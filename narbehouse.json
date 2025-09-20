@@ -1,0 +1,4822 @@
+{
+  "meta": {
+    "format": "bennys-peggle-levels-v1"
+  },
+  "levels": [
+    {
+      "id": 1,
+      "pegs": [
+        {
+          "x": 160,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 615,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 590,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 565,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 535,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 535,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 585,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 465,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 270,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 215,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 395,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 610,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 335,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 585,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 640,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "pegs": [
+        {
+          "x": 560,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 130,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 130,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 155,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 375,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 230,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 280,
+          "y": 310,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 325,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 190,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 650,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 580,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 580,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 445,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 415,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 330,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 440,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 415,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 325,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 355,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 380,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 355,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 325,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 375,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 380,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 295,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 490,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 555,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 270,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 270,
+          "y": 245,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 450,
+          "y": 290,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 215,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 305,
+          "y": 285,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 610,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 670,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 680,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 675,
+          "y": 310,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 595,
+          "y": 335,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 500,
+          "y": 245,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 655,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 234,
+          "radius": 16,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 569,
+          "y": 233,
+          "radius": 16,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "pegs": [
+        {
+          "x": 705,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 90,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 155,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 80,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 275,
+          "y": 360,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 390,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 240,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 75,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 635,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 525,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 660,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 610,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 555,
+          "y": 310,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 465,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 500,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 440,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 405,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 240,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 290,
+          "y": 410,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 220,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 165,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 450,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 570,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 625,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 540,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 450,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 505,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 280,
+          "y": 265,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 230,
+          "y": 370,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 685,
+          "y": 250,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 560,
+          "y": 385,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 610,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 735,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 695,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 650,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 165,
+          "y": 380,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 570,
+          "y": 270,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 585,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 735,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 115,
+          "y": 325,
+          "radius": 18,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 695,
+          "y": 320,
+          "radius": 18,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 270,
+          "y": 235,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 315,
+          "y": 235,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 500,
+          "y": 235,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 540,
+          "y": 235,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "pegs": [
+        {
+          "x": 250,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 175,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 175,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 155,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 200,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 420,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 320,
+          "y": 410,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 340,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 230,
+          "y": 390,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 405,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 405,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 455,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 535,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 580,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 490,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 445,
+          "y": 335,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 390,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 605,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 250,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 295,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 190,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 230,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 380,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 470,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 360,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 480,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 505,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 455,
+          "y": 415,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 400,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 405,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 275,
+          "y": 300,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 215,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 270,
+          "y": 350,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 560,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 305,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 495,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 335,
+          "y": 335,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 635,
+          "y": 365,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 590,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 240,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 355,
+          "y": 235,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 505,
+          "y": 240,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 615,
+          "y": 260,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 135,
+          "y": 285,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 340,
+          "y": 290,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 590,
+          "y": 310,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "pegs": [
+        {
+          "x": 160,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 615,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 590,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 565,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 535,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 360,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 510,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 535,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 585,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 305,
+          "y": 235,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 385,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 700,
+          "y": 345,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 90,
+          "y": 340,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 610,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 640,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 85,
+          "y": 290,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 465,
+          "y": 235,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 685,
+          "y": 300,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 640,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 120,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 130,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 430,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 330,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 210,
+          "y": 225,
+          "radius": 22,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 540,
+          "y": 320,
+          "radius": 22,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 560,
+          "y": 225,
+          "radius": 22,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 245,
+          "y": 315,
+          "radius": 22,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 260,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 315,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 375,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 435,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 495,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 555,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 200,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 615,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "pegs": [
+        {
+          "x": 180,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 100,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 100,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 140,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 430,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 170,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 325,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 355,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 135,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 625,
+          "y": 210,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 660,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 600,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 545,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 565,
+          "y": 215,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 375,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 310,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 345,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 290,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 315,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 175,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 225,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 255,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 280,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 125,
+          "y": 210,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 400,
+          "y": 395,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 455,
+          "y": 395,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 525,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 575,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 620,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 315,
+          "y": 225,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 715,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 215,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 130,
+          "y": 400,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 680,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 670,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 680,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 625,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 265,
+          "y": 425,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 475,
+          "y": 320,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 610,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 475,
+          "y": 220,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 235,
+          "y": 230,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 385,
+          "y": 235,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 395,
+          "y": 295,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 255,
+          "y": 320,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 495,
+          "y": 285,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 545,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 575,
+          "y": 300,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 450,
+          "y": 360,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 515,
+          "y": 420,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "pegs": [
+        {
+          "x": 205,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 180,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 135,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 115,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 420,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 145,
+          "y": 390,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 225,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 255,
+          "y": 415,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 320,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 355,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 115,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 685,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 665,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 630,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 590,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 340,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 445,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 375,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 340,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 205,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 315,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 290,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 330,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 235,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 295,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 420,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 495,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 420,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 545,
+          "y": 405,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 585,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 660,
+          "y": 395,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 615,
+          "y": 395,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 455,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 225,
+          "y": 205,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 115,
+          "y": 275,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 295,
+          "y": 325,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 725,
+          "y": 310,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 550,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 685,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 690,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 690,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 600,
+          "y": 365,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 620,
+          "y": 210,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 365,
+          "y": 210,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 675,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 170,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 220,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 295,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 320,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 420,
+          "y": 385,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 395,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 430,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 465,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 490,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 500,
+          "y": 280,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 555,
+          "y": 280,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 605,
+          "y": 305,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 545,
+          "y": 330,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 335,
+          "y": 280,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 170,
+          "y": 225,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 85,
+          "y": 235,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 60,
+          "y": 325,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 100,
+          "y": 420,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 240,
+          "y": 330,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 430,
+          "y": 340,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 385,
+          "y": 355,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 480,
+          "y": 385,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 715,
+          "y": 400,
+          "radius": 10,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "pegs": [
+        {
+          "x": 85,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 80,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 80,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 120,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 140,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 135,
+          "y": 420,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 155,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 225,
+          "y": 425,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 290,
+          "y": 435,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 290,
+          "y": 390,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 135,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 620,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 685,
+          "y": 210,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 565,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 690,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 465,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 685,
+          "y": 260,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 210,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 625,
+          "y": 230,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 390,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 210,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 205,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 470,
+          "y": 230,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 215,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 250,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 80,
+          "y": 195,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 420,
+          "y": 430,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 495,
+          "y": 415,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 550,
+          "y": 415,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 475,
+          "y": 360,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 625,
+          "y": 435,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 525,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 595,
+          "y": 400,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 355,
+          "y": 410,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 280,
+          "y": 195,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 90,
+          "y": 350,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 175,
+          "y": 240,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 235,
+          "y": 395,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 580,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 645,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 685,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 330,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 315,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 410,
+          "y": 330,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 730,
+          "y": 360,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 655,
+          "y": 410,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 295,
+          "y": 310,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 195,
+          "y": 280,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 295,
+          "y": 265,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 565,
+          "y": 280,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 395,
+          "y": 285,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 520,
+          "y": 380,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 120,
+          "y": 375,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "pegs": [
+        {
+          "x": 160,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 330,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 270,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 270,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 700,
+          "y": 245,
+          "radius": 18,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 135,
+          "y": 210,
+          "radius": 16,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 450,
+          "y": 280,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 425,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 420,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 415,
+          "y": 320,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 345,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 315,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 285,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 190,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 210,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 365,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 470,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 485,
+          "y": 335,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 500,
+          "y": 360,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 520,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 530,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 110,
+          "y": 405,
+          "radius": 18,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 410,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 225,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 240,
+          "y": 410,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 95,
+          "y": 330,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 355,
+          "y": 310,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 600,
+          "y": 220,
+          "radius": 20,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 605,
+          "y": 280,
+          "radius": 18,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 705,
+          "y": 350,
+          "radius": 12,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 420,
+          "y": 215,
+          "radius": 18,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 690,
+          "y": 295,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 575,
+          "y": 340,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 400,
+          "y": 415,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 630,
+          "y": 345,
+          "radius": 16,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 225,
+          "y": 215,
+          "radius": 24,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 510,
+          "y": 215,
+          "radius": 16,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 455,
+          "y": 375,
+          "radius": 16,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 630,
+          "y": 410,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 680,
+          "y": 390,
+          "radius": 16,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "pegs": [
+        {
+          "x": 160,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 315,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 230,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 215,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 245,
+          "y": 335,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 255,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 275,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 305,
+          "y": 265,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 310,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 230,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 390,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 385,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 380,
+          "y": 260,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 370,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 335,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 260,
+          "y": 245,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 265,
+          "y": 270,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 270,
+          "y": 295,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 275,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 280,
+          "y": 350,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 200,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 185,
+          "y": 255,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 160,
+          "y": 240,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 320,
+          "y": 340,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 395,
+          "y": 330,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 400,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 350,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 435,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 470,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 495,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 515,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 325,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 200,
+          "y": 350,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "HAZARD"
+        },
+        {
+          "x": 225,
+          "y": 260,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "INVINCIBLE"
+        },
+        {
+          "x": 355,
+          "y": 340,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 470,
+          "y": 345,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "SPRAY"
+        },
+        {
+          "x": 530,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 505,
+          "y": 260,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 460,
+          "y": 230,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 490,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 725,
+          "y": 340,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXTRA"
+        },
+        {
+          "x": 580,
+          "y": 275,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "MULTIBALL"
+        },
+        {
+          "x": 700,
+          "y": 260,
+          "radius": 14,
+          "shape": "CIRCLE",
+          "type": "EXPLODE"
+        },
+        {
+          "x": 500,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 540,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 205,
+          "y": 215,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 545,
+          "y": 260,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 550,
+          "y": 290,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 560,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 565,
+          "y": 345,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 570,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 575,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 605,
+          "y": 250,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 620,
+          "y": 275,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 605,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 590,
+          "y": 315,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 615,
+          "y": 325,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 635,
+          "y": 335,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 645,
+          "y": 355,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 630,
+          "y": 370,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 600,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 645,
+          "y": 235,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 650,
+          "y": 260,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 655,
+          "y": 285,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 660,
+          "y": 310,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 670,
+          "y": 335,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 675,
+          "y": 360,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 680,
+          "y": 385,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 675,
+          "y": 230,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 710,
+          "y": 225,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 745,
+          "y": 220,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 690,
+          "y": 305,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 725,
+          "y": 300,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 705,
+          "y": 380,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 740,
+          "y": 375,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 770,
+          "y": 365,
+          "radius": 10,
+          "shape": "CIRCLE",
+          "type": "NORMAL"
+        },
+        {
+          "x": 300,
+          "y": 210,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 395,
+          "y": 210,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 610,
+          "y": 210,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 105,
+          "y": 310,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 250,
+          "y": 420,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 375,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 515,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        },
+        {
+          "x": 640,
+          "y": 410,
+          "radius": 14,
+          "shape": "SQUARE",
+          "type": "BLOCK",
+          "block": true
+        }
+      ]
+    }
+  ]
+}
