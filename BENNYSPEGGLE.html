@@ -546,7 +546,8 @@ function ensureNoOverlap(pegs){
             // keep blocks fixed: move the normal peg away
             b.x += ux*push; b.y += uy*push;
           } else if (bStatic && !aStatic){
-            a.x -= ux*push; a.y -= uy*push;
+            a.x -= ux*push*0.5; a.y -= uy*push*0.5;
+            b.x += ux*push*0.5; b.y += uy*push*0.5;
           } else {
             // two blocks or two normals: split the correction
             a.x -= ux*push*0.5; a.y -= uy*push*0.5;
@@ -1480,7 +1481,7 @@ class Game{
 
     // Difficulty + pending start context
     this.difficulty = 'easy';
-    this.bonusStep = 15000; // was 10000; Easy default = 15,000
+    this.bonusStep = 10000; // Easy default = 10,000
     this.difficultyIndex = 0;      // 0 Easy, 1 Medium, 2 Hard
     this.pendingStartKind = null;  // 'builtin' | 'custom'
 
@@ -1686,9 +1687,9 @@ class Game{
   _difficultyItems(){ return ['Back','Easy','Medium','Hard']; }
   setDifficultyFromIndex(i){
     const map = [
-      { name:'easy',   step: 15000 }, // Easy = 15,000
-      { name:'medium', step: 30000 }, // Medium = 30,000
-      { name:'hard',   step: 60000 }  // Hard = 60,000
+      { name:'easy',   step: 10000 }, // Easy = 10,000
+      { name:'medium', step: 20000 }, // Medium = 20,000
+      { name:'hard',   step: 40000 }  // Hard = 40,000
     ];
     const sel = map[Math.max(0, Math.min(i|0, map.length-1))];
     this.difficulty = sel.name;
