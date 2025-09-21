@@ -1480,7 +1480,7 @@ class Game{
 
     // Difficulty + pending start context
     this.difficulty = 'easy';
-    this.bonusStep = 10000;
+    this.bonusStep = 15000; // was 10000; Easy default = 15,000
     this.difficultyIndex = 0;      // 0 Easy, 1 Medium, 2 Hard
     this.pendingStartKind = null;  // 'builtin' | 'custom'
 
@@ -1686,9 +1686,9 @@ class Game{
   _difficultyItems(){ return ['Back','Easy','Medium','Hard']; }
   setDifficultyFromIndex(i){
     const map = [
-      { name:'easy',   step: 10000 },
-      { name:'medium', step: 15000 },
-      { name:'hard',   step: 25000 }
+      { name:'easy',   step: 15000 }, // Easy = 15,000
+      { name:'medium', step: 30000 }, // Medium = 30,000
+      { name:'hard',   step: 60000 }  // Hard = 60,000
     ];
     const sel = map[Math.max(0, Math.min(i|0, map.length-1))];
     this.difficulty = sel.name;
@@ -2153,7 +2153,7 @@ class Game{
     const hasBoom  = this.nextPowers.has('EXPLODE');
 
     if(hasSpray){
-      const count=5; const spread=Math.PI/6; const startAngle=this.aim.angle - spread/2;
+      const count=3; const spread=Math.PI/6; const startAngle=this.aim.angle - spread/2;
       for(let i=0;i<count;i++){
         const a = startAngle + (spread/(count-1))*i;
         const b={x:this.aim.x,y:this.aim.y,vx:Math.sin(a)*speed,vy:Math.cos(a)*speed,radius:12,trail:[],bounceCount:0};
