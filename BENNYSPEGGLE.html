@@ -1444,6 +1444,8 @@ class Game{
     this.aim={x:BASE_W/2,y:60,angle:0};
     this.aimOsc=false; this.aimDir=1; this.aimSpeed=0.0065625;
     this.aimMin=-Math.PI/2; this.aimMax=Math.PI/2;
+    // Trajectory aimer uses the in-game ball radius for accurate intersections
+    this.ballR = 12;
 
     // gameplay
     this.bumper={x:100,y:BASE_H-28,w:160*3,h:18,vx:1.4,active:true};
@@ -2733,24 +2735,10 @@ class Game{
         else if(this.aim.angle<this.aimMin){ this.aim.angle=this.aimMin; this.aimDir=1; }
       }
 
-      // existing aimer drawing (unchanged, now uses updated this.aim.angle)
-      const aimLen = 127.5;
-      const ex = this.aim.x + Math.sin(this.aim.angle)*aimLen;
-      const ey = this.aim.y + Math.cos(this.aim.angle)*aimLen;
-      const dirx = Math.sin(this.aim.angle), diry = Math.cos(this.aim.angle);
-      const arrowLen = 18; const arrowWidth = 10;
-      const bx = ex - dirx*arrowLen, by = ey - diry*arrowLen;
-      ctx.setLineDash([16,6]);
-      ctx.strokeStyle='#000'; ctx.lineWidth=16; ctx.beginPath(); ctx.moveTo(this.aim.x,this.aim.y); ctx.lineTo(bx, by); ctx.stroke();
-      ctx.strokeStyle='#ffffff'; ctx.lineWidth=12; ctx.beginPath(); ctx.moveTo(this.aim.x,this.aim.y); ctx.lineTo(bx, by); ctx.stroke();
-      ctx.setLineDash([]);
-      const leftX = bx + (-diry)*arrowWidth, leftY = by + (dirx)*arrowWidth;
-      const rightX = bx - (-diry)*arrowWidth, rightY = by - (dirx)*arrowWidth;
-      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(leftX, leftY); ctx.lineTo(rightX, rightY); ctx.closePath(); ctx.fillStyle = '#ffffff'; ctx.fill();
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke();
-      ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(this.aim.x,this.aim.y,18,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.stroke();
+      // Trajectory-based aimer (replaces the old straight aimer)
+      this._drawTrajectoryAimer(ctx);
 
-      // Power-up glow around aim origin (stacks and oscillates per queued next-shot power-ups)
+      // Power-up glow around aim origin (unchanged)
       if (this.nextPowers && this.nextPowers.size){
         const colorMap = {
           INVINCIBLE: '#ffffff',   // white glow
@@ -3459,6 +3447,164 @@ class Game{
     for (const t of ['EXTRA','SPRAY','INVINCIBLE','MULTIBALL','EXPLODE']){
       enforceSeparation(t);
     }
+  }
+
+  // --- Trajectory aimer helpers ---
+
+  // Draw a dashed aimer that follows the ball’s curved trajectory under gravity
+  _drawTrajectoryAimer(ctx){
+    const path = this._predictAimPath();
+    const pts = path.points;
+    if (!pts || pts.length < 2){
+      // Fallback to a short stub if prediction failed
+      const ox=this.aim.x, oy=this.aim.y, dx=Math.sin(this.aim.angle), dy=Math.cos(this.aim.angle);
+      const ex=ox+dx*120, ey=oy+dy*120;
+      ctx.setLineDash([16,6]);
+      ctx.strokeStyle='#000'; ctx.lineWidth=16; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=12; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+
+    // Thick black under-stroke, then white stroke on top
+    ctx.setLineDash([16,6]);
+    ctx.strokeStyle='#000';
+    ctx.lineWidth=16;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length-1;i++){ ctx.lineTo(pts[i].x, pts[i].y); }
+    ctx.stroke();
+
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=12;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length-1;i++){ ctx.lineTo(pts[i].x, pts[i].y); }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrow head removed
+
+    // Aim origin disk
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(this.aim.x, this.aim.y, 18, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.stroke();
+  }
+
+  // Predict a curved aim path under gravity until first collision
+  _predictAimPath(){
+    const r = this.ballR || 12;
+    const ox = this.aim.x, oy = this.aim.y;
+    const speed = 11 * TUNING.speed;
+    let vx = Math.sin(this.aim.angle) * speed;
+    let vy = Math.cos(this.aim.angle) * speed;
+
+    // Simulate with the same frame-scale as update(): fStep = 1 (i.e., 1/60th)
+    const g = this.gravity; // per f=1 step
+    const maxSteps = 140;   // cap runtime
+    const fStep = 1;        // one "frame" per step
+    const points = [{ x: ox, y: oy }];
+    let x = ox, y = oy;
+    let hit = null;
+
+    // Cheap helpers
+    const hitWall = () => {
+      if (x - r <= 0) return { kind:'wall', x: r, y };
+      if (x + r >= BASE_W) return { kind:'wall', x: BASE_W - r, y };
+      return null;
+    };
+    const hitCeil = () => (y - r <= HUD_H ? { kind:'ceiling', x, y: HUD_H + r } : null);
+    const hitFloor = () => (y + r >= BASE_H ? { kind:'floor', x, y: BASE_H - r } : null);
+    const hitBumper = () => {
+      if (!this.bumper || !this.bumper.active) return null;
+      const bx=this.bumper.x, by=this.bumper.y, bw=this.bumper.w, bh=this.bumper.h;
+      const minx=bx, miny=by, maxx=bx+bw, maxy=by+bh;
+      if (this._circleIntersectsAABB(x, y, r, minx, miny, maxx, maxy)){
+        // Clamp end point to the closest point on the AABB
+        const cx = Math.max(minx, Math.min(x, maxx));
+        const cy = Math.max(miny, Math.min(y, maxy));
+        return { kind:'bumper', x: cx, y: cy };
+      }
+      return null;
+    };
+    const hitPegOrBlock = () => {
+      const pegs = this.pegs || [];
+      for (let i=0;i<pegs.length;i++){
+        const p = pegs[i];
+        if (!p || p.hit) continue;
+        if (p.block || p.shape === 'SQUARE'){
+          const half = p.radius || 16;
+          const minx = p.x - half, miny = p.y - half, maxx = p.x + half, maxy = p.y + half;
+          if (this._circleIntersectsAABB(x, y, r, minx, miny, maxx, maxy)){
+            // clamp to box boundary
+            const cx = Math.max(minx, Math.min(x, maxx));
+            const cy = Math.max(miny, Math.min(y, maxy));
+            return { kind:'block', x: cx, y: cy };
+          }
+        } else {
+          const R = (p.radius || 16) + r;
+          const dx = x - p.x, dy = y - p.y;
+          if (dx*dx + dy*dy <= R*R){
+            return { kind:'peg', x, y };
+          }
+        }
+      }
+      return null;
+    };
+
+    for (let step=0; step<maxSteps; step++){
+      // Advance
+      x += vx * fStep;
+      y += vy * fStep;
+      vy += g * fStep;
+
+      // Record the new point every step
+      points.push({ x, y });
+
+      // Collision checks in order of cheapest-first
+      hit = hitWall() || hitCeil() || hitFloor() || hitBumper() || hitPegOrBlock();
+      if (hit){
+        // Ensure the end point is the collision point
+        hit.x = Number.isFinite(hit.x) ? hit.x : x;
+        hit.y = Number.isFinite(hit.y) ? hit.y : y;
+        points[points.length-1] = { x: hit.x, y: hit.y };
+        break;
+      }
+
+      // Stop if far off-screen (safety)
+      if (x < -100 || x > BASE_W+100 || y > BASE_H+120) break;
+    }
+
+    // Keep at least two points for drawing
+    if (points.length < 2){
+      const dx = Math.sin(this.aim.angle), dy = Math.cos(this.aim.angle);
+      points.push({ x: ox + dx*60, y: oy + dy*60 });
+    }
+
+    return { points, end: hit || { kind:'none', x: points[points.length-1].x, y: points[points.length-1].y } };
+  }
+
+  // Circle vs AABB intersection (used by predictor)
+  _circleIntersectsAABB(cx, cy, cr, minx, miny, maxx, maxy){
+    const px = Math.max(minx, Math.min(cx, maxx));
+    const py = Math.max(miny, Math.min(cy, maxy));
+    const dx = cx - px, dy = cy - py;
+    return (dx*dx + dy*dy) <= cr*cr;
+  }
+
+  // ...existing code...
+
+  // Find earliest intersection of a ray with world geometry
+  _raycastFirstHit(ox, oy, dx, dy){
+    // ...existing code...
+  }
+
+  _intersectRayCircle(ox, oy, dx, dy, cx, cy, R){
+    // ...existing code...
+  }
+
+  _intersectRayAABB(ox, oy, dx, dy, minx, miny, maxx, maxy){
+    // ...existing code...
   }
 }
 // Call the orientation gate once at boot before creating the game
