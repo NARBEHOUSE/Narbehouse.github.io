@@ -2154,11 +2154,11 @@ class Game{
     const hasBoom  = this.nextPowers.has('EXPLODE');
 
     if(hasSpray){
-      const count=3; const spread=Math.PI/6; const startAngle=this.aim.angle - spread/2;
+      const count=4; const spread=Math.PI/6; const startAngle=this.aim.angle - spread/2;
       for(let i=0;i<count;i++){
         const a = startAngle + (spread/(count-1))*i;
         const b={x:this.aim.x,y:this.aim.y,vx:Math.sin(a)*speed,vy:Math.cos(a)*speed,radius:12,trail:[],bounceCount:0};
-        if(hasInv){ b.invUntil = now + 5000; } // was 10000
+        if(hasInv){ b.invUntil = now + 6000; }
         if(hasBoom){ b.explosive = true; }
         this.balls.push(b);
       }
@@ -2168,7 +2168,7 @@ class Game{
     }
 
     const b={x:this.aim.x,y:this.aim.y,vx:Math.sin(this.aim.angle)*speed,vy:Math.cos(this.aim.angle)*speed,radius:12,trail:[],bounceCount:0};
-    if(hasInv){ b.invUntil = now + 5000; } // was 10000
+    if(hasInv){ b.invUntil = now + 6000; }
     if(hasBoom){ b.explosive = true; }
     this.balls.push(b);
     this.ballsLeft--; this.state='firing'; this.sound.play(400,0.2,'sine',0.12);
@@ -2846,10 +2846,10 @@ class Game{
       { type:'BLOCK',      label:'Unbreakable',      shape:'SQUARE' }
     ];
     const row2 = [
-      { type:'HAZARD',     label:'Removes Power',    shape:'CIRCLE' },
-      { type:'SPRAY',      label:'Spray (Next)',     shape:'CIRCLE' },
-      { type:'INVINCIBLE', label:'Shield 5s (Next)', shape:'CIRCLE' },
-      { type:'EXPLODE',    label:'Blast (Next)',     shape:'CIRCLE' }
+      { type:'HAZARD',     label:'Removes Power',     shape:'CIRCLE' },
+      { type:'SPRAY',      label:'Spray x4 (Next)',   shape:'CIRCLE' },
+      { type:'INVINCIBLE', label:'Shield 6s (Next)',  shape:'CIRCLE' },
+      { type:'EXPLODE',    label:'Blast (Next)',      shape:'CIRCLE' }
     ];
 
     // Shared column centers so pegs align vertically across rows
@@ -2946,9 +2946,9 @@ class Game{
     // Power-up HUD (unchanged)
     {
       const map = {
-        SPRAY:      { text:'Spray',           color:'#ffd21a' }, // yellow
-        INVINCIBLE: { text:'Invincible (5s)', color:'#ffffff' }, // white
-        EXPLODE:    { text:'Explosion',       color:'#ff5722' }  // orange
+        SPRAY:      { text:'Spray x4',        color:'#ffd21a' },
+        INVINCIBLE: { text:'Invincible (6s)', color:'#ffffff' },
+        EXPLODE:    { text:'Explosion',       color:'#ff5722' }
       };
       const items = Array.from(this.nextPowers || []).map(k=>map[k]).filter(Boolean);
 
