@@ -607,8 +607,8 @@ const BUILTIN_LEVELS = JSON.parse(JSON.stringify(LEVELS));
 
   // Small, deterministic RNG so patterns are stable per level
   function RNG(seed){ this.s = (seed>>>0) || 1; }
-  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223) >>> 0; return this.s/4294967296; };
-  RNG.prototype.range = function(a,b){ return a + (b-a) * this.next(); };
+  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223) >>> 0; return this.s/4294967296; }
+  RNG.prototype.range = function(a,b){ return a + (b-a) * this.next(); }
 
   // Override: unbreakable blocks get smaller with level; some levels get a partial blocking row
   function newStaticBlocksForLevel(levelId, pegs){
@@ -1733,7 +1733,7 @@ class Game{
     this.canvas.style.cursor = 'default';
 
     this.menuOpen=true; this.paused=true; this.music.pause(); this.menuIndex = (this.menuIndex<0?0:this.menuIndex);
-    this._speakMenu();
+    TTS.speak('Pause menu', true);
   }
   closeMenu(){
     this.menuOpen=false; this.paused=false; this.music.resume();
@@ -1750,9 +1750,8 @@ class Game{
     ];
   }
   _speakMenu(){
-    const items = this._menuItems();
-    TTS.speak(`Menu. ${items.join('. ')}`, true);
-    if(this.menuIndex>=0) TTS.speak(items[this.menuIndex], false);
+    // Only announce opening of pause menu; do not enumerate items or speak selection here
+    TTS.speak('Pause menu', true);
   }
   _speakMenuItem(){
     const items = this._menuItems();
@@ -2158,7 +2157,7 @@ class Game{
       for(let i=0;i<count;i++){
         const a = startAngle + (spread/(count-1))*i;
         const b={x:this.aim.x,y:this.aim.y,vx:Math.sin(a)*speed,vy:Math.cos(a)*speed,radius:12,trail:[],bounceCount:0};
-        if(hasInv){ b.invUntil = now + 6000; }
+        if(hasInv){ b.invUntil = now + 5000; } // was 6000
         if(hasBoom){ b.explosive = true; }
         this.balls.push(b);
       }
@@ -2168,7 +2167,7 @@ class Game{
     }
 
     const b={x:this.aim.x,y:this.aim.y,vx:Math.sin(this.aim.angle)*speed,vy:Math.cos(this.aim.angle)*speed,radius:12,trail:[],bounceCount:0};
-    if(hasInv){ b.invUntil = now + 6000; }
+    if(hasInv){ b.invUntil = now + 5000; } // was 6000
     if(hasBoom){ b.explosive = true; }
     this.balls.push(b);
     this.ballsLeft--; this.state='firing'; this.sound.play(400,0.2,'sine',0.12);
@@ -2433,12 +2432,12 @@ class Game{
                   b.vx = (tx * side * 0.85 + nx * 0.15) * speed;
                   b.vy = -Math.abs(speed) * 0.9;
                   // Briefly mute block SFX to prevent loud overlap
-                  b._rapidBlockHits = 0;
-                  b._blockNoSoundUntil = now + 200;
                 }
 
+                // Throttled block thunk so it doesn't spam
                 if (!(b._blockNoSoundUntil && now < b._blockNoSoundUntil)){
                   this.sound.blockThunk();
+                  b._blockNoSoundUntil = now + 90; // ms
                 }
 
                 // NEW: note block collision for anomaly detection
@@ -2457,9 +2456,8 @@ class Game{
               if (p.type === 'HAZARD'){
                 if (this.nextPowers && this.nextPowers.size > 0){
                   const arr = Array.from(this.nextPowers);
-                  const idx = (Math.random() * arr.length) | 0;
-                  const lost = arr[idx];
-                  this.nextPowers.delete(lost);
+                  const rem = arr[(Math.random()*arr.length)|0];
+                  this.nextPowers.delete(rem);
                   if (this.sound && this.sound.hazardZap) this.sound.hazardZap();
                 }
               }
@@ -2598,6 +2596,44 @@ class Game{
         const sel=(this.mainMenuIndex===i);
         ctx.fillStyle= sel ? '#4facfe' : '#fff';
         ctx.fillText(items[i], BASE_W/2-110, y);
+      }
+
+      // NEW: bottom hint with inline crosshair icon
+      {
+        ctx.save();
+        const prefix = 'Use Spacebar to Aim & Return to Fire. Press the ';
+        const suffix = ' to enable Mouse Mode';
+        ctx.font = '16px system-ui, Arial';
+        ctx.fillStyle = '#fff';
+        ctx.textBaseline = 'alphabetic';
+        const iconW = 20, gap = 6;
+        const w1 = ctx.measureText(prefix).width;
+        const w2 = ctx.measureText(suffix).width;
+        const total = w1 + gap + iconW + gap + w2;
+        let x = (BASE_W - total) / 2;
+        const y = BASE_H - 22;
+
+        // prefix
+        ctx.fillText(prefix, x, y);
+        x += w1 + gap;
+
+        // crosshair icon
+        ctx.save();
+        const cx = x + iconW/2, cy = y - 8; // align roughly with text
+        const r = 7, arm = 7;
+        ctx.strokeStyle = '#4facfe';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx-arm, cy); ctx.lineTo(cx+arm, cy);
+        ctx.moveTo(cx, cy-arm); ctx.lineTo(cx, cy+arm);
+        ctx.stroke();
+        ctx.restore();
+
+        x += iconW + gap;
+        // suffix
+        ctx.fillText(suffix, x, y);
+        ctx.restore();
       }
 
       // NEW: peg/power legend on both sides of the menu
@@ -2847,8 +2883,8 @@ class Game{
     ];
     const row2 = [
       { type:'HAZARD',     label:'Removes Power',     shape:'CIRCLE' },
-      { type:'SPRAY',      label:'Spray x4 (Next)',   shape:'CIRCLE' },
-      { type:'INVINCIBLE', label:'Shield 6s (Next)',  shape:'CIRCLE' },
+      { type:'SPRAY',      label:'Spray (Next)',      shape:'CIRCLE' },        // was 'Spray x4 (Next)'
+      { type:'INVINCIBLE', label:'Shield 5s (Next)',  shape:'CIRCLE' },        // was 'Shield 6s (Next)'
       { type:'EXPLODE',    label:'Blast (Next)',      shape:'CIRCLE' }
     ];
 
@@ -2911,44 +2947,83 @@ class Game{
     ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,0,BASE_W,42);
     ctx.fillStyle='#fff'; ctx.font='bold 18px system-ui, Arial'; ctx.textBaseline='middle';
 
-    // Home button (left)
-    this.homeBtnRect = { x: 10, y: 9, w: 24, h: 24 };
-    const hb = this.homeBtnRect;
-    ctx.fillStyle='rgba(255,165,0,0.18)'; ctx.fillRect(hb.x, hb.y, hb.w, hb.h);
-    ctx.fillStyle='#ffa500';
-    ctx.beginPath(); ctx.moveTo(hb.x+4, hb.y+12); ctx.lineTo(hb.x+12, hb.y+4); ctx.lineTo(hb.x+20, hb.y+12);
-    ctx.closePath(); ctx.fill();
-    ctx.fillRect(hb.x+7, hb.y+12, 10, 9);
-    ctx.fillStyle='#222'; ctx.fillRect(hb.x+11, hb.y+15, 3, 6);
+    // Home (pause) button: expand down/right, stay within frame
+    {
+      const hbBase = { x: 10, y: 9, w: 24, h: 24 };
+      const mx = this.mouse?.x ?? -1, my = this.mouse?.y ?? -1;
+      const prev = this.homeBtnRect || hbBase;
+      const hoverHome = this.mouse?.active && mx>=prev.x && mx<=prev.x+prev.w && my>=prev.y && my<=prev.y+prev.h;
+      const s = hoverHome ? 3 : 1;
 
-    // Crosshair toggle button next to home
-    this.crosshairBtnRect = { x: 40, y: 9, w: 24, h: 24 };
-    const cb = this.crosshairBtnRect;
-    const on = this.crosshairEnabled;
-    ctx.fillStyle = on ? 'rgba(79,172,254,0.22)' : 'rgba(255,255,255,0.12)';
-    ctx.fillRect(cb.x, cb.y, cb.w, cb.h);
-    // icon: circle + cross lines
-    ctx.strokeStyle = on ? '#4facfe' : '#bbb';
-    ctx.lineWidth = 2;
-    const cx = cb.x + cb.w/2, cy = cb.y + cb.h/2, r = 8, arm=8;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx-arm, cy); ctx.lineTo(cx+arm, cy); ctx.moveTo(cx, cy-arm); ctx.lineTo(cx, cy+arm); ctx.stroke();
+      // Clickable rect anchored at top-left (grow to right/down) + clamp to canvas
+      const scaled = { x: hbBase.x, y: hbBase.y, w: hbBase.w*s, h: hbBase.h*s };
+      if (scaled.x + scaled.w > BASE_W) scaled.w = Math.max(0, BASE_W - scaled.x);
+      if (scaled.y + scaled.h > BASE_H) scaled.h = Math.max(0, BASE_H - scaled.y);
+      this.homeBtnRect = scaled;
 
-    // Shift Level text to the right to make room for icons
+      // Draw with top-left pivot so it never grows outside top/left edges
+      ctx.save();
+      ctx.translate(hbBase.x, hbBase.y);
+      ctx.scale(s, s);
+      ctx.translate(-hbBase.x, -hbBase.y);
+
+      ctx.fillStyle='rgba(255,165,0,0.18)'; ctx.fillRect(hbBase.x, hbBase.y, hbBase.w, hbBase.h);
+      ctx.fillStyle='#ffa500';
+      ctx.beginPath(); ctx.moveTo(hbBase.x+4, hbBase.y+12); ctx.lineTo(hbBase.x+12, hbBase.y+4); ctx.lineTo(hbBase.x+20, hbBase.y+12);
+      ctx.closePath(); ctx.fill();
+      ctx.fillRect(hbBase.x+7, hbBase.y+12, 10, 9);
+      ctx.fillStyle='#222'; ctx.fillRect(hbBase.x+11, hbBase.y+15, 3, 6);
+
+      ctx.restore();
+    }
+
+    // Crosshair toggle button: expand down/right, stay within frame
+    {
+      const cbBase = { x: 40, y: 9, w: 24, h: 24 };
+      const mx = this.mouse?.x ?? -1, my = this.mouse?.y ?? -1;
+      const prev = this.crosshairBtnRect || cbBase;
+      const hoverCross = this.mouse?.active && mx>=prev.x && mx<=prev.x+prev.w && my>=prev.y && my<=prev.y+prev.h;
+      const s = hoverCross ? 3 : 1;
+      const on = this.crosshairEnabled;
+
+      // Clickable rect anchored at top-left (grow to right/down) + clamp to canvas
+      const scaled = { x: cbBase.x, y: cbBase.y, w: cbBase.w*s, h: cbBase.h*s };
+      if (scaled.x + scaled.w > BASE_W) scaled.w = Math.max(0, BASE_W - scaled.x);
+      if (scaled.y + scaled.h > BASE_H) scaled.h = Math.max(0, BASE_H - scaled.y);
+      this.crosshairBtnRect = scaled;
+
+      // Draw with top-left pivot so it never grows outside top/left edges
+      ctx.save();
+      ctx.translate(cbBase.x, cbBase.y);
+      ctx.scale(s, s);
+      ctx.translate(-cbBase.x, -cbBase.y);
+
+      ctx.fillStyle = on ? 'rgba(79,172,254,0.22)' : 'rgba(255,255,255,0.12)';
+      ctx.fillRect(cbBase.x, cbBase.y, cbBase.w, cbBase.h);
+
+      ctx.strokeStyle = on ? '#4facfe' : '#bbb';
+      ctx.lineWidth = 2;
+      const rcx = cbBase.x + cbBase.w/2, rcy = cbBase.y + cbBase.h/2, r = 8, arm=8;
+      ctx.beginPath(); ctx.arc(rcx, rcy, r, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rcx-arm, rcy); ctx.lineTo(rcx+arm, rcy); ctx.moveTo(rcx, rcy-arm); ctx.lineTo(rcx, rcy+arm); ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // Shift Level/Score/Balls/Pegs text (unchanged)
     ctx.fillStyle='#fff';
     ctx.fillText(`Level ${this.currentId}`, 76, 21);
     ctx.fillText(`Score ${this.score}`, 160, 21);
     ctx.fillText(`Balls ${this.ballsLeft}`, 280, 21);
     ctx.fillText(`Pegs ${this.pegsLeft}`, 400, 21);
-    // Move multiplier 20px left to avoid overlapping the "Ne xt:" HUD text
     ctx.fillText(`x${this.mult.toFixed(1)}`, 490, 21);
 
     // Power-up HUD (unchanged)
     {
       const map = {
-        SPRAY:      { text:'Spray x4',        color:'#ffd21a' },
-        INVINCIBLE: { text:'Invincible (6s)', color:'#ffffff' },
-        EXPLODE:    { text:'Explosion',       color:'#ff5722' }
+        SPRAY:      { text:'Spray',            color:'#ffd21a' },  // was 'Spray x4'
+        INVINCIBLE: { text:'Invincible (5s)',  color:'#ffffff' },  // was '(6s)'
+        EXPLODE:    { text:'Explosion',        color:'#ff5722' }
       };
       const items = Array.from(this.nextPowers || []).map(k=>map[k]).filter(Boolean);
 
