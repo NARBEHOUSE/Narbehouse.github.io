@@ -2013,49 +2013,34 @@
     // Board Management
     async function scanForBoards() {
       try {
-        // Try to fetch the boards directory listing
-        const response = await fetch('./boards/');
+        // Fetch the index.json file that lists all available boards
+        const response = await fetch('./boards/index.json');
         if (response.ok) {
-          const text = await response.text();
-          // Parse HTML directory listing to extract CSV files
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(text, 'text/html');
-          const links = doc.querySelectorAll('a[href$=".csv"]');
+          const data = await response.json();
           
-          state.availableBoards = Array.from(links).map(link => {
-            const filename = link.getAttribute('href');
-            const name = filename.replace('.csv', '').replace(/-/g, ' ').replace(/_/g, ' ');
+          // Convert the file list to board objects
+          state.availableBoards = data.files.map(filename => {
+            // Remove .csv extension and format name
+            const name = filename.replace('.csv', '')
+              .replace(/_/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+            
             return {
-              name: name.charAt(0).toUpperCase() + name.slice(1),
+              name: name,
               filename: filename,
               path: `./boards/${filename}`
             };
           });
+          
+          console.log('Loaded boards from index.json:', state.availableBoards);
         } else {
-          // Fallback - try some common board names
-          const commonBoards = ['NARBE Default', 'Basic Communication', 'Emergency'];
-          const foundBoards = [];
-          
-          for (const boardName of commonBoards) {
-            try {
-              const filename = boardName.toLowerCase().replace(/\s+/g, '-') + '.csv';
-              const testResponse = await fetch(`./boards/${filename}`);
-              if (testResponse.ok) {
-                foundBoards.push({
-                  name: boardName,
-                  filename: filename,
-                  path: `./boards/${filename}`
-                });
-              }
-            } catch (e) {
-              // Board doesn't exist, skip
-            }
-          }
-          
-          state.availableBoards = foundBoards;
+          console.error('Could not fetch index.json');
+          state.availableBoards = [];
         }
       } catch (error) {
-        console.log('Could not scan boards directory:', error);
+        console.error('Error scanning for boards:', error);
         state.availableBoards = [];
       }
     }
