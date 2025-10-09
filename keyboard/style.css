@@ -265,7 +265,7 @@ main {
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr) auto;
   gap: 3vh 3vw;
   flex: 1;
   max-height: 70vh;

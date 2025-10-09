@@ -526,9 +526,12 @@
       if (!trimmedBuffer) {
         // Use default predictions when nothing is typed
         predictions = ["yes", "no", "help", "the", "you", "I"];
+        console.log("Using default predictions (empty buffer):", predictions);
       } else {
         // Get predictions from KENLM API
         try {
+          console.log("Fetching predictions from KENLM API for text:", trimmedBuffer);
+          
           const kenlmResponse = await fetch(KENLM_API, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -538,10 +541,30 @@
             })
           });
           
+          console.log("KENLM API Response status:", kenlmResponse.status);
+          
           if (kenlmResponse.ok) {
             const data = await kenlmResponse.json();
-            predictions = Array.isArray(data) ? data : 
-                         (data && data.predictions) ? data.predictions : [];
+            console.log("KENLM API Response data:", data);
+            
+            // Handle different possible response formats
+            if (Array.isArray(data)) {
+              predictions = data;
+            } else if (data && Array.isArray(data.predictions)) {
+              predictions = data.predictions;
+            } else if (data && Array.isArray(data.results)) {
+              predictions = data.results;
+            } else if (data && data.next_words) {
+              predictions = data.next_words;
+            } else {
+              console.warn("Unexpected KENLM response format:", data);
+              predictions = ["yes", "no", "help", "the", "you", "I"];
+            }
+            
+            console.log("Extracted predictions:", predictions);
+          } else {
+            console.error("KENLM API error - status:", kenlmResponse.status);
+            predictions = ["yes", "no", "help", "the", "you", "I"];
           }
         } catch (error) {
           console.error("Error fetching KENLM predictions:", error);
@@ -549,6 +572,13 @@
           predictions = ["yes", "no", "help", "the", "you", "I"];
         }
       }
+
+      // Ensure predictions is an array of strings
+      predictions = predictions.filter(p => typeof p === 'string' || (p && typeof p.word === 'string'))
+                               .map(p => typeof p === 'string' ? p : p.word)
+                               .slice(0, 6);
+      
+      console.log("Final predictions to render:", predictions);
 
       // Render the predictions
       predictBar.innerHTML = "";
@@ -585,6 +615,8 @@
         
         predictBar.appendChild(chip);
       });
+      
+      console.log("Rendered", predictBar.querySelectorAll(".chip").length, "prediction chips");
       
       // Restore predictive row highlighting if it was highlighted before
       if (wasPredictiveRowHighlighted) {
@@ -800,16 +832,6 @@
     const setting = item.dataset.setting;
     
     switch (setting) {
-      case "volume-up":
-        changeVolume(10);
-        speak("volume increased");
-        break;
-        
-      case "volume-down":
-        changeVolume(-10);
-        speak("volume decreased");
-        break;
-        
       case "theme":
         cycleTheme();
         break;
@@ -831,12 +853,6 @@
         speak("settings closed");
         break;
     }
-  }
-
-  function changeVolume(delta) {
-    const action = delta > 0 ? "Volume Up" : "Volume Down";
-    console.log(`${action} by ${Math.abs(delta)}%`);
-    speak(action.toLowerCase());
   }
 
   function cycleTheme() {
@@ -974,6 +990,8 @@
     currentScanSpeed = settings.scanSpeed || "medium";
     renderKeyboard();
     setBuffer("");
+    // Explicitly call renderPredictions to show default predictions on init
+    renderPredictions();
   }
 
   init();
