@@ -70,7 +70,40 @@
     
     ttsEngine.cancel();
     
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Process text for better TTS pronunciation
+    // Convert to lowercase but handle common 2-letter words that shouldn't be spelled out
+    let processedText = text;
+    
+    // List of common 2-letter words that should be spoken as words, not letters
+    const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
+                           'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
+                           'MY', 'AN', 'AM', 'US', 'OK'];
+    
+    // Process the text to handle capitalization issues
+    processedText = text.split(' ').map(word => {
+      // Check if it's a 2-letter word that should be spoken as a word
+      if (word.length === 2 && twoLetterWords.includes(word.toUpperCase())) {
+        return word.toLowerCase();
+      }
+      // For other all-caps words longer than 2 letters, convert to lowercase
+      else if (word.length > 2 && word === word.toUpperCase() && /^[A-Z]+$/.test(word)) {
+        return word.toLowerCase();
+      }
+      // Handle possessives and contractions (e.g., "HOW'S" -> "how's")
+      else if (word.includes("'") && word === word.toUpperCase()) {
+        return word.toLowerCase();
+      }
+      // Keep single letters as uppercase (they should be spelled out)
+      else if (word.length === 1) {
+        return word;
+      }
+      // Default: convert to lowercase for natural speech
+      else {
+        return word.toLowerCase();
+      }
+    }).join(' ');
+    
+    const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
@@ -79,7 +112,7 @@
       utterance.voice = englishVoices[currentVoiceIndex];
     }
     
-    console.log(`TTS: ${text}`);
+    console.log(`TTS: ${text} -> Processed: ${processedText}`);
     ttsEngine.speak(utterance);
   }
 
@@ -661,13 +694,19 @@
     if (spokenLabel === "del letter") spokenLabel = "delete letter";
     if (spokenLabel === "del word") spokenLabel = "delete word";
     
+    // For single letters, keep them uppercase so they're spelled out
+    if (label.length === 1 && /^[A-Z0-9]$/.test(label)) {
+      spokenLabel = label;
+    }
+    
     speak(spokenLabel);
   }
 
   function speakPredictiveButtonLabel(buttonIndex) {
     const chips = predictBar.querySelectorAll(".chip");
     if (chips[buttonIndex] && chips[buttonIndex].textContent.trim()) {
-      speak(chips[buttonIndex].textContent.toLowerCase());
+      // Use the speak function which will handle the text processing
+      speak(chips[buttonIndex].textContent.trim());
     }
   }
 
