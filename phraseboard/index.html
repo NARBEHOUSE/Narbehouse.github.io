@@ -470,6 +470,9 @@
       videoModalActive: false
     };
 
+    // Expose state globally for header title updater
+    window.state = state;
+
     const SCAN_SPEEDS = { slow: 2000, medium: 1200, fast: 600 };
 
     const HIGHLIGHT_COLORS = {
@@ -661,6 +664,7 @@ function updateHeaderForCurrentView(){
       const localBoard = getLocalSavedBoard();
       if (localBoard) {
         const myBtn = createButton(localBoard.name, '📋', () => {
+          state.currentBoardTitle = localBoard.name;
           buildIndex(parseCSV(localBoard.csv));
           el.statusFooter.textContent = `Loaded board: ${localBoard.name}`;
         });
@@ -1179,6 +1183,7 @@ function updateHeaderForCurrentView(){
       saveNavigationState();
       state.page = 0; state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
       openMenu(menuName);
+      updateHeaderForCurrentView();
     }
 
     function navigateBack() {
@@ -1201,6 +1206,7 @@ function updateHeaderForCurrentView(){
           case 'theme': renderThemeMenu(); break;
           case 'category': renderCategory(); break;
         }
+        updateHeaderForCurrentView();
         setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
       } else {
         openMenu('main');
@@ -1219,6 +1225,7 @@ function updateHeaderForCurrentView(){
         case 'highlight': renderHighlightMenu(); break;
         case 'theme': renderThemeMenu(); break;
       }
+      updateHeaderForCurrentView();
       setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
     }
 
@@ -1227,6 +1234,7 @@ function updateHeaderForCurrentView(){
       state.currentCategory = categoryName;
       state.page = 0; state.scanMode = 'row'; state.currentRow = 0;
       renderCategory();
+      updateHeaderForCurrentView();
       setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
     }
 
@@ -1490,6 +1498,14 @@ function updateHeaderForCurrentView(){
         const response = await fetch(boardPath);
         if (response.ok) {
           const csvText = await response.text();
+          // Derive a nice title from filename
+          const filename = boardPath.split('/').pop() || '';
+          const nice = filename
+            .replace(/\.csv$/i, '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+          state.currentBoardTitle = nice;
+          
           buildIndex(parseCSV(csvText));
           return true;
         }
