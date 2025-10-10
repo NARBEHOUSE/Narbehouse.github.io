@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NARBE Accessibility Hub</title>
+  <title>NARBE Benny's Access Hub</title>
   <meta name="description" content="NARBE Branded Accessibility Hub for 2-button switch access." />
   <style>
     :root{
@@ -223,6 +223,9 @@
     }
 
     .brand{
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content: space-between;
+    }
+    .brand-left{
       display:flex; align-items:center; gap:12px; flex-wrap:wrap;
     }
     .logo{
@@ -230,16 +233,14 @@
         conic-gradient(from 210deg, var(--narbe-orange), var(--narbe-blue));
       box-shadow: 0 8px 30px rgba(0,0,0,.35);
     }
+    .benny-logo{
+      width: 80px; height: 80px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
+    }
     .title {
       font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
     }
     .subtitle{ color:var(--muted); font-size: clamp(14px, 2.4vw, 16px); }
-
-    .notice{
-      background: linear-gradient(135deg, rgba(255,92,0,.12), rgba(91,176,255,.12));
-      border:1px solid rgba(255,255,255,.08);
-      padding:16px; border-radius: var(--radius);
-    }
 
     .screen{ display:none; }
     .screen.active{ display:block; }
@@ -372,7 +373,7 @@
       padding: 10px 14px; border-radius: 12px; font-weight: 700;
       cursor: pointer; outline: none;
     }
-    .iframe-back:focus-visible{ box-shadow: var(--ring); }
+    .iframe-back:focus-visible{ box-shadow: var (--ring); }
     .iframe-title{
       font-weight: 800; font-size: 18px;
       background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
@@ -435,11 +436,14 @@
   <div class="container">
     <header>
       <div class="brand" aria-label="NARBE brand header">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div class="title">NARBE Accessibility Hub</div>
-          <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
+        <div class="brand-left">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <div class="title">NARBE Accessibility Hub</div>
+            <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
+          </div>
         </div>
+        <img src="https://github.com/NARBEHOUSE/Narbehouse.github.io/blob/main/bennyshub/images/BeaminBenny.png?raw=true" alt="Beamin Benny" class="benny-logo" />
       </div>
       <div class="notice" role="note">
         Below are tools and games that will be populated over time that are free to access and use. Use <span class="kbd">spacebar</span> to scan and <span class="kbd">return</span> to select. Mouse clicks work too.
@@ -498,9 +502,9 @@
 
           <button class="card-btn tool-btn" data-iframe="phraseboard/index.html" data-title="Phrase Board">
             <span class="kicker">Tool</span>
-            <div class="btn-title">Phrase Board</div>
+            <div class="btn-title">Phrase & Media Board</div>
             <div class="row">
-              <p class="desc">Editable phrase tiles with scanning and speak-out.</p>
+              <p class="desc">Editable phrase & media tiles with scanning and speak-out.</p>
               <span class="pill">Launch</span>
             </div>
           </button>
