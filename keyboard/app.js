@@ -5,10 +5,9 @@
   const kb = $("#keyboard");
   const settingsMenu = $("#settingsMenu");
 
-  // Add KENLM API constant
-  const KENLM_API = "https://super-cell-5973.connect-a5a.workers.dev/";
-
   const defaultSettings = {
+    baseUrl: "http://127.0.0.1:5000",
+    jsonPath: "/api/predictive_ngrams",
     autocapI: true,
     theme: "default",
     scanSpeed: "medium",
@@ -203,7 +202,7 @@
     buffer = txt;
     textBar.textContent = buffer + "|";
     ttsUseCount = 0;
-    renderPredictions();
+    refreshPredictive();
   }
 
   // Keyboard layout
@@ -244,6 +243,7 @@
     highlightTextBox();
   }
 
+  // Keyboard event binding
   document.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
       e.preventDefault();
@@ -355,6 +355,7 @@
       inRowSelectionMode = true;
       highlightPredictiveRow();
       console.log("Long press: Jumped to predictive text row");
+      readPredictiveTTS();
     } else {
       inRowSelectionMode = true;
       if (currentRowIndex === 0) {
@@ -451,7 +452,7 @@
           console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
           
           if (ttsUseCount >= 3) {
-            console.log("3x TTS usage detected - recording words");
+            console.log("3x TTS usage detected - saving text to predictive data");
             saveTextToPredictive(text);
             ttsUseCount = 0;
           }
@@ -490,7 +491,7 @@
           }
           
           setBuffer(newBuffer);
-          recordLocalWord(word); // Record the selected word
+          pingUsage("", word);
         }
       } else {
         const key = rows[currentRowIndex - 2][currentButtonIndex];
@@ -513,127 +514,25 @@
     }
   }
 
-  async function renderPredictions() {
-    // Remember if predictive row was highlighted before refresh
-    const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
-    
+  async function saveTextToPredictive(text) {
     try {
-      let predictions = [];
-      
-      // Check if buffer is empty or only whitespace
-      const trimmedBuffer = buffer.replace(/\|/g, "").trim();
-      
-      if (!trimmedBuffer) {
-        // Use default predictions when nothing is typed
-        predictions = ["YES", "NO", "HELP", "THE", "YOU", "I"];
-        console.log("Using default predictions (empty buffer):", predictions);
-      } else {
-        // Get predictions from KENLM API
-        console.log("Fetching predictions from KENLM API for text:", trimmedBuffer);
-        
-        try {
-          const res = await fetch(KENLM_API, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: trimmedBuffer, max_predictions: 6 })
-          });
-          
-          if (res.ok) {
-            const data = await res.json().catch(() => ({}));
-            console.log("KENLM API response:", data);
-            
-            // Handle the response - check for predictions array
-            if (Array.isArray(data?.predictions)) {
-              predictions = data.predictions.map(p => String(p).toUpperCase());
-            } else if (Array.isArray(data)) {
-              predictions = data.map(p => String(p).toUpperCase());
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching KENLM predictions:", error);
-        }
-        
-        // Fall back to defaults if no predictions
-        if (!predictions.length) {
-          predictions = ["YES", "NO", "HELP", "THE", "YOU", "I"];
-        }
-      }
-
-      console.log("Final predictions to render:", predictions);
-
-      // Render the predictions
-      predictBar.innerHTML = "";
-      
-      // Ensure we always have 6 chips
-      const paddedPredictions = [...predictions];
-      while (paddedPredictions.length < 6) {
-        paddedPredictions.push("");
-      }
-      
-      paddedPredictions.slice(0, 6).forEach((w, index) => {
-        const chip = document.createElement("button");
-        chip.className = "chip";
-        chip.textContent = w || "";
-        chip.disabled = !w;
-        
-        if (w) {
-          chip.addEventListener("click", () => {
-            const currentPartialWord = currentWord();
-            let newBuffer = buffer;
-            
-            if (currentPartialWord && !buffer.endsWith(" ")) {
-              const beforePartial = buffer.slice(0, -currentPartialWord.length);
-              newBuffer = beforePartial + w + " ";
-            } else {
-              if (!buffer.endsWith(" ") && buffer.length) newBuffer += " ";
-              newBuffer += w + " ";
-            }
-            
-            setBuffer(newBuffer);
-            recordLocalWord(w);
-          });
-        }
-        
-        predictBar.appendChild(chip);
+      console.log(`DEBUG: Calling /api/save_text with text: "${text}"`);
+      const response = await fetch(settings.baseUrl + "/api/save_text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text })
       });
       
-      // Restore predictive row highlighting if it was highlighted before
-      if (wasPredictiveRowHighlighted) {
-        highlightPredictiveRow();
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Text saved to predictive data successfully:", result);
+        refreshPredictive();
+      } else {
+        console.error("Error saving text - HTTP status:", response.status);
       }
     } catch (error) {
-      console.error("Error in renderPredictions:", error);
-      
-      // Fallback: create 6 default chips if error occurs
-      predictBar.innerHTML = "";
-      const defaultWords = ["YES", "NO", "HELP", "THE", "YOU", "I"];
-      defaultWords.forEach(w => {
-        const chip = document.createElement("button");
-        chip.className = "chip";
-        chip.textContent = w;
-        chip.addEventListener("click", () => {
-          let newBuffer = buffer;
-          if (!buffer.endsWith(" ") && buffer.length) newBuffer += " ";
-          newBuffer += w + " ";
-          setBuffer(newBuffer);
-          recordLocalWord(w);
-        });
-        predictBar.appendChild(chip);
-      });
-      
-      // Restore highlight even on error
-      if (wasPredictiveRowHighlighted) {
-        highlightPredictiveRow();
-      }
+      console.error("Error saving text to predictive data:", error);
     }
-  }
-
-  function currentWord() {
-    const trimmed = buffer.replace(/\|/g, "").trimEnd();
-    const parts = trimmed.split(/\s+/);
-    if (buffer.endsWith(" ")) return "";
-    return parts[parts.length - 1] || "";
   }
 
   function clearAllHighlights() {
@@ -726,6 +625,34 @@
     }
   }
 
+  function readPredictiveTTS() {
+    const chips = predictBar.querySelectorAll(".chip");
+    const wordsToSpeak = [];
+    
+    // Collect all non-empty words
+    chips.forEach(chip => {
+      if (chip.textContent.trim()) {
+        wordsToSpeak.push(chip.textContent.trim().toLowerCase());
+      }
+    });
+    
+    // Speak each word sequentially with a small delay
+    function speakNextWord(index = 0) {
+      if (index < wordsToSpeak.length) {
+        speak(wordsToSpeak[index]);
+        // Wait for the current word to finish, then speak the next one
+        setTimeout(() => {
+          speakNextWord(index + 1);
+        }, 800); // 800ms delay between words
+      }
+    }
+    
+    if (wordsToSpeak.length > 0) {
+      speakNextWord();
+    }
+  }
+
+  // Settings menu functions
   function openSettings() {
     inSettingsMode = true;
     settingsMenu.classList.remove("hidden");
@@ -812,6 +739,16 @@
     const setting = item.dataset.setting;
     
     switch (setting) {
+      case "volume-up":
+        changeVolume(10);
+        speak("volume increased");
+        break;
+        
+      case "volume-down":
+        changeVolume(-10);
+        speak("volume decreased");
+        break;
+        
       case "theme":
         cycleTheme();
         break;
@@ -833,6 +770,32 @@
         speak("settings closed");
         break;
     }
+  }
+
+  function changeVolume(delta) {
+    const steps = Math.abs(delta / 2); // Convert percentage to steps (2% per step, so 10% = 5 steps)
+    const action = delta > 0 ? "up" : "down";
+    
+    // Call the server API to control system volume
+    fetch(settings.baseUrl + "/api/volume_control", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        action: action, 
+        steps: steps 
+      })
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.ok) {
+        console.log(`Volume control successful: ${result.message}`);
+      } else {
+        console.error(`Volume control failed: ${result.error}`);
+      }
+    })
+    .catch(error => {
+      console.error("Error calling volume control API:", error);
+    });
   }
 
   function cycleTheme() {
@@ -920,11 +883,18 @@
       return; 
     }
     if (key === "Exit")       { 
-      console.log("Exit button pressed");
-      window.close();
-      if (!window.closed) {
-        window.location.href = "about:blank";
-      }
+      console.log("Exit button pressed, closing Chrome...");
+      fetch(settings.baseUrl + "/api/close_chrome", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      })
+        .then(response => {
+          console.log("Chrome close request sent successfully");
+        })
+        .catch(error => {
+          console.error("Error closing Chrome:", error);
+          window.close();
+        });
       return; 
     }
   }
@@ -935,17 +905,115 @@
       if ((k === "i" || k === "I") && (!prev || /\s/.test(prev))) k = "I";
     }
     setBuffer(buffer + k);
+    pingUsage("", "");
   }
 
-  function saveTextToPredictive(text) {
-    console.log(`Text repeated 3 times via TTS: "${text}"`);
-    const words = text.split(/\s+/);
-    words.forEach(word => recordLocalWord(word));
+  let predictive = { frequent_words: {}, bigrams: {}, trigrams: {} };
+
+  async function refreshPredictive() {
+    try {
+      const res = await fetch(settings.baseUrl + settings.jsonPath);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      predictive = await res.json();
+    } catch (e) {
+      // silent
+    }
+    renderPredictions();
   }
 
-  function recordLocalWord(word) {
-    if (!word || word.trim().length === 0) return;
-    console.log(`Recorded word: ${word}`);
+  function currentWord() {
+    const trimmed = buffer.replace(/\|/g, "").trimEnd();
+    const parts = trimmed.split(/\s+/);
+    if (buffer.endsWith(" ")) return "";
+    return parts[parts.length - 1] || "";
+  }
+
+  function renderPredictions() {
+    // Remember if predictive row was highlighted before refresh
+    const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
+    
+    fetch(settings.baseUrl + "/api/hybrid_predictions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ buffer: buffer })
+    })
+    .then(response => response.json())
+    .then(predictions => {
+      predictBar.innerHTML = "";
+      
+      // Ensure we always have 6 chips
+      const predictionArray = Array.isArray(predictions) ? predictions : [];
+      const paddedPredictions = [...predictionArray];
+      while (paddedPredictions.length < 6) {
+        paddedPredictions.push("");
+      }
+      
+      paddedPredictions.slice(0, 6).forEach((w, index) => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = w || ""; // Handle empty predictions
+        chip.disabled = !w;
+        
+        if (w) { // Only add click handler if word exists
+          chip.addEventListener("click", () => {
+            const currentPartialWord = currentWord();
+            let newBuffer = buffer;
+            let context = "";
+            
+            if (currentPartialWord && !buffer.endsWith(" ")) {
+              const beforePartial = buffer.slice(0, -currentPartialWord.length);
+              newBuffer = beforePartial + w + " ";
+              const words = beforePartial.replace(/\|/g, "").trim().split(/\s+/);
+              context = words.filter(word => word.length > 0).join(" ");
+            } else {
+              if (!buffer.endsWith(" ") && buffer.length) newBuffer += " ";
+              newBuffer += w + " ";
+              const words = buffer.replace(/\|/g, "").trim().split(/\s+/);
+              context = words.filter(word => word.length > 0).join(" ");
+            }
+            
+            setBuffer(newBuffer);
+            console.log(`DEBUG: Sending usage - context: "${context}", selected: "${w}"`);
+            pingUsage(context, w);
+          });
+        }
+        
+        predictBar.appendChild(chip);
+      });
+      
+      // Restore predictive row highlighting if it was highlighted before
+      if (wasPredictiveRowHighlighted) {
+        highlightPredictiveRow();
+      }
+    })
+    .catch(error => {
+      console.error("Error fetching predictions:", error);
+      
+      // Fallback: create 6 empty chips if prediction fetch fails
+      predictBar.innerHTML = "";
+      for (let i = 0; i < 6; i++) {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = "";
+        chip.disabled = true;
+        predictBar.appendChild(chip);
+      }
+      
+      // Restore highlight even on error
+      if (wasPredictiveRowHighlighted) {
+        highlightPredictiveRow();
+      }
+    });
+  }
+
+  async function pingUsage(ctx = "", next = "") {
+    try {
+      await fetch(settings.baseUrl + "/api/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buffer, context: ctx, next })
+      });
+    } catch {}
   }
 
   textBar.addEventListener("click", () => {
@@ -956,7 +1024,7 @@
       console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
       
       if (ttsUseCount >= 3) {
-        console.log("3x TTS usage detected - recording words");
+        console.log("3x TTS usage detected - saving text to predictive data");
         saveTextToPredictive(text);
         ttsUseCount = 0;
       }
@@ -970,8 +1038,7 @@
     currentScanSpeed = settings.scanSpeed || "medium";
     renderKeyboard();
     setBuffer("");
-    // Explicitly call renderPredictions to show default predictions on init
-    renderPredictions();
+    refreshPredictive();
   }
 
   init();
