@@ -71,35 +71,62 @@
     ttsEngine.cancel();
     
     // Process text for better TTS pronunciation
-    // Convert to lowercase but handle common 2-letter words that shouldn't be spelled out
     let processedText = text;
     
     // List of common 2-letter words that should be spoken as words, not letters
     const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
                            'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
-                           'MY', 'AN', 'AM', 'US', 'OK'];
+                           'MY', 'AN', 'AM', 'US', 'OK', 'HI', 'OH', 'AH', 'HA'];
     
-    // Process the text to handle capitalization issues
-    processedText = text.split(' ').map(word => {
-      // Check if it's a 2-letter word that should be spoken as a word
-      if (word.length === 2 && twoLetterWords.includes(word.toUpperCase())) {
-        return word.toLowerCase();
+    // Process the text word by word, but handle contractions specially
+    processedText = text.split(' ').map(fullWord => {
+      // Handle contractions by splitting on apostrophe but keeping it together
+      if (fullWord.includes("'")) {
+        // Split the contraction but preserve the apostrophe
+        const parts = fullWord.split("'");
+        const processedParts = parts.map((part, index) => {
+          // Don't process empty strings
+          if (!part) return '';
+          
+          // Check if this part is a 2-letter word that should be spoken as a word
+          if (part.length === 2 && twoLetterWords.includes(part.toUpperCase())) {
+            return part.toLowerCase();
+          }
+          // For other all-caps parts, convert to lowercase
+          else if (part === part.toUpperCase() && /^[A-Z]+$/.test(part)) {
+            return part.toLowerCase();
+          }
+          // Keep single letters as uppercase (they should be spelled out)
+          else if (part.length === 1 && /^[A-Z]$/.test(part)) {
+            return part;
+          }
+          // Default: convert to lowercase
+          else {
+            return part.toLowerCase();
+          }
+        });
+        
+        // Rejoin with apostrophe
+        return processedParts.join("'");
       }
-      // For other all-caps words longer than 2 letters, convert to lowercase
-      else if (word.length > 2 && word === word.toUpperCase() && /^[A-Z]+$/.test(word)) {
-        return word.toLowerCase();
-      }
-      // Handle possessives and contractions (e.g., "HOW'S" -> "how's")
-      else if (word.includes("'") && word === word.toUpperCase()) {
-        return word.toLowerCase();
-      }
-      // Keep single letters as uppercase (they should be spelled out)
-      else if (word.length === 1) {
-        return word;
-      }
-      // Default: convert to lowercase for natural speech
+      // Non-contraction words
       else {
-        return word.toLowerCase();
+        // Check if it's a 2-letter word that should be spoken as a word
+        if (fullWord.length === 2 && twoLetterWords.includes(fullWord.toUpperCase())) {
+          return fullWord.toLowerCase();
+        }
+        // For other all-caps words longer than 2 letters, convert to lowercase
+        else if (fullWord.length > 2 && fullWord === fullWord.toUpperCase() && /^[A-Z]+$/.test(fullWord)) {
+          return fullWord.toLowerCase();
+        }
+        // Keep single letters as uppercase (they should be spelled out)
+        else if (fullWord.length === 1 && /^[A-Z]$/.test(fullWord)) {
+          return fullWord;
+        }
+        // Default: convert to lowercase for natural speech
+        else {
+          return fullWord.toLowerCase();
+        }
       }
     }).join(' ');
     
