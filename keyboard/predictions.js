@@ -47,62 +47,22 @@ class HybridPredictionSystem {
         console.log('Using cached base data from localStorage');
       } else {
         // Fetch fresh data from GitHub
-        console.log('Fetching web_keyboard_predictions.json...');
         const response = await fetch('./web_keyboard_predictions.json');
-        console.log('Response status:', response.status);
-        
         if (response.ok) {
-          const text = await response.text();
-          console.log('Raw response length:', text.length);
-          
-          try {
-            this.baseData = JSON.parse(text);
-            // Ensure the structure is correct
-            if (!this.baseData.frequent_words) this.baseData.frequent_words = {};
-            if (!this.baseData.bigrams) this.baseData.bigrams = {};
-            if (!this.baseData.trigrams) this.baseData.trigrams = {};
-            
-            // Cache the base data
-            localStorage.setItem('baseKeyboardData', JSON.stringify(this.baseData));
-            localStorage.setItem('baseKeyboardDataTime', Date.now().toString());
-            console.log(`Loaded fresh base data: ${Object.keys(this.baseData.frequent_words || {}).length} words`);
-          } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
-            console.log('First 500 chars of response:', text.substring(0, 500));
-            throw parseError;
-          }
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          this.baseData = await response.json();
+          // Cache the base data
+          localStorage.setItem('baseKeyboardData', JSON.stringify(this.baseData));
+          localStorage.setItem('baseKeyboardDataTime', Date.now().toString());
+          console.log(`Loaded fresh base data: ${Object.keys(this.baseData.frequent_words || {}).length} words`);
         }
       }
     } catch (error) {
       console.error('Error loading base data:', error);
       // Fall back to cached data if available
-      try {
-        const cachedBase = localStorage.getItem('baseKeyboardData');
-        if (cachedBase) {
-          this.baseData = JSON.parse(cachedBase);
-          console.log('Using cached base data due to fetch error');
-        } else {
-          // Use hardcoded defaults as last resort
-          console.log('Using hardcoded default data');
-          this.baseData = {
-            frequent_words: {
-              "YES": {"count": 100, "last_used": new Date().toISOString()},
-              "NO": {"count": 90, "last_used": new Date().toISOString()},
-              "HELP": {"count": 80, "last_used": new Date().toISOString()},
-              "THE": {"count": 70, "last_used": new Date().toISOString()},
-              "I": {"count": 60, "last_used": new Date().toISOString()},
-              "YOU": {"count": 50, "last_used": new Date().toISOString()}
-            },
-            bigrams: {},
-            trigrams: {}
-          };
-        }
-      } catch (cacheError) {
-        console.error('Error loading cached data:', cacheError);
-        // Final fallback
-        this.baseData = { frequent_words: {}, bigrams: {}, trigrams: {} };
+      const cachedBase = localStorage.getItem('baseKeyboardData');
+      if (cachedBase) {
+        this.baseData = JSON.parse(cachedBase);
+        console.log('Using cached base data due to fetch error');
       }
     }
   }
@@ -194,12 +154,6 @@ class HybridPredictionSystem {
   }
 
   async getHybridPredictions(buffer) {
-    // Wait for data to load if not ready
-    if (!this.dataLoaded) {
-      console.log('Waiting for data to load...');
-      await this.initializeData();
-    }
-    
     // Use mergedData instead of webData
     const hasTrailingSpace = buffer.replace('|', '').endsWith(' ');
     const cleaned = buffer.toUpperCase().replace('|', '').trim();
@@ -209,9 +163,7 @@ class HybridPredictionSystem {
     
     const DEFAULT_WORDS = ["YES", "NO", "HELP", "THE", "I", "YOU"];
     
-    // If no words are entered or data isn't loaded properly, show defaults
-    if (!words.length || Object.keys(this.mergedData.frequent_words).length === 0) {
-      console.log('Returning default words');
+    if (!words.length) {
       return DEFAULT_WORDS;
     }
     
@@ -334,17 +286,17 @@ class HybridPredictionSystem {
       }
     }
     
-    // Ensure we always return exactly 6 predictions
-    while (finalPredictions.length < 6) {
-      for (const word of DEFAULT_WORDS) {
-        if (!finalPredictions.includes(word)) {
+    for (const word of DEFAULT_WORDS) {
+      if (finalPredictions.length >= 6) break;
+      if (!finalPredictions.includes(word)) {
+        if (!currentWord || word.startsWith(currentWord)) {
           finalPredictions.push(word);
-          if (finalPredictions.length >= 6) break;
         }
       }
-      if (finalPredictions.length < 6) {
-        finalPredictions.push('');
-      }
+    }
+    
+    while (finalPredictions.length < 6) {
+      finalPredictions.push('');
     }
     
     console.log(`DEBUG: Final predictions: ${finalPredictions.slice(0, 6)}`);
