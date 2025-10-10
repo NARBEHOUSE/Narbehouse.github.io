@@ -879,18 +879,26 @@
     });
 
     function showScreen(name){
+      isTransitioning = true; // Set transition flag
       for(const id in SCREENS){
         SCREENS[id].classList.toggle('active', id === name);
       }
       // Reset focus index when changing screens
       focusIndex = 0;
-      // After switching, move focus to first focusable on that screen
-      const first = getFocusables()[0];
-      if(first){ 
-        first.focus(); 
-        announce(`${name} menu`);
-        speakFocusedElement(first);
-      }
+      // Reset key states when changing screens
+      spacePressed = false;
+      enterPressed = false;
+      
+      // Delay focus to prevent immediate triggering
+      setTimeout(() => {
+        const first = getFocusables()[0];
+        if(first){ 
+          first.focus(); 
+          announce(`${name} menu`);
+          speakFocusedElement(first);
+        }
+        isTransitioning = false; // Clear transition flag
+      }, 100);
     }
 
     function announce(msg){
@@ -949,6 +957,7 @@
     let focusIndex = 0;
     let spacePressed = false;
     let enterPressed = false;
+    let isTransitioning = false; // Add transition flag
 
     function focusAt(idx){
       const list = getFocusables();
@@ -975,6 +984,8 @@
     }
 
     function activateFocused(){
+      if (isTransitioning) return; // Don't activate during transitions
+      
       const list = getFocusables();
       if(list.length === 0) return;
       
@@ -999,6 +1010,14 @@
         } else if (e.key === 'Enter' && !enterPressed) {
           e.preventDefault();
           enterPressed = true;
+        }
+        return;
+      }
+
+      // Don't process during transitions
+      if (isTransitioning) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
         }
         return;
       }
@@ -1041,6 +1060,13 @@
             modalCancelBtn.click();
           }
         }
+        return;
+      }
+
+      // Don't process during transitions
+      if (isTransitioning) {
+        if (e.key === ' ') spacePressed = false;
+        if (e.key === 'Enter') enterPressed = false;
         return;
       }
 
