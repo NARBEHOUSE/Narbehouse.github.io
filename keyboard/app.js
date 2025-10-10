@@ -906,11 +906,26 @@
   function saveTextToPredictive(text) {
     console.log(`Text repeated 3 times via TTS: "${text}"`);
     const words = text.split(/\s+/);
-    words.forEach(word => recordLocalWord(word));
+    words.forEach(word => {
+      if (word && word.trim().length > 0) {
+        // Use the prediction system to properly record the word
+        window.predictionSystem.recordLocalWord(word);
+        
+        // Also record n-grams if there's context
+        const textWords = text.split(/\s+/);
+        const wordIndex = textWords.indexOf(word);
+        if (wordIndex > 0) {
+          const context = textWords.slice(0, wordIndex).join(' ');
+          window.predictionSystem.recordNgram(context, word);
+        }
+      }
+    });
   }
 
   function recordLocalWord(word) {
+    // This function is now deprecated - remove or redirect to prediction system
     if (!word || word.trim().length === 0) return;
+    window.predictionSystem.recordLocalWord(word);
     console.log(`Recorded word: ${word}`);
   }
 
