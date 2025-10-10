@@ -300,6 +300,42 @@
 
     /* Large, centered single-column for inner screens */
     .grid.single{ grid-template-columns: 1fr; max-width:720px; margin-inline:auto; }
+    
+    /* Home screen horizontal layout */
+    #screen-home .grid.single{ 
+      grid-template-columns: repeat(3, 1fr); 
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-home .grid.single{ grid-template-columns: 1fr; }
+    }
+    
+    /* Tools screen horizontal layout */
+    #screen-tools .grid.single{ 
+      grid-template-columns: repeat(2, 1fr); 
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-tools .grid.single{ grid-template-columns: 1fr; }
+    }
+    
+    /* Games screen horizontal layout */
+    #screen-games .grid.single{ 
+      grid-template-columns: repeat(2, 1fr); 
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-games .grid.single{ grid-template-columns: 1fr; }
+    }
+    
+    /* Settings screen horizontal layout */
+    #screen-settings .grid.single{ 
+      grid-template-columns: repeat(3, 1fr); 
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-settings .grid.single{ grid-template-columns: 1fr; }
+    }
 
     .backbar{
       display:flex; gap:10px; margin: 8px 0 4px 0; align-items:center; flex-wrap:wrap;
@@ -373,7 +409,7 @@
       padding: 10px 14px; border-radius: 12px; font-weight: 700;
       cursor: pointer; outline: none;
     }
-    .iframe-back:focus-visible{ box-shadow: var (--ring); }
+    .iframe-back:focus-visible{ box-shadow: var(--ring); }
     .iframe-title{
       font-weight: 800; font-size: 18px;
       background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
@@ -439,12 +475,13 @@
         <div class="brand-left">
           <div class="logo" aria-hidden="true"></div>
           <div>
-            <div class="title">NARBE Accessibility Hub</div>
+            <div class="title">NARBE House | Benny's Accessibility Hub</div>
             <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
           </div>
         </div>
-        <img src="bennyshub/images/BeaminBenny.png" 
-             onerror="this.style.display='none'" 
+        <img src="images/BeaminBenny.png" 
+             onerror="console.error('Failed to load:', this.src); this.style.display='none';" 
+             onload="console.log('Image loaded!');"
              alt="Beamin Benny" 
              class="benny-logo" />
       </div>
@@ -1045,5 +1082,4 @@
   </script>
 </body>
 </html>
-
 
