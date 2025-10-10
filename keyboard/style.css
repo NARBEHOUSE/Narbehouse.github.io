@@ -154,6 +154,7 @@ main {
   background: var(--btn);
   color: var(--btn-text);
   font-size: clamp(14px, 3vh, 48px); /* Smaller font size for control buttons */
+  padding: 0.8vh 1vw; /* Added: a bit more top/bottom padding */
 }
 
 .key.highlighted {
@@ -584,6 +585,7 @@ body.theme-red {
   
   .key.ctrl {
     font-size: clamp(12px, 2.5vh, 36px); /* Even smaller on very small screens */
+    padding: 0.6vh 0.8vw; /* Added: slightly reduced padding on tiny screens */
   }
 }
 
