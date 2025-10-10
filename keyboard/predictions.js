@@ -147,8 +147,8 @@ class HybridPredictionSystem {
     // Recency boost: more recent = higher score
     const recencyMultiplier = Math.max(0.5, 1 - (daysSinceUse / 365));
     
-    // User data gets extra weight - increase from 2x to 5x for stronger preference
-    const userMultiplier = userCount > 0 ? 5 : 1;
+    // User data gets MASSIVE weight - increase from 5x to 100x for absolute priority
+    const userMultiplier = userCount > 0 ? 100 : 1;
     
     return count * recencyMultiplier * userMultiplier;
   }
@@ -226,11 +226,25 @@ class HybridPredictionSystem {
     if (currentWord && currentWord.length >= 1) {
       console.log(`DEBUG: Checking word completions for: '${currentWord}'`);
       
+      // First, check USER data with absolute priority
+      for (const [word, data] of Object.entries(this.userData.frequent_words || {})) {
+        if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
+          // User words get MASSIVE priority
+          const score = 999999999;  // Maximum score for user words
+          predictionsFreq[word] = score;
+          console.log(`DEBUG: Found USER word completion: ${word} (score: ${score})`);
+        }
+      }
+      
+      // Then check merged data for other completions
       for (const [word, data] of Object.entries(this.mergedData.frequent_words || {})) {
         if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
-          const score = this.calculateScore(data) * 100000;
-          predictionsFreq[word] = score;
-          console.log(`DEBUG: Found word completion: ${word} (score: ${score})`);
+          // Only add if not already in predictions (from user data)
+          if (!predictionsFreq[word]) {
+            const score = this.calculateScore(data) * 100000;
+            predictionsFreq[word] = score;
+            console.log(`DEBUG: Found word completion: ${word} (score: ${score})`);
+          }
         }
       }
     }
@@ -315,7 +329,8 @@ class HybridPredictionSystem {
       this.userData.frequent_words[upperWord].count++;
       this.userData.frequent_words[upperWord].last_used = timestamp;
       
-      console.log(`Recorded word "${upperWord}" - count: ${this.userData.frequent_words[upperWord].count}`);
+      console.log(`Recorded word "${upperWord}" to userData - count: ${this.userData.frequent_words[upperWord].count}`);
+      console.log('Current userData words:', Object.keys(this.userData.frequent_words));
       
       // Save to localStorage
       this.saveUserData();
@@ -412,7 +427,43 @@ class HybridPredictionSystem {
     this.mergeData();
     console.log('User data cleared');
   }
+
+  // Method to debug what's in storage
+  debugStorage() {
+    console.log('=== DEBUG STORAGE ===');
+    console.log('User Data Words:', Object.keys(this.userData.frequent_words || {}));
+    console.log('User Data Details:', this.userData.frequent_words);
+    console.log('Merged Data has', Object.keys(this.mergedData.frequent_words || {}).length, 'words');
+    
+    // Check if ARIANNA is in any dataset
+    const checkWord = 'ARIANNA';
+    console.log(`Checking for ${checkWord}:`);
+    console.log('- In userData?', checkWord in (this.userData.frequent_words || {}));
+    console.log('- In baseData?', checkWord in (this.baseData.frequent_words || {}));
+    console.log('- In mergedData?', checkWord in (this.mergedData.frequent_words || {}));
+    
+    if (this.userData.frequent_words && this.userData.frequent_words[checkWord]) {
+      console.log(`- userData[${checkWord}]:`, this.userData.frequent_words[checkWord]);
+    }
+    if (this.mergedData.frequent_words && this.mergedData.frequent_words[checkWord]) {
+      console.log(`- mergedData[${checkWord}]:`, this.mergedData.frequent_words[checkWord]);
+    }
+    
+    // Also check localStorage directly
+    const storedData = localStorage.getItem('userKeyboardData');
+    if (storedData) {
+      const parsed = JSON.parse(storedData);
+      console.log('localStorage userKeyboardData:', parsed);
+    } else {
+      console.log('No userKeyboardData in localStorage');
+    }
+    
+    return '=== END DEBUG ===';
+  }
 }
 
 // Create global instance
 window.predictionSystem = new HybridPredictionSystem();
+
+// Add debug command for console
+window.debugKeyboard = () => window.predictionSystem.debugStorage();
