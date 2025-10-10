@@ -932,9 +932,13 @@
     }
     if (key === "Exit")       { 
       console.log("Exit button pressed");
-      window.close();
-      if (!window.closed) {
-        window.location.href = "about:blank";
+      // Message parent to close iframe and return to hub
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ action: 'focusBackButton' }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to message parent:', err);
       }
       return; 
     }

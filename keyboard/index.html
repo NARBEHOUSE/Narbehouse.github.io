@@ -50,5 +50,21 @@
 
   <script src="predictions.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Exit/Close button handler
+    const closeBtn = document.querySelector('[data-setting="close"]');
+    closeBtn.addEventListener('click', () => {
+      // Simply close the settings menu
+      const settingsMenu = document.getElementById('settingsMenu');
+      if (settingsMenu) {
+        settingsMenu.classList.add('hidden');
+        // Return focus to the keyboard or main interface
+        const keyboard = document.getElementById('keyboard');
+        if (keyboard) {
+          keyboard.focus();
+        }
+      }
+    });
+  </script>
 </body>
 </html>
