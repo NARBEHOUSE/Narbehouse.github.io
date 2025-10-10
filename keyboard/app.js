@@ -879,6 +879,27 @@
       const prev = buffer.slice(-1);
       if ((k === "i" || k === "I") && (!prev || /\s/.test(prev))) k = "I";
     }
+    
+    // Auto-learn words when space is pressed
+    if (k === " ") {
+      const currentText = buffer.replace('|', '').trim();
+      const words = currentText.split(' ');
+      if (words.length > 0) {
+        const lastWord = words[words.length - 1];
+        if (lastWord && lastWord.length > 0) {
+          // Record the word that was just typed
+          window.predictionSystem.recordLocalWord(lastWord);
+          console.log(`Auto-learned word: ${lastWord}`);
+          
+          // If there's context, record n-grams too
+          if (words.length > 1) {
+            const context = words.slice(0, -1).join(' ');
+            window.predictionSystem.recordNgram(context, lastWord);
+          }
+        }
+      }
+    }
+    
     setBuffer(buffer + k);
   }
 

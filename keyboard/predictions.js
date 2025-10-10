@@ -147,8 +147,8 @@ class HybridPredictionSystem {
     // Recency boost: more recent = higher score
     const recencyMultiplier = Math.max(0.5, 1 - (daysSinceUse / 365));
     
-    // User data gets extra weight
-    const userMultiplier = userCount > 0 ? 2 : 1;
+    // User data gets extra weight - increase from 2x to 5x for stronger preference
+    const userMultiplier = userCount > 0 ? 5 : 1;
     
     return count * recencyMultiplier * userMultiplier;
   }
@@ -314,6 +314,8 @@ class HybridPredictionSystem {
       }
       this.userData.frequent_words[upperWord].count++;
       this.userData.frequent_words[upperWord].last_used = timestamp;
+      
+      console.log(`Recorded word "${upperWord}" - count: ${this.userData.frequent_words[upperWord].count}`);
       
       // Save to localStorage
       this.saveUserData();
