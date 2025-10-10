@@ -1,1 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NARBE Accessibility Hub</title>
+  <meta name="description" content="NARBE Branded Accessibility Hub for 2-button switch access." />
+  <style>
+    :root{
+      --narbe-orange:#ff5c00;
+      --narbe-blue:#5bb0ff;
+      --bg:#0b0f14;
+      --card:#121822;
+      --text:#e8f0ff;
+      --muted:#b6c6dd;
+      --focus:#ffffff;
+      --ring: 0 0 0 4px rgba(91,176,255,.55), 0 10px 25px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
 
+    /* Text Color variations */
+    body.text-green {
+      --narbe-orange: #00ff88;
+      --narbe-blue: #00cc99;
+    }
+    body.text-purple {
+      --narbe-orange: #9d4edd;
+      --narbe-blue: #c77dff;
+    }
+    body.text-red {
+      --narbe-orange: #ff006e;
+      --narbe-blue: #ff5a8d;
+    }
+    body.text-gold {
+      --narbe-orange: #ffb703;
+      --narbe-blue: #fb8500;
+    }
+
+    /* Highlight Color variations */
+    body.highlight-blue .card-btn:focus-visible,
+    body.highlight-blue .backbtn:focus-visible,
+    body.highlight-blue .modal-btn:focus-visible,
+    body.highlight-blue .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(91,176,255,.55), 0 10px 25px rgba(0,0,0,.35);
+    }
+    body.highlight-green .card-btn:focus-visible,
+    body.highlight-green .backbtn:focus-visible,
+    body.highlight-green .modal-btn:focus-visible,
+    body.highlight-green .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(0,255,136,.55), 0 10px 25px rgba(0,0,0,.35);
+    }
+    body.highlight-purple .card-btn:focus-visible,
+    body.highlight-purple .backbtn:focus-visible,
+    body.highlight-purple .modal-btn:focus-visible,
+    body.highlight-purple .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(157,78,221,.55), 0 10px 25px rgba(0,0,0,.35);
+    }
+    body.highlight-red .card-btn:focus-visible,
+    body.highlight-red .backbtn:focus-visible,
+    body.highlight-red .modal-btn:focus-visible,
+    body.highlight-red .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(255,0,110,.55), 0 10px 25px rgba(0,0,0,.35);
+    }
+    body.highlight-yellow .card-btn:focus-visible,
+    body.highlight-yellow .backbtn:focus-visible,
+    body.highlight-yellow .modal-btn:focus-visible,
+    body.highlight-yellow .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(255,183,3,.65), 0 10px 25px rgba(0,0,0,.35);
+    }
+    body.highlight-white .card-btn:focus-visible,
+    body.highlight-white .backbtn:focus-visible,
+    body.highlight-white .modal-btn:focus-visible,
+    body.highlight-white .iframe-back:focus-visible {
+      box-shadow: 0 0 0 4px rgba(255,255,255,.75), 0 10px 25px rgba(0,0,0,.35);
+    }
+
+    /* Background Theme variations - Dark modes */
+    body.bg-ocean {
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(0,119,182,.25), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(0,180,216,.25), transparent),
+                  #001a2e;
+    }
+    body.bg-forest {
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(34,139,34,.25), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(0,100,0,.25), transparent),
+                  #0a1f0a;
+    }
+    body.bg-sunset {
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,99,71,.25), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(255,140,0,.25), transparent),
+                  #1a0f0a;
+    }
+    body.bg-midnight {
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(75,0,130,.25), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(138,43,226,.25), transparent),
+                  #0a0515;
+    }
+    body.bg-rose {
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,20,147,.25), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(199,21,133,.25), transparent),
+                  #1a0a14;
+    }
+
+    /* Background Theme variations - Light modes */
+    body.bg-sky {
+      --text: #0a2540;
+      --muted: #4a5f7a;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(135,206,250,.4), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(176,224,230,.4), transparent),
+                  #e0f2ff;
+    }
+    body.bg-sky .card-btn,
+    body.bg-sky .backbtn,
+    body.bg-sky .modal-content {
+      background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
+      border-color: rgba(0,0,0,.15);
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+    body.bg-sky .notice {
+      background: linear-gradient(135deg, rgba(255,92,0,.15), rgba(91,176,255,.15));
+      border-color: rgba(0,0,0,.12);
+    }
+
+    body.bg-cream {
+      --text: #2d1b00;
+      --muted: #6b5d48;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,228,196,.4), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(255,248,220,.4), transparent),
+                  #fef9f0;
+    }
+    body.bg-cream .card-btn,
+    body.bg-cream .backbtn,
+    body.bg-cream .modal-content {
+      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,250,235,.7));
+      border-color: rgba(101,67,33,.15);
+      box-shadow: 0 4px 16px rgba(101,67,33,.12);
+    }
+    body.bg-cream .notice {
+      background: linear-gradient(135deg, rgba(255,140,0,.12), rgba(210,180,140,.12));
+      border-color: rgba(101,67,33,.12);
+    }
+
+    body.bg-mint {
+      --text: #0d3d2d;
+      --muted: #446854;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(152,251,152,.35), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(175,238,238,.35), transparent),
+                  #e8f8f5;
+    }
+    body.bg-mint .card-btn,
+    body.bg-mint .backbtn,
+    body.bg-mint .modal-content {
+      background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(240,255,250,.7));
+      border-color: rgba(0,100,80,.15);
+      box-shadow: 0 4px 16px rgba(0,100,80,.1);
+    }
+    body.bg-mint .notice {
+      background: linear-gradient(135deg, rgba(0,200,150,.1), rgba(100,220,200,.1));
+      border-color: rgba(0,100,80,.12);
+    }
+
+    body.bg-lavender {
+      --text: #2d1a40;
+      --muted: #5c4a6b;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(230,230,250,.4), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(221,160,221,.35), transparent),
+                  #f5f0ff;
+    }
+    body.bg-lavender .card-btn,
+    body.bg-lavender .backbtn,
+    body.bg-lavender .modal-content {
+      background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(250,245,255,.7));
+      border-color: rgba(75,0,130,.15);
+      box-shadow: 0 4px 16px rgba(75,0,130,.1);
+    }
+    body.bg-lavender .notice {
+      background: linear-gradient(135deg, rgba(138,43,226,.1), rgba(186,85,211,.1));
+      border-color: rgba(75,0,130,.12);
+    }
+
+    body.bg-peach {
+      --text: #3d1a0d;
+      --muted: #6b4a3d;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,218,185,.4), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(255,239,213,.4), transparent),
+                  #fff5eb;
+    }
+    body.bg-peach .card-btn,
+    body.bg-peach .backbtn,
+    body.bg-peach .modal-content {
+      background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,250,240,.7));
+      border-color: rgba(139,69,19,.15);
+      box-shadow: 0 4px 16px rgba(139,69,19,.1);
+    }
+    body.bg-peach .notice {
+      background: linear-gradient(135deg, rgba(255,140,0,.12), rgba(255,160,122,.12));
+      border-color: rgba(139,69,19,.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,92,0,.15), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(91,176,255,.15), transparent),
+                  var(--bg);
+      display:flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .container{
+      width: min(1100px, 100%);
+      padding: 24px clamp(16px, 3vw, 32px) 40px;
+    }
+
+    header{
+      display:grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    }
+    .logo{
+      width:56px; height:56px; border-radius:14px; background:
+        conic-gradient(from 210deg, var(--narbe-orange), var(--narbe-blue));
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .title {
+      font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
+    }
+    .subtitle{ color:var(--muted); font-size: clamp(14px, 2.4vw, 16px); }
+
+    .notice{
+      background: linear-gradient(135deg, rgba(255,92,0,.12), rgba(91,176,255,.12));
+      border:1px solid rgba(255,255,255,.08);
+      padding:16px; border-radius: var(--radius);
+    }
+
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    @media (max-width: 720px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card-btn{
+      display:flex; flex-direction:column; justify-content:space-between; gap:12px;
+      padding:22px; width:100%; text-align:left; cursor:pointer;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+      outline: none;
+      transition: transform .08s ease, box-shadow .08s ease, background .2s ease;
+      color: var(--text);
+    }
+    .card-btn:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.35);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .card-btn:focus-visible{
+      box-shadow: var(--ring);
+    }
+
+    .kicker{
+      font-size:12px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .btn-title{
+      font-size: clamp(18px, 3vw, 24px); font-weight:800; line-height:1.1;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip:text; background-clip:text; color: transparent;
+    }
+    .desc{ color: var(--muted); font-size: 14px; }
+
+    .row{
+      display:flex; align-items:center; gap:12px; justify-content:space-between;
+    }
+    .pill{
+      padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700;
+      color:#082032; background: linear-gradient(90deg, var(--narbe-blue), var(--narbe-orange));
+      border:1px solid rgba(255,255,255,.2);
+    }
+
+    .footer-note{ margin-top:22px; color: var(--muted); font-size:13px; }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0f1724; border:1px solid rgba(255,255,255,.18); padding:2px 6px; border-radius:6px; color:#d3e3ff; }
+
+    /* Large, centered single-column for inner screens */
+    .grid.single{ grid-template-columns: 1fr; max-width:720px; margin-inline:auto; }
+
+    .backbar{
+      display:flex; gap:10px; margin: 8px 0 4px 0; align-items:center; flex-wrap:wrap;
+    }
+    .backbtn{
+      appearance:none; border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03); color:var(--text);
+      padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
+    }
+    .backbtn:focus-visible{ box-shadow: var(--ring); }
+
+    /* Visually hidden, but screen-reader available */
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+    /* Fullscreen Modal */
+    .modal-overlay{
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; backdrop-filter: blur(8px);
+    }
+    .modal-overlay.hidden{ display: none; }
+    .modal-content{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .modal-title{
+      font-size: 28px; font-weight: 800; margin: 0 0 12px 0;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .modal-text{
+      color: var(--muted); margin: 0 0 24px 0; line-height: 1.5;
+    }
+    .modal-buttons{
+      display: flex; gap: 12px; justify-content: flex-end;
+    }
+    .modal-btn{
+      padding: 12px 24px; border-radius: 12px; font-weight: 700;
+      cursor: pointer; border: 1px solid rgba(255,255,255,.12);
+      transition: all .2s ease; outline: none;
+    }
+    .modal-btn.primary{
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      color: #0b0f14; border-color: transparent;
+    }
+    .modal-btn.secondary{
+      background: rgba(255,255,255,.03); color: var(--text);
+    }
+    .modal-btn:hover{ transform: translateY(-2px); }
+    .modal-btn:focus-visible{ box-shadow: var(--ring); }
+
+    /* Iframe Container */
+    .iframe-container{
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 9000; display: none; flex-direction: column;
+    }
+    .iframe-container.active{ display: flex; }
+    .iframe-header{
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 24px; background: rgba(0,0,0,.3);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .iframe-back{
+      appearance: none; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03); color: var(--text);
+      padding: 10px 14px; border-radius: 12px; font-weight: 700;
+      cursor: pointer; outline: none;
+    }
+    .iframe-back:focus-visible{ box-shadow: var(--ring); }
+    .iframe-title{
+      font-weight: 800; font-size: 18px;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .iframe-wrapper{
+      flex: 1; position: relative; overflow: hidden;
+    }
+    .iframe-wrapper iframe{
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      border: none; background: white;
+    }
+
+    /* Settings specific styles */
+    .setting-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px; background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+    }
+    .setting-label {
+      font-weight: 700; font-size: 16px;
+    }
+    .setting-value {
+      font-size: 14px; color: var(--muted);
+    }
+    .toggle-btn {
+      padding: 8px 16px; border-radius: 8px; font-weight: 600;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      color: #0b0f14; border: none; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Fullscreen Prompt Modal -->
+  <div class="modal-overlay" id="fullscreen-modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Use Fullscreen for the Best Experience</h2>
+      <p class="modal-text">For optimal accessibility and immersion, we recommend using fullscreen mode.</p>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+        <button class="modal-btn primary" id="modal-fullscreen">Fullscreen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Iframe Container -->
+  <div class="iframe-container" id="iframe-container">
+    <div class="iframe-header">
+      <button class="iframe-back" id="iframe-back">← Back</button>
+      <div class="iframe-title" id="iframe-title">Tool</div>
+    </div>
+    <div class="iframe-wrapper">
+      <iframe id="app-iframe" title="Embedded tool" allow="fullscreen"></iframe>
+    </div>
+  </div>
+
+  <a class="sr-only" href="#main">Skip to main content</a>
+  <div class="container">
+    <header>
+      <div class="brand" aria-label="NARBE brand header">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="title">NARBE Accessibility Hub</div>
+          <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
+        </div>
+      </div>
+      <div class="notice" role="note">
+        Below are tools and games that will be populated over time that are free to access and use. Use <span class="kbd">spacebar</span> to scan and <span class="kbd">return</span> to select. Mouse clicks work too.
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- HOME SCREEN -->
+      <section id="screen-home" class="screen active" aria-labelledby="home-heading" data-screen="home">
+        <h2 id="home-heading" class="sr-only">Main menu</h2>
+        <div class="grid single" role="group" aria-label="Main menu buttons">
+          <button class="card-btn nav" data-target="tools">
+            <span class="kicker">Menu</span>
+            <div class="btn-title">Tools</div>
+            <div class="row">
+              <p class="desc">Keyboard and Phrase Board. Free to use.</p>
+              <span class="pill">Open</span>
+            </div>
+          </button>
+
+          <button class="card-btn nav" data-target="games">
+            <span class="kicker">Menu</span>
+            <div class="btn-title">Games</div>
+            <div class="row">
+              <p class="desc">Start with Benny's P3GL Game. More coming soon.</p>
+              <span class="pill">Open</span>
+            </div>
+          </button>
+
+          <button class="card-btn nav" data-target="settings">
+            <span class="kicker">Menu</span>
+            <div class="btn-title">Settings</div>
+            <div class="row">
+              <p class="desc">Customize your experience. Themes, voice, and more.</p>
+              <span class="pill">Open</span>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- TOOLS SCREEN -->
+      <section id="screen-tools" class="screen" aria-labelledby="tools-heading" data-screen="tools">
+        <div class="backbar">
+          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        </div>
+        <h2 id="tools-heading" class="sr-only">Tools</h2>
+        <div class="grid single" role="group" aria-label="Tools list">
+          <button class="card-btn tool-btn" data-iframe="keyboard/index.html" data-title="Keyboard">
+            <span class="kicker">Tool</span>
+            <div class="btn-title">Keyboard</div>
+            <div class="row">
+              <p class="desc">Predictive, simple input mapped for two-button access.</p>
+              <span class="pill">Launch</span>
+            </div>
+          </button>
+
+          <button class="card-btn tool-btn" data-iframe="phraseboard/index.html" data-title="Phrase Board">
+            <span class="kicker">Tool</span>
+            <div class="btn-title">Phrase Board</div>
+            <div class="row">
+              <p class="desc">Editable phrase tiles with scanning and speak-out.</p>
+              <span class="pill">Launch</span>
+            </div>
+          </button>
+        </div>
+        <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to open a tool. Use the Back button to return here.</p>
+      </section>
+
+      <!-- GAMES SCREEN -->
+      <section id="screen-games" class="screen" aria-labelledby="games-heading" data-screen="games">
+        <div class="backbar">
+          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        </div>
+        <h2 id="games-heading" class="sr-only">Games</h2>
+        <div class="grid single" role="group" aria-label="Games list">
+          <button class="card-btn tool-btn" data-iframe="BENNYSPEGGLE/index.html" data-title="Benny's P3GL Game">
+            <span class="kicker">Game</span>
+            <div class="btn-title">Benny's P3GL Game</div>
+            <div class="row">
+              <p class="desc">Two-button friendly gameplay. Always free.</p>
+              <span class="pill">Play</span>
+            </div>
+          </button>
+
+          <button class="card-btn tool-btn" data-iframe="bennysays/index.html" data-title="BennySays">
+            <span class="kicker">Game</span>
+            <div class="btn-title">BennySays</div>
+            <div class="row">
+              <p class="desc">Interactive game with mouse and keyboard support.</p>
+              <span class="pill">Play</span>
+            </div>
+          </button>
+        </div>
+        <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to launch the game. Use the Back button to return here.</p>
+      </section>
+
+      <!-- SETTINGS SCREEN -->
+      <section id="screen-settings" class="screen" aria-labelledby="settings-heading" data-screen="settings">
+        <div class="backbar">
+          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        </div>
+        <h2 id="settings-heading" class="sr-only">Settings</h2>
+        <div class="grid single" role="group" aria-label="Settings list">
+          <button class="card-btn" id="highlight-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Highlight Color</div>
+            <div class="row">
+              <p class="desc">Change focus highlight color</p>
+              <span class="pill" id="highlight-status">Blue</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="textcolor-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Text Color</div>
+            <div class="row">
+              <p class="desc">Change text color scheme</p>
+              <span class="pill" id="textcolor-status">Default</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="bgtheme-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Background Theme</div>
+            <div class="row">
+              <p class="desc">Change background colors</p>
+              <span class="pill" id="bgtheme-status">Default</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="tts-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Text-to-Speech</div>
+            <div class="row">
+              <p class="desc">Enable spoken feedback</p>
+              <span class="pill" id="tts-status">On</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="voice-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Voice</div>
+            <div class="row">
+              <p class="desc">Change TTS voice</p>
+              <span class="pill" id="voice-status">Default</span>
+            </div>
+          </button>
+        </div>
+        <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to toggle settings. Use the Back button to return home.</p>
+      </section>
+
+      <!-- Live polite announcements for screen-reader users -->
+      <div aria-live="polite" aria-atomic="true" class="sr-only" id="live"></div>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * Keyboard scanning model
+     * - Spacebar (on release): move focus forward across focusable cards
+     * - Enter/Return (on release): "activate" the focused element
+     * - TTS announces focused items
+     */
+
+    const SCREENS = {
+      home: document.getElementById('screen-home'),
+      tools: document.getElementById('screen-tools'),
+      games: document.getElementById('screen-games'),
+      settings: document.getElementById('screen-settings'),
+    };
+
+    const live = document.getElementById('live');
+    const fullscreenModal = document.getElementById('fullscreen-modal');
+    const modalFullscreenBtn = document.getElementById('modal-fullscreen');
+    const modalCancelBtn = document.getElementById('modal-cancel');
+    const iframeContainer = document.getElementById('iframe-container');
+    const iframeBack = document.getElementById('iframe-back');
+    const iframeTitle = document.getElementById('iframe-title');
+    const appIframe = document.getElementById('app-iframe');
+
+    // Settings state
+    let settings = {
+      highlightColor: 'blue', // blue, green, purple, red, yellow, white
+      textColor: 'default', // default, green, purple, red, gold
+      bgTheme: 'default', // default, ocean, forest, sunset, midnight, rose, sky, cream, mint, lavender, peach
+      ttsEnabled: true,
+      voiceIndex: 0,
+    };
+
+    // Load settings from localStorage
+    function loadSettings() {
+      const saved = localStorage.getItem('narbe-hub-settings');
+      if (saved) {
+        settings = { ...settings, ...JSON.parse(saved) };
+        applySettings();
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem('narbe-hub-settings', JSON.stringify(settings));
+    }
+
+    function applySettings() {
+      // Apply highlight color
+      document.body.className = document.body.className.replace(/highlight-\w+/g, '');
+      document.body.classList.add(`highlight-${settings.highlightColor}`);
+      const highlightNames = { blue: 'Blue', green: 'Green', purple: 'Purple', red: 'Red', yellow: 'Yellow', white: 'White' };
+      document.getElementById('highlight-status').textContent = highlightNames[settings.highlightColor];
+
+      // Apply text color
+      document.body.className = document.body.className.replace(/text-\w+/g, '');
+      if (settings.textColor !== 'default') {
+        document.body.classList.add(`text-${settings.textColor}`);
+      }
+      const textColorNames = { default: 'Default', green: 'Green', purple: 'Purple', red: 'Red', gold: 'Gold' };
+      document.getElementById('textcolor-status').textContent = textColorNames[settings.textColor];
+
+      // Apply background theme
+      document.body.className = document.body.className.replace(/bg-\w+/g, '');
+      if (settings.bgTheme !== 'default') {
+        document.body.classList.add(`bg-${settings.bgTheme}`);
+      }
+      const bgThemeNames = { 
+        default: 'Default', 
+        ocean: 'Ocean', 
+        forest: 'Forest', 
+        sunset: 'Sunset', 
+        midnight: 'Midnight', 
+        rose: 'Rose',
+        sky: 'Sky',
+        cream: 'Cream',
+        mint: 'Mint',
+        lavender: 'Lavender',
+        peach: 'Peach'
+      };
+      document.getElementById('bgtheme-status').textContent = bgThemeNames[settings.bgTheme];
+
+      // Apply TTS
+      document.getElementById('tts-status').textContent = settings.ttsEnabled ? 'On' : 'Off';
+
+      // Apply Voice
+      updateVoiceDisplay();
+    }
+
+    // TTS functionality
+    let availableVoices = [];
+    let currentUtterance = null;
+
+    function loadVoices() {
+      availableVoices = speechSynthesis.getVoices();
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
+    function speak(text) {
+      if (!settings.ttsEnabled || !text) return;
+      
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+      
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      if (availableVoices.length > 0) {
+        const voiceIndex = settings.voiceIndex % availableVoices.length;
+        currentUtterance.voice = availableVoices[voiceIndex];
+      }
+      currentUtterance.rate = 1.0;
+      currentUtterance.pitch = 1.0;
+      
+      speechSynthesis.speak(currentUtterance);
+    }
+
+    function updateVoiceDisplay() {
+      if (availableVoices.length > 0) {
+        const voice = availableVoices[settings.voiceIndex % availableVoices.length];
+        const voiceName = voice ? voice.name.split(' ')[0] : 'Default';
+        document.getElementById('voice-status').textContent = voiceName;
+      } else {
+        document.getElementById('voice-status').textContent = 'Default';
+      }
+    }
+
+    // Settings toggles
+    document.getElementById('highlight-toggle').addEventListener('click', () => {
+      const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'white'];
+      const currentIndex = colors.indexOf(settings.highlightColor);
+      settings.highlightColor = colors[(currentIndex + 1) % colors.length];
+      applySettings();
+      saveSettings();
+      speak(`Highlight color ${settings.highlightColor}`);
+    });
+
+    document.getElementById('textcolor-toggle').addEventListener('click', () => {
+      const textColors = ['default', 'green', 'purple', 'red', 'gold'];
+      const currentIndex = textColors.indexOf(settings.textColor);
+      settings.textColor = textColors[(currentIndex + 1) % textColors.length];
+      applySettings();
+      saveSettings();
+      speak(`Text color ${settings.textColor}`);
+    });
+
+    document.getElementById('bgtheme-toggle').addEventListener('click', () => {
+      const bgThemes = ['default', 'ocean', 'forest', 'sunset', 'midnight', 'rose', 'sky', 'cream', 'mint', 'lavender', 'peach'];
+      const currentIndex = bgThemes.indexOf(settings.bgTheme);
+      settings.bgTheme = bgThemes[(currentIndex + 1) % bgThemes.length];
+      applySettings();
+      saveSettings();
+      speak(`Background theme ${settings.bgTheme}`);
+    });
+
+    document.getElementById('tts-toggle').addEventListener('click', () => {
+      settings.ttsEnabled = !settings.ttsEnabled;
+      applySettings();
+      saveSettings();
+      if (settings.ttsEnabled) {
+        speak('Text to speech on');
+      }
+    });
+
+    document.getElementById('voice-toggle').addEventListener('click', () => {
+      if (availableVoices.length > 0) {
+        settings.voiceIndex = (settings.voiceIndex + 1) % availableVoices.length;
+        applySettings();
+        saveSettings();
+        speak('Voice changed');
+      }
+    });
+
+    // Fullscreen management
+    function enterFullscreen() {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    }
+
+    function closeModal() {
+      fullscreenModal.classList.add('hidden');
+    }
+
+    modalFullscreenBtn.addEventListener('click', () => {
+      enterFullscreen();
+      closeModal();
+    });
+
+    modalCancelBtn.addEventListener('click', () => {
+      closeModal();
+    });
+
+    // Show iframe with tool
+    function showIframe(src, title) {
+      iframeTitle.textContent = title;
+      appIframe.src = src;
+      iframeContainer.classList.add('active');
+      iframeBack.focus();
+      announce(`${title} loaded`);
+      
+      // Pass focus to the iframe content after a short delay to ensure it's loaded
+      setTimeout(() => {
+        try {
+          appIframe.contentWindow.focus();
+        } catch (e) {
+          // Cross-origin iframes may block focus, but same-origin should work
+          console.log('Unable to focus iframe content:', e);
+        }
+      }, 500);
+    }
+
+    function closeIframe() {
+      iframeContainer.classList.remove('active');
+      appIframe.src = '';
+      // Return focus to tools screen
+      const first = getFocusables()[0];
+      if (first) first.focus();
+      announce('Returned to menu');
+    }
+
+    iframeBack.addEventListener('click', closeIframe);
+
+    // Tool buttons
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const src = btn.getAttribute('data-iframe');
+        const title = btn.getAttribute('data-title');
+        showIframe(src, title);
+      });
+    });
+
+    function showScreen(name){
+      for(const id in SCREENS){
+        SCREENS[id].classList.toggle('active', id === name);
+      }
+      // Reset focus index when changing screens
+      focusIndex = 0;
+      // After switching, move focus to first focusable on that screen
+      const first = getFocusables()[0];
+      if(first){ 
+        first.focus(); 
+        announce(`${name} menu`);
+        speakFocusedElement(first);
+      }
+    }
+
+    function announce(msg){
+      live.textContent = '';
+      // small delay to force screen readers to re-announce
+      setTimeout(()=>{ live.textContent = msg; }, 10);
+    }
+
+    function getFocusables(){
+      // If iframe is active, only scan iframe controls
+      if (iframeContainer.classList.contains('active')) {
+        return [iframeBack];
+      }
+      const active = document.querySelector('.screen.active');
+      if(!active) return [];
+      return Array.from(active.querySelectorAll('button.backbtn, .card-btn'))
+        .filter(el => !el.hasAttribute('disabled'));
+    }
+
+    function speakFocusedElement(el) {
+      if (!el) return;
+      const titleEl = el.querySelector('.btn-title');
+      let text = '';
+      
+      if (titleEl) {
+        text = titleEl.textContent;
+      }
+      
+      // Handle back button
+      if (el.classList.contains('backbtn')) {
+        text = 'Back';
+      }
+      
+      if (text) {
+        speak(text);
+      }
+    }
+
+    // Nav buttons (Tools, Games, Settings)
+    document.querySelectorAll('.card-btn.nav').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        showScreen(target);
+      });
+    });
+
+    // Back buttons
+    document.querySelectorAll('.backbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target') || 'home';
+        showScreen(target);
+      });
+    });
+
+    // Global key handler for scan and select (on key release)
+    let focusIndex = 0;
+    let spacePressed = false;
+    let enterPressed = false;
+
+    function focusAt(idx){
+      const list = getFocusables();
+      if(list.length === 0) return;
+      focusIndex = ((idx % list.length) + list.length) % list.length;
+      list[focusIndex].focus();
+      speakFocusedElement(list[focusIndex]);
+    }
+
+    function focusNext(){
+      const list = getFocusables();
+      if(list.length === 0) return;
+      
+      // Update the current focusIndex based on which element is actually focused
+      const currentFocused = document.activeElement;
+      const currentIndex = list.indexOf(currentFocused);
+      
+      if (currentIndex >= 0) {
+        focusIndex = currentIndex;
+      }
+      
+      // Move to next
+      focusAt(focusIndex + 1);
+    }
+
+    function activateFocused(){
+      const list = getFocusables();
+      if(list.length === 0) return;
+      
+      // Update the current focusIndex based on which element is actually focused
+      const currentFocused = document.activeElement;
+      const currentIndex = list.indexOf(currentFocused);
+      
+      if (currentIndex >= 0) {
+        focusIndex = currentIndex;
+      }
+      
+      const el = list[focusIndex];
+      el.click();
+    }
+
+    document.addEventListener('keydown', (e)=>{
+      // Handle modal keyboard navigation
+      if (!fullscreenModal.classList.contains('hidden')) {
+        if (e.key === ' ' && !spacePressed) {
+          e.preventDefault();
+          spacePressed = true;
+        } else if (e.key === 'Enter' && !enterPressed) {
+          e.preventDefault();
+          enterPressed = true;
+        }
+        return;
+      }
+
+      // Avoid intercepting when typing in inputs
+      const tag = document.activeElement?.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
+        return;
+      }
+
+      if(e.key === ' ' && !spacePressed){
+        e.preventDefault();
+        spacePressed = true;
+      } else if(e.key === 'Enter' && !enterPressed){
+        e.preventDefault();
+        enterPressed = true;
+      }
+    });
+
+    document.addEventListener('keyup', (e)=>{
+      // Handle modal keyboard navigation
+      if (!fullscreenModal.classList.contains('hidden')) {
+        if (e.key === ' ' && spacePressed) {
+          e.preventDefault();
+          spacePressed = false;
+          // Toggle focus between buttons
+          if (document.activeElement === modalFullscreenBtn) {
+            modalCancelBtn.focus();
+            speak('Cancel');
+          } else {
+            modalFullscreenBtn.focus();
+            speak('Fullscreen');
+          }
+        } else if (e.key === 'Enter' && enterPressed) {
+          e.preventDefault();
+          enterPressed = false;
+          if (document.activeElement === modalFullscreenBtn) {
+            modalFullscreenBtn.click();
+          } else {
+            modalCancelBtn.click();
+          }
+        }
+        return;
+      }
+
+      // Avoid intercepting when typing in inputs
+      const tag = document.activeElement?.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
+        return;
+      }
+
+      if(e.key === ' ' && spacePressed){
+        e.preventDefault();
+        spacePressed = false;
+        focusNext();
+      } else if(e.key === 'Enter' && enterPressed){
+        e.preventDefault();
+        enterPressed = false;
+        activateFocused();
+      }
+    });
+
+    // Initialize: load settings, show modal and focus first button
+    window.addEventListener('load', ()=>{
+      loadSettings();
+      loadVoices();
+      focusIndex = 0;
+      modalFullscreenBtn.focus();
+      speak('Use Fullscreen for the Best Experience. Fullscreen or Cancel');
+    });
+
+    // Listen for messages from iframe content to focus the back button
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.action === 'focusBackButton') {
+        // Close iframe and focus back button
+        if (iframeContainer.classList.contains('active')) {
+          closeIframe();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
