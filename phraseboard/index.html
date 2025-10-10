@@ -63,16 +63,14 @@
     }
     
     header { 
-      background: var(--brand); 
-      color: #fff; 
-      padding: 12px 20px; 
-      text-align: center;
-    }
-    
-    header h1 { 
-      margin: 0; 
-      font-size: 24px; 
-    }
+  background: var(--brand); 
+  color: #fff; 
+  padding: 12px 20px; 
+}
+.header-inner{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.brand{ font-size:20px; font-weight:800; white-space:nowrap; }
+.header-title{ font-size:18px; font-weight:700; margin:0 auto; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70vw; }
+.header-right{ width:24px; }
     
     .main-grid {
       padding: 20px;
@@ -354,8 +352,12 @@
 <body>
   <div class="app-container">
     <header>
-      <h1>🧡 NARBE Phrase Board</h1>
-    </header>
+  <div class="header-inner">
+    <div class="brand">🧡 NARBE Phrase Board</div>
+    <div id="viewTitle" class="header-title">Main Menu</div>
+    <div class="header-right"></div>
+  </div>
+</header>
 
     <main class="main-grid" id="mainGrid">
       <div class="sentence-row" id="sentenceRow">
@@ -503,7 +505,26 @@
       loadBoardProceed: document.getElementById('loadBoardProceed')
     };
 
-    // Modal Functions
+    
+// ---- Dynamic header title ----
+function updateHeaderForCurrentView(){
+  const t = document.getElementById('viewTitle');
+  if(!t) return;
+  let title = 'Main Menu';
+  switch(state.currentMenu){
+    case 'main': title = 'Main Menu'; break;
+    case 'categories': title = state.currentBoardTitle || 'Categories'; break;
+    case 'settings': title = 'Settings'; break;
+    case 'gridsize': title = 'Grid Size'; break;
+    case 'tts': title = 'Voice & TTS'; break;
+    case 'scan': title = 'Scan Settings'; break;
+    case 'highlight': title = 'Highlight Colors'; break;
+    case 'theme': title = 'Theme'; break;
+    case 'category': title = state.currentCategory || 'Category'; break;
+  }
+  t.textContent = title;
+}
+// Modal Functions
     function showWarningModal(type) {
       state.modalActive = true;
       state.modalScanIndex = -1;
@@ -662,7 +683,7 @@
           el.mainGrid.appendChild(btn);
         }
         if (needsNext) {
-          const nextBtn = createButton('Next', '▶', () => { state.page++; renderMainMenu(); }, 'next-btn');
+          const nextBtn = createButton('Next', '▶', () => { state.page++; renderMainMenu(); updateHeaderForCurrentView(); }, 'next-btn');
           el.mainGrid.appendChild(nextBtn);
         }
         if (state.page > 0) {
