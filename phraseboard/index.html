@@ -653,7 +653,7 @@ function updateHeaderForCurrentView(){
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
       const coreItems = [
         { text: 'Settings', icon: '⚙️', action: () => navigateTo('settings'), className: 'muted-blue-btn' },
-        { text: 'Exit', icon: '🚪', action: () => alert('Exit to Software Hub (placeholder)'), className: 'muted-red-btn' },
+        { text: 'Exit', icon: '🚪', action: () => exitToHub(), className: 'muted-red-btn' },
         { text: 'Create Board', icon: '✏️', action: () => showWarningModal('create'), className: 'muted-green-btn' },
         { text: 'Load Board', icon: '📁', action: () => showWarningModal('load'), className: 'muted-yellow-btn' }
       ];
@@ -1593,6 +1593,19 @@ function updateHeaderForCurrentView(){
       const g = parseInt(hex.slice(2, 4), 16);
       const b = parseInt(hex.slice(4, 6), 16);
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // Exit to hub function (matches keyboard and BENNYSPEGGLE pattern)
+    function exitToHub() {
+      console.log("Exit button pressed - returning to hub");
+      try {
+        // Message parent to focus back button and close iframe
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ action: 'focusBackButton' }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to message parent:', err);
+      }
     }
   </script>
 
