@@ -525,7 +525,7 @@
       
       if (!trimmedBuffer) {
         // Use default predictions when nothing is typed
-        predictions = ["yes", "no", "help", "the", "you", "I"];
+        predictions = ["YES", "NO", "HELP", "THE", "YOU", "I"];
         console.log("Using default predictions (empty buffer):", predictions);
       } else {
         // Get predictions from KENLM API
@@ -544,40 +544,78 @@
           console.log("KENLM API Response status:", kenlmResponse.status);
           
           if (kenlmResponse.ok) {
-            const data = await kenlmResponse.json();
-            console.log("KENLM API Response data:", data);
+            const responseText = await kenlmResponse.text();
+            console.log("KENLM API raw response:", responseText);
             
-            // Handle different possible response formats
-            if (Array.isArray(data)) {
-              predictions = data;
-            } else if (data && Array.isArray(data.predictions)) {
-              predictions = data.predictions;
-            } else if (data && Array.isArray(data.results)) {
-              predictions = data.results;
-            } else if (data && data.next_words) {
-              predictions = data.next_words;
-            } else {
-              console.warn("Unexpected KENLM response format:", data);
+            try {
+              const data = JSON.parse(responseText);
+              console.log("KENLM API parsed data:", data);
+              
+              // The Cloudflare worker likely returns an array directly
+              if (Array.isArray(data)) {
+                predictions = data.map(item => {
+                  // Handle if items are strings or objects
+                  if (typeof item === 'string') {
+                    return item;
+                  } else if (item && typeof item === 'object') {
+                    // Try common property names
+                    return item.word || item.text || item.prediction || item.value || JSON.stringify(item);
+                  }
+                  return '';
+                }).filter(p => p && p.length > 0);
+              } else if (data && typeof data === 'object') {
+                // Try various possible property names
+                const possibleArrays = [
+                  data.predictions,
+                  data.results, 
+                  data.words,
+                  data.next_words,
+                  data.completions,
+                  data.suggestions
+                ];
+                
+                for (const arr of possibleArrays) {
+                  if (Array.isArray(arr)) {
+                    predictions = arr.map(item => {
+                      if (typeof item === 'string') return item;
+                      if (item && item.word) return item.word;
+                      if (item && item.text) return item.text;
+                      return '';
+                    }).filter(p => p && p.length > 0);
+                    break;
+                  }
+                }
+                
+                // If still no predictions, check if data itself has string properties
+                if (predictions.length === 0) {
+                  console.warn("Could not find predictions array in response, structure:", Object.keys(data));
+                }
+              }
+              
+              // If we got predictions, use them; otherwise fall back to defaults
+              if (predictions.length === 0) {
+                console.warn("No predictions extracted, using defaults");
+                predictions = ["yes", "no", "help", "the", "you", "I"];
+              }
+            } catch (parseError) {
+              console.error("Error parsing KENLM response:", parseError);
+              console.log("Response that failed to parse:", responseText);
               predictions = ["yes", "no", "help", "the", "you", "I"];
             }
-            
-            console.log("Extracted predictions:", predictions);
           } else {
             console.error("KENLM API error - status:", kenlmResponse.status);
+            const errorText = await kenlmResponse.text();
+            console.error("Error response:", errorText);
             predictions = ["yes", "no", "help", "the", "you", "I"];
           }
         } catch (error) {
           console.error("Error fetching KENLM predictions:", error);
-          // Fall back to defaults on error
           predictions = ["yes", "no", "help", "the", "you", "I"];
         }
       }
 
-      // Ensure predictions is an array of strings
-      predictions = predictions.filter(p => typeof p === 'string' || (p && typeof p.word === 'string'))
-                               .map(p => typeof p === 'string' ? p : p.word)
-                               .slice(0, 6);
-      
+      // Ensure we have exactly 6 predictions (pad with empty strings if needed)
+      predictions = predictions.slice(0, 6);
       console.log("Final predictions to render:", predictions);
 
       // Render the predictions
@@ -609,14 +647,15 @@
             }
             
             setBuffer(newBuffer);
-            recordLocalWord(w); // Record the word selection
+            recordLocalWord(w);
           });
         }
         
         predictBar.appendChild(chip);
       });
       
-      console.log("Rendered", predictBar.querySelectorAll(".chip").length, "prediction chips");
+      console.log("Rendered", predictBar.querySelectorAll(".chip").length, "prediction chips with text:", 
+                  Array.from(predictBar.querySelectorAll(".chip")).map(c => c.textContent || "(empty)"));
       
       // Restore predictive row highlighting if it was highlighted before
       if (wasPredictiveRowHighlighted) {
