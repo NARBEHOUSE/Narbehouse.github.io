@@ -1408,17 +1408,24 @@ const TTS = {
   cancel(){ try{ window.speechSynthesis.cancel(); }catch(_){ } }
 };
 
-// Robust exit helper: attempts to close the tab/app; falls back to about:blank
+// Robust exit helper: communicates with parent to focus back button
 function exitApp(){
-  try{ window.open('','_self'); }catch(_){}
-  try{ window.close(); }catch(_){}
-  try{ top.close(); }catch(_){}
-  try{ if (window.opener && window.opener.close) window.opener.close(); }catch(_){}
-  // Fallback: navigate away then attempt close shortly after
   try{
-    setTimeout(()=>{ try{ window.close(); }catch(_){} }, 120);
-    location.replace('about:blank');
-  }catch(_){}
+    // Try to message parent window to focus the back button
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ action: 'focusBackButton' }, '*');
+    }
+    // Navigate to parent directory (Access-Hub root)
+    location.href = '../index.html';
+  }catch(err){
+    // Fallback: try relative navigation
+    try{
+      window.location.replace('../index.html');
+    }catch(_){
+      // Last resort: go up one level
+      window.location.href = '..';
+    }
+  }
 }
 
 /*******************
@@ -3614,4 +3621,3 @@ const game=new Game();
 </script>
 </body>
 </html>
-
