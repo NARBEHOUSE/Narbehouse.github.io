@@ -453,7 +453,54 @@
     spaceHeld:false, spaceStart:0, spaceBackward:false, spaceTimer:null,
     returnHeld:false, returnStart:0, returnTimer:null, pauseTriggered:false,
     returnDebounce: 1.0, lastReturnTime: 0,
+    
+    // best scores tracking
+    bestScores: {}
   };
+
+  // Load best scores from localStorage
+  function loadBestScores() {
+    try {
+      const stored = localStorage.getItem('concentrationBestScores');
+      if (stored) {
+        State.bestScores = JSON.parse(stored);
+      } else {
+        State.bestScores = { easy: null, medium: null, hard: null };
+      }
+    } catch(e) {
+      State.bestScores = { easy: null, medium: null, hard: null };
+    }
+  }
+
+  // Save best scores to localStorage
+  function saveBestScores() {
+    try {
+      localStorage.setItem('concentrationBestScores', JSON.stringify(State.bestScores));
+    } catch(e) {
+      // localStorage might not be available
+    }
+  }
+
+  // Check if current score is better than best
+  function checkBestScore(difficulty, time, moves) {
+    const current = State.bestScores[difficulty];
+    const score = { time: Math.floor(time), moves: moves };
+    
+    if (!current) {
+      State.bestScores[difficulty] = score;
+      saveBestScores();
+      return true;
+    }
+    
+    // Better if fewer moves, or same moves but faster time
+    if (moves < current.moves || (moves === current.moves && time < current.time)) {
+      State.bestScores[difficulty] = score;
+      saveBestScores();
+      return true;
+    }
+    
+    return false;
+  }
 
   // UI helpers
   function buttonWithTTS(label, onClick){ 
@@ -823,6 +870,14 @@
         if(State.matchedPairs === totalPairs){
           if(State.modeType==='two_competitive') return handleRoundEnd(State.currentPlayer);
           const elapsed = (performance.now() - State.startTime)/1000;
+          
+          // Determine winner for two_casual
+          if(State.modeType === 'two_casual') {
+            const winner = State.pairsFound[1] > State.pairsFound[2] ? 1 : 
+                          State.pairsFound[2] > State.pairsFound[1] ? 2 : 0;
+            return showCasualWinMessage(winner);
+          }
+          
           return showWinMessage(elapsed);
         }
       } else {
@@ -889,7 +944,7 @@
   function pauseScanForward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; } updatePauseScan(); }
   function pauseScanBackward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length; } updatePauseScan(); }
 
-  // Win with scoring
+  // Win with scoring - updated for auto-return and best score checking
   function showWinMessage(elapsed){
     const screen=$('#screen'); screen.innerHTML='';
     const center=el('div','center');
@@ -898,6 +953,9 @@
     const minutes = Math.floor(elapsed / 60);
     const seconds = Math.floor(elapsed % 60);
     const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Check if this is a best score
+    const isBest = checkBestScore(State.currentDifficulty, elapsed, State.moveCount);
     
     // Score calculation: lower moves and faster time = higher score
     const optimalMoves = State.rows * State.cols / 2; // Best possible
@@ -908,15 +966,64 @@
     const msg = `🎉 Congratulations! You Won! 🎉`;
     const scoreMsg = `Time: ${timeString} | Moves: ${State.moveCount} | Score: ${totalScore}`;
     
-    speak(`Congratulations! You won in ${timeString} with ${State.moveCount} moves. Your score is ${totalScore} points!`);
+    let speechText = `Congratulations! You won in ${timeString} with ${State.moveCount} moves. Your score is ${totalScore} points!`;
+    
+    if (isBest) {
+      speechText += " This was your best game!";
+    }
+    speechText += " Returning to main menu.";
+    
+    speak(speechText);
     
     const res=el('div','result'); 
     res.innerHTML = `${msg}<div class="result-score">${scoreMsg}</div>`;
+    if (isBest) {
+      res.innerHTML += `<div style="color: var(--yellow); font-size: 1.2rem; margin-top: 0.5rem;">⭐ NEW BEST SCORE! ⭐</div>`;
+    }
+    res.innerHTML += `<div style="color: var(--muted); margin-top: 1rem;">Returning to menu in 5 seconds...</div>`;
     res.style.marginBottom='1rem';
     center.appendChild(res);
-    const back = buttonWithTTS('Back to Menu', renderPlayerModeMenu); 
-    center.appendChild(back);
     screen.appendChild(center);
+    
+    // Auto return to menu after 5 seconds
+    setTimeout(() => {
+      renderPlayerModeMenu();
+    }, 5000);
+  }
+
+  // New function for Two Player Casual win
+  function showCasualWinMessage(winner) {
+    const screen = $('#screen'); 
+    screen.innerHTML = '';
+    const center = el('div', 'center');
+    
+    const resultDiv = el('div', 'competitive-result');
+    
+    if (winner === 0) {
+      // It's a tie
+      resultDiv.innerHTML = `
+        <div class="winner">🤝 It's a Tie! 🤝</div>
+        <div class="final-score">Both players found ${State.pairsFound[1]} pairs!</div>
+        <div style="margin-top: 1rem; color: var(--muted);">Returning to menu in 5 seconds...</div>
+      `;
+      speak(`It's a tie! Both players found ${State.pairsFound[1]} pairs. Returning to main menu.`);
+    } else {
+      // There's a winner
+      resultDiv.innerHTML = `
+        <div class="winner">🏆 Player ${winner} Wins! 🏆</div>
+        <div class="final-score">Player 1: ${State.pairsFound[1]} pairs | Player 2: ${State.pairsFound[2]} pairs</div>
+        <div style="margin-top: 1rem; color: var(--muted);">Returning to menu in 5 seconds...</div>
+      `;
+      speak(`Player ${winner} wins! Player 1 found ${State.pairsFound[1]} pairs, Player 2 found ${State.pairsFound[2]} pairs. Returning to main menu.`);
+    }
+    
+    center.appendChild(resultDiv);
+    screen.appendChild(center);
+    
+    // Auto return to menu after 5 seconds
+    setTimeout(() => {
+      renderPlayerModeMenu();
+    }, 5000);
   }
 
   // Competitive
@@ -1128,6 +1235,7 @@
   }
 
   // Boot
+  loadBestScores(); // Load best scores on startup
   renderPlayerModeMenu();
   </script>
 </body>
