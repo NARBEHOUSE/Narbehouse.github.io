@@ -229,9 +229,8 @@
       display:flex; align-items:center; gap:12px; flex-wrap:wrap;
     }
     .logo{
-      width:56px; height:56px; border-radius:14px; background:
-        conic-gradient(from 210deg, var(--narbe-orange), var(--narbe-blue));
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      width:56px; height:56px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
     }
     .benny-logo{
       width: 80px; height: 80px; object-fit: contain;
@@ -242,8 +241,13 @@
     }
     .subtitle{ color:var(--muted); font-size: clamp(14px, 2.4vw, 16px); }
 
-    .screen{ display:none; }
-    .screen.active{ display:block; }
+    .screen{ 
+      display:none; 
+      outline: none; /* Remove focus outline on screen containers */
+    }
+    .screen.active{ 
+      display:block; 
+    }
 
     .grid{
       display:grid;
@@ -473,7 +477,6 @@
     <header>
       <div class="brand" aria-label="NARBE brand header">
         <div class="brand-left">
-          <div class="logo" aria-hidden="true"></div>
           <div>
             <div class="title">NARBE House | Benny's Accessibility Hub</div>
             <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
@@ -492,7 +495,7 @@
 
     <main id="main" tabindex="-1">
       <!-- HOME SCREEN -->
-      <section id="screen-home" class="screen active" aria-labelledby="home-heading" data-screen="home">
+      <section id="screen-home" class="screen active" aria-labelledby="home-heading" data-screen="home" tabindex="-1">
         <h2 id="home-heading" class="sr-only">Main menu</h2>
         <div class="grid single" role="group" aria-label="Main menu buttons">
           <button class="card-btn nav" data-target="tools">
@@ -525,7 +528,7 @@
       </section>
 
       <!-- TOOLS SCREEN -->
-      <section id="screen-tools" class="screen" aria-labelledby="tools-heading" data-screen="tools">
+      <section id="screen-tools" class="screen" aria-labelledby="tools-heading" data-screen="tools" tabindex="-1">
         <div class="backbar">
           <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
         </div>
@@ -553,7 +556,7 @@
       </section>
 
       <!-- GAMES SCREEN -->
-      <section id="screen-games" class="screen" aria-labelledby="games-heading" data-screen="games">
+      <section id="screen-games" class="screen" aria-labelledby="games-heading" data-screen="games" tabindex="-1">
         <div class="backbar">
           <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
         </div>
@@ -581,7 +584,7 @@
       </section>
 
       <!-- SETTINGS SCREEN -->
-      <section id="screen-settings" class="screen" aria-labelledby="settings-heading" data-screen="settings">
+      <section id="screen-settings" class="screen" aria-labelledby="settings-heading" data-screen="settings" tabindex="-1">
         <div class="backbar">
           <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
         </div>
@@ -775,7 +778,7 @@
       settings.highlightColor = colors[(currentIndex + 1) % colors.length];
       applySettings();
       saveSettings();
-      speak(`Highlight color ${settings.highlightColor}`);
+      speak(`Highlight color changed to ${settings.highlightColor}`);
     });
 
     document.getElementById('textcolor-toggle').addEventListener('click', () => {
@@ -784,7 +787,7 @@
       settings.textColor = textColors[(currentIndex + 1) % textColors.length];
       applySettings();
       saveSettings();
-      speak(`Text color ${settings.textColor}`);
+      speak(`Text color changed to ${settings.textColor}`);
     });
 
     document.getElementById('bgtheme-toggle').addEventListener('click', () => {
@@ -793,7 +796,7 @@
       settings.bgTheme = bgThemes[(currentIndex + 1) % bgThemes.length];
       applySettings();
       saveSettings();
-      speak(`Background theme ${settings.bgTheme}`);
+      speak(`Background theme changed to ${settings.bgTheme}`);
     });
 
     document.getElementById('tts-toggle').addEventListener('click', () => {
@@ -801,7 +804,9 @@
       applySettings();
       saveSettings();
       if (settings.ttsEnabled) {
-        speak('Text to speech on');
+        speak('Text to speech enabled');
+      } else {
+        // Can't speak when disabled, but update status
       }
     });
 
@@ -810,7 +815,8 @@
         settings.voiceIndex = (settings.voiceIndex + 1) % availableVoices.length;
         applySettings();
         saveSettings();
-        speak('Voice changed');
+        const voice = availableVoices[settings.voiceIndex];
+        speak(`Voice changed to ${voice.name.split(' ')[0]}`);
       }
     });
 
@@ -861,19 +867,35 @@
     function closeIframe() {
       iframeContainer.classList.remove('active');
       appIframe.src = '';
-      // Return focus to tools screen
-      const first = getFocusables()[0];
-      if (first) first.focus();
+      // Don't auto-focus when returning to menu
+      focusIndex = -1; // Reset to -1 so spacebar starts scanning
+      
+      // Set focus to the main content to ensure keyboard events work
+      const activeScreen = document.querySelector('.screen.active');
+      if (activeScreen) {
+        // Focus the screen element to ensure keyboard events are captured
+        activeScreen.focus();
+        // If that doesn't work, try focusing the main element
+        if (document.activeElement !== activeScreen) {
+          document.getElementById('main').focus();
+        }
+      }
+      
       announce('Returned to menu');
+      speak('Returned to menu. Press spacebar to start scanning');
     }
 
-    iframeBack.addEventListener('click', closeIframe);
+    iframeBack.addEventListener('click', () => {
+      speak('Closing tool');
+      closeIframe();
+    });
 
     // Tool buttons
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const src = btn.getAttribute('data-iframe');
         const title = btn.getAttribute('data-title');
+        speak(`Opening ${title}`);
         showIframe(src, title);
       });
     });
@@ -884,19 +906,25 @@
         SCREENS[id].classList.toggle('active', id === name);
       }
       // Reset focus index when changing screens
-      focusIndex = 0;
+      focusIndex = -1; // Start at -1 so first spacebar press focuses first element
       // Reset key states when changing screens
       spacePressed = false;
       enterPressed = false;
       
-      // Delay focus to prevent immediate triggering
+      // Don't auto-focus, just announce the screen change
       setTimeout(() => {
-        const first = getFocusables()[0];
-        if(first){ 
-          first.focus(); 
-          announce(`${name} menu`);
-          speakFocusedElement(first);
+        // Set focus to the active screen to ensure keyboard events work
+        const activeScreen = document.querySelector('.screen.active');
+        if (activeScreen) {
+          activeScreen.focus();
+          // If that doesn't work, try focusing the main element
+          if (document.activeElement !== activeScreen) {
+            document.getElementById('main').focus();
+          }
         }
+        
+        announce(`${name} menu`);
+        speak(`${name} menu. Press spacebar to start scanning`);
         isTransitioning = false; // Clear transition flag
       }, 100);
     }
@@ -941,6 +969,10 @@
     document.querySelectorAll('.card-btn.nav').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.getAttribute('data-target');
+        const titleEl = btn.querySelector('.btn-title');
+        if (titleEl) {
+          speak(`Opening ${titleEl.textContent}`);
+        }
         showScreen(target);
       });
     });
@@ -949,12 +981,13 @@
     document.querySelectorAll('.backbtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.getAttribute('data-target') || 'home';
+        speak('Going back');
         showScreen(target);
       });
     });
 
     // Global key handler for scan and select (on key release)
-    let focusIndex = 0;
+    let focusIndex = -1;
     let spacePressed = false;
     let enterPressed = false;
     let isTransitioning = false; // Add transition flag
@@ -970,6 +1003,14 @@
     function focusNext(){
       const list = getFocusables();
       if(list.length === 0) return;
+      
+      // If focusIndex is -1, start at the beginning
+      if (focusIndex === -1) {
+        focusIndex = 0;
+        list[focusIndex].focus();
+        speakFocusedElement(list[focusIndex]);
+        return;
+      }
       
       // Update the current focusIndex based on which element is actually focused
       const currentFocused = document.activeElement;
@@ -988,6 +1029,12 @@
       
       const list = getFocusables();
       if(list.length === 0) return;
+      
+      // Don't activate if nothing is focused yet
+      if (focusIndex === -1) {
+        speak('Press spacebar first to select an item');
+        return;
+      }
       
       // Update the current focusIndex based on which element is actually focused
       const currentFocused = document.activeElement;
@@ -1043,8 +1090,11 @@
         if (e.key === ' ' && spacePressed) {
           e.preventDefault();
           spacePressed = false;
-          // Toggle focus between buttons
-          if (document.activeElement === modalFullscreenBtn) {
+          // First spacebar press focuses first button
+          if (document.activeElement !== modalFullscreenBtn && document.activeElement !== modalCancelBtn) {
+            modalFullscreenBtn.focus();
+            speak('Fullscreen');
+          } else if (document.activeElement === modalFullscreenBtn) {
             modalCancelBtn.focus();
             speak('Cancel');
           } else {
@@ -1056,8 +1106,10 @@
           enterPressed = false;
           if (document.activeElement === modalFullscreenBtn) {
             modalFullscreenBtn.click();
-          } else {
+          } else if (document.activeElement === modalCancelBtn) {
             modalCancelBtn.click();
+          } else {
+            speak('Press spacebar first to select a button');
           }
         }
         return;
@@ -1087,13 +1139,19 @@
       }
     });
 
-    // Initialize: load settings, show modal and focus first button
+    // Initialize: load settings, show modal but don't focus yet
     window.addEventListener('load', ()=>{
       loadSettings();
       loadVoices();
-      focusIndex = 0;
-      modalFullscreenBtn.focus();
-      speak('Use Fullscreen for the Best Experience. Fullscreen or Cancel');
+      focusIndex = -1; // Start with nothing focused
+      
+      // Ensure the document has focus for keyboard events
+      document.body.focus();
+      if (document.activeElement !== document.body) {
+        document.getElementById('main').focus();
+      }
+      
+      speak('Use Fullscreen for the Best Experience. Press spacebar to start');
     });
 
     // Listen for messages from iframe content to focus the back button
