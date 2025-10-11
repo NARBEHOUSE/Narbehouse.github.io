@@ -10,7 +10,8 @@
     theme: "default",
     scanSpeed: "medium",
     voiceIndex: 0,
-    highlightColor: "yellow"
+    highlightColor: "yellow",
+    ttsEnabled: true // Add TTS enabled setting
   };
 
   let settings = loadSettings();
@@ -66,6 +67,9 @@
   }
 
   function speak(text) {
+    // Check if TTS is disabled
+    if (!settings.ttsEnabled) return;
+    
     if (!ttsEngine) return;
     
     ttsEngine.cancel();
@@ -258,12 +262,35 @@
 
   function setBuffer(txt) {
     buffer = txt;
-    textBar.textContent = buffer + "|";
+    const displayText = buffer + "|";
+    textBar.textContent = displayText;
+    
+    // Dynamically adjust text size based on length
+    adjustTextSize(displayText);
+    
     ttsUseCount = 0;
     renderPredictions();
   }
 
-  // Keyboard layout
+  function adjustTextSize(text) {
+    // Remove all size classes first
+    textBar.classList.remove('text-medium', 'text-small', 'text-tiny');
+    
+    // Get the text length without the cursor
+    const textLength = text.replace('|', '').length;
+    
+    // Apply appropriate class based on text length
+    if (textLength > 100) {
+      textBar.classList.add('text-tiny');
+    } else if (textLength > 50) {
+      textBar.classList.add('text-small');
+    } else if (textLength > 25) {
+      textBar.classList.add('text-medium');
+    }
+    // Otherwise use default size (no class needed)
+  }
+
+  // Keyboard layout with symbols for control buttons
   const rows = [
     ["Space", "Del Letter", "Del Word", "Clear", "Settings", "Exit"],
     ["A","B","C","D","E","F"],
@@ -273,6 +300,16 @@
     ["Y","Z","0","1","2","3"],
     ["4","5","6","7","8","9"]
   ];
+
+  // Control button symbols
+  const controlSymbols = {
+    "Space": "—",        // Em dash symbol (changed from underscore)
+    "Del Letter": "⌫",   // Backspace symbol
+    "Del Word": "⌦",     // Delete forward symbol
+    "Clear": "✕",        // Clear/X symbol
+    "Settings": "⚙",     // Gear symbol
+    "Exit": "⏻"          // Power/Exit symbol
+  };
 
   function renderKeyboard() {
     kb.innerHTML = "";
@@ -287,7 +324,16 @@
           btn.classList.add("exit");
         }
         
-        btn.textContent = key;
+        // For control buttons, add symbol and text
+        if (rIdx === 0 && controlSymbols[key]) {
+          btn.innerHTML = `
+            <span class="ctrl-symbol">${controlSymbols[key]}</span>
+            <span class="ctrl-text">${key}</span>
+          `;
+        } else {
+          btn.textContent = key;
+        }
+        
         btn.addEventListener("click", () => {
           if (rIdx === 0) {
             handleControl(key);
@@ -752,6 +798,7 @@
     updateScanSpeedDisplay();
     updateVoiceDisplay();
     updateHighlightDisplay();
+    updateTTSToggleDisplay(); // Add TTS toggle display update
     
     // Add mouse event listeners to settings items
     settingsItems.forEach((item, index) => {
@@ -839,6 +886,14 @@
         cycleHighlightColor();
         break;
         
+      case "tts-toggle":
+        toggleTTS();
+        break;
+        
+      case "read-instructions":
+        readInstructions();
+        break;
+        
       case "close":
         closeSettings();
         speak("settings closed");
@@ -918,6 +973,76 @@
     if (highlightValue) {
       const colorName = highlightColors[currentHighlightIndex];
       highlightValue.textContent = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+    }
+  }
+
+  function toggleTTS() {
+    settings.ttsEnabled = !settings.ttsEnabled;
+    saveSettings();
+    updateTTSToggleDisplay();
+    
+    // Always speak this feedback regardless of TTS setting to confirm the change
+    if (ttsEngine) {
+      ttsEngine.cancel();
+      const utterance = new SpeechSynthesisUtterance(settings.ttsEnabled ? "TTS enabled" : "TTS disabled");
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
+        utterance.voice = englishVoices[currentVoiceIndex];
+      }
+      ttsEngine.speak(utterance);
+    }
+  }
+
+  function updateTTSToggleDisplay() {
+    const ttsValue = $("#ttsToggleValue");
+    if (ttsValue) {
+      ttsValue.textContent = settings.ttsEnabled ? "On" : "Off";
+    }
+  }
+
+  function readInstructions() {
+    // Create a comprehensive instruction text
+    const instructions = `
+      Welcome to Ben's Keyboard. Here are the instructions for using this keyboard.
+      
+      Navigation controls:
+      Spacebar short press will advance forward through rows and buttons.
+      Spacebar long hold will move backward through rows and buttons until released.
+      
+      Selection controls:
+      Return key short press will select the highlighted item.
+      Return key long press in button mode will return you to row selection mode.
+      Return key long hold in row selection mode will jump directly to predictive text.
+      
+      The keyboard has several rows:
+      First is the text bar where your typed text appears. Click or select it to hear your text read aloud.
+      Second is the predictive text row with word suggestions.
+      Third is the controls row with space, delete, clear, settings, and exit.
+      Then letter rows A through Z and number rows 0 through 9.
+      
+      Tips:
+      Saying the same text three times will save those words to your predictions for faster typing later.
+      You can change themes, scan speed, voice, and highlight colors in settings.
+      The TTS toggle controls whether items are read aloud as you navigate.
+      
+      Press return to continue using the keyboard.
+    `;
+    
+    // Use a special TTS call that bypasses the ttsEnabled setting
+    if (ttsEngine) {
+      ttsEngine.cancel();
+      const utterance = new SpeechSynthesisUtterance(instructions);
+      utterance.rate = 0.9; // Slightly slower for instructions
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
+        utterance.voice = englishVoices[currentVoiceIndex];
+      }
+      
+      ttsEngine.speak(utterance);
     }
   }
 
@@ -1002,7 +1127,65 @@
   textBar.addEventListener("click", () => {
     const text = buffer.replace(/\|/g, "").trim();
     if (text) {
-      speak(text);
+      // For text bar, always allow TTS regardless of the setting
+      // This allows users to hear their text when clicking the text bar
+      if (ttsEngine) {
+        ttsEngine.cancel();
+        
+        // Process text for better TTS pronunciation (copy the processing from speak function)
+        let processedText = text;
+        const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
+                               'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
+                               'MY', 'AN', 'AM', 'US', 'OK', 'HI', 'OH', 'AH', 'HA'];
+        
+        processedText = text.split(' ').map(fullWord => {
+          if (fullWord.includes("'")) {
+            const parts = fullWord.split("'");
+            const processedParts = parts.map((part, index) => {
+              if (!part) return '';
+              if (part.length === 2 && twoLetterWords.includes(part.toUpperCase())) {
+                return part.toLowerCase();
+              }
+              else if (part === part.toUpperCase() && /^[A-Z]+$/.test(part)) {
+                return part.toLowerCase();
+              }
+              else if (part.length === 1 && /^[A-Z]$/.test(part)) {
+                return part;
+              }
+              else {
+                return part.toLowerCase();
+              }
+            });
+            return processedParts.join("'");
+          }
+          else {
+            if (fullWord.length === 2 && twoLetterWords.includes(fullWord.toUpperCase())) {
+              return fullWord.toLowerCase();
+            }
+            else if (fullWord.length > 2 && fullWord === fullWord.toUpperCase() && /^[A-Z]+$/.test(fullWord)) {
+              return fullWord.toLowerCase();
+            }
+            else if (fullWord.length === 1 && /^[A-Z]$/.test(fullWord)) {
+              return fullWord;
+            }
+            else {
+              return fullWord.toLowerCase();
+            }
+          }
+        }).join(' ');
+        
+        const utterance = new SpeechSynthesisUtterance(processedText);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
+          utterance.voice = englishVoices[currentVoiceIndex];
+        }
+        
+        ttsEngine.speak(utterance);
+      }
+      
       ttsUseCount++;
       console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
       

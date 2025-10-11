@@ -169,16 +169,25 @@ class HybridPredictionSystem {
     
     let context = '';
     let currentWord = '';
+    let lastCompletedWord = '';
     
     if (hasTrailingSpace) {
       context = cleaned;
       currentWord = '';
+      // The last completed word is the last word in the buffer when there's a trailing space
+      if (words.length > 0) {
+        lastCompletedWord = words[words.length - 1];
+      }
     } else {
       currentWord = words[words.length - 1];
       context = words.slice(0, -1).join(' ');
+      // The last completed word is the second-to-last word when actively typing
+      if (words.length > 1) {
+        lastCompletedWord = words[words.length - 2];
+      }
     }
     
-    console.log(`DEBUG: Context: '${context}', Current word: '${currentWord}'`);
+    console.log(`DEBUG: Context: '${context}', Current word: '${currentWord}', Last completed: '${lastCompletedWord}'`);
     
     // TIER 1: N-gram predictions from merged data
     const predictionsNgram = {};
@@ -194,7 +203,10 @@ class HybridPredictionSystem {
         for (const [key, data] of Object.entries(this.mergedData.trigrams || {})) {
           if (key.startsWith(triCtx + ' ')) {
             const nextWord = key.split(' ').pop();
-            if ((!currentWord || nextWord.startsWith(currentWord)) && nextWord.length >= 2) {
+            // Exclude the last completed word unless we're retyping it
+            if ((!currentWord || nextWord.startsWith(currentWord)) && 
+                nextWord.length >= 2 &&
+                (currentWord || nextWord !== lastCompletedWord)) {
               const score = this.calculateScore(data) * 1000000;
               predictionsNgram[nextWord] = (predictionsNgram[nextWord] || 0) + score;
               console.log(`DEBUG: Found trigram match: ${key} -> ${nextWord} (score: ${score})`);
@@ -211,7 +223,10 @@ class HybridPredictionSystem {
         for (const [key, data] of Object.entries(this.mergedData.bigrams || {})) {
           if (key.startsWith(biCtx + ' ')) {
             const nextWord = key.split(' ').pop();
-            if ((!currentWord || nextWord.startsWith(currentWord)) && nextWord.length >= 2) {
+            // Exclude the last completed word unless we're retyping it
+            if ((!currentWord || nextWord.startsWith(currentWord)) && 
+                nextWord.length >= 2 &&
+                (currentWord || nextWord !== lastCompletedWord)) {
               const score = this.calculateScore(data) * 500000;
               predictionsNgram[nextWord] = (predictionsNgram[nextWord] || 0) + score;
               console.log(`DEBUG: Found bigram match: ${key} -> ${nextWord} (score: ${score})`);
@@ -228,6 +243,8 @@ class HybridPredictionSystem {
       
       // First, check USER data with absolute priority
       for (const [word, data] of Object.entries(this.userData.frequent_words || {})) {
+        // Allow showing the word if we're actively typing it (it starts with currentWord)
+        // But exclude it if it exactly matches what we just typed
         if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
           // User words get MASSIVE priority
           const score = 999999999;  // Maximum score for user words
@@ -238,6 +255,7 @@ class HybridPredictionSystem {
       
       // Then check merged data for other completions
       for (const [word, data] of Object.entries(this.mergedData.frequent_words || {})) {
+        // Allow showing the word if we're actively typing it
         if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
           // Only add if not already in predictions (from user data)
           if (!predictionsFreq[word]) {
@@ -256,7 +274,10 @@ class HybridPredictionSystem {
       
       // Sort frequent words by score (frequency + recency)
       const sortedWords = Object.entries(this.mergedData.frequent_words || {})
-        .filter(([word, data]) => word.length >= 2)
+        .filter(([word, data]) => {
+          // Exclude the word we just typed (lastCompletedWord)
+          return word.length >= 2 && word !== lastCompletedWord;
+        })
         .map(([word, data]) => [word, this.calculateScore(data)])
         .sort((a, b) => b[1] - a[1])
         .slice(0, 20);
@@ -300,11 +321,20 @@ class HybridPredictionSystem {
       }
     }
     
+    // Add default words, excluding the last completed word unless we're retyping it
     for (const word of DEFAULT_WORDS) {
       if (finalPredictions.length >= 6) break;
       if (!finalPredictions.includes(word)) {
-        if (!currentWord || word.startsWith(currentWord)) {
-          finalPredictions.push(word);
+        // If we're typing a partial word, only show defaults that match
+        if (currentWord) {
+          if (word.startsWith(currentWord)) {
+            finalPredictions.push(word);
+          }
+        } else {
+          // If we're at a space, exclude the word we just typed
+          if (word !== lastCompletedWord) {
+            finalPredictions.push(word);
+          }
         }
       }
     }
