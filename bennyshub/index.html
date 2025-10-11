@@ -235,6 +235,7 @@
     .benny-logo{
       width: 80px; height: 80px; object-fit: contain;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
+      display: block; /* Ensure it's visible */
     }
     .title {
       font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
@@ -483,8 +484,8 @@
           </div>
         </div>
         <img src="images/BeaminBenny.png" 
-             onerror="console.error('Failed to load:', this.src); this.style.display='none';" 
-             onload="console.log('Image loaded!');"
+             onerror="console.error('Failed to load Benny logo from:', this.src); this.style.border='2px dashed var(--narbe-orange)'; this.alt='[Benny Logo Missing]';" 
+             onload="console.log('Benny logo loaded successfully from:', this.src);"
              alt="Beamin Benny" 
              class="benny-logo" />
       </div>
