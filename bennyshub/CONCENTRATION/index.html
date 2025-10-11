@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Memory Game for Ben — HTML5</title>
+  <style>
+    :root{
+      --bg:#0b2239;
+      --narbe-orange:#ff5c00;
+      --narbe-blue:#5bb0ff;
+      --panel:#1a2332;
+      --text:#e8f0ff;
+      --muted:#b6c6dd;
+      --yellow:#ffd400;
+      --gray:#4a5568;
+      --dark-gray:#2d3748;
+      --green:#48bb78;
+      --magenta:#ed64a6;
+      --purple:#9f7aea;
+      --cyan:#4dc0b5;
+      --red:#fc8181;
+      --radius:18px;
+      --ring:0 0 0 4px rgba(255,212,0,.65), 0 10px 25px rgba(0,0,0,.35);
+    }
+    html,body{height:100%}
+    body{
+      margin:0; 
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,92,0,.2), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(91,176,255,.2), transparent),
+                  linear-gradient(180deg, #0a1929 0%, #1a2332 100%); 
+      color:var(--text); 
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"; 
+      overflow:hidden
+    }
+    .app{position:fixed; inset:0; display:flex; flex-direction:column;}
+    .topbar{
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      background:rgba(0,0,0,.2); 
+      border-bottom:2px solid rgba(91,176,255,.2);
+      color:#e8f0ff; 
+      padding:.75rem 1rem;
+    }
+    .topbar-title{
+      font-weight:800; 
+      font-size:20px;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip:text; 
+      background-clip:text; 
+      color:transparent;
+      text-shadow: 0 2px 10px rgba(91,176,255,.3);
+    }
+    .screen{flex:1; display:flex; align-items:center; justify-content:center; padding:1rem;}
+    .center{
+      width:min(1400px,96vw); 
+      min-height:70vh; 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      justify-content:center;
+    }
+    .title{
+      font-family:"Arial Black", Impact, system-ui; 
+      font-size:clamp(2.5rem,6vw,4.5rem); 
+      margin:.5rem 0 .5rem; 
+      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+      background-size: 300% 100%;
+      animation: gradient 3s ease infinite;
+      -webkit-background-clip:text; 
+      background-clip:text; 
+      color:transparent; 
+      letter-spacing:.05em;
+      text-shadow: 0 4px 20px rgba(91,176,255,.4);
+    }
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .instructions {
+      background: linear-gradient(135deg, rgba(91,176,255,.1), rgba(255,92,0,.1));
+      border: 2px solid rgba(91,176,255,.3);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin: 1rem 0 1.5rem;
+      max-width: 600px;
+      cursor: pointer;
+      transition: all .3s ease;
+    }
+    .instructions:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(91,176,255,.2);
+      border-color: rgba(91,176,255,.5);
+    }
+    .instructions.scan {
+      border-color: var(--yellow);
+      background: linear-gradient(135deg, rgba(255,212,0,.2), rgba(255,140,0,.2));
+      box-shadow: 0 0 30px rgba(255,212,0,.4);
+    }
+    .instructions h3 {
+      color: var(--narbe-blue);
+      margin: 0 0 .75rem;
+      font-size: 1.2rem;
+    }
+    .instructions p {
+      color: var(--text);
+      line-height: 1.6;
+      margin: .5rem 0;
+      font-size: .95rem;
+    }
+
+    .btn{
+      appearance:none; 
+      border:2px solid rgba(91,176,255,.3); 
+      background: linear-gradient(135deg, rgba(91,176,255,.15), rgba(255,92,0,.15)); 
+      color:white; 
+      padding:1rem 2.5rem; 
+      border-radius:var(--radius); 
+      font-size:clamp(1rem,2.2vw,1.3rem); 
+      font-weight: 600;
+      margin:.5rem 0; 
+      cursor:pointer;
+      transition: all .3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn:hover{
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 14px 34px rgba(91,176,255,.3);
+      background: linear-gradient(135deg, rgba(91,176,255,.25), rgba(255,92,0,.25));
+      border-color: rgba(91,176,255,.5);
+    }
+    .btn.scan{
+      background: linear-gradient(135deg, var(--yellow), #ffab00); 
+      color:#0b2239; 
+      box-shadow:var(--ring);
+      border-color: rgba(255,212,0,.5);
+      animation: pulse 1.5s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .score-panel{
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      align-items: center;
+      margin-bottom:1rem; 
+      background: linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.1)); 
+      padding:.75rem 1.5rem; 
+      border-radius:16px;
+      border:2px solid rgba(91,176,255,.2);
+      box-shadow: inset 0 2px 10px rgba(0,0,0,.3);
+    }
+    .score-item {
+      text-align: center;
+    }
+    .score-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .score-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip:text; 
+      background-clip:text; 
+      color:transparent;
+    }
+
+    .grid{
+      display:grid; 
+      gap:10px; 
+      padding:16px;
+      background: linear-gradient(135deg, rgba(91,176,255,.05), rgba(255,92,0,.05));
+      border-radius:var(--radius);
+      border: 2px solid rgba(91,176,255,.2);
+      box-shadow: 0 10px 40px rgba(0,0,0,.3), inset 0 2px 10px rgba(91,176,255,.1);
+    }
+    .cell-wrap{
+      position:relative; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      background:transparent;
+    }
+    .card{
+      width:100%; 
+      height:100%; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-family:"Segoe UI Emoji", "Apple Color Emoji", system-ui; 
+      background: linear-gradient(135deg, #2d3748, #1a202c); 
+      color:transparent; 
+      border:2px solid rgba(91,176,255,.2);
+      border-radius:14px;
+      cursor:pointer;
+      transition: all .3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(91,176,255,.1), transparent);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+    .card:hover:not(.inactive):not(.revealed):not(.cooldown){
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(91,176,255,.2);
+      border-color: rgba(91,176,255,.4);
+    }
+    .card:hover::before {
+      opacity: 1;
+    }
+    .card.scan{
+      background: linear-gradient(135deg, var(--yellow), #ffab00)!important; 
+      outline:none; 
+      box-shadow: 0 0 30px rgba(255,212,0,.5), 0 8px 20px rgba(0,0,0,.3);
+      border-color: rgba(255,212,0,.6);
+      transform: scale(1.08);
+      animation: glow 1s ease infinite alternate;
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 20px rgba(255,212,0,.4), 0 8px 20px rgba(0,0,0,.3); }
+      to { box-shadow: 0 0 35px rgba(255,212,0,.6), 0 8px 20px rgba(0,0,0,.3); }
+    }
+    .card.revealed {
+      animation: flip .5s ease;
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      border-color: rgba(91,176,255,.4);
+      color: #1a202c !important;
+    }
+    .card.matched {
+      color: #0b2239 !important;
+    }
+    @keyframes flip {
+      0% { transform: rotateY(0deg); }
+      50% { transform: rotateY(90deg); }
+      100% { transform: rotateY(0deg); }
+    }
+    .card.cooldown {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .inactive{
+      background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+      cursor: default;
+      opacity: 0.2;
+      border-color: rgba(255,255,255,.05);
+    }
+
+    .pause-overlay{
+      position:absolute; 
+      inset:0; 
+      background:rgba(0,0,0,.9); 
+      backdrop-filter: blur(10px);
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+    }
+    .pause-card{
+      background: linear-gradient(135deg, rgba(91,176,255,.15), rgba(255,92,0,.15));
+      border: 2px solid rgba(91,176,255,.3);
+      color:white; 
+      padding:2.5rem; 
+      border-radius:var(--radius); 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      min-width:min(90vw,520px);
+      box-shadow: 0 20px 60px rgba(91,176,255,.2);
+    }
+    .pause-title{
+      font-size:2.5rem; 
+      margin-bottom:1.5rem;
+      background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
+      -webkit-background-clip:text; 
+      background-clip:text; 
+      color:transparent;
+      font-weight: 800;
+    }
+
+    .result{
+      font-family:"Arial Black"; 
+      font-size:clamp(1.5rem,3.5vw,2.2rem); 
+      color:#0b2239; 
+      background: linear-gradient(135deg, #ffd400, #ffab00); 
+      padding:1rem 2rem; 
+      border-radius:var(--radius);
+      box-shadow: 0 10px 30px rgba(255,212,0,.3);
+      text-align: center;
+      line-height: 1.4;
+    }
+    .result-score {
+      font-size: 0.8em;
+      margin-top: 0.5rem;
+      color: #1a2332;
+    }
+
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="topbar">
+      <div class="topbar-title">✨ Concentration Memory Game ✨</div>
+    </div>
+    <div class="screen" id="screen"></div>
+  </div>
+
+  <script>
+  // Web Speech TTS - Modified to cancel previous speech
+  const speak = (text) => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    
+    // Cancel any ongoing speech immediately
+    synth.cancel();
+    
+    // Speak the new text
+    const utterance = new SpeechSynthesisUtterance(String(text));
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    synth.speak(utterance);
+  };
+
+  const $ = s => document.querySelector(s);
+  const el = (t,c,txt)=>{ const e=document.createElement(t); if(c) e.className=c; if(txt!=null) e.textContent=txt; return e; };
+
+  // Unique symbol-object pairs - correct names without color descriptions
+  const SYMBOLS = [
+    ["🍎","Apple"],["🌊","Ocean"],["🌲","Tree"],["🍇","Grapes"],
+    ["⭐","Star"],["☀️","Sun"],["🧊","Ice"],["🎃","Pumpkin"],
+    ["🌑","Moon"],["🍓","Strawberry"],["⛰️","Mountain"],["🥥","Coconut"],
+    ["☁️","Cloud"],["🍋","Lemon"],["🔥","Fire"],["🌺","Flower"],
+    ["🦋","Butterfly"],["🥝","Kiwi"],["👑","Crown"],["🌽","Corn"],
+    ["💎","Diamond"],["🍊","Orange"],["🌸","Blossom"],["🍄","Mushroom"],
+    ["🌙","Crescent"],["🍀","Clover"],["🏀","Basketball"],["🎨","Palette"]
+  ];
+  
+  const NAME_MAP = {
+    "🍎":"Apple","🌊":"Ocean","🌲":"Tree","🍇":"Grapes",
+    "⭐":"Star","☀️":"Sun","🧊":"Ice","🎃":"Pumpkin",
+    "🌑":"Moon","🍓":"Strawberry","⛰️":"Mountain","🥥":"Coconut",
+    "☁️":"Cloud","🍋":"Lemon","🔥":"Fire","🌺":"Flower",
+    "🦋":"Butterfly","🥝":"Kiwi","👑":"Crown","🌽":"Corn",
+    "💎":"Diamond","🍊":"Orange","🌸":"Blossom","🍄":"Mushroom",
+    "🌙":"Crescent","🍀":"Clover","🏀":"Basketball","🎨":"Palette"
+  };
+
+  const State = {
+    mode: 'main_menu', // main_menu, game, pause
+    modeType: 'single', // single, two_casual, two_competitive
+    currentPlayer: 1,
+    matchColors: {1: '#48bb78', 2: '#ed64a6'},
+
+    // competitive
+    currentDifficulty: 'easy',
+    points: {1:0, 2:0},
+    difficultyPoints: {easy:1, medium:2, hard:3},
+    winThreshold: 0,
+    pairsFound: {1:0, 2:0},
+
+    // grid
+    rows: 0, cols: 0,
+    cells: new Map(),
+    inactiveIndex: null,
+    firstSel: null,
+    busy: false,
+    matchedPairs: 0,
+    startTime: 0,
+    moveCount: 0,
+    cooldownActive: false,
+
+    // scanning
+    scanMode: 'row',
+    currentRow: 0, currentCol: 0,
+    menuButtons: [], menuScanIndex: 0,
+    instructionsFocused: false,
+    pauseButtons: [], pauseScanIndex: 0, pauseScanned: false,
+
+    // timing
+    spaceDebounce: 1.0,
+    lastSpaceScanTime: 0,
+    spaceHeld:false, spaceStart:0, spaceBackward:false, spaceTimer:null,
+    returnHeld:false, returnStart:0, returnTimer:null, pauseTriggered:false,
+    returnDebounce: 1.0, lastReturnTime: 0,
+  };
+
+  // UI helpers
+  function buttonWithTTS(label, onClick){ 
+    const b = el('button','btn'); 
+    b.textContent = label; 
+    b.onclick = onClick; 
+    b.addEventListener('mouseenter',()=>{
+      window.speechSynthesis.cancel(); // Cancel before speaking
+      speak(label);
+    }); 
+    return b; 
+  }
+  function key(r,c){ return r+','+c; }
+
+  // Menus
+  function renderPlayerModeMenu(){
+    State.mode = 'main_menu';
+    const screen = $('#screen'); screen.innerHTML='';
+    const center = el('div','center');
+    const title = el('div','title','🧠 CONCENTRATION 🧠');
+    center.appendChild(title);
+    
+    // Instructions box
+    const instructions = el('div', 'instructions');
+    instructions.innerHTML = `
+      <h3>How to Play</h3>
+      <p>🎯 Find matching pairs of cards by flipping them over</p>
+      <p>⏱️ Complete the game in the fewest moves and fastest time</p>
+      <p>🎮 Use spacebar to scan, return to select</p>
+      <p>⏸️ Hold return for 3 seconds to pause</p>
+      <p>🏆 Competitive: First to 5 points wins (Easy=1pt, Medium=2pts, Hard=3pts)</p>
+    `;
+    instructions.onclick = () => {
+      speak("How to play Concentration. Find matching pairs of cards by flipping them over. Complete the game in the fewest moves and fastest time for the best score. Use spacebar to scan through options. Press return to select. Hold return for 3 seconds to pause the game. In competitive mode, first player to reach 5 points wins. Easy difficulty gives 1 point, Medium gives 2 points, Hard gives 3 points.");
+    };
+    instructions.addEventListener('mouseenter', () => speak("Instructions"));
+    center.appendChild(instructions);
+    
+    State.menuButtons = [
+      buttonWithTTS('Single Player', ()=> selectMode('single')),
+      buttonWithTTS('Two Player Casual', ()=> selectMode('two_casual')),
+      buttonWithTTS('Two Player Competitive', ()=> selectMode('two_competitive')),
+      buttonWithTTS('Exit', ()=> exitApp())
+    ];
+    State.menuScanIndex = 0;
+    State.instructionsFocused = false;
+    updateMenuScan();
+    center.append(...State.menuButtons);
+    screen.appendChild(center);
+  }
+  
+  function updateMenuScan(){ 
+    const instructions = document.querySelector('.instructions');
+    if (instructions) {
+      instructions.classList.toggle('scan', State.instructionsFocused);
+    }
+    State.menuButtons.forEach((b,i)=> b.classList.toggle('scan', !State.instructionsFocused && i===State.menuScanIndex)); 
+    
+    // Cancel previous speech before speaking new item
+    window.speechSynthesis.cancel();
+    
+    if (State.instructionsFocused) {
+      speak("Instructions. Press return to hear them.");
+    } else {
+      speak(State.menuButtons[State.menuScanIndex].textContent);
+    }
+  }
+  
+  function menuScanForward(){ 
+    if (!State.instructionsFocused && State.menuScanIndex === State.menuButtons.length - 1) {
+      State.instructionsFocused = true;
+    } else if (State.instructionsFocused) {
+      State.instructionsFocused = false;
+      State.menuScanIndex = 0;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex+1)%State.menuButtons.length;
+    }
+    updateMenuScan();
+  }
+  
+  function menuScanBackward(){ 
+    if (State.instructionsFocused) {
+      State.instructionsFocused = false;
+      State.menuScanIndex = State.menuButtons.length - 1;
+    } else if (State.menuScanIndex === 0) {
+      State.instructionsFocused = true;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex-1+State.menuButtons.length)%State.menuButtons.length;
+    }
+    updateMenuScan();
+  }
+
+  function selectMode(mode){
+    State.modeType = mode;
+    if(mode==='two_competitive'){
+      State.currentDifficulty = 'easy';
+      State.points = {1:0,2:0};
+      State.currentPlayer = 1;
+      speak("Competitive mode. First to five points on easy. Player One's turn.");
+      startGame('easy');
+    } else {
+      renderDifficultyMenu();
+    }
+  }
+
+  function renderDifficultyMenu(){
+    State.mode = 'main_menu';
+    const screen = $('#screen'); screen.innerHTML='';
+    const center = el('div','center');
+    const title = el('div','title','SELECT DIFFICULTY');
+    center.appendChild(title);
+    State.menuButtons = [
+      buttonWithTTS('Easy', ()=> startGame('easy')),
+      buttonWithTTS('Medium', ()=> startGame('medium')),
+      buttonWithTTS('Hard', ()=> startGame('hard')),
+      buttonWithTTS('Back', ()=> renderPlayerModeMenu())
+    ];
+    State.menuScanIndex = 0;
+    State.instructionsFocused = false;
+    updateMenuScan();
+    center.append(...State.menuButtons);
+    $('#screen').appendChild(center);
+  }
+
+  // Game
+  function startGame(difficulty){
+    State.mode = 'game'; State.scanMode='row';
+
+    // rows and cols per difficulty
+    const dims = { easy:[4,4], medium:[4,5], hard:[6,5] }[difficulty];
+    State.rows = dims[0]; State.cols = dims[1];
+    State.currentDifficulty = difficulty;
+
+    State.cells = new Map(); State.firstSel = null; State.busy=false; State.matchedPairs=0;
+    State.pairsFound = {1:0,2:0};
+    State.moveCount = 0;
+    State.cooldownActive = false;
+
+    const totalCells = State.rows * State.cols;
+    let inactive = null; let usable = totalCells;
+    if(totalCells % 2 === 1){ inactive = Math.floor(Math.random()*totalCells); usable -= 1; }
+    State.inactiveIndex = inactive;
+
+    const pairs = Math.floor(usable/2);
+    const shuffled = [...SYMBOLS].sort(()=>Math.random()-0.5).slice(0,pairs);
+    const deck = [...shuffled, ...shuffled].sort(()=>Math.random()-0.5);
+
+    // compute threshold for competitive majority
+    if(State.modeType==='two_competitive'){
+      const numPairs = Math.floor(usable/2);
+      State.winThreshold = Math.floor(numPairs/2) + 1;
+    }
+
+    const screen = $('#screen'); screen.innerHTML='';
+    const center = el('div','center');
+
+    // Score panel
+    const scorePanel = el('div', 'score-panel');
+    if(State.modeType==='two_competitive'){
+      const p1Score = el('div', 'score-item');
+      p1Score.innerHTML = `<div class="score-label">Player 1</div><div class="score-value">${State.points[1]}</div>`;
+      const p2Score = el('div', 'score-item');
+      p2Score.innerHTML = `<div class="score-label">Player 2</div><div class="score-value">${State.points[2]}</div>`;
+      scorePanel.append(p1Score, p2Score);
+    } else if(State.modeType==='single') {
+      const movesDiv = el('div', 'score-item');
+      movesDiv.innerHTML = `<div class="score-label">Moves</div><div class="score-value" id="move-counter">0</div>`;
+      const timeDiv = el('div', 'score-item');
+      timeDiv.innerHTML = `<div class="score-label">Time</div><div class="score-value" id="time-counter">0:00</div>`;
+      scorePanel.append(movesDiv, timeDiv);
+    }
+    if(scorePanel.children.length > 0) center.appendChild(scorePanel);
+
+    // grid sizing
+    const vw = Math.min(window.innerWidth, 1400);
+    const vh = Math.min(window.innerHeight*0.85, 900);
+    const cw = Math.floor((vw - 100) / State.cols);
+    const ch = Math.floor((vh - 150) / State.rows);
+    const cellSize = Math.min(cw, ch, 120);
+
+    const grid = el('div','grid');
+    grid.style.gridTemplateColumns = `repeat(${State.cols}, ${cellSize}px)`;
+    grid.style.gridTemplateRows = `repeat(${State.rows}, ${cellSize}px)`;
+
+    let idx = 0;
+    for(let r=0;r<State.rows;r++){
+      for(let c=0;c<State.cols;c++){
+        const wrap = el('div','cell-wrap');
+        const lin = r*State.cols + c;
+        if(inactive!==null && lin===inactive){
+          const filler = el('div','card inactive','');
+          wrap.appendChild(filler);
+        } else {
+          const [sym,color] = deck[idx++];
+          const card = el('button','card');
+          card.dataset.r=r; card.dataset.c=c;
+          card.onclick = ()=> selectCard(r,c);
+          wrap.appendChild(card);
+          State.cells.set(key(r,c), {value:[sym,color], revealed:false, matched:false, matchedBy:null, el:card});
+        }
+        grid.appendChild(wrap);
+      }
+    }
+
+    center.appendChild(grid);
+    screen.appendChild(center);
+
+    if(State.modeType.startsWith('two')) speak(`Player ${State.currentPlayer}'s turn`);
+
+    State.currentRow=0; State.currentCol=0; updateScanHighlight();
+    State.startTime = performance.now();
+    
+    // Start timer update for single player
+    if(State.modeType === 'single') {
+      updateTimer();
+    }
+  }
+
+  function updateTimer() {
+    if(State.mode !== 'game' || State.modeType !== 'single') return;
+    const elapsed = Math.floor((performance.now() - State.startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const timeEl = $('#time-counter');
+    if(timeEl) timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    requestAnimationFrame(updateTimer);
+  }
+
+  function updateScanHighlight(){
+    State.cells.forEach((info, k)=>{
+      const [r,c] = k.split(',').map(Number);
+      const active = (State.scanMode==='row' && r===State.currentRow) || (State.scanMode==='col' && r===State.currentRow && c===State.currentCol);
+      info.el.classList.toggle('scan', active);
+      
+      // Update matched card backgrounds
+      if(info.matched) {
+        const color = info.matchedBy===1? State.matchColors[1] : info.matchedBy===2? State.matchColors[2] : '#48bb78';
+        info.el.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
+        info.el.style.borderColor = color;
+        info.el.style.color = '#0b2239';
+      }
+      
+      // set face
+      if(info.revealed || info.matched){
+        info.el.classList.add('revealed');
+        const size = Math.floor(Math.min(info.el.clientWidth, info.el.clientHeight) * 0.5);
+        info.el.textContent = info.value[0];
+        info.el.style.fontSize = size+'px';
+        if (!info.matched) {
+          info.el.style.color = '#1a202c';
+        }
+      } else {
+        info.el.classList.remove('revealed');
+        info.el.textContent = '';
+        info.el.style.color = '';
+      }
+    });
+  }
+
+  // Card logic with cooldown
+  function selectCard(r,c){
+    if(State.busy || State.cooldownActive) return;
+    const info = State.cells.get(key(r,c)); if(!info || info.matched || info.revealed) return;
+
+    // Add move count for single player
+    if(State.modeType === 'single') {
+      State.moveCount++;
+      const moveEl = $('#move-counter');
+      if(moveEl) moveEl.textContent = State.moveCount;
+    }
+
+    // reveal with cooldown (reduced to 1 second)
+    State.cooldownActive = true;
+    State.cells.forEach(cell => cell.el.classList.add('cooldown'));
+    setTimeout(() => {
+      State.cooldownActive = false;
+      State.cells.forEach(cell => cell.el.classList.remove('cooldown'));
+    }, 1000); // Changed from 2000 to 1000 (1 second)
+
+    info.revealed = true;
+    info.el.classList.add('revealed');
+    const size = Math.floor(Math.min(info.el.clientWidth, info.el.clientHeight) * 0.5);
+    info.el.textContent = info.value[0];
+    info.el.style.fontSize = size+'px';
+    info.el.style.color = '#1a202c';
+    speak(NAME_MAP[info.value[0]] || info.value[1]);
+
+    if(State.firstSel===null){
+      State.firstSel = [r,c];
+    } else {
+      const [fr,fc] = State.firstSel;
+      const first = State.cells.get(key(fr,fc));
+      if(first && first.value[0]===info.value[0] && first.value[1]===info.value[1]){
+        // match
+        first.matched = true; info.matched = true;
+        if(State.modeType!=='single'){
+          first.matchedBy = State.currentPlayer; info.matchedBy = State.currentPlayer;
+        }
+        State.matchedPairs += 1;
+
+        if(State.modeType==='two_competitive'){
+          State.pairsFound[State.currentPlayer] += 1;
+          if(State.pairsFound[State.currentPlayer] >= State.winThreshold){
+            return handleRoundEnd(State.currentPlayer);
+          }
+        }
+
+        setTimeout(()=> speak("That's a match! Great job!"), 100);
+        tintMatched(fr,fc); tintMatched(r,c);
+
+        if(State.modeType.startsWith('two')) speak(`Player ${State.currentPlayer}'s turn`);
+
+        const totalPairs = Math.floor((State.rows*State.cols - (State.inactiveIndex===null?0:1))/2);
+        if(State.matchedPairs === totalPairs){
+          if(State.modeType==='two_competitive') return handleRoundEnd(State.currentPlayer);
+          const elapsed = (performance.now() - State.startTime)/1000;
+          return showWinMessage(elapsed);
+        }
+      } else {
+        // mismatch
+        State.busy = true;
+        setTimeout(()=> hideCards([fr,fc],[r,c]), 1500);
+        if(State.modeType.startsWith('two')){
+          State.currentPlayer = (State.currentPlayer===1?2:1);
+          setTimeout(()=> speak(`Player ${State.currentPlayer}'s turn`), 1600);
+        }
+      }
+      State.firstSel = null;
+    }
+    updateScanHighlight();
+  }
+
+  function tintMatched(r,c){
+    const info = State.cells.get(key(r,c)); if(!info) return;
+    const color = info.matchedBy===1? State.matchColors[1] : info.matchedBy===2? State.matchColors[2] : '#48bb78';
+    info.el.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
+    info.el.style.borderColor = color;
+    info.el.style.color = '#0b2239';
+    info.el.style.transform = 'scale(0.95)';
+  }
+
+  function hideCards(p1,p2){
+    [p1,p2].forEach(([r,c])=>{
+      const info = State.cells.get(key(r,c)); if(!info) return;
+      info.revealed = false; 
+      info.el.classList.remove('revealed');
+      info.el.textContent='';
+      info.el.style.background = '';
+      info.el.style.color = '';
+    });
+    State.busy = false;
+  }
+
+  // Pause
+  let pauseLayer = null;
+  function showPause(){
+    if(State.mode!=='game') return;
+    State.mode='pause'; State.pauseScanned=false; State.pauseScanIndex=0;
+    const screen=$('#screen');
+    pauseLayer = el('div','pause-overlay');
+    const card = el('div','pause-card');
+    const h = el('div','pause-title','Pause Menu');
+    card.appendChild(h);
+    State.pauseButtons = [
+      buttonWithTTS('Continue Game', continueGame),
+      buttonWithTTS('Return to Menu', renderPlayerModeMenu),
+      buttonWithTTS('Exit', exitApp)
+    ];
+    card.append(...State.pauseButtons);
+    pauseLayer.appendChild(card); screen.appendChild(pauseLayer);
+  }
+  function continueGame(){ if(pauseLayer){ pauseLayer.remove(); pauseLayer=null; } State.mode='game'; }
+  function updatePauseScan(){ 
+    State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.pauseScanIndex)); 
+    
+    // Cancel previous speech before speaking new item
+    window.speechSynthesis.cancel();
+    speak(State.pauseButtons[State.pauseScanIndex].textContent); 
+  }
+  function pauseScanForward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; } updatePauseScan(); }
+  function pauseScanBackward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length; } updatePauseScan(); }
+
+  // Win with scoring
+  function showWinMessage(elapsed){
+    const screen=$('#screen'); screen.innerHTML='';
+    const center=el('div','center');
+    
+    // Calculate score based on moves and time
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = Math.floor(elapsed % 60);
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Score calculation: lower moves and faster time = higher score
+    const optimalMoves = State.rows * State.cols / 2; // Best possible
+    const moveScore = Math.max(0, 1000 - (State.moveCount - optimalMoves) * 20);
+    const timeScore = Math.max(0, 1000 - Math.floor(elapsed * 2));
+    const totalScore = moveScore + timeScore;
+    
+    const msg = `🎉 Congratulations! You Won! 🎉`;
+    const scoreMsg = `Time: ${timeString} | Moves: ${State.moveCount} | Score: ${totalScore}`;
+    
+    speak(`Congratulations! You won in ${timeString} with ${State.moveCount} moves. Your score is ${totalScore} points!`);
+    
+    const res=el('div','result'); 
+    res.innerHTML = `${msg}<div class="result-score">${scoreMsg}</div>`;
+    res.style.marginBottom='1rem';
+    center.appendChild(res);
+    const back = buttonWithTTS('Back to Menu', renderPlayerModeMenu); 
+    center.appendChild(back);
+    screen.appendChild(center);
+  }
+
+  // Competitive
+  function handleRoundEnd(winner){
+    const pts = State.difficultyPoints[State.currentDifficulty];
+    State.points[winner] += pts;
+    speak(`Player ${winner} gets ${pts} ${pts>1?'points':'point'} for a ${State.currentDifficulty} win. Score is ${State.points[1]} to ${State.points[2]}.`);
+
+    if(State.points[winner] >= 5){ speak(`Player ${winner} wins the match!`); return resetMatch(); }
+
+    // cycle difficulty
+    State.currentDifficulty = State.currentDifficulty==='easy' ? 'medium' : State.currentDifficulty==='medium' ? 'hard' : 'easy';
+    State.currentPlayer = winner; // winner starts next
+    speak(`Next game on ${State.currentDifficulty}. Player ${winner} starts.`);
+    startGame(State.currentDifficulty);
+  }
+  function resetMatch(){ State.points={1:0,2:0}; State.currentDifficulty='easy'; renderPlayerModeMenu(); }
+
+  // Key handling
+  function onSpaceDown(){ if(!['game','main_menu','pause'].includes(State.mode)) return; if(State.spaceHeld) return; State.spaceHeld=true; State.spaceStart=performance.now(); State.spaceBackward=false; if(State.spaceTimer) clearTimeout(State.spaceTimer); State.spaceTimer=setTimeout(()=>{ if(State.spaceHeld){ State.spaceBackward=true; spaceBackwardLoop(); } },3000); }
+  function spaceBackwardLoop(){ if(!State.spaceHeld) return; if(State.mode==='game') moveScanBackward(); else if(State.mode==='main_menu') menuScanBackward(); else pauseScanBackward(); State.spaceTimer=setTimeout(spaceBackwardLoop,2000); }
+  function onSpaceUp(){ if(!['game','main_menu','pause'].includes(State.mode)) return; const dur = State.spaceStart?(performance.now()-State.spaceStart)/1000:0; if(State.spaceTimer){ clearTimeout(State.spaceTimer); State.spaceTimer=null; } const back=State.spaceBackward; State.spaceHeld=false; State.spaceBackward=false; if(!back && dur<3){ if(State.mode==='game') moveScanForward(); else if(State.mode==='main_menu') moveMenuForwardDebounced(); else pauseScanForward(); } }
+  function moveMenuForwardDebounced(){ const now=performance.now()/1000; if(now-State.lastSpaceScanTime<State.spaceDebounce) return; State.lastSpaceScanTime=now; menuScanForward(); }
+
+  function onReturnDown(){ if(State.mode!=='game') return; if(State.returnHeld) return; State.returnHeld=true; State.returnStart=performance.now(); State.pauseTriggered=false; if(State.returnTimer) clearTimeout(State.returnTimer); State.returnTimer=setTimeout(()=>{ if(State.returnHeld){ State.pauseTriggered=true; showPause(); } },3000); }
+  function onReturnUp(){ if(State.returnTimer){ clearTimeout(State.returnTimer); State.returnTimer=null; } const now=performance.now()/1000; State.returnHeld=false; if(now-State.lastReturnTime < State.returnDebounce) return; State.lastReturnTime=now;
+    if(State.mode==='main_menu'){ 
+      if(State.instructionsFocused) {
+        const instructions = document.querySelector('.instructions');
+        if(instructions) instructions.click();
+      } else {
+        State.menuButtons[State.menuScanIndex]?.click();
+      }
+      return; 
+    }
+    if(State.mode==='pause'){ if(State.pauseScanned){ State.pauseButtons[State.pauseScanIndex]?.click(); } return; }
+    if(State.mode==='game'){
+      if(State.pauseTriggered){ State.pauseTriggered=false; return; }
+      if(State.scanMode==='row'){
+        State.scanMode='col';
+        for(let c=0;c<State.cols;c++){ if(State.cells.has(key(State.currentRow,c))){ State.currentCol=c; break; } }
+      } else {
+        selectCard(State.currentRow, State.currentCol);
+        State.scanMode='row';
+      }
+      updateScanHighlight();
+    }
+  }
+
+  // Game scanning functions - FIXED VERSION
+  function moveScanForward(){
+    const now = performance.now()/1000;
+    if(now - State.lastSpaceScanTime < State.spaceDebounce) return;
+    State.lastSpaceScanTime = now;
+
+    if(State.scanMode==='row'){
+      // Move to next row
+      State.currentRow = (State.currentRow + 1) % State.rows;
+    } else {
+      // Move to next column in current row
+      let startCol = State.currentCol;
+      let found = false;
+      
+      // Try to find the next valid cell in this row
+      for(let i = 1; i <= State.cols; i++){
+        let nextCol = (State.currentCol + i) % State.cols;
+        if(State.cells.has(key(State.currentRow, nextCol))){
+          State.currentCol = nextCol;
+          found = true;
+          
+          // Check if we've looped back to or past the starting column
+          if(nextCol <= startCol) {
+            // We've completed the loop, switch back to row mode
+            State.scanMode = 'row';
+          }
+          break;
+        }
+      }
+      
+      // If no valid cell found (shouldn't happen), switch back to row mode
+      if(!found){
+        State.scanMode = 'row';
+      }
+    }
+    updateScanHighlight();
+  }
+  
+  function moveScanBackward(){
+    if(State.scanMode==='row'){
+      // Move to previous row
+      State.currentRow = (State.currentRow - 1 + State.rows) % State.rows;
+    } else {
+      // Move to previous column in current row
+      let startCol = State.currentCol;
+      let found = false;
+      
+      // Try to find the previous valid cell in this row
+      for(let i = 1; i <= State.cols; i++){
+        let prevCol = (State.currentCol - i + State.cols) % State.cols;
+        if(State.cells.has(key(State.currentRow, prevCol))){
+          State.currentCol = prevCol;
+          found = true;
+          
+          // Check if we've looped back to or past the starting column
+          if(prevCol >= startCol) {
+            // We've completed the loop, switch back to row mode
+            State.scanMode = 'row';
+          }
+          break;
+        }
+      }
+      
+      // If no valid cell found (shouldn't happen), switch back to row mode
+      if(!found){
+        State.scanMode = 'row';
+      }
+    }
+    updateScanHighlight();
+  }
+
+  // Keyboard listeners
+  document.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); onSpaceDown(); } if(e.code==='Enter'){ e.preventDefault(); onReturnDown(); } });
+  document.addEventListener('keyup', e=>{ if(e.code==='Space'){ e.preventDefault(); onSpaceUp(); } if(e.code==='Enter'){ e.preventDefault(); onReturnUp(); } });
+
+  // Robust exit helper: communicates with parent to focus back button
+  function exitApp(){
+    try{
+      // Try to message parent window to focus the back button
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'focusBackButton' }, '*');
+      }
+      // Navigate to parent directory (Access-Hub root)
+      location.href = '../index.html';
+    }catch(err){
+      // Fallback: try relative navigation
+      try{
+        window.location.replace('../index.html');
+      }catch(_){
+        // Last resort: go up one level
+        window.location.href = '..';
+      }
+    }
+  }
+
+  // Boot
+  renderPlayerModeMenu();
+  </script>
+</body>
+</html>
