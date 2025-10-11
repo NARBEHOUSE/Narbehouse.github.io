@@ -808,9 +808,21 @@
     res.innerHTML = `${msg}<div class="result-score">${scoreMsg}</div>`;
     res.style.marginBottom='1rem';
     center.appendChild(res);
-    const back = buttonWithTTS('Back to Menu', renderPlayerModeMenu); 
-    center.appendChild(back);
+    
+    // Add "Returning to menu..." message
+    const returnMsg = el('div','result-score');
+    returnMsg.textContent = 'Returning to menu...';
+    returnMsg.style.marginTop = '1rem';
+    returnMsg.style.fontSize = '1.2rem';
+    returnMsg.style.color = 'var(--muted)';
+    center.appendChild(returnMsg);
+    
     screen.appendChild(center);
+    
+    // Automatically return to main menu after 6 seconds
+    setTimeout(() => {
+      renderPlayerModeMenu();
+    }, 6000);
   }
 
   // Competitive
