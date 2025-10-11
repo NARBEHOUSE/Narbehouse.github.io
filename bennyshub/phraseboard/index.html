@@ -716,6 +716,15 @@ function updateHeaderForCurrentView(){
       for (let i = startIdx; i < endIdx; i++) {
         const cat = state.categories[i];
         const btn = createButton(cat.name, '', () => openCategory(cat.name));
+        
+        // Add category image if available
+        if (cat.image) {
+          const img = document.createElement('img');
+          img.src = cat.image;
+          img.alt = '';
+          btn.insertBefore(img, btn.firstChild);
+        }
+        
         btn.style.background = rgbaFromHex(cat.color, 0.2);
         btn.style.borderColor = cat.color;
         const itemsPerPage = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0) - 1;
@@ -1273,6 +1282,7 @@ function updateHeaderForCurrentView(){
         catColor: header.indexOf('categorycolor'),
         tileColor: header.indexOf('tilecolor'),
         tileOrder: header.indexOf('tileorder'),
+        catImage: header.indexOf('categoryimage'), // New field for category images
       };
       const rows = [];
       for (let i = 1; i < lines.length; i++) {
@@ -1287,6 +1297,7 @@ function updateHeaderForCurrentView(){
           categoryColor: cols[idx.catColor] || '#5bb0ff',
           tileColor: cols[idx.tileColor] || '',
           tileOrder: parseInt(cols[idx.tileOrder] || '9999', 10) || 9999,
+          categoryImage: idx.catImage >= 0 ? (cols[idx.catImage] || '') : '', // Handle backwards compatibility
         });
       }
       return rows;
@@ -1317,12 +1328,23 @@ function updateHeaderForCurrentView(){
       const map = new Map();
       rows.forEach(r => {
         if (!map.has(r.category)) {
-          map.set(r.category, { color: r.categoryColor, order: r.categoryOrder, items: [] });
+          map.set(r.category, { 
+            color: r.categoryColor, 
+            order: r.categoryOrder, 
+            image: r.categoryImage || '', // Store category image
+            items: [] 
+          });
         }
         map.get(r.category).items.push(r);
       });
       const cats = Array.from(map.entries())
-        .map(([name, data]) => ({ name, color: data.color, order: data.order, items: data.items.sort((a, b) => a.tileOrder - b.tileOrder) }))
+        .map(([name, data]) => ({ 
+          name, 
+          color: data.color, 
+          order: data.order, 
+          image: data.image, // Include in category object
+          items: data.items.sort((a, b) => a.tileOrder - b.tileOrder) 
+        }))
         .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
       state.categories = cats;
       state.byCat = new Map(cats.map(c => [c.name, c]));

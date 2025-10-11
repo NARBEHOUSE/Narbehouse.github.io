@@ -26,6 +26,8 @@
     .btn.ok { background: var(--ok); }
     .btn.muted { background: var(--muted); }
     .btn.danger { background: var(--danger); }
+    .btn.yellow { background: #eab308; color: #fff; }
+    .btn.orange { background: #ff5c00; color: #fff; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(17,24,39,0.05); }
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1 1 0; }
@@ -34,7 +36,7 @@
     label { font-size: 12px; color: #374151; display: block; margin-bottom: 6px; }
     .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
     .cat { grid-column: span 12; }
-    .cat header { display: grid; grid-template-columns: 80px 1fr 140px 120px 40px 40px 120px; gap: 10px; align-items: end; margin-bottom: 12px; }
+    .cat header { display: grid; grid-template-columns: 80px 1fr 140px 120px auto 40px 40px 40px; gap: 10px; align-items: end; margin-bottom: 12px; }
     .cat header .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
     .swatch { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #0001; cursor: pointer; }
     .collapse-btn {
@@ -238,28 +240,19 @@
 <body>
   <header>
     <h1>🧡 NARBE Phrase Board Builder</h1>
-    <button class="btn" id="newBtn">New</button>
+    <button class="btn yellow" id="newBtn">New</button>
     <input type="file" id="importFile" accept=".csv" class="hidden" />
     <button class="btn secondary" id="importBtn">Import CSV</button>
-    <button class="btn ok" id="exportBtn">Export CSV</button>
+    <button class="btn orange" id="copyBtn">Copy CSV to Clipboard</button>
+    <button class="btn ok" id="downloadBtn">Download CSV</button>
     <button class="btn muted" id="saveLocal">Save to this browser</button>
     <button class="btn danger" id="clearLocal">Clear browser save</button>
   </header>
 
   <main>
-    <div class="card section row">
-      <div class="grow">
-        <label for="boardName">Board name</label>
-        <input id="boardName" type="text" placeholder="e.g., NARBE House Default" />
-      </div>
-      <div>
-        <label>Download</label>
-        <button class="btn ok" id="downloadBtn">Download CSV</button>
-      </div>
-      <div>
-        <label>Copy</label>
-        <button class="btn" id="copyBtn">Copy CSV to Clipboard</button>
-      </div>
+    <div class="card section">
+      <label for="boardName">Board name</label>
+      <input id="boardName" type="text" placeholder="e.g., NARBE House Default" style="width: 100%;" />
     </div>
 
     <div id="categories"></div>
@@ -271,7 +264,7 @@
     <div class="card section">
       <details>
         <summary>ℹ️ CSV format this builder exports</summary>
-        <p class="nowrap">Header: <strong>Category,CategoryOrder,Display,Speak,Image,CategoryColor,TileColor,TileOrder</strong></p>
+        <p class="nowrap">Header: <strong>Category,CategoryOrder,Display,Speak,Image,CategoryColor,TileColor,TileOrder,CategoryImage</strong></p>
         <p>Runner can ignore unknown columns and still work. Colors are hex values.</p>
       </details>
     </div>
@@ -291,16 +284,21 @@
           <input class="cat-name" type="text" placeholder="e.g., Basic" />
         </div>
         <div>
+          <label>Category image</label>
+          <div class="row">
+            <img class="cat-img-thumb img-thumb" src="" alt="" style="width: 36px; height: 36px;" />
+            <button class="btn cat-image-btn" style="padding: 6px 10px; font-size: 12px;">Image</button>
+          </div>
+          <input class="cat-image" type="hidden" />
+        </div>
+        <div>
           <label>Category color</label>
           <div class="row">
             <input class="cat-color" type="color" value="#5bb0ff" />
             <button class="btn color-btn cat-color-btn">Color</button>
           </div>
         </div>
-        <div>
-          <label>&nbsp;</label>
-          <button class="btn add-phrase">+ Add Phrase</button>
-        </div>
+        <div style="flex: 1;"></div>
         <div>
           <label>&nbsp;</label>
           <div class="collapse-btn" title="Collapse/Expand">▼</div>
@@ -311,7 +309,7 @@
         </div>
         <div>
           <label>&nbsp;</label>
-          <button class="btn danger remove-cat">Remove</button>
+          <button class="btn danger remove-cat" style="padding: 8px 12px; font-size: 20px;" title="Remove category">✕</button>
         </div>
       </header>
 
@@ -330,6 +328,9 @@
           </thead>
           <tbody class="rows"></tbody>
         </table>
+        <div style="text-align: center; margin-top: 15px;">
+          <button class="btn add-phrase" style="padding: 12px 24px;">+ Add Phrase</button>
+        </div>
       </div>
     </section>
   </template>
@@ -351,9 +352,9 @@
       <td><input class="display" type="text" placeholder="Button label" /></td>
       <td><input class="speak" type="text" placeholder="What to speak, insert, or link to" /></td>
       <td>
-        <div class="row">
-          <img class="img-thumb" src="" alt="" />
-          <input class="image" type="text" placeholder="Image URL (optional)" />
+        <div class="row" style="gap: 8px;">
+          <img class="img-thumb" src="" alt="" style="flex-shrink: 0;" />
+          <input class="image" type="text" placeholder="Image URL (optional)" style="flex: 1;" />
         </div>
       </td>
       <td class="row-actions">
@@ -368,7 +369,7 @@
     <div class="image-modal-content">
       <button class="image-modal-close">&times;</button>
       
-      <div class="image-preview-section">
+      <div class="image-preview-section"></div>
         <h3 style="margin: 0 0 10px 0;">Current Image</h3>
         <div class="image-preview">
           <img id="modalImagePreview" src="" alt="No image selected" style="display: none;" />
@@ -411,6 +412,8 @@
     let dragGhost = null; // visual drag ghost
     let draggedRow = null; // for row drag and drop
     let currentImageRow = null; // for image modal
+    let currentImageCategory = null; // for category image modal
+    let autoScrollInterval = null; // for auto-scrolling during drag
 
     function createColorPopup() {
       const popup = document.getElementById('colorPopup');
@@ -477,7 +480,7 @@
       currentColorRows = [];
     }
 
-    function newCategory(order = null) {
+    function newCategory(order = null, values = null) {
       const node = catTpl.content.firstElementChild.cloneNode(true);
       node.dataset.catId = crypto.randomUUID();
 
@@ -487,6 +490,21 @@
       catColorBtn.addEventListener('click', (e) => {
         e.preventDefault();
         showColorPopup(catColorBtn, catColorInput);
+      });
+
+      // Category image button handler
+      const catImageBtn = node.querySelector('.cat-image-btn');
+      const catImgThumb = node.querySelector('.cat-img-thumb');
+      catImageBtn.addEventListener('click', () => {
+        currentImageCategory = node;
+        currentImageRow = null; // Clear row reference
+        showCategoryImageModal(node);
+      });
+      
+      catImgThumb.addEventListener('click', () => {
+        currentImageCategory = node;
+        currentImageRow = null;
+        showCategoryImageModal(node);
       });
 
       // Update colors when category color changes
@@ -504,6 +522,27 @@
       // defaults
       const orderInput = node.querySelector('.cat-order');
       orderInput.value = order ?? (categories.children.length + 1);
+
+      // Apply values if provided (for import)
+      if (values) {
+        node.querySelector('.cat-name').value = values.name || '';
+        node.querySelector('.cat-color').value = toColorInput(values.color || '#5bb0ff');
+        if (values.image) {
+          node.querySelector('.cat-image').value = values.image;
+          node.querySelector('.cat-img-thumb').src = values.image;
+        }
+      }
+
+      // Auto-load image for category if name exists but no image
+      const catNameInput = node.querySelector('.cat-name');
+      catNameInput.addEventListener('input', () => {
+        const currentImage = node.querySelector('.cat-image').value.trim();
+        if (!currentImage) {
+          setTimeout(() => {
+            autoLoadCategoryImage(node);
+          }, 500);
+        }
+      });
 
       // drag and drop handlers
       const dragHandle = node.querySelector('.drag-handle');
@@ -570,9 +609,34 @@
         }
       };
       
+      // Auto-scroll function
+      const checkAutoScroll = (mouseY) => {
+        const scrollThreshold = 100;
+        const scrollSpeed = 10;
+        
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval);
+          autoScrollInterval = null;
+        }
+        
+        // Check if near top or bottom of viewport
+        if (mouseY < scrollThreshold) {
+          // Scroll up
+          autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, -scrollSpeed);
+          }, 20);
+        } else if (mouseY > window.innerHeight - scrollThreshold) {
+          // Scroll down
+          autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, scrollSpeed);
+          }, 20);
+        }
+      };
+      
       const mouseMoveHandler = (e) => {
         updateGhostPosition(e);
         updateDropIndicators(e.clientY);
+        checkAutoScroll(e.clientY);
         
         const afterElement = getDragAfterElement(categories, e.clientY);
         if (afterElement == null) {
@@ -584,6 +648,12 @@
 
       const mouseUpHandler = () => {
         categoryNode.classList.remove('category-dragging');
+        
+        // Clear auto-scroll
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval);
+          autoScrollInterval = null;
+        }
         
         // Remove ghost and indicators
         if (dragGhost) {
@@ -791,6 +861,25 @@
       }
     }
 
+    async function autoLoadCategoryImage(catNode) {
+      const currentImage = catNode.querySelector('.cat-image').value.trim();
+      if (currentImage) return;
+      
+      const catName = catNode.querySelector('.cat-name').value.trim();
+      if (!catName) return;
+      
+      try {
+        const urls = await searchImages(catName);
+        if (urls.length > 0) {
+          const firstImageUrl = urls[0];
+          catNode.querySelector('.cat-image').value = firstImageUrl;
+          catNode.querySelector('.cat-img-thumb').src = firstImageUrl;
+        }
+      } catch (error) {
+        console.error('Auto category image load failed:', error);
+      }
+    }
+
     function getSelectedRows(catNode) {
       const selectedRows = [];
       catNode.querySelectorAll('tbody tr').forEach(tr => {
@@ -808,7 +897,32 @@
       
       const tbody = catNode.querySelector('.rows');
       
+      // Auto-scroll function for rows
+      const checkAutoScroll = (mouseY) => {
+        const scrollThreshold = 100;
+        const scrollSpeed = 10;
+        
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval);
+          autoScrollInterval = null;
+        }
+        
+        // Check if near top or bottom of viewport
+        if (mouseY < scrollThreshold) {
+          // Scroll up
+          autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, -scrollSpeed);
+          }, 20);
+        } else if (mouseY > window.innerHeight - scrollThreshold) {
+          // Scroll down
+          autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, scrollSpeed);
+          }, 20);
+        }
+      };
+      
       const mouseMoveHandler = (e) => {
+        checkAutoScroll(e.clientY);
         const afterElement = getRowAfterElement(tbody, e.clientY);
         if (afterElement == null) {
           tbody.appendChild(draggedRow);
@@ -819,6 +933,13 @@
 
       const mouseUpHandler = () => {
         row.classList.remove('row-dragging');
+        
+        // Clear auto-scroll
+        if (autoScrollInterval) {
+          clearInterval(autoScrollInterval);
+          autoScrollInterval = null;
+        }
+        
         draggedRow = null;
         document.removeEventListener('mousemove', mouseMoveHandler);
         document.removeEventListener('mouseup', mouseUpHandler);
@@ -899,11 +1020,12 @@
 
     function exportCSVString() {
       const rows = [];
-      rows.push(['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder']);
+      rows.push(['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder','CategoryImage']);
       Array.from(categories.children).forEach(cat => {
         const catName = cat.querySelector('.cat-name').value.trim();
         const catOrder = parseInt(cat.querySelector('.cat-order').value || '1', 10);
         const catColor = cat.querySelector('.cat-color').value;
+        const catImage = cat.querySelector('.cat-image').value.trim();
         const trs = cat.querySelectorAll('tbody tr');
         trs.forEach((tr, index) => {
           const display = tr.querySelector('.display').value.trim();
@@ -914,7 +1036,7 @@
           const tileOrder = index + 1; // Use actual row position
           // CSV escape
           rows.push([
-            catName, catOrder, display, speak, image, catColor, tileColor, tileOrder
+            catName, catOrder, display, speak, image, catColor, tileColor, tileOrder, catImage
           ].map(csvEscape));
         });
       });
@@ -985,6 +1107,7 @@
         catColor: header.indexOf('categorycolor'),
         tileColor: header.indexOf('tilecolor'),
         tileOrder: header.indexOf('tileorder'),
+        catImage: header.indexOf('categoryimage'), // New field
       };
 
       // group by category name + order/color
@@ -994,8 +1117,9 @@
         const catName = row[idx.category] ?? '';
         const catOrder = parseInt(row[idx.catOrder] ?? '9999', 10) || 9999;
         const catColor = row[idx.catColor] ?? '#5bb0ff';
+        const catImage = idx.catImage >= 0 ? (row[idx.catImage] ?? '') : ''; // Handle backwards compatibility
         const key = `${catOrder.toString().padStart(4, '0')}_${catName}`;
-        if (!map.has(key)) map.set(key, { name: catName, order: catOrder, color: catColor, tiles: [] });
+        if (!map.has(key)) map.set(key, { name: catName, order: catOrder, color: catColor, image: catImage, tiles: [] });
         map.get(key).tiles.push({
           display: row[idx.display] ?? '',
           speak: row[idx.speak] ?? '',
@@ -1008,9 +1132,7 @@
       // render in order
       Array.from(map.keys()).sort().forEach(key => {
         const c = map.get(key);
-        const node = newCategory(c.order);
-        node.querySelector('.cat-name').value = c.name;
-        node.querySelector('.cat-color').value = toColorInput(c.color);
+        const node = newCategory(c.order, { name: c.name, color: c.color, image: c.image });
         // clear default row
         node.querySelector('.rows').innerHTML = '';
         c.tiles.sort((x,y) => x.tileOrder - y.tileOrder).forEach(t => addRow(node, t));
@@ -1100,17 +1222,60 @@
       modal.classList.add('show');
     }
 
+    function showCategoryImageModal(catNode) {
+      const modal = document.getElementById('imageModal');
+      const preview = document.getElementById('modalImagePreview');
+      const placeholder = document.getElementById('modalImagePlaceholder');
+      const urlInput = document.getElementById('modalImageUrl');
+      const queryInput = document.getElementById('modalImageQuery');
+      
+      const currentUrl = catNode.querySelector('.cat-image').value;
+      urlInput.value = currentUrl;
+      
+      if (currentUrl) {
+        preview.src = currentUrl;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        queryInput.value = '';
+      } else {
+        preview.style.display = 'none';
+        placeholder.style.display = 'block';
+        
+        // Auto-populate search term from category name
+        const catName = catNode.querySelector('.cat-name').value.trim();
+        
+        if (catName) {
+          queryInput.value = catName;
+          // Automatically search when modal opens with no existing image
+          setTimeout(() => {
+            searchModalImages(true);
+          }, 100);
+        } else {
+          queryInput.value = '';
+        }
+      }
+      
+      modal.classList.add('show');
+    }
+
     function hideImageModal() {
       document.getElementById('imageModal').classList.remove('show');
       currentImageRow = null;
+      currentImageCategory = null;
     }
 
     function applyModalImage() {
-      if (!currentImageRow) return;
-      
       const url = document.getElementById('modalImageUrl').value.trim();
-      currentImageRow.querySelector('.image').value = url;
-      currentImageRow.querySelector('.img-thumb').src = url;
+      
+      if (currentImageRow) {
+        // Apply to phrase row
+        currentImageRow.querySelector('.image').value = url;
+        currentImageRow.querySelector('.img-thumb').src = url;
+      } else if (currentImageCategory) {
+        // Apply to category
+        currentImageCategory.querySelector('.cat-image').value = url;
+        currentImageCategory.querySelector('.cat-img-thumb').src = url;
+      }
       
       hideImageModal();
     }
@@ -1145,6 +1310,9 @@
           if (currentImageRow) {
             currentImageRow.querySelector('.image').value = firstImageUrl;
             currentImageRow.querySelector('.img-thumb').src = firstImageUrl;
+          } else if (currentImageCategory) {
+            currentImageCategory.querySelector('.cat-image').value = firstImageUrl;
+            currentImageCategory.querySelector('.cat-img-thumb').src = firstImageUrl;
           }
         }
         
@@ -1247,7 +1415,6 @@
     document.getElementById('addCategory').addEventListener('click', () => newCategory());
     document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
     document.getElementById('copyBtn').addEventListener('click', copyCSV);
-    document.getElementById('exportBtn').addEventListener('click', copyCSV);
     document.getElementById('saveLocal').addEventListener('click', saveLocal);
     document.getElementById('clearLocal').addEventListener('click', () => { localStorage.removeItem('narbe_phrase_builder'); alert('Cleared saved builder data'); });
     document.getElementById('newBtn').addEventListener('click', clearBuilder);
