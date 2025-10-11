@@ -207,8 +207,8 @@
 
   // Scan timing configuration
   const scanSpeeds = {
-    slow: { forward: 1500, backward: 3000, longPress: 4000 },
-    medium: { forward: 1000, backward: 2000, longPress: 3000 },
+    slow: { forward: 1500, backward: 3000, longPress: 2000 },
+    medium: { forward: 1000, backward: 2000, longPress: 2000 },
     fast: { forward: 500, backward: 1000, longPress: 2000 }
   };
 
@@ -458,6 +458,21 @@
       inRowSelectionMode = true;
       highlightPredictiveRow();
       console.log("Long press: Jumped to predictive text row");
+
+      // Read all predictive text words when entering predictive mode
+      const predictButtons = document.querySelectorAll('#predictBar .chip');
+      if (predictButtons.length > 0 && ttsEngine) {
+        ttsEngine.cancel();
+        const predictions = Array.from(predictButtons).map(btn => btn.textContent).filter(text => text);
+        if (predictions.length > 0) {
+          const announcement = predictions.join(", ");
+          const utterance = new SpeechSynthesisUtterance(announcement);
+          if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
+            utterance.voice = englishVoices[currentVoiceIndex];
+          }
+          ttsEngine.speak(utterance);
+        }
+      }
     } else {
       inRowSelectionMode = true;
       if (currentRowIndex === 0) {
@@ -604,9 +619,6 @@
           if (context) {
             window.predictionSystem.recordNgram(context, word);
           }
-          
-          // Update predictions after selection
-          updatePredictiveButtons();
         }
       } else {
         const key = rows[currentRowIndex - 2][currentButtonIndex];
@@ -622,7 +634,9 @@
       if (currentRowIndex === 0) {
         highlightTextBox();
       } else if (currentRowIndex === 1) {
-        highlightPredictiveRow();
+        setTimeout(() => {
+          highlightPredictiveRow();
+        }, 50);
       } else {
         highlightRow(currentRowIndex - 2);
       }
@@ -630,15 +644,14 @@
   }
 
   async function renderPredictions() {
-    // Remember if predictive row was highlighted before refresh
     const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
+    const wasInButtonMode = (currentRowIndex === 1 && !inRowSelectionMode);
+    const savedButtonIndex = currentButtonIndex;
     
-    // Use the prediction system instead of broken KenLM API
     const predictions = await window.predictionSystem.getHybridPredictions(buffer);
     
     console.log("Final predictions to render:", predictions);
 
-    // Render 6 chips
     predictBar.innerHTML = "";
     predictions.slice(0, 6).forEach(w => {
       const chip = document.createElement("button");
@@ -655,7 +668,6 @@
         }
         setBuffer(newBuf);
         
-        // Record the word and context
         window.predictionSystem.recordLocalWord(w);
         const context = buffer.replace("|", "").trim();
         if (context) {
@@ -665,7 +677,6 @@
       predictBar.appendChild(chip);
     });
 
-    // Pad with empty chips if needed
     while (predictBar.children.length < 6) {
       const chip = document.createElement("button");
       chip.className = "chip";
@@ -674,9 +685,13 @@
       predictBar.appendChild(chip);
     }
     
-    // Restore predictive row highlighting if it was highlighted before
     if (wasPredictiveRowHighlighted) {
       highlightPredictiveRow();
+    } else if (wasInButtonMode) {
+      const chips = predictBar.querySelectorAll(".chip");
+      if (chips[savedButtonIndex]) {
+        highlightPredictiveButton(savedButtonIndex);
+      }
     }
   }
 
@@ -767,7 +782,6 @@
     if (spokenLabel === "del letter") spokenLabel = "delete letter";
     if (spokenLabel === "del word") spokenLabel = "delete word";
     
-    // For single letters, keep them uppercase so they're spelled out
     if (label.length === 1 && /^[A-Z0-9]$/.test(label)) {
       spokenLabel = label;
     }
@@ -778,7 +792,6 @@
   function speakPredictiveButtonLabel(buttonIndex) {
     const chips = predictBar.querySelectorAll(".chip");
     if (chips[buttonIndex] && chips[buttonIndex].textContent.trim()) {
-      // Use the speak function which will handle the text processing
       speak(chips[buttonIndex].textContent.trim());
     }
   }
@@ -800,21 +813,17 @@
     updateHighlightDisplay();
     updateTTSToggleDisplay(); // Add TTS toggle display update
     
-    // Add mouse event listeners to settings items
     settingsItems.forEach((item, index) => {
-      // Mouse click handler
       item.addEventListener('click', () => {
         settingsRowIndex = index;
         highlightSettingsItem(settingsRowIndex);
         selectSettingsItem();
       });
       
-      // Mouse hover handler
       item.addEventListener('mouseenter', () => {
         settingsRowIndex = index;
         highlightSettingsItem(settingsRowIndex);
         
-        // Speak the setting name on hover
         const label = item.querySelector(".setting-label").textContent;
         speak(label.toLowerCase());
       });
@@ -828,9 +837,7 @@
     predictBar.style.display = "grid";
     textBar.style.display = "flex"; // Show text bar again
     
-    // Remove mouse event listeners from settings items
     settingsItems.forEach(item => {
-      // Clone the node to remove all event listeners
       const newItem = item.cloneNode(true);
       item.parentNode.replaceChild(newItem, item);
     });
@@ -981,7 +988,6 @@
     saveSettings();
     updateTTSToggleDisplay();
     
-    // Always speak this feedback regardless of TTS setting to confirm the change
     if (ttsEngine) {
       ttsEngine.cancel();
       const utterance = new SpeechSynthesisUtterance(settings.ttsEnabled ? "TTS enabled" : "TTS disabled");
@@ -1003,7 +1009,6 @@
   }
 
   function readInstructions() {
-    // Create a comprehensive instruction text
     const instructions = `
       Welcome to Ben's Keyboard. Here are the instructions for using this keyboard.
       
@@ -1030,11 +1035,10 @@
       Press return to continue using the keyboard.
     `;
     
-    // Use a special TTS call that bypasses the ttsEnabled setting
     if (ttsEngine) {
       ttsEngine.cancel();
       const utterance = new SpeechSynthesisUtterance(instructions);
-      utterance.rate = 0.9; // Slightly slower for instructions
+      utterance.rate = 0.9;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
@@ -1057,7 +1061,6 @@
     }
     if (key === "Exit")       { 
       console.log("Exit button pressed");
-      // Message parent to close iframe and return to hub
       try {
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ action: 'focusBackButton' }, '*');
@@ -1075,18 +1078,15 @@
       if ((k === "i" || k === "I") && (!prev || /\s/.test(prev))) k = "I";
     }
     
-    // Auto-learn words when space is pressed
     if (k === " ") {
       const currentText = buffer.replace('|', '').trim();
       const words = currentText.split(' ');
       if (words.length > 0) {
         const lastWord = words[words.length - 1];
         if (lastWord && lastWord.length > 0) {
-          // Record the word that was just typed
           window.predictionSystem.recordLocalWord(lastWord);
           console.log(`Auto-learned word: ${lastWord}`);
           
-          // If there's context, record n-grams too
           if (words.length > 1) {
             const context = words.slice(0, -1).join(' ');
             window.predictionSystem.recordNgram(context, lastWord);
@@ -1103,10 +1103,8 @@
     const words = text.split(/\s+/);
     words.forEach(word => {
       if (word && word.trim().length > 0) {
-        // Use the prediction system to properly record the word
         window.predictionSystem.recordLocalWord(word);
         
-        // Also record n-grams if there's context
         const textWords = text.split(/\s+/);
         const wordIndex = textWords.indexOf(word);
         if (wordIndex > 0) {
@@ -1118,7 +1116,6 @@
   }
 
   function recordLocalWord(word) {
-    // This function is now deprecated - remove or redirect to prediction system
     if (!word || word.trim().length === 0) return;
     window.predictionSystem.recordLocalWord(word);
     console.log(`Recorded word: ${word}`);
@@ -1127,12 +1124,9 @@
   textBar.addEventListener("click", () => {
     const text = buffer.replace(/\|/g, "").trim();
     if (text) {
-      // For text bar, always allow TTS regardless of the setting
-      // This allows users to hear their text when clicking the text bar
       if (ttsEngine) {
         ttsEngine.cancel();
         
-        // Process text for better TTS pronunciation (copy the processing from speak function)
         let processedText = text;
         const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
                                'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
@@ -1199,8 +1193,16 @@
 
   const originalSetBuffer = setBuffer;
   setBuffer = function(newBuffer) {
+    const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
+    
     originalSetBuffer(newBuffer);
-    updatePredictiveButtons();
+    updatePredictiveButtons().then(() => {
+      if (wasPredictiveRowHighlighted) {
+        setTimeout(() => {
+          highlightPredictiveRow();
+        }, 50);
+      }
+    });
   };
 
   function init() {
@@ -1210,7 +1212,6 @@
     currentScanSpeed = settings.scanSpeed || "medium";
     renderKeyboard();
     setBuffer("");
-    // Wait for prediction system to load then render
     setTimeout(() => renderPredictions(), 100);
   }
 
