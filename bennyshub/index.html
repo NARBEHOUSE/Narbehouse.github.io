@@ -223,10 +223,10 @@
     }
 
     .brand{
-      display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content: space-between;
+      display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content: space-between;
     }
     .brand-left{
-      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex: 1;
     }
     .logo{
       width:56px; height:56px; object-fit: contain;
@@ -236,6 +236,7 @@
       width: 80px; height: 80px; object-fit: contain;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
       display: block; /* Ensure it's visible */
+      flex-shrink: 0; /* Prevent logo from shrinking */
     }
     .title {
       font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
@@ -483,8 +484,18 @@
             <div class="subtitle">This is a hub for 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
           </div>
         </div>
-        <img src="bennyshub/images/BeaminBenny.png" 
-             onerror="console.error('Failed to load Benny logo from:', this.src); this.style.border='2px dashed var(--narbe-orange)'; this.alt='[Benny Logo - Check images/BeaminBenny.png]'; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22 viewBox=%220 0 80 80%22%3E%3Crect width=%2280%22 height=%2280%22 fill=%22%23ff5c00%22 opacity=%220.2%22 rx=%228%22/%3E%3Ctext x=%2240%22 y=%2245%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23ff5c00%22%3EBenny%3C/text%3E%3C/svg%3E';" 
+        <img src="images/BeaminBenny.png" 
+             srcset="images/BeaminBenny.png 1x, ./images/BeaminBenny.png 2x"
+             onerror="console.error('Failed to load Benny logo. Trying alternative paths...'); 
+                      if(this.src.indexOf('./') !== 0) { 
+                        this.src = './images/BeaminBenny.png'; 
+                      } else if(window.location.hostname.includes('github')) { 
+                        this.src = '/bennyshub/images/BeaminBenny.png'; 
+                      } else { 
+                        this.style.border='2px dashed var(--narbe-orange)'; 
+                        this.alt='[Benny Logo Missing - Check images/BeaminBenny.png]'; 
+                        this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22 viewBox=%220 0 80 80%22%3E%3Crect width=%2280%22 height=%2280%22 fill=%22%23ff5c00%22 opacity=%220.2%22 rx=%228%22/%3E%3Ctext x=%2240%22 y=%2245%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23ff5c00%22%3EBenny%3C/text%3E%3C/svg%3E';
+                      }" 
              onload="console.log('Benny logo loaded successfully from:', this.src);"
              alt="Beamin Benny" 
              class="benny-logo" />
@@ -1185,5 +1196,4 @@
   </script>
 </body>
 </html>
-
 
