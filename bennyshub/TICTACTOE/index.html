@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Benny's Tic Tac Toe</title>
+  <style>
+    :root{
+      --bg:#0b2239;
+      --card:#121822;
+      --text:#e8f0ff;
+      --orange:#ff5c00;
+      --blue:#5bb0ff;
+      --green:#39d353;
+      --purple:#a78bfa;
+      --yellow:#ffd400;
+      --red:#ff4d4d;
+      --muted:#8899bb;
+      --radius:24px;
+      --ring:0 0 0 6px rgba(255,220,0,.65), 0 12px 30px rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+    html,body{height:100%; margin:0;}
+    body{
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,92,0,.15), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(91,176,255,.15), transparent),
+                  var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .container{
+      width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:2rem;
+    }
+
+    .title{
+      font-size:clamp(3rem,6vw,5rem);
+      font-weight:900;
+      margin:0 0 2rem;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-align:center;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      padding:1.5rem 3rem;
+      border-radius:var(--radius);
+      font-size:clamp(1.2rem,3vw,2rem);
+      font-weight:700;
+      margin:.75rem 0;
+      cursor:pointer;
+      transition: all .2s ease;
+      min-width:320px;
+      text-align:center;
+    }
+    .btn:hover{
+      transform:translateY(-2px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.35);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+    }
+    .btn.scan{
+      box-shadow:var(--ring);
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      color:#0b0f14;
+      border-color:transparent;
+    }
+
+    .board-container{
+      width:min(90vw, 90vh, 600px);
+      height:min(90vw, 90vh, 600px);
+      margin:0 auto;
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      grid-template-rows:repeat(3,1fr);
+      gap:12px;
+      width:100%;
+      height:100%;
+      padding:20px;
+      background: rgba(0,0,0,.3);
+      border-radius:var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+
+    .cell{
+      appearance:none;
+      border:2px solid rgba(255,255,255,.15);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      color:var(--text);
+      font-size:clamp(3rem,12vw,5rem);
+      font-weight:900;
+      cursor:pointer;
+      transition: all .2s ease;
+      border-radius:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    .cell:hover{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .cell.scan{
+      box-shadow:var(--ring);
+      background: linear-gradient(135deg, rgba(255,220,0,.2), rgba(255,220,0,.1));
+      border-color: var(--yellow);
+    }
+    .cell[data-value="X"]{
+      color:var(--orange);
+      text-shadow: 0 0 20px rgba(255,92,0,.5);
+    }
+    .cell[data-value="O"]{
+      color:var(--blue);
+      text-shadow: 0 0 20px rgba(91,176,255,.5);
+    }
+
+    .result{
+      font-size:clamp(2rem,4vw,3rem);
+      font-weight:800;
+      margin:1rem 0 2rem;
+      padding:1rem 2rem;
+      background: linear-gradient(90deg, var(--purple), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-align:center;
+    }
+
+    .pause-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.9);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      backdrop-filter:blur(8px);
+      z-index:1000;
+    }
+
+    .pause-card{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+      padding:3rem;
+      border-radius:var(--radius);
+      min-width:min(90vw,480px);
+      text-align:center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .pause-title{
+      font-size:clamp(2rem,4vw,3rem);
+      font-weight:800;
+      margin:0 0 2rem;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+
+    .hint {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      font-size: 13px;
+      opacity: .6;
+      color: var(--muted);
+    }
+
+    .status{
+      font-size:clamp(1.2rem,2.5vw,1.8rem);
+      margin:1rem 0;
+      color:var(--muted);
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <!-- content injected by JS -->
+  </div>
+  <div class="hint">Space = scan (hold 3s = backward). Return = select. Hold Return 6s in game = pause.</div>
+
+  <script>
+  // TTS
+  const speak = (() => {
+    const synth = window.speechSynthesis;
+    let queue = Promise.resolve();
+    function say(text){
+      if(!synth) return;
+      queue = queue.then(() => new Promise(res => {
+        const u = new SpeechSynthesisUtterance(String(text));
+        u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+        u.onend = res; u.onerror = res; 
+        synth.cancel(); synth.speak(u);
+      }));
+    }
+    return say;
+  })();
+
+  // Utility
+  const $ = sel => document.querySelector(sel);
+  const el = (tag, cls, txt) => { 
+    const e = document.createElement(tag); 
+    if(cls) e.className = cls; 
+    if(txt!=null) e.textContent = txt; 
+    return e; 
+  };
+
+  // Exit helper - matches BennySays pattern
+  function exitApp(){
+    try{
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'focusBackButton' }, '*');
+      }
+      location.href = '../index.html';
+    }catch(err){
+      try{
+        window.location.replace('../index.html');
+      }catch(_){
+        window.location.href = '..';
+      }
+    }
+  }
+
+  // Game State
+  const State = {
+    mode: 'main_menu',
+    gameMode: null,
+    currentTurn: 'X',
+    board: Array.from({length:3},()=>Array(3).fill('')),
+    order: [],
+    menuButtons: [], menuScanIndex: 0,
+    pauseButtons: [], pauseScanIndex: 0, pauseJustOpened: false,
+    overButtons: [], overScanIndex: 0,
+    boardScanIndex: 0,
+    spaceHeld: false, spaceStart: 0, spaceBackwardActive:false, spaceTimer:null,
+    returnHeld:false, returnStart:0, returnTimer:null, pauseTriggered:false,
+  };
+
+  function resetBoard(){
+    State.board = Array.from({length:3},()=>Array(3).fill(''));
+    State.order = [];
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++) State.order.push([r,c]);
+    State.boardScanIndex = 0;
+  }
+
+  function renderMainMenu(){
+    State.mode = 'main_menu';
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title','Benny\'s Tic Tac Toe');
+    container.appendChild(title);
+
+    State.menuButtons = [];
+
+    const btnSingle = buttonWithTTS('Single Player', () => startGame('single'));
+    const btnTwo = buttonWithTTS('2-Player', () => startGame('two'));
+    const btnExit = buttonWithTTS('Exit to Hub', () => exitApp());
+
+    State.menuButtons.push(btnSingle, btnTwo, btnExit);
+    State.menuScanIndex = 0;
+    updateMenuScan();
+
+    container.append(btnSingle, btnTwo, btnExit);
+    speak('Welcome to Tic Tac Toe. Press space to scan menu options');
+  }
+
+  function buttonWithTTS(label, onClick){
+    const b = el('button','btn'); 
+    b.textContent = label; 
+    b.onclick = onClick;
+    b.addEventListener('mouseenter',()=>speak(label));
+    return b;
+  }
+
+  function updateMenuScan(){
+    State.menuButtons.forEach((b,i)=>{
+      b.classList.toggle('scan', i===State.menuScanIndex);
+    });
+    if(State.menuButtons.length){ 
+      speak(State.menuButtons[State.menuScanIndex].textContent); 
+    }
+  }
+
+  function menuScanForward(){ 
+    State.menuScanIndex = (State.menuScanIndex+1)%State.menuButtons.length; 
+    updateMenuScan(); 
+  }
+  
+  function menuScanBackward(){ 
+    State.menuScanIndex = (State.menuScanIndex-1+State.menuButtons.length)%State.menuButtons.length; 
+    updateMenuScan(); 
+  }
+
+  function startGame(mode){
+    State.gameMode = mode; 
+    State.mode = 'game'; 
+    resetBoard();
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title', mode==='single' ? 'Single Player' : '2-Player Game');
+    container.appendChild(title);
+
+    const status = el('div','status','');
+    status.id = 'status';
+    container.appendChild(status);
+
+    const boardContainer = el('div','board-container');
+    const board = el('div','board');
+    boardContainer.appendChild(board);
+    container.appendChild(boardContainer);
+
+    // Build 3x3 grid
+    for(let r=0;r<3;r++){
+      for(let c=0;c<3;c++){
+        const cell = el('button','cell');
+        cell.dataset.r=r; 
+        cell.dataset.c=c; 
+        cell.onclick=()=>selectCell(r,c);
+        board.appendChild(cell);
+      }
+    }
+
+    // Who starts
+    if(mode==='single'){
+      State.currentTurn = Math.random()<.5 ? 'X' : 'O';
+    } else { 
+      State.currentTurn = 'X'; 
+    }
+
+    updateStatus();
+
+    if(mode==='single' && State.currentTurn==='O'){
+      setTimeout(computerMove, 1000);
+    } else if(State.currentTurn==='X') {
+      speak('Your turn. X goes first');
+    }
+
+    updateBoardScan();
+  }
+
+  function updateStatus(){
+    const status = $('#status');
+    if(!status) return;
+    
+    if(State.gameMode==='single'){
+      status.textContent = State.currentTurn==='X' ? 'Your turn (X)' : 'Computer thinking...';
+    } else {
+      status.textContent = `Player ${State.currentTurn}'s turn`;
+    }
+  }
+
+  function updateBoardScan(){
+    const cells = [...document.querySelectorAll('.cell')];
+    cells.forEach((cell,i)=>{
+      const r = +cell.dataset.r, c = +cell.dataset.c;
+      const v = State.board[r][c];
+      cell.textContent = v;
+      cell.setAttribute('data-value', v);
+      cell.classList.toggle('scan', i===State.boardScanIndex);
+    });
+  }
+
+  function boardScanForward(){ 
+    State.boardScanIndex = (State.boardScanIndex+1)%State.order.length; 
+    updateBoardScan(); 
+  }
+  
+  function boardScanBackward(){ 
+    State.boardScanIndex = (State.boardScanIndex-1+State.order.length)%State.order.length; 
+    updateBoardScan(); 
+  }
+
+  function selectCell(r,c){
+    if(State.gameMode==='single' && State.currentTurn!=='X') return;
+    if(State.board[r][c]!== '') return;
+
+    State.board[r][c] = State.currentTurn;
+    updateBoardScan();
+
+    const res = checkWin();
+    if(res){ 
+      gameOver(res); 
+      return; 
+    }
+
+    State.currentTurn = (State.currentTurn==='X') ? 'O' : 'X';
+    updateStatus();
+
+    if(State.gameMode==='single' && State.currentTurn==='O'){
+      setTimeout(computerMove, 1000);
+    } else if(State.currentTurn==='X'){
+      speak('Your turn');
+    }
+  }
+
+  function computerMove(){
+    const empties = [];
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++) if(State.board[r][c]==='') empties.push([r,c]);
+    if(!empties.length) return;
+
+    const lines = [
+      [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]],
+      [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]],
+      [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]]
+    ];
+
+    const getVal = ([r,c]) => State.board[r][c];
+    const isEmpty = ([r,c]) => State.board[r][c]==='';
+
+    function findLinePlay(player){
+      for(const line of lines){
+        const vals = line.map(getVal);
+        const me = vals.filter(v=>v===player).length;
+        const emptyIdx = vals.findIndex(v=>v==='');
+        if(me===2 && emptyIdx!==-1){
+          return line[emptyIdx];
+        }
+      }
+      return null;
+    }
+
+    let move = findLinePlay('O');
+    if(!move) move = findLinePlay('X');
+    if(!move && isEmpty([1,1])) move = [1,1];
+    
+    const corners = [[0,0],[0,2],[2,0],[2,2]];
+    if(!move){
+      const openCorners = corners.filter(isEmpty);
+      if(openCorners.length) move = openCorners[Math.floor(Math.random()*openCorners.length)];
+    }
+    
+    const sides = [[0,1],[1,0],[1,2],[2,1]];
+    if(!move){
+      const openSides = sides.filter(isEmpty);
+      if(openSides.length) move = openSides[Math.floor(Math.random()*openSides.length)];
+    }
+    
+    if(!move){
+      move = empties[Math.floor(Math.random()*empties.length)];
+    }
+
+    const [r,c] = move;
+    State.board[r][c] = 'O';
+    updateBoardScan();
+
+    const res = checkWin();
+    if(res){ 
+      gameOver(res); 
+      return; 
+    }
+
+    State.currentTurn = 'X';
+    updateStatus();
+    speak('Your turn');
+  }
+
+  function checkWin(){
+    const b = State.board;
+    for(let r=0;r<3;r++) if(b[r][0] && b[r][0]===b[r][1] && b[r][1]===b[r][2]) return b[r][0];
+    for(let c=0;c<3;c++) if(b[0][c] && b[0][c]===b[1][c] && b[1][c]===b[2][c]) return b[0][c];
+    if(b[0][0] && b[0][0]===b[1][1] && b[1][1]===b[2][2]) return b[0][0];
+    if(b[0][2] && b[0][2]===b[1][1] && b[1][1]===b[2][0]) return b[0][2];
+    if(b.flat().every(v=>v)) return 'Tie';
+    return null;
+  }
+
+  function gameOver(result){
+    State.mode = 'game_over_menu';
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title','Game Over');
+    container.appendChild(title);
+
+    const msg = result==='Tie' ? "It's a tie!" : 
+                State.gameMode==='single' && result==='X' ? 'You win!' :
+                State.gameMode==='single' && result==='O' ? 'Computer wins!' :
+                `Player ${result} wins!`;
+    speak(msg);
+
+    const resEl = el('div','result',msg);
+    container.appendChild(resEl);
+
+    State.overButtons = [];
+    const yes = buttonWithTTS('Play Again', ()=> restartGame());
+    const no = buttonWithTTS('Main Menu', ()=> renderMainMenu());
+    const exit = buttonWithTTS('Exit to Hub', ()=> exitApp());
+    State.overButtons.push(yes,no,exit);
+    State.overScanIndex = 0; 
+    updateOverScan();
+
+    container.append(yes,no,exit);
+    speak('Game over. Would you like to play again?');
+  }
+
+  function updateOverScan(){
+    State.overButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.overScanIndex));
+    if(State.overButtons.length) speak(State.overButtons[State.overScanIndex].textContent);
+  }
+
+  function overScanForward(){ 
+    State.overScanIndex = (State.overScanIndex+1)%State.overButtons.length; 
+    updateOverScan(); 
+  }
+  
+  function overScanBackward(){ 
+    State.overScanIndex = (State.overScanIndex-1+State.overButtons.length)%State.overButtons.length; 
+    updateOverScan(); 
+  }
+
+  function restartGame(){ 
+    startGame(State.gameMode); 
+  }
+
+  // Pause menu
+  let pauseLayer = null;
+  function showPause(){
+    if(State.mode!=='game') return;
+    State.mode='pause';
+    State.returnHeld=false; 
+    State.returnStart=0; 
+    State.pauseJustOpened=true;
+    
+    pauseLayer = el('div','pause-overlay');
+    const card = el('div','pause-card');
+    const h = el('div','pause-title','Pause Menu');
+    card.appendChild(h);
+
+    State.pauseButtons = [];
+    const cont = buttonWithTTS('Continue Game', continueGame);
+    const back = buttonWithTTS('Return to Menu', ()=>{
+      if(pauseLayer){ pauseLayer.remove(); pauseLayer=null; }
+      renderMainMenu();
+    });
+    const exit = buttonWithTTS('Exit to Hub', exitApp);
+    State.pauseButtons.push(cont, back, exit);
+    State.pauseScanIndex = 0; 
+    updatePauseScan();
+
+    card.append(cont, back, exit); 
+    pauseLayer.appendChild(card); 
+    document.body.appendChild(pauseLayer);
+    speak('Game paused');
+  }
+
+  function updatePauseScan(){
+    State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.pauseScanIndex));
+    if(State.pauseButtons.length) speak(State.pauseButtons[State.pauseScanIndex].textContent);
+  }
+
+  function pauseScanForward(){ 
+    State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; 
+    updatePauseScan(); 
+  }
+  
+  function pauseScanBackward(){ 
+    State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length; 
+    updatePauseScan(); 
+  }
+  
+  function continueGame(){ 
+    if(pauseLayer){ pauseLayer.remove(); pauseLayer=null; } 
+    State.mode='game'; 
+    speak('Game resumed');
+  }
+
+  // Key handling
+  function onSpaceDown(){
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    if(State.spaceHeld) return;
+    State.spaceHeld = true; 
+    State.spaceStart = performance.now(); 
+    State.spaceBackwardActive=false;
+    if(State.spaceTimer) clearTimeout(State.spaceTimer);
+    State.spaceTimer = setTimeout(()=>{
+      if(State.spaceHeld){
+        State.spaceBackwardActive = true;
+        spaceBackwardLoop();
+      }
+    }, 3000);
+  }
+
+  function spaceBackwardLoop(){
+    if(!State.spaceHeld) return;
+    if(State.mode==='game') boardScanBackward();
+    else if(State.mode==='main_menu') menuScanBackward();
+    else if(State.mode==='pause') pauseScanBackward();
+    else if(State.mode==='game_over_menu') overScanBackward();
+    State.spaceTimer = setTimeout(spaceBackwardLoop, 2000);
+  }
+
+  function onSpaceUp(){
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    const dur = State.spaceStart ? (performance.now()-State.spaceStart)/1000 : 0;
+    if(State.spaceTimer){ clearTimeout(State.spaceTimer); State.spaceTimer=null; }
+    const wasBack = State.spaceBackwardActive; 
+    State.spaceHeld=false; 
+    State.spaceBackwardActive=false;
+    if(!wasBack && dur>=0.1 && dur<3){
+      if(State.mode==='game') boardScanForward();
+      else if(State.mode==='main_menu') menuScanForward();
+      else if(State.mode==='pause') pauseScanForward();
+      else if(State.mode==='game_over_menu') overScanForward();
+    }
+  }
+
+  function onReturnDown(){
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    if(State.returnHeld) return;
+    State.returnHeld=true; 
+    State.returnStart=performance.now(); 
+    State.pauseTriggered=false;
+    if(State.mode==='game'){
+      if(State.returnTimer) clearTimeout(State.returnTimer);
+      State.returnTimer = setTimeout(()=>{
+        if(State.returnHeld){ 
+          State.pauseTriggered=true; 
+          showPause(); 
+        }
+      }, 6000);
+    }
+  }
+
+  function onReturnUp(){
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    const dur = State.returnStart ? (performance.now()-State.returnStart)/1000 : 0;
+
+    if(State.mode==='pause' && State.pauseJustOpened){
+      State.pauseJustOpened=false; 
+      State.returnHeld=false; 
+      return;
+    }
+
+    if(State.mode==='game'){
+      if(State.returnTimer){ clearTimeout(State.returnTimer); State.returnTimer=null; }
+      State.returnHeld=false;
+      if(State.pauseTriggered){ State.pauseTriggered=false; return; }
+      if(dur>=0.1 && dur<3){
+        const [r,c] = State.order[State.boardScanIndex];
+        selectCell(r,c);
+      }
+    } else if(State.mode==='main_menu'){
+      State.returnHeld=false; 
+      State.menuButtons[State.menuScanIndex]?.click();
+    } else if(State.mode==='pause'){
+      State.returnHeld=false; 
+      State.pauseButtons[State.pauseScanIndex]?.click();
+    } else if(State.mode==='game_over_menu'){
+      State.returnHeld=false; 
+      State.overButtons[State.overScanIndex]?.click();
+    }
+  }
+
+  document.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); onSpaceDown(); }
+    if(e.code==='Enter'){ e.preventDefault(); onReturnDown(); }
+  });
+  
+  document.addEventListener('keyup', e=>{
+    if(e.code==='Space'){ e.preventDefault(); onSpaceUp(); }
+    if(e.code==='Enter'){ e.preventDefault(); onReturnUp(); }
+  });
+
+  // Boot
+  renderMainMenu();
+  </script>
+</body>
+</html>
