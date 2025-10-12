@@ -90,6 +90,10 @@
       overflow:hidden; 
       padding:1rem 0; /* Increased padding for better spacing */
       box-sizing: border-box;
+      
+      /* Ensure content fits in available space */
+      max-height: calc(100vh - 50px); /* Account for topbar */
+      max-height: calc(100dvh - 50px);
     }
     .title{
       font-family:"Arial Black", Impact, system-ui; 
@@ -396,87 +400,188 @@
         height: calc(var(--vh, 1vh) * 100);
       }
       
+      .center {
+        padding: 0.5rem 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        justify-content: flex-start;
+        gap: 0.5rem; /* Add gap between elements */
+      }
+      
       .title{
-        font-size:clamp(2rem,8vw,3rem);
-        margin:0.5rem 0 1rem;
+        font-size:clamp(1.8rem,6vw,2.8rem);
+        margin:0.5rem 0 0.8rem;
+        line-height: 1.1;
       }
       
       .instructions {
-        padding: 0.8rem 1rem;
-        margin: 0.5rem 0 1rem;
-        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+        margin: 0.3rem 0 0.8rem;
+        font-size: 0.8rem;
+        max-width: 95%;
       }
       .instructions h3 {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
       }
       .instructions p {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
+        margin: 0.2rem 0;
       }
       
       .btn{
-        padding:0.6rem 1.5rem;
-        font-size:1rem;
-        margin:0.3rem 0;
-        min-width: 150px;
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+        margin: 0.2rem 0;
+        min-width: 140px;
+        min-height: 44px; /* iOS touch target size */
       }
       
       .score-panel{
-        gap: 1rem;
-        margin-bottom:0.8rem;
-        padding:0.6rem 1rem;
+        gap: 0.8rem;
+        margin-bottom: 0.6rem;
+        padding: 0.5rem 0.8rem;
       }
       .score-value {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
       }
       
       .grid{
-        gap:4px;
-        padding:8px;
+        gap: 3px;
+        padding: 6px;
       }
       
       .card{
-        border-radius:8px;
-        min-height: 35px; /* Ensure minimum tap target size */
-      }
-      
-      .pause-card{
-        padding:1.5rem;
-        min-width:min(95vw,400px);
-      }
-      .pause-title{
-        font-size:1.5rem;
-        margin-bottom:1rem;
-      }
-      
-      .result{
-        font-size:clamp(1rem,2.5vw,1.5rem);
-        padding:0.6rem 1.2rem;
-        margin-bottom: 0.6rem;
-      }
-      
-      .competitive-result {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        max-width: 90vw;
-      }
-      .competitive-result .winner {
-        font-size: 1.5rem;
-        margin-bottom: 0.6rem;
-      }
-      .competitive-result .final-score {
-        font-size: 1rem;
-        margin: 0.3rem 0;
-      }
-      
-      /* Ensure proper scroll behavior on mobile */
-      .center{
-        padding:0.5rem 0;
-        overflow-y: auto;
-        overflow-x: hidden;
+        border-radius: 6px;
+        min-height: 35px;
       }
       
       .screen{
-        padding:0.25rem;
+        padding: 0.25rem;
+      }
+    }
+
+    /* Landscape mobile orientation */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .app {
+        height: 100vh; /* Use full viewport height */
+        height: 100dvh; /* Use dynamic viewport when available */
+      }
+      
+      .center {
+        flex-direction: column;
+        justify-content: flex-start;
+        max-height: calc(100vh - 50px); /* Account for topbar */
+        max-height: calc(100dvh - 50px);
+        overflow-y: auto;
+        padding: 0.3rem 0;
+        gap: 0.4rem;
+      }
+      
+      .title {
+        margin: 0.2rem 0 0.4rem;
+        font-size: clamp(1.2rem, 4vw, 1.8rem);
+        line-height: 1;
+      }
+      
+      .instructions {
+        padding: 0.4rem 0.6rem;
+        margin: 0.2rem 0;
+        font-size: 0.65rem;
+        max-width: 95%;
+      }
+      
+      .instructions h3 {
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+      }
+      
+      .instructions p {
+        font-size: 0.6rem;
+        margin: 0.1rem 0;
+      }
+      
+      /* Menu buttons in landscape - ensure all fit */
+      .btn {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.8rem;
+        margin: 0.1rem 0;
+        min-width: 100px;
+        min-height: 36px;
+      }
+      
+      /* Ensure all 4 buttons are visible */
+      .center {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+      }
+    }
+
+    /* Extra small mobile devices */
+    @media (max-width: 480px) {
+      .title{
+        font-size: clamp(1.5rem, 7vw, 2.2rem);
+        margin: 0.3rem 0 0.6rem;
+      }
+      
+      .btn{
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        min-width: 120px;
+        margin: 0.15rem 0;
+      }
+      
+      .instructions {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.75rem;
+      }
+      
+      .instructions h3 {
+        font-size: 0.8rem;
+      }
+      
+      .instructions p {
+        font-size: 0.65rem;
+      }
+      
+      .card{
+        min-height: 30px;
+        border-radius: 4px;
+      }
+      
+      .grid{
+        gap: 2px;
+        padding: 4px;
+      }
+      
+      .pause-card{
+        padding: 1rem;
+        min-width: min(90vw, 300px);
+      }
+      .pause-title{
+        font-size: 1.2rem;
+        margin-bottom: 0.8rem;
+      }
+      
+      .result{
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .competitive-result {
+        padding: 0.8rem;
+        margin-bottom: 0.8rem;
+        max-width: 85vw;
+      }
+      .competitive-result .winner {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
+      .competitive-result .final-score {
+        font-size: 0.9rem;
+        margin: 0.2rem 0;
       }
     }
 
@@ -788,6 +893,7 @@
     const pairs = Math.floor(usable/2);
     const shuffled = [...SYMBOLS].sort(()=>Math.random()-0.5).slice(0,pairs);
     const deck = [...shuffled, ...shuffled].sort(()=>Math.random()-0.5);
+    State.deck = deck; // Store the deck for persistence during resize
 
     // compute threshold for competitive majority
     if(State.modeType==='two_competitive'){
@@ -889,7 +995,7 @@
           const filler = el('div','card inactive','');
           wrap.appendChild(filler);
         } else {
-          const [sym,color] = deck[idx++];
+          const [sym,color] = State.deck[idx++];
           const card = el('button','card');
           card.dataset.r=r; card.dataset.c=c;
           card.onclick = ()=> selectCard(r,c);
@@ -1488,7 +1594,7 @@
     resizeTimeout = setTimeout(() => {
       // Only regenerate grid if we're in game mode
       if (State.mode === 'game') {
-        // Store current game state
+        // Store current game state including symbol deck
         const gameState = {
           mode: State.mode,
           modeType: State.modeType,
@@ -1499,40 +1605,153 @@
           matchedPairs: State.matchedPairs,
           moveCount: State.moveCount,
           startTime: State.startTime,
-          cells: new Map(State.cells)
+          cells: new Map(State.cells),
+          deck: [...State.deck], // Preserve the symbol deck
+          rows: State.rows,
+          cols: State.cols,
+          inactiveIndex: State.inactiveIndex
         };
         
-        // Regenerate the game with current state
-        startGame(State.currentDifficulty);
-        
-        // Restore game state
-        State.points = gameState.points;
-        State.pairsFound = gameState.pairsFound;
-        State.matchedPairs = gameState.matchedPairs;
-        State.moveCount = gameState.moveCount;
-        State.startTime = gameState.startTime;
-        State.currentPlayer = gameState.currentPlayer;
-        
-        // Restore cell states
-        gameState.cells.forEach((info, key) => {
-          if (State.cells.has(key)) {
-            const currentCell = State.cells.get(key);
-            currentCell.revealed = info.revealed;
-            currentCell.matched = info.matched;
-            currentCell.matchedBy = info.matchedBy;
-          }
-        });
-        
-        // Update display
-        updateScanHighlight();
-        
-        // Update score panel if in single player mode
-        if (State.modeType === 'single') {
-          const moveEl = document.getElementById('move-counter');
-          if (moveEl) moveEl.textContent = State.moveCount;
-        }
+        // Regenerate the game layout with preserved symbols
+        regenerateGameWithState(gameState);
       }
     }, 250); // Wait 250ms after resize stops
+  }
+
+  // Function to regenerate game layout while preserving symbols and state
+  function regenerateGameWithState(gameState) {
+    // Restore basic state
+    State.mode = gameState.mode;
+    State.modeType = gameState.modeType;
+    State.currentPlayer = gameState.currentPlayer;
+    State.currentDifficulty = gameState.currentDifficulty;
+    State.points = gameState.points;
+    State.pairsFound = gameState.pairsFound;
+    State.matchedPairs = gameState.matchedPairs;
+    State.moveCount = gameState.moveCount;
+    State.startTime = gameState.startTime;
+    State.deck = gameState.deck;
+    State.rows = gameState.rows;
+    State.cols = gameState.cols;
+    State.inactiveIndex = gameState.inactiveIndex;
+
+    // Clear current display
+    const screen = $('#screen'); 
+    screen.innerHTML = '';
+    const center = el('div', 'center');
+
+    // Recreate score panel
+    const scorePanel = el('div', 'score-panel');
+    if (State.modeType === 'two_competitive') {
+      const p1Score = el('div', 'score-item');
+      p1Score.innerHTML = `<div class="score-label">Player 1</div><div class="score-value">${State.points[1]}</div>`;
+      const p2Score = el('div', 'score-item');
+      p2Score.innerHTML = `<div class="score-label">Player 2</div><div class="score-value">${State.points[2]}</div>`;
+      scorePanel.append(p1Score, p2Score);
+    } else if (State.modeType === 'single') {
+      const movesDiv = el('div', 'score-item');
+      movesDiv.innerHTML = `<div class="score-label">Moves</div><div class="score-value" id="move-counter">${State.moveCount}</div>`;
+      const timeDiv = el('div', 'score-item');
+      timeDiv.innerHTML = `<div class="score-label">Time</div><div class="score-value" id="timer">00:00</div>`;
+      scorePanel.append(movesDiv, timeDiv);
+    }
+
+    // Mobile-responsive grid sizing (same logic as startGame)
+    const isMobile = window.innerWidth <= 768;
+    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 70 : 90) : 0;
+    const screenPadding = isMobile ? 10 : 20;
+    const centerPadding = isMobile ? 10 : 20;
+    const topbarHeight = 50;
+    const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - (screenPadding * 2) - (centerPadding * 2);
+    const availableWidth = Math.min(window.innerWidth - (isMobile ? 20 : 40), 1400);
+
+    const gridPadding = isMobile ? 12 : 24;
+    const cellGap = isMobile ? 4 : 8;
+    const gridWidth = availableWidth - (gridPadding * 2);
+    const gridHeight = availableHeight - (gridPadding * 2);
+    const cellWidth = (gridWidth - (cellGap * (State.cols - 1))) / State.cols;
+    const cellHeight = (gridHeight - (cellGap * (State.rows - 1))) / State.rows;
+    const cellSize = Math.min(cellWidth, cellHeight);
+
+    if (isMobile) {
+      if (cellSize < 45) {
+        const scale = 45 / cellSize;
+        State.rows = Math.max(2, Math.floor(State.rows / scale));
+        State.cols = Math.max(2, Math.floor(State.cols / scale));
+      }
+    }
+
+    // Create grid with preserved symbols
+    const grid = el('div', 'grid');
+    grid.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(${State.cols}, 1fr);
+      grid-template-rows: repeat(${State.rows}, 1fr);
+      gap: ${cellGap}px;
+      padding: ${gridPadding}px;
+      width: 100%;
+      height: 100%;
+      max-width: ${availableWidth}px;
+      max-height: ${availableHeight}px;
+    `;
+
+    // Recreate cells with original symbols and restored states
+    State.cells.clear();
+    let idx = 0;
+    for (let r = 0; r < State.rows; r++) {
+      for (let c = 0; c < State.cols; c++) {
+        const wrap = el('div', 'cell-wrap');
+        const lin = r * State.cols + c;
+        if (State.inactiveIndex !== null && lin === State.inactiveIndex) {
+          const filler = el('div', 'card inactive', '');
+          wrap.appendChild(filler);
+        } else {
+          const [sym, color] = State.deck[idx++];
+          const card = el('button', 'card');
+          card.dataset.r = r;
+          card.dataset.c = c;
+          card.onclick = () => selectCard(r, c);
+          wrap.appendChild(card);
+          State.cells.set(key(r, c), { value: [sym, color], revealed: false, matched: false, matchedBy: null, el: card });
+        }
+        grid.appendChild(wrap);
+      }
+    }
+
+    // Restore cell states from gameState
+    gameState.cells.forEach((info, cellKey) => {
+      if (State.cells.has(cellKey)) {
+        const currentCell = State.cells.get(cellKey);
+        currentCell.revealed = info.revealed;
+        currentCell.matched = info.matched;
+        currentCell.matchedBy = info.matchedBy;
+        
+        // Update visual state
+        const card = currentCell.el;
+        if (info.revealed || info.matched) {
+          const [sym, color] = currentCell.value;
+          card.innerHTML = sym;
+          card.style.background = color;
+          card.style.color = '#fff';
+        }
+        if (info.matched) {
+          card.classList.add('matched');
+          if (info.matchedBy) {
+            card.classList.add(`matched-by-${info.matchedBy}`);
+          }
+        }
+      }
+    });
+
+    center.appendChild(scorePanel);
+    center.appendChild(grid);
+    screen.appendChild(center);
+
+    // Update scan highlight and timers
+    updateScanHighlight();
+    if (State.modeType === 'single') {
+      updateTimer();
+    }
   }
 
   window.addEventListener('resize', handleResize);
