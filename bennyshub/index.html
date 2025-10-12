@@ -763,10 +763,34 @@
 
     // TTS functionality
     let availableVoices = [];
+    let englishVoices = [];
     let currentUtterance = null;
 
     function loadVoices() {
       availableVoices = speechSynthesis.getVoices();
+      // Filter for English voices only
+      englishVoices = availableVoices.filter(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.lang.includes('US') || voice.lang.includes('GB') || voice.lang.includes('AU') || !voice.lang.includes('-'))
+      );
+      
+      // If no English voices found, fallback to any English voice
+      if (englishVoices.length === 0) {
+        englishVoices = availableVoices.filter(voice => voice.lang.startsWith('en'));
+      }
+      
+      // If still no voices, use first available
+      if (englishVoices.length === 0 && availableVoices.length > 0) {
+        englishVoices = [availableVoices[0]];
+      }
+      
+      // Reset voice index if it's out of bounds
+      if (settings.voiceIndex >= englishVoices.length) {
+        settings.voiceIndex = 0;
+        saveSettings();
+      }
+      
+      updateVoiceDisplay();
     }
 
     if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -781,20 +805,37 @@
       speechSynthesis.cancel();
       
       currentUtterance = new SpeechSynthesisUtterance(text);
-      if (availableVoices.length > 0) {
-        const voiceIndex = settings.voiceIndex % availableVoices.length;
-        currentUtterance.voice = availableVoices[voiceIndex];
+      if (englishVoices.length > 0) {
+        const voiceIndex = settings.voiceIndex % englishVoices.length;
+        currentUtterance.voice = englishVoices[voiceIndex];
       }
-      currentUtterance.rate = 1.0;
+      currentUtterance.rate = 0.9; // Slightly slower for better clarity
       currentUtterance.pitch = 1.0;
       
       speechSynthesis.speak(currentUtterance);
     }
 
     function updateVoiceDisplay() {
-      if (availableVoices.length > 0) {
-        const voice = availableVoices[settings.voiceIndex % availableVoices.length];
-        const voiceName = voice ? voice.name.split(' ')[0] : 'Default';
+      if (englishVoices.length > 0) {
+        const voice = englishVoices[settings.voiceIndex % englishVoices.length];
+        let voiceName = 'Default';
+        
+        if (voice) {
+          // Clean up voice name for better display
+          voiceName = voice.name;
+          
+          // Remove common prefixes and suffixes for cleaner display
+          voiceName = voiceName.replace(/^(Microsoft|Google|Apple|Samsung)\s+/i, '');
+          voiceName = voiceName.replace(/\s+(Premium|Enhanced|Compact)$/i, '');
+          voiceName = voiceName.replace(/\s+\([^)]+\)$/i, ''); // Remove parenthetical info
+          
+          // Take only the first word/name for simplicity
+          voiceName = voiceName.split(' ')[0];
+          
+          // Capitalize first letter
+          voiceName = voiceName.charAt(0).toUpperCase() + voiceName.slice(1);
+        }
+        
         document.getElementById('voice-status').textContent = voiceName;
       } else {
         document.getElementById('voice-status').textContent = 'Default';
@@ -841,12 +882,16 @@
     });
 
     document.getElementById('voice-toggle').addEventListener('click', () => {
-      if (availableVoices.length > 0) {
-        settings.voiceIndex = (settings.voiceIndex + 1) % availableVoices.length;
+      if (englishVoices.length > 0) {
+        settings.voiceIndex = (settings.voiceIndex + 1) % englishVoices.length;
         applySettings();
         saveSettings();
-        const voice = availableVoices[settings.voiceIndex];
-        speak(`Voice changed to ${voice.name.split(' ')[0]}`);
+        const voice = englishVoices[settings.voiceIndex];
+        let voiceName = voice.name.split(' ')[0];
+        voiceName = voiceName.charAt(0).toUpperCase() + voiceName.slice(1);
+        speak(`Voice changed to ${voiceName}`);
+      } else {
+        speak('No voices available');
       }
     });
 
