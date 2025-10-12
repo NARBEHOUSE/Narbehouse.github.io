@@ -194,11 +194,15 @@
       display: grid;
       gap: 24px;
       grid-template-columns: 1fr;
+      margin-bottom: 24px;
     }
     
     @media (min-width: 768px){
       .cards-container{
         grid-template-columns: 1.3fr 1fr;
+      }
+      .cards-container.three-col{
+        grid-template-columns: repeat(3, 1fr);
       }
     }
     
@@ -264,6 +268,10 @@
       margin: 0 0 12px 0;
       font-weight: 800;
       letter-spacing: -0.5px;
+    }
+    
+    .card h2{
+      font-size: clamp(20px, 2.5vw, 26px);
     }
     
     .card p{
@@ -341,6 +349,29 @@
       transform: translateY(-2px);
     }
     
+    .btn.discord{
+      background: linear-gradient(135deg, #5865F2, #4752C4);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(88, 101, 242, 0.3);
+    }
+    
+    .btn.discord:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(88, 101, 242, 0.4);
+    }
+    
+    .btn.github{
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    .btn.github:hover{
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+    
     .hint{
       font-size: 14px;
       color: var(--muted);
@@ -378,6 +409,151 @@
       left: 0;
       color: var(--narbe-orange);
       font-weight: bold;
+    }
+    
+    .community-section{
+      width: 100%;
+      max-width: 1100px;
+      margin: 48px 0 32px;
+    }
+    
+    .section-header{
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .section-header h2{
+      font-size: clamp(32px, 4vw, 42px);
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--narbe-blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .section-header p{
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 18px);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .community-grid{
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+    
+    @media (min-width: 640px){
+      .community-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (min-width: 900px){
+      .community-grid{
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .community-card{
+      background: 
+        linear-gradient(135deg, rgba(91, 176, 255, 0.03) 0%, rgba(255, 92, 0, 0.02) 100%),
+        var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .community-card::before{
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--narbe-blue), var(--narbe-orange));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .community-card:hover{
+      transform: translateY(-4px);
+      border-color: rgba(91, 176, 255, 0.3);
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 0 40px var(--accent-glow);
+    }
+    
+    .community-card:hover::before{
+      opacity: 1;
+    }
+    
+    .community-icon{
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      background: linear-gradient(135deg, rgba(91, 176, 255, 0.15), rgba(255, 92, 0, 0.15));
+      border: 1px solid rgba(91, 176, 255, 0.2);
+    }
+    
+    .community-card h3{
+      font-size: 20px;
+      margin: 0 0 8px 0;
+      font-weight: 700;
+    }
+    
+    .community-card p{
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 20px 0;
+    }
+    
+    .community-card .btn{
+      width: 100%;
+    }
+    
+    .cta-banner{
+      width: 100%;
+      max-width: 1100px;
+      margin: 32px 0;
+      background: 
+        linear-gradient(135deg, rgba(91, 176, 255, 0.08) 0%, rgba(255, 92, 0, 0.08) 100%),
+        var(--card);
+      border: 2px solid rgba(91, 176, 255, 0.2);
+      border-radius: var(--radius);
+      padding: clamp(32px, 5vw, 48px);
+      text-align: center;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .cta-banner h2{
+      font-size: clamp(24px, 3.5vw, 36px);
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--narbe-orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .cta-banner p{
+      color: var(--muted);
+      font-size: clamp(15px, 2vw, 18px);
+      max-width: 700px;
+      margin: 0 auto 24px;
+      line-height: 1.7;
     }
     
     footer{
@@ -500,6 +676,9 @@
           <div class="brand-subtitle">Accessible Apps & Tools</div>
         </div>
       </div>
+      <nav>
+        <a class="btn secondary" href="/developer-guide.html">Developer Guide</a>
+      </nav>
     </header>
 
     <main>
@@ -545,6 +724,43 @@
           <p class="hint">Built with simplicity, clarity, and accessibility in mind.</p>
         </article>
       </div>
+
+      <section class="community-section">
+        <div class="section-header">
+          <h2>Join the Community</h2>
+          <p>Connect with families, caregivers, and developers building accessible tools together.</p>
+        </div>
+
+        <div class="community-grid">
+          <article class="community-card">
+            <div class="community-icon">💬</div>
+            <h3>Join Discord</h3>
+            <p>Chat with other families, share tips, and get real-time support from the community.</p>
+            <a class="btn discord" href="https://discord.gg/b82emKJhTC" target="_blank" rel="noopener noreferrer">
+              Join Discord
+            </a>
+          </article>
+
+          <article class="community-card">
+            <div class="community-icon">⭐</div>
+            <h3>Contribute</h3>
+            <p>Star us on GitHub, submit issues, or contribute phrase boards and levels.</p>
+            <a class="btn github" href="https://github.com/narbehouse" target="_blank" rel="noopener noreferrer">
+              View on GitHub
+            </a>
+          </article>
+        </div>
+      </section>
+
+      <section class="cta-banner">
+        <h2>Share Your Accessibility Tools</h2>
+        <p>
+          We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page (coming soon to <strong>NARBEfoundation.org</strong>). Let's build an ecosystem that helps more families access the tools they need.
+        </p>
+        <a class="btn primary" href="https://narbehouse.com" target="_blank" rel="noopener noreferrer">
+          Get in Touch
+        </a>
+      </section>
 
       <footer>
         <details>
