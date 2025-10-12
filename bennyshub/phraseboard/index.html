@@ -179,6 +179,87 @@
       color: white;
     }
     
+    .grid-button.voice-toggle {
+      background: var(--brand);
+      color: white;
+      font-size: 14px !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .grid-button.voice-toggle:hover {
+      background: var(--brand);
+      opacity: 0.8;
+    }
+    
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      .main-grid {
+        padding: 10px;
+        gap: 8px;
+      }
+      
+      .grid-button {
+        min-height: 60px;
+        padding: 8px;
+        font-size: 14px;
+      }
+      
+      .sentence-display {
+        padding: 10px;
+        font-size: 18px;
+        min-height: 60px;
+      }
+      
+      header {
+        padding: 8px 15px;
+      }
+      
+      .brand {
+        font-size: 16px;
+      }
+      
+      .header-title {
+        font-size: 14px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .main-grid {
+        padding: 8px;
+        gap: 6px;
+      }
+      
+      .grid-button {
+        min-height: 50px;
+        padding: 6px;
+        font-size: 12px;
+      }
+      
+      .sentence-display {
+        padding: 8px;
+        font-size: 16px;
+        min-height: 50px;
+      }
+      
+      header {
+        padding: 6px 10px;
+      }
+      
+      .brand {
+        font-size: 14px;
+      }
+      
+      .header-title {
+        font-size: 12px;
+      }
+      
+      .grid-button .icon {
+        font-size: 16px;
+      }
+    }
+    
     .grid-button img {
       max-width: 60%;
       max-height: 50px;
@@ -585,10 +666,28 @@ function updateHeaderForCurrentView(){
     }
 
     // TTS
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
     function initVoices() {
       if (!window.speechSynthesis) return;
       const loadVoices = () => {
-        state.voices = window.speechSynthesis.getVoices();
+        let allVoices = window.speechSynthesis.getVoices();
+        
+        // Filter for English voices only on iOS
+        if (isIOS()) {
+          const englishVoices = allVoices.filter(voice => 
+            voice.lang.startsWith('en-') || 
+            voice.lang === 'en' ||
+            voice.name.toLowerCase().includes('english')
+          );
+          // Use English voices if available, otherwise fall back to all voices
+          allVoices = englishVoices.length > 0 ? englishVoices : allVoices;
+        }
+        
+        state.voices = allVoices;
         const femaleVoice = state.voices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) || state.voices[0];
         const maleVoice = state.voices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man')) || state.voices[1] || state.voices[0];
         state.childVoices.girl = femaleVoice;
@@ -797,19 +896,34 @@ function updateHeaderForCurrentView(){
       el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
       el.mainGrid.appendChild(createButton('TTS', '🔊', () => { state.ttsEnabled = !state.ttsEnabled; renderTTSMenu(); }, state.ttsEnabled ? 'active-green' : ''));
       el.mainGrid.appendChild(createButton('TTS on Scan', '👆', () => { state.ttsOnScan = !state.ttsOnScan; renderTTSMenu(); }, state.ttsOnScan ? 'active-green' : ''));
-      const maxVoices = Math.min(6, state.voices.length);
-      const remainingSlots = totalSlots - 3;
-      const voicesToShow = Math.min(maxVoices, remainingSlots);
-      for (let i = 0; i < voicesToShow; i++) {
-        const btn = createButton(`Voice ${i + 1}`, '🎤', () => {
-          state.currentVoice = i;
-          speak('Voice ' + (i + 1) + ' selected', false, null, i);
+      
+      // Voice toggle button
+      if (state.voices && state.voices.length > 1) {
+        const currentVoice = state.voices[state.currentVoice];
+        let displayName = 'Default';
+        if (currentVoice) {
+          // Show a shorter, more user-friendly name
+          displayName = currentVoice.name.split(' ')[0]; // Get first word
+          if (displayName.length > 12) {
+            displayName = displayName.substring(0, 12);
+          }
+          // Add language info for iOS
+          if (isIOS() && currentVoice.lang) {
+            const langCode = currentVoice.lang.split('-')[0];
+            if (langCode !== 'en') displayName += ` (${langCode})`;
+          }
+        }
+        const voiceBtn = createButton(`🎤 ${displayName}`, '', () => {
+          // Cycle through voices
+          state.currentVoice = (state.currentVoice + 1) % state.voices.length;
+          const newVoice = state.voices[state.currentVoice];
+          const newVoiceName = newVoice ? newVoice.name : 'Default';
+          speak(`Voice changed to ${newVoiceName}`, false, null, state.currentVoice);
           renderTTSMenu();
-        }, state.currentVoice === i ? 'active-green' : '');
-        btn.dataset.voiceIndex = i;
-        btn.classList.add('voice-btn');
-        el.mainGrid.appendChild(btn);
+        }, 'voice-toggle');
+        el.mainGrid.appendChild(voiceBtn);
       }
+      
       updateScannable();
     }
 
@@ -912,13 +1026,10 @@ function updateHeaderForCurrentView(){
       if (state.videoModalActive) {
         const controls = Array.from(document.querySelectorAll('#iframeControls .grid-button')).filter(isVisible);
         state.scannableRows = [controls];
-        state.currentRow = 0;
-        if (state.scanMode === 'row') {
-          highlightCurrentRow();
-        } else if (state.scanMode === 'column') {
-          if (state.scanIndex >= controls.length) state.scanIndex = 0;
-          highlightScanIndex();
-        }
+        state.currentRow = -1; // Start at -1 for no highlighting
+        state.scanIndex = -1;
+        // Clear any existing highlights
+        clearScanHighlight();
         return;
       }
 
@@ -933,8 +1044,12 @@ function updateHeaderForCurrentView(){
         if (row.length > 0) rows.push(row);
       }
       state.scannableRows = rows;
-      if (state.currentRow >= rows.length) state.currentRow = 0;
-      if (state.scanIndex >= (rows[state.currentRow] || []).length) state.scanIndex = 0;
+      // Start at -1 for no highlighting until spacebar is pressed
+      state.currentRow = -1;
+      state.scanIndex = -1;
+      state.scanMode = 'row';
+      // Clear any existing highlights
+      clearScanHighlight();
     }
 
     function clearScanHighlight() {
@@ -944,14 +1059,18 @@ function updateHeaderForCurrentView(){
 
     function highlightCurrentRow() {
       clearScanHighlight();
-      if (state.scannableRows[state.currentRow]) {
+      // Only highlight if currentRow is valid (not -1)
+      if (state.currentRow >= 0 && state.scannableRows[state.currentRow]) {
         state.scannableRows[state.currentRow].forEach(element => element.classList.add('row-highlight'));
       }
     }
 
     function highlightScanIndex() {
       clearScanHighlight();
-      if (state.scannableRows[state.currentRow] && state.scannableRows[state.currentRow][state.scanIndex]) {
+      // Only highlight if both currentRow and scanIndex are valid (not -1)
+      if (state.currentRow >= 0 && state.scanIndex >= 0 && 
+          state.scannableRows[state.currentRow] && 
+          state.scannableRows[state.currentRow][state.scanIndex]) {
         const element = state.scannableRows[state.currentRow][state.scanIndex];
         element.classList.add('scan-highlight');
         if (state.ttsOnScan) {
@@ -979,19 +1098,51 @@ function updateHeaderForCurrentView(){
 
     function scanForward() {
       if (!state.scannableRows || state.scannableRows.length === 0) return;
-      if (state.scanMode === 'row') { state.currentRow = (state.currentRow + 1) % state.scannableRows.length; highlightCurrentRow(); }
+      if (state.scanMode === 'row') { 
+        // If currentRow is -1, start at 0, otherwise cycle normally
+        if (state.currentRow === -1) {
+          state.currentRow = 0;
+        } else {
+          state.currentRow = (state.currentRow + 1) % state.scannableRows.length;
+        }
+        highlightCurrentRow(); 
+      }
       else if (state.scanMode === 'column') {
         const currentRow = state.scannableRows[state.currentRow];
-        if (currentRow) { state.scanIndex = (state.scanIndex + 1) % currentRow.length; highlightScanIndex(); }
+        if (currentRow) { 
+          // If scanIndex is -1, start at 0, otherwise cycle normally
+          if (state.scanIndex === -1) {
+            state.scanIndex = 0;
+          } else {
+            state.scanIndex = (state.scanIndex + 1) % currentRow.length;
+          }
+          highlightScanIndex(); 
+        }
       }
     }
 
     function scanBackward() {
       if (!state.scannableRows || state.scannableRows.length === 0) return;
-      if (state.scanMode === 'row') { state.currentRow = state.currentRow <= 0 ? state.scannableRows.length - 1 : state.currentRow - 1; highlightCurrentRow(); }
+      if (state.scanMode === 'row') { 
+        // If currentRow is -1, start at last row, otherwise cycle normally
+        if (state.currentRow === -1) {
+          state.currentRow = state.scannableRows.length - 1;
+        } else {
+          state.currentRow = state.currentRow <= 0 ? state.scannableRows.length - 1 : state.currentRow - 1;
+        }
+        highlightCurrentRow(); 
+      }
       else if (state.scanMode === 'column') {
         const currentRow = state.scannableRows[state.currentRow];
-        if (currentRow) { state.scanIndex = state.scanIndex <= 0 ? currentRow.length - 1 : state.scanIndex - 1; highlightScanIndex(); }
+        if (currentRow) { 
+          // If scanIndex is -1, start at last item, otherwise cycle normally
+          if (state.scanIndex === -1) {
+            state.scanIndex = currentRow.length - 1;
+          } else {
+            state.scanIndex = state.scanIndex <= 0 ? currentRow.length - 1 : state.scanIndex - 1;
+          }
+          highlightScanIndex(); 
+        }
       }
     }
 
@@ -1008,13 +1159,22 @@ function updateHeaderForCurrentView(){
     }
 
     function selectCurrent() {
+      // If nothing is highlighted (currentRow is -1), start scanning
+      if (state.currentRow === -1) {
+        scanForward();
+        return;
+      }
+      
       if (state.scanMode === 'row') {
         state.scanMode = 'column';
-        state.scanIndex = 0;
-        highlightScanIndex();
+        state.scanIndex = -1; // Start column scanning at -1
+        scanForward(); // This will set scanIndex to 0 and highlight
       } else if (state.scanMode === 'column') {
-        if (state.scannableRows[state.currentRow] && state.scannableRows[state.currentRow][state.scanIndex]) {
+        if (state.currentRow >= 0 && state.scanIndex >= 0 && 
+            state.scannableRows[state.currentRow] && 
+            state.scannableRows[state.currentRow][state.scanIndex]) {
           const element = state.scannableRows[state.currentRow][state.scanIndex];
+          const selectedRow = state.currentRow; // Remember which row we were in
           let selectionText = '';
           if (!state.videoModalActive) {
             if (element === el.sentenceDisplay && state.sentenceMode) {
@@ -1036,8 +1196,12 @@ function updateHeaderForCurrentView(){
             element.click();
           }
           if (selectionText && state.ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
+          
+          // Return to row mode, highlighting the same row we were in
           state.scanMode = 'row';
-          highlightCurrentRow();
+          state.currentRow = selectedRow; // Stay on the same row
+          state.scanIndex = -1; // Reset column index
+          highlightCurrentRow(); // Highlight the row
         }
       }
     }
@@ -1162,7 +1326,7 @@ function updateHeaderForCurrentView(){
       renderMainMenu();
       updateScannable();
       state.currentRow = 0; state.scanIndex = 0;
-      setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 100);
+      setTimeout(() => { updateScannable(); }, 100);
     });
 
     // Theme
@@ -1216,7 +1380,7 @@ function updateHeaderForCurrentView(){
           case 'category': renderCategory(); break;
         }
         updateHeaderForCurrentView();
-        setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
+        setTimeout(() => { updateScannable(); }, 50);
       } else {
         openMenu('main');
       }
@@ -1235,16 +1399,18 @@ function updateHeaderForCurrentView(){
         case 'theme': renderThemeMenu(); break;
       }
       updateHeaderForCurrentView();
-      setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
+      setTimeout(() => { updateScannable(); }, 50);
     }
 
     function openCategory(categoryName) {
       saveNavigationState();
       state.currentCategory = categoryName;
-      state.page = 0; state.scanMode = 'row'; state.currentRow = 0;
+      state.page = 0; state.scanMode = 'row'; 
+      state.currentRow = -1; // Start at -1 for no highlighting
+      state.scanIndex = -1;
       renderCategory();
       updateHeaderForCurrentView();
-      setTimeout(() => { updateScannable(); if (state.scannableRows && state.scannableRows.length > 0) highlightCurrentRow(); }, 50);
+      setTimeout(() => { updateScannable(); }, 50);
     }
 
     function toggleSentenceMode() {
