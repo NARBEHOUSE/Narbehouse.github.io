@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Benny's Tic Tac Toe</title>
   <style>
     :root{
@@ -21,17 +21,30 @@
     }
 
     * { box-sizing: border-box; }
-    html,body{height:100%; margin:0;}
+    html,body{
+      height:100%; 
+      margin:0;
+      overflow:hidden;
+    }
+    
+    /* iOS Safari viewport fix */
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        height: -webkit-fill-available;
+      }
+    }
+    
     body{
       background: radial-gradient(1200px 800px at 10% -10%, rgba(255,92,0,.15), transparent),
                   radial-gradient(1200px 800px at 110% 10%, rgba(91,176,255,.15), transparent),
                   var(--bg);
       color:var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      overflow:hidden;
       display:flex;
       align-items:center;
       justify-content:center;
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport for mobile */
     }
 
     .container{
@@ -88,15 +101,17 @@
     }
 
     .board-container{
-      width:min(85vw, 85vh, 500px);
-      height:min(85vw, 85vh, 500px);
-      max-width:500px;
-      max-height:500px;
-      margin:0 auto;
-      flex-shrink:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      width: min(85vw, 85vh, 500px);
+      height: min(85vw, 85vh, 500px);
+      max-width: 500px;
+      max-height: 500px;
+      margin: 0 auto;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden; /* Absolutely prevent any overflow */
     }
 
     .board{
@@ -112,6 +127,9 @@
       border-radius:var(--radius);
       box-shadow: 0 8px 32px rgba(0,0,0,.4);
       box-sizing:border-box;
+      max-width:100%; /* Prevent expansion */
+      max-height:100%; /* Prevent expansion */
+      overflow:hidden; /* Prevent content overflow */
     }
 
     .cell{
@@ -119,7 +137,7 @@
       border:2px solid rgba(255,255,255,.15);
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       color:var(--text);
-      font-size:clamp(2rem,8vw,4rem);
+      font-size:clamp(2rem,4vw,3rem); /* Reduced from 8vw to 4vw and max from 4rem to 3rem */
       font-weight:900;
       cursor:pointer;
       transition: all .2s ease;
@@ -130,6 +148,9 @@
       position:relative;
       aspect-ratio:1;
       min-height:0;
+      max-width:100%; /* Prevent expansion */
+      max-height:100%; /* Prevent expansion */
+      overflow:hidden; /* Prevent content overflow */
       touch-action:manipulation;
       -webkit-tap-highlight-color:transparent;
     }
@@ -147,10 +168,12 @@
     .cell[data-value="X"]{
       color:var(--orange);
       text-shadow: 0 0 20px rgba(255,92,0,.5);
+      line-height: 1; /* Prevent line-height from expanding cell */
     }
     .cell[data-value="O"]{
       color:var(--blue);
       text-shadow: 0 0 20px rgba(91,176,255,.5);
+      line-height: 1; /* Prevent line-height from expanding cell */
     }
 
     .result{
@@ -243,6 +266,98 @@
       .board-container {
         width:min(60vh, 60vw, 350px);
         height:min(60vh, 60vw, 350px);
+      }
+    }
+
+    /* iOS specific fixes */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0.5rem;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+      
+      .board-container {
+        width: min(90vw, 90vh, 450px);
+        height: min(90vw, 90vh, 450px);
+        max-width: 450px;
+        max-height: 450px;
+      }
+      
+      .board {
+        gap: 6px;
+        padding: 12px;
+      }
+      
+      .cell {
+        font-size: clamp(1.5rem, 3vw, 2.5rem); /* More conservative sizing */
+        border-radius: 12px;
+        min-height: 60px;
+        min-width: 60px;
+        max-width: 100%;
+        max-height: 100%;
+      }
+      
+      .title {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        margin: 0 0 0.5rem;
+      }
+      
+      .btn {
+        padding: 0.8rem 1.5rem;
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        min-width: min(250px, 85vw);
+        margin: 0.3rem 0;
+      }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 480px) {
+      .board-container {
+        width: min(95vw, 85vh, 350px);
+        height: min(95vw, 85vh, 350px);
+        max-width: 350px;
+        max-height: 350px;
+      }
+      
+      .board {
+        gap: 4px;
+        padding: 8px;
+      }
+      
+      .cell {
+        font-size: clamp(1.2rem, 2.5vw, 2rem); /* Even more conservative for small screens */
+        border-radius: 8px;
+        min-height: 50px;
+        min-width: 50px;
+        max-width: 100%;
+        max-height: 100%;
+      }
+    }
+
+    /* Landscape mobile orientation */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .container {
+        padding: 0.25rem;
+      }
+      
+      .board-container {
+        width: min(70vh, 70vw, 400px);
+        height: min(70vh, 70vw, 400px);
+        max-width: 400px;
+        max-height: 400px;
+      }
+      
+      .title {
+        font-size: clamp(1.2rem, 3vw, 2rem);
+        margin: 0 0 0.25rem;
+      }
+      
+      .btn {
+        padding: 0.6rem 1.2rem;
+        margin: 0.2rem 0;
+        font-size: clamp(0.8rem, 1.8vw, 1.1rem);
       }
     }
   </style>
@@ -793,6 +908,24 @@
   // Add event listeners when DOM is ready
   document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, adding event listeners');
+    
+    // iOS orientation change fix
+    const handleOrientationChange = () => {
+      // Force a reflow to fix iOS layout issues
+      setTimeout(() => {
+        const container = document.getElementById('container');
+        if (container) {
+          const display = container.style.display;
+          container.style.display = 'none';
+          container.offsetHeight; // Force reflow
+          container.style.display = display || 'flex';
+        }
+      }, 100);
+    };
+    
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', handleOrientationChange);
+    
     document.addEventListener('keydown', e=>{
       console.log('Keydown:', e.code);
       if(e.code==='Space'){ 
