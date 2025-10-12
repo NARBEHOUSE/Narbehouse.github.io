@@ -46,9 +46,9 @@
       inset:0; 
       display:flex; 
       flex-direction:column; 
-      overflow:hidden;
-      height: 100vh; /* Fallback */
-      height: 100dvh; /* Use dynamic viewport height when supported */
+      overflow:hidden; /* Never allow scrollbars */
+      height: 100vh;
+      height: 100dvh;
     }
     .topbar{
       display:flex; 
@@ -59,8 +59,10 @@
       color:#e8f0ff; 
       padding:.5rem 1rem;
       flex-shrink: 0;
-      height: 50px;
+      min-height: 50px;
       box-sizing: border-box;
+      gap: 1rem;
+      position: relative;
     }
     .topbar-title{
       font-weight:800; 
@@ -70,6 +72,33 @@
       background-clip:text; 
       color:transparent;
       text-shadow: 0 2px 10px rgba(91,176,255,.3);
+      flex-shrink: 0;
+      position: absolute;
+      left: 1rem;
+    }
+    .topbar-score{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .score-item-header{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .score-label-header{
+      font-size: 10px;
+      opacity: 0.8;
+      text-transform: uppercase;
+    }
+    .score-value-header{
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--yellow);
     }
     .screen{
       flex:1; 
@@ -77,37 +106,48 @@
       align-items:center; 
       justify-content:center; 
       padding:0.5rem;
-      overflow-y:auto; /* Changed back to auto for scrolling */
-      overflow-x:hidden; /* Prevent horizontal scroll */
+      overflow:hidden; /* Never allow scrollbars */
       min-height: 0;
     }
     .center{
-      width:min(1400px,96vw);
-      min-height: 100%; /* Changed from height to min-height */
+      width:100%;
+      height:100%; 
       display:flex; 
       flex-direction:column; 
       align-items:center; 
-      justify-content:flex-start; /* Changed from center to flex-start */
-      overflow:visible; /* Allow content to be visible */
-      padding:1rem 0; /* Increased padding for better spacing */
+      justify-content:center; 
+      overflow:hidden; /* Never allow scrollbars */
+      padding:0.5rem; 
       box-sizing: border-box;
-      
-      /* Ensure content fits in available space but allows scrolling */
-      max-width: 100vw; /* Prevent horizontal overflow */
     }
     .title{
-      font-family:"Arial Black", Impact, system-ui; 
-      font-size:clamp(2.5rem,6vw,4.5rem); /* Increased sizes */
-      margin:1rem 0 2rem; /* Added more bottom margin */
-      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
-      background-size: 300% 100%;
-      animation: gradient 3s ease infinite;
-      -webkit-background-clip:text; 
-      background-clip:text; 
-      color:transparent; 
-      letter-spacing:.05em;
-      text-shadow: 0 4px 20px rgba(91,176,255,.4);
-      text-align:center;
+      display: none; /* Remove title from main area - now in header */
+    }
+    .main-menu-container{
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    .instructions-and-buttons{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      width: 100%;
+      height: 100%;
+    }
+    .menu-buttons-container{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
       flex-shrink: 0;
     }
     @keyframes gradient {
@@ -120,13 +160,14 @@
       background: linear-gradient(135deg, rgba(91,176,255,.1), rgba(255,92,0,.1));
       border: 2px solid rgba(91,176,255,.3);
       border-radius: var(--radius);
-      padding: 1rem 1.5rem; /* Slightly increased padding */
-      margin: 1rem 0 1.5rem; /* Increased margins for better spacing */
-      max-width: 500px;
+      padding: 0.8rem 1rem;
+      margin: 0;
+      max-width: 400px;
       cursor: pointer;
-      transition: all .3s ease;
-      font-size: 0.9rem; /* Slightly larger font */
-      flex-shrink: 0;
+      transition: all 0.3s ease;
+      font-size: 0.85rem;
+      flex-shrink: 1; /* Allow shrinking */
+      min-width: 250px;
     }
     .instructions:hover {
       transform: translateY(-2px);
@@ -387,42 +428,40 @@
 
     /* Mobile responsive styles */
     @media (max-width: 768px) {
-      /* Set viewport height custom property for mobile */
-      :root {
-        --vh: 1vh;
+      .topbar {
+        padding: 0.3rem 0.8rem;
+        min-height: 45px;
+        gap: 0.5rem;
       }
       
-      html, body {
-        height: calc(var(--vh, 1vh) * 100);
+      .topbar-title {
+        font-size: 12px;
+        position: static; /* Remove absolute positioning on mobile */
       }
       
-      .app {
-        height: calc(var(--vh, 1vh) * 100);
+      .topbar-score {
+        gap: 1rem;
+        font-size: 12px;
       }
       
-      .center {
-        padding: 0.5rem 0.25rem; /* Reduced horizontal padding */
-        overflow-y: visible; /* Allow content to scroll */
-        overflow-x: hidden;
-        justify-content: flex-start;
-        gap: 0.5rem; /* Add gap between elements */
-        width: 100%; /* Use full width */
-        max-width: 100vw; /* Prevent overflow */
+      .score-value-header {
+        font-size: 14px;
       }
       
-      .title{
-        font-size:clamp(1.6rem, 5vw, 2.5rem);
-        margin:0.3rem 0 0.6rem;
-        line-height: 1.1;
+      .score-label-header {
+        font-size: 9px;
+      }
+      
+      .instructions-and-buttons {
+        gap: 0.8rem;
+        padding: 0.5rem;
       }
       
       .instructions {
-        padding: 0.5rem 0.6rem;
-        margin: 0.2rem 0 0.6rem;
+        padding: 0.5rem 0.8rem;
         font-size: 0.75rem;
-        max-width: 98%;
-        width: 100%;
-        box-sizing: border-box;
+        max-width: 95%;
+        min-width: 200px;
       }
       .instructions h3 {
         font-size: 0.8rem;
@@ -438,113 +477,97 @@
         font-size: 0.85rem;
         margin: 0.15rem 0;
         min-width: 130px;
-        min-height: 42px; /* iOS touch target size */
-        max-width: 90vw; /* Prevent button overflow */
-      }
-      
-      .score-panel{
-        gap: 0.6rem;
-        margin-bottom: 0.5rem;
-        padding: 0.4rem 0.6rem;
-        width: 100%;
-        max-width: 100vw;
-        box-sizing: border-box;
-      }
-      .score-value {
-        font-size: 1rem;
+        min-height: 42px;
+        max-width: 90vw;
       }
       
       .grid{
-        gap: 2px; /* Reduced gap for better fitting */
-        padding: 4px; /* Reduced padding */
-        width: 100%;
-        max-width: 100vw;
+        gap: 2px;
+        padding: 4px;
+        margin: 0 auto; /* Ensure centering */
         box-sizing: border-box;
+        justify-self: center; /* Grid self-centering */
       }
       
       .card{
         border-radius: 6px;
-        min-height: 30px; /* Smaller minimum height */
-        font-size: 0.8rem; /* Smaller font for symbols */
+        min-height: 30px;
+        font-size: 0.8rem;
       }
       
       .screen{
-        padding: 0.25rem 0.1rem; /* Reduced horizontal padding */
+        padding: 0.25rem;
       }
     }
 
-    /* Landscape mobile orientation */
+    /* Landscape mobile orientation - side-by-side layout */
     @media (max-width: 768px) and (orientation: landscape) {
-      .app {
-        height: 100vh; /* Use full viewport height */
-        height: 100dvh; /* Use dynamic viewport when available */
-      }
-      
-      .screen {
-        padding: 0.2rem 0.1rem; /* Minimal padding */
-        overflow-y: auto; /* Allow scrolling */
-        overflow-x: hidden;
-      }
-      
-      .center {
-        flex-direction: column;
-        justify-content: flex-start;
-        min-height: auto; /* Remove height constraints */
-        max-height: none; /* Remove max-height constraints */
-        overflow-y: visible; /* Allow scrolling in parent */
-        padding: 0.2rem 0.1rem; /* Minimal padding */
-        gap: 0.2rem; /* Smaller gaps */
-        width: 100%;
-      }
-      
-      .title {
-        margin: 0.1rem 0 0.2rem;
-        font-size: clamp(1rem, 3vw, 1.4rem);
-        line-height: 1;
-        flex-shrink: 0;
+      .instructions-and-buttons {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 1rem;
+        height: 100%;
       }
       
       .instructions {
-        padding: 0.3rem 0.4rem;
-        margin: 0.1rem 0;
-        font-size: 0.6rem;
-        max-width: 98%;
-        flex-shrink: 0;
+        flex: 0 0 auto;
+        max-width: 35%;
+        min-width: 200px;
+        margin: 0;
+        font-size: 0.65rem;
+        padding: 0.4rem 0.6rem;
       }
       
       .instructions h3 {
-        font-size: 0.65rem;
-        margin-bottom: 0.1rem;
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
       }
       
       .instructions p {
-        font-size: 0.55rem;
-        margin: 0.05rem 0;
+        font-size: 0.6rem;
+        margin: 0.1rem 0;
       }
       
-      /* Menu buttons in landscape - ensure all fit */
+      .menu-buttons-container {
+        flex: 0 0 auto;
+        gap: 0.3rem;
+      }
+      
       .btn {
-        padding: 0.25rem 0.6rem;
-        font-size: 0.75rem;
-        margin: 0.05rem 0;
-        min-width: 90px;
-        min-height: 32px;
-        flex-shrink: 0;
+        padding: 0.3rem 0.8rem;
+        font-size: 0.8rem;
+        min-width: 120px;
+        min-height: 36px;
+        margin: 0.1rem 0;
       }
       
-      /* Specific styles for main menu to ensure all 4 buttons are visible */
-      .center > .btn:nth-child(n+2) {
-        /* Target menu buttons specifically */
-        width: auto;
-        max-width: 90vw;
+      /* Ensure game grid stays centered in landscape */
+      .center {
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .grid {
+        margin: 0 auto;
+        justify-self: center;
       }
     }
 
     /* Extra small mobile devices */
     @media (max-width: 480px) {
-      .title{
-        font-size: clamp(1.2rem, 6vw, 1.8rem);
-        margin: 0.2rem 0 0.4rem;
+      .instructions {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
+        min-width: 180px;
+      }
+      
+      .instructions h3 {
+        font-size: 0.75rem;
+      }
+      
+      .instructions p {
+        font-size: 0.6rem;
       }
       
       .btn{
@@ -554,23 +577,10 @@
         margin: 0.1rem 0;
       }
       
-      .instructions {
-        padding: 0.4rem 0.5rem;
-        font-size: 0.7rem;
-      }
-      
-      .instructions h3 {
-        font-size: 0.75rem;
-      }
-      
-      .instructions p {
-        font-size: 0.6rem;
-      }
-      
       .card{
-        min-height: 28px; /* Smaller for very small screens */
+        min-height: 28px;
         border-radius: 4px;
-        font-size: 0.7rem; /* Smaller font for symbols */
+        font-size: 0.7rem;
       }
       
       .grid{
@@ -645,6 +655,7 @@
   <div class="app" id="app">
     <div class="topbar">
       <div class="topbar-title">✨ Concentration Memory Game ✨</div>
+      <div class="topbar-score"></div>
     </div>
     <div class="screen" id="screen"></div>
   </div>
@@ -794,10 +805,25 @@
   // Menus
   function renderPlayerModeMenu(){
     State.mode = 'main_menu';
+    
+    // Update header title to show game name
+    const topbarTitle = document.querySelector('.topbar-title');
+    if (topbarTitle) {
+      topbarTitle.textContent = '🧠 CONCENTRATION 🧠';
+    }
+    
+    // Clear any score info from header
+    const topbarScore = document.querySelector('.topbar-score');
+    if (topbarScore) {
+      topbarScore.innerHTML = '';
+    }
+    
     const screen = $('#screen'); screen.innerHTML='';
     const center = el('div','center');
-    const title = el('div','title','🧠 CONCENTRATION 🧠');
-    center.appendChild(title);
+    
+    // Create flexible layout container
+    const menuContainer = el('div', 'main-menu-container');
+    const instructionsAndButtons = el('div', 'instructions-and-buttons');
     
     // Instructions box
     const instructions = el('div', 'instructions');
@@ -813,18 +839,26 @@
       speak("How to play Concentration. Find matching pairs of cards by flipping them over. Complete the game in the fewest moves and fastest time for the best score. Use spacebar to scan through options. Press return to select. Hold return for 3 seconds to pause the game. In competitive mode, first player to reach 5 points wins. Easy difficulty gives 1 point, Medium gives 2 points, Hard gives 3 points.");
     };
     instructions.addEventListener('mouseenter', () => speak("Instructions"));
-    center.appendChild(instructions);
     
+    // Create buttons container
+    const buttonsContainer = el('div', 'menu-buttons-container');
     State.menuButtons = [
       buttonWithTTS('Single Player', ()=> selectMode('single')),
       buttonWithTTS('Two Player Casual', ()=> selectMode('two_casual')),
       buttonWithTTS('Two Player Competitive', ()=> selectMode('two_competitive')),
       buttonWithTTS('Exit', ()=> exitApp())
     ];
+    buttonsContainer.append(...State.menuButtons);
+    
+    // Assemble layout
+    instructionsAndButtons.appendChild(instructions);
+    instructionsAndButtons.appendChild(buttonsContainer);
+    menuContainer.appendChild(instructionsAndButtons);
+    center.appendChild(menuContainer);
+    
     State.menuScanIndex = 0;
     State.instructionsFocused = false;
     updateMenuScan();
-    center.append(...State.menuButtons);
     screen.appendChild(center);
   }
   
@@ -936,32 +970,39 @@
     const screen = $('#screen'); screen.innerHTML='';
     const center = el('div','center');
 
-    // Score panel
-    const scorePanel = el('div', 'score-panel');
-    if(State.modeType==='two_competitive'){
-      const p1Score = el('div', 'score-item');
-      p1Score.innerHTML = `<div class="score-label">Player 1</div><div class="score-value">${State.points[1]}</div>`;
-      const p2Score = el('div', 'score-item');
-      p2Score.innerHTML = `<div class="score-label">Player 2</div><div class="score-value">${State.points[2]}</div>`;
-      scorePanel.append(p1Score, p2Score);
-    } else if(State.modeType==='single') {
-      const movesDiv = el('div', 'score-item');
-      movesDiv.innerHTML = `<div class="score-label">Moves</div><div class="score-value" id="move-counter">0</div>`;
-      const timeDiv = el('div', 'score-item');
-      timeDiv.innerHTML = `<div class="score-label">Time</div><div class="score-value" id="time-counter">0:00</div>`;
-      scorePanel.append(movesDiv, timeDiv);
+    // Move score/timer to header instead of main area
+    const topbarScore = document.querySelector('.topbar-score');
+    const topbarTitle = document.querySelector('.topbar-title');
+    
+    if (topbarTitle) {
+      topbarTitle.textContent = `🧠 ${difficulty.toUpperCase()} 🧠`;
     }
-    if(scorePanel.children.length > 0) center.appendChild(scorePanel);
+    
+    if (topbarScore) {
+      topbarScore.innerHTML = '';
+      if(State.modeType==='two_competitive'){
+        const p1Score = el('div', 'score-item-header');
+        p1Score.innerHTML = `<div class="score-label-header">Player 1</div><div class="score-value-header">${State.points[1]}</div>`;
+        const p2Score = el('div', 'score-item-header');
+        p2Score.innerHTML = `<div class="score-label-header">Player 2</div><div class="score-value-header">${State.points[2]}</div>`;
+        topbarScore.append(p1Score, p2Score);
+      } else if(State.modeType==='single') {
+        const movesDiv = el('div', 'score-item-header');
+        movesDiv.innerHTML = `<div class="score-label-header">Moves</div><div class="score-value-header" id="move-counter">0</div>`;
+        const timeDiv = el('div', 'score-item-header');
+        timeDiv.innerHTML = `<div class="score-label-header">Time</div><div class="score-value-header" id="timer">00:00</div>`;
+        topbarScore.append(movesDiv, timeDiv);
+      }
+    }
 
-    // Mobile-responsive grid sizing
+    // Mobile-responsive grid sizing - no score panel needed now
     const isMobile = window.innerWidth <= 768;
     const topbarHeight = 54;
-    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 60 : 90) : 0;
-    const screenPadding = isMobile ? 4 : 20; // Much smaller padding on mobile
+    const screenPadding = isMobile ? 4 : 20;
     const centerPadding = isMobile ? 4 : 20;
     
-    const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - screenPadding - centerPadding;
-    const availableWidth = window.innerWidth - (isMobile ? 8 : 40); // Use full screen width on mobile
+    const availableHeight = window.innerHeight - topbarHeight - screenPadding - centerPadding;
+    const availableWidth = window.innerWidth - (isMobile ? 8 : 40);
     
     // Grid sizing with mobile support
     const gridPadding = isMobile ? 4 : 24; // Much smaller padding on mobile
@@ -1060,7 +1101,7 @@
     const elapsed = Math.floor((performance.now() - State.startTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
-    const timeEl = $('#time-counter');
+    const timeEl = $('#timer');
     if(timeEl) timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     requestAnimationFrame(updateTimer);
   }
