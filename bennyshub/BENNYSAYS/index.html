@@ -87,9 +87,9 @@
   let colorCount = 4; // set by menu
 
   // indices
-  let highlightIndex = 0; // gameplay scan index 0..colorCount-1
+  let highlightIndex = -1; // gameplay scan index -1 (no highlight) then 0..colorCount-1
   const titleItems = MENU_ITEMS.slice();
-  let titleHighlight = 0; // 0..3
+  let titleHighlight = -1; // -1 (no highlight) then 0..3
 
   // timers/flags
   let spaceIsDown = false;
@@ -145,7 +145,7 @@
     sequence = [randInt(colorCount)];
     playerProgress = 0;
     round = 1;
-    highlightIndex = 0;
+    highlightIndex = -1; // Start with no highlight until spacebar is pressed
     phase = Phase.SHOWING;
     showSequence();
   }
@@ -194,7 +194,7 @@
     speak('Game over');
     setTimeout(() => {
       phase = Phase.TITLE;
-      titleHighlight = 0;
+      titleHighlight = -1; // No highlight until spacebar is pressed
       flashingIndex = -1;
     }, 1500);
   }
@@ -244,12 +244,14 @@
       lastReturnAt = now;
 
       if (phase === Phase.TITLE) {
-        const sel = titleItems[titleHighlight];
-        if (sel === 'Exit') {
-          exitApp();
-        } else {
-          colorCount = sel === 'Easy' ? 2 : (sel === 'Medium' ? 3 : 4);
-          startNewGame();
+        if (titleHighlight >= 0 && titleHighlight < titleItems.length) {
+          const sel = titleItems[titleHighlight];
+          if (sel === 'Exit') {
+            exitApp();
+          } else {
+            colorCount = sel === 'Easy' ? 2 : (sel === 'Medium' ? 3 : 4);
+            startNewGame();
+          }
         }
         return;
       }
@@ -306,18 +308,41 @@
 
   function stepForward() {
     if (phase === Phase.PLAYER) {
-      highlightIndex = (highlightIndex + 1) % colorCount;
+      if (highlightIndex === -1) {
+        highlightIndex = 0; // First press: go from no highlight to first button
+      } else {
+        highlightIndex = (highlightIndex + 1) % colorCount;
+      }
     } else if (phase === Phase.TITLE) {
-      titleHighlight = (titleHighlight + 1) % titleItems.length;
+      if (titleHighlight === -1) {
+        titleHighlight = 0; // First press: go from no highlight to first menu item
+      } else {
+        titleHighlight = (titleHighlight + 1) % titleItems.length;
+      }
       speak(titleItems[titleHighlight]);
     }
   }
 
   function stepBackward() {
     if (phase === Phase.PLAYER) {
-      highlightIndex = (highlightIndex - 1 + colorCount) % colorCount;
+      if (highlightIndex === 0) {
+        highlightIndex = -1; // Go back to no highlight
+      } else if (highlightIndex === -1) {
+        highlightIndex = colorCount - 1; // Wrap to last button
+      } else {
+        highlightIndex = (highlightIndex - 1 + colorCount) % colorCount;
+      }
     } else if (phase === Phase.TITLE) {
-      titleHighlight = (titleHighlight - 1 + titleItems.length) % titleItems.length;
+      if (titleHighlight === 0) {
+        titleHighlight = -1; // Go back to no highlight
+      } else if (titleHighlight === -1) {
+        titleHighlight = titleItems.length - 1; // Wrap to last menu item
+      } else {
+        titleHighlight = (titleHighlight - 1 + titleItems.length) % titleItems.length;
+      }
+      if (titleHighlight >= 0) {
+        speak(titleItems[titleHighlight]);
+      }
       speak(titleItems[titleHighlight]);
     }
   }
