@@ -77,23 +77,23 @@
       align-items:center; 
       justify-content:center; 
       padding:0.5rem;
-      overflow:hidden; /* Changed from overflow-y:auto */
+      overflow-y:auto; /* Changed back to auto for scrolling */
+      overflow-x:hidden; /* Prevent horizontal scroll */
       min-height: 0;
     }
     .center{
       width:min(1400px,96vw);
-      height:100%; 
+      min-height: 100%; /* Changed from height to min-height */
       display:flex; 
       flex-direction:column; 
       align-items:center; 
       justify-content:flex-start; /* Changed from center to flex-start */
-      overflow:hidden; 
+      overflow:visible; /* Allow content to be visible */
       padding:1rem 0; /* Increased padding for better spacing */
       box-sizing: border-box;
       
-      /* Ensure content fits in available space */
-      max-height: calc(100vh - 50px); /* Account for topbar */
-      max-height: calc(100dvh - 50px);
+      /* Ensure content fits in available space but allows scrolling */
+      max-width: 100vw; /* Prevent horizontal overflow */
     }
     .title{
       font-family:"Arial Black", Impact, system-ui; 
@@ -401,63 +401,75 @@
       }
       
       .center {
-        padding: 0.5rem 0;
-        overflow-y: auto;
+        padding: 0.5rem 0.25rem; /* Reduced horizontal padding */
+        overflow-y: visible; /* Allow content to scroll */
         overflow-x: hidden;
         justify-content: flex-start;
         gap: 0.5rem; /* Add gap between elements */
+        width: 100%; /* Use full width */
+        max-width: 100vw; /* Prevent overflow */
       }
       
       .title{
-        font-size:clamp(1.8rem,6vw,2.8rem);
-        margin:0.5rem 0 0.8rem;
+        font-size:clamp(1.6rem, 5vw, 2.5rem);
+        margin:0.3rem 0 0.6rem;
         line-height: 1.1;
       }
       
       .instructions {
-        padding: 0.6rem 0.8rem;
-        margin: 0.3rem 0 0.8rem;
-        font-size: 0.8rem;
-        max-width: 95%;
+        padding: 0.5rem 0.6rem;
+        margin: 0.2rem 0 0.6rem;
+        font-size: 0.75rem;
+        max-width: 98%;
+        width: 100%;
+        box-sizing: border-box;
       }
       .instructions h3 {
-        font-size: 0.85rem;
-        margin-bottom: 0.4rem;
+        font-size: 0.8rem;
+        margin-bottom: 0.3rem;
       }
       .instructions p {
-        font-size: 0.7rem;
-        margin: 0.2rem 0;
+        font-size: 0.68rem;
+        margin: 0.15rem 0;
       }
       
       .btn{
-        padding: 0.5rem 1.2rem;
-        font-size: 0.9rem;
-        margin: 0.2rem 0;
-        min-width: 140px;
-        min-height: 44px; /* iOS touch target size */
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        margin: 0.15rem 0;
+        min-width: 130px;
+        min-height: 42px; /* iOS touch target size */
+        max-width: 90vw; /* Prevent button overflow */
       }
       
       .score-panel{
-        gap: 0.8rem;
-        margin-bottom: 0.6rem;
-        padding: 0.5rem 0.8rem;
+        gap: 0.6rem;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem 0.6rem;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
       }
       .score-value {
-        font-size: 1.1rem;
+        font-size: 1rem;
       }
       
       .grid{
-        gap: 3px;
-        padding: 6px;
+        gap: 2px; /* Reduced gap for better fitting */
+        padding: 4px; /* Reduced padding */
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
       }
       
       .card{
         border-radius: 6px;
-        min-height: 35px;
+        min-height: 30px; /* Smaller minimum height */
+        font-size: 0.8rem; /* Smaller font for symbols */
       }
       
       .screen{
-        padding: 0.25rem;
+        padding: 0.25rem 0.1rem; /* Reduced horizontal padding */
       }
     }
 
@@ -468,120 +480,140 @@
         height: 100dvh; /* Use dynamic viewport when available */
       }
       
+      .screen {
+        padding: 0.2rem 0.1rem; /* Minimal padding */
+        overflow-y: auto; /* Allow scrolling */
+        overflow-x: hidden;
+      }
+      
       .center {
         flex-direction: column;
         justify-content: flex-start;
-        max-height: calc(100vh - 50px); /* Account for topbar */
-        max-height: calc(100dvh - 50px);
-        overflow-y: auto;
-        padding: 0.3rem 0;
-        gap: 0.4rem;
+        min-height: auto; /* Remove height constraints */
+        max-height: none; /* Remove max-height constraints */
+        overflow-y: visible; /* Allow scrolling in parent */
+        padding: 0.2rem 0.1rem; /* Minimal padding */
+        gap: 0.2rem; /* Smaller gaps */
+        width: 100%;
       }
       
       .title {
-        margin: 0.2rem 0 0.4rem;
-        font-size: clamp(1.2rem, 4vw, 1.8rem);
+        margin: 0.1rem 0 0.2rem;
+        font-size: clamp(1rem, 3vw, 1.4rem);
         line-height: 1;
+        flex-shrink: 0;
       }
       
       .instructions {
-        padding: 0.4rem 0.6rem;
-        margin: 0.2rem 0;
-        font-size: 0.65rem;
-        max-width: 95%;
+        padding: 0.3rem 0.4rem;
+        margin: 0.1rem 0;
+        font-size: 0.6rem;
+        max-width: 98%;
+        flex-shrink: 0;
       }
       
       .instructions h3 {
-        font-size: 0.7rem;
-        margin-bottom: 0.2rem;
+        font-size: 0.65rem;
+        margin-bottom: 0.1rem;
       }
       
       .instructions p {
-        font-size: 0.6rem;
-        margin: 0.1rem 0;
+        font-size: 0.55rem;
+        margin: 0.05rem 0;
       }
       
       /* Menu buttons in landscape - ensure all fit */
       .btn {
-        padding: 0.3rem 0.8rem;
-        font-size: 0.8rem;
-        margin: 0.1rem 0;
-        min-width: 100px;
-        min-height: 36px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+        margin: 0.05rem 0;
+        min-width: 90px;
+        min-height: 32px;
+        flex-shrink: 0;
       }
       
-      /* Ensure all 4 buttons are visible */
-      .center {
-        display: flex;
-        flex-wrap: nowrap;
-        align-items: center;
+      /* Specific styles for main menu to ensure all 4 buttons are visible */
+      .center > .btn:nth-child(n+2) {
+        /* Target menu buttons specifically */
+        width: auto;
+        max-width: 90vw;
       }
     }
 
     /* Extra small mobile devices */
     @media (max-width: 480px) {
       .title{
-        font-size: clamp(1.5rem, 7vw, 2.2rem);
-        margin: 0.3rem 0 0.6rem;
+        font-size: clamp(1.2rem, 6vw, 1.8rem);
+        margin: 0.2rem 0 0.4rem;
       }
       
       .btn{
-        padding: 0.4rem 0.8rem;
-        font-size: 0.85rem;
-        min-width: 120px;
-        margin: 0.15rem 0;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.8rem;
+        min-width: 110px;
+        margin: 0.1rem 0;
       }
       
       .instructions {
-        padding: 0.5rem 0.6rem;
-        font-size: 0.75rem;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
       }
       
       .instructions h3 {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
       }
       
       .instructions p {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
       }
       
       .card{
-        min-height: 30px;
+        min-height: 28px; /* Smaller for very small screens */
         border-radius: 4px;
+        font-size: 0.7rem; /* Smaller font for symbols */
       }
       
       .grid{
-        gap: 2px;
-        padding: 4px;
+        gap: 1px; /* Minimal gap for small screens */
+        padding: 2px; /* Minimal padding */
       }
       
-      .pause-card{
-        padding: 1rem;
-        min-width: min(90vw, 300px);
-      }
-      .pause-title{
-        font-size: 1.2rem;
-        margin-bottom: 0.8rem;
+      .score-panel {
+        padding: 0.3rem 0.4rem;
+        gap: 0.4rem;
       }
       
-      .result{
-        font-size: clamp(0.9rem, 2vw, 1.2rem);
-        padding: 0.5rem 1rem;
-        margin-bottom: 0.5rem;
-      }
-      
-      .competitive-result {
-        padding: 0.8rem;
-        margin-bottom: 0.8rem;
-        max-width: 85vw;
-      }
-      .competitive-result .winner {
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
-      }
-      .competitive-result .final-score {
+      .score-value {
         font-size: 0.9rem;
-        margin: 0.2rem 0;
+      }
+      
+      /* Specific adjustments for landscape on very small screens */
+      @media (orientation: landscape) {
+        .title {
+          font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+          margin: 0.1rem 0 0.2rem;
+        }
+        
+        .btn {
+          padding: 0.2rem 0.5rem;
+          font-size: 0.7rem;
+          min-width: 80px;
+          min-height: 28px;
+          margin: 0.05rem 0;
+        }
+        
+        .instructions {
+          padding: 0.2rem 0.3rem;
+          font-size: 0.55rem;
+        }
+        
+        .instructions h3 {
+          font-size: 0.6rem;
+        }
+        
+        .instructions p {
+          font-size: 0.5rem;
+        }
       }
     }
 
@@ -924,38 +956,38 @@
     // Mobile-responsive grid sizing
     const isMobile = window.innerWidth <= 768;
     const topbarHeight = 54;
-    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 70 : 90) : 0;
-    const screenPadding = isMobile ? 10 : 20;
-    const centerPadding = isMobile ? 10 : 20;
+    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 60 : 90) : 0;
+    const screenPadding = isMobile ? 4 : 20; // Much smaller padding on mobile
+    const centerPadding = isMobile ? 4 : 20;
     
     const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - screenPadding - centerPadding;
-    const availableWidth = Math.min(window.innerWidth - (isMobile ? 20 : 40), 1400);
+    const availableWidth = window.innerWidth - (isMobile ? 8 : 40); // Use full screen width on mobile
     
     // Grid sizing with mobile support
-    const gridPadding = isMobile ? 12 : 24; // Reduced padding on mobile
-    const cellGap = isMobile ? 4 : 8; // Smaller gap on mobile
+    const gridPadding = isMobile ? 4 : 24; // Much smaller padding on mobile
+    const cellGap = isMobile ? 2 : 8; // Much smaller gap on mobile
     
     // Calculate maximum possible cell size
-    const maxCellWidth = Math.floor((availableWidth - gridPadding - (cellGap * (State.cols - 1))) / State.cols);
-    const maxCellHeight = Math.floor((availableHeight - gridPadding - (cellGap * (State.rows - 1))) / State.rows);
+    const maxCellWidth = Math.floor((availableWidth - (gridPadding * 2) - (cellGap * (State.cols - 1))) / State.cols);
+    const maxCellHeight = Math.floor((availableHeight - (gridPadding * 2) - (cellGap * (State.rows - 1))) / State.rows);
     
     // Mobile-optimized cell sizing
     let cellWidth = maxCellWidth;
     let cellHeight = maxCellHeight;
     
     if(isMobile) {
-      // Mobile-specific sizing
+      // Mobile-specific sizing with better hard mode support
       if(difficulty === 'hard') {
-        // Hard mode on mobile: prioritize fitting everything on screen
-        cellWidth = Math.min(maxCellWidth, 60); // Much smaller for mobile
-        cellHeight = Math.min(maxCellHeight, 45);
+        // Hard mode (6x5) on mobile: prioritize fitting everything on screen
+        cellWidth = Math.min(maxCellWidth, 50); // Smaller for 6 columns
+        cellHeight = Math.min(maxCellHeight, 40);
         
-        // Ensure minimum tap targets for accessibility
-        cellWidth = Math.max(cellWidth, 40);
-        cellHeight = Math.max(cellHeight, 35);
+        // Ensure minimum tap targets but prioritize fitting
+        cellWidth = Math.max(cellWidth, 35);
+        cellHeight = Math.max(cellHeight, 30);
       } else {
         // Easy/medium on mobile
-        cellWidth = Math.min(maxCellWidth, 80);
+        cellWidth = Math.min(maxCellWidth, 70);
         cellHeight = Math.min(maxCellHeight, 70);
         cellWidth = Math.max(cellWidth, 50);
         cellHeight = Math.max(cellHeight, 45);
@@ -1658,41 +1690,42 @@
 
     // Mobile-responsive grid sizing (same logic as startGame)
     const isMobile = window.innerWidth <= 768;
-    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 70 : 90) : 0;
-    const screenPadding = isMobile ? 10 : 20;
-    const centerPadding = isMobile ? 10 : 20;
-    const topbarHeight = 50;
-    const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - (screenPadding * 2) - (centerPadding * 2);
-    const availableWidth = Math.min(window.innerWidth - (isMobile ? 20 : 40), 1400);
+    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 60 : 90) : 0;
+    const screenPadding = isMobile ? 4 : 20;
+    const centerPadding = isMobile ? 4 : 20;
+    const topbarHeight = 54;
+    const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - screenPadding - centerPadding;
+    const availableWidth = window.innerWidth - (isMobile ? 8 : 40);
 
-    const gridPadding = isMobile ? 12 : 24;
-    const cellGap = isMobile ? 4 : 8;
+    const gridPadding = isMobile ? 4 : 24;
+    const cellGap = isMobile ? 2 : 8;
     const gridWidth = availableWidth - (gridPadding * 2);
     const gridHeight = availableHeight - (gridPadding * 2);
     const cellWidth = (gridWidth - (cellGap * (State.cols - 1))) / State.cols;
     const cellHeight = (gridHeight - (cellGap * (State.rows - 1))) / State.rows;
     const cellSize = Math.min(cellWidth, cellHeight);
 
+    // Ensure minimum sizes for mobile
+    let finalCellSize = cellSize;
     if (isMobile) {
-      if (cellSize < 45) {
-        const scale = 45 / cellSize;
-        State.rows = Math.max(2, Math.floor(State.rows / scale));
-        State.cols = Math.max(2, Math.floor(State.cols / scale));
-      }
+      const minCellSize = (State.cols === 6) ? 30 : 40; // Smaller minimum for hard mode
+      finalCellSize = Math.max(cellSize, minCellSize);
     }
 
     // Create grid with preserved symbols
     const grid = el('div', 'grid');
     grid.style.cssText = `
       display: grid;
-      grid-template-columns: repeat(${State.cols}, 1fr);
-      grid-template-rows: repeat(${State.rows}, 1fr);
+      grid-template-columns: repeat(${State.cols}, ${finalCellSize}px);
+      grid-template-rows: repeat(${State.rows}, ${finalCellSize}px);
       gap: ${cellGap}px;
       padding: ${gridPadding}px;
-      width: 100%;
-      height: 100%;
-      max-width: ${availableWidth}px;
-      max-height: ${availableHeight}px;
+      width: auto;
+      height: auto;
+      justify-content: center;
+      align-content: center;
+      max-width: 100vw;
+      box-sizing: border-box;
     `;
 
     // Recreate cells with original symbols and restored states
