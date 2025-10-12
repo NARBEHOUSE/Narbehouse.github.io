@@ -1713,52 +1713,73 @@
     screen.innerHTML = '';
     const center = el('div', 'center');
 
-    // Recreate score panel
-    const scorePanel = el('div', 'score-panel');
-    if (State.modeType === 'two_competitive') {
-      const p1Score = el('div', 'score-item');
-      p1Score.innerHTML = `<div class="score-label">Player 1</div><div class="score-value">${State.points[1]}</div>`;
-      const p2Score = el('div', 'score-item');
-      p2Score.innerHTML = `<div class="score-label">Player 2</div><div class="score-value">${State.points[2]}</div>`;
-      scorePanel.append(p1Score, p2Score);
-    } else if (State.modeType === 'single') {
-      const movesDiv = el('div', 'score-item');
-      movesDiv.innerHTML = `<div class="score-label">Moves</div><div class="score-value" id="move-counter">${State.moveCount}</div>`;
-      const timeDiv = el('div', 'score-item');
-      timeDiv.innerHTML = `<div class="score-label">Time</div><div class="score-value" id="timer">00:00</div>`;
-      scorePanel.append(movesDiv, timeDiv);
-    }
-
+    // No score panel needed - using header now
+    
     // Mobile-responsive grid sizing (same logic as startGame)
     const isMobile = window.innerWidth <= 768;
-    const scorePanelHeight = scorePanel.children.length > 0 ? (isMobile ? 60 : 90) : 0;
+    const topbarHeight = 54;
     const screenPadding = isMobile ? 4 : 20;
     const centerPadding = isMobile ? 4 : 20;
-    const topbarHeight = 54;
-    const availableHeight = window.innerHeight - topbarHeight - scorePanelHeight - screenPadding - centerPadding;
+    
+    const availableHeight = window.innerHeight - topbarHeight - screenPadding - centerPadding;
     const availableWidth = window.innerWidth - (isMobile ? 8 : 40);
 
+    // Improved grid sizing to prevent shrinking on orientation change
     const gridPadding = isMobile ? 4 : 24;
     const cellGap = isMobile ? 2 : 8;
-    const gridWidth = availableWidth - (gridPadding * 2);
-    const gridHeight = availableHeight - (gridPadding * 2);
-    const cellWidth = (gridWidth - (cellGap * (State.cols - 1))) / State.cols;
-    const cellHeight = (gridHeight - (cellGap * (State.rows - 1))) / State.rows;
-    const cellSize = Math.min(cellWidth, cellHeight);
-
-    // Ensure minimum sizes for mobile
-    let finalCellSize = cellSize;
-    if (isMobile) {
-      const minCellSize = (State.cols === 6) ? 30 : 40; // Smaller minimum for hard mode
-      finalCellSize = Math.max(cellSize, minCellSize);
+    
+    // Calculate maximum possible cell size
+    const maxCellWidth = Math.floor((availableWidth - (gridPadding * 2) - (cellGap * (State.cols - 1))) / State.cols);
+    const maxCellHeight = Math.floor((availableHeight - (gridPadding * 2) - (cellGap * (State.rows - 1))) / State.rows);
+    
+    // Use the same sizing logic as startGame to maintain consistency
+    let cellWidth = maxCellWidth;
+    let cellHeight = maxCellHeight;
+    
+    if(isMobile) {
+      // Mobile-specific sizing with better hard mode support
+      if(State.currentDifficulty === 'hard') {
+        // Hard mode (6x5) on mobile: prioritize fitting everything on screen
+        cellWidth = Math.min(maxCellWidth, 50); // Smaller for 6 columns
+        cellHeight = Math.min(maxCellHeight, 40);
+        
+        // Ensure minimum tap targets but prioritize fitting
+        cellWidth = Math.max(cellWidth, 35);
+        cellHeight = Math.max(cellHeight, 30);
+      } else {
+        // Easy/medium on mobile
+        cellWidth = Math.min(maxCellWidth, 70);
+        cellHeight = Math.min(maxCellHeight, 70);
+        cellWidth = Math.max(cellWidth, 50);
+        cellHeight = Math.max(cellHeight, 45);
+      }
+    } else {
+      // Desktop sizing (existing logic)
+      if(State.currentDifficulty === 'hard') {
+        cellWidth = Math.min(maxCellWidth, 200);
+        cellHeight = Math.min(maxCellHeight, 150);
+        cellWidth = Math.max(cellWidth, 80);
+        cellHeight = Math.max(cellHeight, 60);
+      } else {
+        const targetRatio = 1.3;
+        if(cellWidth / cellHeight > targetRatio) {
+          cellWidth = Math.floor(cellHeight * targetRatio);
+        } else if(cellHeight / cellWidth > targetRatio) {
+          cellHeight = Math.floor(cellWidth * targetRatio);
+        }
+        cellWidth = Math.min(cellWidth, 180);
+        cellHeight = Math.min(cellHeight, 160);
+        cellWidth = Math.max(cellWidth, 70);
+        cellHeight = Math.max(cellHeight, 60);
+      }
     }
 
     // Create grid with preserved symbols
     const grid = el('div', 'grid');
     grid.style.cssText = `
       display: grid;
-      grid-template-columns: repeat(${State.cols}, ${finalCellSize}px);
-      grid-template-rows: repeat(${State.rows}, ${finalCellSize}px);
+      grid-template-columns: repeat(${State.cols}, ${cellWidth}px);
+      grid-template-rows: repeat(${State.rows}, ${cellHeight}px);
       gap: ${cellGap}px;
       padding: ${gridPadding}px;
       width: auto;
@@ -1817,7 +1838,7 @@
       }
     });
 
-    center.appendChild(scorePanel);
+    // No scorePanel needed - using header now
     center.appendChild(grid);
     screen.appendChild(center);
 
