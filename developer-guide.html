@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Developer Guide — NARBE House</title>
+  <meta name="description" content="Guidelines for building accessible one- and two-button games and apps for NARBE House." />
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root{
+      --bg:#050d1a;
+      --card:#0a1628;
+      --panel:#0f1d34;
+      --text:#f0f6ff;
+      --muted:#94a9c9;
+      --narbe-orange:#ff5c00;
+      --narbe-blue:#5bb0ff;
+      --accent-glow: rgba(91, 176, 255, 0.15);
+      --orange-glow: rgba(255, 92, 0, 0.2);
+      --radius:20px;
+    }
+    
+    * { 
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html, body { height: 100%; }
+    
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: 
+        radial-gradient(ellipse 1400px 900px at 20% 0%, rgba(91, 176, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 1200px 800px at 80% 100%, rgba(255, 92, 0, 0.06) 0%, transparent 50%),
+        linear-gradient(180deg, #050d1a 0%, #0a1220 100%);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .container{
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    header{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 0;
+      margin-bottom: 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    
+    .brand{
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .logo{
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--narbe-blue) 0%, var(--narbe-orange) 100%);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(91, 176, 255, 0.3);
+      transition: transform 0.3s ease;
+    }
+    
+    .logo:hover {
+      transform: scale(1.05) rotate(-5deg);
+    }
+    
+    .brand-text{
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .brand-title{
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--narbe-blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .brand-subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    
+    .btn{
+      appearance: none;
+      border: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      background: linear-gradient(135deg, rgba(91, 176, 255, 0.15), rgba(91, 176, 255, 0.08));
+      color: var(--narbe-blue);
+      border: 1px solid rgba(91, 176, 255, 0.3);
+    }
+    
+    .btn:hover{
+      background: linear-gradient(135deg, rgba(91, 176, 255, 0.25), rgba(91, 176, 255, 0.15));
+      border-color: rgba(91, 176, 255, 0.5);
+      transform: translateY(-2px);
+    }
+    
+    .btn.primary{
+      background: linear-gradient(135deg, var(--narbe-orange), #ff7a33);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 20px var(--orange-glow);
+    }
+    
+    .btn.primary:hover{
+      box-shadow: 0 8px 30px rgba(255, 92, 0, 0.35);
+    }
+    
+    main h1{
+      font-size: clamp(32px, 5vw, 48px);
+      line-height: 1.15;
+      margin: 0 0 16px 0;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--narbe-blue) 50%, var(--narbe-orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .intro{
+      font-size: 18px;
+      color: var(--muted);
+      margin-bottom: 48px;
+      line-height: 1.8;
+    }
+    
+    .section{
+      margin-bottom: 48px;
+    }
+    
+    h2{
+      font-size: clamp(24px, 3vw, 32px);
+      margin: 0 0 20px 0;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(91, 176, 255, 0.2);
+    }
+    
+    h3{
+      font-size: 20px;
+      margin: 32px 0 12px 0;
+      font-weight: 700;
+      color: var(--narbe-blue);
+    }
+    
+    h4{
+      font-size: 16px;
+      margin: 24px 0 8px 0;
+      font-weight: 700;
+      color: var(--narbe-orange);
+    }
+    
+    p{
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    
+    ul, ol{
+      margin: 16px 0 16px 24px;
+      line-height: 1.8;
+    }
+    
+    li{
+      margin: 8px 0;
+      padding-left: 8px;
+    }
+    
+    code{
+      background: rgba(91, 176, 255, 0.1);
+      border: 1px solid rgba(91, 176, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+      font-size: 0.9em;
+      color: var(--narbe-blue);
+    }
+    
+    .card{
+      background: 
+        linear-gradient(135deg, rgba(91, 176, 255, 0.03) 0%, rgba(255, 92, 0, 0.02) 100%),
+        var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 24px 0;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .card h3{
+      margin-top: 0;
+    }
+    
+    .highlight-box{
+      background: linear-gradient(135deg, rgba(255, 92, 0, 0.08), rgba(255, 92, 0, 0.04));
+      border-left: 4px solid var(--narbe-orange);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    
+    .highlight-box p:last-child{
+      margin-bottom: 0;
+    }
+    
+    strong{
+      color: var(--text);
+      font-weight: 700;
+    }
+    
+    .toc{
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+    
+    .toc h3{
+      margin-top: 0;
+      color: var(--text);
+      font-size: 18px;
+    }
+    
+    .toc ul{
+      margin: 12px 0 0 0;
+      list-style: none;
+    }
+    
+    .toc li{
+      margin: 8px 0;
+      padding-left: 0;
+    }
+    
+    .toc a{
+      color: var(--narbe-blue);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    
+    .toc a:hover{
+      color: var(--narbe-orange);
+    }
+    
+    footer{
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    
+    @media (max-width: 767px){
+      header{
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      
+      .btn{
+        width: 100%;
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce){
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand" aria-label="NARBE House">
+        <div class="logo" aria-hidden="true">NH</div>
+        <div class="brand-text">
+          <div class="brand-title">NARBE House</div>
+          <div class="brand-subtitle">Developer Guide</div>
+        </div>
+      </div>
+      <a class="btn" href="/">← Back to Home</a>
+    </header>
+
+    <main>
+      <h1>One- or Two-Button Game Design Guide</h1>
+      <p class="intro">
+        Building accessible games and apps for Ben and families like ours. This guide provides comprehensive principles, input models, and best practices for creating experiences that work with just two keys: <strong>Spacebar</strong> and <strong>Return</strong>.
+      </p>
+
+      <div class="toc">
+        <h3>Quick Navigation</h3>
+        <ul>
+          <li><a href="#core-principles">Core Principles</a></li>
+          <li><a href="#input-model">Input Model</a></li>
+          <li><a href="#scanning">Scanning Behavior</a></li>
+          <li><a href="#visibility">Visibility and Audio</a></li>
+          <li><a href="#layout">Layout and Components</a></li>
+          <li><a href="#mechanics">Game Mechanics That Work</a></li>
+          <li><a href="#feedback">Feedback and State</a></li>
+          <li><a href="#settings">Settings to Include</a></li>
+          <li><a href="#qa">QA Checklist</a></li>
+          <li><a href="#example">Example: P3GL Game</a></li>
+        </ul>
+      </div>
+
+      <section class="section" id="core-principles">
+        <h2>Core Principles</h2>
+        <ul>
+          <li><strong>Entire app and every game must be fully usable with only two keys:</strong> Spacebar and Return, plus optional mouse or touch for caregivers or users who have those access options.</li>
+          <li><strong>No reflex or time-limit mechanics.</strong> Use puzzles, logic, sequencing, matching, turn-based choices, and exploration.</li>
+          <li><strong>All actions should be available through scanning and selection.</strong> Nothing should require precise timing.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="input-model">
+        <h2>Input Model</h2>
+        
+        <div class="card">
+          <h3>Spacebar Controls</h3>
+          <ul>
+            <li><strong>Short press (release):</strong> Move highlight forward in the current scan list. Activates on release so accidental holds don't trigger selection.</li>
+            <li><strong>Hold 3+ seconds:</strong> Enable auto-scan forward until release. Release stops auto-scan.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Return Controls</h3>
+          <ul>
+            <li><strong>Short press (release):</strong> Select the currently highlighted item.</li>
+            <li><strong>Hold 1.5+ seconds:</strong> Open context or pause menus, or exit sub-modes. Use this for options, help, or a safe back button.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Mouse or Touch (Optional)</h3>
+          <ul>
+            <li>For caregiver support or for individuals who have mouse, touch, or eye-tracking access.</li>
+            <li>Click to select, click and hold to open context menus when appropriate.</li>
+            <li><strong>Never require dragging.</strong></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" id="scanning">
+        <h2>Scanning Behavior</h2>
+        <ul>
+          <li><strong>Scanning starts only after the first Spacebar press</strong> in a scene or game.</li>
+          <li><strong>Row scanning:</strong> Spacebar cycles rows, Return enters a row. Within a row, Spacebar cycles buttons, Return selects.</li>
+          <li><strong>Deadzone at wrap:</strong> Before a list wraps to the top, insert one scan step with no highlight to let the screen "rest."</li>
+          <li><strong>Predictable loop order:</strong> Top to bottom, left to right. Never reorder during a session.</li>
+          <li><strong>Focus memory:</strong> When returning from a submenu, restore highlight to the last focused item.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="visibility">
+        <h2>Visibility and Audio</h2>
+        
+        <h3>Visual Design</h3>
+        <ul>
+          <li>High-contrast UI by default, large hit targets, generous spacing</li>
+          <li>Global font scaling controls with presets: 100, 125, 150, 175, 200 percent</li>
+          <li>Color profiles: High Contrast, Light, Dark, and Ben Default (brand colors)</li>
+          <li>Optional outline thickness control for the highlight ring</li>
+        </ul>
+
+        <h3>Text-to-Speech</h3>
+        <ul>
+          <li>TTS for all labels, menu names, states, and outcomes</li>
+          <li>Speak on focus and on selection</li>
+          <li>Provide a TTS rate control and a volume control</li>
+          <li><strong>TTS should never block input</strong></li>
+        </ul>
+      </section>
+
+      <section class="section" id="layout">
+        <h2>Layout and Components</h2>
+        <ul>
+          <li><strong>Consistent header:</strong> Title, Help, Settings, Exit to Main Menu</li>
+          <li><strong>Footer:</strong> Current mode, current scan target name, and a simple legend: <code>Space = next</code>, <code>Return = select</code>, <code>Return hold = menu</code></li>
+          <li>All dialogs and menus scannable using the same pattern as gameplay</li>
+          <li>Large buttons, minimum 64px height on tablet</li>
+          <li>Avoid small tap targets</li>
+          <li><strong>Never require keyboard keys other than Spacebar and Return</strong></li>
+        </ul>
+      </section>
+
+      <section class="section" id="mechanics">
+        <h2>Game Mechanics That Work Well</h2>
+        
+        <div class="highlight-box">
+          <p><strong>Golden rule:</strong> Turn-based puzzles, no timers, no sudden fail states.</p>
+        </div>
+
+        <h3>Recommended Mechanics</h3>
+        <ul>
+          <li>Matching and memory games</li>
+          <li>Pattern sequencing and Simon-style repetition <em>(without timing)</em></li>
+          <li>Sorting and categorization</li>
+          <li>Grid navigation with obstacles and keys</li>
+          <li>Jigsaw or tile assembly with rotate and place</li>
+          <li>Spot the difference</li>
+          <li>Non-timed maze traversal with step-by-step moves</li>
+          <li>Logic puzzles with yes or no choices</li>
+          <li>Story choices with inventory gates</li>
+          <li>Picture building or coloring by areas, stepwise fills only</li>
+          <li>Word building with predictive suggestions</li>
+          <li>Simple math or shapes, one step at a time</li>
+        </ul>
+
+        <h3>Mechanics to Avoid</h3>
+        <div class="card">
+          <p><strong>Never use:</strong> Timers, falling objects, health decay, platforming, reaction tests, QTEs, hold-to-aim precision, multi-axis analog control.</p>
+        </div>
+      </section>
+
+      <section class="section" id="feedback">
+        <h2>Feedback and State</h2>
+        <ul>
+          <li><strong>On focus change:</strong> Speak the item name and show a strong highlight</li>
+          <li><strong>On selection:</strong> Speak confirmation and show a brief glow or scale pulse</li>
+          <li><strong>On error or locked action:</strong> Speak a short helpful line (e.g., "Need the key for this door")</li>
+          <li><strong>Always provide Undo or Back</strong> in the context menu reached by Return hold</li>
+        </ul>
+
+        <h3>Menus and Pause</h3>
+        <ul>
+          <li><strong>Return hold opens Pause or Context anywhere.</strong> Include Resume, Restart, Help, Settings, Exit</li>
+          <li>Hold Return should also back out of sub-rows to row-select mode</li>
+        </ul>
+      </section>
+
+      <section class="section" id="settings">
+        <h2>Settings to Include</h2>
+        <ul>
+          <li>TTS on/off, rate, volume</li>
+          <li>Highlight style: color, thickness, pulse on/off</li>
+          <li>Font size presets</li>
+          <li>Color profile and contrast</li>
+          <li>Scan speed for auto-scan</li>
+          <li>Audio cues on/off</li>
+          <li>Reduce motion on/off</li>
+        </ul>
+
+        <h3>Data and Persistence</h3>
+        <ul>
+          <li><strong>Auto-save progress</strong> on each selection that changes state</li>
+          <li>Resume puts the player back in the exact frame with the previous highlight restored</li>
+          <li>Keep a per-game Settings profile, and a global default</li>
+        </ul>
+      </section>
+
+      <section class="section" id="qa">
+        <h2>QA Checklist Before You Ship</h2>
+        <ul>
+          <li>✓ Can every action be performed with only Spacebar and Return?</li>
+          <li>✓ Can the same action be performed with mouse or touch when needed?</li>
+          <li>✓ Does scanning begin only after the first Spacebar press?</li>
+          <li>✓ Do Spacebar short, Spacebar hold, Return short, Return hold all behave as specified?</li>
+          <li>✓ Is there a deadzone before wrap?</li>
+          <li>✓ Are fonts readable at 100% on a tablet and adjustable to 200%?</li>
+          <li>✓ Does TTS read focus, selection, errors, and outcomes?</li>
+          <li>✓ Can the player open Pause with Return hold on every screen?</li>
+          <li>✓ Are there no timers or reflex steps anywhere?</li>
+          <li>✓ Does the game auto-save and resume correctly?</li>
+        </ul>
+      </section>
+
+      <section class="section" id="example">
+        <h2>Example: P3GL (Peggle-style Game) Input Setup</h2>
+        
+        <p>Here's an example of how a two-button setup can power a complete skill-based puzzle game without requiring reaction timing:</p>
+
+        <div class="card">
+          <h3>P3GL Input Model</h3>
+          <ul>
+            <li><strong>Spacebar (short press):</strong> Start the aim oscillation left to right</li>
+            <li><strong>Spacebar (long hold):</strong> Reverses the aim direction after each click, allowing fine-tuned aiming with one button</li>
+            <li><strong>Spacebar (release):</strong> Stops movement and locks in aim</li>
+            <li><strong>Return (short press):</strong> Fires the shot or launches the ball</li>
+            <li><strong>Return (long hold):</strong> Opens the pause or options menu (Resume, Restart, Exit)</li>
+          </ul>
+          
+          <div class="highlight-box">
+            <p>This allows Ben to aim, adjust, and fire entirely with one button for control and one button for confirmation, keeping it accessible, predictable, and satisfying without any time-based input or precision demand.</p>
+          </div>
+        </div>
+      </section>
+
+      <div style="margin-top: 60px; text-align: center;">
+        <a class="btn primary" href="https://narbehouse.com" target="_blank" rel="noopener noreferrer">Get in Touch</a>
+        <p style="margin-top: 16px; color: var(--muted);">Have questions or want to contribute? Reach out to us.</p>
+      </div>
+    </main>
+
+    <footer>
+      <p>© <span id="year"></span> NARBE House · Built with accessibility in mind</p>
+      <p style="margin-top: 8px;"><a href="/" style="color: var(--narbe-blue); text-decoration: none;">← Back to Home</a></p>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
