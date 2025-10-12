@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NARBE House — Web Apps and Tools</title>
+  <meta name="description" content="NARBE House web apps and tools. Access Benny's Accessibility Hub Beta and the Phrase Board Editor." />
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root{
+      --bg:#0b2239;
+      --card:#111a26;
+      --panel:#152235;
+      --text:#e8f0ff;
+      --muted:#b6c6dd;
+      --narbe-orange:#ff5c00;
+      --narbe-blue:#5bb0ff;
+      --narbe-purple:#9f7aea;
+      --ring:0 0 0 4px rgba(91,176,255,.25), 0 8px 24px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+      background: radial-gradient(1200px 800px at 15% 10%, #0f2f4f 0%, var(--bg) 40%) no-repeat,
+                  radial-gradient(1000px 700px at 85% 30%, #0f2742 0%, var(--bg) 50%) no-repeat,
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .container{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100dvh;
+    }
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+    }
+    .logo{
+      width:44px; height:44px; border-radius:12px;
+      background: linear-gradient(145deg, var(--narbe-blue), var(--narbe-purple));
+      box-shadow: var(--ring);
+      display:grid; place-items:center; color:#0a1120; font-weight:800;
+      letter-spacing:.5px;
+    }
+    .nav-badge{
+      font-size:.9rem; color:var(--muted);
+    }
+    main{
+      display:grid; place-items:center;
+      padding: 24px 0 32px;
+    }
+    .card{
+      width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00)), var(--card);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      padding: clamp(20px, 3.5vw, 40px);
+    }
+    h1{
+      font-size: clamp(28px, 4vw, 44px);
+      line-height:1.15;
+      margin: 0 0 12px 0;
+      letter-spacing:.3px;
+    }
+    p.lede{
+      margin: 0 0 24px 0;
+      font-size: clamp(16px, 1.8vw, 20px);
+      color: var(--muted);
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size:.9rem;
+      background: rgba(155, 177, 205, .12);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .grid{
+      display:grid; gap:16px; margin-top: 20px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px){
+      .grid{ grid-template-columns: 1.2fr .8fr; }
+    }
+    .panel{
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: calc(var(--radius) - 6px);
+      padding: 20px;
+    }
+    h2{
+      font-size: clamp(20px, 2.4vw, 28px);
+      margin: 0 0 10px 0;
+    }
+    .actions{
+      display:flex; flex-wrap:wrap; gap:12px; margin-top: 18px;
+    }
+    .btn{
+      appearance:none; border:0;
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:10px; text-decoration:none; cursor:pointer;
+      font-weight:700; letter-spacing:.3px;
+      padding:14px 18px; border-radius: 14px;
+      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+      color:#0a1120; background: var(--narbe-orange);
+      box-shadow: 0 10px 24px rgba(255,92,0,.25);
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+    .btn:active{ transform: translateY(0); }
+    .btn.secondary{
+      background: linear-gradient(145deg, var(--narbe-blue), var(--narbe-purple));
+      color:#0a1120;
+      box-shadow: 0 10px 24px rgba(91,176,255,.22);
+    }
+    .hint{
+      font-size:.95rem; color: var(--muted);
+      margin-top: 10px;
+    }
+    ul.simple{
+      padding-left: 18px; margin: 10px 0 0 0;
+    }
+    ul.simple li{ margin: 6px 0; }
+    footer{
+      margin-top: 28px; color: var(--muted); font-size:.9rem;
+    }
+    details{
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    summary{ cursor:pointer; font-weight:600; }
+    .license{
+      white-space: pre-wrap; user-select:text; margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: .85rem;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text);
+    }
+    .sr-only{
+      position:absolute !important; width:1px; height:1px;
+      padding:0; margin:-1px; overflow:hidden; clip: rect(0,0,0,0);
+      white-space:nowrap; border:0;
+    }
+    .center{
+      text-align:center;
+    }
+    .copyright{
+      margin-top: 16px; text-align:center;
+    }
+    a.inline{
+      color: var(--narbe-blue);
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand" aria-label="NARBE House">
+        <div class="logo" aria-hidden="true">NH</div>
+        <div>
+          <div style="font-weight:800; letter-spacing:.5px;">NARBE House</div>
+          <div class="nav-badge">Web Apps and Tools</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <article class="card" aria-labelledby="title">
+        <span class="pill" aria-hidden="true">Welcome</span>
+        <h1 id="title">Welcome to NARBE House web apps and tools</h1>
+        <p class="lede">
+          This is the home for our accessible tools and editors that support Ben and families like ours. Game editors and builders for titles like <strong>Ben's P3GL Adventure</strong> and <strong>Ben's Mini Golf</strong> will live here as they are released.
+        </p>
+
+        <div class="grid">
+          <section class="panel" aria-labelledby="hub">
+            <h2 id="hub">Start here</h2>
+            <p>
+              For now, please try <strong>Benny's Accessibility Hub Beta</strong>. It includes a predictive keyboard, a customizable phrase and media board, and early games that work with two switches mapped to Space and Return. It also supports mouse or head and eye tracking where available.
+            </p>
+            <div class="actions">
+              <a class="btn" href="/bennyshub" aria-label="Open Benny's Accessibility Hub Beta">
+                Open Benny's Hub Beta
+              </a>
+              <a class="btn secondary" href="/bennyshub/phraseboard/phrase-builder.html" aria-label="Open the Phrase Board Editor">
+                Phrase Board Editor
+              </a>
+            </div>
+            <p class="hint">Links: <a class="inline" href="/bennyshub">/bennyshub</a> and <a class="inline" href="/bennyshub/phraseboard/phrase-builder.html">/bennyshub/phraseboard/phrase-builder.html</a></p>
+          </section>
+
+          <section class="panel" aria-labelledby="coming">
+            <h2 id="coming">Coming soon</h2>
+            <ul class="simple">
+              <li>Level editors for P3GL Adventure and Mini Golf</li>
+              <li>Import and export of levels and boards</li>
+              <li>Simple sharing flow for families and caregivers</li>
+              <li>Docs and quick start guides</li>
+            </ul>
+            <p class="hint">We build with simplicity, clarity, and accessibility in mind.</p>
+          </section>
+        </div>
+
+        <footer>
+          <details>
+            <summary>License and copyright</summary>
+            <div class="license">
+Copyright (c) 2025 NARBE LLC. All rights reserved.
+
+This software and associated documentation files (the "Software") are the
+intellectual property of NARBE LLC and are licensed exclusively to
+the NARBE Foundation, a 501(c)(3) nonprofit organization.
+
+Individuals are permitted to use and modify the Software for personal,
+educational, or non-commercial purposes only, provided that this copyright
+notice and license text remain included in all copies or derivative works.
+
+Commercial use, redistribution, sublicensing, or sale of the Software,
+in whole or in part, is strictly prohibited without express written
+permission from NARBE LLC.
+
+For licensing or permission requests, please contact us through
+https://narbehouse.com.
+            </div>
+          </details>
+          <div class="copyright">© <span id="year"></span> NARBE House • All rights reserved</div>
+        </footer>
+      </article>
+    </main>
+  </div>
+
+  <noscript>
+    <div class="center" style="padding:10px; color:#fff;">
+      This site works best with JavaScript enabled. Links still function without scripts.
+    </div>
+  </noscript>
+
+  <script>
+    // Set current year in footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
