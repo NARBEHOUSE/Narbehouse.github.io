@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>Benny's Tic Tac Toe</title>
   <style>
     :root{
@@ -41,18 +41,21 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      padding:2rem;
+      padding:1rem;
+      max-width:100vw;
+      overflow:hidden;
     }
 
     .title{
-      font-size:clamp(3rem,6vw,5rem);
+      font-size:clamp(2rem,5vw,4rem);
       font-weight:900;
-      margin:0 0 2rem;
+      margin:0 0 1rem;
       background: linear-gradient(90deg, var(--orange), var(--blue));
       -webkit-background-clip:text;
       background-clip:text;
       color:transparent;
       text-align:center;
+      flex-shrink:0;
     }
 
     .btn{
@@ -60,15 +63,17 @@
       border:1px solid rgba(255,255,255,.12);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
       color:var(--text);
-      padding:1.5rem 3rem;
+      padding:1rem 2rem;
       border-radius:var(--radius);
-      font-size:clamp(1.2rem,3vw,2rem);
+      font-size:clamp(1rem,2.5vw,1.5rem);
       font-weight:700;
-      margin:.75rem 0;
+      margin:.5rem 0;
       cursor:pointer;
       transition: all .2s ease;
-      min-width:320px;
+      min-width:min(280px, 80vw);
+      max-width:90vw;
       text-align:center;
+      touch-action:manipulation;
     }
     .btn:hover{
       transform:translateY(-2px);
@@ -83,22 +88,30 @@
     }
 
     .board-container{
-      width:min(90vw, 90vh, 600px);
-      height:min(90vw, 90vh, 600px);
+      width:min(85vw, 85vh, 500px);
+      height:min(85vw, 85vh, 500px);
+      max-width:500px;
+      max-height:500px;
       margin:0 auto;
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
 
     .board{
       display:grid;
       grid-template-columns:repeat(3,1fr);
       grid-template-rows:repeat(3,1fr);
-      gap:12px;
+      gap:8px;
       width:100%;
       height:100%;
-      padding:20px;
+      aspect-ratio:1;
+      padding:16px;
       background: rgba(0,0,0,.3);
       border-radius:var(--radius);
       box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      box-sizing:border-box;
     }
 
     .cell{
@@ -106,18 +119,25 @@
       border:2px solid rgba(255,255,255,.15);
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       color:var(--text);
-      font-size:clamp(3rem,12vw,5rem);
+      font-size:clamp(2rem,8vw,4rem);
       font-weight:900;
       cursor:pointer;
       transition: all .2s ease;
-      border-radius:20px;
+      border-radius:16px;
       display:flex;
       align-items:center;
       justify-content:center;
       position:relative;
+      aspect-ratio:1;
+      min-height:0;
+      touch-action:manipulation;
+      -webkit-tap-highlight-color:transparent;
     }
     .cell:hover{
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .cell:active{
+      transform:scale(0.95);
     }
     .cell.scan{
       box-shadow:var(--ring);
@@ -134,15 +154,16 @@
     }
 
     .result{
-      font-size:clamp(2rem,4vw,3rem);
+      font-size:clamp(1.5rem,3vw,2.5rem);
       font-weight:800;
-      margin:1rem 0 2rem;
-      padding:1rem 2rem;
+      margin:0.5rem 0 1rem;
+      padding:0.5rem 1rem;
       background: linear-gradient(90deg, var(--purple), var(--blue));
       -webkit-background-clip:text;
       background-clip:text;
       color:transparent;
       text-align:center;
+      flex-shrink:0;
     }
 
     .pause-overlay{
@@ -186,10 +207,43 @@
     }
 
     .status{
-      font-size:clamp(1.2rem,2.5vw,1.8rem);
-      margin:1rem 0;
+      font-size:clamp(1rem,2.2vw,1.5rem);
+      margin:0.5rem 0;
       color:var(--muted);
       text-align:center;
+      flex-shrink:0;
+    }
+
+    @media (max-height: 600px) {
+      .container {
+        padding:0.5rem;
+      }
+      
+      .title {
+        margin:0 0 0.5rem;
+        font-size:clamp(1.5rem,4vw,3rem);
+      }
+      
+      .board-container {
+        width:min(70vw, 70vh, 400px);
+        height:min(70vw, 70vh, 400px);
+      }
+      
+      .btn {
+        padding:0.75rem 1.5rem;
+        margin:0.25rem 0;
+      }
+      
+      .status {
+        margin:0.25rem 0;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      .board-container {
+        width:min(60vh, 60vw, 350px);
+        height:min(60vh, 60vw, 350px);
+      }
     }
   </style>
 </head>
@@ -248,10 +302,10 @@
     currentTurn: 'X',
     board: Array.from({length:3},()=>Array(3).fill('')),
     order: [],
-    menuButtons: [], menuScanIndex: 0,
-    pauseButtons: [], pauseScanIndex: 0, pauseJustOpened: false,
-    overButtons: [], overScanIndex: 0,
-    boardScanIndex: 0,
+    menuButtons: [], menuScanIndex: -1, menuScanInitiated: false,
+    pauseButtons: [], pauseScanIndex: -1, pauseJustOpened: false, pauseScanInitiated: false,
+    overButtons: [], overScanIndex: -1, overScanInitiated: false,
+    boardScanIndex: -1, boardScanInitiated: false,
     spaceHeld: false, spaceStart: 0, spaceBackwardActive:false, spaceTimer:null,
     returnHeld:false, returnStart:0, returnTimer:null, pauseTriggered:false,
   };
@@ -260,11 +314,12 @@
     State.board = Array.from({length:3},()=>Array(3).fill(''));
     State.order = [];
     for(let r=0;r<3;r++) for(let c=0;c<3;c++) State.order.push([r,c]);
-    State.boardScanIndex = 0;
+    State.boardScanIndex = -1;
   }
 
   function renderMainMenu(){
     State.mode = 'main_menu';
+    State.menuScanInitiated = false;
     const container = $('#container');
     container.innerHTML='';
 
@@ -278,7 +333,7 @@
     const btnExit = buttonWithTTS('Exit to Hub', () => exitApp());
 
     State.menuButtons.push(btnSingle, btnTwo, btnExit);
-    State.menuScanIndex = 0;
+    State.menuScanIndex = -1;
     updateMenuScan();
 
     container.append(btnSingle, btnTwo, btnExit);
@@ -295,26 +350,35 @@
 
   function updateMenuScan(){
     State.menuButtons.forEach((b,i)=>{
-      b.classList.toggle('scan', i===State.menuScanIndex);
+      b.classList.toggle('scan', State.menuScanInitiated && i===State.menuScanIndex);
     });
-    if(State.menuButtons.length){ 
+    if(State.menuButtons.length && State.menuScanInitiated && State.menuScanIndex >= 0){ 
       speak(State.menuButtons[State.menuScanIndex].textContent); 
     }
   }
 
   function menuScanForward(){ 
-    State.menuScanIndex = (State.menuScanIndex+1)%State.menuButtons.length; 
+    if(State.menuScanIndex === -1) {
+      State.menuScanIndex = 0;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex+1)%State.menuButtons.length;
+    }
     updateMenuScan(); 
   }
   
   function menuScanBackward(){ 
-    State.menuScanIndex = (State.menuScanIndex-1+State.menuButtons.length)%State.menuButtons.length; 
+    if(State.menuScanIndex === -1) {
+      State.menuScanIndex = State.menuButtons.length - 1;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex-1+State.menuButtons.length)%State.menuButtons.length;
+    }
     updateMenuScan(); 
   }
 
   function startGame(mode){
     State.gameMode = mode; 
     State.mode = 'game'; 
+    State.boardScanInitiated = false;
     resetBoard();
     const container = $('#container');
     container.innerHTML='';
@@ -378,17 +442,25 @@
       const v = State.board[r][c];
       cell.textContent = v;
       cell.setAttribute('data-value', v);
-      cell.classList.toggle('scan', i===State.boardScanIndex);
+      cell.classList.toggle('scan', State.boardScanInitiated && i===State.boardScanIndex);
     });
   }
 
   function boardScanForward(){ 
-    State.boardScanIndex = (State.boardScanIndex+1)%State.order.length; 
+    if(State.boardScanIndex === -1) {
+      State.boardScanIndex = 0;
+    } else {
+      State.boardScanIndex = (State.boardScanIndex+1)%State.order.length;
+    }
     updateBoardScan(); 
   }
   
   function boardScanBackward(){ 
-    State.boardScanIndex = (State.boardScanIndex-1+State.order.length)%State.order.length; 
+    if(State.boardScanIndex === -1) {
+      State.boardScanIndex = State.order.length - 1;
+    } else {
+      State.boardScanIndex = (State.boardScanIndex-1+State.order.length)%State.order.length;
+    }
     updateBoardScan(); 
   }
 
@@ -488,6 +560,7 @@
 
   function gameOver(result){
     State.mode = 'game_over_menu';
+    State.overScanInitiated = false;
     const container = $('#container');
     container.innerHTML='';
 
@@ -508,7 +581,7 @@
     const no = buttonWithTTS('Main Menu', ()=> renderMainMenu());
     const exit = buttonWithTTS('Exit to Hub', ()=> exitApp());
     State.overButtons.push(yes,no,exit);
-    State.overScanIndex = 0; 
+    State.overScanIndex = -1; 
     updateOverScan();
 
     container.append(yes,no,exit);
@@ -516,17 +589,25 @@
   }
 
   function updateOverScan(){
-    State.overButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.overScanIndex));
-    if(State.overButtons.length) speak(State.overButtons[State.overScanIndex].textContent);
+    State.overButtons.forEach((b,i)=> b.classList.toggle('scan', State.overScanInitiated && i===State.overScanIndex));
+    if(State.overButtons.length && State.overScanInitiated && State.overScanIndex >= 0) speak(State.overButtons[State.overScanIndex].textContent);
   }
 
   function overScanForward(){ 
-    State.overScanIndex = (State.overScanIndex+1)%State.overButtons.length; 
+    if(State.overScanIndex === -1) {
+      State.overScanIndex = 0;
+    } else {
+      State.overScanIndex = (State.overScanIndex+1)%State.overButtons.length;
+    }
     updateOverScan(); 
   }
   
   function overScanBackward(){ 
-    State.overScanIndex = (State.overScanIndex-1+State.overButtons.length)%State.overButtons.length; 
+    if(State.overScanIndex === -1) {
+      State.overScanIndex = State.overButtons.length - 1;
+    } else {
+      State.overScanIndex = (State.overScanIndex-1+State.overButtons.length)%State.overButtons.length;
+    }
     updateOverScan(); 
   }
 
@@ -539,6 +620,7 @@
   function showPause(){
     if(State.mode!=='game') return;
     State.mode='pause';
+    State.pauseScanInitiated = false;
     State.returnHeld=false; 
     State.returnStart=0; 
     State.pauseJustOpened=true;
@@ -556,7 +638,7 @@
     });
     const exit = buttonWithTTS('Exit to Hub', exitApp);
     State.pauseButtons.push(cont, back, exit);
-    State.pauseScanIndex = 0; 
+    State.pauseScanIndex = -1; 
     updatePauseScan();
 
     card.append(cont, back, exit); 
@@ -566,17 +648,25 @@
   }
 
   function updatePauseScan(){
-    State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.pauseScanIndex));
-    if(State.pauseButtons.length) speak(State.pauseButtons[State.pauseScanIndex].textContent);
+    State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', State.pauseScanInitiated && i===State.pauseScanIndex));
+    if(State.pauseButtons.length && State.pauseScanInitiated && State.pauseScanIndex >= 0) speak(State.pauseButtons[State.pauseScanIndex].textContent);
   }
 
   function pauseScanForward(){ 
-    State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; 
+    if(State.pauseScanIndex === -1) {
+      State.pauseScanIndex = 0;
+    } else {
+      State.pauseScanIndex = (State.pauseScanIndex+1)%State.pauseButtons.length;
+    }
     updatePauseScan(); 
   }
   
   function pauseScanBackward(){ 
-    State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length; 
+    if(State.pauseScanIndex === -1) {
+      State.pauseScanIndex = State.pauseButtons.length - 1;
+    } else {
+      State.pauseScanIndex = (State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length;
+    }
     updatePauseScan(); 
   }
   
@@ -588,6 +678,7 @@
 
   // Key handling
   function onSpaceDown(){
+    console.log('Space down, mode:', State.mode);
     if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
     if(State.spaceHeld) return;
     State.spaceHeld = true; 
@@ -604,6 +695,7 @@
 
   function spaceBackwardLoop(){
     if(!State.spaceHeld) return;
+    console.log('Space backward loop, mode:', State.mode);
     if(State.mode==='game') boardScanBackward();
     else if(State.mode==='main_menu') menuScanBackward();
     else if(State.mode==='pause') pauseScanBackward();
@@ -612,21 +704,38 @@
   }
 
   function onSpaceUp(){
-    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
     const dur = State.spaceStart ? (performance.now()-State.spaceStart)/1000 : 0;
+    console.log('Space up, mode:', State.mode, 'duration:', dur, 'wasBack:', State.spaceBackwardActive);
+    
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
     if(State.spaceTimer){ clearTimeout(State.spaceTimer); State.spaceTimer=null; }
     const wasBack = State.spaceBackwardActive; 
     State.spaceHeld=false; 
     State.spaceBackwardActive=false;
+    
     if(!wasBack && dur>=0.1 && dur<3){
-      if(State.mode==='game') boardScanForward();
-      else if(State.mode==='main_menu') menuScanForward();
-      else if(State.mode==='pause') pauseScanForward();
-      else if(State.mode==='game_over_menu') overScanForward();
+      console.log('Triggering scan for mode:', State.mode);
+      if(State.mode==='game') {
+        State.boardScanInitiated = true;
+        boardScanForward();
+      }
+      else if(State.mode==='main_menu') {
+        State.menuScanInitiated = true;
+        menuScanForward();
+      }
+      else if(State.mode==='pause') {
+        State.pauseScanInitiated = true;
+        pauseScanForward();
+      }
+      else if(State.mode==='game_over_menu') {
+        State.overScanInitiated = true;
+        overScanForward();
+      }
     }
   }
 
   function onReturnDown(){
+    console.log('Return down, mode:', State.mode);
     if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
     if(State.returnHeld) return;
     State.returnHeld=true; 
@@ -644,8 +753,10 @@
   }
 
   function onReturnUp(){
-    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
     const dur = State.returnStart ? (performance.now()-State.returnStart)/1000 : 0;
+    console.log('Return up, mode:', State.mode, 'duration:', dur);
+    
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
 
     if(State.mode==='pause' && State.pauseJustOpened){
       State.pauseJustOpened=false; 
@@ -657,31 +768,94 @@
       if(State.returnTimer){ clearTimeout(State.returnTimer); State.returnTimer=null; }
       State.returnHeld=false;
       if(State.pauseTriggered){ State.pauseTriggered=false; return; }
-      if(dur>=0.1 && dur<3){
+      if(dur>=0.1 && dur<3 && State.boardScanInitiated && State.boardScanIndex >= 0){
         const [r,c] = State.order[State.boardScanIndex];
         selectCell(r,c);
       }
     } else if(State.mode==='main_menu'){
       State.returnHeld=false; 
-      State.menuButtons[State.menuScanIndex]?.click();
+      if(State.menuScanInitiated && State.menuScanIndex >= 0) {
+        State.menuButtons[State.menuScanIndex]?.click();
+      }
     } else if(State.mode==='pause'){
       State.returnHeld=false; 
-      State.pauseButtons[State.pauseScanIndex]?.click();
+      if(State.pauseScanInitiated && State.pauseScanIndex >= 0) {
+        State.pauseButtons[State.pauseScanIndex]?.click();
+      }
     } else if(State.mode==='game_over_menu'){
       State.returnHeld=false; 
-      State.overButtons[State.overScanIndex]?.click();
+      if(State.overScanInitiated && State.overScanIndex >= 0) {
+        State.overButtons[State.overScanIndex]?.click();
+      }
     }
   }
 
-  document.addEventListener('keydown', e=>{
-    if(e.code==='Space'){ e.preventDefault(); onSpaceDown(); }
-    if(e.code==='Enter'){ e.preventDefault(); onReturnDown(); }
+  // Add event listeners when DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, adding event listeners');
+    document.addEventListener('keydown', e=>{
+      console.log('Keydown:', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceDown(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnDown(); 
+      }
+    });
+    
+    document.addEventListener('keyup', e=>{
+      console.log('Keyup:', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceUp(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnUp(); 
+      }
+    });
   });
-  
-  document.addEventListener('keyup', e=>{
-    if(e.code==='Space'){ e.preventDefault(); onSpaceUp(); }
-    if(e.code==='Enter'){ e.preventDefault(); onReturnUp(); }
-  });
+
+  // Fallback event listeners (in case DOMContentLoaded already fired)
+  if (document.readyState === 'loading') {
+    // DOM is still loading
+  } else {
+    // DOM is already loaded
+    console.log('DOM already loaded, adding event listeners immediately');
+    document.addEventListener('keydown', e=>{
+      console.log('Keydown (fallback):', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceDown(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnDown(); 
+      }
+    });
+    
+    document.addEventListener('keyup', e=>{
+      console.log('Keyup (fallback):', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceUp(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnUp(); 
+      }
+    });
+  }
 
   // Boot
   renderMainMenu();
