@@ -16,8 +16,9 @@
 <body>
 <canvas id="gameCanvas"></canvas>
 
-<!-- Include shared voice manager -->
+<!-- Include shared voice manager and iOS audio fix -->
 <script src="../../shared/voice-manager.js"></script>
+<script src="../../shared/ios-audio-fix.js"></script>
 
 <script>
 const BASE_W=820, BASE_H=540;
@@ -85,7 +86,8 @@ const AudioGraph = {
     if (this.ac) return this;
     // Do not create the AudioContext until after a user gesture unlocks us
     if (!this._unlocked) return this;
-    this.ac = new (window.AudioContext||window.webkitAudioContext)();
+    // Use iOS helper if available for better iOS compatibility
+    this.ac = window.iOSAudioHelper ? window.iOSAudioHelper.createAudioContext() : new (window.AudioContext||window.webkitAudioContext)();
     this.analyser = this.ac.createAnalyser();
     this.analyser.fftSize = 2048;
     this.analyser.smoothingTimeConstant = 0.85;
@@ -116,6 +118,10 @@ const AudioGraph = {
   // Unlock must be called from a user gesture handler
   async unlock(){
     this._unlocked = true;
+    // Also unlock iOS audio if available
+    if (window.iOSAudioHelper && !window.iOSAudioHelper.isUnlocked) {
+      await window.iOSAudioHelper.unlock();
+    }
     this.ensure();
     return this.resume();
   },
