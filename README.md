@@ -8,4 +8,4 @@ strictly prohibited without written permission from NARBE LLC.
 
 For licensing or permission requests, please visit [narbehouse.com](https://narbehouse.com).
 
-See [DISCLAIMER & TERMS OF USE](./DISCLAIMER.md) for licensing information.
+See [DISCLAIMER & TERMS OF USE](./TERMS.md) for licensing information.
