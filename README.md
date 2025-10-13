@@ -7,3 +7,5 @@ Commercial use, redistribution, or sale of any part of this site or its code is
 strictly prohibited without written permission from NARBE LLC.
 
 For licensing or permission requests, please visit [narbehouse.com](https://narbehouse.com).
+
+See [DISCLAIMER & TERMS OF USE](./DISCLAIMER.md) for licensing information.
