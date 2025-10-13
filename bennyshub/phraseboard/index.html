@@ -464,8 +464,8 @@
       <div id="iframeControls">
         <button class="grid-button" id="playPauseBtn">Play/Pause</button>
         <button class="grid-button" id="prevBtn">⏮ Previous</button>
-        <button class="grid-button" id="rewindBtn">⏪ Rewind 10s</button>
-        <button class="grid-button" id="forwardBtn">⏩ Forward 10s</button>
+        <button class="grid-button" id="rewindBtn">Rewind</button>
+        <button class="grid-button" id="forwardBtn">Fast Forward</button>
         <button class="grid-button" id="nextBtn">⏭ Next</button>
         <button class="grid-button" id="muteBtn">Mute</button>
         <button class="grid-button" id="refreshBtn">Refresh</button>
@@ -765,6 +765,10 @@ function updateHeaderForCurrentView(){
       const localBoard = getLocalSavedBoard();
       if (localBoard) {
         const myBtn = createButton(localBoard.name, '📋', () => {
+          // Speak the board name when selected
+          const cleanBoardName = cleanTextForTTS(localBoard.name);
+          if (cleanBoardName) speak(cleanBoardName);
+          
           state.currentBoardTitle = localBoard.name;
           buildIndex(parseCSV(localBoard.csv));
           el.statusFooter.textContent = `Loaded board: ${localBoard.name}`;
@@ -782,6 +786,10 @@ function updateHeaderForCurrentView(){
         for (let i = startIdx; i < endIdx; i++) {
           const board = state.availableBoards[i];
           const btn = createButton(board.name, '📋', async () => {
+            // Speak the board name when selected
+            const cleanBoardName = cleanTextForTTS(board.name);
+            if (cleanBoardName) speak(cleanBoardName);
+            
             const success = await loadBoard(board.path);
             el.statusFooter.textContent = success ? `Loaded board: ${board.name}` : `Failed to load board: ${board.name}`;
           });
@@ -838,7 +846,10 @@ function updateHeaderForCurrentView(){
         }
         gridPositions.push({ type: 'category', button: btn });
       }
-      gridPositions.push({ type: 'next', button: createButton('Next', '▶', () => { state.page = (state.page + 1) % totalPages; renderCategoryMenu(); }, 'next-btn') });
+      // Add Next button if there are multiple pages (loops back to first page from last page)
+      if (totalPages > 1) {
+        gridPositions.push({ type: 'next', button: createButton('Next', '▶', () => { state.page = (state.page + 1) % totalPages; renderCategoryMenu(); }, 'next-btn') });
+      }
       while (gridPositions.length < totalSlots) gridPositions.push({ type: 'empty', button: null });
       gridPositions.forEach(pos => { if (pos.button) el.mainGrid.appendChild(pos.button); });
       updateScannable();
@@ -1002,6 +1013,7 @@ function updateHeaderForCurrentView(){
         }
         gridPositions.push({ type: 'phrase', button: btn });
       }
+      // Add Next button if there are multiple pages (loops back to first page from last page)
       if (totalPages > 1) {
         gridPositions.push({ type: 'next', button: createButton('Next', '▶', () => { state.page = (state.page + 1) % totalPages; renderCategory(); }, 'next-btn') });
       }
@@ -1345,9 +1357,31 @@ function updateHeaderForCurrentView(){
       const speakText = (item.speak || '').trim();
       const display = (item.display || '').trim();
       const text = speakText || display;
-      if (isLikelyUrl(text)) { openIframe(text); return; }
-      if (state.sentenceMode) { state.sentence.push(text); updateSentenceDisplay(); }
-      else { const cleanText = cleanTextForTTS(text); if (cleanText) speak(cleanText); }
+      
+      // Check if this is a URL link
+      if (isLikelyUrl(text)) { 
+        // For HTML links, speak the display text (what user sees on button) instead of the URL
+        const ttsText = display || speakText;
+        if (ttsText && !isLikelyUrl(ttsText)) {
+          // Only speak if display text is not also a URL
+          const cleanDisplayText = cleanTextForTTS(ttsText);
+          if (cleanDisplayText) speak(cleanDisplayText);
+        } else {
+          // If display text is also a URL or empty, speak generic message
+          speak("Opening link");
+        }
+        openIframe(text); 
+        return; 
+      }
+      
+      // Handle regular phrases (non-URLs) - keep same TTS function
+      if (state.sentenceMode) { 
+        state.sentence.push(text); 
+        updateSentenceDisplay(); 
+      } else { 
+        const cleanText = cleanTextForTTS(text); 
+        if (cleanText) speak(cleanText); 
+      }
     }
 
     function updateSentenceDisplay() { el.sentenceDisplay.textContent = state.sentence.join(' '); }
@@ -1407,6 +1441,10 @@ function updateHeaderForCurrentView(){
     }
 
     function openCategory(categoryName) {
+      // Speak the category name when selected
+      const cleanCategoryName = cleanTextForTTS(categoryName);
+      if (cleanCategoryName) speak(cleanCategoryName);
+      
       saveNavigationState();
       state.currentCategory = categoryName;
       state.page = 0; state.scanMode = 'row'; 
