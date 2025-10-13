@@ -19,8 +19,6 @@
 
   <!-- Include shared voice manager -->
   <script src="../../shared/voice-manager.js"></script>
-  <!-- Minimal iOS game audio fix (does not affect TTS) -->
-  <script src="../../shared/ios-game-audio.js"></script>
   
   <script>
   // ====== Constants ======
@@ -68,11 +66,6 @@
       masterGain.connect(audioCtx.destination);
       audioUnlocked = true;
       console.log('Audio unlocked for BENNYSAYS');
-      
-      // Setup iOS game audio unlock (won't affect TTS)
-      if (window.iOSGameAudio) {
-        window.iOSGameAudio.setupForAudioContext(audioCtx);
-      }
     } catch (e) {
       console.warn('Failed to create audio context:', e);
     }
@@ -231,13 +224,7 @@
     
     // Initialize and resume audio on first user interaction
     if (!audioCtx) initAudio();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-      // Also unlock iOS game audio if needed
-      if (window.iOSGameAudio) {
-        window.iOSGameAudio.unlockGameAudio(audioCtx);
-      }
-    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     if (e.code === 'Space') {
       if (phase === Phase.PLAYER || phase === Phase.TITLE) {
