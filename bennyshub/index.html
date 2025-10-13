@@ -989,6 +989,9 @@
     let spacePressed = false;
     let enterPressed = false;
     let isTransitioning = false; // Add transition flag
+    let suppressEnterClick = false; // Block native click from buttons
+    let lastActivationTime = 0; // For debouncing
+    const DEBOUNCE_DELAY = 500; // Half second debounce
 
     function focusAt(idx){
       const list = getFocusables();
@@ -1025,6 +1028,13 @@
     function activateFocused(){
       if (isTransitioning) return; // Don't activate during transitions
       
+      // Debounce to prevent multiple activations
+      const currentTime = Date.now();
+      if (currentTime - lastActivationTime < DEBOUNCE_DELAY) {
+        return;
+      }
+      lastActivationTime = currentTime;
+      
       const list = getFocusables();
       if(list.length === 0) return;
       
@@ -1046,22 +1056,24 @@
       el.click();
     }
 
+    // Enhanced keydown handler with click suppression
     document.addEventListener('keydown', (e)=>{
       // Handle modal keyboard navigation
       if (!fullscreenModal.classList.contains('hidden')) {
         if (e.key === ' ' && !spacePressed) {
           e.preventDefault();
           spacePressed = true;
-        } else if (e.key === 'Enter' && !enterPressed) {
+        } else if ((e.key === 'Enter' || e.keyCode === 13) && !enterPressed) {
           e.preventDefault();
           enterPressed = true;
+          suppressEnterClick = true; // block native click from buttons
         }
         return;
       }
 
       // Don't process during transitions
       if (isTransitioning) {
-        if (e.key === ' ' || e.key === 'Enter') {
+        if (e.key === ' ' || e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
         }
         return;
@@ -1076,11 +1088,21 @@
       if(e.key === ' ' && !spacePressed){
         e.preventDefault();
         spacePressed = true;
-      } else if(e.key === 'Enter' && !enterPressed){
+      } else if((e.key === 'Enter' || e.keyCode === 13) && !enterPressed){
         e.preventDefault();
         enterPressed = true;
+        suppressEnterClick = true; // block native click from buttons
       }
     });
+
+    // Capture-phase click blocker so it runs before button handlers
+    document.addEventListener('click', (e) => {
+      if (suppressEnterClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      }
+    }, true); // capture = true
 
     document.addEventListener('keyup', (e)=>{
       // Handle modal keyboard navigation
@@ -1099,9 +1121,10 @@
             modalFullscreenBtn.focus();
             speak('Fullscreen');
           }
-        } else if (e.key === 'Enter' && enterPressed) {
+        } else if ((e.key === 'Enter' || e.keyCode === 13) && enterPressed) {
           e.preventDefault();
           enterPressed = false;
+          suppressEnterClick = false; // allow clicks again
           if (document.activeElement === modalFullscreenBtn) {
             modalFullscreenBtn.click();
           } else if (document.activeElement === modalCancelBtn) {
@@ -1116,7 +1139,10 @@
       // Don't process during transitions
       if (isTransitioning) {
         if (e.key === ' ') spacePressed = false;
-        if (e.key === 'Enter') enterPressed = false;
+        if (e.key === 'Enter' || e.keyCode === 13) {
+          enterPressed = false;
+          suppressEnterClick = false;
+        }
         return;
       }
 
@@ -1130,9 +1156,10 @@
         e.preventDefault();
         spacePressed = false;
         focusNext();
-      } else if(e.key === 'Enter' && enterPressed){
+      } else if((e.key === 'Enter' || e.keyCode === 13) && enterPressed){
         e.preventDefault();
         enterPressed = false;
+        suppressEnterClick = false; // allow clicks again
         activateFocused();
       }
     });
