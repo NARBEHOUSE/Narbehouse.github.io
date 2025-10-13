@@ -77,8 +77,13 @@
       display: grid;
       gap: 15px;
       grid-template-columns: repeat(var(--grid-cols, 4), 1fr);
-      grid-template-rows: repeat(var(--grid-rows, 4), 1fr);
+      grid-template-rows: repeat(var(--grid-rows, 4), 1fr); /* Default uniform spacing */
       align-items: stretch;
+    }
+    
+    /* Only use auto row sizing when sentence mode is active */
+    .main-grid.sentence-active {
+      grid-template-rows: auto repeat(var(--grid-rows, 4), 1fr); /* auto for sentence bar, rest for buttons */
     }
     
     .sentence-row {
@@ -91,15 +96,18 @@
     
     .sentence-row.active {
       display: grid;
+      height: 80px; /* Fixed height to prevent button shrinking */
+      padding: 0; /* Remove padding */
+      align-items: center;
     }
     
     .sentence-display {
       background: var(--card);
       border: 2px solid #000000;
       border-radius: var(--tileRadius);
-      padding: 15px;
-      font-size: 24px;
-      min-height: 80px;
+      padding: 5px 10px; /* Reduced padding */
+      font-size: 20px; /* Slightly reduced font size */
+      height: 60px; /* Fixed height */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -107,6 +115,14 @@
       word-wrap: break-word;
       font-weight: 500;
       cursor: pointer;
+    }
+    
+    /* Sentence row buttons should also have fixed height to match */
+    .sentence-row .grid-button {
+      height: 60px; /* Match sentence display height */
+      min-height: 60px;
+      padding: 8px 12px;
+      font-size: 14px;
     }
     
     .grid-button {
@@ -751,7 +767,8 @@ function updateHeaderForCurrentView(){
     function renderMainMenu() {
       clearGrid();
       state.currentMenu = 'main';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const coreItems = [
         { text: 'Settings', icon: '⚙️', action: () => navigateTo('settings'), className: 'muted-blue-btn' },
@@ -834,7 +851,8 @@ function updateHeaderForCurrentView(){
     function renderCategoryMenu() {
       clearGrid();
       state.currentMenu = 'categories';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       const availableSlots = totalSlots - 1;
       const categoriesPerPage = availableSlots - 1;
       const totalPages = Math.ceil(state.categories.length / categoriesPerPage);
@@ -860,7 +878,7 @@ function updateHeaderForCurrentView(){
         
         btn.style.background = rgbaFromHex(cat.color, 0.2);
         btn.style.borderColor = cat.color;
-        const itemsPerPage = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0) - 1;
+        const itemsPerPage = state.gridSize.rows * state.gridSize.cols - 1;
         const catTotalPages = Math.ceil(cat.items.length / itemsPerPage);
         if (catTotalPages > 1) {
           const indicator = document.createElement('div');
@@ -882,7 +900,8 @@ function updateHeaderForCurrentView(){
     function renderSettingsMenu() {
       clearGrid();
       state.currentMenu = 'settings';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const buttons = [
         { text: 'Grid Size', icon: '⊞', action: () => navigateTo('gridsize') },
@@ -933,7 +952,8 @@ function updateHeaderForCurrentView(){
     function renderGridSizeMenu() {
       clearGrid();
       state.currentMenu = 'gridsize';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const gridSizes = [];
       for (let size = 2; size <= 10; size++) gridSizes.push(size);
@@ -983,7 +1003,8 @@ function updateHeaderForCurrentView(){
     function renderTTSMenu() {
       clearGrid();
       state.currentMenu = 'tts';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const buttons = [
         { text: 'TTS', icon: '🔊', action: () => { 
@@ -1058,7 +1079,8 @@ function updateHeaderForCurrentView(){
     function renderScanMenu() {
       clearGrid();
       state.currentMenu = 'scan';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const buttons = [
         { text: 'Auto Scan', icon: '🔄', action: () => { 
@@ -1123,7 +1145,8 @@ function updateHeaderForCurrentView(){
     function renderHighlightMenu() {
       clearGrid();
       state.currentMenu = 'highlight';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const buttons = Object.entries(HIGHLIGHT_COLORS).map(([name, color]) => ({
         text: name.charAt(0).toUpperCase() + name.slice(1),
@@ -1183,7 +1206,8 @@ function updateHeaderForCurrentView(){
     function renderThemeMenu() {
       clearGrid();
       state.currentMenu = 'theme';
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       
       const buttons = Object.entries(THEMES).map(([themeKey, themeName]) => ({
         text: themeName,
@@ -1239,7 +1263,8 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'category';
       const cat = state.byCat.get(state.currentCategory);
       if (!cat) return;
-      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      // Don't subtract sentence row space - it's now in its own dedicated row
+      const totalSlots = state.gridSize.rows * state.gridSize.cols;
       const availableSlots = totalSlots - 1;
       const itemsPerPage = availableSlots - 1;
       const totalPages = Math.ceil(cat.items.length / itemsPerPage);
@@ -1760,8 +1785,17 @@ function updateHeaderForCurrentView(){
 
     function toggleSentenceMode() {
       state.sentenceMode = !state.sentenceMode;
-      if (state.sentenceMode) el.sentenceRow.classList.add('active');
-      else { el.sentenceRow.classList.remove('active'); state.sentence = []; updateSentenceDisplay(); }
+      if (state.sentenceMode) {
+        el.sentenceRow.classList.add('active');
+        el.mainGrid.classList.add('sentence-active'); // Add class for grid sizing
+        speak('Sentence bar on');
+      } else { 
+        el.sentenceRow.classList.remove('active'); 
+        el.mainGrid.classList.remove('sentence-active'); // Remove class for uniform grid
+        state.sentence = []; 
+        updateSentenceDisplay();
+        speak('Sentence bar off');
+      }
       renderCurrentMenu();
     }
 
