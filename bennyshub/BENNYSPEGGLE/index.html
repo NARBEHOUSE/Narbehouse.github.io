@@ -1179,6 +1179,7 @@ class Music {
     window.addEventListener('keydown', () => this._unlock(), { once: true });
     window.addEventListener('pointerdown', () => this._unlock(), { once: true });
     window.addEventListener('click', () => this._unlock(), { once: true });
+    window.addEventListener('touchstart', () => this._unlock(), { once: true });
   }
 
   async _unlock(){

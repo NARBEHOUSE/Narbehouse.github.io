@@ -53,14 +53,32 @@
   resize();
 
   // ====== Audio ======
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0.5; // Medium
-  masterGain.connect(audioCtx.destination);
+  let audioCtx = null;
+  let masterGain = null;
+  let audioUnlocked = false;
+
+  function initAudio() {
+    if (audioCtx || audioUnlocked) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.5; // Medium
+      masterGain.connect(audioCtx.destination);
+      audioUnlocked = true;
+      console.log('Audio unlocked for BENNYSAYS');
+    } catch (e) {
+      console.warn('Failed to create audio context:', e);
+    }
+  }
 
   const TONES = [329.63, 261.63, 392.00, 523.25]; // E4, C4, G4, C5
 
   function beep(idx, dur) {
+    if (!audioCtx) {
+      initAudio();
+      if (!audioCtx) return; // Still failed, give up
+    }
+    
     const d = typeof dur === 'number' ? dur : 520;
     try {
       const osc = audioCtx.createOscillator();
@@ -203,7 +221,10 @@
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') e.preventDefault();
     if (e.repeat) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    // Initialize and resume audio on first user interaction
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     if (e.code === 'Space') {
       if (phase === Phase.PLAYER || phase === Phase.TITLE) {
@@ -267,7 +288,9 @@
 
   // Mouse input
   canvas.addEventListener('click', (e) => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    // Initialize and resume audio on first user interaction
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -290,6 +313,47 @@
       }
     } else if (phase === Phase.PLAYER) {
       // Check tile clicks
+      for (let i = 0; i < tileBounds.length; i++) {
+        const b = tileBounds[i];
+        if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+          handlePlayerPick(i);
+          return;
+        }
+      }
+    }
+  });
+
+  // Touch input for iOS
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Prevent scrolling
+    
+    // Initialize and resume audio on first user interaction
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    
+    if (e.touches.length === 0) return;
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    if (phase === Phase.TITLE) {
+      // Check menu button touches
+      for (let i = 0; i < menuBounds.length; i++) {
+        const b = menuBounds[i];
+        if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+          const sel = titleItems[i];
+          if (sel === 'Exit') {
+            exitApp();
+          } else {
+            colorCount = sel === 'Easy' ? 2 : (sel === 'Medium' ? 3 : 4);
+            startNewGame();
+          }
+          return;
+        }
+      }
+    } else if (phase === Phase.PLAYER) {
+      // Check tile touches
       for (let i = 0; i < tileBounds.length; i++) {
         const b = tileBounds[i];
         if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
