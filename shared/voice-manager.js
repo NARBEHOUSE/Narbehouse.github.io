@@ -13,6 +13,7 @@ window.NarbeVoiceManager = (function() {
   const DEFAULT_SETTINGS = {
     ttsEnabled: true,
     voiceIndex: 0,
+    voiceName: null, // Store voice name for better persistence
     rate: 1.0,
     pitch: 1.0,
     volume: 1.0
@@ -122,9 +123,26 @@ window.NarbeVoiceManager = (function() {
         englishVoices = [availableVoices[0]];
       }
 
+      // Restore voice by name if possible, otherwise validate index
+      if (settings.voiceName) {
+        const savedVoiceIndex = englishVoices.findIndex(voice => voice.name === settings.voiceName);
+        if (savedVoiceIndex >= 0) {
+          settings.voiceIndex = savedVoiceIndex;
+          console.log(`NarbeVoiceManager: Restored voice "${settings.voiceName}" at index ${savedVoiceIndex}`);
+        } else {
+          console.warn(`NarbeVoiceManager: Saved voice "${settings.voiceName}" not found, using index ${settings.voiceIndex}`);
+        }
+      }
+
       // Ensure voice index is within bounds
       if (settings.voiceIndex >= englishVoices.length) {
         settings.voiceIndex = 0;
+        console.warn(`NarbeVoiceManager: Voice index out of bounds, reset to 0`);
+      }
+
+      // Update voice name to match current index
+      if (englishVoices[settings.voiceIndex]) {
+        settings.voiceName = englishVoices[settings.voiceIndex].name;
         saveSettings();
       }
 
@@ -147,7 +165,9 @@ window.NarbeVoiceManager = (function() {
    * Initialize the voice manager
    */
   function init() {
+    console.log('NarbeVoiceManager: Initializing...');
     loadSettings();
+    console.log('NarbeVoiceManager: Settings loaded:', settings);
     loadVoices();
     
     // Set up voice loading callback
@@ -190,6 +210,12 @@ window.NarbeVoiceManager = (function() {
    */
   function updateSettings(newSettings) {
     settings = { ...settings, ...newSettings };
+    
+    // If voice index changed, update voice name to match
+    if (newSettings.voiceIndex !== undefined && englishVoices[settings.voiceIndex]) {
+      settings.voiceName = englishVoices[settings.voiceIndex].name;
+    }
+    
     saveSettings();
   }
 
@@ -251,6 +277,12 @@ window.NarbeVoiceManager = (function() {
     if (englishVoices.length === 0) return false;
     
     settings.voiceIndex = (settings.voiceIndex + 1) % englishVoices.length;
+    
+    // Update voice name to match new index
+    if (englishVoices[settings.voiceIndex]) {
+      settings.voiceName = englishVoices[settings.voiceIndex].name;
+    }
+    
     saveSettings();
     return true;
   }
