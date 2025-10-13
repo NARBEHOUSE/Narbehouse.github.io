@@ -17,9 +17,8 @@
     <div class="hint">Space = scan (hold 3s = auto-back every 1.5s). Return = select. Click = direct select.</div>
   </div>
 
-  <!-- Include shared voice manager and iOS audio fix -->
+  <!-- Include shared voice manager -->
   <script src="../../shared/voice-manager.js"></script>
-  <script src="../../shared/ios-audio-fix.js"></script>
   
   <script>
   // ====== Constants ======
@@ -61,15 +60,12 @@
   function initAudio() {
     if (audioCtx || audioUnlocked) return;
     try {
-      // Use the iOS helper to create audio context
-      audioCtx = window.iOSAudioHelper ? window.iOSAudioHelper.createAudioContext() : new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx) {
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.5; // Medium
-        masterGain.connect(audioCtx.destination);
-        audioUnlocked = true;
-        console.log('Audio unlocked for BENNYSAYS');
-      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.5; // Medium
+      masterGain.connect(audioCtx.destination);
+      audioUnlocked = true;
+      console.log('Audio unlocked for BENNYSAYS');
     } catch (e) {
       console.warn('Failed to create audio context:', e);
     }
@@ -229,10 +225,6 @@
     // Initialize and resume audio on first user interaction
     if (!audioCtx) initAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    // Also unlock iOS audio if available
-    if (window.iOSAudioHelper && !window.iOSAudioHelper.isUnlocked) {
-      window.iOSAudioHelper.unlock();
-    }
 
     if (e.code === 'Space') {
       if (phase === Phase.PLAYER || phase === Phase.TITLE) {
@@ -299,10 +291,6 @@
     // Initialize and resume audio on first user interaction
     if (!audioCtx) initAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    // Also unlock iOS audio if available
-    if (window.iOSAudioHelper && !window.iOSAudioHelper.isUnlocked) {
-      window.iOSAudioHelper.unlock();
-    }
     
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -342,10 +330,6 @@
     // Initialize and resume audio on first user interaction
     if (!audioCtx) initAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    // Also unlock iOS audio if available
-    if (window.iOSAudioHelper && !window.iOSAudioHelper.isUnlocked) {
-      window.iOSAudioHelper.unlock();
-    }
     
     if (e.touches.length === 0) return;
     const touch = e.touches[0];
