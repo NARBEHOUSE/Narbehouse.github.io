@@ -24,6 +24,7 @@ window.NarbeVoiceManager = (function() {
   let englishVoices = [];
   let voicesLoaded = false;
   let callbacks = [];
+  let isReceivingMessage = false; // Flag to prevent message loops
 
   /**
    * Load voice settings from localStorage
@@ -42,10 +43,12 @@ window.NarbeVoiceManager = (function() {
 
   /**
    * Save voice settings to localStorage
+   * @param {boolean} fromMessage - True if this save is triggered by a message to prevent loops
    */
-  function saveSettings() {
+  function saveSettings(fromMessage = false) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      
       // Notify all callbacks of settings change
       callbacks.forEach(callback => {
         try {
@@ -54,6 +57,37 @@ window.NarbeVoiceManager = (function() {
           console.warn('NarbeVoiceManager: Error in callback:', error);
         }
       });
+      
+      // Only send messages if this wasn't triggered by a message to prevent loops
+      if (!fromMessage) {
+        // Post message to parent window (for iframe communication)
+        if (window.parent && window.parent !== window) {
+          try {
+            window.parent.postMessage({
+              type: 'narbe-voice-settings-changed',
+              settings: settings
+            }, '*');
+          } catch (error) {
+            console.warn('NarbeVoiceManager: Error posting to parent:', error);
+          }
+        }
+        
+        // Post message to all child iframes (if we're the parent)
+        try {
+          const iframes = document.querySelectorAll('iframe');
+          iframes.forEach(iframe => {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'narbe-voice-settings-changed',
+                settings: settings
+              }, '*');
+            }
+          });
+        } catch (error) {
+          console.warn('NarbeVoiceManager: Error posting to iframes:', error);
+        }
+      }
+      
     } catch (error) {
       console.warn('NarbeVoiceManager: Error saving settings:', error);
     }
@@ -111,6 +145,23 @@ window.NarbeVoiceManager = (function() {
     if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
+    
+    // Set up cross-iframe communication
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'narbe-voice-settings-changed') {
+        try {
+          // Update local settings from parent/child window
+          const newSettings = event.data.settings;
+          if (newSettings && typeof newSettings === 'object') {
+            settings = { ...DEFAULT_SETTINGS, ...newSettings };
+            // Save with fromMessage=true to avoid infinite loop
+            saveSettings(true);
+          }
+        } catch (error) {
+          console.warn('NarbeVoiceManager: Error handling voice settings message:', error);
+        }
+      }
+    });
     
     // Retry loading voices after a delay if not loaded
     if (!voicesLoaded) {

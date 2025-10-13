@@ -846,9 +846,18 @@
       setTimeout(() => {
         try {
           appIframe.contentWindow.focus();
+          
+          // Send current voice settings to the iframe
+          if (window.NarbeVoiceManager) {
+            const currentSettings = window.NarbeVoiceManager.getSettings();
+            appIframe.contentWindow.postMessage({
+              type: 'narbe-voice-settings-changed',
+              settings: currentSettings
+            }, '*');
+          }
         } catch (e) {
           // Cross-origin iframes may block focus, but same-origin should work
-          console.log('Unable to focus iframe content:', e);
+          console.log('Unable to focus iframe content or send voice settings:', e);
         }
       }, 500);
     }
