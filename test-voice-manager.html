@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Manager Test</title>
+</head>
+<body>
+    <h1>Voice Manager Test</h1>
+    <button id="toggleTTS">Toggle TTS</button>
+    <button id="cycleVoice">Cycle Voice</button>
+    <div id="status"></div>
+
+    <script src="../shared/voice-manager.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function updateStatus() {
+            const settings = window.NarbeVoiceManager.getSettings();
+            const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+            const voiceName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
+            
+            statusDiv.innerHTML = `
+                <p>TTS Enabled: ${settings.ttsEnabled}</p>
+                <p>Current Voice: ${voiceName}</p>
+                <p>Voice Index: ${settings.voiceIndex}</p>
+            `;
+        }
+        
+        // Listen for settings changes
+        window.NarbeVoiceManager.onSettingsChange((settings) => {
+            console.log('Settings changed:', settings);
+            updateStatus();
+        });
+        
+        // Wait for voices to load
+        window.NarbeVoiceManager.waitForVoices().then(() => {
+            updateStatus();
+        });
+        
+        document.getElementById('toggleTTS').addEventListener('click', () => {
+            window.NarbeVoiceManager.toggleTTS();
+            console.log('TTS toggled');
+        });
+        
+        document.getElementById('cycleVoice').addEventListener('click', () => {
+            window.NarbeVoiceManager.cycleVoice();
+            console.log('Voice cycled');
+        });
+        
+        // Initial update
+        setTimeout(updateStatus, 100);
+    </script>
+</body>
+</html>

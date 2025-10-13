@@ -504,6 +504,9 @@
 
   <input id="csvFile" type="file" accept=".csv" style="display:none" />
 
+  <!-- Include shared voice manager -->
+  <script src="../../shared/voice-manager.js"></script>
+  
   <script>
     const state = {
       raw: [],
@@ -522,12 +525,11 @@
       spaceStartTime: 0,
       returnPressed: false,
       returnStartTime: 0,
-      ttsEnabled: true,
+      // TTS settings now handled by unified voice manager
       ttsOnScan: true,
       sentenceMode: false,
       sentence: [],
-      currentVoice: 0,
-      voices: [],
+      // Voice settings now handled by unified voice manager
       childVoices: { boy: null, girl: null },
       ytPlayer: null,
       lastUrl: null,
@@ -620,14 +622,14 @@ function updateHeaderForCurrentView(){
           const newTab = window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
           setTimeout(() => window.focus(), 0);
         };
-        if (state.ttsEnabled) {
+        if (window.NarbeVoiceManager.getSettings().ttsEnabled) {
           speak('Warning: Creating a board opens a new tab and scanning will not return to the phrase board.');
         }
       } else if (type === 'load') {
         el.loadBoardWarning.classList.add('active');
         state.modalButtons = [el.loadBoardBack, el.loadBoardProceed];
         state.pendingAction = () => el.csvFile.click();
-        if (state.ttsEnabled) {
+        if (window.NarbeVoiceManager.getSettings().ttsEnabled) {
           speak('Warning: Loading a board opens a file dialog and scanning will not return to the phrase board.');
         }
       }
@@ -647,7 +649,7 @@ function updateHeaderForCurrentView(){
       state.modalButtons.forEach(btn => btn.classList.remove('modal-highlight'));
       if (state.modalScanIndex >= 0 && state.modalButtons[state.modalScanIndex]) {
         state.modalButtons[state.modalScanIndex].classList.add('modal-highlight');
-        if (state.ttsEnabled && state.ttsOnScan) { speak(state.modalButtons[state.modalScanIndex].textContent); }
+        if (window.NarbeVoiceManager.getSettings().ttsEnabled && state.ttsOnScan) { speak(state.modalButtons[state.modalScanIndex].textContent); }
       }
     }
 
@@ -661,59 +663,59 @@ function updateHeaderForCurrentView(){
     function selectModalButton() {
       if (!state.modalActive || state.modalScanIndex < 0 || !state.modalButtons[state.modalScanIndex]) return;
       const selectedButton = state.modalButtons[state.modalScanIndex];
-      if (selectedButton.textContent === 'GO BACK') { hideWarningModal(); if (state.ttsEnabled) speak('Returning to menu'); }
+      if (selectedButton.textContent === 'GO BACK') { hideWarningModal(); if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('Returning to menu'); }
       else if (selectedButton.textContent === 'PROCEED') { hideWarningModal(); if (state.pendingAction) state.pendingAction(); }
     }
 
-    // TTS
+    // TTS using unified voice manager
     function isIOS() {
       return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
     function initVoices() {
-      if (!window.speechSynthesis) return;
-      const loadVoices = () => {
-        let allVoices = window.speechSynthesis.getVoices();
-        
-        // Filter for English voices only on iOS
-        if (isIOS()) {
-          const englishVoices = allVoices.filter(voice => 
-            voice.lang.startsWith('en-') || 
-            voice.lang === 'en' ||
-            voice.name.toLowerCase().includes('english')
-          );
-          // Use English voices if available, otherwise fall back to all voices
-          allVoices = englishVoices.length > 0 ? englishVoices : allVoices;
-        }
-        
-        state.voices = allVoices;
-        const femaleVoice = state.voices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) || state.voices[0];
-        const maleVoice = state.voices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man')) || state.voices[1] || state.voices[0];
+      // Voice management now handled by unified voice manager
+      // Set up child voices based on available voices
+      window.NarbeVoiceManager.waitForVoices().then(() => {
+        const voices = window.NarbeVoiceManager.getEnglishVoices();
+        const femaleVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) || voices[0];
+        const maleVoice = voices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man')) || voices[1] || voices[0];
         state.childVoices.girl = femaleVoice;
         state.childVoices.boy = maleVoice;
-      };
-      loadVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = loadVoices;
-      if (state.voices.length === 0) setTimeout(loadVoices, 100);
+      });
     }
 
     function speak(text, isChild = false, gender = null, specificVoiceIndex = null) {
-      if (!state.ttsEnabled || !window.speechSynthesis || !text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (specificVoiceIndex !== null && state.voices[specificVoiceIndex]) utterance.voice = state.voices[specificVoiceIndex];
-      else if (isChild && gender && state.childVoices[gender]) {
+      const voiceSettings = window.NarbeVoiceManager.getSettings();
+      if (!voiceSettings.ttsEnabled || !text) return;
+      
+      if (specificVoiceIndex !== null) {
+        const voices = window.NarbeVoiceManager.getEnglishVoices();
+        if (voices[specificVoiceIndex]) {
+          window.NarbeVoiceManager.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.voice = voices[specificVoiceIndex];
+          window.speechSynthesis.speak(utterance);
+          return;
+        }
+      }
+      
+      if (isChild && gender && state.childVoices[gender]) {
+        window.NarbeVoiceManager.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.voice = state.childVoices[gender];
         utterance.pitch = gender === 'girl' ? 1.8 : 1.6;
         utterance.rate = 1.3;
-      } else if (state.voices[state.currentVoice]) utterance.voice = state.voices[state.currentVoice];
-      window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.speak(utterance);
+      } else {
+        window.NarbeVoiceManager.speak(text);
+      }
     }
 
     function speakWithVoice(text, voice) {
-      if (!state.ttsEnabled || !window.speechSynthesis || !text) return;
-      window.speechSynthesis.cancel();
+      const voiceSettings = window.NarbeVoiceManager.getSettings();
+      if (!voiceSettings.ttsEnabled || !text) return;
+      window.NarbeVoiceManager.cancel();
       const u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
       window.speechSynthesis.speak(u);
@@ -894,31 +896,24 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'tts';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
       el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
-      el.mainGrid.appendChild(createButton('TTS', '🔊', () => { state.ttsEnabled = !state.ttsEnabled; renderTTSMenu(); }, state.ttsEnabled ? 'active-green' : ''));
+      el.mainGrid.appendChild(createButton('TTS', '🔊', () => { 
+        window.NarbeVoiceManager.toggleTTS(); 
+        renderTTSMenu(); 
+      }, window.NarbeVoiceManager.getSettings().ttsEnabled ? 'active-green' : ''));
       el.mainGrid.appendChild(createButton('TTS on Scan', '👆', () => { state.ttsOnScan = !state.ttsOnScan; renderTTSMenu(); }, state.ttsOnScan ? 'active-green' : ''));
       
       // Voice toggle button
-      if (state.voices && state.voices.length > 1) {
-        const currentVoice = state.voices[state.currentVoice];
-        let displayName = 'Default';
-        if (currentVoice) {
-          // Show a shorter, more user-friendly name
-          displayName = currentVoice.name.split(' ')[0]; // Get first word
-          if (displayName.length > 12) {
-            displayName = displayName.substring(0, 12);
-          }
-          // Add language info for iOS
-          if (isIOS() && currentVoice.lang) {
-            const langCode = currentVoice.lang.split('-')[0];
-            if (langCode !== 'en') displayName += ` (${langCode})`;
-          }
-        }
+      const voices = window.NarbeVoiceManager.getEnglishVoices();
+      if (voices && voices.length > 1) {
+        const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+        let displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
+        
         const voiceBtn = createButton(`🎤 ${displayName}`, '', () => {
           // Cycle through voices
-          state.currentVoice = (state.currentVoice + 1) % state.voices.length;
-          const newVoice = state.voices[state.currentVoice];
-          const newVoiceName = newVoice ? newVoice.name : 'Default';
-          speak(`Voice changed to ${newVoiceName}`, false, null, state.currentVoice);
+          window.NarbeVoiceManager.cycleVoice();
+          const newVoice = window.NarbeVoiceManager.getCurrentVoice();
+          const newVoiceName = window.NarbeVoiceManager.getVoiceDisplayName(newVoice);
+          speak(`Voice changed to ${newVoiceName}`);
           renderTTSMenu();
         }, 'voice-toggle');
         el.mainGrid.appendChild(voiceBtn);
@@ -1179,8 +1174,8 @@ function updateHeaderForCurrentView(){
           if (!state.videoModalActive) {
             if (element === el.sentenceDisplay && state.sentenceMode) {
               const displayText = el.sentenceDisplay.textContent.trim();
-              if (displayText) { if (state.ttsEnabled) speak(displayText); }
-              else { if (state.ttsEnabled) speak('sentence is empty'); }
+              if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak(displayText); }
+              else { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty'); }
             } else if (element === el.deleteWordBtn && state.sentenceMode) {
               selectionText = 'Deleting';
               deleteLastWord();
@@ -1195,7 +1190,7 @@ function updateHeaderForCurrentView(){
             selectionText = cleanTextForTTS(element.textContent);
             element.click();
           }
-          if (selectionText && state.ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
+          if (selectionText && window.NarbeVoiceManager.getSettings().ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
           
           // Return to row mode, highlighting the same row we were in
           state.scanMode = 'row';
@@ -1247,7 +1242,7 @@ function updateHeaderForCurrentView(){
                 if (state.sentenceMode && el.sentenceRow.classList.contains('active')) {
                   state.currentRow = 0;
                   highlightCurrentRow();
-                  if (state.ttsEnabled) speak('Sentence row');
+                  if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('Sentence row');
                 } else {
                   if (state.currentMenu === 'category' || state.csvLoaded) navigateBack();
                 }
@@ -1296,8 +1291,8 @@ function updateHeaderForCurrentView(){
 
     el.sentenceDisplay.addEventListener('click', () => {
       const text = el.sentenceDisplay.textContent.trim();
-      if (text && state.ttsEnabled) speak(text);
-      else if (!text && state.ttsEnabled) speak('sentence is empty');
+      if (text && window.NarbeVoiceManager.getSettings().ttsEnabled) speak(text);
+      else if (!text && window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty');
     });
 
     el.deleteWordBtn.addEventListener('click', deleteLastWord);
@@ -1316,9 +1311,18 @@ function updateHeaderForCurrentView(){
     // Init
     if (window.speechSynthesis) {
       initVoices();
-      window.speechSynthesis.onvoiceschanged = () => { initVoices(); };
+      // Voice manager handles voices changed event
       window.addEventListener('load', () => { setTimeout(initVoices, 500); });
     }
+    
+    // Listen for voice settings changes from other apps
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.onSettingsChange(() => {
+        // Update child voices when main voice settings change
+        initVoices();
+      });
+    }
+    
     document.documentElement.style.setProperty('--rowHighlight', state.highlightColor);
     document.documentElement.style.setProperty('--columnHighlight', state.highlightColor);
     setTheme(state.theme);

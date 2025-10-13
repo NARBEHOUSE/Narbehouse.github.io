@@ -651,6 +651,9 @@
     </main>
   </div>
 
+  <!-- Include shared voice manager -->
+  <script src="../shared/voice-manager.js"></script>
+  
   <script>
     /**
      * Keyboard scanning model
@@ -675,16 +678,14 @@
     const iframeTitle = document.getElementById('iframe-title');
     const appIframe = document.getElementById('app-iframe');
 
-    // Settings state
+    // Settings state (excluding voice settings which are now handled by NarbeVoiceManager)
     let settings = {
       highlightColor: 'blue', // blue, green, purple, red, yellow, white
       textColor: 'default', // default, green, purple, red, gold
       bgTheme: 'default', // default, ocean, forest, sunset, midnight, rose, sky, cream, mint, lavender, peach
-      ttsEnabled: true,
-      voiceIndex: 0,
     };
 
-    // Load settings from localStorage
+    // Load settings from localStorage (voice settings handled by NarbeVoiceManager)
     function loadSettings() {
       const saved = localStorage.getItem('narbe-hub-settings');
       if (saved) {
@@ -732,93 +733,30 @@
       };
       document.getElementById('bgtheme-status').textContent = bgThemeNames[settings.bgTheme];
 
-      // Apply TTS
-      document.getElementById('tts-status').textContent = settings.ttsEnabled ? 'On' : 'Off';
+      // Apply TTS status (from voice manager)
+      const voiceSettings = window.NarbeVoiceManager.getSettings();
+      document.getElementById('tts-status').textContent = voiceSettings.ttsEnabled ? 'On' : 'Off';
 
-      // Apply Voice
+      // Apply Voice display (from voice manager)
       updateVoiceDisplay();
     }
 
-    // TTS functionality
-    let availableVoices = [];
-    let englishVoices = [];
-    let currentUtterance = null;
-
-    function loadVoices() {
-      availableVoices = speechSynthesis.getVoices();
-      // Filter for English voices only
-      englishVoices = availableVoices.filter(voice => 
-        voice.lang.startsWith('en') && 
-        (voice.lang.includes('US') || voice.lang.includes('GB') || voice.lang.includes('AU') || !voice.lang.includes('-'))
-      );
-      
-      // If no English voices found, fallback to any English voice
-      if (englishVoices.length === 0) {
-        englishVoices = availableVoices.filter(voice => voice.lang.startsWith('en'));
-      }
-      
-      // If still no voices, use first available
-      if (englishVoices.length === 0 && availableVoices.length > 0) {
-        englishVoices = [availableVoices[0]];
-      }
-      
-      // Reset voice index if it's out of bounds
-      if (settings.voiceIndex >= englishVoices.length) {
-        settings.voiceIndex = 0;
-        saveSettings();
-      }
-      
-      updateVoiceDisplay();
-    }
-
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    loadVoices();
-
+    // TTS functionality using unified voice manager
     function speak(text) {
-      if (!settings.ttsEnabled || !text) return;
-      
-      // Cancel any ongoing speech
-      speechSynthesis.cancel();
-      
-      currentUtterance = new SpeechSynthesisUtterance(text);
-      if (englishVoices.length > 0) {
-        const voiceIndex = settings.voiceIndex % englishVoices.length;
-        currentUtterance.voice = englishVoices[voiceIndex];
-      }
-      currentUtterance.rate = 0.9; // Slightly slower for better clarity
-      currentUtterance.pitch = 1.0;
-      
-      speechSynthesis.speak(currentUtterance);
+      window.NarbeVoiceManager.speak(text);
     }
 
     function updateVoiceDisplay() {
-      if (englishVoices.length > 0) {
-        const voice = englishVoices[settings.voiceIndex % englishVoices.length];
-        let voiceName = 'Default';
-        
-        if (voice) {
-          // Clean up voice name for better display
-          voiceName = voice.name;
-          
-          // Remove common prefixes and suffixes for cleaner display
-          voiceName = voiceName.replace(/^(Microsoft|Google|Apple|Samsung)\s+/i, '');
-          voiceName = voiceName.replace(/\s+(Premium|Enhanced|Compact)$/i, '');
-          voiceName = voiceName.replace(/\s+\([^)]+\)$/i, ''); // Remove parenthetical info
-          
-          // Take only the first word/name for simplicity
-          voiceName = voiceName.split(' ')[0];
-          
-          // Capitalize first letter
-          voiceName = voiceName.charAt(0).toUpperCase() + voiceName.slice(1);
-        }
-        
-        document.getElementById('voice-status').textContent = voiceName;
-      } else {
-        document.getElementById('voice-status').textContent = 'Default';
-      }
+      const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+      const displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
+      document.getElementById('voice-status').textContent = displayName;
     }
+
+    // Update voice display when voice manager settings change
+    window.NarbeVoiceManager.onSettingsChange(() => {
+      updateVoiceDisplay();
+      applySettings(); // Update TTS status display
+    });
 
     // Settings toggles
     document.getElementById('highlight-toggle').addEventListener('click', () => {
@@ -849,24 +787,22 @@
     });
 
     document.getElementById('tts-toggle').addEventListener('click', () => {
-      settings.ttsEnabled = !settings.ttsEnabled;
-      applySettings();
-      saveSettings();
-      if (settings.ttsEnabled) {
+      const ttsEnabled = window.NarbeVoiceManager.toggleTTS();
+      applySettings(); // Update display
+      if (ttsEnabled) {
         speak('Text to speech enabled');
       } else {
-        // Can't speak when disabled, but update status
+        // Can't speak when disabled, but status is updated
       }
     });
 
     document.getElementById('voice-toggle').addEventListener('click', () => {
-      if (englishVoices.length > 0) {
-        settings.voiceIndex = (settings.voiceIndex + 1) % englishVoices.length;
-        applySettings();
-        saveSettings();
-        const voice = englishVoices[settings.voiceIndex];
-        let voiceName = voice.name.split(' ')[0];
-        voiceName = voiceName.charAt(0).toUpperCase() + voiceName.slice(1);
+      const voiceChanged = window.NarbeVoiceManager.cycleVoice();
+      if (voiceChanged) {
+        updateVoiceDisplay();
+        applySettings(); // Update display
+        const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+        const voiceName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
         speak(`Voice changed to ${voiceName}`);
       } else {
         speak('No voices available');
@@ -1195,7 +1131,13 @@
     // Initialize: load settings, show modal but don't focus yet
     window.addEventListener('load', ()=>{
       loadSettings();
-      loadVoices();
+      
+      // Wait for voice manager to load voices, then update display
+      window.NarbeVoiceManager.waitForVoices().then(() => {
+        updateVoiceDisplay();
+        applySettings();
+      });
+      
       focusIndex = -1; // Start with nothing focused
       
       // Ensure the document has focus for keyboard events

@@ -660,21 +660,15 @@
     <div class="screen" id="screen"></div>
   </div>
 
+  <!-- Include shared voice manager -->
+  <script src="../../shared/voice-manager.js"></script>
+  
   <script>
-  // Web Speech TTS - Modified to cancel previous speech
+  // Web Speech TTS using unified voice manager
   const speak = (text) => {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    
-    // Cancel any ongoing speech immediately
-    synth.cancel();
-    
-    // Speak the new text
-    const utterance = new SpeechSynthesisUtterance(String(text));
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    synth.speak(utterance);
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.speak(text);
+    }
   };
 
   const $ = s => document.querySelector(s);
@@ -795,7 +789,9 @@
     b.textContent = label; 
     b.onclick = onClick; 
     b.addEventListener('mouseenter',()=>{
-      window.speechSynthesis.cancel(); // Cancel before speaking
+      if (window.NarbeVoiceManager) {
+        window.NarbeVoiceManager.cancel(); // Cancel before speaking
+      }
       speak(label);
     }); 
     return b; 
@@ -870,7 +866,9 @@
     State.menuButtons.forEach((b,i)=> b.classList.toggle('scan', !State.instructionsFocused && i===State.menuScanIndex)); 
     
     // Cancel previous speech before speaking new item
-    window.speechSynthesis.cancel();
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.cancel();
+    }
     
     if (State.instructionsFocused) {
       speak("Instructions. Press return to hear them.");
@@ -1273,7 +1271,9 @@
     State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', i===State.pauseScanIndex)); 
     
     // Cancel previous speech before speaking new item
-    window.speechSynthesis.cancel();
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.cancel();
+    }
     speak(State.pauseButtons[State.pauseScanIndex].textContent); 
   }
   function pauseScanForward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; } updatePauseScan(); }

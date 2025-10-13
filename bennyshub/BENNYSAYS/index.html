@@ -17,6 +17,9 @@
     <div class="hint">Space = scan (hold 3s = auto-back every 1.5s). Return = select. Click = direct select.</div>
   </div>
 
+  <!-- Include shared voice manager -->
+  <script src="../../shared/voice-manager.js"></script>
+  
   <script>
   // ====== Constants ======
   const BACK_HOLD_THRESHOLD = 3000;   // ms to engage back-scan
@@ -112,12 +115,9 @@
   function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
   function randInt(n) { return Math.floor(Math.random() * n); }
   function speak(text) {
-    try {
-      const synth = window.speechSynthesis; if (!synth) return;
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-      synth.cancel(); synth.speak(u);
-    } catch (e) { /* ignore */ }
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.speak(text);
+    }
   }
 
   // Robust exit helper: communicates with parent to focus back button

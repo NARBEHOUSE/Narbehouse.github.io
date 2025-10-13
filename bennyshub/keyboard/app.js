@@ -9,15 +9,15 @@
     autocapI: true,
     theme: "default",
     scanSpeed: "medium",
-    voiceIndex: 0,
-    highlightColor: "yellow",
-    ttsEnabled: true // Add TTS enabled setting
+    highlightColor: "yellow"
   };
 
   let settings = loadSettings();
   function loadSettings() {
     try { 
       const v = JSON.parse(localStorage.getItem("kb_settings")); 
+      // Remove voiceIndex from keyboard settings as it's now handled by voice manager
+      if (v && 'voiceIndex' in v) delete v.voiceIndex;
       return { ...defaultSettings, ...v }; 
     }
     catch { 
@@ -28,181 +28,10 @@
     localStorage.setItem("kb_settings", JSON.stringify(settings));
   }
 
-  // TTS functionality with voice management
-  let ttsEngine = null;
-  let availableVoices = [];
-  let englishVoices = [];
-  let currentVoiceIndex = 0;
-
-  function initTTS() {
-    if ('speechSynthesis' in window) {
-      ttsEngine = window.speechSynthesis;
-      
-      function loadVoices() {
-        availableVoices = ttsEngine.getVoices();
-        if (availableVoices.length > 0) {
-          // Filter for English voices only
-          englishVoices = availableVoices.filter(voice => 
-            voice.lang.startsWith('en-') || voice.lang === 'en'
-          );
-          
-          console.log(`Found ${englishVoices.length} English voices:`, englishVoices.map(v => v.name));
-          
-          currentVoiceIndex = settings.voiceIndex || 0;
-          // Ensure index is within bounds
-          if (currentVoiceIndex >= englishVoices.length) {
-            currentVoiceIndex = 0;
-          }
-          updateVoiceDisplay();
-        }
-      }
-      
-      loadVoices();
-      if (ttsEngine.onvoiceschanged !== undefined) {
-        ttsEngine.onvoiceschanged = loadVoices;
-      }
-    } else {
-      console.warn("Speech synthesis not supported");
-    }
-  }
-
+  // TTS functionality using unified voice manager
   function speak(text) {
-    // Check if TTS is disabled
-    if (!settings.ttsEnabled) return;
-    
-    if (!ttsEngine) return;
-    
-    ttsEngine.cancel();
-    
-    // Process text for better TTS pronunciation
-    let processedText = text;
-    
-    // List of common 2-letter words that should be spoken as words, not letters
-    const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
-                           'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
-                           'MY', 'AN', 'AM', 'US', 'OK', 'HI', 'OH', 'AH', 'HA'];
-    
-    // Process the text word by word, but handle contractions specially
-    processedText = text.split(' ').map(fullWord => {
-      // Handle contractions by splitting on apostrophe but keeping it together
-      if (fullWord.includes("'")) {
-        // Split the contraction but preserve the apostrophe
-        const parts = fullWord.split("'");
-        const processedParts = parts.map((part, index) => {
-          // Don't process empty strings
-          if (!part) return '';
-          
-          // Check if this part is a 2-letter word that should be spoken as a word
-          if (part.length === 2 && twoLetterWords.includes(part.toUpperCase())) {
-            return part.toLowerCase();
-          }
-          // For other all-caps parts, convert to lowercase
-          else if (part === part.toUpperCase() && /^[A-Z]+$/.test(part)) {
-            return part.toLowerCase();
-          }
-          // Keep single letters as uppercase (they should be spelled out)
-          else if (part.length === 1 && /^[A-Z]$/.test(part)) {
-            return part;
-          }
-          // Default: convert to lowercase
-          else {
-            return part.toLowerCase();
-          }
-        });
-        
-        // Rejoin with apostrophe
-        return processedParts.join("'");
-      }
-      // Non-contraction words
-      else {
-        // Check if it's a 2-letter word that should be spoken as a word
-        if (fullWord.length === 2 && twoLetterWords.includes(fullWord.toUpperCase())) {
-          return fullWord.toLowerCase();
-        }
-        // For other all-caps words longer than 2 letters, convert to lowercase
-        else if (fullWord.length > 2 && fullWord === fullWord.toUpperCase() && /^[A-Z]+$/.test(fullWord)) {
-          return fullWord.toLowerCase();
-        }
-        // Keep single letters as uppercase (they should be spelled out)
-        else if (fullWord.length === 1 && /^[A-Z]$/.test(fullWord)) {
-          return fullWord;
-        }
-        // Default: convert to lowercase for natural speech
-        else {
-          return fullWord.toLowerCase();
-        }
-      }
-    }).join(' ');
-    
-    const utterance = new SpeechSynthesisUtterance(processedText);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-      utterance.voice = englishVoices[currentVoiceIndex];
-    }
-    
-    console.log(`TTS: ${text} -> Processed: ${processedText}`);
-    ttsEngine.speak(utterance);
-  }
-
-  function getVoiceDisplayName(voice) {
-    if (!voice) return "Default";
-    
-    const name = voice.name.toLowerCase();
-    
-    // Count voices by provider and gender for numbering
-    const providerVoices = englishVoices.filter(v => {
-      const vName = v.name.toLowerCase();
-      if (name.includes('google')) return vName.includes('google');
-      if (name.includes('microsoft')) return vName.includes('microsoft');
-      if (name.includes('apple')) return vName.includes('apple');
-      if (name.includes('samsung')) return vName.includes('samsung');
-      return false;
-    });
-    
-    let provider = "Unknown";
-    if (name.includes('google')) provider = "Google";
-    else if (name.includes('microsoft')) provider = "Microsoft";
-    else if (name.includes('apple')) provider = "Apple";
-    else if (name.includes('samsung')) provider = "Samsung";
-    
-    // Determine gender based on common patterns
-    let gender = "Voice";
-    if (name.includes('female') || name.includes('woman') || name.includes('girl') ||
-        name.includes('zira') || name.includes('cortana') || name.includes('hazel') ||
-        name.includes('susan') || name.includes('karen') || name.includes('heather') ||
-        name.includes('linda') || name.includes('julie') || name.includes('catherine')) {
-      gender = "Female";
-    } else if (name.includes('male') || name.includes('man') || name.includes('boy') ||
-               name.includes('david') || name.includes('mark') || name.includes('richard') ||
-               name.includes('george') || name.includes('james') || name.includes('kevin') ||
-               name.includes('paul') || name.includes('sean') || name.includes('benjamin')) {
-      gender = "Male";
-    }
-    
-    // Find the index of this voice within its provider/gender group
-    const sameTypeVoices = providerVoices.filter(v => {
-      const vName = v.name.toLowerCase();
-      const vGender = (vName.includes('female') || vName.includes('woman') || 
-                       vName.includes('zira') || vName.includes('cortana') ||
-                       vName.includes('hazel') || vName.includes('susan') ||
-                       vName.includes('karen') || vName.includes('heather') ||
-                       vName.includes('linda') || vName.includes('julie') ||
-                       vName.includes('catherine')) ? "Female" : 
-                      (vName.includes('male') || vName.includes('man') ||
-                       vName.includes('david') || vName.includes('mark') ||
-                       vName.includes('richard') || vName.includes('george') ||
-                       vName.includes('james') || vName.includes('kevin') ||
-                       vName.includes('paul') || vName.includes('sean') ||
-                       vName.includes('benjamin')) ? "Male" : "Voice";
-      return vGender === gender;
-    });
-    
-    const voiceNumber = sameTypeVoices.findIndex(v => v.name === voice.name) + 1;
-    
-    return `${provider} ${gender} ${voiceNumber}`;
+    // Use the unified voice manager's speakProcessed function for better pronunciation
+    window.NarbeVoiceManager.speakProcessed(text);
   }
 
   // Scan timing configuration
@@ -461,16 +290,11 @@
 
       // Read all predictive text words when entering predictive mode
       const predictButtons = document.querySelectorAll('#predictBar .chip');
-      if (predictButtons.length > 0 && ttsEngine) {
-        ttsEngine.cancel();
+      if (predictButtons.length > 0) {
         const predictions = Array.from(predictButtons).map(btn => btn.textContent).filter(text => text);
         if (predictions.length > 0) {
           const announcement = predictions.join(", ");
-          const utterance = new SpeechSynthesisUtterance(announcement);
-          if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-            utterance.voice = englishVoices[currentVoiceIndex];
-          }
-          ttsEngine.speak(utterance);
+          window.NarbeVoiceManager.speak(announcement);
         }
       }
     } else {
@@ -942,29 +766,23 @@
   }
 
   function cycleVoice() {
-    if (englishVoices.length === 0) {
+    const voiceChanged = window.NarbeVoiceManager.cycleVoice();
+    if (voiceChanged) {
+      updateVoiceDisplay();
+      const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+      const displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
+      speak(`voice changed to ${displayName}`);
+    } else {
       speak("no english voices available");
-      return;
     }
-    
-    currentVoiceIndex = (currentVoiceIndex + 1) % englishVoices.length;
-    settings.voiceIndex = currentVoiceIndex;
-    saveSettings();
-    updateVoiceDisplay();
-    
-    const voice = englishVoices[currentVoiceIndex];
-    const displayName = getVoiceDisplayName(voice);
-    speak(`voice changed to ${displayName}`);
   }
 
   function updateVoiceDisplay() {
     const voiceValue = $("#voiceValue");
-    if (voiceValue && englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-      const voice = englishVoices[currentVoiceIndex];
-      const displayName = getVoiceDisplayName(voice);
+    if (voiceValue) {
+      const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
+      const displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
       voiceValue.textContent = displayName;
-    } else if (voiceValue) {
-      voiceValue.textContent = "Default";
     }
   }
 
@@ -984,27 +802,16 @@
   }
 
   function toggleTTS() {
-    settings.ttsEnabled = !settings.ttsEnabled;
-    saveSettings();
+    const ttsEnabled = window.NarbeVoiceManager.toggleTTS();
     updateTTSToggleDisplay();
-    
-    if (ttsEngine) {
-      ttsEngine.cancel();
-      const utterance = new SpeechSynthesisUtterance(settings.ttsEnabled ? "TTS enabled" : "TTS disabled");
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-        utterance.voice = englishVoices[currentVoiceIndex];
-      }
-      ttsEngine.speak(utterance);
-    }
+    speak(ttsEnabled ? "TTS enabled" : "TTS disabled");
   }
 
   function updateTTSToggleDisplay() {
     const ttsValue = $("#ttsToggleValue");
     if (ttsValue) {
-      ttsValue.textContent = settings.ttsEnabled ? "On" : "Off";
+      const voiceSettings = window.NarbeVoiceManager.getSettings();
+      ttsValue.textContent = voiceSettings.ttsEnabled ? "On" : "Off";
     }
   }
 
@@ -1035,18 +842,9 @@
       Press return to continue using the keyboard.
     `;
     
-    if (ttsEngine) {
-      ttsEngine.cancel();
-      const utterance = new SpeechSynthesisUtterance(instructions);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-        utterance.voice = englishVoices[currentVoiceIndex];
-      }
-      
-      ttsEngine.speak(utterance);
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.cancel();
+      window.NarbeVoiceManager.speak(instructions, { rate: 0.9 });
     }
   }
 
@@ -1124,61 +922,7 @@
   textBar.addEventListener("click", () => {
     const text = buffer.replace(/\|/g, "").trim();
     if (text) {
-      if (ttsEngine) {
-        ttsEngine.cancel();
-        
-        let processedText = text;
-        const twoLetterWords = ['IT', 'IS', 'IN', 'AT', 'ON', 'TO', 'OF', 'AS', 'BY', 'IF', 
-                               'OR', 'SO', 'UP', 'DO', 'GO', 'HE', 'WE', 'ME', 'BE', 'NO', 
-                               'MY', 'AN', 'AM', 'US', 'OK', 'HI', 'OH', 'AH', 'HA'];
-        
-        processedText = text.split(' ').map(fullWord => {
-          if (fullWord.includes("'")) {
-            const parts = fullWord.split("'");
-            const processedParts = parts.map((part, index) => {
-              if (!part) return '';
-              if (part.length === 2 && twoLetterWords.includes(part.toUpperCase())) {
-                return part.toLowerCase();
-              }
-              else if (part === part.toUpperCase() && /^[A-Z]+$/.test(part)) {
-                return part.toLowerCase();
-              }
-              else if (part.length === 1 && /^[A-Z]$/.test(part)) {
-                return part;
-              }
-              else {
-                return part.toLowerCase();
-              }
-            });
-            return processedParts.join("'");
-          }
-          else {
-            if (fullWord.length === 2 && twoLetterWords.includes(fullWord.toUpperCase())) {
-              return fullWord.toLowerCase();
-            }
-            else if (fullWord.length > 2 && fullWord === fullWord.toUpperCase() && /^[A-Z]+$/.test(fullWord)) {
-              return fullWord.toLowerCase();
-            }
-            else if (fullWord.length === 1 && /^[A-Z]$/.test(fullWord)) {
-              return fullWord;
-            }
-            else {
-              return fullWord.toLowerCase();
-            }
-          }
-        }).join(' ');
-        
-        const utterance = new SpeechSynthesisUtterance(processedText);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        if (englishVoices.length > 0 && englishVoices[currentVoiceIndex]) {
-          utterance.voice = englishVoices[currentVoiceIndex];
-        }
-        
-        ttsEngine.speak(utterance);
-      }
+      window.NarbeVoiceManager.speakProcessed(text);
       
       ttsUseCount++;
       console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
@@ -1206,7 +950,18 @@
   };
 
   function init() {
-    initTTS();
+    // Wait for voice manager to load voices, then update display
+    window.NarbeVoiceManager.waitForVoices().then(() => {
+      updateVoiceDisplay();
+      updateTTSToggleDisplay();
+    });
+    
+    // Listen for voice settings changes from other apps
+    window.NarbeVoiceManager.onSettingsChange(() => {
+      updateVoiceDisplay();
+      updateTTSToggleDisplay();
+    });
+    
     applyTheme(settings.theme);
     applyHighlightColor(settings.highlightColor || "yellow");
     currentScanSpeed = settings.scanSpeed || "medium";

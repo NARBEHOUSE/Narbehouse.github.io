@@ -368,22 +368,16 @@
   </div>
   <div class="hint">Space = scan (hold 3s = backward). Return = select. Hold Return 6s in game = pause.</div>
 
+  <!-- Include shared voice manager -->
+  <script src="../../shared/voice-manager.js"></script>
+  
   <script>
-  // TTS
-  const speak = (() => {
-    const synth = window.speechSynthesis;
-    function say(text){
-      if(!synth) return;
-      // Cancel any ongoing speech immediately
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(String(text));
-      u.rate = 1.0; 
-      u.pitch = 1.0; 
-      u.volume = 1.0;
-      synth.speak(u);
+  // TTS using unified voice manager
+  const speak = (text) => {
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.speak(text);
     }
-    return say;
-  })();
+  };
 
   // Utility
   const $ = sel => document.querySelector(sel);

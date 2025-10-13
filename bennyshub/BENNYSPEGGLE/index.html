@@ -16,6 +16,9 @@
 <body>
 <canvas id="gameCanvas"></canvas>
 
+<!-- Include shared voice manager -->
+<script src="../../shared/voice-manager.js"></script>
+
 <script>
 const BASE_W=820, BASE_H=540;
 // Solid top HUD bar height (treat as wall)
@@ -1390,22 +1393,20 @@ class Music {
   toggle(){ this.enabled=!this.enabled; if(!this.enabled) this.pause(); else this.resume(); }
 }
 
-// Add this near the top-level (before class Game), so TTS exists when called.
+// TTS using unified voice manager
 const TTS = {
-  enabled: true,
   speak(text, interrupt = true){
-    try{
-      if(!this.enabled || !('speechSynthesis' in window)) return;
-      if(interrupt) window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(String(text));
-      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-      const voices = window.speechSynthesis.getVoices();
-      const en = voices && voices.find(v=>/en/i.test(v.lang));
-      if(en) u.voice = en;
-      window.speechSynthesis.speak(u);
-    }catch(_){}
+    if(!window.NarbeVoiceManager) return;
+    const voiceSettings = window.NarbeVoiceManager.getSettings();
+    if(!voiceSettings.ttsEnabled) return;
+    if(interrupt) window.NarbeVoiceManager.cancel();
+    window.NarbeVoiceManager.speak(text);
   },
-  cancel(){ try{ window.speechSynthesis.cancel(); }catch(_){ } }
+  cancel(){ 
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.cancel();
+    }
+  }
 };
 
 // Robust exit helper: communicates with parent to focus back button
@@ -1753,7 +1754,7 @@ class Game{
     return [
       'Resume game',
       `Toggle music (${this.music.enabled? 'On':'Off'})`,
-      `Toggle TTS (${TTS.enabled? 'On':'Off'})`,
+      `Toggle TTS (${window.NarbeVoiceManager?.getSettings().ttsEnabled ? 'On':'Off'})`,
       'Main menu',
       'Exit'
     ];
@@ -1774,7 +1775,9 @@ class Game{
     } else if(this.menuIndex===1){
       this.music.toggle();
     } else if(this.menuIndex===2){
-      TTS.enabled = !TTS.enabled;
+      if (window.NarbeVoiceManager) {
+        window.NarbeVoiceManager.toggleTTS();
+      }
     } else if(this.menuIndex===3){
       // Return to main menu
       this.goMainMenu();
@@ -2848,7 +2851,7 @@ class Game{
       const items=[
         'Resume game',
         `Music: ${this.music.enabled? 'On':'Off'}`,
-        `TTS: ${TTS.enabled? 'On':'Off'}`,
+        `TTS: ${window.NarbeVoiceManager?.getSettings().ttsEnabled ? 'On':'Off'}`,
         'Main menu',
         'Exit'
       ];
