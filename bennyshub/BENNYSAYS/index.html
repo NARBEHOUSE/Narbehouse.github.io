@@ -19,8 +19,6 @@
 
   <!-- Include shared voice manager -->
   <script src="../../shared/voice-manager.js"></script>
-  <!-- Include iOS audio unlock -->
-  <script src="../../shared/ios-audio-unlock.js"></script>
   
   <script>
   // ====== Constants ======
@@ -68,11 +66,6 @@
       masterGain.connect(audioCtx.destination);
       audioUnlocked = true;
       console.log('Audio unlocked for BENNYSAYS');
-      
-      // iOS-specific unlock for Web Audio API
-      if (window.iOSAudioUnlock && audioCtx) {
-        window.iOSAudioUnlock.unlockContext(audioCtx);
-      }
     } catch (e) {
       console.warn('Failed to create audio context:', e);
     }

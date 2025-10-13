@@ -18,8 +18,6 @@
 
 <!-- Include shared voice manager -->
 <script src="../../shared/voice-manager.js"></script>
-<!-- Include iOS audio unlock -->
-<script src="../../shared/ios-audio-unlock.js"></script>
 
 <script>
 const BASE_W=820, BASE_H=540;
@@ -119,12 +117,6 @@ const AudioGraph = {
   async unlock(){
     this._unlocked = true;
     this.ensure();
-    
-    // iOS-specific unlock for Web Audio API
-    if (window.iOSAudioUnlock && this.ac) {
-      await window.iOSAudioUnlock.unlockContext(this.ac);
-    }
-    
     return this.resume();
   },
   // Resume the shared context (needed for music routed via MediaElementSource)
