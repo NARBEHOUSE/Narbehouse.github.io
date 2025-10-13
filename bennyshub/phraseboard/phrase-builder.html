@@ -135,53 +135,72 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.6);
       z-index: 2000;
       display: none;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
     .image-modal.show { display: flex; }
     .image-modal-content {
       background: white;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 800px;
-      max-height: 90%;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 700px;
+      max-height: 85vh;
       overflow: hidden;
       position: relative;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 20px;
-      padding: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     }
     .image-modal-close {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      background: none;
-      border: none;
-      font-size: 24px;
+      top: 16px;
+      right: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 20px;
       cursor: pointer;
       color: var(--muted);
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 50%;
+      transition: all 0.2s ease;
     }
-    .image-modal-close:hover { background: var(--bg); }
+    .image-modal-close:hover { 
+      background: var(--danger); 
+      color: white;
+      border-color: var(--danger);
+    }
+    .image-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .image-modal-header h3 {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+    }
     .image-preview-section {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 16px;
+      background: white;
     }
     .image-preview {
       width: 100%;
       height: 200px;
       border: 2px dashed var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -193,31 +212,69 @@
       max-height: 100%;
       object-fit: contain;
     }
+    .image-url-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .image-url-controls {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+    }
     .image-search-section {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 16px;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      margin-top: 4px;
+    }
+    .search-controls {
+      display: flex;
+      gap: 12px;
+      align-items: end;
     }
     .search-results {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
       max-height: 300px;
       overflow-y: auto;
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .search-results::-webkit-scrollbar {
+      width: 8px;
+    }
+    .search-results::-webkit-scrollbar-track {
+      background: var(--bg);
+      border-radius: 4px;
+    }
+    .search-results::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    .search-results::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
     }
     .search-results img {
       width: 100%;
       height: 80px;
       object-fit: cover;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       border: 2px solid transparent;
+      transition: all 0.2s ease;
+      background: white;
     }
     .search-results img:hover {
       border-color: var(--brand);
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(91, 176, 255, 0.2);
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { border-top: 1px solid var(--border); padding: 8px; vertical-align: middle; }
@@ -251,8 +308,27 @@
 
   <main>
     <div class="card section">
-      <label for="boardName">Board name</label>
-      <input id="boardName" type="text" placeholder="e.g., NARBE House Default" style="width: 100%;" />
+      <div class="row" style="align-items: end; gap: 16px;">
+        <div class="grow">
+          <label for="boardName">Board name</label>
+          <input id="boardName" type="text" placeholder="e.g., NARBE House Default" />
+        </div>
+        <div>
+          <label>Board color</label>
+          <div class="row">
+            <input id="boardColor" type="color" value="#5bb0ff" />
+            <button class="btn color-btn" id="boardColorBtn">Color</button>
+          </div>
+        </div>
+        <div>
+          <label>Board image</label>
+          <div class="row">
+            <img id="boardImgThumb" class="img-thumb" src="" alt="" style="width: 36px; height: 36px;" />
+            <button class="btn" id="boardImageBtn" style="padding: 6px 10px; font-size: 12px;">Image</button>
+          </div>
+          <input id="boardImage" type="hidden" />
+        </div>
+      </div>
     </div>
 
     <div id="categories"></div>
@@ -264,8 +340,8 @@
     <div class="card section">
       <details>
         <summary>ℹ️ CSV format this builder exports</summary>
-        <p class="nowrap">Header: <strong>Category,CategoryOrder,Display,Speak,Image,CategoryColor,TileColor,TileOrder,CategoryImage</strong></p>
-        <p>Runner can ignore unknown columns and still work. Colors are hex values.</p>
+        <p class="nowrap">Header: <strong>Category,CategoryOrder,Display,Speak,Image,CategoryColor,TileColor,TileOrder,CategoryImage,BoardName,BoardColor,BoardImage</strong></p>
+        <p>Runner can ignore unknown columns and still work. Colors are hex values. Board-level data (name, color, image) is duplicated in each row for compatibility.</p>
       </details>
     </div>
   </main>
@@ -369,22 +445,30 @@
     <div class="image-modal-content">
       <button class="image-modal-close">&times;</button>
       
-      <div class="image-preview-section"></div>
-        <h3 style="margin: 0 0 10px 0;">Current Image</h3>
+      <div class="image-modal-header">
+        <h3>Image Selection</h3>
+      </div>
+      
+      <div class="image-preview-section">
         <div class="image-preview">
           <img id="modalImagePreview" src="" alt="No image selected" style="display: none;" />
           <span id="modalImagePlaceholder">No image selected</span>
         </div>
-        <div>
-          <label>Image URL</label>
-          <input id="modalImageUrl" type="text" placeholder="Enter image URL" />
+      </div>
+      
+      <div class="image-url-section">
+        <label>Image URL</label>
+        <div class="image-url-controls">
+          <input id="modalImageUrl" type="text" placeholder="Enter image URL" class="grow" />
+          <button class="btn ok" id="modalApplyBtn">Apply Image</button>
         </div>
-        <button class="btn ok" id="modalApplyBtn">Apply Image</button>
       </div>
       
       <div class="image-search-section">
-        <h3 style="margin: 0 0 10px 0;">Search Open Images</h3>
-        <div class="row">
+        <div class="image-modal-header">
+          <h3>Search Images</h3>
+        </div>
+        <div class="search-controls">
           <input id="modalImageQuery" type="search" placeholder="Search for images (e.g., water, food, help)" class="grow" />
           <button class="btn" id="modalSearchBtn">Search</button>
         </div>
@@ -413,6 +497,7 @@
     let draggedRow = null; // for row drag and drop
     let currentImageRow = null; // for image modal
     let currentImageCategory = null; // for category image modal
+    let currentImageBoard = false; // for board image modal
     let autoScrollInterval = null; // for auto-scrolling during drag
 
     function createColorPopup() {
@@ -880,6 +965,25 @@
       }
     }
 
+    async function autoLoadBoardImage() {
+      const currentImage = document.getElementById('boardImage').value.trim();
+      if (currentImage) return;
+      
+      const boardName = document.getElementById('boardName').value.trim();
+      if (!boardName) return;
+      
+      try {
+        const urls = await searchImages(boardName);
+        if (urls.length > 0) {
+          const firstImageUrl = urls[0];
+          document.getElementById('boardImage').value = firstImageUrl;
+          document.getElementById('boardImgThumb').src = firstImageUrl;
+        }
+      } catch (error) {
+        console.error('Auto board image load failed:', error);
+      }
+    }
+
     function getSelectedRows(catNode) {
       const selectedRows = [];
       catNode.querySelectorAll('tbody tr').forEach(tr => {
@@ -1019,8 +1123,13 @@
     }
 
     function exportCSVString() {
+      const boardName = document.getElementById('boardName').value.trim();
+      const boardColor = document.getElementById('boardColor').value;
+      const boardImage = document.getElementById('boardImage').value.trim();
+      
       const rows = [];
-      rows.push(['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder','CategoryImage']);
+      rows.push(['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder','CategoryImage','BoardName','BoardColor','BoardImage']);
+      
       Array.from(categories.children).forEach(cat => {
         const catName = cat.querySelector('.cat-name').value.trim();
         const catOrder = parseInt(cat.querySelector('.cat-order').value || '1', 10);
@@ -1034,9 +1143,9 @@
           const useOverride = tr.querySelector('.use-override').checked;
           const tileColor = useOverride ? tr.querySelector('.tile-color').value : '';
           const tileOrder = index + 1; // Use actual row position
-          // CSV escape
+          // CSV escape - include board data in each row
           rows.push([
-            catName, catOrder, display, speak, image, catColor, tileColor, tileOrder, catImage
+            catName, catOrder, display, speak, image, catColor, tileColor, tileOrder, catImage, boardName, boardColor, boardImage
           ].map(csvEscape));
         });
       });
@@ -1108,7 +1217,25 @@
         tileColor: header.indexOf('tilecolor'),
         tileOrder: header.indexOf('tileorder'),
         catImage: header.indexOf('categoryimage'), // New field
+        boardName: header.indexOf('boardname'), // New field
+        boardColor: header.indexOf('boardcolor'), // New field
+        boardImage: header.indexOf('boardimage'), // New field
       };
+
+      // Extract board-level data from first row (if available)
+      if (lines.length > 1) {
+        const firstRow = parseCSVLine(lines[1]);
+        if (idx.boardName >= 0 && firstRow[idx.boardName]) {
+          document.getElementById('boardName').value = firstRow[idx.boardName];
+        }
+        if (idx.boardColor >= 0 && firstRow[idx.boardColor]) {
+          document.getElementById('boardColor').value = toColorInput(firstRow[idx.boardColor]);
+        }
+        if (idx.boardImage >= 0 && firstRow[idx.boardImage]) {
+          document.getElementById('boardImage').value = firstRow[idx.boardImage];
+          document.getElementById('boardImgThumb').src = firstRow[idx.boardImage];
+        }
+      }
 
       // group by category name + order/color
       const map = new Map();
@@ -1258,10 +1385,47 @@
       modal.classList.add('show');
     }
 
+    function showBoardImageModal() {
+      const modal = document.getElementById('imageModal');
+      const preview = document.getElementById('modalImagePreview');
+      const placeholder = document.getElementById('modalImagePlaceholder');
+      const urlInput = document.getElementById('modalImageUrl');
+      const queryInput = document.getElementById('modalImageQuery');
+      
+      const currentUrl = document.getElementById('boardImage').value;
+      urlInput.value = currentUrl;
+      
+      if (currentUrl) {
+        preview.src = currentUrl;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        queryInput.value = '';
+      } else {
+        preview.style.display = 'none';
+        placeholder.style.display = 'block';
+        
+        // Auto-populate search term from board name
+        const boardName = document.getElementById('boardName').value.trim();
+        
+        if (boardName) {
+          queryInput.value = boardName;
+          // Automatically search when modal opens with no existing image
+          setTimeout(() => {
+            searchModalImages(true);
+          }, 100);
+        } else {
+          queryInput.value = '';
+        }
+      }
+      
+      modal.classList.add('show');
+    }
+
     function hideImageModal() {
       document.getElementById('imageModal').classList.remove('show');
       currentImageRow = null;
       currentImageCategory = null;
+      currentImageBoard = false;
     }
 
     function applyModalImage() {
@@ -1275,6 +1439,10 @@
         // Apply to category
         currentImageCategory.querySelector('.cat-image').value = url;
         currentImageCategory.querySelector('.cat-img-thumb').src = url;
+      } else if (currentImageBoard) {
+        // Apply to board
+        document.getElementById('boardImage').value = url;
+        document.getElementById('boardImgThumb').src = url;
       }
       
       hideImageModal();
@@ -1313,6 +1481,9 @@
           } else if (currentImageCategory) {
             currentImageCategory.querySelector('.cat-image').value = firstImageUrl;
             currentImageCategory.querySelector('.cat-img-thumb').src = firstImageUrl;
+          } else if (currentImageBoard) {
+            document.getElementById('boardImage').value = firstImageUrl;
+            document.getElementById('boardImgThumb').src = firstImageUrl;
           }
         }
         
@@ -1410,6 +1581,22 @@
     document.getElementById('imageModal').querySelector('.image-modal-close').addEventListener('click', hideImageModal);
     document.getElementById('modalApplyBtn').addEventListener('click', applyModalImage);
     document.getElementById('modalSearchBtn').addEventListener('click', () => searchModalImages(false));
+    
+    // Add Enter key support for search
+    document.getElementById('modalImageQuery').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchModalImages(false);
+      }
+    });
+
+    // Add Enter key support for URL input
+    document.getElementById('modalImageUrl').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyModalImage();
+      }
+    });
 
     // wire up top actions
     document.getElementById('addCategory').addEventListener('click', () => newCategory());
@@ -1426,6 +1613,36 @@
       r.onload = () => importCSVString(String(r.result));
       r.readAsText(f);
       e.target.value = '';
+    });
+
+    // Board color and image event handlers
+    document.getElementById('boardColorBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      showColorPopup(document.getElementById('boardColorBtn'), document.getElementById('boardColor'));
+    });
+
+    document.getElementById('boardImageBtn').addEventListener('click', () => {
+      currentImageBoard = true;
+      currentImageRow = null;
+      currentImageCategory = null;
+      showBoardImageModal();
+    });
+
+    document.getElementById('boardImgThumb').addEventListener('click', () => {
+      currentImageBoard = true;
+      currentImageRow = null;
+      currentImageCategory = null;
+      showBoardImageModal();
+    });
+
+    // Auto-load board image when board name changes
+    document.getElementById('boardName').addEventListener('input', () => {
+      const currentImage = document.getElementById('boardImage').value.trim();
+      if (!currentImage) {
+        setTimeout(() => {
+          autoLoadBoardImage();
+        }, 500);
+      }
     });
 
     // bootstrap

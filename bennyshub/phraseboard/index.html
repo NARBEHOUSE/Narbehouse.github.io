@@ -800,6 +800,7 @@ function updateHeaderForCurrentView(){
         allMainItems.push({
           text: board.name,
           icon: '📋',
+          boardData: board, // Store board data for styling
           action: async () => {
             const cleanBoardName = cleanTextForTTS(board.name);
             if (cleanBoardName) speak(cleanBoardName);
@@ -827,6 +828,21 @@ function updateHeaderForCurrentView(){
         for (let i = startIdx; i < endIdx; i++) {
           const item = allMainItems[i];
           const btn = createButton(item.text, item.icon, item.action, item.className || '');
+          
+          // Apply board color and image if available
+          if (item.boardData) {
+            if (item.boardData.color) {
+              btn.style.background = rgbaFromHex(item.boardData.color, 0.2);
+              btn.style.borderColor = item.boardData.color;
+            }
+            if (item.boardData.image) {
+              const img = document.createElement('img');
+              img.src = item.boardData.image;
+              img.alt = '';
+              btn.insertBefore(img, btn.firstChild);
+            }
+          }
+          
           el.mainGrid.appendChild(btn);
         }
         
@@ -841,6 +857,21 @@ function updateHeaderForCurrentView(){
         // Single page - add all items
         allMainItems.forEach(item => {
           const btn = createButton(item.text, item.icon, item.action, item.className || '');
+          
+          // Apply board color and image if available
+          if (item.boardData) {
+            if (item.boardData.color) {
+              btn.style.background = rgbaFromHex(item.boardData.color, 0.2);
+              btn.style.borderColor = item.boardData.color;
+            }
+            if (item.boardData.image) {
+              const img = document.createElement('img');
+              img.src = item.boardData.image;
+              img.alt = '';
+              btn.insertBefore(img, btn.firstChild);
+            }
+          }
+          
           el.mainGrid.appendChild(btn);
         });
       }
@@ -1828,7 +1859,26 @@ function updateHeaderForCurrentView(){
         tileColor: header.indexOf('tilecolor'),
         tileOrder: header.indexOf('tileorder'),
         catImage: header.indexOf('categoryimage'), // New field for category images
+        boardName: header.indexOf('boardname'), // New field for board name
+        boardColor: header.indexOf('boardcolor'), // New field for board color
+        boardImage: header.indexOf('boardimage'), // New field for board image
       };
+
+      // Extract board-level data from first row (if available)
+      let boardData = { name: null, color: null, image: null };
+      if (lines.length > 1) {
+        const firstRow = parseCSVLine(lines[1]);
+        if (idx.boardName >= 0 && firstRow[idx.boardName]) {
+          boardData.name = firstRow[idx.boardName];
+        }
+        if (idx.boardColor >= 0 && firstRow[idx.boardColor]) {
+          boardData.color = firstRow[idx.boardColor];
+        }
+        if (idx.boardImage >= 0 && firstRow[idx.boardImage]) {
+          boardData.image = firstRow[idx.boardImage];
+        }
+      }
+
       const rows = [];
       for (let i = 1; i < lines.length; i++) {
         const cols = parseCSVLine(lines[i]);
@@ -1843,6 +1893,10 @@ function updateHeaderForCurrentView(){
           tileColor: cols[idx.tileColor] || '',
           tileOrder: parseInt(cols[idx.tileOrder] || '9999', 10) || 9999,
           categoryImage: idx.catImage >= 0 ? (cols[idx.catImage] || '') : '', // Handle backwards compatibility
+          // Include board data in each row for access
+          boardName: boardData.name,
+          boardColor: boardData.color,
+          boardImage: boardData.image,
         });
       }
       return rows;
@@ -2052,12 +2106,49 @@ function updateHeaderForCurrentView(){
         const response = await fetch('./boards/index.json');
         if (response.ok) {
           const data = await response.json();
-          state.availableBoards = data.files.map(filename => {
+          // Process each board file to extract board-level data
+          const boardPromises = data.files.map(async filename => {
             const name = filename.replace('.csv', '').replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-            return { name, filename, path: `./boards/${filename}` };
+            const path = `./boards/${filename}`;
+            
+            try {
+              // Fetch the CSV to extract board-level data
+              const csvResponse = await fetch(path);
+              if (csvResponse.ok) {
+                const csvText = await csvResponse.text();
+                const parsedRows = parseCSV(csvText);
+                
+                // Extract board data from the first row
+                let boardColor = null;
+                let boardImage = null;
+                if (parsedRows.length > 0) {
+                  boardColor = parsedRows[0].boardColor;
+                  boardImage = parsedRows[0].boardImage;
+                }
+                
+                return { 
+                  name, 
+                  filename, 
+                  path,
+                  color: boardColor,
+                  image: boardImage
+                };
+              }
+            } catch (error) {
+              console.warn(`Failed to load board data for ${filename}:`, error);
+            }
+            
+            // Fallback if CSV loading fails
+            return { name, filename, path, color: null, image: null };
           });
-        } else { state.availableBoards = []; }
-      } catch { state.availableBoards = []; }
+          
+          state.availableBoards = await Promise.all(boardPromises);
+        } else { 
+          state.availableBoards = []; 
+        }
+      } catch { 
+        state.availableBoards = []; 
+      }
     }
 
     async function loadBoard(boardPath) {
