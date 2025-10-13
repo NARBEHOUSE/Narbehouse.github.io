@@ -781,9 +781,17 @@ function updateHeaderForCurrentView(){
       const localBoard = getLocalSavedBoard();
       let allMainItems = [...coreItems];
       if (localBoard) {
+        // Parse the local board CSV to check for board image
+        const localBoardData = parseCSV(localBoard.csv);
+        const boardHasImage = localBoardData.length > 0 && localBoardData[0].boardImage;
+        
         allMainItems.push({
           text: localBoard.name, 
-          icon: '📋', 
+          icon: boardHasImage ? '' : '📋', // Only use clipboard icon if no image is available
+          boardData: localBoardData.length > 0 ? {
+            image: localBoardData[0].boardImage,
+            color: localBoardData[0].boardColor
+          } : null,
           action: () => {
             const cleanBoardName = cleanTextForTTS(localBoard.name);
             if (cleanBoardName) speak(cleanBoardName);
@@ -799,7 +807,7 @@ function updateHeaderForCurrentView(){
       state.availableBoards.forEach(board => {
         allMainItems.push({
           text: board.name,
-          icon: '📋',
+          icon: board.image ? '' : '📋', // Only use clipboard icon if no image is available
           boardData: board, // Store board data for styling
           action: async () => {
             const cleanBoardName = cleanTextForTTS(board.name);
