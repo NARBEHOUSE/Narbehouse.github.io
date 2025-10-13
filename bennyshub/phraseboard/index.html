@@ -752,63 +752,82 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'main';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      
       const coreItems = [
         { text: 'Settings', icon: '⚙️', action: () => navigateTo('settings'), className: 'muted-blue-btn' },
         { text: 'Exit', icon: '🚪', action: () => exitToHub(), className: 'muted-red-btn' },
         { text: 'Create Board', icon: '✏️', action: () => showWarningModal('create'), className: 'muted-green-btn' },
         { text: 'Load Board', icon: '📁', action: () => showWarningModal('load'), className: 'muted-yellow-btn' }
       ];
-      coreItems.forEach(item => {
-        const btn = createButton(item.text, item.icon, item.action, item.className || '');
-        el.mainGrid.appendChild(btn);
-      });
+      
+      // Add local board if exists
       const localBoard = getLocalSavedBoard();
+      let allMainItems = [...coreItems];
       if (localBoard) {
-        const myBtn = createButton(localBoard.name, '📋', () => {
-          // Speak the board name when selected
-          const cleanBoardName = cleanTextForTTS(localBoard.name);
-          if (cleanBoardName) speak(cleanBoardName);
-          
-          state.currentBoardTitle = localBoard.name;
-          buildIndex(parseCSV(localBoard.csv));
-          el.statusFooter.textContent = `Loaded board: ${localBoard.name}`;
+        allMainItems.push({
+          text: localBoard.name, 
+          icon: '📋', 
+          action: () => {
+            const cleanBoardName = cleanTextForTTS(localBoard.name);
+            if (cleanBoardName) speak(cleanBoardName);
+            
+            state.currentBoardTitle = localBoard.name;
+            buildIndex(parseCSV(localBoard.csv));
+            el.statusFooter.textContent = `Loaded board: ${localBoard.name}`;
+          }
         });
-        el.mainGrid.appendChild(myBtn);
       }
-      const usedSlots = coreItems.length + (localBoard ? 1 : 0);
-      const availableSlots = totalSlots - usedSlots;
-      if (state.availableBoards.length > 0) {
-        const totalPages = Math.ceil(state.availableBoards.length / availableSlots);
-        // Always reserve space for Next button if there are multiple pages
-        const boardsPerPage = totalPages > 1 ? availableSlots - 1 : availableSlots;
-        const startIdx = state.page * boardsPerPage;
-        const endIdx = Math.min(startIdx + boardsPerPage, state.availableBoards.length);
-        for (let i = startIdx; i < endIdx; i++) {
-          const board = state.availableBoards[i];
-          const btn = createButton(board.name, '📋', async () => {
-            // Speak the board name when selected
+      
+      // Add available boards to main items list
+      state.availableBoards.forEach(board => {
+        allMainItems.push({
+          text: board.name,
+          icon: '📋',
+          action: async () => {
             const cleanBoardName = cleanTextForTTS(board.name);
             if (cleanBoardName) speak(cleanBoardName);
             
             const success = await loadBoard(board.path);
             el.statusFooter.textContent = success ? `Loaded board: ${board.name}` : `Failed to load board: ${board.name}`;
-          });
+          }
+        });
+      });
+      
+      // Calculate pagination - reserve 1 slot for Next button if needed
+      let itemsPerPage = totalSlots;
+      const totalPages = Math.ceil(allMainItems.length / itemsPerPage);
+      
+      // If we need multiple pages, reserve 1 slot for Next button
+      if (totalPages > 1) {
+        itemsPerPage = totalSlots - 1;
+        // Recalculate total pages with the reserved slot
+        const recalcTotalPages = Math.ceil(allMainItems.length / itemsPerPage);
+        
+        const startIdx = state.page * itemsPerPage;
+        const endIdx = Math.min(startIdx + itemsPerPage, allMainItems.length);
+        
+        // Add items for current page
+        for (let i = startIdx; i < endIdx; i++) {
+          const item = allMainItems[i];
+          const btn = createButton(item.text, item.icon, item.action, item.className || '');
           el.mainGrid.appendChild(btn);
         }
-        // Add Next button if there are multiple pages (loops back to first page from last page)
-        if (totalPages > 1) {
-          const nextBtn = createButton('Next', '▶', () => { 
-            state.page = (state.page + 1) % totalPages; 
-            renderMainMenu(); 
-            updateHeaderForCurrentView(); 
-          }, 'next-btn');
-          el.mainGrid.appendChild(nextBtn);
-        }
-        if (state.page > 0) {
-          const backBtn = createButton('Back', '←', () => { state.page--; renderMainMenu(); }, 'back-btn');
-          el.mainGrid.appendChild(backBtn);
-        }
+        
+        // Always add Next button if multiple pages
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % recalcTotalPages; 
+          renderMainMenu(); 
+          updateHeaderForCurrentView(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
+      } else {
+        // Single page - add all items
+        allMainItems.forEach(item => {
+          const btn = createButton(item.text, item.icon, item.action, item.className || '');
+          el.mainGrid.appendChild(btn);
+        });
       }
+      
       updateScannable();
     }
 
@@ -864,8 +883,7 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'settings';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
-      const backBtn = createButton('Back', '←', () => navigateBack(), 'back-btn');
-      el.mainGrid.appendChild(backBtn);
+      
       const buttons = [
         { text: 'Grid Size', icon: '⊞', action: () => navigateTo('gridsize') },
         { text: 'Voice & TTS', icon: '🔊', action: () => navigateTo('tts') },
@@ -874,11 +892,41 @@ function updateHeaderForCurrentView(){
         { text: 'Theme', icon: '🌈', action: () => navigateTo('theme') },
         { text: 'Toggle Sentence', icon: '💬', action: toggleSentenceMode, className: state.sentenceMode ? 'active-green' : '' }
       ];
-      for (let i = 0; i < Math.min(buttons.length, totalSlots - 1); i++) {
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Main Menu', '🏠', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
+          renderSettingsMenu();
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
+      
+      for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
       }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
+      if (totalPages > 1) {
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderSettingsMenu(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
+      }
+      
       updateScannable();
     }
 
@@ -886,21 +934,29 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'gridsize';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
-      const backBtn = createButton('Back', '←', () => {
-        if (state.page > 0) {
-          state.page--;
-          renderGridSizeMenu();
-        } else {
-          navigateBack();
-        }
-      }, 'back-btn');
-      el.mainGrid.appendChild(backBtn);
-      const availableSlots = totalSlots - 1;
-      const startIdx = state.page * availableSlots;
+      
       const gridSizes = [];
       for (let size = 2; size <= 10; size++) gridSizes.push(size);
-      const endIdx = Math.min(startIdx + availableSlots, gridSizes.length);
-      const totalPages = Math.ceil(gridSizes.length / availableSlots);
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(gridSizes.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
+          renderGridSizeMenu();
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, gridSizes.length);
+      
       for (let i = startIdx; i < endIdx; i++) {
         const size = gridSizes[i];
         const btn = createButton(`${size}×${size}`, '⊞', () => { 
@@ -911,12 +967,16 @@ function updateHeaderForCurrentView(){
         if (state.gridSize.rows === size && state.gridSize.cols === size) btn.classList.add('active-green');
         el.mainGrid.appendChild(btn);
       }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        el.mainGrid.appendChild(createButton('Next', '▶', () => { 
+        const nextBtn = createButton('Next', '▶', () => { 
           state.page = (state.page + 1) % totalPages; 
           renderGridSizeMenu(); 
-        }, 'next-btn'));
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
       }
+      
       updateScannable();
     }
 
@@ -924,33 +984,72 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'tts';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
-      el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
-      el.mainGrid.appendChild(createButton('TTS', '🔊', () => { 
-        const newState = window.NarbeVoiceManager.toggleTTS(); 
-        speak(newState ? 'TTS enabled' : 'TTS disabled');
-        renderTTSMenu(); 
-      }, window.NarbeVoiceManager.getSettings().ttsEnabled ? 'active-green' : ''));
-      el.mainGrid.appendChild(createButton('TTS on Scan', '👆', () => { 
-        state.ttsOnScan = !state.ttsOnScan; 
-        speak(state.ttsOnScan ? 'TTS on Scan enabled' : 'TTS on Scan disabled');
-        renderTTSMenu(); 
-      }, state.ttsOnScan ? 'active-green' : ''));
       
-      // Voice toggle button
+      const buttons = [
+        { text: 'TTS', icon: '🔊', action: () => { 
+          const newState = window.NarbeVoiceManager.toggleTTS(); 
+          speak(newState ? 'TTS enabled' : 'TTS disabled');
+          renderTTSMenu(); 
+        }, className: window.NarbeVoiceManager.getSettings().ttsEnabled ? 'active-green' : '' },
+        { text: 'TTS on Scan', icon: '👆', action: () => { 
+          state.ttsOnScan = !state.ttsOnScan; 
+          speak(state.ttsOnScan ? 'TTS on Scan enabled' : 'TTS on Scan disabled');
+          renderTTSMenu(); 
+        }, className: state.ttsOnScan ? 'active-green' : '' }
+      ];
+      
+      // Add voice toggle button if multiple voices available
       const voices = window.NarbeVoiceManager.getEnglishVoices();
       if (voices && voices.length > 1) {
         const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
         let displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
         
-        const voiceBtn = createButton(`🎤 ${displayName}`, '', () => {
-          // Cycle through voices
-          window.NarbeVoiceManager.cycleVoice();
-          const newVoice = window.NarbeVoiceManager.getCurrentVoice();
-          const newVoiceName = window.NarbeVoiceManager.getVoiceDisplayName(newVoice);
-          speak(`Voice changed to ${newVoiceName}`);
+        buttons.push({
+          text: `🎤 ${displayName}`,
+          icon: '',
+          action: () => {
+            window.NarbeVoiceManager.cycleVoice();
+            const newVoice = window.NarbeVoiceManager.getCurrentVoice();
+            const newVoiceName = window.NarbeVoiceManager.getVoiceDisplayName(newVoice);
+            speak(`Voice changed to ${newVoiceName}`);
+            renderTTSMenu();
+          },
+          className: 'voice-toggle'
+        });
+      }
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button  
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
           renderTTSMenu();
-        }, 'voice-toggle');
-        el.mainGrid.appendChild(voiceBtn);
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
+      
+      for (let i = startIdx; i < endIdx; i++) {
+        const btnData = buttons[i];
+        const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
+        el.mainGrid.appendChild(btn);
+      }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
+      if (totalPages > 1) {
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderTTSMenu(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
       }
       
       updateScannable();
@@ -960,7 +1059,7 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'scan';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
-      el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
+      
       const buttons = [
         { text: 'Auto Scan', icon: '🔄', action: () => { 
           state.autoScan = !state.autoScan; 
@@ -969,52 +1068,168 @@ function updateHeaderForCurrentView(){
           renderScanMenu(); 
         }, className: state.autoScan ? 'active-green' : '' }
       ];
+      
       Object.entries(SCAN_SPEEDS).forEach(([speed, ms]) => {
-        buttons.push({ text: `${speed.charAt(0).toUpperCase() + speed.slice(1)} Speed`, icon: speed === 'slow' ? '🐌' : speed === 'medium' ? '🚶' : '🏃', action: () => {
-          state.scanSpeed = ms;
-          speak(`${speed.charAt(0).toUpperCase() + speed.slice(1)} speed selected`);
-          if (state.scanning || state.autoScan) { stopScanning(); if (state.autoScan) startAutoScan(); }
-          renderScanMenu();
-        }, className: state.scanSpeed === ms ? 'active-green' : '' });
+        buttons.push({ 
+          text: `${speed.charAt(0).toUpperCase() + speed.slice(1)} Speed`, 
+          icon: speed === 'slow' ? '🐌' : speed === 'medium' ? '🚶' : '🏃', 
+          action: () => {
+            state.scanSpeed = ms;
+            speak(`${speed.charAt(0).toUpperCase() + speed.slice(1)} speed selected`);
+            if (state.scanning || state.autoScan) { stopScanning(); if (state.autoScan) startAutoScan(); }
+            renderScanMenu();
+          }, 
+          className: state.scanSpeed === ms ? 'active-green' : '' 
+        });
       });
-      for (let i = 0; i < Math.min(buttons.length, totalSlots - 1); i++) {
-        const btnData = buttons[i];
-        el.mainGrid.appendChild(createButton(btnData.text, btnData.icon, btnData.action, btnData.className || ''));
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
+          renderScanMenu();
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
       }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
+      
+      for (let i = startIdx; i < endIdx; i++) {
+        const btnData = buttons[i];
+        const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
+        el.mainGrid.appendChild(btn);
+      }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
+      if (totalPages > 1) {
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderScanMenu(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
+      }
+      
       updateScannable();
     }
 
     function renderHighlightMenu() {
       clearGrid();
       state.currentMenu = 'highlight';
-      el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
-      Object.entries(HIGHLIGHT_COLORS).forEach(([name, color]) => {
-        const btn = createButton(name.charAt(0).toUpperCase() + name.slice(1), '●', () => {
+      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      
+      const buttons = Object.entries(HIGHLIGHT_COLORS).map(([name, color]) => ({
+        text: name.charAt(0).toUpperCase() + name.slice(1),
+        icon: '●',
+        action: () => {
           state.highlightColor = color;
           const colorName = name.charAt(0).toUpperCase() + name.slice(1);
           speak(`${colorName} highlight selected`);
           document.documentElement.style.setProperty('--rowHighlight', color);
           document.documentElement.style.setProperty('--columnHighlight', color);
           renderHighlightMenu();
-        }, state.highlightColor === color ? 'active-green' : '');
-        btn.querySelector('.icon').style.color = color;
+        },
+        className: state.highlightColor === color ? 'active-green' : '',
+        iconColor: color
+      }));
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
+          renderHighlightMenu();
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
+      
+      for (let i = startIdx; i < endIdx; i++) {
+        const btnData = buttons[i];
+        const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
+        if (btnData.iconColor) {
+          btn.querySelector('.icon').style.color = btnData.iconColor;
+        }
         el.mainGrid.appendChild(btn);
-      });
+      }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
+      if (totalPages > 1) {
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderHighlightMenu(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
+      }
+      
       updateScannable();
     }
 
     function renderThemeMenu() {
       clearGrid();
       state.currentMenu = 'theme';
-      el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
-      Object.entries(THEMES).forEach(([themeKey, themeName]) => {
-        const btn = createButton(themeName, '🎨', () => { 
+      const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
+      
+      const buttons = Object.entries(THEMES).map(([themeKey, themeName]) => ({
+        text: themeName,
+        icon: '🎨',
+        action: () => { 
           setTheme(themeKey); 
           speak(`${themeName} theme selected`);
           renderThemeMenu(); 
-        }, state.theme === themeKey ? 'active-green' : '');
+        },
+        className: state.theme === themeKey ? 'active-green' : ''
+      }));
+      
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
+      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      
+      // Back button logic
+      if (state.page === 0) {
+        const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      } else {
+        const backBtn = createButton('Back', '←', () => {
+          state.page--;
+          renderThemeMenu();
+        }, 'back-btn');
+        el.mainGrid.appendChild(backBtn);
+      }
+      
+      const startIdx = state.page * itemsPerPage;
+      const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
+      
+      for (let i = startIdx; i < endIdx; i++) {
+        const btnData = buttons[i];
+        const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
-      });
+      }
+      
+      // Always add Next button if there are multiple pages (loops back to first page)
+      if (totalPages > 1) {
+        const nextBtn = createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderThemeMenu(); 
+        }, 'next-btn');
+        el.mainGrid.appendChild(nextBtn);
+      }
+      
       updateScannable();
     }
 
@@ -1089,7 +1304,6 @@ function updateHeaderForCurrentView(){
       // Start at -1 for no highlighting until spacebar is pressed
       state.currentRow = -1;
       state.scanIndex = -1;
-      state.scanMode = 'row';
       // Clear any existing highlights
       clearScanHighlight();
     }
@@ -1433,14 +1647,26 @@ function updateHeaderForCurrentView(){
     }
 
     function navigateBack() {
+      // Add TTS for navigation back events
+      let backMessage = '';
       if (state.navigationHistory.length > 0) {
         const prevState = state.navigationHistory.pop();
+        
+        // Determine what we're going back to for TTS
+        switch (prevState.menu) {
+          case 'main': backMessage = 'Main Menu'; break;
+          case 'settings': backMessage = 'Settings Menu'; break;
+          case 'categories': backMessage = state.currentBoardTitle || 'Categories'; break;
+          case 'category': backMessage = prevState.category || 'Category'; break;
+        }
+        
         state.currentMenu = prevState.menu;
         state.currentCategory = prevState.category;
         state.page = prevState.page;
         state.scanMode = 'row';
         state.currentRow = 0;
         state.scanIndex = 0;
+        
         switch (prevState.menu) {
           case 'main': renderMainMenu(); break;
           case 'categories': renderCategoryMenu(); break;
@@ -1452,10 +1678,18 @@ function updateHeaderForCurrentView(){
           case 'theme': renderThemeMenu(); break;
           case 'category': renderCategory(); break;
         }
+        
         updateHeaderForCurrentView();
         setTimeout(() => { updateScannable(); }, 50);
       } else {
+        backMessage = 'Main Menu';
         openMenu('main');
+      }
+      
+      // Speak the back navigation message
+      if (backMessage) {
+        const cleanMessage = cleanTextForTTS(backMessage);
+        if (cleanMessage) speak(cleanMessage);
       }
     }
 
