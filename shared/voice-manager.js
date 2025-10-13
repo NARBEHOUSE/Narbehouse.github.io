@@ -131,6 +131,15 @@ window.NarbeVoiceManager = (function() {
       voicesLoaded = true;
       console.log(`NarbeVoiceManager: Loaded ${englishVoices.length} English voices:`, 
                   englishVoices.map(v => v.name));
+      
+      // Notify callbacks that voices are loaded and settings may have changed
+      callbacks.forEach(callback => {
+        try {
+          callback(settings);
+        } catch (error) {
+          console.warn('NarbeVoiceManager: Error in voice load callback:', error);
+        }
+      });
     }
   }
 
@@ -195,8 +204,17 @@ window.NarbeVoiceManager = (function() {
    * Get the current voice object
    */
   function getCurrentVoice() {
-    if (englishVoices.length > 0 && settings.voiceIndex < englishVoices.length) {
-      return englishVoices[settings.voiceIndex];
+    if (englishVoices.length > 0) {
+      // Validate voice index is within bounds
+      if (settings.voiceIndex >= 0 && settings.voiceIndex < englishVoices.length) {
+        return englishVoices[settings.voiceIndex];
+      } else {
+        // If saved index is invalid, reset to 0 and save
+        console.warn(`NarbeVoiceManager: Invalid voice index ${settings.voiceIndex}, resetting to 0`);
+        settings.voiceIndex = 0;
+        saveSettings();
+        return englishVoices[0];
+      }
     }
     return null;
   }
@@ -252,6 +270,20 @@ window.NarbeVoiceManager = (function() {
   function speak(text, options = {}) {
     if (!settings.ttsEnabled || !text || !('speechSynthesis' in window)) return;
     
+    // If voices aren't loaded yet, wait for them
+    if (!voicesLoaded || englishVoices.length === 0) {
+      // Wait for voices to load, then try again
+      const waitForVoices = () => {
+        if (voicesLoaded && englishVoices.length > 0) {
+          speak(text, options);
+        } else {
+          setTimeout(waitForVoices, 100);
+        }
+      };
+      waitForVoices();
+      return;
+    }
+    
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
     
@@ -262,10 +294,12 @@ window.NarbeVoiceManager = (function() {
     utterance.pitch = options.pitch || settings.pitch;
     utterance.volume = options.volume || settings.volume;
     
-    // Set voice if available
+    // Set voice - should be available now
     const currentVoice = getCurrentVoice();
     if (currentVoice) {
       utterance.voice = currentVoice;
+    } else {
+      console.warn('NarbeVoiceManager: No voice available, using default');
     }
     
     window.speechSynthesis.speak(utterance);
