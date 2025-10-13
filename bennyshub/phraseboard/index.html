@@ -779,8 +779,8 @@ function updateHeaderForCurrentView(){
       const availableSlots = totalSlots - usedSlots;
       if (state.availableBoards.length > 0) {
         const totalPages = Math.ceil(state.availableBoards.length / availableSlots);
-        const needsNext = totalPages > 1 && state.page < totalPages - 1;
-        const boardsPerPage = needsNext ? availableSlots - 1 : availableSlots;
+        // Always reserve space for Next button if there are multiple pages
+        const boardsPerPage = totalPages > 1 ? availableSlots - 1 : availableSlots;
         const startIdx = state.page * boardsPerPage;
         const endIdx = Math.min(startIdx + boardsPerPage, state.availableBoards.length);
         for (let i = startIdx; i < endIdx; i++) {
@@ -795,8 +795,13 @@ function updateHeaderForCurrentView(){
           });
           el.mainGrid.appendChild(btn);
         }
-        if (needsNext) {
-          const nextBtn = createButton('Next', '▶', () => { state.page++; renderMainMenu(); updateHeaderForCurrentView(); }, 'next-btn');
+        // Add Next button if there are multiple pages (loops back to first page from last page)
+        if (totalPages > 1) {
+          const nextBtn = createButton('Next', '▶', () => { 
+            state.page = (state.page + 1) % totalPages; 
+            renderMainMenu(); 
+            updateHeaderForCurrentView(); 
+          }, 'next-btn');
           el.mainGrid.appendChild(nextBtn);
         }
         if (state.page > 0) {
@@ -881,7 +886,14 @@ function updateHeaderForCurrentView(){
       clearGrid();
       state.currentMenu = 'gridsize';
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
-      const backBtn = createButton('Back', '←', () => navigateBack(), 'back-btn');
+      const backBtn = createButton('Back', '←', () => {
+        if (state.page > 0) {
+          state.page--;
+          renderGridSizeMenu();
+        } else {
+          navigateBack();
+        }
+      }, 'back-btn');
       el.mainGrid.appendChild(backBtn);
       const availableSlots = totalSlots - 1;
       const startIdx = state.page * availableSlots;
@@ -891,13 +903,19 @@ function updateHeaderForCurrentView(){
       const totalPages = Math.ceil(gridSizes.length / availableSlots);
       for (let i = startIdx; i < endIdx; i++) {
         const size = gridSizes[i];
-        const btn = createButton(`${size}×${size}`, '⊞', () => { setGridSize(size, size); navigateBack(); });
+        const btn = createButton(`${size}×${size}`, '⊞', () => { 
+          setGridSize(size, size); 
+          speak(`Grid size ${size} by ${size} selected`);
+          navigateBack(); 
+        });
         if (state.gridSize.rows === size && state.gridSize.cols === size) btn.classList.add('active-green');
         el.mainGrid.appendChild(btn);
       }
       if (totalPages > 1) {
-        if (state.page > 0) el.mainGrid.appendChild(createButton('Back', '←', () => { state.page--; renderGridSizeMenu(); }, 'back-btn'));
-        if (state.page < totalPages - 1) el.mainGrid.appendChild(createButton('Next', '▶', () => { state.page++; renderGridSizeMenu(); }, 'next-btn'));
+        el.mainGrid.appendChild(createButton('Next', '▶', () => { 
+          state.page = (state.page + 1) % totalPages; 
+          renderGridSizeMenu(); 
+        }, 'next-btn'));
       }
       updateScannable();
     }
@@ -908,10 +926,15 @@ function updateHeaderForCurrentView(){
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
       el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
       el.mainGrid.appendChild(createButton('TTS', '🔊', () => { 
-        window.NarbeVoiceManager.toggleTTS(); 
+        const newState = window.NarbeVoiceManager.toggleTTS(); 
+        speak(newState ? 'TTS enabled' : 'TTS disabled');
         renderTTSMenu(); 
       }, window.NarbeVoiceManager.getSettings().ttsEnabled ? 'active-green' : ''));
-      el.mainGrid.appendChild(createButton('TTS on Scan', '👆', () => { state.ttsOnScan = !state.ttsOnScan; renderTTSMenu(); }, state.ttsOnScan ? 'active-green' : ''));
+      el.mainGrid.appendChild(createButton('TTS on Scan', '👆', () => { 
+        state.ttsOnScan = !state.ttsOnScan; 
+        speak(state.ttsOnScan ? 'TTS on Scan enabled' : 'TTS on Scan disabled');
+        renderTTSMenu(); 
+      }, state.ttsOnScan ? 'active-green' : ''));
       
       // Voice toggle button
       const voices = window.NarbeVoiceManager.getEnglishVoices();
@@ -939,11 +962,17 @@ function updateHeaderForCurrentView(){
       const totalSlots = state.gridSize.rows * state.gridSize.cols - (state.sentenceMode ? state.gridSize.cols : 0);
       el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
       const buttons = [
-        { text: 'Auto Scan', icon: '🔄', action: () => { state.autoScan = !state.autoScan; if (state.autoScan) startAutoScan(); else stopScanning(); renderScanMenu(); }, className: state.autoScan ? 'active-green' : '' }
+        { text: 'Auto Scan', icon: '🔄', action: () => { 
+          state.autoScan = !state.autoScan; 
+          speak(state.autoScan ? 'Auto Scan enabled' : 'Auto Scan disabled');
+          if (state.autoScan) startAutoScan(); else stopScanning(); 
+          renderScanMenu(); 
+        }, className: state.autoScan ? 'active-green' : '' }
       ];
       Object.entries(SCAN_SPEEDS).forEach(([speed, ms]) => {
         buttons.push({ text: `${speed.charAt(0).toUpperCase() + speed.slice(1)} Speed`, icon: speed === 'slow' ? '🐌' : speed === 'medium' ? '🚶' : '🏃', action: () => {
           state.scanSpeed = ms;
+          speak(`${speed.charAt(0).toUpperCase() + speed.slice(1)} speed selected`);
           if (state.scanning || state.autoScan) { stopScanning(); if (state.autoScan) startAutoScan(); }
           renderScanMenu();
         }, className: state.scanSpeed === ms ? 'active-green' : '' });
@@ -962,6 +991,8 @@ function updateHeaderForCurrentView(){
       Object.entries(HIGHLIGHT_COLORS).forEach(([name, color]) => {
         const btn = createButton(name.charAt(0).toUpperCase() + name.slice(1), '●', () => {
           state.highlightColor = color;
+          const colorName = name.charAt(0).toUpperCase() + name.slice(1);
+          speak(`${colorName} highlight selected`);
           document.documentElement.style.setProperty('--rowHighlight', color);
           document.documentElement.style.setProperty('--columnHighlight', color);
           renderHighlightMenu();
@@ -977,7 +1008,11 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'theme';
       el.mainGrid.appendChild(createButton('Back', '←', () => navigateBack(), 'back-btn'));
       Object.entries(THEMES).forEach(([themeKey, themeName]) => {
-        const btn = createButton(themeName, '🎨', () => { setTheme(themeKey); renderThemeMenu(); }, state.theme === themeKey ? 'active-green' : '');
+        const btn = createButton(themeName, '🎨', () => { 
+          setTheme(themeKey); 
+          speak(`${themeName} theme selected`);
+          renderThemeMenu(); 
+        }, state.theme === themeKey ? 'active-green' : '');
         el.mainGrid.appendChild(btn);
       });
       updateScannable();
@@ -1426,16 +1461,50 @@ function updateHeaderForCurrentView(){
 
     function openMenu(menuName) {
       state.page = 0; state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
+      
+      // Speak the menu name when entering
+      let menuTitle = '';
       switch (menuName) {
-        case 'main': renderMainMenu(); break;
-        case 'categories': renderCategoryMenu(); break;
-        case 'settings': renderSettingsMenu(); break;
-        case 'gridsize': renderGridSizeMenu(); break;
-        case 'tts': renderTTSMenu(); break;
-        case 'scan': renderScanMenu(); break;
-        case 'highlight': renderHighlightMenu(); break;
-        case 'theme': renderThemeMenu(); break;
+        case 'main': 
+          renderMainMenu(); 
+          menuTitle = 'Main Menu';
+          break;
+        case 'categories': 
+          renderCategoryMenu(); 
+          menuTitle = state.currentBoardTitle || 'Categories';
+          break;
+        case 'settings': 
+          renderSettingsMenu(); 
+          menuTitle = 'Settings Menu';
+          break;
+        case 'gridsize': 
+          renderGridSizeMenu(); 
+          menuTitle = 'Grid Size';
+          break;
+        case 'tts': 
+          renderTTSMenu(); 
+          menuTitle = 'Voice & TTS';
+          break;
+        case 'scan': 
+          renderScanMenu(); 
+          menuTitle = 'Scan Settings';
+          break;
+        case 'highlight': 
+          renderHighlightMenu(); 
+          menuTitle = 'Highlight Colors';
+          break;
+        case 'theme': 
+          renderThemeMenu(); 
+          menuTitle = 'Theme';
+          break;
       }
+      
+      // Speak the menu title
+      if (menuTitle) {
+        const cleanTitle = cleanTextForTTS(menuTitle);
+        if (cleanTitle) speak(cleanTitle);
+      }
+      
       updateHeaderForCurrentView();
       setTimeout(() => { updateScannable(); }, 50);
     }
