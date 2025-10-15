@@ -887,6 +887,12 @@
   function renderPlayerModeMenu(){
     State.mode = 'main_menu';
     
+    // Clear player turn indicator when returning to main menu
+    const playerTurnIndicator = document.querySelector('.player-turn-indicator');
+    if (playerTurnIndicator) {
+      playerTurnIndicator.remove();
+    }
+    
     // Update header title to show game name
     const topbarTitle = document.querySelector('.topbar-title');
     if (topbarTitle) {
@@ -1281,11 +1287,12 @@
         first.matched = true; info.matched = true;
         if(State.modeType!=='single'){
           first.matchedBy = State.currentPlayer; info.matchedBy = State.currentPlayer;
+          // Track pairs found for both casual and competitive modes
+          State.pairsFound[State.currentPlayer] += 1;
         }
         State.matchedPairs += 1;
 
         if(State.modeType==='two_competitive'){
-          State.pairsFound[State.currentPlayer] += 1;
           if(State.pairsFound[State.currentPlayer] >= State.winThreshold){
             return handleRoundEnd(State.currentPlayer);
           }
@@ -1441,13 +1448,16 @@
     const resultDiv = el('div', 'competitive-result');
     
     if (winner === 0) {
-      // It's a tie
+      // It's a tie - fix the logic to show correct counts
       resultDiv.innerHTML = `
         <div class="winner">🤝 It's a Tie! 🤝</div>
-        <div class="final-score">Both players found ${State.pairsFound[1]} pairs</div>
+        <div class="final-score">
+          <div>Player 1: ${State.pairsFound[1]} pairs</div>
+          <div>Player 2: ${State.pairsFound[2]} pairs</div>
+        </div>
         <div class="auto-return-notice">Returning to menu in 5 seconds...</div>
       `;
-      speak(`It's a tie in casual mode! Both players found ${State.pairsFound[1]} pairs each. Great game! Returning to main menu in 5 seconds.`);
+      speak(`It's a tie in casual mode! Player 1 found ${State.pairsFound[1]} pairs and Player 2 found ${State.pairsFound[2]} pairs. Great game! Returning to main menu in 5 seconds.`);
     } else {
       // There's a winner
       resultDiv.innerHTML = `
@@ -1498,6 +1508,37 @@
       State.currentDifficulty = 'easy'; 
       renderPlayerModeMenu();
     }, 6000);
+  }
+
+  function handleRoundEnd(winner) {
+    // Award points based on difficulty
+    State.points[winner] += State.difficultyPoints[State.currentDifficulty];
+    
+    // Check if player has reached 5 points to win the match
+    if (State.points[winner] >= 5) {
+      return showCompetitiveWin(winner);
+    }
+    
+    // Continue to next round - increase difficulty and reset for next game
+    if (State.currentDifficulty === 'easy') {
+      State.currentDifficulty = 'medium';
+    } else if (State.currentDifficulty === 'medium') {
+      State.currentDifficulty = 'hard';
+    } else {
+      // If we were on hard, cycle back to easy
+      State.currentDifficulty = 'easy';
+    }
+    
+    // Reset pairs found for next round
+    State.pairsFound = {1: 0, 2: 0};
+    
+    // Announce round results and next round
+    speak(`Player ${winner} wins this round and gets ${State.difficultyPoints[State.currentDifficulty === 'easy' ? 'hard' : State.currentDifficulty === 'medium' ? 'easy' : 'medium']} points! Score is now Player 1: ${State.points[1]}, Player 2: ${State.points[2]}. Next round: ${State.currentDifficulty} difficulty!`);
+    
+    // Start next round after brief delay
+    setTimeout(() => {
+      startGame(State.currentDifficulty);
+    }, 3000);
   }
 
   function resetMatch(){ State.points={1:0,2:0}; State.currentDifficulty='easy'; renderPlayerModeMenu(); }
