@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Benny's Tic Tac Toe</title>
+  <style>
+    :root{
+      --bg:#0b2239;
+      --card:#121822;
+      --text:#e8f0ff;
+      --orange:#ff5c00;
+      --blue:#5bb0ff;
+      --green:#39d353;
+      --purple:#a78bfa;
+      --yellow:#ffd400;
+      --red:#ff4d4d;
+      --muted:#8899bb;
+      --radius:24px;
+      --ring:0 0 0 6px rgba(255,220,0,.65), 0 12px 30px rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+    html,body{
+      height:100%; 
+      margin:0;
+      overflow:hidden;
+    }
+    
+    /* iOS Safari viewport fix */
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        height: -webkit-fill-available;
+      }
+    }
+    
+    body{
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(255,92,0,.15), transparent),
+                  radial-gradient(1200px 800px at 110% 10%, rgba(91,176,255,.15), transparent),
+                  var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport for mobile */
+    }
+
+    .container{
+      width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:1rem;
+      max-width:100vw;
+      overflow:hidden;
+    }
+
+    .title{
+      font-size:clamp(2rem,5vw,4rem);
+      font-weight:900;
+      margin:0 0 1rem;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-align:center;
+      flex-shrink:0;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      padding:1rem 2rem;
+      border-radius:var(--radius);
+      font-size:clamp(1rem,2.5vw,1.5rem);
+      font-weight:700;
+      margin:.5rem 0;
+      cursor:pointer;
+      transition: all .2s ease;
+      min-width:min(280px, 80vw);
+      max-width:90vw;
+      text-align:center;
+      touch-action:manipulation;
+    }
+    .btn:hover{
+      transform:translateY(-2px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.35);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+    }
+    .btn.scan{
+      box-shadow:var(--ring);
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      color:#0b0f14;
+      border-color:transparent;
+    }
+
+    .board-container{
+      width: min(85vw, 85vh, 500px);
+      height: min(85vw, 85vh, 500px);
+      max-width: 500px;
+      max-height: 500px;
+      margin: 0 auto;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden; /* Absolutely prevent any overflow */
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      grid-template-rows:repeat(3,1fr);
+      gap:8px;
+      width:100%;
+      height:100%;
+      aspect-ratio:1;
+      padding:16px;
+      background: rgba(0,0,0,.3);
+      border-radius:var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      box-sizing:border-box;
+      max-width:100%; /* Prevent expansion */
+      max-height:100%; /* Prevent expansion */
+      overflow:hidden; /* Prevent content overflow */
+    }
+
+    .cell{
+      appearance:none;
+      border:2px solid rgba(255,255,255,.15);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      color:var(--text);
+      font-size:clamp(2rem,4vw,3rem); /* Reduced from 8vw to 4vw and max from 4rem to 3rem */
+      font-weight:900;
+      cursor:pointer;
+      transition: all .2s ease;
+      border-radius:16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      aspect-ratio:1;
+      min-height:0;
+      max-width:100%; /* Prevent expansion */
+      max-height:100%; /* Prevent expansion */
+      overflow:hidden; /* Prevent content overflow */
+      touch-action:manipulation;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .cell:hover{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .cell:active{
+      transform:scale(0.95);
+    }
+    .cell.scan{
+      box-shadow:var(--ring);
+      background: linear-gradient(135deg, rgba(255,220,0,.2), rgba(255,220,0,.1));
+      border-color: var(--yellow);
+    }
+    .cell[data-value="X"]{
+      color:var(--orange);
+      text-shadow: 0 0 20px rgba(255,92,0,.5);
+      line-height: 1; /* Prevent line-height from expanding cell */
+    }
+    .cell[data-value="O"]{
+      color:var(--blue);
+      text-shadow: 0 0 20px rgba(91,176,255,.5);
+      line-height: 1; /* Prevent line-height from expanding cell */
+    }
+
+    .result{
+      font-size:clamp(1.5rem,3vw,2.5rem);
+      font-weight:800;
+      margin:0.5rem 0 1rem;
+      padding:0.5rem 1rem;
+      background: linear-gradient(90deg, var(--purple), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-align:center;
+      flex-shrink:0;
+    }
+
+    .pause-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.9);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      backdrop-filter:blur(8px);
+      z-index:1000;
+    }
+
+    .pause-card{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+      padding:3rem;
+      border-radius:var(--radius);
+      min-width:min(90vw,480px);
+      text-align:center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .pause-title{
+      font-size:clamp(2rem,4vw,3rem);
+      font-weight:800;
+      margin:0 0 2rem;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+
+    .hint {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      font-size: 13px;
+      opacity: .6;
+      color: var(--muted);
+    }
+
+    .status{
+      font-size:clamp(1rem,2.2vw,1.5rem);
+      margin:0.5rem 0;
+      color:var(--muted);
+      text-align:center;
+      flex-shrink:0;
+    }
+
+    @media (max-height: 600px) {
+      .container {
+        padding:0.5rem;
+      }
+      
+      .title {
+        margin:0 0 0.5rem;
+        font-size:clamp(1.5rem,4vw,3rem);
+      }
+      
+      .board-container {
+        width:min(70vw, 70vh, 400px);
+        height:min(70vw, 70vh, 400px);
+      }
+      
+      .btn {
+        padding:0.75rem 1.5rem;
+        margin:0.25rem 0;
+      }
+      
+      .status {
+        margin:0.25rem 0;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      .board-container {
+        width:min(60vh, 60vw, 350px);
+        height:min(60vh, 60vw, 350px);
+      }
+    }
+
+    /* iOS specific fixes */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0.5rem;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+      
+      .board-container {
+        width: min(90vw, 90vh, 450px);
+        height: min(90vw, 90vh, 450px);
+        max-width: 450px;
+        max-height: 450px;
+      }
+      
+      .board {
+        gap: 6px;
+        padding: 12px;
+      }
+      
+      .cell {
+        font-size: clamp(1.5rem, 3vw, 2.5rem); /* More conservative sizing */
+        border-radius: 12px;
+        min-height: 60px;
+        min-width: 60px;
+        max-width: 100%;
+        max-height: 100%;
+      }
+      
+      .title {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        margin: 0 0 0.5rem;
+      }
+      
+      .btn {
+        padding: 0.8rem 1.5rem;
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        min-width: min(250px, 85vw);
+        margin: 0.3rem 0;
+      }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 480px) {
+      .board-container {
+        width: min(95vw, 85vh, 350px);
+        height: min(95vw, 85vh, 350px);
+        max-width: 350px;
+        max-height: 350px;
+      }
+      
+      .board {
+        gap: 4px;
+        padding: 8px;
+      }
+      
+      .cell {
+        font-size: clamp(1.2rem, 2.5vw, 2rem); /* Even more conservative for small screens */
+        border-radius: 8px;
+        min-height: 50px;
+        min-width: 50px;
+        max-width: 100%;
+        max-height: 100%;
+      }
+    }
+
+    /* Landscape mobile orientation */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .container {
+        padding: 0.25rem;
+      }
+      
+      .board-container {
+        width: min(70vh, 70vw, 400px);
+        height: min(70vh, 70vw, 400px);
+        max-width: 400px;
+        max-height: 400px;
+      }
+      
+      .title {
+        font-size: clamp(1.2rem, 3vw, 2rem);
+        margin: 0 0 0.25rem;
+      }
+      
+      .btn {
+        padding: 0.6rem 1.2rem;
+        margin: 0.2rem 0;
+        font-size: clamp(0.8rem, 1.8vw, 1.1rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <!-- content injected by JS -->
+  </div>
+  <div class="hint">Space = scan (hold 3s = backward). Return = select. Hold Return 6s in game = pause.</div>
+
+  <!-- Include shared voice manager -->
+  <script src="../../shared/voice-manager.js"></script>
+  
+  <script>
+  // TTS using unified voice manager
+  const speak = (text) => {
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.speak(text);
+    }
+  };
+
+  // Utility
+  const $ = sel => document.querySelector(sel);
+  const el = (tag, cls, txt) => { 
+    const e = document.createElement(tag); 
+    if(cls) e.className = cls; 
+    if(txt!=null) e.textContent = txt; 
+    return e; 
+  };
+
+  // Exit helper - matches BennySays pattern
+  function exitApp(){
+    try{
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'focusBackButton' }, '*');
+      }
+      location.href = '../index.html';
+    }catch(err){
+      try{
+        window.location.replace('../index.html');
+      }catch(_){
+        window.location.href = '..';
+      }
+    }
+  }
+
+  // Game State
+  const State = {
+    mode: 'main_menu',
+    gameMode: null,
+    currentTurn: 'X',
+    board: Array.from({length:3},()=>Array(3).fill('')),
+    order: [],
+    menuButtons: [], menuScanIndex: -1, menuScanInitiated: false,
+    pauseButtons: [], pauseScanIndex: -1, pauseJustOpened: false, pauseScanInitiated: false,
+    overButtons: [], overScanIndex: -1, overScanInitiated: false,
+    boardScanIndex: -1, boardScanInitiated: false,
+    spaceHeld: false, spaceStart: 0, spaceBackwardActive:false, spaceTimer:null,
+    returnHeld:false, returnStart:0, returnTimer:null, pauseTriggered:false,
+  };
+
+  function resetBoard(){
+    State.board = Array.from({length:3},()=>Array(3).fill(''));
+    State.order = [];
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++) State.order.push([r,c]);
+    State.boardScanIndex = -1;
+  }
+
+  function renderMainMenu(){
+    State.mode = 'main_menu';
+    State.menuScanInitiated = false;
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title','Benny\'s Tic Tac Toe');
+    container.appendChild(title);
+
+    State.menuButtons = [];
+
+    const btnSingle = buttonWithTTS('Single Player', () => startGame('single'));
+    const btnTwo = buttonWithTTS('2-Player', () => startGame('two'));
+    const btnExit = buttonWithTTS('Exit to Hub', () => exitApp());
+
+    State.menuButtons.push(btnSingle, btnTwo, btnExit);
+    State.menuScanIndex = -1;
+    updateMenuScan();
+
+    container.append(btnSingle, btnTwo, btnExit);
+    speak('Welcome to Tic Tac Toe. Press space to scan menu options');
+  }
+
+  function buttonWithTTS(label, onClick){
+    const b = el('button','btn'); 
+    b.textContent = label; 
+    b.onclick = onClick;
+    b.addEventListener('mouseenter',()=>speak(label));
+    return b;
+  }
+
+  function updateMenuScan(){
+    State.menuButtons.forEach((b,i)=>{
+      b.classList.toggle('scan', State.menuScanInitiated && i===State.menuScanIndex);
+    });
+    if(State.menuButtons.length && State.menuScanInitiated && State.menuScanIndex >= 0){ 
+      speak(State.menuButtons[State.menuScanIndex].textContent); 
+    }
+  }
+
+  function menuScanForward(){ 
+    if(State.menuScanIndex === -1) {
+      State.menuScanIndex = 0;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex+1)%State.menuButtons.length;
+    }
+    updateMenuScan(); 
+  }
+  
+  function menuScanBackward(){ 
+    if(State.menuScanIndex === -1) {
+      State.menuScanIndex = State.menuButtons.length - 1;
+    } else {
+      State.menuScanIndex = (State.menuScanIndex-1+State.menuButtons.length)%State.menuButtons.length;
+    }
+    updateMenuScan(); 
+  }
+
+  function startGame(mode){
+    State.gameMode = mode; 
+    State.mode = 'game'; 
+    State.boardScanInitiated = false;
+    resetBoard();
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title', mode==='single' ? 'Single Player' : '2-Player Game');
+    container.appendChild(title);
+
+    const status = el('div','status','');
+    status.id = 'status';
+    container.appendChild(status);
+
+    const boardContainer = el('div','board-container');
+    const board = el('div','board');
+    boardContainer.appendChild(board);
+    container.appendChild(boardContainer);
+
+    // Build 3x3 grid
+    for(let r=0;r<3;r++){
+      for(let c=0;c<3;c++){
+        const cell = el('button','cell');
+        cell.dataset.r=r; 
+        cell.dataset.c=c; 
+        cell.onclick=()=>selectCell(r,c);
+        board.appendChild(cell);
+      }
+    }
+
+    // Who starts
+    if(mode==='single'){
+      State.currentTurn = Math.random()<.5 ? 'X' : 'O';
+    } else { 
+      State.currentTurn = 'X'; 
+    }
+
+    updateStatus();
+
+    if(mode==='single' && State.currentTurn==='O'){
+      setTimeout(computerMove, 1000);
+    } else if(State.currentTurn==='X') {
+      speak('Your turn. X goes first');
+    }
+
+    updateBoardScan();
+  }
+
+  function updateStatus(){
+    const status = $('#status');
+    if(!status) return;
+    
+    if(State.gameMode==='single'){
+      status.textContent = State.currentTurn==='X' ? 'Your turn (X)' : 'Computer thinking...';
+    } else {
+      status.textContent = `Player ${State.currentTurn}'s turn`;
+    }
+  }
+
+  function updateBoardScan(){
+    const cells = [...document.querySelectorAll('.cell')];
+    cells.forEach((cell,i)=>{
+      const r = +cell.dataset.r, c = +cell.dataset.c;
+      const v = State.board[r][c];
+      cell.textContent = v;
+      cell.setAttribute('data-value', v);
+      cell.classList.toggle('scan', State.boardScanInitiated && i===State.boardScanIndex);
+    });
+  }
+
+  function boardScanForward(){ 
+    if(State.boardScanIndex === -1) {
+      State.boardScanIndex = 0;
+    } else {
+      State.boardScanIndex = (State.boardScanIndex+1)%State.order.length;
+    }
+    updateBoardScan(); 
+  }
+  
+  function boardScanBackward(){ 
+    if(State.boardScanIndex === -1) {
+      State.boardScanIndex = State.order.length - 1;
+    } else {
+      State.boardScanIndex = (State.boardScanIndex-1+State.order.length)%State.order.length;
+    }
+    updateBoardScan(); 
+  }
+
+  function selectCell(r,c){
+    if(State.gameMode==='single' && State.currentTurn!=='X') return;
+    if(State.board[r][c]!== '') return;
+
+    State.board[r][c] = State.currentTurn;
+    updateBoardScan();
+
+    const res = checkWin();
+    if(res){ 
+      gameOver(res); 
+      return; 
+    }
+
+    State.currentTurn = (State.currentTurn==='X') ? 'O' : 'X';
+    updateStatus();
+
+    if(State.gameMode==='single' && State.currentTurn==='O'){
+      setTimeout(computerMove, 1000);
+    } else if(State.currentTurn==='X'){
+      speak('Your turn');
+    }
+  }
+
+  function computerMove(){
+    const empties = [];
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++) if(State.board[r][c]==='') empties.push([r,c]);
+    if(!empties.length) return;
+
+    const lines = [
+      [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]],
+      [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]],
+      [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]]
+    ];
+
+    const getVal = ([r,c]) => State.board[r][c];
+    const isEmpty = ([r,c]) => State.board[r][c]==='';
+
+    function findLinePlay(player){
+      for(const line of lines){
+        const vals = line.map(getVal);
+        const me = vals.filter(v=>v===player).length;
+        const emptyIdx = vals.findIndex(v=>v==='');
+        if(me===2 && emptyIdx!==-1){
+          return line[emptyIdx];
+        }
+      }
+      return null;
+    }
+
+    let move = findLinePlay('O');
+    if(!move) move = findLinePlay('X');
+    if(!move && isEmpty([1,1])) move = [1,1];
+    
+    const corners = [[0,0],[0,2],[2,0],[2,2]];
+    if(!move){
+      const openCorners = corners.filter(isEmpty);
+      if(openCorners.length) move = openCorners[Math.floor(Math.random()*openCorners.length)];
+    }
+    
+    const sides = [[0,1],[1,0],[1,2],[2,1]];
+    if(!move){
+      const openSides = sides.filter(isEmpty);
+      if(openSides.length) move = openSides[Math.floor(Math.random()*openSides.length)];
+    }
+    
+    if(!move){
+      move = empties[Math.floor(Math.random()*empties.length)];
+    }
+
+    const [r,c] = move;
+    State.board[r][c] = 'O';
+    updateBoardScan();
+
+    const res = checkWin();
+    if(res){ 
+      gameOver(res); 
+      return; 
+    }
+
+    State.currentTurn = 'X';
+    updateStatus();
+    speak('Your turn');
+  }
+
+  function checkWin(){
+    const b = State.board;
+    for(let r=0;r<3;r++) if(b[r][0] && b[r][0]===b[r][1] && b[r][1]===b[r][2]) return b[r][0];
+    for(let c=0;c<3;c++) if(b[0][c] && b[0][c]===b[1][c] && b[1][c]===b[2][c]) return b[0][c];
+    if(b[0][0] && b[0][0]===b[1][1] && b[1][1]===b[2][2]) return b[0][0];
+    if(b[0][2] && b[0][2]===b[1][1] && b[1][1]===b[2][0]) return b[0][2];
+    if(b.flat().every(v=>v)) return 'Tie';
+    return null;
+  }
+
+  function gameOver(result){
+    State.mode = 'game_over_menu';
+    State.overScanInitiated = false;
+    const container = $('#container');
+    container.innerHTML='';
+
+    const title = el('h1','title','Game Over');
+    container.appendChild(title);
+
+    const msg = result==='Tie' ? "It's a tie!" : 
+                State.gameMode==='single' && result==='X' ? 'You win!' :
+                State.gameMode==='single' && result==='O' ? 'Computer wins!' :
+                `Player ${result} wins!`;
+    speak(msg);
+
+    const resEl = el('div','result',msg);
+    container.appendChild(resEl);
+
+    State.overButtons = [];
+    const yes = buttonWithTTS('Play Again', ()=> restartGame());
+    const no = buttonWithTTS('Main Menu', ()=> renderMainMenu());
+    const exit = buttonWithTTS('Exit to Hub', ()=> exitApp());
+    State.overButtons.push(yes,no,exit);
+    State.overScanIndex = -1; 
+    updateOverScan();
+
+    container.append(yes,no,exit);
+    speak('Game over. Would you like to play again?');
+  }
+
+  function updateOverScan(){
+    State.overButtons.forEach((b,i)=> b.classList.toggle('scan', State.overScanInitiated && i===State.overScanIndex));
+    if(State.overButtons.length && State.overScanInitiated && State.overScanIndex >= 0) speak(State.overButtons[State.overScanIndex].textContent);
+  }
+
+  function overScanForward(){ 
+    if(State.overScanIndex === -1) {
+      State.overScanIndex = 0;
+    } else {
+      State.overScanIndex = (State.overScanIndex+1)%State.overButtons.length;
+    }
+    updateOverScan(); 
+  }
+  
+  function overScanBackward(){ 
+    if(State.overScanIndex === -1) {
+      State.overScanIndex = State.overButtons.length - 1;
+    } else {
+      State.overScanIndex = (State.overScanIndex-1+State.overButtons.length)%State.overButtons.length;
+    }
+    updateOverScan(); 
+  }
+
+  function restartGame(){ 
+    startGame(State.gameMode); 
+  }
+
+  // Pause menu
+  let pauseLayer = null;
+  function showPause(){
+    if(State.mode!=='game') return;
+    State.mode='pause';
+    State.pauseScanInitiated = false;
+    State.returnHeld=false; 
+    State.returnStart=0; 
+    State.pauseJustOpened=true;
+    
+    pauseLayer = el('div','pause-overlay');
+    const card = el('div','pause-card');
+    const h = el('div','pause-title','Pause Menu');
+    card.appendChild(h);
+
+    State.pauseButtons = [];
+    const cont = buttonWithTTS('Continue Game', continueGame);
+    const back = buttonWithTTS('Return to Menu', ()=>{
+      if(pauseLayer){ pauseLayer.remove(); pauseLayer=null; }
+      renderMainMenu();
+    });
+    const exit = buttonWithTTS('Exit to Hub', exitApp);
+    State.pauseButtons.push(cont, back, exit);
+    State.pauseScanIndex = -1; 
+    updatePauseScan();
+
+    card.append(cont, back, exit); 
+    pauseLayer.appendChild(card); 
+    document.body.appendChild(pauseLayer);
+    speak('Game paused');
+  }
+
+  function updatePauseScan(){
+    State.pauseButtons.forEach((b,i)=> b.classList.toggle('scan', State.pauseScanInitiated && i===State.pauseScanIndex));
+    if(State.pauseButtons.length && State.pauseScanInitiated && State.pauseScanIndex >= 0) speak(State.pauseButtons[State.pauseScanIndex].textContent);
+  }
+
+  function pauseScanForward(){ 
+    if(State.pauseScanIndex === -1) {
+      State.pauseScanIndex = 0;
+    } else {
+      State.pauseScanIndex = (State.pauseScanIndex+1)%State.pauseButtons.length;
+    }
+    updatePauseScan(); 
+  }
+  
+  function pauseScanBackward(){ 
+    if(State.pauseScanIndex === -1) {
+      State.pauseScanIndex = State.pauseButtons.length - 1;
+    } else {
+      State.pauseScanIndex = (State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length;
+    }
+    updatePauseScan(); 
+  }
+  
+  function continueGame(){ 
+    if(pauseLayer){ pauseLayer.remove(); pauseLayer=null; } 
+    State.mode='game'; 
+    speak('Game resumed');
+  }
+
+  // Key handling
+  function onSpaceDown(){
+    console.log('Space down, mode:', State.mode);
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    if(State.spaceHeld) return;
+    State.spaceHeld = true; 
+    State.spaceStart = performance.now(); 
+    State.spaceBackwardActive=false;
+    if(State.spaceTimer) clearTimeout(State.spaceTimer);
+    State.spaceTimer = setTimeout(()=>{
+      if(State.spaceHeld){
+        State.spaceBackwardActive = true;
+        spaceBackwardLoop();
+      }
+    }, 3000);
+  }
+
+  function spaceBackwardLoop(){
+    if(!State.spaceHeld) return;
+    console.log('Space backward loop, mode:', State.mode);
+    if(State.mode==='game') boardScanBackward();
+    else if(State.mode==='main_menu') menuScanBackward();
+    else if(State.mode==='pause') pauseScanBackward();
+    else if(State.mode==='game_over_menu') overScanBackward();
+    State.spaceTimer = setTimeout(spaceBackwardLoop, 2000);
+  }
+
+  function onSpaceUp(){
+    const dur = State.spaceStart ? (performance.now()-State.spaceStart)/1000 : 0;
+    console.log('Space up, mode:', State.mode, 'duration:', dur, 'wasBack:', State.spaceBackwardActive);
+    
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    if(State.spaceTimer){ clearTimeout(State.spaceTimer); State.spaceTimer=null; }
+    const wasBack = State.spaceBackwardActive; 
+    State.spaceHeld=false; 
+    State.spaceBackwardActive=false;
+    
+    if(!wasBack && dur>=0.1 && dur<3){
+      console.log('Triggering scan for mode:', State.mode);
+      if(State.mode==='game') {
+        State.boardScanInitiated = true;
+        boardScanForward();
+      }
+      else if(State.mode==='main_menu') {
+        State.menuScanInitiated = true;
+        menuScanForward();
+      }
+      else if(State.mode==='pause') {
+        State.pauseScanInitiated = true;
+        pauseScanForward();
+      }
+      else if(State.mode==='game_over_menu') {
+        State.overScanInitiated = true;
+        overScanForward();
+      }
+    }
+  }
+
+  function onReturnDown(){
+    console.log('Return down, mode:', State.mode);
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+    if(State.returnHeld) return;
+    State.returnHeld=true; 
+    State.returnStart=performance.now(); 
+    State.pauseTriggered=false;
+    if(State.mode==='game'){
+      if(State.returnTimer) clearTimeout(State.returnTimer);
+      State.returnTimer = setTimeout(()=>{
+        if(State.returnHeld){ 
+          State.pauseTriggered=true; 
+          showPause(); 
+        }
+      }, 6000);
+    }
+  }
+
+  function onReturnUp(){
+    const dur = State.returnStart ? (performance.now()-State.returnStart)/1000 : 0;
+    console.log('Return up, mode:', State.mode, 'duration:', dur);
+    
+    if(!['game','main_menu','pause','game_over_menu'].includes(State.mode)) return;
+
+    if(State.mode==='pause' && State.pauseJustOpened){
+      State.pauseJustOpened=false; 
+      State.returnHeld=false; 
+      return;
+    }
+
+    if(State.mode==='game'){
+      if(State.returnTimer){ clearTimeout(State.returnTimer); State.returnTimer=null; }
+      State.returnHeld=false;
+      if(State.pauseTriggered){ State.pauseTriggered=false; return; }
+      if(dur>=0.1 && dur<3 && State.boardScanInitiated && State.boardScanIndex >= 0){
+        const [r,c] = State.order[State.boardScanIndex];
+        selectCell(r,c);
+      }
+    } else if(State.mode==='main_menu'){
+      State.returnHeld=false; 
+      if(State.menuScanInitiated && State.menuScanIndex >= 0) {
+        State.menuButtons[State.menuScanIndex]?.click();
+      }
+    } else if(State.mode==='pause'){
+      State.returnHeld=false; 
+      if(State.pauseScanInitiated && State.pauseScanIndex >= 0) {
+        State.pauseButtons[State.pauseScanIndex]?.click();
+      }
+    } else if(State.mode==='game_over_menu'){
+      State.returnHeld=false; 
+      if(State.overScanInitiated && State.overScanIndex >= 0) {
+        State.overButtons[State.overScanIndex]?.click();
+      }
+    }
+  }
+
+  // Add event listeners when DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, adding event listeners');
+    
+    // iOS orientation change fix
+    const handleOrientationChange = () => {
+      // Force a reflow to fix iOS layout issues
+      setTimeout(() => {
+        const container = document.getElementById('container');
+        if (container) {
+          const display = container.style.display;
+          container.style.display = 'none';
+          container.offsetHeight; // Force reflow
+          container.style.display = display || 'flex';
+        }
+      }, 100);
+    };
+    
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', handleOrientationChange);
+    
+    document.addEventListener('keydown', e=>{
+      console.log('Keydown:', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceDown(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnDown(); 
+      }
+    });
+    
+    document.addEventListener('keyup', e=>{
+      console.log('Keyup:', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceUp(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnUp(); 
+      }
+    });
+  });
+
+  // Fallback event listeners (in case DOMContentLoaded already fired)
+  if (document.readyState === 'loading') {
+    // DOM is still loading
+  } else {
+    // DOM is already loaded
+    console.log('DOM already loaded, adding event listeners immediately');
+    document.addEventListener('keydown', e=>{
+      console.log('Keydown (fallback):', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceDown(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnDown(); 
+      }
+    });
+    
+    document.addEventListener('keyup', e=>{
+      console.log('Keyup (fallback):', e.code);
+      if(e.code==='Space'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onSpaceUp(); 
+      }
+      if(e.code==='Enter'){ 
+        e.preventDefault(); 
+        e.stopPropagation();
+        onReturnUp(); 
+      }
+    });
+  }
+
+  // Boot
+  renderMainMenu();
+  </script>
+</body>
+</html>

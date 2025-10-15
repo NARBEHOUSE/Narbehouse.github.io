@@ -35,42 +35,56 @@
       --narbe-orange: #ffb703;
       --narbe-blue: #fb8500;
     }
+    body.text-black {
+      --narbe-orange: #333333;
+      --narbe-blue: #666666;
+    }
+    body.text-white {
+      --narbe-orange: #ffffff;
+      --narbe-blue: #f0f0f0;
+    }
 
     /* Highlight Color variations */
     body.highlight-blue .card-btn:focus-visible,
     body.highlight-blue .backbtn:focus-visible,
     body.highlight-blue .modal-btn:focus-visible,
-    body.highlight-blue .iframe-back:focus-visible {
+    body.highlight-blue .iframe-back:focus-visible,
+    body.highlight-blue .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(91,176,255,.55), 0 10px 25px rgba(0,0,0,.35);
     }
     body.highlight-green .card-btn:focus-visible,
     body.highlight-green .backbtn:focus-visible,
     body.highlight-green .modal-btn:focus-visible,
-    body.highlight-green .iframe-back:focus-visible {
+    body.highlight-green .iframe-back:focus-visible,
+    body.highlight-green .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(0,255,136,.55), 0 10px 25px rgba(0,0,0,.35);
     }
     body.highlight-purple .card-btn:focus-visible,
     body.highlight-purple .backbtn:focus-visible,
     body.highlight-purple .modal-btn:focus-visible,
-    body.highlight-purple .iframe-back:focus-visible {
+    body.highlight-purple .iframe-back:focus-visible,
+    body.highlight-purple .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(157,78,221,.55), 0 10px 25px rgba(0,0,0,.35);
     }
     body.highlight-red .card-btn:focus-visible,
     body.highlight-red .backbtn:focus-visible,
     body.highlight-red .modal-btn:focus-visible,
-    body.highlight-red .iframe-back:focus-visible {
+    body.highlight-red .iframe-back:focus-visible,
+    body.highlight-red .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(255,0,110,.55), 0 10px 25px rgba(0,0,0,.35);
     }
     body.highlight-yellow .card-btn:focus-visible,
     body.highlight-yellow .backbtn:focus-visible,
     body.highlight-yellow .modal-btn:focus-visible,
-    body.highlight-yellow .iframe-back:focus-visible {
+    body.highlight-yellow .iframe-back:focus-visible,
+    body.highlight-yellow .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(255,183,3,.65), 0 10px 25px rgba(0,0,0,.35);
     }
     body.highlight-white .card-btn:focus-visible,
     body.highlight-white .backbtn:focus-visible,
     body.highlight-white .modal-btn:focus-visible,
-    body.highlight-white .iframe-back:focus-visible {
+    body.highlight-white .iframe-back:focus-visible,
+    body.highlight-white .nav-btn:focus-visible {
       box-shadow: 0 0 0 4px rgba(255,255,255,.75), 0 10px 25px rgba(0,0,0,.35);
     }
 
@@ -99,7 +113,8 @@
     }
     body.bg-sky .card-btn,
     body.bg-sky .backbtn,
-    body.bg-sky .modal-content {
+    body.bg-sky .modal-content,
+    body.bg-sky .nav-btn {
       background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
       border-color: rgba(0,0,0,.15);
       box-shadow: 0 4px 16px rgba(0,0,0,.1);
@@ -116,7 +131,8 @@
     }
     body.bg-cream .card-btn,
     body.bg-cream .backbtn,
-    body.bg-cream .modal-content {
+    body.bg-cream .modal-content,
+    body.bg-cream .nav-btn {
       background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,250,235,.7));
       border-color: rgba(101,67,33,.15);
       box-shadow: 0 4px 16px rgba(101,67,33,.12);
@@ -133,7 +149,8 @@
     }
     body.bg-mint .card-btn,
     body.bg-mint .backbtn,
-    body.bg-mint .modal-content {
+    body.bg-mint .modal-content,
+    body.bg-mint .nav-btn {
       background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(240,255,250,.7));
       border-color: rgba(0,100,80,.15);
       box-shadow: 0 4px 16px rgba(0,100,80,.1);
@@ -150,7 +167,8 @@
     }
     body.bg-lavender .card-btn,
     body.bg-lavender .backbtn,
-    body.bg-lavender .modal-content {
+    body.bg-lavender .modal-content,
+    body.bg-lavender .nav-btn {
       background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(250,245,255,.7));
       border-color: rgba(75,0,130,.15);
       box-shadow: 0 4px 16px rgba(75,0,130,.1);
@@ -167,7 +185,8 @@
     }
     body.bg-peach .card-btn,
     body.bg-peach .backbtn,
-    body.bg-peach .modal-content {
+    body.bg-peach .modal-content,
+    body.bg-peach .nav-btn {
       background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,250,240,.7));
       border-color: rgba(139,69,19,.15);
       box-shadow: 0 4px 16px rgba(139,69,19,.1);
@@ -213,17 +232,24 @@
     .benny-logo{
       width: 80px; height: 80px; object-fit: contain;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
-      display: block; /* Ensure it's visible */
-      flex-shrink: 0; /* Prevent logo from shrinking */
+      display: block;
+      flex-shrink: 0;
     }
     .title {
       font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
     }
     .subtitle{ color:var(--muted); font-size: clamp(14px, 2.4vw, 16px); }
 
+    .notice{
+      padding: 16px 20px; border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255,92,0,.08), rgba(91,176,255,.08));
+      border: 1px solid rgba(255,255,255,.1);
+      font-size: 14px; line-height: 1.5;
+    }
+
     .screen{ 
       display:none; 
-      outline: none; /* Remove focus outline on screen containers */
+      outline: none;
     }
     .screen.active{ 
       display:block; 
@@ -231,12 +257,33 @@
 
     .grid{
       display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-top: 16px;
     }
-    @media (max-width: 720px){
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px){
       .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Home screen layout */
+    #screen-home .grid{
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-home .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Settings screen layout */
+    #screen-settings .grid{
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 100%;
+    }
+    @media (max-width: 900px){
+      #screen-settings .grid{ grid-template-columns: 1fr; }
     }
 
     .card-btn{
@@ -282,54 +329,46 @@
     .footer-note{ margin-top:22px; color: var(--muted); font-size:13px; }
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0f1724; border:1px solid rgba(255,255,255,.18); padding:2px 6px; border-radius:6px; color:#d3e3ff; }
 
-    /* Large, centered single-column for inner screens */
-    .grid.single{ grid-template-columns: 1fr; max-width:720px; margin-inline:auto; }
-    
-    /* Home screen horizontal layout */
-    #screen-home .grid.single{ 
-      grid-template-columns: repeat(3, 1fr); 
-      max-width: 100%;
+    .controls-bar{
+      display:flex; gap:10px; margin: 8px 0 16px 0; align-items:center; flex-wrap:wrap;
+      justify-content: space-between;
     }
-    @media (max-width: 900px){
-      #screen-home .grid.single{ grid-template-columns: 1fr; }
+    .controls-left{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
     }
-    
-    /* Tools screen horizontal layout */
-    #screen-tools .grid.single{ 
-      grid-template-columns: repeat(2, 1fr); 
-      max-width: 100%;
-    }
-    @media (max-width: 900px){
-      #screen-tools .grid.single{ grid-template-columns: 1fr; }
-    }
-    
-    /* Games screen horizontal layout - Updated for 4 games */
-    #screen-games .grid.single{ 
-      grid-template-columns: repeat(2, 1fr); 
-      max-width: 100%;
-    }
-    @media (max-width: 900px){
-      #screen-games .grid.single{ grid-template-columns: 1fr; }
-    }
-    
-    /* Settings screen horizontal layout */
-    #screen-settings .grid.single{ 
-      grid-template-columns: repeat(3, 1fr); 
-      max-width: 100%;
-    }
-    @media (max-width: 900px){
-      #screen-settings .grid.single{ grid-template-columns: 1fr; }
+    .controls-right{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
     }
 
-    .backbar{
-      display:flex; gap:10px; margin: 8px 0 4px 0; align-items:center; flex-wrap:wrap;
+    .nav-btn{
+      appearance:none; border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03); color:var(--text);
+      padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
+      transition: all .2s ease; outline: none;
     }
-    .backbtn{
+    .nav-btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.05);
+    }
+    .nav-btn:focus-visible{ box-shadow: var(--ring); }
+    .nav-btn:disabled{
+      opacity: .5; cursor: not-allowed;
+    }
+
+    .backbtn{ 
       appearance:none; border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.03); color:var(--text);
       padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
     }
     .backbtn:focus-visible{ box-shadow: var(--ring); }
+
+    .page-info{
+      color: var(--muted); font-size: 14px; font-weight: 600;
+    }
+
+    .genre-filter{
+      color: var(--text); font-size: 14px; font-weight: 600;
+    }
 
     /* Visually hidden, but screen-reader available */
     .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
@@ -426,6 +465,12 @@
       background: linear-gradient(90deg, var(--narbe-orange), var(--narbe-blue));
       color: #0b0f14; border: none; cursor: pointer;
     }
+
+    /* Genre filter screen */
+    #screen-genre-filter .grid{
+      max-width: 720px;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
@@ -487,7 +532,7 @@
       <!-- HOME SCREEN -->
       <section id="screen-home" class="screen active" aria-labelledby="home-heading" data-screen="home" tabindex="-1">
         <h2 id="home-heading" class="sr-only">Main menu</h2>
-        <div class="grid single" role="group" aria-label="Main menu buttons">
+        <div class="grid" role="group" aria-label="Main menu buttons">
           <button class="card-btn nav" data-target="tools">
             <span class="kicker">Menu</span>
             <div class="btn-title">Tools</div>
@@ -519,85 +564,70 @@
 
       <!-- TOOLS SCREEN -->
       <section id="screen-tools" class="screen" aria-labelledby="tools-heading" data-screen="tools" tabindex="-1">
-        <div class="backbar">
-          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        <div class="controls-bar">
+          <div class="controls-left">
+            <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+            <button class="nav-btn" id="tools-filter-btn">Filter by Genre</button>
+          </div>
+          <div class="controls-right">
+            <span class="page-info" id="tools-page-info">Page 1 of 1</span>
+            <button class="nav-btn" id="tools-prev" disabled>← Previous</button>
+            <button class="nav-btn" id="tools-next" disabled>Next →</button>
+          </div>
         </div>
         <h2 id="tools-heading" class="sr-only">Tools</h2>
-        <div class="grid single" role="group" aria-label="Tools list">
-          <button class="card-btn tool-btn" data-iframe="keyboard/index.html" data-title="Keyboard">
-            <span class="kicker">Tool</span>
-            <div class="btn-title">Keyboard</div>
-            <div class="row">
-              <p class="desc">Predictive, simple input mapped for two-button access.</p>
-              <span class="pill">Launch</span>
-            </div>
-          </button>
-
-          <button class="card-btn tool-btn" data-iframe="phraseboard/index.html" data-title="Phrase & Media Board">
-            <span class="kicker">Tool</span>
-            <div class="btn-title">Phrase & Media Board</div>
-            <div class="row">
-              <p class="desc">Editable phrase & media tiles with scanning and speak-out.</p>
-              <span class="pill">Launch</span>
-            </div>
-          </button>
+        <div class="grid" role="group" aria-label="Tools list" id="tools-grid">
+          <!-- Tools will be populated by JavaScript -->
         </div>
         <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to open a tool. Use the Back button to return here.</p>
       </section>
 
       <!-- GAMES SCREEN -->
       <section id="screen-games" class="screen" aria-labelledby="games-heading" data-screen="games" tabindex="-1">
-        <div class="backbar">
-          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        <div class="controls-bar">
+          <div class="controls-left">
+            <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+            <button class="nav-btn" id="games-filter-btn">Filter by Genre</button>
+          </div>
+          <div class="controls-right">
+            <span class="page-info" id="games-page-info">Page 1 of 1</span>
+            <button class="nav-btn" id="games-prev" disabled>← Previous</button>
+            <button class="nav-btn" id="games-next" disabled>Next →</button>
+          </div>
         </div>
         <h2 id="games-heading" class="sr-only">Games</h2>
-        <div class="grid single" role="group" aria-label="Games list">
-          <button class="card-btn tool-btn" data-iframe="BENNYSPEGGLE/index.html" data-title="Benny's P3GL Game">
-            <span class="kicker">Game</span>
-            <div class="btn-title">Benny's P3GL Game</div>
-            <div class="row">
-              <p class="desc">Two-button friendly gameplay. Always free.</p>
-              <span class="pill">Play</span>
-            </div>
-          </button>
-
-          <button class="card-btn tool-btn" data-iframe="BENNYSAYS/index.html" data-title="BennySays">
-            <span class="kicker">Game</span>
-            <div class="btn-title">BennySays</div>
-            <div class="row">
-              <p class="desc">Interactive game with mouse and keyboard support.</p>
-              <span class="pill">Play</span>
-            </div>
-          </button>
-
-          <button class="card-btn tool-btn" data-iframe="TICTACTOE/index.html" data-title="Benny's Tic Tac Toe">
-            <span class="kicker">Game</span>
-            <div class="btn-title">Tic Tac Toe</div>
-            <div class="row">
-              <p class="desc">Classic game with single-player AI and 2-player modes.</p>
-              <span class="pill">Play</span>
-            </div>
-          </button>
-
-          <button class="card-btn tool-btn" data-iframe="CONCENTRATION/index.html" data-title="Concentration">
-            <span class="kicker">Game</span>
-            <div class="btn-title">Concentration</div>
-            <div class="row">
-              <p class="desc">Memory matching game with single & multiplayer modes.</p>
-              <span class="pill">Play</span>
-            </div>
-          </button>
+        <div class="grid" role="group" aria-label="Games list" id="games-grid">
+          <!-- Games will be populated by JavaScript -->
         </div>
         <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to launch the game. Use the Back button to return here.</p>
       </section>
 
+      <!-- GENRE FILTER SCREEN -->
+      <section id="screen-genre-filter" class="screen" aria-labelledby="genre-filter-heading" data-screen="genre-filter" tabindex="-1">
+        <div class="controls-bar">
+          <div class="controls-left">
+            <button class="backbtn" id="genre-back-btn" aria-label="Back to previous menu">← Back</button>
+          </div>
+          <div class="controls-right">
+            <span class="genre-filter" id="current-filter">All Items</span>
+          </div>
+        </div>
+        <h2 id="genre-filter-heading" class="sr-only">Filter by Genre</h2>
+        <div class="grid" role="group" aria-label="Genre filter options" id="genre-grid">
+          <!-- Genre options will be populated by JavaScript -->
+        </div>
+        <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to select a genre filter.</p>
+      </section>
+
       <!-- SETTINGS SCREEN -->
       <section id="screen-settings" class="screen" aria-labelledby="settings-heading" data-screen="settings" tabindex="-1">
-        <div class="backbar">
-          <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+        <div class="controls-bar">
+          <div class="controls-left">
+            <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+          </div>
         </div>
         <h2 id="settings-heading" class="sr-only">Settings</h2>
-        <div class="grid single" role="group" aria-label="Settings list">
+        <div class="grid" role="group" aria-label="Settings list">
           <button class="card-btn" id="highlight-toggle">
             <span class="kicker">Setting</span>
             <div class="btn-title">Highlight Color</div>
@@ -642,6 +672,15 @@
               <span class="pill" id="voice-status">Default</span>
             </div>
           </button>
+
+          <button class="card-btn" id="autoscan-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Auto Scan</div>
+            <div class="row">
+              <p class="desc">Automatically move focus every 2 seconds</p>
+              <span class="pill" id="autoscan-status">Off</span>
+            </div>
+          </button>
         </div>
         <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to toggle settings. Use the Back button to return home.</p>
       </section>
@@ -656,10 +695,8 @@
   
   <script>
     /**
-     * Keyboard scanning model
-     * - Spacebar (on release): move focus forward across focusable cards
-     * - Enter/Return (on release): "activate" the focused element
-     * - TTS announces focused items
+     * NARBE Accessibility Hub
+     * JSON-based app management with pagination and genre filtering
      */
 
     const SCREENS = {
@@ -667,6 +704,7 @@
       tools: document.getElementById('screen-tools'),
       games: document.getElementById('screen-games'),
       settings: document.getElementById('screen-settings'),
+      'genre-filter': document.getElementById('screen-genre-filter'),
     };
 
     const live = document.getElementById('live');
@@ -678,14 +716,210 @@
     const iframeTitle = document.getElementById('iframe-title');
     const appIframe = document.getElementById('app-iframe');
 
-    // Settings state (excluding voice settings which are now handled by NarbeVoiceManager)
+    // App data and state
+    let appsData = { tools: [], games: [] };
+    let currentScreen = 'home';
+    let filterState = {
+      tools: { genre: 'all', page: 0 },
+      games: { genre: 'all', page: 0 }
+    };
+    const ITEMS_PER_PAGE = 9;
+
+    // Settings state
     let settings = {
-      highlightColor: 'blue', // blue, green, purple, red, yellow, white
-      textColor: 'default', // default, green, purple, red, gold
-      bgTheme: 'default', // default, ocean, forest, sunset, midnight, rose, sky, cream, mint, lavender, peach
+      highlightColor: 'blue',
+      textColor: 'default',
+      bgTheme: 'default',
+      autoScan: false,
     };
 
-    // Load settings from localStorage (voice settings handled by NarbeVoiceManager)
+    // Auto scan state
+    let autoScanInterval = null;
+    let spaceHoldTimeout = null;
+    let backwardsScanInterval = null;
+    let spaceHoldStartTime = 0;
+    const AUTO_SCAN_DELAY = 2000; // 2 seconds
+    const BACKWARDS_SCAN_THRESHOLD = 3000; // 3 seconds to trigger backwards scan
+    const BACKWARDS_SCAN_INTERVAL = 1500; // 1.5 seconds between backwards scans
+
+    // Load JSON data for apps
+    async function loadAppsData() {
+      try {
+        const [toolsResponse, gamesResponse] = await Promise.all([
+          fetch('apps/tools/tools.json'),
+          fetch('apps/games/games.json')
+        ]);
+        
+        const toolsData = await toolsResponse.json();
+        const gamesData = await gamesResponse.json();
+        
+        appsData.tools = toolsData.tools.sort((a, b) => a.title.localeCompare(b.title));
+        appsData.games = gamesData.games.sort((a, b) => a.title.localeCompare(b.title));
+        
+        console.log('Apps data loaded:', appsData);
+      } catch (error) {
+        console.error('Failed to load apps data:', error);
+        // Fallback to empty arrays
+        appsData = { tools: [], games: [] };
+      }
+    }
+
+    // Get unique genres for a category
+    function getGenres(category) {
+      const items = appsData[category] || [];
+      const genreSet = new Set();
+      items.forEach(item => {
+        if (item.genres) {
+          item.genres.forEach(genre => genreSet.add(genre));
+        }
+      });
+      return Array.from(genreSet).sort();
+    }
+
+    // Filter items by genre
+    function filterItemsByGenre(category, genre) {
+      const items = appsData[category] || [];
+      
+      if (genre === 'all' || !genre) {
+        return items.sort((a, b) => a.title.localeCompare(b.title));
+      }
+      return items.filter(item => item.genres && item.genres.includes(genre))
+                  .sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    // Paginate items
+    function paginateItems(items, page) {
+      const startIndex = page * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      return {
+        items: items.slice(startIndex, endIndex),
+        totalPages: Math.ceil(items.length / ITEMS_PER_PAGE),
+        currentPage: page + 1,
+        hasNext: endIndex < items.length,
+        hasPrevious: page > 0
+      };
+    }
+
+    // Create app card HTML
+    function createAppCard(app, category) {
+      const categoryLabel = category === 'tools' ? 'Tool' : 'Game';
+      const actionLabel = category === 'tools' ? 'Launch' : 'Play';
+      
+      return `
+        <button class="card-btn app-btn" data-path="${app.path}" data-title="${app.title}">
+          <span class="kicker">${categoryLabel}</span>
+          <div class="btn-title">${app.title}</div>
+          <div class="row">
+            <p class="desc">${app.description}</p>
+            <span class="pill">${actionLabel}</span>
+          </div>
+        </button>
+      `;
+    }
+
+    // Create genre filter card HTML
+    function createGenreCard(genre, isAll = false) {
+      return `
+        <button class="card-btn genre-btn" data-genre="${genre}">
+          <span class="kicker">Filter</span>
+          <div class="btn-title">${genre}</div>
+          <div class="row">
+            <p class="desc">${isAll ? 'Show all items' : `Show ${genre.toLowerCase()} items only`}</p>
+            <span class="pill">Select</span>
+          </div>
+        </button>
+      `;
+    }
+
+    // Render apps grid
+    function renderAppsGrid(category) {
+      const grid = document.getElementById(`${category}-grid`);
+      const pageInfo = document.getElementById(`${category}-page-info`);
+      const prevBtn = document.getElementById(`${category}-prev`);
+      const nextBtn = document.getElementById(`${category}-next`);
+      
+      const state = filterState[category];
+      const filteredItems = filterItemsByGenre(category, state.genre);
+      const paginatedData = paginateItems(filteredItems, state.page);
+      
+      // Update grid
+      const gridHTML = paginatedData.items.map(app => createAppCard(app, category)).join('');
+      grid.innerHTML = gridHTML;
+      
+      // Update page info
+      if (paginatedData.totalPages > 0) {
+        pageInfo.textContent = `Page ${paginatedData.currentPage} of ${paginatedData.totalPages}`;
+      } else {
+        pageInfo.textContent = 'No items found';
+      }
+      
+      // Update navigation buttons
+      prevBtn.disabled = !paginatedData.hasPrevious;
+      nextBtn.disabled = !paginatedData.hasNext;
+      
+      // Add event listeners to app buttons
+      grid.querySelectorAll('.app-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const path = btn.getAttribute('data-path');
+          const title = btn.getAttribute('data-title');
+          speak(`Opening ${title}`);
+          showIframe(path, title);
+        });
+      });
+      
+      // Reset focus when grid changes
+      focusIndex = -1;
+    }
+
+    // Render genre filter screen
+    function renderGenreFilter(category, returnScreen) {
+      const grid = document.getElementById('genre-grid');
+      const currentFilter = document.getElementById('current-filter');
+      const backBtn = document.getElementById('genre-back-btn');
+      
+      const genres = getGenres(category);
+      const allGenres = ['All Items', ...genres];
+      
+      grid.innerHTML = allGenres.map((genre, index) => {
+        const genreValue = index === 0 ? 'all' : genre;
+        return `
+          <button class="card-btn genre-btn" data-genre="${genreValue}">
+            <span class="kicker">Filter</span>
+            <div class="btn-title">${genre}</div>
+            <div class="row">
+              <p class="desc">${index === 0 ? 'Show all items' : `Show ${genre.toLowerCase()} items only`}</p>
+              <span class="pill">Select</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+      
+      currentFilter.textContent = filterState[category].genre === 'all' ? 'All Items' : filterState[category].genre;
+      
+      // Update back button target
+      backBtn.setAttribute('data-target', returnScreen);
+      backBtn.setAttribute('data-category', category);
+      
+      // Add event listeners to genre buttons
+      grid.querySelectorAll('.genre-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const genre = btn.getAttribute('data-genre');
+          const genreName = genre === 'all' ? 'All Items' : genre;
+          
+          filterState[category].genre = genre;
+          filterState[category].page = 0; // Reset to first page
+          
+          speak(`Filter set to ${genreName}`);
+          renderAppsGrid(category);
+          showScreen(returnScreen);
+        });
+      });
+      
+      // Reset focus when screen changes
+      focusIndex = -1;
+    }
+
+    // Load settings from localStorage
     function loadSettings() {
       const saved = localStorage.getItem('narbe-hub-settings');
       if (saved) {
@@ -710,7 +944,7 @@
       if (settings.textColor !== 'default') {
         document.body.classList.add(`text-${settings.textColor}`);
       }
-      const textColorNames = { default: 'Default', green: 'Green', purple: 'Purple', red: 'Red', gold: 'Gold' };
+      const textColorNames = { default: 'Default', green: 'Green', purple: 'Purple', red: 'Red', gold: 'Gold', black: 'Black', white: 'White' };
       document.getElementById('textcolor-status').textContent = textColorNames[settings.textColor];
 
       // Apply background theme
@@ -733,12 +967,59 @@
       };
       document.getElementById('bgtheme-status').textContent = bgThemeNames[settings.bgTheme];
 
+      // Apply auto scan setting
+      document.getElementById('autoscan-status').textContent = settings.autoScan ? 'On' : 'Off';
+      if (settings.autoScan) {
+        startAutoScan();
+      } else {
+        stopAutoScan();
+      }
+
       // Apply TTS status (from voice manager)
       const voiceSettings = window.NarbeVoiceManager.getSettings();
       document.getElementById('tts-status').textContent = voiceSettings.ttsEnabled ? 'On' : 'Off';
 
       // Apply Voice display (from voice manager)
       updateVoiceDisplay();
+    }
+
+    // Auto scan functions
+    function startAutoScan() {
+      if (autoScanInterval) return; // Already running
+      
+      autoScanInterval = setInterval(() => {
+        if (!isTransitioning && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
+          focusNext();
+        }
+      }, AUTO_SCAN_DELAY);
+    }
+
+    function stopAutoScan() {
+      if (autoScanInterval) {
+        clearInterval(autoScanInterval);
+        autoScanInterval = null;
+      }
+    }
+
+    function focusPrevious() {
+      const list = getFocusables();
+      if(list.length === 0) return;
+      
+      if (focusIndex === -1) {
+        focusIndex = list.length - 1;
+        list[focusIndex].focus();
+        speakFocusedElement(list[focusIndex]);
+        return;
+      }
+      
+      const currentFocused = document.activeElement;
+      const currentIndex = list.indexOf(currentFocused);
+      
+      if (currentIndex >= 0) {
+        focusIndex = currentIndex;
+      }
+      
+      focusAt(focusIndex - 1);
     }
 
     // TTS functionality using unified voice manager
@@ -755,7 +1036,7 @@
     // Update voice display when voice manager settings change
     window.NarbeVoiceManager.onSettingsChange(() => {
       updateVoiceDisplay();
-      applySettings(); // Update TTS status display
+      applySettings();
     });
 
     // Settings toggles
@@ -769,7 +1050,7 @@
     });
 
     document.getElementById('textcolor-toggle').addEventListener('click', () => {
-      const textColors = ['default', 'green', 'purple', 'red', 'gold'];
+      const textColors = ['default', 'green', 'purple', 'red', 'gold', 'black', 'white'];
       const currentIndex = textColors.indexOf(settings.textColor);
       settings.textColor = textColors[(currentIndex + 1) % textColors.length];
       applySettings();
@@ -788,11 +1069,9 @@
 
     document.getElementById('tts-toggle').addEventListener('click', () => {
       const ttsEnabled = window.NarbeVoiceManager.toggleTTS();
-      applySettings(); // Update display
+      applySettings();
       if (ttsEnabled) {
         speak('Text to speech enabled');
-      } else {
-        // Can't speak when disabled, but status is updated
       }
     });
 
@@ -800,13 +1079,20 @@
       const voiceChanged = window.NarbeVoiceManager.cycleVoice();
       if (voiceChanged) {
         updateVoiceDisplay();
-        applySettings(); // Update display
+        applySettings();
         const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
         const voiceName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
         speak(`Voice changed to ${voiceName}`);
       } else {
         speak('No voices available');
       }
+    });
+
+    document.getElementById('autoscan-toggle').addEventListener('click', () => {
+      settings.autoScan = !settings.autoScan;
+      applySettings();
+      saveSettings();
+      speak(`Auto scan ${settings.autoScan ? 'enabled' : 'disabled'}`);
     });
 
     // Fullscreen management
@@ -834,7 +1120,7 @@
       closeModal();
     });
 
-    // Show iframe with tool
+    // Show iframe with tool/game
     function showIframe(src, title) {
       iframeTitle.textContent = title;
       appIframe.src = src;
@@ -842,12 +1128,10 @@
       iframeBack.focus();
       announce(`${title} loaded`);
       
-      // Pass focus to the iframe content after a short delay to ensure it's loaded
       setTimeout(() => {
         try {
           appIframe.contentWindow.focus();
           
-          // Send current voice settings to the iframe
           if (window.NarbeVoiceManager) {
             const currentSettings = window.NarbeVoiceManager.getSettings();
             appIframe.contentWindow.postMessage({
@@ -856,7 +1140,6 @@
             }, '*');
           }
         } catch (e) {
-          // Cross-origin iframes may block focus, but same-origin should work
           console.log('Unable to focus iframe content or send voice settings:', e);
         }
       }, 500);
@@ -865,15 +1148,11 @@
     function closeIframe() {
       iframeContainer.classList.remove('active');
       appIframe.src = '';
-      // Don't auto-focus when returning to menu
-      focusIndex = -1; // Reset to -1 so spacebar starts scanning
+      focusIndex = -1;
       
-      // Set focus to the main content to ensure keyboard events work
       const activeScreen = document.querySelector('.screen.active');
       if (activeScreen) {
-        // Focus the screen element to ensure keyboard events are captured
         activeScreen.focus();
-        // If that doesn't work, try focusing the main element
         if (document.activeElement !== activeScreen) {
           document.getElementById('main').focus();
         }
@@ -884,38 +1163,34 @@
     }
 
     iframeBack.addEventListener('click', () => {
-      speak('Closing tool');
+      speak('Closing app');
       closeIframe();
     });
 
-    // Tool buttons
-    document.querySelectorAll('.tool-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const src = btn.getAttribute('data-iframe');
-        const title = btn.getAttribute('data-title');
-        speak(`Opening ${title}`);
-        showIframe(src, title);
-      });
-    });
-
-    function showScreen(name){
-      isTransitioning = true; // Set transition flag
+    // Screen management
+    function showScreen(name) {
+      isTransitioning = true;
+      currentScreen = name;
+      
       for(const id in SCREENS){
         SCREENS[id].classList.toggle('active', id === name);
       }
-      // Reset focus index when changing screens
-      focusIndex = -1; // Start at -1 so first spacebar press focuses first element
-      // Reset key states when changing screens
+      
+      // Render content for dynamic screens
+      if (name === 'tools') {
+        renderAppsGrid('tools');
+      } else if (name === 'games') {
+        renderAppsGrid('games');
+      }
+      
+      focusIndex = -1;
       spacePressed = false;
       enterPressed = false;
       
-      // Don't auto-focus, just announce the screen change
       setTimeout(() => {
-        // Set focus to the active screen to ensure keyboard events work
         const activeScreen = document.querySelector('.screen.active');
         if (activeScreen) {
           activeScreen.focus();
-          // If that doesn't work, try focusing the main element
           if (document.activeElement !== activeScreen) {
             document.getElementById('main').focus();
           }
@@ -923,24 +1198,22 @@
         
         announce(`${name} menu`);
         speak(`${name} menu. Press spacebar to start scanning`);
-        isTransitioning = false; // Clear transition flag
+        isTransitioning = false;
       }, 100);
     }
 
-    function announce(msg){
+    function announce(msg) {
       live.textContent = '';
-      // small delay to force screen readers to re-announce
-      setTimeout(()=>{ live.textContent = msg; }, 10);
+      setTimeout(() => { live.textContent = msg; }, 10);
     }
 
-    function getFocusables(){
-      // If iframe is active, only scan iframe controls
+    function getFocusables() {
       if (iframeContainer.classList.contains('active')) {
         return [iframeBack];
       }
       const active = document.querySelector('.screen.active');
       if(!active) return [];
-      return Array.from(active.querySelectorAll('button.backbtn, .card-btn'))
+      return Array.from(active.querySelectorAll('button:not([disabled])'))
         .filter(el => !el.hasAttribute('disabled'));
     }
 
@@ -951,11 +1224,12 @@
       
       if (titleEl) {
         text = titleEl.textContent;
-      }
-      
-      // Handle back button
-      if (el.classList.contains('backbtn')) {
+      } else if (el.classList.contains('backbtn')) {
         text = 'Back';
+      } else if (el.classList.contains('nav-btn')) {
+        text = el.textContent;
+      } else {
+        text = el.textContent.trim();
       }
       
       if (text) {
@@ -963,7 +1237,7 @@
       }
     }
 
-    // Nav buttons (Tools, Games, Settings)
+    // Navigation event listeners
     document.querySelectorAll('.card-btn.nav').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.getAttribute('data-target');
@@ -975,7 +1249,6 @@
       });
     });
 
-    // Back buttons
     document.querySelectorAll('.backbtn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.getAttribute('data-target') || 'home';
@@ -984,16 +1257,50 @@
       });
     });
 
-    // Global key handler for scan and select (on key release)
+    // Pagination event listeners
+    ['tools', 'games'].forEach(category => {
+      document.getElementById(`${category}-prev`).addEventListener('click', () => {
+        if (filterState[category].page > 0) {
+          filterState[category].page--;
+          renderAppsGrid(category);
+          speak('Previous page');
+        }
+      });
+
+      document.getElementById(`${category}-next`).addEventListener('click', () => {
+        const filteredItems = filterItemsByGenre(category, filterState[category].genre);
+        const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+        if (filterState[category].page < totalPages - 1) {
+          filterState[category].page++;
+          renderAppsGrid(category);
+          speak('Next page');
+        }
+      });
+    });
+
+    // Filter button event listeners
+    document.getElementById('games-filter-btn').addEventListener('click', () => {
+      speak('Opening genre filter');
+      renderGenreFilter('games', 'games');
+      showScreen('genre-filter');
+    });
+
+    document.getElementById('tools-filter-btn').addEventListener('click', () => {
+      speak('Opening genre filter');
+      renderGenreFilter('tools', 'tools');
+      showScreen('genre-filter');
+    });
+
+    // Keyboard scanning functionality
     let focusIndex = -1;
     let spacePressed = false;
     let enterPressed = false;
-    let isTransitioning = false; // Add transition flag
-    let suppressEnterClick = false; // Block native click from buttons
-    let lastActivationTime = 0; // For debouncing
-    const DEBOUNCE_DELAY = 500; // Half second debounce
+    let isTransitioning = false;
+    let suppressEnterClick = false;
+    let lastActivationTime = 0;
+    const DEBOUNCE_DELAY = 500;
 
-    function focusAt(idx){
+    function focusAt(idx) {
       const list = getFocusables();
       if(list.length === 0) return;
       focusIndex = ((idx % list.length) + list.length) % list.length;
@@ -1001,11 +1308,10 @@
       speakFocusedElement(list[focusIndex]);
     }
 
-    function focusNext(){
+    function focusNext() {
       const list = getFocusables();
       if(list.length === 0) return;
       
-      // If focusIndex is -1, start at the beginning
       if (focusIndex === -1) {
         focusIndex = 0;
         list[focusIndex].focus();
@@ -1013,7 +1319,6 @@
         return;
       }
       
-      // Update the current focusIndex based on which element is actually focused
       const currentFocused = document.activeElement;
       const currentIndex = list.indexOf(currentFocused);
       
@@ -1021,14 +1326,12 @@
         focusIndex = currentIndex;
       }
       
-      // Move to next
       focusAt(focusIndex + 1);
     }
 
-    function activateFocused(){
-      if (isTransitioning) return; // Don't activate during transitions
+    function activateFocused() {
+      if (isTransitioning) return;
       
-      // Debounce to prevent multiple activations
       const currentTime = Date.now();
       if (currentTime - lastActivationTime < DEBOUNCE_DELAY) {
         return;
@@ -1038,13 +1341,11 @@
       const list = getFocusables();
       if(list.length === 0) return;
       
-      // Don't activate if nothing is focused yet
       if (focusIndex === -1) {
         speak('Press spacebar first to select an item');
         return;
       }
       
-      // Update the current focusIndex based on which element is actually focused
       const currentFocused = document.activeElement;
       const currentIndex = list.indexOf(currentFocused);
       
@@ -1056,9 +1357,8 @@
       el.click();
     }
 
-    // Enhanced keydown handler with click suppression
-    document.addEventListener('keydown', (e)=>{
-      // Handle modal keyboard navigation
+    // Keyboard event handlers
+    document.addEventListener('keydown', (e) => {
       if (!fullscreenModal.classList.contains('hidden')) {
         if (e.key === ' ' && !spacePressed) {
           e.preventDefault();
@@ -1066,12 +1366,11 @@
         } else if ((e.key === 'Enter' || e.keyCode === 13) && !enterPressed) {
           e.preventDefault();
           enterPressed = true;
-          suppressEnterClick = true; // block native click from buttons
+          suppressEnterClick = true;
         }
         return;
       }
 
-      // Don't process during transitions
       if (isTransitioning) {
         if (e.key === ' ' || e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
@@ -1079,7 +1378,6 @@
         return;
       }
 
-      // Avoid intercepting when typing in inputs
       const tag = document.activeElement?.tagName;
       if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
         return;
@@ -1088,29 +1386,46 @@
       if(e.key === ' ' && !spacePressed){
         e.preventDefault();
         spacePressed = true;
+        spaceHoldStartTime = Date.now();
+        
+        // Set timeout for backwards scanning
+        spaceHoldTimeout = setTimeout(() => {
+          if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
+            speak('Backwards scanning');
+            focusPrevious();
+            
+            // Start backwards auto-scan
+            backwardsScanInterval = setInterval(() => {
+              if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
+                focusPrevious();
+              } else {
+                clearInterval(backwardsScanInterval);
+                backwardsScanInterval = null;
+              }
+            }, BACKWARDS_SCAN_INTERVAL);
+          }
+        }, BACKWARDS_SCAN_THRESHOLD);
+        
       } else if((e.key === 'Enter' || e.keyCode === 13) && !enterPressed){
         e.preventDefault();
         enterPressed = true;
-        suppressEnterClick = true; // block native click from buttons
+        suppressEnterClick = true;
       }
     });
 
-    // Capture-phase click blocker so it runs before button handlers
     document.addEventListener('click', (e) => {
       if (suppressEnterClick) {
         e.preventDefault();
         e.stopPropagation();
         if (e.stopImmediatePropagation) e.stopImmediatePropagation();
       }
-    }, true); // capture = true
+    }, true);
 
-    document.addEventListener('keyup', (e)=>{
-      // Handle modal keyboard navigation
+    document.addEventListener('keyup', (e) => {
       if (!fullscreenModal.classList.contains('hidden')) {
         if (e.key === ' ' && spacePressed) {
           e.preventDefault();
           spacePressed = false;
-          // First spacebar press focuses first button
           if (document.activeElement !== modalFullscreenBtn && document.activeElement !== modalCancelBtn) {
             modalFullscreenBtn.focus();
             speak('Fullscreen');
@@ -1124,7 +1439,7 @@
         } else if ((e.key === 'Enter' || e.keyCode === 13) && enterPressed) {
           e.preventDefault();
           enterPressed = false;
-          suppressEnterClick = false; // allow clicks again
+          suppressEnterClick = false;
           if (document.activeElement === modalFullscreenBtn) {
             modalFullscreenBtn.click();
           } else if (document.activeElement === modalCancelBtn) {
@@ -1136,9 +1451,19 @@
         return;
       }
 
-      // Don't process during transitions
       if (isTransitioning) {
-        if (e.key === ' ') spacePressed = false;
+        if (e.key === ' ') {
+          spacePressed = false;
+          // Clear timers
+          if (spaceHoldTimeout) {
+            clearTimeout(spaceHoldTimeout);
+            spaceHoldTimeout = null;
+          }
+          if (backwardsScanInterval) {
+            clearInterval(backwardsScanInterval);
+            backwardsScanInterval = null;
+          }
+        }
         if (e.key === 'Enter' || e.keyCode === 13) {
           enterPressed = false;
           suppressEnterClick = false;
@@ -1146,7 +1471,6 @@
         return;
       }
 
-      // Avoid intercepting when typing in inputs
       const tag = document.activeElement?.tagName;
       if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
         return;
@@ -1155,28 +1479,44 @@
       if(e.key === ' ' && spacePressed){
         e.preventDefault();
         spacePressed = false;
-        focusNext();
+        
+        // Clear backwards scanning timers
+        if (spaceHoldTimeout) {
+          clearTimeout(spaceHoldTimeout);
+          spaceHoldTimeout = null;
+        }
+        if (backwardsScanInterval) {
+          clearInterval(backwardsScanInterval);
+          backwardsScanInterval = null;
+        }
+        
+        // Check if this was a short press (normal forward scanning)
+        const holdDuration = Date.now() - spaceHoldStartTime;
+        if (holdDuration < BACKWARDS_SCAN_THRESHOLD) {
+          focusNext();
+        }
+        
       } else if((e.key === 'Enter' || e.keyCode === 13) && enterPressed){
         e.preventDefault();
         enterPressed = false;
-        suppressEnterClick = false; // allow clicks again
+        suppressEnterClick = false;
         activateFocused();
       }
     });
 
-    // Initialize: load settings, show modal but don't focus yet
-    window.addEventListener('load', ()=>{
+    // Initialize application
+    window.addEventListener('load', async () => {
       loadSettings();
       
-      // Wait for voice manager to load voices, then update display
+      await loadAppsData();
+      
       window.NarbeVoiceManager.waitForVoices().then(() => {
         updateVoiceDisplay();
         applySettings();
       });
       
-      focusIndex = -1; // Start with nothing focused
+      focusIndex = -1;
       
-      // Ensure the document has focus for keyboard events
       document.body.focus();
       if (document.activeElement !== document.body) {
         document.getElementById('main').focus();
@@ -1185,10 +1525,9 @@
       speak('Use Fullscreen for the Best Experience. Press spacebar to start');
     });
 
-    // Listen for messages from iframe content to focus the back button
+    // Listen for messages from iframe content
     window.addEventListener('message', (event) => {
       if (event.data && event.data.action === 'focusBackButton') {
-        // Close iframe and focus back button
         if (iframeContainer.classList.contains('active')) {
           closeIframe();
         }

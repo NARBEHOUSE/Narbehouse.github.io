@@ -1,0 +1,32 @@
+{
+  "games": [
+    {
+      "id": "bennysays",
+      "title": "BennySays",
+      "description": "Interactive game with mouse and keyboard support.",
+      "path": "apps/games/BENNYSAYS/index.html",
+      "genres": ["Memory", "Interactive"]
+    },
+    {
+      "id": "bennyspeggle",
+      "title": "Benny's P3GL Game",
+      "description": "Two-button friendly gameplay. Always free.",
+      "path": "apps/games/BENNYSPEGGLE/index.html",
+      "genres": ["Arcade", "Action"]
+    },
+    {
+      "id": "concentration",
+      "title": "Concentration",
+      "description": "Memory matching game with single & multiplayer modes.",
+      "path": "apps/games/CONCENTRATION/index.html",
+      "genres": ["Memory", "Puzzle"]
+    },
+    {
+      "id": "tictactoe",
+      "title": "Tic Tac Toe",
+      "description": "Classic game with single-player AI and 2-player modes.",
+      "path": "apps/games/TICTACTOE/index.html",
+      "genres": ["Strategy", "Classic"]
+    }
+  ]
+}
