@@ -100,6 +100,52 @@
       font-weight: 800;
       color: var(--yellow);
     }
+    
+    /* Player turn indicator */
+    .player-turn-indicator {
+      position: absolute;
+      right: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    .player-turn-indicator.player-1 {
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      box-shadow: 0 4px 12px rgba(72,187,120,.3);
+    }
+    
+    .player-turn-indicator.player-2 {
+      background: linear-gradient(135deg, #ed64a6, #d53f8c);
+      box-shadow: 0 4px 12px rgba(237,100,166,.3);
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { 
+        transform: scale(1);
+      }
+      50% { 
+        transform: scale(1.02);
+      }
+    }
+    
+    .player-turn-indicator.player-1:hover {
+      box-shadow: 0 6px 20px rgba(72,187,120,.5);
+    }
+    
+    .player-turn-indicator.player-2:hover {
+      box-shadow: 0 6px 20px rgba(237,100,166,.5);
+    }
+    
     .screen{
       flex:1; 
       display:flex; 
@@ -385,43 +431,82 @@
 
     .result{
       font-family:"Arial Black"; 
-      font-size:clamp(1.2rem,2.8vw,1.8rem); /* Reduced font size */
+      font-size:clamp(1.2rem,2.8vw,1.8rem); 
       color:#0b2239; 
       background: linear-gradient(135deg, #ffd400, #ffab00); 
-      padding:0.8rem 1.5rem; /* Reduced padding */
+      padding:1.2rem 2rem;
       border-radius:var(--radius);
-      box-shadow: 0 10px 30px rgba(255,212,0,.3);
+      box-shadow: 0 15px 40px rgba(255,212,0,.4);
       text-align: center;
-      line-height: 1.4;
-      margin-bottom: 0.8rem; /* Reduced margin */
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
       flex-shrink: 0;
+      border: 3px solid rgba(255,255,255,.3);
+      max-width: 90vw;
+    }
+    
+    .result-details {
+      background: rgba(0,0,0,.1);
+      padding: 1rem;
+      border-radius: 12px;
+      margin: 1rem 0;
+      font-size: 1rem;
+      color: var(--bg);
+    }
+    
+    .best-score-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--green), #38a169);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin: 0.5rem 0;
+      box-shadow: 0 4px 15px rgba(72,187,120,.3);
+      animation: celebrate 0.6s ease-out;
+    }
+    
+    @keyframes celebrate {
+      0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+      50% { transform: scale(1.1) rotate(2deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
     }
 
     .competitive-result {
-      background: linear-gradient(135deg, rgba(91,176,255,.2), rgba(255,92,0,.2));
-      border: 3px solid var(--yellow);
+      background: linear-gradient(135deg, rgba(91,176,255,.3), rgba(255,92,0,.3));
+      border: 4px solid var(--yellow);
       color: var(--text);
-      padding: 1.5rem; /* Reduced padding */
+      padding: 2rem;
       border-radius: var(--radius);
       text-align: center;
-      margin-bottom: 1.5rem; /* Reduced margin */
-      box-shadow: 0 15px 40px rgba(255,212,0,.4);
-      max-width: 80vw; /* Reduced width */
+      margin-bottom: 2rem;
+      box-shadow: 0 20px 60px rgba(255,212,0,.5);
+      max-width: 85vw;
       flex-shrink: 0;
     }
     .competitive-result .winner {
-      font-size: 2rem; /* Reduced font size */
-      font-weight: 800;
+      font-size: 2.5rem;
+      font-weight: 900;
       background: linear-gradient(90deg, var(--yellow), #ffab00);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      margin-bottom: 0.8rem; /* Reduced margin */
+      margin-bottom: 1rem;
+      text-shadow: 0 4px 10px rgba(255,212,0,.3);
     }
     .competitive-result .final-score {
-      font-size: 1.2rem; /* Reduced font size */
+      font-size: 1.4rem;
       color: var(--text);
-      margin: 0.4rem 0; /* Reduced margin */
+      margin: 0.8rem 0;
+      font-weight: 600;
+    }
+    
+    .auto-return-notice {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 1.5rem;
+      opacity: 0.8;
     }
 
     .hidden{display:none!important}
@@ -661,7 +746,7 @@
   </div>
 
   <!-- Include shared voice manager -->
-  <script src="../../shared/voice-manager.js"></script>
+  <script src="../../../shared/voice-manager.js"></script>
   
   <script>
   // Web Speech TTS using unified voice manager
@@ -1080,7 +1165,19 @@
     center.appendChild(grid);
     screen.appendChild(center);
 
-    if(State.modeType.startsWith('two')) speak(`Player ${State.currentPlayer}'s turn`);
+    if(State.modeType.startsWith('two')) {
+      speak(`Player ${State.currentPlayer}'s turn`);
+      // Add player turn indicator - ensure only one exists
+      let playerTurnIndicator = document.querySelector('.player-turn-indicator');
+      if (!playerTurnIndicator) {
+        playerTurnIndicator = el('div', `player-turn-indicator player-${State.currentPlayer}`, `Player ${State.currentPlayer}'s Turn`);
+        document.querySelector('.topbar').appendChild(playerTurnIndicator);
+      } else {
+        // Update existing indicator
+        playerTurnIndicator.textContent = `Player ${State.currentPlayer}'s Turn`;
+        playerTurnIndicator.className = `player-turn-indicator player-${State.currentPlayer}`;
+      }
+    }
 
     State.currentRow=0; State.currentCol=0; 
     // Don't highlight anything until first spacebar press
@@ -1220,6 +1317,12 @@
         if(State.modeType.startsWith('two')){
           State.currentPlayer = (State.currentPlayer===1?2:1);
           setTimeout(()=> speak(`Player ${State.currentPlayer}'s turn`), 1600);
+          // Update player turn indicator
+          const playerTurnIndicator = document.querySelector('.player-turn-indicator');
+          if (playerTurnIndicator) {
+            playerTurnIndicator.textContent = `Player ${State.currentPlayer}'s Turn`;
+            playerTurnIndicator.className = `player-turn-indicator player-${State.currentPlayer}`;
+          }
         }
       }
       State.firstSel = null;
@@ -1277,7 +1380,7 @@
     speak(State.pauseButtons[State.pauseScanIndex].textContent); 
   }
   function pauseScanForward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex+1)%State.pauseButtons.length; } updatePauseScan(); }
-  function pauseScanBackward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseButtons.length)%State.pauseButtons.length; } updatePauseScan(); }
+  function pauseScanBackward(){ if(!State.pauseScanned){ State.pauseScanned=true; } else { State.pauseScanIndex=(State.pauseScanIndex-1+State.pauseScanButtons.length)%State.pauseScanButtons.length; } updatePauseScan(); }
 
   // Win with scoring - updated for auto-return and best score checking
   function showWinMessage(elapsed){
@@ -1292,33 +1395,36 @@
     // Check if this is a best score
     const isBest = checkBestScore(State.currentDifficulty, elapsed, State.moveCount);
     
-    // Score calculation: lower moves and faster time = higher score
-    const optimalMoves = State.rows * State.cols / 2; // Best possible
-    const moveScore = Math.max(0, 1000 - (State.moveCount - optimalMoves) * 20);
-    const timeScore = Math.max(0, 1000 - Math.floor(elapsed * 2));
-    const totalScore = moveScore + timeScore;
-    
-    const msg = `🎉 Congratulations! You Won! 🎉`;
-    const scoreMsg = `Time: ${timeString} | Moves: ${State.moveCount} | Score: ${totalScore}`;
-    
-    let speechText = `Congratulations! You won in ${timeString} with ${State.moveCount} moves. Your score is ${totalScore} points!`;
+    // Create enhanced result display
+    const res = el('div','result');
+    res.innerHTML = `
+      <div style="font-size: 2rem; margin-bottom: 1rem;">🎉 Congratulations! You Won! 🎉</div>
+      <div class="result-details">
+        <div style="font-size: 1.2rem; margin: 0.5rem 0;"><strong>Time:</strong> ${timeString}</div>
+        <div style="font-size: 1.2rem; margin: 0.5rem 0;"><strong>Moves:</strong> ${State.moveCount}</div>
+        <div style="font-size: 1.2rem; margin: 0.5rem 0;"><strong>Difficulty:</strong> ${State.currentDifficulty.toUpperCase()}</div>
+      </div>
+    `;
     
     if (isBest) {
-      speechText += " This was your best game!";
+      const bestBadge = el('div', 'best-score-badge', '⭐ NEW PERSONAL BEST! ⭐');
+      res.appendChild(bestBadge);
     }
-    speechText += " Returning to main menu.";
     
-    speak(speechText);
+    const autoReturn = el('div', 'auto-return-notice', 'Returning to menu in 5 seconds...');
+    res.appendChild(autoReturn);
     
-    const res=el('div','result'); 
-    res.innerHTML = `${msg}<div class="result-score">${scoreMsg}</div>`;
-    if (isBest) {
-      res.innerHTML += `<div style="color: var(--yellow); font-size: 1.2rem; margin-top: 0.5rem;">⭐ NEW BEST SCORE! ⭐</div>`;
-    }
-    res.innerHTML += `<div style="color: var(--muted); margin-top: 1rem;">Returning to menu in 5 seconds...</div>`;
-    res.style.marginBottom='1rem';
     center.appendChild(res);
     screen.appendChild(center);
+    
+    // Enhanced TTS announcement
+    let speechText = `Congratulations! You won the ${State.currentDifficulty} difficulty game! Your time was ${timeString} with ${State.moveCount} moves.`;
+    if (isBest) {
+      speechText += " This is your new personal best score!";
+    }
+    speechText += " Returning to main menu in 5 seconds.";
+    
+    speak(speechText);
     
     // Auto return to menu after 5 seconds
     setTimeout(() => {
@@ -1326,7 +1432,7 @@
     }, 5000);
   }
 
-  // New function for Two Player Casual win
+  // Enhanced Two Player Casual win function
   function showCasualWinMessage(winner) {
     const screen = $('#screen'); 
     screen.innerHTML = '';
@@ -1338,18 +1444,21 @@
       // It's a tie
       resultDiv.innerHTML = `
         <div class="winner">🤝 It's a Tie! 🤝</div>
-        <div class="final-score">Both players found ${State.pairsFound[1]} pairs!</div>
-        <div style="margin-top: 1rem; color: var(--muted);">Returning to menu in 5 seconds...</div>
+        <div class="final-score">Both players found ${State.pairsFound[1]} pairs</div>
+        <div class="auto-return-notice">Returning to menu in 5 seconds...</div>
       `;
-      speak(`It's a tie! Both players found ${State.pairsFound[1]} pairs. Returning to main menu.`);
+      speak(`It's a tie in casual mode! Both players found ${State.pairsFound[1]} pairs each. Great game! Returning to main menu in 5 seconds.`);
     } else {
       // There's a winner
       resultDiv.innerHTML = `
         <div class="winner">🏆 Player ${winner} Wins! 🏆</div>
-        <div class="final-score">Player 1: ${State.pairsFound[1]} pairs | Player 2: ${State.pairsFound[2]} pairs</div>
-        <div style="margin-top: 1rem; color: var(--muted);">Returning to menu in 5 seconds...</div>
+        <div class="final-score">
+          <div>Player 1: ${State.pairsFound[1]} pairs</div>
+          <div>Player 2: ${State.pairsFound[2]} pairs</div>
+        </div>
+        <div class="auto-return-notice">Returning to menu in 5 seconds...</div>
       `;
-      speak(`Player ${winner} wins! Player 1 found ${State.pairsFound[1]} pairs, Player 2 found ${State.pairsFound[2]} pairs. Returning to main menu.`);
+      speak(`Player ${winner} wins the casual game! Player 1 found ${State.pairsFound[1]} pairs and Player 2 found ${State.pairsFound[2]} pairs. Congratulations! Returning to main menu in 5 seconds.`);
     }
     
     center.appendChild(resultDiv);
@@ -1361,26 +1470,7 @@
     }, 5000);
   }
 
-  // Competitive
-  function handleRoundEnd(winner){
-    const pts = State.difficultyPoints[State.currentDifficulty];
-    State.points[winner] += pts;
-    
-    if(State.points[winner] >= 5){ 
-      // Show final competitive result
-      showCompetitiveWin(winner);
-      return;
-    }
-
-    speak(`Player ${winner} gets ${pts} ${pts>1?'points':'point'} for a ${State.currentDifficulty} win. Score is ${State.points[1]} to ${State.points[2]}.`);
-
-    // cycle difficulty
-    State.currentDifficulty = State.currentDifficulty==='easy' ? 'medium' : State.currentDifficulty==='medium' ? 'hard' : 'easy';
-    State.currentPlayer = winner; // winner starts next
-    speak(`Next game on ${State.currentDifficulty}. Player ${winner} starts.`);
-    startGame(State.currentDifficulty);
-  }
-
+  // Enhanced competitive win function
   function showCompetitiveWin(winner) {
     const screen = $('#screen'); 
     screen.innerHTML = '';
@@ -1388,15 +1478,19 @@
     
     const resultDiv = el('div', 'competitive-result');
     resultDiv.innerHTML = `
-      <div class="winner">🏆 Player ${winner} Wins! 🏆</div>
-      <div class="final-score">Final Score: ${State.points[1]} - ${State.points[2]}</div>
-      <div style="margin-top: 1rem; color: var(--muted);">Returning to menu in 6 seconds...</div>
+      <div class="winner">🏆 Player ${winner} Wins the Match! 🏆</div>
+      <div class="final-score">
+        <div style="margin: 0.5rem 0;">Final Score:</div>
+        <div>Player 1: ${State.points[1]} points</div>
+        <div>Player 2: ${State.points[2]} points</div>
+      </div>
+      <div class="auto-return-notice">Returning to menu in 6 seconds...</div>
     `;
     
     center.appendChild(resultDiv);
     screen.appendChild(center);
     
-    speak(`Player ${winner} wins the match! Final score: Player 1 with ${State.points[1]} points, Player 2 with ${State.points[2]} points. Returning to main menu.`);
+    speak(`Player ${winner} wins the competitive match! The final score is Player 1 with ${State.points[1]} points and Player 2 with ${State.points[2]} points. Congratulations to Player ${winner}! Returning to main menu in 6 seconds.`);
     
     // Wait 6 seconds then return to menu
     setTimeout(() => {
