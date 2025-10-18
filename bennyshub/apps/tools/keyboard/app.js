@@ -149,6 +149,7 @@
   let returnPressTime = null;
   let longPressTriggered = false;
   let backwardScanInterval = null;
+  let backwardScanStarted = false; // Track if backward scanning actually started
 
   // Text state
   let buffer = "";
@@ -265,6 +266,7 @@
     if (!spacebarPressed) {
       spacebarPressed = true;
       spacebarPressTime = Date.now();
+      backwardScanStarted = false; // Reset the flag
       console.log("Spacebar pressed");
       
       const speed = scanSpeeds[currentScanSpeed];
@@ -272,6 +274,7 @@
       setTimeout(() => {
         if (spacebarPressed && (Date.now() - spacebarPressTime) >= speed.longPress) {
           console.log("Long press detected - starting backward scanning");
+          backwardScanStarted = true; // Mark that backward scanning started
           backwardScanInterval = setInterval(() => {
             if (spacebarPressed) {
               if (inSettingsMode) {
@@ -297,33 +300,22 @@
         backwardScanInterval = null;
       }
       
-      const speed = scanSpeeds[currentScanSpeed];
-      
-      if (pressDuration >= 250 && pressDuration <= speed.longPress) {
+      // Only trigger forward scan if:
+      // 1. Press duration is at least 100ms
+      // 2. Backward scanning was NOT started (short press)
+      if (pressDuration >= 100 && !backwardScanStarted) {
         console.log("Short press - scanning forward");
         if (inSettingsMode) {
           scanSettingsForward();
         } else {
           scanForward();
         }
+      } else if (backwardScanStarted) {
+        console.log("Long press released - stopping backward scan without advancing");
       }
       
       spacebarPressTime = null;
-    }
-  }
-
-  function startSelecting() {
-    if (!returnPressed) {
-      returnPressed = true;
-      returnPressTime = Date.now();
-      longPressTriggered = false;
-      console.log("Return pressed");
-      
-      setTimeout(() => {
-        if (returnPressed && (Date.now() - returnPressTime) >= 3000) {
-          handleLongPress();
-        }
-      }, 3000);
+      backwardScanStarted = false; // Reset the flag
     }
   }
 
