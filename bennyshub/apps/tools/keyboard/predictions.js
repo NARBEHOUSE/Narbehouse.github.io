@@ -169,25 +169,16 @@ class HybridPredictionSystem {
     
     let context = '';
     let currentWord = '';
-    let lastCompletedWord = '';
     
     if (hasTrailingSpace) {
       context = cleaned;
       currentWord = '';
-      // The last completed word is the last word in the buffer when there's a trailing space
-      if (words.length > 0) {
-        lastCompletedWord = words[words.length - 1];
-      }
     } else {
       currentWord = words[words.length - 1];
       context = words.slice(0, -1).join(' ');
-      // The last completed word is the second-to-last word when actively typing
-      if (words.length > 1) {
-        lastCompletedWord = words[words.length - 2];
-      }
     }
     
-    console.log(`DEBUG: Context: '${context}', Current word: '${currentWord}', Last completed: '${lastCompletedWord}'`);
+    console.log(`DEBUG: Context: '${context}', Current word: '${currentWord}'`);
     
     // TIER 1: N-gram predictions from merged data
     const predictionsNgram = {};
@@ -195,47 +186,21 @@ class HybridPredictionSystem {
     if (context && (hasTrailingSpace || context !== currentWord)) {
       const ctxWords = context.split(' ');
       
-      // Trigrams - highest priority (FIXED: Better context matching)
+      // Trigrams - highest priority
       if (ctxWords.length >= 2) {
         const triCtx = ctxWords.slice(-2).join(' ');
-        console.log(`DEBUG: Checking trigrams with context: '${triCtx}'`);
         
         for (const [key, data] of Object.entries(this.mergedData.trigrams || {})) {
-          // FIXED: Use exact match for trigram context
           const trigramParts = key.split(' ');
           if (trigramParts.length === 3) {
             const trigramContext = trigramParts.slice(0, 2).join(' ');
             const nextWord = trigramParts[2];
             
-            // Check if the trigram context exactly matches our current context
             if (trigramContext === triCtx) {
-              // Exclude the last completed word unless we're retyping it
-              if ((!currentWord || nextWord.startsWith(currentWord)) && 
-                  nextWord.length >= 2 &&
-                  (currentWord || nextWord !== lastCompletedWord)) {
-                // MASSIVELY increase trigram priority when context matches exactly
-                const score = this.calculateScore(data) * 10000000; // Increased from 1000000
+              if ((!currentWord || nextWord.startsWith(currentWord)) && nextWord.length >= 2) {
+                const score = this.calculateScore(data) * 10000000;
                 predictionsNgram[nextWord] = (predictionsNgram[nextWord] || 0) + score;
-                console.log(`DEBUG: Found EXACT trigram match: ${key} -> ${nextWord} (score: ${score})`);
               }
-            }
-          }
-        }
-      }
-      
-      // Also check if we have exactly 2 words and look for trigrams starting with those words
-      if (ctxWords.length === 2 && hasTrailingSpace) {
-        const exactContext = ctxWords.join(' ');
-        console.log(`DEBUG: Checking trigrams starting with: '${exactContext}'`);
-        
-        for (const [key, data] of Object.entries(this.mergedData.trigrams || {})) {
-          if (key.startsWith(exactContext + ' ')) {
-            const nextWord = key.split(' ').pop();
-            if (nextWord && nextWord.length >= 2 && nextWord !== lastCompletedWord) {
-              // Give even higher priority to exact 2-word context matches
-              const score = this.calculateScore(data) * 50000000; // Highest priority
-              predictionsNgram[nextWord] = (predictionsNgram[nextWord] || 0) + score;
-              console.log(`DEBUG: Found EXACT 2-word trigram match: ${key} -> ${nextWord} (score: ${score})`);
             }
           }
         }
@@ -244,18 +209,13 @@ class HybridPredictionSystem {
       // Bigrams - medium priority  
       if (ctxWords.length >= 1) {
         const biCtx = ctxWords[ctxWords.length - 1];
-        console.log(`DEBUG: Checking bigrams with context: '${biCtx}'`);
         
         for (const [key, data] of Object.entries(this.mergedData.bigrams || {})) {
           if (key.startsWith(biCtx + ' ')) {
             const nextWord = key.split(' ').pop();
-            // Exclude the last completed word unless we're retyping it
-            if ((!currentWord || nextWord.startsWith(currentWord)) && 
-                nextWord.length >= 2 &&
-                (currentWord || nextWord !== lastCompletedWord)) {
+            if ((!currentWord || nextWord.startsWith(currentWord)) && nextWord.length >= 2) {
               const score = this.calculateScore(data) * 500000;
               predictionsNgram[nextWord] = (predictionsNgram[nextWord] || 0) + score;
-              console.log(`DEBUG: Found bigram match: ${key} -> ${nextWord} (score: ${score})`);
             }
           }
         }
@@ -267,60 +227,49 @@ class HybridPredictionSystem {
     if (currentWord && currentWord.length >= 1) {
       console.log(`DEBUG: Checking word completions for: '${currentWord}'`);
       
-      // First, check USER data with absolute priority
-      for (const [word, data] of Object.entries(this.userData.frequent_words || {})) {
-        // Allow showing the word if we're actively typing it (it starts with currentWord)
-        // But exclude it if it exactly matches what we just typed
-        if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
-          // User words get MASSIVE priority
-          const score = 999999999;  // Maximum score for user words
-          predictionsFreq[word] = score;
-          console.log(`DEBUG: Found USER word completion: ${word} (score: ${score})`);
-        }
-      }
-      
-      // Then check merged data for other completions
+      // Check ALL words in merged data (which includes user data with high priority)
       for (const [word, data] of Object.entries(this.mergedData.frequent_words || {})) {
-        // Allow showing the word if we're actively typing it
+        // Check if word starts with the current partial word
         if (word.startsWith(currentWord) && word !== currentWord && word.length >= 2) {
-          // Only add if not already in predictions (from user data)
-          if (!predictionsFreq[word]) {
-            const score = this.calculateScore(data) * 100000;
-            predictionsFreq[word] = score;
-            console.log(`DEBUG: Found word completion: ${word} (score: ${score})`);
+          // Calculate score with user data getting massive boost
+          const score = this.calculateScore(data) * 100000;
+          predictionsFreq[word] = score;
+          
+          // Special logging for user words
+          if (data.user_count && data.user_count > 0) {
+            console.log(`DEBUG: Found USER word completion: ${word} (user_count: ${data.user_count}, score: ${score})`);
           }
         }
       }
+      
+      console.log(`DEBUG: Total freq predictions found: ${Object.keys(predictionsFreq).length}`);
     }
     
     // TIER 3: Most frequent words (when after a space with no partial word)
     const predictionsCommon = {};
     if (hasTrailingSpace && !currentWord) {
-      console.log(`DEBUG: Getting most common words after space`);
-      
       // Sort frequent words by score (frequency + recency)
       const sortedWords = Object.entries(this.mergedData.frequent_words || {})
-        .filter(([word, data]) => {
-          // Exclude the word we just typed (lastCompletedWord)
-          return word.length >= 2 && word !== lastCompletedWord;
-        })
+        .filter(([word, data]) => word.length >= 2)
         .map(([word, data]) => [word, this.calculateScore(data)])
         .sort((a, b) => b[1] - a[1])
         .slice(0, 20);
       
       for (const [word, score] of sortedWords) {
         predictionsCommon[word] = score * 10000;
-        console.log(`DEBUG: Common word: ${word} (score: ${predictionsCommon[word]})`);
       }
     }
     
+    // Combine all predictions
     let finalPredictions = [];
     
+    // First add n-gram predictions (highest priority)
     const sortedNgrams = Object.entries(predictionsNgram)
       .sort((a, b) => b[1] - a[1])
       .map(([word]) => word);
     finalPredictions.push(...sortedNgrams);
     
+    // Then add frequency-based completions
     if (finalPredictions.length < 6) {
       const sortedFreq = Object.entries(predictionsFreq)
         .sort((a, b) => b[1] - a[1])
@@ -334,6 +283,7 @@ class HybridPredictionSystem {
       }
     }
     
+    // Then add common words
     if (finalPredictions.length < 6) {
       const sortedCommon = Object.entries(predictionsCommon)
         .sort((a, b) => b[1] - a[1])
@@ -347,7 +297,7 @@ class HybridPredictionSystem {
       }
     }
     
-    // Add default words, excluding the last completed word unless we're retyping it
+    // Finally, add default words if still need more
     for (const word of DEFAULT_WORDS) {
       if (finalPredictions.length >= 6) break;
       if (!finalPredictions.includes(word)) {
@@ -357,14 +307,12 @@ class HybridPredictionSystem {
             finalPredictions.push(word);
           }
         } else {
-          // If we're at a space, exclude the word we just typed
-          if (word !== lastCompletedWord) {
-            finalPredictions.push(word);
-          }
+          finalPredictions.push(word);
         }
       }
     }
     
+    // Ensure we always return 6 predictions (empty strings if needed)
     while (finalPredictions.length < 6) {
       finalPredictions.push('');
     }
@@ -379,6 +327,10 @@ class HybridPredictionSystem {
       const timestamp = new Date().toISOString();
       
       // Update user data
+      if (!this.userData.frequent_words) {
+        this.userData.frequent_words = {};
+      }
+      
       if (!this.userData.frequent_words[upperWord]) {
         this.userData.frequent_words[upperWord] = { count: 0, last_used: timestamp };
       }
@@ -388,11 +340,18 @@ class HybridPredictionSystem {
       console.log(`Recorded word "${upperWord}" to userData - count: ${this.userData.frequent_words[upperWord].count}`);
       console.log('Current userData words:', Object.keys(this.userData.frequent_words));
       
-      // Save to localStorage
+      // Save to localStorage IMMEDIATELY
       this.saveUserData();
       
       // Re-merge data to reflect changes immediately
       this.mergeData();
+      
+      // Force verify the word is in merged data
+      if (this.mergedData.frequent_words[upperWord]) {
+        console.log(`Verified: ${upperWord} is now in mergedData with user_count: ${this.mergedData.frequent_words[upperWord].user_count}`);
+      } else {
+        console.error(`ERROR: ${upperWord} failed to merge into mergedData!`);
+      }
     } catch (error) {
       console.error('Error recording word:', error);
     }

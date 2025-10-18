@@ -35,6 +35,61 @@
     window.NarbeVoiceManager.speakProcessed(text);
   }
 
+  // Track TTS usage for learning and text clearing
+  let ttsHistory = [];
+  const MAX_TTS_HISTORY = 10;
+
+  function trackTTSAndLearn(text) {
+    if (!text || !text.trim()) return;
+    
+    const cleanText = text.trim();
+    const timestamp = Date.now();
+    
+    // Add to history
+    ttsHistory.push({ text: cleanText, timestamp });
+    
+    // Keep only recent history
+    if (ttsHistory.length > MAX_TTS_HISTORY) {
+      ttsHistory = ttsHistory.slice(-MAX_TTS_HISTORY);
+    }
+    
+    // Check for 3 occurrences of the same text
+    const occurrences = ttsHistory.filter(entry => entry.text === cleanText);
+    
+    if (occurrences.length >= 3) {
+      console.log(`Text "${cleanText}" spoken 3+ times, learning and clearing text`);
+      
+      // Learn from the text FIRST
+      learnFromText(cleanText);
+      
+      // Clear the text box completely - use setBuffer to ensure proper clearing
+      setBuffer(""); // This will trigger renderPredictions and reset everything properly
+      
+      // Clear this text from history to avoid repeated learning
+      ttsHistory = ttsHistory.filter(entry => entry.text !== cleanText);
+    }
+  }
+
+  function learnFromText(text) {
+    if (!window.predictionSystem) return;
+    
+    const words = text.toUpperCase().split(/\s+/).filter(w => w.length > 0);
+    
+    // Record each word
+    words.forEach(word => {
+      window.predictionSystem.recordLocalWord(word);
+    });
+    
+    // Record n-grams
+    for (let i = 0; i < words.length - 1; i++) {
+      const context = words.slice(0, i + 1).join(' ');
+      const nextWord = words[i + 1];
+      window.predictionSystem.recordNgram(context, nextWord);
+    }
+    
+    console.log(`Learned from text: "${text}" (${words.length} words)`);
+  }
+
   // Scan timing configuration
   const scanSpeeds = {
     slow: { forward: 1500, backward: 3000, longPress: 2000 },
@@ -403,14 +458,7 @@
         const text = buffer.replace(/\|/g, "").trim();
         if (text) {
           speak(text);
-          ttsUseCount++;
-          console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
-          
-          if (ttsUseCount >= 3) {
-            console.log("3x TTS usage detected - recording words");
-            saveTextToPredictive(text);
-            ttsUseCount = 0;
-          }
+          trackTTSAndLearn(text); // Use the unified tracking function
         }
       } else if (currentRowIndex === 1) {
         inRowSelectionMode = false;
@@ -447,12 +495,14 @@
           
           setBuffer(newBuffer);
           
-          // Record the selected word and context
-          window.predictionSystem.recordLocalWord(word);
-          const context = buffer.replace("|", "").trim();
-          if (context) {
-            window.predictionSystem.recordNgram(context, word);
-          }
+          // REMOVED: Don't record the word when selecting from predictions
+          // This was causing the issue - words were being recorded as "used"
+          // which might affect future predictions
+          // window.predictionSystem.recordLocalWord(word);
+          // const context = buffer.replace("|", "").trim();
+          // if (context) {
+          //   window.predictionSystem.recordNgram(context, word);
+          // }
         }
       } else {
         const key = rows[currentRowIndex - 2][currentButtonIndex];
@@ -502,11 +552,12 @@
         }
         setBuffer(newBuf);
         
-        window.predictionSystem.recordLocalWord(w);
-        const context = buffer.replace("|", "").trim();
-        if (context) {
-          window.predictionSystem.recordNgram(context, w);
-        }
+        // REMOVED: Don't record clicked predictions either
+        // window.predictionSystem.recordLocalWord(w);
+        // const context = buffer.replace("|", "").trim();
+        // if (context) {
+        //   window.predictionSystem.recordNgram(context, w);
+        // }
       });
       predictBar.appendChild(chip);
     });
@@ -1001,16 +1052,8 @@
   textBar.addEventListener("click", () => {
     const text = buffer.replace(/\|/g, "").trim();
     if (text) {
-      window.NarbeVoiceManager.speakProcessed(text);
-      
-      ttsUseCount++;
-      console.log(`TTS use count: ${ttsUseCount} for text: "${text}"`);
-      
-      if (ttsUseCount >= 3) {
-        console.log("3x TTS usage detected - recording words");
-        saveTextToPredictive(text);
-        ttsUseCount = 0;
-      }
+      speak(text);
+      trackTTSAndLearn(text); // Use the unified tracking function
     }
   });
 
