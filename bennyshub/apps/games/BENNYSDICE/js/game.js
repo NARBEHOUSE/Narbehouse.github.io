@@ -92,195 +92,46 @@ const MODES = ['Free Throw', 'Yarkle', 'Fahtzee'];
 let modeIndex = 0;
 
 // --- Sound Effects System ---
+// Uses SafeAudio (HTML5 Audio) instead of Web Audio API to avoid Electron crashes
 const SoundFX = {
-    audioContext: null,
-    sounds: {},
-    buffers: {},
+    initialized: false,
 
     init() {
-        try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            this.loadSound('roll', 'sounds/dice-roll.WAV');
-        } catch(e) {
-            console.log('Web Audio API not supported');
+        if (this.initialized) return;
+        
+        // Use SafeAudio if available (HTML5 Audio based - safe for Electron)
+        if (window.SafeAudio) {
+            // File-based sound
+            window.SafeAudio.preload('roll', 'sounds/dice-roll.WAV');
+            // Built-in synthesized sounds (no URL needed - SafeAudio generates them)
+            window.SafeAudio.preload('select');
+            window.SafeAudio.preload('hover');
+            window.SafeAudio.preload('score');
+            window.SafeAudio.preload('bust');
+            window.SafeAudio.preload('bank');
+            window.SafeAudio.preload('fahtzee');
+            window.SafeAudio.preload('win');
+            window.SafeAudio.preload('lose');
+            this.initialized = true;
+            console.log('[SoundFX] Using SafeAudio for sound effects');
+        } else {
+            console.warn('[SoundFX] SafeAudio not available');
         }
     },
 
-    async loadSound(name, url) {
-        if (!this.audioContext) return;
-        try {
-            const response = await fetch(url);
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-            this.buffers[name] = audioBuffer;
-        } catch (e) {
-            console.log(`Failed to load sound ${name}:`, e);
-        }
-    },
-
-    // Generate sounds programmatically
     play(type) {
-        if (!this.audioContext) return;
-
-        // Check if sound is disabled
+        // Check if sound is disabled in settings
         if (!gameSettings.sound) return;
-
-        // Resume context if suspended (iOS requirement)
-        if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+        
+        // Use SafeAudio (auto-loads built-in sounds if not preloaded)
+        if (window.SafeAudio) {
+            window.SafeAudio.play(type);
         }
-
-        const ctx = this.audioContext;
-        const now = ctx.currentTime;
-
-        // Prefer simple buffer playback for loaded sounds
-        if (this.buffers[type]) {
-            const source = ctx.createBufferSource();
-            source.buffer = this.buffers[type];
-            source.connect(ctx.destination);
-            source.start(now);
-            // Don't return, allow fall-through if we want layered sounds? 
-            // No, usually we want to replace.
-            return;
-        }
-
-        switch(type) {
-            /* case 'roll': REMOVED FALLBACK to rely only on loaded WAV
-                break; */
-
-            case 'select':
-                // Click sound
-                const osc1 = ctx.createOscillator();
-                const gain1 = ctx.createGain();
-                osc1.connect(gain1);
-                gain1.connect(ctx.destination);
-                osc1.frequency.value = 800;
-                osc1.type = 'sine';
-                gain1.gain.setValueAtTime(0.2, now);
-                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                osc1.start(now);
-                osc1.stop(now + 0.1);
-                break;
-
-            case 'score':
-                // Positive ding
-                [523, 659, 784].forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = freq;
-                    osc.type = 'sine';
-                    gain.gain.setValueAtTime(0.15, now + i * 0.1);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
-                    osc.start(now + i * 0.1);
-                    osc.stop(now + i * 0.1 + 0.3);
-                });
-                break;
-
-            case 'bust':
-                // Sad trombone / failure sound
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.frequency.setValueAtTime(400, now);
-                osc2.frequency.exponentialRampToValueAtTime(100, now + 0.5);
-                osc2.type = 'sawtooth';
-                gain2.gain.setValueAtTime(0.15, now);
-                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                osc2.start(now);
-                osc2.stop(now + 0.5);
-                break;
-
-            case 'fahtzee':
-                // Victory fanfare!
-                const notes = [523, 659, 784, 1047, 784, 1047];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = freq;
-                    osc.type = 'square';
-                    gain.gain.setValueAtTime(0.12, now + i * 0.12);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.15);
-                    osc.start(now + i * 0.12);
-                    osc.stop(now + i * 0.12 + 0.15);
-                });
-                break;
-
-            case 'bank':
-                // Cash register / coin sound
-                const osc3 = ctx.createOscillator();
-                const gain3 = ctx.createGain();
-                osc3.connect(gain3);
-                gain3.connect(ctx.destination);
-                osc3.frequency.value = 1200;
-                osc3.type = 'sine';
-                gain3.gain.setValueAtTime(0.2, now);
-                gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                osc3.start(now);
-                osc3.stop(now + 0.15);
-                // Second ding
-                const osc4 = ctx.createOscillator();
-                const gain4 = ctx.createGain();
-                osc4.connect(gain4);
-                gain4.connect(ctx.destination);
-                osc4.frequency.value = 1600;
-                osc4.type = 'sine';
-                gain4.gain.setValueAtTime(0.2, now + 0.1);
-                gain4.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                osc4.start(now + 0.1);
-                osc4.stop(now + 0.25);
-                break;
-
-            case 'hover':
-                // Soft blip for scanning
-                const osc5 = ctx.createOscillator();
-                const gain5 = ctx.createGain();
-                osc5.connect(gain5);
-                gain5.connect(ctx.destination);
-                osc5.frequency.value = 600;
-                osc5.type = 'sine';
-                gain5.gain.setValueAtTime(0.08, now);
-                gain5.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc5.start(now);
-                osc5.stop(now + 0.05);
-                break;
-
-            case 'win':
-                // Victory music
-                const winNotes = [523, 659, 784, 1047, 784, 659, 784, 1047, 1319];
-                winNotes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = freq;
-                    osc.type = 'triangle';
-                    gain.gain.setValueAtTime(0.12, now + i * 0.15);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
-                    osc.start(now + i * 0.15);
-                    osc.stop(now + i * 0.15 + 0.2);
-                });
-                break;
-
-            case 'lose':
-                // Losing sound
-                [400, 350, 300, 250].forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = freq;
-                    osc.type = 'sawtooth';
-                    gain.gain.setValueAtTime(0.1, now + i * 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.25);
-                    osc.start(now + i * 0.2);
-                    osc.stop(now + i * 0.2 + 0.25);
-                });
-                break;
+    },
+    
+    setEnabled(enabled) {
+        if (window.SafeAudio) {
+            window.SafeAudio.setEnabled(enabled);
         }
     }
 };
@@ -1952,7 +1803,9 @@ const yarkleState = {
     hasRolled: false,
     targetScore: 10000,
     currentPlayer: 0, // 0-indexed current player
-    scores: [0, 0, 0, 0] // Multiplayer scores
+    scores: [0, 0, 0, 0], // Multiplayer scores
+    isBanking: false, // Lock to prevent multiple bank operations
+    turnId: 0 // Unique turn ID to prevent cross-turn banking
 };
 window.yarkleState = yarkleState; // Expose for getFocusables
 
@@ -2150,6 +2003,10 @@ function updateYarklePreview(shouldSpeak = true) {
 }
 
 function yarkleRoll() {
+    // Prevent rolling during banking or when it's not player's turn
+    if (yarkleState.isBanking) return;
+    if (appState.players === 1 && !yarkleState.isPlayerTurn) return;
+    
     const msg = document.getElementById('yarkle-message');
 
     // Lock held dice and add their score
@@ -2344,12 +2201,28 @@ function highlightScoringYarkleDice() {
 }
 
 function yarkleBank() {
+    // Comprehensive guards to prevent multi-banking and cross-turn exploits
     if (!yarkleState.hasRolled) return;
+    if (yarkleState.isBanking) return; // Already banking - prevent spam
+    if (yarkleState.turnScore === 0 && yarkleState.dice.every(d => d === 0)) return; // No points to bank
+    
+    // In single player mode, verify it's actually player's turn
+    if (appState.players === 1 && !yarkleState.isPlayerTurn) return;
+    
+    // Lock banking immediately to prevent double-banking
+    yarkleState.isBanking = true;
+    const bankingTurnId = yarkleState.turnId; // Capture current turn ID
 
     // Add any currently held dice
     const heldValues = yarkleState.dice.filter((v, i) => yarkleState.held[i] && !yarkleState.locked[i]);
     const result = calculateYarkleScore(heldValues);
     yarkleState.turnScore += result.score;
+    
+    // Double-check turn didn't change during calculation
+    if (bankingTurnId !== yarkleState.turnId) {
+        yarkleState.isBanking = false;
+        return;
+    }
 
     // Update score for current player
     if (appState.players === 1) {
@@ -2392,6 +2265,8 @@ function yarkleEndTurn(wasYarkle) {
     yarkleState.turnScore = 0;
     yarkleState.rollCount = 0;
     yarkleState.hasRolled = false;
+    yarkleState.isBanking = false; // Reset banking lock
+    yarkleState.turnId++; // Increment turn ID to invalidate any pending bank operations
 
     if (appState.players === 1) {
         // Single Player (Player vs CPU) Logic
@@ -2548,6 +2423,8 @@ function initYarkle() {
 
     yarkleState.rollCount = 0;
     yarkleState.hasRolled = false;
+    yarkleState.isBanking = false; // Reset banking lock
+    yarkleState.turnId = 0; // Reset turn ID
 
     // --- RANDOM START (NO INITIATIVE ROLL) ---
     const isSinglePlayer = (appState.players === 1);
@@ -2632,7 +2509,9 @@ const fahtzeeState = {
         smallStraight: null, largeStraight: null, fahtzee: null, chance: null
     },
     fahtzeeBonus: 0,
-    aiFahtzeeBonus: 0
+    aiFahtzeeBonus: 0,
+    isScoring: false, // Lock to prevent multiple score operations
+    hasRolledThisTurn: false // Track if player has rolled this turn
 };
 window.fahtzeeState = fahtzeeState; // Expose for getFocusables
 
@@ -2798,6 +2677,7 @@ function fahtzeeRoll() {
     // Roll 3D dice
     throw3DDice(5, heldData, (results) => {
         appState.isRolling = false;
+        fahtzeeState.hasRolledThisTurn = true; // Mark that player has rolled
         for (let i = 0; i < 5; i++) {
             // Update only if NOT in heldData (meaning it rolled)
             // heldData contains indices that were KEPT.
@@ -3103,7 +2983,16 @@ function showFahtzeeScorecard() {
 }
 
 function selectFahtzeeCategory(key) {
-    if (fahtzeeState.scorecard[key] !== null) return;
+    // Comprehensive guards to prevent multi-scoring
+    if (fahtzeeState.scorecard[key] !== null) return; // Already scored
+    if (fahtzeeState.isScoring) return; // Already scoring - prevent spam
+    if (!fahtzeeState.hasRolledThisTurn) return; // Must roll first
+    
+    // In single player mode, verify it's actually player's turn
+    if (appState.players === 1 && !fahtzeeState.isPlayerTurn) return;
+    
+    // Lock scoring immediately to prevent double-scoring
+    fahtzeeState.isScoring = true;
 
     const cat = FAHTZEE_CATEGORIES[key];
     const score = cat.calc(fahtzeeState.dice);
@@ -3175,6 +3064,8 @@ function selectFahtzeeCategory(key) {
             fahtzeeState.dice = [0, 0, 0, 0, 0];
             fahtzeeState.held = [false, false, false, false, false];
             fahtzeeState.rollsLeft = 3;
+            fahtzeeState.isScoring = false; // Reset scoring lock
+            fahtzeeState.hasRolledThisTurn = false; // Reset roll flag
 
             // Check if Game Over? (Everyone full?)
             // Just check current player's card for nulls
@@ -3247,6 +3138,8 @@ function selectFahtzeeCategory(key) {
 
         // After player scores, CPU takes turn
         fahtzeeState.isPlayerTurn = false;
+        fahtzeeState.isScoring = false; // Reset scoring lock
+        fahtzeeState.hasRolledThisTurn = false; // Reset roll flag
         resetTableColor();
         renderFahtzeeDice();
         document.getElementById('fahtzee-message').textContent = "CPU's turn...";
@@ -3447,6 +3340,8 @@ function aiSelectCategory() {
             fahtzeeState.held = [false, false, false, false, false];
             fahtzeeState.rollsLeft = 3;
             fahtzeeState.isPlayerTurn = true;
+            fahtzeeState.isScoring = false; // Reset scoring lock
+            fahtzeeState.hasRolledThisTurn = false; // Reset roll flag
             renderFahtzeeDice();
             msg.textContent = `Round ${fahtzeeState.round} - Your turn! Click ROLL`;
             speak(`Round ${fahtzeeState.round}. Your turn! You have ${fahtzeeState.totalScore} points.`);
@@ -3461,6 +3356,8 @@ function initFahtzee() {
     fahtzeeState.rollsLeft = 3;
     fahtzeeState.round = 1;
     fahtzeeState.currentPlayer = 0; // Initialize before initiative roll
+    fahtzeeState.isScoring = false; // Reset scoring lock
+    fahtzeeState.hasRolledThisTurn = false; // Reset roll flag
 
     // Multiplayer Setup
     // We need separate scorecards and bonus flags for each player
@@ -3580,20 +3477,30 @@ function savePlayerScorecard(playerIdx) {
 // GLOBAL EXPORTS FOR HTML HANDLERS
 // ============================================
 window.playerYarkleRoll = () => {
-    if (typeof yarkleState !== 'undefined' && !yarkleState.isPlayerTurn) return; 
+    if (typeof yarkleState === 'undefined') return;
+    if (!yarkleState.isPlayerTurn) return; // Not player's turn
+    if (yarkleState.isBanking) return; // Prevent roll during banking
     yarkleRoll();
 };
 window.playerYarkleBank = () => {
-    if (typeof yarkleState !== 'undefined' && !yarkleState.isPlayerTurn) return;
+    if (typeof yarkleState === 'undefined') return;
+    if (!yarkleState.isPlayerTurn) return; // Not player's turn
+    if (yarkleState.isBanking) return; // Already banking - prevent spam
+    if (!yarkleState.hasRolled) return; // Must roll first
     yarkleBank();
 };
 window.playerFahtzeeRoll = () => {
-    if (typeof fahtzeeState !== 'undefined' && !fahtzeeState.isPlayerTurn) return;
+    if (typeof fahtzeeState === 'undefined') return;
+    if (!fahtzeeState.isPlayerTurn) return; // Not player's turn
+    if (fahtzeeState.isScoring) return; // Prevent roll during scoring
     fahtzeeRoll();
 };
 window.playerFahtzeeScore = () => {
      // AUTO-SCORE LOGIC REPLACEMENT
-     if (typeof fahtzeeState !== 'undefined' && !fahtzeeState.isPlayerTurn) return;
+     if (typeof fahtzeeState === 'undefined') return;
+     if (!fahtzeeState.isPlayerTurn) return; // Not player's turn
+     if (fahtzeeState.isScoring) return; // Already scoring - prevent spam
+     if (!fahtzeeState.hasRolledThisTurn) return; // Must roll first
 
      // Reuse AI Logic to find best score
      const priorityOrder = [
