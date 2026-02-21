@@ -222,7 +222,7 @@ const menus = {
     ],
     settings: [
         { text: () => `Change Theme: ${themes[settings.themeIndex].name}`, action: () => cycleTheme(1), onPrev: () => cycleTheme(-1) },
-        { text: () => `TTS: ${settings.tts ? 'On' : 'Off'}`, action: () => toggleTTS(), onPrev: () => toggleTTS() },
+        { text: () => `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (settings.tts ? 'On' : 'Off')}`, action: () => toggleTTS(), onPrev: () => toggleTTS() },
         { text: () => `Location TTS: ${settings.locationTTS ? 'On' : 'Off'}`, action: () => toggleLocationTTS(), onPrev: () => toggleLocationTTS() },
         { 
             text: () => {
@@ -263,7 +263,7 @@ const menus = {
     ],
     pauseSettings: [
         { text: () => `Change Theme: ${themes[settings.themeIndex].name}`, action: () => cycleTheme(1, true), onPrev: () => cycleTheme(-1, true) },
-        { text: () => `TTS: ${settings.tts ? 'On' : 'Off'}`, action: () => toggleTTS(true), onPrev: () => toggleTTS(true) },
+        { text: () => `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (settings.tts ? 'On' : 'Off')}`, action: () => toggleTTS(true), onPrev: () => toggleTTS(true) },
         { text: () => `Location TTS: ${settings.locationTTS ? 'On' : 'Off'}`, action: () => toggleLocationTTS(true), onPrev: () => toggleLocationTTS(true) },
         { 
             text: () => {
@@ -449,7 +449,12 @@ function cycleTheme(dir, isPause = false) {
 }
 
 function toggleTTS(isPause = false) {
-    settings.tts = !settings.tts;
+    if (window.NarbeVoiceManager) {
+        window.NarbeVoiceManager.toggleTTS();
+        settings.tts = window.NarbeVoiceManager.getSettings().ttsEnabled;
+    } else {
+        settings.tts = !settings.tts;
+    }
     saveSettings();
     isPause ? refreshPauseMenu() : refreshMenu();
 }
@@ -1014,9 +1019,12 @@ function performBackwardsToggle() {
 // --- TTS ---
 
 function speak(text) {
-    if (!settings.tts) return;
     if (window.NarbeVoiceManager) {
         window.NarbeVoiceManager.speak(text);
+    } else if (settings.tts && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(u);
     }
 }
 

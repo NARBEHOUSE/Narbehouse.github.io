@@ -322,7 +322,13 @@
             
             updateSettings() {
                 this.enabled = GameSettings.sfx;
-                this.ttsEnabled = GameSettings.tts;
+                // Sync TTS with NarbeVoiceManager
+                if (window.NarbeVoiceManager) {
+                    this.ttsEnabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+                    GameSettings.tts = this.ttsEnabled;
+                } else {
+                    this.ttsEnabled = GameSettings.tts;
+                }
                 if (GameSettings.music) {
                     this.playMusic();
                 } else {
@@ -341,9 +347,12 @@
             }
 
             speak(text) {
-                if (!this.ttsEnabled) return;
                 if (window.NarbeVoiceManager) {
                     window.NarbeVoiceManager.speak(text);
+                } else if (this.ttsEnabled && 'speechSynthesis' in window) {
+                    speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(text);
+                    speechSynthesis.speak(u);
                 }
             }
 
@@ -427,7 +436,12 @@
             }
 
             toggleTTS() {
-                GameSettings.tts = !GameSettings.tts;
+                if (window.NarbeVoiceManager) {
+                    window.NarbeVoiceManager.toggleTTS();
+                    GameSettings.tts = window.NarbeVoiceManager.getSettings().ttsEnabled;
+                } else {
+                    GameSettings.tts = !GameSettings.tts;
+                }
                 this.ttsEnabled = GameSettings.tts;
                 if(this.ttsEnabled) this.speak("TTS Enabled");
                 return this.ttsEnabled;
@@ -1651,7 +1665,7 @@
                 }
                 
                 const settings = [
-                    { label: `TTS: ${GameSettings.tts ? 'ON' : 'OFF'}`, action: 'toggle_tts' },
+                    { label: `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (GameSettings.tts ? 'ON' : 'OFF')}`, action: 'toggle_tts' },
                     { label: `SFX: ${GameSettings.sfx ? 'ON' : 'OFF'}`, action: 'toggle_sfx' },
                     { label: `Music: ${GameSettings.music ? 'ON' : 'OFF'}`, action: 'toggle_music' },
                     { label: `Shot Helper: ${GameSettings.aimAssist ? 'ON' : 'OFF'}`, action: 'toggle_aimassist' },

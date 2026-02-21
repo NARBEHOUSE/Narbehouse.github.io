@@ -519,9 +519,12 @@ function performToggleBackwards() {
 
 // --- TTS ---
 function speak(text) {
-    if (!settings.tts) return;
     if (window.NarbeVoiceManager) {
         window.NarbeVoiceManager.speak(text);
+    } else if (settings.tts && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(u);
     }
 }
 
@@ -561,7 +564,7 @@ const menus = {
     ],
     settings: [
         { text: () => `Change Theme: ${themes[settings.themeIndex].name}`, action: () => cycleTheme(1), onPrev: () => cycleTheme(-1) },
-        { text: () => `TTS: ${settings.tts ? 'On' : 'Off'}`, action: () => toggleTTS(), onPrev: () => toggleTTS() },
+        { text: () => `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (settings.tts ? 'On' : 'Off')}`, action: () => toggleTTS(), onPrev: () => toggleTTS() },
         { text: () => `Location TTS: ${settings.ttsLocation ? 'On' : 'Off'}`, action: () => toggleTTSLocation(), onPrev: () => toggleTTSLocation() },
         { text: () => `Sound: ${settings.sound ? 'On' : 'Off'}`, action: () => toggleSound(), onPrev: () => toggleSound() },
         { text: () => `Highlight Style: ${settings.highlightStyle === 'outline' ? 'Outline' : 'Full Cell'}`, action: () => toggleHighlightStyle(), onPrev: () => toggleHighlightStyle() },
@@ -637,7 +640,7 @@ const menus = {
     ],
     pauseSettings: [
         { text: () => `Change Theme: ${themes[settings.themeIndex].name}`, action: () => cycleTheme(1, true), onPrev: () => cycleTheme(-1, true) },
-        { text: () => `TTS: ${settings.tts ? 'On' : 'Off'}`, action: () => toggleTTS(true), onPrev: () => toggleTTS(true) },
+        { text: () => `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (settings.tts ? 'On' : 'Off')}`, action: () => toggleTTS(true), onPrev: () => toggleTTS(true) },
         { text: () => `Location TTS: ${settings.ttsLocation ? 'On' : 'Off'}`, action: () => toggleTTSLocation(true), onPrev: () => toggleTTSLocation(true) },
         { text: () => `Sound: ${settings.sound ? 'On' : 'Off'}`, action: () => toggleSound(true), onPrev: () => toggleSound(true) },
         { text: () => `Highlight Style: ${settings.highlightStyle === 'outline' ? 'Outline' : 'Full Cell'}`, action: () => toggleHighlightStyle(true), onPrev: () => toggleHighlightStyle(true) },
@@ -1229,7 +1232,12 @@ function applyTheme() {
 }
 
 function toggleTTS(isPause = false) {
-    settings.tts = !settings.tts; // Adding prev/next creates same effect for boolean
+    if (window.NarbeVoiceManager) {
+        window.NarbeVoiceManager.toggleTTS();
+        settings.tts = window.NarbeVoiceManager.getSettings().ttsEnabled;
+    } else {
+        settings.tts = !settings.tts;
+    }
     saveSettings();
     if (isPause) renderPauseMenu(); else renderMenu();
 }

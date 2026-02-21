@@ -835,7 +835,7 @@ class WordJumbleGame {
             <div class="menu-title" style="margin-bottom: 1vh; font-size: 6vmin;">Settings</div>
             <div id="menu-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2vmin; width: 80%; max-width: 1000px; margin: 0 auto; box-sizing: border-box;">
                 <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleTheme()">Theme: ${themes[s.themeIndex].name}</button>
-                <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleTTS()">TTS: ${s.tts ? 'On' : 'Off'}</button>
+                <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleTTS()">TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (s.tts ? 'On' : 'Off')}</button>
                 <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleAutoScan()">Auto Scan: ${currentAutoScan ? 'On' : 'Off'}</button>
                 <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleScanSpeed()" data-spoken="Scan Speed: ${speedSpoken}">Speed: ${speedLabel}</button>
                 <button class="menu-button" style="width: 100%; margin: 0; font-size: 3vmin; white-space: normal; height: 100%; min-height: 8vh;" onclick="game.toggleHighlightColor()" data-spoken="Highlight Color: ${hColor.name}">
@@ -861,7 +861,12 @@ class WordJumbleGame {
         this.speak("Theme: " + themes[this.settings.themeIndex].name);
     }
     toggleTTS() {
-        this.settings.tts = !this.settings.tts;
+        if (window.NarbeVoiceManager) {
+            window.NarbeVoiceManager.toggleTTS();
+            this.settings.tts = window.NarbeVoiceManager.getSettings().ttsEnabled;
+        } else {
+            this.settings.tts = !this.settings.tts;
+        }
         this.saveSettings();
         this.renderSettingsMenu();
         this.speak("TTS: " + (this.settings.tts ? 'On' : 'Off'));

@@ -461,7 +461,12 @@ class MenuSystem {
             this.showSettingsMenu(true);
             this.game.audioSystem.speak(this.game.audioSystem.settings.soundEnabled ? "Sound effects enabled" : "Sound effects disabled");
         } else if (option.includes('Text-to-Speech:')) {
-            this.game.audioSystem.settings.ttsEnabled = !this.game.audioSystem.settings.ttsEnabled;
+            if (window.NarbeVoiceManager) {
+                window.NarbeVoiceManager.toggleTTS();
+                this.game.audioSystem.settings.ttsEnabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+            } else {
+                this.game.audioSystem.settings.ttsEnabled = !this.game.audioSystem.settings.ttsEnabled;
+            }
             this.game.audioSystem.save();
             this.showSettingsMenu(true);
             if (this.game.audioSystem.settings.ttsEnabled) {
@@ -642,7 +647,7 @@ class MenuSystem {
             `Scan Speed: ${scanSettings.scanInterval / 1000}s`,
             `Music: ${this.game.audioSystem.settings.musicEnabled ? 'ON' : 'OFF'}`,
             `Sound Effects: ${this.game.audioSystem.settings.soundEnabled ? 'ON' : 'OFF'}`,
-            `Text-to-Speech: ${this.game.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF'}`,
+            `Text-to-Speech: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (this.game.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF')}`,
             `Voice: ${voiceDisplayName}`,
             'Next Track',
             'Reset Season',

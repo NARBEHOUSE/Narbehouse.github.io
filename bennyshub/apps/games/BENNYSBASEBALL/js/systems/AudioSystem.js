@@ -90,18 +90,14 @@ class AudioSystem {
     }
 
     speak(text) {
-        if (!this.settings.ttsEnabled) return;
-        
-        // Use NarbeVoiceManager for consistent TTS
-        if (this.voiceManager) {
-            // Convert position abbreviations to full names
-            const processedText = this.convertPositionNames(text);
-            this.voiceManager.speakProcessed(processedText);
-        } else {
-            const processedText = this.convertPositionNames(text);
-            if (window.NarbeVoiceManager) {
-                window.NarbeVoiceManager.speak(processedText);
-            }
+        // Use NarbeVoiceManager for consistent TTS (it handles ttsEnabled internally)
+        const processedText = this.convertPositionNames(text);
+        if (window.NarbeVoiceManager) {
+            window.NarbeVoiceManager.speak(processedText);
+        } else if (this.settings.ttsEnabled && 'speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(processedText);
+            speechSynthesis.speak(u);
         }
     }
 

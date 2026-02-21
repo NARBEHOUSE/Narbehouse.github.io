@@ -265,7 +265,7 @@ const menus = {
     ],
     settings: [
         { 
-            text: () => `TTS: ${settings.tts ? 'On' : 'Off'}`, 
+            text: () => `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'On' : 'Off') : (settings.tts ? 'On' : 'Off')}`, 
             action: () => toggleSetting('tts'), 
             onPrev: () => toggleSetting('tts') 
         },
@@ -481,7 +481,12 @@ function resumeGame() {
 // --- Settings Logic ---
 
 function toggleSetting(key) {
-    settings[key] = !settings[key];
+    if (key === 'tts' && window.NarbeVoiceManager) {
+        window.NarbeVoiceManager.toggleTTS();
+        settings.tts = window.NarbeVoiceManager.getSettings().ttsEnabled;
+    } else {
+        settings[key] = !settings[key];
+    }
     saveSettings();
     refreshCurrentMenu();
 }
@@ -1480,9 +1485,12 @@ function updateGameHighlights() {
 // --- TTS & Autoscan ---
 
 function speak(text) {
-    if (!settings.tts) return;
     if (window.NarbeVoiceManager) {
         window.NarbeVoiceManager.speak(text);
+    } else if (settings.tts && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(u);
     }
 }
 

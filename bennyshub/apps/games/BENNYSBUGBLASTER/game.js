@@ -98,9 +98,12 @@ function startMusic() {
 
 // --- TTS ---
 function speak(text) {
-    if (!tts_enabled) return;
     if (window.NarbeVoiceManager) {
         window.NarbeVoiceManager.speak(text);
+    } else if (tts_enabled && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(u);
     }
 }
 
@@ -3035,7 +3038,7 @@ function draw_settings_menu() {
     }
 
     let options = [
-        "TTS: " + (tts_enabled ? "ON" : "OFF"),
+        "TTS: " + (window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? "ON" : "OFF") : (tts_enabled ? "ON" : "OFF")),
         "Autoscan: " + autoscanDisplay,
         "Scan Speed: " + speedDisplay,
         "Auto Stomp: " + (auto_stomp_enabled ? "ON" : "OFF"),
@@ -3718,7 +3721,12 @@ function selectAction() {
          }
     } else if (gameState === 'SETTINGS') {
         if (menu_selected_index === 0) { // TTS
-            tts_enabled = !tts_enabled;
+            if (window.NarbeVoiceManager) {
+                window.NarbeVoiceManager.toggleTTS();
+                tts_enabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+            } else {
+                tts_enabled = !tts_enabled;
+            }
             speak("TTS " + (tts_enabled ? "On" : "Off"));
         } else if (menu_selected_index === 1) { // Autoscan
             if (typeof window.NarbeScanManager !== 'undefined') {
@@ -3964,7 +3972,12 @@ function handleInput(x, y) {
              // Fixed gap 60, font max 30.
              if (y >= ty - 40 && y <= ty + 10) {
                  if (i === 0) { // TTS
-                    tts_enabled = !tts_enabled;
+                    if (window.NarbeVoiceManager) {
+                        window.NarbeVoiceManager.toggleTTS();
+                        tts_enabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+                    } else {
+                        tts_enabled = !tts_enabled;
+                    }
                     speak("TTS " + (tts_enabled ? "On" : "Off"));
                 } else if (i === 1) { // Autoscan
                     if (typeof window.NarbeScanManager !== 'undefined') {

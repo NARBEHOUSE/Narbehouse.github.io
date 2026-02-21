@@ -102,7 +102,12 @@ class Game {
         };
         
         window.togglePauseTTS = () => {
-            this.audioSystem.settings.ttsEnabled = !this.audioSystem.settings.ttsEnabled;
+            if (window.NarbeVoiceManager) {
+                window.NarbeVoiceManager.toggleTTS();
+                this.audioSystem.settings.ttsEnabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+            } else {
+                this.audioSystem.settings.ttsEnabled = !this.audioSystem.settings.ttsEnabled;
+            }
             this.audioSystem.save();
             this.updatePauseSettingsDisplay();
             if (this.audioSystem.settings.ttsEnabled) {
@@ -362,14 +367,14 @@ class Game {
         // Update the button text to reflect current settings
         document.getElementById('pauseMusicToggle').textContent = `Music: ${this.audioSystem.settings.musicEnabled ? 'ON' : 'OFF'}`;
         document.getElementById('pauseSoundToggle').textContent = `Sound Effects: ${this.audioSystem.settings.soundEnabled ? 'ON' : 'OFF'}`;
-        document.getElementById('pauseTTSToggle').textContent = `Text-to-Speech: ${this.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF'}`;
+        document.getElementById('pauseTTSToggle').textContent = `Text-to-Speech: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (this.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF')}`;
         document.getElementById('pauseVoiceToggle').textContent = `Voice: ${voiceDisplayName}`;
         
         // Update menu options array to match
         this.gameState.menuOptions = [
             `Music: ${this.audioSystem.settings.musicEnabled ? 'ON' : 'OFF'}`,
             `Sound Effects: ${this.audioSystem.settings.soundEnabled ? 'ON' : 'OFF'}`,
-            `Text-to-Speech: ${this.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF'}`,
+            `Text-to-Speech: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (this.audioSystem.settings.ttsEnabled ? 'ON' : 'OFF')}`,
             `Voice: ${voiceDisplayName}`,
             'Next Track',
             'Reset Season',
