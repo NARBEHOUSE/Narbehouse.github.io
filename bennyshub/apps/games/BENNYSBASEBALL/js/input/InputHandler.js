@@ -726,19 +726,18 @@ class InputHandler {
         const gameState = this.game.gameState;
         const mode = gameState.mode;
         
-        // Handle pitch grid click
-        if (mode === GAME_CONSTANTS.MODES.PITCHING && gameState.pitchGrid && gameState.pitchGridBounds) {
-            // Check grid cells
-            for (let i = 0; i < gameState.pitchGridBounds.length; i++) {
-                const b = gameState.pitchGridBounds[i];
+        // Handle pitch grid click (5-zone system)
+        if (mode === GAME_CONSTANTS.MODES.PITCHING && gameState.pitchGrid && gameState.pitchZoneBounds) {
+            // Check center zone first (it overlaps with corners)
+            for (let i = gameState.pitchZoneBounds.length - 1; i >= 0; i--) {
+                const b = gameState.pitchZoneBounds[i];
                 if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
-                    gameState.pitchGridRow = b.row;
-                    gameState.pitchGridCol = b.col;
+                    gameState.pitchZoneIndex = b.zoneIndex;
                     gameState.hasScanned = true;
                     gameState.menuReady = true;
                     
-                    const cell = gameState.pitchGrid[b.row][b.col];
-                    this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+                    const cell = gameState.pitchGrid[b.zoneIndex];
+                    this.game.audioSystem.speak(`${cell.pitch}, ${cell.zone}`);
                     this.game.audioSystem.playSound('select');
                     
                     // Lock inputs and process
@@ -746,7 +745,7 @@ class InputHandler {
                     gameState.inputsBlocked = true;
                     gameState.lastActionTime = Date.now();
                     
-                    this.game.gameLogic.processPitchSelection(0);
+                    this.game.gameLogic.processPitchSelection(b.zoneIndex);
                     return;
                 }
             }
@@ -755,7 +754,7 @@ class InputHandler {
             if (gameState.pauseButtonBounds) {
                 const pb = gameState.pauseButtonBounds;
                 if (x >= pb.x && x <= pb.x + pb.width && y >= pb.y && y <= pb.y + pb.height) {
-                    gameState.pitchGridRow = 3;
+                    gameState.pitchZoneIndex = 5;
                     this.game.audioSystem.speak('Pause');
                     this.game.audioSystem.playSound('select');
                     this.game.gameLogic.processPitchSelection(-1);

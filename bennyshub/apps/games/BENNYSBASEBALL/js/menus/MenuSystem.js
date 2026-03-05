@@ -404,6 +404,26 @@ class MenuSystem {
             { x: centerX, y: centerY }                                         // Center zone
         ];
         
+        // Store zone bounds for click detection
+        // For curved zones, we use simplified rectangular hit areas
+        const halfSize = size / 2;
+        gameState.pitchZoneBounds = [
+            { zoneIndex: 0, x: squareX, y: squareY, width: halfSize, height: halfSize },                    // Top-left
+            { zoneIndex: 1, x: squareX + halfSize, y: squareY, width: halfSize, height: halfSize },         // Top-right
+            { zoneIndex: 2, x: squareX + halfSize, y: squareY + halfSize, width: halfSize, height: halfSize }, // Bottom-right
+            { zoneIndex: 3, x: squareX, y: squareY + halfSize, width: halfSize, height: halfSize },         // Bottom-left
+        ];
+        // Center zone - a smaller area in the middle
+        const centerZoneSize = size * 0.4;
+        gameState.pitchZoneBounds.push({
+            zoneIndex: 4,
+            x: centerX - centerZoneSize / 2,
+            y: centerY - centerZoneSize / 2,
+            width: centerZoneSize,
+            height: centerZoneSize,
+            isCenter: true
+        });
+        
         // PASS 1: Draw all zone fills first
         for (let i = 0; i < 5; i++) {
             const cell = grid[i];
