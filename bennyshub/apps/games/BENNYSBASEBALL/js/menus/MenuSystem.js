@@ -189,12 +189,14 @@ class MenuSystem {
         ctx.fillText(playText, menuX + menuWidth / 2, playButtonY + itemHeight / 2);
     }
 
-    drawSwingMenu() {
+    // Old drawSwingMenu removed - now using drawStealMenu for batting phase
+
+    drawStealMenu() {
         this.game.fieldRenderer.drawField(this.game.gameState);
         this.game.fieldRenderer.drawPlayers();
         this.game.uiRenderer.drawScoreboard(this.game.gameState);
         
-        this.drawGameMenuPanel(this.game.gameState.menuOptions, this.game.gameState.selectedIndex, "CHOOSE SWING");
+        this.drawGameMenuPanel(this.game.gameState.menuOptions, this.game.gameState.selectedIndex, "STEAL OR BAT?");
     }
 
     drawPitchMenu() {
@@ -203,6 +205,144 @@ class MenuSystem {
         this.game.uiRenderer.drawScoreboard(this.game.gameState);
         
         this.drawGameMenuPanel(this.game.gameState.menuOptions, this.game.gameState.selectedIndex, "CHOOSE PITCH");
+    }
+    
+    drawPitchGridMenu() {
+        this.game.fieldRenderer.drawField(this.game.gameState);
+        this.game.fieldRenderer.drawPlayers();
+        this.game.uiRenderer.drawScoreboard(this.game.gameState);
+        
+        const ctx = this.game.ctx;
+        const canvas = this.game.canvas;
+        const gameState = this.game.gameState;
+        const grid = gameState.pitchGrid;
+        
+        if (!grid) return;
+        
+        const cellSize = 90;
+        const gridSize = cellSize * 3;
+        const padding = 15;
+        const menuX = 20;
+        const menuY = canvas.height / 2 - gridSize / 2 - 30;
+        
+        gameState.menuBounds = [];
+        gameState.pitchGridBounds = [];
+        
+        // Draw title
+        ctx.font = 'bold 18px monospace';
+        ctx.fillStyle = GAME_CONSTANTS.COLORS.menuBorder;
+        ctx.textAlign = 'center';
+        ctx.fillText('CHOOSE PITCH', menuX + gridSize / 2 + padding, menuY);
+        
+        // Draw grid background
+        const bgGradient = ctx.createLinearGradient(menuX, menuY + 20, menuX, menuY + 20 + gridSize + padding * 2);
+        bgGradient.addColorStop(0, GAME_CONSTANTS.COLORS.menuBg);
+        bgGradient.addColorStop(1, 'rgba(10, 15, 30, 0.95)');
+        ctx.fillStyle = bgGradient;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 20;
+        ctx.fillRect(menuX, menuY + 20, gridSize + padding * 2, gridSize + padding * 2);
+        ctx.shadowBlur = 0;
+        
+        ctx.strokeStyle = GAME_CONSTANTS.COLORS.menuBorder;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(menuX, menuY + 20, gridSize + padding * 2, gridSize + padding * 2);
+        
+        // Grid starts right after the title
+        const gridStartY = menuY + 35;
+        
+        // Draw each cell in the grid
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                const cell = grid[row][col];
+                const cellX = menuX + padding + col * cellSize;
+                const cellY = gridStartY + row * cellSize;
+                const isSelected = row === gameState.pitchGridRow && col === gameState.pitchGridCol;
+                
+                // Store bounds for click detection
+                gameState.pitchGridBounds.push({
+                    x: cellX,
+                    y: cellY,
+                    width: cellSize,
+                    height: cellSize,
+                    row: row,
+                    col: col
+                });
+                
+                // Draw heatmap background (green = effective, red = less effective)
+                const effectiveness = cell.effectiveness;
+                // More vibrant colors for better visibility
+                const r = Math.floor(255 * (1 - effectiveness));
+                const g = Math.floor(200 * effectiveness);
+                const b = 30;
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.6)`;
+                ctx.fillRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
+                
+                // Draw cell border
+                if (isSelected) {
+                    this.drawSelectionHighlight(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
+                } else {
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
+                }
+                
+                // Draw pitch name (abbreviated)
+                ctx.font = isSelected ? 'bold 12px monospace' : '11px monospace';
+                ctx.fillStyle = isSelected ? GAME_CONSTANTS.COLORS.menuSelected : GAME_CONSTANTS.COLORS.menuText;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Abbreviate pitch names
+                let pitchAbbr = cell.pitch;
+                if (pitchAbbr === 'Fastball') pitchAbbr = 'FAST';
+                else if (pitchAbbr === 'Curveball') pitchAbbr = 'CURVE';
+                else if (pitchAbbr === 'Slider') pitchAbbr = 'SLIDE';
+                else if (pitchAbbr === 'Knuckleball') pitchAbbr = 'KNUCK';
+                else if (pitchAbbr === 'Changeup') pitchAbbr = 'CHANGE';
+                
+                ctx.fillText(pitchAbbr, cellX + cellSize / 2, cellY + cellSize / 2 - 8);
+                
+                // Draw zone description
+                ctx.font = '9px monospace';
+                ctx.fillStyle = isSelected ? '#AAAAAA' : '#666666';
+                ctx.fillText(`${cell.vertical}`, cellX + cellSize / 2, cellY + cellSize / 2 + 8);
+                ctx.fillText(`${cell.horizontal}`, cellX + cellSize / 2, cellY + cellSize / 2 + 20);
+            }
+        }
+        
+        // Draw pause button below grid
+        const pauseBtnY = gridStartY + gridSize + 15;
+        const pauseBtnWidth = gridSize;
+        const pauseBtnHeight = 35;
+        const pauseBtnX = menuX + padding;
+        
+        gameState.pauseButtonBounds = {
+            x: pauseBtnX,
+            y: pauseBtnY,
+            width: pauseBtnWidth,
+            height: pauseBtnHeight
+        };
+        
+        // Check if pause is selected (when row is 3)
+        const pauseSelected = gameState.pitchGridRow === 3;
+        
+        ctx.fillStyle = pauseSelected ? 'rgba(100, 100, 150, 0.6)' : 'rgba(50, 50, 80, 0.6)';
+        ctx.fillRect(pauseBtnX, pauseBtnY, pauseBtnWidth, pauseBtnHeight);
+        
+        if (pauseSelected) {
+            this.drawSelectionHighlight(pauseBtnX, pauseBtnY, pauseBtnWidth, pauseBtnHeight);
+        } else {
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(pauseBtnX, pauseBtnY, pauseBtnWidth, pauseBtnHeight);
+        }
+        
+        ctx.font = pauseSelected ? 'bold 14px monospace' : '12px monospace';
+        ctx.fillStyle = pauseSelected ? GAME_CONSTANTS.COLORS.menuSelected : GAME_CONSTANTS.COLORS.menuText;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PAUSE', pauseBtnX + pauseBtnWidth / 2, pauseBtnY + pauseBtnHeight / 2);
     }
 
     drawMenuPanel(options, selectedIndex, fontSize = 24) {

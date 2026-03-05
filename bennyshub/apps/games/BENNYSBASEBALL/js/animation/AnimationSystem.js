@@ -24,11 +24,11 @@ class AnimationSystem {
                 };
             }
             
-            if (outcome === 'Ground Out' || outcome === 'Double Play') {
+            if (outcome === 'Ground Out' || outcome === 'Double Play' || outcome === 'Triple Play') {
                 this.drawGroundBall(ballStartPos, to, fielder, callback);
             } else {
-                this.drawBallArc(ballStartPos, to, 1200, () => {
-                    if (fielder && ['Pop Fly Out', 'Ground Out', 'Double Play'].includes(outcome)) {
+                this.drawBallArc(ballStartPos, to, 1200, fielder, () => {
+                    if (fielder && ['Pop Fly Out', 'Ground Out', 'Double Play', 'Triple Play'].includes(outcome)) {
                         this.game.audioSystem.speak(`Caught by ${fielder.position}`);
                     }
                     this.safeCallback(callback);
@@ -49,7 +49,7 @@ class AnimationSystem {
         if (outcome === 'Pop Fly Out') {
             const outfielders = fieldPlayers.filter(p => ['LF', 'CF', 'RF'].includes(p.position));
             targetPlayer = outfielders[Math.floor(Math.random() * outfielders.length)];
-        } else if (outcome === 'Ground Out' || outcome === 'Double Play') {
+        } else if (outcome === 'Ground Out' || outcome === 'Double Play' || outcome === 'Triple Play') {
             const infielders = fieldPlayers.filter(p => ['1B', '2B', 'SS', '3B'].includes(p.position));
             targetPlayer = infielders[Math.floor(Math.random() * infielders.length)];
         } else if (outcome === 'Single') {
@@ -94,11 +94,19 @@ class AnimationSystem {
         return targetPlayer ? { x: targetPlayer.x, y: targetPlayer.y, player: targetPlayer } : null;
     }
 
-    drawBallArc(from, to, duration, callback) {
+    drawBallArc(from, to, duration, fielder, callback) {
         const startTime = Date.now();
         const ballSize = 8;
         const distance = Math.sqrt((to.x - from.x) ** 2 + (to.y - from.y) ** 2);
         const arcHeight = Math.min(150, distance * 0.3);
+        
+        // Animate fielder moving to catch position for pop fly outs (subtle movement)
+        if (fielder && fielder.moveToPosition) {
+            // Only move 40% of the way to the ball for subtle realism
+            const catchX = fielder.baseX + (to.x - fielder.baseX) * 0.4;
+            const catchY = fielder.baseY + (to.y - fielder.baseY) * 0.4;
+            fielder.moveToPosition(catchX, catchY, duration * 1.2);
+        }
 
         // Add timeout to prevent infinite animation
         const timeoutId = setTimeout(() => {
@@ -173,6 +181,14 @@ class AnimationSystem {
         const ballSize = 8;
         const bounceCount = 3;
         
+        // Animate fielder moving to meet the ball (subtle movement)
+        if (fielder && fielder.moveToPosition) {
+            // Calculate where fielder should meet the ball (only move 30% of the way)
+            const meetX = fielder.baseX + (to.x - fielder.baseX) * 0.3;
+            const meetY = fielder.baseY + (to.y - fielder.baseY) * 0.3;
+            fielder.moveToPosition(meetX, meetY, duration * 1.5);
+        }
+        
         // Add timeout to prevent infinite animation
         const timeoutId = setTimeout(() => {
             console.warn('Ground ball animation timeout, forcing completion');
@@ -213,11 +229,14 @@ class AnimationSystem {
                 } else {
                     clearTimeout(timeoutId);
                     this.game.gameState.animating = false;
-                    // Always announce fielder for ground outs, regardless of who's batting
+                    // Animate throw to first base (no TTS, just animation)
                     if (fielder && fielder.position) {
-                        this.game.audioSystem.speak(`Fielded by ${fielder.position}`);
+                        this.drawThrowToFirstBase(fielder, () => {
+                            this.safeCallback(callback);
+                        });
+                    } else {
+                        this.safeCallback(callback);
                     }
-                    this.safeCallback(callback);
                 }
             } catch (error) {
                 console.error('Ground ball animation error:', error);
@@ -229,6 +248,100 @@ class AnimationSystem {
 
         this.game.gameState.animating = true;
         animate();
+    }
+
+    // Throw animation from fielder to first base for ground outs
+    drawThrowToFirstBase(fielder, callback) {
+        try {
+            if (!this.game.gameState.fieldCoords || !this.game.fieldRenderer.fieldPlayers) {
+                this.safeCallback(callback);
+                return;
+            }
+            
+            const coords = this.game.gameState.fieldCoords;
+            const fieldPlayers = this.game.fieldRenderer.fieldPlayers;
+            
+            // Find first baseman
+            const firstBaseman = fieldPlayers.find(p => p.position === '1B');
+            
+            // If fielder IS the first baseman, no throw needed
+            if (fielder.position === '1B') {
+                setTimeout(() => {
+                    this.safeCallback(callback);
+                }, 300);
+                return;
+            }
+            
+            // Calculate target - first base position or first baseman position
+            const to = firstBaseman 
+                ? { x: firstBaseman.x, y: firstBaseman.y }
+                : { x: coords.first.x, y: coords.first.y };
+            
+            // From the fielder's current position
+            const from = { x: fielder.x, y: fielder.y };
+            
+            const startTime = Date.now();
+            const duration = 600; // Quick throw
+            const ballSize = 8;
+            
+            // Add timeout to prevent infinite animation
+            const timeoutId = setTimeout(() => {
+                console.warn('Throw to first animation timeout, forcing completion');
+                this.game.gameState.animating = false;
+                this.safeCallback(callback);
+            }, duration + 1000);
+            
+            const animate = () => {
+                try {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Calculate arc height for throw
+                    const arcHeight = 30;
+                    const currentX = from.x + (to.x - from.x) * progress;
+                    const baseY = from.y + (to.y - from.y) * progress;
+                    const arc = Math.sin(progress * Math.PI) * arcHeight;
+                    const currentY = baseY - arc;
+                    
+                    // Redraw field and players
+                    this.game.fieldRenderer.drawField(this.game.gameState);
+                    this.game.fieldRenderer.drawPlayers();
+                    this.game.uiRenderer.drawScoreboard(this.game.gameState);
+                    
+                    // Draw ball shadow
+                    this.game.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    this.game.ctx.beginPath();
+                    this.game.ctx.ellipse(currentX, baseY, ballSize / 2, ballSize / 4, 0, 0, Math.PI * 2);
+                    this.game.ctx.fill();
+                    
+                    // Draw ball
+                    this.game.ctx.fillStyle = GAME_CONSTANTS.COLORS.ballWhite;
+                    this.game.ctx.beginPath();
+                    this.game.ctx.arc(currentX, currentY, ballSize / 2, 0, Math.PI * 2);
+                    this.game.ctx.fill();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        clearTimeout(timeoutId);
+                        this.game.gameState.animating = false;
+                        // Animation complete (no TTS - outcome announced separately)
+                        this.safeCallback(callback);
+                    }
+                } catch (error) {
+                    console.error('Throw to first animation error:', error);
+                    clearTimeout(timeoutId);
+                    this.game.gameState.animating = false;
+                    this.safeCallback(callback);
+                }
+            };
+            
+            this.game.gameState.animating = true;
+            animate();
+        } catch (error) {
+            console.error('Throw to first setup error:', error);
+            this.safeCallback(callback);
+        }
     }
 
     drawPitchAnimation(pitchType, location, callback) {
@@ -798,7 +911,7 @@ class AnimationSystem {
             const from = coords.pitcher;
             const to = { x: targetFielder.x, y: targetFielder.y };
             
-            this.drawBallArc(from, to, 800, () => {
+            this.drawBallArc(from, to, 800, null, () => {
                 this.game.audioSystem.speak(`Thrown out trying to steal ${base === 'second' ? 'second base' : 'third base'}!`);
                 this.safeCallback(callback);
             });
@@ -806,5 +919,353 @@ class AnimationSystem {
             console.error('Failed steal animation error:', error);
             this.safeCallback(callback);
         }
+    }
+    
+    // Interactive pitch animation - slower, with progress callback
+    drawInteractivePitchAnimation(pitchType, location, progressCallback, completeCallback) {
+        try {
+            if (!this.game.gameState.fieldCoords) {
+                this.safeCallback(completeCallback);
+                return;
+            }
+
+            const coords = this.game.gameState.fieldCoords;
+            const from = { x: coords.pitcher.x, y: coords.pitcher.y };
+            const to = { x: coords.home.x, y: coords.home.y - 20 };
+            
+            // Adjust target based on pitch location
+            if (location === 'Inside') {
+                to.x -= 15;
+            } else if (location === 'Outside') {
+                to.x += 15;
+            }
+            
+            const startTime = Date.now();
+            const duration = GAME_CONSTANTS.TIMING.INTERACTIVE_PITCH_DURATION;
+            const ballSize = 10; // Slightly larger for visibility
+            
+            // Store animation state for potential early termination (swing)
+            this.interactivePitchState = {
+                active: true,
+                from: from,
+                to: to,
+                pitchType: pitchType,
+                startTime: startTime,
+                duration: duration
+            };
+            
+            // Add timeout to prevent infinite animation
+            const timeoutId = setTimeout(() => {
+                console.warn('Interactive pitch animation timeout, forcing completion');
+                this.interactivePitchState.active = false;
+                this.game.gameState.animating = false;
+                this.safeCallback(completeCallback);
+            }, duration + 2000);
+
+            const animate = () => {
+                try {
+                    // Check if animation was cancelled (e.g., player swung)
+                    if (!this.interactivePitchState.active) {
+                        clearTimeout(timeoutId);
+                        return;
+                    }
+                    
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Call progress callback
+                    if (typeof progressCallback === 'function') {
+                        progressCallback(progress);
+                    }
+                    
+                    // Calculate ball position with pitch-specific movement
+                    const { x: currentX, y: currentY } = this.calculatePitchMovement(
+                        from, to, progress, pitchType
+                    );
+
+                    // Redraw field and players
+                    this.game.fieldRenderer.drawField(this.game.gameState);
+
+                    // Don't interfere with batter state during interactive pitch animation
+                    // The bunt animation handles its own state management
+                    
+                    this.game.fieldRenderer.drawPlayers();
+                    this.game.uiRenderer.drawScoreboard(this.game.gameState);
+                    
+                    // Draw interactive batting UI
+                    this.game.uiRenderer.drawInteractiveBattingUI(this.game.gameState);
+                    
+                    // Draw ball shadow on ground
+                    const shadowY = from.y + (to.y - from.y) * progress + 20;
+                    this.game.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    this.game.ctx.beginPath();
+                    this.game.ctx.ellipse(currentX, shadowY, ballSize / 2, ballSize / 4, 0, 0, Math.PI * 2);
+                    this.game.ctx.fill();
+
+                    // Draw pitch trail based on type
+                    this.drawPitchTrail(from, { x: currentX, y: currentY }, pitchType, progress);
+
+                    // Draw ball with enhanced visibility
+                    const ballGlow = progress >= 0.80 && progress <= 0.98 ? '#00ff00' : '#ffffff';
+                    this.game.ctx.shadowColor = ballGlow;
+                    this.game.ctx.shadowBlur = 15;
+                    this.game.ctx.fillStyle = GAME_CONSTANTS.COLORS.ballWhite;
+                    this.game.ctx.beginPath();
+                    this.game.ctx.arc(currentX, currentY, ballSize / 2, 0, Math.PI * 2);
+                    this.game.ctx.fill();
+                    this.game.ctx.shadowBlur = 0;
+
+                    // Draw ball seams with rotation
+                    const rotation = progress * Math.PI * 6; // Slower rotation for visibility
+                    this.game.ctx.strokeStyle = '#cccccc';
+                    this.game.ctx.lineWidth = 1;
+                    this.game.ctx.save();
+                    this.game.ctx.translate(currentX, currentY);
+                    this.game.ctx.rotate(rotation);
+                    this.game.ctx.beginPath();
+                    this.game.ctx.arc(0, 0, ballSize / 2 - 1, 0, Math.PI, false);
+                    this.game.ctx.stroke();
+                    this.game.ctx.beginPath();
+                    this.game.ctx.arc(0, 0, ballSize / 2 - 1, Math.PI, Math.PI * 2, false);
+                    this.game.ctx.stroke();
+                    this.game.ctx.restore();
+                    
+                    // Draw pitch type indicator
+                    this.drawPitchTypeIndicator(pitchType, location);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        clearTimeout(timeoutId);
+                        this.interactivePitchState.active = false;
+                        this.game.gameState.animating = false;
+                        this.safeCallback(completeCallback);
+                    }
+                } catch (error) {
+                    console.error('Interactive pitch animation error:', error);
+                    clearTimeout(timeoutId);
+                    this.interactivePitchState.active = false;
+                    this.game.gameState.animating = false;
+                    this.safeCallback(completeCallback);
+                }
+            };
+
+            this.game.gameState.animating = true;
+            animate();
+        } catch (error) {
+            console.error('Interactive pitch animation initialization error:', error);
+            this.safeCallback(completeCallback);
+        }
+    }
+    
+    drawPitchTypeIndicator(pitchType, location) {
+        const ctx = this.game.ctx;
+        const centerX = this.game.canvas.width / 2;
+        const indicatorY = 80;
+        
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(centerX - 100, indicatorY - 25, 200, 50);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(centerX - 100, indicatorY - 25, 200, 50);
+        
+        // Pitch type text
+        ctx.font = 'bold 20px monospace';
+        ctx.fillStyle = '#ffff00';
+        ctx.textAlign = 'center';
+        ctx.fillText(pitchType.toUpperCase(), centerX, indicatorY);
+        
+        // Location indicator
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = '#cccccc';
+        ctx.fillText(location, centerX, indicatorY + 18);
+    }
+    
+    // Animate the batter's swing
+    animateBatterSwing(callback) {
+        const batter = this.game.fieldRenderer.fieldPlayers.find(p => p.position === 'BATTER');
+        if (!batter) {
+            this.safeCallback(callback);
+            return;
+        }
+        
+        // Cancel the pitch animation if still running
+        if (this.interactivePitchState) {
+            this.interactivePitchState.active = false;
+        }
+        
+        batter.type = 'SWING';
+        batter.swingProgress = 0;
+        
+        const startTime = Date.now();
+        const swingDuration = 300; // Fast swing animation
+        
+        const animateSwing = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / swingDuration, 1);
+            
+            batter.setSwingProgress(progress);
+            
+            // Redraw
+            this.game.fieldRenderer.drawField(this.game.gameState);
+            this.game.fieldRenderer.drawPlayers();
+            this.game.uiRenderer.drawScoreboard(this.game.gameState);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateSwing);
+            } else {
+                // Reset batter type after swing
+                setTimeout(() => {
+                    batter.type = 'BAT';
+                    batter.swingProgress = 0;
+                    this.safeCallback(callback);
+                }, 200);
+            }
+        };
+        
+        animateSwing();
+    }
+    
+    // Animate the batter into bunt position
+    animateBatterBunt(callback) {
+        console.log('animateBatterBunt CALLED');
+        const batter = this.game.fieldRenderer.fieldPlayers.find(p => p.position === 'BATTER');
+        console.log('animateBatterBunt - Found batter:', batter);
+        
+        if (!batter) {
+            console.log('animateBatterBunt - NO BATTER FOUND, exiting');
+            this.safeCallback(callback);
+            return;
+        }
+        
+        console.log('animateBatterBunt - Setting batter to BUNT with progress 0');
+        batter.type = 'BUNT';
+        batter.buntProgress = 0;
+        
+        const startTime = Date.now();
+        const buntMoveTime = 400; // Time to move bat to bunt position
+        const buntHoldTime = 3000; // Hold the bunt position for 3 seconds
+        
+        const animateBunt = () => {
+            const elapsed = Date.now() - startTime;
+            
+            if (elapsed < buntMoveTime) {
+                // Move bat to horizontal position
+                const progress = elapsed / buntMoveTime;
+                batter.buntProgress = progress;
+                console.log('animateBunt - Moving, progress:', progress);
+            } else {
+                // Hold at bunt position
+                batter.buntProgress = 1.0;
+                if (elapsed === buntMoveTime || elapsed % 500 === 0) {
+                    console.log('animateBunt - Holding at 1.0');
+                }
+            }
+            
+            // Redraw
+            this.game.fieldRenderer.drawField(this.game.gameState);
+            this.game.fieldRenderer.drawPlayers();
+            this.game.uiRenderer.drawScoreboard(this.game.gameState);
+            
+            if (elapsed < buntMoveTime + buntHoldTime) {
+                requestAnimationFrame(animateBunt);
+            } else {
+                console.log('animateBunt - Complete, resetting to BAT');
+                // Reset batter type after bunt hold completes
+                batter.type = 'BAT';
+                batter.buntProgress = 0;
+                this.safeCallback(callback);
+            }
+        };
+        
+        console.log('animateBatterBunt - Starting animation loop');
+        animateBunt();
+    }
+    
+    // Stop interactive pitch (called when player swings)
+    stopInteractivePitch() {
+        if (this.interactivePitchState) {
+            this.interactivePitchState.active = false;
+        }
+    }
+    
+    // Animate runner advancing from one base to another
+    animateRunnerAdvancing(runner, fromBase, toBase, callback) {
+        if (!this.game.gameState.fieldCoords) {
+            this.safeCallback(callback);
+            return;
+        }
+        
+        const coords = this.game.gameState.fieldCoords;
+        const basePositions = {
+            'home': coords.home,
+            'first': coords.first,
+            'second': coords.second,
+            'third': coords.third
+        };
+        
+        const from = basePositions[fromBase];
+        const to = basePositions[toBase];
+        
+        if (!from || !to) {
+            this.safeCallback(callback);
+            return;
+        }
+        
+        // Runner takes about 3-4 seconds to run between bases
+        const duration = 3000;
+        const startTime = Date.now();
+        const startX = from.x;
+        const startY = from.y;
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Ease-in-out motion for realistic running
+            const easeProgress = progress < 0.5 
+                ? 2 * progress * progress 
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            
+            runner.x = startX + (to.x - startX) * easeProgress;
+            runner.y = startY + (to.y - startY) * easeProgress;
+            
+            // Redraw field
+            this.game.fieldRenderer.drawField(this.game.gameState);
+            this.game.fieldRenderer.drawPlayers();
+            this.game.uiRenderer.drawScoreboard(this.game.gameState);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.safeCallback(callback);
+            }
+        };
+        
+        animate();
+    }
+    
+    // Animate multiple runners advancing simultaneously
+    animateRunnersAdvancing(movements, callback) {
+        if (!movements || movements.length === 0) {
+            this.safeCallback(callback);
+            return;
+        }
+        
+        let completed = 0;
+        const total = movements.length;
+        
+        const onComplete = () => {
+            completed++;
+            if (completed >= total) {
+                this.safeCallback(callback);
+            }
+        };
+        
+        // Start all runner animations at once
+        movements.forEach(movement => {
+            this.animateRunnerAdvancing(movement.runner, movement.from, movement.to, onComplete);
+        });
     }
 }

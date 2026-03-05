@@ -33,6 +33,28 @@ class GameState {
         this.lastPitchType = null;
         this.consecutiveHolds = 0; // Track consecutive "Hold" selections
         
+        // Pitch grid (3x3 matrix of pitches)
+        this.pitchGrid = null;
+        this.pitchGridRow = 0;
+        this.pitchGridCol = 0;
+        
+        // Interactive Batting State
+        this.interactiveBatting = {
+            active: false,
+            pitchInProgress: false,
+            pitchProgress: 0,          // 0 to 1, where ball reaches batter
+            swingPressed: false,
+            swingPressStart: 0,
+            swingReleased: false,
+            swingPowerLevel: 0,        // 0 to 1 based on hold duration
+            swingTimingScore: 0,       // How well-timed the swing was (-1 to 1)
+            isSwinging: false,
+            swingAnimationProgress: 0,
+            ballInStrikeZone: false,
+            selectedRunner: null,      // For steal attempts
+            waitingForSwing: false
+        };
+        
         // Input handling
         this.spaceHeld = false;
         this.spaceHoldStart = 0;
@@ -89,10 +111,32 @@ class GameState {
         this.hasScanned = false;
         this.selectedIndex = -1;
         
+        // Reset interactive batting state
+        this.resetInteractiveBatting();
+        
         if (this.runnerAnimation.active) {
             this.runnerAnimation.active = false;
             this.runnerAnimation.runners = [];
         }
+    }
+    
+    resetInteractiveBatting() {
+        this.interactiveBatting = {
+            active: false,
+            pitchInProgress: false,
+            pitchProgress: 0,
+            swingPressed: false,
+            swingPressStart: 0,
+            swingReleased: false,
+            swingPowerLevel: 0,
+            swingType: 'normal', // 'normal', 'power', or 'bunt'
+            swingTimingScore: 0,
+            isSwinging: false,
+            swingAnimationProgress: 0,
+            ballInStrikeZone: false,
+            selectedRunner: null,
+            waitingForSwing: false
+        };
     }
     
     getBattingTeam() {

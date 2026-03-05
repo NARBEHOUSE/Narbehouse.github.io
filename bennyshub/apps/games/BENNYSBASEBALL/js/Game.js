@@ -28,7 +28,7 @@ class Game {
     setupPauseMenu() {
         // Setup pause button click handler
         this.pauseButton.addEventListener('click', () => {
-            if ([GAME_CONSTANTS.MODES.GAMEPLAY, GAME_CONSTANTS.MODES.BATTING, GAME_CONSTANTS.MODES.PITCHING].includes(this.gameState.mode)) {
+            if ([GAME_CONSTANTS.MODES.GAMEPLAY, GAME_CONSTANTS.MODES.BATTING, GAME_CONSTANTS.MODES.PITCHING, GAME_CONSTANTS.MODES.INTERACTIVE_BATTING].includes(this.gameState.mode)) {
                 this.showPauseMenu();
             }
         });
@@ -170,11 +170,20 @@ class Game {
         this.gameState.previousMode = this.gameState.mode;
         this.gameState.mode = GAME_CONSTANTS.MODES.PAUSE_MENU;
         
+        // Unblock ALL inputs so pause menu can be interacted with
+        this.gameState.inputsBlocked = false;
+        this.gameState.playInProgress = false;
+        
         // Set up scanning for pause menu buttons - start with first option
         this.gameState.menuOptions = ['Resume Game', 'Settings', 'Restart Game', 'Main Menu'];
         this.gameState.selectedIndex = 0;
         this.gameState.menuReady = true;
         this.gameState.hasScanned = false;
+        
+        // Ensure the main pause menu is visible (not settings or confirmation)
+        document.getElementById('pauseMenu').style.display = 'block';
+        document.getElementById('pauseSettingsMenu').style.display = 'none';
+        document.getElementById('resetSeasonConfirmation').style.display = 'none';
         
         // Show the HTML pause overlay
         this.pauseOverlay.classList.add('active');
@@ -236,11 +245,14 @@ class Game {
         this.audioSystem.speak('Resuming game');
         
         if (this.gameState.mode === GAME_CONSTANTS.MODES.BATTING) {
-            // Reset batting menu state and call showSwingMenu to restore proper options
-            this.gameLogic.showSwingMenu();
+            // Reset batting menu state and call showStealMenu to restore proper options
+            this.gameLogic.showStealMenu();
         } else if (this.gameState.mode === GAME_CONSTANTS.MODES.PITCHING) {
             // Reset pitching menu state and call showPitchMenu to restore proper options
             this.gameLogic.showPitchMenu();
+        } else if (this.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+            // Resume interactive batting - restart the pitch
+            this.gameLogic.startInteractivePitch();
         } else {
             this.drawGameScreen();
         }
@@ -320,9 +332,13 @@ class Game {
                 this.drawGameScreen();
                 this.fieldRenderer.initializeFieldPlayers(this.gameState);
             } else if (mode === GAME_CONSTANTS.MODES.BATTING) {
-                this.menuSystem.drawSwingMenu();
+                this.menuSystem.drawStealMenu();
             } else if (mode === GAME_CONSTANTS.MODES.PITCHING) {
                 this.menuSystem.drawPitchMenu();
+            } else if (mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+                // Interactive batting mode - redraw field and UI
+                this.drawGameScreen();
+                this.uiRenderer.drawInteractiveBattingUI(this.gameState);
             } else if (mode === GAME_CONSTANTS.MODES.HALF_INNING_TRANSITION) {
                 this.uiRenderer.drawTransitionScreen(this.gameState);
             }

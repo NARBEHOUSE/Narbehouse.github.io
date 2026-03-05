@@ -9,6 +9,7 @@ const GAME_CONSTANTS = {
         GAMEPLAY: 'GAMEPLAY',
         BATTING: 'BATTING',
         PITCHING: 'PITCHING',
+        INTERACTIVE_BATTING: 'INTERACTIVE_BATTING', // New mode for timing-based batting
         HALF_INNING_TRANSITION: 'HALF_INNING_TRANSITION',
         GAME_OVER: 'GAME_OVER',
         PAUSE_MENU: 'PAUSE_MENU',
@@ -60,7 +61,18 @@ const GAME_CONSTANTS = {
         HALF_INNING_DELAY: 4000,
         GAME_OVER_DELAY: 5000,
         SPACE_SCAN_DELAY: 200,
-        HOLD_DURATION_FOR_PAUSE: 3000
+        HOLD_DURATION_FOR_PAUSE: 3000,
+        // Interactive batting timing constants
+        // 0-3s = normal swing
+        // 3-6s = power swing  
+        // 6s+ = bunt (hold from start of pitch to bunt)
+        SWING_NORMAL_MAX: 3000,         // Under 3 seconds = normal swing
+        SWING_POWER_MIN: 3000,          // 3+ seconds = power swing starts
+        SWING_POWER_MAX: 6000,          // Up to 6 seconds = max power swing
+        SWING_BUNT_MIN: 6000,           // 6+ seconds = bunt
+        INTERACTIVE_PITCH_DURATION: 7500, // Much slower pitch for timing (7.5 seconds - 3x slower)
+        SWING_TIMING_WINDOW: 600,       // Window of time to hit the ball perfectly (ms) - wider for slower pitch
+        HIT_BY_PITCH_CHANCE: 0.05       // 5% chance of hit by pitch if no swing
     },
     
     GAME_RULES: {

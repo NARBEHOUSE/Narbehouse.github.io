@@ -62,7 +62,9 @@ class UIRenderer {
         this.ctx.fillText(rightScore, rightScoreX, rightScoreY);
 
         // Count indicators
-        if (gameState.mode === GAME_CONSTANTS.MODES.BATTING || gameState.mode === GAME_CONSTANTS.MODES.PITCHING) {
+        if (gameState.mode === GAME_CONSTANTS.MODES.BATTING || 
+            gameState.mode === GAME_CONSTANTS.MODES.PITCHING ||
+            gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
             this.drawCountIndicators(gameState);
         }
     }
@@ -144,6 +146,211 @@ class UIRenderer {
                 this.ctx.fill();
                 this.ctx.shadowBlur = 0;
             }
+        }
+    }
+    
+    drawInteractiveBattingUI(gameState) {
+        const ib = gameState.interactiveBatting;
+        
+        // Draw power meter if player is holding swing button
+        if (ib.swingPressed && !ib.swingReleased) {
+            this.drawPowerMeter(ib);
+        }
+        
+        // Draw timing zone indicator
+        /* Timing meter removed as per request - ball is the indicator
+        if (ib.pitchInProgress && !ib.isSwinging) {
+            this.drawTimingIndicator(ib);
+        }
+        */
+        
+        // Draw count indicators
+        this.drawCountIndicators(gameState);
+        
+        // Draw instructions
+        this.drawBattingInstructions(ib);
+    }
+    
+    drawPowerMeter(ib) {
+        const meterX = 50;
+        const meterY = this.canvas.height / 2 - 100;
+        const meterWidth = 60;
+        const meterHeight = 200;
+        
+        // Calculate current hold duration and determine swing type
+        const holdDuration = Date.now() - ib.swingPressStart;
+        const maxDuration = GAME_CONSTANTS.TIMING.SWING_POWER_MAX; // 4 seconds max
+        const progress = Math.min(holdDuration / maxDuration, 1);
+        
+        // Determine current swing type based on hold duration (or pre-selected bunt)
+        let currentSwingType = 'NORMAL';
+        let swingColor = '#00ff00';
+        
+        if (ib.swingType === 'bunt') {
+            currentSwingType = 'BUNT';
+            swingColor = '#ffaa00';
+        } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+            currentSwingType = 'POWER';
+            swingColor = '#ff4444';
+        }
+        
+        // Background
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(meterX - 10, meterY - 40, meterWidth + 20, meterHeight + 80);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(meterX - 10, meterY - 40, meterWidth + 20, meterHeight + 80);
+        
+        // Swing type label
+        this.ctx.font = 'bold 14px monospace';
+        this.ctx.fillStyle = swingColor;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(currentSwingType, meterX + meterWidth / 2, meterY - 20);
+        
+        // Meter background
+        this.ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+        this.ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
+        
+        // If bunt mode, show single bunt zone
+        if (ib.swingType === 'bunt') {
+            this.ctx.fillStyle = '#ffaa00' + '60';
+            this.ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
+            
+            this.ctx.font = 'bold 10px monospace';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillStyle = '#ffaa00';
+            this.ctx.fillText('BUNT', meterX + meterWidth + 5, meterY + meterHeight / 2);
+        } else {
+            // Draw swing type zones (from bottom to top)
+            // Zone 1: NORMAL (0-2s) - green
+            const normalZoneHeight = (GAME_CONSTANTS.TIMING.SWING_NORMAL_MAX / maxDuration) * meterHeight;
+            this.ctx.fillStyle = '#00ff00' + '60';
+            this.ctx.fillRect(meterX, meterY + meterHeight - normalZoneHeight, meterWidth, normalZoneHeight);
+            
+            // Zone 2: POWER (2-4s) - red  
+            const powerZoneStart = normalZoneHeight;
+            const powerZoneHeight = ((GAME_CONSTANTS.TIMING.SWING_POWER_MAX - GAME_CONSTANTS.TIMING.SWING_POWER_MIN) / maxDuration) * meterHeight;
+            this.ctx.fillStyle = '#ff4444' + '60';
+            this.ctx.fillRect(meterX, meterY + meterHeight - powerZoneStart - powerZoneHeight, meterWidth, powerZoneHeight);
+            
+            // Zone labels on the side
+            this.ctx.font = 'bold 10px monospace';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillStyle = '#00ff00';
+            this.ctx.fillText('NORMAL', meterX + meterWidth + 5, meterY + meterHeight - normalZoneHeight/2);
+            this.ctx.fillStyle = '#ff4444';
+            this.ctx.fillText('POWER', meterX + meterWidth + 5, meterY + meterHeight - powerZoneStart - powerZoneHeight/2);
+        }
+        
+        // Filled progress bar
+        const filledHeight = progress * meterHeight;
+        this.ctx.fillStyle = swingColor;
+        this.ctx.fillRect(meterX, meterY + meterHeight - filledHeight, meterWidth, filledHeight);
+        
+        // Current position line
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(meterX - 5, meterY + meterHeight - filledHeight);
+        this.ctx.lineTo(meterX + meterWidth + 5, meterY + meterHeight - filledHeight);
+        this.ctx.stroke();
+        
+        // Time display
+        this.ctx.font = 'bold 16px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(`${(holdDuration / 1000).toFixed(1)}s`, meterX + meterWidth / 2, meterY + meterHeight + 25);
+    }
+    
+    drawTimingIndicator(ib) {
+        const indicatorX = this.canvas.width - 100;
+        const indicatorY = this.canvas.height / 2;
+        const indicatorWidth = 30;
+        const indicatorHeight = 200;
+        
+        // Background
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(indicatorX - 15, indicatorY - indicatorHeight / 2 - 30, indicatorWidth + 30, indicatorHeight + 60);
+        
+        // Timing bar
+        this.ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+        this.ctx.fillRect(indicatorX, indicatorY - indicatorHeight / 2, indicatorWidth, indicatorHeight);
+        
+        // Sweet spot zone (green area in the middle-lower portion)
+        const sweetSpotStart = 0.70;  // 70% progress
+        const sweetSpotEnd = 0.95;    // 95% progress
+        const sweetSpotY = indicatorY - indicatorHeight / 2 + (1 - sweetSpotEnd) * indicatorHeight;
+        const sweetSpotHeight = (sweetSpotEnd - sweetSpotStart) * indicatorHeight;
+        
+        this.ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+        this.ctx.fillRect(indicatorX, sweetSpotY, indicatorWidth, sweetSpotHeight);
+        this.ctx.strokeStyle = '#00ff00';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(indicatorX, sweetSpotY, indicatorWidth, sweetSpotHeight);
+        
+        // Ball progress indicator (moving bar)
+        const ballY = indicatorY - indicatorHeight / 2 + (1 - ib.pitchProgress) * indicatorHeight;
+        
+        // Ball indicator with glow
+        this.ctx.fillStyle = ib.ballInStrikeZone ? '#00ff00' : '#ffffff';
+        this.ctx.shadowColor = ib.ballInStrikeZone ? '#00ff00' : '#ffffff';
+        this.ctx.shadowBlur = 10;
+        this.ctx.fillRect(indicatorX - 5, ballY - 3, indicatorWidth + 10, 6);
+        this.ctx.shadowBlur = 0;
+        
+        // Label
+        this.ctx.font = 'bold 12px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('TIMING', indicatorX + indicatorWidth / 2, indicatorY - indicatorHeight / 2 - 10);
+        
+        // "SWING!" prompt when in sweet spot
+        if (ib.ballInStrikeZone) {
+            this.ctx.font = 'bold 16px monospace';
+            this.ctx.fillStyle = '#00ff00';
+            this.ctx.shadowColor = '#00ff00';
+            this.ctx.shadowBlur = 15;
+            this.ctx.fillText('SWING!', indicatorX + indicatorWidth / 2, indicatorY + indicatorHeight / 2 + 25);
+            this.ctx.shadowBlur = 0;
+        }
+    }
+    
+    drawBattingInstructions(ib) {
+        const instructY = this.canvas.height - 70;
+        
+        this.ctx.font = 'bold 14px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(this.canvas.width / 2 - 220, instructY - 25, 440, 65);
+        
+        this.ctx.fillStyle = '#ffffff';
+        
+        if (ib.swingPressed) {
+            const holdDuration = Date.now() - ib.swingPressStart;
+            let swingTypeText, swingColor;
+            
+            if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MIN) {
+                swingTypeText = 'BUNT';
+                swingColor = '#ffaa00';
+            } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+                swingTypeText = 'POWER SWING';
+                swingColor = '#ff4444';
+            } else {
+                swingTypeText = 'NORMAL SWING';
+                swingColor = '#00ff00';
+            }
+            
+            this.ctx.fillStyle = swingColor;
+            this.ctx.fillText(`Current: ${swingTypeText} - RELEASE to SWING!`, this.canvas.width / 2, instructY);
+            this.ctx.font = 'bold 11px monospace';
+            this.ctx.fillStyle = '#cccccc';
+            this.ctx.fillText('0-3s = Normal | 3-6s = Power | 6s+ = Bunt', this.canvas.width / 2, instructY + 18);
+        } else if (ib.waitingForSwing) {
+            this.ctx.fillStyle = '#00ff00';
+            this.ctx.fillText('Press & Release ENTER to SWING!', this.canvas.width / 2, instructY);
+            this.ctx.font = 'bold 11px monospace';
+            this.ctx.fillStyle = '#cccccc';
+            this.ctx.fillText('0-3s = Normal | 3-6s = Power | 6s+ = Bunt', this.canvas.width / 2, instructY + 18);
         }
     }
 

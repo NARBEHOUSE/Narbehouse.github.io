@@ -28,6 +28,8 @@ class AudioSystem {
         };
         
         this.ctx = null;
+        this.sounds = {};
+        this.loadSoundEffects();
         this.load();
         
         // Auto-unlock handlers
@@ -133,33 +135,17 @@ class AudioSystem {
             playPromise.then(() => {
                 console.log('Music started successfully');
             }).catch((error) => {
-                console.log('Audio play prevented, trying generated music:', error);
-                this.playGeneratedMusic();
+                console.log('Audio play prevented:', error);
+                // Don't play generated music - it's just an annoying tone
+                // Music will start when user interacts with the page
             });
         }
     }
 
     playGeneratedMusic() {
-        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const audioCtx = this.ctx;
-        if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        
-        oscillator.start();
-        
-        setTimeout(() => {
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
-            oscillator.stop(audioCtx.currentTime + 1);
-        }, 30000);
+        // Disabled - generated tone is not actual music and is annoying
+        // This function is kept for compatibility but does nothing
+        return;
     }
 
     nextTrack() {
@@ -204,11 +190,37 @@ class AudioSystem {
                 oscillator.stop(audioCtx.currentTime + 0.15);
                 break;
             case 'hit':
-                oscillator.frequency.value = 200;
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.3);
+                if (this.sounds.hit) {
+                    this.sounds.hit.currentTime = 0;
+                    this.sounds.hit.volume = 0.4;
+                    this.sounds.hit.play().catch(e => console.warn('Audio play prevented:', e));
+                } else {
+                    // Fallback to oscillator if sound file not available
+                    oscillator.frequency.value = 200;
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                }
+                break;
+            case 'foul':
+                if (this.sounds.hit) {
+                    this.sounds.hit.currentTime = 0;
+                    this.sounds.hit.volume = 0.2; // Softer for foul tip
+                    this.sounds.hit.play().catch(e => console.warn('Audio play prevented:', e));
+                }
+                break;
+            case 'homerun':
+                if (this.sounds.homerun) {
+                    this.sounds.homerun.currentTime = 0;
+                    this.sounds.homerun.play().catch(e => console.warn('Audio play prevented:', e));
+                }
+                break;
+            case 'swing':
+                if (this.sounds.swing) {
+                    this.sounds.swing.currentTime = 0;
+                    this.sounds.swing.play().catch(e => console.warn('Audio play prevented:', e));
+                }
                 break;
             case 'cheer':
                 for (let i = 0; i < 3; i++) {
@@ -225,6 +237,89 @@ class AudioSystem {
                     }, i * 100);
                 }
                 break;
+            case 'swingZone':
+                // Friendly reminder tone when ball enters strike zone - two quick ascending notes
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 660; // E5
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.12);
+                
+                // Second higher note
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.type = 'sine';
+                    osc2.frequency.value = 880; // A5
+                    gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc2.start(audioCtx.currentTime);
+                    osc2.stop(audioCtx.currentTime + 0.15);
+                }, 80);
+                break;
         }
+    }
+
+    // Batting charge tone system - plays rising tones at 25%, 50%, 75%, 100%
+    startChargeSound() {
+        this.lastChargeStep = 0;
+    }
+
+    updateChargeSound(percent) {
+        if (!this.settings.soundEnabled) return;
+        
+        // Play a beep every 25% charge
+        // Steps: 1 (25%), 2 (50%), 3 (75%), 4 (100%)
+        const step = Math.floor(percent * 4);
+        
+        // Only play if we moved to a new step (and ignore step 0 which is < 25%)
+        if (step > this.lastChargeStep && step > 0 && step <= 4) {
+            this.playChargeBeep(step);
+            this.lastChargeStep = step;
+        }
+    }
+    
+    playChargeBeep(step) {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioCtx = this.ctx;
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        // Rising tones (C5, E5, G5, C6) - increases with charge
+        const freqs = [523.25, 659.25, 783.99, 1046.50];
+        const freq = freqs[step - 1] || freqs[freqs.length - 1];
+        
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        
+        const now = audioCtx.currentTime;
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        
+        osc.start(now);
+        osc.stop(now + 0.12);
+    }
+
+    stopChargeSound() {
+        this.lastChargeStep = 0;
+    }
+
+    loadSoundEffects() {
+        this.sounds.hit = new Audio('audio/baseballhit.wav');
+        this.sounds.hit.volume = 0.4;
+        
+        this.sounds.homerun = new Audio('audio/homerun.wav');
+        this.sounds.homerun.volume = 0.5;
+
+        this.sounds.swing = new Audio('audio/swing.wav');
+        this.sounds.swing.volume = 0.5;
     }
 }

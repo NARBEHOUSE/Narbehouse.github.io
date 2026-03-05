@@ -19,8 +19,32 @@ class InputHandler {
     setupEventListeners() {
         window.addEventListener('keydown', (e) => this.handleKeyDown(e));
         window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+        // Add mouse support for interactive batting
+        this.game.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.game.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         this.game.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
         this.game.canvas.addEventListener('touchstart', (e) => this.handleTouch(e));
+    }
+    
+    handleMouseDown(e) {
+        if (e.button === 0) { // Left Mouse Button
+            // If in interactive batting, holding click charges swing
+            if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+                if (this.game.gameLogic.onSwingStart()) {
+                    // Prevent default if swing started successfully
+                    // We don't prevent default on canvas generally to allow other interactions
+                }
+            }
+        }
+    }
+
+    handleMouseUp(e) {
+        if (e.button === 0) { // Left Mouse Button
+            // Release swing
+            if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+                this.game.gameLogic.onSwingRelease();
+            }
+        }
     }
 
     startAutoScan() {
@@ -82,13 +106,29 @@ class InputHandler {
             this.game.gameState.returnHeld = true;
             this.game.gameState.returnHoldStart = Date.now();
             
+            // Handle interactive batting swing press
+            if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+                this.handleInteractiveBattingKeyDown();
+            }
+            
             // Start checking for pause menu during hold
             this.checkPauseMenuDuringHold();
+        }
+    }
+    
+    handleInteractiveBattingKeyDown() {
+        const gameState = this.game.gameState;
+        const ib = gameState.interactiveBatting;
+        
+        // Only respond if waiting for swing and not already swinging
+        if (ib.active && ib.waitingForSwing && !ib.swingPressed && !ib.isSwinging) {
+            this.game.gameLogic.onSwingStart();
         }
     }
 
     checkPauseMenuDuringHold() {
         // Only check if we're in a gameplay mode and return is still held
+        // Skip pause check for interactive batting - pause is now a menu option
         if (!this.game.gameState.returnHeld || 
             ![GAME_CONSTANTS.MODES.GAMEPLAY, GAME_CONSTANTS.MODES.BATTING, GAME_CONSTANTS.MODES.PITCHING].includes(this.game.gameState.mode)) {
             return;
@@ -137,6 +177,11 @@ class InputHandler {
             GAME_CONSTANTS.MODES.PITCHING,
             GAME_CONSTANTS.MODES.PAUSE_MENU
         ];
+        
+        // Don't allow backward scan in interactive batting mode
+        if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+            return;
+        }
         
         if (!menuModes.includes(this.game.gameState.mode)) {
             return;
@@ -313,12 +358,48 @@ class InputHandler {
         }
         gameState.hasScanned = true;
         gameState.menuReady = true;
-        this.game.menuSystem.drawSwingMenu();
+        this.game.menuSystem.drawStealMenu();
         this.game.audioSystem.speak(gameState.menuOptions[gameState.selectedIndex]);
     }
 
     handlePitchingScan() {
         const gameState = this.game.gameState;
+        
+        // Handle 3x3 pitch grid navigation
+        if (gameState.pitchGrid) {
+            gameState.hasScanned = true;
+            gameState.menuReady = true;
+            
+            // Scan through grid left-to-right, top-to-bottom, then pause button
+            if (gameState.pitchGridRow === -1 && gameState.pitchGridCol === -1) {
+                // First scan - start at top-left (0,0)
+                gameState.pitchGridRow = 0;
+                gameState.pitchGridCol = 0;
+            } else if (gameState.pitchGridRow === 3) {
+                // Currently on pause, wrap to top-left
+                gameState.pitchGridRow = 0;
+                gameState.pitchGridCol = 0;
+            } else {
+                gameState.pitchGridCol++;
+                if (gameState.pitchGridCol > 2) {
+                    gameState.pitchGridCol = 0;
+                    gameState.pitchGridRow++;
+                }
+            }
+            
+            this.game.menuSystem.drawPitchGridMenu();
+            
+            // Announce current selection
+            if (gameState.pitchGridRow === 3) {
+                this.game.audioSystem.speak('Pause');
+            } else {
+                const cell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
+                this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+            }
+            return;
+        }
+        
+        // Legacy menu fallback
         if (gameState.selectedIndex === -1) {
             gameState.selectedIndex = 0;
         } else {
@@ -425,12 +506,52 @@ class InputHandler {
         }
         gameState.hasScanned = true;
         gameState.menuReady = true;
-        this.game.menuSystem.drawSwingMenu();
+        this.game.menuSystem.drawStealMenu();
         this.game.audioSystem.speak(gameState.menuOptions[gameState.selectedIndex]);
     }
 
     handlePitchingBackwardScan() {
         const gameState = this.game.gameState;
+        
+        // Handle 3x3 pitch grid backward navigation
+        if (gameState.pitchGrid) {
+            gameState.hasScanned = true;
+            gameState.menuReady = true;
+            
+            // Scan backwards through grid right-to-left, bottom-to-top
+            if (gameState.pitchGridRow === -1 && gameState.pitchGridCol === -1) {
+                // First scan - start at pause button
+                gameState.pitchGridRow = 3;
+                gameState.pitchGridCol = 0;
+            } else if (gameState.pitchGridRow === 0 && gameState.pitchGridCol === 0) {
+                // At top-left, wrap to pause
+                gameState.pitchGridRow = 3;
+                gameState.pitchGridCol = 0;
+            } else if (gameState.pitchGridRow === 3) {
+                // Currently on pause, go to bottom-right (2,2)
+                gameState.pitchGridRow = 2;
+                gameState.pitchGridCol = 2;
+            } else {
+                gameState.pitchGridCol--;
+                if (gameState.pitchGridCol < 0) {
+                    gameState.pitchGridCol = 2;
+                    gameState.pitchGridRow--;
+                }
+            }
+            
+            this.game.menuSystem.drawPitchGridMenu();
+            
+            // Announce current selection
+            if (gameState.pitchGridRow === 3) {
+                this.game.audioSystem.speak('Pause');
+            } else {
+                const cell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
+                this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+            }
+            return;
+        }
+        
+        // Legacy menu fallback
         if (gameState.selectedIndex <= 0) {
             gameState.selectedIndex = gameState.menuOptions.length - 1;
         } else {
@@ -473,6 +594,23 @@ class InputHandler {
         
         const now = Date.now();
         const holdDuration = now - this.game.gameState.returnHoldStart;
+        
+        // Handle interactive batting swing release FIRST
+        if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+            const ib = this.game.gameState.interactiveBatting;
+            
+            // Check if held too long (opens pause menu instead)
+            if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_PAUSE_THRESHOLD) {
+                // Pause menu will be shown, don't process as swing
+                return;
+            }
+            
+            // If player was pressing swing button, release it
+            if (ib.swingPressed) {
+                this.game.gameLogic.onSwingRelease();
+                return;
+            }
+        }
         
         // Check for long press to open pause menu FIRST and ONLY if held for 3+ seconds
         if (holdDuration >= GAME_CONSTANTS.TIMING.HOLD_DURATION_FOR_PAUSE && 
@@ -535,7 +673,7 @@ class InputHandler {
                 return;
             }
             
-            // Batting/Pitching selection
+            // Batting/Pitching selection (for steal menu in BATTING mode)
             if (this.game.gameState.mode === GAME_CONSTANTS.MODES.BATTING || this.game.gameState.mode === GAME_CONSTANTS.MODES.PITCHING) {
                 if (!this.validateGameplayInput()) return;
                 
@@ -546,9 +684,20 @@ class InputHandler {
                 this.game.audioSystem.playSound('select');
                 
                 if (this.game.gameState.mode === GAME_CONSTANTS.MODES.BATTING) {
-                    this.game.gameLogic.processBattingSelection(this.game.gameState.selectedIndex);
+                    // Steal/Bat menu selection
+                    this.game.gameLogic.processStealOrBat(this.game.gameState.selectedIndex);
                 } else {
-                    this.game.gameLogic.processPitchSelection(this.game.gameState.selectedIndex);
+                    // Pitch grid selection
+                    if (this.game.gameState.pitchGrid) {
+                        // Check if pause is selected
+                        if (this.game.gameState.pitchGridRow === 3) {
+                            this.game.gameLogic.processPitchSelection(-1); // -1 means pause
+                        } else {
+                            this.game.gameLogic.processPitchSelection(0); // Grid selection (actual pitch from grid)
+                        }
+                    } else {
+                        this.game.gameLogic.processPitchSelection(this.game.gameState.selectedIndex);
+                    }
                 }
             }
         }
@@ -557,6 +706,29 @@ class InputHandler {
 
     validateGameplayInput() {
         const gameState = this.game.gameState;
+        
+        // For pitch grid, we don't need the traditional selectedIndex validation
+        if (gameState.mode === GAME_CONSTANTS.MODES.PITCHING && gameState.pitchGrid) {
+            // Must have scanned at least once
+            if (!gameState.hasScanned) {
+                this.game.audioSystem.speak('Press space to scan options first.');
+                return false;
+            }
+            
+            // Must be in ready state
+            if (!gameState.menuReady) {
+                this.game.audioSystem.speak('Please wait for menu to be ready.');
+                return false;
+            }
+            
+            // Must not be animating
+            if (gameState.animating) {
+                this.game.audioSystem.speak('Please wait for current action to complete.');
+                return false;
+            }
+            
+            return true;
+        }
         
         // Must have a valid selection
         if (gameState.selectedIndex === -1) {
@@ -595,6 +767,47 @@ class InputHandler {
         const rect = this.game.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+        
+        const gameState = this.game.gameState;
+        const mode = gameState.mode;
+        
+        // Handle pitch grid click
+        if (mode === GAME_CONSTANTS.MODES.PITCHING && gameState.pitchGrid && gameState.pitchGridBounds) {
+            // Check grid cells
+            for (let i = 0; i < gameState.pitchGridBounds.length; i++) {
+                const b = gameState.pitchGridBounds[i];
+                if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
+                    gameState.pitchGridRow = b.row;
+                    gameState.pitchGridCol = b.col;
+                    gameState.hasScanned = true;
+                    gameState.menuReady = true;
+                    
+                    const cell = gameState.pitchGrid[b.row][b.col];
+                    this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+                    this.game.audioSystem.playSound('select');
+                    
+                    // Lock inputs and process
+                    gameState.playInProgress = true;
+                    gameState.inputsBlocked = true;
+                    gameState.lastActionTime = Date.now();
+                    
+                    this.game.gameLogic.processPitchSelection(0);
+                    return;
+                }
+            }
+            
+            // Check pause button
+            if (gameState.pauseButtonBounds) {
+                const pb = gameState.pauseButtonBounds;
+                if (x >= pb.x && x <= pb.x + pb.width && y >= pb.y && y <= pb.y + pb.height) {
+                    gameState.pitchGridRow = 3;
+                    this.game.audioSystem.speak('Pause');
+                    this.game.audioSystem.playSound('select');
+                    this.game.gameLogic.processPitchSelection(-1);
+                    return;
+                }
+            }
+        }
 
         if (this.game.gameState.menuBounds.length === 0) return;
 
@@ -604,8 +817,6 @@ class InputHandler {
             if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
                 this.game.gameState.selectedIndex = i;
                 this.game.audioSystem.playSound('select');
-
-                const mode = this.game.gameState.mode;
 
                 if (mode === GAME_CONSTANTS.MODES.BATTING || mode === GAME_CONSTANTS.MODES.PITCHING) {
                     // Set the necessary flags for clicks (don't require scanning)
@@ -628,7 +839,8 @@ class InputHandler {
 
                     try {
                         if (mode === GAME_CONSTANTS.MODES.BATTING) {
-                            this.game.gameLogic.processBattingSelection(this.game.gameState.selectedIndex);
+                            // Steal/Bat menu selection
+                            this.game.gameLogic.processStealOrBat(this.game.gameState.selectedIndex);
                         } else {
                             this.game.gameLogic.processPitchSelection(this.game.gameState.selectedIndex);
                         }
