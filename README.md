@@ -1,57 +1,34 @@
 # Narbehouse.github.io
 
-© 2026 NARBE LLC. All rights reserved. Licensed exclusively to the NARBE Foundation (501(c)(3)).
+© 2026 NARBE LLC
 
-This project is provided for personal, educational, and non-commercial use only.
-Commercial use, redistribution, or sale of any part of this site or its code is
-strictly prohibited without written permission from NARBE LLC.
+This project is licensed under the **MIT License**.
 
-For licensing or permission requests, please visit [narbehouse.com](https://narbehouse.com).
+You are free to use, modify, distribute, and use this software commercially, provided that the original copyright notice and license are included in all copies or substantial portions of the Software.
 
-See Below or [DISCLAIMER & TERMS OF USE](./TERMS.md) for licensing information.
+See the [LICENSE](./LICENSE) file for full details.
 
-<details>
-<summary><strong>Disclaimer & Terms of Use</strong></summary>
+---
 
-<p>
+## Trademark & Attribution
 
- DISCLAIMER AND TERMS OF USE
+"Benny’s Accessibility Hub," "NARBE," "NARBE Foundation," and related names, logos, and branding are identifiers associated with the original project.
 
-This software and any accompanying resources, including documentation, images, audio, and configuration files (collectively, the “Software”), are provided by NARBE LLC and licensed exclusively to the NARBE Foundation, a 501(c)(3) nonprofit organization.
+The MIT License applies to the source code only.
 
-BY ACCESSING OR USING THE SOFTWARE, YOU AGREE TO THE FOLLOWING TERMS:
+Use of the project name, logo, or branding does **not** grant trademark rights.
 
-1. **Permitted Use**
-   - You may use, modify, and adapt this Software solely for **personal, educational, or non-commercial purposes**.
-   - This Software may be used for **individual, patient-to-patient** use cases (e.g., a family adapting the software for their own needs).
-   - Caregivers, educators, and therapists may use this Software for **one-on-one use** with specific individuals, as long as no fee is charged for the software and it is not part of a larger commercial service.
+Forks and derivative works must not imply endorsement, sponsorship, or official affiliation with NARBE LLC or the NARBE Foundation without written permission.
 
-2. **Prohibited Use**
-   - Commercial use of any kind is strictly prohibited without express written permission from NARBE LLC.
-   - The Software may not be:
-     - Sold, sublicensed, or redistributed.
-     - Pre-installed or bundled on hardware or tablets intended for sale.
-     - Used in hospitals, clinics, schools, or therapy centers as part of a **paid program**, **clinical system**, or **commercial distribution**.
-     - Deployed at scale for multiple patients or clients across an institution or service provider.
+If you redistribute modified versions of this software, you must clearly indicate that your version is a derivative work and not the original project.
 
-3. **No Warranty**
-   - THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
-   - NARBE LLC and the NARBE Foundation make no guarantees regarding the accuracy, reliability, or safety of the Software.
-   - You assume full responsibility for the use of this Software.
+For partnership or branding inquiries, please visit:
+[https://narbehouse.com](https://narbehouse.com)
 
-4. **Limitation of Liability**
-   - Under no circumstances shall NARBE LLC or the NARBE Foundation be liable for any claims, damages, or other liabilities, whether in an action of contract, tort, or otherwise, arising from your use of the Software.
+---
 
-5. **License Enforcement**
-   - Any use of the Software outside the scope defined in this agreement may constitute a violation of copyright and licensing terms and may result in revocation of your rights to use the Software.
+## Disclaimer
 
-6. **Attribution**
-   - If you adapt or share the Software for non-commercial purposes, you must retain the original copyright notice and licensing terms.
+This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not medical software and is provided “AS IS,” without warranty of any kind, express or implied.
 
-For licensing or permission inquiries, please contact:
-https://narbehouse.com
-
-
-</p>
-</details>
-
+---
