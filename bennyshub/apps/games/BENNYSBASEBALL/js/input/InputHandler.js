@@ -350,36 +350,31 @@ class InputHandler {
     handlePitchingScan() {
         const gameState = this.game.gameState;
         
-        // Handle 3x3 pitch grid navigation
+        // Handle 5-zone pitch selector navigation
         if (gameState.pitchGrid) {
             gameState.hasScanned = true;
             gameState.menuReady = true;
             
-            // Scan through grid left-to-right, top-to-bottom, then pause button
-            if (gameState.pitchGridRow === -1 && gameState.pitchGridCol === -1) {
-                // First scan - start at top-left (0,0)
-                gameState.pitchGridRow = 0;
-                gameState.pitchGridCol = 0;
-            } else if (gameState.pitchGridRow === 3) {
-                // Currently on pause, wrap to top-left
-                gameState.pitchGridRow = 0;
-                gameState.pitchGridCol = 0;
+            // Scan through 5 zones (0-4) then pause (5)
+            // Order: Top(0), Right(1), Bottom(2), Left(3), Center(4), Pause(5)
+            if (gameState.pitchZoneIndex === -1) {
+                // First scan - start at top (0)
+                gameState.pitchZoneIndex = 0;
+            } else if (gameState.pitchZoneIndex >= 5) {
+                // Currently on pause, wrap to top
+                gameState.pitchZoneIndex = 0;
             } else {
-                gameState.pitchGridCol++;
-                if (gameState.pitchGridCol > 2) {
-                    gameState.pitchGridCol = 0;
-                    gameState.pitchGridRow++;
-                }
+                gameState.pitchZoneIndex++;
             }
             
             this.game.menuSystem.drawPitchGridMenu();
             
             // Announce current selection
-            if (gameState.pitchGridRow === 3) {
+            if (gameState.pitchZoneIndex === 5) {
                 this.game.audioSystem.speak('Pause');
             } else {
-                const cell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
-                this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+                const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
+                this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
             }
             return;
         }
@@ -498,40 +493,30 @@ class InputHandler {
     handlePitchingBackwardScan() {
         const gameState = this.game.gameState;
         
-        // Handle 3x3 pitch grid backward navigation
+        // Handle 5-zone pitch selector backward navigation
         if (gameState.pitchGrid) {
             gameState.hasScanned = true;
             gameState.menuReady = true;
             
-            // Scan backwards through grid right-to-left, bottom-to-top
-            if (gameState.pitchGridRow === -1 && gameState.pitchGridCol === -1) {
-                // First scan - start at pause button
-                gameState.pitchGridRow = 3;
-                gameState.pitchGridCol = 0;
-            } else if (gameState.pitchGridRow === 0 && gameState.pitchGridCol === 0) {
-                // At top-left, wrap to pause
-                gameState.pitchGridRow = 3;
-                gameState.pitchGridCol = 0;
-            } else if (gameState.pitchGridRow === 3) {
-                // Currently on pause, go to bottom-right (2,2)
-                gameState.pitchGridRow = 2;
-                gameState.pitchGridCol = 2;
+            // Scan backwards: Pause(5), Center(4), Left(3), Bottom(2), Right(1), Top(0)
+            if (gameState.pitchZoneIndex === -1) {
+                // First scan - start at pause
+                gameState.pitchZoneIndex = 5;
+            } else if (gameState.pitchZoneIndex === 0) {
+                // At top, wrap to pause
+                gameState.pitchZoneIndex = 5;
             } else {
-                gameState.pitchGridCol--;
-                if (gameState.pitchGridCol < 0) {
-                    gameState.pitchGridCol = 2;
-                    gameState.pitchGridRow--;
-                }
+                gameState.pitchZoneIndex--;
             }
             
             this.game.menuSystem.drawPitchGridMenu();
             
             // Announce current selection
-            if (gameState.pitchGridRow === 3) {
+            if (gameState.pitchZoneIndex === 5) {
                 this.game.audioSystem.speak('Pause');
             } else {
-                const cell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
-                this.game.audioSystem.speak(`${cell.pitch} ${cell.vertical} ${cell.horizontal}`);
+                const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
+                this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
             }
             return;
         }
@@ -659,13 +644,13 @@ class InputHandler {
                 // Steal/Bat menu selection
                 this.game.gameLogic.processStealOrBat(this.game.gameState.selectedIndex);
             } else {
-                // Pitch grid selection
+                // 5-zone pitch selector
                 if (this.game.gameState.pitchGrid) {
-                    // Check if pause is selected
-                    if (this.game.gameState.pitchGridRow === 3) {
+                    // Check if pause is selected (index 5)
+                    if (this.game.gameState.pitchZoneIndex === 5) {
                         this.game.gameLogic.processPitchSelection(-1); // -1 means pause
                     } else {
-                        this.game.gameLogic.processPitchSelection(0); // Grid selection (actual pitch from grid)
+                        this.game.gameLogic.processPitchSelection(0); // Zone selection (actual pitch from grid)
                     }
                 } else {
                     this.game.gameLogic.processPitchSelection(this.game.gameState.selectedIndex);

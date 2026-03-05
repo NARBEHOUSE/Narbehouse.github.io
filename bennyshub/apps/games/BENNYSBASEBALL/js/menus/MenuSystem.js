@@ -219,103 +219,288 @@ class MenuSystem {
         
         if (!grid) return;
         
-        const cellSize = 90;
-        const gridSize = cellSize * 3;
+        const size = 200; // Size of the square
         const padding = 15;
         const menuX = 20;
-        const menuY = canvas.height / 2 - gridSize / 2 - 30;
+        const menuY = canvas.height / 2 - size / 2 - 40;
         
         gameState.menuBounds = [];
-        gameState.pitchGridBounds = [];
+        gameState.pitchZoneBounds = [];
         
         // Draw title
         ctx.font = 'bold 18px monospace';
         ctx.fillStyle = GAME_CONSTANTS.COLORS.menuBorder;
         ctx.textAlign = 'center';
-        ctx.fillText('CHOOSE PITCH', menuX + gridSize / 2 + padding, menuY);
+        ctx.fillText('CHOOSE PITCH', menuX + size / 2 + padding, menuY);
         
-        // Draw grid background
-        const bgGradient = ctx.createLinearGradient(menuX, menuY + 20, menuX, menuY + 20 + gridSize + padding * 2);
+        // Draw background
+        const bgGradient = ctx.createLinearGradient(menuX, menuY + 20, menuX, menuY + 20 + size + padding * 2);
         bgGradient.addColorStop(0, GAME_CONSTANTS.COLORS.menuBg);
         bgGradient.addColorStop(1, 'rgba(10, 15, 30, 0.95)');
         ctx.fillStyle = bgGradient;
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 20;
-        ctx.fillRect(menuX, menuY + 20, gridSize + padding * 2, gridSize + padding * 2);
+        ctx.fillRect(menuX, menuY + 20, size + padding * 2, size + padding * 2 + 50);
         ctx.shadowBlur = 0;
         
         ctx.strokeStyle = GAME_CONSTANTS.COLORS.menuBorder;
         ctx.lineWidth = 3;
-        ctx.strokeRect(menuX, menuY + 20, gridSize + padding * 2, gridSize + padding * 2);
+        ctx.strokeRect(menuX, menuY + 20, size + padding * 2, size + padding * 2 + 50);
         
-        // Grid starts right after the title
-        const gridStartY = menuY + 35;
+        // Square area starts here
+        const squareX = menuX + padding;
+        const squareY = menuY + 35;
+        const centerX = squareX + size / 2;
+        const centerY = squareY + size / 2;
         
-        // Draw each cell in the grid
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 3; col++) {
-                const cell = grid[row][col];
-                const cellX = menuX + padding + col * cellSize;
-                const cellY = gridStartY + row * cellSize;
-                const isSelected = row === gameState.pitchGridRow && col === gameState.pitchGridCol;
+        // Corner points
+        const topLeft = { x: squareX, y: squareY };
+        const topRight = { x: squareX + size, y: squareY };
+        const bottomRight = { x: squareX + size, y: squareY + size };
+        const bottomLeft = { x: squareX, y: squareY + size };
+        
+        // Edge midpoints (where corner curves meet the center)
+        const topMid = { x: centerX, y: squareY };
+        const rightMid = { x: squareX + size, y: centerY };
+        const bottomMid = { x: centerX, y: squareY + size };
+        const leftMid = { x: squareX, y: centerY };
+        
+        // Create a gradient across the entire pitch selector based on effectiveness
+        // Find min and max effectiveness to determine gradient direction
+        let bestZoneIndex = 0;
+        let worstZoneIndex = 0;
+        for (let i = 0; i < 5; i++) {
+            if (grid[i].effectiveness > grid[bestZoneIndex].effectiveness) bestZoneIndex = i;
+            if (grid[i].effectiveness < grid[worstZoneIndex].effectiveness) worstZoneIndex = i;
+        }
+        
+        // Get the zone positions for gradient calculation
+        const zoneCenters = [
+            { x: squareX + size * 0.22, y: squareY + size * 0.22 },  // Top-left (High Inside)
+            { x: squareX + size * 0.78, y: squareY + size * 0.22 },  // Top-right (High Outside)
+            { x: squareX + size * 0.78, y: squareY + size * 0.78 },  // Bottom-right (Low Outside)
+            { x: squareX + size * 0.22, y: squareY + size * 0.78 },  // Bottom-left (Low Inside)
+            { x: centerX, y: centerY }                               // Center
+        ];
+        
+        let mainGradient;
+        
+        if (bestZoneIndex === 4) {
+            // Center is best - use radial gradient going outward (green center → red edges)
+            const outerRadius = size * 0.75;
+            mainGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+            mainGradient.addColorStop(0, 'rgba(50, 255, 100, 0.65)');      // Green (best - center)
+            mainGradient.addColorStop(0.25, 'rgba(140, 255, 70, 0.65)');   // Lime
+            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
+            mainGradient.addColorStop(0.75, 'rgba(255, 150, 50, 0.65)');   // Orange
+            mainGradient.addColorStop(1, 'rgba(255, 60, 60, 0.65)');       // Red (worst - edges)
+        } else if (worstZoneIndex === 4) {
+            // Center is worst - use radial gradient going inward (red center → green edges)
+            const outerRadius = size * 0.75;
+            mainGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+            mainGradient.addColorStop(0, 'rgba(255, 60, 60, 0.65)');       // Red (worst - center)
+            mainGradient.addColorStop(0.25, 'rgba(255, 150, 50, 0.65)');   // Orange
+            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
+            mainGradient.addColorStop(0.75, 'rgba(140, 255, 70, 0.65)');   // Lime
+            mainGradient.addColorStop(1, 'rgba(50, 255, 100, 0.65)');      // Green (best - edges)
+        } else {
+            // Best/worst are both corners - use linear gradient
+            const worstPos = zoneCenters[worstZoneIndex];
+            const bestPos = zoneCenters[bestZoneIndex];
+            
+            // Calculate direction vector and extend it
+            const dx = bestPos.x - worstPos.x;
+            const dy = bestPos.y - worstPos.y;
+            
+            // Extend gradient 20% beyond each end for more even distribution
+            const extendFactor = 0.2;
+            const startX = worstPos.x - dx * extendFactor;
+            const startY = worstPos.y - dy * extendFactor;
+            const endX = bestPos.x + dx * extendFactor;
+            const endY = bestPos.y + dy * extendFactor;
+            
+            mainGradient = ctx.createLinearGradient(startX, startY, endX, endY);
+            mainGradient.addColorStop(0, 'rgba(255, 60, 60, 0.65)');       // Red (worst)
+            mainGradient.addColorStop(0.25, 'rgba(255, 150, 50, 0.65)');   // Orange
+            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
+            mainGradient.addColorStop(0.75, 'rgba(140, 255, 70, 0.65)');   // Lime
+            mainGradient.addColorStop(1, 'rgba(50, 255, 100, 0.65)');      // Green (best)
+        }
+        
+        // Base button color (dark blue/gray)
+        const getBaseColor = (isSelected) => {
+            return isSelected ? 'rgba(50, 60, 90, 0.95)' : 'rgba(35, 45, 75, 0.9)';
+        };
+        
+        // Zone 0: Top-left corner (curved inner edge toward center)
+        const drawTopLeftCorner = () => {
+            ctx.beginPath();
+            ctx.moveTo(topLeft.x, topLeft.y);
+            ctx.lineTo(topMid.x, topMid.y);
+            // Curve inward toward center then back out to left edge
+            ctx.quadraticCurveTo(centerX, centerY, leftMid.x, leftMid.y);
+            ctx.closePath();
+        };
+        
+        // Zone 1: Top-right corner (curved inner edge toward center)
+        const drawTopRightCorner = () => {
+            ctx.beginPath();
+            ctx.moveTo(topMid.x, topMid.y);
+            ctx.lineTo(topRight.x, topRight.y);
+            ctx.lineTo(rightMid.x, rightMid.y);
+            // Curve inward toward center then back out to top edge
+            ctx.quadraticCurveTo(centerX, centerY, topMid.x, topMid.y);
+            ctx.closePath();
+        };
+        
+        // Zone 2: Bottom-right corner (curved inner edge toward center)
+        const drawBottomRightCorner = () => {
+            ctx.beginPath();
+            ctx.moveTo(rightMid.x, rightMid.y);
+            ctx.lineTo(bottomRight.x, bottomRight.y);
+            ctx.lineTo(bottomMid.x, bottomMid.y);
+            // Curve inward toward center then back out to right edge
+            ctx.quadraticCurveTo(centerX, centerY, rightMid.x, rightMid.y);
+            ctx.closePath();
+        };
+        
+        // Zone 3: Bottom-left corner (curved inner edge toward center)
+        const drawBottomLeftCorner = () => {
+            ctx.beginPath();
+            ctx.moveTo(bottomMid.x, bottomMid.y);
+            ctx.lineTo(bottomLeft.x, bottomLeft.y);
+            ctx.lineTo(leftMid.x, leftMid.y);
+            // Curve inward toward center then back out to bottom edge
+            ctx.quadraticCurveTo(centerX, centerY, bottomMid.x, bottomMid.y);
+            ctx.closePath();
+        };
+        
+        // Zone 4: Center zone - fills the negative space between the 4 corners
+        // Uses 4 curves that mirror the corner curves (bulging outward)
+        const drawCenterZone = () => {
+            ctx.beginPath();
+            // Start at top midpoint, curve outward to right midpoint
+            ctx.moveTo(topMid.x, topMid.y);
+            ctx.quadraticCurveTo(centerX, centerY, rightMid.x, rightMid.y);
+            // Curve outward to bottom midpoint
+            ctx.quadraticCurveTo(centerX, centerY, bottomMid.x, bottomMid.y);
+            // Curve outward to left midpoint
+            ctx.quadraticCurveTo(centerX, centerY, leftMid.x, leftMid.y);
+            // Curve outward back to top midpoint
+            ctx.quadraticCurveTo(centerX, centerY, topMid.x, topMid.y);
+            ctx.closePath();
+        };
+        
+        const drawFunctions = [drawTopLeftCorner, drawTopRightCorner, drawBottomRightCorner, drawBottomLeftCorner, drawCenterZone];
+        // Zone labels using baseball terminology
+        const zoneLabels = ['High In', 'High Out', 'Low Out', 'Low In', 'Center'];
+        
+        // Label positions - corners now have more space with curved center
+        const labelPositions = [
+            { x: squareX + size * 0.22, y: squareY + size * 0.22 },           // Top-left corner (High Inside)
+            { x: squareX + size * 0.78, y: squareY + size * 0.22 },           // Top-right corner (High Outside)
+            { x: squareX + size * 0.78, y: squareY + size * 0.78 },           // Bottom-right corner (Low Outside)
+            { x: squareX + size * 0.22, y: squareY + size * 0.78 },           // Bottom-left corner (Low Inside)
+            { x: centerX, y: centerY }                                         // Center zone
+        ];
+        
+        // PASS 1: Draw all zone fills first
+        for (let i = 0; i < 5; i++) {
+            const cell = grid[i];
+            const isSelected = gameState.pitchZoneIndex === i;
+            
+            // Step 1: Draw base button color
+            ctx.fillStyle = getBaseColor(isSelected);
+            drawFunctions[i]();
+            ctx.fill();
+            
+            // Step 2: Draw the unified gradient overlay (clipped to this zone's shape)
+            ctx.save();
+            drawFunctions[i]();
+            ctx.clip();
+            ctx.fillStyle = mainGradient;
+            ctx.fillRect(squareX, squareY, size, size);
+            ctx.restore();
+        }
+        
+        // PASS 2: Draw all black borders
+        for (let i = 0; i < 5; i++) {
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            drawFunctions[i]();
+            ctx.stroke();
+        }
+        
+        // PASS 3: Draw selection highlights ON TOP of everything
+        for (let i = 0; i < 5; i++) {
+            const isSelected = gameState.pitchZoneIndex === i;
+            
+            // Draw selection highlight on top if selected - very prominent
+            if (isSelected) {
+                // Outer glow effect
+                ctx.save();
+                ctx.shadowColor = '#FFFFFF';
+                ctx.shadowBlur = 12;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 6;
+                drawFunctions[i]();
+                ctx.stroke();
+                ctx.restore();
                 
-                // Store bounds for click detection
-                gameState.pitchGridBounds.push({
-                    x: cellX,
-                    y: cellY,
-                    width: cellSize,
-                    height: cellSize,
-                    row: row,
-                    col: col
-                });
+                // Bright gold border
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 5;
+                drawFunctions[i]();
+                ctx.stroke();
                 
-                // Draw heatmap background (green = effective, red = less effective)
-                const effectiveness = cell.effectiveness;
-                // More vibrant colors for better visibility
-                const r = Math.floor(255 * (1 - effectiveness));
-                const g = Math.floor(200 * effectiveness);
-                const b = 30;
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.6)`;
-                ctx.fillRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
-                
-                // Draw cell border
-                if (isSelected) {
-                    this.drawSelectionHighlight(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
-                } else {
-                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
-                }
-                
-                // Draw pitch name (abbreviated)
-                ctx.font = isSelected ? 'bold 12px monospace' : '11px monospace';
-                ctx.fillStyle = isSelected ? GAME_CONSTANTS.COLORS.menuSelected : GAME_CONSTANTS.COLORS.menuText;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                // Abbreviate pitch names
-                let pitchAbbr = cell.pitch;
-                if (pitchAbbr === 'Fastball') pitchAbbr = 'FAST';
-                else if (pitchAbbr === 'Curveball') pitchAbbr = 'CURVE';
-                else if (pitchAbbr === 'Slider') pitchAbbr = 'SLIDE';
-                else if (pitchAbbr === 'Knuckleball') pitchAbbr = 'KNUCK';
-                else if (pitchAbbr === 'Changeup') pitchAbbr = 'CHANGE';
-                
-                ctx.fillText(pitchAbbr, cellX + cellSize / 2, cellY + cellSize / 2 - 8);
-                
-                // Draw zone description
-                ctx.font = '9px monospace';
-                ctx.fillStyle = isSelected ? '#AAAAAA' : '#666666';
-                ctx.fillText(`${cell.vertical}`, cellX + cellSize / 2, cellY + cellSize / 2 + 8);
-                ctx.fillText(`${cell.horizontal}`, cellX + cellSize / 2, cellY + cellSize / 2 + 20);
+                // Inner white highlight
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                drawFunctions[i]();
+                ctx.stroke();
             }
         }
         
-        // Draw pause button below grid
-        const pauseBtnY = gridStartY + gridSize + 15;
-        const pauseBtnWidth = gridSize;
+        // PASS 4: Draw all text labels on top
+        for (let i = 0; i < 5; i++) {
+            const cell = grid[i];
+            const isSelected = gameState.pitchZoneIndex === i;
+            
+            // Draw pitch name
+            const pos = labelPositions[i];
+            ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace';
+            ctx.fillStyle = isSelected ? '#FFFFFF' : '#EEEEEE';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Abbreviate pitch names
+            let pitchAbbr = cell.pitch;
+            if (pitchAbbr === 'Fastball') pitchAbbr = 'FAST';
+            else if (pitchAbbr === 'Curveball') pitchAbbr = 'CURVE';
+            else if (pitchAbbr === 'Slider') pitchAbbr = 'SLIDE';
+            else if (pitchAbbr === 'Knuckleball') pitchAbbr = 'KNUCK';
+            else if (pitchAbbr === 'Changeup') pitchAbbr = 'CHANGE';
+            
+            // For corner zones, show pitch name + zone abbreviation
+            if (i < 4) {
+                ctx.fillText(pitchAbbr, pos.x, pos.y - 5);
+                ctx.font = '8px monospace';
+                ctx.fillStyle = isSelected ? '#CCCC00' : '#AAAAAA';
+                ctx.fillText(zoneLabels[i], pos.x, pos.y + 6);
+            } else {
+                // Center zone has more space
+                ctx.fillText(pitchAbbr, pos.x, pos.y - 8);
+                ctx.font = '9px monospace';
+                ctx.fillStyle = isSelected ? '#CCCC00' : '#888888';
+                ctx.fillText(zoneLabels[i], pos.x, pos.y + 6);
+            }
+        }
+        
+        // Draw pause button below
+        const pauseBtnY = squareY + size + 15;
+        const pauseBtnWidth = size;
         const pauseBtnHeight = 35;
-        const pauseBtnX = menuX + padding;
+        const pauseBtnX = squareX;
         
         gameState.pauseButtonBounds = {
             x: pauseBtnX,
@@ -324,8 +509,8 @@ class MenuSystem {
             height: pauseBtnHeight
         };
         
-        // Check if pause is selected (when row is 3)
-        const pauseSelected = gameState.pitchGridRow === 3;
+        // Check if pause is selected (index 5)
+        const pauseSelected = gameState.pitchZoneIndex === 5;
         
         ctx.fillStyle = pauseSelected ? 'rgba(100, 100, 150, 0.6)' : 'rgba(50, 50, 80, 0.6)';
         ctx.fillRect(pauseBtnX, pauseBtnY, pauseBtnWidth, pauseBtnHeight);

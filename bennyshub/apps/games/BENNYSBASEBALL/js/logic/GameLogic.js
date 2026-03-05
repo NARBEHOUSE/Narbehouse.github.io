@@ -1352,10 +1352,9 @@ class GameLogic {
     showPitchMenu() {
         const gameState = this.game.gameState;
         
-        // Generate randomized 3x3 pitch grid
+        // Generate 5-zone pitch selector (4 corners + center diamond)
         gameState.pitchGrid = this.generatePitchGrid();
-        gameState.pitchGridRow = -1; // Start with nothing selected
-        gameState.pitchGridCol = -1;
+        gameState.pitchZoneIndex = -1; // Start with nothing selected (0-4 for zones, 5 for pause)
         gameState.menuOptions = ['Pause']; // Keep pause option separate
         
         // Keep inputs blocked initially to provide a selection buffer
@@ -1373,44 +1372,85 @@ class GameLogic {
     
     generatePitchGrid() {
         const pitchTypes = ['Fastball', 'Curveball', 'Slider', 'Knuckleball', 'Changeup'];
-        const verticalZones = ['High', 'Middle', 'Low'];
-        const horizontalZones = ['Inside', 'Middle', 'Outside'];
+        // Zone labels: 0=High Inside, 1=High Outside, 2=Low Outside, 3=Low Inside, 4=Center
+        const zones = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside', 'Center'];
         
-        // Pick a random "hot spot" cell for the heatmap center
-        const hotRow = Math.floor(Math.random() * 3);
-        const hotCol = Math.floor(Math.random() * 3);
+        // Shuffle the pitch types to randomize which pitch goes where
+        const shuffledPitches = [...pitchTypes];
+        for (let i = shuffledPitches.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledPitches[i], shuffledPitches[j]] = [shuffledPitches[j], shuffledPitches[i]];
+        }
+        
+        // Pick a random "hot spot" zone (0-4) - the best pitch location
+        const hotZone = Math.floor(Math.random() * 5);
         
         const grid = [];
         
-        for (let row = 0; row < 3; row++) {
-            grid[row] = [];
-            for (let col = 0; col < 3; col++) {
-                // Pick a completely random pitch for each cell
-                const pitch = pitchTypes[Math.floor(Math.random() * pitchTypes.length)];
-                
-                // Get zone from position
-                const vertical = verticalZones[row];
-                const horizontal = horizontalZones[col];
-                
-                // Calculate effectiveness (heatmap value 0-1)
-                // Gradient radiating from the random hot spot
-                const rowDist = Math.abs(row - hotRow);
-                const colDist = Math.abs(col - hotCol);
-                const maxDist = 2 * Math.sqrt(2); // Max possible distance in 3x3 grid
-                const dist = Math.sqrt(rowDist * rowDist + colDist * colDist);
-                const effectiveness = 1 - (dist / maxDist) * 0.7; // 1.0 at hot spot, ~0.3 at furthest
-                
-                grid[row][col] = {
-                    pitch: pitch,
-                    vertical: vertical,
-                    horizontal: horizontal,
-                    effectiveness: effectiveness,
-                    label: `${pitch} ${vertical} ${horizontal}`
-                };
+        for (let i = 0; i < 5; i++) {
+            // Each zone gets a unique pitch from the shuffled array
+            const pitch = shuffledPitches[i];
+            const zone = zones[i];
+            
+            // Calculate effectiveness based on distance from hot zone
+            // Hot zone = 1.0, adjacent = ~0.6, opposite = ~0.3
+            let effectiveness;
+            if (i === hotZone) {
+                effectiveness = 1.0; // Best pitch
+            } else if (i === 4 || hotZone === 4) {
+                // Center is adjacent to all corners, corners adjacent to center
+                effectiveness = 0.6;
+            } else {
+                // Calculate distance between corner zones (0-3)
+                // Adjacent corners (differ by 1 or 3) = 0.6, diagonal (differ by 2) = 0.3
+                const diff = Math.abs(i - hotZone);
+                if (diff === 1 || diff === 3) {
+                    effectiveness = 0.6; // Adjacent corner
+                } else {
+                    effectiveness = 0.3; // Diagonal corner (opposite)
+                }
             }
+            
+            grid[i] = {
+                pitch: pitch,
+                zone: zone,
+                zoneIndex: i,
+                effectiveness: effectiveness,
+                label: `${pitch}, ${zone}`
+            };
         }
         
         return grid;
+    }
+    
+    // Determine where the pitch actually ends up based on selected zone
+    getPitchOutcome(selectedZone) {
+        const roll = Math.random() * 100;
+        
+        if (selectedZone.zoneIndex === 4) {
+            // Center zone - usually center, small chance to drift
+            // 70% center, 7.5% each direction (high center, low center, inside, outside)
+            if (roll < 70) {
+                return { location: 'Center', drifted: false };
+            } else if (roll < 77.5) {
+                return { location: 'High Center', drifted: true };
+            } else if (roll < 85) {
+                return { location: 'Low Center', drifted: true };
+            } else if (roll < 92.5) {
+                return { location: 'Inside', drifted: true };
+            } else {
+                return { location: 'Outside', drifted: true };
+            }
+        } else {
+            // Corner zones - usually their zone, small chance to drift to center
+            // 85% their zone, 15% center
+            const zoneNames = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside'];
+            if (roll < 85) {
+                return { location: zoneNames[selectedZone.zoneIndex], drifted: false };
+            } else {
+                return { location: 'Center', drifted: true };
+            }
+        }
     }
 
     processPitchSelection(selected) {
@@ -1422,13 +1462,33 @@ class GameLogic {
             return;
         }
         
-        // Get pitch from grid
-        const gridCell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
+        // Get pitch from the 5-zone grid using pitchZoneIndex
+        const zoneIndex = gameState.pitchZoneIndex;
+        const gridCell = gameState.pitchGrid[zoneIndex];
         const pitchType = gridCell.pitch;
-        const pitchLocation = gridCell.horizontal;
+        
+        // Get the actual pitch outcome (where the ball actually goes)
+        const pitchOutcome = this.getPitchOutcome(gridCell);
+        const actualLocation = pitchOutcome.location;
+        
+        // Map the actual location to animation location
+        let pitchLocation;
+        if (actualLocation.includes('Inside')) pitchLocation = 'Inside';
+        else if (actualLocation.includes('Outside')) pitchLocation = 'Outside';
+        else pitchLocation = 'Middle';
+        
+        // Check if this is the best pitch (30% strike bonus)
+        const isBestPitch = gridCell.effectiveness >= 0.95;
+        if (isBestPitch) {
+            gameState.bestPitchBonus = true;
+        } else {
+            gameState.bestPitchBonus = false;
+        }
         
         gameState.selectedPitch = pitchType;
         gameState.selectedPitchLocation = pitchLocation;
+        gameState.actualPitchLocation = actualLocation; // Store the detailed location
+        gameState.pitchDrifted = pitchOutcome.drifted; // Whether pitch drifted from intended zone
         gameState.selectedPitchEffectiveness = gridCell.effectiveness; // Store for outcome calculation
         
         // Clear any existing timeout
@@ -1521,11 +1581,34 @@ class GameLogic {
         // Apply to strike rate (positive = more strikes, negative = fewer strikes)
         strikeRate = strikeRate * (1 + effectivenessModifier);
         
+        // BEST PITCH BONUS: 30% increased strike rate for selecting the best pitch
+        if (gameState.bestPitchBonus) {
+            strikeRate = strikeRate * 1.30; // 30% bonus
+        }
+        
         // Apply inverse to hit outcomes (positive effectiveness = fewer hits, negative = more hits)
         const hitModifier = 1 - effectivenessModifier; // Green reduces hits, red increases hits
         Object.keys(hitOutcomes).forEach(key => {
             hitOutcomes[key] = hitOutcomes[key] * hitModifier;
         });
+        
+        // BEST PITCH BONUS: Also boost ground outs/weak contact for the best pitch
+        if (gameState.bestPitchBonus) {
+            // Increase ground out chance by 20% (good for double plays)
+            if (hitOutcomes['Ground Out']) {
+                hitOutcomes['Ground Out'] = hitOutcomes['Ground Out'] * 1.20;
+            }
+            // Reduce extra base hits
+            if (hitOutcomes['Double']) {
+                hitOutcomes['Double'] = hitOutcomes['Double'] * 0.85;
+            }
+            if (hitOutcomes['Triple']) {
+                hitOutcomes['Triple'] = hitOutcomes['Triple'] * 0.80;
+            }
+            if (hitOutcomes['Home Run']) {
+                hitOutcomes['Home Run'] = hitOutcomes['Home Run'] * 0.75;
+            }
+        }
         
         if (gameState.samePitchCount > 2) {
             const penalty = (gameState.samePitchCount - 2) * 5;
@@ -2044,13 +2127,22 @@ class GameLogic {
         if (!this.game.audioSystem.settings.soundEnabled) return;
         
         try {
-            const homerunAudio = new Audio('audio/homerun.wav');
-            homerunAudio.volume = 0.3; // Set appropriate volume
-            homerunAudio.play().catch(error => {
-                console.warn('Could not play home run sound:', error);
-            });
+            // Use the preloaded sound from AudioSystem
+            if (this.game.audioSystem.sounds.homerun) {
+                this.game.audioSystem.sounds.homerun.currentTime = 0;
+                this.game.audioSystem.sounds.homerun.play().catch(error => {
+                    console.warn('Could not play home run sound:', error);
+                });
+            } else {
+                // Fallback to creating new Audio
+                const homerunAudio = new Audio('audio/homerun.wav');
+                homerunAudio.volume = 0.5;
+                homerunAudio.play().catch(error => {
+                    console.warn('Could not play home run sound:', error);
+                });
+            }
         } catch (error) {
-            console.warn('Error loading home run sound:', error);
+            console.warn('Error playing home run sound:', error);
         }
     }
 
@@ -2059,13 +2151,22 @@ class GameLogic {
         if (!this.game.audioSystem.settings.soundEnabled) return;
         
         try {
-            const hitAudio = new Audio('audio/baseballhit.wav');
-            hitAudio.volume = 0.3; // Set appropriate volume
-            hitAudio.play().catch(error => {
-                console.warn('Could not play baseball hit sound:', error);
-            });
+            // Use the preloaded sound from AudioSystem
+            if (this.game.audioSystem.sounds.hit) {
+                this.game.audioSystem.sounds.hit.currentTime = 0;
+                this.game.audioSystem.sounds.hit.play().catch(error => {
+                    console.warn('Could not play baseball hit sound:', error);
+                });
+            } else {
+                // Fallback to creating new Audio
+                const hitAudio = new Audio('audio/baseballhit.wav');
+                hitAudio.volume = 0.4;
+                hitAudio.play().catch(error => {
+                    console.warn('Could not play baseball hit sound:', error);
+                });
+            }
         } catch (error) {
-            console.warn('Error loading baseball hit sound:', error);
+            console.warn('Error playing baseball hit sound:', error);
         }
     }
 }
