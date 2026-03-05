@@ -510,9 +510,17 @@ class GameLogic {
     onSwingRelease() {
         const gameState = this.game.gameState;
         
-        if (!gameState.interactiveBatting.active || !gameState.interactiveBatting.swingPressed) {
+        // Guard against multiple calls - check active, swingPressed, and NOT already released
+        if (!gameState.interactiveBatting.active || 
+            !gameState.interactiveBatting.swingPressed || 
+            gameState.interactiveBatting.swingReleased) {
             return;
         }
+        
+        // Immediately mark as released and clear swingPressed to prevent any further swing processing
+        gameState.interactiveBatting.swingPressed = false;
+        gameState.interactiveBatting.swingReleased = true;
+        gameState.interactiveBatting.waitingForSwing = false;
         
         // Stop charge tone monitoring
         if (this.chargeMonitorId) {
@@ -522,9 +530,6 @@ class GameLogic {
         this.game.audioSystem.stopChargeSound();
         
         const holdDuration = Date.now() - gameState.interactiveBatting.swingPressStart;
-        
-        gameState.interactiveBatting.swingReleased = true;
-        gameState.interactiveBatting.waitingForSwing = false;
         
         // Determine swing type based on hold duration:
         // 0-3s = normal swing

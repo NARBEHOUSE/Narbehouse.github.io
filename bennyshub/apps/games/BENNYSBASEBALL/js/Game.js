@@ -170,6 +170,10 @@ class Game {
         this.gameState.previousMode = this.gameState.mode;
         this.gameState.mode = GAME_CONSTANTS.MODES.PAUSE_MENU;
         
+        // Clear the return/enter held state to prevent any lingering hold checks
+        this.gameState.returnHeld = false;
+        this.gameState.returnHoldStart = 0;
+        
         // Unblock ALL inputs so pause menu can be interacted with
         this.gameState.inputsBlocked = false;
         this.gameState.playInProgress = false;
@@ -241,6 +245,10 @@ class Game {
     resumeFromPause() {
         // Return to the previous game mode
         this.gameState.mode = this.gameState.previousMode || GAME_CONSTANTS.MODES.GAMEPLAY;
+        
+        // Clear any lingering return/enter hold state to prevent pause re-triggering
+        this.gameState.returnHeld = false;
+        this.gameState.returnHoldStart = 0;
         
         this.audioSystem.speak('Resuming game');
         
