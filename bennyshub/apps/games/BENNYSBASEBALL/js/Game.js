@@ -342,7 +342,8 @@ class Game {
             } else if (mode === GAME_CONSTANTS.MODES.BATTING) {
                 this.menuSystem.drawStealMenu();
             } else if (mode === GAME_CONSTANTS.MODES.PITCHING) {
-                this.menuSystem.drawPitchMenu();
+                // Use drawPitchGridMenu which has null check - won't draw if grid is cleared
+                this.menuSystem.drawPitchGridMenu();
             } else if (mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
                 // Interactive batting mode - redraw field and UI
                 this.drawGameScreen();

@@ -200,6 +200,15 @@ class MenuSystem {
     }
 
     drawPitchMenu() {
+        // Don't draw if pitch grid is cleared (transition in progress)
+        if (!this.game.gameState.pitchGrid) {
+            // Just draw the field without menu
+            this.game.fieldRenderer.drawField(this.game.gameState);
+            this.game.fieldRenderer.drawPlayers();
+            this.game.uiRenderer.drawScoreboard(this.game.gameState);
+            return;
+        }
+        
         this.game.fieldRenderer.drawField(this.game.gameState);
         this.game.fieldRenderer.drawPlayers();
         this.game.uiRenderer.drawScoreboard(this.game.gameState);
@@ -285,24 +294,27 @@ class MenuSystem {
         
         let mainGradient;
         
+        // Colorblind-friendly gradient: Dark Purple/Blue (worst) → Light Blue → White/Yellow (best)
+        // This uses luminance differences which are visible to all color vision types
+        
         if (bestZoneIndex === 4) {
-            // Center is best - use radial gradient going outward (green center → red edges)
+            // Center is best - use radial gradient going outward (bright center → dark edges)
             const outerRadius = size * 0.75;
             mainGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
-            mainGradient.addColorStop(0, 'rgba(50, 255, 100, 0.65)');      // Green (best - center)
-            mainGradient.addColorStop(0.25, 'rgba(140, 255, 70, 0.65)');   // Lime
-            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
-            mainGradient.addColorStop(0.75, 'rgba(255, 150, 50, 0.65)');   // Orange
-            mainGradient.addColorStop(1, 'rgba(255, 60, 60, 0.65)');       // Red (worst - edges)
+            mainGradient.addColorStop(0, 'rgba(255, 255, 150, 0.75)');     // Bright yellow (best - center)
+            mainGradient.addColorStop(0.25, 'rgba(200, 230, 255, 0.70)');  // Light cyan
+            mainGradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.65)');   // Sky blue (mid)
+            mainGradient.addColorStop(0.75, 'rgba(80, 100, 180, 0.65)');   // Medium blue
+            mainGradient.addColorStop(1, 'rgba(60, 60, 120, 0.70)');       // Dark purple-blue (worst - edges)
         } else if (worstZoneIndex === 4) {
-            // Center is worst - use radial gradient going inward (red center → green edges)
+            // Center is worst - use radial gradient going inward (dark center → bright edges)
             const outerRadius = size * 0.75;
             mainGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
-            mainGradient.addColorStop(0, 'rgba(255, 60, 60, 0.65)');       // Red (worst - center)
-            mainGradient.addColorStop(0.25, 'rgba(255, 150, 50, 0.65)');   // Orange
-            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
-            mainGradient.addColorStop(0.75, 'rgba(140, 255, 70, 0.65)');   // Lime
-            mainGradient.addColorStop(1, 'rgba(50, 255, 100, 0.65)');      // Green (best - edges)
+            mainGradient.addColorStop(0, 'rgba(60, 60, 120, 0.70)');       // Dark purple-blue (worst - center)
+            mainGradient.addColorStop(0.25, 'rgba(80, 100, 180, 0.65)');   // Medium blue
+            mainGradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.65)');   // Sky blue (mid)
+            mainGradient.addColorStop(0.75, 'rgba(200, 230, 255, 0.70)');  // Light cyan
+            mainGradient.addColorStop(1, 'rgba(255, 255, 150, 0.75)');     // Bright yellow (best - edges)
         } else {
             // Best/worst are both corners - use linear gradient
             const worstPos = zoneCenters[worstZoneIndex];
@@ -320,11 +332,11 @@ class MenuSystem {
             const endY = bestPos.y + dy * extendFactor;
             
             mainGradient = ctx.createLinearGradient(startX, startY, endX, endY);
-            mainGradient.addColorStop(0, 'rgba(255, 60, 60, 0.65)');       // Red (worst)
-            mainGradient.addColorStop(0.25, 'rgba(255, 150, 50, 0.65)');   // Orange
-            mainGradient.addColorStop(0.5, 'rgba(255, 235, 50, 0.65)');    // Yellow (mid)
-            mainGradient.addColorStop(0.75, 'rgba(140, 255, 70, 0.65)');   // Lime
-            mainGradient.addColorStop(1, 'rgba(50, 255, 100, 0.65)');      // Green (best)
+            mainGradient.addColorStop(0, 'rgba(60, 60, 120, 0.70)');       // Dark purple-blue (worst)
+            mainGradient.addColorStop(0.25, 'rgba(80, 100, 180, 0.65)');   // Medium blue
+            mainGradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.65)');   // Sky blue (mid)
+            mainGradient.addColorStop(0.75, 'rgba(200, 230, 255, 0.70)');  // Light cyan
+            mainGradient.addColorStop(1, 'rgba(255, 255, 150, 0.75)');     // Bright yellow (best)
         }
         
         // Base button color (dark blue/gray)
@@ -454,42 +466,70 @@ class MenuSystem {
         // PASS 3: Draw selection highlights ON TOP of everything
         for (let i = 0; i < 5; i++) {
             const isSelected = gameState.pitchZoneIndex === i;
+            const cell = grid[i];
+            const isBestPitch = cell.effectiveness >= 0.95;
             
-            // Draw selection highlight on top if selected - very prominent
+            // Draw selection highlight on top if selected - SUPER PROMINENT
             if (isSelected) {
-                // Outer glow effect
+                // Pulsing effect - calculate pulse intensity
+                const pulseTime = Date.now() % 1000;
+                const pulseIntensity = 0.7 + 0.3 * Math.sin(pulseTime / 1000 * Math.PI * 2);
+                
+                // Best pitch gets GREEN glow, others get YELLOW
+                const glowColor = isBestPitch ? '#00FF00' : '#FFFF00';
+                const borderColor = isBestPitch ? '#00FF00' : '#FFD700';
+                const fillColor = isBestPitch ? '#00FF00' : '#FFFF00';
+                
+                // Outer bright glow effect (very large)
                 ctx.save();
-                ctx.shadowColor = '#FFFFFF';
-                ctx.shadowBlur = 12;
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 6;
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur = isBestPitch ? 35 : 25;
+                ctx.strokeStyle = isBestPitch ? `rgba(0, 255, 0, ${pulseIntensity})` : `rgba(255, 255, 0, ${pulseIntensity})`;
+                ctx.lineWidth = isBestPitch ? 12 : 10;
                 drawFunctions[i]();
                 ctx.stroke();
                 ctx.restore();
                 
-                // Bright gold border
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 5;
+                // Second glow layer
+                ctx.save();
+                ctx.shadowColor = '#FFFFFF';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 8;
+                drawFunctions[i]();
+                ctx.stroke();
+                ctx.restore();
+                
+                // Bright border
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 6;
                 drawFunctions[i]();
                 ctx.stroke();
                 
                 // Inner white highlight
                 ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 drawFunctions[i]();
                 ctx.stroke();
+                
+                // Draw a filled highlight overlay for extra visibility
+                ctx.save();
+                ctx.globalAlpha = isBestPitch ? 0.35 : 0.25;
+                ctx.fillStyle = fillColor;
+                drawFunctions[i]();
+                ctx.fill();
+                ctx.restore();
             }
         }
         
-        // PASS 4: Draw all text labels on top
+        // PASS 4: Draw all text labels on top with black outlines for readability
         for (let i = 0; i < 5; i++) {
             const cell = grid[i];
             const isSelected = gameState.pitchZoneIndex === i;
+            const isBestPitch = cell.effectiveness >= 0.95;
             
             // Draw pitch name
             const pos = labelPositions[i];
-            ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace';
-            ctx.fillStyle = isSelected ? '#FFFFFF' : '#EEEEEE';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
@@ -501,18 +541,36 @@ class MenuSystem {
             else if (pitchAbbr === 'Knuckleball') pitchAbbr = 'KNUCK';
             else if (pitchAbbr === 'Changeup') pitchAbbr = 'CHANGE';
             
+            // Helper function to draw text with black outline for readability
+            const drawTextWithOutline = (text, x, y, font, fillColor) => {
+                ctx.font = font;
+                // Draw black outline (stroke)
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(text, x, y);
+                // Draw fill
+                ctx.fillStyle = fillColor;
+                ctx.fillText(text, x, y);
+            };
+            
             // For corner zones, show pitch name + zone abbreviation
             if (i < 4) {
-                ctx.fillText(pitchAbbr, pos.x, pos.y - 5);
-                ctx.font = '8px monospace';
-                ctx.fillStyle = isSelected ? '#CCCC00' : '#AAAAAA';
-                ctx.fillText(zoneLabels[i], pos.x, pos.y + 6);
+                const pitchFont = isSelected ? 'bold 11px monospace' : 'bold 10px monospace';
+                const pitchColor = isSelected ? '#FFFFFF' : '#FFFFFF';
+                drawTextWithOutline(pitchAbbr, pos.x, pos.y - 5, pitchFont, pitchColor);
+                
+                const zoneFont = 'bold 8px monospace';
+                const zoneColor = isSelected ? (isBestPitch ? '#00FF00' : '#FFFF00') : '#DDDDDD';
+                drawTextWithOutline(zoneLabels[i], pos.x, pos.y + 6, zoneFont, zoneColor);
             } else {
                 // Center zone has more space
-                ctx.fillText(pitchAbbr, pos.x, pos.y - 8);
-                ctx.font = '9px monospace';
-                ctx.fillStyle = isSelected ? '#CCCC00' : '#888888';
-                ctx.fillText(zoneLabels[i], pos.x, pos.y + 6);
+                const pitchFont = isSelected ? 'bold 12px monospace' : 'bold 11px monospace';
+                const pitchColor = isSelected ? '#FFFFFF' : '#FFFFFF';
+                drawTextWithOutline(pitchAbbr, pos.x, pos.y - 8, pitchFont, pitchColor);
+                
+                const zoneFont = 'bold 9px monospace';
+                const zoneColor = isSelected ? (isBestPitch ? '#00FF00' : '#FFFF00') : '#DDDDDD';
+                drawTextWithOutline(zoneLabels[i], pos.x, pos.y + 6, zoneFont, zoneColor);
             }
         }
         

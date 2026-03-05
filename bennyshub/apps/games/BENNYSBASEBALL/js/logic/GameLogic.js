@@ -1340,8 +1340,22 @@ class GameLogic {
     }
 
     startPitchingPhase() {
-        this.game.gameState.mode = GAME_CONSTANTS.MODES.PITCHING;
-        this.game.gameState.inputsBlocked = true; // Block inputs immediately
+        const gameState = this.game.gameState;
+        gameState.mode = GAME_CONSTANTS.MODES.PITCHING;
+        gameState.inputsBlocked = true; // Block inputs immediately
+        
+        // IMMEDIATELY clear the old pitch grid so scans are ignored during transition
+        gameState.pitchGrid = null;
+        gameState.pitchZoneIndex = -1;
+        
+        // Force reset spacebar state
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Require fresh keypress
+            this.game.inputHandler.stopBackwardScan();
+            this.game.inputHandler.stopAutoScan();
+        }
         
         setTimeout(() => {
             this.showPitchMenu();
@@ -1354,8 +1368,18 @@ class GameLogic {
         
         // Generate 5-zone pitch selector (4 corners + center diamond)
         gameState.pitchGrid = this.generatePitchGrid();
+        gameState.pitchGridTimestamp = Date.now(); // Track when this grid was created
         gameState.pitchZoneIndex = -1; // Start with nothing selected (0-4 for zones, 5 for pause)
         gameState.menuOptions = ['Pause']; // Keep pause option separate
+        
+        // FORCE reset spacebar state - require fresh keypress after menu appears
+        // This prevents held spacebar from immediately scanning the new menu
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Mark as "already pressed" so keydown is ignored until release
+            this.game.inputHandler.stopBackwardScan();
+        }
         
         // Keep inputs blocked initially to provide a selection buffer
         gameState.inputsBlocked = true;
@@ -1462,9 +1486,23 @@ class GameLogic {
             return;
         }
         
-        // Get pitch from the 5-zone grid using pitchZoneIndex
+        // IMMEDIATELY block all inputs and clear the menu to prevent any more scans
+        gameState.inputsBlocked = true;
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Require fresh keypress
+            this.game.inputHandler.stopBackwardScan();
+            this.game.inputHandler.stopAutoScan();
+        }
+        
+        // Get pitch from the 5-zone grid using pitchZoneIndex BEFORE clearing
         const zoneIndex = gameState.pitchZoneIndex;
         const gridCell = gameState.pitchGrid[zoneIndex];
+        
+        // NOW clear the pitch grid so the old menu can never be drawn again
+        gameState.pitchGrid = null;
+        gameState.pitchZoneIndex = -1;
         const pitchType = gridCell.pitch;
         
         // Get the actual pitch outcome (where the ball actually goes)

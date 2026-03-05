@@ -352,6 +352,13 @@ class InputHandler {
         
         // Handle 5-zone pitch selector navigation
         if (gameState.pitchGrid) {
+            // Don't scan if spacebar was held BEFORE this pitch grid was generated
+            // This prevents scanning on old grid when holding space during menu transition
+            if (gameState.pitchGridTimestamp && gameState.spaceHoldStart && 
+                gameState.spaceHoldStart < gameState.pitchGridTimestamp) {
+                return; // Ignore this scan - space was held before menu appeared
+            }
+            
             gameState.hasScanned = true;
             gameState.menuReady = true;
             
@@ -374,7 +381,12 @@ class InputHandler {
                 this.game.audioSystem.speak('Pause');
             } else {
                 const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
-                this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                // Check if this is the best pitch (effectiveness = 1.0)
+                if (cell.effectiveness >= 0.95) {
+                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}, Best pitch!`);
+                } else {
+                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                }
             }
             return;
         }
@@ -495,6 +507,12 @@ class InputHandler {
         
         // Handle 5-zone pitch selector backward navigation
         if (gameState.pitchGrid) {
+            // Don't scan if spacebar was held BEFORE this pitch grid was generated
+            if (gameState.pitchGridTimestamp && gameState.spaceHoldStart && 
+                gameState.spaceHoldStart < gameState.pitchGridTimestamp) {
+                return; // Ignore this scan - space was held before menu appeared
+            }
+            
             gameState.hasScanned = true;
             gameState.menuReady = true;
             
@@ -516,7 +534,12 @@ class InputHandler {
                 this.game.audioSystem.speak('Pause');
             } else {
                 const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
-                this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                // Check if this is the best pitch (effectiveness = 1.0)
+                if (cell.effectiveness >= 0.95) {
+                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}, Best pitch!`);
+                } else {
+                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                }
             }
             return;
         }
