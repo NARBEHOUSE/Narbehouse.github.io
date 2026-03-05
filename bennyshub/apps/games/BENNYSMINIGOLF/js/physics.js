@@ -318,17 +318,9 @@ class PhysicsEngine {
                     const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
                     const boostAmount = currentSpeed * 0.10;
 
-                    let angleRad;
                     if (activeBoost.boostAngle !== undefined) {
-                        angleRad = activeBoost.boostAngle * Math.PI / 180;
-                    } else if (activeBoost.angle !== undefined || activeBoost.angle === 0) {
-                        // Editor uses 0=Up (negative Y), but Math uses 0=Right
-                        // Subtract 90 degrees
-                        angleRad = ((activeBoost.angle || 0) - 90) * Math.PI / 180;
-                    }
-
-                    if (angleRad !== undefined) {
                         // Directional Boost
+                        const angleRad = activeBoost.boostAngle * Math.PI / 180;
                         ball.vx += Math.cos(angleRad) * boostAmount;
                         ball.vy += Math.sin(angleRad) * boostAmount;
                     } else {

@@ -768,8 +768,8 @@ class Game {
         const steps = 5;
         const subDt = (dt * 60) / steps;
         
-        // Collect all balls that have started the hole
-        const activePlayers = this.players.filter(p => p.hasStartedHole);
+        // Collect all balls that have started the hole and haven't finished yet
+        const activePlayers = this.players.filter(p => p.hasStartedHole && !p.finishedHole);
         const balls = activePlayers.map(p => p.ball);
         
         // Store start positions for texture rolling
@@ -1237,17 +1237,9 @@ class Game {
             this.ctx.shadowBlur = 8;
             this.boosts.forEach(b => {
                 if (this.boostPattern) {
-                    let angle;
-                    if (b.boostAngle !== undefined) {
-                        angle = b.boostAngle;
-                    } else {
-                        // Editor uses 0=Up, but Pattern is 0=Right
-                        // Subtract 90 degrees to align visual
-                        angle = (b.angle || 0) - 90;
-                    }
-                    
+                    const angle = (b.boostAngle !== undefined) ? b.boostAngle : (b.angle || 0);
                     const matrix = new DOMMatrix();
-                    matrix.rotateSelf(angle);
+                    if (angle) matrix.rotateSelf(angle);
                     this.boostPattern.setTransform(matrix);
                     this.ctx.fillStyle = this.boostPattern;
                 } else {

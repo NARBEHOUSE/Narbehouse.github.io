@@ -4,12 +4,15 @@ class InputHandler {
         this.mode = 'MENU'; // 'MENU' or 'GAMEPLAY'
         
         // State tracking
-        this.spaceHeld = false;
-        this.spaceHoldStart = 0;
+        // NOTE: All input debouncing is handled by scan-manager.js - do NOT add local debounce
+        this.spacePressed = false;
+        this.spaceHoldStartTime = 0;
+        this.spaceHoldTimeout = null;
         this.backwardScanInterval = null;
         
-        this.enterHeld = false;
+        this.enterPressed = false;
         this.enterHoldStart = 0;
+        this.pauseHoldTimeout = null;
         this.pauseTriggered = false;
 
         // Callbacks
@@ -21,38 +24,98 @@ class InputHandler {
     setMode(mode) {
         this.mode = mode;
         // Reset states on mode switch to prevent stuck inputs
-        this.spaceHeld = false;
-        this.enterHeld = false;
+        this.spacePressed = false;
+        this.enterPressed = false;
         this.stopBackwardScan();
+        if (this.spaceHoldTimeout) {
+            clearTimeout(this.spaceHoldTimeout);
+            this.spaceHoldTimeout = null;
+        }
+        if (this.pauseHoldTimeout) {
+            clearTimeout(this.pauseHoldTimeout);
+            this.pauseHoldTimeout = null;
+        }
     }
 
     setupListeners() {
         window.addEventListener('keydown', (e) => this.handleKeyDown(e));
         window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+        
+        // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+        document.addEventListener('narbe-input-cancelled', (e) => {
+            if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+                const wasBackwardScanning = this.backwardScanInterval !== null;
+                this.spacePressed = false;
+                this.spaceHoldStartTime = 0;
+                this.keys['Space'] = false;
+                this.stopBackwardScan();
+                if (this.spaceHoldTimeout) {
+                    clearTimeout(this.spaceHoldTimeout);
+                    this.spaceHoldTimeout = null;
+                }
+                // If cancelled due to 'too-short', still perform forward scan in menu mode - user intended to press
+                if (e.detail.reason === 'too-short' && !wasBackwardScanning && this.mode === 'MENU') {
+                    this.trigger('SCAN_NEXT');
+                }
+            }
+            if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+                const wasPauseTriggered = this.pauseTriggered;
+                this.enterPressed = false;
+                this.enterHoldStart = 0;
+                this.keys['Enter'] = false;
+                this.pauseTriggered = false;
+                if (this.pauseHoldTimeout) {
+                    clearTimeout(this.pauseHoldTimeout);
+                    this.pauseHoldTimeout = null;
+                }
+                // If cancelled due to 'too-short', still perform select in menu mode - user intended to press
+                if (e.detail.reason === 'too-short' && !wasPauseTriggered && this.mode === 'MENU') {
+                    this.trigger('SELECT');
+                }
+            }
+        });
     }
 
     handleKeyDown(e) {
-        if (this.keys[e.code]) return; // Ignore repeats
+        if (e.repeat) return; // Ignore auto-repeat
+        if (this.keys[e.code]) return; // Already down
         this.keys[e.code] = true;
 
-        if (e.code === 'Space') {
-            this.spaceHeld = true;
-            this.spaceHoldStart = Date.now();
+        if (e.code === 'Space' && !this.spacePressed) {
+            this.spacePressed = true;
+            this.spaceHoldStartTime = Date.now();
             
             if (this.mode === 'MENU') {
-                this.checkBackwardScan();
+                // Set timeout for backwards scanning - only if not already active
+                if (!this.spaceHoldTimeout && !this.backwardScanInterval) {
+                    this.spaceHoldTimeout = setTimeout(() => {
+                        if (this.spacePressed && this.mode === 'MENU') {
+                            this.startBackwardScan();
+                        }
+                        this.spaceHoldTimeout = null;
+                    }, 3000);
+                }
             } else {
                 this.trigger('GAME_SPACE_DOWN');
             }
         }
 
-        if (e.code === 'Enter') {
-            this.enterHeld = true;
+        if (e.code === 'Enter' && !this.enterPressed) {
+            this.enterPressed = true;
             this.enterHoldStart = Date.now();
             this.pauseTriggered = false;
 
             if (this.mode === 'GAMEPLAY') {
-                this.checkPauseHold();
+                // Set timeout for pause - only if not already active
+                if (!this.pauseHoldTimeout) {
+                    this.pauseHoldTimeout = setTimeout(() => {
+                        if (this.enterPressed && !this.pauseTriggered) {
+                            this.pauseTriggered = true;
+                            this.trigger('PAUSE');
+                        }
+                        this.pauseHoldTimeout = null;
+                    }, 6000); // 6 seconds for pause menu
+                }
                 this.trigger('GAME_ENTER_DOWN');
             }
         }
@@ -61,24 +124,37 @@ class InputHandler {
     handleKeyUp(e) {
         this.keys[e.code] = false;
 
-        if (e.code === 'Space') {
-            this.spaceHeld = false;
-            const duration = Date.now() - this.spaceHoldStart;
+        if (e.code === 'Space' && this.spacePressed) {
+            this.spacePressed = false;
+            const duration = Date.now() - this.spaceHoldStartTime;
+            
+            // Clear backwards scan timeout
+            if (this.spaceHoldTimeout) {
+                clearTimeout(this.spaceHoldTimeout);
+                this.spaceHoldTimeout = null;
+            }
 
             if (this.mode === 'MENU') {
                 const wasBackwardScanning = this.backwardScanInterval !== null;
                 this.stopBackwardScan();
 
-                if (!wasBackwardScanning) {
+                if (!wasBackwardScanning && duration < 3000) {
                     this.trigger('SCAN_NEXT');
                 }
             } else {
                 this.trigger('GAME_SPACE_UP');
             }
+            this.spaceHoldStartTime = 0;
         }
 
-        if (e.code === 'Enter') {
-            this.enterHeld = false;
+        if (e.code === 'Enter' && this.enterPressed) {
+            this.enterPressed = false;
+            
+            // Clear pause timeout
+            if (this.pauseHoldTimeout) {
+                clearTimeout(this.pauseHoldTimeout);
+                this.pauseHoldTimeout = null;
+            }
             
             if (this.mode === 'MENU') {
                 if (!this.pauseTriggered) {
@@ -93,33 +169,19 @@ class InputHandler {
         }
     }
 
-    // --- Backward Scan Logic (Menu) ---
-    checkBackwardScan() {
-        if (!this.spaceHeld || this.mode !== 'MENU') return;
-
-        const duration = Date.now() - this.spaceHoldStart;
-        
-        // Start backward scanning after 3000ms
-        if (duration >= 3000 && !this.backwardScanInterval) {
-            this.startBackwardScan();
-            return;
-        }
-
-        if (!this.backwardScanInterval) {
-            requestAnimationFrame(() => this.checkBackwardScan());
-        }
-    }
-
     startBackwardScan() {
+        if (typeof window.NarbeVoiceManager !== 'undefined') {
+            window.NarbeVoiceManager.speak('Backwards scanning');
+        }
         this.trigger('SCAN_PREV'); // Immediate first backward scan
         
         let interval = 2000;
-        if (typeof NarbeScanManager !== 'undefined') {
-            interval = NarbeScanManager.getScanInterval();
+        if (typeof window.NarbeScanManager !== 'undefined') {
+            interval = window.NarbeScanManager.getScanInterval();
         }
 
         this.backwardScanInterval = setInterval(() => {
-            if (this.spaceHeld && this.mode === 'MENU') {
+            if (this.spacePressed && this.mode === 'MENU') {
                 this.trigger('SCAN_PREV');
             } else {
                 this.stopBackwardScan();
@@ -131,23 +193,6 @@ class InputHandler {
         if (this.backwardScanInterval) {
             clearInterval(this.backwardScanInterval);
             this.backwardScanInterval = null;
-        }
-    }
-
-    // --- Pause Logic (Gameplay) ---
-    checkPauseHold() {
-        if (!this.enterHeld || this.mode !== 'GAMEPLAY') return;
-
-        const duration = Date.now() - this.enterHoldStart;
-
-        if (duration >= 8000 && !this.pauseTriggered) { // 8 seconds for pause
-            this.pauseTriggered = true;
-            this.trigger('PAUSE');
-            return;
-        }
-
-        if (!this.pauseTriggered) {
-            requestAnimationFrame(() => this.checkPauseHold());
         }
     }
 
