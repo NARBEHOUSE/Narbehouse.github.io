@@ -475,17 +475,16 @@ class MenuSystem {
                 const pulseTime = Date.now() % 1000;
                 const pulseIntensity = 0.7 + 0.3 * Math.sin(pulseTime / 1000 * Math.PI * 2);
                 
-                // Best pitch gets GREEN glow, others get YELLOW
-                const glowColor = isBestPitch ? '#00FF00' : '#FFFF00';
-                const borderColor = isBestPitch ? '#00FF00' : '#FFD700';
-                const fillColor = isBestPitch ? '#00FF00' : '#FFFF00';
+                // Best pitch gets BLUE oscillating glow, others get YELLOW
+                const glowColor = isBestPitch ? '#00BFFF' : '#FFFF00';  // Deep sky blue for best
+                const borderColor = isBestPitch ? '#00BFFF' : '#FFD700';
                 
-                // Outer bright glow effect (very large)
+                // Outer bright glow effect (very large) - oscillating for best pitch
                 ctx.save();
                 ctx.shadowColor = glowColor;
-                ctx.shadowBlur = isBestPitch ? 35 : 25;
-                ctx.strokeStyle = isBestPitch ? `rgba(0, 255, 0, ${pulseIntensity})` : `rgba(255, 255, 0, ${pulseIntensity})`;
-                ctx.lineWidth = isBestPitch ? 12 : 10;
+                ctx.shadowBlur = isBestPitch ? 25 + 15 * pulseIntensity : 25;
+                ctx.strokeStyle = isBestPitch ? `rgba(0, 191, 255, ${pulseIntensity})` : `rgba(255, 255, 0, ${pulseIntensity})`;
+                ctx.lineWidth = isBestPitch ? 10 + 4 * pulseIntensity : 10;
                 drawFunctions[i]();
                 ctx.stroke();
                 ctx.restore();
@@ -512,13 +511,16 @@ class MenuSystem {
                 drawFunctions[i]();
                 ctx.stroke();
                 
-                // Draw a filled highlight overlay for extra visibility
-                ctx.save();
-                ctx.globalAlpha = isBestPitch ? 0.35 : 0.25;
-                ctx.fillStyle = fillColor;
-                drawFunctions[i]();
-                ctx.fill();
-                ctx.restore();
+                // Only fill for NON-best pitch (yellow fill)
+                // Best pitch is outline only with blue glow
+                if (!isBestPitch) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.25;
+                    ctx.fillStyle = '#FFFF00';
+                    drawFunctions[i]();
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
         }
         

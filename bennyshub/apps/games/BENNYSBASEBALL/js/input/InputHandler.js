@@ -383,9 +383,9 @@ class InputHandler {
                 const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
                 // Check if this is the best pitch (effectiveness = 1.0)
                 if (cell.effectiveness >= 0.95) {
-                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}, Best pitch!`);
+                    this.game.audioSystem.speak(`Best pitch! ${cell.pitch}, ${cell.zone}`);
                 } else {
-                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                    this.game.audioSystem.speak(`${cell.pitch}, ${cell.zone}`);
                 }
             }
             return;
@@ -536,9 +536,9 @@ class InputHandler {
                 const cell = gameState.pitchGrid[gameState.pitchZoneIndex];
                 // Check if this is the best pitch (effectiveness = 1.0)
                 if (cell.effectiveness >= 0.95) {
-                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}, Best pitch!`);
+                    this.game.audioSystem.speak(`Best pitch! ${cell.pitch}, ${cell.zone}`);
                 } else {
-                    this.game.audioSystem.speak(`${cell.pitch} ${cell.zone}`);
+                    this.game.audioSystem.speak(`${cell.pitch}, ${cell.zone}`);
                 }
             }
             return;

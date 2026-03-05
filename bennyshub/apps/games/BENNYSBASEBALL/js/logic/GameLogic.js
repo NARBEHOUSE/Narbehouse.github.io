@@ -1622,6 +1622,7 @@ class GameLogic {
         // BEST PITCH BONUS: 30% increased strike rate for selecting the best pitch
         if (gameState.bestPitchBonus) {
             strikeRate = strikeRate * 1.30; // 30% bonus
+            foulRate = foulRate * 1.25; // 25% more fouls (batter is fooled)
         }
         
         // Apply inverse to hit outcomes (positive effectiveness = fewer hits, negative = more hits)
@@ -1630,21 +1631,30 @@ class GameLogic {
             hitOutcomes[key] = hitOutcomes[key] * hitModifier;
         });
         
-        // BEST PITCH BONUS: Also boost ground outs/weak contact for the best pitch
+        // BEST PITCH BONUS: Heavily favor outs and weak contact
         if (gameState.bestPitchBonus) {
-            // Increase ground out chance by 20% (good for double plays)
-            if (hitOutcomes['Ground Out']) {
-                hitOutcomes['Ground Out'] = hitOutcomes['Ground Out'] * 1.20;
-            }
-            // Reduce extra base hits
+            // DRASTICALLY reduce extra base hits (very hard to hit best pitch hard)
             if (hitOutcomes['Double']) {
-                hitOutcomes['Double'] = hitOutcomes['Double'] * 0.85;
+                hitOutcomes['Double'] = hitOutcomes['Double'] * 0.25; // 75% reduction
             }
             if (hitOutcomes['Triple']) {
-                hitOutcomes['Triple'] = hitOutcomes['Triple'] * 0.80;
+                hitOutcomes['Triple'] = hitOutcomes['Triple'] * 0.15; // 85% reduction
             }
             if (hitOutcomes['Home Run']) {
-                hitOutcomes['Home Run'] = hitOutcomes['Home Run'] * 0.75;
+                hitOutcomes['Home Run'] = hitOutcomes['Home Run'] * 0.10; // 90% reduction
+            }
+            
+            // Moderately reduce singles (still possible but harder)
+            if (hitOutcomes['Single']) {
+                hitOutcomes['Single'] = hitOutcomes['Single'] * 0.70; // 30% reduction
+            }
+            
+            // INCREASE outs significantly (batter is fooled by best pitch)
+            if (hitOutcomes['Ground Out']) {
+                hitOutcomes['Ground Out'] = hitOutcomes['Ground Out'] * 1.60; // 60% increase
+            }
+            if (hitOutcomes['Pop Fly Out']) {
+                hitOutcomes['Pop Fly Out'] = hitOutcomes['Pop Fly Out'] * 1.50; // 50% increase
             }
         }
         
@@ -1654,7 +1664,9 @@ class GameLogic {
             strikeRate = Math.max(20, strikeRate - penalty);
             
             // Boost hit chances when computer recognizes the pattern
-            const hitBoost = penalty / Object.keys(hitOutcomes).length;
+            // BUT if best pitch was selected, reduce the penalty effect significantly
+            const penaltyReduction = gameState.bestPitchBonus ? 0.3 : 1.0; // Best pitch only gets 30% of penalty
+            const hitBoost = (penalty * penaltyReduction) / Object.keys(hitOutcomes).length;
             Object.keys(hitOutcomes).forEach(key => {
                 if (key !== 'Home Run') { // Don't boost home runs
                     hitOutcomes[key] += hitBoost;
