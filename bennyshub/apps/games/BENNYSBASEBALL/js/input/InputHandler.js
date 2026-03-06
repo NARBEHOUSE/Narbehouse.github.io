@@ -23,7 +23,10 @@ class InputHandler {
         this.game.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.game.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         this.game.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
-        this.game.canvas.addEventListener('touchstart', (e) => this.handleTouch(e));
+        // Add touch support for interactive batting (touch and hold to charge)
+        this.game.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.game.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+        this.game.canvas.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
     }
     
     handleMouseDown(e) {
@@ -839,11 +842,32 @@ class InputHandler {
         }
     }
 
-    handleTouch(e) {
+    handleTouchStart(e) {
         e.preventDefault();
         const t = e.touches[0];
         if (!t) return;
-        // Synthesize a click so we keep logic in one place
-        this.handleCanvasClick({ clientX: t.clientX, clientY: t.clientY });
+        
+        // Track the touch position for click synthesis
+        this.lastTouchX = t.clientX;
+        this.lastTouchY = t.clientY;
+        
+        // If in interactive batting, start the swing charge (like mousedown)
+        if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+            this.game.gameLogic.onSwingStart();
+        }
+    }
+    
+    handleTouchEnd(e) {
+        e.preventDefault();
+        
+        // If in interactive batting, release the swing (like mouseup)
+        if (this.game.gameState.mode === GAME_CONSTANTS.MODES.INTERACTIVE_BATTING) {
+            this.game.gameLogic.onSwingRelease();
+        } else {
+            // For other modes, synthesize a click so menu selection works
+            if (this.lastTouchX !== undefined && this.lastTouchY !== undefined) {
+                this.handleCanvasClick({ clientX: this.lastTouchX, clientY: this.lastTouchY });
+            }
+        }
     }
 }
