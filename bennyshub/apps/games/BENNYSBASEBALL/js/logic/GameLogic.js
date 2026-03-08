@@ -716,10 +716,11 @@ class GameLogic {
         // Play hit sound for ANY contact (not Strike)
         // This is the single source of truth for player batting hit sounds
         if (outcome !== 'Strike') {
-            this.playBaseballHitSound();
-            // Play additional homerun sound for home runs
+            // For home runs, only play the homerun sound (it includes the hit sound)
             if (outcome === 'Home Run') {
-                setTimeout(() => this.playHomeRunSound(), 300);
+                this.playHomeRunSound();
+            } else {
+                this.playBaseballHitSound();
             }
         }
         
