@@ -885,35 +885,35 @@ class GameLogic {
         }
         
         if (powerLevel >= 0.9) {
-            // Max power with perfect timing (+5% triples/HRs, +25% outs/fouls - high risk/reward)
-            if (rand < 0.25 + hitBonus) return 'Home Run';
-            if (rand < 0.50 + hitBonus) return 'Triple';
-            if (rand < 0.60) return 'Double';
-            if (rand < 0.70 - strikeBonus) return 'Single';
-            if (rand < 0.90) return 'Foul';
-            return 'Pop Fly Out';
+            // Max power with perfect timing - high risk/reward
+            if (rand < 0.12 + hitBonus) return 'Home Run';
+            if (rand < 0.22 + hitBonus) return 'Triple';
+            if (rand < 0.35) return 'Double';
+            if (rand < 0.50 - strikeBonus) return 'Single';
+            if (rand < 0.70) return 'Pop Fly Out';
+            return 'Foul';
         } else if (powerLevel >= 0.7) {
-            // Strong power with good timing (+5% triples/HRs, +25% outs/fouls)
-            if (rand < 0.13 + hitBonus) return 'Home Run';
-            if (rand < 0.30 + hitBonus) return 'Triple';
-            if (rand < 0.45) return 'Double';
-            if (rand < 0.60 - strikeBonus) return 'Single';
-            if (rand < 0.82) return 'Foul';
-            return 'Pop Fly Out';
+            // Strong power with good timing
+            if (rand < 0.08 + hitBonus) return 'Home Run';
+            if (rand < 0.18 + hitBonus) return 'Triple';
+            if (rand < 0.30) return 'Double';
+            if (rand < 0.45 - strikeBonus) return 'Single';
+            if (rand < 0.65) return 'Pop Fly Out';
+            return 'Foul';
         } else if (powerLevel >= 0.4) {
-            // Medium power with good timing (+10% bonus for singles/doubles on normal swing)
-            if (rand < 0.02) return 'Home Run';
-            if (rand < 0.10) return 'Triple';
-            if (rand < 0.35 + hitBonus) return 'Double';
-            if (rand < 0.70 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.85) return 'Ground Out';
+            // Medium power with good timing (normal swing)
+            if (rand < 0.01) return 'Home Run';
+            if (rand < 0.05) return 'Triple';
+            if (rand < 0.18 + hitBonus) return 'Double';
+            if (rand < 0.45 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.70) return 'Ground Out';
             return 'Pop Fly Out';
         } else {
-            // Low power (quick tap) with good timing - contact hitter (+10% bonus for singles/doubles)
-            if (rand < 0.55 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.68 + hitBonus) return 'Double';
-            if (rand < 0.80) return 'Ground Out';
-            if (rand < 0.92) return 'Foul';
+            // Low power (quick tap) with good timing - contact hitter
+            if (rand < 0.35 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.45 + hitBonus) return 'Double';
+            if (rand < 0.65) return 'Ground Out';
+            if (rand < 0.85) return 'Foul';
             return 'Pop Fly Out';
         }
     }
@@ -2081,6 +2081,14 @@ class GameLogic {
         gameState.strikes = 0;
 
         if (gameState.half === 'top') {
+            // Check if game should end: if home team (Blue) is ahead after top of 9th or later,
+            // they don't need to bat - game is over
+            if (gameState.currentInning >= GAME_CONSTANTS.GAME_RULES.INNINGS_PER_GAME && 
+                gameState.score.Blue > gameState.score.Red) {
+                // Home team is ahead after the top of the 9th (or later) - game ends
+                this.endGame();
+                return;
+            }
             // Switch to bottom of the same inning
             gameState.half = 'bottom';
         } else {
