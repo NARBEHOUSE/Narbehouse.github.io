@@ -657,6 +657,92 @@
       max-width: 720px;
       margin: 0 auto;
     }
+
+    /* Minimal Legal Footer */
+    .mini-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(5, 10, 18, 0.98);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      z-index: 50;
+      pointer-events: auto;
+    }
+    .mini-footer-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
+    .mini-footer-bar span {
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .mini-footer-bar:hover span {
+      color: var(--text);
+    }
+    .mini-footer-expand {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: rgba(8, 12, 20, 0.99);
+    }
+    .mini-footer.open .mini-footer-expand {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .mini-footer-content {
+      padding: 20px 24px 24px;
+      text-align: left;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .mini-footer-content h4 {
+      color: var(--narbe-orange);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 16px 0 8px;
+    }
+    .mini-footer-content h4:first-child {
+      margin-top: 0;
+    }
+    .mini-footer-content p {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.7;
+      margin: 0 0 8px;
+    }
+    .mini-footer-content strong {
+      color: var(--text);
+    }
+    .mini-footer-content a {
+      color: var(--narbe-blue);
+      text-decoration: none;
+    }
+    .mini-footer-content a:hover {
+      color: var(--narbe-orange);
+    }
+    .mini-footer-links {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .mini-footer-links a {
+      color: var(--muted);
+      font-size: 10px;
+      text-decoration: none;
+    }
+    .mini-footer-links a:hover {
+      color: var(--narbe-orange);
+    }
   </style>
 </head>
 <body>
@@ -2140,6 +2226,53 @@
       }
     };
   </script>
+
+  <!-- Minimal Legal Footer (not scannable) -->
+  <div class="mini-footer" id="mini-footer" tabindex="-1">
+    <div class="mini-footer-bar" onclick="document.getElementById('mini-footer').classList.toggle('open')">
+      <span>© 2026 NARBE LLC · Terms & Legal ▾</span>
+    </div>
+    <div class="mini-footer-expand">
+      <div class="mini-footer-content">
+        
+        <h4>⚠️ Disclaimer & Warranty</h4>
+        <p><strong>THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
+        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, NARBE LLC, OR THE NARBE FOUNDATION BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+        <p>USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK. The authors and NARBE LLC make no representations or warranties regarding the accuracy, reliability, completeness, or timeliness of the software or its suitability for any particular purpose.</p>
+        
+        <h4>™ Trademark & Intellectual Property</h4>
+        <p>"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong>NARBE LLC</strong>. All rights reserved.</p>
+        <p>The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> applies to the <strong>source code only</strong> and does not grant any rights to use NARBE LLC's trademarks, trade names, logos, or branding.</p>
+        <p>Unauthorized use of NARBE LLC's trademarks is strictly prohibited and may violate trademark laws.</p>
+        
+        <h4>📜 License & Derivative Works</h4>
+        <p>This project's source code is licensed under the <strong>MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:</p>
+        <p>The above copyright notice and permission notice shall be included in all copies or substantial portions of the Software.</p>
+        <p><strong>DERIVATIVE WORKS:</strong> If you fork, modify, or redistribute this software, you <strong>MUST</strong>: (1) Clearly indicate that your version is a modified/derivative work and NOT the original project; (2) NOT use the names "Benny's Accessibility Hub," "NARBE," or any NARBE trademarks to imply endorsement, sponsorship, or official affiliation without express written permission from NARBE LLC; (3) Include original copyright notices and license.</p>
+        
+        <h4>🔒 Limitation of Liability</h4>
+        <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL NARBE LLC, ITS OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, AFFILIATES, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING BUT NOT LIMITED TO DAMAGES FOR LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, REGARDLESS OF WHETHER SUCH DAMAGES WERE FORESEEABLE OR WHETHER NARBE LLC WAS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
+        <p>SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF CERTAIN DAMAGES, SO SOME OF THE ABOVE LIMITATIONS MAY NOT APPLY TO YOU.</p>
+        
+        <h4>⚖️ Indemnification</h4>
+        <p>You agree to indemnify, defend, and hold harmless NARBE LLC, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable attorneys' fees) arising out of or in connection with your use of the Software, your violation of these terms, or your violation of any rights of another.</p>
+        
+        <h4>🌐 Governing Law</h4>
+        <p>These terms shall be governed by and construed in accordance with the laws of the State of Florida, United States, without regard to its conflict of law provisions. Any disputes arising under these terms shall be subject to the exclusive jurisdiction of the courts located in Florida.</p>
+        
+        <h4>📧 Contact</h4>
+        <p>For partnership, branding, or legal inquiries: <a href="https://narbehouse.com" target="_blank" rel="noopener">narbehouse.com</a></p>
+        
+        <div class="mini-footer-links">
+          <span style="color:var(--muted);font-size:10px;">© 2026 NARBE LLC. All rights reserved.</span>
+          <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+          <a href="https://github.com/narbehouse/narbehouse.github.io" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://narbehouse.com" target="_blank" rel="noopener">NARBE LLC</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
 
