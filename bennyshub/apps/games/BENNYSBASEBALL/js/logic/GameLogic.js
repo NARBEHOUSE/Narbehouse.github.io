@@ -57,7 +57,15 @@ class GameLogic {
         }
         
         // Randomly determine who is home vs away team (this determines who bats first)
-        const playerIsAwayTeam = Math.random() < 0.5;
+        // For playoff/championship series, use consistent assignment throughout the series
+        let playerIsAwayTeam;
+        if (mode === 'season' && this.game.seasonManager.isInSeries()) {
+            // Use consistent home/away for series games
+            playerIsAwayTeam = !this.game.seasonManager.getSeriesHomeTeamIsPlayer();
+        } else {
+            // Regular season or exhibition - randomize each game
+            playerIsAwayTeam = Math.random() < 0.5;
+        }
         
         if (playerIsAwayTeam) {
             // Player is away team (Red), bats first in top of 1st
@@ -472,11 +480,11 @@ class GameLogic {
         gameState.interactiveBatting.swingPressStart = Date.now();
         gameState.interactiveBatting.announcedSwingType = null; // Track announced type
         
-        // Announce initial swing type
-        this.game.audioSystem.speak('Normal swing');
-        gameState.interactiveBatting.announcedSwingType = 'normal';
+        // Announce initial swing type (bunt for quick release)
+        this.game.audioSystem.speak('Bunt');
+        gameState.interactiveBatting.announcedSwingType = 'bunt';
         
-        // Start charge tone monitoring (6 seconds max for bunt)
+        // Start charge tone monitoring (6 seconds max for power)
         this.game.audioSystem.startChargeSound();
         this.chargeMonitorId = setInterval(() => {
             if (!gameState.interactiveBatting.swingPressed) {
@@ -484,22 +492,20 @@ class GameLogic {
                 return;
             }
             const holdDuration = Date.now() - gameState.interactiveBatting.swingPressStart;
-            // 6 seconds = 100% charge (SWING_BUNT_MIN)
-            const chargePercent = Math.min(holdDuration / GAME_CONSTANTS.TIMING.SWING_BUNT_MIN, 1.0);
+            // 6 seconds = 100% charge (SWING_POWER_MAX)
+            const chargePercent = Math.min(holdDuration / GAME_CONSTANTS.TIMING.SWING_POWER_MAX, 1.0);
             this.game.audioSystem.updateChargeSound(chargePercent);
             
-            // Announce swing type transitions
+            // Announce swing type transitions (bunt -> normal -> power)
+            if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MAX && 
+                gameState.interactiveBatting.announcedSwingType === 'bunt') {
+                this.game.audioSystem.speak('Normal swing');
+                gameState.interactiveBatting.announcedSwingType = 'normal';
+            }
             if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN && 
                 gameState.interactiveBatting.announcedSwingType === 'normal') {
                 this.game.audioSystem.speak('Power swing');
                 gameState.interactiveBatting.announcedSwingType = 'power';
-            }
-            
-            // Auto-trigger bunt when fully charged (100%)
-            if (chargePercent >= 1.0) {
-                this.game.audioSystem.speak('Bunt');
-                gameState.interactiveBatting.announcedSwingType = 'bunt';
-                this.triggerAutoBunt();
             }
         }, 50); // Check every 50ms
         
@@ -532,25 +538,25 @@ class GameLogic {
         const holdDuration = Date.now() - gameState.interactiveBatting.swingPressStart;
         
         // Determine swing type based on hold duration:
-        // 0-3s = normal swing
-        // 3-6s = power swing
-        // 6s+ = bunt (hold from start of pitch)
+        // 0-2s = bunt (quick tap/short hold)
+        // 2-4s = normal swing
+        // 4-6s = power swing (longer hold for more power)
         let swingType;
-        if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MIN) {
-            // Bunt (6+ seconds)
+        if (holdDuration < GAME_CONSTANTS.TIMING.SWING_BUNT_MAX) {
+            // Bunt (under 2 seconds)
             swingType = 'bunt';
             gameState.interactiveBatting.swingPowerLevel = 0.1; // Low power for bunt
-        } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
-            // Power swing (3-6 seconds)
+        } else if (holdDuration < GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+            // Normal swing (2-4 seconds)
+            swingType = 'normal';
+            gameState.interactiveBatting.swingPowerLevel = 0.5; // Medium power for normal
+        } else {
+            // Power swing (4+ seconds)
             swingType = 'power';
-            // Scale power from 0.7 to 1.0 based on how close to 6 seconds
+            // Scale power from 0.7 to 1.0 based on how long held past 4 seconds
             const powerRange = GAME_CONSTANTS.TIMING.SWING_POWER_MAX - GAME_CONSTANTS.TIMING.SWING_POWER_MIN;
             const powerProgress = Math.min(holdDuration - GAME_CONSTANTS.TIMING.SWING_POWER_MIN, powerRange) / powerRange;
             gameState.interactiveBatting.swingPowerLevel = 0.7 + (powerProgress * 0.3);
-        } else {
-            // Normal swing (0-3 seconds)
-            swingType = 'normal';
-            gameState.interactiveBatting.swingPowerLevel = 0.5; // Medium power for normal
         }
         
         gameState.interactiveBatting.swingType = swingType;
@@ -2149,18 +2155,29 @@ class GameLogic {
         // Update season progress and check if championship was won
         const wasChampionshipWin = this.game.seasonManager.updateProgress(playerWon);
         
-        // If championship was won, show special victory screen
+        // If championship was won, show special victory screen with mega celebration
         if (wasChampionshipWin) {
             const victoryData = this.game.seasonManager.getChampionshipVictoryData();
-            this.game.uiRenderer.drawChampionshipVictoryScreen(gameState, victoryData);
-            this.game.audioSystem.speak('Championship won! You are the champion!');
+            this.game.uiRenderer.startChampionshipCelebration(gameState, victoryData);
+            this.game.audioSystem.speak('Championship won! You are the champion! Congratulations on an amazing season!');
             
-            // Reset season after showing victory screen
+            // Reset season after showing victory screen (20+ seconds for mega celebration)
             setTimeout(() => {
+                this.game.uiRenderer.stopChampionshipCelebration();
                 this.game.seasonManager.reset();
                 this.game.menuSystem.showMainMenu();
-            }, 15000); // 15 seconds total
-        } else {
+            }, 22000); // 22 seconds total for mega celebration
+        } 
+        // Check if we just won the playoff series
+        else if (this.game.seasonManager.checkAndClearPlayoffVictory()) {
+            const victoryData = this.game.seasonManager.getPlayoffVictoryData();
+            this.game.uiRenderer.drawPlayoffVictoryScreen(gameState, victoryData);
+            this.game.audioSystem.speak(`Playoff series won! You're heading to the Championship! Next opponent: ${victoryData.championshipOpponent}`);
+            
+            // Show playoff victory for 10 seconds before returning to menu
+            setTimeout(() => this.game.menuSystem.showMainMenu(), 10000);
+        }
+        else {
             // Normal game over screen
             this.game.uiRenderer.drawGameOverScreen(gameState);
             this.game.audioSystem.speak(playerWon ? 'YOU WON!' : 'YOU LOST!');

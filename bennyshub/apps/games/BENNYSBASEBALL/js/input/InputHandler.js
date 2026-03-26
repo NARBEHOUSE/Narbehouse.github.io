@@ -27,6 +27,35 @@ class InputHandler {
         this.game.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
         this.game.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
         this.game.canvas.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+        
+        // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+        // This is CRITICAL to prevent stuck input state when spamming spacebar
+        document.addEventListener('narbe-input-cancelled', (e) => this.handleInputCancelled(e));
+    }
+    
+    handleInputCancelled(e) {
+        if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+            const wasBackwardScanning = this.backwardScanInterval !== null;
+            // Reset space input state
+            this.game.gameState.spaceHeld = false;
+            this.game.gameState.spaceHoldStart = 0;
+            this.keyStates[' '] = false;
+            this.stopBackwardScan();
+            // If cancelled due to 'too-short', still perform short press action - user intended to press
+            if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
+                this.handleSpaceRelease();
+            }
+        }
+        if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+            // Reset enter input state
+            this.game.gameState.returnHeld = false;
+            this.game.gameState.returnHoldStart = 0;
+            this.keyStates['Enter'] = false;
+            // Perform select for short Enter presses
+            if (e.detail.reason === 'too-short') {
+                this.handleEnterRelease();
+            }
+        }
     }
     
     handleMouseDown(e) {

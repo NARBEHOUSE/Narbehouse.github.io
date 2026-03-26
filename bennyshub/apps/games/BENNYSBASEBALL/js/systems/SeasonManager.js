@@ -22,7 +22,9 @@ class SeasonManager {
             championshipOpponent: null,
             championshipWins: 0,
             championshipLosses: 0,
-            seasonFailed: false // Track if season failed to qualify for playoffs
+            seasonFailed: false, // Track if season failed to qualify for playoffs
+            seriesHomeTeamIsPlayer: null, // Track home/away assignment for series consistency
+            justWonPlayoffs: false // Flag to trigger playoff victory celebration
         };
         this.load();
     }
@@ -34,6 +36,8 @@ class SeasonManager {
             // Ensure new fields exist for older saves
             if (this.data.playoffWins === undefined) this.data.playoffWins = 0;
             if (this.data.playoffLosses === undefined) this.data.playoffLosses = 0;
+            if (this.data.seriesHomeTeamIsPlayer === undefined) this.data.seriesHomeTeamIsPlayer = null;
+            if (this.data.justWonPlayoffs === undefined) this.data.justWonPlayoffs = false;
         }
     }
 
@@ -63,7 +67,9 @@ class SeasonManager {
             championshipOpponent: null,
             championshipWins: 0,
             championshipLosses: 0,
-            seasonFailed: false
+            seasonFailed: false,
+            seriesHomeTeamIsPlayer: null,
+            justWonPlayoffs: false
         };
         this.save();
     }
@@ -104,7 +110,9 @@ class SeasonManager {
             championshipOpponent: null,
             championshipWins: 0,
             championshipLosses: 0,
-            seasonFailed: false
+            seasonFailed: false,
+            seriesHomeTeamIsPlayer: null,
+            justWonPlayoffs: false
         };
         this.save();
     }
@@ -148,6 +156,8 @@ class SeasonManager {
                 this.data.championshipOpponent = championshipOpponent.name;
                 this.data.championshipWins = 0;
                 this.data.championshipLosses = 0;
+                // Set home/away assignment for the series (random, but consistent throughout series)
+                this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
                 this.save();
                 
                 return GAME_CONSTANTS.COLOR_OPTIONS.find(c => c.name === championshipOpponent.name);
@@ -162,6 +172,8 @@ class SeasonManager {
                 this.data.playoffOpponent = playoffOpponent.name;
                 this.data.playoffWins = 0;
                 this.data.playoffLosses = 0;
+                // Set home/away assignment for the series (random, but consistent throughout series)
+                this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
                 this.save();
                 
                 return GAME_CONSTANTS.COLOR_OPTIONS.find(c => c.name === playoffOpponent.name);
@@ -297,6 +309,10 @@ class SeasonManager {
                 this.data.inPlayoffs = false; // Clear playoffs flag
                 this.data.championshipWins = 0; // Initialize series
                 this.data.championshipLosses = 0;
+                // Set new home/away assignment for the championship series
+                this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
+                // Set flag to trigger playoff victory celebration
+                this.data.justWonPlayoffs = true;
             } else if (this.data.playoffLosses >= 2) {
                 // Lost playoff series
                 this.data.seasonFailed = true;
@@ -317,8 +333,43 @@ class SeasonManager {
             teamColor: this.data.teamColor,
             wins: this.data.wins,
             losses: this.data.losses,
-            finalRecord: `${this.data.wins}-${this.data.losses}`
+            finalRecord: `${this.data.wins}-${this.data.losses}`,
+            championshipWins: this.data.championshipWins,
+            championshipLosses: this.data.championshipLosses - 1 // Subtract 1 because we haven't counted the final loss yet
         };
+    }
+
+    // Get playoff victory data for the celebration screen
+    getPlayoffVictoryData() {
+        return {
+            teamColor: this.data.teamColor,
+            wins: this.data.wins,
+            losses: this.data.losses,
+            seasonRecord: `${this.data.wins}-${this.data.losses}`,
+            playoffWins: 2, // They won the series (best of 3)
+            playoffLosses: this.data.playoffLosses || 0,
+            championshipOpponent: this.data.championshipOpponent
+        };
+    }
+
+    // Check if we just won playoffs and need to show celebration
+    checkAndClearPlayoffVictory() {
+        if (this.data.justWonPlayoffs) {
+            this.data.justWonPlayoffs = false;
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    // Get home/away assignment for series games
+    getSeriesHomeTeamIsPlayer() {
+        return this.data.seriesHomeTeamIsPlayer;
+    }
+
+    // Check if currently in a series (playoffs or championship)
+    isInSeries() {
+        return this.data.inPlayoffs || this.data.inChampionship;
     }
 
     getSeasonStatus() {
