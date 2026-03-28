@@ -1,3 +1,47 @@
+// Toast notification function (replaces alert for better UX)
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('editor-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'editor-toast';
+        toast.style.cssText = `position:fixed;top:20px;right:20px;padding:15px 25px;border-radius:8px;color:white;font-weight:bold;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;`;
+        document.body.appendChild(toast);
+    }
+    toast.style.background = type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#28a745';
+    toast.style.color = type === 'warning' ? '#000' : '#fff';
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, 300); }, 3000);
+}
+
+// Non-blocking confirm dialog (replaces confirm() to avoid focus issues)
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById('confirm-dialog-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'confirm-dialog-overlay';
+            overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;`;
+            overlay.innerHTML = `
+                <div style="background:#1e1e1e;border:1px solid #444;border-radius:12px;padding:25px;max-width:450px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+                    <p id="confirm-dialog-message" style="color:#fff;font-size:16px;margin:0 0 20px 0;white-space:pre-wrap;line-height:1.5;"></p>
+                    <div style="display:flex;gap:12px;justify-content:flex-end;">
+                        <button id="confirm-dialog-cancel" style="padding:10px 20px;border:1px solid #666;background:#333;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">Cancel</button>
+                        <button id="confirm-dialog-ok" style="padding:10px 20px;border:none;background:#0d6efd;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">OK</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+        }
+        document.getElementById('confirm-dialog-message').textContent = message;
+        overlay.style.display = 'flex';
+        const cleanup = (result) => { overlay.style.display = 'none'; resolve(result); };
+        document.getElementById('confirm-dialog-ok').onclick = () => cleanup(true);
+        document.getElementById('confirm-dialog-cancel').onclick = () => cleanup(false);
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    });
+}
+
 class Editor {
     constructor() {
         this.canvas = document.getElementById('editorCanvas');
@@ -836,8 +880,8 @@ class Editor {
         return this.course.holes[this.currentHoleIndex];
     }
 
-    newCourse() {
-        if (confirm("Are you sure you want to create a new course? Any unsaved changes will be lost.")) {
+    async newCourse() {
+        if (await showConfirm("Are you sure you want to create a new course? Any unsaved changes will be lost.")) {
             this.course = {
                 name: "My Custom Course",
                 holes: [this.createDefaultHole()]
@@ -1202,7 +1246,7 @@ class Editor {
             });
             
             if (response.ok) {
-                alert('Course saved to server successfully!');
+                showToast('Course saved to server successfully!');
                 return;
             } else {
                 console.warn('Server save failed, falling back to local save.');
@@ -1251,7 +1295,7 @@ class Editor {
                 this.updateUI();
                 this.render();
             } catch (err) {
-                alert("Invalid JSON file");
+                showToast("Invalid JSON file");
             }
         };
         reader.readAsText(file);

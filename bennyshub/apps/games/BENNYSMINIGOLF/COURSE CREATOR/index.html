@@ -76,7 +76,6 @@
             </div>
 
             <div class="section bottom">
-                <button id="viewTutorial" class="full-width" style="margin-bottom:10px; background:#17a2b8; border-color:#17a2b8; color:white;" onclick="BennyTutorial.show()">View Tutorial</button>
                 <button id="saveCourse" class="primary full-width">Save Course (JSON)</button>
                 <label for="loadCourse" class="button full-width">Load Course</label>
                 <input type="file" id="loadCourse" accept=".json" style="display:none">
@@ -93,15 +92,5 @@
 
     <script src="../js/utils.js"></script>
     <script src="editor.js"></script>
-    <script src="../../../../shared/tutorial-modal.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            BennyTutorial.init({
-                title: "Benny’s Mini Golf Course Creator",
-                videoUrl: "https://youtu.be/CIXn-jervzo",
-                localStorageKey: "bennyHubSeenTutorial_miniGolf"
-            });
-        });
-    </script>
 </body>
 </html>

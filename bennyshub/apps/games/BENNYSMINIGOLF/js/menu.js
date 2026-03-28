@@ -534,7 +534,23 @@ class MenuSystem {
                 { 
                     id: 'cc-proceed', 
                     action: () => { 
-                        window.open('COURSE%20CREATOR/index.html', '_blank'); 
+                        // Launch editor in Chrome via Electron API (or fallback to direct URL)
+                        const isElectron = typeof window !== 'undefined' && window.electronAPI;
+                        if (isElectron && window.electronAPI.editor) {
+                            window.electronAPI.editor.open('golf').then(result => {
+                                if (result.success) {
+                                    console.log('[Editor] Opened golf course creator in Chrome:', result.url);
+                                } else {
+                                    console.error('[Editor] Failed to open editor:', result.error);
+                                    window.open('COURSE%20CREATOR/index.html', '_blank'); 
+                                }
+                            }).catch(err => {
+                                console.error('[Editor] Error:', err);
+                                window.open('COURSE%20CREATOR/index.html', '_blank'); 
+                            });
+                        } else {
+                            window.open('COURSE%20CREATOR/index.html', '_blank'); 
+                        }
                         this.hideCourseCreatorWarning();
                     } 
                 }
@@ -550,8 +566,24 @@ class MenuSystem {
         // Click handlers
         document.getElementById('cc-cancel').onclick = () => this.hideCourseCreatorWarning();
         document.getElementById('cc-proceed').onclick = () => {
-             window.open('COURSE%20CREATOR/index.html', '_blank');
-             this.hideCourseCreatorWarning();
+            // Launch editor in Chrome via Electron API (or fallback to direct URL)
+            const isElectron = typeof window !== 'undefined' && window.electronAPI;
+            if (isElectron && window.electronAPI.editor) {
+                window.electronAPI.editor.open('golf').then(result => {
+                    if (result.success) {
+                        console.log('[Editor] Opened golf course creator in Chrome:', result.url);
+                    } else {
+                        console.error('[Editor] Failed to open editor:', result.error);
+                        window.open('COURSE%20CREATOR/index.html', '_blank');
+                    }
+                }).catch(err => {
+                    console.error('[Editor] Error:', err);
+                    window.open('COURSE%20CREATOR/index.html', '_blank');
+                });
+            } else {
+                window.open('COURSE%20CREATOR/index.html', '_blank');
+            }
+            this.hideCourseCreatorWarning();
         };
     }
 

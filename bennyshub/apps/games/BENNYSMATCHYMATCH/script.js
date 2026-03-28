@@ -19,7 +19,7 @@ const state = {
     round: 0,
     soundMap: {},
     timers: { space: null, enter: null, spaceRepeat: null, enterRepeat: null, mismatch: null },
-    input: { spaceHeld: false, enterHeld: false, spaceTime: 0, enterTime: 0 },
+    input: { spaceHeld: false, enterHeld: false, spaceTime: 0, enterTime: 0, spaceLongPressFired: false, enterLongPressFired: false },
     mismatches: 0,
     mismatchLimit: 0,
     consecutiveMatches: 0,
@@ -86,6 +86,7 @@ const config = {
     scanHighlightPx: 8,
     spaceDebounce: 200,
     longPress: 3000,
+    pauseLongPress: 5000, // 5 seconds to open pause menu
     repeatInterval: 2000,
     colors: { ...themes[0] }
 };
@@ -254,17 +255,27 @@ async function loadPack(filename) {
         for (const pack of realPacks) {
              const data = await fetchPackData(pack);
              if (data && data.categories) {
-                 // Check for duplicate keys if necessary, but Object.assign overwrites
-                 // To behave nicely, we might want to prefix keys? 
-                 // But most packs have "Animals", "Shapes". 
-                 // If we just overwrite, we merge the lists? No, we replace the list.
-                 // We probably want to merge lists if categories match.
+                 // Get pack asset base path
+                 const packParts = pack.split('/');
+                 const packBasePath = packParts.length >= 3 
+                     ? packParts.slice(0, -1).join('/') + '/'
+                     : 'packs/';
                  
                  for (const [catName, cards] of Object.entries(data.categories)) {
+                     // Derive category folder from category name
+                     const categoryFolder = categoryToFolderName(catName);
+                     
+                     // Add pack base path and category folder to each card for proper asset resolution
+                     const cardsWithPath = cards.map(card => ({
+                         ...card,
+                         _packBasePath: packBasePath,
+                         _categoryFolder: categoryFolder
+                     }));
+                     
                      if (state.assets.categories[catName]) {
-                         state.assets.categories[catName] = state.assets.categories[catName].concat(cards);
+                         state.assets.categories[catName] = state.assets.categories[catName].concat(cardsWithPath);
                      } else {
-                         state.assets.categories[catName] = cards;
+                         state.assets.categories[catName] = cardsWithPath;
                      }
                  }
              }
@@ -283,9 +294,48 @@ async function loadPack(filename) {
     
     const data = await fetchPackData(filename);
     if (data && data.categories) {
+        // Get pack asset base path for single pack
+        const packParts = filename.split('/');
+        const packBasePath = packParts.length >= 3 
+            ? packParts.slice(0, -1).join('/') + '/'
+            : 'packs/';
+        
+        // Add pack base path and category folder to each card
+        for (const [catName, cards] of Object.entries(data.categories)) {
+            // Derive category folder from category name
+            const categoryFolder = categoryToFolderName(catName);
+            
+            data.categories[catName] = cards.map(card => ({
+                ...card,
+                _packBasePath: packBasePath,
+                _categoryFolder: categoryFolder
+            }));
+        }
+        
         state.assets.categories = data.categories;
         console.log("Pack loaded:", filename);
     }
+}
+
+// Convert category name to folder name
+// "The Simpsons" -> "simpsons", "Aqua Teen Hunger Force" -> "athf", "Family Guy" -> "familyguy"
+function categoryToFolderName(catName) {
+    if (!catName || catName === 'Unassigned') return '';
+    
+    // Special mappings for known categories
+    const mappings = {
+        'The Simpsons': 'simpsons',
+        'Aqua Teen Hunger Force': 'athf',
+        'Family Guy': 'familyguy',
+        'South Park': 'southpark',
+        'Futurama': 'futurama',
+        'Jen Hamilton': 'jenhamilton'
+    };
+    
+    if (mappings[catName]) return mappings[catName];
+    
+    // Default: lowercase, remove spaces and special chars
+    return catName.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 async function fetchPackData(filename) {
@@ -335,9 +385,27 @@ function getPackTitle() {
     if (filename === '__ALL__') return "All Categories";
     if (filename === "Default Game") return "Default Game";
     
-    // "packs/adult_cartoons.json" -> "Adult Cartoons"
-    const base = filename.split('/').pop().replace('.json', '');
+    // "packs/adult_cartoons/adult_cartoons.json" -> "Adult Cartoons"
+    // "packs/adult_cartoons.json" -> "Adult Cartoons" (legacy)
+    const parts = filename.split('/');
+    const base = parts[parts.length - 1].replace('.json', '');
     return base.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Get the folder path for the current pack's assets
+function getPackAssetPath() {
+    if (state.packs.length === 0 || !state.packs[state.currentPackIndex]) return 'packs/';
+    const filename = state.packs[state.currentPackIndex];
+    if (filename === '__ALL__' || filename === "Default Game") return 'packs/';
+    
+    // "packs/adult_cartoons/adult_cartoons.json" -> "packs/adult_cartoons/"
+    // "packs/adult_cartoons.json" -> "packs/" (legacy)
+    const parts = filename.split('/');
+    if (parts.length >= 3) {
+        // New structure: packs/subfolder/file.json
+        return parts.slice(0, -1).join('/') + '/';
+    }
+    return 'packs/';
 }
 
 async function cyclePack(dir) {
@@ -370,6 +438,7 @@ function setupInput() {
             if (!state.input.spaceHeld) {
                 state.input.spaceHeld = true;
                 state.input.spaceTime = Date.now();
+                state.input.spaceLongPressFired = false;
                 state.timers.space = setTimeout(onSpaceLongPress, config.longPress);
             }
             e.preventDefault();
@@ -377,7 +446,8 @@ function setupInput() {
             if (!state.input.enterHeld) {
                 state.input.enterHeld = true;
                 state.input.enterTime = Date.now();
-                state.timers.enter = setTimeout(onEnterLongPress, config.longPress);
+                state.input.enterLongPressFired = false;
+                state.timers.enter = setTimeout(onEnterLongPress, config.pauseLongPress);
             }
             e.preventDefault();
         }
@@ -388,16 +458,60 @@ function setupInput() {
             clearTimeout(state.timers.space);
             clearInterval(state.timers.spaceRepeat);
             state.input.spaceHeld = false;
-            const duration = Date.now() - state.input.spaceTime;
-            if (duration < config.longPress) {
+            // Only perform short press if long press hasn't fired
+            if (!state.input.spaceLongPressFired) {
                 onSpaceShortPress();
             }
+            state.input.spaceLongPressFired = false;
         } else if (e.code === 'Enter') {
             clearTimeout(state.timers.enter);
             clearInterval(state.timers.enterRepeat);
             state.input.enterHeld = false;
-            const duration = Date.now() - state.input.enterTime;
-            if (duration < config.longPress) {
+            // Only perform short press if long press hasn't fired
+            if (!state.input.enterLongPressFired) {
+                onEnterShortPress();
+            }
+            state.input.enterLongPressFired = false;
+        }
+    });
+
+    // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+    // This is CRITICAL to prevent stuck input state when spamming spacebar
+    document.addEventListener('narbe-input-cancelled', (e) => {
+        if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+            const wasBackScanning = !!state.timers.spaceRepeat;
+            // Reset space input state
+            state.input.spaceHeld = false;
+            state.input.spaceLongPressFired = false;
+            state.input.spaceTime = 0;
+            if (state.timers.space) {
+                clearTimeout(state.timers.space);
+                state.timers.space = null;
+            }
+            if (state.timers.spaceRepeat) {
+                clearInterval(state.timers.spaceRepeat);
+                state.timers.spaceRepeat = null;
+            }
+            // If cancelled due to 'too-short', still perform short press action - user intended to press
+            if (e.detail.reason === 'too-short' && !wasBackScanning) {
+                onSpaceShortPress();
+            }
+        }
+        if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+            // Reset enter input state
+            state.input.enterHeld = false;
+            state.input.enterLongPressFired = false;
+            state.input.enterTime = 0;
+            if (state.timers.enter) {
+                clearTimeout(state.timers.enter);
+                state.timers.enter = null;
+            }
+            if (state.timers.enterRepeat) {
+                clearInterval(state.timers.enterRepeat);
+                state.timers.enterRepeat = null;
+            }
+            // Perform select for short Enter presses
+            if (e.detail.reason === 'too-short') {
                 onEnterShortPress();
             }
         }
@@ -425,6 +539,7 @@ function onSpaceShortPress() {
 }
 
 function onSpaceLongPress() {
+    state.input.spaceLongPressFired = true;
     performBackwardScan();
     state.timers.spaceRepeat = setInterval(() => {
         performBackwardScan();
@@ -483,6 +598,7 @@ function onEnterShortPress() {
 }
 
 function onEnterLongPress() {
+    state.input.enterLongPressFired = true;
     if (state.mode === 'game') {
         showPauseMenu();
     } else if (state.mode === 'menu' || state.mode === 'pause') {
@@ -1769,25 +1885,31 @@ function generateGrid() {
     }
     
     let cards = [];
+    const defaultPackAssetPath = getPackAssetPath();
     selectedCards.forEach(card => {
         const name = card.title || "Untitled";
+        // Use card's specific pack path if available (for __ALL__ mode), otherwise use current pack path
+        const cardPackPath = card._packBasePath || defaultPackAssetPath;
+        // Use category folder if available
+        const categoryFolder = card._categoryFolder ? card._categoryFolder + '/' : '';
         let imagePath = '';
         if (card.image) {
             if (card.image.startsWith('http') || card.image.startsWith('data:')) {
                 imagePath = card.image;
-            } else if (card.image.startsWith('assets/')) {
+            } else if (card.image.startsWith('packs/') || card.image.startsWith('assets/')) {
                 imagePath = card.image;
             } else {
-                imagePath = `assets/${card.image}`;
+                // Build path: packs/packname/categoryname/filename
+                imagePath = cardPackPath + categoryFolder + card.image;
             }
         }
         
         const altTitle = card.altTitle || "";
-        cards.push({ name, image: imagePath, altTitle });
-        cards.push({ name, image: imagePath, altTitle });
+        cards.push({ name, image: imagePath, altTitle, _packBasePath: cardPackPath, _categoryFolder: card._categoryFolder });
+        cards.push({ name, image: imagePath, altTitle, _packBasePath: cardPackPath, _categoryFolder: card._categoryFolder });
         
-        // Store full card object for sound/tts
-        state.soundMap[name] = card;
+        // Store full card object for sound/tts (with pack path and category folder)
+        state.soundMap[name] = { ...card, _packBasePath: cardPackPath, _categoryFolder: card._categoryFolder };
     });
     
     for (let i = cards.length - 1; i > 0; i--) {
@@ -2428,6 +2550,8 @@ function playSound(name) {
     if (!card) return;
 
     let soundPlayed = false;
+    const cardPackPath = card._packBasePath || getPackAssetPath();
+    const categoryFolder = card._categoryFolder ? card._categoryFolder + '/' : '';
 
     // Priority: MP3 > TTS Text > Alt Title > Title
     if (card.sound && settings.sound) {
@@ -2441,7 +2565,13 @@ function playSound(name) {
         }
 
         if (soundFile) {
-            const src = resolveAsset(soundFile);
+            // Use card's pack path and category folder for sound resolution
+            let src = soundFile;
+            if (!soundFile.startsWith('http') && !soundFile.startsWith('data:') && 
+                !soundFile.startsWith('packs/') && !soundFile.startsWith('assets/')) {
+                src = cardPackPath + categoryFolder + soundFile;
+            }
+            src = resolveAsset(src);
             const audio = new Audio(src);
             audio.play().catch(e => console.log("Audio play failed", e));
             soundPlayed = true;
@@ -2491,10 +2621,11 @@ function resolveAsset(path) {
     // 2. Default Path Handling
     if (path.startsWith('http') || path.startsWith('data:')) {
         return path;
-    } else if (path.startsWith('assets/')) {
+    } else if (path.startsWith('packs/') || path.startsWith('assets/')) {
         return path;
     } else {
-        return `assets/${path}`;
+        // Use pack-specific path
+        return getPackAssetPath() + path;
     }
 }
 

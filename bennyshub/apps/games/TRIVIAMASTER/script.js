@@ -23,6 +23,7 @@ const state = {
     audioContext: null,
     gameStartTime: 0,
     questionStartTime: 0,
+    answerSelected: false,
     categoryPage: 0,
     previousScreen: null, // To track where to go back from settings
     inputState: {
@@ -1470,6 +1471,7 @@ function loadQuestion() {
     setTimeout(adjustQuestionFontSize, 50); // Small delay to allow render
 
     state.questionStartTime = Date.now();
+    state.answerSelected = false;
     resetScanning();
 
     // Start scanning on the Question Text immediately
@@ -1481,6 +1483,10 @@ function loadQuestion() {
 }
 
 function handleAnswer(btn) {
+    // Prevent selecting multiple answers per question
+    if (state.answerSelected) return;
+    state.answerSelected = true;
+    
     const isCorrect = btn.dataset.isCorrect === 'true';
     
     // Disable all buttons

@@ -182,14 +182,18 @@ class UIRenderer {
         const maxDuration = GAME_CONSTANTS.TIMING.SWING_POWER_MAX; // 4 seconds max
         const progress = Math.min(holdDuration / maxDuration, 1);
         
-        // Determine current swing type based on hold duration (or pre-selected bunt)
-        let currentSwingType = 'NORMAL';
-        let swingColor = '#00ff00';
+        // Determine current swing type based on hold duration
+        // 0-2s = bunt, 2-4s = normal, 4-6s = power
+        let currentSwingType = 'BUNT';
+        let swingColor = '#ffaa00';
         
-        if (ib.swingType === 'bunt') {
+        if (holdDuration < GAME_CONSTANTS.TIMING.SWING_BUNT_MAX) {
             currentSwingType = 'BUNT';
             swingColor = '#ffaa00';
-        } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+        } else if (holdDuration < GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+            currentSwingType = 'NORMAL';
+            swingColor = '#00ff00';
+        } else {
             currentSwingType = 'POWER';
             swingColor = '#ff4444';
         }
@@ -211,36 +215,33 @@ class UIRenderer {
         this.ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
         this.ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
         
-        // If bunt mode, show single bunt zone
-        if (ib.swingType === 'bunt') {
-            this.ctx.fillStyle = '#ffaa00' + '60';
-            this.ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
-            
-            this.ctx.font = 'bold 10px monospace';
-            this.ctx.textAlign = 'left';
-            this.ctx.fillStyle = '#ffaa00';
-            this.ctx.fillText('BUNT', meterX + meterWidth + 5, meterY + meterHeight / 2);
-        } else {
-            // Draw swing type zones (from bottom to top)
-            // Zone 1: NORMAL (0-2s) - green
-            const normalZoneHeight = (GAME_CONSTANTS.TIMING.SWING_NORMAL_MAX / maxDuration) * meterHeight;
-            this.ctx.fillStyle = '#00ff00' + '60';
-            this.ctx.fillRect(meterX, meterY + meterHeight - normalZoneHeight, meterWidth, normalZoneHeight);
-            
-            // Zone 2: POWER (2-4s) - red  
-            const powerZoneStart = normalZoneHeight;
-            const powerZoneHeight = ((GAME_CONSTANTS.TIMING.SWING_POWER_MAX - GAME_CONSTANTS.TIMING.SWING_POWER_MIN) / maxDuration) * meterHeight;
-            this.ctx.fillStyle = '#ff4444' + '60';
-            this.ctx.fillRect(meterX, meterY + meterHeight - powerZoneStart - powerZoneHeight, meterWidth, powerZoneHeight);
-            
-            // Zone labels on the side
-            this.ctx.font = 'bold 10px monospace';
-            this.ctx.textAlign = 'left';
-            this.ctx.fillStyle = '#00ff00';
-            this.ctx.fillText('NORMAL', meterX + meterWidth + 5, meterY + meterHeight - normalZoneHeight/2);
-            this.ctx.fillStyle = '#ff4444';
-            this.ctx.fillText('POWER', meterX + meterWidth + 5, meterY + meterHeight - powerZoneStart - powerZoneHeight/2);
-        }
+        // Draw swing type zones (from bottom to top)
+        // Zone 1: BUNT (0-2s) - orange (bottom)
+        const buntZoneHeight = (GAME_CONSTANTS.TIMING.SWING_BUNT_MAX / maxDuration) * meterHeight;
+        this.ctx.fillStyle = '#ffaa00' + '60';
+        this.ctx.fillRect(meterX, meterY + meterHeight - buntZoneHeight, meterWidth, buntZoneHeight);
+        
+        // Zone 2: NORMAL (2-4s) - green (middle)
+        const normalZoneStart = buntZoneHeight;
+        const normalZoneHeight = ((GAME_CONSTANTS.TIMING.SWING_POWER_MIN - GAME_CONSTANTS.TIMING.SWING_BUNT_MAX) / maxDuration) * meterHeight;
+        this.ctx.fillStyle = '#00ff00' + '60';
+        this.ctx.fillRect(meterX, meterY + meterHeight - normalZoneStart - normalZoneHeight, meterWidth, normalZoneHeight);
+        
+        // Zone 3: POWER (4-6s) - red (top)
+        const powerZoneStart = normalZoneStart + normalZoneHeight;
+        const powerZoneHeight = ((GAME_CONSTANTS.TIMING.SWING_POWER_MAX - GAME_CONSTANTS.TIMING.SWING_POWER_MIN) / maxDuration) * meterHeight;
+        this.ctx.fillStyle = '#ff4444' + '60';
+        this.ctx.fillRect(meterX, meterY + meterHeight - powerZoneStart - powerZoneHeight, meterWidth, powerZoneHeight);
+        
+        // Zone labels on the side
+        this.ctx.font = 'bold 10px monospace';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.fillText('BUNT', meterX + meterWidth + 5, meterY + meterHeight - buntZoneHeight/2);
+        this.ctx.fillStyle = '#00ff00';
+        this.ctx.fillText('NORMAL', meterX + meterWidth + 5, meterY + meterHeight - normalZoneStart - normalZoneHeight/2);
+        this.ctx.fillStyle = '#ff4444';
+        this.ctx.fillText('POWER', meterX + meterWidth + 5, meterY + meterHeight - powerZoneStart - powerZoneHeight/2);
         
         // Filled progress bar
         const filledHeight = progress * meterHeight;
@@ -329,22 +330,22 @@ class UIRenderer {
             const holdDuration = Date.now() - ib.swingPressStart;
             let swingTypeText, swingColor;
             
-            if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MIN) {
+            if (holdDuration < GAME_CONSTANTS.TIMING.SWING_BUNT_MAX) {
                 swingTypeText = 'BUNT';
                 swingColor = '#ffaa00';
-            } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
-                swingTypeText = 'POWER SWING';
-                swingColor = '#ff4444';
-            } else {
+            } else if (holdDuration < GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
                 swingTypeText = 'NORMAL SWING';
                 swingColor = '#00ff00';
+            } else {
+                swingTypeText = 'POWER SWING';
+                swingColor = '#ff4444';
             }
             
             this.ctx.fillStyle = swingColor;
             this.ctx.fillText(`Current: ${swingTypeText} - RELEASE to SWING!`, this.canvas.width / 2, instructY);
             this.ctx.font = 'bold 11px monospace';
             this.ctx.fillStyle = '#cccccc';
-            this.ctx.fillText('0-3s = Normal | 3-6s = Power | 6s+ = Bunt', this.canvas.width / 2, instructY + 18);
+            this.ctx.fillText('0-2s = Bunt | 2-4s = Normal | 4-6s = Power', this.canvas.width / 2, instructY + 18);
         } else if (ib.waitingForSwing) {
             this.ctx.fillStyle = '#00ff00';
             this.ctx.fillText('Press & Release ENTER to SWING!', this.canvas.width / 2, instructY);
@@ -445,6 +446,324 @@ class UIRenderer {
         this.ctx.strokeText(finalScore, this.canvas.width / 2, this.canvas.height / 2 + 60);
         this.ctx.fillText(finalScore, this.canvas.width / 2, this.canvas.height / 2 + 60);
         this.ctx.shadowBlur = 0;
+    }
+
+    // Playoff Victory Screen - shown when winning the playoff series
+    drawPlayoffVictoryScreen(gameState, victoryData) {
+        // Dark blue background
+        this.ctx.fillStyle = '#000022';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Celebration gradient
+        const gradient = this.ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2,
+            50,
+            this.canvas.width / 2, this.canvas.height / 2,
+            400
+        );
+        gradient.addColorStop(0, 'rgba(0, 200, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Header
+        this.ctx.font = 'bold 64px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#00ccff';
+        this.ctx.shadowColor = '#00ccff';
+        this.ctx.shadowBlur = 40;
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 5;
+        
+        this.ctx.strokeText('⭐ PLAYOFF SERIES WON! ⭐', this.canvas.width / 2, 100);
+        this.ctx.fillText('⭐ PLAYOFF SERIES WON! ⭐', this.canvas.width / 2, 100);
+        
+        // Advancement message
+        this.ctx.font = 'bold 48px monospace';
+        this.ctx.fillStyle = '#00ff88';
+        this.ctx.shadowColor = '#00ff88';
+        this.ctx.shadowBlur = 25;
+        this.ctx.strokeText("YOU'RE GOING TO THE", this.canvas.width / 2, 200);
+        this.ctx.fillText("YOU'RE GOING TO THE", this.canvas.width / 2, 200);
+        
+        this.ctx.font = 'bold 72px monospace';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.shadowColor = '#FFD700';
+        this.ctx.shadowBlur = 35;
+        this.ctx.strokeText('CHAMPIONSHIP!', this.canvas.width / 2, 280);
+        this.ctx.fillText('CHAMPIONSHIP!', this.canvas.width / 2, 280);
+        
+        // Team name
+        this.ctx.font = 'bold 40px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeText(`Team ${victoryData.teamColor.toUpperCase()}`, this.canvas.width / 2, 360);
+        this.ctx.fillText(`Team ${victoryData.teamColor.toUpperCase()}`, this.canvas.width / 2, 360);
+        
+        // Series result
+        this.ctx.font = 'bold 36px monospace';
+        this.ctx.fillStyle = '#aaffaa';
+        this.ctx.shadowBlur = 10;
+        const seriesText = `Playoff Series: ${victoryData.playoffWins}-${victoryData.playoffLosses}`;
+        this.ctx.strokeText(seriesText, this.canvas.width / 2, 420);
+        this.ctx.fillText(seriesText, this.canvas.width / 2, 420);
+        
+        // Season record
+        this.ctx.font = 'bold 32px monospace';
+        this.ctx.fillStyle = '#cccccc';
+        const recordText = `Season Record: ${victoryData.seasonRecord}`;
+        this.ctx.strokeText(recordText, this.canvas.width / 2, 470);
+        this.ctx.fillText(recordText, this.canvas.width / 2, 470);
+        
+        // Next opponent
+        this.ctx.font = 'bold 36px monospace';
+        this.ctx.fillStyle = '#ff6600';
+        this.ctx.shadowColor = '#ff6600';
+        this.ctx.shadowBlur = 15;
+        const nextText = `Championship Opponent: ${victoryData.championshipOpponent.toUpperCase()}`;
+        this.ctx.strokeText(nextText, this.canvas.width / 2, 540);
+        this.ctx.fillText(nextText, this.canvas.width / 2, 540);
+        
+        this.ctx.shadowBlur = 0;
+    }
+
+    // Championship celebration animation state
+    startChampionshipCelebration(gameState, victoryData) {
+        this.celebrationActive = true;
+        this.celebrationStartTime = Date.now();
+        this.celebrationGameState = gameState;
+        this.celebrationVictoryData = victoryData;
+        this.confetti = [];
+        this.fireworks = [];
+        
+        // Initialize confetti particles
+        for (let i = 0; i < 150; i++) {
+            this.confetti.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * -this.canvas.height,
+                size: Math.random() * 10 + 5,
+                speedY: Math.random() * 3 + 2,
+                speedX: (Math.random() - 0.5) * 2,
+                rotation: Math.random() * 360,
+                rotationSpeed: (Math.random() - 0.5) * 10,
+                color: ['#FFD700', '#ff0000', '#00ff00', '#0088ff', '#ff00ff', '#ffffff'][Math.floor(Math.random() * 6)]
+            });
+        }
+        
+        // Start animation loop
+        this.animateChampionshipCelebration();
+    }
+
+    animateChampionshipCelebration() {
+        if (!this.celebrationActive) return;
+        
+        const elapsed = Date.now() - this.celebrationStartTime;
+        const gameState = this.celebrationGameState;
+        const victoryData = this.celebrationVictoryData;
+        
+        // Dark background with pulsing effect
+        const pulseIntensity = 0.1 + Math.sin(elapsed / 500) * 0.05;
+        this.ctx.fillStyle = `rgb(${Math.floor(20 + pulseIntensity * 30)}, ${Math.floor(10 + pulseIntensity * 20)}, 0)`;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Multiple radial gradients for dynamic glow
+        for (let i = 0; i < 3; i++) {
+            const offset = Math.sin(elapsed / 1000 + i * 2) * 50;
+            const gradient = this.ctx.createRadialGradient(
+                this.canvas.width / 2 + offset, this.canvas.height / 2,
+                50,
+                this.canvas.width / 2, this.canvas.height / 2,
+                400 + Math.sin(elapsed / 800) * 50
+            );
+            gradient.addColorStop(0, `rgba(255, 215, 0, ${0.15 + Math.sin(elapsed / 600 + i) * 0.1})`);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        
+        // Draw and update confetti
+        this.confetti.forEach(c => {
+            c.y += c.speedY;
+            c.x += c.speedX;
+            c.rotation += c.rotationSpeed;
+            
+            // Reset confetti that falls off screen
+            if (c.y > this.canvas.height + 20) {
+                c.y = -20;
+                c.x = Math.random() * this.canvas.width;
+            }
+            
+            this.ctx.save();
+            this.ctx.translate(c.x, c.y);
+            this.ctx.rotate(c.rotation * Math.PI / 180);
+            this.ctx.fillStyle = c.color;
+            this.ctx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size / 2);
+            this.ctx.restore();
+        });
+        
+        // Draw fireworks periodically
+        if (elapsed % 2000 < 50) {
+            this.fireworks.push({
+                x: Math.random() * this.canvas.width,
+                y: this.canvas.height,
+                targetY: Math.random() * 200 + 100,
+                exploded: false,
+                particles: [],
+                color: ['#FFD700', '#ff0000', '#00ff00', '#0088ff', '#ff00ff'][Math.floor(Math.random() * 5)]
+            });
+        }
+        
+        // Update and draw fireworks
+        this.fireworks = this.fireworks.filter(fw => {
+            if (!fw.exploded) {
+                fw.y -= 8;
+                // Draw rocket
+                this.ctx.beginPath();
+                this.ctx.arc(fw.x, fw.y, 4, 0, Math.PI * 2);
+                this.ctx.fillStyle = '#ffff00';
+                this.ctx.fill();
+                
+                if (fw.y <= fw.targetY) {
+                    fw.exploded = true;
+                    // Create explosion particles
+                    for (let i = 0; i < 30; i++) {
+                        const angle = (Math.PI * 2 / 30) * i;
+                        const speed = Math.random() * 4 + 2;
+                        fw.particles.push({
+                            x: fw.x,
+                            y: fw.y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            life: 60
+                        });
+                    }
+                }
+            } else {
+                // Draw explosion particles
+                fw.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.1; // Gravity
+                    p.life--;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                    this.ctx.fillStyle = fw.color;
+                    this.ctx.globalAlpha = p.life / 60;
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                });
+                
+                fw.particles = fw.particles.filter(p => p.life > 0);
+                return fw.particles.length > 0;
+            }
+            return true;
+        });
+        
+        // Main text with bouncing effect
+        const bounce = Math.sin(elapsed / 300) * 10;
+        const scale = 1 + Math.sin(elapsed / 400) * 0.05;
+        
+        this.ctx.save();
+        this.ctx.translate(this.canvas.width / 2, 100 + bounce);
+        this.ctx.scale(scale, scale);
+        
+        this.ctx.font = 'bold 72px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.shadowColor = '#FFD700';
+        this.ctx.shadowBlur = 40 + Math.sin(elapsed / 200) * 10;
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 5;
+        
+        this.ctx.strokeText('🏆 CHAMPIONSHIP! 🏆', 0, 0);
+        this.ctx.fillText('🏆 CHAMPIONSHIP! 🏆', 0, 0);
+        this.ctx.restore();
+        
+        // Victory message with rainbow effect
+        const hue = (elapsed / 20) % 360;
+        this.ctx.font = 'bold 56px monospace';
+        this.ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+        this.ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+        this.ctx.shadowBlur = 25;
+        this.ctx.textAlign = 'center';
+        this.ctx.strokeText('YOU ARE THE CHAMPION!', this.canvas.width / 2, 200);
+        this.ctx.fillText('YOU ARE THE CHAMPION!', this.canvas.width / 2, 200);
+        
+        // Team name
+        this.ctx.font = 'bold 48px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeText(victoryData.teamColor.toUpperCase(), this.canvas.width / 2, 280);
+        this.ctx.fillText(victoryData.teamColor.toUpperCase(), this.canvas.width / 2, 280);
+        
+        // Season record box
+        const boxWidth = 600;
+        const boxHeight = 220;
+        const boxX = this.canvas.width / 2 - boxWidth / 2;
+        const boxY = 320;
+        
+        // Box with animated gradient
+        const boxGradient = this.ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
+        boxGradient.addColorStop(0, `rgba(255, 215, 0, ${0.2 + Math.sin(elapsed / 500) * 0.1})`);
+        boxGradient.addColorStop(0.5, `rgba(139, 69, 19, ${0.3 + Math.sin(elapsed / 500 + 1) * 0.1})`);
+        boxGradient.addColorStop(1, `rgba(255, 215, 0, ${0.2 + Math.sin(elapsed / 500 + 2) * 0.1})`);
+        this.ctx.fillStyle = boxGradient;
+        this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Box border with glow
+        this.ctx.strokeStyle = '#FFD700';
+        this.ctx.lineWidth = 4;
+        this.ctx.shadowColor = '#FFD700';
+        this.ctx.shadowBlur = 20 + Math.sin(elapsed / 300) * 10;
+        this.ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Season stats header
+        this.ctx.font = 'bold 36px monospace';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.shadowColor = '#FFD700';
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeText('🌟 SEASON STATS 🌟', this.canvas.width / 2, boxY + 50);
+        this.ctx.fillText('🌟 SEASON STATS 🌟', this.canvas.width / 2, boxY + 50);
+        
+        // Final record
+        this.ctx.font = 'bold 52px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 15;
+        const recordText = `Final Record: ${victoryData.finalRecord}`;
+        this.ctx.strokeText(recordText, this.canvas.width / 2, boxY + 110);
+        this.ctx.fillText(recordText, this.canvas.width / 2, boxY + 110);
+        
+        // Championship series result
+        this.ctx.font = 'bold 32px monospace';
+        this.ctx.fillStyle = '#aaffaa';
+        this.ctx.shadowBlur = 10;
+        const seriesText = `Championship Series: 3-${victoryData.championshipLosses >= 0 ? victoryData.championshipLosses + 1 : 0}`;
+        this.ctx.strokeText(seriesText, this.canvas.width / 2, boxY + 160);
+        this.ctx.fillText(seriesText, this.canvas.width / 2, boxY + 160);
+        
+        // Championship Won message
+        this.ctx.font = 'bold 28px monospace';
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.shadowBlur = 10;
+        this.ctx.strokeText('🏆 Championship Series Won! 🏆', this.canvas.width / 2, boxY + 200);
+        this.ctx.fillText('🏆 Championship Series Won! 🏆', this.canvas.width / 2, boxY + 200);
+        
+        this.ctx.shadowBlur = 0;
+        
+        // Continue animation
+        if (this.celebrationActive) {
+            requestAnimationFrame(() => this.animateChampionshipCelebration());
+        }
+    }
+
+    stopChampionshipCelebration() {
+        this.celebrationActive = false;
+        this.confetti = [];
+        this.fireworks = [];
     }
 
     drawChampionshipVictoryScreen(gameState, victoryData) {

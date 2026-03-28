@@ -57,7 +57,15 @@ class GameLogic {
         }
         
         // Randomly determine who is home vs away team (this determines who bats first)
-        const playerIsAwayTeam = Math.random() < 0.5;
+        // For playoff/championship series, use consistent assignment throughout the series
+        let playerIsAwayTeam;
+        if (mode === 'season' && this.game.seasonManager.isInSeries()) {
+            // Use consistent home/away for series games
+            playerIsAwayTeam = !this.game.seasonManager.getSeriesHomeTeamIsPlayer();
+        } else {
+            // Regular season or exhibition - randomize each game
+            playerIsAwayTeam = Math.random() < 0.5;
+        }
         
         if (playerIsAwayTeam) {
             // Player is away team (Red), bats first in top of 1st
@@ -472,11 +480,11 @@ class GameLogic {
         gameState.interactiveBatting.swingPressStart = Date.now();
         gameState.interactiveBatting.announcedSwingType = null; // Track announced type
         
-        // Announce initial swing type
-        this.game.audioSystem.speak('Normal swing');
-        gameState.interactiveBatting.announcedSwingType = 'normal';
+        // Announce initial swing type (bunt for quick release)
+        this.game.audioSystem.speak('Bunt');
+        gameState.interactiveBatting.announcedSwingType = 'bunt';
         
-        // Start charge tone monitoring (6 seconds max for bunt)
+        // Start charge tone monitoring (6 seconds max for power)
         this.game.audioSystem.startChargeSound();
         this.chargeMonitorId = setInterval(() => {
             if (!gameState.interactiveBatting.swingPressed) {
@@ -484,22 +492,20 @@ class GameLogic {
                 return;
             }
             const holdDuration = Date.now() - gameState.interactiveBatting.swingPressStart;
-            // 6 seconds = 100% charge (SWING_BUNT_MIN)
-            const chargePercent = Math.min(holdDuration / GAME_CONSTANTS.TIMING.SWING_BUNT_MIN, 1.0);
+            // 6 seconds = 100% charge (SWING_POWER_MAX)
+            const chargePercent = Math.min(holdDuration / GAME_CONSTANTS.TIMING.SWING_POWER_MAX, 1.0);
             this.game.audioSystem.updateChargeSound(chargePercent);
             
-            // Announce swing type transitions
+            // Announce swing type transitions (bunt -> normal -> power)
+            if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MAX && 
+                gameState.interactiveBatting.announcedSwingType === 'bunt') {
+                this.game.audioSystem.speak('Normal swing');
+                gameState.interactiveBatting.announcedSwingType = 'normal';
+            }
             if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN && 
                 gameState.interactiveBatting.announcedSwingType === 'normal') {
                 this.game.audioSystem.speak('Power swing');
                 gameState.interactiveBatting.announcedSwingType = 'power';
-            }
-            
-            // Auto-trigger bunt when fully charged (100%)
-            if (chargePercent >= 1.0) {
-                this.game.audioSystem.speak('Bunt');
-                gameState.interactiveBatting.announcedSwingType = 'bunt';
-                this.triggerAutoBunt();
             }
         }, 50); // Check every 50ms
         
@@ -510,9 +516,17 @@ class GameLogic {
     onSwingRelease() {
         const gameState = this.game.gameState;
         
-        if (!gameState.interactiveBatting.active || !gameState.interactiveBatting.swingPressed) {
+        // Guard against multiple calls - check active, swingPressed, and NOT already released
+        if (!gameState.interactiveBatting.active || 
+            !gameState.interactiveBatting.swingPressed || 
+            gameState.interactiveBatting.swingReleased) {
             return;
         }
+        
+        // Immediately mark as released and clear swingPressed to prevent any further swing processing
+        gameState.interactiveBatting.swingPressed = false;
+        gameState.interactiveBatting.swingReleased = true;
+        gameState.interactiveBatting.waitingForSwing = false;
         
         // Stop charge tone monitoring
         if (this.chargeMonitorId) {
@@ -523,29 +537,26 @@ class GameLogic {
         
         const holdDuration = Date.now() - gameState.interactiveBatting.swingPressStart;
         
-        gameState.interactiveBatting.swingReleased = true;
-        gameState.interactiveBatting.waitingForSwing = false;
-        
         // Determine swing type based on hold duration:
-        // 0-3s = normal swing
-        // 3-6s = power swing
-        // 6s+ = bunt (hold from start of pitch)
+        // 0-2s = bunt (quick tap/short hold)
+        // 2-4s = normal swing
+        // 4-6s = power swing (longer hold for more power)
         let swingType;
-        if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_BUNT_MIN) {
-            // Bunt (6+ seconds)
+        if (holdDuration < GAME_CONSTANTS.TIMING.SWING_BUNT_MAX) {
+            // Bunt (under 2 seconds)
             swingType = 'bunt';
             gameState.interactiveBatting.swingPowerLevel = 0.1; // Low power for bunt
-        } else if (holdDuration >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
-            // Power swing (3-6 seconds)
+        } else if (holdDuration < GAME_CONSTANTS.TIMING.SWING_POWER_MIN) {
+            // Normal swing (2-4 seconds)
+            swingType = 'normal';
+            gameState.interactiveBatting.swingPowerLevel = 0.5; // Medium power for normal
+        } else {
+            // Power swing (4+ seconds)
             swingType = 'power';
-            // Scale power from 0.7 to 1.0 based on how close to 6 seconds
+            // Scale power from 0.7 to 1.0 based on how long held past 4 seconds
             const powerRange = GAME_CONSTANTS.TIMING.SWING_POWER_MAX - GAME_CONSTANTS.TIMING.SWING_POWER_MIN;
             const powerProgress = Math.min(holdDuration - GAME_CONSTANTS.TIMING.SWING_POWER_MIN, powerRange) / powerRange;
             gameState.interactiveBatting.swingPowerLevel = 0.7 + (powerProgress * 0.3);
-        } else {
-            // Normal swing (0-3 seconds)
-            swingType = 'normal';
-            gameState.interactiveBatting.swingPowerLevel = 0.5; // Medium power for normal
         }
         
         gameState.interactiveBatting.swingType = swingType;
@@ -711,10 +722,11 @@ class GameLogic {
         // Play hit sound for ANY contact (not Strike)
         // This is the single source of truth for player batting hit sounds
         if (outcome !== 'Strike') {
-            this.playBaseballHitSound();
-            // Play additional homerun sound for home runs
+            // For home runs, only play the homerun sound (it includes the hit sound)
             if (outcome === 'Home Run') {
-                setTimeout(() => this.playHomeRunSound(), 300);
+                this.playHomeRunSound();
+            } else {
+                this.playBaseballHitSound();
             }
         }
         
@@ -880,35 +892,35 @@ class GameLogic {
         }
         
         if (powerLevel >= 0.9) {
-            // Max power with perfect timing (+5% triples/HRs, +25% outs/fouls - high risk/reward)
-            if (rand < 0.25 + hitBonus) return 'Home Run';
-            if (rand < 0.50 + hitBonus) return 'Triple';
-            if (rand < 0.60) return 'Double';
-            if (rand < 0.70 - strikeBonus) return 'Single';
-            if (rand < 0.90) return 'Foul';
-            return 'Pop Fly Out';
+            // Max power with perfect timing - high risk/reward
+            if (rand < 0.12 + hitBonus) return 'Home Run';
+            if (rand < 0.22 + hitBonus) return 'Triple';
+            if (rand < 0.35) return 'Double';
+            if (rand < 0.50 - strikeBonus) return 'Single';
+            if (rand < 0.70) return 'Pop Fly Out';
+            return 'Foul';
         } else if (powerLevel >= 0.7) {
-            // Strong power with good timing (+5% triples/HRs, +25% outs/fouls)
-            if (rand < 0.13 + hitBonus) return 'Home Run';
-            if (rand < 0.30 + hitBonus) return 'Triple';
-            if (rand < 0.45) return 'Double';
-            if (rand < 0.60 - strikeBonus) return 'Single';
-            if (rand < 0.82) return 'Foul';
-            return 'Pop Fly Out';
+            // Strong power with good timing
+            if (rand < 0.08 + hitBonus) return 'Home Run';
+            if (rand < 0.18 + hitBonus) return 'Triple';
+            if (rand < 0.30) return 'Double';
+            if (rand < 0.45 - strikeBonus) return 'Single';
+            if (rand < 0.65) return 'Pop Fly Out';
+            return 'Foul';
         } else if (powerLevel >= 0.4) {
-            // Medium power with good timing (+10% bonus for singles/doubles on normal swing)
-            if (rand < 0.02) return 'Home Run';
-            if (rand < 0.10) return 'Triple';
-            if (rand < 0.35 + hitBonus) return 'Double';
-            if (rand < 0.70 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.85) return 'Ground Out';
+            // Medium power with good timing (normal swing)
+            if (rand < 0.01) return 'Home Run';
+            if (rand < 0.05) return 'Triple';
+            if (rand < 0.18 + hitBonus) return 'Double';
+            if (rand < 0.45 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.70) return 'Ground Out';
             return 'Pop Fly Out';
         } else {
-            // Low power (quick tap) with good timing - contact hitter (+10% bonus for singles/doubles)
-            if (rand < 0.55 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.68 + hitBonus) return 'Double';
-            if (rand < 0.80) return 'Ground Out';
-            if (rand < 0.92) return 'Foul';
+            // Low power (quick tap) with good timing - contact hitter
+            if (rand < 0.35 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.45 + hitBonus) return 'Double';
+            if (rand < 0.65) return 'Ground Out';
+            if (rand < 0.85) return 'Foul';
             return 'Pop Fly Out';
         }
     }
@@ -1335,8 +1347,22 @@ class GameLogic {
     }
 
     startPitchingPhase() {
-        this.game.gameState.mode = GAME_CONSTANTS.MODES.PITCHING;
-        this.game.gameState.inputsBlocked = true; // Block inputs immediately
+        const gameState = this.game.gameState;
+        gameState.mode = GAME_CONSTANTS.MODES.PITCHING;
+        gameState.inputsBlocked = true; // Block inputs immediately
+        
+        // IMMEDIATELY clear the old pitch grid so scans are ignored during transition
+        gameState.pitchGrid = null;
+        gameState.pitchZoneIndex = -1;
+        
+        // Force reset spacebar state
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Require fresh keypress
+            this.game.inputHandler.stopBackwardScan();
+            this.game.inputHandler.stopAutoScan();
+        }
         
         setTimeout(() => {
             this.showPitchMenu();
@@ -1347,11 +1373,20 @@ class GameLogic {
     showPitchMenu() {
         const gameState = this.game.gameState;
         
-        // Generate randomized 3x3 pitch grid
+        // Generate 5-zone pitch selector (4 corners + center diamond)
         gameState.pitchGrid = this.generatePitchGrid();
-        gameState.pitchGridRow = -1; // Start with nothing selected
-        gameState.pitchGridCol = -1;
+        gameState.pitchGridTimestamp = Date.now(); // Track when this grid was created
+        gameState.pitchZoneIndex = -1; // Start with nothing selected (0-4 for zones, 5 for pause)
         gameState.menuOptions = ['Pause']; // Keep pause option separate
+        
+        // FORCE reset spacebar state - require fresh keypress after menu appears
+        // This prevents held spacebar from immediately scanning the new menu
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Mark as "already pressed" so keydown is ignored until release
+            this.game.inputHandler.stopBackwardScan();
+        }
         
         // Keep inputs blocked initially to provide a selection buffer
         gameState.inputsBlocked = true;
@@ -1368,44 +1403,85 @@ class GameLogic {
     
     generatePitchGrid() {
         const pitchTypes = ['Fastball', 'Curveball', 'Slider', 'Knuckleball', 'Changeup'];
-        const verticalZones = ['High', 'Middle', 'Low'];
-        const horizontalZones = ['Inside', 'Middle', 'Outside'];
+        // Zone labels: 0=High Inside, 1=High Outside, 2=Low Outside, 3=Low Inside, 4=Center
+        const zones = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside', 'Center'];
         
-        // Pick a random "hot spot" cell for the heatmap center
-        const hotRow = Math.floor(Math.random() * 3);
-        const hotCol = Math.floor(Math.random() * 3);
+        // Shuffle the pitch types to randomize which pitch goes where
+        const shuffledPitches = [...pitchTypes];
+        for (let i = shuffledPitches.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledPitches[i], shuffledPitches[j]] = [shuffledPitches[j], shuffledPitches[i]];
+        }
+        
+        // Pick a random "hot spot" zone (0-4) - the best pitch location
+        const hotZone = Math.floor(Math.random() * 5);
         
         const grid = [];
         
-        for (let row = 0; row < 3; row++) {
-            grid[row] = [];
-            for (let col = 0; col < 3; col++) {
-                // Pick a completely random pitch for each cell
-                const pitch = pitchTypes[Math.floor(Math.random() * pitchTypes.length)];
-                
-                // Get zone from position
-                const vertical = verticalZones[row];
-                const horizontal = horizontalZones[col];
-                
-                // Calculate effectiveness (heatmap value 0-1)
-                // Gradient radiating from the random hot spot
-                const rowDist = Math.abs(row - hotRow);
-                const colDist = Math.abs(col - hotCol);
-                const maxDist = 2 * Math.sqrt(2); // Max possible distance in 3x3 grid
-                const dist = Math.sqrt(rowDist * rowDist + colDist * colDist);
-                const effectiveness = 1 - (dist / maxDist) * 0.7; // 1.0 at hot spot, ~0.3 at furthest
-                
-                grid[row][col] = {
-                    pitch: pitch,
-                    vertical: vertical,
-                    horizontal: horizontal,
-                    effectiveness: effectiveness,
-                    label: `${pitch} ${vertical} ${horizontal}`
-                };
+        for (let i = 0; i < 5; i++) {
+            // Each zone gets a unique pitch from the shuffled array
+            const pitch = shuffledPitches[i];
+            const zone = zones[i];
+            
+            // Calculate effectiveness based on distance from hot zone
+            // Hot zone = 1.0, adjacent = ~0.6, opposite = ~0.3
+            let effectiveness;
+            if (i === hotZone) {
+                effectiveness = 1.0; // Best pitch
+            } else if (i === 4 || hotZone === 4) {
+                // Center is adjacent to all corners, corners adjacent to center
+                effectiveness = 0.6;
+            } else {
+                // Calculate distance between corner zones (0-3)
+                // Adjacent corners (differ by 1 or 3) = 0.6, diagonal (differ by 2) = 0.3
+                const diff = Math.abs(i - hotZone);
+                if (diff === 1 || diff === 3) {
+                    effectiveness = 0.6; // Adjacent corner
+                } else {
+                    effectiveness = 0.3; // Diagonal corner (opposite)
+                }
             }
+            
+            grid[i] = {
+                pitch: pitch,
+                zone: zone,
+                zoneIndex: i,
+                effectiveness: effectiveness,
+                label: `${pitch}, ${zone}`
+            };
         }
         
         return grid;
+    }
+    
+    // Determine where the pitch actually ends up based on selected zone
+    getPitchOutcome(selectedZone) {
+        const roll = Math.random() * 100;
+        
+        if (selectedZone.zoneIndex === 4) {
+            // Center zone - usually center, small chance to drift
+            // 70% center, 7.5% each direction (high center, low center, inside, outside)
+            if (roll < 70) {
+                return { location: 'Center', drifted: false };
+            } else if (roll < 77.5) {
+                return { location: 'High Center', drifted: true };
+            } else if (roll < 85) {
+                return { location: 'Low Center', drifted: true };
+            } else if (roll < 92.5) {
+                return { location: 'Inside', drifted: true };
+            } else {
+                return { location: 'Outside', drifted: true };
+            }
+        } else {
+            // Corner zones - usually their zone, small chance to drift to center
+            // 85% their zone, 15% center
+            const zoneNames = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside'];
+            if (roll < 85) {
+                return { location: zoneNames[selectedZone.zoneIndex], drifted: false };
+            } else {
+                return { location: 'Center', drifted: true };
+            }
+        }
     }
 
     processPitchSelection(selected) {
@@ -1417,13 +1493,47 @@ class GameLogic {
             return;
         }
         
-        // Get pitch from grid
-        const gridCell = gameState.pitchGrid[gameState.pitchGridRow][gameState.pitchGridCol];
+        // IMMEDIATELY block all inputs and clear the menu to prevent any more scans
+        gameState.inputsBlocked = true;
+        gameState.spaceHeld = false;
+        gameState.spaceHoldStart = null;
+        if (this.game.inputHandler) {
+            this.game.inputHandler.keyStates[' '] = true; // Require fresh keypress
+            this.game.inputHandler.stopBackwardScan();
+            this.game.inputHandler.stopAutoScan();
+        }
+        
+        // Get pitch from the 5-zone grid using pitchZoneIndex BEFORE clearing
+        const zoneIndex = gameState.pitchZoneIndex;
+        const gridCell = gameState.pitchGrid[zoneIndex];
+        
+        // NOW clear the pitch grid so the old menu can never be drawn again
+        gameState.pitchGrid = null;
+        gameState.pitchZoneIndex = -1;
         const pitchType = gridCell.pitch;
-        const pitchLocation = gridCell.horizontal;
+        
+        // Get the actual pitch outcome (where the ball actually goes)
+        const pitchOutcome = this.getPitchOutcome(gridCell);
+        const actualLocation = pitchOutcome.location;
+        
+        // Map the actual location to animation location
+        let pitchLocation;
+        if (actualLocation.includes('Inside')) pitchLocation = 'Inside';
+        else if (actualLocation.includes('Outside')) pitchLocation = 'Outside';
+        else pitchLocation = 'Middle';
+        
+        // Check if this is the best pitch (30% strike bonus)
+        const isBestPitch = gridCell.effectiveness >= 0.95;
+        if (isBestPitch) {
+            gameState.bestPitchBonus = true;
+        } else {
+            gameState.bestPitchBonus = false;
+        }
         
         gameState.selectedPitch = pitchType;
         gameState.selectedPitchLocation = pitchLocation;
+        gameState.actualPitchLocation = actualLocation; // Store the detailed location
+        gameState.pitchDrifted = pitchOutcome.drifted; // Whether pitch drifted from intended zone
         gameState.selectedPitchEffectiveness = gridCell.effectiveness; // Store for outcome calculation
         
         // Clear any existing timeout
@@ -1516,11 +1626,44 @@ class GameLogic {
         // Apply to strike rate (positive = more strikes, negative = fewer strikes)
         strikeRate = strikeRate * (1 + effectivenessModifier);
         
+        // BEST PITCH BONUS: 30% increased strike rate for selecting the best pitch
+        if (gameState.bestPitchBonus) {
+            strikeRate = strikeRate * 1.30; // 30% bonus
+            foulRate = foulRate * 1.25; // 25% more fouls (batter is fooled)
+        }
+        
         // Apply inverse to hit outcomes (positive effectiveness = fewer hits, negative = more hits)
         const hitModifier = 1 - effectivenessModifier; // Green reduces hits, red increases hits
         Object.keys(hitOutcomes).forEach(key => {
             hitOutcomes[key] = hitOutcomes[key] * hitModifier;
         });
+        
+        // BEST PITCH BONUS: Heavily favor outs and weak contact
+        if (gameState.bestPitchBonus) {
+            // DRASTICALLY reduce extra base hits (very hard to hit best pitch hard)
+            if (hitOutcomes['Double']) {
+                hitOutcomes['Double'] = hitOutcomes['Double'] * 0.25; // 75% reduction
+            }
+            if (hitOutcomes['Triple']) {
+                hitOutcomes['Triple'] = hitOutcomes['Triple'] * 0.15; // 85% reduction
+            }
+            if (hitOutcomes['Home Run']) {
+                hitOutcomes['Home Run'] = hitOutcomes['Home Run'] * 0.10; // 90% reduction
+            }
+            
+            // Moderately reduce singles (still possible but harder)
+            if (hitOutcomes['Single']) {
+                hitOutcomes['Single'] = hitOutcomes['Single'] * 0.70; // 30% reduction
+            }
+            
+            // INCREASE outs significantly (batter is fooled by best pitch)
+            if (hitOutcomes['Ground Out']) {
+                hitOutcomes['Ground Out'] = hitOutcomes['Ground Out'] * 1.60; // 60% increase
+            }
+            if (hitOutcomes['Pop Fly Out']) {
+                hitOutcomes['Pop Fly Out'] = hitOutcomes['Pop Fly Out'] * 1.50; // 50% increase
+            }
+        }
         
         if (gameState.samePitchCount > 2) {
             const penalty = (gameState.samePitchCount - 2) * 5;
@@ -1528,7 +1671,9 @@ class GameLogic {
             strikeRate = Math.max(20, strikeRate - penalty);
             
             // Boost hit chances when computer recognizes the pattern
-            const hitBoost = penalty / Object.keys(hitOutcomes).length;
+            // BUT if best pitch was selected, reduce the penalty effect significantly
+            const penaltyReduction = gameState.bestPitchBonus ? 0.3 : 1.0; // Best pitch only gets 30% of penalty
+            const hitBoost = (penalty * penaltyReduction) / Object.keys(hitOutcomes).length;
             Object.keys(hitOutcomes).forEach(key => {
                 if (key !== 'Home Run') { // Don't boost home runs
                     hitOutcomes[key] += hitBoost;
@@ -1943,6 +2088,14 @@ class GameLogic {
         gameState.strikes = 0;
 
         if (gameState.half === 'top') {
+            // Check if game should end: if home team (Blue) is ahead after top of 9th or later,
+            // they don't need to bat - game is over
+            if (gameState.currentInning >= GAME_CONSTANTS.GAME_RULES.INNINGS_PER_GAME && 
+                gameState.score.Blue > gameState.score.Red) {
+                // Home team is ahead after the top of the 9th (or later) - game ends
+                this.endGame();
+                return;
+            }
             // Switch to bottom of the same inning
             gameState.half = 'bottom';
         } else {
@@ -2002,18 +2155,29 @@ class GameLogic {
         // Update season progress and check if championship was won
         const wasChampionshipWin = this.game.seasonManager.updateProgress(playerWon);
         
-        // If championship was won, show special victory screen
+        // If championship was won, show special victory screen with mega celebration
         if (wasChampionshipWin) {
             const victoryData = this.game.seasonManager.getChampionshipVictoryData();
-            this.game.uiRenderer.drawChampionshipVictoryScreen(gameState, victoryData);
-            this.game.audioSystem.speak('Championship won! You are the champion!');
+            this.game.uiRenderer.startChampionshipCelebration(gameState, victoryData);
+            this.game.audioSystem.speak('Championship won! You are the champion! Congratulations on an amazing season!');
             
-            // Reset season after showing victory screen
+            // Reset season after showing victory screen (20+ seconds for mega celebration)
             setTimeout(() => {
+                this.game.uiRenderer.stopChampionshipCelebration();
                 this.game.seasonManager.reset();
                 this.game.menuSystem.showMainMenu();
-            }, 15000); // 15 seconds total
-        } else {
+            }, 22000); // 22 seconds total for mega celebration
+        } 
+        // Check if we just won the playoff series
+        else if (this.game.seasonManager.checkAndClearPlayoffVictory()) {
+            const victoryData = this.game.seasonManager.getPlayoffVictoryData();
+            this.game.uiRenderer.drawPlayoffVictoryScreen(gameState, victoryData);
+            this.game.audioSystem.speak(`Playoff series won! You're heading to the Championship! Next opponent: ${victoryData.championshipOpponent}`);
+            
+            // Show playoff victory for 10 seconds before returning to menu
+            setTimeout(() => this.game.menuSystem.showMainMenu(), 10000);
+        }
+        else {
             // Normal game over screen
             this.game.uiRenderer.drawGameOverScreen(gameState);
             this.game.audioSystem.speak(playerWon ? 'YOU WON!' : 'YOU LOST!');
@@ -2039,13 +2203,22 @@ class GameLogic {
         if (!this.game.audioSystem.settings.soundEnabled) return;
         
         try {
-            const homerunAudio = new Audio('audio/homerun.wav');
-            homerunAudio.volume = 0.3; // Set appropriate volume
-            homerunAudio.play().catch(error => {
-                console.warn('Could not play home run sound:', error);
-            });
+            // Use the preloaded sound from AudioSystem
+            if (this.game.audioSystem.sounds.homerun) {
+                this.game.audioSystem.sounds.homerun.currentTime = 0;
+                this.game.audioSystem.sounds.homerun.play().catch(error => {
+                    console.warn('Could not play home run sound:', error);
+                });
+            } else {
+                // Fallback to creating new Audio
+                const homerunAudio = new Audio('audio/homerun.wav');
+                homerunAudio.volume = 0.5;
+                homerunAudio.play().catch(error => {
+                    console.warn('Could not play home run sound:', error);
+                });
+            }
         } catch (error) {
-            console.warn('Error loading home run sound:', error);
+            console.warn('Error playing home run sound:', error);
         }
     }
 
@@ -2054,13 +2227,22 @@ class GameLogic {
         if (!this.game.audioSystem.settings.soundEnabled) return;
         
         try {
-            const hitAudio = new Audio('audio/baseballhit.wav');
-            hitAudio.volume = 0.3; // Set appropriate volume
-            hitAudio.play().catch(error => {
-                console.warn('Could not play baseball hit sound:', error);
-            });
+            // Use the preloaded sound from AudioSystem
+            if (this.game.audioSystem.sounds.hit) {
+                this.game.audioSystem.sounds.hit.currentTime = 0;
+                this.game.audioSystem.sounds.hit.play().catch(error => {
+                    console.warn('Could not play baseball hit sound:', error);
+                });
+            } else {
+                // Fallback to creating new Audio
+                const hitAudio = new Audio('audio/baseballhit.wav');
+                hitAudio.volume = 0.4;
+                hitAudio.play().catch(error => {
+                    console.warn('Could not play baseball hit sound:', error);
+                });
+            }
         } catch (error) {
-            console.warn('Error loading baseball hit sound:', error);
+            console.warn('Error playing baseball hit sound:', error);
         }
     }
 }

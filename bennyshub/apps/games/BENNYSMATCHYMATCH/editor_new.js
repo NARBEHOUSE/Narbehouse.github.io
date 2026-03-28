@@ -7,6 +7,128 @@ let currentEditingCardIndex = -1;
 let currentEditingCardTitle = null;
 let currentSelectorCallback = null;
 
+// API Proxy helper - routes external API calls through local proxy to bypass CORS
+// Works in both Chrome (direct) and Electron (via localhost proxy)
+function getApiUrl(service, path) {
+    const isLocalhost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (isLocalhost) {
+        return `/api/proxy/${service}/${path}`;
+    }
+    const baseUrls = {
+        'tmdb': 'https://api.themoviedb.org',
+        'opensymbols': 'https://www.opensymbols.org/api/v1',
+        'freesound': 'https://api.freesound.org',
+        'freesound-proxy': 'https://aged-thunder-a674.narbehousellc.workers.dev'
+    };
+    return `${baseUrls[service]}/${path}`;
+}
+
+// Toast notification function (replaces alert to avoid focus issues)
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateY(-10px);
+            opacity: 0;
+            max-width: 500px;
+            white-space: pre-wrap;
+        `;
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.background = type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#28a745';
+    toast.style.color = type === 'warning' ? '#000' : '#fff';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+    
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+    }, type === 'error' ? 4000 : 2500);
+}
+
+// Non-blocking confirm dialog (replaces confirm() to avoid focus issues)
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById('confirm-dialog-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'confirm-dialog-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            overlay.innerHTML = `
+                <div id="confirm-dialog-box" style="
+                    background: #1e1e1e;
+                    border: 1px solid #444;
+                    border-radius: 12px;
+                    padding: 25px;
+                    max-width: 450px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                ">
+                    <p id="confirm-dialog-message" style="
+                        color: #fff;
+                        font-size: 16px;
+                        margin: 0 0 20px 0;
+                        white-space: pre-wrap;
+                        line-height: 1.5;
+                    "></p>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button id="confirm-dialog-cancel" style="
+                            padding: 10px 20px;
+                            border: 1px solid #666;
+                            background: #333;
+                            color: #fff;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">Cancel</button>
+                        <button id="confirm-dialog-ok" style="
+                            padding: 10px 20px;
+                            border: none;
+                            background: #0d6efd;
+                            color: #fff;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        document.getElementById('confirm-dialog-message').textContent = message;
+        overlay.style.display = 'flex';
+        
+        const cleanup = (result) => {
+            overlay.style.display = 'none';
+            resolve(result);
+        };
+        
+        document.getElementById('confirm-dialog-ok').onclick = () => cleanup(true);
+        document.getElementById('confirm-dialog-cancel').onclick = () => cleanup(false);
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    });
+}
+
 // Audio Context
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let audioBuffer = null;
@@ -94,7 +216,7 @@ function performAutoSave() {
     }
 }
 
-function checkForAutoSave() {
+async function checkForAutoSave() {
     try {
         const saved = localStorage.getItem(AUTOSAVE_KEY);
         if (saved) {
@@ -117,7 +239,7 @@ function checkForAutoSave() {
 
             const savedTime = new Date(data.timestamp);
             
-            if (confirm(`Unsaved work found from ${savedTime.toLocaleString()}.\n\nDo you want to restore it?`)) {
+            if (await showConfirm(`Unsaved work found from ${savedTime.toLocaleString()}.\n\nDo you want to restore it?`)) {
                 if (data.manifest && data.manifest.categories) {
                     manifest = data.manifest;
                     console.log("Restored from auto-save");
@@ -266,6 +388,143 @@ async function loadPack(filename) {
     renderCategories();
 }
 
+// Load a discovered JSON pack file from folder scanning
+async function loadDiscoveredPack(packInfo) {
+    const { path, name, data, fileHandle, selectedFolderName } = packInfo;
+    
+    // Construct the correct pack path for the registry
+    // The path is relative to the selected folder, so we need to include the folder name
+    // Expected structure: packs/folder_name/file.json
+    let packPath;
+    if (path.startsWith('packs/')) {
+        // Path already includes packs/ prefix (shouldn't happen, but handle it)
+        packPath = path;
+    } else if (selectedFolderName) {
+        // We know the folder that was selected
+        // If the folder name is "packs", the path is already correct relative to packs/
+        if (selectedFolderName.toLowerCase() === 'packs') {
+            packPath = `packs/${path}`;
+        } else {
+            // The selected folder is a pack subfolder (e.g., "adult_cartoons")
+            // Construct path as: packs/folder_name/path
+            packPath = `packs/${selectedFolderName}/${path}`;
+        }
+    } else {
+        // Fallback: assume it's directly under packs/
+        packPath = `packs/${path}`;
+    }
+    
+    // Register this pack in packList if not already there
+    if (!packList.includes(packPath)) {
+        packList.push(packPath);
+        localStorage.setItem('matchy_packList', JSON.stringify(packList));
+    }
+    
+    // Store the file handle for direct saving later
+    window.currentPackFileHandle = fileHandle;
+    window.currentPackJsonPath = path;
+    
+    // Set as current pack
+    currentPackFilename = packPath;
+    localStorage.setItem('matchy_last_pack', packPath);
+    
+    // Load the manifest data
+    manifest = data;
+    
+    // Update UI
+    const title = data.name || getPackTitle(name);
+    const input = document.getElementById('pack-title-input');
+    if (input) input.value = title;
+    const srcIndicator = document.getElementById('save-status');
+    if (srcIndicator) srcIndicator.innerText = `Matching Pack: ${title}`;
+    
+    console.log("Loaded discovered pack:", name, "with", Object.keys(data.categories || {}).length, "categories");
+    
+    renderCategories();
+}
+
+// Show a dialog to let user pick which pack to edit
+function showPackPickerDialog(jsonPacks) {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'pack-picker-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 10000;
+        display: flex; align-items: center; justify-content: center;
+    `;
+    
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: white; border-radius: 12px; padding: 20px;
+        min-width: 300px; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+    
+    dialog.innerHTML = `
+        <h3 style="margin: 0 0 15px 0; color: #333;">Multiple Packs Found</h3>
+        <p style="color: #666; margin-bottom: 15px;">Select which matching pack to edit:</p>
+        <div id="pack-picker-list" style="max-height: 300px; overflow-y: auto;"></div>
+        <div style="margin-top: 15px; text-align: right;">
+            <button id="pack-picker-cancel" style="padding: 8px 16px; cursor: pointer;">Cancel</button>
+        </div>
+    `;
+    
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    
+    const listContainer = dialog.querySelector('#pack-picker-list');
+    
+    jsonPacks.forEach((packInfo, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = `
+            padding: 12px; margin-bottom: 8px; border: 1px solid #ddd;
+            border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        `;
+        
+        const packName = packInfo.data.name || packInfo.name.replace('.json', '');
+        const categoryCount = Object.keys(packInfo.data.categories || {}).length;
+        const cardCount = Object.values(packInfo.data.categories || {}).reduce((sum, cat) => sum + (cat.cards?.length || 0), 0);
+        
+        item.innerHTML = `
+            <div style="font-weight: bold; color: #333;">${packName}</div>
+            <div style="font-size: 12px; color: #888; margin-top: 4px;">
+                ${categoryCount} categories, ${cardCount} cards
+            </div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${packInfo.path}</div>
+        `;
+        
+        item.onmouseover = () => { item.style.background = '#f0f7ff'; item.style.borderColor = '#4a90d9'; };
+        item.onmouseout = () => { item.style.background = 'white'; item.style.borderColor = '#ddd'; };
+        
+        item.onclick = async () => {
+            overlay.remove();
+            await loadDiscoveredPack(packInfo);
+            showToast(`Loaded pack: ${packName}`);
+        };
+        
+        listContainer.appendChild(item);
+    });
+    
+    dialog.querySelector('#pack-picker-cancel').onclick = () => overlay.remove();
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+}
+
+// Get list of detected packs in current folder
+function getDetectedPacks() {
+    return window.detectedJsonPacks || [];
+}
+
+// Switch to a different detected pack
+async function switchToDetectedPack(packPath) {
+    const packs = getDetectedPacks();
+    const pack = packs.find(p => p.path === packPath);
+    if (pack) {
+        await loadDiscoveredPack(pack);
+        return true;
+    }
+    return false;
+}
+
 function toggleProjectList() {
     const dropdown = document.getElementById('project-list-dropdown');
     if (dropdown.style.display === 'none') {
@@ -280,12 +539,68 @@ function renderProjectList() {
     const list = document.getElementById('project-list-dropdown');
     list.innerHTML = '';
     
-    if (packList.length === 0) {
-        list.innerHTML = '<div style="padding: 10px; color: #666; font-size: 12px;">No matching packs found.</div>';
+    // Get detected packs from linked folder
+    const detectedPacks = window.detectedJsonPacks || [];
+    
+    // Header for detected packs if we have any
+    if (detectedPacks.length > 0) {
+        const header = document.createElement('div');
+        header.style.cssText = 'padding: 6px 8px; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: bold; border-bottom: 1px solid #c8e6c9;';
+        header.innerHTML = '📁 Detected in Linked Folder';
+        list.appendChild(header);
+        
+        detectedPacks.forEach(packInfo => {
+            const item = document.createElement('div');
+            item.style.padding = '8px';
+            item.style.cursor = 'pointer';
+            item.style.borderBottom = '1px solid #eee';
+            item.style.fontSize = '13px';
+            
+            const packName = packInfo.data.name || packInfo.name.replace('.json', '');
+            item.innerText = packName;
+            item.title = packInfo.path;
+            
+            const isCurrentPack = window.currentPackJsonPath === packInfo.path;
+            if (isCurrentPack) {
+                item.style.background = '#e3f2fd';
+                item.style.fontWeight = 'bold';
+            }
+            
+            item.onmouseover = () => { if (!isCurrentPack) item.style.background = '#f5f5f5'; };
+            item.onmouseout = () => { if (!isCurrentPack) item.style.background = 'white'; };
+            
+            item.onclick = async () => {
+                const confirmed = await showConfirm(`Load matching pack "${packName}"? Unsaved changes will be lost.`);
+                if (confirmed) {
+                    await loadDiscoveredPack(packInfo);
+                    document.getElementById('project-list-dropdown').style.display = 'none';
+                }
+            };
+            
+            list.appendChild(item);
+        });
+    }
+    
+    // Header for registry packs
+    if (packList.length > 0) {
+        const header = document.createElement('div');
+        header.style.cssText = 'padding: 6px 8px; background: #e3f2fd; color: #1565c0; font-size: 11px; font-weight: bold; border-bottom: 1px solid #bbdefb;';
+        header.innerHTML = '📦 Pack Registry';
+        list.appendChild(header);
+    }
+    
+    if (packList.length === 0 && detectedPacks.length === 0) {
+        list.innerHTML = '<div style="padding: 10px; color: #666; font-size: 12px;">No matching packs found. Link a folder to auto-detect packs.</div>';
         return;
     }
     
     packList.forEach(pack => {
+        // Skip if this pack is already shown in detected packs
+        const alreadyDetected = detectedPacks.some(d => 
+            `packs/${d.path}` === pack || d.path === pack
+        );
+        if (alreadyDetected) return;
+        
         const item = document.createElement('div');
         item.style.padding = '8px';
         item.style.cursor = 'pointer';
@@ -306,7 +621,7 @@ function renderProjectList() {
              // Load it
              // If we are serverless, we might not be able to fetch simple paths if they are not in cache
              // But let's try standard loadPack
-             const confirmed = confirm(`Load matching pack "${item.innerText}"? Unsaved changes will be lost.`);
+             const confirmed = await showConfirm(`Load matching pack "${item.innerText}"? Unsaved changes will be lost.`);
              if (confirmed) {
                  await loadPack(pack);
                  document.getElementById('project-list-dropdown').style.display = 'none';
@@ -324,25 +639,84 @@ function handlePackNameChange(val) {
 function getPackTitle(filename) {
     if (!filename) return "None";
     if (filename === "assetManifest.json") return "Default Game";
-    // Strip packs/ and packs_ prefix
-    let base = filename.split('/').pop().replace('.json', '');
+    // "packs/adult_cartoons/adult_cartoons.json" -> "Adult Cartoons"
+    // "packs/adult_cartoons.json" -> "Adult Cartoons" (legacy)
+    const parts = filename.split('/');
+    let base = parts[parts.length - 1].replace('.json', '');
     if (base.startsWith('packs_')) {
         base = base.substring(6);
     }
     return base.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+// Get the pack's subfolder name (for assets)
+function getPackFolderName(filename) {
+    if (!filename) return null;
+    // "packs/adult_cartoons/adult_cartoons.json" -> "adult_cartoons"
+    // "packs/adult_cartoons.json" -> "adult_cartoons" (derive from filename)
+    const parts = filename.split('/');
+    if (parts.length >= 3) {
+        // New structure: packs/subfolder/file.json
+        return parts[1];
+    } else if (parts.length === 2) {
+        // Legacy: packs/file.json - derive folder from filename
+        return parts[1].replace('.json', '');
+    }
+    return filename.replace('.json', '');
+}
+
+// Get asset path prefix for the current pack
+function getPackAssetPath(filename) {
+    const folderName = getPackFolderName(filename || currentPackFilename);
+    if (folderName) {
+        return `packs/${folderName}/`;
+    }
+    return 'packs/';
+}
+
+// Convert category name to folder name for file organization
+// "The Simpsons" -> "simpsons", "Aqua Teen Hunger Force" -> "athf"
+function categoryToFolderName(catName) {
+    if (!catName || catName === 'Unassigned') return '';
+    
+    // Special mappings for known categories
+    const mappings = {
+        'The Simpsons': 'simpsons',
+        'Aqua Teen Hunger Force': 'athf',
+        'Family Guy': 'familyguy',
+        'South Park': 'southpark',
+        'Futurama': 'futurama',
+        'Jen Hamilton': 'jenhamilton'
+    };
+    
+    if (mappings[catName]) return mappings[catName];
+    
+    // Default: lowercase, remove spaces and special chars
+    return catName.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// Get full asset path including category subfolder
+function getCategoryAssetPath(categoryName) {
+    const packPath = getPackAssetPath();
+    const categoryFolder = categoryToFolderName(categoryName);
+    if (categoryFolder) {
+        return packPath + categoryFolder + '/';
+    }
+    return packPath;
+}
+
 async function createNewPack(name, silent=false) {
     if (!name) return;
     const cleanName = name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    const filename = cleanName + '.json';
+    // New structure: packs/subfolder/filename.json
+    const filename = `packs/${cleanName}/${cleanName}.json`;
     
     // Check global list (Server + Local) by FILENAME
     const getFilename = (path) => path.split('/').pop().toLowerCase();
-    const existingIdx = packList.findIndex(p => getFilename(p) === filename);
+    const existingIdx = packList.findIndex(p => getFilename(p) === cleanName + '.json');
     
     if (existingIdx !== -1) {
-        if (!silent) alert("Matching Pack already exists!");
+        if (!silent) showToast("Matching Pack already exists!");
         await loadPack(packList[existingIdx]);
         return;
     }
@@ -364,7 +738,7 @@ async function createNewPack(name, silent=false) {
     try {
         let localReg = JSON.parse(localStorage.getItem('matchy_local_registry') || '[]');
         // Check duplicate by filename in local reg
-        if (!localReg.some(p => getFilename(p) === filename)) {
+        if (!localReg.some(p => getFilename(p) === cleanName + '.json')) {
             localReg.push(filename);
             localStorage.setItem('matchy_local_registry', JSON.stringify(localReg));
         }
@@ -376,7 +750,7 @@ async function createNewPack(name, silent=false) {
     // Save empty pack file
     await saveManifest(true); 
     
-    if (!silent) alert(`Created new matching pack: ${name}`);
+    if (!silent) showToast(`Created new matching pack: ${name}`);
     renderCategories();
 }
 
@@ -395,7 +769,7 @@ async function saveRegistry() {
 async function refreshAssets() {
     await loadAssetPool();
     autoMatchSounds();
-    alert("Assets refreshed and auto-matched!");
+    showToast("Assets refreshed and auto-matched!");
 }
 
 async function loadAssetPool() {
@@ -451,7 +825,7 @@ function handleManualScan(input) {
         console.log("Manual scan files:", files.length);
         
         if (files.length === 0) {
-            alert("No files selected.");
+            showToast("No files selected.");
             return;
         }
 
@@ -499,7 +873,7 @@ function handleManualScan(input) {
         
     } catch (e) {
         console.error("Error in handleManualScan:", e);
-        alert("An error occurred while scanning assets: " + e.message);
+        showToast("An error occurred while scanning assets: " + e.message);
     }
 }
 
@@ -535,11 +909,16 @@ function autoMatchSounds() {
                 
                 if (matches.length > 0) {
                     const currentSounds = card.sound ? (Array.isArray(card.sound) ? card.sound : [card.sound]) : [];
-                    // Add only new unique matches
+                    // Get just filenames for duplicate checking (handles different path formats)
+                    const currentSoundFilenames = currentSounds.map(s => s.split('/').pop().toLowerCase());
+                    
+                    // Add only new unique matches (compare by filename, not full path)
                     let added = false;
                     matches.forEach(m => {
-                        if (!currentSounds.includes(m)) {
+                        const matchFilename = m.split('/').pop().toLowerCase();
+                        if (!currentSoundFilenames.includes(matchFilename)) {
                             currentSounds.push(m);
+                            currentSoundFilenames.push(matchFilename); // Track to avoid adding same file twice in this loop
                             added = true;
                         }
                     });
@@ -671,9 +1050,9 @@ function renderCategories() {
             clearBtn.style.padding = '2px 6px';
             clearBtn.style.fontSize = '10px';
             clearBtn.title = "Remove all items from Unassigned";
-            clearBtn.onclick = (e) => {
+            clearBtn.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm("Clear all items from Unassigned?")) {
+                if (await showConfirm("Clear all items from Unassigned?")) {
                     manifest.categories['Unassigned'] = [];
                     renderCategories();
                     if (currentCategory === 'Unassigned') renderCards();
@@ -749,7 +1128,7 @@ function createCategory() {
     const name = document.getElementById('new-cat-name').value.trim();
     if (!name) return;
     if (manifest.categories[name]) {
-        alert("Category already exists");
+        showToast("Category already exists");
         return;
     }
     manifest.categories[name] = [];
@@ -758,8 +1137,8 @@ function createCategory() {
     selectCategory(name);
 }
 
-function deleteCategory(name) {
-    if (!confirm(`Delete category "${name}"? Assets will be moved to Unassigned.`)) return;
+async function deleteCategory(name) {
+    if (!await showConfirm(`Delete category "${name}"? Assets will be moved to Unassigned.`)) return;
     
     // Move items to Unassigned
     const items = manifest.categories[name] || [];
@@ -797,8 +1176,8 @@ function reorderCategory(draggedCat, targetCat) {
     saveToBrowser(); // Ensures order is saved locally immediately
 }
 
-function sortCategoriesAZ() {
-    if (!confirm("Sort all categories alphabetically? This will change the display order in the game.")) return;
+async function sortCategoriesAZ() {
+    if (!await showConfirm("Sort all categories alphabetically? This will change the display order in the game.")) return;
     
     const keys = Object.keys(manifest.categories).sort((a,b) => {
         // Always put 'Unassigned' at the bottom
@@ -895,23 +1274,23 @@ function updateSelectionUI() {
 function moveSelectedCards() {
     const targetCat = document.getElementById('move-target-cat').value;
     if (!targetCat) {
-        alert("Please select a target category.");
+        showToast("Please select a target category.");
         return;
     }
     
     if (selectedCards.size === 0) {
-        alert("No cards selected.");
+        showToast("No cards selected.");
         return;
     }
     
     const indices = Array.from(selectedCards);
     moveCards(currentCategory, targetCat, indices);
-    alert(`Moved ${indices.length} cards to ${targetCat}.`);
+    showToast(`Moved ${indices.length} cards to ${targetCat}.`);
 }
 
-function deleteSelectedCards() {
+async function deleteSelectedCards() {
     if (selectedCards.size === 0) return;
-    if (!confirm(`Delete ${selectedCards.size} selected cards?`)) return;
+    if (!await showConfirm(`Delete ${selectedCards.size} selected cards?`)) return;
     
     const cards = manifest.categories[currentCategory];
     const indices = Array.from(selectedCards).sort((a, b) => b - a);
@@ -1167,7 +1546,7 @@ function renderCards() {
             editImgBtn.style.fontSize = '10px';
             editImgBtn.onclick = () => {
                 if (!card.title || card.title.trim() === '') {
-                    alert("Please enter a Main Title for this card before editing the image.");
+                    showToast("Please enter a Main Title for this card before editing the image.");
                     return;
                 }
                 editingCardCallback = (newFilename) => updateCard(index, 'image', newFilename);
@@ -1549,24 +1928,24 @@ function importManifestFile() {
                 
                 // CHECK IF IT IS A MANIFEST (Registry)
                 if (data && data.packs && Array.isArray(data.packs)) {
-                    if (confirm(`This file appears to be a Game Registry with ${data.packs.length} matching packs.\nDo you want to import this pack list?`)) {
-                        
-                        // Merge with existing pack list
-                        let count = 0;
-                        data.packs.forEach(p => {
-                            if (!packList.includes(p)) {
-                                packList.push(p);
-                                count++;
-                            }
-                        });
-                        
-                        // Save to local registry so it persists
-                        localStorage.setItem('matchy_local_registry', JSON.stringify(packList));
-                        
-                        alert(`Imported ${count} new matching packs to your list!\nClick the folder icon 📁 next to the Matching Pack Name to switch between them.`);
-                        return; // Done
-                    }
-                    return; // Cancelled
+                    showConfirm(`This file appears to be a Game Registry with ${data.packs.length} matching packs.\nDo you want to import this pack list?`).then(confirmed => {
+                        if (confirmed) {
+                            // Merge with existing pack list
+                            let count = 0;
+                            data.packs.forEach(p => {
+                                if (!packList.includes(p)) {
+                                    packList.push(p);
+                                    count++;
+                                }
+                            });
+                            
+                            // Save to local registry so it persists
+                            localStorage.setItem('matchy_local_registry', JSON.stringify(packList));
+                            
+                            showToast(`Imported ${count} new matching packs to your list!\nClick the folder icon 📁 next to the Matching Pack Name to switch between them.`);
+                        }
+                    });
+                    return; // Done (async)
                 }
 
                 // Determine if valid manifest or raw category map
@@ -1583,109 +1962,135 @@ function importManifestFile() {
 
                 if (newCategories) {
                     // Always replace logic as per user request
-                    if (confirm("This will REPLACE all current categories with the data from the imported file. Any unsaved changes will be lost. Continue?")) {
-                         manifest.categories = newCategories;
+                    showConfirm("This will REPLACE all current categories with the data from the imported file. Any unsaved changes will be lost. Continue?").then(async confirmed => {
+                        if (!confirmed) {
+                            return; // User cancelled
+                        }
+                        
+                        manifest.categories = newCategories;
                          
-                         // Update Filename and Title based on imported file
-                         const rawName = file.name.replace('.json', '');
-                         let cleanName = rawName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-                         cleanName = cleanName.replace(/^packs?_/, ''); // Remove 'packs_' prefix
+                        // Update Filename and Title based on imported file
+                        const rawName = file.name.replace('.json', '');
+                        let cleanName = rawName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                        cleanName = cleanName.replace(/^packs?_/, ''); // Remove 'packs_' prefix
                          
-                         currentPackFilename = 'packs/' + cleanName + '.json';
+                        currentPackFilename = 'packs/' + cleanName + '.json';
                          
-                         // Update UI
-                         const displayTitle = rawName.replace(/^packs?_/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                         const titleInput = document.getElementById('pack-title-input');
-                         if (titleInput) titleInput.value = displayTitle;
+                        // Update UI
+                        const displayTitle = rawName.replace(/^packs?_/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        const titleInput = document.getElementById('pack-title-input');
+                        if (titleInput) titleInput.value = displayTitle;
                          
-                         const srcIndicator = document.getElementById('save-status');
-                         if (srcIndicator) srcIndicator.innerText = `Matching Pack: ${displayTitle}`;
+                        const srcIndicator = document.getElementById('save-status');
+                        if (srcIndicator) srcIndicator.innerText = `Matching Pack: ${displayTitle}`;
                          
-                         // Ensure it's in the pack list if not already
-                         if (!packList.includes(currentPackFilename)) {
-                             packList.push(currentPackFilename);
-                         }
-                    } else {
-                        return; // User cancelled
-                    }
+                        // Ensure it's in the pack list if not already
+                        if (!packList.includes(currentPackFilename)) {
+                            packList.push(currentPackFilename);
+                        }
                     
-                    // Ensure Unassigned exists
-                    if (!manifest.categories['Unassigned']) {
-                        manifest.categories['Unassigned'] = [];
-                    }
+                        // Ensure Unassigned exists
+                        if (!manifest.categories['Unassigned']) {
+                            manifest.categories['Unassigned'] = [];
+                        }
 
-                    // Scan imported manifest for assets and add to pool
-                    const poolSet = new Set(assetPool);
-                    let addedCount = 0;
-                    Object.values(manifest.categories).forEach(cat => {
-                        cat.forEach(card => {
-                            if (card.image && !card.image.startsWith('data:') && !card.image.startsWith('http')) {
-                                if (!poolSet.has(card.image)) {
-                                    poolSet.add(card.image);
-                                    addedCount++;
-                                }
-                            }
-                            if (card.sound) {
-                                const sounds = Array.isArray(card.sound) ? card.sound : [card.sound];
-                                sounds.forEach(s => {
-                                    if (s && !s.startsWith('data:') && !s.startsWith('http')) {
-                                        if (!poolSet.has(s)) {
-                                            poolSet.add(s);
-                                            addedCount++;
-                                        }
+                        // Scan imported manifest for assets and add to pool
+                        const poolSet = new Set(assetPool);
+                        let addedCount = 0;
+                        Object.values(manifest.categories).forEach(cat => {
+                            cat.forEach(card => {
+                                if (card.image && !card.image.startsWith('data:') && !card.image.startsWith('http')) {
+                                    if (!poolSet.has(card.image)) {
+                                        poolSet.add(card.image);
+                                        addedCount++;
                                     }
-                                });
-                            }
-                        });
-                    });
-                    
-                    if (addedCount > 0) {
-                        assetPool = Array.from(poolSet);
-                        console.log(`Added ${addedCount} assets from imported JSON to pool.`);
-                    }
-
-                    // Reset Editor State and View - Force Refresh
-                    currentCategory = null;
-                    currentEditingCardIndex = -1;
-                    
-                    // Clear list explicitly before render
-                    document.getElementById('category-list').innerHTML = '';
-
-                    // Select first available category to refresh page view
-                    const cats = Object.keys(manifest.categories);
-                    const first = cats.find(c => c !== 'Unassigned') || 'Unassigned';
-                    selectCategory(first);
-
-                    alert("Manifest imported successfully!");
-                    localStorage.setItem('matchy_manifest', JSON.stringify(manifest));
-                    localStorage.setItem('matchy_last_pack', currentPackFilename);
-                    
-                    // Offer to link asset folder for persistent access
-                    if (window.showDirectoryPicker) {
-                        setTimeout(async () => {
-                            if (confirm("Would you like to link an asset folder?\n\nThis will give the editor persistent access to your images and sounds, so you won't need to re-import them each time.")) {
-                                const handle = await requestFolderAccess();
-                                if (handle) {
-                                    await loadAssetsFromFolderHandle(handle, false);
-                                    autoMatchSounds();
-                                    if (currentCategory) renderCards();
-                                    alert("Asset folder linked successfully! The editor will remember this folder.");
                                 }
-                            }
-                        }, 100);
-                    }
+                                if (card.sound) {
+                                    const sounds = Array.isArray(card.sound) ? card.sound : [card.sound];
+                                    sounds.forEach(s => {
+                                        if (s && !s.startsWith('data:') && !s.startsWith('http')) {
+                                            if (!poolSet.has(s)) {
+                                                poolSet.add(s);
+                                                addedCount++;
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    
+                        if (addedCount > 0) {
+                            assetPool = Array.from(poolSet);
+                            console.log(`Added ${addedCount} assets from imported JSON to pool.`);
+                        }
 
+                        // Reset Editor State and View - Force Refresh
+                        currentCategory = null;
+                        currentEditingCardIndex = -1;
+                    
+                        // Clear list explicitly before render
+                        document.getElementById('category-list').innerHTML = '';
+
+                        // Select first available category to refresh page view
+                        const cats = Object.keys(manifest.categories);
+                        const first = cats.find(c => c !== 'Unassigned') || 'Unassigned';
+                        selectCategory(first);
+
+                        showToast("Manifest imported successfully!");
+                        localStorage.setItem('matchy_manifest', JSON.stringify(manifest));
+                        localStorage.setItem('matchy_last_pack', currentPackFilename);
+                    
+                        // Offer to link asset folder for persistent access
+                        if (window.showDirectoryPicker) {
+                            setTimeout(async () => {
+                                if (await showConfirm("Would you like to link an asset folder?\n\nThis will give the editor persistent access to your images and sounds, so you won't need to re-import them each time.")) {
+                                    const handle = await requestFolderAccess();
+                                    if (handle) {
+                                        await loadAssetsFromFolderHandle(handle, false);
+                                        autoMatchSounds();
+                                        if (currentCategory) renderCards();
+                                        showToast("Asset folder linked successfully! The editor will remember this folder.");
+                                    }
+                                }
+                            }, 100);
+                        }
+                    });
                 } else {
-                    alert("Invalid JSON format: Could not find 'categories' object or valid category map.");
+                    showToast("Invalid JSON format: Could not find 'categories' object or valid category map.");
                 }
             } catch (err) {
                 console.error(err);
-                alert("Failed to parse JSON file: " + err.message);
+                showToast("Failed to parse JSON file: " + err.message);
             }
         };
         reader.readAsText(file);
     };
     input.click();
+}
+
+// Prepare manifest for saving - excludes Unassigned category
+// Unassigned cards are just for browsing/organizing, not part of the game pack
+function getManifestForSave() {
+    const saveManifest = {
+        name: manifest.name,
+        categories: {}
+    };
+    
+    // Copy all categories except "Unassigned"
+    for (const [catName, catData] of Object.entries(manifest.categories || {})) {
+        if (catName.toLowerCase() !== 'unassigned') {
+            saveManifest.categories[catName] = catData;
+        }
+    }
+    
+    // Preserve any other top-level properties
+    for (const [key, value] of Object.entries(manifest)) {
+        if (key !== 'categories' && key !== 'name') {
+            saveManifest[key] = value;
+        }
+    }
+    
+    return saveManifest;
 }
 
 async function saveManifest(silent = false) {
@@ -1694,32 +2099,34 @@ async function saveManifest(silent = false) {
     
     // If we are unsaved (null filename) and have no title, ask for one
     if (!currentPackFilename && (!titleInput || !titleInput.value)) {
-        alert("Please enter a Matching Pack Name before saving.");
+        showToast("Please enter a Matching Pack Name before saving.");
         return;
     }
 
-    if (titleInput && titleInput.value) {
+    // Only handle renaming for server-based saves (no file handle)
+    // When we have a file handle, the file location is fixed by the user's folder selection
+    if (!window.currentPackFileHandle && titleInput && titleInput.value) {
         let cleanName = titleInput.value.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         
         // Fix: Remove 'packs_' or 'pack_' prefix if user typed it or it exists
         cleanName = cleanName.replace(/^packs?_/, '');
         
         if (cleanName.length > 0) {
-            // Remove 'packs/' prefix as user requested strict filename control
-            const newFilename = cleanName + '.json';
+            // New structure: packs/subfolder/filename.json
+            const newFilename = `packs/${cleanName}/${cleanName}.json`;
             
             // If name changed, update current filename before saving
-            if (newFilename !== currentPackFilename) {
+            const getFilename = (path) => path.split('/').pop().toLowerCase();
+            if (getFilename(newFilename) !== getFilename(currentPackFilename || '')) {
                 console.log(`Renaming matching pack: ${currentPackFilename} -> ${newFilename}`);
                 currentPackFilename = newFilename;
                 
                 // Smart Add to packList (Deduplicate based on filename)
-                const getFilename = (path) => path.split('/').pop().toLowerCase();
                 const newBase = getFilename(currentPackFilename);
                 const existingIndex = packList.findIndex(p => getFilename(p) === newBase);
                 
                 if (existingIndex !== -1) {
-                    // Update existing entry (e.g. packs/abc.json -> abc.json)
+                    // Update existing entry to new path structure
                     packList[existingIndex] = currentPackFilename;
                 } else {
                     packList.push(currentPackFilename);
@@ -1728,8 +2135,20 @@ async function saveManifest(silent = false) {
         }
     }
 
-    // Default fallback if something goes wrong, but ensure it's in packs/
-    const targetFile = currentPackFilename || 'my_game.json';
+    // Default fallback - ensure new structure
+    let targetFile = currentPackFilename || 'packs/my_game/my_game.json';
+    
+    // Only enforce packs/ structure for NEW packs, not for packs loaded via file handle
+    // If we have a file handle, we're saving to a user-selected location, so preserve the path
+    if (!window.currentPackFileHandle) {
+        // No file handle means server-based save, enforce packs/ structure
+        if (!targetFile.startsWith('packs/') || targetFile.split('/').length < 3) {
+            const baseName = targetFile.replace('.json', '').split('/').pop();
+            targetFile = `packs/${baseName}/${baseName}.json`;
+            currentPackFilename = targetFile;
+        }
+    }
+    // If we have a file handle, keep targetFile as-is (it's the actual path)
     
     // 1. Save to Local Storage (Browser Persistence)
     try {
@@ -1763,8 +2182,29 @@ async function saveManifest(silent = false) {
 
     // Protect the registry file from being overwritten with pack data
     if (targetFile === 'assetManifest.json') {
-        if (!confirm("Warning: You are about to overwrite the Game Registry (assetManifest.json) with pack data. This might break the game pack list. Continue?")) {
+        if (!await showConfirm("Warning: You are about to overwrite the Game Registry (assetManifest.json) with pack data. This might break the game pack list. Continue?")) {
             return;
+        }
+    }
+
+    // Prepare manifest for save - excludes Unassigned category
+    const manifestToSave = getManifestForSave();
+
+    // Try to save directly via File System Access API if we have a file handle
+    if (window.currentPackFileHandle) {
+        try {
+            const permission = await window.currentPackFileHandle.requestPermission({ mode: 'readwrite' });
+            if (permission === 'granted') {
+                const writable = await window.currentPackFileHandle.createWritable();
+                await writable.write(JSON.stringify(manifestToSave, null, 4));
+                await writable.close();
+                if (!silent) showToast(`Saved "${window.currentPackJsonPath || targetFile}" directly to file!`);
+                saveToBrowser();
+                console.log("Saved directly via File System Access API");
+                return; // Success, no need for server fallback
+            }
+        } catch (e) {
+            console.warn("Direct file save failed, falling back to server:", e);
         }
     }
 
@@ -1772,10 +2212,10 @@ async function saveManifest(silent = false) {
         const res = await fetch('/api/pack?file=' + encodeURIComponent(targetFile), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(manifest, null, 4)
+            body: JSON.stringify(manifestToSave, null, 4)
         });
         if (res.ok) {
-            if (!silent) alert(`Saved "${targetFile}" successfully!`);
+            if (!silent) showToast(`Saved "${targetFile}" successfully!`);
             saveToBrowser(); 
             
             // Ensure proper sync with assetManifest
@@ -1811,7 +2251,9 @@ async function saveManifest(silent = false) {
 }
 
 async function downloadManifest() {
-    const jsonString = JSON.stringify(manifest, null, 4);
+    // Use filtered manifest (excludes Unassigned)
+    const manifestToSave = getManifestForSave();
+    const jsonString = JSON.stringify(manifestToSave, null, 4);
     const filename = currentPackFilename || 'game_pack.json';
     
     // Try File System Access API
@@ -1827,7 +2269,7 @@ async function downloadManifest() {
             const writable = await handle.createWritable();
             await writable.write(jsonString);
             await writable.close();
-            alert("Manifest saved successfully!");
+            showToast("Manifest saved successfully!");
             return;
         } catch (err) {
             if (err.name === 'AbortError') return; // User cancelled
@@ -1842,7 +2284,7 @@ async function downloadManifest() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-    alert("Manifest downloaded! Please save it as 'assetManifest.json' in your main game folder.");
+    showToast("Manifest downloaded! Please save it as 'assetManifest.json' in your main game folder.");
 }
 
 // --- Asset Manager ---
@@ -2170,13 +2612,13 @@ function updateAssetManagerUI() {
 }
 
 async function deleteAsset(filename) {
-    if (!confirm(`Delete "${filename}"?`)) return;
+    if (!await showConfirm(`Delete "${filename}"?`)) return;
     performDelete(filename);
 }
 
 async function deleteSelectedAssets() {
     if (assetManagerSelection.size === 0) return;
-    if (!confirm(`Delete ${assetManagerSelection.size} assets?`)) return;
+    if (!await showConfirm(`Delete ${assetManagerSelection.size} assets?`)) return;
     
     assetManagerSelection.forEach(filename => {
        performDelete(filename, true);
@@ -2277,7 +2719,7 @@ function filterAssets(type) {
 }
 
 async function resetAssetList() {
-    if (!confirm("This will clear the current list of loaded assets (images/sounds) from the browser cache. It will NOT delete files from the server or your computer.\n\nContinue?")) return;
+    if (!await showConfirm("This will clear the current list of loaded assets (images/sounds) from the browser cache. It will NOT delete files from the server or your computer.\n\nContinue?")) return;
     
     // 1. Clear In-Memory Data
     assetPool = [];
@@ -2302,7 +2744,7 @@ async function resetAssetList() {
     // If they want server files back, they can refresh the page.
     
     filterAssets('all');
-    alert("Asset list cleared!");
+    showToast("Asset list cleared!");
 }
 
 async function uploadAssets() {
@@ -2310,8 +2752,18 @@ async function uploadAssets() {
     const files = input.files;
     if (!files.length) return;
     
+    // Get current pack folder name
+    const packFolder = getPackFolderName(currentPackFilename);
+    if (!packFolder) {
+        showToast("Please select or create a pack first before uploading assets.");
+        return;
+    }
+    
     const status = document.getElementById('upload-status');
-    status.innerText = `Uploading ${files.length} files...`;
+    status.innerText = `Uploading ${files.length} files to ${packFolder}...`;
+    
+    // Get current category folder for organizing uploads
+    const categoryFolder = currentCategory ? categoryToFolderName(currentCategory) : '';
     
     // Batch upload or sequential? Sequential is safer for now but slower.
     // Let's do it in chunks to avoid freezing UI too much but faster than 1 by 1
@@ -2321,7 +2773,11 @@ async function uploadAssets() {
         await Promise.all(chunk.map(file => {
             const formData = new FormData();
             formData.append('file', file);
-            return fetch('/api/upload', { method: 'POST', body: formData });
+            formData.append('pack', packFolder);
+            if (categoryFolder) {
+                formData.append('category', categoryFolder);
+            }
+            return fetch('/api/upload_to_pack', { method: 'POST', body: formData });
         }));
         status.innerText = `Uploaded ${Math.min(i + chunkSize, files.length)}/${files.length}...`;
     }
@@ -2331,7 +2787,7 @@ async function uploadAssets() {
     await loadAssetPool();
     
     if (assetPool.length === 0) {
-        alert("Warning: No assets found on server after upload. Please check server logs.");
+        showToast("Warning: No assets found on server after upload. Please check server logs.");
         return;
     }
     
@@ -2341,7 +2797,8 @@ async function uploadAssets() {
     syncAssets(true);
     saveToBrowser();
     
-    alert("Upload complete! Assets have been added to Unassigned.");
+    const destFolder = categoryFolder ? categoryFolder : 'pack root';
+    showToast(`Upload complete! Files added to ${destFolder}.`);
 }
 
 function syncAssets(silent = false) {
@@ -2471,10 +2928,10 @@ function syncAssets(silent = false) {
 
     if (!silent) {
         if (addedCount > 0) {
-            alert(`Auto-populated ${addedCount} new cards into Unassigned category.`);
+            showToast(`Auto-populated ${addedCount} new cards into Unassigned category.`);
         } else {
             if (images.length === 0) {
-                alert("No images found in assets folder to populate.");
+                showToast("No images found in assets folder to populate.");
             } else {
                 // Detailed report
                 const unassignedCount = manifest.categories['Unassigned'] ? manifest.categories['Unassigned'].length : 0;
@@ -2489,7 +2946,7 @@ function syncAssets(silent = false) {
                     msg += `\n\nIt seems all images in the pool are already assigned to a card.`;
                 }
                 
-                alert(msg);
+                showToast(msg);
             }
         }
     }
@@ -2585,17 +3042,17 @@ function openPhotoEditor(imagePath, cardTitle = null) {
                     loadImageToCanvas(blobImage);
                 };
                 blobImage.onerror = () => {
-                    alert("Could not load this image for editing. The image server may not allow cross-origin access.");
+                    showToast("Could not load this image for editing. The image server may not allow cross-origin access.");
                     closeModal('photo-editor-modal');
                 };
                 blobImage.src = blobUrl;
             } catch (e) {
                 console.error("Failed to fetch image:", e);
-                alert("Could not load this image for editing. The image server may not allow cross-origin access.\n\nTip: Download the image and import it locally.");
+                showToast("Could not load this image for editing. The image server may not allow cross-origin access.\n\nTip: Download the image and import it locally.");
                 closeModal('photo-editor-modal');
             }
         } else {
-            alert("Could not load image for editing.");
+            showToast("Could not load image for editing.");
             closeModal('photo-editor-modal');
         }
     };
@@ -3287,7 +3744,7 @@ async function openAudioEditor(audioPath, cardTitle = null) {
         loadAudioBuffer(arrayBuffer);
     } catch (e) {
         console.error("Failed to load audio for editing", e);
-        alert("Could not load audio file.");
+        showToast("Could not load audio file.");
         closeModal('audio-editor-modal');
     }
 }
@@ -3324,7 +3781,7 @@ async function loadAudioBuffer(arrayBuffer) {
     audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
     if (audioBuffer.duration > 10) {
-        alert("Suggestion: Keep audio under 10 seconds for best experience.");
+        showToast("Suggestion: Keep audio under 10 seconds for best experience.");
     }
     
     document.getElementById('audio-start').value = 0;
@@ -3381,7 +3838,7 @@ async function startRecording(source) {
             // Check if user actually shared audio
             const audioTrack = stream.getAudioTracks()[0];
             if (!audioTrack) {
-                alert("No system audio detected. Make sure to check 'Share Audio' in the dialog.");
+                showToast("No system audio detected. Make sure to check 'Share Audio' in the dialog.");
                 stream.getTracks().forEach(t => t.stop());
                 return;
             }
@@ -3417,7 +3874,7 @@ async function startRecording(source) {
         
     } catch (err) {
         console.error("Error starting recording:", err);
-        alert("Could not start recording: " + err.message);
+        showToast("Could not start recording: " + err.message);
     }
 }
 
@@ -3651,7 +4108,7 @@ async function saveEditedAudio() {
     let end = parseFloat(document.getElementById('audio-end').value);
     
     if (end <= start) {
-        alert("End time must be greater than start time");
+        showToast("End time must be greater than start time");
         return;
     }
     
@@ -3663,7 +4120,7 @@ async function saveEditedAudio() {
     const frameCount = Math.floor((end - start) * sampleRate);
     
     if (frameCount <= 0) {
-        alert("Selection too short");
+        showToast("Selection too short");
         return;
     }
 
@@ -3922,7 +4379,7 @@ function saveToBrowser() {
         localStorage.removeItem(AUTOSAVE_KEY);
     } catch (e) {
         console.error("Failed to save to browser", e);
-        alert("Failed to save to browser storage. Storage might be full.");
+        showToast("Failed to save to browser storage. Storage might be full.");
     }
 }
 
@@ -3965,7 +4422,7 @@ function clearBrowserData() {
 }
 
 async function resetLocalStorage() {
-    if (confirm("FACTORY RESET: This will delete ALL locally saved games, settings, and registries from this browser.\n\nAre you sure you want to completely wipe all local data?")) {
+    if (await showConfirm("FACTORY RESET: This will delete ALL locally saved games, settings, and registries from this browser.\n\nAre you sure you want to completely wipe all local data?")) {
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -3982,7 +4439,7 @@ async function resetLocalStorage() {
         await clearFolderHandleFromDB();
         persistentFolderHandle = null;
         
-        alert("Local storage cleared. Reloading...");
+        showToast("Local storage cleared. Reloading...");
         window.location.reload();
     }
 }
@@ -4040,8 +4497,8 @@ async function searchSymbols() {
     container.innerHTML = '<div style="text-align:center; padding:20px; background-color:#fff;">Searching...</div>';
     
     try {
-        // Using Open Symbols API
-        const res = await fetch(`https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(query)}`);
+        // Using Open Symbols API via proxy
+        const res = await fetch(getApiUrl('opensymbols', `symbols/search?q=${encodeURIComponent(query)}`));
         const data = await res.json();
         
         container.innerHTML = '';
@@ -4105,22 +4562,36 @@ async function searchSounds() {
 
     container.innerHTML = '<div style="text-align:center; padding:20px; background-color:#fff;">Searching FreeSound...</div>';
 
-    // Using worker proxy
-    const base = "https://aged-thunder-a674.narbehousellc.workers.dev";
-    const u = new URL(`${base}/api/search`);
+    // Using local proxy or worker proxy depending on environment
+    const isLocalhost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    let searchUrl;
     
-    // We send both 'query' (FreeSound standard) and 'q' to ensure the worker picks it up
-    u.searchParams.set("query", query);
-    u.searchParams.set("q", query);
-    
-    u.searchParams.set("page_size", "15");
-    u.searchParams.set("fields", "id,name,duration,previews,images");
-    u.searchParams.set("_", Date.now()); // Prevent caching
+    if (isLocalhost) {
+        // Use local proxy to bypass CORS in Electron
+        const params = new URLSearchParams({
+            query: query,
+            q: query,
+            page_size: "15",
+            fields: "id,name,duration,previews,images",
+            _: Date.now()
+        });
+        searchUrl = `/api/proxy/freesound-proxy/api/search?${params.toString()}`;
+    } else {
+        // Direct worker proxy for external access
+        const base = "https://aged-thunder-a674.narbehousellc.workers.dev";
+        const u = new URL(`${base}/api/search`);
+        u.searchParams.set("query", query);
+        u.searchParams.set("q", query);
+        u.searchParams.set("page_size", "15");
+        u.searchParams.set("fields", "id,name,duration,previews,images");
+        u.searchParams.set("_", Date.now());
+        searchUrl = u.toString();
+    }
 
-    console.log("Searching FreeSound:", u.toString());
+    console.log("Searching FreeSound:", searchUrl);
 
     try {
-        const res = await fetch(u.toString());
+        const res = await fetch(searchUrl);
         const data = await res.json();
         
         container.innerHTML = '';
@@ -4216,7 +4687,7 @@ async function searchSounds() {
                     btn.innerText = "Error";
                     btn.disabled = false;
                     console.error("Download failed:", e);
-                    alert("Error downloading sound. It might be a CORS issue with FreeSound previews.");
+                    showToast("Error downloading sound. It might be a CORS issue with FreeSound previews.");
                 }
             };
             
@@ -4395,7 +4866,7 @@ async function restorePersistentFolderHandle() {
 
 async function requestFolderAccess() {
     if (!window.showDirectoryPicker) {
-        alert("Your browser doesn't support persistent folder access. Assets will need to be re-imported each session.");
+        showToast("Your browser doesn't support persistent folder access. Assets will need to be re-imported each session.");
         return null;
     }
     
@@ -4430,13 +4901,14 @@ async function loadAssetsFromFolderHandle(handle, silent = false) {
         if (permission !== 'granted') {
             permission = await handle.requestPermission({ mode: 'read' });
             if (permission !== 'granted') {
-                if (!silent) alert("Permission to access the folder was denied.");
+                if (!silent) showToast("Permission to access the folder was denied.");
                 return false;
             }
         }
         
         const files = [];
         const filePaths = [];
+        const jsonPacks = []; // Track discovered JSON pack files
         
         // Recursively read files from directory
         async function readDirectory(dirHandle, path = '') {
@@ -4448,6 +4920,25 @@ async function loadAssetsFromFolderHandle(handle, silent = false) {
                         const file = await entry.getFile();
                         files.push({ file, path: entryPath });
                         filePaths.push(entryPath);
+                    } else if (ext === 'json' && !entry.name.startsWith('.')) {
+                        // Found a JSON file - could be a pack definition
+                        try {
+                            const file = await entry.getFile();
+                            const content = await file.text();
+                            const data = JSON.parse(content);
+                            // Check if it looks like a pack file (has categories)
+                            if (data.categories && typeof data.categories === 'object') {
+                                jsonPacks.push({
+                                    path: entryPath,
+                                    name: entry.name,
+                                    data: data,
+                                    fileHandle: entry
+                                });
+                                console.log("Found pack JSON:", entryPath);
+                            }
+                        } catch (e) {
+                            console.warn("Could not parse JSON:", entryPath, e);
+                        }
                     }
                 } else if (entry.kind === 'directory') {
                     await readDirectory(entry, entryPath);
@@ -4458,8 +4949,29 @@ async function loadAssetsFromFolderHandle(handle, silent = false) {
         await readDirectory(handle);
         
         if (files.length === 0) {
-            if (!silent) alert("No supported image or audio files found in the selected folder.");
+            if (!silent) showToast("No supported image or audio files found in the selected folder.");
             return false;
+        }
+        
+        // Handle discovered JSON pack files
+        if (jsonPacks.length > 0) {
+            console.log(`Found ${jsonPacks.length} JSON pack file(s) in folder:`, jsonPacks.map(p => p.name));
+            
+            // Store detected packs for later reference
+            // Include the selected folder name so we can construct proper paths
+            const selectedFolderName = handle.name;
+            jsonPacks.forEach(p => p.selectedFolderName = selectedFolderName);
+            window.detectedJsonPacks = jsonPacks;
+            
+            // Auto-load the first pack, or let user choose if multiple
+            if (jsonPacks.length === 1) {
+                // Single pack - auto-load it
+                if (!silent) showToast(`Found pack: ${jsonPacks[0].data.name || jsonPacks[0].name}`);
+                await loadDiscoveredPack(jsonPacks[0]);
+            } else {
+                // Multiple packs - show picker
+                showPackPickerDialog(jsonPacks);
+            }
         }
         
         // Clear old blobs
@@ -4503,7 +5015,7 @@ async function loadAssetsFromFolderHandle(handle, silent = false) {
         return true;
     } catch (e) {
         console.error("Error loading assets from folder handle:", e);
-        if (!silent) alert("Error loading assets: " + e.message);
+        if (!silent) showToast("Error loading assets: " + e.message);
         return false;
     }
 }
@@ -4616,7 +5128,7 @@ async function saveScannedRegistry() {
             const writable = await handle.createWritable();
             await writable.write(pendingRegistryJSON);
             await writable.close();
-            alert(`Registry updated with ${pendingPackCount} packs!`);
+            showToast(`Registry updated with ${pendingPackCount} packs!`);
             
             // Success - Reset UI
             pendingRegistryJSON = null;
@@ -4632,13 +5144,13 @@ async function saveScannedRegistry() {
              // If user simply cancelled, we do nothing. 
              // If actual error, we might want to alert?
              if (err.name !== 'AbortError') {
-                 alert("Error opening File Picker: " + err.message + "\n\nFalling back to standard download.");
+                 showToast("Error opening File Picker: " + err.message + "\n\nFalling back to standard download.");
              } else {
                  return; // Just return if cancelled to let them try again
              }
         }
     } else {
-        alert("Your browser does not support the 'Save As' dialog for this action.\nIt will attempt to download to your default folder.");
+        showToast("Your browser does not support the 'Save As' dialog for this action.\nIt will attempt to download to your default folder.");
     }
 
     // Fallback to Download Link
@@ -4650,7 +5162,7 @@ async function saveScannedRegistry() {
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
     
-    alert(`Registry downloaded with ${pendingPackCount} packs!\n\nPlease move 'assetManifest.json' to your main game folder if it didn't save there.`);
+    showToast(`Registry downloaded with ${pendingPackCount} packs!\n\nPlease move 'assetManifest.json' to your main game folder if it didn't save there.`);
     
     // Reset UI
     pendingRegistryJSON = null;
@@ -4680,11 +5192,24 @@ function updateGameRegistry() {
         const jsonFiles = files.filter(f => f.name.endsWith('.json') && !f.name.startsWith('.'));
         
         if (jsonFiles.length === 0) {
-            alert("No JSON files found in the selected folder.");
+            showToast("No JSON files found in the selected folder.");
             return;
         }
 
-        const packList = jsonFiles.map(f => `packs/${f.name}`);
+        // Use webkitRelativePath to get the full path within the selected folder
+        // webkitRelativePath looks like: "packs/adult_cartoons/adult_cartoons.json"
+        // We need to ensure the path starts with "packs/"
+        const packList = jsonFiles.map(f => {
+            const relativePath = f.webkitRelativePath;
+            // If the selected folder is "packs", relativePath will be like "packs/subfolder/file.json"
+            // If the selected folder is a subfolder, relativePath will be like "subfolder/file.json"
+            if (relativePath.startsWith('packs/')) {
+                return relativePath;
+            } else {
+                // The user selected a folder inside packs, so prepend "packs/"
+                return `packs/${relativePath}`;
+            }
+        });
         
         // Prepare new manifest
         let newManifest = {
@@ -4704,10 +5229,10 @@ function updateGameRegistry() {
             btn.style.backgroundColor = "#4CAF50"; // Green
         }
         
-        alert(`Scan Complete! Found ${packList.length} packs.\n\nClick the green 'Save assetManifest.json' button to choose where to save it.`);
+        showToast(`Scan Complete! Found ${packList.length} packs.\n\nClick the green 'Save assetManifest.json' button to choose where to save it.`);
     };
     
-    alert("Step 1: Select your 'packs' folder to scan.");
+    showToast("Step 1: Select your 'packs' folder to scan.");
     input.click();
 }
 
@@ -4728,7 +5253,7 @@ async function linkAssetFolder() {
 }
 
 async function unlinkAssetFolder() {
-    if (confirm("Unlink the asset folder? You will need to re-import assets manually.")) {
+    if (await showConfirm("Unlink the asset folder? You will need to re-import assets manually.")) {
         persistentFolderHandle = null;
         await clearFolderHandleFromDB();
         updateFolderUI();
