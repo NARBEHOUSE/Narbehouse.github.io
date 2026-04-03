@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Universal Play Ecosystem | Play Without Barriers</title>
+    <meta name="description" content="A gaming ecosystem built for 1 and 2 switch control. Working to change the paradigm of accessible gaming.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#0a0a0a',
+                        'charcoal': '#141414',
+                        'access-violet': '#8b5cf6',
+                        'action-teal': '#14b8a6',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0a0a0a;
+        }
+        
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+        }
+        
+        .glass-card-teal {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(20, 184, 166, 0.15);
+        }
+        
+        /* Glow Effects */
+        .glow-violet {
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+        }
+        
+        .glow-teal {
+            box-shadow: 0 0 40px rgba(20, 184, 166, 0.3);
+        }
+        
+        .text-glow-violet {
+            text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+        }
+        
+        .text-glow-teal {
+            text-shadow: 0 0 30px rgba(20, 184, 166, 0.5);
+        }
+        
+        /* Input Glow */
+        .input-glow:focus {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            border-color: #8b5cf6;
+        }
+        
+        /* Video Overlay */
+        .video-overlay {
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.7) 0%, rgba(10, 10, 10, 0.9) 100%);
+        }
+        
+        /* Scroll Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-40px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .reveal-left.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .reveal-right {
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .reveal-right.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .reveal-scale.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Gradient Borders */
+        .gradient-border {
+            position: relative;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #8b5cf6, #14b8a6);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Pulse Animation */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        /* Grid Pattern Background */
+        .grid-pattern {
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        /* Arcade-Style Hover Effects */
+        .arcade-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .arcade-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 0 30px rgba(139, 92, 246, 0.4),
+                0 0 60px rgba(139, 92, 246, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        
+        .arcade-card-teal:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 0 30px rgba(20, 184, 166, 0.4),
+                0 0 60px rgba(20, 184, 166, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-color: rgba(20, 184, 166, 0.5);
+        }
+        
+        /* Arcade Button Press Animation */
+        @keyframes arcade-press {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+        }
+        
+        .arcade-btn:active {
+            animation: arcade-press 0.15s ease;
+        }
+        
+        /* Scanline Effect for Retro Feel */
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body class="bg-deep-black text-white antialiased">
+    
+    <!-- ==================== HERO SECTION ==================== -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <!-- Background Video -->
+        <video 
+            class="absolute inset-0 w-full h-full object-cover"
+            autoplay 
+            muted 
+            loop 
+            playsinline
+            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%230a0a0a' width='1920' height='1080'/%3E%3C/svg%3E"
+        >
+            <source src="videos/BENNYS-HUB-PROMO.mp4" type="video/mp4">
+        </video>
+        
+        <!-- Dark Overlay -->
+        <div class="absolute inset-0 video-overlay"></div>
+        
+        <!-- Grid Pattern Overlay -->
+        <div class="absolute inset-0 grid-pattern opacity-50"></div>
+        
+        <!-- Hero Content -->
+        <div class="relative z-10 text-center px-6 max-w-5xl mx-auto">
+            <div class="reveal">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-access-violet text-sm font-medium mb-8">
+                    <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                    THE UNIVERSAL PLAY ECOSYSTEM
+                </span>
+            </div>
+            
+            <h1 class="reveal text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 text-glow-violet">
+                PLAY WITHOUT<br>
+                <span class="bg-gradient-to-r from-access-violet to-action-teal bg-clip-text text-transparent">BARRIERS.</span>
+            </h1>
+            
+            <p class="reveal text-lg md:text-xl lg:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed">
+                A gaming ecosystem built for <span class="text-access-violet font-semibold">1 and 2 switch control</span>. 
+                Working to change the paradigm of accessible gaming.
+            </p>
+            
+            <div class="reveal flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#ecosystem" class="group inline-flex items-center gap-2 px-8 py-4 bg-access-violet hover:bg-violet-500 rounded-xl font-semibold transition-all duration-300 glow-violet">
+                    Explore the Ecosystem
+                    <i data-lucide="arrow-down" class="w-5 h-5 group-hover:translate-y-1 transition-transform"></i>
+                </a>
+                <a href="#contact" class="inline-flex items-center gap-2 px-8 py-4 glass-card rounded-xl font-semibold hover:border-access-violet/50 transition-all duration-300">
+                    <i data-lucide="mail" class="w-5 h-5"></i>
+                    Get in Touch
+                </a>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 reveal">
+            <div class="w-6 h-10 rounded-full border-2 border-gray-600 flex items-start justify-center p-2">
+                <div class="w-1 h-3 bg-access-violet rounded-full animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== THE PROBLEM SECTION ==================== -->
+    <section id="the-problem" class="py-24 lg:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-pattern opacity-30"></div>
+        
+        <!-- Accent Glow -->
+        <div class="absolute top-1/2 right-0 w-[500px] h-[500px] bg-access-violet/5 rounded-full blur-3xl"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-6">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <!-- Content -->
+                <div class="reveal-left">
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-red-400 text-sm font-medium mb-6">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        THE PROBLEM
+                    </span>
+                    
+                    <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                        Gaming is Getting More <span class="text-red-400">Inclusive</span> — But Not for Everyone
+                    </h2>
+                    
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6">
+                        The industry has made incredible strides with adaptive controllers and accessibility features. But there's still a large group of people left behind — like Ben — who require <span class="text-white font-semibold">simpler inputs and lower complexity</span> for gaming.
+                    </p>
+                    
+                    <div class="glass-card rounded-xl p-6 mb-6 border-red-500/20">
+                        <p class="text-xl text-white font-medium italic">
+                            "Imagine only having one input. How are you going to play a game?"
+                        </p>
+                    </div>
+                    
+                    <p class="text-gray-400 leading-relaxed">
+                        Most games — even "accessible" ones — still assume multiple buttons, quick reflexes, or complex navigation. For people with severe motor impairments, that's simply not possible.
+                    </p>
+                </div>
+                
+                <!-- Visual / Stats -->
+                <div class="reveal-right">
+                    <div class="glass-card rounded-2xl p-8 lg:p-10">
+                        <h3 class="text-xl font-bold mb-6 text-center">The Accessibility Gap</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">Standard Controllers</span>
+                                    <span class="text-white font-medium">12-16 inputs</span>
+                                </div>
+                                <div class="h-3 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-gray-500 to-gray-400 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">Adaptive Controllers</span>
+                                    <span class="text-white font-medium">4-8 inputs</span>
+                                </div>
+                                <div class="h-3 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-access-violet/70 to-access-violet/50 rounded-full" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">What some users have</span>
+                                    <span class="text-action-teal font-bold">1-2 inputs</span>
+                                </div>
+                                <div class="h-3 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-action-teal to-action-teal/70 rounded-full" style="width: 12%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 pt-6 border-t border-gray-800 text-center">
+                            <p class="text-gray-500 text-sm">
+                                Traditional games aren't designed for this reality.
+                            </p>
+                            <p class="text-action-teal font-semibold mt-2">
+                                We're changing that.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== OUR MISSION SECTION ==================== -->
+    <section id="mission" class="py-24 lg:py-32 relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-deep-black via-charcoal/50 to-deep-black"></div>
+        
+        <div class="relative max-w-4xl mx-auto px-6 text-center">
+            <div class="reveal">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card-teal text-action-teal text-sm font-medium mb-6">
+                    <i data-lucide="target" class="w-4 h-4"></i>
+                    OUR MISSION
+                </span>
+                
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                    Accessibility <span class="bg-gradient-to-r from-access-violet to-action-teal bg-clip-text text-transparent">First</span>, Not as an Afterthought
+                </h2>
+                
+                <p class="text-gray-400 text-lg leading-relaxed mb-8 max-w-3xl mx-auto">
+                    We're not retrofitting accessibility into existing games. We're building games from the ground up for people with the most extreme accessibility needs. Will we reach everyone? No — but our mission is to create <span class="text-white font-semibold">fun, engaging, and empowering games</span> for people who've been told gaming isn't for them.
+                </p>
+                
+                <div class="grid sm:grid-cols-3 gap-6">
+                    <div class="glass-card rounded-xl p-6">
+                        <div class="w-12 h-12 rounded-xl bg-access-violet/10 flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="smile" class="w-6 h-6 text-access-violet"></i>
+                        </div>
+                        <h4 class="font-semibold mb-2">Fun</h4>
+                        <p class="text-gray-500 text-sm">Real games with real enjoyment — not watered-down experiences.</p>
+                    </div>
+                    
+                    <div class="glass-card rounded-xl p-6">
+                        <div class="w-12 h-12 rounded-xl bg-action-teal/10 flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="brain" class="w-6 h-6 text-action-teal"></i>
+                        </div>
+                        <h4 class="font-semibold mb-2">Engaging</h4>
+                        <p class="text-gray-500 text-sm">Depth, challenge, and progression that keeps players coming back.</p>
+                    </div>
+                    
+                    <div class="glass-card rounded-xl p-6">
+                        <div class="w-12 h-12 rounded-xl bg-access-violet/10 flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="trophy" class="w-6 h-6 text-access-violet"></i>
+                        </div>
+                        <h4 class="font-semibold mb-2">Empowering</h4>
+                        <p class="text-gray-500 text-sm">Giving players agency, achievement, and the joy of play.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROBLEM/SOLUTION SPLIT ==================== -->
+    <section id="problem-solution" class="py-24 lg:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-pattern opacity-30"></div>
+        
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="reveal text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    A New <span class="text-access-violet">Paradigm</span> in Gaming
+                </h2>
+                <p class="reveal text-gray-500 text-lg max-w-2xl mx-auto">
+                    See the difference between traditional barriers and universal accessibility.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
+                <!-- Traditional Gaming (Problem) -->
+                <div class="reveal-left glass-card rounded-2xl p-8 lg:p-10 border-red-500/20 hover:border-red-500/40 transition-all duration-500">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+                            <i data-lucide="x-circle" class="w-6 h-6 text-red-500"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-red-400">Traditional Gaming</h3>
+                    </div>
+                    
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Complex Inputs</span> — Multiple buttons, joysticks, and combinations create insurmountable barriers.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Expensive Adapters</span> — Accessibility hardware can cost hundreds or thousands of dollars.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Limited Options</span> — Most accessible games are simple, lacking depth and engagement.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Afterthought Design</span> — Accessibility is patched on, not built in from the ground up.</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-8 pt-6 border-t border-gray-800">
+                        <div class="flex items-center gap-2 text-red-400 font-medium">
+                            <i data-lucide="ban" class="w-5 h-5"></i>
+                            Exclusion by Default
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Universal Layer (Solution) -->
+                <div class="reveal-right glass-card-teal rounded-2xl p-8 lg:p-10 glow-teal hover:shadow-[0_0_60px_rgba(20,184,166,0.4)] transition-all duration-500">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-action-teal/10 flex items-center justify-center">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-action-teal"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-action-teal">The Universal Layer</h3>
+                    </div>
+                    
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="zap" class="w-5 h-5 text-action-teal mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">1-2 Button Simplicity</span> — Every game controlled with just one or two inputs. Period.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="zap" class="w-5 h-5 text-action-teal mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Zero Hardware Cost</span> — Works with any switch, keyboard, or touch device you already have.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="zap" class="w-5 h-5 text-action-teal mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Deep, Engaging Titles</span> — Real games with real depth: sports, puzzles, strategy, and more.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="zap" class="w-5 h-5 text-action-teal mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-400"><span class="text-white font-medium">Accessible-First Design</span> — Built from day one for motor-impaired players.</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-8 pt-6 border-t border-action-teal/20">
+                        <div class="flex items-center gap-2 text-action-teal font-medium">
+                            <i data-lucide="heart" class="w-5 h-5"></i>
+                            Freedom by Design
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== ECOSYSTEM FEATURE GRID ==================== -->
+    <section id="ecosystem" class="py-24 lg:py-32 relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-deep-black via-charcoal to-deep-black"></div>
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-action-teal text-sm font-medium mb-6">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    CORE FEATURES
+                </span>
+                <h2 class="reveal text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    The <span class="bg-gradient-to-r from-access-violet to-action-teal bg-clip-text text-transparent">Ecosystem</span>
+                </h2>
+                <p class="reveal text-gray-500 text-lg max-w-2xl mx-auto">
+                    Three pillars that power the future of accessible gaming.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
+                <!-- Feature 1: Direct-to-Switch -->
+                <div class="reveal-scale group glass-card arcade-card rounded-2xl p-8 cursor-pointer">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-access-violet/20 to-access-violet/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="toggle-right" class="w-8 h-8 text-access-violet"></i>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-access-violet transition-colors">Direct-to-Switch</h3>
+                    <p class="text-gray-400 leading-relaxed mb-6">
+                        Every game is natively 1-2 button compatible. No adapters, no configuration nightmares. Just plug in and play.
+                    </p>
+                    
+                    <div class="flex items-center gap-2 text-access-violet text-sm font-medium">
+                        <span>Native Compatibility</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+                
+                <!-- Feature 2: Infinite Configurator -->
+                <div class="reveal-scale group glass-card arcade-card-teal rounded-2xl p-8 cursor-pointer" style="transition-delay: 100ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-action-teal/20 to-action-teal/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="sliders-horizontal" class="w-8 h-8 text-action-teal"></i>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-action-teal transition-colors">Infinite Configurator</h3>
+                    <p class="text-gray-400 leading-relaxed mb-6">
+                        If a player has slow reaction time, the game world slows without losing visual fidelity. If they can only tap once per 5 seconds, the game adapts its rhythm to them — not the other way around.
+                    </p>
+                    
+                    <div class="flex items-center gap-2 text-action-teal text-sm font-medium">
+                        <span>Personalized Experience</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+                
+                <!-- Feature 3: Rapid Growth Engine -->
+                <div class="reveal-scale group glass-card arcade-card rounded-2xl p-8 cursor-pointer" style="transition-delay: 200ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-access-violet/20 to-action-teal/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="rocket" class="w-8 h-8 text-access-violet"></i>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-access-violet transition-colors">Rapid Growth Engine</h3>
+                    <p class="text-gray-400 leading-relaxed mb-6">
+                        Leveraging AI-assisted development to build a library that scales with community needs. New games, faster than ever.
+                    </p>
+                    
+                    <div class="flex items-center gap-2 text-access-violet text-sm font-medium">
+                        <span>AI-Powered Development</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Row -->
+            <div class="reveal grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 pt-16 border-t border-gray-800">
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-black text-access-violet mb-2">12+</div>
+                    <div class="text-gray-500 text-sm">Games & Growing</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-black text-action-teal mb-2">1-2</div>
+                    <div class="text-gray-500 text-sm">Buttons Only</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-black text-access-violet mb-2">$0</div>
+                    <div class="text-gray-500 text-sm">Hardware Required</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-black text-action-teal mb-2">∞</div>
+                    <div class="text-gray-500 text-sm">Possibilities</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== BEN CASE STUDY ==================== -->
+    <section id="case-study" class="py-24 lg:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-pattern opacity-30"></div>
+        
+        <!-- Accent Glow -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-access-violet/10 rounded-full blur-3xl"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-6">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <!-- Video Player -->
+                <div class="reveal-left order-2 lg:order-1">
+                    <div class="relative rounded-2xl overflow-hidden gradient-border">
+                        <div class="aspect-video bg-charcoal relative">
+                            <!-- YouTube Embed -->
+                            <iframe 
+                                class="w-full h-full"
+                                src="https://www.youtube.com/embed/NXqcyBKxBiQ" 
+                                title="Benny's Hub Explainer Video"
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Caption -->
+                    <p class="text-gray-500 text-sm text-center mt-4">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                        Watch the full explainer on how Benny's Hub was built.
+                    </p>
+                </div>
+                
+                <!-- Content -->
+                <div class="reveal-right order-1 lg:order-2">
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-access-violet text-sm font-medium mb-6">
+                        <i data-lucide="star" class="w-4 h-4"></i>
+                        PROOF OF CONCEPT
+                    </span>
+                    
+                    <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                        The Ben <span class="text-access-violet">Case Study</span>
+                    </h2>
+                    
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6">
+                        <span class="text-white font-semibold">See the creator's full explainer video</span> on how he built Benny's Hub and all the games created as of the video's recording.
+                    </p>
+                    
+                    <p class="text-gray-400 leading-relaxed mb-8">
+                        There's a lot more being built constantly — and that's the power of using AI to accelerate accessible game development. What started as a personal project to bring gaming joy to one person has grown into a comprehensive ecosystem. With the support of our community, accessibility advocates, and partner organizations, we're exploring how this could help people in more settings.
+                    </p>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-access-violet/10 flex items-center justify-center">
+                                <i data-lucide="heart-handshake" class="w-5 h-5 text-access-violet"></i>
+                            </div>
+                            <span class="text-gray-300">Tested with Ben, validated by the community</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-action-teal/10 flex items-center justify-center">
+                                <i data-lucide="building-2" class="w-5 h-5 text-action-teal"></i>
+                            </div>
+                            <span class="text-gray-300">Exploring opportunities in new settings</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-access-violet/10 flex items-center justify-center">
+                                <i data-lucide="globe" class="w-5 h-5 text-access-violet"></i>
+                            </div>
+                            <span class="text-gray-300">Evolving with the most extreme accessibility needs</span>
+                        </div>
+                    </div>
+                    
+                    <a href="bennyshub/index.html" class="inline-flex items-center gap-2 text-access-violet hover:text-violet-400 font-semibold transition-colors">
+                        Visit Benny's Hub
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== IMAGINE THE POSSIBILITIES ==================== -->
+    <section id="possibilities" class="py-24 lg:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-deep-black via-charcoal/30 to-deep-black"></div>
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <!-- Accent Glow -->
+        <div class="absolute top-1/2 left-0 w-[400px] h-[400px] bg-action-teal/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-[400px] h-[400px] bg-access-violet/10 rounded-full blur-3xl"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card-teal text-action-teal text-sm font-medium mb-6">
+                    <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                    THE POTENTIAL
+                </span>
+                <h2 class="reveal text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    Imagine the <span class="text-action-teal">Possibilities</span>
+                </h2>
+                <p class="reveal text-gray-400 text-lg max-w-3xl mx-auto">
+                    We've built the software. The games. The hub. Now we're looking for partners who can see where this could go — and help us get there.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Possibility 1 -->
+                <div class="reveal-scale glass-card arcade-card rounded-2xl p-8 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-action-teal/20 to-action-teal/5 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="building-2" class="w-8 h-8 text-action-teal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Hospitals & Rehab Centers</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        What if patients recovering from surgery or undergoing long-term treatment had access to games they could actually play? A welcome distraction that requires nothing but two buttons.
+                    </p>
+                </div>
+                
+                <!-- Possibility 2 -->
+                <div class="reveal-scale glass-card arcade-card rounded-2xl p-8 text-center" style="transition-delay: 100ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-access-violet/20 to-access-violet/5 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="graduation-cap" class="w-8 h-8 text-access-violet"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Special Education</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        What if classrooms had gaming experiences that every student could participate in — regardless of motor ability? Learning through play, without exclusion.
+                    </p>
+                </div>
+                
+                <!-- Possibility 3 -->
+                <div class="reveal-scale glass-card arcade-card rounded-2xl p-8 text-center" style="transition-delay: 200ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-action-teal/20 to-action-teal/5 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="home" class="w-8 h-8 text-action-teal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Home & Caregiving</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        What if families had a library of games their loved ones could enjoy independently? Entertainment that gives caregivers a moment to breathe.
+                    </p>
+                </div>
+                
+                <!-- Possibility 4 -->
+                <div class="reveal-scale glass-card arcade-card rounded-2xl p-8 text-center" style="transition-delay: 300ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-access-violet/20 to-access-violet/5 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="heart-pulse" class="w-8 h-8 text-access-violet"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Therapy & Recreation</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        What if occupational therapists had engaging tools that patients actually looked forward to? Motivation through play, progress through fun.
+                    </p>
+                </div>
+                
+                <!-- Possibility 5 -->
+                <div class="reveal-scale glass-card arcade-card rounded-2xl p-8 text-center" style="transition-delay: 400ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-action-teal/20 to-action-teal/5 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="users" class="w-8 h-8 text-action-teal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Senior Living</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        What if residents in assisted living could enjoy modern gaming entertainment? Cognitive engagement and joy, adapted to their abilities.
+                    </p>
+                </div>
+                
+                <!-- Your Idea -->
+                <div class="reveal-scale glass-card-teal arcade-card-teal rounded-2xl p-8 text-center glow-teal" style="transition-delay: 500ms;">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-action-teal/30 to-access-violet/30 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Your Vision Here</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        We don't have all the answers. But if you see a possibility we haven't imagined — a setting, a use case, a community that could benefit — we want to hear from you.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Key Differentiator -->
+            <div class="reveal mt-16 glass-card rounded-2xl p-8 lg:p-10 text-center max-w-4xl mx-auto">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <i data-lucide="key-round" class="w-6 h-6 text-action-teal"></i>
+                    <h3 class="text-xl font-bold">The Key Differentiator</h3>
+                </div>
+                <p class="text-gray-300 text-lg leading-relaxed">
+                    The entire experience — <span class="text-white font-semibold">navigating menus, choosing games, playing, and switching titles</span> — is controlled with the same 1-2 switches. Users don't need someone to select a game for them. 
+                    <span class="text-action-teal font-semibold">True independence.</span>
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== ABOUT THE CREATORS ==================== -->
+    <section id="about" class="py-24 lg:py-32 relative overflow-hidden">
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <div class="relative max-w-4xl mx-auto px-6">
+            <div class="reveal text-center">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-access-violet text-sm font-medium mb-6">
+                    <i data-lucide="heart" class="w-4 h-4"></i>
+                    A PROJECT OF PASSION
+                </span>
+                
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+                    Built with <span class="text-access-violet">Love</span>, Given <span class="text-action-teal">Freely</span>
+                </h2>
+                
+                <p class="text-gray-400 text-lg leading-relaxed mb-8 max-w-3xl mx-auto">
+                    This isn't a corporate venture. It's a labor of love from creators who dedicate their personal time to building games for people like Ben — and sharing them with the world.
+                </p>
+            </div>
+            
+            <div class="reveal grid sm:grid-cols-3 gap-6 mb-12">
+                <div class="glass-card rounded-xl p-6 text-center">
+                    <div class="w-14 h-14 rounded-xl bg-access-violet/10 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="gift" class="w-7 h-7 text-access-violet"></i>
+                    </div>
+                    <h4 class="font-semibold text-lg mb-2">100% Free</h4>
+                    <p class="text-gray-500 text-sm">Every game, every tool — completely free to use. No subscriptions, no paywalls, no ads.</p>
+                </div>
+                
+                <div class="glass-card rounded-xl p-6 text-center">
+                    <div class="w-14 h-14 rounded-xl bg-action-teal/10 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="code-2" class="w-7 h-7 text-action-teal"></i>
+                    </div>
+                    <h4 class="font-semibold text-lg mb-2">Open Source</h4>
+                    <p class="text-gray-500 text-sm">All code is published openly. Fork it, learn from it, build on it, make it better.</p>
+                </div>
+                
+                <div class="glass-card rounded-xl p-6 text-center">
+                    <div class="w-14 h-14 rounded-xl bg-access-violet/10 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="clock" class="w-7 h-7 text-access-violet"></i>
+                    </div>
+                    <h4 class="font-semibold text-lg mb-2">Volunteer Time</h4>
+                    <p class="text-gray-500 text-sm">Built in evenings, weekends, and spare moments — driven by purpose, not profit.</p>
+                </div>
+            </div>
+            
+            <!-- NARBE Foundation Callout -->
+            <div class="reveal glass-card-teal rounded-2xl p-8 lg:p-10 text-center glow-teal">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-action-teal/20 flex items-center justify-center">
+                        <i data-lucide="landmark" class="w-6 h-6 text-action-teal"></i>
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold mb-3">NARBE House + NARBE Foundation</h3>
+                <p class="text-gray-400 leading-relaxed max-w-2xl mx-auto mb-6">
+                    This project operates under <span class="text-white font-semibold">NARBE House</span>, supported by the <span class="text-white font-semibold">NARBE Foundation</span> for hosting and development tools. The creators volunteer their personal time to build these games and tools — no salaries, no investors, just passion. Your support helps cover costs and keeps everything free for those who need it.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a 
+                        href="https://narbefoundation.org" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-teal hover:bg-teal-500 rounded-xl font-semibold text-white transition-all duration-300"
+                    >
+                        <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+                        Support the Foundation
+                    </a>
+                    <a 
+                        href="https://github.com/narbehouse" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 glass-card rounded-xl font-semibold hover:border-access-violet/50 transition-all duration-300"
+                    >
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Personal Note -->
+            <div class="reveal mt-12 text-center">
+                <p class="text-gray-500 italic max-w-2xl mx-auto">
+                    "We started this for Ben. We continue it for everyone like him who deserves to experience the joy of play. This is our way of giving back."
+                </p>
+                <p class="text-gray-600 text-sm mt-4">— Ari, Ben's Brother, NARBE House</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CALL TO ACTION / CONTACT ==================== -->
+    <section id="contact" class="py-24 lg:py-32 relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-deep-black via-charcoal to-deep-black"></div>
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <!-- Accent Glow -->
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-access-violet/10 rounded-full blur-3xl"></div>
+        
+        <div class="relative max-w-4xl mx-auto px-6">
+            <div class="reveal text-center mb-12">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-action-teal text-sm font-medium mb-6">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    JOIN THE MISSION
+                </span>
+                
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    Support the <span class="bg-gradient-to-r from-access-violet to-action-teal bg-clip-text text-transparent">Vision</span>
+                </h2>
+                
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                    Whether you're an investor, developer, therapist, educator, or simply someone who believes gaming should be for everyone — we'd love to hear from you.
+                </p>
+            </div>
+            
+            <!-- Contact CTA -->
+            <div class="reveal-scale glass-card rounded-2xl p-8 lg:p-12 glow-violet text-center">
+                <div class="max-w-lg mx-auto">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-access-violet/20 to-action-teal/20 flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="message-circle" class="w-10 h-10 text-access-violet"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-bold mb-4">Ready to Connect?</h3>
+                    
+                    <p class="text-gray-400 mb-8">
+                        Share your ideas, ask questions, or tell us how you'd like to get involved. We read every message and will get back to you soon.
+                    </p>
+                    
+                    <a 
+                        href="https://forms.gle/jWFF8YEnXztxguUS6" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-access-violet to-action-teal hover:opacity-90 rounded-xl font-semibold text-white transition-all duration-300 group"
+                    >
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                        Open Contact Form
+                        <i data-lucide="external-link" class="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    
+                    <p class="text-gray-500 text-sm mt-6">
+                        <i data-lucide="shield-check" class="w-4 h-4 inline mr-1"></i>
+                        Secure form powered by Google Forms
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="py-12 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Privacy First Banner -->
+            <div class="glass-card rounded-xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
+                <div class="flex items-center gap-2 text-action-teal">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span class="font-semibold">Privacy First</span>
+                </div>
+                <span class="text-gray-400 text-sm">No patient data tracking. No accounts required. Just plug, play, and heal.</span>
+            </div>
+            
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-access-violet to-action-teal flex items-center justify-center">
+                        <i data-lucide="gamepad-2" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="font-bold text-lg">Universal Play Ecosystem</span>
+                </div>
+                
+                <nav class="flex flex-wrap items-center justify-center gap-6 md:gap-8">
+                    <a href="#hero" class="text-gray-400 hover:text-white transition-colors text-sm">Home</a>
+                    <a href="#the-problem" class="text-gray-400 hover:text-white transition-colors text-sm">The Problem</a>
+                    <a href="#ecosystem" class="text-gray-400 hover:text-white transition-colors text-sm">Features</a>
+                    <a href="#case-study" class="text-gray-400 hover:text-white transition-colors text-sm">Case Study</a>
+                    <a href="#possibilities" class="text-gray-400 hover:text-white transition-colors text-sm">Possibilities</a>
+                    <a href="#contact" class="text-gray-400 hover:text-white transition-colors text-sm">Contact</a>
+                </nav>
+                
+                <p class="text-gray-500 text-sm">
+                    &copy; 2026 Narbe LLC. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        
+        // Scroll Reveal using Intersection Observer
+        const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+        
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+        
+        revealElements.forEach(el => {
+            revealObserver.observe(el);
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
