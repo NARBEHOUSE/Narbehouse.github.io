@@ -733,6 +733,366 @@
       margin-top: 0;
     }
     
+    /* Mini Quiz Styles */
+    .mini-quiz {
+      background: linear-gradient(135deg, rgba(100, 255, 218, 0.05), rgba(100, 255, 218, 0.02));
+      border: 2px solid rgba(100, 255, 218, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin: 48px 0;
+    }
+    
+    .mini-quiz-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .mini-quiz-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-dim));
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+    
+    .mini-quiz-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--white);
+      margin: 0;
+    }
+    
+    .mini-quiz-subtitle {
+      font-size: 14px;
+      color: var(--slate);
+      margin: 0;
+    }
+    
+    .quiz-question {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    
+    .quiz-question:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .quiz-question-text {
+      font-size: 16px;
+      color: var(--white);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--navy);
+      border: 2px solid rgba(100, 255, 218, 0.15);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all var(--transition);
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--slate-light);
+      text-align: left;
+      width: 100%;
+    }
+    
+    .quiz-option:hover:not(.selected):not(.correct):not(.incorrect) {
+      border-color: rgba(100, 255, 218, 0.4);
+      background: rgba(100, 255, 218, 0.05);
+    }
+    
+    .quiz-option.selected {
+      border-color: var(--cyan);
+      background: rgba(100, 255, 218, 0.1);
+      color: var(--white);
+    }
+    
+    .quiz-option.correct {
+      border-color: var(--success);
+      background: rgba(100, 255, 218, 0.15);
+      color: var(--white);
+    }
+    
+    .quiz-option.incorrect {
+      border-color: var(--error);
+      background: rgba(255, 107, 107, 0.1);
+      color: var(--slate-light);
+    }
+    
+    .quiz-option-marker {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--slate);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all var(--transition);
+    }
+    
+    .quiz-option.selected .quiz-option-marker {
+      border-color: var(--cyan);
+      background: var(--cyan);
+      color: var(--navy);
+    }
+    
+    .quiz-option.correct .quiz-option-marker {
+      border-color: var(--success);
+      background: var(--success);
+      color: var(--navy);
+    }
+    
+    .quiz-option.incorrect .quiz-option-marker {
+      border-color: var(--error);
+      background: var(--error);
+      color: white;
+    }
+    
+    .quiz-feedback {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+    
+    .quiz-feedback.show {
+      display: block;
+      animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .quiz-feedback.correct {
+      background: rgba(100, 255, 218, 0.1);
+      border: 1px solid rgba(100, 255, 218, 0.3);
+      color: var(--cyan);
+    }
+    
+    .quiz-feedback.incorrect {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      color: var(--error);
+    }
+    
+    .quiz-score {
+      margin-top: 24px;
+      padding: 20px;
+      background: var(--navy);
+      border-radius: var(--radius);
+      text-align: center;
+      display: none;
+    }
+    
+    .quiz-score.show {
+      display: block;
+      animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .quiz-score-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    
+    .quiz-score-detail {
+      font-size: 14px;
+      color: var(--slate-light);
+    }
+    
+    .quiz-reset-btn {
+      margin-top: 16px;
+      padding: 10px 24px;
+      background: transparent;
+      border: 2px solid var(--cyan);
+      border-radius: 50px;
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    
+    .quiz-reset-btn:hover {
+      background: var(--cyan);
+      color: var(--navy);
+    }
+
+    /* Section Lock Overlay */
+    .section-lock-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 25, 47, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .section-lock-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .section-lock-content {
+      background: var(--navy-light);
+      border: 2px solid var(--orange);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      max-width: 500px;
+      text-align: center;
+      animation: fadeInUp 0.3s ease-out;
+    }
+
+    .section-lock-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .section-lock-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .section-lock-text {
+      font-size: 16px;
+      color: var(--slate-light);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .section-lock-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .section-lock-btn {
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 2px solid transparent;
+    }
+
+    .section-lock-btn.primary {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+
+    .section-lock-btn.primary:hover {
+      background: transparent;
+      color: var(--cyan);
+    }
+
+    .section-lock-btn.secondary {
+      background: transparent;
+      color: var(--slate-light);
+      border-color: var(--slate);
+    }
+
+    .section-lock-btn.secondary:hover {
+      border-color: var(--white);
+      color: var(--white);
+    }
+
+    .section-lock-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 20px 0;
+      color: var(--slate);
+      font-size: 13px;
+    }
+
+    .section-lock-divider::before,
+    .section-lock-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(136, 146, 176, 0.3);
+    }
+
+    .section-lock-skip-all {
+      background: none;
+      border: none;
+      color: var(--slate);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: inherit;
+      transition: color var(--transition);
+    }
+
+    .section-lock-skip-all:hover {
+      color: var(--slate-light);
+    }
+
+    /* Quiz completion indicator */
+    .mini-quiz.completed {
+      border-color: var(--success);
+    }
+
+    .mini-quiz.completed .mini-quiz-icon {
+      background: linear-gradient(135deg, var(--success), var(--cyan-dim));
+    }
+
+    .quiz-completion-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .mini-quiz.completed .quiz-completion-badge {
+      display: flex;
+    }
+
+    .mini-quiz-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
     /* FAQ Accordion */
     .faq-item {
       background: var(--navy-light);
@@ -1227,6 +1587,24 @@
     <span class="stage-num">Start</span> — Vibe Coding Guide
   </div>
 
+  <!-- Section Lock Overlay -->
+  <div class="section-lock-overlay" id="sectionLockOverlay">
+    <div class="section-lock-content">
+      <div class="section-lock-icon">🔒</div>
+      <h3 class="section-lock-title">Complete the Knowledge Check</h3>
+      <p class="section-lock-text">
+        Please finish the quiz in the current section before moving on. 
+        This helps ensure you've understood the key concepts!
+      </p>
+      <div class="section-lock-buttons">
+        <button class="section-lock-btn primary" onclick="scrollToCurrentQuiz()">Take Me to the Quiz</button>
+        <button class="section-lock-btn secondary" onclick="skipQuiz()">Skip This Time</button>
+      </div>
+      <div class="section-lock-divider">or</div>
+      <button class="section-lock-skip-all" onclick="skipAllQuizzes()">Skip all knowledge checks (just let me read)</button>
+    </div>
+  </div>
+
   <!-- Navigation -->
   <nav>
     <div class="container-wide">
@@ -1409,6 +1787,84 @@
           <strong>The next section is hands-on.</strong> You'll build something real in the next 15 minutes—no prior experience needed. 
           The rest of this guide (mental models, advanced tools, etc.) will make more sense after you've experienced it yourself.
         </p>
+      </div>
+      
+      <!-- Mini Quiz Section 1 -->
+      <div class="mini-quiz" data-quiz="why-ai">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 01</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. In "Vibe Coding," what has the key skill shifted to?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Memorizing programming languages</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Describing what you want clearly</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Writing perfect code on the first try</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! The skill has shifted from knowing programming languages to knowing how to describe what you want clearly.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The key insight is that AI handles the coding—your job is to describe what you want clearly.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">2. What are the three types of code in web-based tools?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Python, Java, and C++</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Frontend, Backend, and Database</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>HTML (structure), CSS (appearance), JavaScript (behavior)</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! HTML is the structure, CSS controls appearance, and JavaScript handles behavior.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. For web tools, it's HTML (structure), CSS (appearance), and JavaScript (behavior).</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">3. Why does this guide start with HTML instead of other languages?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Zero setup, instant feedback, works everywhere</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>HTML is the most powerful programming language</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Other languages don't work with AI</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! HTML requires zero setup, gives instant feedback, and works on any device with a browser.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. HTML is chosen because it requires zero setup, gives instant visual feedback, and works everywhere.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('why-ai')">Try Again</button>
+        </div>
       </div>
       
       <!-- Section Navigation -->
@@ -1663,6 +2119,84 @@ Please give me the complete code I can save as a file. After the code, briefly e
         </p>
       </div>
       
+      <!-- Mini Quiz Section 2 -->
+      <div class="mini-quiz" data-quiz="first-build">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 02</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. What's the core loop of Vibe Coding?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Write, compile, debug, deploy</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Describe, save, test, iterate</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Copy, paste, hope, pray</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Describe what you want, save the code, test it, and iterate based on results.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The core loop is: Describe → Save → Test → Iterate.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">2. Why is the file extension (.html) so important?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>It makes the file run faster</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>It's just a naming convention with no real effect</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>It tells the browser to treat it as a web page</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! The .html extension tells your browser to interpret the file as a web page.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The extension tells the browser how to handle the file—.html means it's a web page.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">3. If your first attempt doesn't work, what's the BEST approach?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Describe the problem to AI and ask for help fixing it</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Give up and try a different project</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Delete everything and start completely over</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Fixing things with AI's help is actually the most valuable skill in Vibe Coding.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Problems are normal! Tell AI exactly what you see and what you expected—it can help fix almost anything.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('first-build')">Try Again</button>
+        </div>
+      </div>
+      
       <!-- Section Navigation -->
       <div class="section-nav">
         <a href="#why-ai" class="section-nav-btn prev">
@@ -1871,6 +2405,84 @@ Please give me the complete code I can save as a file. After the code, briefly e
             <strong>Ask questions constantly.</strong> "Why did you do it that way?" "What would happen if we changed this?" "Can you explain that like I'm five?" 
             There's no such thing as a dumb question—AI has infinite patience.
           </p>
+        </div>
+      </div>
+      
+      <!-- Mini Quiz Section 3 -->
+      <div class="mini-quiz" data-quiz="thought-partner">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 03</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. What's the biggest mistake beginners make with AI?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Asking too many questions</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Treating AI like a vending machine instead of a collaborator</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Using AI at all instead of learning to code</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! AI works best as a thought partner in conversation, not a one-shot code generator.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The biggest mistake is treating AI like a vending machine—AI works best as a collaborative partner.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. What should you do BEFORE asking AI for code?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Provide context about who you are and what you're building for</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Learn the programming language first</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Nothing—just ask for the code directly</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Setting context helps AI give you much better, more relevant solutions.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Starting with context about your situation helps AI understand your needs and give better results.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">3. When something isn't right with the code AI gave you, what should you do?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Start a completely new conversation</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Ask the same question again</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Describe what's wrong and ask AI to refine it</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Iterating on the conversation by describing the problem leads to better results than starting over.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Iterate by describing what's wrong—"The button is too small, can you make it larger?"</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('thought-partner')">Try Again</button>
         </div>
       </div>
       
@@ -2162,6 +2774,84 @@ Please give me the complete code I can save as a file. After the code, briefly e
         </p>
       </div>
       
+      <!-- Mini Quiz Section 4 -->
+      <div class="mini-quiz" data-quiz="level-up">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 04</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">1. Why use a code editor with built-in AI instead of just chat-and-save?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>AI can see all your files and make changes directly</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>It's cheaper than using a chat interface</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Chat interfaces can't generate code</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Code editors let AI see your entire project and make changes directly—no more copy-pasting.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The main advantage is that AI can see all your files at once and make changes directly.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">2. What's the main trade-off of the free local AI option (Ollama)?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>It can only write HTML, not other languages</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>It requires an internet connection</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>It requires more setup and a decent computer</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Local AI is free and private, but requires more setup and at least 16GB of RAM.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The trade-off is that Ollama requires more setup and a computer with at least 16GB of RAM.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">3. What's the best advice for choosing a development path?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Always choose the most expensive option for best results</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Pick whatever gets you building fastest</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Always choose the free option to save money</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Don't let tools be a barrier—pick whatever gets you building and learning fastest.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The best advice is to pick whatever gets you building fastest—don't let setup issues kill your motivation.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('level-up')">Try Again</button>
+        </div>
+      </div>
+      
       <!-- Section Navigation -->
       <div class="section-nav">
         <a href="#thought-partner" class="section-nav-btn prev">
@@ -2375,6 +3065,84 @@ Please give me the complete code I can save as a file. After the code, briefly e
         </div>
       </div>
       
+      <!-- Mini Quiz Section 5 -->
+      <div class="mini-quiz" data-quiz="tokens">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 05</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. What is a "token" in AI terminology?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>A type of cryptocurrency used to pay for AI</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>A small chunk of text (roughly 3-4 characters or ¾ of a word)</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>A security password for AI services</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Tokens are small text chunks used to measure AI usage—roughly 3-4 characters each.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. A token is a small chunk of text (about ¾ of a word) that AI processes.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. What happens when your conversation exceeds the context window?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>AI "forgets" older messages from the conversation</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>The AI gets smarter and remembers everything</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Your account gets charged extra fees</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! When conversations get too long, older messages "fall off" and AI forgets them.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The context window is AI's working memory—older messages get dropped when it fills up.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">3. Which of these is a good way to manage AI usage?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Always use the most powerful model for everything</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Copy your entire conversation history into each new message</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Start fresh conversations when changing topics</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Starting fresh when changing topics saves tokens and keeps AI focused on what matters.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Starting fresh conversations when changing topics helps manage usage efficiently.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('tokens')">Try Again</button>
+        </div>
+      </div>
+      
       <!-- Section Navigation -->
       <div class="section-nav">
         <a href="#level-up" class="section-nav-btn prev">
@@ -2533,6 +3301,84 @@ Please give me the complete code I can save as a file. After the code, briefly e
             The most useful part: error messages often include a line number (like "at line 15"). 
             That tells you exactly where in your code the problem is. Share this with AI!
           </p>
+        </div>
+      </div>
+      
+      <!-- Mini Quiz Section 6 -->
+      <div class="mini-quiz" data-quiz="verification">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 06</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">1. What does it mean when AI "hallucinates"?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>The AI is dreaming and not paying attention</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>The AI is being creative and artistic</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>The AI makes up facts, URLs, or information that doesn't exist</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Hallucination means AI confidently generates plausible-sounding but fake information.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Hallucination is when AI makes up facts, URLs, or documentation that sounds real but doesn't exist.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. What's the BEST way to verify if AI-generated code works?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Run it and test every feature yourself</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Ask AI if it's correct</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Check if the code looks professional</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Run the code and test it—don't take AI's word that it works.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. The best verification is simple: run the code and test every feature yourself.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">3. Where do you find error messages when code doesn't work in a browser?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>In a pop-up window that appears automatically</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>In Developer Tools → Console tab (press F12)</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>In the browser's address bar</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Press F12, click the Console tab, and look for red error text.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Open Developer Tools (F12), go to the Console tab, and look for red text.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('verification')">Try Again</button>
         </div>
       </div>
       
@@ -2709,6 +3555,84 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
 <span class="highlight">## Future Ideas</span>
 - Add volume control
 - Let Ben record his own sounds</pre>
+        </div>
+      </div>
+      
+      <!-- Mini Quiz Section 7 -->
+      <div class="mini-quiz" data-quiz="workflow">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 07</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. What should you do BEFORE asking AI to write any code?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Design the entire interface in detail</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Define the user, core need, and constraints through conversation</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Learn the programming language you'll be using</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Phase 1 is Discovery—understand who it's for, what they need, and the constraints before coding.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. First, explore with AI to define the user, core need, and constraints—this is the Discovery phase.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. How should you build features during the Building phase?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>One feature at a time, testing after each</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Ask AI to build everything at once, then test at the end</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Write 500 lines of code, then see if it works</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Add features one at a time: add, test, confirm, then move to the next feature.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Build incrementally—one feature, test it, confirm it works, then add the next.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">3. What is a README file useful for?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>It makes your code run faster</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>It's required for code to work</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Reminding yourself (and AI) what you built and why</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! A README helps you remember what you built, and you can give it to AI to restore context.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. READMEs document your project—helping you, AI, and others understand what it is and how to use it.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('workflow')">Try Again</button>
         </div>
       </div>
       
@@ -2981,6 +3905,84 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
         </p>
       </div>
       
+      <!-- Mini Quiz Section 8 -->
+      <div class="mini-quiz" data-quiz="git-github">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 08</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">1. What's the difference between Git and GitHub?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>They're the same thing—just different names</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Git runs locally on your computer; GitHub stores projects online</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Git is free, GitHub costs money</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Git tracks changes locally, GitHub is an online service to store and share your projects.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Git runs on your computer (tracks changes), GitHub is a website to store projects online.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. What's a Git "commit" comparable to?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>A save point in a video game</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Sending an email</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Deleting old files</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Like video game save points, commits let you go back to any previous working state.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Commits are like save points in a video game—you can reload if something goes wrong.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">3. Do you need to memorize Git commands?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Yes, Git is impossible to use without memorizing commands</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Yes, AI can't help with Git at all</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>No, AI can run commands for you and VS Code has visual buttons</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! AI handles Git commands, VS Code has visual buttons, and AI can explain anything confusing.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. You don't need to memorize commands—AI can run them for you, and VS Code has clickable buttons.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('git-github')">Try Again</button>
+        </div>
+      </div>
+      
       <!-- Section Navigation -->
       <div class="section-nav">
         <a href="#workflow" class="section-nav-btn prev">
@@ -3195,6 +4197,84 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
         <p style="margin-top: 12px; margin-bottom: 0;">
           A fresh AI session with full context often catches things that were missed in a long conversation.
         </p>
+      </div>
+      
+      <!-- Mini Quiz Section 9 -->
+      <div class="mini-quiz" data-quiz="troubleshooting">
+        <div class="mini-quiz-header">
+          <div class="mini-quiz-icon">📝</div>
+          <div>
+            <h4 class="mini-quiz-title">Quick Knowledge Check</h4>
+            <p class="mini-quiz-subtitle">Test your understanding of Section 09</p>
+          </div>
+          <span class="quiz-completion-badge">✓ Complete</span>
+        </div>
+        
+        <div class="quiz-question" data-correct="c">
+          <p class="quiz-question-text">1. If you see code text instead of your app when opening the file, what's the likely problem?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Your browser is broken</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>AI gave you bad code</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>The file saved as .txt instead of .html</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! The file likely has a .txt extension—rename it to end in .html instead.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. This usually means the file saved as .txt instead of .html—check and rename the extension.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="a">
+          <p class="quiz-question-text">2. Your button appears but clicking it does nothing. What's the FIRST thing to check?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Press F12 and look for red errors in the Console tab</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Restart your computer</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Delete everything and start over</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! Check the browser console (F12 → Console) for JavaScript errors shown in red text.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. First check the Console in Developer Tools (F12)—red errors tell you what went wrong.</div>
+        </div>
+        
+        <div class="quiz-question" data-correct="b">
+          <p class="quiz-question-text">3. It worked yesterday but now it's broken. What should you try first?</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-answer="a">
+              <span class="quiz-option-marker">A</span>
+              <span>Buy a new computer</span>
+            </button>
+            <button class="quiz-option" data-answer="b">
+              <span class="quiz-option-marker">B</span>
+              <span>Hard refresh with Ctrl+Shift+R to clear browser cache</span>
+            </button>
+            <button class="quiz-option" data-answer="c">
+              <span class="quiz-option-marker">C</span>
+              <span>Wait a few days and try again</span>
+            </button>
+          </div>
+          <div class="quiz-feedback correct">✓ Correct! A hard refresh (Ctrl+Shift+R) clears cached files that might be causing the problem.</div>
+          <div class="quiz-feedback incorrect">✗ Not quite. Try a hard refresh first (Ctrl+Shift+R on Windows, Cmd+Shift+R on Mac) to clear the browser cache.</div>
+        </div>
+        
+        <div class="quiz-score">
+          <p class="quiz-score-text">You got <span class="score-value">0</span> out of 3 correct!</p>
+          <p class="quiz-score-detail"></p>
+          <button class="quiz-reset-btn" onclick="resetQuiz('troubleshooting')">Try Again</button>
+        </div>
       </div>
       
       <!-- Section Navigation -->
@@ -3501,6 +4581,290 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
     
     // Initialize on load
     updateStageIndicators();
+    
+    // Section locking configuration
+    const sectionQuizMap = {
+      'why-ai': 'why-ai',
+      'first-build': 'first-build',
+      'thought-partner': 'thought-partner',
+      'level-up': 'level-up',
+      'tokens': 'tokens',
+      'verification': 'verification',
+      'workflow': 'workflow',
+      'git-github': 'git-github',
+      'troubleshooting': 'troubleshooting'
+    };
+    
+    const sectionOrder = ['top', 'why-ai', 'first-build', 'thought-partner', 'level-up', 'tokens', 'verification', 'workflow', 'git-github', 'troubleshooting', 'faq'];
+    const completedQuizzes = new Set();
+    let currentLockedSection = null;
+    let allowSkip = false;
+    
+    // Load completed quizzes from localStorage
+    try {
+      const saved = localStorage.getItem('completedQuizzes');
+      if (saved) {
+        JSON.parse(saved).forEach(q => completedQuizzes.add(q));
+        // Mark quizzes as completed visually
+        completedQuizzes.forEach(quizId => {
+          const quiz = document.querySelector(`.mini-quiz[data-quiz="${quizId}"]`);
+          if (quiz) quiz.classList.add('completed');
+        });
+      }
+    } catch (e) {}
+    
+    // Mini Quiz Functionality
+    document.querySelectorAll('.mini-quiz').forEach(quiz => {
+      initQuiz(quiz);
+    });
+    
+    function initQuiz(quiz) {
+      const questions = quiz.querySelectorAll('.quiz-question');
+      
+      questions.forEach(question => {
+        const correctAnswer = question.dataset.correct;
+        const options = question.querySelectorAll('.quiz-option');
+        const correctFeedback = question.querySelector('.quiz-feedback.correct');
+        const incorrectFeedback = question.querySelector('.quiz-feedback.incorrect');
+        
+        options.forEach(option => {
+          // Remove old listener if exists (for reset)
+          option.replaceWith(option.cloneNode(true));
+        });
+        
+        // Re-query options after cloning
+        const newOptions = question.querySelectorAll('.quiz-option');
+        
+        newOptions.forEach(option => {
+          option.addEventListener('click', () => {
+            // Only allow one answer per question
+            if (question.classList.contains('answered')) return;
+            question.classList.add('answered');
+            
+            const selectedAnswer = option.dataset.answer;
+            const isCorrect = selectedAnswer === correctAnswer;
+            
+            // Mark the selected option
+            option.classList.add('selected');
+            
+            if (isCorrect) {
+              option.classList.add('correct');
+              correctFeedback.classList.add('show');
+            } else {
+              option.classList.add('incorrect');
+              incorrectFeedback.classList.add('show');
+              // Also highlight the correct answer
+              newOptions.forEach(opt => {
+                if (opt.dataset.answer === correctAnswer) {
+                  opt.classList.add('correct');
+                }
+              });
+            }
+            
+            // Check if all questions answered
+            checkQuizCompletion(quiz);
+          });
+        });
+      });
+    }
+    
+    function checkQuizCompletion(quiz) {
+      const questions = quiz.querySelectorAll('.quiz-question');
+      const answeredQuestions = quiz.querySelectorAll('.quiz-question.answered');
+      
+      if (answeredQuestions.length === questions.length) {
+        const correctCount = quiz.querySelectorAll('.quiz-option.selected.correct').length;
+        showQuizScore(quiz, correctCount, questions.length);
+      }
+    }
+    
+    function showQuizScore(quiz, correct, total) {
+      const scoreDiv = quiz.querySelector('.quiz-score');
+      const scoreValue = scoreDiv.querySelector('.score-value');
+      const scoreDetail = scoreDiv.querySelector('.quiz-score-detail');
+      
+      scoreValue.textContent = correct;
+      
+      const percentage = (correct / total) * 100;
+      if (percentage === 100) {
+        scoreDetail.textContent = "🎉 Perfect score! You've mastered this section!";
+        scoreDetail.style.color = 'var(--cyan)';
+      } else if (percentage >= 67) {
+        scoreDetail.textContent = "👍 Great job! You understand the key concepts.";
+        scoreDetail.style.color = 'var(--cyan)';
+      } else {
+        scoreDetail.textContent = "📚 Consider reviewing this section before moving on.";
+        scoreDetail.style.color = 'var(--yellow)';
+      }
+      
+      scoreDiv.classList.add('show');
+      
+      // Mark quiz as completed and unlock section
+      const quizId = quiz.dataset.quiz;
+      completedQuizzes.add(quizId);
+      quiz.classList.add('completed');
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('completedQuizzes', JSON.stringify([...completedQuizzes]));
+      } catch (e) {}
+      
+      // Hide lock overlay if showing
+      document.getElementById('sectionLockOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    
+    function resetQuiz(quizId) {
+      const quiz = document.querySelector(`.mini-quiz[data-quiz="${quizId}"]`);
+      if (!quiz) return;
+      
+      // Reset all questions
+      quiz.querySelectorAll('.quiz-question').forEach(question => {
+        question.classList.remove('answered');
+        
+        question.querySelectorAll('.quiz-option').forEach(option => {
+          option.classList.remove('selected', 'correct', 'incorrect');
+        });
+        
+        question.querySelectorAll('.quiz-feedback').forEach(feedback => {
+          feedback.classList.remove('show');
+        });
+      });
+      
+      // Hide score
+      const scoreDiv = quiz.querySelector('.quiz-score');
+      scoreDiv.classList.remove('show');
+      
+      // Re-initialize quiz to reset event listeners
+      initQuiz(quiz);
+    }
+    
+    // Section lock functionality
+    function checkSectionLock() {
+      const scrollPos = window.scrollY + window.innerHeight / 2;
+      let currentSectionIndex = 0;
+      
+      // Find current section based on scroll
+      sectionOrder.forEach((sectionId, index) => {
+        const section = document.getElementById(sectionId);
+        if (section && section.offsetTop <= scrollPos) {
+          currentSectionIndex = index;
+        }
+      });
+      
+      // Check if we're trying to scroll past a section with an incomplete quiz
+      for (let i = 0; i < currentSectionIndex; i++) {
+        const sectionId = sectionOrder[i];
+        const quizId = sectionQuizMap[sectionId];
+        
+        if (quizId && !completedQuizzes.has(quizId) && !allowSkip) {
+          // Show lock overlay
+          currentLockedSection = sectionId;
+          showLockOverlay();
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    function showLockOverlay() {
+      const overlay = document.getElementById('sectionLockOverlay');
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function hideLockOverlay() {
+      const overlay = document.getElementById('sectionLockOverlay');
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    
+    function scrollToCurrentQuiz() {
+      hideLockOverlay();
+      if (currentLockedSection) {
+        const quiz = document.querySelector(`.mini-quiz[data-quiz="${sectionQuizMap[currentLockedSection]}"]`);
+        if (quiz) {
+          quiz.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+    
+    function skipQuiz() {
+      allowSkip = true;
+      hideLockOverlay();
+      // Reset skip after a short delay (allows scrolling but re-enables for future sections)
+      setTimeout(() => {
+        allowSkip = false;
+      }, 2000);
+    }
+    
+    function skipAllQuizzes() {
+      // Mark all quizzes as "skipped" by disabling section locking entirely
+      allowSkip = true;
+      hideLockOverlay();
+      
+      // Store preference in localStorage
+      try {
+        localStorage.setItem('skipAllQuizzes', 'true');
+      } catch (e) {}
+      
+      // Keep allowSkip true permanently for this session
+      // (don't reset it like in skipQuiz)
+    }
+    
+    // Check if user previously chose to skip all quizzes
+    try {
+      if (localStorage.getItem('skipAllQuizzes') === 'true') {
+        allowSkip = true;
+      }
+    } catch (e) {}
+    
+    // Throttled scroll check for section locking
+    let lockCheckTimeout;
+    window.addEventListener('scroll', () => {
+      if (lockCheckTimeout) return;
+      lockCheckTimeout = setTimeout(() => {
+        checkSectionLock();
+        lockCheckTimeout = null;
+      }, 100);
+    });
+    
+    // Also check on navigation link clicks
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const targetId = this.getAttribute('href').substring(1);
+        const targetIndex = sectionOrder.indexOf(targetId);
+        
+        if (targetIndex > 0) {
+          // Check if any previous section has incomplete quiz
+          for (let i = 0; i < targetIndex; i++) {
+            const sectionId = sectionOrder[i];
+            const quizId = sectionQuizMap[sectionId];
+            
+            if (quizId && !completedQuizzes.has(quizId)) {
+              e.preventDefault();
+              currentLockedSection = sectionId;
+              showLockOverlay();
+              return;
+            }
+          }
+        }
+      });
+    });
+    
+    // Clear progress button (for testing - can be removed in production)
+    function clearQuizProgress() {
+      completedQuizzes.clear();
+      localStorage.removeItem('completedQuizzes');
+      localStorage.removeItem('skipAllQuizzes');
+      allowSkip = false;
+      document.querySelectorAll('.mini-quiz').forEach(quiz => {
+        quiz.classList.remove('completed');
+        resetQuiz(quiz.dataset.quiz);
+      });
+      alert('Quiz progress cleared!');
+    }
   </script>
 </body>
 </html>
