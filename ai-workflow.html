@@ -1,0 +1,3506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Coding Guide — Learn to Build with AI | NARBE House</title>
+  <meta name="description" content="A comprehensive guide to Vibe Coding. Learn to build accessibility tools with AI as your thought partner — no programming experience required.">
+  <meta name="color-scheme" content="dark">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ========================================
+       CYBER-BLUEPRINT THEME
+       ======================================== */
+    
+    :root {
+      --navy: #0a192f;
+      --navy-light: #112240;
+      --navy-lighter: #1d3461;
+      --cyan: #64ffda;
+      --cyan-dim: #4fd1c5;
+      --slate: #8892b0;
+      --slate-light: #a8b2d1;
+      --white: #e6f1ff;
+      --orange: #ff5c00;
+      --yellow: #ffd93d;
+      --error: #ff6b6b;
+      --success: #64ffda;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      
+      --radius: 12px;
+      --radius-lg: 20px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--navy);
+      color: var(--white);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    
+    /* ========================================
+       ANIMATIONS
+       ======================================== */
+    
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(100, 255, 218, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(100, 255, 218, 0.5); }
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    /* ========================================
+       LAYOUT
+       ======================================== */
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    .container-wide {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    section {
+      padding: 80px 0;
+    }
+    
+    /* ========================================
+       NAVIGATION
+       ======================================== */
+    
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(10, 25, 47, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+      padding: 16px 0;
+    }
+    
+    nav .container-wide {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--white);
+    }
+    
+    .nav-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--orange), #ff8c42);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 14px;
+      color: white;
+    }
+    
+    .nav-title {
+      font-weight: 700;
+      font-size: 18px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    
+    .nav-links a {
+      color: var(--slate-light);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+    
+    .nav-links a:hover {
+      color: var(--cyan);
+    }
+    
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+    
+    /* ========================================
+       HERO SECTION
+       ======================================== */
+    
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 100px;
+      padding-bottom: 60px;
+      position: relative;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(100, 255, 218, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(255, 92, 0, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(100, 255, 218, 0.1);
+      border: 1px solid rgba(100, 255, 218, 0.3);
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--cyan);
+      margin-bottom: 24px;
+    }
+    
+    h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+    
+    h1 .gradient {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dim) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 22px);
+      color: var(--slate-light);
+      max-width: 700px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    
+    /* Transparency Box */
+    .transparency-box {
+      background: rgba(255, 92, 0, 0.1);
+      border: 1px solid rgba(255, 92, 0, 0.3);
+      border-left: 4px solid var(--orange);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 40px 0;
+    }
+    
+    .transparency-box h3 {
+      color: var(--orange);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .transparency-box p {
+      color: var(--slate-light);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    
+    .transparency-box strong {
+      color: var(--white);
+    }
+    
+    /* ========================================
+       SECTION STYLES
+       ======================================== */
+    
+    .section-header {
+      margin-bottom: 48px;
+    }
+    
+    .section-number {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: block;
+    }
+    
+    h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    
+    .section-intro {
+      font-size: 18px;
+      color: var(--slate-light);
+      line-height: 1.7;
+    }
+    
+    /* ========================================
+       CONTENT BLOCKS
+       ======================================== */
+    
+    .content-block {
+      margin-bottom: 48px;
+    }
+    
+    .content-block h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--white);
+    }
+    
+    .content-block h4 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 32px 0 12px;
+      color: var(--cyan);
+    }
+    
+    .content-block p {
+      color: var(--slate-light);
+      margin-bottom: 16px;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+    
+    .content-block ul, .content-block ol {
+      color: var(--slate-light);
+      margin: 16px 0 16px 24px;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+    
+    .content-block li {
+      margin-bottom: 8px;
+    }
+    
+    .content-block strong {
+      color: var(--white);
+    }
+    
+    .content-block em {
+      color: var(--cyan);
+      font-style: normal;
+    }
+    
+    /* Highlight Box */
+    .highlight-box {
+      background: var(--navy-light);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 24px 0;
+    }
+    
+    .highlight-box.cyan {
+      border-left: 4px solid var(--cyan);
+    }
+    
+    .highlight-box.orange {
+      border-left: 4px solid var(--orange);
+      border-color: rgba(255, 92, 0, 0.2);
+    }
+    
+    .highlight-box.yellow {
+      border-left: 4px solid var(--yellow);
+      border-color: rgba(255, 217, 61, 0.2);
+      background: rgba(255, 217, 61, 0.05);
+    }
+    
+    .highlight-box h4 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+    
+    .highlight-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* Code Blocks */
+    .code-block {
+      background: var(--navy);
+      border: 1px solid rgba(100, 255, 218, 0.15);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    
+    .code-block pre {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--slate-light);
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .code-block .comment {
+      color: var(--slate);
+    }
+    
+    .code-block .highlight {
+      color: var(--cyan);
+    }
+    
+    .code-block .string {
+      color: var(--yellow);
+    }
+    
+    /* Step Lists */
+    .step-list {
+      list-style: none;
+      margin: 24px 0;
+      padding: 0;
+      counter-reset: step-counter;
+    }
+    
+    .step-list li {
+      counter-increment: step-counter;
+      position: relative;
+      padding-left: 56px;
+      margin-bottom: 24px;
+      min-height: 40px;
+    }
+    
+    .step-list li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 40px;
+      height: 40px;
+      background: var(--navy-light);
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--cyan);
+    }
+    
+    .step-list li strong {
+      display: block;
+      color: var(--white);
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+    
+    /* Example Prompts */
+    .prompt-example {
+      background: linear-gradient(135deg, rgba(100, 255, 218, 0.08), rgba(100, 255, 218, 0.02));
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 24px 0;
+    }
+    
+    .prompt-example .label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .prompt-example .label::before {
+      content: '💬';
+    }
+    
+    .prompt-example .text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--white);
+      font-style: italic;
+    }
+    
+    /* Comparison Cards */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+    
+    .path-card {
+      background: var(--navy-light);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      border: 2px solid transparent;
+      position: relative;
+    }
+    
+    .path-card.recommended {
+      border-color: rgba(255, 92, 0, 0.4);
+    }
+    
+    .path-card.recommended::before {
+      content: '★ NARBE House Uses This';
+      position: absolute;
+      top: -12px;
+      left: 24px;
+      background: var(--orange);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 50px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .path-card.free {
+      border-color: rgba(100, 255, 218, 0.3);
+    }
+    
+    .path-card h3 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    
+    .path-card .subtitle {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--slate);
+      margin-bottom: 20px;
+    }
+    
+    .path-card .price {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    
+    .path-card.recommended .price {
+      color: var(--orange);
+    }
+    
+    .path-card.free .price {
+      color: var(--cyan);
+    }
+    
+    .path-card ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .path-card li {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+      color: var(--slate-light);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .path-card li::before {
+      content: '→';
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+    
+    /* LLM Option Cards */
+    .llm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+    
+    .llm-card {
+      background: var(--navy-light);
+      border: 1px solid rgba(100, 255, 218, 0.15);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      text-decoration: none;
+      transition: all var(--transition);
+    }
+    
+    .llm-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    .llm-card .icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    
+    .llm-card .name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    
+    .llm-card .meta {
+      font-size: 12px;
+      color: var(--slate);
+      font-family: var(--font-mono);
+    }
+    
+    .llm-card.free .meta { color: var(--cyan); }
+    .llm-card.paid .meta { color: var(--orange); }
+    
+    /* Path Selector */
+    .path-selector {
+      display: flex;
+      gap: 16px;
+      margin: 32px 0;
+    }
+    
+    .path-tab {
+      flex: 1;
+      padding: 24px;
+      background: var(--navy-light);
+      border: 2px solid rgba(100, 255, 218, 0.15);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: left;
+      font-family: inherit;
+      color: var(--white);
+      position: relative;
+    }
+    
+    .path-tab:hover {
+      border-color: rgba(100, 255, 218, 0.4);
+    }
+    
+    .path-tab.active {
+      border-color: var(--cyan);
+      box-shadow: 0 0 30px rgba(100, 255, 218, 0.15);
+    }
+    
+    .path-tab.active.recommended {
+      border-color: var(--orange);
+      box-shadow: 0 0 30px rgba(255, 92, 0, 0.15);
+    }
+    
+    .path-tab .badge {
+      position: absolute;
+      top: -10px;
+      right: 16px;
+      background: var(--orange);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 50px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .path-tab h3 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    
+    .path-tab .subtitle {
+      font-size: 13px;
+      color: var(--slate);
+      margin-bottom: 12px;
+    }
+    
+    .path-tab .price {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    
+    .path-tab.recommended .price { color: var(--orange); }
+    .path-tab:not(.recommended) .price { color: var(--cyan); }
+    
+    .path-tab .arrow {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      color: var(--slate);
+      transition: all var(--transition);
+    }
+    
+    .path-tab.active .arrow {
+      color: var(--cyan);
+      transform: rotate(90deg);
+    }
+    
+    .path-tab.active.recommended .arrow {
+      color: var(--orange);
+    }
+    
+    @media (max-width: 600px) {
+      .path-selector { flex-direction: column; }
+    }
+    
+    /* Path Details Panel */
+    .path-details {
+      display: none;
+      background: var(--navy-light);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-top: 24px;
+      animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .path-details.active {
+      display: block;
+    }
+    
+    .path-details h4 {
+      color: var(--cyan);
+      font-size: 18px;
+      margin: 24px 0 12px;
+    }
+    
+    .path-details h4:first-child {
+      margin-top: 0;
+    }
+    
+    /* FAQ Accordion */
+    .faq-item {
+      background: var(--navy-light);
+      border: 1px solid rgba(100, 255, 218, 0.1);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    
+    .faq-question {
+      width: 100%;
+      padding: 20px 24px;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--white);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background var(--transition);
+    }
+    
+    .faq-question:hover {
+      background: rgba(100, 255, 218, 0.05);
+    }
+    
+    .faq-question::after {
+      content: '+';
+      font-size: 24px;
+      color: var(--cyan);
+      transition: transform var(--transition);
+    }
+    
+    .faq-item.open .faq-question::after {
+      transform: rotate(45deg);
+    }
+    
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    
+    .faq-item.open .faq-answer {
+      max-height: 500px;
+    }
+    
+    .faq-answer-inner {
+      padding: 0 24px 20px;
+      color: var(--slate-light);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    
+    /* Dividers */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(100, 255, 218, 0.3), transparent);
+      margin: 60px 0;
+    }
+    
+    /* ========================================
+       CHAT INTERFACE
+       ======================================== */
+    
+    .chat-demo {
+      background: var(--navy);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(100, 255, 218, 0.15);
+      overflow: hidden;
+      margin: 32px 0;
+    }
+    
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: rgba(100, 255, 218, 0.05);
+      border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    
+    .chat-dots {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .chat-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .chat-dot:nth-child(1) { background: #ff5f56; }
+    .chat-dot:nth-child(2) { background: #ffbd2e; }
+    .chat-dot:nth-child(3) { background: #27ca40; }
+    
+    .chat-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--slate);
+      margin-left: 8px;
+    }
+    
+    .chat-messages {
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    .message.ai {
+      flex-direction: row-reverse;
+    }
+    
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    
+    .message.user .message-avatar {
+      background: linear-gradient(135deg, var(--orange), #ff8c42);
+    }
+    
+    .message.ai .message-avatar {
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-dim));
+    }
+    
+    .message-bubble {
+      max-width: 80%;
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .message.user .message-bubble {
+      background: var(--navy-light);
+      border: 1px solid rgba(255, 92, 0, 0.2);
+      border-bottom-left-radius: 4px;
+      color: var(--slate-light);
+    }
+    
+    .message.ai .message-bubble {
+      background: rgba(100, 255, 218, 0.08);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-bottom-right-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--white);
+    }
+    
+    /* ========================================
+       FOOTER
+       ======================================== */
+    
+    footer {
+      background: var(--navy-light);
+      padding: 60px 0 40px;
+      border-top: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    
+    .footer-content {
+      text-align: center;
+    }
+    
+    .footer-note {
+      font-size: 15px;
+      color: var(--slate-light);
+      margin-bottom: 24px;
+      line-height: 1.7;
+    }
+    
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    
+    .footer-links a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-size: 14px;
+      transition: opacity var(--transition);
+    }
+    
+    .footer-links a:hover {
+      opacity: 0.8;
+    }
+    
+    .footer-copyright {
+      font-size: 13px;
+      color: var(--slate);
+      font-family: var(--font-mono);
+    }
+    
+    /* ========================================
+       UTILITIES
+       ======================================== */
+    
+    .mt-0 { margin-top: 0; }
+    .mb-0 { margin-bottom: 0; }
+    .text-cyan { color: var(--cyan); }
+    .text-orange { color: var(--orange); }
+    
+    *:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+    }
+    
+    /* Section backgrounds */
+    .bg-navy-light {
+      background: var(--navy-light);
+    }
+    
+    /* ========================================
+       STAGE NAVIGATION (Side Progress)
+       ======================================== */
+    
+    .stage-nav {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .stage-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--navy-lighter);
+      border: 2px solid var(--slate);
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+    }
+    
+    .stage-dot:hover {
+      border-color: var(--cyan);
+      transform: scale(1.2);
+    }
+    
+    .stage-dot.active {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px rgba(100, 255, 218, 0.5);
+    }
+    
+    .stage-dot.completed {
+      background: var(--cyan-dim);
+      border-color: var(--cyan-dim);
+    }
+    
+    .stage-dot-label {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--navy-light);
+      color: var(--white);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+    }
+    
+    .stage-dot:hover .stage-dot-label {
+      opacity: 1;
+    }
+    
+    .stage-line {
+      width: 2px;
+      height: 16px;
+      background: var(--navy-lighter);
+      transition: background var(--transition);
+    }
+    
+    .stage-line.completed {
+      background: var(--cyan-dim);
+    }
+    
+    @media (max-width: 1200px) {
+      .stage-nav {
+        right: 12px;
+      }
+      .stage-dot-label {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .stage-nav {
+        display: none;
+      }
+    }
+    
+    /* ========================================
+       SECTION NAVIGATION (Prev/Next)
+       ======================================== */
+    
+    .section-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(100, 255, 218, 0.1);
+      gap: 20px;
+    }
+    
+    .section-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      background: var(--navy-lighter);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: var(--radius);
+      color: var(--white);
+      text-decoration: none;
+      transition: all var(--transition);
+      max-width: 280px;
+    }
+    
+    .section-nav-btn:hover {
+      border-color: var(--cyan);
+      background: rgba(100, 255, 218, 0.05);
+      transform: translateY(-2px);
+    }
+    
+    .section-nav-btn.prev {
+      text-align: left;
+    }
+    
+    .section-nav-btn.next {
+      text-align: right;
+      margin-left: auto;
+    }
+    
+    .section-nav-btn .arrow {
+      font-size: 20px;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+    
+    .section-nav-btn .nav-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .section-nav-btn .nav-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--slate);
+    }
+    
+    .section-nav-btn .nav-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+    }
+    
+    .section-nav-btn.hidden {
+      visibility: hidden;
+    }
+    
+    @media (max-width: 600px) {
+      .section-nav {
+        flex-direction: column;
+      }
+      .section-nav-btn {
+        width: 100%;
+        max-width: none;
+      }
+      .section-nav-btn.next {
+        margin-left: 0;
+      }
+    }
+    
+    /* ========================================
+       CURRENT STAGE INDICATOR (Mobile)
+       ======================================== */
+    
+    .mobile-stage-indicator {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy-light);
+      border: 1px solid rgba(100, 255, 218, 0.3);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--white);
+      z-index: 998;
+      backdrop-filter: blur(10px);
+    }
+    
+    .mobile-stage-indicator .stage-num {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-stage-indicator {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Stage Navigation (Side Progress Dots) -->
+  <div class="stage-nav" id="stageNav">
+    <div class="stage-dot active" data-section="top" data-index="0">
+      <span class="stage-dot-label">Start</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="why-ai" data-index="1">
+      <span class="stage-dot-label">01 — Why AI?</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="first-build" data-index="2">
+      <span class="stage-dot-label">02 — First Build</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="thought-partner" data-index="3">
+      <span class="stage-dot-label">03 — Thought Partner</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="level-up" data-index="4">
+      <span class="stage-dot-label">04 — Level Up</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="tokens" data-index="5">
+      <span class="stage-dot-label">05 — Understanding AI</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="verification" data-index="6">
+      <span class="stage-dot-label">06 — Verification</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="workflow" data-index="7">
+      <span class="stage-dot-label">07 — Workflow</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="git-github" data-index="8">
+      <span class="stage-dot-label">08 — Git & GitHub</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="troubleshooting" data-index="9">
+      <span class="stage-dot-label">09 — Troubleshooting</span>
+    </div>
+    <div class="stage-line"></div>
+    <div class="stage-dot" data-section="faq" data-index="10">
+      <span class="stage-dot-label">10 — FAQ</span>
+    </div>
+  </div>
+  
+  <!-- Mobile Stage Indicator -->
+  <div class="mobile-stage-indicator" id="mobileStage">
+    <span class="stage-num">Start</span> — Vibe Coding Guide
+  </div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="container-wide">
+      <a href="index.html" class="nav-brand">
+        <div class="nav-logo">N</div>
+        <span class="nav-title">NARBE House</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" style="color: var(--orange);">← Home</a></li>
+        <li><a href="#why-ai">Why AI?</a></li>
+        <li><a href="#first-build">First Build</a></li>
+        <li><a href="#level-up">Level Up</a></li>
+        <li><a href="#verification">Verification</a></li>
+        <li><a href="#workflow">Workflow</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero" id="top">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-tag">A Complete Guide to Vibe Coding</div>
+        <h1>Build Anything with AI as Your <span class="gradient">Thought Partner</span></h1>
+        <p class="hero-subtitle">
+          You don't need to know how to code. You need to know how to think clearly and describe what you want. 
+          AI has changed everything—and this guide will show you exactly how to harness it.
+        </p>
+        
+        <div class="transparency-box">
+          <h3>🔍 Full Transparency</h3>
+          <p>
+            <strong>This entire website was built using AI.</strong> Every line of code, every design decision—created through conversation with AI assistants, guided by NARBE House volunteers. 
+            We have no professional developers on staff. We have <em>intent</em>, <em>patience</em>, and <em>the willingness to iterate</em>.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            Here's the thing: <strong>you don't even need this website.</strong> If you learn to ask the right questions, AI can teach you everything here and more. 
+            But we've compiled this guide to give you a head start—a roadmap that took us months of trial and error to discover.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: Why AI Changes Everything -->
+  <section id="why-ai">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">01</span>
+        <h2>Why AI Changes Everything</h2>
+        <p class="section-intro">
+          For decades, building software required years of study. Now, the barrier isn't knowledge—it's clarity of thought.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>The Old Way vs. The New Way</h3>
+        <p>
+          In the past, if you wanted to build a simple app—say, a button that plays a sound when pressed—you needed to:
+        </p>
+        <ul>
+          <li>Learn HTML (the structure of web pages)</li>
+          <li>Learn CSS (how things look)</li>
+          <li>Learn JavaScript (how things behave)</li>
+          <li>Understand browser APIs (how to actually play audio)</li>
+          <li>Debug cryptic error messages</li>
+          <li>Spend weeks or months getting something basic working</li>
+        </ul>
+        
+        <p>
+          <strong>Now?</strong> You describe what you want to an AI, and it writes the code. When it doesn't work, you show the AI the error, and it fixes it. 
+          The skill has shifted from <em>"knowing programming languages"</em> to <em>"knowing how to describe what you want clearly."</em>
+        </p>
+        
+        <div class="highlight-box cyan">
+          <h4>💡 The Core Insight</h4>
+          <p>
+            Programming is really just <strong>problem decomposition</strong>—breaking a big problem into smaller pieces and solving each piece. 
+            AI is extraordinarily good at the "solving each piece" part. Your job is the decomposition: figuring out what pieces you need.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>What Is "Code" Anyway?</h3>
+        <p>
+          Before we go further, let's demystify what code actually is. <strong>Code is just text that computers can read and follow.</strong> 
+          It's like a recipe—step-by-step instructions written in a language computers understand.
+        </p>
+        <p>
+          For web-based tools (which is what we'll build), there are three types of code:
+        </p>
+        <ul>
+          <li><strong>HTML</strong> — The structure. "Put a button here, a title there." Like the bones of a body.</li>
+          <li><strong>CSS</strong> — The appearance. "Make the button blue and big." Like the clothes and makeup.</li>
+          <li><strong>JavaScript</strong> — The behavior. "When clicked, play a sound." Like the brain and muscles.</li>
+        </ul>
+        <p>
+          <strong>You don't need to learn these languages.</strong> AI will write them for you. But understanding what they do helps you 
+          communicate with AI better. If something looks wrong, you can say "the CSS seems off" instead of "it's broken somehow."
+        </p>
+        
+        <div class="highlight-box yellow">
+          <h4>📄 What's a "File"?</h4>
+          <p>
+            Code lives in files, just like documents. A file named <code style="color: var(--cyan);">index.html</code> contains HTML code. 
+            The <code style="color: var(--cyan);">.html</code> ending (called an "extension") tells the computer what type of file it is.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            For simple projects, you can put ALL three types of code (HTML, CSS, JavaScript) in a single <code style="color: var(--cyan);">.html</code> file. 
+            That's what we'll do in the next section—one file that does everything.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Why Start with HTML? (Other Languages Exist!)</h3>
+        <p>
+          HTML/CSS/JavaScript are just <em>one family</em> of programming languages. There are many others, each designed for different purposes:
+        </p>
+        <ul>
+          <li><strong>Python</strong> — Great for desktop apps, automating tasks on your computer, data analysis, and AI. If you want to make something that runs directly on Windows/Mac (not in a browser), Python is often the choice.</li>
+          <li><strong>Swift</strong> — Apple's language for iPhone and iPad apps.</li>
+          <li><strong>Kotlin / Java</strong> — For Android phone apps.</li>
+          <li><strong>C# (C-Sharp)</strong> — For Windows desktop apps and games (Unity).</li>
+          <li><strong>SQL</strong> — For working with databases (storing and retrieving information).</li>
+        </ul>
+        
+        <p>
+          <strong>So why do we start with HTML?</strong>
+        </p>
+        <ul>
+          <li><strong>Zero setup</strong> — Just save a file and open it in your browser. No installation needed.</li>
+          <li><strong>Instant feedback</strong> — Make a change, refresh the page, see the result immediately.</li>
+          <li><strong>Works everywhere</strong> — Phones, tablets, computers—any device with a browser.</li>
+          <li><strong>Easiest to debug</strong> — Visual problems are obvious; you can see what's wrong.</li>
+          <li><strong>AI is great at it</strong> — Web code is extremely well-documented online, so AI models are very good at writing it.</li>
+        </ul>
+        
+        <div class="highlight-box cyan">
+          <h4>🐍 Want to Try Python Later?</h4>
+          <p>
+            Once you're comfortable with HTML and the Vibe Coding workflow, Python is a natural next step. 
+            At NARBE House, we use Python for things like:
+          </p>
+          <p style="margin-top: 12px;">
+            • Automating repetitive tasks on a computer<br>
+            • Converting file formats in bulk<br>
+            • Processing data (like organizing large lists)<br>
+            • Building tools that don't need a visual interface
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            <strong>The process is the same:</strong> describe what you want to AI, get code, run it, iterate. 
+            The only difference is you run Python files differently than HTML files. AI can teach you when you're ready!
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>What "Vibe Coding" Actually Means</h3>
+        <p>
+          The term "Vibe Coding" comes from the idea that you're communicating the <em>essence</em> of what you want—the vibe—rather than the technical implementation. 
+          You say "I want it to feel calm and accessible" instead of "use a 16px font with #333 color and 1.6 line-height."
+        </p>
+        <p>
+          But here's the crucial part that many people miss: <strong>Vibe Coding is not magic.</strong> It requires:
+        </p>
+        <ul>
+          <li><strong>Clear thinking</strong> — You must understand your own problem deeply</li>
+          <li><strong>Patience</strong> — The first output is rarely perfect; iteration is normal</li>
+          <li><strong>Verification</strong> — AI can be wrong; you must test and validate</li>
+          <li><strong>Persistence</strong> — Complex projects take many conversations, not one</li>
+        </ul>
+      </div>
+      
+      <div class="highlight-box cyan" style="margin-top: 32px;">
+        <h4>🚀 Ready to Try It?</h4>
+        <p>
+          <strong>The next section is hands-on.</strong> You'll build something real in the next 15 minutes—no prior experience needed. 
+          The rest of this guide (mental models, advanced tools, etc.) will make more sense after you've experienced it yourself.
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#top" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Back to</span>
+            <span class="nav-title">Start</span>
+          </span>
+        </a>
+        <a href="#first-build" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">02 — Your First Build</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Your First Build (Hands-On) -->
+  <section id="first-build" class="bg-navy-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">02</span>
+        <h2>Your First Build: 15 Minutes to "I Made This"</h2>
+        <p class="section-intro">
+          Stop reading, start doing. In the next 15 minutes, you'll build a working app—a button that plays a sound. 
+          This is the fastest way to understand what Vibe Coding feels like.
+        </p>
+      </div>
+      
+      <div class="highlight-box orange" style="margin-bottom: 32px;">
+        <h4>⚡ What You Need</h4>
+        <p>
+          • A computer (Windows, Mac, or Chromebook)<br>
+          • A web browser (Chrome, Firefox, Edge, Safari—any works)<br>
+          • 15 minutes of focus
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          <strong>That's it.</strong> No downloads. No accounts (yet). No credit card.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 1: Open an AI Chatbot</h3>
+        <p>
+          Go to one of these AI chat services. They're all free to start:
+        </p>
+        <div class="llm-grid" style="margin: 24px 0;">
+          <a href="https://chat.openai.com" target="_blank" rel="noopener" class="llm-card free">
+            <div class="icon">🤖</div>
+            <div class="name">ChatGPT</div>
+            <div class="meta">Most popular, easy to use</div>
+          </a>
+          <a href="https://claude.ai" target="_blank" rel="noopener" class="llm-card free">
+            <div class="icon">🧠</div>
+            <div class="name">Claude</div>
+            <div class="meta">Great for detailed explanations</div>
+          </a>
+          <a href="https://gemini.google.com" target="_blank" rel="noopener" class="llm-card free">
+            <div class="icon">✨</div>
+            <div class="name">Google Gemini</div>
+            <div class="meta">No signup if you have Google account</div>
+          </a>
+        </div>
+        <p>
+          Create an account if needed (takes 1-2 minutes). Once you see a chat box, you're ready.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 2: Ask AI to Build Your App</h3>
+        <p>
+          Copy and paste this exact prompt into the chat:
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">Copy This Prompt</div>
+          <div class="text">
+            I'm brand new to coding and want to build my first app. Please create a single HTML file that shows one big button on the screen. When I click the button, it should play a pleasant chime sound. 
+
+Requirements:
+- The button should be LARGE (taking up most of the screen)
+- High contrast colors (dark background, bright button)
+- The text should say "PRESS ME"
+- Include the sound directly in the code (use a base64 encoded sound or generate a tone with JavaScript)
+- Add a simple instruction at the top that says "Tap the button to hear a sound"
+
+Please give me the complete code I can save as a file. After the code, briefly explain how I would add my own sound file later.
+          </div>
+        </div>
+        
+        <p>
+          Press Enter and wait. AI will give you a block of code—it'll look like a wall of strange text. <strong>That's perfect.</strong>
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 3: Save It as a File</h3>
+        <p>
+          This is the part many guides skip. Here's exactly how to save code as a file:
+        </p>
+        
+        <h4>On Windows:</h4>
+        <ol class="step-list">
+          <li>
+            <strong>Copy the code</strong> — Click the copy button AI shows (usually in the corner of the code block), or select all the code and press Ctrl+C
+          </li>
+          <li>
+            <strong>Open Notepad</strong> — Press the Windows key, type "Notepad", press Enter
+          </li>
+          <li>
+            <strong>Paste the code</strong> — Press Ctrl+V (you should see all that code appear)
+          </li>
+          <li>
+            <strong>Save with the right name</strong> — Press Ctrl+Shift+S (Save As), then:
+            <ul style="margin-top: 8px;">
+              <li>Navigate to your Desktop (so you can find it easily)</li>
+              <li>In "File name", type: <code style="color: var(--cyan);">my-first-app.html</code></li>
+              <li>In "Save as type", select: <strong>All Files (*.*)</strong></li>
+              <li>Click Save</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <h4>On Mac:</h4>
+        <ol class="step-list">
+          <li>
+            <strong>Copy the code</strong> — Click copy or select all and press Cmd+C
+          </li>
+          <li>
+            <strong>Open TextEdit</strong> — Press Cmd+Space, type "TextEdit", press Enter
+          </li>
+          <li>
+            <strong>Switch to plain text</strong> — Go to Format menu → Make Plain Text (important!)
+          </li>
+          <li>
+            <strong>Paste the code</strong> — Press Cmd+V
+          </li>
+          <li>
+            <strong>Save with the right name</strong> — Press Cmd+Shift+S, then:
+            <ul style="margin-top: 8px;">
+              <li>Navigate to Desktop</li>
+              <li>Name it: <code style="color: var(--cyan);">my-first-app.html</code></li>
+              <li>Uncheck "If no extension is provided, use .txt"</li>
+              <li>Click Save</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <div class="highlight-box yellow">
+          <h4>⚠️ The Extension Matters!</h4>
+          <p>
+            The file MUST end in <code style="color: var(--cyan);">.html</code> — not <code>.txt</code> or <code>.html.txt</code>. 
+            If Windows or Mac adds .txt automatically, your browser won't recognize it as a web page.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            If you see <code>my-first-app.html.txt</code> on your desktop, rename it to remove the <code>.txt</code> part.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 4: Open It in Your Browser</h3>
+        <p>
+          Find the file on your Desktop. It should have an icon that looks like your web browser (Chrome, Firefox, etc.). 
+          <strong>Double-click it.</strong>
+        </p>
+        <p>
+          Your browser will open, and you should see your button. Click it!
+        </p>
+        
+        <div class="highlight-box cyan">
+          <h4>🎉 Did It Work?</h4>
+          <p>
+            <strong>If you heard a sound: Congratulations!</strong> You just built your first app with AI. 
+            You're officially Vibe Coding.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            <strong>If something went wrong:</strong> That's completely normal. Go to Step 5.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 5: Fix Any Problems (The Real Skill)</h3>
+        <p>
+          If it didn't work, this is actually the most valuable part of Vibe Coding: learning to fix things with AI's help.
+        </p>
+        
+        <h4>Common Issues and What to Tell AI:</h4>
+        
+        <div class="prompt-example">
+          <div class="label">If Nothing Appears</div>
+          <div class="text">
+            "I saved the code and opened it in my browser, but I just see a blank page. Here's what I did: [describe your steps]. What might be wrong?"
+          </div>
+        </div>
+        
+        <div class="prompt-example">
+          <div class="label">If the Button Appears but No Sound</div>
+          <div class="text">
+            "The button shows up but when I click it, no sound plays. I'm using [Chrome/Safari/Firefox] on [Windows/Mac]. Is there something I need to do to enable sound?"
+          </div>
+        </div>
+        
+        <div class="prompt-example">
+          <div class="label">If You See the Code Instead of a Button</div>
+          <div class="text">
+            "When I open the file, I see all the code text instead of a button. I think the file didn't save correctly. Can you help me figure out what went wrong?"
+          </div>
+        </div>
+        
+        <p>
+          <strong>The key skill:</strong> Describe exactly what you see and what you expected. AI can almost always figure out what went wrong.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Step 6: Make It Yours</h3>
+        <p>
+          Now that it works, try asking AI to modify it. Here are some ideas:
+        </p>
+        <ul>
+          <li>"Can you change the button color to green?"</li>
+          <li>"Can you make the button even bigger?"</li>
+          <li>"Can you add a second button that plays a different sound?"</li>
+          <li>"Can you make the button say 'Hello!' instead of playing a sound?"</li>
+        </ul>
+        <p>
+          Each time AI gives you new code, save it (overwrite the old file or create a new one) and refresh your browser to see the changes.
+        </p>
+      </div>
+      
+      <div class="highlight-box cyan" style="margin-top: 32px;">
+        <h4>🎯 What You Just Learned</h4>
+        <p>
+          You didn't just build a button. You learned the core loop of Vibe Coding:
+        </p>
+        <p style="margin-top: 12px;">
+          1. <strong>Describe</strong> what you want to AI<br>
+          2. <strong>Save</strong> the code AI gives you<br>
+          3. <strong>Test</strong> it in your browser<br>
+          4. <strong>Iterate</strong> by telling AI what to fix or change
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          <strong>That's it.</strong> Everything else in this guide—tools, techniques, best practices—builds on this simple loop. 
+          Now let's understand it more deeply.
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#why-ai" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">01 — Why AI?</span>
+          </span>
+        </a>
+        <a href="#thought-partner" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">03 — Thought Partner</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: AI as a Thought Partner -->
+  <section id="thought-partner">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">03</span>
+        <h2>AI as a Thought Partner (Not Just a Code Generator)</h2>
+        <p class="section-intro">
+          The biggest mistake beginners make is treating AI like a vending machine. Put in request, get code out. That's not how this works.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>The Right Mental Model</h3>
+        <p>
+          Think of AI as a highly skilled collaborator who:
+        </p>
+        <ul>
+          <li>Has broad knowledge but doesn't know <em>your specific situation</em></li>
+          <li>Can suggest approaches but needs <em>your feedback</em> to refine them</li>
+          <li>Works best with <em>conversation</em>, not one-shot requests</li>
+          <li>Can explain its reasoning if you ask</li>
+          <li>Will confidently give wrong answers sometimes (more on this later)</li>
+        </ul>
+        
+        <div class="highlight-box orange">
+          <h4>⚠️ Critical Understanding</h4>
+          <p>
+            AI doesn't "understand" in the way humans do. It predicts what text should come next based on patterns. 
+            This means it can produce plausible-sounding nonsense. <strong>Always verify important information.</strong>
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>How to Have Productive Conversations</h3>
+        
+        <h4>Start with Context, Not Requests</h4>
+        <p>
+          Before asking for code, explain your situation. The more context you provide, the better the AI can help.
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">Example: Good Context-Setting</div>
+          <div class="text">
+            "I'm a caregiver for my 14-year-old son who has cerebral palsy. He can use a single head-switch to interact with devices. 
+            I want to build a simple web app that plays his favorite song when he activates the switch. He loves immediate audio feedback. 
+            I have no programming experience but I'm comfortable using a computer. Can you help me understand what I need to do?"
+          </div>
+        </div>
+        
+        <p>
+          Notice how this prompt doesn't immediately ask for code. It establishes:
+        </p>
+        <ul>
+          <li>Who you are (caregiver, no programming experience)</li>
+          <li>Who you're building for (14-year-old with cerebral palsy)</li>
+          <li>The constraints (single head-switch)</li>
+          <li>The goal (play a song on switch activation)</li>
+          <li>The user's preferences (loves immediate feedback)</li>
+        </ul>
+        
+        <h4>Ask Questions Before Building</h4>
+        <p>
+          Use AI to explore the problem space before jumping to solutions:
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">Example: Exploratory Questions</div>
+          <div class="text">
+            "Before we build anything, can you help me understand: What are the different ways a head-switch could be connected to a computer? 
+            What are the trade-offs between them? Are there accessibility standards I should know about?"
+          </div>
+        </div>
+        
+        <h4>Iterate, Don't Start Over</h4>
+        <p>
+          When something isn't right, describe what's wrong rather than starting a new conversation:
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">Example: Iterative Refinement</div>
+          <div class="text">
+            "The button works, but it's too small for my son to see easily. Can you make it much larger—maybe taking up most of the screen? 
+            Also, he responds better to bright colors. Can we make it bright yellow with a thick black border?"
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>A Real Conversation Example</h3>
+        <p>Here's what a productive back-and-forth actually looks like:</p>
+        
+        <div class="chat-demo">
+          <div class="chat-header">
+            <div class="chat-dots">
+              <span class="chat-dot"></span>
+              <span class="chat-dot"></span>
+              <span class="chat-dot"></span>
+            </div>
+            <span class="chat-title">thought-partner-session</span>
+          </div>
+          <div class="chat-messages">
+            <div class="message user">
+              <div class="message-avatar">👤</div>
+              <div class="message-bubble">
+                I want to build something for my son Ben. He's non-verbal and we currently use a paper-based communication board, but I want something on a tablet that can speak words out loud.
+              </div>
+            </div>
+            <div class="message ai">
+              <div class="message-avatar">🤖</div>
+              <div class="message-bubble">
+                That's a great project. Before I suggest anything, I have some questions: How does Ben currently indicate his choices on the paper board—does he point, use eye gaze, or use a switch? How many choices does he typically have at once? Are there specific words or phrases he uses most often?
+              </div>
+            </div>
+            <div class="message user">
+              <div class="message-avatar">👤</div>
+              <div class="message-bubble">
+                He points with his finger. Usually 6-8 choices at a time. The most common ones are "yes", "no", "more", "done", "help", and "bathroom."
+              </div>
+            </div>
+            <div class="message ai">
+              <div class="message-avatar">🤖</div>
+              <div class="message-bubble">
+                Perfect. So we're looking at a grid of 6-8 large, touchable buttons that speak when tapped. A few more questions: Does Ben have any vision considerations—does he need high contrast or larger text? And do you have a preference between a male or female voice for the speech?
+              </div>
+            </div>
+            <div class="message user">
+              <div class="message-avatar">👤</div>
+              <div class="message-bubble">
+                High contrast would be good—he sees better with dark backgrounds. And he seems to respond well to a male voice.
+              </div>
+            </div>
+            <div class="message ai">
+              <div class="message-avatar">🤖</div>
+              <div class="message-bubble">
+                Got it. I have enough to start. I'll create a simple web app with: dark background, 6 large high-contrast buttons in a 2x3 grid, text-to-speech using a male voice, and we can easily add more buttons later. Shall I explain how this will work before I write the code, or would you prefer to see it first and ask questions?
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <p>
+          <strong>Notice what happened:</strong> The AI asked clarifying questions, confirmed understanding, and offered choices about how to proceed. 
+          This is the kind of collaboration that produces good results.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Learning by Watching and Asking</h3>
+        <p>
+          Here's something important: <strong>you don't need to understand the code to start building.</strong> 
+          At first, you'll be "blindly" asking AI to do things, and that's okay. But over time, something magical happens—you start to learn.
+        </p>
+        <p>
+          Every time AI writes code for you, you can ask it to explain:
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">Example: Learning Through Explanation</div>
+          <div class="text">
+            "That code works, but I don't understand it. Can you explain what the 'addEventListener' part does? Why do we need it?"
+          </div>
+        </div>
+        
+        <p>
+          <strong>The AI becomes your teacher.</strong> You'll find yourself picking up concepts naturally:
+        </p>
+        <ul>
+          <li>"Oh, so <em>functions</em> are like reusable recipes for doing things"</li>
+          <li>"I see—<em>CSS</em> is what controls colors and sizes"</li>
+          <li>"So <em>variables</em> are just named containers for information"</li>
+        </ul>
+        
+        <p>
+          This gradual understanding gives you an edge. When something breaks, you'll start to have intuitions about what might be wrong. 
+          When you want a specific change, you'll know how to describe it more precisely. <strong>You don't have to become a programmer—but you'll become better at directing one.</strong>
+        </p>
+        
+        <div class="highlight-box cyan">
+          <h4>🎓 You're Already Learning</h4>
+          <p>
+            Even if you never write a line of code yourself, watching AI work teaches you the <em>logic</em> of programming. 
+            You'll understand how pieces fit together, why certain approaches work better, and how to communicate technical ideas.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            <strong>Ask questions constantly.</strong> "Why did you do it that way?" "What would happen if we changed this?" "Can you explain that like I'm five?" 
+            There's no such thing as a dumb question—AI has infinite patience.
+          </p>
+        </div>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#first-build" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">02 — First Build</span>
+          </span>
+        </a>
+        <a href="#level-up" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">04 — Level Up</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Level Up - Choose Your Path -->
+  <section id="level-up" class="bg-navy-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">04</span>
+        <h2>Level Up: Choose Your Development Path</h2>
+        <p class="section-intro">
+          Once you're comfortable chatting with AI, these tools make building bigger projects much easier. 
+          They let AI see your entire project and make changes directly—no more copy-pasting code blocks.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Why Use a Code Editor?</h3>
+        <p>
+          The chat-and-save method works, but it has limitations:
+        </p>
+        <ul>
+          <li>Copying and pasting code gets tedious for larger projects</li>
+          <li>AI can't see your other files, so it might give you code that doesn't fit</li>
+          <li>You lose conversation history when you close the browser</li>
+          <li>No easy way to undo mistakes or track changes</li>
+        </ul>
+        <p>
+          A <strong>code editor</strong> with built-in AI solves these problems. The AI can see all your files at once, make changes directly, and you have a full history of everything.
+        </p>
+      </div>
+      
+      <p style="color: var(--slate-light); margin-bottom: 16px;"><strong>Click a path below to see the full setup guide:</strong></p>
+      
+      <div class="path-selector">
+        <button class="path-tab recommended active" onclick="showPath('cursor')">
+          <span class="badge">★ Easiest Start</span>
+          <h3>Cursor</h3>
+          <p class="subtitle">All-in-one AI editor</p>
+          <p class="price">Free tier / $20/mo Pro</p>
+          <span class="arrow">→</span>
+        </button>
+        
+        <button class="path-tab" onclick="showPath('paid')">
+          <span class="badge">NARBE House Uses</span>
+          <h3>VS Code + Copilot</h3>
+          <p class="subtitle">Industry standard</p>
+          <p class="price">~$10-19/mo</p>
+          <span class="arrow">→</span>
+        </button>
+        
+        <button class="path-tab" onclick="showPath('free')">
+          <h3>VS Code + Ollama</h3>
+          <p class="subtitle">100% free & private</p>
+          <p class="price">$0</p>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+      
+      <!-- Cursor Path Details -->
+      <div class="path-details active" id="path-cursor">
+        <h4>Why This Path?</h4>
+        <p style="color: var(--slate-light); margin-bottom: 24px;">
+          Cursor is VS Code with AI built-in from the start. No extensions to install, no configuration—it just works. 
+          It's designed specifically for AI-assisted coding and is the fastest way to get started. 
+          The free tier is generous enough for learning.
+        </p>
+        
+        <h4>What Makes Cursor Special</h4>
+        <ul style="color: var(--slate-light); margin: 16px 0 24px 24px;">
+          <li><strong>AI-first design</strong> — Built around AI from the ground up, not added as an afterthought</li>
+          <li><strong>Composer mode</strong> — Ask it to build entire features across multiple files</li>
+          <li><strong>Works immediately</strong> — Download, install, start coding with AI in under 5 minutes</li>
+          <li><strong>Same interface as VS Code</strong> — All your VS Code knowledge transfers over</li>
+        </ul>
+        
+        <h4>Step-by-Step Setup</h4>
+        <ol class="step-list">
+          <li>
+            <strong>Download Cursor</strong>
+            Go to <a href="https://cursor.com" target="_blank" rel="noopener" style="color: var(--cyan);">cursor.com</a> and download for your operating system (Windows, Mac, or Linux).
+          </li>
+          
+          <li>
+            <strong>Install and Open</strong>
+            Run the installer. When it opens, it may ask if you want to import VS Code settings—say yes if you've used VS Code before.
+          </li>
+          
+          <li>
+            <strong>Create an Account (Optional)</strong>
+            You'll be prompted to sign up. The free tier includes 2,000 completions and 50 slow premium requests per month—plenty for learning.
+          </li>
+          
+          <li>
+            <strong>Start a Project</strong>
+            Click File → Open Folder. Create a new folder on your Desktop called "my-projects". Select it.
+          </li>
+          
+          <li>
+            <strong>Try the AI Chat</strong>
+            Press <strong>Ctrl+L</strong> (or Cmd+L on Mac) to open the AI chat. Type: 
+            "Create a file called index.html with a big button that plays a sound when clicked. Make it look modern and accessible."
+          </li>
+          
+          <li>
+            <strong>Watch the Magic</strong>
+            Cursor will create the file and write the code. Click "Apply" to save it. Right-click the file and select "Open with Live Server" 
+            or just double-click the file in your file explorer to open in browser.
+          </li>
+        </ol>
+        
+        <div class="highlight-box cyan">
+          <h4>💬 Cursor Power Features</h4>
+          <p>
+            • Press <strong>Ctrl+K</strong> (Cmd+K) on any code to edit it with AI instructions<br>
+            • Press <strong>Ctrl+L</strong> (Cmd+L) for chat that can see your whole project<br>
+            • Press <strong>Ctrl+I</strong> (Cmd+I) for Composer—builds entire features across files<br>
+            • Select code and press <strong>Ctrl+Shift+K</strong> to ask "what does this do?"
+          </p>
+        </div>
+        
+        <div class="highlight-box yellow">
+          <h4>💰 Free vs Pro</h4>
+          <p>
+            <strong>Free tier:</strong> 2,000 code completions + 50 premium requests/month. Enough for learning and small projects.<br><br>
+            <strong>Pro ($20/month):</strong> Unlimited completions + 500 fast premium requests. Worth it once you're building daily.
+          </p>
+        </div>
+      </div>
+      
+      <!-- VS Code + Copilot Path Details -->
+      <div class="path-details" id="path-paid">
+        <h4>Why This Path?</h4>
+        <p style="color: var(--slate-light); margin-bottom: 24px;">
+          GitHub Copilot is the most beginner-friendly AI coding tool. It works inside VS Code (a free code editor), 
+          understands your entire project, and lets you chat naturally. The $10-19/month is worth it for the smooth experience.
+        </p>
+        
+        <h4>What You'll Need</h4>
+        <ul style="color: var(--slate-light); margin: 16px 0 24px 24px;">
+          <li>A computer with internet access</li>
+          <li>A GitHub account (free to create)</li>
+          <li>A Copilot subscription ($10-19/month, often has free trial)</li>
+        </ul>
+        
+        <h4>Step-by-Step Setup</h4>
+        <ol class="step-list">
+          <li>
+            <strong>Download and Install VS Code</strong>
+            Go to <a href="https://code.visualstudio.com" target="_blank" rel="noopener" style="color: var(--cyan);">code.visualstudio.com</a> and download for your computer. Run the installer and accept defaults.
+          </li>
+          
+          <li>
+            <strong>Create a GitHub Account</strong>
+            Go to <a href="https://github.com" target="_blank" rel="noopener" style="color: var(--cyan);">github.com</a> and sign up. This is free and where your code can be saved.
+          </li>
+          
+          <li>
+            <strong>Subscribe to GitHub Copilot</strong>
+            Go to <a href="https://github.com/features/copilot" target="_blank" rel="noopener" style="color: var(--cyan);">github.com/features/copilot</a>. 
+            Click "Start my free trial" or choose a plan. Individual is $10/month; Pro is $19/month with more features.
+          </li>
+          
+          <li>
+            <strong>Install the Copilot Extensions</strong>
+            Open VS Code. Click the Extensions icon (four squares on the left). Search "GitHub Copilot" and click Install. 
+            Also install "GitHub Copilot Chat".
+          </li>
+          
+          <li>
+            <strong>Sign In to GitHub</strong>
+            You'll see a prompt to sign in. Click it and follow the instructions. You may need to authorize in your browser.
+          </li>
+          
+          <li>
+            <strong>Test It!</strong>
+            Create a new file (File → New File), save as "test.html". Click the Chat icon in the sidebar (or press Ctrl+Shift+I). 
+            Type: "Create a button that plays a sound when clicked". Watch it work!
+          </li>
+        </ol>
+        
+        <div class="highlight-box cyan">
+          <h4>💬 Pro Tips for Copilot Chat</h4>
+          <p>
+            • Use <strong>@workspace</strong> to ask questions about your entire project<br>
+            • Highlight code and ask "explain this" or "fix this"<br>
+            • Say "create a new file called X with Y" and it will make it for you<br>
+            • If something breaks, paste the error and say "help me fix this"
+          </p>
+        </div>
+      </div>
+      
+      <!-- Free Path Details -->
+      <div class="path-details" id="path-free">
+        <h4>Why This Path?</h4>
+        <p style="color: var(--slate-light); margin-bottom: 24px;">
+          This option is completely free and keeps everything on your computer—your code and conversations never leave your machine. 
+          Perfect for privacy-conscious users or those without reliable internet. Trade-off: requires more setup and a decent computer.
+        </p>
+        
+        <h4>What You'll Need</h4>
+        <ul style="color: var(--slate-light); margin: 16px 0 24px 24px;">
+          <li>A computer with <strong>at least 16GB of RAM</strong> (8GB will be very slow)</li>
+          <li>About 10GB of free disk space</li>
+          <li>Comfort using a terminal/command prompt (we'll guide you)</li>
+        </ul>
+        
+        <h4>Step-by-Step Setup</h4>
+        <ol class="step-list">
+          <li>
+            <strong>Download and Install VS Code</strong>
+            Go to <a href="https://code.visualstudio.com" target="_blank" rel="noopener" style="color: var(--cyan);">code.visualstudio.com</a> and install it.
+          </li>
+          
+          <li>
+            <strong>Download and Install Ollama</strong>
+            Go to <a href="https://ollama.ai" target="_blank" rel="noopener" style="color: var(--cyan);">ollama.ai</a>. Download for your operating system and run the installer.
+          </li>
+          
+          <li>
+            <strong>Download an AI Model</strong>
+            Open Terminal (Mac/Linux) or Command Prompt (Windows). Type:
+            <div class="code-block" style="margin: 16px 0;">
+              <pre><span class="highlight">ollama pull llama3.2</span>
+
+<span class="comment"># This downloads ~4GB. Wait for it to finish.</span>
+<span class="comment"># For more power (needs 32GB+ RAM):</span>
+<span class="highlight">ollama pull llama3.1:70b</span></pre>
+            </div>
+          </li>
+          
+          <li>
+            <strong>Install the Continue Extension</strong>
+            In VS Code, go to Extensions. Search "Continue" and install the one by Continue.dev. 
+            This is a free, open-source AI assistant that works with local models.
+          </li>
+          
+          <li>
+            <strong>Configure Continue</strong>
+            After installing, Continue will ask you to configure. Select "Ollama" as your provider. 
+            Choose the model you downloaded (llama3.2). It auto-detects Ollama on your machine.
+          </li>
+          
+          <li>
+            <strong>Test It!</strong>
+            Click the Continue icon in the sidebar. Type "Create a simple HTML page with a blue background". 
+            It may take a few seconds—local AI is slower than cloud, but it's working entirely on your machine!
+          </li>
+        </ol>
+        
+        <div class="highlight-box orange">
+          <h4>⚠️ Troubleshooting</h4>
+          <p>
+            <strong>"Ollama not found"</strong> — Make sure Ollama is running. Look for its icon in your system tray/menu bar.<br><br>
+            <strong>"Very slow responses"</strong> — Normal for local AI. Try a smaller model: <code style="color: var(--cyan);">ollama pull phi3</code><br><br>
+            <strong>"Out of memory"</strong> — Your computer needs more RAM. Consider the paid path instead.
+          </p>
+        </div>
+      </div>
+      
+      <div class="highlight-box yellow" style="margin-top: 40px;">
+        <h4>🤔 Still Not Sure?</h4>
+        <p>
+          <strong>If you're just starting out, go with Cursor.</strong> It's the fastest path from download to building with AI. 
+          You can always switch to VS Code + Copilot later once you understand how everything works.
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          The free path (Ollama) is great for privacy and learning, but fighting setup issues can kill your motivation. 
+          <strong>Don't let tools be a barrier—pick whatever gets you building fastest.</strong>
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#thought-partner" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">03 — Thought Partner</span>
+          </span>
+        </a>
+        <a href="#tokens" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">05 — Understanding AI</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: Understanding How AI Works -->
+  <section id="tokens">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">05</span>
+        <h2>Understanding How AI Works</h2>
+        <p class="section-intro">
+          You don't need to understand AI deeply, but knowing a few concepts will help you use it more effectively and avoid frustration.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>What's Actually Inside Your Code?</h3>
+        <p>
+          Now that you've built something, let's briefly understand what AI created for you. 
+          If you open your HTML file in a text editor, you'll see something like this:
+        </p>
+        <div class="code-block">
+          <pre><span class="comment">&lt;!-- This is HTML - the structure --&gt;</span>
+<span class="highlight">&lt;button id="myButton"&gt;</span>Press Me<span class="highlight">&lt;/button&gt;</span>
+
+<span class="comment">&lt;!-- This is CSS - the appearance --&gt;</span>
+<span class="highlight">&lt;style&gt;</span>
+  button { 
+    background: blue; 
+    font-size: 24px; 
+  }
+<span class="highlight">&lt;/style&gt;</span>
+
+<span class="comment">&lt;!-- This is JavaScript - the behavior --&gt;</span>
+<span class="highlight">&lt;script&gt;</span>
+  document.getElementById('myButton').onclick = function() {
+    // play sound code here
+  }
+<span class="highlight">&lt;/script&gt;</span></pre>
+        </div>
+        <p>
+          <strong>You don't need to understand this code.</strong> But knowing that <code>&lt;style&gt;</code> controls appearance 
+          and <code>&lt;script&gt;</code> controls behavior helps you say things like: "The button looks wrong—can you fix the style part?" 
+          or "The click isn't working—check the script section."
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>What Are Tokens?</h3>
+        <p>
+          When you chat with AI, your messages are broken down into small chunks called <strong>tokens</strong>. 
+          A token is roughly 3-4 characters or about ¾ of a word. For example:
+        </p>
+        <ul>
+          <li>"Hello" = 1 token</li>
+          <li>"Hello, how are you?" = 5 tokens</li>
+          <li>A typical paragraph = 50-100 tokens</li>
+          <li>A full page of code = 300-500 tokens</li>
+        </ul>
+        <p>
+          <strong>Both your messages AND the AI's responses use tokens.</strong> A long conversation with lots of code can quickly add up to thousands of tokens.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>What's a Context Window?</h3>
+        <p>
+          The <strong>context window</strong> is how much the AI can "see" at once—your entire conversation plus any code or files you've shared. 
+          Think of it like the AI's working memory.
+        </p>
+        <ul>
+          <li><strong>Small context window (8K tokens)</strong> — Can see about 6,000 words or a few pages of code</li>
+          <li><strong>Medium context window (32K tokens)</strong> — Can see about 25,000 words or a small project</li>
+          <li><strong>Large context window (128K+ tokens)</strong> — Can see about 100,000 words or an entire codebase</li>
+        </ul>
+        
+        <div class="highlight-box cyan">
+          <h4>💡 Why Context Windows Matter</h4>
+          <p>
+            When your conversation gets too long, older messages "fall off" the context window—the AI literally forgets them. 
+            This is why AI might suddenly forget something you told it earlier, or ask you to repeat something.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            <strong>In code editors like VS Code with Copilot</strong>, the AI can often see your open files automatically. 
+            This is incredibly powerful—it understands your project structure without you having to explain everything.
+          </p>
+        </div>
+        
+        <h4>Practical Impact</h4>
+        <p>
+          Context windows affect how you work:
+        </p>
+        <ul>
+          <li><strong>Long conversations use more tokens</strong> — Starting fresh can be more efficient than continuing a very long chat</li>
+          <li><strong>Code editors have an advantage</strong> — They feed relevant code to the AI automatically, using context wisely</li>
+          <li><strong>Bigger isn't always better</strong> — Larger context windows cost more; use what you need</li>
+          <li><strong>Be strategic</strong> — If AI forgets something important, paste it again or start a new conversation focused on that topic</li>
+        </ul>
+      </div>
+      
+      <div class="content-block">
+        <h3>Why Some Models Cost More</h3>
+        <p>
+          Not all AI models are equal. More powerful models can:
+        </p>
+        <ul>
+          <li>Handle longer conversations without forgetting context</li>
+          <li>Write more accurate, complex code</li>
+          <li>Better understand nuanced requests</li>
+          <li>Make fewer mistakes</li>
+        </ul>
+        <p>
+          This extra capability requires more computing power, which costs more money. Think of it like cars: 
+          a basic sedan gets you where you need to go, but a high-performance vehicle offers more speed and features at a higher price.
+        </p>
+        
+        <div class="code-block">
+          <pre><span class="comment"># Rough comparison (as of 2026):</span>
+
+<span class="highlight">GPT-4o</span>          → Very capable, moderate cost
+<span class="highlight">Claude Sonnet</span>   → Excellent for coding, moderate cost
+<span class="highlight">GPT-4 Turbo</span>    → Top tier, higher cost
+<span class="highlight">Claude Opus</span>     → Most capable, highest cost
+<span class="highlight">Llama 3 (local)</span> → Free, but uses your computer's resources</pre>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>How Pricing Works</h3>
+        <p>
+          AI services typically offer two pricing models:
+        </p>
+        
+        <h4>1. Subscription Plans (Monthly Fee)</h4>
+        <p>
+          Pay a flat monthly fee (usually $10-20/month) and get a set amount of usage included. 
+          This is what most people start with because it's predictable.
+        </p>
+        <ul>
+          <li><strong>ChatGPT Plus:</strong> $20/month — includes generous usage of GPT-4o</li>
+          <li><strong>Claude Pro:</strong> $20/month — includes usage of Claude Sonnet</li>
+          <li><strong>GitHub Copilot:</strong> $10-19/month — integrated into your code editor</li>
+        </ul>
+        <p>
+          <strong>Important:</strong> Even with subscriptions, there are usually <em>rate limits</em>—caps on how many messages you can send per hour or per day. 
+          If you hit the limit, you'll need to wait or switch to a different model temporarily.
+        </p>
+        
+        <h4>2. Pay-As-You-Go (API Usage)</h4>
+        <p>
+          Pay only for what you use, measured in tokens. This is more advanced and typically used by developers building apps, but some services offer it directly.
+        </p>
+        <ul>
+          <li>You're charged per 1,000 tokens (input and output separately)</li>
+          <li>You can usually set spending limits to avoid surprises</li>
+          <li>Good for occasional use or when you need the most powerful models</li>
+        </ul>
+        
+        <div class="highlight-box orange">
+          <h4>⚠️ Running Out of Tokens</h4>
+          <p>
+            <strong>This will happen.</strong> You'll be in the middle of a coding session and suddenly hit a limit. 
+            When this happens, you have options:
+          </p>
+          <p style="margin-top: 12px;">
+            • <strong>Wait</strong> — Limits usually reset hourly or daily<br>
+            • <strong>Switch models</strong> — Use a less powerful (but still capable) model temporarily<br>
+            • <strong>Start a new conversation</strong> — Long conversations use more tokens; starting fresh can help<br>
+            • <strong>Use the free tier</strong> — Most services have a free tier you can fall back to
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Tips for Managing Usage</h3>
+        <ul>
+          <li><strong>Be concise</strong> — Shorter prompts use fewer tokens</li>
+          <li><strong>Don't repeat yourself</strong> — AI remembers the conversation; no need to re-explain</li>
+          <li><strong>Start fresh when changing topics</strong> — Old context uses tokens even when irrelevant</li>
+          <li><strong>Use the right model for the task</strong> — Simple questions don't need the most powerful model</li>
+          <li><strong>Set spending alerts</strong> — If using pay-as-you-go, set up budget notifications</li>
+        </ul>
+        
+        <div class="highlight-box yellow">
+          <h4>🎯 Practical Advice</h4>
+          <p>
+            <strong>Start with a $20/month subscription to ChatGPT Plus or Claude Pro.</strong> 
+            This gives you plenty of usage for learning and building simple projects. 
+            You'll rarely hit limits unless you're doing heavy, all-day coding sessions.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            If you do hit limits frequently, that's actually a good sign—you're building a lot! 
+            At that point, consider GitHub Copilot for code-specific work, or explore pay-as-you-go options.
+          </p>
+        </div>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#level-up" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">04 — Level Up</span>
+          </span>
+        </a>
+        <a href="#verification" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">06 — Verification</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Verifying Information -->
+  <section id="verification" class="bg-navy-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">06</span>
+        <h2>How to Verify AI Information</h2>
+        <p class="section-intro">
+          AI can be confidently wrong. This is perhaps the most important skill to develop: knowing when and how to verify what AI tells you.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>When AI Gets Things Wrong</h3>
+        <p>
+          AI models are trained on vast amounts of text from the internet. This means they can:
+        </p>
+        <ul>
+          <li><strong>Hallucinate</strong> — Make up facts, URLs, or documentation that doesn't exist</li>
+          <li><strong>Be outdated</strong> — Their knowledge has a cutoff date; newer information isn't included</li>
+          <li><strong>Mix up details</strong> — Confuse similar concepts or combine information incorrectly</li>
+          <li><strong>Be confidently wrong</strong> — State incorrect things with the same tone as correct things</li>
+        </ul>
+        
+        <div class="highlight-box yellow">
+          <h4>🧠 Key Principle</h4>
+          <p>
+            <strong>AI is a brilliant assistant with no concept of truth.</strong> It generates plausible text based on patterns. 
+            Something sounding confident doesn't make it correct. Always verify anything important.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Verification Strategies</h3>
+        
+        <h4>1. Test Code Immediately</h4>
+        <p>
+          For code, the best verification is simple: <strong>run it and see if it works.</strong> 
+          Don't take AI's word that the code is correct—put it in a file, open it in a browser, and test every feature.
+        </p>
+        
+        <h4>2. Ask for Sources</h4>
+        <p>
+          When AI gives you factual information, ask: "Can you provide official documentation or sources for this?" 
+          Then <strong>actually visit those links</strong>. AI sometimes makes up URLs that look real but lead nowhere.
+        </p>
+        
+        <h4>3. Cross-Reference</h4>
+        <p>
+          For important decisions, ask multiple AI tools the same question and see if they agree. 
+          Or do a quick web search to verify. If something seems unusual, it probably deserves a second look.
+        </p>
+        
+        <h4>4. Ask "Are You Sure?"</h4>
+        <p>
+          Surprisingly effective: simply ask "Are you certain about that? Please double-check." 
+          AI will sometimes catch its own mistakes when prompted to review.
+        </p>
+        
+        <h4>5. Understand the Limits</h4>
+        <p>
+          AI is most reliable for:
+        </p>
+        <ul>
+          <li>Common programming patterns and syntax</li>
+          <li>Well-documented technologies</li>
+          <li>General explanations and concepts</li>
+        </ul>
+        <p>
+          AI is less reliable for:
+        </p>
+        <ul>
+          <li>Recent events or new software versions</li>
+          <li>Specific numbers, dates, or statistics</li>
+          <li>URLs, citations, or references</li>
+          <li>Niche or obscure topics</li>
+        </ul>
+      </div>
+      
+      <div class="content-block">
+        <h3>The Error-Fix Loop</h3>
+        <p>
+          When code doesn't work, you'll see errors. Here's how to handle them:
+        </p>
+        
+        <ol class="step-list">
+          <li>
+            <strong>Open Developer Tools</strong>
+            In your browser, press <strong>F12</strong> (or right-click anywhere on your page and select "Inspect"). 
+            A panel will open—it might be at the bottom or side of your screen.
+          </li>
+          
+          <li>
+            <strong>Click the "Console" Tab</strong>
+            You'll see tabs like "Elements", "Console", "Network". Click "Console". 
+            This is where errors appear in <span style="color: #ff6b6b;">red text</span>.
+          </li>
+          
+          <li>
+            <strong>Copy the Exact Error</strong>
+            Don't paraphrase. Don't interpret. Copy the exact red text, including any line numbers.
+          </li>
+          
+          <li>
+            <strong>Paste to AI with Context</strong>
+            Say something like: "I'm getting this error when I click the button: [paste error]. Here's my code: [paste relevant code]. What's wrong?"
+          </li>
+          
+          <li>
+            <strong>Apply the Fix and Test Again</strong>
+            Make the changes AI suggests. Refresh the page. Test. If there's a new error, repeat the process.
+          </li>
+        </ol>
+        
+        <div class="prompt-example">
+          <div class="label">Example: Error Reporting</div>
+          <div class="text">
+            "I clicked the Play Sound button but nothing happened. The console shows this error:<br><br>
+            <code style="color: #ff6b6b; font-family: var(--font-mono); font-size: 13px;">Uncaught TypeError: Cannot read properties of null (reading 'play') at playSound (app.js:15:23)</code><br><br>
+            Here's my playSound function: [paste code]. What's wrong?"
+          </div>
+        </div>
+        
+        <div class="highlight-box yellow">
+          <h4>🔧 What Developer Tools Looks Like</h4>
+          <p>
+            Don't be intimidated when you open it—it's made for professionals and has lots of confusing options. 
+            <strong>You only need the Console tab.</strong>
+          </p>
+          <p style="margin-top: 12px;">
+            • <strong>Red text</strong> = Errors (something broke)<br>
+            • <strong>Yellow text</strong> = Warnings (something might be wrong, but it still works)<br>
+            • <strong>White/gray text</strong> = Regular information (usually fine to ignore)
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            The most useful part: error messages often include a line number (like "at line 15"). 
+            That tells you exactly where in your code the problem is. Share this with AI!
+          </p>
+        </div>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#tokens" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">05 — Understanding AI</span>
+          </span>
+        </a>
+        <a href="#workflow" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">07 — Workflow</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: The Workflow -->
+  <section id="workflow">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">07</span>
+        <h2>The Complete Workflow</h2>
+        <p class="section-intro">
+          Here's the full process from idea to working application. This is what we use at NARBE House for every project.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Phase 1: Discovery (Before Any Code)</h3>
+        
+        <ol class="step-list">
+          <li>
+            <strong>Define the User</strong>
+            Who exactly is this for? What are their abilities? What devices do they use? What's their environment like? 
+            Write this down. You'll share it with AI.
+          </li>
+          
+          <li>
+            <strong>Define the Core Need</strong>
+            What is the ONE main thing this needs to do? Don't say "a communication app"—say "a way to request 'bathroom' with one button press that speaks out loud."
+          </li>
+          
+          <li>
+            <strong>List the Constraints</strong>
+            What are the limitations? Single switch? No internet? Must work on iPad? Needs to be extremely simple? 
+            Constraints are helpful—they focus the solution.
+          </li>
+          
+          <li>
+            <strong>Explore with AI</strong>
+            Before asking for code, have a conversation. Ask what approaches exist. Ask about trade-offs. 
+            Ask what you might not be thinking about. Let AI help you understand the problem space.
+          </li>
+        </ol>
+      </div>
+      
+      <div class="content-block">
+        <h3>Phase 2: Building (The Iterative Loop)</h3>
+        
+        <ol class="step-list">
+          <li>
+            <strong>Start Small</strong>
+            Ask AI to build the simplest possible version. One button, one action. 
+            Get that working before adding complexity.
+          </li>
+          
+          <li>
+            <strong>Test Immediately</strong>
+            Save the file. Open it in a browser. Does it work? Test every feature as it's added. 
+            Don't write 500 lines before testing.
+          </li>
+          
+          <li>
+            <strong>Fix Errors as They Appear</strong>
+            Error → Copy → Paste to AI → Apply fix → Test again. 
+            This loop is normal. Even experienced developers do this constantly.
+          </li>
+          
+          <li>
+            <strong>Add Features One at a Time</strong>
+            Get the button working. Then add the sound. Then add the visual feedback. 
+            One feature, test, confirm, next feature.
+          </li>
+          
+          <li>
+            <strong>Save Checkpoints</strong>
+            When something works, save a copy (or use Git to commit). 
+            This way, if you break something later, you can go back to the working version.
+          </li>
+        </ol>
+        
+        <div class="code-block">
+          <pre><span class="comment"># If you want to learn Git (optional but valuable):</span>
+
+<span class="highlight">git init</span>                              <span class="comment"># Start tracking this project</span>
+<span class="highlight">git add .</span>                             <span class="comment"># Stage all files</span>
+<span class="highlight">git commit -m "Button plays sound"</span>    <span class="comment"># Save checkpoint with description</span>
+
+<span class="comment"># Later, if you break something:</span>
+<span class="highlight">git log --oneline</span>                     <span class="comment"># See your checkpoints</span>
+<span class="highlight">git checkout [commit-id]</span>              <span class="comment"># Go back to a working version</span></pre>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Phase 3: Refinement (Polish & Handoff)</h3>
+        
+        <ol class="step-list">
+          <li>
+            <strong>Test with the Actual User</strong>
+            Put it in front of the person it's for. Watch them use it. What's confusing? What's frustrating? What delights them?
+          </li>
+          
+          <li>
+            <strong>Iterate Based on Feedback</strong>
+            "The button is too small" → Ask AI to make it bigger. 
+            "The sound is too quiet" → Ask AI to add volume control. 
+            Real user feedback drives real improvements.
+          </li>
+          
+          <li>
+            <strong>Document What You Built</strong>
+            Create a README file that explains: what this is, who it's for, how to use it, and any known issues. 
+            Future you will thank present you.
+          </li>
+          
+          <li>
+            <strong>Share It</strong>
+            If it helps one person, it might help others. Consider sharing with the accessibility community. 
+            Open source your code. Pay it forward.
+          </li>
+        </ol>
+      </div>
+      
+      <div class="content-block">
+        <h3>The README: Your Project's Memory</h3>
+        <p>
+          A README file is a text document (usually named README.md) that lives in your project folder. 
+          It serves multiple purposes:
+        </p>
+        <ul>
+          <li><strong>For you:</strong> Reminds you what you built and why, especially months later</li>
+          <li><strong>For AI:</strong> Give it to the AI at the start of each session to restore context</li>
+          <li><strong>For others:</strong> Helps anyone else understand and use your project</li>
+        </ul>
+        
+        <div class="code-block">
+          <pre><span class="comment"># Example README.md structure:</span>
+
+<span class="highlight"># Ben's Soundboard</span>
+
+A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch user).
+
+<span class="highlight">## What It Does</span>
+- Large buttons in a 2x3 grid
+- Each button plays a different sound
+- Works with keyboard (spacebar scans through options)
+
+<span class="highlight">## How to Use</span>
+1. Open index.html in a browser
+2. Tap any button to hear the sound
+3. Press spacebar to scan (auto-highlight moves every 2 seconds)
+
+<span class="highlight">## Known Issues</span>
+- Sound doesn't work on iOS until user taps once (browser limitation)
+
+<span class="highlight">## Future Ideas</span>
+- Add volume control
+- Let Ben record his own sounds</pre>
+        </div>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#verification" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">06 — Verification</span>
+          </span>
+        </a>
+        <a href="#git-github" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">08 — Git & GitHub</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 8: Git & GitHub -->
+  <section id="git-github" class="bg-navy-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">08</span>
+        <h2>Git & GitHub: Your Safety Net</h2>
+        <p class="section-intro">
+          Git and GitHub might sound intimidating, but they're incredibly useful tools that save you from disaster and make collaboration possible. 
+          Here's what you need to know.
+        </p>
+      </div>
+      
+      <div class="highlight-box yellow" style="margin-bottom: 32px;">
+        <h4>🤖 Good News: AI Handles Most of This For You</h4>
+        <p>
+          <strong>You don't need to memorize Git commands.</strong> When you use VS Code with Copilot or Cursor, the AI assistant can:
+        </p>
+        <p style="margin-top: 12px;">
+          • Run Git commands for you when you ask<br>
+          • Write commit messages automatically based on your changes<br>
+          • Explain what's happening when something goes wrong<br>
+          • Guide you through publishing to GitHub step by step
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          <strong>This section explains what these tools are</strong> so you understand what's happening behind the scenes. 
+          But in practice, you'll mostly just click buttons and let AI handle the details.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Git vs. GitHub: What's the Difference?</h3>
+        <p>
+          These two things are related but different:
+        </p>
+        <ul>
+          <li><strong>Git</strong> is a tool that runs on your computer. It tracks every change you make to your files, like an infinite undo button. It's free and works offline.</li>
+          <li><strong>GitHub</strong> is a website where you can store your Git projects online. Think of it like cloud storage specifically designed for code projects.</li>
+        </ul>
+        <p>
+          <strong>You can use Git without GitHub</strong> (just local backups), but GitHub adds the ability to:
+        </p>
+        <ul>
+          <li>Access your code from any computer</li>
+          <li>Share projects with others</li>
+          <li>Collaborate with other people on the same project</li>
+          <li>Show off your work (like a portfolio)</li>
+          <li>Get free web hosting for simple sites (GitHub Pages)</li>
+        </ul>
+      </div>
+      
+      <div class="content-block">
+        <h3>Why This Matters for Vibe Coding</h3>
+        <p>
+          When you're building with AI, things will break. You'll make a change that seemed like a good idea, and suddenly nothing works. 
+          Without Git, you're stuck trying to remember what you changed. With Git:
+        </p>
+        <ul>
+          <li><strong>Every working version is saved</strong> — Go back to any previous state instantly</li>
+          <li><strong>You can experiment fearlessly</strong> — Try risky changes knowing you can undo them</li>
+          <li><strong>AI can help you use it</strong> — Just ask! "How do I undo my last commit?"</li>
+        </ul>
+        
+        <div class="highlight-box cyan">
+          <h4>💡 The Video Game Analogy</h4>
+          <p>
+            Git commits are like save points in a video game. You save before a boss fight so if you die, you don't start over from the beginning. 
+            In coding, you commit before making big changes. If the change breaks everything, you reload your save.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Getting Started with Git</h3>
+        <p>
+          Git comes built into VS Code, so if you followed the setup guide, you already have it. Here's the simplest workflow:
+        </p>
+        
+        <h4>First Time Setup (Once Per Project)</h4>
+        <p>
+          Open the terminal in VS Code (View → Terminal) and run:
+        </p>
+        <div class="code-block">
+          <pre><span class="highlight">git init</span>
+<span class="comment"># This tells Git to start tracking this folder</span></pre>
+        </div>
+        
+        <h4>Saving Your Work (Do This Often)</h4>
+        <div class="code-block">
+          <pre><span class="highlight">git add .</span>
+<span class="comment"># Stage all your changes (the dot means "everything")</span>
+
+<span class="highlight">git commit -m "Added sound button feature"</span>
+<span class="comment"># Save a checkpoint with a description</span></pre>
+        </div>
+        
+        <h4>Going Back to a Previous Version</h4>
+        <div class="code-block">
+          <pre><span class="highlight">git log --oneline</span>
+<span class="comment"># See all your save points (press Q to exit)</span>
+
+<span class="comment"># You'll see something like:</span>
+<span class="comment"># a1b2c3d Added sound button feature</span>
+<span class="comment"># e4f5g6h Initial setup</span>
+
+<span class="highlight">git checkout e4f5g6h</span>
+<span class="comment"># Go back to that specific save point</span></pre>
+        </div>
+        
+        <div class="highlight-box yellow">
+          <h4>🤖 Let AI Help You With Git</h4>
+          <p>
+            Don't memorize commands! In VS Code with Copilot, just ask in the chat:
+          </p>
+          <p style="margin-top: 12px;">
+            • "How do I save my current progress with Git?"<br>
+            • "I broke something, how do I go back to my last working version?"<br>
+            • "What's the difference between git add and git commit?"<br>
+            • "How do I see what files I've changed?"
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            <strong>Copilot understands Git deeply</strong> and will give you the exact commands for your situation.
+          </p>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Connecting to GitHub</h3>
+        <p>
+          Once you have a project you want to back up online or share, you can push it to GitHub:
+        </p>
+        
+        <ol class="step-list">
+          <li>
+            <strong>Create a GitHub Account</strong>
+            Go to <a href="https://github.com" target="_blank" rel="noopener" style="color: var(--cyan);">github.com</a> and sign up (free).
+          </li>
+          
+          <li>
+            <strong>Create a New Repository</strong>
+            On GitHub, click the "+" button and "New repository". Give it a name (like "my-sound-button"). Keep it public or make it private.
+          </li>
+          
+          <li>
+            <strong>Connect Your Local Project</strong>
+            GitHub will show you commands to run. It looks something like:
+            <div class="code-block" style="margin-top: 12px;">
+              <pre><span class="highlight">git remote add origin https://github.com/yourusername/my-sound-button.git</span>
+<span class="highlight">git branch -M main</span>
+<span class="highlight">git push -u origin main</span></pre>
+            </div>
+          </li>
+          
+          <li>
+            <strong>Push Changes Going Forward</strong>
+            After committing locally, upload to GitHub with:
+            <div class="code-block" style="margin-top: 12px;">
+              <pre><span class="highlight">git push</span></pre>
+            </div>
+          </li>
+        </ol>
+        
+        <p>
+          <strong>Or let VS Code do it for you:</strong> Click the Source Control icon in VS Code (looks like a branch), and it will guide you through publishing to GitHub with buttons instead of commands.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>Using AI to Help with Git</h3>
+        <p>
+          One of the best things about AI coding assistants is that they're experts at Git. Here are prompts that work great:
+        </p>
+        
+        <div class="prompt-example">
+          <div class="label">When You're Lost</div>
+          <div class="text">
+            "I'm in the middle of my project and things are broken. I want to save my current broken state (in case I need it) but then go back to when everything worked. How do I do this with Git?"
+          </div>
+        </div>
+        
+        <div class="prompt-example">
+          <div class="label">When You Want to Experiment</div>
+          <div class="text">
+            "I want to try adding a new feature but I'm worried I'll break things. Can you help me create a Git branch so I can experiment safely?"
+          </div>
+        </div>
+        
+        <div class="prompt-example">
+          <div class="label">When You Need to Undo</div>
+          <div class="text">
+            "I just committed something and realized it was a mistake. How do I undo my last commit but keep the files so I can fix them?"
+          </div>
+        </div>
+        
+        <div class="prompt-example">
+          <div class="label">When You're Confused</div>
+          <div class="text">
+            "Git is showing me a weird message about 'merge conflicts'. I don't know what that means. Can you explain what happened and help me fix it?"
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Commit Messages: Leave Notes for Future You</h3>
+        <p>
+          Each commit includes a short description of what changed. This helps when you need to find a specific version later. 
+          Here's what good vs. bad messages look like:
+        </p>
+        <div class="code-block">
+          <pre><span class="comment"># Good commit messages:</span>
+<span class="highlight">"Add volume slider to sound button"</span>
+<span class="highlight">"Fix: button now works on iOS Safari"</span>
+<span class="highlight">"Change colors to high contrast for Ben"</span>
+
+<span class="comment"># Not helpful:</span>
+<span class="string">"stuff"</span>
+<span class="string">"changes"</span>
+<span class="string">"asdfasdf"</span></pre>
+        </div>
+        
+        <div class="highlight-box cyan">
+          <h4>🤖 AI Writes These For You</h4>
+          <p>
+            In VS Code, when you go to commit your changes, <strong>Copilot can automatically generate a commit message</strong> based on what you changed. 
+            There's a sparkle button (✨) next to the message box that does this.
+          </p>
+          <p style="margin-top: 12px; margin-bottom: 0;">
+            The AI reads your changes and writes something like "Add volume slider and update button styles" — 
+            usually better than what you'd write yourself! You can edit it or just accept it.
+          </p>
+        </div>
+      </div>
+      
+      <div class="highlight-box cyan" style="margin-top: 32px;">
+        <h4>🎯 The Reality: You'll Mostly Click Buttons</h4>
+        <p>
+          <strong>VS Code has a visual interface for all of this.</strong> Click the Source Control icon (branch symbol) in the sidebar, and you'll see:
+        </p>
+        <p style="margin-top: 12px;">
+          • A list of files you've changed<br>
+          • A text box to write (or auto-generate) your commit message<br>
+          • Buttons to commit, push, pull, and sync<br>
+          • Clear visual status of what's staged and what's not
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          <strong>The terminal commands exist</strong> and are useful to understand, but most of your Git usage will be clicking buttons 
+          in VS Code while AI explains anything confusing. That's the Vibe Coding way.
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#workflow" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">07 — Workflow</span>
+          </span>
+        </a>
+        <a href="#troubleshooting" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">09 — Troubleshooting</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 9: Troubleshooting -->
+  <section id="troubleshooting">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">09</span>
+        <h2>Troubleshooting Common Problems</h2>
+        <p class="section-intro">
+          Things will go wrong. That's normal. Here are the most common problems beginners face and exactly how to fix them.
+        </p>
+      </div>
+      
+      <div class="content-block">
+        <h3>File & Saving Problems</h3>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            I see the code text instead of my app when I open the file
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Problem:</strong> Your file saved as <code>.txt</code> instead of <code>.html</code>.</p>
+              <p><strong>Fix:</strong></p>
+              <ol style="margin-left: 20px;">
+                <li>Find the file on your computer</li>
+                <li>Right-click → Rename</li>
+                <li>Change <code>my-file.html.txt</code> to just <code>my-file.html</code></li>
+                <li>If Windows warns you about changing extensions, click "Yes"</li>
+              </ol>
+              <p style="margin-top: 12px;"><strong>Prevention:</strong> When saving in Notepad, change "Save as type" to "All Files" before saving.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            My file opens in Notepad instead of the browser
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Fix:</strong> Right-click the file → "Open with" → Choose your browser (Chrome, Firefox, Edge, etc.). 
+              You can also check "Always use this app" to make it the default.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            I can't find where my file saved
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Fix:</strong></p>
+              <ul style="margin-left: 20px;">
+                <li><strong>Windows:</strong> Check your Documents folder, Downloads, or Desktop. You can also search for <code>*.html</code> in File Explorer.</li>
+                <li><strong>Mac:</strong> Check Finder → Recent, or search in Spotlight (Cmd+Space, type the filename).</li>
+              </ul>
+              <p style="margin-top: 12px;"><strong>Prevention:</strong> Always save to your Desktop when starting out—it's the easiest place to find things.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Nothing Happens When I Click</h3>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            The button appears but clicking does nothing
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Most likely causes:</strong></p>
+              <ul style="margin-left: 20px;">
+                <li><strong>JavaScript error:</strong> Press F12, click Console, look for red text. Copy and share with AI.</li>
+                <li><strong>Sound blocked:</strong> Browsers block auto-playing sounds. The page may need a "click to enable audio" interaction first. Ask AI to add this.</li>
+                <li><strong>Missing file:</strong> If your code references a sound file that doesn't exist, nothing will play.</li>
+              </ul>
+              <p style="margin-top: 12px;"><strong>What to tell AI:</strong> "My button shows up but clicking it doesn't do anything. The console shows: [paste any red errors]."</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            It worked yesterday but now it's broken
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Possible causes:</strong></p>
+              <ul style="margin-left: 20px;">
+                <li><strong>Browser cache:</strong> Press Ctrl+Shift+R (Cmd+Shift+R on Mac) to hard refresh</li>
+                <li><strong>You edited and made a typo:</strong> Even one missing character can break code. Ask AI to review your recent changes.</li>
+                <li><strong>File moved:</strong> If the file references other files (images, sounds), make sure they're all still in the same folder.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>It Looks Wrong</h3>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            Colors, sizes, or layout don't match what I asked for
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>What to tell AI:</strong></p>
+              <p>"The button is showing up too small. I wanted it to take up most of the screen. Here's my current code: [paste code]. Can you fix the CSS to make the button larger?"</p>
+              <p style="margin-top: 12px;"><strong>Tip:</strong> Be specific! Instead of "it looks wrong," say "the button is blue but I wanted green" or "the text is too small to read easily."</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            It looks different in different browsers
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>Browsers render things slightly differently. If it looks good in Chrome but bad in Safari:</p>
+              <p style="margin-top: 12px;"><strong>Tell AI:</strong> "This looks fine in Chrome but the layout is broken in Safari. Can you add CSS that works in both browsers?"</p>
+              <p style="margin-top: 12px;">AI will add "vendor prefixes" or alternative styles to fix cross-browser issues.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>AI Gave Me Multiple Files</h3>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            AI gave me separate HTML, CSS, and JS files—what do I do?
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>For more complex projects, AI might split code into multiple files. Here's how to handle that:</p>
+              <ol style="margin-left: 20px;">
+                <li><strong>Create a project folder</strong> — Make a new folder on your Desktop called "my-project"</li>
+                <li><strong>Save each file inside that folder</strong> — Save <code>index.html</code>, <code>styles.css</code>, and <code>script.js</code> all in the same folder</li>
+                <li><strong>Open index.html</strong> — Always open the HTML file; it will automatically load the CSS and JS</li>
+              </ol>
+              <p style="margin-top: 12px;"><strong>Simpler option:</strong> Tell AI "Please put everything in a single HTML file" and it will combine them for you.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-block">
+        <h3>Code Editor Problems</h3>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            VS Code / Cursor says "workspace not trusted"
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>This is a security feature. If you created the files yourself, click "Yes, I trust the authors" to enable full features.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="faq-item" style="margin-bottom: 16px;">
+          <button class="faq-question">
+            Copilot / AI isn't responding
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p><strong>Check these:</strong></p>
+              <ul style="margin-left: 20px;">
+                <li><strong>Internet connection</strong> — AI needs internet to work (except Ollama)</li>
+                <li><strong>Signed in?</strong> — Check the bottom-left of VS Code for your account</li>
+                <li><strong>Subscription active?</strong> — Free trials expire; check your GitHub/Cursor account</li>
+                <li><strong>Rate limited?</strong> — You may have hit usage limits. Wait an hour or upgrade your plan.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="highlight-box cyan">
+        <h4>🆘 When All Else Fails</h4>
+        <p>
+          Copy your ENTIRE code, go to a fresh AI chat (ChatGPT, Claude, etc.), and say:
+        </p>
+        <p style="margin-top: 12px;">
+          <em>"I'm trying to build [describe goal]. Here's my code: [paste everything]. It's not working—[describe the problem]. 
+          Can you review the entire thing and tell me what's wrong?"</em>
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          A fresh AI session with full context often catches things that were missed in a long conversation.
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#git-github" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">08 — Git & GitHub</span>
+          </span>
+        </a>
+        <a href="#faq" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Next Section</span>
+            <span class="nav-title">10 — FAQ</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 10: FAQ -->
+  <section id="faq" class="bg-navy-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-number">10</span>
+        <h2>Frequently Asked Questions</h2>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          I have zero programming experience. Can I really do this?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            Yes. We're proof. NARBE House has volunteers with backgrounds in caregiving, education, and advocacy—not software engineering. 
+            This website, and the apps in Benny's Hub, were built through AI collaboration. 
+            It takes patience and willingness to iterate, but the technical barrier is genuinely lower than it's ever been.
+          </div>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          How long does it take to build something useful?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            A very simple app (one button, one action) can be built in an hour or two, including setup time. 
+            Something more complex like a multi-screen communication board might take a weekend of focused work. 
+            The apps in Benny's Hub evolved over weeks and months as we added features based on Ben's feedback.
+          </div>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          What if I get completely stuck?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            First, describe your problem to AI as clearly as possible, including any error messages. 
+            If that doesn't work, try starting a fresh conversation with full context. 
+            If you're still stuck, community forums like Reddit's r/learnprogramming or Stack Overflow are helpful. 
+            You can also reach out to NARBE House—we're happy to point people in the right direction.
+          </div>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          Is my code private when using AI?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            With cloud AI (like Copilot), your code is sent to external servers. Check the privacy policy of your specific tool. 
+            Most reputable tools (GitHub Copilot, Claude, ChatGPT) have policies against training on your private code, but read the fine print. 
+            If privacy is critical, use the local Ollama option—nothing ever leaves your computer.
+          </div>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          What's the best AI model to use?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            As of early 2026, Claude 3.5 Sonnet (Anthropic) and GPT-4o (OpenAI) are excellent for coding tasks. 
+            Gemini 1.5 Pro (Google) is also strong. For local models, Llama 3.2 and DeepSeek are solid choices. 
+            The landscape changes quickly—models that are best today may be surpassed in months. 
+            The good news: the skills you learn transfer to any model.
+          </div>
+        </div>
+      </div>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          Should I learn "real" programming eventually?
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            It depends on your goals. For building accessibility tools for personal use, Vibe Coding may be all you need. 
+            But understanding programming fundamentals will make you more effective with AI and able to debug harder problems. 
+            The two approaches aren't mutually exclusive—many people use AI collaboration alongside traditional programming skills. 
+            If you're curious, resources like freeCodeCamp, The Odin Project, or Codecademy are great starting points.
+          </div>
+        </div>
+      </div>
+      
+      <div class="highlight-box cyan" style="margin-top: 32px;">
+        <h4>💪 You're Ready!</h4>
+        <p>
+          You've read the guide. You have the tools. You understand the process. 
+          Every expert was once a beginner. Every complex app started as a simple experiment.
+        </p>
+        <p style="margin-top: 12px; margin-bottom: 0;">
+          You don't need permission to build. You don't need a computer science degree. You need curiosity and persistence.
+          <strong>The tools are ready. The AI is ready. What will you build?</strong>
+        </p>
+      </div>
+      
+      <!-- Section Navigation -->
+      <div class="section-nav">
+        <a href="#troubleshooting" class="section-nav-btn prev">
+          <span class="arrow">←</span>
+          <span class="nav-text">
+            <span class="nav-label">Previous</span>
+            <span class="nav-title">09 — Troubleshooting</span>
+          </span>
+        </a>
+        <a href="#top" class="section-nav-btn next">
+          <span class="nav-text">
+            <span class="nav-label">Back to</span>
+            <span class="nav-title">Top of Guide</span>
+          </span>
+          <span class="arrow">↑</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-note">
+          This guide is maintained by NARBE House volunteers and built entirely with AI assistance.<br>
+          It's open knowledge—use it, share it, improve upon it.
+        </p>
+        
+        <div class="footer-links">
+          <a href="index.html">← Back to Home</a>
+          <a href="bennyshub/index.html">Benny's Hub</a>
+          <a href="https://github.com/narbehouse" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://discord.gg/b82emKJhTC" target="_blank" rel="noopener">Discord</a>
+        </div>
+        
+        <p class="footer-copyright">
+          © 2026 NARBE House • Accessibility is a Human Right
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // Stage Navigation Data
+    const stages = [
+      { id: 'top', label: 'Start', title: 'Vibe Coding Guide' },
+      { id: 'why-ai', label: '01', title: 'Why AI?' },
+      { id: 'first-build', label: '02', title: 'First Build' },
+      { id: 'thought-partner', label: '03', title: 'Thought Partner' },
+      { id: 'level-up', label: '04', title: 'Level Up' },
+      { id: 'tokens', label: '05', title: 'Understanding AI' },
+      { id: 'verification', label: '06', title: 'Verification' },
+      { id: 'workflow', label: '07', title: 'Workflow' },
+      { id: 'git-github', label: '08', title: 'Git & GitHub' },
+      { id: 'troubleshooting', label: '09', title: 'Troubleshooting' },
+      { id: 'faq', label: '10', title: 'FAQ' }
+    ];
+    
+    let currentStageIndex = 0;
+    
+    // Update stage indicators based on scroll position
+    function updateStageIndicators() {
+      const scrollPos = window.scrollY + window.innerHeight / 3;
+      let newIndex = 0;
+      
+      stages.forEach((stage, index) => {
+        const section = document.getElementById(stage.id);
+        if (section && section.offsetTop <= scrollPos) {
+          newIndex = index;
+        }
+      });
+      
+      if (newIndex !== currentStageIndex) {
+        currentStageIndex = newIndex;
+        
+        // Update dots
+        const dots = document.querySelectorAll('.stage-dot');
+        const lines = document.querySelectorAll('.stage-line');
+        
+        dots.forEach((dot, index) => {
+          dot.classList.remove('active', 'completed');
+          if (index === currentStageIndex) {
+            dot.classList.add('active');
+          } else if (index < currentStageIndex) {
+            dot.classList.add('completed');
+          }
+        });
+        
+        lines.forEach((line, index) => {
+          line.classList.remove('completed');
+          if (index < currentStageIndex) {
+            line.classList.add('completed');
+          }
+        });
+        
+        // Update mobile indicator
+        const mobileStage = document.getElementById('mobileStage');
+        if (mobileStage) {
+          const stage = stages[currentStageIndex];
+          mobileStage.innerHTML = `<span class="stage-num">${stage.label}</span> — ${stage.title}`;
+        }
+      }
+    }
+    
+    // Throttled scroll handler
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+      if (scrollTimeout) return;
+      scrollTimeout = setTimeout(() => {
+        updateStageIndicators();
+        scrollTimeout = null;
+      }, 50);
+    });
+    
+    // Stage dot click handlers
+    document.querySelectorAll('.stage-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const sectionId = dot.dataset.section;
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    
+    // Path Selector
+    function showPath(path) {
+      // Update tabs
+      document.querySelectorAll('.path-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+      
+      // Update details panels
+      document.querySelectorAll('.path-details').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.getElementById('path-' + path).classList.add('active');
+    }
+    
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.parentElement;
+        const isOpen = item.classList.contains('open');
+        
+        // Close all other items
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        
+        // Toggle current item
+        if (!isOpen) {
+          item.classList.add('open');
+        }
+      });
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    
+    // Section navigation button handlers
+    document.querySelectorAll('.section-nav-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    
+    // Initialize on load
+    updateStageIndicators();
+  </script>
+</body>
+</html>
