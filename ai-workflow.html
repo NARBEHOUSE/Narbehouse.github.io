@@ -4689,12 +4689,16 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
       if (percentage === 100) {
         scoreDetail.textContent = "🎉 Perfect score! You've mastered this section!";
         scoreDetail.style.color = 'var(--cyan)';
+        // Hide the retry button on perfect score
+        scoreDiv.querySelector('.quiz-reset-btn').style.display = 'none';
       } else if (percentage >= 67) {
         scoreDetail.textContent = "👍 Great job! You understand the key concepts.";
         scoreDetail.style.color = 'var(--cyan)';
+        scoreDiv.querySelector('.quiz-reset-btn').style.display = 'inline-block';
       } else {
         scoreDetail.textContent = "📚 Consider reviewing this section before moving on.";
         scoreDetail.style.color = 'var(--yellow)';
+        scoreDiv.querySelector('.quiz-reset-btn').style.display = 'inline-block';
       }
       
       scoreDiv.classList.add('show');
@@ -4833,6 +4837,9 @@ A simple sound-playing app for my son Ben (14, cerebral palsy, single-switch use
     // Also check on navigation link clicks
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function(e) {
+        // Skip check if user chose to skip all quizzes
+        if (allowSkip) return;
+        
         const targetId = this.getAttribute('href').substring(1);
         const targetIndex = sectionOrder.indexOf(targetId);
         
