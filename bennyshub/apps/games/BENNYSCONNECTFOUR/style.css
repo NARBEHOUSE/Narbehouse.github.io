@@ -1,0 +1,436 @@
+/* Benny's Connect Four - Based on Chess/Checkers Style */
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #ff4b1f, #ff9068);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    color: white;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#status-display {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin-bottom: 20px;
+    background-color: transparent;
+    color: white;
+    padding: 0;
+    font-size: 2.5rem;
+    font-weight: bold;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    height: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#status-display.visible {
+    opacity: 1;
+}
+
+#main-content {
+    flex-grow: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 0;
+    padding-top: 0;
+}
+
+/* Checkerboard Background Pattern Global */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image:
+        linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%);
+    background-size: 60px 60px;
+    background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Menu Styles */
+.menu-container {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    position: relative; 
+}
+
+.menu-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 72px;
+    color: white;
+    margin-bottom: 40px;
+    text-align: center;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.4);
+    letter-spacing: 2px;
+}
+
+@media (max-width: 600px) {
+    .menu-title {
+        font-size: 40px;
+        letter-spacing: 1px;
+    }
+}
+
+.pause-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 48px;
+    color: white;
+    margin-bottom: 30px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+}
+
+.menu-button {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-size: 32px;
+    padding: 15px 40px;
+    margin: 12px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    width: 80%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.menu-button.highlight {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0,0,0, 0.4);
+    border-style: solid;
+    border-width: 4px;
+    z-index: 5;
+}
+
+/* Settings Layout */
+.menu-container.settings-layout,
+.pause-overlay.settings-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 15px;
+    padding: 20px;
+    box-sizing: border-box;
+    align-content: center;
+    justify-items: center;
+    max-width: 1200px;
+}
+
+.menu-container.settings-layout .menu-title,
+.pause-overlay.settings-layout .pause-title {
+    grid-column: 1 / -1;
+    margin-bottom: 20px;
+}
+
+.menu-container.settings-layout .menu-button,
+.pause-overlay.settings-layout .menu-button {
+    width: 90%;
+    font-size: 24px;
+    padding: 10px 20px;
+    margin: 5px;
+}
+
+.menu-container.settings-layout .menu-button:last-child {
+    grid-column: 1 / -1;
+    width: 60%;
+}
+
+/* Pause Overlay */
+.pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+.pause-button-icon {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    font-size: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    color: white;
+    border: 3px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.pause-button-icon:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+/* Connect Four Board */
+.game-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Column Selector */
+.column-selector {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    width: min(80vw, 70vh);
+    margin-bottom: 10px;
+    gap: 4px;
+}
+
+.column-arrow {
+    width: 100%;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 40px;
+    cursor: pointer;
+    color: white;
+    transition: all 0.2s ease;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+}
+
+.column-arrow:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.column-arrow.highlight-outline {
+    box-shadow: inset 0 0 0 6px yellow, 0 0 20px yellow;
+    animation: pulse-outline 1.5s infinite;
+    transform: scale(1.1);
+}
+
+.column-arrow.highlight-full {
+    background-color: yellow !important;
+    opacity: 0.9;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px yellow;
+}
+
+.column-arrow.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@keyframes pulse-outline {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* Connect Four Board Grid */
+.connect-four-board {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    width: min(80vw, 70vh);
+    height: min(68.57vw, 60vh); /* 6/7 aspect ratio */
+    border: 10px solid #1565c0;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background-color: #1976d2;
+    gap: 4px;
+    padding: 8px;
+}
+
+.cell {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    background-color: #1976d2;
+    border-radius: 50%;
+}
+
+.cell::before {
+    content: '';
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.cell.highlight-outline {
+    box-shadow: 0 0 0 6px yellow;
+    z-index: 2;
+    animation: pulse-outline 1.5s infinite;
+}
+
+.cell.highlight-full::before {
+    background-color: yellow !important;
+    opacity: 0.8;
+}
+
+/* Game Pieces */
+.piece {
+    position: absolute;
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.3);
+    transition: transform 0.3s ease;
+}
+
+.piece.dropping {
+    animation: dropPiece 0.5s ease-out;
+}
+
+@keyframes dropPiece {
+    0% {
+        transform: translateY(-500%);
+    }
+    70% {
+        transform: translateY(5%);
+    }
+    85% {
+        transform: translateY(-3%);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.piece.winning {
+    animation: winPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes winPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.3);
+    }
+    100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px gold, 0 4px 8px rgba(0,0,0,0.4);
+    }
+}
+
+/* Preview piece showing where the drop will land */
+.piece.preview {
+    opacity: 0.5;
+    animation: previewPulse 1s ease-in-out infinite;
+    box-shadow: 0 0 15px currentColor, 0 4px 8px rgba(0,0,0,0.4);
+}
+
+@keyframes previewPulse {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(0.9);
+    }
+}
+
+/* Highlight the target cell */
+.cell.preview-target::before {
+    animation: targetGlow 1s ease-in-out infinite;
+}
+
+@keyframes targetGlow {
+    0% {
+        box-shadow: inset 0 4px 8px rgba(0,0,0,0.3), 0 0 10px rgba(255,255,0,0.5);
+    }
+    50% {
+        box-shadow: inset 0 4px 8px rgba(0,0,0,0.3), 0 0 25px rgba(255,255,0,0.8);
+    }
+    100% {
+        box-shadow: inset 0 4px 8px rgba(0,0,0,0.3), 0 0 10px rgba(255,255,0,0.5);
+    }
+}
+
+/* Settings Color Swatches */
+.color-swatch-circle {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    vertical-align: middle;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Turn Indicator */
+.turn-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.turn-indicator .preview-piece {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-left: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}

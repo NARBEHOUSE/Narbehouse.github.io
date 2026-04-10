@@ -103,6 +103,22 @@
       "path": "apps/games/TRIVIAMASTER/index.html",
       "image": "images/games/triviamaster.png",
       "genres": ["Educational", "Trivia"]
+    },
+    {
+      "id": "bennysslotmachine",
+      "title": "Benny's Mega Slots",
+      "description": "A fun casino-style slot machine game with exciting sound effects, visual effects, and diamond bonus mode!",
+      "path": "apps/games/BENNYSSLOTMACHINE/index.html",
+      "image": "images/games/bennysslotmachine.png",
+      "genres": ["Casino", "Arcade"]
+    },
+    {
+      "id": "bennysconnectfour",
+      "title": "Benny's Connect Four",
+      "description": "Play classic Connect Four against the computer or with a friend! Drop discs and connect four in a row to win.",
+      "path": "apps/games/BENNYSCONNECTFOUR/index.html",
+      "image": "images/games/connectfour.png",
+      "genres": ["Classic", "Board", "Strategy"]
     }
   ]
 }

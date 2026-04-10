@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Benny's Mega Slots</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    <div class="bg-particles" id="bg-particles"></div>
+    
+    <div id="game-container">
+        <div id="header">
+            <div id="status-display">💎 BENNY'S MEGA SLOTS 💎</div>
+        </div>
+        <div id="main-content">
+        </div>
+    </div>
+    
+    <!-- Effect Canvas for Particles -->
+    <canvas id="effect-canvas"></canvas>
+    <canvas id="particle-canvas"></canvas>
+    
+    <!-- Screen Flash Effect -->
+    <div id="screen-flash" class="screen-flash"></div>
+    
+    <!-- Win Celebration Overlay -->
+    <div id="win-celebration" class="win-celebration hidden">
+        <div class="celebration-content">
+            <div class="celebration-title"></div>
+            <div class="celebration-amount"></div>
+            <div class="celebration-multiplier"></div>
+        </div>
+    </div>
+    
+    <!-- Bonus Mode Overlay -->
+    <div id="bonus-overlay" class="bonus-overlay hidden">
+        <div class="bonus-content">
+            <div class="bonus-title">💎 DIAMOND BONUS! 💎</div>
+            <div class="bonus-info"></div>
+            <div class="bonus-multiplier-display"></div>
+            <div class="bonus-spins-left"></div>
+        </div>
+    </div>
+    
+    <!-- Diamond Suspense Overlay -->
+    <div id="diamond-suspense" class="diamond-suspense hidden">
+        <div class="suspense-content">
+            <div class="suspense-diamonds">💎💎</div>
+            <div class="suspense-text">BONUS CHANCE!</div>
+            <div class="suspense-subtext">One more diamond for BONUS!</div>
+        </div>
+    </div>
+    
+    <script src="../../../shared/voice-manager.js"></script>
+    <script src="../../../shared/ios-audio-fix.js"></script>
+    <script src="../../../shared/scan-manager.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
