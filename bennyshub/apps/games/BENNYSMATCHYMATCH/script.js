@@ -1234,6 +1234,8 @@ function startChallengePlusSetup() {
     state.players = 1;
     
     // Generate Levels
+    // Progression: Go through all grid sizes at each time level first
+    // e.g., 4x4@10s, 4x5@10s, 5x6@10s, 6x6@10s, then 4x4@5s, 4x5@5s, etc.
     state.challengePlus.levels = [];
     const sizes = ['4x4', '4x5', '5x6', '6x6'];
     const times = [10000, 5000, 3000, 1000];
@@ -1243,8 +1245,9 @@ function startChallengePlusSetup() {
     // For simplicity, we add all, but startGame will handle (or fail) if not enough cards.
     // Ideally we filter sizes based on available count in 'All'.
     
-    sizes.forEach(size => {
-        times.forEach(time => {
+    // Loop times first, then sizes - this way we complete all sizes at 10s, then all at 5s, etc.
+    times.forEach(time => {
+        sizes.forEach(size => {
              state.challengePlus.levels.push({ size, time });
         });
     });

@@ -1,1554 +1,736 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NARBE House — Accessible Apps and Tools</title>
-  <meta name="description" content="NARBE House web apps and tools. Access Benny's Accessibility Hub Beta and the Phrase Board Editor." />
-  <meta name="color-scheme" content="dark light" />
-  <style>
-    :root{
-      --bg:#1e3a5f;
-      --card:#0a1628;
-      --panel:#0f1d34;
-      --text:#ffffff;
-      --muted:#94a9c9;
-      --narbe-orange:#ff5c00;
-      --narbe-blue:#5bb0ff;
-      --accent-glow: rgba(91, 176, 255, 0.15);
-      --orange-glow: rgba(255, 92, 0, 0.2);
-      --radius:20px;
-    }
-    
-    * { 
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body { height: 100%; }
-    
-    body{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-20px) rotate(5deg); }
-    }
-    
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    .container{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      min-height: 100vh;
-      animation: fadeInUp 0.6s ease-out;
-    }
-    
-    header{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 32px 0;
-      position: relative;
-    }
-    
-    .brand{
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .logo{
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: var(--narbe-orange);
-      display: grid;
-      place-items: center;
-      font-weight: 900;
-      font-size: 20px;
-      letter-spacing: -0.5px;
-      color: #fff;
-      box-shadow: 
-        0 8px 32px rgba(255, 92, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-      position: relative;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .logo:hover {
-      transform: scale(1.05) rotate(-5deg);
-      box-shadow: 
-        0 12px 48px rgba(255, 92, 0, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.2);
-    }
-    
-    .brand-text{
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    
-    .brand-title{
-      font-weight: 800;
-      font-size: 22px;
-      letter-spacing: -0.5px;
-      color: var(--text);
-    }
-    
-    .brand-subtitle{
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .social-links {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-right: 16px;
-    }
-
-    .social-link {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: transform 0.3s ease, background 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .social-link:hover {
-      transform: translateY(-2px);
-    }
-
-    .social-link.support {
-      background: var(--narbe-orange);
-      color: white;
-      font-weight: 700;
-      font-size: 12px;
-    }
-
-    .social-link.instagram {
-      background: #E4405F;
-      color: white;
-    }
-
-    .social-link.youtube {
-      background: #FF0000;
-      color: white;
-    }
-
-    .social-link.tiktok {
-      background: #000000;
-      color: white;
-    }
-    
-    main{
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px 0 60px;
-    }
-    
-    .hero-section{
-      text-align: center;
-      max-width: 720px;
-      margin-bottom: 48px;
-    }
-    
-    h1{
-      font-size: clamp(36px, 6vw, 56px);
-      line-height: 1.1;
-      margin: 0 0 20px 0;
-      font-weight: 900;
-      letter-spacing: -1px;
-      color: var(--narbe-orange);
-    }
-    
-    .lede{
-      font-size: clamp(17px, 2vw, 20px);
-      color: var(--text);
-      line-height: 1.7;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .cards-container{
-      width: 100%;
-      max-width: 1100px;
-      margin-bottom: 24px;
-      /* Center contents */
-      display: flex;
-      justify-content: center;
-    }
-    
-    /* Removed grid definition for desktop to keep single centered card */
-    
-    .card{
-      background: var(--card);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius);
-      padding: clamp(28px, 4vw, 40px);
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      
-      /* Make it full width of container */
-      width: 100%;
-    }
-    
-    .card::before{
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--narbe-orange);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .card:hover{
-      transform: translateY(-4px);
-      border-color: var(--narbe-blue);
-      box-shadow: 
-        0 24px 80px rgba(0, 0, 0, 0.5),
-        0 0 40px var(--accent-glow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    
-    .card:hover::before{
-      opacity: 1;
-    }
-    
-    .card-icon{
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      margin-bottom: 20px;
-      background: var(--narbe-blue);
-      color: white;
-    }
-    
-    .card.primary .card-icon{
-      background: var(--narbe-orange);
-    }
-    
-    h2{
-      font-size: clamp(24px, 3vw, 32px);
-      margin: 0 0 12px 0;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--narbe-orange);
-    }
-    
-    .card h2{
-      font-size: clamp(20px, 2.5vw, 26px);
-    }
-    
-    .card p{
-      color: var(--text);
-      margin: 12px 0;
-      line-height: 1.7;
-    }
-    
-    .actions{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 24px;
-    }
-    
-    .btn{
-      appearance: none;
-      border: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 15px;
-      padding: 14px 24px;
-      border-radius: 12px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .btn::before{
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255, 255, 255, 0.1);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    
-    .btn:hover::before{
-      opacity: 1;
-    }
-    
-    .btn.primary{
-      background: var(--narbe-orange);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--orange-glow);
-    }
-    
-    .btn.primary:hover{
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(255, 92, 0, 0.35);
-    }
-    
-    .btn.primary:active{
-      transform: translateY(0);
-    }
-    
-    .btn.secondary{
-      background: var(--narbe-blue);
-      color: white;
-    }
-    
-    .btn.secondary:hover{
-      background: rgba(91, 176, 255, 0.8);
-      transform: translateY(-2px);
-    }
-    
-    .btn.discord{
-      background: #5865F2;
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(88, 101, 242, 0.3);
-    }
-    
-    .btn.discord:hover{
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(88, 101, 242, 0.4);
-    }
-    
-    .btn.github{
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    
-    .btn.github:hover{
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: translateY(-2px);
-    }
-    
-    .hint{
-      font-size: 14px;
-      color: var(--muted);
-      margin-top: 16px;
-      opacity: 0.8;
-    }
-    
-    .hint a{
-      color: var(--narbe-blue);
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.2s ease;
-    }
-    
-    .hint a:hover{
-      color: var(--narbe-orange);
-    }
-    
-    ul.features{
-      list-style: none;
-      margin: 16px 0;
-      padding: 0;
-    }
-    
-    ul.features li{
-      padding: 10px 0;
-      padding-left: 28px;
-      position: relative;
-      color: var(--text);
-    }
-    
-    ul.features li::before{
-      content: '→';
-      position: absolute;
-      left: 0;
-      color: var(--narbe-orange);
-      font-weight: bold;
-    }
-
-    .support-section{
-      width: 100%;
-      max-width: 1100px;
-      margin: 48px 0 32px;
-    }
-
-    .nonprofit-banner{
-      width: 100%;
-      max-width: 1100px;
-      margin: 32px 0;
-      background: var(--card);
-      border: 2px solid var(--narbe-blue);
-      border-radius: var(--radius);
-      padding: clamp(32px, 5vw, 48px);
-      text-align: center;
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-
-    .nonprofit-banner h2{
-      font-size: clamp(24px, 3.5vw, 36px);
-      margin-bottom: 16px;
-      color: var(--narbe-blue);
-    }
-
-    .nonprofit-banner p{
-      color: var(--text);
-      font-size: clamp(15px, 2vw, 18px);
-      max-width: 700px;
-      margin: 0 auto 24px;
-      line-height: 1.7;
-    }
-
-    .tip-banner{
-      width: 100%;
-      max-width: 1100px;
-      margin: 32px 0;
-      background: var(--narbe-orange);
-      border-radius: var(--radius);
-      padding: clamp(28px, 4vw, 40px);
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(255, 92, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .tip-banner::before{
-      content: '💝';
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 32px;
-      opacity: 0.3;
-    }
-
-    .tip-banner h3{
-      font-size: clamp(20px, 3vw, 28px);
-      margin-bottom: 12px;
-      color: white;
-      font-weight: 800;
-    }
-
-    .tip-banner p{
-      color: rgba(255, 255, 255, 0.9);
-      font-size: clamp(14px, 2vw, 16px);
-      margin-bottom: 20px;
-      line-height: 1.6;
-    }
-
-    .tip-btn{
-      background: white;
-      color: var(--narbe-orange);
-      font-weight: 800;
-      padding: 16px 32px;
-      border-radius: 12px;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .tip-btn:hover{
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-    }
-    
-    .community-section{
-      width: 100%;
-      max-width: 1100px;
-      margin: 48px 0 32px;
-    }
-    
-    .section-header{
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    
-    .section-header h2{
-      font-size: clamp(32px, 4vw, 42px);
-      margin-bottom: 12px;
-      color: var(--narbe-orange);
-    }
-    
-    .section-header p{
-      color: var(--text);
-      font-size: clamp(16px, 2vw, 18px);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .community-grid{
-      display: grid;
-      gap: 20px;
-      grid-template-columns: 1fr;
-    }
-    
-    @media (min-width: 640px){
-      .community-grid{
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    
-    @media (min-width: 900px){
-      .community-grid{
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-    
-    .community-card{
-      background: var(--card);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 28px;
-      text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .community-card::before{
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--narbe-orange);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .community-card:hover{
-      transform: translateY(-4px);
-      border-color: var(--narbe-blue);
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        0 0 40px var(--accent-glow);
-    }
-    
-    .community-card:hover::before{
-      opacity: 1;
-    }
-    
-    .community-icon{
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 20px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      font-size: 32px;
-      background: var(--narbe-blue);
-      color: white;
-    }
-    
-    .community-card h3{
-      font-size: 20px;
-      margin: 0 0 8px 0;
-      font-weight: 700;
-      color: var(--narbe-orange);
-    }
-    
-    .community-card p{
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.6;
-      margin: 0 0 20px 0;
-    }
-    
-    .community-card .btn{
-      width: 100%;
-    }
-    
-    .cta-banner{
-      width: 100%;
-      max-width: 1100px;
-      margin: 32px 0;
-      background: var(--card);
-      border: 2px solid var(--narbe-blue);
-      border-radius: var(--radius);
-      padding: clamp(32px, 5vw, 48px);
-      text-align: center;
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    
-    .cta-banner h2{
-      font-size: clamp(24px, 3.5vw, 36px);
-      margin-bottom: 16px;
-      color: var(--narbe-orange);
-    }
-    
-    .cta-banner p{
-      color: var(--text);
-      font-size: clamp(15px, 2vw, 18px);
-      max-width: 700px;
-      margin: 0 auto 24px;
-      line-height: 1.7;
-    }
-    
-    footer{
-      width: 100%;
-      max-width: 1100px;
-      margin-top: 60px;
-      padding-top: 40px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    
-    details{
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 20px;
-      transition: border-color 0.2s ease;
-    }
-    
-    details:hover{
-      border-color: var(--narbe-blue);
-    }
-    
-    summary{
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--text);
-      user-select: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    summary::before{
-      content: '▶';
-      font-size: 12px;
-      color: var(--narbe-blue);
-      transition: transform 0.2s ease;
-    }
-    
-    details[open] summary::before{
-      transform: rotate(90deg);
-    }
-    
-    .license{
-      white-space: pre-wrap;
-      margin-top: 16px;
-      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-      font-size: 13px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 10px;
-      padding: 16px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    
-    .copyright{
-      margin-top: 24px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      padding-bottom: 24px;
-    }
-    
-    .sr-only{
-      position: absolute !important;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
-      border: 0;
-    }
-    
-    @media (max-width: 767px){
-      .brand-title{
-        font-size: 18px;
-      }
-      
-      .brand-subtitle{
-        font-size: 12px;
-      }
-      
-      .logo{
-        width: 48px;
-        height: 48px;
-        font-size: 18px;
-      }
-      
-      .nav-links{
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-end;
-      }
-
-      .social-links{
-        margin-right: 0;
-      }
-      
-      .actions{
-        flex-direction: column;
-      }
-      
-      .btn{
-        width: 100%;
-      }
-    }
-    
-    @media (prefers-reduced-motion: reduce){
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-
-    .video-container{
-      position: relative;
-      width: 100%;
-      height: 0;
-      padding-bottom: 56.25%; /* 16:9 aspect ratio */
-      margin: 20px 0 24px;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 
-        0 12px 32px rgba(0, 0, 0, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-      background: var(--panel);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .video-container:hover{
-      transform: translateY(-2px);
-      box-shadow: 
-        0 16px 48px rgba(0, 0, 0, 0.5),
-        0 0 40px var(--accent-glow),
-        0 0 0 1px rgba(255, 255, 255, 0.15);
-    }
-    
-    .video-container iframe{
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-      border-radius: 16px;
-    }
-    
-    .video-badge{
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: var(--narbe-orange);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      z-index: 2;
-      box-shadow: 0 4px 12px rgba(255, 92, 0, 0.3);
-    }
-    
-    .card.primary{
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .card-content{
-      flex: 1;
-    }
-
-    .game-grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      margin-top: 32px;
-    }
-
-    .game-card {
-      background: var(--card);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .game-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-      border-color: var(--narbe-blue);
-    }
-
-    .game-card img {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    .game-card-content {
-      padding: 20px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .game-card h3 {
-      font-size: 18px;
-      margin: 0 0 8px 0;
-      color: var(--narbe-orange);
-    }
-
-    .game-card p {
-      font-size: 14px;
-      color: var(--muted);
-      margin-bottom: 16px;
-      flex: 1;
-      line-height: 1.5;
-    }
-    
-    .game-card .btn {
-        width: 100%;
-        padding: 10px;
-        font-size: 14px;
-    }
-    
-    .pill-container {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-    }
-    
-    .genre-pill {
-        font-size: 11px;
-        background: rgba(255,255,255,0.05);
-        padding: 4px 8px;
-        border-radius: 6px;
-        color: var(--muted);
-    }
-
-    /* Iframe Modal */
-    .iframe-container{
-      position: fixed; inset: 0; background: var(--bg);
-      z-index: 9000; display: none; flex-direction: column;
-    }
-    .iframe-container.active{ display: flex; }
-    
-    .iframe-header{
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px 24px; background: rgba(0,0,0,.3);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    
-    .iframe-back{
-      appearance: none; border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.03); color: var(--text);
-      padding: 10px 14px; border-radius: 12px; font-weight: 700;
-      cursor: pointer; outline: none;
-      font-size: 14px;
-    }
-    
-    .iframe-back:hover{
-        background: rgba(255,255,255,.08);
-    }
-    
-    .iframe-title{
-      font-weight: 800; font-size: 18px;
-      color: var(--narbe-orange);
-    }
-    
-    .iframe-wrapper{
-      flex: 1; position: relative; overflow: hidden;
-    }
-    
-    /* Legal Footer Styles */
-    .legal-footer {
-      background: linear-gradient(180deg, var(--card) 0%, #050a12 100%);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 48px 24px 32px;
-      margin-top: 64px;
-    }
-    
-    .legal-footer-content {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    
-    .legal-footer-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 40px;
-      margin-bottom: 40px;
-    }
-    
-    .legal-section h3 {
-      color: var(--narbe-orange);
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 16px;
-      font-weight: 700;
-    }
-    
-    .legal-section p,
-    .legal-section ul {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
-    }
-    
-    .legal-section ul {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .legal-section ul li {
-      margin-bottom: 8px;
-      padding-left: 16px;
-      position: relative;
-    }
-    
-    .legal-section ul li::before {
-      content: '•';
-      position: absolute;
-      left: 0;
-      color: var(--narbe-blue);
-    }
-    
-    .legal-section a {
-      color: var(--narbe-blue);
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-    
-    .legal-section a:hover {
-      color: var(--narbe-orange);
-    }
-    
-    .legal-divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-      margin: 32px 0;
-    }
-    
-    .legal-bottom {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .legal-copyright {
-      color: var(--muted);
-      font-size: 13px;
-    }
-    
-    .legal-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 24px;
-    }
-    
-    .legal-links a {
-      color: var(--muted);
-      font-size: 12px;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-    
-    .legal-links a:hover {
-      color: var(--narbe-orange);
-    }
-    
-    .disclaimer-box {
-      background: rgba(255, 92, 0, 0.08);
-      border: 1px solid rgba(255, 92, 0, 0.2);
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 16px;
-    }
-    
-    .disclaimer-box p {
-      color: var(--text);
-      font-size: 12px;
-      line-height: 1.8;
-    }
-    
-    .disclaimer-box strong {
-      color: var(--narbe-orange);
-    }
-    
-    /* Minimal Legal Footer */
-    .mini-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(5, 10, 18, 0.98);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      z-index: 100;
-      pointer-events: auto;
-    }
-    .mini-footer-bar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      cursor: pointer;
-    }
-    .mini-footer-bar span {
-      color: var(--muted);
-      font-size: 10px;
-    }
-    .mini-footer-bar:hover span {
-      color: var(--text);
-    }
-    .mini-footer-expand {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-      background: rgba(8, 12, 20, 0.99);
-    }
-    .mini-footer.open .mini-footer-expand {
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-    .mini-footer-content {
-      padding: 20px 24px 24px;
-      text-align: left;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .mini-footer-content h4 {
-      color: var(--narbe-orange);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin: 16px 0 8px;
-    }
-    .mini-footer-content h4:first-child {
-      margin-top: 0;
-    }
-    .mini-footer-content p {
-      color: var(--muted);
-      font-size: 10px;
-      line-height: 1.7;
-      margin: 0 0 8px;
-    }
-    .mini-footer-content strong {
-      color: var(--text);
-    }
-    .mini-footer-content a {
-      color: var(--narbe-blue);
-      text-decoration: none;
-    }
-    .mini-footer-content a:hover {
-      color: var(--narbe-orange);
-    }
-    .mini-footer-links {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-    .mini-footer-links a {
-      color: var(--muted);
-      font-size: 10px;
-      text-decoration: none;
-    }
-    .mini-footer-links a:hover {
-      color: var(--narbe-orange);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <div class="brand" aria-label="NARBE House">
-        <div class="logo" aria-hidden="true">NH</div>
-        <div class="brand-text">
-          <div class="brand-title">NARBE House</div>
-          <div class="brand-subtitle">Accessible Apps & Tools</div>
-        </div>
-      </div>
-      <nav class="nav-links">
-        <div class="social-links">
-          <a class="social-link support" href="https://narbehouse.com" target="_blank" rel="noopener noreferrer" aria-label="Support Us">
-            💝
-          </a>
-          <a class="social-link instagram" href="https://instagram.com/narbehouse" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.40z"/>
-            </svg>
-          </a>
-          <a class="social-link youtube" href="https://youtube.com/@narbehouse" target="_blank" rel="noopener noreferrer" aria-label="Subscribe on YouTube">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-            </svg>
-          </a>
-          <a class="social-link tiktok" href="https://tiktok.com/@narbehouse" target="_blank" rel="noopener noreferrer" aria-label="Follow us on TikTok">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.05-3.78 2.30-5.12 1.26-1.35 2.93-2.26 4.70-2.40 1.12-.09 2.25.05 3.31.48.04 1.37.06 2.75.06 4.12-.74-.5-1.65-.77-2.57-.66-1.21.15-2.31.95-2.81 2.07-.24.58-.27 1.24-.12 1.84.24.96 1.05 1.73 1.99 2.04.99.33 2.15.15 2.95-.67.8-.82.99-2.12.82-3.24-.01-2.92-.02-5.84-.02-8.76.01-1.38.01-2.76.01-4.14z"/>
-            </svg>
-          </a>
-        </div>
-        <a class="btn primary" href="https://streamelements.com/narbehouse/tip" target="_blank" rel="noopener noreferrer">
-          💝 Support Us
-        </a>
-        <a class="btn secondary" href="/developer-guide.html">Developer Guide</a>
-      </nav>
-    </header>
-
-    <main>
-      <section class="hero-section">
-        <h1 id="title">One and Two Switch Accessibility Tools and Games</h1>
-        <p class="lede">
-          Supporting Ben and families like ours with intuitive, accessible tools and editors.
-        </p>
-      </section>
-
-      <div class="cards-container">
-        <article class="card primary" aria-labelledby="hub">
-          <div class="card-icon" aria-hidden="true">🎮</div>
-          <h2 id="hub">Start here</h2>
-          <div class="card-content">
-            <p>
-              Try <strong>Benny's Accessibility Hub Beta</strong> featuring a predictive keyboard, customizable phrase and media board, and early games that work with one and/or two-switch input (Space and Return). Full support for mouse, head tracking, and eye tracking.
-            </p>
-            <div class="video-container">
-              <div class="video-badge">Tutorial</div>
-              <iframe src="https://www.youtube.com/embed/oW3p4fnNMtA" title="NARBE House: Benny's Accessibility Hub | Free AAC, Games & Media In One Place" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-            </div>
-            <div class="actions">
-              <a class="btn primary" href="/bennyshub" aria-label="Open Benny's Accessibility Hub Beta">
-                Open Benny's Hub
-              </a>
-              <a class="btn secondary" href="/bennyshub/apps/tools/phraseboard/phrase-builder.html" aria-label="Open the Phrase Board Editor">
-                Phrase Board Editor
-              </a>
-              <a class="btn secondary" href="/developer-guide.html" aria-label="View the Developer Guide">
-                Developer Guide
-              </a>
-            </div>
-            <p class="hint">
-              Quick links: <a href="/bennyshub">/bennyshub</a> · <a href="/bennyshub/apps/tools/phraseboard/phrase-builder.html">phrase-builder</a> · <a href="/developer-guide.html">developer-guide</a>
-            </p>
-          </div>
-        </article>
-      </div>
-      
-      <section class="update-section" style="width: 100%; max-width: 1100px; margin: 48px 0;">
-        <div class="section-header">
-            <h2>Update January 2026</h2>
-            <p>We added multiple new games and tools. Many of these include level and game editors, allowing families to completely customize the experience.</p>
-        </div>
-        
-        <div class="game-grid">
-            <!-- Tools -->
-            <article class="game-card">
-              <img src="bennyshub/images/tools/keyboard.png" alt="Keyboard" loading="lazy">
-              <div class="game-card-content">
-                <h3>Keyboard</h3>
-                <div class="pill-container"><span class="genre-pill">Communication</span></div>
-                <p>Predictive, simple input mapped for two-button access.</p>
-                <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/tools/keyboard/index.html', 'Keyboard')">Launch Tool</a>
-              </div>
-            </article>
-            
-            <article class="game-card">
-                <img src="bennyshub/images/tools/phraseboard.png" alt="Phrase & Media Board" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Phrase & Media Board</h3>
-                  <div class="pill-container"><span class="genre-pill">Communication</span></div>
-                  <p>Editable phrase & media tiles with scanning and speak-out.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/tools/phraseboard/index.html', 'Phrase Board')">Launch Tool</a>
-                </div>
-            </article>
-            
-            <article class="game-card">
-                <img src="bennyshub/images/tools/ytsearch.png" alt="YouTube Search" loading="lazy">
-                <div class="game-card-content">
-                  <h3>YouTube Search</h3>
-                  <div class="pill-container"><span class="genre-pill">Entertainment</span></div>
-                  <p>Search and watch YouTube videos with accessible scanning controls.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/tools/ytsearch/index.html', 'YouTube Search')">Launch Tool</a>
-                </div>
-            </article>
-
-            <!-- Games -->
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysays.png" alt="Benny Says" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Benny Says</h3>
-                  <div class="pill-container"><span class="genre-pill">Memory</span></div>
-                  <p>A simon says style game where you match the sequence.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSAYS/index.html', 'Benny Says')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysbaseball.png" alt="Benny's Baseball" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Benny's Baseball</h3>
-                  <div class="pill-container"><span class="genre-pill">Sports</span></div>
-                  <p>Full baseball simulation game with no reaction needed.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSBASEBALL/index.html', 'Benny\'s Baseball')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysbasketball.png" alt="Benny's Basketball Shooter" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Basketball Shooter</h3>
-                  <div class="pill-container"><span class="genre-pill">Sports</span></div>
-                  <p>Fun basketball shooting game with special bonus modes.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html', 'Basketball Shooter')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysbowling.png" alt="Benny's Bowling" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Benny's Bowling</h3>
-                  <div class="pill-container"><span class="genre-pill">Sports</span></div>
-                  <p>Bowling game with physics, ball styles, and themes.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSBOWLING/index.html', 'Benny\'s Bowling')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysbugblaster.png" alt="Benny's Bug Blaster" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Bug Blaster</h3>
-                  <div class="pill-container"><span class="genre-pill">Strategy</span></div>
-                  <p>Tower defense style game where you squash bugs.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSBUGBLASTER/index.html', 'Bug Blaster')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennyscheckers.png" alt="Benny's Chess and Checkers" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Chess & Checkers</h3>
-                  <div class="pill-container"><span class="genre-pill">Board</span></div>
-                  <p>Classic Chess or Checkers vs computer or friend.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSCHESSCHECKERS/index.html', 'Chess & Checkers')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysmatchymatch.png" alt="Benny's Matchy Match" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Matchy Match</h3>
-                  <div class="pill-container"><span class="genre-pill">Puzzle</span><span class="genre-pill">Editor</span></div>
-                  <p>Matching game with competitive modes. Includes Editor.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSMATCHYMATCH/index.html', 'Matchy Match')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennysminigolf.png" alt="Benny's Mini Golf" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Mini Golf</h3>
-                  <div class="pill-container"><span class="genre-pill">Sports</span><span class="genre-pill">Editor</span></div>
-                  <p>Top-down minigolf for up to 4 players. Includes Course Editor.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSMINIGOLF/index.html', 'Mini Golf')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennyspeggle.png" alt="Benny's P3GL Game" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Benny's P3GL</h3>
-                  <div class="pill-container"><span class="genre-pill">Arcade</span><span class="genre-pill">Editor</span></div>
-                  <p>Peggle style game with campaign/level editor.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSPEGGLE/index.html', 'Benny\'s P3GL')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennystictactoe.png" alt="Benny's Tic Tac Toe" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Tic Tac Toe</h3>
-                  <div class="pill-container"><span class="genre-pill">Strategy</span></div>
-                  <p>Play vs computer or friends.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSTICTACTOE/index.html', 'Tic Tac Toe')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/bennyswordjumble.png" alt="Benny's Word Jumble" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Word Jumble</h3>
-                  <div class="pill-container"><span class="genre-pill">Puzzle</span></div>
-                  <p>Rearrange the word to advance.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/BENNYSWORDJUMBLE/index.html', 'Word Jumble')">Play Game</a>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img src="bennyshub/images/games/triviamaster.png" alt="Benny's Trivia Master" loading="lazy">
-                <div class="game-card-content">
-                  <h3>Trivia Master</h3>
-                  <div class="pill-container"><span class="genre-pill">Trivia</span><span class="genre-pill">Editor</span></div>
-                  <p>Trivia engine to build your own accessible trivia games.</p>
-                  <a class="btn secondary" href="#" onclick="event.preventDefault(); openApp('bennyshub/apps/games/TRIVIAMASTER/index.html', 'Trivia Master')">Play Game</a>
-                </div>
-            </article>
-        </div>
-      </section>
-
-      <!-- Nonprofit Foundation Section -->
-      <section class="nonprofit-banner">
-        <h2>Our Nonprofit Foundation</h2>
-        <p>
-          We have a nonprofit foundation that enables us to build apps like this for a community of families and builders working together to create better accessibility tools. While our operational costs are minimal, your donation helps fund new initiatives including hardware procurement and donation programs for families in need.
-        </p>
-        <a class="btn primary" href="https://narbefoundation.org" target="_blank" rel="noopener noreferrer">
-          Visit NARBE Foundation
-        </a>
-      </section>
-
-      <section class="community-section">
-        <div class="section-header">
-          <h2>Join the Community</h2>
-          <p>Connect with families, caregivers, and developers building accessible tools together.</p>
-        </div>
-
-        <div class="community-grid">
-          <article class="community-card">
-            <div class="community-icon">🏠</div>
-            <h3>NARBE House</h3>
-            <p>Check out our website for all of our links, merch and resources.</p>
-            <a class="btn primary" href="https://narbehouse.com" target="_blank" rel="noopener noreferrer">
-              Visit Website
-            </a>
-          </article>
-
-          <article class="community-card">
-            <div class="community-icon">💬</div>
-            <h3>Join Discord</h3>
-            <p>Chat with other families, share tips, and get real-time support from the community.</p>
-            <a class="btn discord" href="https://discord.gg/b82emKJhTC" target="_blank" rel="noopener noreferrer">
-              Join Discord
-            </a>
-          </article>
-
-          <article class="community-card">
-            <div class="community-icon">⭐</div>
-            <h3>Contribute</h3>
-            <p>Star us on GitHub, submit issues, or contribute phrase boards and levels.</p>
-            <a class="btn github" href="https://github.com/narbehouse" target="_blank" rel="noopener noreferrer">
-              View on GitHub
-            </a>
-          </article>
-        </div>
-      </section>
-
-      <section class="cta-banner">
-        <h2>Share Your Accessibility Tools</h2>
-        <p>
-          We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page (coming soon to <strong>NARBEfoundation.org</strong>). Let's build an ecosystem that helps more families access the tools they need.
-        </p>
-        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-          <a class="btn primary" href="https://narbehouse.com" target="_blank" rel="noopener noreferrer">
-            Get in Touch
-          </a>
-          <a class="btn secondary" href="https://beacons.ai/narbehouse/connect" target="_blank" rel="noopener noreferrer">
-            Get Updates
-          </a>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-    <div id="iframe-app-container" class="iframe-container">
-        <div class="iframe-header">
-            <button class="iframe-back" onclick="closeApp(true)">← Exit to Benny's Hub</button>
-            <div id="iframe-title" class="iframe-title">App</div>
-        </div>
-        <div class="iframe-wrapper">
-            <iframe id="app-iframe" src="about:blank" title="App Content" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen"></iframe>
-        </div>
-    </div>
-
-  <noscript>
-    <div style="padding:20px; color:#fff; text-align:center; background:rgba(255,92,0,0.1); border-bottom: 2px solid var(--narbe-orange);">
-      This site works best with JavaScript enabled. Links still function without scripts.
-    </div>
-  </noscript>
-
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // App Launcher Logic
-    function openApp(path, title) {
-        const container = document.getElementById('iframe-app-container');
-        const iframe = document.getElementById('app-iframe');
-        const titleEl = document.getElementById('iframe-title');
-        
-        if (!container || !iframe) return;
-        
-        iframe.src = path;
-        titleEl.textContent = title;
-        container.classList.add('active');
-        
-        // Prevent body scrolling
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeApp(redirectToHub = false) {
-        const container = document.getElementById('iframe-app-container');
-        const iframe = document.getElementById('app-iframe');
-        
-        if (!container) return;
-        
-        container.classList.remove('active');
-        
-        // Clear src to stop audio/game
-        setTimeout(() => {
-            if (iframe) iframe.src = 'about:blank';
-            
-            if (redirectToHub) {
-                window.location.href = 'bennyshub/index.html';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NARBE House — Accessible Apps and Tools</title>
+    <meta name="description" content="Switch-accessible games and tools built for Ben and families like ours. Free and open source.">
+    <meta name="color-scheme" content="dark">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#0a0a0a',
+                        'charcoal': '#141414',
+                        'narbe-orange': '#ff5c00',
+                        'narbe-cyan': '#22d3ee',
+                        'access-violet': '#8b5cf6',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                }
             }
-        }, 300);
-        
-        // Restore body scrolling
-        document.body.style.overflow = '';
-    }
-
-    // Listen for messages from iframe content
-    window.addEventListener('message', (event) => {
-      // Handle exit/back requests from games
-      if (event.data && event.data.action === 'focusBackButton') {
-        const container = document.getElementById('iframe-app-container');
-        if (container && container.classList.contains('active')) {
-          // User requested "Exit" from within the game.
-          // As per request, redirect to bennyshub instead of staying on index.
-          closeApp(true);
         }
-      }
-    });
-  </script>
+    </script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0a0a0a;
+        }
+        
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 92, 0, 0.15);
+        }
+        
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        
+        /* Glow Effects */
+        .glow-orange {
+            box-shadow: 0 0 40px rgba(255, 92, 0, 0.3);
+        }
+        
+        .glow-cyan {
+            box-shadow: 0 0 40px rgba(34, 211, 238, 0.3);
+        }
+        
+        .text-glow-orange {
+            text-shadow: 0 0 30px rgba(255, 92, 0, 0.5);
+        }
+        
+        /* Grid Pattern */
+        .grid-pattern {
+            background-image: 
+                linear-gradient(rgba(255, 92, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 92, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Game Card Hover */
+        .game-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 0 30px rgba(255, 92, 0, 0.3),
+                0 0 60px rgba(255, 92, 0, 0.15);
+            border-color: rgba(255, 92, 0, 0.5);
+        }
+        
+        /* Gradient Border */
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #ff5c00, #22d3ee);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Iframe Modal */
+        .iframe-container {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            z-index: 9000;
+            display: none;
+            flex-direction: column;
+        }
+        .iframe-container.active { display: flex; }
+        
+        /* Mini Footer */
+        .mini-footer-expand {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .mini-footer.open .mini-footer-expand {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-deep-black text-white antialiased">
 
-  <!-- Minimal Legal Footer -->
-  <div class="mini-footer" id="mini-footer">
-    <div class="mini-footer-bar" onclick="document.getElementById('mini-footer').classList.toggle('open')">
-      <span>© 2026 NARBE LLC · Terms & Legal ▾</span>
-    </div>
-    <div class="mini-footer-expand">
-      <div class="mini-footer-content">
-        
-        <h4>⚠️ Disclaimer & Warranty</h4>
-        <p><strong>THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
-        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, NARBE LLC, OR THE NARBE FOUNDATION BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
-        <p>USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK. The authors and NARBE LLC make no representations or warranties regarding the accuracy, reliability, completeness, or timeliness of the software or its suitability for any particular purpose.</p>
-        
-        <h4>™ Trademark & Intellectual Property</h4>
-        <p>"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong>NARBE LLC</strong>. All rights reserved.</p>
-        <p>The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> applies to the <strong>source code only</strong> and does not grant any rights to use NARBE LLC's trademarks, trade names, logos, or branding.</p>
-        <p>Unauthorized use of NARBE LLC's trademarks is strictly prohibited and may violate trademark laws.</p>
-        
-        <h4>📜 License & Derivative Works</h4>
-        <p>This project's source code is licensed under the <strong>MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:</p>
-        <p>The above copyright notice and permission notice shall be included in all copies or substantial portions of the Software.</p>
-        <p><strong>DERIVATIVE WORKS:</strong> If you fork, modify, or redistribute this software, you <strong>MUST</strong>: (1) Clearly indicate that your version is a modified/derivative work and NOT the original project; (2) NOT use the names "Benny's Accessibility Hub," "NARBE," or any NARBE trademarks to imply endorsement, sponsorship, or official affiliation without express written permission from NARBE LLC; (3) Include original copyright notices and license.</p>
-        
-        <h4>🔒 Limitation of Liability</h4>
-        <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL NARBE LLC, ITS OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, AFFILIATES, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING BUT NOT LIMITED TO DAMAGES FOR LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, REGARDLESS OF WHETHER SUCH DAMAGES WERE FORESEEABLE OR WHETHER NARBE LLC WAS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
-        <p>SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF CERTAIN DAMAGES, SO SOME OF THE ABOVE LIMITATIONS MAY NOT APPLY TO YOU.</p>
-        
-        <h4>⚖️ Indemnification</h4>
-        <p>You agree to indemnify, defend, and hold harmless NARBE LLC, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable attorneys' fees) arising out of or in connection with your use of the Software, your violation of these terms, or your violation of any rights of another.</p>
-        
-        <h4>🌐 Governing Law</h4>
-        <p>These terms shall be governed by and construed in accordance with the laws of the State of Florida, United States, without regard to its conflict of law provisions. Any disputes arising under these terms shall be subject to the exclusive jurisdiction of the courts located in Florida.</p>
-        
-        <h4>📧 Contact</h4>
-        <p>For partnership, branding, or legal inquiries: <a href="https://narbehouse.com" target="_blank" rel="noopener">narbehouse.com</a></p>
-        
-        <div class="mini-footer-links">
-          <span style="color:var(--muted);font-size:10px;">© 2026 NARBE LLC. All rights reserved.</span>
-          <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
-          <a href="https://github.com/narbehouse/narbehouse.github.io" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://narbehouse.com" target="_blank" rel="noopener">NARBE LLC</a>
-          <a href="https://discord.gg/Mzr8AJNe2v" target="_blank" rel="noopener">Discord</a>
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-nav border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand -->
+                <a href="index.html" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-narbe-orange to-orange-600 flex items-center justify-center font-black text-sm text-white transition-transform group-hover:scale-105 group-hover:rotate-[-3deg]">
+                        NH
+                    </div>
+                    <div class="hidden sm:block">
+                        <div class="font-bold text-white">NARBE House</div>
+                        <div class="text-xs text-gray-500">Accessible Apps & Tools</div>
+                    </div>
+                </a>
+                
+                <!-- Nav Links -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <a href="ai-workflow.html" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-narbe-cyan font-medium hover:bg-narbe-cyan/10 transition-colors">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Vibe Coding
+                    </a>
+                    <a href="developer-guide.html" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-gray-400 font-medium hover:text-white hover:bg-white/5 transition-colors">
+                        Developer Guide
+                    </a>
+                    <a href="https://narbehouse.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2 bg-narbe-orange hover:bg-orange-600 rounded-lg font-semibold text-white text-sm transition-colors">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Support Us</span>
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
+    </nav>
+
+    <!-- ==================== HERO SECTION ==================== -->
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 grid-pattern opacity-40"></div>
+        <div class="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-narbe-orange/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-narbe-cyan/10 rounded-full blur-[100px]"></div>
+        
+        <!-- Content -->
+        <div class="relative z-10 text-center px-6 max-w-5xl mx-auto py-20">
+            <div class="reveal">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-narbe-orange text-sm font-medium mb-8">
+                    <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                    FREE & OPEN SOURCE
+                </span>
+            </div>
+            
+            <h1 class="reveal text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 text-glow-orange leading-tight">
+                Accessible Games &<br>
+                <span class="bg-gradient-to-r from-narbe-orange to-narbe-cyan bg-clip-text text-transparent">Tools for Everyone</span>
+            </h1>
+            
+            <p class="reveal text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                Switch-accessible apps built for <span class="text-narbe-orange font-semibold">Ben</span> and families like ours. 
+                Works with <span class="text-white">1 or 2 switches</span>, head tracking, and eye tracking.
+            </p>
+            
+            <div class="reveal flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="bennyshub/index.html" class="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-narbe-orange hover:bg-orange-600 rounded-xl font-bold transition-all duration-300 glow-orange">
+                    <i data-lucide="play" class="w-5 h-5"></i>
+                    Open Benny's Hub
+                    <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+                <a href="the-dream.html" class="inline-flex items-center justify-center gap-2 px-8 py-4 glass-card rounded-xl font-semibold hover:border-narbe-orange/50 transition-all duration-300">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-narbe-cyan"></i>
+                    See Our Dream
+                </a>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 reveal">
+            <div class="w-6 h-10 rounded-full border-2 border-gray-600 flex items-start justify-center p-2">
+                <div class="w-1 h-3 bg-narbe-orange rounded-full animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURED VIDEO SECTION ==================== -->
+    <section class="py-20 lg:py-28 relative">
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <div class="relative max-w-6xl mx-auto px-6">
+            <div class="reveal glass-card rounded-3xl overflow-hidden">
+                <div class="p-6 sm:p-8 flex flex-col sm:flex-row items-start gap-6 border-b border-white/5">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-narbe-orange to-orange-600 flex items-center justify-center text-2xl flex-shrink-0">
+                        🎮
+                    </div>
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-bold mb-2">Benny's Accessibility Hub</h2>
+                        <p class="text-gray-400">
+                            Predictive keyboard, customizable phrase boards, and games designed for switch access. 
+                            Full support for Space/Enter input, mouse, head tracking, and eye tracking.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Video -->
+                <div class="aspect-video bg-black">
+                    <iframe 
+                        class="w-full h-full"
+                        src="https://www.youtube.com/embed/oW3p4fnNMtA" 
+                        title="NARBE House: Benny's Accessibility Hub Tutorial" 
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                
+                <!-- Actions -->
+                <div class="p-6 sm:p-8 flex flex-wrap gap-3">
+                    <a href="bennyshub/index.html" class="inline-flex items-center gap-2 px-6 py-3 bg-narbe-orange hover:bg-orange-600 rounded-xl font-semibold transition-colors">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        Open Benny's Hub
+                    </a>
+                    <a href="developer-guide.html" class="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold transition-colors">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        Developer Guide
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== HIGHLIGHT CARDS ==================== -->
+    <section class="py-16 lg:py-24 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Vibe Coding -->
+                <a href="ai-workflow.html" class="reveal glass-card rounded-2xl p-8 game-card group cursor-pointer">
+                    <div class="w-14 h-14 rounded-2xl bg-narbe-orange/20 flex items-center justify-center text-3xl mb-6">
+                        🤖
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-narbe-orange transition-colors">Vibe Coding Guide</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                        Learn to build your own accessibility tools with AI as your thought partner. No coding experience required.
+                    </p>
+                    <span class="inline-flex items-center gap-2 text-narbe-orange font-semibold text-sm">
+                        Read the Guide
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </a>
+                
+                <!-- NARBE Foundation -->
+                <a href="https://narbefoundation.org" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 game-card group cursor-pointer" style="border-color: rgba(139, 92, 246, 0.15);">
+                    <div class="w-14 h-14 rounded-2xl bg-access-violet/20 flex items-center justify-center text-3xl mb-6">
+                        💝
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-access-violet transition-colors">NARBE Foundation</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                        Our nonprofit enables us to build these tools and help families in need with hardware donations.
+                    </p>
+                    <span class="inline-flex items-center gap-2 text-access-violet font-semibold text-sm">
+                        Learn More
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </span>
+                </a>
+                
+                <!-- Open Source -->
+                <a href="https://github.com/narbehouse" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 game-card group cursor-pointer" style="border-color: rgba(34, 211, 238, 0.15);">
+                    <div class="w-14 h-14 rounded-2xl bg-narbe-cyan/20 flex items-center justify-center text-3xl mb-6">
+                        ⭐
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 group-hover:text-narbe-cyan transition-colors">Open Source</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                        All our code is on GitHub. Star us, contribute, or fork it to build your own tools.
+                    </p>
+                    <span class="inline-flex items-center gap-2 text-narbe-cyan font-semibold text-sm">
+                        View on GitHub
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== GAMES & TOOLS GRID ==================== -->
+    <section id="games" class="py-16 lg:py-24 relative">
+        <div class="absolute inset-0 grid-pattern opacity-20"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-6">
+            <!-- Section Header -->
+            <div class="text-center mb-16 reveal">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-narbe-cyan text-sm font-medium mb-6">
+                    <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                    APPS LIBRARY
+                </span>
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Games & Tools</h2>
+                <p class="text-gray-400 text-lg max-w-xl mx-auto">
+                    All apps support switch access and include customizable options.
+                </p>
+            </div>
+            
+            <!-- Grid -->
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <!-- Tools -->
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/tools/keyboard.png" alt="Keyboard" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Communication</span>
+                        <h3 class="font-bold mb-2">Keyboard</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Predictive, simple input mapped for two-button access.</p>
+                        <button onclick="openApp('bennyshub/apps/tools/keyboard/index.html', 'Keyboard')" class="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold transition-colors">
+                            Launch Tool
+                        </button>
+                    </div>
+                </article>
+                
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/tools/phraseboard.png" alt="Phrase Board" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Communication</span>
+                        <h3 class="font-bold mb-2">Phrase & Media Board</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Editable phrase & media tiles with scanning and speak-out.</p>
+                        <button onclick="openApp('bennyshub/apps/tools/phraseboard/index.html', 'Phrase Board')" class="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold transition-colors">
+                            Launch Tool
+                        </button>
+                    </div>
+                </article>
+                
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/tools/ytsearch.png" alt="YouTube Search" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Entertainment</span>
+                        <h3 class="font-bold mb-2">YouTube Search</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Search and watch YouTube videos with accessible scanning controls.</p>
+                        <button onclick="openApp('bennyshub/apps/tools/ytsearch/index.html', 'YouTube Search')" class="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold transition-colors">
+                            Launch Tool
+                        </button>
+                    </div>
+                </article>
+
+                <!-- Games -->
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysays.png" alt="Benny Says" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Memory</span>
+                        <h3 class="font-bold mb-2">Benny Says</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">A simon says style game where you match the sequence.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSAYS/index.html', 'Benny Says')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysbaseball.png" alt="Benny's Baseball" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Sports</span>
+                        <h3 class="font-bold mb-2">Benny's Baseball</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Full baseball simulation game with no reaction needed.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSBASEBALL/index.html', 'Benny\'s Baseball')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysbasketball.png" alt="Basketball Shooter" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Sports</span>
+                        <h3 class="font-bold mb-2">Basketball Shooter</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Fun basketball shooting game with special bonus modes.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html', 'Basketball Shooter')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysbowling.png" alt="Benny's Bowling" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Sports</span>
+                        <h3 class="font-bold mb-2">Benny's Bowling</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Bowling game with physics, ball styles, and themes.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSBOWLING/index.html', 'Benny\'s Bowling')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysbugblaster.png" alt="Bug Blaster" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Strategy</span>
+                        <h3 class="font-bold mb-2">Bug Blaster</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Tower defense style game where you squash bugs.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSBUGBLASTER/index.html', 'Bug Blaster')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennyscheckers.png" alt="Chess & Checkers" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Board</span>
+                        <h3 class="font-bold mb-2">Chess & Checkers</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Classic Chess or Checkers vs computer or friend.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSCHESSCHECKERS/index.html', 'Chess & Checkers')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysmatchymatch.png" alt="Matchy Match" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <div class="flex gap-2 mb-3">
+                            <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Puzzle</span>
+                            <span class="inline-block px-2 py-1 rounded-md bg-narbe-cyan/10 text-[10px] uppercase tracking-wider text-narbe-cyan font-semibold">Editor</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Matchy Match</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Matching game with competitive modes. Includes Editor.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSMATCHYMATCH/index.html', 'Matchy Match')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennysminigolf.png" alt="Mini Golf" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <div class="flex gap-2 mb-3">
+                            <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Sports</span>
+                            <span class="inline-block px-2 py-1 rounded-md bg-narbe-cyan/10 text-[10px] uppercase tracking-wider text-narbe-cyan font-semibold">Editor</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Mini Golf</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Top-down minigolf for up to 4 players. Includes Course Editor.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSMINIGOLF/index.html', 'Mini Golf')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennyspeggle.png" alt="Benny's P3GL" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <div class="flex gap-2 mb-3">
+                            <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Arcade</span>
+                            <span class="inline-block px-2 py-1 rounded-md bg-narbe-cyan/10 text-[10px] uppercase tracking-wider text-narbe-cyan font-semibold">Editor</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Benny's P3GL</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Peggle style game with campaign/level editor.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSPEGGLE/index.html', 'Benny\'s P3GL')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennystictactoe.png" alt="Tic Tac Toe" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Strategy</span>
+                        <h3 class="font-bold mb-2">Tic Tac Toe</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Play vs computer or friends.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSTICTACTOE/index.html', 'Tic Tac Toe')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/bennyswordjumble.png" alt="Word Jumble" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Puzzle</span>
+                        <h3 class="font-bold mb-2">Word Jumble</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Rearrange the word to advance.</p>
+                        <button onclick="openApp('bennyshub/apps/games/BENNYSWORDJUMBLE/index.html', 'Word Jumble')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+
+                <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
+                    <img src="bennyshub/images/games/triviamaster.png" alt="Trivia Master" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
+                    <div class="p-5">
+                        <div class="flex gap-2 mb-3">
+                            <span class="inline-block px-2 py-1 rounded-md bg-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Trivia</span>
+                            <span class="inline-block px-2 py-1 rounded-md bg-narbe-cyan/10 text-[10px] uppercase tracking-wider text-narbe-cyan font-semibold">Editor</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Trivia Master</h3>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">Trivia engine to build your own accessible trivia games.</p>
+                        <button onclick="openApp('bennyshub/apps/games/TRIVIAMASTER/index.html', 'Trivia Master')" class="w-full py-2.5 bg-narbe-orange/20 hover:bg-narbe-orange/30 border border-narbe-orange/20 rounded-xl text-sm font-semibold text-narbe-orange transition-colors">
+                            Play Game
+                        </button>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== COMMUNITY SECTION ==================== -->
+    <section class="py-16 lg:py-24 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Section Header -->
+            <div class="text-center mb-16 reveal">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-access-violet text-sm font-medium mb-6">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    COMMUNITY
+                </span>
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Join the Community</h2>
+                <p class="text-gray-400 text-lg max-w-xl mx-auto">
+                    Connect with families, caregivers, and developers building accessible tools together.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <a href="https://narbehouse.com" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-narbe-orange/20 flex items-center justify-center text-3xl mb-6">
+                        🏠
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">NARBE House</h3>
+                    <p class="text-gray-400 text-sm mb-6">Check out our website for all links, merch and resources.</p>
+                    <span class="inline-flex items-center gap-2 px-6 py-3 bg-narbe-orange hover:bg-orange-600 rounded-xl font-semibold text-sm transition-colors">
+                        Visit Website
+                    </span>
+                </a>
+                
+                <a href="https://discord.gg/b82emKJhTC" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group" style="border-color: rgba(88, 101, 242, 0.15);">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-[#5865F2]/20 flex items-center justify-center text-3xl mb-6">
+                        💬
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Join Discord</h3>
+                    <p class="text-gray-400 text-sm mb-6">Chat with other families and get real-time support.</p>
+                    <span class="inline-flex items-center gap-2 px-6 py-3 bg-[#5865F2] hover:bg-[#4752c4] rounded-xl font-semibold text-sm transition-colors">
+                        Join Discord
+                    </span>
+                </a>
+                
+                <a href="https://github.com/narbehouse" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group" style="border-color: rgba(34, 211, 238, 0.15);">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-narbe-cyan/20 flex items-center justify-center text-3xl mb-6">
+                        ⭐
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Contribute</h3>
+                    <p class="text-gray-400 text-sm mb-6">Star us on GitHub or submit phrase boards and levels.</p>
+                    <span class="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold text-sm transition-colors">
+                        View GitHub
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CTA SECTION ==================== -->
+    <section class="py-16 lg:py-24 relative">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="reveal gradient-border rounded-3xl bg-charcoal p-8 sm:p-12 text-center">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Share Your Accessibility Tools</h2>
+                <p class="text-gray-400 max-w-xl mx-auto mb-8">
+                    We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page. 
+                    Let's build an ecosystem that helps more families.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="https://narbehouse.com" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-narbe-orange hover:bg-orange-600 rounded-xl font-semibold transition-colors">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                        Get in Touch
+                    </a>
+                    <a href="https://beacons.ai/narbehouse/connect" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold transition-colors">
+                        Get Updates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== IFRAME MODAL ==================== -->
+    <div id="iframe-app-container" class="iframe-container">
+        <div class="flex items-center gap-4 p-4 bg-charcoal border-b border-white/10">
+            <button onclick="closeApp(true)" class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold text-sm transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Exit to Benny's Hub
+            </button>
+            <span id="iframe-title" class="font-bold text-narbe-orange">App</span>
+        </div>
+        <div class="flex-1 relative">
+            <iframe id="app-iframe" src="about:blank" class="absolute inset-0 w-full h-full" title="App Content" allow="autoplay; fullscreen"></iframe>
+        </div>
     </div>
-  </div>
+
+    <!-- ==================== MINI LEGAL FOOTER ==================== -->
+    <footer class="mini-footer fixed bottom-0 left-0 right-0 bg-deep-black/95 backdrop-blur-lg border-t border-white/5 z-50" id="mini-footer">
+        <div class="mini-footer-bar flex justify-center items-center py-2 cursor-pointer" onclick="document.getElementById('mini-footer').classList.toggle('open')">
+            <span class="text-gray-500 text-xs">© <span id="year">2026</span> NARBE LLC · Terms & Legal ▾</span>
+        </div>
+        <div class="mini-footer-expand bg-deep-black">
+            <div class="max-w-3xl mx-auto p-6 text-xs text-gray-500 leading-relaxed">
+                
+                <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-0">⚠️ Disclaimer & Warranty</h4>
+                <p class="mb-4"><strong class="text-white">THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
+                <p class="mb-4">THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK.</p>
+                
+                <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">™ Trademark & Intellectual Property</h4>
+                <p class="mb-4">"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong class="text-white">NARBE LLC</strong>. All rights reserved.</p>
+                <p class="mb-4">The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener" class="text-narbe-cyan hover:text-narbe-orange transition-colors">MIT License</a> applies to the <strong class="text-white">source code only</strong> and does not grant any rights to use NARBE LLC's trademarks.</p>
+                
+                <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">📜 License & Derivative Works</h4>
+                <p class="mb-4">This project's source code is licensed under the <strong class="text-white">MIT License</strong>. If you fork, modify, or redistribute this software, you <strong class="text-white">MUST</strong> clearly indicate that your version is a modified/derivative work and NOT the original project.</p>
+                
+                <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">📧 Contact</h4>
+                <p class="mb-4">For partnership, branding, or legal inquiries: <a href="https://narbehouse.com" target="_blank" rel="noopener" class="text-narbe-cyan hover:text-narbe-orange transition-colors">narbehouse.com</a></p>
+                
+                <div class="flex flex-wrap gap-4 justify-center pt-4 border-t border-white/10 mt-4">
+                    <span>© <span id="footer-year">2026</span> NARBE LLC</span>
+                    <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+                    <a href="https://github.com/narbehouse/narbehouse.github.io" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+                    <a href="https://narbehouse.com" target="_blank" rel="noopener" class="hover:text-white transition-colors">NARBE LLC</a>
+                    <a href="https://discord.gg/Mzr8AJNe2v" target="_blank" rel="noopener" class="hover:text-white transition-colors">Discord</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Spacer for fixed footer -->
+    <div class="h-12"></div>
+
+    <noscript>
+        <div class="fixed top-16 left-0 right-0 bg-narbe-orange/20 border-b border-narbe-orange/30 p-4 text-center text-sm">
+            This site works best with JavaScript enabled. Links still function without scripts.
+        </div>
+    </noscript>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Update year
+        const year = new Date().getFullYear();
+        document.getElementById('year').textContent = year;
+        document.getElementById('footer-year').textContent = year;
+
+        // Scroll Reveal Animation
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // App Launcher
+        function openApp(path, title) {
+            const container = document.getElementById('iframe-app-container');
+            const iframe = document.getElementById('app-iframe');
+            const titleEl = document.getElementById('iframe-title');
+            
+            if (!container || !iframe) return;
+            
+            iframe.src = path;
+            titleEl.textContent = title;
+            container.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeApp(redirectToHub = false) {
+            const container = document.getElementById('iframe-app-container');
+            const iframe = document.getElementById('app-iframe');
+            
+            if (!container) return;
+            
+            container.classList.remove('active');
+            
+            setTimeout(() => {
+                if (iframe) iframe.src = 'about:blank';
+                if (redirectToHub) {
+                    window.location.href = 'bennyshub/index.html';
+                }
+            }, 300);
+            
+            document.body.style.overflow = '';
+        }
+
+        // Listen for messages from iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'focusBackButton') {
+                const container = document.getElementById('iframe-app-container');
+                if (container && container.classList.contains('active')) {
+                    closeApp(true);
+                }
+            }
+        });
+    </script>
 
 </body>
 </html>
