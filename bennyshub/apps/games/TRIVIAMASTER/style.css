@@ -169,6 +169,7 @@ body.theme-high-contrast #game-header {
 h1.title {
     font-size: 8vh;
     background: var(--primary-gradient);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 5vh;
@@ -228,18 +229,48 @@ button, .scannable {
 }
 
 /* Category Grid */
-#category-selection {
+#category-selection, #game-selection {
     justify-content: flex-start;
-    padding-top: 2vh;
+    padding-top: 1vh;
+}
+
+.grid-header {
+    width: 100%;
+    padding: 1vh 2vw;
+    display: flex;
+    justify-content: flex-start;
+    gap: 1vw;
+}
+
+.grid-header-btn {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 1.2vh 2vw;
+    border-radius: 8px;
+    font-size: 2vh;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grid-header-btn:hover {
+    background: #555;
+}
+
+.grid-header-btn.load-file {
+    background: #666;
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 2vh 2vw;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1.5vh 1.5vw;
     width: 100%;
-    height: 75vh; /* Fill remaining space */
+    height: 65vh; /* Reduced for better square fit */
+    flex-grow: 1;
 }
 
 .category-card {
@@ -521,10 +552,22 @@ body.theme-high-contrast .pause-content {
 /* Utility */
 #pause-btn {
     background: transparent;
-    font-size: 3vh;
-    color: var(--text-color);
-    padding: 10px;
+    font-size: 4vh;
+    padding: 5px;
     box-shadow: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+}
+
+#pause-btn:hover {
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 1)) drop-shadow(0 0 6px rgba(0, 0, 0, 0.7));
+}
+
+body.theme-high-contrast #pause-btn {
+    filter: drop-shadow(0 0 2px #ff0) drop-shadow(0 0 4px #ff0);
 }
 
 /* Answer Images */

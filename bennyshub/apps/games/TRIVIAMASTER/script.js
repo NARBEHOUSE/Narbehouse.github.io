@@ -1,6 +1,13 @@
 // Game State
 let TRIVIA_DATA = {}; // Loaded from JSON
 
+// Input configuration - matching other games (BENNYSTICTACTOE, BENNYSMATCHYMATCH)
+const config = {
+    longPress: 3000,        // 3 seconds to start backwards scanning
+    enterLongPress: 5000,   // 5 seconds for pause menu
+    repeatInterval: 2000    // 2 seconds between backward scans
+};
+
 const state = {
     score: 0,
     streak: 0,
@@ -23,19 +30,23 @@ const state = {
     audioContext: null,
     gameStartTime: 0,
     questionStartTime: 0,
-    answerSelected: false,
     categoryPage: 0,
     previousScreen: null, // To track where to go back from settings
-    inputState: {
-        spaceDownTime: 0,
-        enterDownTime: 0,
-        longPressThreshold: 3000, // 3 seconds
-        repeatInterval: 2000,     // 2 seconds
-        spaceTimer: null,
-        spaceInterval: null,
-        enterTimer: null,
-        spaceLongTriggered: false,
-        enterLongTriggered: false
+    answerLocked: false, // Prevent double-selection of answers
+    gamePage: 0, // For game selection pagination
+    // Input State (matching other games pattern)
+    input: {
+        spaceHeld: false,
+        enterHeld: false,
+        spaceTime: 0,
+        enterTime: 0,
+        spaceLongPressFired: false,
+        enterLongPressFired: false
+    },
+    timers: {
+        space: null,
+        spaceRepeat: null,
+        enter: null
     }
 };
 
@@ -44,8 +55,10 @@ const state = {
 
 const THEMES = ['Default', 'Dark', 'Pastel', 'Neon', 'High Contrast'];
 
-const CATS_PAGE_FIRST = 5;
-const CATS_PAGE_OTHER = 6;
+const CATS_PAGE_FIRST = 7; // 1 prev + 7 categories + 1 next = 9 slots (3x3 grid)
+const CATS_PAGE_OTHER = 7; // Same for all pages
+const GAMES_PAGE_FIRST = 7; // 1 prev + 7 games + 1 next = 9 slots (3x3 grid)
+const GAMES_PAGE_OTHER = 7; // Same for all pages
 const LEVEL_THRESHOLD = 5;
 
 // Audio Manager
@@ -282,7 +295,11 @@ function startScanning() {
         if (window.NarbeScanManager) {
             speed = window.NarbeScanManager.getScanInterval();
         }
-        state.scanTimer = setInterval(scanNext, speed);
+        state.scanTimer = setInterval(() => {
+            // Don't auto-scan while user is holding keys
+            if (state.input.spaceHeld || state.input.enterHeld) return;
+            scanNext();
+        }, speed);
     } else {
         state.scanTimer = null;
     }
@@ -581,67 +598,126 @@ function selectCurrent() {
     }
 }
 
-// Input Handling
+// Input Handling - Using the same pattern as other working games (BENNYSTICTACTOE, BENNYSMATCHYMATCH)
+function onSpaceLongPress() {
+    state.input.spaceLongPressFired = true;
+    
+    // Stop auto-scan while manually scanning backwards
+    if (state.scanTimer) clearInterval(state.scanTimer);
+    
+    scanPrev(); // Initial backward scan
+    
+    // Start repeating backward scan
+    const interval = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : config.repeatInterval;
+    state.timers.spaceRepeat = setInterval(() => {
+        scanPrev();
+    }, interval);
+}
+
+function onEnterLongPress() {
+    state.input.enterLongPressFired = true;
+    togglePause();
+}
+
+function onSpaceShortPress() {
+    scanNext();
+}
+
+function onEnterShortPress() {
+    selectCurrent();
+}
+
 function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
-        if (e.repeat) return; // Ignore auto-repeat
-
         if (e.code === 'Space') {
+            if (!state.input.spaceHeld) {
+                state.input.spaceHeld = true;
+                state.input.spaceTime = Date.now();
+                state.input.spaceLongPressFired = false;
+                state.timers.space = setTimeout(onSpaceLongPress, config.longPress);
+            }
             e.preventDefault();
-            state.inputState.spaceDownTime = Date.now();
-            
-            // Start timer for long press (3s)
-            state.inputState.spaceTimer = setTimeout(() => {
-                // Long press detected
-                state.inputState.spaceLongTriggered = true;
-                
-                // Stop auto-scan while manually scanning backwards
-                if (state.scanTimer) clearInterval(state.scanTimer);
-
-                scanPrev(); // Initial backward scan
-                
-                // Start repeating backward scan every 2s
-                state.inputState.spaceInterval = setInterval(() => {
-                    scanPrev();
-                }, state.inputState.repeatInterval);
-                
-            }, state.inputState.longPressThreshold);
-
-        } else if (e.code === 'Enter') {
+        } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+            if (!state.input.enterHeld) {
+                state.input.enterHeld = true;
+                state.input.enterTime = Date.now();
+                state.input.enterLongPressFired = false;
+                state.timers.enter = setTimeout(onEnterLongPress, config.enterLongPress);
+            }
             e.preventDefault();
-            state.inputState.enterDownTime = Date.now();
-            
-            // Start timer for long press (3s)
-            state.inputState.enterTimer = setTimeout(() => {
-                // Long press detected - Open Pause Menu immediately
-                state.inputState.enterLongTriggered = true;
-                togglePause();
-            }, state.inputState.longPressThreshold);
         }
     });
 
     document.addEventListener('keyup', (e) => {
         if (e.code === 'Space') {
-            e.preventDefault();
-            clearTimeout(state.inputState.spaceTimer);
-            clearInterval(state.inputState.spaceInterval);
+            // Clear timers first
+            clearTimeout(state.timers.space);
+            clearInterval(state.timers.spaceRepeat);
+            state.timers.space = null;
+            state.timers.spaceRepeat = null;
             
-            if (!state.inputState.spaceLongTriggered) {
-                // Short press - Scan Forward
-                scanNext();
+            const wasFired = state.input.spaceLongPressFired;
+            state.input.spaceHeld = false;
+            state.input.spaceLongPressFired = false;
+            
+            // Only perform short press if long press hasn't fired
+            if (!wasFired) {
+                onSpaceShortPress();
             }
+            
             startScanning(); // Reset/Resume auto scan timer if active
-            state.inputState.spaceLongTriggered = false;
-
-        } else if (e.code === 'Enter') {
-            e.preventDefault();
-            clearTimeout(state.inputState.enterTimer);
+        } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+            // Clear timers first
+            clearTimeout(state.timers.enter);
+            state.timers.enter = null;
             
-            if (!state.inputState.enterLongTriggered) {
-                // Short press - Select
-                selectCurrent();
+            const wasFired = state.input.enterLongPressFired;
+            state.input.enterHeld = false;
+            state.input.enterLongPressFired = false;
+            
+            // Only perform short press if long press hasn't fired
+            if (!wasFired) {
+                onEnterShortPress();
             }
-            state.inputState.enterLongTriggered = false;
+        }
+    });
+
+    // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+    document.addEventListener('narbe-input-cancelled', (e) => {
+        if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+            const wasBackScanning = !!state.timers.spaceRepeat;
+            // Reset space input state
+            state.input.spaceHeld = false;
+            state.input.spaceLongPressFired = false;
+            state.input.spaceTime = 0;
+            if (state.timers.space) {
+                clearTimeout(state.timers.space);
+                state.timers.space = null;
+            }
+            if (state.timers.spaceRepeat) {
+                clearInterval(state.timers.spaceRepeat);
+                state.timers.spaceRepeat = null;
+            }
+            // If cancelled due to 'too-short', still perform short press action
+            if (e.detail.reason === 'too-short' && !wasBackScanning) {
+                onSpaceShortPress();
+            }
+            startScanning();
+        }
+        if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+            const wasFired = state.input.enterLongPressFired;
+            // Reset enter input state
+            state.input.enterHeld = false;
+            state.input.enterLongPressFired = false;
+            state.input.enterTime = 0;
+            if (state.timers.enter) {
+                clearTimeout(state.timers.enter);
+                state.timers.enter = null;
+            }
+            // If cancelled due to 'too-short', still select
+            if (e.detail.reason === 'too-short' && !wasFired) {
+                onEnterShortPress();
+            }
         }
     });
 
@@ -654,6 +730,8 @@ function setupEventListeners() {
         const action = target.dataset.action;
         
         if (action === 'select-game') {
+            state.gamePage = 0; // Reset game page
+            allGamesCache = []; // Clear cache to reload
             loadGamesList();
             showScreen('game-selection');
         } else if (action === 'load-game') {
@@ -689,6 +767,11 @@ function setupEventListeners() {
             }, 500);
         } else if (action === 'back-to-menu') {
             showScreen('main-menu');
+        } else if (action === 'back-to-game-select') {
+            state.gamePage = 0; // Reset game page
+            allGamesCache = []; // Clear cache to reload
+            showScreen('game-selection');
+            loadGamesList(); // Load after showing screen (async)
         } else if (action === 'settings-back') {
             if (state.previousScreen === 'game-screen') {
                 // Return to game and re-open pause overlay
@@ -761,7 +844,23 @@ function setupEventListeners() {
             resetScanning();
         } else if (action === 'open-editor') {
             document.getElementById('editor-warning-overlay').classList.add('hidden');
-            window.open('trivia editor/index.html', '_blank');
+            // Launch editor in Chrome via Electron API (or fallback to direct URL)
+            const isElectron = typeof window !== 'undefined' && window.electronAPI;
+            if (isElectron && window.electronAPI.editor) {
+                window.electronAPI.editor.open('triviamaster').then(result => {
+                    if (result.success) {
+                        console.log('[Editor] Opened trivia editor in Chrome:', result.url);
+                    } else {
+                        console.error('[Editor] Failed to open editor:', result.error);
+                        window.open('trivia editor/index.html', '_blank');
+                    }
+                }).catch(err => {
+                    console.error('[Editor] Error:', err);
+                    window.open('trivia editor/index.html', '_blank');
+                });
+            } else {
+                window.open('trivia editor/index.html', '_blank');
+            }
             resetScanning();
         } else if (action === 'open-load-game-warning') {
             document.getElementById('load-game-warning-overlay').classList.remove('hidden');
@@ -807,6 +906,22 @@ function setupEventListeners() {
             }
             state.categoryPage = state.categoryPage <= 0 ? maxPage : state.categoryPage - 1;
             loadCategories();
+        } else if (action === 'next-game-page') {
+            const total = allGamesCache.length;
+            let maxPage = 0;
+            if (total > GAMES_PAGE_FIRST) {
+                maxPage = Math.ceil((total - GAMES_PAGE_FIRST) / GAMES_PAGE_OTHER);
+            }
+            state.gamePage = state.gamePage >= maxPage ? 0 : state.gamePage + 1;
+            loadGamesList();
+        } else if (action === 'prev-game-page') {
+            const total = allGamesCache.length;
+            let maxPage = 0;
+            if (total > GAMES_PAGE_FIRST) {
+                maxPage = Math.ceil((total - GAMES_PAGE_FIRST) / GAMES_PAGE_OTHER);
+            }
+            state.gamePage = state.gamePage <= 0 ? maxPage : state.gamePage - 1;
+            loadGamesList();
         } else if (action === 'repeat-question') {
             const q = state.questions[state.currentQuestionIndex];
             speak(q.question);
@@ -898,6 +1013,9 @@ function applyTheme(themeName) {
 }
 
 // Game Logic
+// Store all games for pagination
+let allGamesCache = [];
+
 async function loadGamesList() {
     const grid = document.getElementById('games-list');
     grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Loading games...</p>';
@@ -907,110 +1025,143 @@ async function loadGamesList() {
         const showOnline = source === 'ALL' || source === 'Online';
         const showLocal = source === 'ALL' || source === 'Local';
         
-        // Clear immediately before populating
-        grid.innerHTML = '';
-        let hasGames = false;
-
-        if (showOnline) {
-            // Try to fetch from manifest file
-            try {
-                const response = await fetch('games_manifest.json');
-                if (response.ok) {
-                    const games = await response.json();
-                    
-                    if (games.length > 0) {
-                        hasGames = true;
-                        // Process games in parallel to fetch images if needed
-                        const buttons = await Promise.all(games.map(async (game) => {
-                            const btn = document.createElement('button');
-                            btn.className = 'scannable category-card';
-                            btn.dataset.action = 'load-game';
-                            btn.dataset.path = game.path;
-                            
-                            let imageUrl = game.image;
-
-                            // If no image in manifest, try to fetch from game file
-                            if (!imageUrl && game.path) {
-                                try {
-                                    const gameResp = await fetch(game.path);
-                                    if (gameResp.ok) {
-                                        const gameData = await gameResp.json();
-                                        if (gameData.meta && gameData.meta.image) {
-                                            imageUrl = gameData.meta.image;
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.warn(`Failed to fetch image for ${game.name}`, err);
-                                }
-                            }
-                            
-                            let content = '';
-                            if (imageUrl) {
-                                content += `<img src="${imageUrl}" class="category-img" alt="">`;
-                                btn.classList.add('has-image');
-                            } else {
-                                content += `<i class="fas fa-gamepad"></i>`;
-                            }
-                            
-                            content += `<span>${game.name}</span>`;
-                            
-                            btn.innerHTML = content;
-                            return btn;
-                        }));
-
-                        buttons.forEach(btn => grid.appendChild(btn));
-                    }
-                }
-            } catch (e) {
-                console.warn("Manifest load failed", e);
-            }
-        }
-        
-        if (showLocal) {
-            // Check for Local Custom Games and add a button for EACH of them
-            const localLib = JSON.parse(localStorage.getItem('trivia_game_library') || '[]');
+        // Build the games list first (only on page 0 or cache empty)
+        if (state.gamePage === 0 || allGamesCache.length === 0) {
+            allGamesCache = [];
             
-            if (localLib.length > 0) {
-                hasGames = true;
-                localLib.forEach((game, index) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'scannable category-card';
-                    btn.dataset.action = 'load-local-game';
-                    btn.dataset.index = index;
-                    btn.style.border = '2px solid #4a90e2';
-                    
+            if (showOnline) {
+                // Try to fetch from manifest file
+                try {
+                    const response = await fetch('games_manifest.json');
+                    if (response.ok) {
+                        const games = await response.json();
+                        
+                        if (games.length > 0) {
+                            // Process games in parallel to fetch images if needed
+                            const gameEntries = await Promise.all(games.map(async (game) => {
+                                let imageUrl = game.image;
 
-                    let content = '';
-                    // Use game image if available
-                    if (game.meta && game.meta.image) {
-                        content += `<img src="${game.meta.image}" class="category-img" alt="">`;
-                        btn.classList.add('has-image');
-                    } else {
-                        content += `<i class="fas fa-user-edit"></i>`;
+                                // If no image in manifest, try to fetch from game file
+                                if (!imageUrl && game.path) {
+                                    try {
+                                        const gameResp = await fetch(game.path);
+                                        if (gameResp.ok) {
+                                            const gameData = await gameResp.json();
+                                            if (gameData.meta && gameData.meta.image) {
+                                                imageUrl = gameData.meta.image;
+                                            }
+                                        }
+                                    } catch (err) {
+                                        console.warn(`Failed to fetch image for ${game.name}`, err);
+                                    }
+                                }
+                                
+                                return {
+                                    type: 'online',
+                                    name: game.name,
+                                    path: game.path,
+                                    image: imageUrl
+                                };
+                            }));
+                            allGamesCache.push(...gameEntries);
+                        }
                     }
-                    
-
-                    const title = game.meta && game.meta.title ? game.meta.title : (game.name || "Custom Game");
-                    content += `<span>${title}</span>`;
-                    
-                    btn.innerHTML = content;
-                    grid.appendChild(btn); 
-                });
+                } catch (e) {
+                    console.warn("Manifest load failed", e);
+                }
+            }
+            
+            if (showLocal) {
+                // Check for Local Custom Games
+                const localLib = JSON.parse(localStorage.getItem('trivia_game_library') || '[]');
+                
+                if (localLib.length > 0) {
+                    localLib.forEach((game, index) => {
+                        const title = game.meta && game.meta.title ? game.meta.title : (game.name || "Custom Game");
+                        const imageUrl = game.meta && game.meta.image ? game.meta.image : null;
+                        
+                        allGamesCache.push({
+                            type: 'local',
+                            name: title,
+                            index: index,
+                            image: imageUrl
+                        });
+                    });
+                }
             }
         }
-
-        // Add "Load Local File" Option - Always available or only when Local is active?
-        // User probably expects to be able to load a file in "All" or "Local" modes.
-        // If "Online" is selected, user likely wants a restricted view. 
-        // Let's hide it in "Online" mode to match " Available Games" intent.
         
-        if (showLocal) {
-             addLoadFileButton(grid);
-             hasGames = true; // Always count load button as a game entry
+        // Clear the grid
+        grid.innerHTML = '';
+        
+        // Calculate pagination
+        const total = allGamesCache.length;
+        let start, end, itemsOnPage;
+        
+        if (state.gamePage === 0) {
+            start = 0;
+            end = GAMES_PAGE_FIRST;
+            itemsOnPage = GAMES_PAGE_FIRST;
+        } else {
+            start = GAMES_PAGE_FIRST + (state.gamePage - 1) * GAMES_PAGE_OTHER;
+            end = start + GAMES_PAGE_OTHER;
+            itemsOnPage = GAMES_PAGE_OTHER;
         }
         
-        if (!hasGames) {
-             grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No games found for selected filter.</p>';
+        const pageGames = allGamesCache.slice(start, end);
+        
+        // Prev Page button (always show, loops to last)
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'scannable category-card';
+        prevBtn.dataset.action = 'prev-game-page';
+        prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Prev Page';
+        prevBtn.style.background = '#666';
+        grid.appendChild(prevBtn);
+        
+        // Add game buttons for this page
+        pageGames.forEach(game => {
+            const btn = document.createElement('button');
+            btn.className = 'scannable category-card';
+            
+            if (game.type === 'online') {
+                btn.dataset.action = 'load-game';
+                btn.dataset.path = game.path;
+            } else {
+                btn.dataset.action = 'load-local-game';
+                btn.dataset.index = game.index;
+                btn.style.border = '2px solid #4a90e2';
+            }
+            
+            let content = '';
+            if (game.image) {
+                content += `<img src="${game.image}" class="category-img" alt="">`;
+                btn.classList.add('has-image');
+            } else {
+                content += game.type === 'online' ? '<i class="fas fa-gamepad"></i>' : '<i class="fas fa-user-edit"></i>';
+            }
+            
+            content += `<span>${game.name}</span>`;
+            btn.innerHTML = content;
+            grid.appendChild(btn);
+        });
+        
+        // Show/hide header Load File button based on source setting
+        const showLoadFile = (source === 'ALL' || source === 'Local');
+        const headerLoadFileBtn = document.getElementById('header-load-file-btn');
+        if (headerLoadFileBtn) {
+            headerLoadFileBtn.style.display = showLoadFile ? 'flex' : 'none';
+        }
+        
+        // Next Page button (always show to allow looping)
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'scannable category-card';
+        nextBtn.dataset.action = 'next-game-page';
+        nextBtn.innerHTML = 'Next Page <i class="fas fa-arrow-right"></i>';
+        nextBtn.style.background = '#666';
+        grid.appendChild(nextBtn);
+        
+        if (allGamesCache.length === 0 && !showLoadFile) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No games found for selected filter.</p>';
         }
 
         resetScanning();
@@ -1019,21 +1170,13 @@ async function loadGamesList() {
         console.warn("Error loading games list", e);
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Error loading games.</p>';
         
-        // Add "Load Local File" Option in case of error, if local is allowed
-        if (state.settings.gamesSource !== 'Online') {
-             addLoadFileButton(grid);
+        // Show/hide header Load File button based on source setting
+        const headerLoadFileBtn = document.getElementById('header-load-file-btn');
+        if (headerLoadFileBtn) {
+            headerLoadFileBtn.style.display = state.settings.gamesSource !== 'Online' ? 'flex' : 'none';
         }
         resetScanning();
     }
-}
-
-function addLoadFileButton(grid) {
-    const fileBtn = document.createElement('button');
-    fileBtn.className = 'scannable category-card';
-    fileBtn.style.background = '#666';
-    fileBtn.innerHTML = `<i class="fas fa-folder-open"></i> <span>Load File...</span>`;
-    fileBtn.dataset.action = 'open-load-game-warning'; // Changed action to trigger warning
-    grid.appendChild(fileBtn);
 }
 
 function saveToLibrary(json, filename) {
@@ -1157,31 +1300,13 @@ function loadCategories() {
     // Load category scores
     const categoryScores = JSON.parse(localStorage.getItem('trivia_category_scores') || '{}');
 
-    // Pagination Controls - Prev (First)
-    if (state.categoryPage === 0) {
-        // Main Menu Button
-        const menuBtn = document.createElement('button');
-        menuBtn.className = 'scannable category-card';
-        menuBtn.dataset.action = 'back-to-menu';
-        menuBtn.innerHTML = '<i class="fas fa-home"></i> Main Menu';
-        menuBtn.style.background = '#444';
-        grid.appendChild(menuBtn);
-
-        // Prev Page (Loops to last)
-        const prevBtn = document.createElement('button');
-        prevBtn.className = 'scannable category-card';
-        prevBtn.dataset.action = 'prev-page';
-        prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Prev Page';
-        prevBtn.style.background = '#666';
-        grid.appendChild(prevBtn);
-    } else {
-        const prevBtn = document.createElement('button');
-        prevBtn.className = 'scannable category-card';
-        prevBtn.dataset.action = 'prev-page';
-        prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Prev Page';
-        prevBtn.style.background = '#666';
-        grid.appendChild(prevBtn);
-    }
+    // Prev Page button (always show, loops to last)
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'scannable category-card';
+    prevBtn.dataset.action = 'prev-page';
+    prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Prev Page';
+    prevBtn.style.background = '#666';
+    grid.appendChild(prevBtn);
 
     pageCategories.forEach(cat => {
         const btn = document.createElement('button');
@@ -1470,8 +1595,9 @@ function loadQuestion() {
     // Adjust font size to fit
     setTimeout(adjustQuestionFontSize, 50); // Small delay to allow render
 
+    // Reset answer lock for new question
+    state.answerLocked = false;
     state.questionStartTime = Date.now();
-    state.answerSelected = false;
     resetScanning();
 
     // Start scanning on the Question Text immediately
@@ -1483,9 +1609,9 @@ function loadQuestion() {
 }
 
 function handleAnswer(btn) {
-    // Prevent selecting multiple answers per question
-    if (state.answerSelected) return;
-    state.answerSelected = true;
+    // Prevent double-selection of answers
+    if (state.answerLocked) return;
+    state.answerLocked = true;
     
     const isCorrect = btn.dataset.isCorrect === 'true';
     

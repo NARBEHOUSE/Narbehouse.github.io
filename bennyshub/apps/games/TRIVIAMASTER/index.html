@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benny's Trivia Master</title>
+    <title>Trivia Game</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
@@ -18,12 +18,12 @@
             <div class="hud-item" id="score-display"><i class="fas fa-star"></i> <span id="score">0</span></div>
             <div class="hud-item" id="streak-display"><i class="fas fa-fire"></i> <span id="streak">0</span>x</div>
             <div class="hud-item" id="progress-display">Q: <span id="current-q">1</span>/<span id="total-q">10</span></div>
-            <button id="pause-btn" data-action="pause-game" aria-label="Pause Game"><i class="fas fa-pause"></i></button>
+            <button id="pause-btn" data-action="pause-game" aria-label="Pause Game">⏸️</button>
         </header>
 
         <!-- Main Menu -->
         <section id="main-menu" class="screen active">
-            <h1 class="title">BENNY'S TRIVIA MASTER</h1>
+            <h1 class="title">TRIVIA MASTER</h1>
             <div class="menu-options">
                 <button class="scannable menu-btn" data-action="select-game">
                     <i class="fas fa-gamepad"></i> Select Game
@@ -40,15 +40,21 @@
         <!-- Game Selection Screen -->
         <section id="game-selection" class="screen">
             <h2>Select a Game</h2>
+            <div class="grid-header">
+                <button class="scannable grid-header-btn" data-action="back-to-menu"><i class="fas fa-home"></i> Main Menu</button>
+                <button class="scannable grid-header-btn load-file" id="header-load-file-btn" data-action="open-load-game-warning"><i class="fas fa-folder-open"></i> Load File</button>
+            </div>
             <div id="games-list" class="grid-container">
                 <!-- Games injected by JS -->
             </div>
-            <button class="scannable back-btn" data-action="back-to-menu" style="margin-top: 20px;">Back</button>
         </section>
 
         <!-- Category Selection -->
         <section id="category-selection" class="screen">
             <h2>Choose a Category</h2>
+            <div class="grid-header">
+                <button class="scannable grid-header-btn" data-action="back-to-game-select"><i class="fas fa-gamepad"></i> Game Select</button>
+            </div>
             <div id="category-grid" class="grid-container">
                 <!-- Categories injected by JS -->
             </div>
