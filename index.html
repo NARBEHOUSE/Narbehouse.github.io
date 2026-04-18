@@ -117,6 +117,7 @@
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
+            pointer-events: none;
         }
         
         /* Iframe Modal */
@@ -599,7 +600,7 @@
                     We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page. 
                     Let's build an ecosystem that helps more families.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
                     <a href="https://narbehouse.com" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-narbe-orange hover:bg-orange-600 rounded-xl font-semibold transition-colors">
                         <i data-lucide="mail" class="w-5 h-5"></i>
                         Get in Touch
