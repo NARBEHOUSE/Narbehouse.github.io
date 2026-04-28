@@ -370,6 +370,12 @@ class GameLogic {
         // Player didn't swing - determine outcome (ball, strike, or hit by pitch)
         const gameState = this.game.gameState;
         
+        // Guard: If player already swung (isSwinging is true), don't process pitch complete
+        // This prevents double outcomes when swinging early
+        if (gameState.interactiveBatting.isSwinging) {
+            return;
+        }
+        
         // If player is still charging (swingPressed but hasn't released or auto-bunted),
         // they missed their chance - treat as no swing (ball or strike)
         if (gameState.interactiveBatting.swingPressed && !gameState.interactiveBatting.swingReleased) {
@@ -398,6 +404,14 @@ class GameLogic {
     
     processNoSwing() {
         const gameState = this.game.gameState;
+        const ib = gameState.interactiveBatting;
+        
+        // Guard: Prevent processing multiple outcomes for the same pitch
+        if (ib.outcomeProcessed) {
+            return;
+        }
+        ib.outcomeProcessed = true;
+        
         const location = gameState.selectedPitchLocation;
         
         // Determine outcome based on pitch location
@@ -611,6 +625,16 @@ class GameLogic {
         const gameState = this.game.gameState;
         gameState.interactiveBatting.isSwinging = true;
         
+        // Stop the pitch animation - player swung, we don't want onPitchComplete to fire
+        if (this.game.animationSystem.interactivePitchState) {
+            this.game.animationSystem.interactivePitchState.active = false;
+            // Clear the timeout that would otherwise call onPitchComplete
+            if (this.game.animationSystem.interactivePitchState.timeoutId) {
+                clearTimeout(this.game.animationSystem.interactivePitchState.timeoutId);
+                this.game.animationSystem.interactivePitchState.timeoutId = null;
+            }
+        }
+        
         // Play swing sound
         this.game.audioSystem.playSound('swing');
 
@@ -673,6 +697,12 @@ class GameLogic {
     processInteractiveSwingOutcome() {
         const gameState = this.game.gameState;
         const ib = gameState.interactiveBatting;
+        
+        // Guard: Prevent processing multiple outcomes for the same pitch
+        if (ib.outcomeProcessed) {
+            return;
+        }
+        ib.outcomeProcessed = true;
         
         const swingType = ib.swingType; // 'normal', 'power', or 'bunt'
         const timingScore = Math.abs(ib.timingScore); // 0 = perfect, higher = worse

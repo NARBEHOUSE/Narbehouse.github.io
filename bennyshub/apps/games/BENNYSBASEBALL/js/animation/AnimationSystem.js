@@ -951,16 +951,21 @@ class AnimationSystem {
                 to: to,
                 pitchType: pitchType,
                 startTime: startTime,
-                duration: duration
+                duration: duration,
+                timeoutId: null
             };
             
             // Add timeout to prevent infinite animation
             const timeoutId = setTimeout(() => {
                 console.warn('Interactive pitch animation timeout, forcing completion');
                 this.interactivePitchState.active = false;
+                this.interactivePitchState.timeoutId = null;
                 this.game.gameState.animating = false;
                 this.safeCallback(completeCallback);
             }, duration + 2000);
+            
+            // Store timeout ID so it can be cleared when swing cancels the animation
+            this.interactivePitchState.timeoutId = timeoutId;
 
             const animate = () => {
                 try {

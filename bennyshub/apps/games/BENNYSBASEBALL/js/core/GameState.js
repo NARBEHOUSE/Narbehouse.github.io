@@ -52,7 +52,8 @@ class GameState {
             swingAnimationProgress: 0,
             ballInStrikeZone: false,
             selectedRunner: null,      // For steal attempts
-            waitingForSwing: false
+            waitingForSwing: false,
+            outcomeProcessed: false    // Prevents double outcome processing
         };
         
         // Input handling
@@ -135,7 +136,8 @@ class GameState {
             swingAnimationProgress: 0,
             ballInStrikeZone: false,
             selectedRunner: null,
-            waitingForSwing: false
+            waitingForSwing: false,
+            outcomeProcessed: false  // Prevents double outcome processing
         };
     }
     

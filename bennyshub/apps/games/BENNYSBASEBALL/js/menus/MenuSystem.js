@@ -827,8 +827,8 @@ class MenuSystem {
             this.showColorSelectMenu('exhibition');
         } else if (option === 'Season Mode') {
             this.showColorSelectMenu('season');
-        } else if (option.includes('Resume Season')) {
-            // Resume existing season - start a new game with the existing season's team color
+        } else if (option.includes('Resume Season') || option.includes('Resume Championship') || option.includes('Resume Playoffs')) {
+            // Resume existing season/playoffs/championship - start a new game with the existing season's team color
             this.game.gameLogic.startGameWithSettings('season', this.game.seasonManager.data.teamColor);
         } else if (option === 'Back') {
             this.showMainMenu();

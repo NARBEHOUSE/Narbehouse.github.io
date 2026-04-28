@@ -123,20 +123,42 @@ class SeasonManager {
             return null;
         }
 
-        // If in championship, use the championship opponent
-        if (this.data.inChampionship && this.data.championshipOpponent) {
+        // If in championship, use the championship opponent (or set one if missing)
+        if (this.data.inChampionship) {
             // Check if series is already over (Best of 5, first to 3 wins)
             if (this.data.championshipWins >= 3 || this.data.championshipLosses >= 3) {
                 return null;
             }
+            // If we're in championship but somehow don't have an opponent, set one
+            if (!this.data.championshipOpponent) {
+                const availableOpponents = GAME_CONSTANTS.COLOR_OPTIONS
+                    .filter(c => c.name !== this.data.teamColor && c.name !== this.data.playoffOpponent);
+                if (availableOpponents.length > 0) {
+                    this.data.championshipOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)].name;
+                } else {
+                    // Fallback if no other opponents available
+                    const fallback = GAME_CONSTANTS.COLOR_OPTIONS.filter(c => c.name !== this.data.teamColor);
+                    this.data.championshipOpponent = fallback[Math.floor(Math.random() * fallback.length)].name;
+                }
+                this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
+                this.save();
+            }
             return GAME_CONSTANTS.COLOR_OPTIONS.find(c => c.name === this.data.championshipOpponent);
         }
         
-        // If in playoffs, use the playoff opponent
-        if (this.data.inPlayoffs && this.data.playoffOpponent) {
+        // If in playoffs, use the playoff opponent (or set one if missing)
+        if (this.data.inPlayoffs) {
             // Check if series is already over (Best of 3, first to 2 wins)
             if (this.data.playoffWins >= 2 || this.data.playoffLosses >= 2) {
                 return null;
+            }
+            // If we're in playoffs but somehow don't have an opponent, set one
+            if (!this.data.playoffOpponent) {
+                const availableOpponents = GAME_CONSTANTS.COLOR_OPTIONS
+                    .filter(c => c.name !== this.data.teamColor);
+                this.data.playoffOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)].name;
+                this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
+                this.save();
             }
             return GAME_CONSTANTS.COLOR_OPTIONS.find(c => c.name === this.data.playoffOpponent);
         }
@@ -299,10 +321,18 @@ class SeasonManager {
                     const championshipOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
                     this.data.championshipOpponent = championshipOpponent.name;
                 } else {
-                    // Fallback: if somehow no other opponents available, use any opponent except player's team
-                    const fallbackOpponents = GAME_CONSTANTS.COLOR_OPTIONS.filter(c => c.name !== this.data.teamColor);
-                    const championshipOpponent = fallbackOpponents[Math.floor(Math.random() * fallbackOpponents.length)];
-                    this.data.championshipOpponent = championshipOpponent.name;
+                    // Fallback: if somehow no other opponents available (shouldn't happen with 9 colors),
+                    // use any opponent except player's team - but this case should be extremely rare
+                    const fallbackOpponents = GAME_CONSTANTS.COLOR_OPTIONS.filter(c => c.name !== this.data.teamColor && c.name !== this.data.playoffOpponent);
+                    if (fallbackOpponents.length > 0) {
+                        const championshipOpponent = fallbackOpponents[Math.floor(Math.random() * fallbackOpponents.length)];
+                        this.data.championshipOpponent = championshipOpponent.name;
+                    } else {
+                        // Ultimate fallback - just pick any team that isn't the player (should never reach here)
+                        const ultimateFallback = GAME_CONSTANTS.COLOR_OPTIONS.filter(c => c.name !== this.data.teamColor);
+                        const championshipOpponent = ultimateFallback[Math.floor(Math.random() * ultimateFallback.length)];
+                        this.data.championshipOpponent = championshipOpponent.name;
+                    }
                 }
                 
                 this.data.inChampionship = true;
