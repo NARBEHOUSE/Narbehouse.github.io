@@ -38,6 +38,42 @@ class SeasonManager {
             if (this.data.playoffLosses === undefined) this.data.playoffLosses = 0;
             if (this.data.seriesHomeTeamIsPlayer === undefined) this.data.seriesHomeTeamIsPlayer = null;
             if (this.data.justWonPlayoffs === undefined) this.data.justWonPlayoffs = false;
+            if (this.data.opponentSchedule === undefined) this.data.opponentSchedule = [];
+            if (this.data.opponentResults === undefined) this.data.opponentResults = {};
+            if (this.data.currentScheduleIndex === undefined) this.data.currentScheduleIndex = 0;
+            if (this.data.seasonFailed === undefined) this.data.seasonFailed = false;
+            
+            // CRITICAL FIX: If season is active and regular season should be over (8+ games played),
+            // but we're not in playoffs/championship, force the transition
+            if (this.data.active && !this.data.inPlayoffs && !this.data.inChampionship && !this.data.seasonFailed) {
+                const totalRegularSeasonGames = this.data.wins + this.data.losses;
+                if (totalRegularSeasonGames >= 8) {
+                    // Regular season is over, need to transition
+                    if (this.data.wins === 8 && this.data.losses === 0) {
+                        // Perfect season - go to championship
+                        this.data.inChampionship = true;
+                        const availableOpponents = GAME_CONSTANTS.COLOR_OPTIONS
+                            .filter(c => c.name !== this.data.teamColor);
+                        this.data.championshipOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)].name;
+                        this.data.championshipWins = 0;
+                        this.data.championshipLosses = 0;
+                        this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
+                    } else if (this.data.wins >= 5) {
+                        // Qualified for playoffs
+                        this.data.inPlayoffs = true;
+                        const availableOpponents = GAME_CONSTANTS.COLOR_OPTIONS
+                            .filter(c => c.name !== this.data.teamColor);
+                        this.data.playoffOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)].name;
+                        this.data.playoffWins = 0;
+                        this.data.playoffLosses = 0;
+                        this.data.seriesHomeTeamIsPlayer = Math.random() < 0.5;
+                    } else {
+                        // Did not qualify
+                        this.data.seasonFailed = true;
+                    }
+                    this.save();
+                }
+            }
         }
     }
 
@@ -164,10 +200,15 @@ class SeasonManager {
         }
         
         // Regular season - check if we've completed all scheduled games
-        if (this.data.currentScheduleIndex >= this.data.opponentSchedule.length) {
+        // ALSO check if total games played >= 8 (safety check for older saves without schedule)
+        const totalGamesPlayed = this.data.wins + this.data.losses;
+        const scheduleComplete = this.data.currentScheduleIndex >= this.data.opponentSchedule.length;
+        const regularSeasonOver = scheduleComplete || totalGamesPlayed >= 8;
+        
+        if (regularSeasonOver) {
             // Regular season complete
             // Check if player won all 8 games (perfect season)
-            if (this.data.wins === 8 && this.data.losses === 0) {
+            if (this.data.wins >= 8 && this.data.losses === 0) {
                 // Perfect season! Skip playoffs, go straight to championship
                 this.data.inChampionship = true;
                 
