@@ -40,7 +40,7 @@ let scan_speed_index = 1; // Default 2.0s
 let last_autoscan_time = 0;
 let sfx_enabled = true;
 let music_enabled = true;
-let music_volume = 0.25;
+let music_volume = 0.15;
 
 let bgMusic = new Audio('sounds/bug-defender-cozy.wav');
 bgMusic.loop = true;
@@ -98,12 +98,9 @@ function startMusic() {
 
 // --- TTS ---
 function speak(text) {
+    if (!tts_enabled) return;
     if (window.NarbeVoiceManager) {
         window.NarbeVoiceManager.speak(text);
-    } else if (tts_enabled && 'speechSynthesis' in window) {
-        speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        speechSynthesis.speak(u);
     }
 }
 
@@ -3038,7 +3035,7 @@ function draw_settings_menu() {
     }
 
     let options = [
-        "TTS: " + (window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? "ON" : "OFF") : (tts_enabled ? "ON" : "OFF")),
+        "TTS: " + (tts_enabled ? "ON" : "OFF"),
         "Autoscan: " + autoscanDisplay,
         "Scan Speed: " + speedDisplay,
         "Auto Stomp: " + (auto_stomp_enabled ? "ON" : "OFF"),
@@ -3601,6 +3598,34 @@ function scanBackward() {
         }
         speakSelection();
     }
+    else if (gameState === 'MENU') {
+         menu_selected_index = (menu_selected_index - 1 + 4) % 4;
+         let opts = ["Play Game", "Instructions", "Settings", "Exit Game"];
+         speak(opts[menu_selected_index]);
+    }
+    else if (gameState === 'INSTRUCTIONS') {
+         menu_selected_index = 0; // Only one option
+         speak("Back");
+    }
+    else if (gameState === 'PAUSED') {
+         menu_selected_index = (menu_selected_index - 1 + 4) % 4;
+         let opts = ["Continue", "Restart Level", "Settings", "Main Menu"];
+         speak(opts[menu_selected_index]);
+    }
+    else if (gameState === 'SETTINGS') {
+         menu_selected_index = (menu_selected_index - 1 + 7) % 7;
+         let opts = ["TTS", "Auto Scan", "Scan Speed", "Auto Stomp", "SFX", "Music", "Back"];
+         speak(opts[menu_selected_index]);
+    }
+    else if (gameState === 'CONFIRM_EXIT') {
+        if (menu_selected_index === -1) menu_selected_index = 0;
+        else menu_selected_index = (menu_selected_index - 1 + 2) % 2;
+        
+        speak(menu_selected_index === 0 ? "Cancel" : "Proceed");
+    }
+    else if (gameState === 'PLAYING') {
+         cycle_stomp_target();
+    }
 }
 
 let settings_return_state = 'MENU';
@@ -3721,12 +3746,7 @@ function selectAction() {
          }
     } else if (gameState === 'SETTINGS') {
         if (menu_selected_index === 0) { // TTS
-            if (window.NarbeVoiceManager) {
-                window.NarbeVoiceManager.toggleTTS();
-                tts_enabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
-            } else {
-                tts_enabled = !tts_enabled;
-            }
+            tts_enabled = !tts_enabled;
             speak("TTS " + (tts_enabled ? "On" : "Off"));
         } else if (menu_selected_index === 1) { // Autoscan
             if (typeof window.NarbeScanManager !== 'undefined') {
@@ -3778,7 +3798,15 @@ function selectAction() {
 }
 
 
+// Input state for timeouts
+let spaceHoldTimeout = null;
+let enterHoldTimeout = null;
+let spaceBackwardInterval = null;
+let backwardScanAnnounced = false;
+
 window.addEventListener('keydown', (e) => {
+    if (e.repeat) return; // Ignore auto-repeat
+    
     startMusic();
     
     if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
@@ -3788,61 +3816,126 @@ window.addEventListener('keydown', (e) => {
     if (!keysPressed[e.code]) {
         keysPressed[e.code] = true;
         keyTimers[e.code] = Date.now();
+        
+        // Set timeout for backward scan (Space) - only if not already active
+        if (e.code === 'Space' && !spaceHoldTimeout && !spaceBackwardInterval) {
+            backwardScanAnnounced = false;
+            spaceHoldTimeout = setTimeout(() => {
+                if (keysPressed['Space']) {
+                    startBackwardScan();
+                }
+                spaceHoldTimeout = null;
+            }, 3000);
+        }
+        
+        // Set timeout for pause (Enter during gameplay) - only if not already active
+        if (e.code === 'Enter' && gameState === 'PLAYING' && !enterHoldTimeout) {
+            enterHoldTimeout = setTimeout(() => {
+                if (keysPressed['Enter'] && gameState === 'PLAYING') {
+                    gameState = 'PAUSED';
+                    pauseStartTime = Date.now()/1000;
+                    menu_selected_index = -1;
+                    speak("Paused");
+                }
+                enterHoldTimeout = null;
+            }, 5000); // 5 seconds for pause menu
+        }
     }
 });
 
+function startBackwardScan() {
+    if (!backwardScanAnnounced) {
+        // speak("Backwards scanning");
+        backwardScanAnnounced = true;
+    }
+    
+    // Perform first backward scan
+    if (gameState === 'PLAYING') cycle_stomp_target();
+    else scanBackward();
+    
+    // Set interval for continued scanning
+    let interval = (gameState === 'PLAYING') ? 500 : (window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000);
+    spaceBackwardInterval = setInterval(() => {
+        if (keysPressed['Space']) {
+            if (gameState === 'PLAYING') cycle_stomp_target();
+            else scanBackward();
+        } else {
+            stopBackwardScan();
+        }
+    }, interval);
+}
+
+function stopBackwardScan() {
+    if (spaceBackwardInterval) {
+        clearInterval(spaceBackwardInterval);
+        spaceBackwardInterval = null;
+    }
+    backwardScanAnnounced = false;
+}
+
 window.addEventListener('keyup', (e) => {
-    let duration = Date.now() - keyTimers[e.code];
     keysPressed[e.code] = false;
     
     if (e.code === 'Space') {
-        if (duration < 3000) {
-            scanForward(); // Back to Forward on Tap
+        // Clear the hold timeout
+        if (spaceHoldTimeout) {
+            clearTimeout(spaceHoldTimeout);
+            spaceHoldTimeout = null;
+        }
+        
+        // Check if we were backward scanning
+        const wasBackwardScanning = spaceBackwardInterval !== null;
+        stopBackwardScan();
+        
+        // Only forward scan if not backward scanning
+        if (!wasBackwardScanning) {
+            scanForward();
         }
     }
     
     if (e.code === 'Enter') {
-        if (duration < 6000) {
+        // Clear the hold timeout
+        if (enterHoldTimeout) {
+            clearTimeout(enterHoldTimeout);
+            enterHoldTimeout = null;
+        }
+        
+        selectAction();
+    }
+});
+
+// Listen for cancelled inputs from scan-manager
+document.addEventListener('narbe-input-cancelled', (e) => {
+    if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+        keysPressed['Space'] = false;
+        if (spaceHoldTimeout) {
+            clearTimeout(spaceHoldTimeout);
+            spaceHoldTimeout = null;
+        }
+        const wasBackwardScanning = spaceBackwardInterval !== null;
+        stopBackwardScan();
+        // If cancelled due to 'too-short', still forward scan
+        if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
+            scanForward();
+        }
+    }
+    if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+        keysPressed['Enter'] = false;
+        if (enterHoldTimeout) {
+            clearTimeout(enterHoldTimeout);
+            enterHoldTimeout = null;
+        }
+        // If cancelled due to 'too-short', still select
+        if (e.detail.reason === 'too-short') {
             selectAction();
         }
     }
 });
 
-// Input Loop Check (run effectively every frame via main loop)
+// Input Loop Check - now only handles legacy behaviors, main timing is done via setTimeout
 function checkInputHolds() {
-    let now = Date.now();
-    
-    // Space Hold Logic -> Scan Backward
-    if (keysPressed['Space']) {
-        let duration = now - keyTimers['Space'];
-        if (duration > 3000) {
-            if (!keysPressed['Space_LastScan']) keysPressed['Space_LastScan'] = now;
-            
-            let interval = (gameState === 'PLAYING') ? 500 : 2000;
-            if (now - keysPressed['Space_LastScan'] >= interval) {
-                if (gameState === 'PLAYING') cycle_stomp_target();
-                else scanBackward(); // REVERSE SCAN
-                keysPressed['Space_LastScan'] = now;
-            }
-        } else {
-             delete keysPressed['Space_LastScan'];
-        }
-    } else {
-        delete keysPressed['Space_LastScan'];
-    }
-    
-    // Enter Hold Logic
-    if (keysPressed['Enter']) {
-        let duration = now - keyTimers['Enter'];
-        if (gameState === 'PLAYING') {
-            if (duration > 6000) {
-                gameState = 'PAUSED';
-                pauseStartTime = Date.now()/1000;
-                menu_selected_index = -1;
-                speak("Paused");
-            }
-        }
-    }
+    // This function can remain for any other continuous input checking
+    // but backward scan timing is now handled by setTimeout/setInterval
 }
 
 let click_block_time = 0;
@@ -3972,12 +4065,7 @@ function handleInput(x, y) {
              // Fixed gap 60, font max 30.
              if (y >= ty - 40 && y <= ty + 10) {
                  if (i === 0) { // TTS
-                    if (window.NarbeVoiceManager) {
-                        window.NarbeVoiceManager.toggleTTS();
-                        tts_enabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
-                    } else {
-                        tts_enabled = !tts_enabled;
-                    }
+                    tts_enabled = !tts_enabled;
                     speak("TTS " + (tts_enabled ? "On" : "Off"));
                 } else if (i === 1) { // Autoscan
                     if (typeof window.NarbeScanManager !== 'undefined') {
