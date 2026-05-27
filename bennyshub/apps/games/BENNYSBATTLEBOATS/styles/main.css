@@ -1,0 +1,1474 @@
+button#randomizeButton {
+    width: 100%;
+    padding: clamp(10px, 2vh, 18px) clamp(12px, 2vw, 20px);
+    border: 0;
+    border-radius: 8px;
+    margin-bottom: clamp(8px, 1.5vh, 14px);
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    cursor: pointer;
+    background: #2ecc40;
+    color: #fff;
+    transition: background 0.2s ease, opacity 0.2s;
+}
+button#randomizeButton:hover {
+    background: #27ae38;
+    opacity: 0.95;
+}
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+    font-family: Arial, sans-serif;
+    background: radial-gradient(circle at top, #0a2a4b 0%, #02111f 60%);
+    color: #f7f7f7;
+    overflow: hidden;
+}
+
+.app-shell {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* =========================================
+   MAIN MENU & SETTINGS SCREENS
+   ========================================= */
+.menu-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at top, #0a2a4b 0%, #02111f 60%);
+}
+
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(12px, 2vh, 20px);
+    padding: clamp(20px, 4vh, 40px);
+    max-width: 500px;
+    width: 90%;
+}
+
+.menu-title {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 700;
+    color: #78c6ff;
+    text-shadow: 0 2px 10px rgba(120, 198, 255, 0.5);
+    text-align: center;
+    margin-bottom: clamp(10px, 2vh, 20px);
+    line-height: 1.2;
+}
+
+.menu-button {
+    width: 100%;
+    padding: clamp(14px, 2.5vh, 22px) clamp(20px, 3vw, 30px);
+    border: none;
+    border-radius: 12px;
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    font-weight: 600;
+    cursor: pointer;
+    background: linear-gradient(135deg, #1c4d8a 0%, #2563a8 100%);
+    color: #fff;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(28, 77, 138, 0.4);
+}
+
+.menu-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(28, 77, 138, 0.6);
+}
+
+.menu-button.scan-highlight {
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent) !important;
+    transform: scale(1.02);
+}
+
+.settings-container {
+    max-width: 600px;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(8px, 1.5vh, 14px);
+    width: 100%;
+    margin-bottom: clamp(10px, 2vh, 20px);
+}
+
+.setting-btn {
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    padding: clamp(10px, 2vh, 16px) clamp(12px, 2vw, 20px);
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #6c5ce7 0%, #5b4cdb 100%);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+    margin-top: clamp(5px, 1vh, 10px);
+}
+
+.back-btn:hover {
+    box-shadow: 0 6px 20px rgba(108, 92, 231, 0.6);
+}
+
+/* Game Screen */
+.game-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    display: none;
+}
+
+.game-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(4px, 0.8vh, 8px) clamp(12px, 2vw, 24px);
+    background: rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.game-title {
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    font-weight: 700;
+    color: #78c6ff;
+    text-shadow: 0 2px 8px rgba(120, 198, 255, 0.4);
+    letter-spacing: 1px;
+}
+
+.turn-indicator {
+    margin-top: clamp(2px, 0.5vh, 6px);
+    font-size: clamp(0.8rem, 1.8vw, 1rem);
+    font-weight: 600;
+    padding: clamp(3px, 0.5vh, 6px) clamp(10px, 1.5vw, 16px);
+    border-radius: 20px;
+    min-height: 1.2em;
+}
+
+.turn-indicator.player-turn {
+    background: rgba(46, 204, 64, 0.2);
+    color: #2ecc40;
+    border: 1px solid rgba(46, 204, 64, 0.4);
+}
+
+.turn-indicator.enemy-turn {
+    background: rgba(242, 80, 66, 0.2);
+    color: #f25042;
+    border: 1px solid rgba(242, 80, 66, 0.4);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+header p {
+    margin: 4px auto 0;
+    max-width: 760px;
+    color: #c8d8f0;
+    font-size: 0.85rem;
+}
+
+.game-layout {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.board-column {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* grid-grid styles defined below */
+
+.grid-label:first-child {
+    background: transparent;
+}
+.ship-selector h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+}
+
+/* Combat log removed: styles cleaned up */
+
+.ship-list {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    padding: clamp(16px, 3vw, 30px);
+    width: clamp(320px, 60vw, 600px);
+    margin: 0 auto;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.25);
+    display: grid;
+    gap: clamp(10px, 2vh, 18px);
+    margin-bottom: clamp(14px, 2vh, 24px);
+}
+
+.ship-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: clamp(12px, 2.5vh, 24px) clamp(14px, 2.5vw, 28px);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    color: #f7f7f7;
+    cursor: pointer;
+    font-size: clamp(0.9rem, 2vw, 1.3rem);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.ship-button:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+.ship-button.selected {
+    border-color: #78c6ff;
+    background: rgba(120,198,255,0.14);
+}
+
+.ship-button.placed {
+    border-color: #4caf50;
+    background: rgba(76,175,80,0.16);
+    color: #d7f8d7;
+}
+
+.ship-button .ship-size {
+    color: #a6c9ff;
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+}
+
+/* Ship graphical representation */
+.ship-button {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(8px, 1.5vh, 14px);
+}
+
+.ship-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.ship-name {
+    font-weight: 600;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+}
+
+.ship-graphic {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.ship-graphic.vertical {
+    flex-direction: column;
+    align-items: center;
+}
+
+.ship-cell {
+    width: clamp(20px, 4vw, 36px);
+    height: clamp(20px, 4vw, 36px);
+    background: #4b95f3;
+    border-radius: 4px;
+    border: 2px solid #78c6ff;
+    box-shadow: inset 0 0 8px rgba(255,255,255,0.2);
+}
+
+.ship-button.placed .ship-cell {
+    background: #4caf50;
+    border-color: #81c784;
+}
+
+.ship-button.selected .ship-cell {
+    background: #64b5f6;
+    border-color: #90caf9;
+    box-shadow: 0 0 10px rgba(120,198,255,0.5);
+}
+
+/* Center ship selector */
+.ship-selector {
+    text-align: center;
+}
+
+.ship-selector h2 {
+    margin-bottom: clamp(16px, 3vh, 28px);
+    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+}
+
+button#resetButton {
+    width: 100%;
+    padding: clamp(10px, 2vh, 18px) clamp(12px, 2vw, 20px);
+    border: 0;
+    border-radius: 8px;
+    margin-bottom: clamp(8px, 1.5vh, 14px);
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    cursor: pointer;
+    background: #d23f52;
+    color: #fff;
+}
+
+button#resetButton:hover {
+    opacity: 0.95;
+}
+
+.status {
+    color: #cbd8fc;
+    margin-top: clamp(6px, 1vh, 12px);
+    min-height: 1.5rem;
+    font-size: clamp(0.8rem, 1.6vw, 1rem);
+    padding: clamp(8px, 1vh, 12px) clamp(12px, 2vw, 20px);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.status.scan-highlight {
+    background: color-mix(in srgb, var(--scan-highlight-color, #ffd700) 25%, transparent);
+    outline: 3px solid var(--scan-highlight-color, #ffd700);
+    color: var(--scan-highlight-color, #ffd700);
+    font-weight: 600;
+}
+
+.boards {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.board-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: clamp(8px, 1.5vh, 16px);
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    width: 100%;
+    height: 100%;
+}
+
+.board-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.grid-grid {
+    --cell-width: calc((100vw - 40px) / 11);
+    --cell-height: calc((100vh - 160px) / 11);
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+    gap: 3px;
+    width: calc(100vw - 40px);
+    height: calc(100vh - 160px);
+    max-width: 95vw;
+    max-height: calc(100vh - 140px);
+    margin: 0 auto;
+    flex-shrink: 0;
+}
+
+.grid-cell,
+.grid-label {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(0.7rem, 2vw, 1.4rem);
+}
+
+.grid-label {
+    color: #7ea4ff;
+    font-weight: 600;
+}
+
+.grid-cell {
+    position: relative;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.2s ease;
+}
+
+.grid-cell:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.16);
+}
+
+.grid-cell.occupied {
+    background: transparent;
+    box-shadow: inset 0 0 0 4px #4b95f3 !important;
+}
+
+/* Player's ship sunk by enemy: muted red highlight */
+.grid-cell.player-sunk {
+    background: rgba(180, 60, 50, 0.25) !important;
+    box-shadow: inset 0 0 0 4px rgba(180, 60, 50, 0.7) !important;
+}
+
+/* Enemy ship sunk by player: muted green highlight */
+.grid-cell.enemy-sunk {
+    background: rgba(46, 160, 64, 0.2) !important;
+    box-shadow: inset 0 0 0 4px rgba(46, 160, 64, 0.6) !important;
+}
+
+/* Selected ship highlight during placement */
+.grid-cell.selected-ship {
+    box-shadow: inset 0 0 0 4px var(--scan-highlight-color, #ffd700), 0 0 15px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent) !important;
+    background: color-mix(in srgb, var(--scan-highlight-color, #ffd700) 15%, transparent) !important;
+}
+
+/* Player ship hit: red X in top left via SVG (same size as green X) */
+.grid-cell.player-hit {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12% !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px) !important;
+}
+
+/* Player fired and hit enemy: green circle in bottom right */
+.grid-cell.enemy-hit:not(.player-hit):not(.enemy-sunk)::after {
+    content: '';
+    position: absolute;
+    right: 12%;
+    bottom: 12%;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: 45%;
+    height: 45%;
+    max-width: 22px;
+    max-height: 22px;
+    border-radius: 50%;
+    background: #2ecc40;
+    z-index: 2;
+}
+
+/* Enemy ship sunk: muted green highlight with centered green X via SVG */
+.grid-cell.enemy-sunk:not(.player-hit) {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%232ecc40' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center center,
+        rgba(46, 160, 64, 0.2) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100%;
+    box-shadow: inset 0 0 0 4px rgba(46, 160, 64, 0.6) !important;
+}
+
+/* When both enemy hit player AND player sunk enemy on same cell - red X top-left, green X centered */
+.grid-cell.enemy-sunk.player-hit {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%232ecc40' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center center,
+        rgba(46, 160, 64, 0.2) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100%;
+    box-shadow: inset 0 0 0 4px rgba(46, 160, 64, 0.6) !important;
+}
+
+/* When both enemy hit player AND player hit enemy on same cell - red X top-left, green dot bottom-right */
+.grid-cell.enemy-hit.player-hit:not(.enemy-sunk) {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
+        radial-gradient(circle at calc(100% - 18%) calc(100% - 18%), 
+            #2ecc40 0, #2ecc40 clamp(6px, 22%, 11px), transparent clamp(6px, 22%, 11px)) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100% !important;
+}
+
+/* Player miss: white circle in bottom right */
+.grid-cell.player-miss:not(.player-hit)::after {
+    content: '';
+    position: absolute;
+    right: 12%;
+    bottom: 12%;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: 40%;
+    height: 40%;
+    max-width: 18px;
+    max-height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    opacity: 0.95;
+    z-index: 2;
+}
+
+/* When both enemy hit player AND player missed on same cell - red X top-left, white dot bottom-right */
+.grid-cell.player-miss.player-hit {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
+        radial-gradient(circle at calc(100% - 18%) calc(100% - 18%), 
+            #ffffff 0, #ffffff clamp(5px, 20%, 9px), transparent clamp(5px, 20%, 9px)) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100% !important;
+}
+
+.grid-cell.miss {
+    background: rgba(255,255,255,0.16);
+    box-shadow: none;
+}
+
+/* When a player's ship square is hit, prefer the red X marker and hide the blue outline */
+/* keep ship outline even when hit; markers overlay the outline */
+
+.grid-cell.disabled {
+    cursor: default;
+}
+
+.grid-card-header {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.attempt-count {
+    margin-top: 14px;
+    text-align: center;
+    color: #d4e0ff;
+}
+
+@media (max-width: 960px) {
+    .board-card,
+    .ship-selector {
+        width: 100%;
+    }
+}
+
+/* Ship Selection Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #0d3a5c 0%, #061a2e 100%);
+    border: 2px solid rgba(120, 198, 255, 0.4);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 48px);
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(78, 150, 243, 0.2);
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.modal-content h3 {
+    margin: 0 0 clamp(16px, 3vh, 28px);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    color: #78c6ff;
+}
+
+.modal-ship-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: clamp(20px, 4vh, 36px);
+    min-height: clamp(40px, 8vh, 80px);
+    transition: all 0.3s ease;
+}
+
+.modal-ship-preview .ship-graphic {
+    gap: 4px;
+}
+
+.modal-ship-preview .ship-cell {
+    width: clamp(30px, 6vw, 50px);
+    height: clamp(30px, 6vw, 50px);
+    background: #4b95f3;
+    border-radius: 6px;
+    border: 3px solid #78c6ff;
+    box-shadow: inset 0 0 12px rgba(255,255,255,0.25), 0 0 15px rgba(78, 150, 243, 0.4);
+}
+
+.modal-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(10px, 2vw, 18px);
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: clamp(12px, 2.5vh, 20px) clamp(20px, 4vw, 36px);
+    border: none;
+    border-radius: 10px;
+    font-size: clamp(0.95rem, 2vw, 1.2rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-btn.rotate-btn {
+    background: #1c4d8a;
+    color: #fff;
+}
+
+.modal-btn.rotate-btn:hover {
+    background: #2563a8;
+    transform: scale(1.05);
+}
+
+.modal-btn.confirm-btn {
+    background: #2ecc40;
+    color: #fff;
+}
+
+.modal-btn.confirm-btn:hover {
+    background: #27ae38;
+    transform: scale(1.05);
+}
+
+.modal-btn.cancel-btn {
+    background: #d23f52;
+    color: #fff;
+}
+
+.modal-btn.cancel-btn:hover {
+    background: #b8334a;
+    transform: scale(1.05);
+}
+
+.modal-btn.move-btn {
+    background: #f39c12;
+    color: #fff;
+}
+
+.modal-btn.move-btn:hover {
+    background: #e67e22;
+    transform: scale(1.05);
+}
+
+/* Ship Action Modal */
+.ship-action-modal {
+    min-width: clamp(280px, 50vw, 400px);
+}
+
+.ship-action-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: clamp(20px, 4vh, 36px);
+    min-height: clamp(40px, 8vh, 80px);
+}
+
+.ship-action-preview .ship-graphic {
+    display: flex;
+    gap: 4px;
+}
+
+.ship-action-preview .ship-graphic.vertical {
+    flex-direction: column;
+}
+
+.ship-action-preview .ship-cell {
+    width: clamp(28px, 5vw, 45px);
+    height: clamp(28px, 5vw, 45px);
+    background: #4b95f3;
+    border-radius: 5px;
+    border: 2px solid #78c6ff;
+    box-shadow: 0 0 12px rgba(78, 150, 243, 0.5);
+}
+
+/* Game Over Modal */
+.game-over-modal {
+    min-width: clamp(300px, 60vw, 500px);
+    animation: modalPop 0.4s ease-out;
+}
+
+@keyframes modalPop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.game-over-modal h2 {
+    margin: 0 0 clamp(12px, 2vh, 20px);
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.game-over-modal h2:contains('Victory') {
+    color: #2ecc40;
+    text-shadow: 0 0 20px rgba(46, 204, 64, 0.6);
+}
+
+#gameOverTitle {
+    color: #78c6ff;
+    text-shadow: 0 0 20px rgba(120, 198, 255, 0.6);
+}
+
+#gameOverModal .game-over-modal:has(#gameOverTitle:contains('Victory')) #gameOverTitle {
+    color: #2ecc40;
+}
+
+.game-over-modal p {
+    margin: 0;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    color: #c8d8f0;
+}
+
+/* Ship Controls - Combined Grid Interface */
+.ship-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(6px, 1vh, 12px);
+    margin-bottom: clamp(8px, 1.5vh, 14px);
+    padding: clamp(8px, 1.5vw, 16px);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 10px;
+}
+
+.ship-cycler {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 24px);
+}
+
+.cycle-btn {
+    width: clamp(40px, 6vw, 60px);
+    height: clamp(40px, 6vw, 60px);
+    border: 2px solid #78c6ff;
+    border-radius: 50%;
+    background: rgba(120, 198, 255, 0.15);
+    color: #78c6ff;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cycle-btn:hover {
+    background: rgba(120, 198, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.current-ship-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(8px, 1.5vh, 14px);
+    min-width: clamp(150px, 30vw, 300px);
+}
+
+.current-ship-name {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 600;
+    color: #78c6ff;
+}
+
+.current-ship-graphic {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.current-ship-graphic.vertical {
+    flex-direction: column;
+}
+
+.current-ship-graphic .ship-cell {
+    width: clamp(24px, 4vw, 40px);
+    height: clamp(24px, 4vw, 40px);
+    background: #4b95f3;
+    border-radius: 5px;
+    border: 2px solid #78c6ff;
+    box-shadow: 0 0 10px rgba(78, 150, 243, 0.4);
+}
+
+.placement-buttons {
+    display: flex;
+    gap: clamp(10px, 2vw, 20px);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: clamp(10px, 2vw, 16px);
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    margin-top: clamp(8px, 1.5vh, 14px);
+    overflow: visible;
+    padding: 10px;
+    margin: clamp(8px, 1.5vh, 14px) -10px 0 -10px;
+}
+
+.menu-buttons .action-btn,
+.menu-buttons .start-game-btn {
+    flex: 1;
+    min-width: 0;
+}
+
+.action-btn {
+    padding: clamp(10px, 1.5vh, 14px) clamp(14px, 2.5vw, 22px);
+    border: none;
+    border-radius: 8px;
+    font-size: clamp(0.85rem, 1.8vw, 1rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn.rotate-btn {
+    background: #1c4d8a;
+    color: #fff;
+}
+
+.action-btn.rotate-btn:hover {
+    background: #2563a8;
+}
+
+.action-btn.randomize-btn {
+    background: #6c5ce7;
+    color: #fff;
+}
+
+.action-btn.randomize-btn:hover {
+    background: #5b4cdb;
+}
+
+.start-game-btn {
+    padding: clamp(10px, 1.5vh, 14px) clamp(16px, 2.5vw, 24px);
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2ecc40 0%, #27ae60 100%);
+    color: #fff;
+    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(46, 204, 64, 0.4);
+}
+
+.start-game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 64, 0.5);
+}
+
+.ship-controls.hidden {
+    display: none;
+}
+
+.menu-buttons.hidden {
+    display: none;
+}
+
+/* General hidden class */
+.hidden {
+    display: none !important;
+}
+
+/* Sunk Ship Toast */
+.sunk-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: linear-gradient(135deg, #2ecc40 0%, #27ae60 100%);
+    color: #fff;
+    padding: clamp(16px, 3vh, 28px) clamp(28px, 5vw, 48px);
+    border-radius: 12px;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(46, 204, 64, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.sunk-toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.sunk-toast.enemy-sunk-toast {
+    background: linear-gradient(135deg, #f25042 0%, #c0392b 100%);
+    box-shadow: 0 8px 32px rgba(242, 80, 66, 0.5);
+}
+
+/* =========================================
+   SCAN/SELECT ACCESSIBILITY STYLES
+   ========================================= */
+
+/* Scan highlight for buttons and cells */
+.scan-highlight {
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent), inset 0 0 10px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 20%, transparent) !important;
+    animation: scanPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes scanPulse {
+    0% {
+        outline-color: var(--scan-highlight-color, #ffd700);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent), inset 0 0 10px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 20%, transparent);
+    }
+    100% {
+        outline-color: var(--scan-highlight-color, #ffd700);
+        box-shadow: 0 0 30px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 80%, transparent), inset 0 0 15px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 30%, transparent);
+    }
+}
+
+/* Row highlight for grid scanning */
+.row-highlight {
+    background: color-mix(in srgb, var(--scan-highlight-color, #ffd700) 35%, transparent) !important;
+    box-shadow: inset 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 50%, transparent) !important;
+    outline: 3px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: -3px;
+}
+
+/* Row highlight on player-hit cell - preserve red X */
+.grid-cell.player-hit.row-highlight {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
+        color-mix(in srgb, var(--scan-highlight-color, #ffd700) 35%, transparent) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100% !important;
+    outline: 3px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: -3px;
+}
+
+/* Placement preview highlight */
+.placement-preview {
+    background: rgba(78, 150, 243, 0.4) !important;
+    box-shadow: inset 0 0 0 3px #4b95f3, 0 0 15px rgba(78, 150, 243, 0.5) !important;
+}
+
+/* Menu button scan highlight */
+.menu-buttons .scan-highlight,
+.action-btn.scan-highlight,
+.start-game-btn.scan-highlight {
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent) !important;
+    transform: scale(1.05);
+}
+
+/* Modal button scan highlight */
+.modal-btn.scan-highlight {
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: 3px;
+    transform: scale(1.08);
+    box-shadow: 0 0 25px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 70%, transparent) !important;
+}
+
+/* Grid cell scan highlight override to ensure visibility */
+.grid-cell.scan-highlight {
+    background: color-mix(in srgb, var(--scan-highlight-color, #ffd700) 35%, transparent) !important;
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: -2px;
+    z-index: 10;
+}
+
+/* Scan highlight on player-hit cell - preserve red X */
+.grid-cell.player-hit.scan-highlight {
+    background: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
+        color-mix(in srgb, var(--scan-highlight-color, #ffd700) 35%, transparent) !important;
+    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100% !important;
+}
+
+/* Ship cells scan highlight (for selecting ships) - uses highlight style */
+.grid-cell.occupied.scan-highlight {
+    box-shadow: inset 0 0 0 4px var(--scan-highlight-color, #ffd700), 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 70%, transparent) !important;
+}
+
+/* Game Over Modal OK Button */
+.game-over-modal .menu-button {
+    margin-top: clamp(15px, 2vh, 25px);
+    width: auto;
+    min-width: 150px;
+}
+
+.game-over-modal .menu-button.scan-highlight {
+    outline: 4px solid var(--scan-highlight-color, #ffd700) !important;
+    outline-offset: 3px;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--scan-highlight-color, #ffd700) 60%, transparent) !important;
+}
+
+/* =========================================
+   HIGHLIGHT STYLES (Dynamic via JS)
+   ========================================= */
+
+/* CSS Variables for dynamic highlighting */
+:root {
+    --scan-highlight-color: #ffd700;
+}
+
+/* Glow Style (default) */
+body.highlight-glow .scan-highlight {
+    outline: 4px solid var(--scan-highlight-color) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 25px var(--scan-highlight-color) !important;
+}
+
+body.highlight-glow .row-highlight {
+    background: color-mix(in srgb, var(--scan-highlight-color) 35%, transparent) !important;
+    box-shadow: inset 0 0 20px var(--scan-highlight-color) !important;
+    outline: 3px solid var(--scan-highlight-color) !important;
+    outline-offset: -3px;
+}
+
+/* Outline Style */
+body.highlight-outline .scan-highlight {
+    outline: 5px solid var(--scan-highlight-color) !important;
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
+body.highlight-outline .row-highlight {
+    outline: 4px solid var(--scan-highlight-color) !important;
+    outline-offset: -4px;
+    background: color-mix(in srgb, var(--scan-highlight-color) 20%, transparent) !important;
+    box-shadow: none !important;
+}
+
+/* Solid Style */
+body.highlight-solid .scan-highlight {
+    background: var(--scan-highlight-color) !important;
+    color: #000 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+body.highlight-solid .row-highlight {
+    background: color-mix(in srgb, var(--scan-highlight-color) 50%, transparent) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Pause Button (fixed in corner during gameplay) */
+.pause-button {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1000;
+    user-select: none;
+    border: 2px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.pause-button:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+/* Pause Modal */
+.pause-modal {
+    text-align: center;
+}
+
+.pause-modal h2 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    color: #78c6ff;
+    margin-bottom: clamp(15px, 2vh, 25px);
+}
+
+.pause-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.5vh, 15px);
+    align-items: center;
+}
+
+.pause-buttons .menu-button {
+    min-width: 200px;
+}
+
+.pause-settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1vh, 12px);
+}
+
+.pause-settings-grid .setting-btn {
+    min-width: 220px;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+}
+
+.pause-settings-grid .back-btn {
+    margin-top: clamp(10px, 1.5vh, 15px);
+}
+
+/* =========================================
+   PHASE SCREENS (Attack & Defense)
+   ========================================= */
+.phase-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: phaseSlideIn 0.4s ease-out;
+}
+
+@keyframes phaseSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.phase-header {
+    padding: clamp(4px, 0.8vh, 8px) clamp(10px, 2vw, 20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(4px, 0.5vh, 6px);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.phase-indicator {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1vw, 10px);
+    padding: clamp(4px, 0.8vh, 8px) clamp(12px, 2.5vw, 25px);
+    border-radius: 50px;
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    font-weight: 700;
+    animation: phasePulse 2s ease-in-out infinite;
+}
+
+.phase-indicator.attack-phase {
+    background: linear-gradient(135deg, rgba(46, 204, 64, 0.3) 0%, rgba(46, 204, 64, 0.1) 100%);
+    border: 2px solid rgba(46, 204, 64, 0.6);
+    color: #2ecc40;
+}
+
+.phase-indicator.defense-phase {
+    background: linear-gradient(135deg, rgba(242, 80, 66, 0.3) 0%, rgba(242, 80, 66, 0.1) 100%);
+    border: 2px solid rgba(242, 80, 66, 0.6);
+    color: #f25042;
+}
+
+@keyframes phasePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.phase-icon {
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.phase-text {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: clamp(0.8rem, 1.8vw, 1rem);
+}
+
+/* Ship Status Bar */
+.ship-status-bar {
+    display: flex;
+    justify-content: center;
+    gap: clamp(4px, 1vw, 10px);
+    flex-wrap: wrap;
+    padding: clamp(2px, 0.5vh, 5px);
+}
+
+.ship-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: clamp(3px, 0.5vh, 5px) clamp(5px, 1vw, 8px);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.ship-icon.sunk {
+    background: rgba(242, 80, 66, 0.2);
+    border-color: rgba(242, 80, 66, 0.5);
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.ship-icon-emoji {
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+}
+
+.ship-icon-name {
+    font-size: clamp(0.5rem, 1vw, 0.65rem);
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Phase Content */
+.phase-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px, 2vh, 20px);
+    min-height: 0;
+}
+
+.phase-grid-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================
+   COVER EYES SCREEN (2-Player Mode)
+   ========================================= */
+.cover-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%);
+    animation: coverFadeIn 0.5s ease-out;
+}
+
+@keyframes coverFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.cover-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: clamp(20px, 4vh, 40px);
+    max-width: 90%;
+}
+
+.cover-icon {
+    font-size: clamp(4rem, 15vw, 8rem);
+    margin-bottom: clamp(15px, 3vh, 30px);
+    animation: coverBounce 1s ease-in-out infinite;
+}
+
+@keyframes coverBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+.cover-title {
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 900;
+    color: #ff6b6b;
+    text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+    margin: 0 0 clamp(10px, 2vh, 20px) 0;
+    letter-spacing: 3px;
+}
+
+.cover-subtitle {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: 700;
+    color: #ffd700;
+    margin: 0 0 clamp(15px, 3vh, 30px) 0;
+}
+
+.cover-instruction {
+    font-size: clamp(0.9rem, 2.5vw, 1.3rem);
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 clamp(20px, 4vh, 40px) 0;
+    max-width: 500px;
+}
+
+.cover-ready-btn {
+    padding: clamp(18px, 3vh, 30px) clamp(50px, 10vw, 100px) !important;
+    font-size: clamp(1.3rem, 4vw, 2rem) !important;
+    background: linear-gradient(135deg, #2ecc40 0%, #27ae38 100%) !important;
+    animation: readyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes readyPulse {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(46, 204, 64, 0.4);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(46, 204, 64, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+/* =========================================
+   PLACEMENT SCREEN SPECIFIC
+   ========================================= */
+.placement-indicator {
+    padding: clamp(8px, 1.5vh, 12px) clamp(15px, 3vw, 25px);
+    background: linear-gradient(135deg, rgba(120, 198, 255, 0.2) 0%, rgba(120, 198, 255, 0.1) 100%);
+    border: 2px solid rgba(120, 198, 255, 0.4);
+    border-radius: 25px;
+    color: #78c6ff;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    font-weight: 600;
+}
+
+/* =========================================
+   ATTACK GRID CELL STATES
+   ========================================= */
+.grid-cell.attack-hit {
+    background: rgba(46, 204, 64, 0.2);
+    border-color: rgba(46, 204, 64, 0.8);
+    box-shadow: inset 0 0 0 3px #1a8c2a;
+}
+
+.grid-cell.attack-hit:not(.enemy-sunk)::after {
+    content: '✕';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    color: #2ecc40;
+}
+
+.grid-cell.attack-miss {
+    background: rgba(150, 150, 150, 0.15);
+    border-color: rgba(150, 150, 150, 0.4);
+}
+
+.grid-cell.attack-miss::after {
+    content: '•';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    color: rgba(150, 150, 150, 0.7);
+}
+
+.attack-grid .grid-cell.enemy-sunk {
+    background: rgba(46, 204, 64, 0.5);
+    border-color: #2ecc40;
+}
+
+.attack-grid .grid-cell.enemy-sunk::after {
+    content: '✕';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    color: #2ecc40;
+}
+
+/* =========================================
+   DEFENSE GRID CELL STATES  
+   ========================================= */
+.grid-cell.defense-hit {
+    background: rgba(242, 80, 66, 0.5);
+    border-color: rgba(242, 80, 66, 0.8);
+}
+
+.grid-cell.defense-hit::after {
+    content: '✕';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    color: #f25042;
+}
+
+.grid-cell.defense-miss::after {
+    content: '•';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    color: rgba(150, 150, 150, 0.7);
+}
+
+.grid-cell.player-sunk {
+    background: rgba(100, 100, 100, 0.5);
+    border-color: rgba(100, 100, 100, 0.8);
+}
+
+.grid-cell.player-sunk::after {
+    content: '✕';
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    color: #999;
+}
+
+/* Attack phase grid - cells without fire history */
+#attackGrid .grid-cell:not(.attack-hit):not(.attack-miss) {
+    cursor: pointer;
+}
+
+#attackGrid .grid-cell:not(.attack-hit):not(.attack-miss):hover {
+    background: rgba(255, 255, 255, 0.2);
+}

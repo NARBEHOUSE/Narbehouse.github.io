@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benny's Battle Boats</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <!-- Shared accessibility scripts -->
+    <script src="../../../shared/scan-manager.js"></script>
+    <script src="../../../shared/voice-manager.js"></script>
+    <div class="app-shell">
+        <!-- Main Menu -->
+        <div id="mainMenuScreen" class="menu-screen">
+            <div class="menu-container" id="mainMenuContainer">
+                <h1 class="menu-title">BENNY'S<br>BATTLE BOATS</h1>
+                <button id="onePlayerBtn" class="menu-button">1 Player</button>
+                <button id="twoPlayerBtn" class="menu-button">2 Players</button>
+                <button id="settingsBtn" class="menu-button">Settings</button>
+                <button id="exitBtn" class="menu-button">Exit</button>
+            </div>
+        </div>
+        
+        <!-- Settings Menu -->
+        <div id="settingsScreen" class="menu-screen hidden">
+            <div class="menu-container settings-container" id="settingsContainer">
+                <h1 class="menu-title">SETTINGS</h1>
+                <div class="settings-grid">
+                    <button id="ttsBtn" class="menu-button setting-btn">TTS: On</button>
+                    <button id="soundBtn" class="menu-button setting-btn">Sound: On</button>
+                    <button id="themeBtn" class="menu-button setting-btn">Theme: Ocean</button>
+                    <button id="highlightStyleBtn" class="menu-button setting-btn">Style: Glow</button>
+                    <button id="highlightColorBtn" class="menu-button setting-btn">Color: Gold</button>
+                    <button id="autoScanBtn" class="menu-button setting-btn">Auto Scan: Off</button>
+                    <button id="scanSpeedBtn" class="menu-button setting-btn">Speed: 2 Seconds</button>
+                </div>
+                <button id="settingsBackBtn" class="menu-button back-btn">Back</button>
+            </div>
+        </div>
+        
+        <!-- Ship Placement Screen -->
+        <div id="placementScreen" class="game-screen hidden">
+            <header class="game-header">
+                <h1 class="game-title">Benny's Battle Boats</h1>
+                <div class="placement-indicator" id="placementIndicator">Place Your Ships</div>
+            </header>
+            <section class="game-layout">
+                <div class="board-column">
+                    <div class="board-card" id="placementBoardCard">
+                        <div class="grid-grid" id="placementBoard"></div>
+                        
+                        <div class="menu-buttons" id="menuButtons">
+                            <button id="backToMenuBtn" class="action-btn back-btn" aria-label="Back to Main Menu">Back</button>
+                            <button id="randomizeBtn" class="action-btn randomize-btn" aria-label="Randomize All Ships">Randomize</button>
+                            <button id="startGameBtn" class="start-game-btn" aria-label="Place Ships">Place Ships</button>
+                        </div>
+                        
+                        <div class="status" id="statusText" aria-live="polite">Press Space to scan, Enter to select.</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Attack Phase Screen (Your turn - fire at enemy) -->
+        <div id="attackPhaseScreen" class="phase-screen hidden">
+            <header class="phase-header">
+                <div class="phase-indicator attack-phase">
+                    <span class="phase-icon">🎯</span>
+                    <span class="phase-text">YOUR TURN - ATTACK</span>
+                </div>
+                <div class="ship-status-bar" id="enemyShipStatus">
+                    <!-- Enemy ships you've sunk shown here -->
+                </div>
+            </header>
+            <section class="phase-content">
+                <div class="phase-grid-container">
+                    <div class="grid-grid" id="attackGrid"></div>
+                </div>
+                <div class="status" id="attackStatusText" aria-live="polite">Scan rows to target enemy fleet.</div>
+            </section>
+        </div>
+        
+        <!-- Defense Phase Screen (Enemy turn - see your ships) -->
+        <div id="defensePhaseScreen" class="phase-screen hidden">
+            <header class="phase-header">
+                <div class="phase-indicator defense-phase">
+                    <span class="phase-icon">🛡️</span>
+                    <span class="phase-text">ENEMY TURN</span>
+                </div>
+                <div class="ship-status-bar" id="playerShipStatus">
+                    <!-- Your ships that have been sunk shown here -->
+                </div>
+            </header>
+            <section class="phase-content">
+                <div class="phase-grid-container">
+                    <div class="grid-grid" id="defenseGrid"></div>
+                </div>
+                <div class="status" id="defenseStatusText" aria-live="polite">Enemy is targeting...</div>
+            </section>
+        </div>
+        
+        <!-- Cover Eyes Screen (2-Player mode) -->
+        <div id="coverScreen" class="cover-screen hidden">
+            <div class="cover-content">
+                <div class="cover-icon">🙈</div>
+                <h1 class="cover-title">COVER YOUR EYES</h1>
+                <h2 class="cover-subtitle" id="coverPlayerText">PLAYER 1, LOOK AWAY!</h2>
+                <p class="cover-instruction" id="coverInstruction">Player 2, press Ready when Player 1 isn't looking</p>
+                <button id="coverReadyBtn" class="menu-button cover-ready-btn">READY</button>
+            </div>
+        </div>
+        
+        <!-- Ship Action Modal -->
+        <div class="modal-overlay" id="shipActionModal" style="display: none;" role="dialog" aria-labelledby="shipActionTitle">
+            <div class="modal-content ship-action-modal">
+                <h3 id="shipActionTitle">Ship Name</h3>
+                <div class="ship-action-preview" id="shipActionPreview" aria-hidden="true"></div>
+                <div class="modal-buttons">
+                    <button id="rotateShipModalBtn" class="modal-btn rotate-btn" aria-label="Rotate Ship">Rotate Ship</button>
+                    <button id="moveShipModalBtn" class="modal-btn move-btn" aria-label="Move Ship">Move Ship</button>
+                    <button id="cancelShipModalBtn" class="modal-btn cancel-btn" aria-label="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Over Modal -->
+        <div class="modal-overlay" id="gameOverModal" style="display: none;" role="dialog" aria-labelledby="gameOverTitle">
+            <div class="modal-content game-over-modal">
+                <h2 id="gameOverTitle">Game Over</h2>
+                <p id="gameOverMessage" aria-live="assertive"></p>
+                <button id="gameOverOkBtn" class="menu-button">OK</button>
+            </div>
+        </div>
+        
+        <!-- Pause Modal -->
+        <div class="modal-overlay" id="pauseModal" style="display: none;" role="dialog" aria-labelledby="pauseTitle">
+            <div class="modal-content pause-modal">
+                <!-- Main Pause View -->
+                <div id="pauseMainView">
+                    <h2 id="pauseTitle">Paused</h2>
+                    <div class="modal-buttons pause-buttons">
+                        <button id="pauseContinueBtn" class="menu-button">Continue</button>
+                        <button id="pauseSettingsBtn" class="menu-button">Settings</button>
+                        <button id="pauseMainMenuBtn" class="menu-button">Main Menu</button>
+                    </div>
+                </div>
+                <!-- Settings View (inside pause modal) -->
+                <div id="pauseSettingsView" style="display: none;">
+                    <h2>Settings</h2>
+                    <div class="modal-buttons pause-buttons pause-settings-grid">
+                        <button id="pauseTtsBtn" class="menu-button setting-btn">TTS: On</button>
+                        <button id="pauseSoundBtn" class="menu-button setting-btn">Sound: On</button>
+                        <button id="pauseThemeBtn" class="menu-button setting-btn">Theme: Ocean</button>
+                        <button id="pauseHighlightStyleBtn" class="menu-button setting-btn">Style: Glow</button>
+                        <button id="pauseHighlightColorBtn" class="menu-button setting-btn">Color: Gold</button>
+                        <button id="pauseScanSpeedBtn" class="menu-button setting-btn">Speed: Normal</button>
+                        <button id="pauseSettingsBackBtn" class="menu-button back-btn">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pause Button (fixed position, shown during gameplay) -->
+        <div id="pauseButton" class="pause-button" title="Pause Game" style="display: none;">&#10074;&#10074;</div>
+        
+        <!-- Sunk Ship Toast -->
+        <div class="sunk-toast" id="sunkToast" aria-live="assertive"></div>
+    </div>
+
+    <script src="scripts/battleship.js"></script>
+</body>
+</html>
