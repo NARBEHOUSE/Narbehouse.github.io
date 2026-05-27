@@ -2246,6 +2246,49 @@ function setupScanningInput() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     
+    // Listen for postMessage from parent hub (web app iframe support)
+    window.addEventListener('message', (event) => {
+        if (!event.data || !event.data.type) return;
+        
+        // Handle input messages from parent hub
+        if (event.data.type === 'gamehub-input-down') {
+            const action = event.data.action?.toLowerCase();
+            if (action === 'space' || action === 'scan') {
+                // Simulate space keydown
+                const fakeEvent = { code: 'Space', key: ' ', repeat: false, preventDefault: () => {} };
+                handleKeyDown(fakeEvent);
+            } else if (action === 'enter' || action === 'select' || action === 'return') {
+                // Simulate enter keydown
+                const fakeEvent = { code: 'Enter', key: 'Enter', repeat: false, preventDefault: () => {} };
+                handleKeyDown(fakeEvent);
+            }
+        } else if (event.data.type === 'gamehub-input-up') {
+            const action = event.data.action?.toLowerCase();
+            if (action === 'space' || action === 'scan') {
+                // Simulate space keyup
+                const fakeEvent = { code: 'Space', key: ' ', preventDefault: () => {} };
+                handleKeyUp(fakeEvent);
+            } else if (action === 'enter' || action === 'select' || action === 'return') {
+                // Simulate enter keyup
+                const fakeEvent = { code: 'Enter', key: 'Enter', preventDefault: () => {} };
+                handleKeyUp(fakeEvent);
+            }
+        } else if (event.data.type === 'gamehub-input') {
+            // Legacy single-shot input (press + release)
+            const action = event.data.action?.toLowerCase();
+            if (action === 'space' || action === 'scan') {
+                scanForward();
+            } else if (action === 'enter' || action === 'select' || action === 'return') {
+                selectCurrentItem();
+            }
+        } else if (event.data.type === 'narbe-voice-settings-changed') {
+            // Handle voice settings from hub
+            if (window.NarbeVoiceManager && event.data.settings) {
+                window.NarbeVoiceManager.applySettings(event.data.settings);
+            }
+        }
+    });
+    
     // Handle input cancelled events from scan-manager (anti-tremor)
     document.addEventListener('narbe-input-cancelled', (e) => {
         if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
@@ -2412,8 +2455,8 @@ function handleKeyUp(e) {
             scanState.spaceRepeatInterval = null;
         }
         
-        if (!wasBackwardScanning && scanState.spaceHeld) {
-            // Perform forward scan on space release
+        // Perform forward scan on space release (unless we were backward scanning)
+        if (!wasBackwardScanning) {
             scanForward();
         }
         scanState.spaceHeld = false;
@@ -2425,8 +2468,8 @@ function handleKeyUp(e) {
             scanState.enterTimer = null;
         }
         
-        if (scanState.enterHeld && !scanState.enterLongTriggered) {
-            // Perform selection on enter release
+        // Perform selection on enter release (unless long press already triggered)
+        if (!scanState.enterLongTriggered) {
             selectCurrentItem();
         }
         scanState.enterHeld = false;
