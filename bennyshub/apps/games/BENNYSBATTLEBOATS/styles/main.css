@@ -461,42 +461,7 @@ button#resetButton:hover {
     background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px) !important;
 }
 
-/* Player fired and hit enemy: green circle in bottom right */
-.grid-cell.enemy-hit:not(.player-hit):not(.enemy-sunk)::after {
-    content: '';
-    position: absolute;
-    right: 12%;
-    bottom: 12%;
-    left: auto;
-    top: auto;
-    transform: none;
-    width: 45%;
-    height: 45%;
-    max-width: 22px;
-    max-height: 22px;
-    border-radius: 50%;
-    background: #2ecc40;
-    z-index: 2;
-}
-
-/* Enemy ship sunk: muted green highlight with centered green X via SVG */
-.grid-cell.enemy-sunk:not(.player-hit) {
-    background: 
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%232ecc40' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center center,
-        rgba(46, 160, 64, 0.2) !important;
-    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100%;
-    box-shadow: inset 0 0 0 4px rgba(46, 160, 64, 0.6) !important;
-}
-
-/* When both enemy hit player AND player sunk enemy on same cell - red X top-left, green X centered */
-.grid-cell.enemy-sunk.player-hit {
-    background: 
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%23f25042' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 12% 12%,
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 4L20 20M20 4L4 20' stroke='%232ecc40' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center center,
-        rgba(46, 160, 64, 0.2) !important;
-    background-size: clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), clamp(12px, 50%, 24px) clamp(12px, 50%, 24px), 100% 100%;
-    box-shadow: inset 0 0 0 4px rgba(46, 160, 64, 0.6) !important;
-}
+/* Enemy sunk styling handled in attack grid section below */
 
 /* When both enemy hit player AND player hit enemy on same cell - red X top-left, green dot bottom-right */
 .grid-cell.enemy-hit.player-hit:not(.enemy-sunk) {
@@ -1385,7 +1350,7 @@ body.highlight-solid .row-highlight {
     box-shadow: inset 0 0 0 3px #1a8c2a;
 }
 
-.grid-cell.attack-hit:not(.enemy-sunk)::after {
+.grid-cell.attack-hit::after {
     content: '✕';
     position: absolute;
     top: 50%;
@@ -1411,18 +1376,8 @@ body.highlight-solid .row-highlight {
 }
 
 .attack-grid .grid-cell.enemy-sunk {
-    background: rgba(46, 204, 64, 0.5);
+    background: rgba(46, 204, 64, 0.5) !important;
     border-color: #2ecc40;
-}
-
-.attack-grid .grid-cell.enemy-sunk::after {
-    content: '✕';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: clamp(1.2rem, 3.5vw, 2rem);
-    color: #2ecc40;
 }
 
 /* =========================================

@@ -940,6 +940,14 @@ function switchToAttackPhase() {
     gamePhase = 'attack';
     awaitingEnemy = false;
     
+    // Clear any pending enter timer to prevent accidental pause
+    if (scanState.enterTimer) {
+        clearTimeout(scanState.enterTimer);
+        scanState.enterTimer = null;
+    }
+    scanState.enterHeld = false;
+    scanState.enterLongTriggered = false;
+    
     // Hide other screens
     document.getElementById('placementScreen').classList.add('hidden');
     document.getElementById('defensePhaseScreen').classList.add('hidden');
@@ -987,6 +995,14 @@ function switchToDefensePhase() {
     stopAutoScan();
     clearAllHighlights();
     gamePhase = 'defense';
+    
+    // Clear any pending enter timer to prevent accidental pause
+    if (scanState.enterTimer) {
+        clearTimeout(scanState.enterTimer);
+        scanState.enterTimer = null;
+    }
+    scanState.enterHeld = false;
+    scanState.enterLongTriggered = false;
     
     // Hide other screens
     document.getElementById('attackPhaseScreen').classList.add('hidden');
@@ -1443,7 +1459,12 @@ function hideGameOverModal() {
 // PAUSE MODAL
 // =========================================
 function showPauseModal() {
+    // Don't show pause during defense phase (enemy's turn)
+    if (gamePhase === 'defense') return;
+    
+    // Don't show pause if modal is already visible
     const modal = document.getElementById('pauseModal');
+    if (modal && modal.style.display === 'flex') return;
     
     stopAutoScan();
     clearAllHighlights();
@@ -2221,16 +2242,22 @@ function updateMenuButtonsList() {
 // SCANNING INPUT HANDLING
 // =========================================
 function setupScanningInput() {
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
+    // Use window instead of document for better iframe compatibility
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     
     // Handle input cancelled events from scan-manager (anti-tremor)
     document.addEventListener('narbe-input-cancelled', (e) => {
         if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
-            clearTimeout(scanState.spaceTimer);
-            clearInterval(scanState.spaceRepeatInterval);
+            if (scanState.spaceTimer) {
+                clearTimeout(scanState.spaceTimer);
+                scanState.spaceTimer = null;
+            }
             const wasBackwardScanning = scanState.spaceRepeatInterval !== null;
-            scanState.spaceRepeatInterval = null;
+            if (scanState.spaceRepeatInterval) {
+                clearInterval(scanState.spaceRepeatInterval);
+                scanState.spaceRepeatInterval = null;
+            }
             scanState.spaceHeld = false;
             
             // If cancelled due to 'too-short' but wasn't backward scanning, do a forward scan
@@ -2240,6 +2267,11 @@ function setupScanningInput() {
             }
         }
         if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+            // Clear enter timer to prevent accidental pause
+            if (scanState.enterTimer) {
+                clearTimeout(scanState.enterTimer);
+                scanState.enterTimer = null;
+            }
             scanState.enterHeld = false;
             scanState.enterLongTriggered = false;
             
@@ -2281,13 +2313,14 @@ function handleKeyDown(e) {
             scanState.enterHeld = true;
             scanState.enterStartTime = Date.now();
             
-            // During gameplay, set up 5-second hold for pause menu
-            if (scanState.mode === 'game-row' || scanState.mode === 'game-cell') {
+            // During gameplay (attack phase only), set up 5-second hold for pause menu
+            // Don't allow pause during defense phase (enemy's turn)
+            if ((scanState.mode === 'game-row' || scanState.mode === 'game-cell') && gamePhase === 'attack') {
                 scanState.enterTimer = setTimeout(() => {
                     scanState.enterLongTriggered = true;
                     showPauseModal();
                 }, config.pauseLongPress);
-            } else {
+            } else if (gamePhase !== 'defense') {
                 // Set up long press for going back (in cell modes during placement)
                 scanState.enterTimer = setTimeout(() => {
                     scanState.enterLongTriggered = true;
