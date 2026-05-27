@@ -1414,32 +1414,31 @@ function showGameOverModal(title, message) {
     stopAutoScan();
     clearAllHighlights();
     
+    // Hide the OK button - we'll auto-dismiss instead
+    if (okBtn) okBtn.style.display = 'none';
+    
     if (titleEl) {
         titleEl.textContent = title;
         // Set color based on win/lose
         if (title.includes('Victory')) {
             titleEl.style.color = '#2ecc40';
             titleEl.style.textShadow = '0 0 20px rgba(46, 204, 64, 0.6)';
-            speak('Victory! You sank the enemy fleet!');
         } else {
             titleEl.style.color = '#f25042';
             titleEl.style.textShadow = '0 0 20px rgba(242, 80, 66, 0.6)';
-            speak('Defeat. The enemy sank your fleet.');
         }
     }
     if (messageEl) messageEl.textContent = message;
     if (modal) modal.style.display = 'flex';
     
-    // Switch to game-over scanning mode
-    scanState.mode = 'game-over';
-    scanState.scanIndex = -1;
-    updateGameOverButtonsList();
+    // Speak the actual title and message
+    speak(`${title} ${message}`);
     
-    // Start scanning the OK button
+    // Auto-dismiss after 5 seconds and return to main menu
     setTimeout(() => {
-        speak('Press Enter or scan to return to main menu.');
-        startAutoScan();
-    }, 2000);
+        hideGameOverModal();
+        returnToMainMenu();
+    }, 5000);
 }
 
 function updateGameOverButtonsList() {
