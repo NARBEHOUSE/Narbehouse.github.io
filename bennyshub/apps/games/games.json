@@ -25,6 +25,14 @@
       "genres": ["Sports", "Arcade"]
     },
     {
+      "id": "bennysbattleboats",
+      "title": "Benny's Battle Boats",
+      "description": "A classic battleship-style game where you place your fleet and try to sink the enemy's ships. Play against the computer or challenge a friend in 2-player mode!",
+      "path": "apps/games/BENNYSBATTLEBOATS/index.html",
+      "image": "images/games/battleboats.png",
+      "genres": ["Strategy", "Classic", "Board"]
+    },
+    {
       "id": "bennysbowling",
       "title": "Benny's Bowling",
       "description": "A fun simple bowling game with physics and realistic sound effects. Choose your a ball style or fun background theme.",
@@ -46,6 +54,14 @@
       "description": "Play classic Chess or Checkers against the computer or with a friend!",
       "path": "apps/games/BENNYSCHESSCHECKERS/index.html",
       "image": "images/games/bennyscheckers.png",
+      "genres": ["Classic", "Board", "Strategy"]
+    },
+    {
+      "id": "bennysconnectfour",
+      "title": "Benny's Connect Four",
+      "description": "Drop pieces and connect four in a row to win! Play against the computer or challenge a friend.",
+      "path": "apps/games/BENNYSCONNECTFOUR/index.html",
+      "image": "images/games/connectfour.png",
       "genres": ["Classic", "Board", "Strategy"]
     },
     {
@@ -102,23 +118,16 @@
       "description": "A trivia game engine that lets you build your own trivia games! Add pictures and videos to make it more fun!",
       "path": "apps/games/TRIVIAMASTER/index.html",
       "image": "images/games/triviamaster.png",
-      "genres": ["Educational", "Trivia"]
+      "genres": ["Educational", "Trivia"],
+      "needsServer": true
     },
     {
-      "id": "bennysslotmachine",
-      "title": "Benny's Mega Slots",
-      "description": "A fun casino-style slot machine game with exciting sound effects, visual effects, and diamond bonus mode!",
+      "id": "bennysmegaslot",
+      "title": "Benny's Mega Slot",
+      "description": "A fun casino-style slot machine game with bonus modes, multiple themes, and exciting sound effects!",
       "path": "apps/games/BENNYSSLOTMACHINE/index.html",
       "image": "images/games/bennysslotmachine.png",
       "genres": ["Casino", "Arcade"]
-    },
-    {
-      "id": "bennysconnectfour",
-      "title": "Benny's Connect Four",
-      "description": "Play classic Connect Four against the computer or with a friend! Drop discs and connect four in a row to win.",
-      "path": "apps/games/BENNYSCONNECTFOUR/index.html",
-      "image": "images/games/connectfour.png",
-      "genres": ["Classic", "Board", "Strategy"]
     }
   ]
 }
