@@ -106,19 +106,67 @@
     .drop-indicator.show { opacity: 1; }
     .drop-zone { border-top: 3px solid var(--brand); margin-top: -3px; }
     .color-popup { 
-      position: absolute; 
+      position: fixed; 
       background: white; 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-      padding: 12px; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+      border: 2px solid #333; 
+      border-radius: 12px; 
+      padding: 16px; 
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25); 
       z-index: 1000; 
       display: none;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 4px;
-      width: 280px;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+      width: 360px;
+      max-height: 400px;
+      overflow-y: auto;
     }
     .color-popup.show { display: grid; }
+    .color-popup .swatch {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 2px solid #333;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .color-popup .swatch:hover {
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 1;
+    }
+    .color-popup .custom-color-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 12px;
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .color-popup .custom-color-picker {
+      width: 60px;
+      height: 40px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .color-popup .custom-color-label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .color-popup .apply-custom-btn {
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .color-popup .apply-custom-btn:hover {
+      opacity: 0.9;
+    }
     .color-btn { 
       background: var(--muted); 
       border: 1px solid var(--border); 
@@ -292,6 +340,17 @@
     footer { text-align: center; color: #6b7280; padding: 16px; }
     .hidden { display: none !important; }
     .nowrap { white-space: nowrap; }
+    .speak-cell { display: flex; align-items: center; gap: 4px; }
+    .speak-cell input { flex: 1; min-width: 0; }
+    .btn-icon { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--muted); transition: background 0.15s, color 0.15s; }
+    .btn-icon:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .btn-icon.playing { background: var(--ok); color: #fff; border-color: var(--ok); }
+    .speak-expand-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); z-index: 3000; display: none; align-items: center; justify-content: center; }
+    .speak-expand-modal.show { display: flex; }
+    .speak-expand-content { background: white; border-radius: 14px; padding: 20px; width: 520px; max-width: 92vw; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+    .speak-expand-content h3 { margin: 0; font-size: 15px; color: #111827; }
+    .speak-expand-content textarea { width: 100%; min-height: 110px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical; }
+    .speak-expand-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
   </style>
 </head>
 <body>
@@ -299,9 +358,9 @@
     <h1>🧡 NARBE Phrase Board Builder</h1>
     <button class="btn yellow" id="newBtn">New</button>
     <input type="file" id="importFile" accept=".csv" class="hidden" />
-    <button class="btn secondary" id="importBtn">Import CSV</button>
-    <button class="btn orange" id="copyBtn">Copy CSV to Clipboard</button>
-    <button class="btn ok" id="downloadBtn">Download CSV</button>
+    <button class="btn secondary" id="importBtn">Import Board</button>
+    <button class="btn orange" id="copyBtn">Copy Board to Clipboard</button>
+    <button class="btn ok" id="downloadBtn">Download/Save Board</button>
     <button class="btn muted" id="saveLocal">Save to this browser</button>
     <button class="btn danger" id="clearLocal">Clear browser save</button>
   </header>
@@ -426,7 +485,13 @@
         </div>
       </td>
       <td><input class="display" type="text" placeholder="Button label" /></td>
-      <td><input class="speak" type="text" placeholder="What to speak, insert, or link to" /></td>
+      <td>
+        <div class="speak-cell">
+          <input class="speak" type="text" placeholder="What to speak, insert, or link to" />
+          <button class="btn-icon speak-play" title="Preview TTS" type="button">▶</button>
+          <button class="btn-icon speak-expand" title="Expand text" type="button">⤢</button>
+        </div>
+      </td>
       <td>
         <div class="row" style="gap: 8px;">
           <img class="img-thumb" src="" alt="" style="flex-shrink: 0;" />
@@ -440,6 +505,18 @@
   </template>
 
   <div id="colorPopup" class="color-popup"></div>
+
+  <div id="speakExpandModal" class="speak-expand-modal">
+    <div class="speak-expand-content">
+      <h3>Speak / Text / Link</h3>
+      <textarea id="speakExpandText" placeholder="What to speak, insert, or link to"></textarea>
+      <div class="speak-expand-actions">
+        <button class="btn muted" id="speakExpandClose">Cancel</button>
+        <button class="btn" id="speakExpandPreview" style="background:#0ea5e9;">&#9654; Preview</button>
+        <button class="btn ok" id="speakExpandApply">Apply</button>
+      </div>
+    </div>
+  </div>
   
   <div id="imageModal" class="image-modal">
     <div class="image-modal-content">
@@ -499,43 +576,130 @@
     let currentImageCategory = null; // for category image modal
     let currentImageBoard = false; // for board image modal
     let autoScrollInterval = null; // for auto-scrolling during drag
+    let currentSpeakExpandRow = null; // for speak expand modal
+
+    // Toast notification function (replaces alert to avoid focus issues)
+    function showToast(message, type = 'success') {
+      let toast = document.getElementById('toast-notification');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 25px;
+          border-radius: 8px;
+          font-weight: 600;
+          z-index: 9999;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          transition: opacity 0.3s, transform 0.3s;
+          transform: translateY(-10px);
+          opacity: 0;
+        `;
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.style.background = type === 'error' ? '#e55353' : '#28a745';
+      toast.style.color = 'white';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+      }, 2500);
+    }
+
+    // Non-blocking confirm dialog (replaces confirm() to avoid focus issues)
+    function showConfirm(message) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;';
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background:white;padding:24px;border-radius:12px;max-width:400px;text-align:center;';
+            dialog.innerHTML = `<p style="margin:0 0 20px 0;font-size:16px;">${message}</p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="confirm-ok" style="padding:10px 24px;background:var(--brand);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">OK</button>
+                    <button id="confirm-cancel" style="padding:10px 24px;background:#6c757d;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Cancel</button>
+                </div>`;
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            dialog.querySelector('#confirm-ok').onclick = () => { document.body.removeChild(overlay); resolve(true); };
+            dialog.querySelector('#confirm-cancel').onclick = () => { document.body.removeChild(overlay); resolve(false); };
+            dialog.querySelector('#confirm-ok').focus();
+        });
+    }
 
     function createColorPopup() {
       const popup = document.getElementById('colorPopup');
+      
+      // Add preset color swatches
       palette.forEach(color => {
         const swatch = document.createElement('div');
         swatch.className = 'swatch';
         swatch.style.background = color;
         swatch.title = color;
         swatch.addEventListener('click', () => {
-          if (currentColorInput) {
-            currentColorInput.value = toColorInput(color);
-            currentColorInput.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          
-          if (currentColorRows.length > 0) {
-            currentColorRows.forEach(tr => {
-              if (!tr.querySelector('.tile-color')) {
-                // Add hidden color input if it doesn't exist
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'color';
-                hiddenInput.className = 'tile-color';
-                hiddenInput.style.display = 'none';
-                hiddenInput.value = toColorInput(color);
-                tr.appendChild(hiddenInput);
-              } else {
-                tr.querySelector('.tile-color').value = toColorInput(color);
-              }
-              tr.querySelector('.use-override').checked = true;
-              const catNode = tr.closest('.cat');
-              updateRowBackground(catNode, tr);
-            });
-          }
-          
-          hideColorPopup();
+          applyColorToSelection(color);
         });
         popup.appendChild(swatch);
       });
+      
+      // Add custom color picker row
+      const customRow = document.createElement('div');
+      customRow.className = 'custom-color-row';
+      
+      const label = document.createElement('span');
+      label.className = 'custom-color-label';
+      label.textContent = 'Custom Color:';
+      
+      const colorPicker = document.createElement('input');
+      colorPicker.type = 'color';
+      colorPicker.className = 'custom-color-picker';
+      colorPicker.id = 'customColorPicker';
+      colorPicker.value = '#5bb0ff';
+      
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'apply-custom-btn';
+      applyBtn.textContent = 'Apply Color';
+      applyBtn.addEventListener('click', () => {
+        applyColorToSelection(colorPicker.value);
+      });
+      
+      customRow.appendChild(label);
+      customRow.appendChild(colorPicker);
+      customRow.appendChild(applyBtn);
+      popup.appendChild(customRow);
+    }
+    
+    function applyColorToSelection(color) {
+      if (currentColorInput) {
+        currentColorInput.value = toColorInput(color);
+        currentColorInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      
+      if (currentColorRows.length > 0) {
+        currentColorRows.forEach(tr => {
+          if (!tr.querySelector('.tile-color')) {
+            // Add hidden color input if it doesn't exist
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'color';
+            hiddenInput.className = 'tile-color';
+            hiddenInput.style.display = 'none';
+            hiddenInput.value = toColorInput(color);
+            tr.appendChild(hiddenInput);
+          } else {
+            tr.querySelector('.tile-color').value = toColorInput(color);
+          }
+          tr.querySelector('.use-override').checked = true;
+          const catNode = tr.closest('.cat');
+          updateRowBackground(catNode, tr);
+        });
+      }
+      
+      hideColorPopup();
     }
 
     function showColorPopup(button, colorInput) {
@@ -543,8 +707,31 @@
       currentColorInput = colorInput;
       
       const rect = button.getBoundingClientRect();
-      popup.style.left = rect.left + 'px';
-      popup.style.top = (rect.bottom + 4) + 'px';
+      
+      // Calculate position, keeping popup on screen
+      let left = rect.left;
+      let top = rect.bottom + 4;
+      
+      // Ensure popup doesn't go off right edge
+      const popupWidth = 360;
+      if (left + popupWidth > window.innerWidth - 20) {
+        left = window.innerWidth - popupWidth - 20;
+      }
+      
+      // Ensure popup doesn't go off left edge
+      if (left < 20) {
+        left = 20;
+      }
+      
+      // Ensure popup doesn't go off bottom
+      const popupHeight = 400;
+      if (top + popupHeight > window.innerHeight - 20) {
+        top = rect.top - popupHeight - 4;
+        if (top < 20) top = 20;
+      }
+      
+      popup.style.left = left + 'px';
+      popup.style.top = top + 'px';
       popup.classList.add('show');
     }
 
@@ -554,8 +741,31 @@
       currentColorRows = rows;
       
       const rect = button.getBoundingClientRect();
-      popup.style.left = rect.left + 'px';
-      popup.style.top = (rect.bottom + 4) + 'px';
+      
+      // Calculate position, keeping popup on screen
+      let left = rect.left;
+      let top = rect.bottom + 4;
+      
+      // Ensure popup doesn't go off right edge
+      const popupWidth = 360;
+      if (left + popupWidth > window.innerWidth - 20) {
+        left = window.innerWidth - popupWidth - 20;
+      }
+      
+      // Ensure popup doesn't go off left edge
+      if (left < 20) {
+        left = 20;
+      }
+      
+      // Ensure popup doesn't go off bottom
+      const popupHeight = 400;
+      if (top + popupHeight > window.innerHeight - 20) {
+        top = rect.top - popupHeight - 4;
+        if (top < 20) top = 20;
+      }
+      
+      popup.style.left = left + 'px';
+      popup.style.top = top + 'px';
       popup.classList.add('show');
     }
 
@@ -635,9 +845,9 @@
       
       // handlers
       node.querySelector('.add-phrase').addEventListener('click', () => addRow(node));
-      node.querySelector('.remove-cat').addEventListener('click', () => {
+      node.querySelector('.remove-cat').addEventListener('click', async () => {
         const catName = node.querySelector('.cat-name').value || 'this category';
-        if (confirm(`Are you sure you want to remove "${catName}"? This action cannot be undone.`)) {
+        if (await showConfirm(`Are you sure you want to remove "${catName}"? This action cannot be undone.`)) {
           node.remove();
           saveCollapsedStates();
         }
@@ -870,6 +1080,12 @@
         currentImageRow = tr;
         showImageModal(tr);
       });
+
+      // speak TTS preview and expand
+      tr.querySelector('.speak-play').addEventListener('click', () => {
+        previewTTS(tr.querySelector('.speak-play'), tr.querySelector('.speak').value.trim());
+      });
+      tr.querySelector('.speak-expand').addEventListener('click', () => openSpeakExpand(tr));
 
       if (values) {
         tr.querySelector('.tile-order-display').textContent = values.tileOrder ?? tbody.children.length;
@@ -1187,7 +1403,7 @@
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error(err);
-          alert('Error saving file: ' + err.message);
+          showToast('Error saving file: ' + err.message, 'error');
         }
       }
     }
@@ -1195,7 +1411,7 @@
     function copyCSV() {
       const text = exportCSVString();
       navigator.clipboard.writeText(text);
-      alert('CSV copied to clipboard');
+      showToast('CSV copied to clipboard');
     }
 
     function clearBuilder() {
@@ -1211,7 +1427,7 @@
         ts: Date.now(),
       };
       localStorage.setItem('narbe_phrase_builder', JSON.stringify(data));
-      alert('Saved to this browser');
+      showToast('Saved to this browser');
     }
 
     function loadLocal() {
@@ -1313,10 +1529,19 @@
 
     // OpenSymbols search (open symbols library)
     async function searchImages(q) {
-      const url = new URL('https://www.opensymbols.org/api/v1/symbols/search');
-      url.searchParams.set('q', q);
-      url.searchParams.set('format', 'json');
-      url.searchParams.set('limit', '30');
+      // Use proxy when running on localhost (Electron) to bypass CORS
+      const isLocalhost = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+      let url;
+      
+      if (isLocalhost) {
+        url = `/api/proxy/opensymbols/symbols/search?q=${encodeURIComponent(q)}&format=json&limit=30`;
+      } else {
+        url = new URL('https://www.opensymbols.org/api/v1/symbols/search');
+        url.searchParams.set('q', q);
+        url.searchParams.set('format', 'json');
+        url.searchParams.set('limit', '30');
+        url = url.toString();
+      }
       
       try {
         const res = await fetch(url);
@@ -1530,6 +1755,41 @@
       }
     }
 
+    function previewTTS(btn, text) {
+      if (!text) return;
+      window.speechSynthesis.cancel();
+      if (btn.classList.contains('playing')) {
+        btn.classList.remove('playing');
+        btn.textContent = '▶';
+        return;
+      }
+      const utter = new SpeechSynthesisUtterance(text);
+      btn.classList.add('playing');
+      btn.textContent = '■';
+      utter.onend = () => { btn.classList.remove('playing'); btn.textContent = '▶'; };
+      utter.onerror = () => { btn.classList.remove('playing'); btn.textContent = '▶'; };
+      window.speechSynthesis.speak(utter);
+    }
+
+    function openSpeakExpand(tr) {
+      currentSpeakExpandRow = tr;
+      document.getElementById('speakExpandText').value = tr.querySelector('.speak').value;
+      document.getElementById('speakExpandModal').classList.add('show');
+      setTimeout(() => document.getElementById('speakExpandText').focus(), 50);
+    }
+
+    function closeSpeakExpand() {
+      window.speechSynthesis.cancel();
+      document.getElementById('speakExpandModal').classList.remove('show');
+      currentSpeakExpandRow = null;
+    }
+
+    function applySpeakExpand() {
+      if (!currentSpeakExpandRow) return;
+      currentSpeakExpandRow.querySelector('.speak').value = document.getElementById('speakExpandText').value;
+      closeSpeakExpand();
+    }
+
     function selectAllRows(catNode, checked) {
       catNode.querySelectorAll('.sel').forEach(cb => cb.checked = checked);
     }
@@ -1621,12 +1881,23 @@
       }
     });
 
+    // Speak expand modal event listeners
+    document.getElementById('speakExpandApply').addEventListener('click', applySpeakExpand);
+    document.getElementById('speakExpandClose').addEventListener('click', closeSpeakExpand);
+    document.getElementById('speakExpandPreview').addEventListener('click', () => {
+      const btn = document.getElementById('speakExpandPreview');
+      previewTTS(btn, document.getElementById('speakExpandText').value.trim());
+    });
+    document.getElementById('speakExpandModal').addEventListener('click', (e) => {
+      if (e.target.id === 'speakExpandModal') closeSpeakExpand();
+    });
+
     // wire up top actions
     document.getElementById('addCategory').addEventListener('click', () => newCategory());
     document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
     document.getElementById('copyBtn').addEventListener('click', copyCSV);
     document.getElementById('saveLocal').addEventListener('click', saveLocal);
-    document.getElementById('clearLocal').addEventListener('click', () => { localStorage.removeItem('narbe_phrase_builder'); alert('Cleared saved builder data'); });
+    document.getElementById('clearLocal').addEventListener('click', () => { localStorage.removeItem('narbe_phrase_builder'); showToast('Cleared saved builder data'); });
     document.getElementById('newBtn').addEventListener('click', clearBuilder);
 
     document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());

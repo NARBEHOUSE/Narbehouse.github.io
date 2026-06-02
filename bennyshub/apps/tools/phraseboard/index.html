@@ -586,6 +586,7 @@
       pendingAction: null,
       modalSpacePressed: false,
       modalSpaceStartTime: 0,
+      modalEnterPressed: false,
       lastKeyPressTime: 0,
       debounceDelay: window.NarbeScanManager ? window.NarbeScanManager.getSettings().inputSensitivity : 200,
       returnActionExecuted: false,
@@ -755,6 +756,7 @@ function updateHeaderForCurrentView(){
       state.modalScanIndex = -1;
       state.modalSpacePressed = false;
       state.modalSpaceStartTime = 0;
+      state.modalEnterPressed = false;
     }
 
     function highlightModalButton() {
@@ -1934,9 +1936,12 @@ function updateHeaderForCurrentView(){
           // Already pressed, ignore repeats
           e.preventDefault();
           return;
-        } else if (e.code === 'Enter') {
+        } else if (e.code === 'Enter' && !state.modalEnterPressed) {
           e.preventDefault();
-          selectModalButton();
+          state.modalEnterPressed = true;
+          return;
+        } else if (e.code === 'Enter' && state.modalEnterPressed) {
+          e.preventDefault(); // ignore key-repeat
           return;
         }
       }
@@ -2008,6 +2013,10 @@ function updateHeaderForCurrentView(){
           if (duration < 3000) {
             scanModalForward();
           }
+        } else if (e.code === 'Enter' && state.modalEnterPressed) {
+          e.preventDefault();
+          state.modalEnterPressed = false;
+          selectModalButton();
         }
         return;
       }
