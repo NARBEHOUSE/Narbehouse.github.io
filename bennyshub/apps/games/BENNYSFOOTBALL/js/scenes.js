@@ -112,11 +112,10 @@ class TitleScene extends Phaser.Scene {
             this.scene.start('SettingsScene');
         } else if (value === 'exit') {
             // Signal the hub to close the iframe and return to the main menu.
-            // Same pattern used by Bowling and other hub games.
             if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ action: 'closeApp' }, '*');
+                window.parent.postMessage({ action: 'focusBackButton' }, '*');
             } else {
-                window.history.back();
+                window.location.href = '../../../index.html';
             }
         }
     }
