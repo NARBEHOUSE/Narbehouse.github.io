@@ -25,6 +25,14 @@
       "genres": ["Sports", "Arcade"]
     },
     {
+      "id": "bennysfootball",
+      "title": "Benny's Football",
+      "description": "Pick your team color and play a 16-game season of football! Call your plays, time your passes, and win 10 games to make the single-elimination playoffs - or go 16-0 for a straight shot at the championship.",
+      "path": "apps/games/BENNYSFOOTBALL/index.html",
+      "image": "images/games/bennysfootball.png",
+      "genres": ["Sports", "Strategy"]
+    },
+    {
       "id": "bennysbattleboats",
       "title": "Benny's Battle Boats",
       "description": "A classic battleship-style game where you place your fleet and try to sink the enemy's ships. Play against the computer or challenge a friend in 2-player mode!",
