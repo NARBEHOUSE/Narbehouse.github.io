@@ -299,7 +299,12 @@ class GameScene extends Phaser.Scene {
             backward: () => this.scanBackward(),
             select: () => this.commit(),
             escape: () => this.togglePause(),
-            isChargePhase: () => this.phase === 'charge' || this.phase === 'fgcharge' || this.phase === 'fgaim',
+            // Keyboard Enter: also active during receiver selection so hold-Enter
+            // selects the current receiver and immediately starts the throw charge.
+            isChargePhase: () => this.phase === 'receiver' || this.phase === 'charge' || this.phase === 'fgcharge' || this.phase === 'fgaim',
+            // Pointer/touch: excludes receiver phase so pan gestures don't accidentally
+            // start a throw. Touch receiver selection stays as-is (tap-to-cycle).
+            isPointerChargePhase: () => this.phase === 'charge' || this.phase === 'fgcharge' || this.phase === 'fgaim',
             chargeStart: () => this.chargeStart(),
             chargeRelease: () => this.chargeRelease(),
             // During a field-goal aim: hold SPACE to sweep, each new press
@@ -330,7 +335,7 @@ class GameScene extends Phaser.Scene {
         switch (this.phase) {
             case 'playcall': if (this.playMenu) this.playMenu.select(); break;
             case 'defcall': if (this.playMenu) this.playMenu.select(); break;
-            case 'receiver': this.selectReceiver(); break;
+            // receiver phase: Enter is now hold-to-throw (handled via chargeStart/chargeRelease)
             case 'message': if (this.skipMessage) this.skipMessage(); break;
         }
     }
@@ -338,7 +343,14 @@ class GameScene extends Phaser.Scene {
     // ENTER hold begins a charge; ENTER release fires it.
     // For a field goal we mirror the basketball shooter: a single ENTER hold
     // locks the aim AND starts the power charge in one motion; release kicks.
+    // During receiver selection: hold ENTER locks in the highlighted receiver
+    // and immediately starts the throw charge — one less step.
     chargeStart() {
+        if (this.phase === 'receiver') {
+            this.selectReceiver();           // sets target, phase → 'charge' (or 'anim' if easy-throw)
+            if (this.phase === 'charge') this.startCharge();
+            return;
+        }
         if (this.phase === 'charge') this.startCharge();
         else if (this.phase === 'fgaim') {
             // If this chargeStart was triggered by a pointer/touch tap, aim where

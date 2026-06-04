@@ -216,7 +216,7 @@ class ScanList {
 
     select() {
         if (!this.active) return;
-        if (this.index < 0) { this.next(false); return; } // nothing selected yet — advance first
+        if (this.index < 0) return; // nothing highlighted yet — Enter does nothing
         const opt = this.options[this.index];
         if (this.audio) this.audio.play('select');
         if (this.onSelect) this.onSelect(opt, this.index);
@@ -707,16 +707,42 @@ class ScanInput {
         window.addEventListener('keydown', this._kd);
         window.addEventListener('keyup', this._ku);
 
+        // If the window loses focus while Space is held the keyup never arrives,
+        // leaving spaceDown=true and backTimer running forever. Reset everything
+        // on blur so the stuck-autoscan bug can't happen.
+        this._onBlur = () => this._clearSpaceState();
+        window.addEventListener('blur', this._onBlur);
+
+        // Phaser keyboard key used for physical cross-check in the backTimer.
+        this._spaceKey = (scene.input && scene.input.keyboard)
+            ? scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+            : null;
+
         // Pointer / touch only drives the hold-to-charge gestures. Menu buttons
         // handle their own clicks (see ScanList zones), so a click on empty space
         // never fires an accidental select.
-        this._pd = () => { if (this._isCharge()) this._chargeStart(); };
-        this._pu = () => { if (this._isCharge()) this._chargeRelease(); };
+        // Pointer/touch uses isPointerChargePhase (excludes receiver-select phase)
+        // so a pan drag during receiver selection doesn't accidentally start a throw.
+        this._isPointerCharge = () => {
+            if (this.h.isPointerChargePhase) return !!this.h.isPointerChargePhase();
+            return this._isCharge();
+        };
+        this._pd = () => { if (this._isPointerCharge()) this._chargeStart(); };
+        this._pu = () => { if (this._isPointerCharge()) this._chargeRelease(); };
         scene.input.on('pointerdown', this._pd);
         scene.input.on('pointerup', this._pu);
 
         scene.events.once('shutdown', () => this.destroy());
         scene.events.once('destroy', () => this.destroy());
+    }
+
+    // Reset all Space-related state. Called on window blur (missed keyup guard).
+    _clearSpaceState() {
+        if (this.s.spaceTimer) { clearTimeout(this.s.spaceTimer); this.s.spaceTimer = null; }
+        if (this.s.backTimer)  { clearInterval(this.s.backTimer);  this.s.backTimer  = null; }
+        this.s.spaceDown = false;
+        this.s.spaceLong = false;
+        this.s.aiming    = false;
     }
 
     _interval() {
@@ -746,8 +772,12 @@ class ScanInput {
                 this.s.spaceLong = true;
                 if (this.h.backward) this.h.backward();
                 this.s.backTimer = setInterval(() => {
-                    if (this.s.spaceDown) { if (this.h.backward) this.h.backward(); }
-                    else { clearInterval(this.s.backTimer); this.s.backTimer = null; }
+                    // Cross-check Phaser's physical key state so a missed keyup
+                    // (window blur, focus switch, etc.) doesn't keep this running
+                    // when autoScan is off and Space isn't actually held.
+                    const physicallyDown = !this._spaceKey || this._spaceKey.isDown;
+                    if (this.s.spaceDown && physicallyDown) { if (this.h.backward) this.h.backward(); }
+                    else { this.s.spaceDown = false; clearInterval(this.s.backTimer); this.s.backTimer = null; }
                 }, this._interval());
                 this.s.spaceTimer = null;
             }, this.longPress);
@@ -790,6 +820,7 @@ class ScanInput {
         this._destroyed = true;
         window.removeEventListener('keydown', this._kd);
         window.removeEventListener('keyup', this._ku);
+        window.removeEventListener('blur', this._onBlur);
         if (this.s.spaceTimer) clearTimeout(this.s.spaceTimer);
         if (this.s.backTimer) clearInterval(this.s.backTimer);
     }
