@@ -709,9 +709,13 @@ class ScanInput {
 
         // If the window loses focus while Space is held the keyup never arrives,
         // leaving spaceDown=true and backTimer running forever. Reset everything
-        // on blur so the stuck-autoscan bug can't happen.
+        // on blur or page-hide so the stuck-autoscan bug can't happen.
         this._onBlur = () => this._clearSpaceState();
         window.addEventListener('blur', this._onBlur);
+        // visibilitychange covers tab-switching and OS overlays that don't
+        // always fire a blur event (e.g. Surface Pro adaptive-switch software).
+        this._onHidden = () => { if (document.visibilityState === 'hidden') this._clearSpaceState(); };
+        document.addEventListener('visibilitychange', this._onHidden);
 
         // Phaser keyboard key used for physical cross-check in the backTimer.
         this._spaceKey = (scene.input && scene.input.keyboard)
@@ -761,7 +765,13 @@ class ScanInput {
             // During an aiming phase: flip direction and start sweeping on
             // each new press; stop on release. Matches P3GL aim behaviour.
             if (this._isAim()) {
-                if (this.s.aiming) return; // already down — ignore repeat
+                // Cancel any pending non-aim scan state that may have leaked
+                // through a phase transition while Space was held (adaptive
+                // switches can fire a fresh keydown without e.repeat=true).
+                if (this.s.spaceTimer) { clearTimeout(this.s.spaceTimer); this.s.spaceTimer = null; }
+                if (this.s.backTimer)  { clearInterval(this.s.backTimer);  this.s.backTimer  = null; }
+                this.s.spaceDown = false; this.s.spaceLong = false;
+                if (this.s.aiming) return; // already in aim — ignore
                 this.s.aiming = true;
                 if (this.h.aimStart) this.h.aimStart();
                 return;
@@ -775,7 +785,9 @@ class ScanInput {
                     // Cross-check Phaser's physical key state so a missed keyup
                     // (window blur, focus switch, etc.) doesn't keep this running
                     // when autoScan is off and Space isn't actually held.
-                    const physicallyDown = !this._spaceKey || this._spaceKey.isDown;
+                    // Default to false (stop) when _spaceKey is unavailable so
+                    // a missing Phaser key reference never keeps the timer alive.
+                    const physicallyDown = !!(this._spaceKey && this._spaceKey.isDown);
                     if (this.s.spaceDown && physicallyDown) { if (this.h.backward) this.h.backward(); }
                     else { this.s.spaceDown = false; clearInterval(this.s.backTimer); this.s.backTimer = null; }
                 }, this._interval());
@@ -794,20 +806,27 @@ class ScanInput {
     }
 
     _up(e) {
-        if (e.code === 'Space' && this.s.aiming) {
+        if (e.code === 'Space') {
             e.preventDefault();
-            this.s.aiming = false;
-            if (this.h.aimStop) this.h.aimStop();
+            // Capture state BEFORE clearing so we know what to fire.
+            const wasAiming   = this.s.aiming;
+            const wasShortNav = this.s.spaceDown && !this.s.spaceLong;
+            // Unconditionally clear ALL space state on every keyup.
+            // This is the primary defence against stuck backTimers: it works
+            // regardless of how the state got into an inconsistent condition
+            // (phase transitions during adaptive-switch long-holds, missed
+            // keyups from focus loss, etc.).
+            this.s.aiming    = false;
+            this.s.spaceDown = false;
+            this.s.spaceLong = false;
+            if (this.s.spaceTimer) { clearTimeout(this.s.spaceTimer); this.s.spaceTimer = null; }
+            if (this.s.backTimer)  { clearInterval(this.s.backTimer);  this.s.backTimer  = null; }
+            // Fire the appropriate callback.
+            if (wasAiming && this.h.aimStop) this.h.aimStop();
+            else if (wasShortNav && this.h.forward) this.h.forward();
             return;
         }
-        if (e.code === 'Space' && this.s.spaceDown) {
-            e.preventDefault();
-            this.s.spaceDown = false;
-            if (this.s.spaceTimer) { clearTimeout(this.s.spaceTimer); this.s.spaceTimer = null; }
-            if (this.s.backTimer) { clearInterval(this.s.backTimer); this.s.backTimer = null; }
-            if (!this.s.spaceLong && this.h.forward) this.h.forward();
-            this.s.spaceLong = false;
-        } else if (e.code === 'Enter' && this.s.enterDown) {
+        if (e.code === 'Enter' && this.s.enterDown) {
             e.preventDefault();
             this.s.enterDown = false;
             if (this._isCharge()) this._chargeRelease();
@@ -821,6 +840,7 @@ class ScanInput {
         window.removeEventListener('keydown', this._kd);
         window.removeEventListener('keyup', this._ku);
         window.removeEventListener('blur', this._onBlur);
+        document.removeEventListener('visibilitychange', this._onHidden);
         if (this.s.spaceTimer) clearTimeout(this.s.spaceTimer);
         if (this.s.backTimer) clearInterval(this.s.backTimer);
     }

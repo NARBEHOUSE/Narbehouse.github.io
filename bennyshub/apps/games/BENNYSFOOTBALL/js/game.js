@@ -2286,6 +2286,9 @@ class GameScene extends Phaser.Scene {
     resolveOppPass(defPlay) {
         this.phase = 'oppanim';
         const midY = FIELD.MID_Y;
+        // Capture the snap yard-line before anything mutates it so route targets
+        // and yardage calculations both reference the same starting position.
+        const startYard = this.opp.yard;
         const recs = [this.defense[2], this.defense[3], this.defense[4]].filter(Boolean);
         const dbs = [this.offense[3], this.offense[4], this.offense[5]].filter(Boolean);
 
@@ -2313,15 +2316,55 @@ class GameScene extends Phaser.Scene {
         const target = (Math.random() < 0.78) ? byOpen[0] : Phaser.Utils.Array.GetRandom(recInfo);
         this.oppTarget = target.player;
 
-        // Routes: receivers release downfield (toward our goal = left); their
-        // defenders track them; the QB drops; our line rushes.
+        // ── Compute outcome BEFORE routing so the target receiver's route ─────
+        // endpoint can match the actual gain. Previously, routes were always
+        // 5–11 yards deep regardless of the reported gain, so short completions
+        // would show the receiver already past the endpoint → carrier barely
+        // moved → "gain of 1" after an 8-yard visual route (the core mismatch).
+        const cpuSP        = this._scorePressure(this.gs.score.them);
+        const cpuBoostPass = this._cpuBoost();
+        const intChance  = [0.06, 0.20, 0.38][target.cov];
+        const buChance   = Math.max(0.04, [0.14, 0.30, 0.38][target.cov] - cpuBoostPass * 0.4);
+        const missChance = Math.max(0.02, 0.10 + cpuSP * 0.6 + (this.gs.score.them > 35 ? 0.12 : 0) - cpuBoostPass * 0.35);
+        const roll = Math.random();
+        let passOutcome, passYards = 0;
+        if (roll < intChance) {
+            passOutcome = 'int';
+        } else if (roll < intChance + buChance || Math.random() < missChance) {
+            passOutcome = 'incomplete';
+        } else {
+            passOutcome = 'complete';
+            let base = (target.cov === 0 ? 7 + Math.random() * 11 : 4 + Math.random() * 6) + defPlay.passMod;
+            base += cpuBoostPass * (4 + Math.random() * 5);
+            const bigChance = (target.cov === 0 ? 0.14 : 0) * (1 - cpuSP) + cpuBoostPass * 0.10;
+            if (Math.random() < bigChance) base += 6 + Math.random() * 12;
+            base *= (1 - cpuSP * 0.5);
+            passYards = Phaser.Math.Clamp(Math.round(base), -2, startYard);
+        }
+        const passMatchup = target.cov >= 2 ? 'perfect' : target.cov === 1 ? 'neutral' : 'blown';
+        const myDef = target.defenders[0] || this.offense[3];
+
+        // ── Route receivers. For a completion the target goes to their catch ──
+        // point: roughly 50–80 % of the gain as route depth, rest is YAC.
+        // This guarantees that carrier.x is never already past endX when
+        // _startRun fires, so the run-after-catch animation covers the correct
+        // remaining distance and the total visual movement matches the game result.
         recInfo.forEach((ri, k) => {
-            const tx = ri.player.x - 46 - Math.random() * 40;
-            // Give each receiver a distinct route shape: first WR breaks deep,
-            // second crosses hard, third (TE) runs a shorter angle. This spreads
-            // them across the field so routes don't all run flat in parallel.
-            // Keep all routes within the visible field — angles are clamped so
-            // no WR can run into the sideline and end up at a boundary.
+            let tx;
+            if (passOutcome === 'complete' && ri === target && passYards >= 1) {
+                // Route the TARGET to the catch point so the run-after-catch
+                // covers exactly the remaining yards to the tackle spot.
+                // routeYards is 50–80 % of the gain, clamped to [0, passYards-1]
+                // so there is always at least 1 yard of visible run after the catch.
+                // For a 1-yard gain this means catch at the LOS then run 1 yard.
+                const raw = Math.round(passYards * (0.5 + Math.random() * 0.3));
+                const routeYards = Phaser.Math.Clamp(raw, 0, passYards - 1);
+                tx = ydToX(Phaser.Math.Clamp(startYard - routeYards, 1, 99));
+            } else {
+                // Non-target, incomplete, INT, or negative gain: random route depth.
+                tx = ri.player.x - 46 - Math.random() * 40;
+            }
+            // Give each receiver a distinct route shape (same as before).
             const rawAngle  = k === 0 ? (Math.random() - 0.5) * 60
                             : k === 1 ? (Math.random() < 0.5 ? 1 : -1) * (18 + Math.random() * 26)
                             :           (Math.random() - 0.5) * 38;
@@ -2344,38 +2387,13 @@ class GameScene extends Phaser.Scene {
 
         this.time.delayedCall(1220, () => {
             this.audio.speak(target.cov === 0 ? 'Open!' : 'Into coverage.', true);
-            const myDef = target.defenders[0] || this.offense[3];
-            // Tightened pick + breakup rates and an extra plain-miss roll so
-            // overall completion drops ~15-20%. Score pressure adds more misses
-            // once the CPU is rolling, with a sharp jump once they top 35.
-            const cpuSP = this._scorePressure(this.gs.score.them);
-            const cpuBoostPass = this._cpuBoost();
-            // Difficulty boost lowers miss/breakup rates and sharpens the CPU QB.
-            const intChance = [0.06, 0.20, 0.38][target.cov];
-            const buChance  = Math.max(0.04, [0.14, 0.30, 0.38][target.cov] - cpuBoostPass * 0.4);
-            const missChance = Math.max(0.02, 0.10 + cpuSP * 0.6 + (this.gs.score.them > 35 ? 0.12 : 0) - cpuBoostPass * 0.35);
-            const roll = Math.random();
-            if (roll < intChance) { this.animateOppInterception(target.player, myDef); return; }
-            if (roll < intChance + buChance) {
+            if (passOutcome === 'int') {
+                this.animateOppInterception(target.player, myDef);
+            } else if (passOutcome === 'incomplete') {
                 this.animateOppPlay(0, 'incomplete', () => this.endOppPlay(0, 'incomplete'), target.player, myDef);
-                return;
+            } else {
+                this.animateOppPlay(passYards, 'pass', () => this.endOppPlay(passYards, 'pass'), target.player, null, passMatchup);
             }
-            if (Math.random() < missChance) {
-                this.animateOppPlay(0, 'incomplete', () => this.endOppPlay(0, 'incomplete'), target.player, myDef);
-                return;
-            }
-            // Completion: more yards when the man was open. Baselines trimmed
-            // and high-score CPUs lose chunk-play potential.
-            let base = (target.cov === 0 ? 7 + Math.random() * 11 : 4 + Math.random() * 6) + defPlay.passMod;
-            base += cpuBoostPass * (4 + Math.random() * 5);  // boost adds chunk yards
-            const bigChance = (target.cov === 0 ? 0.14 : 0) * (1 - cpuSP) + cpuBoostPass * 0.10;
-            if (Math.random() < bigChance) base += 6 + Math.random() * 12;
-            base *= (1 - cpuSP * 0.5);
-            let yards = Phaser.Math.Clamp(Math.round(base), -2, this.opp.yard);
-            // Derive visual matchup quality from how tightly the receiver was covered.
-            // cov=2 → blanket → perfect; cov=1 → contested → neutral; cov=0 → open → blown.
-            const passMatchup = target.cov >= 2 ? 'perfect' : target.cov === 1 ? 'neutral' : 'blown';
-            this.animateOppPlay(yards, 'pass', () => this.endOppPlay(yards, 'pass'), target.player, null, passMatchup);
         });
     }
 
@@ -2465,6 +2483,10 @@ class GameScene extends Phaser.Scene {
         const lane = sideDir * (type === 'pass' ? 28 + Math.random() * 44 : 12 + Math.random() * 30) * laneMult;
 
         const _startRun = () => {
+            // Kill any route-jog tween still running on the carrier (e.g. the last
+            // fraction of a 1650ms jog) so it can't fight the run-after-catch tween.
+            this.tweens.killTweensOf(carrier);
+            this.stopBob(carrier);
             // If the CPU receiver catches the ball already at or past the goal line
             // it's an immediate TD. Use this.opp.yard (full remaining distance) when
             // calling endOppPlay to guarantee the TD registers — the `yards` variable
