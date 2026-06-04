@@ -1299,27 +1299,55 @@ class GameScene extends Phaser.Scene {
 
     // Drag-to-pan during receiver selection: lets touch/mouse users scroll the
     // zoomed-in view to find receivers that are off-screen.
+    // Hold-to-charge: holding still for 300ms selects the current receiver and
+    // starts the throw charge. Moving >14px before that timer fires cancels it
+    // and treats the gesture as a pan instead.  Releasing during 'charge' phase
+    // is already handled by ScanInput's existing pointerup handler.
     _setupReceiverPan() {
-        let panStart = null, camStart = null;
+        let panStart = null, camStart = null, holdTimer = null, isPanning = false;
+
+        const cancelHold = () => {
+            if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        };
+
         const onDown = (ptr) => {
+            isPanning = false;
             panStart = { x: ptr.x, y: ptr.y };
             camStart = { x: this.cameras.main.scrollX, y: this.cameras.main.scrollY };
+            // Start hold-to-charge timer.
+            holdTimer = setTimeout(() => {
+                holdTimer = null;
+                if (this.phase !== 'receiver') return;
+                this.selectReceiver();           // sets target, phase → 'charge' (or 'anim' easy-throw)
+                if (this.phase === 'charge') this.startCharge();
+            }, 300);
         };
         const onMove = (ptr) => {
             if (!ptr.isDown || !panStart) return;
             const dx = (ptr.x - panStart.x) / this.cameras.main.zoom;
             const dy = (ptr.y - panStart.y) / this.cameras.main.zoom;
-            this.cameras.main.scrollX = camStart.x - dx;
-            this.cameras.main.scrollY = camStart.y - dy;
+            // Cancel the hold timer once the pointer drifts — treat as pan.
+            if (!isPanning && Phaser.Math.Distance.Between(ptr.x, ptr.y, panStart.x, panStart.y) > 14) {
+                isPanning = true;
+                cancelHold();
+            }
+            if (isPanning) {
+                this.cameras.main.scrollX = camStart.x - dx;
+                this.cameras.main.scrollY = camStart.y - dy;
+            }
         };
+        const onUp = () => { cancelHold(); isPanning = false; };
         this.input.on('pointerdown', onDown);
         this.input.on('pointermove', onMove);
-        this._recPanHandlers = { onDown, onMove };
+        this.input.on('pointerup', onUp);
+        this._recPanHandlers = { onDown, onMove, onUp, cancelHold };
     }
     _cleanupReceiverPan() {
         if (!this._recPanHandlers) return;
+        this._recPanHandlers.cancelHold();
         this.input.off('pointerdown', this._recPanHandlers.onDown);
         this.input.off('pointermove', this._recPanHandlers.onMove);
+        this.input.off('pointerup', this._recPanHandlers.onUp);
         this._recPanHandlers = null;
     }
 
