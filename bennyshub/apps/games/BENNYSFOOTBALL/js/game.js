@@ -258,6 +258,28 @@ class GameScene extends Phaser.Scene {
     // coverage team converges for the tackle.
     kickReturn(receiving, returner, coverTeam, fromYard, toYard) {
         const us = receiving === 'us';
+        // ── Kickoff return miracle: 1 % base (2.2 % if returner's team is trailing 14+).
+        if (Math.random() < this._miracleChance(us)) {
+            this.ball.carrier = returner; this.ball.visible = true;
+            const tdEndX = us ? FIELD.GOAL_R + 52 : FIELD.GOAL_L - 52;
+            this._miracleRun(
+                returner, coverTeam,
+                returner.x, returner.y, tdEndX, us,
+                () => {
+                    if (us) {
+                        this.gs.score.us += 6; this.updateHUD();
+                        this._doTDCelebration(returner);
+                        this.bigMessage('MIRACLE RETURN! TOUCHDOWN!', 2000,
+                            () => this.showAfterTouchdownMenu());
+                    } else {
+                        this.gs.score.them += 6; this.updateHUD();
+                        this.bigMessage(`MIRACLE RETURN! ${this.oppColor.name} TOUCHDOWN!`, 2000,
+                            () => this.oppAfterTouchdown());
+                    }
+                }
+            );
+            return;
+        }
         const returnTeam = us ? this.offense : this.defense;
         const lane = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50);
         const midX = ydToX((fromYard + toYard) / 2), endX = ydToX(toYard), midY = FIELD.MID_Y;
@@ -688,8 +710,49 @@ class GameScene extends Phaser.Scene {
     tackleShake(p) {
         this.cameras.main.shake(160, 0.006);
         if (p) {
-            this.tweens.add({ targets: p, angle: (Math.random() < 0.5 ? -28 : 28), duration: 120, yoyo: true });
+            // Push the tackled player to the bottom of the player depth stack
+            // so defenders visually pile on top of them.
+            this._tackledPlayer = p;
+            p.setDepth(2.0);
+            this.tweens.add({
+                targets: p, angle: (Math.random() < 0.5 ? -28 : 28), duration: 120, yoyo: true,
+                onComplete: () => {
+                    // Clear the tackled flag after the shake so the Y-sort
+                    // takes over again once everyone repositions.
+                    this.time.delayedCall(600, () => {
+                        if (this._tackledPlayer === p) this._tackledPlayer = null;
+                    });
+                }
+            });
         }
+    }
+
+    // ─── Dynamic player depth sorting ──────────────────────────────────────────
+    // Called every frame from update(). Players further down the field (higher Y)
+    // appear closer to the camera and are drawn on top of players higher up.
+    // Special cases: the ball carrier is always on top (7.0); the player who just
+    // got tackled is pinned at the bottom (2.0) so defenders pile over them.
+    _sortPlayerDepths() {
+        if (!this.offense || !this.defense) return;
+        const carrier  = this.ball && this.ball.carrier;
+        const tackled  = this._tackledPlayer;
+        const fieldH   = FIELD.BOTTOM - FIELD.TOP || 380;
+        const allPlayers = [...this.offense, ...this.defense];
+        allPlayers.forEach(p => {
+            if (!p) return;
+            if (p === carrier) {
+                // Ball carrier always on top of the player layer.
+                p.setDepth(7.0);
+            } else if (p === tackled) {
+                // Tackled player is pinned under everyone.
+                p.setDepth(2.0);
+            } else {
+                // Y-sort: lower Y (far side of field) = lower depth;
+                // higher Y (near side) = higher depth, appears in front.
+                const t = Phaser.Math.Clamp((p.y - FIELD.TOP) / fieldH, 0, 1);
+                p.setDepth(2.5 + t * 4.0); // range 2.5 – 6.5
+            }
+        });
     }
 
     // ─── Camera helpers ────────────────────────────────────────────────────────
@@ -763,6 +826,9 @@ class GameScene extends Phaser.Scene {
             this._zoomOut(400);
             this.tweenFormation(this.gs.ballPosition, 1000, () => this.time.delayedCall(2500, () => this.showPlayCall()));
         } else {
+            // Always reset the camera — previous play may have left it zoomed in
+            // (e.g. incomplete pass, interception, turnover on downs).
+            this._zoomOut(380);
             this.repositionFormation(this.gs.ballPosition);
             this.showPlayCall();
         }
@@ -868,33 +934,64 @@ class GameScene extends Phaser.Scene {
 
     // Returns a { [playValue]: shortTipString } map (max 2 entries) of recommended
     // offensive plays for the current down-and-distance situation.
+    // Philosophy: pass plays are freely suggested on 1st/2nd down or when far from
+    // scoring. On 3rd/4th, risk is weighted by distance — being close to the endzone
+    // makes a risky pass worthwhile; the middle of the field on a late down favors
+    // safer or run-oriented choices. Short passes always carry the highest success rate.
     _getBestOffensePlays() {
         const down = this.gs.down, toGo = this.gs.yardsToGo, pos = this.gs.ballPosition;
         const best = {};
+        const inRedZone   = pos >= 88;   // ~12 yards out — short plays dominate
+        const nearScoring = pos >= 65;   // ~35 yards out — INT risk increases
+        const earlyDown   = down <= 2;   // 1st or 2nd: can afford to take chances
 
         if (toGo <= 2) {
-            // Short yardage — power run is the percentage call.
+            // Short yardage: power run is the safe call.
             best['INSIDE_RUN'] = 'Short yardage – run it';
-            if (down >= 3) best['SHORT_PASS'] = '3rd down – quick out as backup';
+            if (down >= 3) best['SHORT_PASS'] = 'Quick out as backup on 3rd';
         } else if (toGo <= 5) {
-            // Medium yardage — quick pass or outside sweep.
-            best['SHORT_PASS'] = 'Medium yardage – short throw';
-            best['OUTSIDE_RUN'] = 'Sweep around the end';
+            // Medium yardage: short pass is highest percentage.
+            best['SHORT_PASS'] = 'Short throw – high percentage';
+            if (earlyDown) best['OUTSIDE_RUN'] = 'Sweep around the end';
         } else if (toGo <= 9) {
-            // Standard yardage — pass-heavy.
-            best['SHORT_PASS'] = 'Move the chains with a quick throw';
-            if (down >= 2) best['LONG_PASS'] = 'Take a shot downfield';
+            if (earlyDown) {
+                // 1st/2nd: suggest passes freely — still have downs to adjust.
+                best['SHORT_PASS'] = 'Move the chains';
+                best['LONG_PASS'] = 'Take a shot downfield';
+            } else if (!nearScoring) {
+                // 3rd/4th but still far from scoring — need yards, pass is right.
+                best['SHORT_PASS'] = 'Best chance at the first';
+                best['LONG_PASS'] = 'Far from scoring – worth the risk';
+            } else if (inRedZone) {
+                // 3rd/4th in red zone: points are close, the risk is worth it.
+                best['SHORT_PASS'] = 'Red zone – quick slant';
+                best['INSIDE_RUN'] = 'Red zone – punch it in';
+            } else {
+                // 3rd/4th, near scoring but not red zone: safer plays preferred.
+                best['SHORT_PASS'] = '3rd down – move the chains';
+                best['INSIDE_RUN'] = 'Could grind for the first';
+            }
         } else {
-            // Long yardage / 3rd-or-4th and long.
-            best['LONG_PASS'] = 'Need yards – go deep';
-            best['SHORT_PASS'] = 'Safe choice to stay in range';
+            // Long yardage: need to air it out.
+            if (earlyDown || !nearScoring) {
+                // Pass freely on early downs or when far from scoring.
+                best['LONG_PASS'] = earlyDown ? 'Take a big shot' : 'Need yards – go deep';
+                best['SHORT_PASS'] = 'Safe check-down option';
+            } else if (inRedZone) {
+                // Red zone, 3rd/4th and long: the points are worth the risk.
+                best['SHORT_PASS'] = 'Red zone – take what\'s there';
+                best['LONG_PASS'] = 'Throw it up – you need the score';
+            } else {
+                // 3rd/4th and long near scoring: an INT here is costly. Stay safer.
+                best['SHORT_PASS'] = 'High percentage – stay in field goal range';
+                best['INSIDE_RUN'] = 'Grind for yards – keep the drive alive';
+            }
         }
 
-        // Scoring position (≤10 yards out): run or slant beats deep routes.
-        if (pos >= 90) {
+        // In red zone on early downs: long pass rarely helps — swap for run.
+        if (inRedZone && earlyDown && best['LONG_PASS']) {
             delete best['LONG_PASS'];
-            best['INSIDE_RUN'] = 'Red zone – punch it in';
-            best['SHORT_PASS'] = 'Red zone – quick slant';
+            if (!best['INSIDE_RUN']) best['INSIDE_RUN'] = 'Red zone – punch it in';
         }
 
         // Cap at 2 recommendations.
@@ -992,6 +1089,23 @@ class GameScene extends Phaser.Scene {
     // ─── Running plays ─────────────────────────────────────────────────────────
     execRun(play) {
         this.phase = 'anim';
+        // ── Miracle run: rare breakaway TD on any run play ─────────────────────
+        // ~1 % base chance (higher if player is trailing by 14+).
+        if (Math.random() < this._miracleChance(true)) {
+            const rb = this.offense[1];
+            this.ball.carrier = rb; this.ball.visible = true;
+            const endX = FIELD.GOAL_R + 52; // deep into the scoring endzone
+            this._miracleRun(
+                rb, this.defense,
+                rb.x, rb.y, endX, true,
+                () => {
+                    const yards = 100 - this.gs.ballPosition;
+                    this._doTDCelebration(rb);
+                    this.bigMessage('MIRACLE RUN! TOUCHDOWN!', 2000, () => this.endPlay(yards, 'run'));
+                }
+            );
+            return;
+        }
         // Yardage model: base +/- variance, with a chance at a big gain.
         let yards = play.base + Math.round((Math.random() - 0.45) * play.variance);
         // Big plays are rarer and a touch shorter; stuffs more common.
@@ -1099,6 +1213,112 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+    // ─── Miracle Run touchdown ──────────────────────────────────────────────
+    // A rare electrifying play: the carrier breaks into the open field and races
+    // to the endzone untouched while the whole defense chases desperately.
+    //
+    // runner    – the sprite that carries the ball
+    // chasers   – array of defender sprites that pursue
+    // startX/Y  – where the break happens (runner's current position)
+    // tdEndX    – x position deep inside the scoring endzone
+    // isUs      – true = player team scored, false = CPU scored
+    // onDone    – callback fired after celebration, scored 6pts, then caller
+    //             should call the appropriate endPlay / endOppPlay equivalent
+    _miracleRun(runner, chasers, startX, startY, tdEndX, isUs, onDone) {
+        this.phase = 'anim';
+        // Kill any existing tweens on everyone involved.
+        this.tweens.killTweensOf(runner);
+        chasers.forEach(p => { if (p) this.tweens.killTweensOf(p); });
+
+        const midY   = FIELD.MID_Y;
+        const totalDist = Math.abs(tdEndX - startX);
+        // Total animation time scales with distance; minimum 2.1s so it feels epic.
+        const totalDur  = Math.max(2100, totalDist * 8.5);
+
+        // Pick a weave lane — the runner cuts to one side of the field.
+        const laneDir = startY <= midY ? 1 : -1; // cut toward open space
+        const peakY   = Phaser.Math.Clamp(
+            startY + laneDir * (55 + Math.random() * 35),
+            FIELD.TOP + 18, FIELD.BOTTOM - 18);
+
+        // Mid-field x is used as the apex of the cut.
+        const midRunX = startX + (tdEndX - startX) * 0.38;
+
+        // 1. Brief dramatic freeze — the "what just happened" moment.
+        this.audio.play('whistle');
+        this.cameras.main.shake(60, 0.005);
+        this.bigMessage(isUs ? 'HE\'S IN THE OPEN!' : `${this.oppColor.name} BREAKS FREE!`, 900, () => {
+            this.audio.speak(isUs ? 'He\'s gone! Nobody can catch him!' : 'Breaks free! Nobody can stop him!', true);
+            this.audio.play('crowd_big');
+
+            // Zoom onto the runner.
+            this._zoomOnPoint(startX, startY, 1.8, 220);
+
+            // Ball sticks to runner.
+            this.ball.carrier = runner; this.ball.visible = true;
+            this.startBob(runner);
+
+            // Runner weaves: cut to edge, then straighten into the endzone.
+            this.tweens.add({
+                targets: runner, x: midRunX, y: peakY,
+                duration: totalDur * 0.45, ease: 'Sine.easeOut',
+                onComplete: () => {
+                    // Zoom widens to show the whole chase.
+                    this._zoomOnPoint(runner.x + (tdEndX - runner.x) * 0.4, midY, 1.4, 300);
+                    this.tweens.add({
+                        targets: runner, x: tdEndX, y: Phaser.Math.Clamp(midY + laneDir * 18, FIELD.TOP + 16, FIELD.BOTTOM - 16),
+                        duration: totalDur * 0.55, ease: 'Quad.easeIn',
+                        onUpdate: (tw) => {
+                            // Pulse the zoom forward as runner approaches endzone.
+                            if (tw.progress > 0.6) {
+                                const progExcess = (tw.progress - 0.6) / 0.4;
+                                this.cameras.main.shake(16, 0.003 * progExcess);
+                            }
+                        },
+                        onComplete: () => {
+                            this.stopBob(runner);
+                            this.ball.carrier = null;
+                            this.audio.play('touchdown');
+                            this.audio.play('crowd_big');
+                            // Massive zoom onto the scorer in the endzone.
+                            this._zoomOnPoint(runner.x, runner.y, 2.4, 250);
+                            this.cameras.main.shake(240, 0.012);
+                            onDone();
+                        }
+                    });
+                }
+            });
+
+            // Defenders chase at full sprint — they close the gap but can never
+            // quite get there. The closest two almost make it; the rest trail off.
+            chasers.forEach((p, i) => {
+                if (!p) return;
+                this.tweens.killTweensOf(p);
+                const dist = Phaser.Math.Distance.Between(p.x, p.y, tdEndX, midY);
+                // Lean ahead of the runner slightly so they're visibly straining.
+                const chaseTargetX = Phaser.Math.Clamp(
+                    tdEndX + (i < 2 ? 20 + i * 12 : 50 + i * 20), FIELD.LEFT + 8, FIELD.RIGHT - 8);
+                const chaseTargetY = Phaser.Math.Clamp(
+                    peakY + (i % 2 ? 1 : -1) * (12 + i * 8), FIELD.TOP + 12, FIELD.BOTTOM - 12);
+                const chaseDur = totalDur * (i < 2 ? 0.90 : 1.05); // two closest nearly get there
+                this.startBob(p);
+                this.tweens.add({
+                    targets: p, x: chaseTargetX, y: chaseTargetY,
+                    duration: chaseDur, ease: 'Sine.easeIn',
+                    onComplete: () => this.stopBob(p)
+                });
+            });
+        });
+    }
+
+    // Returns the miracle-run chance for the current context.
+    // Base 1 % (1/100), bumped if the runner's team is trailing by 14+.
+    _miracleChance(isUs) {
+        const lead = this.gs.score.us - this.gs.score.them;
+        const trailing = isUs ? lead <= -14 : lead >= 14; // runner's team is down by 14+
+        return trailing ? 0.022 : 0.010;
+    }
+
     _finishRun(rb, yards) {
         this.stopBob(rb);
         this._zoomOut(340);
@@ -1146,13 +1366,23 @@ class GameScene extends Phaser.Scene {
         const idxs = [2, 3, 4, 1];
 
         // Coverage model: the defense has THREE coverage defenders to spread over
-        // the four receivers, so at least one is always open. How many defenders
-        // are draped over a man is what makes the throw risky — the whole skill is
-        // reading the field and picking the receiver with the FEWEST guys on him.
-        // Distribution multisets that total 3 defenders (max 2 per man):
-        const dists = [[0, 1, 1, 1], [0, 0, 1, 2], [0, 0, 2, 1], [1, 0, 1, 1]];
+        // the four receivers. Distribution multisets that total 3 defenders (max 2 per man).
+        // Later in the game (large lead / high score), the defence tightens — fewer or
+        // no receivers are wide open, matching the difficulty ramp the player feels.
+        const scoreLead = this.gs.score.us - this.gs.score.them;
+        const gamePressure = Phaser.Math.Clamp(
+            this._scorePressure() + Math.max(0, scoreLead - 7) / 42, 0, 1);
+        // Low pressure  → normal: at least one wide-open receiver.
+        // Moderate      → tighter: maybe one open, rest covered.
+        // High pressure → everyone covered; the read is genuinely hard.
+        const normalDists   = [[0, 1, 1, 1], [0, 0, 1, 2], [0, 0, 2, 1], [1, 0, 1, 1]];
+        const moderateDists = [[1, 1, 1, 1], [0, 1, 1, 2], [1, 0, 2, 1], [0, 1, 2, 1]];
+        const heavyDists    = [[1, 1, 1, 2], [1, 1, 2, 1], [1, 2, 1, 1], [2, 1, 1, 1]];
+        const distPool = gamePressure < 0.30 ? normalDists
+                       : gamePressure < 0.55 ? moderateDists
+                       : heavyDists;
         const coverage = Phaser.Utils.Array.Shuffle(
-            [...Phaser.Utils.Array.GetRandom(dists)]
+            [...Phaser.Utils.Array.GetRandom(distPool)]
         );
         const dbPool = [this.defense[3], this.defense[4], this.defense[5]];
         let dbi = 0;
@@ -1163,16 +1393,30 @@ class GameScene extends Phaser.Scene {
             const lateral = [-130, 130, -55, 60][k] * (0.6 + Math.random() * 0.5);
             const cov = coverage[k];
             // Fewer defenders = more open. 0 → wide open, 1 → contested, 2 → blanketed.
+            // Base for cov=2 is intentionally very low (0.08) so doubles are genuinely
+            // dangerous. Long routes get a heavier penalty (-0.14) because the DB has
+            // more reaction time. distRisk also shaves actual openness so visual and
+            // math stay in sync.
+            // distRisk is DETERMINISTIC: any open receiver 18+ yards downfield is
+            // always orange — no randomness — so the further receiver is always the
+            // riskier-looking one, never the closer one.
+            const distRisk = (cov === 0) && (depthYards >= 18);
             const openness = Phaser.Math.Clamp(
-                [0.92, 0.5, 0.2][cov] + (Math.random() * 0.1 - 0.05) - (isLong ? 0.06 : 0),
-                0.08, 0.95);
+                [0.92, 0.45, 0.08][cov]
+                + (Math.random() * 0.10 - 0.05)
+                - (isLong ? 0.14 : 0)
+                - (distRisk ? 0.18 : 0),
+                0.04, 0.95);
             const rx = ydToX(targetYard), ry = midY + lateral;
             // Pull this man's defenders from the shared pool.
             const defenders = [];
             for (let c = 0; c < cov && dbi < dbPool.length; c++) defenders.push(dbPool[dbi++]);
+            // displayCov shows orange on technically-open deep receivers too; distRisk
+            // is already baked into openness so visual and completion math agree.
+            const displayCov = Math.min(2, cov + (distRisk ? 1 : 0));
             return {
                 player: this.offense[oi], depthYards, targetYard,
-                x: rx, y: ry, openness, coverage: cov,
+                x: rx, y: ry, openness, coverage: cov, displayCov,
                 defender: defenders[0] || this.defense[3 + (k % 3)],
                 defenders
             };
@@ -1274,13 +1518,21 @@ class GameScene extends Phaser.Scene {
     announceReceiver() {
         const r = this.receivers[this.recIndex];
         const cov = r.coverage || 0;
-        const status = cov === 0 ? 'wide open' : (cov === 1 ? 'one defender on him' : 'double covered');
         const dist = Math.round((r.targetYard - this.gs.ballPosition));
         // Zoom in so the player can read the receiver's coverage situation up close.
         this._zoomOnPoint(r.player.x, r.player.y, 2.0, 280);
         // Concise receiver call — interrupts any previous announcement immediately.
         const roleFull = positionName(r.player.role || 'WR');
-        const covShort = cov === 0 ? 'open' : (cov === 1 ? 'covered' : 'doubled');
+        // Use displayCov to match what the orange/red ring actually shows.
+        // If displayCov > cov it means distance is the risk, not defenders.
+        const disp = r.displayCov !== undefined ? r.displayCov : cov;
+        let covShort;
+        if (disp > cov) {
+            // Distance-elevated: receiver is open but the throw is far.
+            covShort = 'open but far';
+        } else {
+            covShort = cov === 0 ? 'open' : (cov === 1 ? 'covered' : 'doubled');
+        }
         this.audio.speak(`${roleFull}, ${dist} yards, ${covShort}.`, true);
     }
 
@@ -1444,9 +1696,11 @@ class GameScene extends Phaser.Scene {
 
         let complete = false, intercepted = false;
         const cov = r.coverage || 0;
-        // The more defenders draped over the man, the more likely a pick or a
-        // knock-down. Throwing into double coverage is genuinely dangerous.
-        const intBase = [0.02, 0.16, 0.34][cov];      // base interception risk
+        // INT risk on a failed throw:
+        //   0 defenders → rare (3 %)
+        //   1 defender  → meaningful (22 %)
+        //   2 defenders → near coin-flip (52 %) — throwing into doubles is genuinely risky
+        const intBase = [0.03, 0.22, 0.52][cov];
 
         // 3rd/4th-down risk: defense knows you have to throw; they press harder.
         // Passing behind the 50 on 3rd/4th is especially risky (should punt).
@@ -1456,9 +1710,15 @@ class GameScene extends Phaser.Scene {
 
         if (inWindow) {
             const centered = 1 - Math.abs(power - idealPower) / band; // 0..1
-            // Baseline lowered ~18% to keep scoring realistic; score pressure
-            // multiplier bumped so leads above 35 visibly tighten coverage.
-            const completion = Phaser.Math.Clamp(0.50 + 0.28 * r.openness + 0.06 * centered - downPenalty - this._scorePressure() * 0.8 - this._cpuBoost() * 0.30, 0.22, 0.90);
+            // Per-coverage floors guarantee the ring colour always means something:
+            //   green  (cov=0) — never below 65 % even when down by a lot
+            //   orange (cov=1) — never below 25 %
+            //   red    (cov=2) — can drop to 5 % (genuinely dangerous)
+            const covFloor = [0.65, 0.25, 0.05][cov];
+            const completion = Phaser.Math.Clamp(
+                0.12 + 0.78 * r.openness + 0.05 * centered
+                - downPenalty - this._scorePressure() * 0.8 - this._cpuBoost() * 0.30,
+                covFloor, 0.90);
             complete = Math.random() < completion;
             if (!complete) intercepted = Math.random() < intBase;
         } else if (!undercharged) {
@@ -1591,7 +1851,12 @@ class GameScene extends Phaser.Scene {
             db.x + (Math.random() * 40 - 20),
             db.y + (Math.random() * 40 - 20),
             700 + Math.random() * 200, 'Sine.easeOut'));
-        this.bigMessage('INTERCEPTED!', 1600, () => { this.ball.carrier = null; this.turnover('interception'); });
+        // Speak immediately so TTS fires while the banner is visible and has
+        // the full 1600ms to play — calling it inside the callback was too late
+        // because turnover() fires synchronously right after, triggering defenseDrive
+        // which can interrupt the speech before it begins.
+        this.audio.speak('Intercepted!', true);
+        this.bigMessage('INTERCEPTED!', 1600, () => { this.ball.carrier = null; this.time.delayedCall(300, () => this.turnover('interception')); });
     }
 
     // ─── Kicks ─────────────────────────────────────────────────────────────────
@@ -2058,6 +2323,8 @@ class GameScene extends Phaser.Scene {
             this._zoomOut(400);
             this.tweenDefense(this.opp.yard, 1000, () => this.time.delayedCall(2500, () => this.showDefPlayCall()));
         } else {
+            // Always reset the camera — previous play may have left it zoomed in.
+            this._zoomOut(380);
             this.repositionDefense(this.opp.yard);
             // Pause after the message so any preceding TTS (punt, FG, turnover, etc.) can finish.
             this.bigMessage(`${this.oppColor.name} BALL`, 1400, () => this.time.delayedCall(2000, () => this.showDefPlayCall()));
@@ -2253,6 +2520,22 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
+        // ── CPU miracle run: rare breakaway TD on any CPU run play ─────────────
+        if (!isPass && Math.random() < this._miracleChance(false)) {
+            const rb = this.defense[1]; // CPU's RB
+            this.ball.carrier = rb; this.ball.visible = true;
+            const endX = FIELD.GOAL_L - 52; // deep into the CPU scoring endzone
+            this._miracleRun(
+                rb, this.offense,
+                rb.x, rb.y, endX, false,
+                () => {
+                    this.gs.score.them += 6; this.updateHUD();
+                    this.bigMessage(`MIRACLE RUN! ${this.oppColor.name} TOUCHDOWN!`, 2000,
+                        () => this.oppAfterTouchdown());
+                }
+            );
+            return;
+        }
         // Visual matchup quality for run plays: right call = defenders converge
         // fast (perfect), wrong call = gap opens (blown), blitz = coin flip.
         const runMatchup = defPlay.id === 'STOP_RUN'    ? 'perfect'
@@ -2418,14 +2701,17 @@ class GameScene extends Phaser.Scene {
             onComplete: () => {
                 this.ball.carrier = myDef;
                 this.audio.play('interception'); this.audio.play('crowd_big');
+                // Speak immediately while the banner is visible so TTS has the
+                // full 1700ms to play — firing it inside the callback races with
+                // checkClockThen/startUsDrive and gets cut off.
+                this.audio.speak('Intercepted!', true);
                 // Short return the other way for show.
                 this.jog(myDef, myDef.x + 70 + Math.random() * 40, myDef.y + (Math.random() - 0.5) * 40, 600, 'Sine.easeOut');
                 this.bigMessage('INTERCEPTED!', 1700, () => {
                     this._zoomOut(380);
-                    this.audio.speak('Intercepted!', true);
                     this.ball.carrier = null;
                     this.onDefense = false;
-                    this.checkClockThen(() => this.startUsDrive(Phaser.Math.Clamp(this.opp.yard, 15, 85)));
+                    this.time.delayedCall(300, () => this.checkClockThen(() => this.startUsDrive(Phaser.Math.Clamp(this.opp.yard, 15, 85))));
                 });
             }
         });
@@ -2466,9 +2752,9 @@ class GameScene extends Phaser.Scene {
         const startYard = this.opp.yard;
         const endYard = Phaser.Math.Clamp(startYard - yards, 0, 100);
         const startX = ydToX(startYard);
-        // On a TD the carrier should run into the endzone, not stop right at the
-        // goal line — mirror the player-offense TD which carries past GOAL_R.
-        const endX = endYard <= 0 ? FIELD.GOAL_L - 38 : ydToX(endYard);
+        // On a TD the carrier runs well into the endzone so it's visually clear
+        // they crossed — not just stopped at the goal line.
+        const endX = endYard <= 0 ? FIELD.GOAL_L - 58 : ydToX(endYard);
         const midY = FIELD.MID_Y;
         const carrier = type === 'pass' ? (wrOverride || this.defense[2]) : this.defense[1]; // WR on pass, RB on run
         // Capture the carrier's position BEFORE any tweens so run paths are relative
@@ -2497,9 +2783,25 @@ class GameScene extends Phaser.Scene {
                 this.audio.play('catch');
                 this.audio.speak('Touchdown!', true);
                 this.ball.carrier = carrier; this.ball.visible = true;
-                this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
                 const tdYards = this.opp.yard; // guarantees o.yard - tdYards = 0 in endOppPlay
-                this.time.delayedCall(320, () => { this.ball.carrier = null; this.endOppPlay(tdYards, 'pass'); });
+                // Carry the receiver clearly into the endzone — if they caught near
+                // the goal line, animate a quick burst deeper so it never looks like
+                // they stopped right on the line.
+                const tdTargetX = Math.min(carrier.x, FIELD.GOAL_L - 42);
+                if (carrier.x > tdTargetX + 8) {
+                    this.startBob(carrier);
+                    this.tweens.add({
+                        targets: carrier, x: tdTargetX, duration: 270, ease: 'Sine.easeOut',
+                        onComplete: () => {
+                            this.stopBob(carrier);
+                            this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
+                            this.time.delayedCall(300, () => { this.ball.carrier = null; this.endOppPlay(tdYards, 'pass'); });
+                        }
+                    });
+                } else {
+                    this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
+                    this.time.delayedCall(320, () => { this.ball.carrier = null; this.endOppPlay(tdYards, 'pass'); });
+                }
                 return;
             }
             // Zoom onto the carrier so the defense pursuit reads clearly.
@@ -2685,21 +2987,49 @@ class GameScene extends Phaser.Scene {
 
     oppPunt() {
         this.phase = 'oppanim';
-        this.audio.play('kick');
+        this._zoomOut(350);
         const net = 35 + Math.floor(Math.random() * 12);
         const usStart = Phaser.Math.Clamp(this.opp.yard - net, 5, 95); // our new yard line
-        const start = { x: ydToX(this.opp.yard), y: FIELD.MID_Y };
-        this.ball.visible = true; this.ball.carrier = null;
-        this.tweens.add({
-            targets: start, x: ydToX(usStart), y: FIELD.MID_Y, duration: 900, ease: 'Quad.easeOut',
-            onUpdate: (tw) => { this.ball.x = start.x; this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * 120; },
-            onComplete: () => {
-                this.ball.visible = false;
-                this.bigMessage(`${this.oppColor.name} PUNT`, 1300, () => {
-                    this.audio.speak('Your ball.');
-                    this.checkClockThen(() => this.startUsDrive(usStart));
-                });
-            }
+        const startX = ydToX(this.opp.yard);
+        const landX  = ydToX(usStart);
+        const midY   = FIELD.MID_Y;
+
+        // CPU punter (QB slot) takes a short drop-step before the kick.
+        const punter = this.defense[0];
+        this.jog(punter, startX + 18, midY, 320, 'Quad.easeOut');
+
+        // CPU gunners sprint downfield toward the landing spot.
+        this.defense.forEach((p, i) => {
+            if (i === 0) return;
+            this.jog(p, landX + 30 - Math.random() * 60, midY + (Math.random() - 0.5) * 80, 1200, 'Sine.easeIn');
+        });
+
+        // Our returner (deep safety) runs toward the landing spot.
+        const returner = this.offense[5] || this.offense[4];
+        if (returner) this.jog(returner, landX - 12, midY, 1100, 'Sine.easeIn');
+
+        this.time.delayedCall(350, () => {
+            this.audio.play('kick');
+            const ball = this.ball;
+            ball.visible = true; ball.carrier = null;
+            ball.x = startX; ball.y = midY;
+            const flight = { x: startX, y: midY };
+            this.tweens.add({
+                targets: flight, x: landX, y: midY, duration: 900, ease: 'Quad.easeOut',
+                onUpdate: (tw) => {
+                    ball.x = flight.x;
+                    ball.y = midY - Math.sin(tw.progress * Math.PI) * 120;
+                },
+                onComplete: () => {
+                    ball.visible = false;
+                    this.bigMessage(`${this.oppColor.name} PUNT`, 1300, () => {
+                        this.audio.speak('Your ball.');
+                        // Pass isKickoff=true so startUsDrive tweens the formation
+                        // smoothly rather than snapping players into position.
+                        this.checkClockThen(() => this.startUsDrive(usStart, true));
+                    });
+                }
+            });
         });
     }
 
@@ -2981,6 +3311,10 @@ class GameScene extends Phaser.Scene {
 
     // ─── Per-frame rendering ───────────────────────────────────────────────────
     update(time, delta) {
+        // Dynamic depth sort: players closer to the bottom of the screen (higher Y)
+        // are drawn on top; ball carrier always on top; tackled player under everyone.
+        this._sortPlayerDepths();
+
         // Real-time game clock: ticks down only while a play is live.
         if (this.gs && this.gs.timeRemaining > 0 && this.clockShouldRun()) {
             this.gs.timeRemaining -= delta / 1000;
@@ -3033,9 +3367,12 @@ class GameScene extends Phaser.Scene {
         if ((this.phase === 'receiver' || this.phase === 'charge') && this.receivers) {
             this.receivers.forEach((rr, i) => {
                 const cov = rr.coverage || 0;
-                const col = cov === 0 ? 0x37e36b : (cov === 1 ? 0xffb300 : 0xff4040);
+                // displayCov factors in route depth: deep throws show as orange even
+                // when coverage is technically 0, giving a truer read on success risk.
+                const disp = rr.displayCov !== undefined ? rr.displayCov : cov;
+                const col = disp === 0 ? 0x37e36b : (disp === 1 ? 0xffb300 : 0xff4040);
                 m.lineStyle(3, col, 0.9); m.strokeCircle(rr.player.x, rr.player.y, 20);
-                // Little pips above the man for each defender covering him.
+                // Pips reflect actual defenders on the man (not display risk).
                 for (let d = 0; d < cov; d++) {
                     m.fillStyle(0xff4040, 0.95);
                     m.fillCircle(rr.player.x - 6 + d * 12, rr.player.y - 30, 4);
@@ -3112,8 +3449,8 @@ class GameScene extends Phaser.Scene {
             this._onTarget = Math.abs(this.aimValue) <= this.aimWindow;
             if (this._onTarget) {
                 if (!this._aimDing) {
-                    this._aimDing = true; this.audio.play('cue');
-                    this.time.delayedCall(320, () => { this._aimDing = false; });
+                    this._aimDing = true; this.audio.play('fgcue');
+                    this.time.delayedCall(700, () => { this._aimDing = false; });
                 }
             } else {
                 this._aimDing = false;

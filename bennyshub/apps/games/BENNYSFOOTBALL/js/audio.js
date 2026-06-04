@@ -276,12 +276,24 @@ class AudioSystem {
                 break;
             }
             case 'fieldgoal': {
-                // Satisfying clang + rising chime
-                [{ f: 440, t: 0 }, { f: 660, t: 0.12 }, { f: 880, t: 0.24 }].forEach(({ f, t }) => {
+                // Warm, slow bell chime — three low-pitched sine tones spaced
+                // wider apart so it feels mellow and celebratory, not sharp.
+                // Each note has a longer natural ring-out decay for a bell quality.
+                [{ f: 220, t: 0 }, { f: 330, t: 0.22 }, { f: 440, t: 0.46 }].forEach(({ f, t }) => {
                     const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.type = 'triangle'; o.frequency.setValueAtTime(f, now + t);
-                    g.gain.setValueAtTime(0.17, now + t); g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.30);
-                    connect(o, g); o.start(now + t); o.stop(now + t + 0.31);
+                    o.type = 'sine'; o.frequency.setValueAtTime(f, now + t);
+                    // Soft attack, slow exponential ring-out (~0.8s tail).
+                    g.gain.setValueAtTime(0.001, now + t);
+                    g.gain.linearRampToValueAtTime(0.22, now + t + 0.03);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.82);
+                    connect(o, g); o.start(now + t); o.stop(now + t + 0.84);
+                    // Gentle overtone an octave up at lower volume for warmth.
+                    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+                    o2.type = 'sine'; o2.frequency.setValueAtTime(f * 2, now + t);
+                    g2.gain.setValueAtTime(0.001, now + t);
+                    g2.gain.linearRampToValueAtTime(0.07, now + t + 0.03);
+                    g2.gain.exponentialRampToValueAtTime(0.001, now + t + 0.55);
+                    connect(o2, g2); o2.start(now + t); o2.stop(now + t + 0.56);
                 });
                 break;
             }
@@ -305,12 +317,26 @@ class AudioSystem {
                 break;
             }
             case 'cue': {
-                // "Release now!" — two bright distinct notes
+                // "Release now!" — two bright distinct notes (pass charge window)
                 [{ f: 1047, t: 0 }, { f: 1319, t: 0.09 }].forEach(({ f, t }) => {
                     const o = ctx.createOscillator(), g = ctx.createGain();
                     o.type = 'square'; o.frequency.setValueAtTime(f, now + t);
                     g.gain.setValueAtTime(0.16, now + t); g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.14);
                     connect(o, g); o.start(now + t); o.stop(now + t + 0.15);
+                });
+                break;
+            }
+            case 'fgcue': {
+                // Soft "on target" ding for field goal aim — low, warm, cute.
+                // Two gentle sine tones a major third apart; slow attack + bell-like
+                // decay so it sounds like a soft xylophone tap, not a buzzer.
+                [{ f: 261, t: 0 }, { f: 329, t: 0.18 }].forEach(({ f, t }) => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(f, now + t);
+                    g.gain.setValueAtTime(0.001, now + t);
+                    g.gain.linearRampToValueAtTime(0.18, now + t + 0.025);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.55);
+                    connect(o, g); o.start(now + t); o.stop(now + t + 0.57);
                 });
                 break;
             }
