@@ -112,6 +112,7 @@ class TitleScene extends Phaser.Scene {
             this.scene.start('SettingsScene');
         } else if (value === 'exit') {
             // Signal the hub to close the iframe and return to the main menu.
+            // Same pattern used by Bowling and other hub games.
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({ action: 'focusBackButton' }, '*');
             } else {
@@ -516,16 +517,17 @@ class SeasonScene extends Phaser.Scene {
         let tts;
         if (season.isSeasonOver()) {
             tts = this._overLabel(d);
+        } else if (season.hasGameInProgress()) {
+            const gs = season.loadGameState().gs;
+            const q = gs.overtime ? 'Overtime' : `Quarter ${gs.quarter}`;
+            tts = `Record ${d.wins} and ${d.losses}. ${d.teamColor} ${gs.score.us}, ${d.opponentColor} ${gs.score.them}. ${q}.`;
         } else if (d.stage === 'regular') {
-            tts = `Record ${d.wins} and ${d.losses}. ` +
-                  `Game ${d.gamesPlayed + 1} of ${SEASON.REGULAR_GAMES} is next, ` +
-                  `against ${d.opponentColor}.`;
+            tts = `Record ${d.wins} and ${d.losses}. Next game against ${d.opponentColor}.`;
         } else {
             const roundName = d.stage === 'playoffs'
                 ? this._tc(SEASON.PLAYOFF_ROUNDS[d.playoffRound])
                 : 'Championship';
-            tts = `Record ${d.wins} and ${d.losses}. ` +
-                  `Next up: ${roundName} against ${d.opponentColor}.`;
+            tts = `Record ${d.wins} and ${d.losses}. Next up: ${roundName} against ${d.opponentColor}.`;
         }
         audio.speak(tts, true);
 

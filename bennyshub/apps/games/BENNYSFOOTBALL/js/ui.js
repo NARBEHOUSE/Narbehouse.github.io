@@ -700,7 +700,12 @@ class ScanInput {
         this.longPress = 3000;   // hold SPACE this long → backward scanning
         this.s = {
             spaceDown: false, spaceTimer: null, backTimer: null, spaceLong: false,
-            enterDown: false, aiming: false
+            enterDown: false, aiming: false,
+            // Set by _clearSpaceState() (play selected). Blocks any new hold-backward
+            // sequence until a genuine keyup arrives, preventing the adaptive-switch
+            // "re-fire" bug where the switch sends a fresh keydown (e.repeat=false)
+            // while the key is still physically held, re-starting the 3-s timer.
+            awaitingSpaceRelease: false
         };
         this._kd = (e) => this._down(e);
         this._ku = (e) => this._up(e);
@@ -740,13 +745,16 @@ class ScanInput {
         scene.events.once('destroy', () => this.destroy());
     }
 
-    // Reset all Space-related state. Called on window blur (missed keyup guard).
+    // Reset all Space-related state. Called on window blur (missed keyup guard)
+    // AND after every play selection. Sets awaitingSpaceRelease so that any
+    // adaptive-switch keydown still in flight is ignored until a real keyup lands.
     _clearSpaceState() {
         if (this.s.spaceTimer) { clearTimeout(this.s.spaceTimer); this.s.spaceTimer = null; }
         if (this.s.backTimer)  { clearInterval(this.s.backTimer);  this.s.backTimer  = null; }
         this.s.spaceDown = false;
         this.s.spaceLong = false;
         this.s.aiming    = false;
+        this.s.awaitingSpaceRelease = true;
     }
 
     _interval() {
@@ -776,6 +784,10 @@ class ScanInput {
                 if (this.h.aimStart) this.h.aimStart();
                 return;
             }
+            // If a play was just selected, ignore Space until the key is physically
+            // released (keyup clears awaitingSpaceRelease). This prevents the adaptive-
+            // switch from re-firing a non-repeat keydown with the key still held.
+            if (this.s.awaitingSpaceRelease) return;
             if (this.s.spaceDown || this.s.spaceTimer || this.s.backTimer) return;
             this.s.spaceDown = true; this.s.spaceLong = false;
             this.s.spaceTimer = setTimeout(() => {
@@ -808,6 +820,8 @@ class ScanInput {
     _up(e) {
         if (e.code === 'Space') {
             e.preventDefault();
+            // A genuine keyup means the key was released — unblock future presses.
+            this.s.awaitingSpaceRelease = false;
             // Capture state BEFORE clearing so we know what to fire.
             const wasAiming   = this.s.aiming;
             const wasShortNav = this.s.spaceDown && !this.s.spaceLong;

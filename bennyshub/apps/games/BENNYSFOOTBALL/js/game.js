@@ -1041,6 +1041,9 @@ class GameScene extends Phaser.Scene {
 
     onPlayChosen(playId) {
         if (playId === 'PAUSE') { this.togglePause(); return; }
+        // Reset all spacebar state so a held-space that committed this play
+        // doesn't keep the backTimer running into the next play-call menu.
+        if (this.scanInput) this.scanInput._clearSpaceState();
         if (this.playMenu) { this.playMenu.destroy(); this.playMenu = null; }
         if (this.playLabel) { this.playLabel.destroy(); this.playLabel = null; }
         if (this.playPanel) { this.playPanel.destroy(); this.playPanel = null; }
@@ -2480,6 +2483,9 @@ class GameScene extends Phaser.Scene {
 
     onDefChosen(defId) {
         if (defId === 'PAUSE') { this.togglePause(); return; }
+        // Reset all spacebar state so a held-space that committed this play
+        // doesn't keep the backTimer running into the next play-call menu.
+        if (this.scanInput) this.scanInput._clearSpaceState();
         if (this.playMenu) { this.playMenu.destroy(); this.playMenu = null; }
         if (this.playLabel) { this.playLabel.destroy(); this.playLabel = null; }
         if (this.playPanel) { this.playPanel.destroy(); this.playPanel = null; }
