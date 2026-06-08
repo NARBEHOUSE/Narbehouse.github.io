@@ -161,8 +161,9 @@ class ScanList {
         if (this.index < 0) return;
         const opt = this.options[this.index];
         if (!opt) return;
-        let text = opt.label;
-        if (opt.hint) text += '. ' + opt.hint;
+        const text = opt.speakText != null ? opt.speakText
+                   : opt.hint ? opt.label + '. ' + opt.hint
+                   : opt.label;
         if (this.audio) this.audio.speak(text, true);
     }
 

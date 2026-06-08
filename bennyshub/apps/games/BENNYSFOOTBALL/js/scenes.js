@@ -495,10 +495,25 @@ class SeasonScene extends Phaser.Scene {
                 const q = gs.overtime ? 'OT' : `Q${gs.quarter}`;
                 const min = Math.floor(gs.timeRemaining / 60);
                 const sec = Math.floor(gs.timeRemaining % 60);
+                let resumeSpeakText;
+                if (d.stage === 'regular') {
+                    resumeSpeakText = `Resume game ${d.gamesPlayed + 1}`;
+                } else if (d.stage === 'playoffs') {
+                    if (d.playoffRound === 0) {
+                        resumeSpeakText = 'Resume wildcard game';
+                    } else if (d.playoffRound >= 2) {
+                        resumeSpeakText = 'Resume championship';
+                    } else {
+                        resumeSpeakText = 'Resume playoffs';
+                    }
+                } else {
+                    resumeSpeakText = 'Resume championship';
+                }
                 opts.push({
                     label: 'RESUME GAME',
                     value: 'resume',
-                    hint: `${d.teamColor} ${gs.score.us} - ${gs.score.them} ${d.opponentColor} · ${q} ${min}:${sec.toString().padStart(2,'0')}`
+                    hint: `${d.teamColor} ${gs.score.us} - ${gs.score.them} ${d.opponentColor} · ${q} ${min}:${sec.toString().padStart(2,'0')}`,
+                    speakText: resumeSpeakText
                 });
             } else {
                 opts.push({ label: 'PLAY NEXT GAME', value: 'play' });
