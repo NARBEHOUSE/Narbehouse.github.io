@@ -82,10 +82,11 @@ const SEASON = {
 const QUARTER_SECONDS = 120;
 
 // localStorage keys
-const LS_SEASON     = 'bennyFootball_season';
-const LS_AUDIO      = 'bennyFootball_audio';
-const LS_GAME_STATE = 'bennyFootball_gameState';
-const LS_EASY_THROW = 'bennyFootball_easyThrow';
+const LS_SEASON      = 'bennyFootball_season';
+const LS_AUDIO       = 'bennyFootball_audio';
+const LS_GAME_STATE  = 'bennyFootball_gameState';
+const LS_EASY_THROW  = 'bennyFootball_easyThrow';
+const LS_COLORBLIND  = 'bennyFootball_colorblind';
 
 // Returns true when the "no-charge" accessibility mode is enabled.
 // When on, passing auto-throws at ideal power right after receiver selection,
@@ -95,6 +96,62 @@ function easyThrowOn() {
 }
 function setEasyThrow(on) {
     try { localStorage.setItem(LS_EASY_THROW, on ? '1' : '0'); } catch(e) {}
+}
+
+// ─── Colorblind mode ─────────────────────────────────────────────────────────
+// Four modes: 'normal' | 'deuteranopia' | 'protanopia' | 'tritanopia'.
+// Reading/writing is guarded so SSR / sandboxed contexts never throw.
+const COLORBLIND_MODES = [
+    { id: 'normal',       label: 'Normal' },
+    { id: 'deuteranopia', label: 'Deuteranopia (red-green, green-weak)' },
+    { id: 'protanopia',   label: 'Protanopia (red-green, red-weak)' },
+    { id: 'tritanopia',   label: 'Tritanopia (blue-yellow)' }
+];
+
+function colorblindMode() {
+    try { return localStorage.getItem(LS_COLORBLIND) || 'normal'; } catch(e) { return 'normal'; }
+}
+function setColorblindMode(m) {
+    try { localStorage.setItem(LS_COLORBLIND, m); } catch(e) {}
+    applyColorblindFilter(m);
+}
+
+// Attach the appropriate SVG filter (defined in index.html) to the Phaser
+// canvas so every pixel rendered — field, HUD, players — gets the palette
+// shift. The filter IDs match those declared in the <defs> block.
+function applyColorblindFilter(mode) {
+    // Defer if Phaser hasn't created the canvas yet.
+    const attach = () => {
+        const canvas = document.querySelector('#game canvas');
+        if (!canvas) { setTimeout(attach, 100); return; }
+        const map = {
+            deuteranopia: 'url(#cb-deuteranopia)',
+            protanopia:   'url(#cb-protanopia)',
+            tritanopia:   'url(#cb-tritanopia)'
+        };
+        canvas.style.filter = map[mode] || '';
+        document.documentElement.setAttribute('data-colorblind', mode || 'normal');
+    };
+    attach();
+}
+
+// Colorblind-safe highlight colours (Phaser hex integers).
+// Normal mode keeps the legacy green/amber/red.
+// All three colorblind modes use blue / yellow / dark-grey — hues that remain
+// distinguishable under deuteranopia, protanopia, and tritanopia alike,
+// and that survive the palette-shift SVG filter without losing identity.
+function cbHighlightColor(dispCov) {
+    if (colorblindMode() === 'normal') {
+        // Legacy: open=green, covered/distant=amber, doubled=red.
+        return dispCov === 0 ? 0x37e36b : (dispCov === 1 ? 0xffb300 : 0xff4040);
+    }
+    // Colorblind modes: open=blue, covered/distant=yellow, blocked=dark-grey.
+    return dispCov === 0 ? 0x2196f3 : (dispCov === 1 ? 0xfdd835 : 0x546e7a);
+}
+
+// Glow alpha paired with cbHighlightColor.
+function cbGlowAlpha(dispCov) {
+    return dispCov === 0 ? 0.32 : (dispCov === 1 ? 0.36 : 0.44);
 }
 
 // ─── Shared helmet drawing helper ────────────────────────────────────────────

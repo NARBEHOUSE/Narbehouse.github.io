@@ -1531,12 +1531,17 @@ class GameScene extends Phaser.Scene {
         const disp = r.displayCov !== undefined ? r.displayCov : cov;
         let covShort;
         if (disp > cov) {
-            // Distance-elevated: receiver is open but the throw is far.
             covShort = 'open but far';
         } else {
             covShort = cov === 0 ? 'open' : (cov === 1 ? 'covered' : 'doubled');
         }
         this.audio.speak(`${roleFull}, ${dist} yards, ${covShort}.`, true);
+
+        // Play a distinct audio scan cue whenever a non-normal colorblind mode is
+        // active and the display-coverage state changes (or on every scan).
+        if (colorblindMode() !== 'normal') {
+            this.audio.scanCue(disp);
+        }
     }
 
     selectReceiver() {
@@ -3344,6 +3349,8 @@ class GameScene extends Phaser.Scene {
             const sfxOn     = a.settings.soundEnabled;
             const musicOn   = a.settings.musicEnabled;
             const easy      = easyThrowOn();
+            const cbMode    = colorblindMode();
+            const cbLabel   = (COLORBLIND_MODES.find(m => m.id === cbMode) || COLORBLIND_MODES[0]).label;
             opts = [
                 { label: `Sound Effects: ${sfxOn ? 'ON' : 'OFF'}`,  value: 'sfx' },
                 { label: `Music: ${musicOn ? 'ON' : 'OFF'}`,         value: 'music' },
@@ -3352,6 +3359,8 @@ class GameScene extends Phaser.Scene {
                 { label: `Scan Speed: ${scanSec}s`,                   value: 'scanspeed' },
                 { label: `Easy Throw: ${easy ? 'ON' : 'OFF'}`,       value: 'easythrow',
                   hint: easy ? 'no charge needed — pick receiver and it throws' : 'hold to charge throw & kick power' },
+                { label: `Colorblind: ${cbLabel}`,                    value: 'colorblind',
+                  hint: 'cycles Normal → Deuteranopia → Protanopia → Tritanopia' },
                 { label: 'Back', value: 'back' }
             ];
         } else {
@@ -3412,6 +3421,14 @@ class GameScene extends Phaser.Scene {
             const on = !easyThrowOn();
             setEasyThrow(on);
             a.speak(on ? 'Easy Throw on.' : 'Easy Throw off.', true);
+            this.showPauseMenu(idx);
+        } else if (value === 'colorblind') {
+            const ids = COLORBLIND_MODES.map(m => m.id);
+            const cur = colorblindMode();
+            const next = ids[(ids.indexOf(cur) + 1) % ids.length];
+            setColorblindMode(next);
+            const lbl = (COLORBLIND_MODES.find(m => m.id === next) || COLORBLIND_MODES[0]).label;
+            a.speak(`Colorblind mode: ${lbl}.`, true);
             this.showPauseMenu(idx);
         }
     }
@@ -3477,64 +3494,72 @@ class GameScene extends Phaser.Scene {
             m.lineStyle(3, 0xffeb3b, 0.8); m.lineBetween(fdX, FIELD.TOP, fdX, FIELD.BOTTOM);
         }
 
-        // Highlight the currently scanned receiver and colour every receiver by
-        // how open he is (green = open, orange = one defender, red = doubled), so
-        // the player can SEE which target has the fewest defenders on him.
+        // Highlight every receiver by coverage status using shape + colour.
+        // Shape encodes status in all modes:
+        //   disp 0 (open)             → circle
+        //   disp 1 (covered/distant)  → triangle (pointing up)
+        //   disp 2 (blocked)          → square
+        // Colour comes from cbHighlightColor() which respects the colorblind setting.
+        // The pulsing selection reticle also uses the same shape so there is only
+        // one consistent visual indicator — no extra circle stacked on top.
         if ((this.phase === 'receiver' || this.phase === 'charge') && this.receivers) {
-            this.receivers.forEach((rr, i) => {
-                const cov = rr.coverage || 0;
-                // displayCov factors in route depth: deep throws show as orange even
-                // when coverage is technically 0, giving a truer read on success risk.
-                const disp = rr.displayCov !== undefined ? rr.displayCov : cov;
-                const col = disp === 0 ? 0x37e36b : (disp === 1 ? 0xffb300 : 0xff4040);
 
-                // --- Glow disc: semi-transparent colour fill so the status is
-                //     readable even on a cluttered background.
-                const glowAlpha = disp === 0 ? 0.30 : (disp === 1 ? 0.36 : 0.40);
-                m.fillStyle(col, glowAlpha);
-                m.fillCircle(rr.player.x, rr.player.y, 30);
+            // ── Helper: draw a shape outline & fill at (px,py) scaled by `scale`.
+            // Used for both the static base marker and the pulsing reticle.
+            const drawShape = (disp, px, py, scale, fillAlpha, strokeW, strokeCol, shadowW) => {
+                const tr = 26 * scale;   // triangle circumradius / circle radius / half-square
+                const hs = 22 * scale;   // half-side for square
+                const col = cbHighlightColor(disp);
 
-                // --- Dark shadow ring behind the coloured ring for contrast.
-                m.lineStyle(10, 0x000000, 0.75);
-                m.strokeCircle(rr.player.x, rr.player.y, 22);
-
-                // --- Thick coloured ring (much more visible than the old 3px line).
-                m.lineStyle(7, col, 1.0);
-                m.strokeCircle(rr.player.x, rr.player.y, 22);
-
-                // --- Pips: larger, with black outline, reflect actual defenders.
-                for (let d = 0; d < cov; d++) {
-                    const px = rr.player.x - 7 + d * 15;
-                    const py = rr.player.y - 36;
-                    m.fillStyle(0x000000, 1.0);
-                    m.fillCircle(px, py, 7);
-                    m.fillStyle(0xff3030, 1.0);
-                    m.fillCircle(px, py, 5);
+                if (disp === 0) {
+                    // Circle — open
+                    if (fillAlpha > 0) { m.fillStyle(col, fillAlpha); m.fillCircle(px, py, tr + 4); }
+                    if (shadowW > 0)   { m.lineStyle(shadowW, 0x000000, 0.75); m.strokeCircle(px, py, tr); }
+                    m.lineStyle(strokeW, strokeCol, 1.0); m.strokeCircle(px, py, tr);
+                } else if (disp === 1) {
+                    // Triangle — covered/distant
+                    const x1 = px,              y1 = py - tr;
+                    const x2 = px - tr * 0.866, y2 = py + tr * 0.5;
+                    const x3 = px + tr * 0.866, y3 = py + tr * 0.5;
+                    if (fillAlpha > 0) { m.fillStyle(col, fillAlpha); m.fillTriangle(x1, y1, x2, y2, x3, y3); }
+                    if (shadowW > 0)   { m.lineStyle(shadowW, 0x000000, 0.75); m.strokeTriangle(x1, y1, x2, y2, x3, y3); }
+                    m.lineStyle(strokeW, strokeCol, 1.0); m.strokeTriangle(x1, y1, x2, y2, x3, y3);
+                } else {
+                    // Square — blocked
+                    if (fillAlpha > 0) { m.fillStyle(col, fillAlpha); m.fillRect(px - hs, py - hs, hs * 2, hs * 2); }
+                    if (shadowW > 0)   { m.lineStyle(shadowW, 0x000000, 0.75); m.strokeRect(px - hs, py - hs, hs * 2, hs * 2); }
+                    m.lineStyle(strokeW, strokeCol, 1.0); m.strokeRect(px - hs, py - hs, hs * 2, hs * 2);
                 }
+            };
 
-                // --- Connector lines to covering defenders (thicker + brighter).
+            this.receivers.forEach((rr) => {
+                const cov  = rr.coverage || 0;
+                const disp = rr.displayCov !== undefined ? rr.displayCov : cov;
+                const px   = rr.player.x, py = rr.player.y;
+
+                // Base marker: filled + shadow outline + coloured outline at scale 1.
+                drawShape(disp, px, py, 1.0, cbGlowAlpha(disp), 6, cbHighlightColor(disp), 9);
+
+                // Connector lines to covering defenders.
                 (rr.defenders || []).forEach(def => {
                     if (!def) return;
-                    m.lineStyle(3, 0xff5050, 0.65); m.lineBetween(rr.player.x, rr.player.y, def.x, def.y);
+                    m.lineStyle(3, 0xff5050, 0.65);
+                    m.lineBetween(px, py, def.x, def.y);
                 });
             });
 
-            // --- Pulsing selection reticle on the currently targeted man.
+            // --- Pulsing selection reticle: same shape as the base marker,
+            //     scaled up and breathing so it's clearly the "selected" one.
             const r = this.phase === 'charge' && this.target ? this.target : this.receivers[this.recIndex];
             if (r) {
                 const rDisp = r.displayCov !== undefined ? r.displayCov : (r.coverage || 0);
-                const rCol = rDisp === 0 ? 0x37e36b : (rDisp === 1 ? 0xffb300 : 0xff4040);
                 const pulse = 0.5 + 0.5 * Math.sin(time * 0.007); // 0.5–1.0
-                const outerR = 32 + 5 * pulse;
-                // Black halo so the white ring always contrasts the field.
-                m.lineStyle(8, 0x000000, 0.7);
-                m.strokeCircle(r.player.x, r.player.y, outerR + 1);
-                // Bright white inner ring.
-                m.lineStyle(6, 0xffffff, 1.0);
-                m.strokeCircle(r.player.x, r.player.y, outerR - 7);
-                // Outer pulse ring coloured by coverage status.
-                m.lineStyle(4, rCol, 0.9);
-                m.strokeCircle(r.player.x, r.player.y, outerR);
+                // Scale oscillates between 1.35 and 1.65 so the pulsing reticle
+                // is clearly larger than the static base marker underneath.
+                const scale = 1.35 + 0.30 * pulse;
+                // Black halo pass first (shadow), then white inner fill, then colour outline.
+                drawShape(rDisp, r.player.x, r.player.y, scale, 0, 4, 0xffffff, 9);
+                drawShape(rDisp, r.player.x, r.player.y, scale * 0.88, 0, 3, cbHighlightColor(rDisp), 0);
             }
         }
 

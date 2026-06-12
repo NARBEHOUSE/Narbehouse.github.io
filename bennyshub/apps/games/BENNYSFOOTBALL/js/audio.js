@@ -481,4 +481,32 @@ class AudioSystem {
         u.onerror = done;
         try { speechSynthesis.speak(u); } catch (e) { this._speaking = false; }
     }
+
+    // ─── Colorblind scan cues ────────────────────────────────────────────────
+    // Plays a brief distinct tone each time the player scans onto a receiver
+    // whose highlight state changes. Only plays when a non-normal colorblind
+    // mode is active (normal mode has colour alone; colorblind users get this
+    // audio feedback in addition to the shape cues).
+    //   state 0 = open      → short high beep (~880 Hz)
+    //   state 1 = covered   → mid-range tone (~440 Hz)
+    //   state 2 = blocked   → low blip (~220 Hz)
+    scanCue(state) {
+        if (!this.settings.soundEnabled) return;
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const specs = [
+            { freq: 880, dur: 0.08, gain: 0.14, type: 'sine'     },  // open — bright high ping
+            { freq: 440, dur: 0.12, gain: 0.13, type: 'triangle' },  // covered — mellow mid tone
+            { freq: 220, dur: 0.10, gain: 0.12, type: 'sine'     }   // blocked — low blip
+        ];
+        const s = specs[Phaser.Math.Clamp(state, 0, 2)];
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = s.type;
+        o.frequency.setValueAtTime(s.freq, now);
+        g.gain.setValueAtTime(s.gain, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + s.dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now); o.stop(now + s.dur + 0.01);
+    }
 }

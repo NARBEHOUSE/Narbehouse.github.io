@@ -181,6 +181,8 @@ class SettingsScene extends Phaser.Scene {
         const sfxOn    = a.settings.soundEnabled;
         const easyThrow = easyThrowOn();
         const season   = seasonMgr();
+        const cbMode   = colorblindMode();
+        const cbLabel  = (COLORBLIND_MODES.find(m => m.id === cbMode) || COLORBLIND_MODES[0]).label;
 
         const opts = [
             { label: `Sound Effects: ${sfxOn  ? 'ON' : 'OFF'}`, value: 'sfx' },
@@ -188,7 +190,9 @@ class SettingsScene extends Phaser.Scene {
             { label: `Auto Scan: ${autoScan ? 'ON' : 'OFF'}`,  value: 'autoscan' },
             { label: `Scan Speed: ${scanSec}s`,                  value: 'scanspeed' },
             { label: `Easy Throw: ${easyThrow ? 'ON' : 'OFF'}`, value: 'easythrow',
-              hint: easyThrow ? 'no charge needed — pick receiver and it throws' : 'hold to charge throw & kick power' }
+              hint: easyThrow ? 'no charge needed — pick receiver and it throws' : 'hold to charge throw & kick power' },
+            { label: `Colorblind: ${cbLabel}`,                   value: 'colorblind',
+              hint: 'cycles through Normal, Deuteranopia, Protanopia, Tritanopia' }
         ];
         if (season.isActive()) {
             opts.push({ label: 'RESET SEASON', value: 'reset_season', hint: 'wipe all season data' });
@@ -251,6 +255,14 @@ class SettingsScene extends Phaser.Scene {
             const on = !easyThrowOn();
             setEasyThrow(on);
             a.speak(on ? 'Easy Throw on. Pick receiver and it throws automatically.' : 'Easy Throw off. Hold to charge your throw.', true);
+            this._buildMenu(idx);
+        } else if (value === 'colorblind') {
+            const ids = COLORBLIND_MODES.map(m => m.id);
+            const cur = colorblindMode();
+            const next = ids[(ids.indexOf(cur) + 1) % ids.length];
+            setColorblindMode(next);
+            const lbl = (COLORBLIND_MODES.find(m => m.id === next) || COLORBLIND_MODES[0]).label;
+            a.speak(`Colorblind mode: ${lbl}.`, true);
             this._buildMenu(idx);
         } else if (value === 'reset_season') {
             this._confirmingReset = true;
