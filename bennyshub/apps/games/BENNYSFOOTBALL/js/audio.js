@@ -373,12 +373,23 @@ class AudioSystem {
                 break;
             }
             case 'incomplete': {
-                // Crowd groan / ball thud on turf
-                const o = ctx.createOscillator(), g = ctx.createGain();
-                o.type = 'sine'; o.frequency.setValueAtTime(220, now);
-                o.frequency.exponentialRampToValueAtTime(80, now + 0.25);
-                g.gain.setValueAtTime(0.10, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-                connect(o, g); o.start(now); o.stop(now + 0.29);
+                // Ball hits the turf — sharp noise thud + low dull boom
+                // Clearly distinct from the bright 'catch' ping.
+                const len = Math.floor(ctx.sampleRate * 0.055);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.6) * 0.9;
+                const src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+                lp.type = 'lowpass'; lp.frequency.value = 600;
+                g.gain.setValueAtTime(0.38, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
+                src.buffer = buf; src.connect(lp); lp.connect(g); g.connect(ctx.destination);
+                src.start(now);
+                // Low dull boom underneath
+                const o = ctx.createOscillator(), g2 = ctx.createGain();
+                o.type = 'sine'; o.frequency.setValueAtTime(95, now);
+                o.frequency.exponentialRampToValueAtTime(45, now + 0.18);
+                g2.gain.setValueAtTime(0.22, now); g2.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                connect(o, g2); o.start(now); o.stop(now + 0.23);
                 break;
             }
             case 'interception': {

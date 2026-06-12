@@ -1839,27 +1839,80 @@ class GameScene extends Phaser.Scene {
     _interceptPass(r) {
         this.audio.play('interception');
         this.audio.play('crowd_big');
-        // Use whichever defender is physically closest to where the ball is going,
-        // so we never get a pick by a player on the opposite side of the field.
+        // Use whichever defender is physically closest to where the ball is going.
         const db = this.defense.reduce((best, p) => {
             const d = Phaser.Math.Distance.Between(p.x, p.y, r.x, r.y);
             const bd = Phaser.Math.Distance.Between(best.x, best.y, r.x, r.y);
             return d < bd ? p : best;
         }, this.defense[0]);
         this.ball.carrier = db;
-        // Defender snags it and returns a few steps the other way.
-        this.jog(db, db.x - 60 - Math.random() * 40, db.y + (Math.random() - 0.5) * 40, 600, 'Sine.easeOut');
-        // Offense chases the interceptor.
-        this.offense.forEach(p => this.jog(p,
-            db.x + (Math.random() * 40 - 20),
-            db.y + (Math.random() * 40 - 20),
-            700 + Math.random() * 200, 'Sine.easeOut'));
-        // Speak immediately so TTS fires while the banner is visible and has
-        // the full 1600ms to play — calling it inside the callback was too late
-        // because turnover() fires synchronously right after, triggering defenseDrive
-        // which can interrupt the speech before it begins.
         this.audio.speak('Intercepted!', true);
-        this.bigMessage('INTERCEPTED!', 1600, () => { this.ball.carrier = null; this.time.delayedCall(300, () => this.turnover('interception')); });
+
+        // Defender returns the ball toward their own end zone (left).
+        // The return covers 5–22 yards; the offense must chase and tackle.
+        const startYard   = this.gs.ballPosition;
+        const returnYards = 5 + Math.floor(Math.random() * 18);
+        const returnToYard = Phaser.Math.Clamp(startYard - returnYards, 1, 99);
+        const endX    = ydToX(returnToYard);
+        const midY    = FIELD.MID_Y;
+        const totalDur = 1300 + returnYards * 45;
+        const laneDir  = db.y <= midY ? 1 : -1;
+        const lane     = laneDir * (12 + Math.random() * 22);
+        const midRunX  = (db.x + endX) * 0.5;
+
+        const isPickSixCPU = returnToYard <= 0;
+        const actualEndX   = isPickSixCPU ? FIELD.GOAL_L - 52 : endX;
+
+        this._zoomOnPoint(db.x, db.y, 1.7, 280);
+        this.startBob(db);
+        this.tweens.add({
+            targets: db, x: (db.x + actualEndX) * 0.5,
+            y: Phaser.Math.Clamp(db.y + lane, FIELD.TOP + 14, FIELD.BOTTOM - 14),
+            duration: totalDur * 0.5, ease: 'Sine.easeOut',
+            onComplete: () => {
+                this._zoomOnPoint(db.x + (actualEndX - db.x) * 0.35, midY, 1.4, 260);
+                this.tweens.add({
+                    targets: db, x: actualEndX,
+                    y: Phaser.Math.Clamp(db.y + lane * 0.3, FIELD.TOP + 14, FIELD.BOTTOM - 14),
+                    duration: totalDur * 0.5, ease: 'Sine.easeIn',
+                    onComplete: () => {
+                        this.stopBob(db);
+                        this.ball.carrier = null;
+                        if (isPickSixCPU) {
+                            this.gs.score.them += 6; this.updateHUD();
+                            this.audio.play('touchdown'); this.audio.play('crowd_big');
+                            this._zoomOnPoint(db.x, db.y, 2.2, 280);
+                            this.cameras.main.shake(220, 0.009);
+                            this.bigMessage(`${this.oppColor.name} PICK SIX! TOUCHDOWN!`, 2000,
+                                () => this.oppAfterTouchdown());
+                        } else {
+                            const rushDur = this._rushIntoTackle(this.offense, db.x, db.y);
+                            this.time.delayedCall(rushDur, () => {
+                                this.audio.play('tackle');
+                                this.tackleShake(db);
+                                this.bigMessage('INTERCEPTED!', 1600, () => {
+                                    this.time.delayedCall(300, () =>
+                                        this.defenseDrive(Phaser.Math.Clamp(returnToYard, 1, 99)));
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        });
+        // Offense chases the interceptor from their coverage positions.
+        this.time.delayedCall(totalDur * 0.15, () => {
+            this._convergePlayers(this.offense, actualEndX,
+                db.y + lane * 0.35, totalDur * 0.78);
+        });
+        // Other defenders escort the returner downfield.
+        this.defense.forEach(p => {
+            if (p === db) return;
+            this.jog(p,
+                (db.x + actualEndX) * 0.5 - 20 - Math.random() * 30,
+                p.y + (Math.random() - 0.5) * 40,
+                totalDur * 0.75 + Math.random() * 200);
+        });
     }
 
     // ─── Kicks ─────────────────────────────────────────────────────────────────
@@ -2628,7 +2681,7 @@ class GameScene extends Phaser.Scene {
             const bigChance = (target.cov === 0 ? 0.14 : 0) * (1 - cpuSP) + cpuBoostPass * 0.10;
             if (Math.random() < bigChance) base += 6 + Math.random() * 12;
             base *= (1 - cpuSP * 0.5);
-            passYards = Phaser.Math.Clamp(Math.round(base), -2, startYard);
+            passYards = Phaser.Math.Clamp(Math.round(base), 1, startYard);
         }
         const passMatchup = target.cov >= 2 ? 'perfect' : target.cov === 1 ? 'neutral' : 'blown';
         const myDef = target.defenders[0] || this.offense[3];
@@ -2690,15 +2743,15 @@ class GameScene extends Phaser.Scene {
     animateOppInterception(wrOverride, defOverride) {
         this.phase = 'oppanim';
         this.oppTarget = null;
-        const qb = this.defense[0];                  // opponent QB
-        const wr = wrOverride || this.defense[2];    // intended receiver
-        const myDef = defOverride || this.offense[3]; // a cornerback of ours, close to the route
+        const qb = this.defense[0];                   // CPU QB
+        const wr = wrOverride || this.defense[2];     // CPU's intended receiver
+        const myDef = defOverride || this.offense[3]; // our cornerback who breaks on the ball
         this.ball.visible = true; this.ball.carrier = null;
         this.ball.x = qb.x; this.ball.y = qb.y;
-        // Zoom onto where the ball is going so the pick is clearly visible.
+        // Zoom onto the route endpoint so the pick is clearly visible.
         this._zoomOnPoint(wr.x, wr.y, 1.6, 320);
-        this.audio.speak('Up...', true);
-        // Our defender breaks on the ball.
+        this.audio.speak('Up for grabs!', true);
+        // Our defender breaks toward the catch point.
         this.jog(myDef, wr.x - 6, wr.y - 10, 640, 'Sine.easeOut');
         const flight = { x: qb.x, y: qb.y };
         this.tweens.add({
@@ -2707,17 +2760,73 @@ class GameScene extends Phaser.Scene {
             onComplete: () => {
                 this.ball.carrier = myDef;
                 this.audio.play('interception'); this.audio.play('crowd_big');
-                // Speak immediately while the banner is visible so TTS has the
-                // full 1700ms to play — firing it inside the callback races with
-                // checkClockThen/startUsDrive and gets cut off.
                 this.audio.speak('Intercepted!', true);
-                // Short return the other way for show.
-                this.jog(myDef, myDef.x + 70 + Math.random() * 40, myDef.y + (Math.random() - 0.5) * 40, 600, 'Sine.easeOut');
-                this.bigMessage('INTERCEPTED!', 1700, () => {
-                    this._zoomOut(380);
-                    this.ball.carrier = null;
-                    this.onDefense = false;
-                    this.time.delayedCall(300, () => this.checkClockThen(() => this.startUsDrive(Phaser.Math.Clamp(this.opp.yard, 15, 85))));
+                this.tweens.killTweensOf(myDef); this.stopBob(myDef);
+
+                // ── Full return run toward our scoring end zone (right / high yards) ──
+                // opp.yard is in OUR yard numbers (they drive high→0).
+                // After a pick our player runs right → returnToYard = opp.yard + return.
+                const catchYard   = Phaser.Math.Clamp(this.opp.yard, 1, 99);
+                const returnYards = 5 + Math.floor(Math.random() * 20);
+                const returnToYard = catchYard + returnYards;             // may exceed 100 (pick-six)
+                const isPickSix   = returnToYard >= 100;
+                const endX = isPickSix ? FIELD.GOAL_R + 52 : ydToX(Phaser.Math.Clamp(returnToYard, 1, 99));
+                const midY    = FIELD.MID_Y;
+                const totalDur = 1300 + Math.min(returnYards, 28) * 50;
+                const laneDir  = myDef.y <= midY ? 1 : -1;
+                const lane     = laneDir * (12 + Math.random() * 24);
+                const midRunX  = (myDef.x + endX) * 0.5;
+
+                this._zoomOnPoint(myDef.x, myDef.y, 1.7, 260);
+                this.startBob(myDef);
+                this.tweens.add({
+                    targets: myDef, x: midRunX,
+                    y: Phaser.Math.Clamp(myDef.y + lane, FIELD.TOP + 14, FIELD.BOTTOM - 14),
+                    duration: totalDur * 0.5, ease: 'Sine.easeOut',
+                    onComplete: () => {
+                        this._zoomOnPoint(myDef.x + (endX - myDef.x) * 0.35, midY, 1.4, 260);
+                        this.tweens.add({
+                            targets: myDef, x: endX,
+                            y: Phaser.Math.Clamp(myDef.y + lane * 0.3, FIELD.TOP + 14, FIELD.BOTTOM - 14),
+                            duration: totalDur * 0.5, ease: 'Sine.easeIn',
+                            onComplete: () => {
+                                this.stopBob(myDef);
+                                this.ball.carrier = null;
+                                this.onDefense = false;
+                                if (isPickSix) {
+                                    this.gs.score.us += 6; this.updateHUD();
+                                    this.audio.play('touchdown'); this.audio.play('crowd_big');
+                                    this._zoomOnPoint(myDef.x, myDef.y, 2.2, 280);
+                                    this.cameras.main.shake(220, 0.009);
+                                    this._doTDCelebration(myDef);
+                                    this.bigMessage('PICK SIX! TOUCHDOWN!', 2000, () =>
+                                        this.checkClockThen(() => this.showAfterTouchdownMenu()));
+                                } else {
+                                    const rushDur = this._rushIntoTackle(this.defense, myDef.x, myDef.y);
+                                    this.time.delayedCall(rushDur, () => {
+                                        this.audio.play('tackle');
+                                        this.tackleShake(myDef);
+                                        this.bigMessage('INTERCEPTED!', 1700, () =>
+                                            this.checkClockThen(() =>
+                                                this.startUsDrive(Phaser.Math.Clamp(returnToYard, 1, 99))));
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                // CPU offense chases our returner.
+                this.time.delayedCall(totalDur * 0.15, () => {
+                    this._convergePlayers(this.defense, endX,
+                        myDef.y + lane * 0.35, totalDur * 0.78);
+                });
+                // Our other players escort/block downfield.
+                this.offense.forEach(p => {
+                    if (p === myDef) return;
+                    this.jog(p,
+                        (myDef.x + endX) * 0.5 + 18 + Math.random() * 28,
+                        p.y + (Math.random() - 0.5) * 40,
+                        totalDur * 0.75 + Math.random() * 200);
                 });
             }
         });
@@ -3193,6 +3302,7 @@ class GameScene extends Phaser.Scene {
     // ─── Messaging helpers ─────────────────────────────────────────────────────
     bigMessage(text, ms, then) {
         this.phase = 'message';
+        this._zoomOut(200);
         this.msgTxt.setText(text).setAlpha(1);
         this.subTxt.setAlpha(0);
         let done = false;
@@ -3377,23 +3487,54 @@ class GameScene extends Phaser.Scene {
                 // when coverage is technically 0, giving a truer read on success risk.
                 const disp = rr.displayCov !== undefined ? rr.displayCov : cov;
                 const col = disp === 0 ? 0x37e36b : (disp === 1 ? 0xffb300 : 0xff4040);
-                m.lineStyle(3, col, 0.9); m.strokeCircle(rr.player.x, rr.player.y, 20);
-                // Pips reflect actual defenders on the man (not display risk).
+
+                // --- Glow disc: semi-transparent colour fill so the status is
+                //     readable even on a cluttered background.
+                const glowAlpha = disp === 0 ? 0.30 : (disp === 1 ? 0.36 : 0.40);
+                m.fillStyle(col, glowAlpha);
+                m.fillCircle(rr.player.x, rr.player.y, 30);
+
+                // --- Dark shadow ring behind the coloured ring for contrast.
+                m.lineStyle(10, 0x000000, 0.75);
+                m.strokeCircle(rr.player.x, rr.player.y, 22);
+
+                // --- Thick coloured ring (much more visible than the old 3px line).
+                m.lineStyle(7, col, 1.0);
+                m.strokeCircle(rr.player.x, rr.player.y, 22);
+
+                // --- Pips: larger, with black outline, reflect actual defenders.
                 for (let d = 0; d < cov; d++) {
-                    m.fillStyle(0xff4040, 0.95);
-                    m.fillCircle(rr.player.x - 6 + d * 12, rr.player.y - 30, 4);
+                    const px = rr.player.x - 7 + d * 15;
+                    const py = rr.player.y - 36;
+                    m.fillStyle(0x000000, 1.0);
+                    m.fillCircle(px, py, 7);
+                    m.fillStyle(0xff3030, 1.0);
+                    m.fillCircle(px, py, 5);
                 }
-                // A soft connector to each covering defender.
+
+                // --- Connector lines to covering defenders (thicker + brighter).
                 (rr.defenders || []).forEach(def => {
                     if (!def) return;
-                    m.lineStyle(2, 0xff5050, 0.5); m.lineBetween(rr.player.x, rr.player.y, def.x, def.y);
+                    m.lineStyle(3, 0xff5050, 0.65); m.lineBetween(rr.player.x, rr.player.y, def.x, def.y);
                 });
             });
-            // Bright reticle on the currently selected/targeted man.
+
+            // --- Pulsing selection reticle on the currently targeted man.
             const r = this.phase === 'charge' && this.target ? this.target : this.receivers[this.recIndex];
             if (r) {
-                m.lineStyle(4, 0xffffff, 1); m.strokeCircle(r.player.x, r.player.y, 24);
-                m.lineStyle(2, 0xffeb3b, 0.9); m.strokeCircle(r.player.x, r.player.y, 30);
+                const rDisp = r.displayCov !== undefined ? r.displayCov : (r.coverage || 0);
+                const rCol = rDisp === 0 ? 0x37e36b : (rDisp === 1 ? 0xffb300 : 0xff4040);
+                const pulse = 0.5 + 0.5 * Math.sin(time * 0.007); // 0.5–1.0
+                const outerR = 32 + 5 * pulse;
+                // Black halo so the white ring always contrasts the field.
+                m.lineStyle(8, 0x000000, 0.7);
+                m.strokeCircle(r.player.x, r.player.y, outerR + 1);
+                // Bright white inner ring.
+                m.lineStyle(6, 0xffffff, 1.0);
+                m.strokeCircle(r.player.x, r.player.y, outerR - 7);
+                // Outer pulse ring coloured by coverage status.
+                m.lineStyle(4, rCol, 0.9);
+                m.strokeCircle(r.player.x, r.player.y, outerR);
             }
         }
 
