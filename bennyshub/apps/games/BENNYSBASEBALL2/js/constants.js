@@ -22,12 +22,15 @@ const GAME_CONSTANTS = {
         SWING_POWER_MIN: 4000,
         SWING_POWER_MAX: 6000,
         INTERACTIVE_PITCH_DURATION: 7500,  // deliberately slow pitch for accessibility
-        SWING_TIMING_WINDOW: 600,          // v1 exact — outcome quality window
-        // v1 exact: the ball glows green while progress is in [0.80, 0.98]
-        // (~1.35 seconds of green) — the swingable window
-        GREEN_ZONE_LO: 0.80,
+        // Outcome quality window: was v1's 600ms, widened by a full second
+        // for slower reflexes — releases up to ~1.3s off perfect still make
+        // solid contact instead of whiffing
+        SWING_TIMING_WINDOW: 1600,
+        // The ball glows green while progress is in [0.78, 0.98] (~1.5s of
+        // green, slightly earlier than v1's 0.80 to match the wider window)
+        GREEN_ZONE_LO: 0.78,
         GREEN_ZONE_HI: 0.98,
-        HIT_BY_PITCH_CHANCE: 0.05
+        HIT_BY_PITCH_CHANCE: 0.01          // 1% — a rare free base, not a routine one
     },
 
     GAME_RULES: {

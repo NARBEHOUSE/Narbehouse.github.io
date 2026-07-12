@@ -333,7 +333,7 @@ class GameScene extends Phaser.Scene {
     // outcome tables use (perfect = 90% of flight).
     createSwingMeter() {
         const T = GAME_CONSTANTS.TIMING;
-        const win = T.SWING_TIMING_WINDOW / T.INTERACTIVE_PITCH_DURATION; // 0.08
+        const win = T.SWING_TIMING_WINDOW / T.INTERACTIVE_PITCH_DURATION; // ~0.21 (widened for slower reflexes)
         this.meterBands = {
             hitLo: 0.75, hitHi: 1.0,                          // any contact possible
             okLo: 0.90 - win * 0.8, okHi: 0.90 + win * 0.8,   // decent timing
@@ -1045,7 +1045,10 @@ class GameScene extends Phaser.Scene {
         // Close-up on the duel: batter, pitcher, and the incoming pitch
         this.setBattingCamera(true);
 
-        this.audio.speak(`${gs.selectedPitch}, ${gs.selectedPitchLocation}!`);
+        // Call the incoming pitch — this is STRATEGY, not flavor (inside =
+        // power-swing it, center = normal swing, outside = let it go for a
+        // ball), so it interrupts anything still talking and always plays.
+        this.audio.speak(`${gs.selectedPitch}, ${gs.selectedPitchLocation}!`, true);
 
         // Pitcher windup, then the deliberately slow pitch (7.5s — v1 accessibility pacing)
         const pitcher = this.fielders.P;
@@ -2094,9 +2097,12 @@ class GameScene extends Phaser.Scene {
         gs.lastPitchType = cell.pitch;
 
         // Decide the outcome NOW so the choreography can match it: the CPU
-        // batter visibly swings as the ball arrives (except on called balls)
-        const outcome = this.computeCpuPitchOutcome(cell.pitch);
-        const cpuSwings = outcome !== 'Ball';
+        // batter visibly swings as the ball arrives (except on called balls).
+        // Coming inside has a cost: 1% of non-best inside pitches plunk the
+        // batter — a free base, the risk you take pitching in.
+        const hbp = gs.selectedPitchLocation === 'Inside' && !gs.bestPitchBonus && Math.random() < 0.01;
+        const outcome = hbp ? 'Hit By Pitch' : this.computeCpuPitchOutcome(cell.pitch);
+        const cpuSwings = outcome !== 'Ball' && outcome !== 'Hit By Pitch';
 
         // Close-up on the duel for the pitch and the CPU's swing
         this.setBattingCamera(true);
@@ -2106,7 +2112,16 @@ class GameScene extends Phaser.Scene {
         // Unhurried beats so the announcer finishes each line before the next
         this.time.delayedCall(800, () => {
             const dur = this.cpuPitchFlight(cell.pitch, () => {
-                if (outcome === 'Ball' || outcome === 'Strike') {
+                if (outcome === 'Hit By Pitch') {
+                    // The ball rides in and clips the batter
+                    this.audio.play('tag');
+                    this.cameras.main.shake(140, 0.006);
+                    this.ball.setVisible(false);
+                    if (this.batter && this.batter.active) {
+                        this.tweens.add({ targets: this.batter, x: this.batter.x - 10, duration: 90, yoyo: true, repeat: 1 });
+                    }
+                    this.time.delayedCall(700, () => this.processCpuOutcome(outcome));
+                } else if (outcome === 'Ball' || outcome === 'Strike') {
                     // Into the catcher's glove, small breather for the call
                     this.catchAtPlate();
                     this.time.delayedCall(700, () => this.processCpuOutcome(outcome));
@@ -2193,6 +2208,14 @@ class GameScene extends Phaser.Scene {
         this.setBattingCamera(false);
         const gs = this.gs;
         const R = GAME_CONSTANTS.GAME_RULES;
+
+        if (outcome === 'Hit By Pitch') {
+            gs.balls = 0; gs.strikes = 0;
+            gs.pendingBaseUpdate = () => this.updateBases('Walk', 'comp');
+            this.audio.speak('Hit by pitch! He takes his base.');
+            this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
+            return;
+        }
 
         if (outcome === 'Strike') {
             gs.strikes++;

@@ -12,11 +12,12 @@ class AudioSystem {
         this.settings = {
             musicEnabled: true,
             soundEnabled: true,
-            musicMode: 'shuffle'   // 'shuffle' = random next track, 'loop' = repeat current
+            musicMode: 'shuffle',  // 'shuffle' = random next track, 'loop' = repeat current
+            trackIndex: 0          // persisted: reopening the game resumes this track
         };
         this.music = null;
-        this.trackIndex = 0;
         this.loadSettings();
+        this.trackIndex = this.settings.trackIndex || 0;
         this.musicCandidates = [
             'audio/music/music (1).mp3',
             'audio/music/music (2).mp3',
@@ -64,7 +65,13 @@ class AudioSystem {
     startMusic() {
         if (!this.settings.musicEnabled) return;
         if (this.music) { this.music.play().catch(() => {}); return; }
-        this._tryTrack(0);
+        this._tryTrack(this.trackIndex % this.musicCandidates.length);
+    }
+
+    _saveTrackIndex(i) {
+        this.trackIndex = i;
+        this.settings.trackIndex = i;
+        this.saveSettings();
     }
 
     _tryTrack(i) {
@@ -74,6 +81,7 @@ class AudioSystem {
         audio.loop = false;
         audio.addEventListener('canplaythrough', () => {
             this.music = audio;
+            this._saveTrackIndex(i); // remember what's playing across sessions
             if (this.settings.musicEnabled) audio.play().catch(() => {});
         }, { once: true });
         audio.addEventListener('ended', () => {
@@ -88,7 +96,6 @@ class AudioSystem {
             if (this.musicCandidates.length > 1 && next === i) {
                 next = (next + 1) % this.musicCandidates.length;
             }
-            this.trackIndex = next;
             this.music = null;
             this._tryTrack(next);
         });
