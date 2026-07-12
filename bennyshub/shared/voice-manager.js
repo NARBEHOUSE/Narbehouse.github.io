@@ -316,12 +316,16 @@ window.NarbeVoiceManager = (function() {
     return settings.ttsEnabled;
   }
 
+  // Bumped on every speak() call so a deferred utterance can detect it was
+  // superseded by a newer call before its setTimeout fires.
+  let speakReqId = 0;
+
   /**
    * Speak text using current voice settings
    */
   function speak(text, options = {}) {
     if (!settings.ttsEnabled || !text || !('speechSynthesis' in window)) return;
-    
+
     // If voices aren't loaded yet, wait for them
     if (!voicesLoaded || englishVoices.length === 0) {
       // Wait for voices to load, then try again
@@ -335,26 +339,37 @@ window.NarbeVoiceManager = (function() {
       waitForVoices();
       return;
     }
-    
+
+    const reqId = ++speakReqId;
+
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(String(text));
-    
-    // Apply voice settings
-    utterance.rate = options.rate || settings.rate;
-    utterance.pitch = options.pitch || settings.pitch;
-    utterance.volume = options.volume || settings.volume;
-    
-    // Set voice - should be available now
-    const currentVoice = getCurrentVoice();
-    if (currentVoice) {
-      utterance.voice = currentVoice;
-    } else {
-      console.warn('NarbeVoiceManager: No voice available, using default');
-    }
-    
-    window.speechSynthesis.speak(utterance);
+
+    // Defer the actual speak() so it isn't issued in the same tick as
+    // cancel(). Chrome/Edge can silently wedge the speech engine (it stops
+    // firing any future utterances, with no error) after repeated
+    // cancel-then-speak-immediately cycles, which happens constantly here
+    // since every menu step and announcement routes through this function.
+    setTimeout(() => {
+      if (reqId !== speakReqId) return; // a newer call already superseded this one
+
+      const utterance = new SpeechSynthesisUtterance(String(text));
+
+      // Apply voice settings
+      utterance.rate = options.rate || settings.rate;
+      utterance.pitch = options.pitch || settings.pitch;
+      utterance.volume = options.volume || settings.volume;
+
+      // Set voice - should be available now
+      const currentVoice = getCurrentVoice();
+      if (currentVoice) {
+        utterance.voice = currentVoice;
+      } else {
+        console.warn('NarbeVoiceManager: No voice available, using default');
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }, 50);
   }
 
   /**

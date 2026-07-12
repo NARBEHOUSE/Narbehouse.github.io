@@ -151,16 +151,40 @@
 
   function beep(idx, dur) {
     if (!isAudioActive) return;
-    
+
     const audio = audioElements[idx % audioElements.length];
     if (!audio) return;
-    
+
     try {
       audio.currentTime = 0;
       audio.play().catch(e => console.warn('Beep play failed:', e));
     } catch (e) {
       console.warn('Beep error:', e);
     }
+  }
+
+  // Distinct two-note ascending chime for "round complete" -- separate from
+  // the per-tile beep() tones so the round transition is recognizable by ear
+  // alone, not just via the TTS line.
+  let fxCtx = null;
+  function playRoundCompleteChime() {
+    if (!isAudioActive) return;
+    if (!fxCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) fxCtx = new AC();
+    }
+    if (!fxCtx) return;
+    if (fxCtx.state === 'suspended') fxCtx.resume().catch(() => {});
+    const now = fxCtx.currentTime;
+    [{ f: 880, t: 0 }, { f: 1174.66, t: 0.09 }].forEach(({ f, t }) => {
+      const o = fxCtx.createOscillator(), g = fxCtx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, now + t);
+      g.gain.setValueAtTime(0.0001, now + t);
+      g.gain.linearRampToValueAtTime(0.22, now + t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.22);
+      o.connect(g); g.connect(fxCtx.destination);
+      o.start(now + t); o.stop(now + t + 0.24);
+    });
   }
 
   // ====== State ======
@@ -218,6 +242,11 @@
   // visuals
   let flashingIndex = -1;
   let flashUntil = 0;
+
+  // Round-complete cue: a distinct flash + chime separate from per-tile
+  // feedback, so advancing to the next round is obvious even without
+  // parsing the "Round N" TTS line (rounds otherwise just roll together).
+  let roundCompleteUntil = 0;
 
   // Store tile bounds for mouse detection
   let tileBounds = [];
@@ -358,6 +387,8 @@
       if (playerProgress === sequence.length) {
         round += 1;
         sequence.push(randInt(colorCount));
+        playRoundCompleteChime();
+        roundCompleteUntil = performance.now() + 650;
         // Speak the next round immediately while still in interaction context
         speak('Round ' + round);
         phase = Phase.SHOWING;
@@ -931,6 +962,20 @@
 
       if (flashingIndex !== -1 && performance.now() >= flashUntil) {
         flashingIndex = -1;
+      }
+
+      // Round-complete banner: a brief full-screen tint + label, distinct
+      // from per-tile flashes, so the transition between rounds is obvious
+      // without having to parse the "Round N" TTS line.
+      if (performance.now() < roundCompleteUntil) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(34,197,94,0.22)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#bbf7d0';
+        ctx.font = '800 26px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('Round Complete!', w/2, h/2);
+        ctx.restore();
       }
 
     } catch (err) {
