@@ -964,12 +964,13 @@
         flashingIndex = -1;
       }
 
-      // Round-complete banner: a brief full-screen tint + label, distinct
+      // Round-complete banner: a brief opaque full-screen card, distinct
       // from per-tile flashes, so the transition between rounds is obvious
-      // without having to parse the "Round N" TTS line.
+      // without having to parse the "Round N" TTS line. Fully opaque so the
+      // tile labels underneath can't bleed through and clash with the text.
       if (performance.now() < roundCompleteUntil) {
         ctx.save();
-        ctx.fillStyle = 'rgba(34,197,94,0.22)';
+        ctx.fillStyle = '#14532d';
         ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#bbf7d0';
         ctx.font = '800 26px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
