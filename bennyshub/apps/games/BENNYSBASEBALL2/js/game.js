@@ -1403,21 +1403,21 @@ class GameScene extends Phaser.Scene {
 
         let hitBonus = 0, strikeBonus = 0;
         if (location === 'Inside') {
-            if (swingType === 'power') hitBonus = 0.15;
-            else strikeBonus = 0.10;
+            if (swingType === 'power') hitBonus = 0.08;
+            else strikeBonus = 0.05;
         }
 
         if (powerLevel >= 0.8) {
-            if (rand < 0.25 + hitBonus) return 'Pop Fly Out';
+            if (rand < 0.32 + hitBonus) return 'Pop Fly Out';
             if (rand < 0.45 + hitBonus) return 'Single';
-            if (rand < 0.60) return 'Double';
-            if (rand < 0.75 - strikeBonus) return 'Foul';
+            if (rand < 0.52) return 'Double';
+            if (rand < 0.67 - strikeBonus) return 'Foul';
             return 'Ground Out';
         } else {
-            if (rand < 0.30 + hitBonus) return 'Single';
-            if (rand < 0.45 - strikeBonus) return 'Ground Out';
-            if (rand < 0.65) return 'Foul';
-            if (rand < 0.80) return 'Pop Fly Out';
+            if (rand < 0.16 + hitBonus) return 'Single';
+            if (rand < 0.40 - strikeBonus) return 'Ground Out';
+            if (rand < 0.62) return 'Foul';
+            if (rand < 0.90) return 'Pop Fly Out';
             return 'Double';
         }
     }
@@ -1425,45 +1425,45 @@ class GameScene extends Phaser.Scene {
     calculateGoodTimingOutcome(powerLevel, wasInStrikeZone, location, swingType) {
         const rand = Math.random();
         if (!wasInStrikeZone) {
-            if (rand < 0.5) return 'Foul';
-            if (rand < 0.8) return 'Single';
+            if (rand < 0.55) return 'Foul';
+            if (rand < 0.72) return 'Single';
             return 'Ground Out';
         }
 
         let hitBonus = 0, strikeBonus = 0;
         if (location === 'Inside') {
-            if (swingType === 'power') hitBonus = 0.15;
-            else strikeBonus = 0.08;
+            if (swingType === 'power') hitBonus = 0.08;
+            else strikeBonus = 0.05;
         } else if (location === 'Middle') {
-            hitBonus = 0.05;
+            hitBonus = 0.03;
         }
 
         if (powerLevel >= 0.9) {
-            if (rand < 0.12 + hitBonus) return 'Home Run';
-            if (rand < 0.22 + hitBonus) return 'Triple';
-            if (rand < 0.35) return 'Double';
-            if (rand < 0.50 - strikeBonus) return 'Single';
-            if (rand < 0.70) return 'Pop Fly Out';
+            if (rand < 0.04 + hitBonus) return 'Home Run';
+            if (rand < 0.08 + hitBonus) return 'Triple';
+            if (rand < 0.16) return 'Double';
+            if (rand < 0.28 - strikeBonus) return 'Single';
+            if (rand < 0.62) return 'Pop Fly Out';
             return 'Foul';
         } else if (powerLevel >= 0.7) {
-            if (rand < 0.08 + hitBonus) return 'Home Run';
-            if (rand < 0.18 + hitBonus) return 'Triple';
-            if (rand < 0.30) return 'Double';
-            if (rand < 0.45 - strikeBonus) return 'Single';
-            if (rand < 0.65) return 'Pop Fly Out';
+            if (rand < 0.03 + hitBonus) return 'Home Run';
+            if (rand < 0.06 + hitBonus) return 'Triple';
+            if (rand < 0.13) return 'Double';
+            if (rand < 0.24 - strikeBonus) return 'Single';
+            if (rand < 0.58) return 'Pop Fly Out';
             return 'Foul';
         } else if (powerLevel >= 0.4) {
-            if (rand < 0.01) return 'Home Run';
-            if (rand < 0.05) return 'Triple';
-            if (rand < 0.18 + hitBonus) return 'Double';
-            if (rand < 0.45 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.70) return 'Ground Out';
+            if (rand < 0.005) return 'Home Run';
+            if (rand < 0.02) return 'Triple';
+            if (rand < 0.09 + hitBonus) return 'Double';
+            if (rand < 0.28 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.68) return 'Ground Out';
             return 'Pop Fly Out';
         } else {
-            if (rand < 0.35 + hitBonus - strikeBonus) return 'Single';
-            if (rand < 0.45 + hitBonus) return 'Double';
-            if (rand < 0.65) return 'Ground Out';
-            if (rand < 0.85) return 'Foul';
+            if (rand < 0.20 + hitBonus - strikeBonus) return 'Single';
+            if (rand < 0.28 + hitBonus) return 'Double';
+            if (rand < 0.55) return 'Ground Out';
+            if (rand < 0.80) return 'Foul';
             return 'Pop Fly Out';
         }
     }
