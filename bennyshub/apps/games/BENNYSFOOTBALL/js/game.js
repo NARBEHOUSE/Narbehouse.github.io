@@ -1311,6 +1311,59 @@ class GameScene extends Phaser.Scene {
                     onComplete: () => this.stopBob(p)
                 });
             });
+
+            // The runner's teammates don't stand and watch — the whole convoy
+            // takes off downfield. Three of them peel toward the trailing
+            // pursuers and throw blocks (which is WHY those chasers never get
+            // there); anyone left just sprints after the play.
+            const runDir = Math.sign(tdEndX - startX) || 1;
+            const mates = (chasers === this.defense ? this.offense : this.defense)
+                .filter(p => p && p !== runner);
+            mates.forEach((m, j) => {
+                this.tweens.killTweensOf(m);
+                this.stopBob(m);
+                this.startBob(m);
+                const mark = j < 3 ? chasers[2 + j] : null; // trailing pursuers get blocked
+                if (mark) {
+                    // Intercept the pursuer partway along their chase path.
+                    const meetX = Phaser.Math.Clamp(
+                        mark.x + (tdEndX - mark.x) * (0.40 + j * 0.08),
+                        FIELD.LEFT + 10, FIELD.RIGHT - 10);
+                    const meetY = Phaser.Math.Clamp(
+                        mark.y + (peakY - mark.y) * 0.5 + (j % 2 ? 10 : -10),
+                        FIELD.TOP + 12, FIELD.BOTTOM - 12);
+                    this.tweens.add({
+                        targets: m, x: meetX, y: meetY,
+                        duration: totalDur * (0.42 + j * 0.09), ease: 'Sine.easeInOut',
+                        onComplete: () => {
+                            // Contact: the pursuer is shoved off their line and
+                            // out of the play; the blocker stalls with them.
+                            this.tweens.killTweensOf(mark);
+                            this.stopBob(mark);
+                            this.stopBob(m);
+                            this.tweens.add({
+                                targets: mark,
+                                x: Phaser.Math.Clamp(mark.x - runDir * (14 + Math.random() * 12), FIELD.LEFT + 10, FIELD.RIGHT - 10),
+                                y: Phaser.Math.Clamp(mark.y + (j % 2 ? 1 : -1) * (14 + Math.random() * 10), FIELD.TOP + 12, FIELD.BOTTOM - 12),
+                                duration: 220, ease: 'Quad.easeOut'
+                            });
+                            this.tweens.add({ targets: mark, angle: (j % 2 ? -24 : 24), duration: 130, yoyo: true });
+                            this.tweens.add({ targets: m, x: m.x + runDir * 8, duration: 200, ease: 'Quad.easeOut' });
+                        }
+                    });
+                } else {
+                    // Nobody left to block — sprint downfield behind the play.
+                    const trailX = Phaser.Math.Clamp(
+                        tdEndX - runDir * (60 + j * 26), FIELD.LEFT + 10, FIELD.RIGHT - 10);
+                    const trailY = Phaser.Math.Clamp(
+                        peakY + (j % 2 ? -1 : 1) * (18 + j * 6), FIELD.TOP + 12, FIELD.BOTTOM - 12);
+                    this.tweens.add({
+                        targets: m, x: trailX, y: trailY,
+                        duration: totalDur * 1.08, ease: 'Sine.easeIn',
+                        onComplete: () => this.stopBob(m)
+                    });
+                }
+            });
         });
     }
 
@@ -1368,26 +1421,35 @@ class GameScene extends Phaser.Scene {
         // Eligible receivers: WR, WR, TE, RB (offense indices 2,3,4,1)
         const idxs = [2, 3, 4, 1];
 
-        // Coverage model: the defense has THREE coverage defenders to spread over
-        // the four receivers. Distribution multisets that total 3 defenders (max 2 per man).
+        // Coverage model: the defense has FOUR coverage defenders (CB, CB, LB, S)
+        // to spread over the four receivers. Every distribution below must sum to
+        // at most 4 (max 2 per man) — that cap is load-bearing: if the total ever
+        // exceeds the real defender pool, some receiver gets tagged "covered" or
+        // "doubled" with no actual defender to draw, which is the bug this fixes.
         // Later in the game (large lead / high score), the defence tightens — fewer or
         // no receivers are wide open, matching the difficulty ramp the player feels.
         const scoreLead = this.gs.score.us - this.gs.score.them;
         const gamePressure = Phaser.Math.Clamp(
             this._scorePressure() + Math.max(0, scoreLead - 7) / 42, 0, 1);
-        // Low pressure  → normal: at least one wide-open receiver.
-        // Moderate      → tighter: maybe one open, rest covered.
-        // High pressure → everyone covered; the read is genuinely hard.
+        // Low pressure  → normal: one man uncommitted (the free safety floats deep),
+        //                 at least one receiver wide open.
+        // Moderate      → all four defenders commit; nobody is left wide open.
+        // High pressure → all four commit AND double one man, which is exactly why
+        //                 someone else is left open — the D can't double a receiver
+        //                 for free with only 4 defenders. The read is hard because
+        //                 the obvious throw is doubled, not because everyone is covered.
         const normalDists   = [[0, 1, 1, 1], [0, 0, 1, 2], [0, 0, 2, 1], [1, 0, 1, 1]];
         const moderateDists = [[1, 1, 1, 1], [0, 1, 1, 2], [1, 0, 2, 1], [0, 1, 2, 1]];
-        const heavyDists    = [[1, 1, 1, 2], [1, 1, 2, 1], [1, 2, 1, 1], [2, 1, 1, 1]];
+        const heavyDists    = [[0, 1, 1, 2], [1, 0, 2, 1], [1, 2, 1, 0], [2, 1, 0, 1]];
         const distPool = gamePressure < 0.30 ? normalDists
                        : gamePressure < 0.55 ? moderateDists
                        : heavyDists;
         const coverage = Phaser.Utils.Array.Shuffle(
             [...Phaser.Utils.Array.GetRandom(distPool)]
         );
-        const dbPool = [this.defense[3], this.defense[4], this.defense[5]];
+        // CBs lock up the outside WRs first, LB and S drop in behind for the
+        // TE/RB and to double up wherever a receiver draws a "2".
+        const dbPool = [this.defense[3], this.defense[4], this.defense[2], this.defense[5]];
         let dbi = 0;
 
         this.receivers = idxs.map((oi, k) => {

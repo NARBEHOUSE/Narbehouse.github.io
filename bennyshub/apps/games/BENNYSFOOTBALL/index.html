@@ -18,11 +18,46 @@ body {
     align-items: center;
 }
 #game { line-height: 0; width: 100vw; height: 100vh; }
-canvas { display: block; }
+canvas { display: block; transition: filter 0.25s; }
 </style>
 </head>
 <body>
 <div id="game"></div>
+
+<!-- ── Colorblind palette-shift SVG filters ───────────────────────────────
+     Applied as CSS filter to the Phaser canvas by applyColorblindFilter().
+     Matrices are LMS-space daltonisation corrections that redistribute the
+     lost channel so affected hues become distinguishable, not a simulation.
+     Sources: Machado et al. (2009) + Lindbloom adaptation.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- Deuteranopia correction (green-weak): redistribute green into red+blue -->
+    <filter id="cb-deuteranopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix type="matrix" values="
+        0.625  0.375  0      0  0
+        0.70   0.30   0      0  0
+        0      0.30   0.70   0  0
+        0      0      0      1  0"/>
+    </filter>
+    <!-- Protanopia correction (red-weak): redistribute red into green+blue -->
+    <filter id="cb-protanopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix type="matrix" values="
+        0.17   0.83   0      0  0
+        0.17   0.83   0      0  0
+        0      0.16   0.84   0  0
+        0      0      0      1  0"/>
+    </filter>
+    <!-- Tritanopia correction (blue-yellow): redistribute blue into red+green -->
+    <filter id="cb-tritanopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix type="matrix" values="
+        0.95   0.05   0      0  0
+        0      0.43   0.57   0  0
+        0      0.43   0.57   0  0
+        0      0      0      1  0"/>
+    </filter>
+  </defs>
+</svg>
 
 <!-- Phaser engine -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
@@ -42,6 +77,11 @@ canvas { display: block; }
 
 <script>
 window.addEventListener('load', () => {
+    // Restore saved colorblind filter as soon as the page loads so it applies
+    // before the first frame is rendered (canvas may not exist yet — the helper
+    // polls until it does).
+    if (typeof colorblindMode === 'function') applyColorblindFilter(colorblindMode());
+
     // Render the 1000x600 world at a much higher backing resolution so the
     // upscale to the screen stays crisp instead of looking blurry. We size the
     // canvas to the actual device pixels (zoom), then FIT scales it to fit.

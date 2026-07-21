@@ -142,8 +142,8 @@ function applyColorblindFilter(mode) {
 // and that survive the palette-shift SVG filter without losing identity.
 function cbHighlightColor(dispCov) {
     if (colorblindMode() === 'normal') {
-        // Legacy: open=green, covered/distant=amber, doubled=red.
-        return dispCov === 0 ? 0x37e36b : (dispCov === 1 ? 0xffb300 : 0xff4040);
+        // Legacy: open=blue, covered/distant=amber, doubled=red.
+        return dispCov === 0 ? 0x2196f3 : (dispCov === 1 ? 0xffb300 : 0xff4040);
     }
     // Colorblind modes: open=blue, covered/distant=yellow, blocked=dark-grey.
     return dispCov === 0 ? 0x2196f3 : (dispCov === 1 ? 0xfdd835 : 0x546e7a);
