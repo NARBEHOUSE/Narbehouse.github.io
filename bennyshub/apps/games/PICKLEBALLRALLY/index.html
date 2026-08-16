@@ -257,7 +257,6 @@
     left: 50%;
     top: 20px;
     transform: translateX(-50%) rotate(180deg);
-    font-size: 5rem;
     transition: left .45s ease, transform .25s ease;
     z-index: 4;
   }
@@ -267,9 +266,19 @@
     left: 50%;
     bottom: 36px;
     transform: translateX(-50%);
-    font-size: 5rem;
     transition: left .32s ease, transform .22s ease;
     z-index: 4;
+  }
+
+  .paddleImg {
+    display: block;
+    height: 4.6rem;
+    width: auto;
+    transform: rotate(-30deg);
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.35));
   }
 
   #ball {
@@ -540,9 +549,9 @@
         </svg>
       </div>
 
-      <div id="opponent">🏓</div>
+      <div id="opponent"><img class="paddleImg" src="paddle.png" alt="" /></div>
       <div id="ball">🟡</div>
-      <div id="benny">🏓</div>
+      <div id="benny"><img class="paddleImg" src="paddle.png" alt="" /></div>
     </div>
 
     <div id="opponentLabel" class="label">Computer</div>

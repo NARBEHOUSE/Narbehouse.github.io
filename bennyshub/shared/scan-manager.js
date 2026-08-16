@@ -288,6 +288,14 @@ window.NarbeScanManager = (function() {
      */
     getAvailableSpeeds: function() {
       return [...SCAN_SPEEDS];
+    },
+
+    /**
+     * Get the debounce cooldown (ms) used to prevent a single switch press
+     * from double-triggering (same value the global input guard above uses)
+     */
+    getInputSensitivity: function() {
+      return INPUT_COOLDOWN_MS;
     }
   };
 })();
