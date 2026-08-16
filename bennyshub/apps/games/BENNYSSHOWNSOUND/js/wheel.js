@@ -689,12 +689,10 @@ class Wheel {
         let lastTickAt = 0;
         this._flick = 0;
 
-        // Stashed so requestEarlyStop() can replace this tween with a quick
-        // wrap-up to the SAME destination — press-to-stop only compresses the
-        // wait, it never touches which sector wins.
-        this._pendingTarget = target;
+        // Stashed so requestEarlyStop() can still call back correctly if it
+        // fires — it decides its OWN winner from wherever the wheel actually
+        // is at that moment, so only the callback itself needs stashing here.
         this._pendingOnDone = onDone;
-        this._pendingFinalRotation = from + delta;
 
         this._mainTween = this.scene.tweens.add({
             targets: this.container,
@@ -736,21 +734,37 @@ class Wheel {
     }
 
     /**
-     * Press-to-stop: cut a long spin short. The winner and its final rotation
-     * were already fixed at launch (see `_pickWinner` above) — this only
-     * replaces the remaining wait with a quicker wrap-up to that same
-     * destination, so it never changes which panel the wheel lands on.
+     * Press-to-stop: stop where it actually IS, right now — not a fast-
+     * forward through however much of the original journey was left. An
+     * earlier version kept the winner picked at launch and just rushed to
+     * that (possibly several-more-full-rotations-away) destination, which at
+     * an early press meant racing through most of the spin in a fraction of
+     * a second — reading to a player as "it didn't stop, it just kept
+     * spinning," not as a stop.
+     *
+     * So the winner is decided HERE instead, from whichever sector is
+     * currently at the pointer (`sectorAtPointer`, a discrete lookup — no
+     * physics-settle boundary ambiguity, unlike reading a coasted-to-rest
+     * angle), then a short correction tween brings that sector's centre
+     * exactly to the pointer. Same no-repeat rule as a fresh spin, applied to
+     * wherever it actually landed rather than a fresh random pick.
      */
     requestEarlyStop() {
         if (!this.spinning || !this._mainTween) return;
         const tween = this._mainTween;
         this._mainTween = null;
-        const finalRotation = this._pendingFinalRotation;
-        const target = this._pendingTarget;
         const onDone = this._pendingOnDone;
         tween.stop();
-
         if (this.pointer) this.pointer.rotation = 0;
+
+        let target = WheelGeom.sectorAtPointer(this.container.rotation, this.n);
+        if (this.n > 2 && target === this.lastWinner) target = (target + 1) % this.n;
+
+        const mid = WheelGeom.sectorMid(target, this.n);
+        const from = this.container.rotation;
+        const want = WHEEL.POINTER - mid;
+        const finalRotation = from + norm2pi(want - from); // shortest forward correction only
+
         this.scene.tweens.add({
             targets: this.container,
             rotation: finalRotation,

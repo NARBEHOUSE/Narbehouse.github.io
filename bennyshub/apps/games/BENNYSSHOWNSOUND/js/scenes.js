@@ -6,9 +6,10 @@
 const HELP_TEXT =
     "Show n Sound. First pick a category. Under the wheel there are three " +
     "buttons: Spin, New Game, and Main Menu. Press your switch to move between " +
-    "them and press Enter to choose one. Choose Spin to spin the wheel. When it " +
-    "stops, the picture grows big in the middle and you hear its sound. Press " +
-    "Enter to hear it again, or press your switch to go back to the wheel.";
+    "them and press Enter to choose one. Choose Spin to spin the wheel — you " +
+    "can press Enter or your switch again at any time to stop it right where " +
+    "it is. When it stops, the picture grows big in the middle and you hear " +
+    "its sound. Press Enter or your switch to go back to the wheel and spin again.";
 
 /**
  * Leave the game and hand control back to the hub.
@@ -909,13 +910,14 @@ class WheelScene extends Phaser.Scene {
         });
 
         // ── Mouse / touch ────────────────────────────────────────────────────
-        // Everything reachable by switch is also reachable by tapping, and the
-        // tap targets mirror the two keys exactly:
+        // Everything reachable by switch is also reachable by tapping:
         //   on the wheel  — tap the wheel = Spin (the row handles its own taps)
-        //   on a reveal   — tap the card  = ENTER (hear it again)
-        //                   tap anywhere else = SPACE (back to the wheel)
-        // Without that second rule a touch user who spun once was stranded on
-        // the result with no way back.
+        //   on a reveal   — tap the card  = hear it again (a mouse/touch-only
+        //                   extra, since a precise tap is easy for that input
+        //                   but Enter/the switch now always means "back", see
+        //                   onSelect — Auto Scan had no other way out of a
+        //                   reveal if Enter just kept replaying the sound)
+        //                   tap anywhere else = back to the wheel
         this.input.on('pointerdown', (p) => {
             if (this.paused || this.state_ === 'spinning' || this.state_ === 'loading') return;
 
@@ -1084,10 +1086,13 @@ class WheelScene extends Phaser.Scene {
 
     onSelect() {
         if (this.paused) { this.pauseList.select(); return; }
-        if (this.state_ === 'revealed') {
-            if (this.lastPanel) this.audio.playPanel(this.lastPanel);
-            return;
-        }
+        // Enter now returns to the wheel (same as Space) instead of replaying
+        // the sound — with Auto Scan on, "hear it again" left no way to
+        // actually get back to scanning, since nothing else was scannable
+        // while revealed. This also means the very next press (Spin is still
+        // highlighted) spins again, which is what someone relying entirely on
+        // Auto Scan actually wants: press = advance.
+        if (this.state_ === 'revealed') { this.dismissReveal(); return; }
         // Press-to-stop, always on: a press during the spin itself lands it
         // sooner. Never changes which panel wins — see Wheel.requestEarlyStop.
         // If nothing is pressed again, it lands on its own at the normal timing.
@@ -1135,8 +1140,8 @@ class WheelScene extends Phaser.Scene {
                 // Second, bigger burst once the card has fully popped in.
                 this.party.burst(W / 2, REVEAL.CARD_Y - 40, 60);
             });
-            this.setHint('Tap the picture or Enter to hear again   ·   '
-                + 'Tap outside or press your switch to go back', '18px');
+            this.setHint('Tap the picture to hear it again   ·   '
+                + 'Enter, your switch, or tap outside to spin again', '18px');
         });
 
         if (!started) { this.state_ = 'idle'; this.setButtonsVisible(true); }
