@@ -13,7 +13,7 @@ A community modification of the original “Benny’s Bowling” by iliagrigorev
 - Position & Aim via Space: 5s oscillation left/right; resumes from where released; thicker aiming guide.
 - Charge & Throw via Enter: 0–3s charge with non‑linear power; quick tap = weaker, full hold = strong.
 - Text‑to‑Speech: English voices only (up to 8). Speaks menu focus, settings changes (ball style, alley theme), outcomes (“Strike!”), frame announcements, and final score. TTS cancels prior utterances to stay clear.
-- Pause: Hold Enter ≥5s or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu).
+- Pause: Hold Enter ≥5s or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu, Help). Help speaks "I need help" without closing the pause menu.
 - 1–2 Players: Single Player and Two Player options. Each player chooses a ball style; scores tracked independently. Keyboard scanning works on menus.
 - Visuals: retro green/black UI; high‑contrast focus highlight; strike celebration banner.
 - Themes: 10 alley themes with animated walls/backdrops and cohesive lighting; alley tint adapts to theme.
@@ -54,5 +54,5 @@ Ensure the following files exist:
 ## License
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License v3. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; see LICENSE for details.
 
-© 2026 NARBEHOUSE, LLC — Modifications  
+© 2025 NARBEHOUSE, LLC — Modifications  
 © Original authors (see upstream repository)

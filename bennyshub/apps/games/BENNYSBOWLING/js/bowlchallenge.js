@@ -1,6 +1,7 @@
 const CAMERA_FOV = 50.0;
 const CAMERA_NEAR = 0.1;
-const CAMERA_FAR = 10.0;
+// Far enough to take in the neighbouring lanes and the back of the house.
+const CAMERA_FAR = 60.0;
 
 const FRAME_ROLL_TIME = 3.0;
 
@@ -21,10 +22,11 @@ const CHARGE_POWER_CURVE = 2.5; // >1 makes long holds much stronger vs short ta
 
 var container, scene, camera, clock, renderer, ppi;
 var ambientLight = null, dirLight = null; // global lights for theming
+var deckLight = null, laneLight = null;   // lamps over the pin deck and mid-lane
 var pauseUIButton = null; // clickable pause button for mouse users
 var themeEnv = null; // environment meshes (floor, walls, backdrop)
 var touchPoint, raycaster, pickPoint, dragPoint, releaseVector, pickSphere;
-var trackProtoMesh, ballProtoMesh, pinProtoMesh;
+var ballProtoMesh, pinProtoMesh;
 var players, imitations, scoresDiv;
 var chargeBar, chargeFill; // UI for charge power
 
@@ -68,80 +70,54 @@ var celebrationDiv = null;       // strike celebration overlay
 var celebrationHideTimer = null; // timeout handle for hiding celebration
 var musicEl = null;              // background music element (optional)
 var ambientEl = null;            // ambient bowling background loop
+// Using SafeAudio for sound effects (HTML5 Audio - safe for Electron)
 var SFX_ENABLED = true;          // reflects settings.sfx but cached for quick checks
-var rollingSound = null;         // Track rolling ball sound to cut it off
-var rollingSoundTimer = null;    // Timer to limit rolling sound duration
+var sfxInitialized = false;
+
+// Initialize SafeAudio sounds
+function initSafeAudio() {
+	if (sfxInitialized || !window.SafeAudio) return;
+	window.SafeAudio.preload('rolling', 'sound/rolling-ball.wav');
+	window.SafeAudio.preload('pin', 'sound/single-pin.mp3');
+	// No select.wav ever shipped with this game — preloading a URL here would
+	// register a 404 and silence the blip. Let SafeAudio synthesise the built-in.
+	window.SafeAudio.preload('select');
+	sfxInitialized = true;
+	console.log('[Bowling] SafeAudio initialized');
+}
 
 function playSfx(src, volume) {
-	try {
-		if (!SFX_ENABLED) return null;
-        // Use NarbeAudioHelper for solid iOS support if available
-        if (window.NarbeAudioHelper && window.NarbeAudioHelper.play) {
-            return window.NarbeAudioHelper.play(src, (typeof volume === 'number') ? volume : 1.0);
-        }
-        // Fallback for older browsers
-		var a = new Audio(src);
-		a.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 1.0;
-		a.play().catch(function(){});
-		return a;
-	} catch(e) { return null; }
-}
-
-function stopRollingSound() {
-	if (rollingSoundTimer) { clearTimeout(rollingSoundTimer); rollingSoundTimer = null; }
-	if (rollingSound) {
-		try {
-			// If it's a standard Audio element
-			if (typeof rollingSound.pause === 'function') {
-				rollingSound.pause();
-				if (typeof rollingSound.currentTime === 'number') rollingSound.currentTime = 0;
-			}
-			// If it's a Howl or other wrapper returned by NarbeAudioHelper
-			else if (typeof rollingSound.stop === 'function') {
-				rollingSound.stop();
-			}
-		} catch(e) {}
-		rollingSound = null;
+	if (!SFX_ENABLED) return;
+	
+	// Initialize on first use
+	if (!sfxInitialized) initSafeAudio();
+	
+	// Map sound file paths to SafeAudio names
+	if (window.SafeAudio) {
+		if (src.includes('rolling-ball')) {
+			window.SafeAudio.play('rolling', volume);
+		} else if (src.includes('single-pin')) {
+			window.SafeAudio.play('pin', volume);
+		} else if (src.includes('select')) {
+			window.SafeAudio.play('select', volume);
+		}
 	}
-}
-
-function playRollingSound() {
-	stopRollingSound();
-	rollingSound = playSfx('sound/rolling-ball.wav', 1.0);
-	// Limit to 1.5 seconds max
-	rollingSoundTimer = setTimeout(function() {
-		stopRollingSound();
-	}, 1500);
 }
 
 var ambientController = null;
 
 function ensureAmbient() {
-	if (!ambientEl && !window.NarbeAudioHelper) {
-		try {
-			// Fallback for non-iOS or older environments
-			ambientEl = new Audio('sound/bowling-bg.wav');
-			ambientEl.loop = true;
-			ambientEl.volume = 0.3;
-		} catch(e) { ambientEl = null; }
-	}
+	// Ambient sound disabled for now
+	return;
 }
 
 function startAmbient() {
-	if (window.NarbeAudioHelper && window.NarbeAudioHelper.playLoop) {
-		if (!ambientController) {
-			ambientController = window.NarbeAudioHelper.playLoop('sound/bowling-bg.wav', 0.3);
-		}
-	} else {
-		try { ensureAmbient(); if (ambientEl) ambientEl.play().catch(function(){}); } catch(e) {}
-	}
+	// Ambient sound disabled for now
+	return;
 }
 function stopAmbient() {
-	if (ambientController) {
-		ambientController.stop();
-		ambientController = null;
-	}
-	try { if (ambientEl) { ambientEl.pause(); ambientEl.currentTime = 0; } } catch(e) {}
+	// Ambient sound disabled for now
+	return;
 }
 var settings = {
 	music: false,
@@ -182,143 +158,92 @@ function buildThemes() {
 	// Simple canvas texture helpers for floors/walls/backdrops
 	function makeCanvas(w,h,draw){ var c=document.createElement('canvas'); c.width=w; c.height=h; var x=c.getContext('2d'); draw(x,w,h); return c; }
 	function texFromCanvas(c){ var t=new THREE.CanvasTexture(c); t.needsUpdate=true; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(1,1); return t; }
-	function woodPlanks(){ return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){ ctx.fillStyle='#8b5a2b'; ctx.fillRect(0,0,w,h); for(var y=0;y<h;y+=32){ ctx.fillStyle= (y/32)%2? '#7a4f26':'#6d4522'; ctx.fillRect(0,y,w,32); ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=2; ctx.beginPath(); for(var x=0;x<w;x+=64){ ctx.moveTo(x,y); ctx.lineTo(x,y+32);} ctx.stroke(); } })); }
-	function neonGrid(bg, line){ return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){ ctx.fillStyle=bg; ctx.fillRect(0,0,w,h); ctx.strokeStyle=line; ctx.shadowColor=line; ctx.shadowBlur=6; ctx.lineWidth=1.5; for(var i=0;i<=w;i+=32){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); } for(var j=0;j<=h;j+=32){ ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(w,j); ctx.stroke(); } })); }
-	function sandTexture(){ return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){ for(var y=0;y<h;y++){ var hue=40+Math.random()*2; var sat=60+Math.random()*10; var light=70+Math.random()*6; ctx.fillStyle='hsl('+hue+','+sat+'%,'+light+'%)'; ctx.fillRect(0,y,w,1);} for(var i=0;i<1600;i++){ var x=Math.random()*w, y=Math.random()*h, r=Math.random()*1.2; ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } })); }
 	function oceanBackdrop(){ return texFromCanvas(makeCanvas(1024,512,function(ctx,w,h){ var g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'#9bd3ff'); g.addColorStop(0.55,'#9bd3ff'); g.addColorStop(0.56,'#2e7bb8'); g.addColorStop(1,'#0c3f66'); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); // sun
 		ctx.fillStyle='rgba(255,255,200,0.9)'; ctx.beginPath(); ctx.arc(w*0.75,h*0.2,30,0,Math.PI*2); ctx.fill(); // horizon sparkle
 		ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1; for(var i=0;i<60;i++){ var y=h*0.56 + i*4; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
 	})); }
 	function snowTexture(){ return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){ var grd=ctx.createLinearGradient(0,0,0,h); grd.addColorStop(0,'#f7fbff'); grd.addColorStop(1,'#dbe9f6'); ctx.fillStyle=grd; ctx.fillRect(0,0,w,h); ctx.fillStyle='rgba(255,255,255,0.6)'; for(var i=0;i<800;i++){ var x=Math.random()*w, y=Math.random()*h, r=Math.random()*1.5; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } })); }
-	function lavaTexture(){ return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){ ctx.fillStyle='#220000'; ctx.fillRect(0,0,w,h); ctx.strokeStyle='#ff3300'; ctx.lineWidth=3; ctx.shadowColor='#ff5500'; ctx.shadowBlur=8; for(var i=0;i<100;i++){ ctx.beginPath(); var x=Math.random()*w, y=Math.random()*h, len=20+Math.random()*120; ctx.moveTo(x,y); ctx.bezierCurveTo(x+len*0.2,y+len*0.1,x-len*0.3,y+len*0.4,x+len*0.5,y+len*0.6); ctx.stroke(); } })); }
 	function starBackdrop(){ return texFromCanvas(makeCanvas(1024,512,function(ctx,w,h){ ctx.fillStyle='#020214'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#fff'; for(var i=0;i<800;i++){ var x=Math.random()*w, y=Math.random()*h, r=Math.random()*1.5; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); } })); }
 	function auroraBackdrop(){ return texFromCanvas(makeCanvas(1024,512,function(ctx,w,h){ var g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'#081a3a'); g.addColorStop(1,'#083b42'); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); var bands=['#64ffda','#aaffee','#77ff88']; for(var b=0;b<bands.length;b++){ ctx.fillStyle=bands[b]; ctx.globalAlpha=0.18; ctx.beginPath(); ctx.ellipse(w*0.4+b*120,h*0.3+b*30,220,60,0,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; })); }
 	function sunsetBackdrop(){ return texFromCanvas(makeCanvas(1024,512,function(ctx,w,h){ var g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'#ff7e5f'); g.addColorStop(1,'#2a2a72'); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); })); }
 
+	// The house is the whole bowling centre: our alley, the neighbouring lanes,
+	// the concourse, walls and ceiling. The alley geometry itself lives in
+	// alley.js, where every surface is derived from the collision constants.
 	function ensureThemeEnvironment(){
 		if (themeEnv) return themeEnv;
-		var group = new THREE.Group(); group.name = 'ThemeEnvironment';
-		// Dimensions
-		var laneWidth = (typeof LANE_WIDTH !== 'undefined' ? LANE_WIDTH : 1.06);
-		var laneHalf = 0.5 * laneWidth;
-		var gutterWidth = (typeof GUTTER_WIDTH !== 'undefined' ? GUTTER_WIDTH : 0.24);
-		var gutterHalf = 0.5 * gutterWidth;
-		var floorLen = (typeof LANE_LENGTH !== 'undefined' ? LANE_LENGTH : 10.0) + 4.0;
-		var zMid = (typeof LANE_MID_Z !== 'undefined' ? LANE_MID_Z : 0);
-		// Drop the visual floors a bit further so the ball never appears to clip through them
-		var visualClear = 0.06; // 6cm down for safe visual clearance
-		var laneY = (typeof BASE_HEIGHT !== 'undefined' ? BASE_HEIGHT : 0) - visualClear; // clearly below lane top
-		var gutterY = (typeof BOTTOM_HEIGHT !== 'undefined' ? BOTTOM_HEIGHT : -0.05) - visualClear; // clearly below gutter bottom
+		if (typeof BowlAlley === 'undefined') return null;
 
-		// Three floor strips: center under lane (at laneY), sides under gutters (at gutterY)
-		var floorCenter = new THREE.Mesh(
-			new THREE.PlaneGeometry(laneWidth, floorLen),
-			new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, metalness: 0.0 })
-		);
-		floorCenter.rotation.x = -Math.PI/2; floorCenter.position.set(0, laneY, zMid); group.add(floorCenter);
+		var built = BowlAlley.createHouse({
+			slots: [-2, -1, 0, 1, 2],
+			makePins: buildDecorPins
+		});
+		scene.add(built.group);
 
-		var floorLeft = new THREE.Mesh(
-			new THREE.PlaneGeometry(gutterWidth, floorLen),
-			new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, metalness: 0.0 })
-		);
-		floorLeft.rotation.x = -Math.PI/2; floorLeft.position.set(-(laneHalf + gutterHalf), gutterY, zMid); group.add(floorLeft);
-
-		var floorRight = new THREE.Mesh(
-			new THREE.PlaneGeometry(gutterWidth, floorLen),
-			new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, metalness: 0.0 })
-		);
-		floorRight.rotation.x = -Math.PI/2; floorRight.position.set(+(laneHalf + gutterHalf), gutterY, zMid); group.add(floorRight);
-
-		var wallWidth = (typeof TRACK_WIDTH !== 'undefined' ? TRACK_WIDTH : (laneWidth + 2*gutterWidth)) * 3.0;
-		var wallHeight = 3.0;
-		var backGeo = new THREE.PlaneGeometry(wallWidth, wallHeight);
-		var backMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, metalness: 0.0 });
-	var backWallZ = (typeof LANE_END_Z !== 'undefined' ? LANE_END_Z : -1.0) - 0.5;
-	var backWall = new THREE.Mesh(backGeo, backMat); backWall.position.set(0, (typeof BASE_HEIGHT !== 'undefined' ? BASE_HEIGHT : 0)+wallHeight*0.5, backWallZ); group.add(backWall);
-
-		// Side walls
-		var sideLen = floorLen;
-		var sideGeo = new THREE.PlaneGeometry(sideLen, wallHeight);
-		var sideMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, metalness: 0.0 });
-	var sideLeft = new THREE.Mesh(sideGeo, sideMat); sideLeft.rotation.y = Math.PI/2; sideLeft.position.set(-wallWidth*0.5, (typeof BASE_HEIGHT !== 'undefined' ? BASE_HEIGHT : 0)+wallHeight*0.5, zMid); group.add(sideLeft);
-	var sideRight = new THREE.Mesh(sideGeo, sideMat); sideRight.rotation.y = -Math.PI/2; sideRight.position.set(wallWidth*0.5, (typeof BASE_HEIGHT !== 'undefined' ? BASE_HEIGHT : 0)+wallHeight*0.5, zMid); group.add(sideRight);
-
-		// Backdrop behind back wall
-		var backDropGeo = new THREE.PlaneGeometry(wallWidth*3.0, wallHeight*2.5);
-		var backDropMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-	var backDropZ = backWallZ - 4.0;
-	var backdrop = new THREE.Mesh(backDropGeo, backDropMat); backdrop.position.set(0, (typeof BASE_HEIGHT !== 'undefined' ? BASE_HEIGHT : 0)+wallHeight*0.9, backDropZ); group.add(backdrop);
-
-		scene.add(group);
 		themeEnv = {
-			group: group,
-			floorCenter: floorCenter,
-			floorLeft: floorLeft,
-			floorRight: floorRight,
-			backWall: backWall,
-			sideLeft: sideLeft,
-			sideRight: sideRight,
-			backdrop: backdrop,
+			group: built.group,
+			alleys: built.alleys,
+			backdrop: built.backdrop,
+			ceiling: built.ceiling,
 			key: null
 		};
 		return themeEnv;
 	}
 
+	// A frozen rack of pins for the neighbouring lanes, so the house doesn't
+	// look abandoned. Purely decorative: no bodies, no scoring.
+	function buildDecorPins(){
+		if (!pinProtoMesh) return null;
+		var group = new THREE.Group();
+		group.name = 'DecorPins';
+		for (var i = 0; i < PIN_POSITIONS.length; i++) {
+			var p = PIN_POSITIONS[i];
+			var mesh = pinProtoMesh.clone();
+			stylePin(mesh);
+			mesh.position.set(p[0], p[1], p[2]);
+			mesh.castShadow = true;
+			group.add(mesh);
+		}
+		return group;
+	}
+
 	function setEnv(themeKey){
 		var env = ensureThemeEnvironment();
 		if (!env) return;
-		// Defaults
-		var floorMap=null, floorColor=0x333333, wallMap=null, wallColor=0x222222, backdropMap=null, backdropColor=0x000000;
-		// Wall pattern helpers
-		function stripes(bg, line, angle){
-			return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){
-				ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
-				ctx.save(); ctx.translate(w/2,h/2); ctx.rotate((angle||45)*Math.PI/180);
-				ctx.strokeStyle=line; ctx.lineWidth=6; for(var y=-h; y<=h; y+=40){ ctx.beginPath(); ctx.moveTo(-w,y); ctx.lineTo(w,y); ctx.stroke(); }
-				ctx.restore();
-			}));
-		}
-		function dots(bg, dot){
-			return texFromCanvas(makeCanvas(512,512,function(ctx,w,h){
-				ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
-				ctx.fillStyle=dot; for(var y=0;y<h;y+=48){ for(var x=0;x<w;x+=48){ ctx.beginPath(); ctx.arc(x+12,y+12,3,0,Math.PI*2); ctx.fill(); }}
-			}));
-		}
+		BowlAlley.applyTheme(themeKey);
+		applyEnvMapToActors();
+
+		// The wall above the masking units is the one big surface the house
+		// doesn't need for structure, so the fantasy themes get a mural there.
+		// Classic and Lava keep a plain wall -- a sunset over lane 4 would look
+		// like a bug, not a theme.
+		var mural = null;
 		switch(themeKey){
-			case 'Classic':
-				floorMap = woodPlanks(); floorColor=0xffffff; wallColor=0x444444; wallMap = stripes('#2a2a2a','#555',30); backdropMap = sunsetBackdrop(); break;
-			case 'Ocean':
-				floorMap = sandTexture(); floorColor=0xffffff; wallColor=0x225577; wallMap = stripes('#0b2a4a','#3da0ff',-20); backdropMap = oceanBackdrop(); break;
-			case 'Neon Night':
-				floorMap = neonGrid('#050505','#00ff99'); wallColor=0x001a12; wallMap = neonGrid('#000000','#00ffcc'); backdropMap = starBackdrop(); break;
-			case 'Retro 80s':
-				floorMap = neonGrid('#0a0030','#66ffff'); wallColor=0x2b0057; wallMap = stripes('#1a003a','#ff66ff',45); backdropMap = sunsetBackdrop(); break;
-			case 'Cyber Grid':
-				floorMap = neonGrid('#000000','#00ffaa'); wallColor=0x001010; wallMap = neonGrid('#000000','#00ffaa'); backdropMap = starBackdrop(); break;
-			case 'Sunset Blvd':
-				floorMap = woodPlanks(); wallColor=0x442222; wallMap = dots('#2a1010','#ff9966'); backdropMap = sunsetBackdrop(); break;
-			case 'Aurora':
-				floorMap = neonGrid('#041a2e','#aaffee'); wallColor=0x0a2b3c; wallMap = stripes('#0a2b3c','#64ffda',25); backdropMap = auroraBackdrop(); break;
-			case 'Lava Lanes':
-				floorMap = lavaTexture(); wallColor=0x330000; wallMap = stripes('#220000','#ff3300',-15); backdropMap = sunsetBackdrop(); break;
-			case 'Snow Day':
-				floorMap = snowTexture(); wallColor=0x99bbdd; wallMap = dots('#6ea3cc','#ffffff'); backdropMap = snowTexture(); break;
-			case 'Cosmic Bowl':
-				floorMap = neonGrid('#000010','#6aa2ff'); wallColor=0x110022; wallMap = neonGrid('#000010','#6aa2ff'); backdropMap = starBackdrop(); break;
+			case 'Ocean': mural = oceanBackdrop(); break;
+			case 'Neon Night': case 'Cyber Grid': case 'Cosmic Bowl': mural = starBackdrop(); break;
+			case 'Aurora': mural = auroraBackdrop(); break;
+			case 'Snow Day': mural = snowTexture(); break;
+			case 'Retro 80s': case 'Sunset Blvd': mural = sunsetBackdrop(); break;
 		}
-		[env.floorCenter.material, env.floorLeft.material, env.floorRight.material, env.backWall.material, env.sideLeft.material, env.sideRight.material].forEach(function(m){ m.roughness=0.85; m.metalness=0.05; if (m.emissive) m.emissive.setHex(0x000000); });
-		env.floorCenter.material.map = floorMap; env.floorCenter.material.color.setHex(floorColor); env.floorCenter.material.needsUpdate=true;
-		env.floorLeft.material.map = floorMap; env.floorLeft.material.color.setHex(floorColor); env.floorLeft.material.needsUpdate=true;
-		env.floorRight.material.map = floorMap; env.floorRight.material.color.setHex(floorColor); env.floorRight.material.needsUpdate=true;
-		env.backWall.material.map = wallMap; env.backWall.material.color.setHex(wallColor); env.backWall.material.needsUpdate=true;
-		env.sideLeft.material.map = wallMap; env.sideLeft.material.color.setHex(wallColor); env.sideLeft.material.needsUpdate=true;
-		env.sideRight.material.map = wallMap; env.sideRight.material.color.setHex(wallColor); env.sideRight.material.needsUpdate=true;
-		// Give walls a reasonable tiling so patterns aren't overly stretched
-		if (wallMap) { try { wallMap.wrapS = wallMap.wrapT = THREE.RepeatWrapping; wallMap.repeat.set(3, 1.5); wallMap.needsUpdate = true; } catch(e){} }
-		env.backdrop.material.map = backdropMap; env.backdrop.material.color.setHex(backdropColor); env.backdrop.material.needsUpdate=true;
+		if (env.backdrop && !env.backdropMaterial) {
+			// Give the backdrop its own material so retexturing it doesn't
+			// repaint every wall in the house.
+			env.backdropMaterial = env.backdrop.material.clone();
+			env.backdrop.material = env.backdropMaterial;
+		}
+		if (env.backdropMaterial) {
+			var m = env.backdropMaterial;
+			// Only ever dispose a mural we made -- falling back to the house
+			// wall map means sharing a texture the whole house is using.
+			if (env.muralTex) { try { env.muralTex.dispose(); } catch(e){} }
+			env.muralTex = mural;
+			if (mural) { mural.encoding = THREE.sRGBEncoding; mural.repeat.set(2, 1); mural.needsUpdate = true; }
+			var wallMat = BowlAlley.materials().wall;
+			m.map = mural || wallMat.map;
+			m.color.copy(wallMat.color);
+			m.needsUpdate = true;
+		}
 		env.key = themeKey;
-		// Cache wall maps for animation later
-		env._wallMaps = [env.backWall.material.map, env.sideLeft.material.map, env.sideRight.material.map];
 	}
 
 	THEMES = [
@@ -339,35 +264,39 @@ function applyTheme(index) {
 	if (!THEMES || !THEMES.length) return;
 	var t = THEMES[Math.abs(index|0) % THEMES.length];
 	if (t && typeof t.apply === 'function') {
-		try { t.apply(); applyThemeToAlleys(t.name); } catch(e){}
+		try { t.apply(); applyThemeLighting(t.name); } catch(e){}
 	}
 }
 
-function applyThemeToAlleys(themeName) {
-	if (!players || !players.length) return;
-	var tint = 0x444444;
+// Per-theme lighting rig. The alley materials come from BowlAlley.applyTheme();
+// this sets the lamps that fall on them.
+function applyThemeLighting(themeName) {
+	var pal = (typeof BowlAlley !== 'undefined') ? BowlAlley.paletteFor(themeName) : null;
+	if (!deckLight) return;
+	var warm = 0xfff0d8;
 	switch(themeName){
-		case 'Classic': tint = 0x8b5a2b; break;
-		case 'Ocean': tint = 0xbfa26a; break; // sandy warm tint
-		case 'Neon Night': tint = 0x003322; break;
-		case 'Retro 80s': tint = 0x2b0057; break;
-		case 'Cyber Grid': tint = 0x001010; break;
-		case 'Sunset Blvd': tint = 0x774444; break;
-		case 'Aurora': tint = 0x0a2b3c; break;
-		case 'Lava Lanes': tint = 0x331100; break;
-		case 'Snow Day': tint = 0xbbd5ee; break;
-		case 'Cosmic Bowl': tint = 0x110022; break;
+		case 'Neon Night': warm = 0x66ffcc; break;
+		case 'Retro 80s': warm = 0xff99ff; break;
+		case 'Cyber Grid': warm = 0x88ffcc; break;
+		case 'Aurora': warm = 0xaaffee; break;
+		case 'Lava Lanes': warm = 0xffb070; break;
+		case 'Ocean': warm = 0xcceeff; break;
+		case 'Snow Day': warm = 0xffffff; break;
+		case 'Cosmic Bowl': warm = 0xccbbff; break;
 	}
-	for (var i=0;i<players.length;i++){
-		var p = players[i]; if (!p || !p.trackMesh) continue;
-		// Only tint the track mesh; do NOT affect pins or ball
-		var target = p.trackMesh;
-		var mat = target.material;
-		if (Array.isArray(mat)) {
-			mat.forEach(function(m){ if (m && m.color) { m.color.setHex(tint); if (m.emissive) m.emissive.setHex(0x000000); m.needsUpdate = true; } });
-		} else if (mat && mat.color) {
-			mat.color.setHex(tint); if (mat.emissive) mat.emissive.setHex(0x000000); mat.needsUpdate = true;
-		}
+	deckLight.color.setHex(warm);
+	if (laneLight) laneLight.color.setHex(warm);
+	// Dark themes need the deck lamp to carry more of the load.
+	var dim = (themeName === 'Neon Night' || themeName === 'Cyber Grid'
+			|| themeName === 'Cosmic Bowl' || themeName === 'Retro 80s');
+	deckLight.intensity = dim ? 1.15 : 0.85;
+	if (laneLight) laneLight.intensity = dim ? 0.55 : 0.4;
+
+	// Fog keeps the far end of the house from reading as a flat cut-out.
+	if (scene) {
+		var fogHex = pal ? pal.pit : 0x101010;
+		if (!scene.fog) { scene.fog = new THREE.Fog(fogHex, 7.0, 26.0); }
+		else { scene.fog.color.setHex(fogHex); }
 	}
 }
 
@@ -562,17 +491,20 @@ var menuFocusIndex = -1;
 var menuScanHeld = false;
 var menuHoldStart = 0.0;
 var menuLastBackStep = 0.0;
+var menuBackScanAnnounced = false; // TTS announced flag
 var settingsItems = [];          // array of {el, key, type}
 var settingsFocusIndex = 0;
 var settingsScanHeld = false;
 var settingsHoldStart = 0.0;
 var settingsLastBackStep = 0.0;
+var settingsBackScanAnnounced = false; // TTS announced flag
 // Pause menu scan state
 var pauseMenuItems = [];
 var pauseFocusIndex = -1;
 var pauseScanHeld = false;
 var pauseHoldStart = 0.0;
 var pauseLastBackStep = 0.0;
+var pauseBackScanAnnounced = false; // TTS announced flag
 var autoScanLastTime = 0.0; // Added for Auto Scan support
 // Enter hold to pause
 var enterHeld = false;
@@ -614,6 +546,29 @@ function init() {
 	dirLight.position.set(-0.4, 0.6, 1.0);
 	scene.add(dirLight);
 
+	// Overhead lamp on the pin deck. This is the only shadow caster: it gives
+	// the pins and the ball a contact shadow, which is most of what sells the
+	// deck as a real surface.
+	deckLight = new THREE.SpotLight(0xfff0d8, 0.85, 6.0, 0.62, 0.55, 1.2);
+	deckLight.position.set(0.0, 2.0, -0.35);
+	deckLight.target.position.set(0.0, BASE_HEIGHT, -0.45);
+	deckLight.castShadow = true;
+	deckLight.shadow.mapSize.width = 1024;
+	deckLight.shadow.mapSize.height = 1024;
+	deckLight.shadow.camera.near = 0.5;
+	deckLight.shadow.camera.far = 5.0;
+	deckLight.shadow.bias = -0.0016;
+	scene.add(deckLight);
+	scene.add(deckLight.target);
+
+	// A softer lamp further up the lane so the ball isn't lit from nowhere on
+	// its way down. No shadow: one shadow map is plenty here.
+	laneLight = new THREE.SpotLight(0xfff0d8, 0.4, 8.0, 0.75, 0.7, 1.2);
+	laneLight.position.set(0.0, 2.2, 2.0);
+	laneLight.target.position.set(0.0, BASE_HEIGHT, 1.6);
+	scene.add(laneLight);
+	scene.add(laneLight.target);
+
 	touchPoint = new THREE.Vector2();
 	pickPoint = new THREE.Vector3();
 	dragPoint = new THREE.Vector3();
@@ -625,10 +580,12 @@ function init() {
 
 	container = document.getElementById("container");
 
-	renderer = new THREE.WebGLRenderer({ antialias: false });
+	renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.setPixelRatio(window.devicePixelRatio);
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	renderer.gammaOutput = true;
+	renderer.shadowMap.enabled = true;
+	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 	container.appendChild(renderer.domElement);
 
 	scoresDiv = document.createElement("div");
@@ -678,10 +635,8 @@ function init() {
 
 	var loader = new THREE.GLTFLoader();
 	loader.load("res/scene.gltf", (gltf) => {
-		trackProtoMesh = gltf.scene.children.find(child => child.name == "Track");
-		if (!trackProtoMesh) {
-			throw new Error("Track not found");
-		}
+		// The model's "Track" node is no longer used: the alley is built
+		// procedurally in alley.js so it lines up with the collision shapes.
 		ballProtoMesh = gltf.scene.children.find(child => child.name == "Ball");
 		if (!ballProtoMesh) {
 			throw new Error("Ball not found");
@@ -692,7 +647,6 @@ function init() {
 		}
 
 		var maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-		setAnisotropy(trackProtoMesh, maxAnisotropy);
 		setAnisotropy(ballProtoMesh, maxAnisotropy);
 		setAnisotropy(pinProtoMesh, maxAnisotropy);
 
@@ -726,46 +680,176 @@ function addPlayer(id, local, slot) {
 	group.position.x = slot * TRACK_DISTANCE;
 	scene.add(group);
 
-	var trackMesh = trackProtoMesh.clone();
-	// Hide the original alley/track object; we now use the themed environment floor/walls
-	trackMesh.visible = false;
-	group.add(trackMesh);
+	// The alley itself is part of the house (see ensureThemeEnvironment), so a
+	// player only contributes its ball and pins. Hide the decorative rack on
+	// whichever lane this player takes over.
+	if (typeof BowlAlley !== 'undefined') {
+		BowlAlley.setDecorPinsVisible(slot, false);
+	}
 
 	var ballMesh = ballProtoMesh.clone();
+	ballMesh.castShadow = true;
 	group.add(ballMesh);
 
 	var pinMeshes = new Array(PIN_COUNT);
 	for (var i = 0; i < pinMeshes.length; i++) {
 		var pinMesh = pinProtoMesh.clone();
-		// Force pins to be bright white with very subtle lighting
-		pinMesh.traverse(function(obj){
-			if (obj.isMesh && obj.material) {
-				var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-				for (var mi=0; mi<mats.length; mi++) {
-					var m = mats[mi];
-					if (!m) continue;
-					if (m.color) m.color.setHex(0xffffff);
-					if ('metalness' in m) m.metalness = 0.0;
-					if ('roughness' in m) m.roughness = 0.35;
-					if ('emissive' in m && m.emissive) m.emissive.setHex(0x0a0a0a); // very subtle glow to keep readability
-					if ('envMapIntensity' in m) m.envMapIntensity = 0.05;
-					m.needsUpdate = true;
-				}
-			}
-		});
+		stylePin(pinMesh);
+		pinMesh.castShadow = true;
 		group.add(pinMesh);
 		pinMeshes[i] = pinMesh;
 	}
 
 	var player = new Player(id, local, physics, scores, ballMesh, pinMeshes);
-	player.trackMesh = trackMesh;
+	player.slot = slot;
+	buildReflections(player, group);
 
 	if (!players) {
 		players = new Array();
 	}
 	players.push(player);
 
+	// After the push: applyEnvMapToActors walks the player list.
+	applyEnvMapToActors();
+
 	return player;
+}
+
+// Bright polished-white pin finish; the GLTF texture supplies the red bands.
+function stylePin(pinMesh) {
+	pinMesh.traverse(function(obj){
+		if (!obj.isMesh || !obj.material) return;
+		var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+		for (var mi = 0; mi < mats.length; mi++) {
+			var m = mats[mi];
+			if (!m) continue;
+			if (m.color) m.color.setHex(0xffffff);
+			if ('metalness' in m) m.metalness = 0.0;
+			// Pins are lacquered, so they hold a tight highlight.
+			if ('roughness' in m) m.roughness = 0.22;
+			if ('emissive' in m && m.emissive) m.emissive.setHex(0x060606);
+			if ('envMapIntensity' in m) m.envMapIntensity = 0.5;
+			m.needsUpdate = true;
+		}
+	});
+}
+
+// Push the house's environment map onto the ball and pins so they pick up the
+// room instead of looking like matte plastic.
+function applyEnvMapToActors() {
+	if (typeof BowlAlley === 'undefined') return;
+	var env = BowlAlley.getEnvMap();
+	if (!env || !players) return;
+	players.forEach(function(p){
+		[p.ballMesh].concat(p.pinMeshes || []).forEach(function(root){
+			if (!root) return;
+			root.traverse(function(obj){
+				if (!obj.isMesh || !obj.material) return;
+				var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+				mats.forEach(function(m){
+					if (!m || !('envMap' in m)) return;
+					m.envMap = env;
+					m.needsUpdate = true;
+				});
+			});
+		});
+	});
+}
+
+// --- lane sheen -------------------------------------------------------------
+// A freshly oiled lane throws a bright smear back toward the bowler under
+// anything standing on it. A true mirror would mean either a render target or
+// mirrored geometry below an opaque lane -- and geometry below the lane has to
+// skip the depth test to be visible at all, which makes it punch through the
+// kickbacks from any angle but one. Instead each object gets a flat quad lying
+// *in* the lane plane. It can't poke through anything, it depth-tests correctly
+// from every camera, and at this grazing angle it reads the same.
+const SHEEN_STRENGTH = 0.55;
+const SHEEN_FADE_HEIGHT = 0.35;   // sheen dies out as things fly up off the lane
+
+var sheenGradientTex = null;
+
+function getSheenGradient() {
+	if (sheenGradientTex) return sheenGradientTex;
+	var c = document.createElement('canvas');
+	c.width = 16; c.height = 128;
+	var ctx = c.getContext('2d');
+	// Row 0 is v=1, which is the end of the quad that touches the object.
+	var g = ctx.createLinearGradient(0, 0, 0, 128);
+	g.addColorStop(0.00, 'rgba(255,255,255,0.85)');
+	g.addColorStop(0.25, 'rgba(255,255,255,0.42)');
+	g.addColorStop(0.60, 'rgba(255,255,255,0.13)');
+	g.addColorStop(1.00, 'rgba(255,255,255,0.0)');
+	ctx.fillStyle = g;
+	ctx.fillRect(0, 0, 16, 128);
+	// Taper the sides so the streak has soft edges rather than hard corners.
+	var side = ctx.createLinearGradient(0, 0, 16, 0);
+	side.addColorStop(0.0, 'rgba(0,0,0,1)');
+	side.addColorStop(0.5, 'rgba(0,0,0,0)');
+	side.addColorStop(1.0, 'rgba(0,0,0,1)');
+	ctx.globalCompositeOperation = 'destination-out';
+	ctx.fillStyle = side;
+	ctx.fillRect(0, 0, 16, 128);
+	sheenGradientTex = new THREE.CanvasTexture(c);
+	sheenGradientTex.needsUpdate = true;
+	return sheenGradientTex;
+}
+
+const SHEEN_LENGTH = 1.0;   // geometry length; scaled per frame
+
+function makeSheen(width, colorHex) {
+	var mat = new THREE.MeshBasicMaterial({
+		map: getSheenGradient(),
+		color: colorHex,
+		transparent: true,
+		opacity: SHEEN_STRENGTH,
+		blending: THREE.AdditiveBlending,
+		depthWrite: false,
+		fog: false
+	});
+	var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(width, SHEEN_LENGTH), mat);
+	// Lie flat in the lane plane, a hair above it so it never z-fights.
+	mesh.rotation.x = -Math.PI / 2;
+	mesh.visible = false;
+	return mesh;
+}
+
+function buildReflections(player, group) {
+	player.ballSheen = makeSheen(2.1 * BALL_RADIUS, 0xffffff);
+	group.add(player.ballSheen);
+	player.pinSheens = player.pinMeshes.map(function(){
+		var s = makeSheen(2.0 * PIN_RADIUS_MAX, 0xffffff);
+		group.add(s);
+		return s;
+	});
+}
+
+// Lay the streak on the lane running from the object back toward the bowler.
+// After the -90deg X rotation the quad's local +Y points at -Z, so v=1 (the
+// bright end of the gradient) lands at the far edge -- put that edge on the
+// object and the streak trails towards the camera.
+function syncSheen(sheen, source, visible, radius) {
+	if (!sheen) return;
+	if (!visible) { sheen.visible = false; return; }
+	var lift = Math.max(0.0, source.position.y - BASE_HEIGHT - radius);
+	var fade = 1.0 - lift / SHEEN_FADE_HEIGHT;
+	if (fade <= 0.02) { sheen.visible = false; return; }
+
+	// Taller objects throw a longer streak; a pin on its side barely smears.
+	var height = Math.max(0.04, source.position.y - BASE_HEIGHT);
+	var len = Math.min(0.75, 2.6 * height);
+	sheen.scale.set(1.0, len / SHEEN_LENGTH, 1.0);
+	sheen.position.set(source.position.x, BASE_HEIGHT + 0.0012,
+			source.position.z + len * 0.5);
+	sheen.visible = true;
+	sheen.material.opacity = SHEEN_STRENGTH * fade;
+}
+
+// Only draw sheen on the polished lane: a streak floating over a gutter or the
+// pit would read as a bug.
+function overLane(pos, radius) {
+	return Math.abs(pos.x) < (LANE_HALF_WIDTH - radius)
+			&& pos.z < TRACK_START_Z && pos.z > LANE_END_Z + radius;
 }
 
 function removePlayer(id) {
@@ -776,6 +860,10 @@ function removePlayer(id) {
 		var player = players[i];
 		if (player.id === id) {
 			scene.remove(player.ballMesh.parent);
+			// Hand the lane back to its decorative pin rack.
+			if (typeof BowlAlley !== 'undefined') {
+				BowlAlley.setDecorPinsVisible(player.slot, true);
+			}
 			players.splice(i, 1);
 			return;
 		}
@@ -837,7 +925,7 @@ function updateImitation(imitation, dt) {
 	imitation.player.physics.positionBall(position, false);
 	imitation.player.physics.releaseBall(velocity, angle);
 	// SFX: ball rolling for imitation throws too
-	playRollingSound();
+	playSfx('sound/rolling-ball.wav', 1.0);
 }
 
 function initScene() {
@@ -853,6 +941,52 @@ function initScene() {
 	// Keyboard: Spacebar to move ball left/right across the lane
 	window.addEventListener("keydown", onDocumentKeyDown, false);
 	window.addEventListener("keyup", onDocumentKeyUp, false);
+
+	// Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+	document.addEventListener('narbe-input-cancelled', function(e) {
+		if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+			var wasMenuHeld = menuScanHeld;
+			var wasSettingsHeld = settingsScanHeld;
+			var wasPauseHeld = pauseScanHeld;
+			menuScanHeld = false;
+			menuHoldStart = 0.0;
+			menuBackScanAnnounced = false;
+			settingsScanHeld = false;
+			settingsHoldStart = 0.0;
+			settingsBackScanAnnounced = false;
+			pauseScanHeld = false;
+			pauseHoldStart = 0.0;
+			pauseBackScanAnnounced = false;
+			// If cancelled due to 'too-short', still perform forward scan in menu - user intended to press
+			if (e.detail.reason === 'too-short' && (gameState === 'menu' || gameState === 'paused')) {
+				if (settingsDiv && settingsDiv.style.display === 'flex') {
+					settingsFocusIndex = (settingsFocusIndex + 1) % settingsItems.length;
+					applySettingsFocus();
+				} else if (gameState === 'menu') {
+					menuFocusIndex = (menuFocusIndex + 1) % mainMenuItems.length;
+					applyMenuFocus();
+				} else {
+					pauseFocusIndex = (pauseFocusIndex + 1) % pauseMenuItems.length;
+					applyPauseFocus();
+				}
+			}
+		}
+		if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+			var wasEnterHeld = enterHeld;
+			enterHeld = false;
+			enterHoldStart = 0.0;
+			// If cancelled due to 'too-short', still perform select in menu - user intended to press
+			if (e.detail.reason === 'too-short' && wasEnterHeld && (gameState === 'menu' || gameState === 'paused')) {
+				if (settingsDiv && settingsDiv.style.display === 'flex') {
+					handleSettingsEnter();
+				} else if (gameState === 'menu') {
+					handleMainMenuEnter();
+				} else {
+					handlePauseMenuEnter();
+				}
+			}
+		}
+	});
 
 	// Build UI overlays
 	buildMenus();
@@ -1008,6 +1142,10 @@ function updateScene(dt) {
 		if (gameState === 'menu' && (!settingsDiv || settingsDiv.style.display !== 'flex') && menuScanHeld) {
 			var held = Math.max(0.0, now - menuHoldStart);
 			if (held >= 3.0) {
+				if (!menuBackScanAnnounced) {
+					menuBackScanAnnounced = true;
+					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
+				}
 				var stepInterval = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - menuLastBackStep) >= stepInterval) {
 					menuFocusIndex = (menuFocusIndex - 1 + mainMenuItems.length) % mainMenuItems.length;
@@ -1020,6 +1158,10 @@ function updateScene(dt) {
 		if (gameState === 'paused' && (!settingsDiv || settingsDiv.style.display !== 'flex') && pauseScanHeld) {
 			var heldP = Math.max(0.0, now - pauseHoldStart);
 			if (heldP >= 3.0) {
+				if (!pauseBackScanAnnounced) {
+					pauseBackScanAnnounced = true;
+					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
+				}
 				var stepIntervalP = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - pauseLastBackStep) >= stepIntervalP) {
 					pauseFocusIndex = (pauseFocusIndex - 1 + pauseMenuItems.length) % pauseMenuItems.length;
@@ -1032,6 +1174,10 @@ function updateScene(dt) {
 		if (settingsDiv && settingsDiv.style.display === 'flex' && settingsScanHeld) {
 			var heldS = Math.max(0.0, now - settingsHoldStart);
 			if (heldS >= 3.0) {
+				if (!settingsBackScanAnnounced) {
+					settingsBackScanAnnounced = true;
+					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
+				}
 				var stepIntervalS = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - settingsLastBackStep) >= stepIntervalS) {
 					settingsFocusIndex = (settingsFocusIndex - 1 + settingsItems.length) % settingsItems.length;
@@ -1112,30 +1258,22 @@ function updateScene(dt) {
 		}
 	}
 
-	// Animate ambient effects per theme
+	// Animate ambient effects per theme. Only the mural and the lamps move --
+	// the alley itself is fixed geometry that has to stay put under the physics.
 	if (themeEnv && themeEnv.key) {
 		var t = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
 		var k = themeEnv.key;
-		// Safe checks for maps
-		var floorMap = (themeEnv.floorCenter && themeEnv.floorCenter.material && themeEnv.floorCenter.material.map) ? themeEnv.floorCenter.material.map : null;
-		var backMap = themeEnv.backdrop && themeEnv.backdrop.material && themeEnv.backdrop.material.map;
-		var wallMaps = (themeEnv._wallMaps && themeEnv._wallMaps.filter(function(m){return !!m;})) || [];
+		var backMap = themeEnv.backdropMaterial && themeEnv.backdropMaterial.map;
 		if (k === 'Ocean') {
 			if (backMap) { backMap.offset.x = (t*0.01)%1; backMap.needsUpdate = true; }
-			if (floorMap) { floorMap.offset.x = (t*0.02)%1; floorMap.needsUpdate = true; }
-			// Gentle rolling wave across walls
-			wallMaps.forEach(function(wm, i){ wm.offset.x = (t*0.008 + i*0.1)%1; wm.needsUpdate = true; });
 			if (ambientLight) ambientLight.intensity = 0.5 + 0.05*Math.sin(t*0.6);
 		}
 		else if (k === 'Neon Night' || k === 'Cyber Grid' || k === 'Retro 80s') {
-			if (floorMap) { floorMap.offset.x = (t*0.03)%1; floorMap.needsUpdate = true; }
-			// Sweep neon patterns along walls in opposing directions
-			wallMaps.forEach(function(wm, i){ wm.offset.x = (((i%2)===0)?1:-1) * (t*0.025)%1; wm.offset.y = (t*0.005)%1; wm.needsUpdate = true; });
 			if (ambientLight) ambientLight.intensity = ((k==='Retro 80s')?0.3:0.25) + 0.05*Math.sin(t*1.2);
+			if (deckLight) deckLight.intensity = 1.15 + 0.12*Math.sin(t*1.6);
 		}
 		else if (k === 'Aurora') {
 			if (backMap) { backMap.offset.x = (t*0.005)%1; backMap.needsUpdate = true; }
-			wallMaps.forEach(function(wm){ wm.offset.y = (Math.sin(t*0.2)*0.05 + 0.05)%1; wm.needsUpdate = true; });
 			if (dirLight) {
 				var hue = (0.5 + 0.1*Math.sin(t*0.3)); // 0..1-ish
 				var col = new THREE.Color().setHSL(hue, 0.6, 0.6);
@@ -1143,23 +1281,15 @@ function updateScene(dt) {
 			}
 		}
 		else if (k === 'Lava Lanes') {
-			if (floorMap) { floorMap.offset.x = (t*0.02)%1; floorMap.needsUpdate = true; }
-			// Lava glow scrolling diagonally on walls
-			wallMaps.forEach(function(wm){ wm.offset.x = (t*0.03)%1; wm.offset.y = (t*0.01)%1; wm.needsUpdate = true; });
-			var emissHex = (0x22 + Math.floor(0x11 * (1+Math.sin(t*5.0))*0.5))<<16;
-			['floorCenter','floorLeft','floorRight'].forEach(function(key){
-				var m = themeEnv[key] && themeEnv[key].material;
-				if (m && m.emissive) m.emissive.setHex(emissHex);
-			});
+			// Flicker the deck lamp like firelight.
+			if (deckLight) deckLight.intensity = 0.85 + 0.2*Math.sin(t*5.0) + 0.06*Math.sin(t*13.0);
 		}
 		else if (k === 'Snow Day') {
 			if (backMap) { backMap.offset.y = (t*-0.02)%1; backMap.needsUpdate = true; }
-			wallMaps.forEach(function(wm){ wm.offset.y = (t*-0.01)%1; wm.needsUpdate = true; });
 			if (ambientLight) ambientLight.intensity = 0.6 + 0.03*Math.sin(t*0.8);
 		}
 		else if (k === 'Cosmic Bowl') {
 			if (backMap) { backMap.offset.x = (t*0.01)%1; backMap.needsUpdate = true; }
-			wallMaps.forEach(function(wm){ wm.offset.x = (t*0.012)%1; wm.needsUpdate = true; });
 		}
 	}
 
@@ -1193,6 +1323,10 @@ function syncView(player) {
 	} else {
 		player.ballMesh.visible = false;
 	}
+	syncSheen(player.ballSheen, player.ballMesh,
+			player.ballMesh.visible && overLane(player.ballMesh.position, BALL_RADIUS),
+			BALL_RADIUS);
+
 	for (var i = 0; i < player.physics.pinBodies.length; i++) {
 		var pinBody = player.physics.pinBodies[i];
 		var pinMesh = player.pinMeshes[i];
@@ -1201,6 +1335,11 @@ function syncView(player) {
 			syncMeshToBody(pinMesh, pinBody);
 		} else {
 			pinMesh.visible = false;
+		}
+		if (player.pinSheens) {
+			syncSheen(player.pinSheens[i], pinMesh,
+					pinMesh.visible && overLane(pinMesh.position, PIN_RADIUS_MAX),
+					0.0);
 		}
 	}
 
@@ -1256,10 +1395,19 @@ function handleGameInputDown() {
 	if (localPlayer.physics.simulationActive) return;
 	if (pickingBall || positioningBall || rollingBall) return;
 
-	// The ball position is confirmed on RELEASE in both modes -- see
-	// handleGameInputUp(). Confirming on the press locked the ball the instant
-	// the switch went down, which gave the player no way to let the scan carry
-	// the ball to where they actually wanted it.
+	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
+	var isAuto = (sm && sm.getSettings().autoScan);
+
+	// AUTO SCAN: Input confirms position -> go to Aim
+	if (isAuto && !aimingMode && !charging) {
+		aimingMode = true;
+		playSfx('sound/select.wav', 0.6);
+		// Reset aim angle to center
+		currentAimAngle = 0.0;
+		ensureAimHelper(localPlayer);
+		updateAimHelper(localPlayer);
+		return;
+	}
 
 	// AIMING: Input starts charging (if not already)
 	if (aimingMode && !charging) {
@@ -1278,15 +1426,11 @@ function handleGameInputUp() {
 	if (localPlayer.physics.simulationActive) return;
 
 	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
+	var isAuto = (sm && sm.getSettings().autoScan);
 
-	// Release confirms the ball position -> go to Aim. Release rather than press
-	// in BOTH modes: the ball keeps scanning for as long as the switch is held,
-	// so wherever it has got to when you let go is where it stays.
-	if (!aimingMode && !charging) {
+	// MANUAL: Input release confirms position -> go to Aim
+	if (!isAuto && !aimingMode && !charging) {
 		aimingMode = true;
-		// No select.wav ever shipped with this game, so this confirmation was
-		// silent. SafeAudio synthesises the blip instead of us adding an asset.
-		if (SFX_ENABLED && window.SafeAudio) window.SafeAudio.play('select', 0.6);
 		currentAimAngle = 0.0;
 		ensureAimHelper(localPlayer);
 		updateAimHelper(localPlayer);
@@ -1310,7 +1454,7 @@ function handleGameInputUp() {
 		var velocity = BALL_VELOCITY_MIN + (BALL_VELOCITY_MAX - BALL_VELOCITY_MIN) * kPow;
 		
 		localPlayer.physics.releaseBall(velocity, currentAimAngle);
-		playRollingSound();
+		playSfx('sound/rolling-ball.wav', 1.0);
 		
 		charging = false;
 		aimingMode = false;
@@ -1421,9 +1565,7 @@ function onActionUp(clientX, clientY, time) {
 		var angle = Math.atan2(-releaseVector.x, -releaseVector.z);
 		localPlayer.physics.releaseBall(velocity, angle);
 		// SFX: ball rolling
-		if (localPlayer.physics.simulationActive) {
-			playRollingSound();
-		}
+		playSfx('sound/rolling-ball.wav', 1.0);
 	}
 
 	pickingBall = false;
@@ -1582,6 +1724,7 @@ function onDocumentKeyUp(event) {
 					applySettingsFocus();
 				}
 				settingsScanHeld = false;
+				settingsBackScanAnnounced = false;
 				return;
 			}
 			if (event.code === 'Enter') {
@@ -1601,6 +1744,7 @@ function onDocumentKeyUp(event) {
 						applyMenuFocus();
 					}
 					menuScanHeld = false;
+					menuBackScanAnnounced = false;
 				} else {
 					var heldP = Math.max(0.0, t2 - pauseHoldStart);
 					if (heldP < 3.0) {
@@ -1608,6 +1752,7 @@ function onDocumentKeyUp(event) {
 						applyPauseFocus();
 					}
 					pauseScanHeld = false;
+					pauseBackScanAnnounced = false;
 				}
 				return;
 			}
@@ -1637,11 +1782,47 @@ function onDocumentKeyUp(event) {
 		event.preventDefault();
 		// Stop tracking enter hold
 		enterHeld = false;
-		// Delegate to the same handler the mouse and touch paths use. This block
-		// used to duplicate that logic, which is how the keyboard drifted out of
-		// step with them in the first place.
-		handleGameInputUp();
-		return;
+		var localPlayer = getLocalPlayer();
+		if (!localPlayer) return;
+		if (localPlayer.physics.simulationActive) return;
+
+		// First Enter release: enter aiming mode
+		if (!aimingMode && !charging) {
+			aimingMode = true;
+			currentAimAngle = 0.0; // start centered
+			ensureAimHelper(localPlayer);
+			updateAimHelper(localPlayer);
+			return;
+		}
+
+		// If charging, release the shot
+		if (aimingMode && charging) {
+			var now = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+			// Ensure aim angle is current at release moment
+			if (aimHeld) {
+				var targetT = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 200.0) : 20.0;
+				var T = targetT; 
+				var omega = 2.0 * Math.PI / T; var tauAim = Math.max(0.0, now - aimStartTime);
+				currentAimAngle = BALL_ANGLE_MAX * Math.sin(omega * tauAim + aimPhase);
+			}
+			var held = Math.max(0.0, now - chargeStartTime);
+			var k = Math.min(1.0, held / CHARGE_TIME_MAX);
+			var kPow = Math.pow(k, CHARGE_POWER_CURVE); // non-linear power mapping
+			var velocity = BALL_VELOCITY_MIN + (BALL_VELOCITY_MAX - BALL_VELOCITY_MIN) * kPow;
+
+			// Fire!
+			localPlayer.physics.releaseBall(velocity, currentAimAngle);
+			// SFX: ball rolling
+			playSfx('sound/rolling-ball.wav', 1.0);
+
+			// Cleanup aiming state
+			charging = false;
+			aimingMode = false;
+			aimHeld = false;
+			setAimHelperVisible(localPlayer, false);
+			if (chargeBar) chargeBar.style.display = "none";
+			return;
+		}
 	}
 }
 
@@ -1670,6 +1851,8 @@ function handlePauseMenuEnter() {
 	} else if (idx === 2) { // Main Menu
 		hidePauseMenu();
 		returnToMenu();
+	} else if (idx === 3) { // Help
+		speakText('I need help');
 	}
 }
 
@@ -1896,7 +2079,7 @@ function buildMenus() {
 		ttsRow._update(); 
 	}, false);
 	var musicRow = makeRow(()=>'Music', ()=> settings.music? 'ON':'OFF', ()=>{ settings.music=!settings.music; saveSettings(); applySettings(); musicRow._update(); }, false);
-	var sfxRow = makeRow(()=>'Sound Effects', ()=> settings.sfx? 'ON':'OFF', ()=>{ settings.sfx=!settings.sfx; saveSettings(); SFX_ENABLED = !!settings.sfx; sfxRow._update(); }, false);
+	var sfxRow = makeRow(()=>'Sound Effects', ()=> settings.sfx? 'ON':'OFF', ()=>{ settings.sfx=!settings.sfx; saveSettings(); applySettings(); sfxRow._update(); }, false);
 	var voiceRow = makeRow(()=>'Voice', ()=> getVoiceName(), ()=>{ cycleVoice(); voiceRow._update(); }, false);
 	var autoScanRow = makeRow(()=>'Auto Scan', ()=> (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) ? 'ON' : 'OFF', ()=>{
 		if (window.NarbeScanManager) {
@@ -1945,7 +2128,8 @@ function buildMenus() {
 	var continueBtn = document.createElement('button'); continueBtn.textContent = 'CONTINUE GAME'; continueBtn.style = pbtnStyle; continueBtn.onclick = ()=> resumeGame();
 	var psettingsBtn = document.createElement('button'); psettingsBtn.textContent = 'SETTINGS'; psettingsBtn.style = pbtnStyle; psettingsBtn.onclick = ()=> { showSettings(); };
 	var pmenuBtn = document.createElement('button'); pmenuBtn.textContent = 'MAIN MENU'; pmenuBtn.style = pbtnStyle; pmenuBtn.onclick = ()=> { hidePauseMenu(); returnToMenu(); };
-	pbox.appendChild(ptitle); pbox.appendChild(continueBtn); pbox.appendChild(psettingsBtn); pbox.appendChild(pmenuBtn);
+	var phelpBtn = document.createElement('button'); phelpBtn.textContent = 'HELP'; phelpBtn.style = pbtnStyle; phelpBtn.onclick = ()=> { speakText('I need help'); };
+	pbox.appendChild(ptitle); pbox.appendChild(continueBtn); pbox.appendChild(psettingsBtn); pbox.appendChild(pmenuBtn); pbox.appendChild(phelpBtn);
 	pauseMenuDiv.appendChild(pbox);
 	document.body.appendChild(pauseMenuDiv);
 
@@ -1977,7 +2161,7 @@ function buildMenus() {
 	menuFocusIndex = -1;
 	// Don't apply focus initially - user must press spacebar first
 
-	pauseMenuItems = [continueBtn, psettingsBtn, pmenuBtn];
+	pauseMenuItems = [continueBtn, psettingsBtn, pmenuBtn, phelpBtn];
 	pauseFocusIndex = -1;
 	// Don't apply focus initially - user must press spacebar first
 
@@ -2115,24 +2299,13 @@ function resumeGame() {
 }
 
 function applySettings() {
-	// Music
-	if (!musicEl) {
-		musicEl = document.createElement('audio');
-		musicEl.loop = true; musicEl.volume = 0.25;
-		// Use the requested music track
-		musicEl.src = 'music/music (1).mp3';
-		document.body.appendChild(musicEl);
-	}
-	if (settings.music && userHasInteracted) { 
-		musicEl.play().catch(function(err){
-			console.log('Music playback blocked:', err);
-		}); 
-	} else { 
-		try { musicEl.pause(); } catch(e){} 
-	}
-
+	// Music disabled for now (can be re-enabled with SafeAudio later)
+	
 	// Reflect SFX toggle for helper
 	SFX_ENABLED = !!settings.sfx;
+	if (window.SafeAudio) {
+		window.SafeAudio.setEnabled(SFX_ENABLED);
+	}
 }
 
 function updatePauseUIButtonVisibility() {
@@ -2259,6 +2432,38 @@ function applyBallStyle(ballMesh, styleIdx) {
 	if (skin && typeof skin.apply === 'function') {
 		try { skin.apply(ballMesh); } catch(e) {}
 	}
+	// A bowling ball is polished, whatever it's painted with.
+	ballMesh.traverse(function(obj){
+		if (!obj.isMesh || !obj.material) return;
+		var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+		mats.forEach(function(m){
+			if (!m) return;
+			if ('roughness' in m) m.roughness = Math.min(m.roughness, 0.18);
+			if ('envMapIntensity' in m) m.envMapIntensity = 0.8;
+			m.needsUpdate = true;
+		});
+	});
+	applyEnvMapToActors();
+	// Tint the lane sheen with whatever ball the player picked.
+	if (players) {
+		players.forEach(function(p){ if (p.ballMesh === ballMesh) refreshBallSheen(p); });
+	}
+}
+
+// The sheen is built before a skin is chosen, so re-tint it on every change.
+// A dark ball throws a dark streak; a white one throws a bright streak.
+function refreshBallSheen(player) {
+	if (!player || !player.ballSheen) return;
+	var src = null;
+	player.ballMesh.traverse(function(o){
+		if (!src && o.isMesh && o.material) {
+			src = Array.isArray(o.material) ? o.material[0] : o.material;
+		}
+	});
+	if (!src || !src.color) return;
+	// Lift the tint towards white so even a black ball leaves a visible sheen.
+	player.ballSheen.material.color.copy(src.color).lerp(new THREE.Color(0xffffff), 0.55);
+	player.ballSheen.material.needsUpdate = true;
 }
 
 function applyBallColor(ballMesh, colorIdx) {
