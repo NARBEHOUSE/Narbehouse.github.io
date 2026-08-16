@@ -121,6 +121,47 @@ body {
     #main-content {
         padding-bottom: 5px;
     }
+
+    /* Note: these .setup-* overrides need !important - this media query
+       block is positioned earlier in the file than the base (desktop)
+       .setup-* rules, and at equal specificity the later rule (the desktop
+       one) would otherwise win regardless of viewport width. */
+    /* Stack instead of side-by-side (buttons-left/preview-right doesn't fit a
+       narrow screen); preview moves above the buttons via `order`, both are
+       full-width single columns. */
+    .setup-layout {
+        flex-direction: column !important;
+        gap: 15px !important;
+        padding: 0 10px !important;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .setup-menu-col {
+        grid-template-columns: 1fr !important;
+        grid-auto-rows: 64px !important;
+        width: 100% !important;
+        gap: 10px !important;
+        order: 2 !important;
+    }
+
+    .setup-menu-col .menu-button {
+        width: 100% !important;
+        height: 100%;
+        padding: 10px 16px !important;
+        margin: 0 !important;
+        font-size: var(--fit-font-size, 20px) !important;
+    }
+
+    .setup-preview-col {
+        order: 1 !important;
+    }
+
+    .preview-grid,
+    .preview-empty {
+        width: 240px !important;
+        height: 240px !important;
+    }
 }
 
 .menu-button {
@@ -151,6 +192,123 @@ body {
     transform: scale(1.05);
     box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
     border: 4px solid white;
+}
+
+/* Setup Menu + Preview Layout (Game Type menu only). Buttons sit in a fixed
+   single-column grid to the left; the preview board sits to the right at a
+   constant size. `order` controls visual placement independent of DOM order
+   so mobile can stack them (preview on top) without touching the JS. */
+.setup-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 900px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.setup-preview-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 auto;
+    order: 2;
+}
+
+/* Fixed grid (not flex-wrap): every button keeps the same cell regardless of
+   how long its label is, so a long dynamic label (e.g. a pack name) can never
+   push other buttons into a different row/position. Long labels shrink their
+   own font instead (see fitSetupButtonText in script.js). */
+.setup-menu-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: 70px;
+    gap: 12px;
+    width: 320px;
+    flex: 0 0 auto;
+    order: 1;
+}
+
+.setup-menu-col .menu-button {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.15;
+    padding: 8px 16px;
+    overflow: hidden;
+    box-sizing: border-box;
+    /* Set/overridden per-button by fitSetupButtonText() in script.js */
+    font-size: var(--fit-font-size, 24px);
+}
+
+.preview-label {
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+/* Same fixed footprint as .preview-grid so the "not enough cards" state
+   doesn't collapse the preview box down to just its text. */
+.preview-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 360px;
+    height: 360px;
+    box-sizing: border-box;
+    color: rgba(255,255,255,0.85);
+    font-size: 16px;
+    font-style: italic;
+    padding: 30px 20px;
+    text-align: center;
+}
+
+/* Fixed footprint (not aspect-ratio/max-width relative): the box itself
+   never resizes when the board dimensions change (4x4 vs 6x6) - only the
+   cells inside it get denser/smaller. Keeps the preview visually stationary. */
+.preview-grid {
+    display: grid;
+    gap: 6px;
+    width: 360px;
+    height: 360px;
+    flex-shrink: 0;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
+
+.preview-cell {
+    background-color: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    min-width: 0;
+    min-height: 0;
+}
+
+.preview-cell img {
+    max-width: 85%;
+    max-height: 85%;
+    object-fit: contain;
+    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.3));
 }
 
 /* Grid Styles */

@@ -31,9 +31,12 @@ const state = {
     setup: {
         categoryIndex: 0,
         boardSizeIndex: 0,
-        difficultyIndex: 0, 
+        difficultyIndex: 0,
         categories: [],
         boardSizes: [],
+        previewSignature: null,
+        previewCards: [],
+        previewDims: null,
         difficulties: [
             { id: '10000', label: 'Easy (10s)', tts: 'Easy 10 Second Reveal' },
             { id: '5000', label: 'Medium (5s)', tts: 'Medium 5 Second Reveal' },
@@ -743,6 +746,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Settings", action: () => showPauseSettings() },
         { text: "Return to Menu", action: () => showMainMenu() },
+        { text: "Help", action: () => speak("I need help") },
         { text: "Exit", action: () => {
              speak("Exiting to Hub");
              setTimeout(() => {
@@ -1124,6 +1128,101 @@ function updateBoardSizes() {
     }
 }
 
+// --- Setup Preview (mini board preview of the current pack/category/board size) ---
+function getSetupPreviewSignature() {
+    const size = state.setup.boardSizes[state.setup.boardSizeIndex];
+    const sizeId = size ? size.id : null;
+    return `${state.packs[state.currentPackIndex]}|${state.category}|${sizeId}`;
+}
+
+function getSetupPreviewCards(count) {
+    const cats = state.assets.categories || {};
+    let pool = [];
+    if (state.category === 'All') {
+        Object.keys(cats).forEach(k => {
+            if (Array.isArray(cats[k])) pool = pool.concat(cats[k]);
+        });
+    } else if (Array.isArray(cats[state.category])) {
+        pool = [...cats[state.category]];
+    }
+    if (pool.length === 0 || count <= 0) return [];
+
+    const shuffle = arr => {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    };
+
+    // Fill from independently shuffled passes over the pool (rather than one
+    // shuffle + modulo wrap) so that when the pool is smaller than the board,
+    // repeats land in random positions instead of mirroring a fixed pattern
+    // that could look like the real match-pairs layout.
+    const result = [];
+    while (result.length < count) {
+        const remaining = count - result.length;
+        const batch = shuffle([...pool]).slice(0, Math.min(remaining, pool.length));
+        result.push(...batch);
+    }
+    return shuffle(result);
+}
+
+function ensureSetupPreview() {
+    const sig = getSetupPreviewSignature();
+    if (state.setup.previewSignature === sig) return;
+
+    state.setup.previewSignature = sig;
+    const size = state.setup.boardSizes[state.setup.boardSizeIndex];
+    if (size && size.id) {
+        const [rows, cols] = size.id.split('x').map(Number);
+        state.setup.previewDims = { rows, cols };
+        state.setup.previewCards = getSetupPreviewCards(rows * cols);
+    } else {
+        state.setup.previewDims = null;
+        state.setup.previewCards = [];
+    }
+}
+
+function renderSetupPreview(hostEl) {
+    ensureSetupPreview();
+    hostEl.innerHTML = '';
+
+    const label = document.createElement('div');
+    label.className = 'preview-label';
+    label.innerText = 'Preview';
+    hostEl.appendChild(label);
+
+    const dims = state.setup.previewDims;
+    const cards = state.setup.previewCards;
+
+    if (!dims || cards.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'preview-empty';
+        msg.innerText = 'Not enough cards to preview';
+        hostEl.appendChild(msg);
+        return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'preview-grid';
+    grid.style.gridTemplateColumns = `repeat(${dims.cols}, 1fr)`;
+    grid.style.gridTemplateRows = `repeat(${dims.rows}, 1fr)`;
+
+    const defaultPackAssetPath = getPackAssetPath();
+    cards.forEach(card => {
+        const cell = document.createElement('div');
+        cell.className = 'preview-cell';
+        const img = document.createElement('img');
+        img.src = resolveAsset(buildCardImagePath(card, defaultPackAssetPath));
+        img.alt = (card.altTitle && card.altTitle.trim() !== '') ? card.altTitle : (card.title || '');
+        cell.appendChild(img);
+        grid.appendChild(cell);
+    });
+
+    hostEl.appendChild(grid);
+}
+
 function updateSetupMenu() {
     menus.setup = [
         { 
@@ -1234,8 +1333,8 @@ function startChallengePlusSetup() {
     state.players = 1;
     
     // Generate Levels
-    // Progression: Go through all grid sizes at each time level first
-    // e.g., 4x4@10s, 4x5@10s, 5x6@10s, 6x6@10s, then 4x4@5s, 4x5@5s, etc.
+    // Levels progress through all board sizes first, then time decreases
+    // Example: 4x4@10s, 4x5@10s, 5x6@10s, 6x6@10s, then 4x4@5s, 4x5@5s, etc.
     state.challengePlus.levels = [];
     const sizes = ['4x4', '4x5', '5x6', '6x6'];
     const times = [10000, 5000, 3000, 1000];
@@ -1245,7 +1344,8 @@ function startChallengePlusSetup() {
     // For simplicity, we add all, but startGame will handle (or fail) if not enough cards.
     // Ideally we filter sizes based on available count in 'All'.
     
-    // Loop times first, then sizes - this way we complete all sizes at 10s, then all at 5s, etc.
+    // Loop through times first (outer), then sizes (inner)
+    // This makes sizes increase within each time tier before time decreases
     times.forEach(time => {
         sizes.forEach(size => {
              state.challengePlus.levels.push({ size, time });
@@ -1478,6 +1578,20 @@ function removeActiveStyle(btn) {
     btn.style.boxShadow = '';
 }
 
+// Shrink a setup-menu button's font until its (possibly long/dynamic) label
+// fits inside its fixed-size grid cell, instead of letting it wrap/grow and
+// push other buttons around.
+function fitSetupButtonText(btn) {
+    const maxFont = 24;
+    const minFont = 12;
+    let size = maxFont;
+    btn.style.setProperty('--fit-font-size', size + 'px');
+    while (size > minFont && btn.scrollHeight > btn.clientHeight + 1) {
+        size -= 1;
+        btn.style.setProperty('--fit-font-size', size + 'px');
+    }
+}
+
 function renderMenu() {
     // Hide game specific displays
     const scoreDisplay = document.getElementById('score-display');
@@ -1525,12 +1639,27 @@ function renderMenu() {
 
     const items = menus[state.menuState];
     const isSettings = state.menuState === 'settings';
+    const isSetup = state.menuState === 'setup';
 
     let buttonContainer = container;
     if (isSettings) {
         buttonContainer = document.createElement('div');
         buttonContainer.className = 'menu-grid';
         container.appendChild(buttonContainer);
+    } else if (isSetup) {
+        const layout = document.createElement('div');
+        layout.className = 'setup-layout';
+        container.appendChild(layout);
+
+        // Preview goes first so it renders above the buttons (column layout)
+        const previewCol = document.createElement('div');
+        previewCol.className = 'setup-preview-col';
+        layout.appendChild(previewCol);
+        renderSetupPreview(previewCol);
+
+        buttonContainer = document.createElement('div');
+        buttonContainer.className = 'setup-menu-col';
+        layout.appendChild(buttonContainer);
     }
 
 
@@ -1593,7 +1722,14 @@ function renderMenu() {
 
         buttonContainer.appendChild(btn);
     });
-    
+
+    // Setup buttons sit in fixed grid cells so a long label (e.g. a long pack
+    // name) never reflows/shifts the other buttons; instead its own font
+    // shrinks to fit the fixed cell.
+    if (isSetup) {
+        buttonContainer.querySelectorAll('.menu-button').forEach(fitSetupButtonText);
+    }
+
     // Only announce if we have a valid selection
     if (items.length > 0 && state.menuIndex !== -1) {
         const item = items[state.menuIndex];
@@ -1844,6 +1980,17 @@ function updateChallengeStatus(text) {
     }
 }
 
+// Resolve a card's raw image path relative to its pack/category folder
+function buildCardImagePath(card, defaultPackAssetPath) {
+    if (!card.image) return '';
+    if (card.image.startsWith('http') || card.image.startsWith('data:')) return card.image;
+    if (card.image.startsWith('packs/') || card.image.startsWith('assets/')) return card.image;
+
+    const cardPackPath = card._packBasePath || defaultPackAssetPath;
+    const categoryFolder = card._categoryFolder ? card._categoryFolder + '/' : '';
+    return cardPackPath + categoryFolder + card.image;
+}
+
 function generateGrid() {
     state.soundMap = {}; // Clear sound map to prevent ghost sounds
     const totalCells = state.rows * state.cols;
@@ -1893,20 +2040,8 @@ function generateGrid() {
         const name = card.title || "Untitled";
         // Use card's specific pack path if available (for __ALL__ mode), otherwise use current pack path
         const cardPackPath = card._packBasePath || defaultPackAssetPath;
-        // Use category folder if available
-        const categoryFolder = card._categoryFolder ? card._categoryFolder + '/' : '';
-        let imagePath = '';
-        if (card.image) {
-            if (card.image.startsWith('http') || card.image.startsWith('data:')) {
-                imagePath = card.image;
-            } else if (card.image.startsWith('packs/') || card.image.startsWith('assets/')) {
-                imagePath = card.image;
-            } else {
-                // Build path: packs/packname/categoryname/filename
-                imagePath = cardPackPath + categoryFolder + card.image;
-            }
-        }
-        
+        const imagePath = buildCardImagePath(card, defaultPackAssetPath);
+
         const altTitle = card.altTitle || "";
         cards.push({ name, image: imagePath, altTitle, _packBasePath: cardPackPath, _categoryFolder: card._categoryFolder });
         cards.push({ name, image: imagePath, altTitle, _packBasePath: cardPackPath, _categoryFolder: card._categoryFolder });
