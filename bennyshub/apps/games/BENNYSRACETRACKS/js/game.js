@@ -180,6 +180,27 @@ RT.game = (function () {
 
   function resetProgress() {
     U.save('progress', { car: 1, motorcycle: 1, spaceship: 1 });
+    U.save('stars', {});
+  }
+
+  /* Optional Race stars, stored as one bitmask of levels per vehicle. */
+  function getStars() {
+    const v = U.load('stars', null);
+    return (v && typeof v === 'object') ? v : {};
+  }
+  function hasStar(vehKey, level) {
+    return !!((getStars()[vehKey] || 0) & (1 << (level - 1)));
+  }
+  function recordStar(vehKey, level) {
+    const all = getStars();
+    all[vehKey] = (all[vehKey] || 0) | (1 << (level - 1));
+    U.save('stars', all);
+  }
+  function starCount(vehKey) {
+    const mask = getStars()[vehKey] || 0;
+    let n = 0;
+    for (let i = 0; i < MAX_LEVEL; i++) if (mask & (1 << i)) n++;
+    return n;
   }
 
   function bestTime(vehKey, level) {
@@ -298,6 +319,7 @@ RT.game = (function () {
       powerups: [],
       rings: [],
       traffic: [],
+      star: null,
       finishS: cfg.mode === 'casual' ? Infinity : cfg.raceLength - 45,
       outroFrom: 0,
       finishArch: null,
@@ -341,16 +363,69 @@ RT.game = (function () {
       s += cfg.groupGap * r.range(0.85, 1.25);
     }
 
-    /* Power-ups, on lane centres so they're reachable with one switch. */
-    const puKinds = cfg.mode === 'casual' ? ['boost', 'magnet', 'shield'] : ['boost', 'shield', 'boost'];
-    for (let ps = 320; ps < cfg.raceLength - 160; ps += cfg.powerupGap * r.range(0.8, 1.25)) {
+    /* Pickup slots.
+     *
+     * Power-ups used to be dropped at a blind interval in a random lane, which
+     * regularly buried them inside a hazard or put them in a lane the player
+     * could not legally occupy. Instead, every candidate slot is the *midpoint
+     * of a gap* between two consecutive obstacle clusters, and the lane is one
+     * that is clear in both the cluster before and the cluster after — so a
+     * pickup is always reachable, and grabbing it never forces a crash. */
+    const slots = [];
+    for (let i = 0; i < L.groups.length - 1; i++) {
+      const a = L.groups[i], b = L.groups[i + 1];
+      if (b.s - a.s < 55) continue;                    // gap too tight to be fair
+      const free = [];
+      for (let lane = 0; lane < LANE_COUNT; lane++) {
+        if (!a.blocked[lane] && !b.blocked[lane]) free.push(lane);
+      }
+      if (!free.length) continue;
+      slots.push({ s: (a.s + b.s) / 2, lanes: free });
+    }
+
+    const takeSlot = (index) => {
+      const slot = slots[index];
+      if (!slot || slot.used) return null;
+      slot.used = true;
+      return { s: slot.s, lane: r.pick(slot.lanes) };
+    };
+
+    /* Power-ups. Magnet is Cruise-only: in a Race there is nothing to attract,
+     * so it would be a dead pickup. */
+    const puKinds = cfg.mode === 'casual'
+      ? ['boost', 'magnet', 'shield', 'boost']
+      : ['boost', 'shield', 'heart', 'boost'];   // hearts only matter where you can lose one
+    // Aim for a similar number of power-ups per level however many gaps the
+    // difficulty leaves; the old fixed interval starved level 10 down to one.
+    const puWanted = cfg.mode === 'casual' ? 6 : 5;
+    const puEvery = Math.max(2, Math.floor(slots.length / puWanted));
+    for (let i = 1; i < slots.length; i += puEvery) {
+      const at = takeSlot(i);
+      if (!at) continue;
       const kind = r.pick(puKinds);
       const mesh = A.powerup(kind);
-      const lane = r.int(0, LANE_COUNT - 1);
-      const p = { s: ps, x: laneX(lane), lane: lane, kind: kind, mesh: mesh, alive: true };
+      const p = { s: at.s, x: laneX(at.lane), lane: at.lane, kind: kind, mesh: mesh, alive: true };
       world.pointAt(p.s, p.x, mesh.position);
       group.add(mesh);
       L.powerups.push(p);
+    }
+
+    /* One optional star per Race level, roughly halfway along. Collecting it in
+     * all ten unlocks a special award — it is never required, and the guidance
+     * deliberately never points at it, so it stays a bonus for players who want
+     * to look for one. */
+    if (cfg.mode === 'competitive' && slots.length) {
+      let idx = Math.floor(slots.length / 2);
+      for (let n = 0; n < slots.length && slots[idx] && slots[idx].used; n++) {
+        idx = (idx + 1) % slots.length;
+      }
+      const at = takeSlot(idx);
+      if (at) {
+        const mesh = A.star();
+        L.star = { s: at.s, x: laneX(at.lane), lane: at.lane, mesh: mesh, alive: true, bob: 0 };
+        world.pointAt(L.star.s, L.star.x, mesh.position);
+        group.add(mesh);
+      }
     }
 
     /* Stunt rings are disabled: the torus is taller than the road is wide, so
@@ -478,6 +553,7 @@ RT.game = (function () {
     };
     retire(L.powerups);
     retire(L.items);
+    if (L.star) retire([L.star]);
   }
 
   function placeFinish(L, s) {
@@ -552,7 +628,7 @@ RT.game = (function () {
       boost: 0, shieldT: 0, magnetT: 0,
       stunt: 0,
       lean: 0, bob: 0,
-      edgeHit: false, punch: 0
+      edgeHit: false, punch: 0, gotStar: false
     };
     steerHold = 0;
 
@@ -1001,12 +1077,27 @@ RT.game = (function () {
       }
     }
 
+    /* The optional star */
+    const st = layout.star;
+    if (st && st.alive && swept(st.s, 3.0) && Math.abs(st.x - player.x) < 2.2 + pHalf) {
+      st.alive = false;
+      st.mesh.visible = false;
+      player.gotStar = true;
+      player.punch = 1;
+      spawnBurst(0xffd400, 26, st.mesh.position);
+      AU.pickup(6);
+      U.speak('Star!');
+      pushHud();
+    }
+
     /* Power-ups */
     for (let i = 0; i < layout.powerups.length; i++) {
       const p = layout.powerups[i];
       if (!p.alive) continue;
       if (!swept(p.s, 2.6)) continue;
       if (Math.abs(p.x - player.x) > 1.9 + pHalf) continue;
+      // A heart at full health is left on the track rather than wasted.
+      if (p.kind === 'heart' && player.hearts >= cfg.hearts) continue;
       p.alive = false;
       p.mesh.visible = false;
       player.punch = 1;
@@ -1015,6 +1106,10 @@ RT.game = (function () {
         player.boost = 3.2; AU.boost(); U.speak('Speed boost');
       } else if (p.kind === 'shield') {
         player.shieldT = 6.0; AU.shield(); U.speak('Shield on');
+      } else if (p.kind === 'heart') {
+        player.hearts = Math.min(cfg.hearts, player.hearts + 1);
+        AU.pickup(4);
+        U.speak('Extra heart');
       } else {
         player.magnetT = 7.0; AU.shield(); U.speak('Magnet on');
       }
@@ -1321,7 +1416,10 @@ RT.game = (function () {
       placeText: cfg.rivals ? ordinal(placeOf()) : '',
       newUnlock: false,
       newBest: false,
-      finale: false
+      finale: false,
+      gotStar: !!player.gotStar,
+      stars: 0,
+      allStars: false
     };
 
     if (won) {
@@ -1330,6 +1428,11 @@ RT.game = (function () {
         result.newUnlock = recordWin(vehicleDef.key, cfg.level);
         result.newBest = recordTime(vehicleDef.key, cfg.level, elapsed);
         result.finale = cfg.level >= MAX_LEVEL;
+        // The star only counts if the level was actually finished.
+        const hadAll = starCount(vehicleDef.key) >= MAX_LEVEL;
+        if (player.gotStar) recordStar(vehicleDef.key, cfg.level);
+        result.stars = starCount(vehicleDef.key);
+        result.allStars = !hadAll && result.stars >= MAX_LEVEL;
       }
     } else {
       AU.fail();
@@ -1352,6 +1455,8 @@ RT.game = (function () {
       collected: player.collected,
       target: cfg.items,
       itemEmoji: vehicleDef.casual.emoji,
+      hasStarInLevel: !!layout.star,
+      gotStar: !!player.gotStar,
       place: cfg.rivals ? ordinal(placeOf()) : '',
       time: elapsed,
       shield: player.shieldT,
@@ -1484,6 +1589,7 @@ RT.game = (function () {
     };
     cullList(layout.items);
     cullList(layout.powerups);
+    if (layout.star) cullList([layout.star]);
   }
 
   /**
@@ -1519,6 +1625,10 @@ RT.game = (function () {
     }
     for (let i = 0; i < layout.rings.length; i++) {
       if (layout.rings[i].alive) layout.rings[i].mesh.rotation.z += dt * 0.55;
+    }
+    if (layout.star && layout.star.alive && layout.star.mesh.visible) {
+      layout.star.mesh.rotation.y += dt * 1.6;
+      layout.star.mesh.position.y = world.frameAt(layout.star.s).y + Math.sin(t * 2) * 0.4;
     }
     for (let i = 0; i < layout.items.length; i++) {
       const it = layout.items[i];
@@ -1602,6 +1712,74 @@ RT.game = (function () {
     return { overlapping, through };
   }
 
+  /**
+   * Audit every pickup against the obstacle layout: `inHazard` counts any that
+   * share a lane with a blocked cluster close enough to overlap it.
+   */
+  function debugPickups() {
+    if (!layout) return null;
+    let inHazard = 0;
+    const check = (o) => {
+      for (let i = 0; i < layout.groups.length; i++) {
+        const g = layout.groups[i];
+        if (Math.abs(g.s - o.s) > 12) continue;      // near enough to matter
+        if (g.blocked[o.lane]) return true;
+      }
+      return false;
+    };
+    for (let i = 0; i < layout.powerups.length; i++) if (check(layout.powerups[i])) inHazard++;
+    if (layout.star && check(layout.star)) inHazard++;
+    const st = layout.star;
+    return {
+      powerups: layout.powerups.length,
+      star: !!st,
+      starLane: st ? st.lane : null,
+      starAlive: st ? st.alive : false,
+      starDs: (st && player) ? Math.round(st.s - player.s) : null,
+      total: layout.powerups.length + (layout.star ? 1 : 0),
+      inHazard: inHazard
+    };
+  }
+
+  /** Nearest uncollected heart pickup ahead, for testing. */
+  function debugNextHeart() {
+    if (!layout || !player) return null;
+    let best = null, count = 0;
+    for (let i = 0; i < layout.powerups.length; i++) {
+      const p = layout.powerups[i];
+      if (p.kind !== 'heart' || !p.alive) continue;
+      count++;
+      const ds = p.s - player.s;
+      if (ds > 0 && (!best || ds < best.ds)) best = { lane: p.lane, ds: Math.round(ds) };
+    }
+    return best
+      ? { lane: best.lane, ds: best.ds, count, hearts: player.hearts, max: cfg.hearts }
+      : { lane: 2, ds: -1, count, hearts: player.hearts, max: cfg.hearts };
+  }
+
+  /** Drop a heart pickup just ahead in the player's lane, to test collection. */
+  function debugHeartAhead() {
+    if (!layout || !player || !layout.powerups.length) return null;
+    const p = layout.powerups[0];
+    p.kind = 'heart';
+    p.alive = true;
+    p.lane = player.targetLane;
+    p.x = laneX(p.lane);
+    p.s = player.s + 70;
+    p.visCache = undefined;
+    p.mesh.visible = true;
+    world.pointAt(p.s, p.x, p.mesh.position);
+    return { s: Math.round(p.s), lane: p.lane };
+  }
+
+  /** Knock a heart off, to test the heart pickup. */
+  function debugHurt() {
+    if (!player) return null;
+    player.hearts = Math.max(0, player.hearts - 1);
+    pushHud();
+    return player.hearts;
+  }
+
   /** Park a traffic vehicle right on top of the player, to test contact. */
   function debugRamTraffic() {
     if (!player || !layout || !layout.traffic.length) return null;
@@ -1627,7 +1805,8 @@ RT.game = (function () {
   /* ── Public ───────────────────────────────────────────────────────────── */
 
   return {
-    debugAlignment, debugGrantPower, debugCue, debugTraffic, debugRamTraffic,
+    debugAlignment, debugGrantPower, debugCue, debugTraffic, debugRamTraffic, debugPickups,
+    debugNextHeart, debugHurt, debugHeartAhead,
     VEHICLES, VEHICLE_ORDER, MAX_LEVEL, LANE_COUNT,
     init, loadAttract, startRun, quitToMenu, disposeRun,
     pause, resume, update,
@@ -1636,6 +1815,7 @@ RT.game = (function () {
     getCueLevel, setCueLevel, cycleCueLevel, setCueSpeech,
     setPreview,
     getProgress, unlockedFor, resetProgress, bestTime,
+    hasStar, starCount,
     levelConfig,
     callbacks
   };

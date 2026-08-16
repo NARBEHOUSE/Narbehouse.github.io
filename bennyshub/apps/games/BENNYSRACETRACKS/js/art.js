@@ -783,12 +783,41 @@ RT.art = (function () {
     d.mat.opacity = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(t * 3));
   }
 
+  /**
+   * The optional star hidden in every Race level. Deliberately a different
+   * shape language from the power-up badges — a real five-pointed star rather
+   * than a glowing sphere — so it reads as "a thing to collect" at a glance.
+   */
+  function star() {
+    const g = new THREE.Group();
+    const shape = new THREE.Shape();
+    const points = 5, outer = 1.25, inner = 0.55;
+    for (let i = 0; i < points * 2; i++) {
+      const rad = (i % 2 === 0) ? outer : inner;
+      const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+      const x = Math.cos(a) * rad, y = Math.sin(a) * rad;
+      if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+    }
+    shape.closePath();
+
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.4, bevelEnabled: false });
+    geo.center();
+    g.add(part(geo, glow(0xffd400, 0.9), { pos: [0, 2.8, 0], outline: true, outlineAngle: 40 }));
+
+    // A faint halo so it still catches the eye from a long way back.
+    g.add(part(new THREE.TorusGeometry(1.75, 0.09, 6, 20), glow(0xfff3b0, 0.8), {
+      pos: [0, 2.8, 0], cast: false
+    }));
+    return g;
+  }
+
   /** Floating badge used by every power-up, colour-coded per kind. */
   function powerup(kind) {
     const spec = {
       boost:  { col: 0xffd166 },
       shield: { col: 0x8ecae6 },
-      magnet: { col: 0xf4581f }
+      magnet: { col: 0xf4581f },
+      heart:  { col: 0xff3b6b }
     }[kind] || { col: 0xffd166 };
 
     const g = new THREE.Group();
@@ -804,6 +833,14 @@ RT.art = (function () {
       }
     } else if (kind === 'shield') {
       g.add(part(new THREE.SphereGeometry(0.66, 10, 8), glow(0xfffdf7, 1.0), { pos: [0, 2.4, 0] }));
+    } else if (kind === 'heart') {
+      // Two lobes and a point — reads as a heart even at a glance and at speed.
+      const lobe = glow(0xff5c86, 1.0);
+      g.add(part(new THREE.SphereGeometry(0.36, 10, 8), lobe, { pos: [-0.27, 2.62, 0] }));
+      g.add(part(new THREE.SphereGeometry(0.36, 10, 8), lobe, { pos: [0.27, 2.62, 0] }));
+      g.add(part(new THREE.ConeGeometry(0.56, 0.95, 8), lobe, {
+        pos: [0, 2.05, 0], rot: [Math.PI, 0, 0]
+      }));
     } else {
       g.add(part(new THREE.TorusGeometry(0.55, 0.18, 6, 16, Math.PI), glow(0xfffdf7, 1.1), { pos: [0, 2.3, 0] }));
       g.add(part(new THREE.BoxGeometry(0.2, 0.35, 0.2), glow(0xfffdf7, 1.1), { pos: [-0.55, 2.1, 0] }));
@@ -1312,7 +1349,7 @@ RT.art = (function () {
     asteroid, planet, crystalSpire, satellite,
     // gameplay props
     trafficCone, barrier, boulder, obstacleCactus, spaceMine, debrisChunk,
-    balloon, flower, artifact, powerup, itemBeacon, updateItemBeacon,
+    balloon, flower, artifact, star, powerup, itemBeacon, updateItemBeacon,
     stuntRing, finishArch, checkerStrip,
     // vehicles + fx
     buildVehicle, limb, vehicleFx, updateVehicleFx, burst, updateBurst

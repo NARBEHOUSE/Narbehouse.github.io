@@ -307,10 +307,13 @@ RT.ui = (function () {
       for (let i = 1; i <= G.MAX_LEVEL; i++) {
         const open = i <= unlocked;
         const best = G.bestTime(sel.vehicle, i);
+        const star = G.hasStar(sel.vehicle, i);
         list.push({
-          label: (open ? '' : '🔒 ') + 'Level ' + i +
+          label: (open ? '' : '🔒 ') + 'Level ' + i + (star ? ' ⭐' : '') +
                  (best ? ' <span style="opacity:.6;font-size:.8em">' + best.toFixed(1) + 's</span>' : ''),
-          speech: open ? ('Level ' + i + (best ? ', best ' + best.toFixed(1) + ' seconds' : '')) : ('Level ' + i + ', locked'),
+          speech: open
+            ? ('Level ' + i + (star ? ', star found' : '') + (best ? ', best ' + best.toFixed(1) + ' seconds' : ''))
+            : ('Level ' + i + ', locked'),
           enabled: open,
           action: () => { sel.level = i; startRun(); }
         });
@@ -442,14 +445,20 @@ RT.ui = (function () {
         list.push({ label: '🔄 Cruise Again', speech: 'Cruise again', action: startRun });
         list.push({ label: '🚗 Change Ride', speech: 'Change ride', action: () => setScreen('vehicle') });
       } else if (r.won) {
-        art = r.finale ? '👑' : '🏆';
-        title = r.finale ? 'You beat the whole game!' : 'Level ' + r.level + ' Complete!';
-        sub = r.finale
-          ? 'Every level cleared with the ' + r.vehicleName + '. Incredible driving.'
-          : (r.newUnlock ? 'Level ' + (r.level + 1) + ' is unlocked!' : 'Nice clean run.');
+        // Completing the star set is a bigger deal than clearing the level.
+        art = r.allStars ? '🌟' : (r.finale ? '👑' : '🏆');
+        title = r.allStars ? 'Every star found!'
+              : (r.finale ? 'You beat the whole game!' : 'Level ' + r.level + ' Complete!');
+        sub = r.allStars
+          ? 'All ' + G.MAX_LEVEL + ' stars collected with the ' + r.vehicleName + '. That is the hard one.'
+          : (r.finale
+              ? 'Every level cleared with the ' + r.vehicleName + '. Incredible driving.'
+              : (r.newUnlock ? 'Level ' + (r.level + 1) + ' is unlocked!' : 'Nice clean run.'));
         stats = '⏱ ' + fmtTime(r.time) + (r.newBest ? '  <span style="color:#ffd166">NEW BEST</span>' : '') +
                 (r.placeText ? '<br>🏁 Finished ' + r.placeText : '') +
-                '<br>💥 Crashes: ' + r.crashes;
+                '<br>💥 Crashes: ' + r.crashes +
+                '<br>' + (r.gotStar ? '⭐ Star found!' : '☆ Star missed') +
+                ' <span style="opacity:.65;font-size:.85em">(' + r.stars + ' / ' + G.MAX_LEVEL + ')</span>';
         if (r.level < G.MAX_LEVEL) {
           list.push({
             label: '➡️ Next Level', speech: 'Next level',
@@ -536,8 +545,10 @@ RT.ui = (function () {
     $('hudLevel').textContent = casual ? h.vehicleName : ('Level ' + h.level);
     $('hudLevel').style.display = '';
 
-    $('hudGoal').style.display = casual ? '' : 'none';
+    const showStar = !casual && h.hasStarInLevel;
+    $('hudGoal').style.display = (casual || showStar) ? '' : 'none';
     if (casual) $('hudGoal').textContent = h.itemEmoji + ' ' + h.collected + ' / ' + h.target;
+    else if (showStar) $('hudGoal').textContent = h.gotStar ? '⭐' : '☆';
 
     $('hudHearts').style.display = casual ? 'none' : '';
     if (!casual) $('hudHearts').textContent = '❤️'.repeat(Math.max(0, h.hearts)) || '—';
