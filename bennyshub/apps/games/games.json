@@ -152,6 +152,14 @@
       "path": "apps/games/BENNYSSHOWNSOUND/index.html",
       "image": "images/games/shownsound.png",
       "genres": ["Interactive", "Educational"]
+    },
+    {
+      "id": "bennysracetracks",
+      "title": "Benny's Race Tracks",
+      "description": "A 3D racing game you steer with a single switch - the game tells you which way to go with arrows, sound, and speech. Race 10 levels in a car, motorcycle, or spaceship, or pick the no-fail Cruise mode and just collect things along the way.",
+      "path": "apps/games/BENNYSRACETRACKS/index.html",
+      "image": "images/games/bennysracetrack.png",
+      "genres": ["Racing", "Arcade"]
     }
   ]
 }

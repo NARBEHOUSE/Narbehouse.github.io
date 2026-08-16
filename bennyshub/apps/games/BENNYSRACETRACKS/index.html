@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Benny's Race Tracks</title>
+<style>
+  :root {
+    --paper:   #fff8e7;   /* card stock            */
+    --paper2:  #ffeecd;   /* shaded fold           */
+    --ink:     #3b2a1c;   /* everything text       */
+    --ink2:    #7a6350;
+    --orange:  #f4581f;
+    --gold:    #ffc233;
+    --leaf:    #4ba83c;
+    --sky:     #3d9ee0;
+    --grape:   #b388eb;
+    --red:     #e63946;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #2a1d14;
+    font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif;
+    color: var(--ink);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app { position: fixed; inset: 0; }
+
+  /* ── 3D canvas ─────────────────────────────────────────────────────────── */
+  /* touch-action:none so dragging to steer never scrolls or zooms the page */
+  #canvasWrap { position: absolute; inset: 0; z-index: 0; touch-action: none; }
+  #canvasWrap canvas { display: block; width: 100%; height: 100%; }
+
+  /* ── Reusable paper surface ────────────────────────────────────────────── */
+  .paper {
+    background:
+      repeating-linear-gradient(102deg, rgba(180,150,110,.045) 0 2px, transparent 2px 7px),
+      linear-gradient(168deg, var(--paper) 0%, var(--paper2) 100%);
+    border: 4px solid var(--ink);
+    box-shadow: 0 8px 0 rgba(59,42,28,.22), 0 18px 34px rgba(0,0,0,.4);
+  }
+
+  /* ── Loading ───────────────────────────────────────────────────────────── */
+  #loading {
+    position: absolute; inset: 0; z-index: 90;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px;
+    background: linear-gradient(165deg, #ffd79a 0%, #f4a261 55%, #e76f51 100%);
+    color: var(--ink);
+    font-size: 1.7rem; font-weight: bold;
+  }
+  #loading .spinner {
+    width: 70px; height: 70px; border-radius: 50%;
+    border: 8px solid rgba(59,42,28,.2);
+    border-top-color: var(--ink);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── HUD ───────────────────────────────────────────────────────────────── */
+  #hud {
+    position: absolute; inset: 0; z-index: 10;
+    pointer-events: none; display: none; padding: 16px 20px;
+  }
+  #hud.on { display: block; }
+
+  .hudPanel {
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    padding: 6px 15px;
+    font-weight: bold;
+    color: var(--ink);
+    box-shadow: 0 5px 0 rgba(59,42,28,.25);
+  }
+
+  #hudTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  #hudLeft, #hudRight { display: flex; flex-direction: column; gap: 9px; }
+  #hudRight { align-items: flex-end; }
+
+  #hudLevel  { font-size: 1.4rem; background: var(--gold); }
+  #hudGoal   { font-size: 1.7rem; }
+  #hudHearts { font-size: 1.7rem; letter-spacing: 4px; padding: 4px 14px; }
+  #hudSpeed  { font-size: 1.25rem; }
+  #hudPlace  { font-size: 1.5rem; background: var(--orange); color: var(--paper); }
+  #hudTimer  { font-size: 1.25rem; }
+
+  #hudLanes {
+    position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%);
+    display: flex; gap: 8px;
+  }
+  .lanePip {
+    width: 46px; height: 14px;
+    background: rgba(255,248,231,.55);
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    transition: background .12s ease, transform .12s ease;
+  }
+  .lanePip.on {
+    background: var(--orange);
+    transform: scaleY(1.7);
+    box-shadow: 0 0 14px rgba(244,88,31,.75);
+  }
+
+  #hudProgressOuter {
+    position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+    width: min(780px, 86vw); height: 26px;
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: 999px; overflow: hidden;
+    box-shadow: 0 5px 0 rgba(59,42,28,.25);
+  }
+  #hudProgressBar {
+    height: 100%; width: 0%;
+    background: repeating-linear-gradient(45deg,
+      var(--gold) 0 12px, #ffd873 12px 24px);
+    border-right: 3px solid var(--ink);
+    transition: width .12s linear;
+  }
+  #hudProgressFlag {
+    position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    font-size: 1.05rem;
+  }
+
+  /* ── Direction cue (the accessibility centrepiece) ─────────────────────── */
+  #cue {
+    position: absolute; left: 50%; top: 12%; transform: translateX(-50%);
+    z-index: 12; pointer-events: none;
+    display: none; flex-direction: column; align-items: center; gap: 6px;
+  }
+  #cue.on { display: flex; }
+  #cueArrow {
+    font-size: 8rem; line-height: 1;
+    filter: drop-shadow(0 0 6px #fff8e7) drop-shadow(0 6px 12px rgba(0,0,0,.5));
+    animation: cuePulse .55s ease-in-out infinite alternate;
+  }
+  @keyframes cuePulse {
+    from { transform: scale(1)    translateX(0);    }
+    to   { transform: scale(1.16) translateX(var(--nudge, 0)); }
+  }
+  #cueText {
+    font-size: 2.1rem; font-weight: bold; letter-spacing: .08em;
+    color: var(--ink);
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: 999px; padding: 3px 28px;
+    box-shadow: 0 5px 0 rgba(59,42,28,.3);
+  }
+  #cue.left  { --nudge: -14px; }
+  #cue.right { --nudge:  14px; }
+  #cue.left  #cueArrow { color: var(--gold);   }
+  #cue.right #cueArrow { color: var(--sky);    }
+  #cue.clear #cueArrow { color: var(--leaf);   }
+  #cue.left  #cueText  { background: var(--gold);  }
+  #cue.right #cueText  { background: var(--sky);   }
+  #cue.clear #cueText  { background: var(--leaf); color: var(--paper); }
+
+  /* ── One-switch direction scanner ──────────────────────────────────────── */
+  /* Pinned to the screen edges, clear of the centred cue, and running for the
+     whole race so the player can time a press against a steady rhythm. */
+  #dirScan { display: none; }
+  #dirScan.on { display: block; }
+
+  .dirOpt {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    z-index: 12; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    width: 104px; padding: 16px 8px;
+    font-size: 1.15rem; font-weight: bold; letter-spacing: .06em;
+    color: var(--ink2);
+    background: rgba(255, 248, 231, .8);
+    border: 5px solid var(--ink);
+    box-shadow: 0 6px 0 rgba(59,42,28,.3);
+    opacity: .4;
+    transition: transform .12s ease, opacity .12s ease, background .12s ease;
+  }
+  .dirArrow { font-size: 2.5rem; line-height: 1; }
+  #dirLeft  { left: 0;  border-left: none;  border-radius: 0 22px 22px 0; }
+  #dirRight { right: 0; border-right: none; border-radius: 22px 0 0 22px; }
+
+  /* The armed side — press now and this is the way you go. */
+  .dirOpt.on {
+    opacity: 1;
+    color: var(--ink);
+    background: var(--gold);
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 6px 0 rgba(59,42,28,.45), 0 0 44px 12px rgba(255,194,51,.65);
+  }
+
+  /* Armed direction matches the way the guidance wants you to go. */
+  .dirOpt.on.match {
+    background: var(--leaf);
+    color: #fff;
+    box-shadow: 0 6px 0 rgba(59,42,28,.45), 0 0 52px 16px rgba(75,168,60,.75);
+  }
+
+  /* Screen-edge glow reinforces the cue direction for low vision */
+  .edgeGlow {
+    position: absolute; top: 0; bottom: 0; width: 24vw;
+    z-index: 11; pointer-events: none; opacity: 0;
+    transition: opacity .16s ease;
+  }
+  #edgeLeft  { left: 0;  background: linear-gradient(90deg,  rgba(255,194,51,.75), transparent); }
+  #edgeRight { right: 0; background: linear-gradient(270deg, rgba(61,158,224,.75), transparent); }
+  .edgeGlow.on { opacity: 1; }
+
+  /* ── Obstacle warning ──────────────────────────────────────────────────── */
+  /* A red rim rather than a wash, so it never obscures the road itself. */
+  #dangerGlow {
+    position: absolute; inset: 0; z-index: 13; pointer-events: none;
+    opacity: 0; transition: opacity .16s ease;
+    box-shadow: inset 0 0 100px 34px rgba(214, 32, 32, .92);
+  }
+  #dangerGlow.on {
+    opacity: 1;
+    animation: dangerPulse .46s ease-in-out infinite alternate;
+  }
+  @keyframes dangerPulse { from { opacity: .5; } to { opacity: 1; } }
+
+  /* ── Crash flash + big centre message ──────────────────────────────────── */
+  #flash {
+    position: absolute; inset: 0; z-index: 13; pointer-events: none;
+    background: rgba(244, 88, 31, .6); opacity: 0;
+    transition: opacity .3s ease;
+  }
+  #flash.on { opacity: 1; transition: opacity .04s ease; }
+
+  #bigMsg {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    z-index: 14; pointer-events: none; display: none;
+    font-size: 7rem; font-weight: bold; text-align: center;
+    color: var(--paper);
+    -webkit-text-stroke: 8px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 10px 0 rgba(59,42,28,.35);
+  }
+  #bigMsg.on { display: block; animation: pop .45s cubic-bezier(.2,1.7,.4,1); }
+  @keyframes pop {
+    from { transform: translate(-50%, -50%) scale(.35) rotate(-8deg); opacity: 0; }
+    to   { transform: translate(-50%, -50%) scale(1)   rotate(0deg);  opacity: 1; }
+  }
+
+  /* ── Hold-to-pause ring ────────────────────────────────────────────────── */
+  #holdRing {
+    position: absolute; right: 28px; bottom: 66px; z-index: 15;
+    width: 104px; height: 104px; display: none;
+  }
+  #holdRing.on { display: block; }
+  #holdRing svg { transform: rotate(-90deg); }
+  #holdRing .track { stroke: rgba(255,248,231,.5); }
+  #holdRing .fill  { stroke: var(--orange); transition: stroke-dashoffset .08s linear; }
+  #holdRing .label {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; font-weight: bold; text-align: center; line-height: 1.15;
+    color: var(--paper); text-shadow: 0 2px 4px rgba(0,0,0,.9);
+  }
+
+  /* ── Pause button (mouse / touch) ──────────────────────────────────────── */
+  /* Bottom-left: clear of the HUD corners, the centred progress bar, the
+     hold-to-pause ring, and the side direction panels. */
+  #pauseBtn {
+    position: absolute; left: 20px; bottom: 22px;
+    z-index: 16; display: none; cursor: pointer;
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: 16px; padding: 10px 18px;
+    font-size: 1.2rem; font-weight: bold; color: var(--ink);
+    box-shadow: 0 5px 0 rgba(59,42,28,.3);
+  }
+  #pauseBtn.on { display: block; }
+  #pauseBtn:hover { background: var(--gold); }
+
+  /* ── Overlay (all menus share one card) ────────────────────────────────── */
+  #overlay {
+    position: absolute; inset: 0; z-index: 20;
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+    /* Light touch only — the card carries its own contrast, and a heavy scrim
+       makes the sunny world behind the menus look gloomy. */
+    background: radial-gradient(circle at 50% 42%, rgba(20,14,10,.04), rgba(14,10,7,.34));
+  }
+  #overlay.on { display: flex; }
+
+  #overlayCard {
+    position: relative;
+    width: min(660px, 94vw);
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 26px;
+    padding: 26px 28px 20px;
+    text-align: center;
+    transform: rotate(-.5deg);
+  }
+  /* Sticky-tape corners — a small thing that sells the craft-paper idea. */
+  #overlayCard::before, #overlayCard::after {
+    content: '';
+    position: absolute; top: -16px; width: 92px; height: 30px;
+    background: rgba(255,255,255,.55);
+    border: 2px solid rgba(59,42,28,.18);
+  }
+  #overlayCard::before { left: 24px;  transform: rotate(-7deg); }
+  #overlayCard::after  { right: 24px; transform: rotate(6deg);  }
+
+  /* Vehicle screen: shift the card aside so the 3D model is visible */
+  #overlay.showcase { justify-content: flex-start; }
+  #overlay.showcase #overlayCard { margin-left: 4vw; width: min(470px, 62vw); }
+
+  #overlayArt {
+    font-size: 3.8rem; line-height: 1; margin-bottom: 2px;
+    filter: drop-shadow(0 4px 6px rgba(59,42,28,.3));
+  }
+  #overlayArt:empty { display: none; }
+
+  #overlayTitle {
+    font-size: 2.5rem; line-height: 1.1; color: var(--orange);
+    margin-bottom: 6px;
+    -webkit-text-stroke: 1.5px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 4px 0 rgba(59,42,28,.18);
+  }
+  #overlaySub {
+    font-size: 1.05rem; color: var(--ink2); font-weight: bold;
+    margin-bottom: 16px; line-height: 1.45;
+  }
+  #overlaySub:empty { display: none; }
+  #overlaySub b { color: var(--ink); }
+
+  #overlayMenu { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  #overlayMenu.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
+  #overlayMenu.grid .menuItem.wide { grid-column: 1 / -1; }
+
+  .menuItem {
+    padding: 13px 18px;
+    background: #fffdf6;
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    font-size: 1.2rem; font-weight: bold;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 5px 0 rgba(59,42,28,.25);
+  }
+  .menuItem .val { margin-left: auto; color: var(--orange); }
+  .menuItem:hover { background: var(--paper2); }
+
+  /* Focus has to be unmistakable at a glance — fill, outline, lift and grow. */
+  .menuItem.focused {
+    background: var(--gold);
+    color: var(--ink);
+    transform: scale(1.045) rotate(-.6deg);
+    box-shadow: 0 8px 0 rgba(59,42,28,.4), 0 0 0 6px rgba(255,194,51,.45);
+  }
+  .menuItem.focused .val { color: #8a3a06; }
+
+  .menuItem.locked {
+    opacity: .45; cursor: not-allowed;
+    background: #efe6d3; color: var(--ink2);
+    box-shadow: none;
+  }
+  .menuItem.locked:hover { background: #efe6d3; }
+
+  #overlayHint {
+    margin-top: 16px; font-size: .95rem; font-weight: bold;
+    color: var(--ink2);
+    animation: hintPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes hintPulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+  #overlayStats {
+    margin-top: 14px; font-size: 1.15rem; font-weight: bold; color: var(--ink);
+    line-height: 1.6;
+  }
+  #overlayStats:empty { display: none; }
+
+  @media (max-width: 760px) {
+    #overlayTitle { font-size: 1.85rem; }
+    .menuItem { font-size: 1.02rem; padding: 11px 14px; }
+    #cueArrow { font-size: 5.4rem; }
+    #cueText { font-size: 1.5rem; }
+    #bigMsg { font-size: 4.2rem; -webkit-text-stroke-width: 6px; }
+    #overlay.showcase { justify-content: center; }
+    #overlay.showcase #overlayCard { margin-left: 0; width: min(660px, 94vw); }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="canvasWrap"></div>
+
+  <!-- Direction cue -->
+  <div id="edgeLeft"  class="edgeGlow"></div>
+  <div id="edgeRight" class="edgeGlow"></div>
+  <div id="cue">
+    <div id="cueArrow">⬅</div>
+    <div id="cueText">LEFT</div>
+  </div>
+
+  <!-- One-switch direction scanner: alternates LEFT/RIGHT, press to commit -->
+  <div id="dirScan">
+    <div class="dirOpt" id="dirLeft"><span class="dirArrow">⬅</span><span>LEFT</span></div>
+    <div class="dirOpt" id="dirRight"><span class="dirArrow">➡</span><span>RIGHT</span></div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hudTop">
+      <div id="hudLeft">
+        <div class="hudPanel" id="hudLevel">Level 1</div>
+        <div class="hudPanel" id="hudGoal">🎈 0 / 5</div>
+      </div>
+      <div id="hudRight">
+        <div class="hudPanel" id="hudHearts">❤️❤️❤️</div>
+        <div class="hudPanel" id="hudSpeed">0 mph</div>
+        <div class="hudPanel" id="hudPlace">1st</div>
+        <div class="hudPanel" id="hudTimer">0:00</div>
+      </div>
+    </div>
+    <!-- Which of the five lanes we're in. The chase camera keeps the vehicle
+         centred, so this is what tells you where you actually are. -->
+    <div id="hudLanes">
+      <div class="lanePip"></div><div class="lanePip"></div><div class="lanePip"></div>
+      <div class="lanePip"></div><div class="lanePip"></div>
+    </div>
+
+    <div id="hudProgressOuter">
+      <div id="hudProgressBar"></div>
+      <div id="hudProgressFlag">🏁</div>
+    </div>
+  </div>
+
+  <!-- Lined up with an obstacle: red vignette, paired with a warning pulse -->
+  <div id="dangerGlow"></div>
+
+  <div id="flash"></div>
+  <div id="bigMsg"></div>
+
+  <div id="holdRing">
+    <svg width="104" height="104" viewBox="0 0 104 104">
+      <circle class="track" cx="52" cy="52" r="40" fill="none" stroke-width="11"></circle>
+      <circle class="fill"  cx="52" cy="52" r="40" fill="none" stroke-width="11"
+              stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"></circle>
+    </svg>
+    <div class="label">Keep<br>holding</div>
+  </div>
+
+  <div id="pauseBtn">⏸<br>Pause</div>
+
+  <!-- Every menu renders into this one card -->
+  <div id="overlay">
+    <div id="overlayCard" class="paper">
+      <div id="overlayArt"></div>
+      <h2 id="overlayTitle">Benny's Race Tracks</h2>
+      <p  id="overlaySub"></p>
+      <div id="overlayMenu"></div>
+      <div id="overlayStats"></div>
+      <p  id="overlayHint"><strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select</p>
+    </div>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Folding the paper tracks…</div>
+  </div>
+</div>
+
+<!-- Shared accessibility scripts -->
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+
+<!-- Engine -->
+<script src="js/three.min.js"></script>
+
+<!-- Game -->
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/world.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
