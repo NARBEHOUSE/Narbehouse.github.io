@@ -68,88 +68,6 @@
         "ttsText": ""
       }
     ],
-    "Vehicles": [
-      {
-        "image": "",
-        "emoji": "🚗",
-        "sound": [
-          "car1.wav"
-        ],
-        "title": "Car",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "🚌",
-        "sound": [
-          "bus1.wav"
-        ],
-        "title": "Bus",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "🚆",
-        "sound": [
-          "train1.wav"
-        ],
-        "title": "Train",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "⛵",
-        "sound": [
-          "boat1.wav"
-        ],
-        "title": "Boat",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "✈",
-        "sound": [
-          "aeroplane1.wav"
-        ],
-        "title": "Aeroplane",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "🚀",
-        "sound": [
-          "rocket1.wav"
-        ],
-        "title": "Rocket",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "🚲",
-        "sound": [
-          "bike1.wav"
-        ],
-        "title": "Bike",
-        "altTitle": "",
-        "ttsText": ""
-      },
-      {
-        "image": "",
-        "emoji": "🚜",
-        "sound": [
-          "tractor1.wav"
-        ],
-        "title": "Tractor",
-        "altTitle": "",
-        "ttsText": ""
-      }
-    ],
     "Yum": [
       {
         "image": "",
@@ -534,10 +452,6 @@
     "categories": {
       "Farm Animals": {
         "palette": "Bright",
-        "spinMs": 3800
-      },
-      "Vehicles": {
-        "palette": "Candy",
         "spinMs": 3800
       },
       "Yum": {
