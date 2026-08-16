@@ -1,6 +1,5 @@
 {
     "categories": {
-        "Unassigned": [],
         "Jen Hamilton": [
             {
                 "image": "pickle.png",
@@ -112,25 +111,6 @@
                 ],
                 "title": "jen and gritz",
                 "altTitle": "Jen and Gritz",
-                "ttsText": ""
-            },
-            {
-                "image": "husband_jackie.png",
-                "sound": [
-                    "husband_jackie.wav"
-                ],
-                "title": "husband jackie",
-                "altTitle": "Husband Jackie",
-                "ttsText": ""
-            },
-            {
-                "image": "husband_with_glasses.png",
-                "sound": [
-                    "husband_with_glasses1.wav",
-                    "husband_with_glasses.wav"
-                ],
-                "title": "husband with glasses",
-                "altTitle": "Husband With Glasses",
                 "ttsText": ""
             },
             {
