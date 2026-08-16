@@ -912,28 +912,20 @@ class WheelScene extends Phaser.Scene {
         // ── Mouse / touch ────────────────────────────────────────────────────
         // Everything reachable by switch is also reachable by tapping:
         //   on the wheel  — tap the wheel = Spin (the row handles its own taps)
-        //   on a reveal   — tap the card  = hear it again (a mouse/touch-only
-        //                   extra, since a precise tap is easy for that input
-        //                   but Enter/the switch now always means "back", see
-        //                   onSelect — Auto Scan had no other way out of a
-        //                   reveal if Enter just kept replaying the sound)
-        //                   tap anywhere else = back to the wheel
+        //   on a reveal   — tap ANYWHERE = back to the wheel, same as Enter or
+        //                   the switch. There is deliberately no "tap to hear
+        //                   it again" — if a panel has more than one sound,
+        //                   spinning back onto it is how you hear a different
+        //                   one, not replaying the same clip on tap.
         this.input.on('pointerdown', (p) => {
             if (this.paused || this.state_ === 'spinning' || this.state_ === 'loading') return;
+
+            if (this.state_ === 'revealed') { this.dismissReveal(); return; }
 
             // worldX/worldY, not x/y: the camera is zoomed for supersampling, so
             // pointer.x is in canvas pixels while every layout value is in world
             // units. Using x/y here would misplace every hit test.
             const px = p.worldX, py = p.worldY;
-
-            if (this.state_ === 'revealed') {
-                if (this.reveal.hitTest(px, py)) {
-                    if (this.lastPanel) this.audio.playPanel(this.lastPanel);
-                } else {
-                    this.dismissReveal();
-                }
-                return;
-            }
 
             // Idle: only the wheel face spins. The button row and the corner
             // pause control sit outside this radius and get their taps from
@@ -1140,8 +1132,7 @@ class WheelScene extends Phaser.Scene {
                 // Second, bigger burst once the card has fully popped in.
                 this.party.burst(W / 2, REVEAL.CARD_Y - 40, 60);
             });
-            this.setHint('Tap the picture to hear it again   ·   '
-                + 'Enter, your switch, or tap outside to spin again', '18px');
+            this.setHint('Tap anywhere, press Enter, or your switch to spin again', '18px');
         });
 
         if (!started) { this.state_ = 'idle'; this.setButtonsVisible(true); }
