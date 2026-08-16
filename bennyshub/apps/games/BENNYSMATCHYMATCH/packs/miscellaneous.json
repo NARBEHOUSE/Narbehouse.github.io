@@ -3,7 +3,7 @@
         "Unassigned": [],
         "Vehicles": [
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/icon_archive/train.png",
+                "image": "train.png",
                 "sound": null,
                 "title": "train",
                 "altTitle": "",
@@ -11,7 +11,7 @@
                 "_created": 1768921845726
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/truck.png",
+                "image": "dumptruck.png",
                 "sound": null,
                 "title": "dump truck",
                 "altTitle": "",
@@ -19,7 +19,7 @@
                 "_created": 1768921874515
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/car.png",
+                "image": "car.png",
                 "sound": null,
                 "title": "car",
                 "altTitle": "",
@@ -27,7 +27,7 @@
                 "_created": 1768921888491
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/mulberry/fork lift truck.svg",
+                "image": "forklift.svg",
                 "sound": null,
                 "title": "fork lift",
                 "altTitle": "",
@@ -35,7 +35,7 @@
                 "_created": 1768921907015
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/twemoji/2708.svg",
+                "image": "airplane.svg",
                 "sound": null,
                 "title": "airplane",
                 "altTitle": "",
@@ -43,7 +43,7 @@
                 "_created": 1768921928177
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/tawasol/GMC pickup bw.png",
+                "image": "pickuptruck.png",
                 "sound": null,
                 "title": "pickup truck",
                 "altTitle": "",
@@ -51,7 +51,7 @@
                 "_created": 1768921943294
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/people carrier.png",
+                "image": "minivan.png",
                 "sound": null,
                 "title": "minivan",
                 "altTitle": "",
@@ -59,7 +59,7 @@
                 "_created": 1768921956052
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/mulberry/boat.svg",
+                "image": "sailboat.svg",
                 "sound": null,
                 "title": "sailboat",
                 "altTitle": "",
@@ -67,7 +67,7 @@
                 "_created": 1768921982937
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/F1 car.png",
+                "image": "f1car.png",
                 "sound": null,
                 "title": "F1 Car",
                 "altTitle": "",
@@ -75,7 +75,7 @@
                 "_created": 1768922004739
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/tractor.png",
+                "image": "tractor.png",
                 "sound": null,
                 "title": "tractor",
                 "altTitle": "",
@@ -83,7 +83,7 @@
                 "_created": 1768922017126
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/motorbike.png",
+                "image": "motorcycle.png",
                 "sound": null,
                 "title": "motorcycle",
                 "altTitle": "",
@@ -91,7 +91,7 @@
                 "_created": 1768922028773
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/bike.png",
+                "image": "bicycle.png",
                 "sound": null,
                 "title": "bicycle",
                 "altTitle": "",
@@ -99,7 +99,7 @@
                 "_created": 1768922049478
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/fighter.png",
+                "image": "fighterjet.png",
                 "sound": null,
                 "title": "fighter jet",
                 "altTitle": "",
@@ -107,7 +107,7 @@
                 "_created": 1768922067751
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/twemoji/1f690.svg",
+                "image": "minibus.svg",
                 "sound": null,
                 "title": "minibus",
                 "altTitle": "",
@@ -117,7 +117,7 @@
         ],
         "Flowers": [
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/twemoji/1f339.svg",
+                "image": "rose.svg",
                 "sound": null,
                 "title": "rose",
                 "altTitle": "",
@@ -125,7 +125,7 @@
                 "_created": 1768922158951
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/twemoji/1f337.svg",
+                "image": "tulip.svg",
                 "sound": null,
                 "title": "tulip",
                 "altTitle": "",
@@ -133,7 +133,7 @@
                 "_created": 1768922170186
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/twemoji/1f33b.svg",
+                "image": "sunflower.svg",
                 "sound": null,
                 "title": "sunflower",
                 "altTitle": "",
@@ -141,7 +141,7 @@
                 "_created": 1768922186339
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/daisy.png",
+                "image": "daisy.png",
                 "sound": null,
                 "title": "daisy",
                 "altTitle": "",
@@ -149,7 +149,7 @@
                 "_created": 1768922200457
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/mulberry/daffodil.svg",
+                "image": "daffodil.svg",
                 "sound": null,
                 "title": "daffodil",
                 "altTitle": "",
@@ -157,7 +157,7 @@
                 "_created": 1768922221864
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/cala lily.png",
+                "image": "lilies.png",
                 "sound": null,
                 "title": "lilies",
                 "altTitle": "",
@@ -165,7 +165,7 @@
                 "_created": 1768922475711
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/orchid.png",
+                "image": "orchid.png",
                 "sound": null,
                 "title": "orchid",
                 "altTitle": "",
@@ -173,7 +173,7 @@
                 "_created": 1768922499213
             },
             {
-                "image": "https://d18vdu4p71yql0.cloudfront.net/libraries/arasaac/lavender.png",
+                "image": "lavender.png",
                 "sound": null,
                 "title": "lavender",
                 "altTitle": "",
