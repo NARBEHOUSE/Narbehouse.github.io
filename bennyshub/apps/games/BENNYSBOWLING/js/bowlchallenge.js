@@ -1256,19 +1256,10 @@ function handleGameInputDown() {
 	if (localPlayer.physics.simulationActive) return;
 	if (pickingBall || positioningBall || rollingBall) return;
 
-	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
-	var isAuto = (sm && sm.getSettings().autoScan);
-
-	// AUTO SCAN: Input confirms position -> go to Aim
-	if (isAuto && !aimingMode && !charging) {
-		aimingMode = true;
-		playSfx('sound/select.wav', 0.6);
-		// Reset aim angle to center
-		currentAimAngle = 0.0;
-		ensureAimHelper(localPlayer);
-		updateAimHelper(localPlayer);
-		return;
-	}
+	// The ball position is confirmed on RELEASE in both modes -- see
+	// handleGameInputUp(). Confirming on the press locked the ball the instant
+	// the switch went down, which gave the player no way to let the scan carry
+	// the ball to where they actually wanted it.
 
 	// AIMING: Input starts charging (if not already)
 	if (aimingMode && !charging) {
@@ -1287,11 +1278,15 @@ function handleGameInputUp() {
 	if (localPlayer.physics.simulationActive) return;
 
 	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
-	var isAuto = (sm && sm.getSettings().autoScan);
 
-	// MANUAL: Input release confirms position -> go to Aim
-	if (!isAuto && !aimingMode && !charging) {
+	// Release confirms the ball position -> go to Aim. Release rather than press
+	// in BOTH modes: the ball keeps scanning for as long as the switch is held,
+	// so wherever it has got to when you let go is where it stays.
+	if (!aimingMode && !charging) {
 		aimingMode = true;
+		// No select.wav ever shipped with this game, so this confirmation was
+		// silent. SafeAudio synthesises the blip instead of us adding an asset.
+		if (SFX_ENABLED && window.SafeAudio) window.SafeAudio.play('select', 0.6);
 		currentAimAngle = 0.0;
 		ensureAimHelper(localPlayer);
 		updateAimHelper(localPlayer);
@@ -1642,47 +1637,11 @@ function onDocumentKeyUp(event) {
 		event.preventDefault();
 		// Stop tracking enter hold
 		enterHeld = false;
-		var localPlayer = getLocalPlayer();
-		if (!localPlayer) return;
-		if (localPlayer.physics.simulationActive) return;
-
-		// First Enter release: enter aiming mode
-		if (!aimingMode && !charging) {
-			aimingMode = true;
-			currentAimAngle = 0.0; // start centered
-			ensureAimHelper(localPlayer);
-			updateAimHelper(localPlayer);
-			return;
-		}
-
-		// If charging, release the shot
-		if (aimingMode && charging) {
-			var now = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
-			// Ensure aim angle is current at release moment
-			if (aimHeld) {
-				var targetT = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 200.0) : 20.0;
-				var T = targetT; 
-				var omega = 2.0 * Math.PI / T; var tauAim = Math.max(0.0, now - aimStartTime);
-				currentAimAngle = BALL_ANGLE_MAX * Math.sin(omega * tauAim + aimPhase);
-			}
-			var held = Math.max(0.0, now - chargeStartTime);
-			var k = Math.min(1.0, held / CHARGE_TIME_MAX);
-			var kPow = Math.pow(k, CHARGE_POWER_CURVE); // non-linear power mapping
-			var velocity = BALL_VELOCITY_MIN + (BALL_VELOCITY_MAX - BALL_VELOCITY_MIN) * kPow;
-
-			// Fire!
-			localPlayer.physics.releaseBall(velocity, currentAimAngle);
-			// SFX: ball rolling
-			playRollingSound();
-
-			// Cleanup aiming state
-			charging = false;
-			aimingMode = false;
-			aimHeld = false;
-			setAimHelperVisible(localPlayer, false);
-			if (chargeBar) chargeBar.style.display = "none";
-			return;
-		}
+		// Delegate to the same handler the mouse and touch paths use. This block
+		// used to duplicate that logic, which is how the keyboard drifted out of
+		// step with them in the first place.
+		handleGameInputUp();
+		return;
 	}
 }
 
