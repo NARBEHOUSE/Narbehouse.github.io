@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pickleball Rally</title>
+<style>
+  :root {
+    --panel: rgba(255,255,255,.94);
+    --dark: #102033;
+    --yellow: #facc15;
+    --blue1: #2f80ed;
+    --blue2: #2563eb;
+    --green1: #2f9e44;
+    --green2: #2b8a3e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    text-align: center;
+    overflow: hidden;
+    background: linear-gradient(#7dd3fc 0%, #bae6fd 38%, #86efac 39%, #22c55e 100%);
+    color: var(--dark);
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #game {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  /* ── Decorative ── */
+  #sun {
+    position: absolute;
+    top: 8px;
+    right: 54px;
+    font-size: 2.8rem;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .cloud {
+    position: absolute;
+    font-size: 2.2rem;
+    opacity: .8;
+    z-index: 0;
+    animation: drift 34s linear infinite;
+    pointer-events: none;
+  }
+  #cloud1 { top: 10px; left: -90px; }
+  #cloud2 { top: 34px; left: 42%; animation-duration: 46s; }
+  @keyframes drift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(120vw); }
+  }
+
+  /* ── Top bar ── */
+  #topBar {
+    position: relative;
+    z-index: 3;
+    padding: 4px 10px 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    color: #083344;
+    text-shadow: 0 2px rgba(255,255,255,.55);
+  }
+
+  #controls {
+    display: inline-block;
+    background: rgba(255,255,255,.84);
+    color: #083344;
+    border: 2px solid rgba(8,51,68,.25);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-weight: bold;
+    font-size: .78rem;
+  }
+
+  #scoreboard {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .scoreBox {
+    background: var(--panel);
+    padding: 4px 8px;
+    border-radius: 10px;
+    min-width: 76px;
+    font-weight: bold;
+    font-size: .8rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  }
+
+  #timerBox { background: #fef08a; }
+
+  #timerBarOuter {
+    width: min(720px, 92vw);
+    height: 11px;
+    background: rgba(255,255,255,.55);
+    border: 2px solid rgba(8,51,68,.22);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  #timerBar {
+    height: 100%;
+    width: 100%;
+    background: var(--yellow);
+    transition: width .1s linear;
+  }
+
+  /* ── Court ── */
+  #courtFrame {
+    position: absolute;
+    left: 50%;
+    top: 113px;
+    transform: translateX(-50%);
+    width: min(1100px, 99vw);
+    height: calc(100vh - 118px);
+    background: linear-gradient(90deg, var(--green1), var(--green2));
+    border: 7px solid white;
+    border-radius: 16px;
+    box-shadow: 0 16px 32px rgba(0,0,0,.26);
+    z-index: 2;
+  }
+
+  #court {
+    position: absolute;
+    left: 5%;
+    top: 5%;
+    width: 90%;
+    height: 90%;
+    background: linear-gradient(90deg, var(--blue1), var(--blue2));
+    border: 5px solid white;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .courtLine {
+    position: absolute;
+    background: white;
+    opacity: .96;
+  }
+
+  #centerLine {
+    width: 5px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+  }
+
+  #kitchenLineLeft, #kitchenLineRight,
+  #kitchenLineTopLeft, #kitchenLineTopRight {
+    height: 5px;
+    width: calc(50% - 5px);
+  }
+  #kitchenLineLeft     { left:  0; bottom: 168px; }
+  #kitchenLineRight    { right: 0; bottom: 168px; }
+  #kitchenLineTopLeft  { left:  0; top:    168px; }
+  #kitchenLineTopRight { right: 0; top:    168px; }
+
+  #net {
+    height: 22px;
+    width: 100%;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    /* diamond mesh over a dark backing */
+    background:
+      repeating-linear-gradient( 45deg,
+        rgba(255,255,255,.52) 0, rgba(255,255,255,.52) 1.5px,
+        transparent 0, transparent 50%
+      ) 0 0 / 14px 14px,
+      repeating-linear-gradient(-45deg,
+        rgba(255,255,255,.52) 0, rgba(255,255,255,.52) 1.5px,
+        transparent 0, transparent 50%
+      ) 0 0 / 14px 14px,
+      rgba(8, 28, 58, 0.55);
+    border-top: 4px solid rgba(255,255,255,.98);
+    border-bottom: 2px solid rgba(255,255,255,.55);
+    box-shadow: 0 3px 8px rgba(0,0,0,.45);
+    z-index: 2;
+  }
+
+  /* net posts at each end */
+  #net::before, #net::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: calc(100% + 18px);
+    top: -9px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    z-index: 3;
+  }
+  #net::before { left: -5px; }
+  #net::after  { right: -5px; }
+
+  .zone {
+    position: absolute;
+    bottom: 16px;
+    width: 28%;
+    height: 130px;
+    border: 4px dashed rgba(255,255,255,.28);
+    border-radius: 18px;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 5px;
+    transition: border-color .1s, background .1s, box-shadow .1s;
+  }
+
+
+  #leftZone   { left: 4%; }
+  #middleZone { left: 36%; }
+  #rightZone  { right: 4%; }
+
+  .activeZone {
+    border-color: var(--yellow);
+    background: rgba(250,204,21,.15);
+    box-shadow: 0 0 26px rgba(250,204,21,.7);
+  }
+
+  .zoneFeet {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -58%);
+    width: 52px;
+    height: 60px;
+    opacity: 0;
+    transition: opacity .18s ease;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.55));
+  }
+  .activeZone .zoneFeet { opacity: 1; }
+
+  #court { cursor: pointer; }
+  .zone  { cursor: pointer; }
+
+  #opponent {
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%) rotate(180deg);
+    font-size: 5rem;
+    transition: left .45s ease, transform .25s ease;
+    z-index: 4;
+  }
+
+  #benny {
+    position: absolute;
+    left: 50%;
+    bottom: 36px;
+    transform: translateX(-50%);
+    font-size: 5rem;
+    transition: left .32s ease, transform .22s ease;
+    z-index: 4;
+  }
+
+  #ball {
+    position: absolute;
+    left: 50%;
+    top: 70%;
+    transform: translate(-50%, -50%);
+    font-size: 4.5rem;
+    z-index: 5;
+  }
+
+  .label {
+    position: absolute;
+    background: rgba(255,255,255,.88);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: .88rem;
+    font-weight: bold;
+    z-index: 6;
+  }
+
+  #opponentLabel { top: 4px; left: 50%; transform: translateX(-50%); }
+  #playerLabel   { bottom: 5px; left: 50%; transform: translateX(-50%); }
+
+  /* ── Animations ── */
+  .swingBenny    { animation: swingBenny .38s ease; }
+  .swingOpponent { animation: swingOpponent .38s ease; }
+  .serveSwing    { animation: serveSwing .55s ease; }
+  .bounce        { animation: bounce .42s ease-out; }
+
+  @keyframes swingBenny {
+    0%   { transform: translateX(-50%) rotate(0deg) scale(1); }
+    40%  { transform: translateX(-50%) rotate(-24deg) scale(1.08); }
+    100% { transform: translateX(-50%) rotate(10deg) scale(1); }
+  }
+  @keyframes swingOpponent {
+    0%   { transform: translateX(-50%) rotate(180deg) scale(1); }
+    40%  { transform: translateX(-50%) rotate(205deg) scale(1.08); }
+    100% { transform: translateX(-50%) rotate(170deg) scale(1); }
+  }
+  @keyframes serveSwing {
+    0%   { transform: translateX(-50%) rotate(180deg) scale(1); }
+    45%  { transform: translateX(-50%) rotate(215deg) scale(1.12); }
+    100% { transform: translateX(-50%) rotate(170deg) scale(1); }
+  }
+  @keyframes bounce {
+    0%   { transform: translate(-50%, -50%) scale(1.1); }
+    45%  { transform: translate(-50%, -82%) scale(.95); }
+    100% { transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  /* ── Feedback popup ── */
+  #bigFeedback {
+    position: absolute;
+    left: 50%;
+    top: 43%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,.97);
+    color: var(--dark);
+    padding: 20px 32px;
+    border-radius: 20px;
+    font-size: 2.2rem;
+    font-weight: bold;
+    display: none;
+    z-index: 20;
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  }
+
+  .clap {
+    position: absolute;
+    font-size: 2rem;
+    animation: clapFloat 900ms ease-out forwards;
+    z-index: 21;
+  }
+  @keyframes clapFloat {
+    0%   { opacity: 1; transform: scale(.55); }
+    100% { opacity: 0; transform: scale(1.7) translateY(-80px); }
+  }
+
+  /* ── Full-screen overlays ── */
+  .fullOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #0f2940 0%, #1a4a70 55%, #0d3020 100%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlayCard {
+    width: min(580px, 94vw);
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 2px solid rgba(255,255,255,.2);
+    color: white;
+    border-radius: 24px;
+    padding: 22px 26px 18px;
+    box-shadow: 0 24px 56px rgba(0,0,0,.52);
+  }
+
+  .overlayCard h2 {
+    margin: 0 0 14px;
+    font-size: 1.9rem;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,.4);
+  }
+
+  /* ── Menu items ── */
+  .menuItem {
+    padding: 12px 18px;
+    margin: 6px 0;
+    background: rgba(255,255,255,.1);
+    border: 2px solid rgba(255,255,255,.22);
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all .14s ease;
+    text-align: left;
+    color: rgba(255,255,255,.9);
+    user-select: none;
+  }
+
+  .menuItem.focused {
+    background: rgba(250,204,21,.22);
+    border-color: var(--yellow);
+    box-shadow: 0 0 22px rgba(250,204,21,.5);
+    transform: scale(1.025);
+    color: var(--yellow);
+  }
+
+  .hintText {
+    margin: 12px 0 0;
+    font-size: .84rem;
+    color: rgba(255,255,255,.6);
+  }
+
+  /* ── Victory overlay ── */
+  #victoryOverlay { display: none; z-index: 31; }
+
+  #trophy {
+    font-size: 5rem;
+    margin: 2px 0 8px;
+    animation: trophyBounce 900ms ease-in-out infinite alternate;
+    display: block;
+  }
+  @keyframes trophyBounce {
+    from { transform: translateY(0) scale(1); }
+    to   { transform: translateY(-8px) scale(1.06); }
+  }
+
+  /* ── Settings overlay ── */
+  #settingsOverlay { z-index: 35; }
+
+  /* ── Pause overlay ── */
+  #pauseOverlay { z-index: 40; display: none; }
+
+  /* ── Pause button (lower-left, always visible during game) ── */
+  #pauseBtn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 62px;
+    height: 62px;
+    background: rgba(255,255,255,.18);
+    border: 2px solid rgba(255,255,255,.52);
+    border-radius: 50%;
+    color: white;
+    font-size: 1.5rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    user-select: none;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.32);
+    transition: background .15s, transform .15s;
+  }
+  #pauseBtn:hover { background: rgba(255,255,255,.34); transform: scale(1.08); }
+  #pauseBtn.visible { display: flex; }
+
+  .pulse { animation: pulse .9s ease-in-out infinite alternate; }
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to   { transform: scale(1.05); }
+  }
+</style>
+</head>
+
+<body>
+<div id="game">
+
+  <!-- Pause button -->
+  <button id="pauseBtn" aria-label="Pause">⏸</button>
+
+  <!-- Decorative -->
+  <div id="sun">☀️</div>
+  <div id="cloud1" class="cloud">☁️</div>
+  <div id="cloud2" class="cloud">☁️</div>
+
+  <!-- Top bar: title / controls / score / timer -->
+  <div id="topBar">
+    <h1>🏓 Pickleball Rally</h1>
+    <div id="controls"><strong>SPACE</strong>: Scan &nbsp;|&nbsp; <strong>ENTER</strong>: Select</div>
+    <div id="scoreboard">
+      <div class="scoreBox">Player 1: <span id="bennyScore">0</span></div>
+      <div class="scoreBox">CPU: <span id="computerScore">0</span></div>
+      <div class="scoreBox">Games: <span id="bennyGames">0</span>-<span id="computerGames">0</span></div>
+      <div class="scoreBox">Game: <span id="gameNumber">1</span></div>
+      <div class="scoreBox" id="timerBox">⏱ <span id="timeLeft">5.0</span>s</div>
+    </div>
+    <div id="timerBarOuter"><div id="timerBar"></div></div>
+  </div>
+
+  <!-- Court -->
+  <div id="courtFrame">
+    <div id="court">
+      <div id="centerLine"       class="courtLine"></div>
+      <div id="kitchenLineLeft"     class="courtLine"></div>
+      <div id="kitchenLineRight"    class="courtLine"></div>
+      <div id="kitchenLineTopLeft"  class="courtLine"></div>
+      <div id="kitchenLineTopRight" class="courtLine"></div>
+      <div id="net"              class="courtLine"></div>
+
+      <div id="leftZone" class="zone">
+        <svg class="zoneFeet" viewBox="0 0 42 50" xmlns="http://www.w3.org/2000/svg">
+          <g transform="rotate(-7,10,25)">
+            <path d="M 10 4 C 4 4 1 7 1 12 L 1 22 C 1 26 1 30 2 34 L 3 40 C 4 44 7 46 10 46 C 13 46 16 44 17 40 L 17 34 C 16 30 13 26 16 22 L 18 12 C 18 7 16 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(21,0) rotate(7,10,25)">
+            <path d="M 10 4 C 16 4 19 7 19 12 L 19 22 C 19 26 19 30 18 34 L 17 40 C 16 44 13 46 10 46 C 7 46 4 44 3 40 L 3 34 C 4 30 7 26 4 22 L 2 12 C 2 7 4 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <div id="middleZone" class="zone">
+        <svg class="zoneFeet" viewBox="0 0 42 50" xmlns="http://www.w3.org/2000/svg">
+          <g transform="rotate(-7,10,25)">
+            <path d="M 10 4 C 4 4 1 7 1 12 L 1 22 C 1 26 1 30 2 34 L 3 40 C 4 44 7 46 10 46 C 13 46 16 44 17 40 L 17 34 C 16 30 13 26 16 22 L 18 12 C 18 7 16 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(21,0) rotate(7,10,25)">
+            <path d="M 10 4 C 16 4 19 7 19 12 L 19 22 C 19 26 19 30 18 34 L 17 40 C 16 44 13 46 10 46 C 7 46 4 44 3 40 L 3 34 C 4 30 7 26 4 22 L 2 12 C 2 7 4 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <div id="rightZone" class="zone">
+        <svg class="zoneFeet" viewBox="0 0 42 50" xmlns="http://www.w3.org/2000/svg">
+          <g transform="rotate(-7,10,25)">
+            <path d="M 10 4 C 4 4 1 7 1 12 L 1 22 C 1 26 1 30 2 34 L 3 40 C 4 44 7 46 10 46 C 13 46 16 44 17 40 L 17 34 C 16 30 13 26 16 22 L 18 12 C 18 7 16 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(21,0) rotate(7,10,25)">
+            <path d="M 10 4 C 16 4 19 7 19 12 L 19 22 C 19 26 19 30 18 34 L 17 40 C 16 44 13 46 10 46 C 7 46 4 44 3 40 L 3 34 C 4 30 7 26 4 22 L 2 12 C 2 7 4 4 10 4 Z" fill="rgba(255,255,255,0.9)"/>
+            <line x1="4" y1="14" x2="16" y2="14" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="38" x2="16" y2="38" stroke="rgba(150,150,150,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+
+      <div id="opponent">🏓</div>
+      <div id="ball">🟡</div>
+      <div id="benny">🏓</div>
+    </div>
+
+    <div id="opponentLabel" class="label">Computer</div>
+    <div id="playerLabel"   class="label">Player 1</div>
+  </div>
+
+  <!-- In-game feedback -->
+  <div id="bigFeedback"></div>
+
+  <!-- Victory overlay -->
+  <div id="victoryOverlay" class="fullOverlay">
+    <div class="overlayCard" style="text-align:center;">
+      <span id="trophy">🏆</span>
+      <h2 id="victoryTitle">Match Winner</h2>
+      <p style="color:rgba(255,255,255,.75);margin-top:6px;">Returning to the title screen…</p>
+    </div>
+  </div>
+
+  <!-- Start / main menu overlay -->
+  <div id="startOverlay" class="fullOverlay">
+    <div class="overlayCard">
+      <h2>🏓 Pickleball Rally</h2>
+      <div id="mainMenu">
+        <div class="menuItem focused" data-midx="0">😌 Casual &nbsp;<span style="opacity:.65;font-size:.85em;">(no timer)</span></div>
+        <div class="menuItem"         data-midx="1">🐢 Slow &nbsp;<span style="opacity:.65;font-size:.85em;">(10s timer)</span></div>
+        <div class="menuItem"         data-midx="2">⚡ Medium &nbsp;<span style="opacity:.65;font-size:.85em;">(6s timer)</span></div>
+        <div class="menuItem"         data-midx="3">🔥 Fast &nbsp;<span style="opacity:.65;font-size:.85em;">(3s timer)</span></div>
+        <div class="menuItem"         data-midx="4">⚙️ Settings</div>
+        <div class="menuItem"         data-midx="5">🏠 Exit Game</div>
+      </div>
+      <p class="hintText">First to 5 points wins a game &bull; Best of 3 wins the match</p>
+      <p class="hintText pulse" style="margin-top:8px;"><strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select</p>
+    </div>
+  </div>
+
+  <!-- Pause overlay -->
+  <div id="pauseOverlay" class="fullOverlay">
+    <div class="overlayCard">
+      <h2>⏸ Paused</h2>
+      <div id="pauseMenu">
+        <div class="menuItem focused" data-pidx="0">▶ Continue</div>
+        <div class="menuItem"         data-pidx="1">🏠 Main Menu</div>
+        <div class="menuItem"         data-pidx="2">🆘 Help</div>
+      </div>
+      <p class="hintText pulse" style="margin-top:10px;"><strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select</p>
+    </div>
+  </div>
+
+  <!-- Settings overlay (stacked above start overlay) -->
+  <div id="settingsOverlay" class="fullOverlay" style="display:none;">
+    <div class="overlayCard">
+      <h2>⚙️ Settings</h2>
+      <div id="settingsMenu">
+        <div class="menuItem focused" data-sidx="0">Text to Speech: <span id="val-tts">On</span></div>
+        <div class="menuItem"         data-sidx="1">Voice: <span id="val-voice">Default</span></div>
+        <div class="menuItem"         data-sidx="2">Auto Scan: <span id="val-autoscan">Off</span></div>
+        <div class="menuItem"         data-sidx="3">Scan Speed: <span id="val-speed">2s</span></div>
+        <div class="menuItem"         data-sidx="4">Sound Effects: <span id="val-sound">On</span></div>
+        <div class="menuItem"         data-sidx="5">← Back</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #game -->
+
+<!-- Shared accessibility scripts -->
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+
+<script>
+'use strict';
+
+// ─── Shorthand ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function vm() { return window.NarbeVoiceManager || null; }
+function sm() { return window.NarbeScanManager  || null; }
+
+// ─── TTS helper ───────────────────────────────────────────────────────────────
+function speak(text) {
+  if (vm()) vm().speak(String(text));
+}
+
+// ─── Persistent sound toggle ──────────────────────────────────────────────────
+let soundEnabled = localStorage.getItem('pb-sound') !== 'false';
+
+// ─── Game constants ───────────────────────────────────────────────────────────
+const POINTS_TO_WIN_GAME  = 5;
+const GAMES_TO_WIN_MATCH  = 2;
+const ZONE_NAMES  = ['Left', 'Center', 'Right'];
+const ZONE_FREQS  = [220, 440, 880];   // distinct pitches: low / mid / high
+
+// Difficulty only affects the response timer. Ball speed is the same for all.
+const difficulties = [
+  { name:'Casual', noTimer:true,  baseTime:60.0, minTime:60.0, ballMs:900, computerMissChance:0.35, minRally:2, maxRally:4 },
+  { name:'Slow',                  baseTime:10.0, minTime: 9.0, ballMs:900, computerMissChance:0.22, minRally:4, maxRally:7 },
+  { name:'Medium',                baseTime: 6.0, minTime: 5.0, ballMs:900, computerMissChance:0.22, minRally:4, maxRally:7 },
+  { name:'Fast',                  baseTime: 3.0, minTime: 2.5, ballMs:900, computerMissChance:0.22, minRally:4, maxRally:7 }
+];
+
+const bennyPositions = [
+  { left:'20%', rot:'-18deg' },
+  { left:'50%', rot:'0deg'   },
+  { left:'80%', rot:'18deg'  }
+];
+const bennyBallPositions = [
+  { left:'21%', top:'72%' },
+  { left:'50%', top:'72%' },
+  { left:'79%', top:'72%' }
+];
+const opponentPositions = [
+  { left:'22%', rot:'155deg' },
+  { left:'50%', rot:'180deg' },
+  { left:'78%', rot:'205deg' }
+];
+const opponentBallPositions = [
+  { left:'23%', top:'22%' },
+  { left:'50%', top:'22%' },
+  { left:'77%', top:'22%' }
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let currentMenu     = 'start';  // 'start' | 'settings' | 'game'
+let menuIndex       = 0;
+const MENU_COUNT    = 6;        // Casual, Slow, Medium, Fast, Settings, Exit
+let settingsIndex   = 0;
+const SETTINGS_COUNT = 6;
+let autoScanTimer   = null;
+
+let started = false, busy = false, matchOver = false;
+let difficultyIndex = 0;
+let selectedIndex = 1, targetIndex = 1, lastReturnIndex = 1;
+let bennyScore = 0, computerScore = 0, bennyGames = 0, computerGames = 0;
+let gameNumber = 1, rallyHits = 0, rallyGoal = 4;
+let gameTimer = null;
+let timeLeft  = 5;
+
+// ─── Input handling: keyup for tap, hold-detect for backward scan ──────────────
+const keyIsDown = {};
+const lastKeyUp = {};
+
+// Space hold: tap (< HOLD_THRESHOLD ms) → forward scan
+//             hold (≥ HOLD_THRESHOLD ms) → backward scan, repeating
+const HOLD_THRESHOLD = 3000; // ms
+const HOLD_REPEAT_MS = 380; // ms between backward steps while held
+let spaceHoldTimer  = null;
+let spaceHoldRepeat = null;
+let spaceDidHold    = false;
+
+// Enter hold: tap → select; hold ≥ ENTER_PAUSE_MS → open pause menu
+const ENTER_PAUSE_MS = 5000;
+let enterHoldTimer = null;
+let enterDidHold   = false;
+
+let paused = false;
+let pauseMenuIndex = 0;
+const PAUSE_COUNT  = 3;
+
+function inputCooldown() {
+  return sm() ? sm().getInputSensitivity() : 200;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (keyIsDown['Space']) return; // ignore browser auto-repeat
+    keyIsDown['Space'] = true;
+    spaceDidHold = false;
+    spaceHoldTimer = setTimeout(() => {
+      spaceDidHold = true;
+      onSpaceBack();
+      const repeatMs = sm() ? sm().getScanInterval() : HOLD_REPEAT_MS;
+      spaceHoldRepeat = setInterval(onSpaceBack, repeatMs);
+    }, HOLD_THRESHOLD);
+  }
+  if (e.code === 'Enter') {
+    e.preventDefault();
+    if (keyIsDown['Enter']) return;
+    keyIsDown['Enter'] = true;
+    enterDidHold = false;
+    enterHoldTimer = setTimeout(() => {
+      enterDidHold = true;
+      enterHoldTimer = null;
+      if (currentMenu === 'game') openPause();
+    }, ENTER_PAUSE_MS);
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    clearTimeout(spaceHoldTimer);
+    clearInterval(spaceHoldRepeat);
+    spaceHoldTimer = spaceHoldRepeat = null;
+
+    if (!keyIsDown['Space']) return;
+    keyIsDown['Space'] = false;
+
+    if (!spaceDidHold) {
+      // Short tap → forward scan
+      const now = Date.now();
+      if (now - (lastKeyUp['Space'] || 0) < inputCooldown()) return;
+      lastKeyUp['Space'] = now;
+      onSpace();
+    }
+    spaceDidHold = false;
+  }
+
+  if (e.code === 'Enter') {
+    clearTimeout(enterHoldTimer);
+    enterHoldTimer = null;
+    if (!keyIsDown['Enter']) return;
+    keyIsDown['Enter'] = false;
+    if (enterDidHold) { enterDidHold = false; return; }
+    const now = Date.now();
+    if (now - (lastKeyUp['Enter'] || 0) < inputCooldown()) return;
+    lastKeyUp['Enter'] = now;
+    onEnter();
+  }
+});
+
+// ─── Space / Enter dispatch ────────────────────────────────────────────────────
+function onSpace() {
+  if (currentMenu === 'pause') {
+    pauseMenuIndex = (pauseMenuIndex + 1) % PAUSE_COUNT;
+    updatePauseMenuFocus();
+    speakPauseItem();
+    restartAutoScan();
+  } else if (currentMenu === 'start') {
+    menuIndex = (menuIndex + 1) % MENU_COUNT;
+    updateMainMenuFocus();
+    speakMainItem();
+    restartAutoScan();
+  } else if (currentMenu === 'settings') {
+    settingsIndex = (settingsIndex + 1) % SETTINGS_COUNT;
+    updateSettingsMenuFocus();
+    speakSettingsItem();
+    restartAutoScan();
+  } else if (currentMenu === 'game') {
+    if (busy || matchOver) return;
+    scanZone();
+    restartAutoScan();
+  }
+}
+
+function onSpaceBack() {
+  if (currentMenu === 'start') {
+    menuIndex = (menuIndex - 1 + MENU_COUNT) % MENU_COUNT;
+    updateMainMenuFocus();
+    speakMainItem();
+    restartAutoScan();
+  } else if (currentMenu === 'settings') {
+    settingsIndex = (settingsIndex - 1 + SETTINGS_COUNT) % SETTINGS_COUNT;
+    updateSettingsMenuFocus();
+    speakSettingsItem();
+    restartAutoScan();
+  } else if (currentMenu === 'game') {
+    if (busy || matchOver) return;
+    selectedIndex = (selectedIndex - 1 + 3) % 3;
+    updateGlow();
+    zoneTone(selectedIndex);
+    restartAutoScan();
+  }
+}
+
+function onEnter() {
+  if (currentMenu === 'pause') {
+    if (pauseMenuIndex === 0) closePause();
+    else if (pauseMenuIndex === 1) pauseGoMainMenu();
+    else speak('I need help');
+    return;
+  }
+  if (currentMenu === 'start') {
+    if (menuIndex < 4) {
+      difficultyIndex = menuIndex;
+      startMatch();
+    } else if (menuIndex === 4) {
+      openSettings();
+    } else {
+      goToHub();
+    }
+  } else if (currentMenu === 'settings') {
+    activateSettingsItem(settingsIndex);
+  } else if (currentMenu === 'game') {
+    if (matchOver) { returnToTitleScreen(); return; }
+    if (!busy)     chooseMoveAndHit();
+  }
+}
+
+// ─── Menu focus helpers ────────────────────────────────────────────────────────
+function updateMainMenuFocus() {
+  document.querySelectorAll('#mainMenu .menuItem').forEach((el, i) =>
+    el.classList.toggle('focused', i === menuIndex));
+}
+
+function updateSettingsMenuFocus() {
+  document.querySelectorAll('#settingsMenu .menuItem').forEach((el, i) =>
+    el.classList.toggle('focused', i === settingsIndex));
+}
+
+// ─── TTS for menus ────────────────────────────────────────────────────────────
+function speakMainItem() {
+  speak(['Casual', 'Slow', 'Medium', 'Fast', 'Settings', 'Exit Game'][menuIndex]);
+}
+
+function speakSettingsItem() {
+  speak(buildSettingsLabel(settingsIndex));
+}
+
+function buildSettingsLabel(idx) {
+  const v = vm(), s = sm();
+  const tts      = v ? v.getSettings().ttsEnabled : true;
+  const voiceName = v && typeof v.getVoiceDisplayName === 'function'
+                    ? v.getVoiceDisplayName() : 'Default';
+  const autoScan = s ? s.getSettings().autoScan : false;
+  const speedMs  = s ? s.getScanInterval() : 2000;
+  return [
+    `Text to Speech: ${tts ? 'On' : 'Off'}`,
+    `Voice: ${voiceName}`,
+    `Auto Scan: ${autoScan ? 'On' : 'Off'}`,
+    `Scan Speed: ${speedMs / 1000} seconds`,
+    `Sound Effects: ${soundEnabled ? 'On' : 'Off'}`,
+    'Back'
+  ][idx];
+}
+
+function goToHub() {
+  speak('Exiting to Hub');
+  setTimeout(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ action: 'focusBackButton' }, '*');
+    } else {
+      window.location.href = '../../../index.html';
+    }
+  }, 800);
+}
+
+// ─── Settings panel ────────────────────────────────────────────────────────────
+function openSettings() {
+  currentMenu   = 'settings';
+  settingsIndex = 0;
+  $('settingsOverlay').style.display = 'flex';
+  updateSettingsMenuFocus();
+  updateSettingsDisplay();
+  speak('Settings');
+  restartAutoScan();
+}
+
+function closeSettings() {
+  currentMenu = 'start';
+  $('settingsOverlay').style.display = 'none';
+  speakMainItem();
+  restartAutoScan();
+}
+
+function activateSettingsItem(idx) {
+  const v = vm(), s = sm();
+  switch (idx) {
+    case 0: // TTS toggle
+      if (v) {
+        v.toggleTTS();
+        updateSettingsDisplay();
+        if (v.getSettings().ttsEnabled) speak(buildSettingsLabel(0));
+      }
+      break;
+    case 1: // Cycle voice
+      if (v) {
+        v.cycleVoice();
+        updateSettingsDisplay();
+        speak(buildSettingsLabel(1));
+      }
+      break;
+    case 2: // Auto scan toggle
+      if (s) {
+        s.toggleAutoScan();
+        updateSettingsDisplay();
+        speak(buildSettingsLabel(2));
+        restartAutoScan();
+      }
+      break;
+    case 3: // Cycle scan speed
+      if (s) {
+        s.cycleScanSpeed();
+        updateSettingsDisplay();
+        speak(buildSettingsLabel(3));
+        restartAutoScan();
+      }
+      break;
+    case 4: // Sound toggle
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('pb-sound', soundEnabled);
+      updateSettingsDisplay();
+      speak(buildSettingsLabel(4));
+      break;
+    case 5: // Back
+      closeSettings();
+      break;
+  }
+}
+
+function updateSettingsDisplay() {
+  const v = vm(), s = sm();
+  const tts      = v ? v.getSettings().ttsEnabled : true;
+  const voiceName = v && typeof v.getVoiceDisplayName === 'function'
+                    ? v.getVoiceDisplayName() : 'Default';
+  const autoScan = s ? s.getSettings().autoScan : false;
+  const speedMs  = s ? s.getScanInterval() : 2000;
+
+  $('val-tts').textContent      = tts ? 'On' : 'Off';
+  $('val-voice').textContent    = voiceName;
+  $('val-autoscan').textContent = autoScan ? 'On' : 'Off';
+  $('val-speed').textContent    = (speedMs / 1000) + 's';
+  $('val-sound').textContent    = soundEnabled ? 'On' : 'Off';
+}
+
+// ─── Auto scan ────────────────────────────────────────────────────────────────
+function restartAutoScan() {
+  if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
+  const s = sm();
+  if (!s || !s.getSettings().autoScan) return;
+  autoScanTimer = setInterval(onSpace, s.getScanInterval());
+}
+
+function stopAutoScan() {
+  if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
+}
+
+// ─── Sound ────────────────────────────────────────────────────────────────────
+function makeCtx() {
+  return new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function beep(freq, duration, volume = 0.065) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = makeCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+    osc.start(); osc.stop(ctx.currentTime + duration / 1000);
+  } catch(e) {}
+}
+
+function zoneTone(zoneIndex) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = makeCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = ZONE_FREQS[zoneIndex];
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.14);
+  } catch(e) {}
+}
+
+function paddleHitSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = makeCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(155, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.09);
+  } catch(e) {}
+}
+
+function clapSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = makeCtx();
+    const now = ctx.currentTime;
+    for (let i = 0; i < 7; i++) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.07);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let j = 0; j < bufferSize; j++) {
+        data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufferSize, 2);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 800 + Math.random() * 900;
+      const gain = ctx.createGain();
+      const start = now + i * 0.065;
+      gain.gain.setValueAtTime(0.05, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.07);
+      noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      noise.start(start); noise.stop(start + 0.07);
+    }
+  } catch(e) {}
+}
+
+// ─── Display ──────────────────────────────────────────────────────────────────
+const bennyEl   = $('benny');
+const oppEl     = $('opponent');
+const ballEl    = $('ball');
+const feedbackEl = $('bigFeedback');
+const zones     = [$('leftZone'), $('middleZone'), $('rightZone')];
+
+function updateScoreDisplay() {
+  $('bennyScore').textContent    = bennyScore;
+  $('computerScore').textContent = computerScore;
+  $('bennyGames').textContent    = bennyGames;
+  $('computerGames').textContent = computerGames;
+  $('gameNumber').textContent    = gameNumber;
+}
+
+function updateGlow() {
+  zones.forEach((z, i) => z.classList.toggle('activeZone', i === selectedIndex));
+}
+
+function showFeedback(text, duration = 900) {
+  feedbackEl.textContent = text;
+  feedbackEl.style.display = 'block';
+  setTimeout(() => { feedbackEl.style.display = 'none'; }, duration);
+}
+
+// ─── Court element control ────────────────────────────────────────────────────
+function moveBenny(index) {
+  selectedIndex = index;
+  const p = bennyPositions[index];
+  bennyEl.style.left = p.left;
+  bennyEl.style.transform = `translateX(-50%) rotate(${p.rot})`;
+  updateGlow();
+}
+
+function moveOpponent(index) {
+  const p = opponentPositions[index];
+  oppEl.style.left = p.left;
+  oppEl.style.transform = `translateX(-50%) rotate(${p.rot})`;
+}
+
+function swingBenny() {
+  bennyEl.classList.remove('swingBenny');
+  void bennyEl.offsetWidth;
+  bennyEl.classList.add('swingBenny');
+  paddleHitSound();
+}
+
+function swingOpponent() {
+  oppEl.classList.remove('swingOpponent');
+  void oppEl.offsetWidth;
+  oppEl.classList.add('swingOpponent');
+  paddleHitSound();
+}
+
+function serveSwing() {
+  oppEl.classList.remove('serveSwing');
+  void oppEl.offsetWidth;
+  oppEl.classList.add('serveSwing');
+  paddleHitSound();
+}
+
+function setBallImmediate(pos, scale = 1.05) {
+  ballEl.style.transition = 'none';
+  ballEl.style.left = pos.left;
+  ballEl.style.top  = pos.top;
+  ballEl.style.transform = `translate(-50%,-50%) scale(${scale})`;
+  void ballEl.offsetWidth;
+}
+
+function setBallAnimated(pos, ms, scale = 1.05) {
+  ballEl.style.transition = `left ${ms}ms ease-in-out,top ${ms}ms ease-in-out,transform ${ms}ms ease-in-out`;
+  ballEl.style.left = pos.left;
+  ballEl.style.top  = pos.top;
+  ballEl.style.transform = `translate(-50%,-50%) scale(${scale})`;
+}
+
+function bounceBall() {
+  ballEl.classList.remove('bounce');
+  void ballEl.offsetWidth;
+  ballEl.classList.add('bounce');
+  beep(150, 55, 0.045);
+}
+
+function chooseDifferentReturn(previous) {
+  let next = Math.floor(Math.random() * 3);
+  if (next === previous) next = (next + 1) % 3;
+  return next;
+}
+
+function placeBallAtBennySide(index) {
+  setBallImmediate(bennyBallPositions[index], 1.15);
+  targetIndex = index;
+  lastReturnIndex = index;
+}
+
+// ─── Timer ────────────────────────────────────────────────────────────────────
+function currentTimerLimit() {
+  const d = difficulties[difficultyIndex];
+  return Math.max(d.minTime, d.baseTime - rallyHits * 0.1);
+}
+
+function randomRallyGoal() {
+  const d = difficulties[difficultyIndex];
+  return Math.floor(Math.random() * (d.maxRally - d.minRally + 1)) + d.minRally;
+}
+
+function clearGameTimer() {
+  if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
+}
+
+function resetTimerVisual() {
+  const d = difficulties[difficultyIndex];
+  if (d.noTimer) {
+    $('timeLeft').textContent = '∞';
+    $('timerBar').style.width = '100%';
+    return;
+  }
+  const limit = currentTimerLimit();
+  timeLeft = limit;
+  $('timeLeft').textContent = limit.toFixed(1);
+  $('timerBar').style.width = '100%';
+}
+
+function startTimer() {
+  clearGameTimer();
+  const d = difficulties[difficultyIndex];
+  if (d.noTimer) {
+    $('timeLeft').textContent = '∞';
+    $('timerBar').style.width = '100%';
+    return;
+  }
+  const limit = currentTimerLimit();
+  timeLeft = limit;
+  $('timeLeft').textContent = timeLeft.toFixed(1);
+  $('timerBar').style.width = '100%';
+
+  gameTimer = setInterval(() => {
+    timeLeft = Math.max(0, timeLeft - 0.1);
+    $('timeLeft').textContent = timeLeft.toFixed(1);
+    $('timerBar').style.width = Math.max(0, (timeLeft / limit) * 100) + '%';
+    if (timeLeft <= 2 && timeLeft > 1.9) beep(300, 80);
+    if (timeLeft <= 0) { clearGameTimer(); awardPoint('computer'); }
+  }, 100);
+}
+
+// ─── Zone scanning (in-game) ──────────────────────────────────────────────────
+function scanZone() {
+  selectedIndex = (selectedIndex + 1) % 3;
+  updateGlow();
+  zoneTone(selectedIndex);
+}
+
+// ─── Clap animation ───────────────────────────────────────────────────────────
+function clapAnimation() {
+  const icons = ['👏', '⭐', '✨', '👏'];
+  for (let i = 0; i < 14; i++) {
+    const c = document.createElement('div');
+    c.className = 'clap';
+    c.textContent = icons[Math.floor(Math.random() * icons.length)];
+    c.style.left = (15 + Math.random() * 70) + '%';
+    c.style.top  = (32 + Math.random() * 30) + '%';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 900);
+  }
+  clapSound();
+}
+
+// ─── Points / scoring ─────────────────────────────────────────────────────────
+function announceGamePoint() {
+  if      (bennyScore === 4 && bennyGames === 1)       { showFeedback('Player 1 match point', 1100); speak('Player 1 match point'); }
+  else if (computerScore === 4 && computerGames === 1) { showFeedback('Computer match point', 1100); speak('Computer match point'); }
+  else if (bennyScore === 4)                           { showFeedback('Player 1 game point', 1100); speak('Player 1 game point'); }
+  else if (computerScore === 4)                        { showFeedback('Computer game point', 1100); speak('Computer game point'); }
+}
+
+function checkGameOrMatch() {
+  if (bennyScore < POINTS_TO_WIN_GAME && computerScore < POINTS_TO_WIN_GAME) return false;
+
+  clearGameTimer();
+  stopAutoScan();
+  busy = true;
+
+  const gameWinner = bennyScore >= POINTS_TO_WIN_GAME ? 'Player 1' : 'Computer';
+  if (gameWinner === 'Player 1') bennyGames++; else computerGames++;
+  updateScoreDisplay();
+
+  if (bennyGames >= GAMES_TO_WIN_MATCH || computerGames >= GAMES_TO_WIN_MATCH) {
+    matchOver = true;
+    const matchWinner = bennyGames >= GAMES_TO_WIN_MATCH ? 'Player 1' : 'Computer';
+    $('victoryTitle').textContent = matchWinner + ' Wins!';
+    $('victoryOverlay').style.display = 'flex';
+    showFeedback(matchWinner + ' wins the match!', 1500);
+    speak(matchWinner + ' wins the match!');
+    clapAnimation();
+    setTimeout(returnToTitleScreen, 4500);
+    return true;
+  }
+
+  const msg = gameWinner + ' wins game ' + gameNumber;
+  showFeedback(msg, 1300);
+  speak(msg);
+  clapAnimation();
+  gameNumber++;
+  setTimeout(startNewGame, 1900);
+  return true;
+}
+
+function awardPoint(winner) {
+  if (!started || matchOver) return;
+  clearGameTimer();
+  busy = true;
+
+  if (winner === 'benny') {
+    bennyScore++;
+    showFeedback('Player 1 scores!', 900);
+    speak('Point for Player 1');
+    beep(660, 110);
+    setTimeout(() => beep(880, 110), 130);
+  } else {
+    computerScore++;
+    showFeedback('Computer scores!', 900);
+    speak('Computer scores');
+    beep(220, 160);
+  }
+
+  rallyHits = 0;
+  updateScoreDisplay();
+  clapAnimation();
+
+  if (checkGameOrMatch()) return;
+  announceGamePoint();
+  setTimeout(startNewPoint, 1350);
+}
+
+// ─── Game flow ────────────────────────────────────────────────────────────────
+function startNewPoint() {
+  busy = true;
+  clearGameTimer();
+  stopAutoScan();
+  rallyHits = 0;
+  rallyGoal = randomRallyGoal();
+  updateScoreDisplay();
+  resetTimerVisual();
+
+  const serveTarget = chooseDifferentReturn(lastReturnIndex);
+  const d   = difficulties[difficultyIndex];
+  const ballMs = Math.max(650, d.ballMs);
+
+  moveOpponent(1);
+  setBallImmediate(opponentBallPositions[1], 1.05);
+
+  setTimeout(() => {
+    serveSwing();
+    setBallAnimated({ left:'50%', top:'47%' }, Math.floor(ballMs * 0.45), 1.42);
+  }, 450);
+
+  setTimeout(() => {
+    setBallAnimated(bennyBallPositions[serveTarget], Math.floor(ballMs * 0.55), 1.15);
+  }, 450 + Math.floor(ballMs * 0.45));
+
+  setTimeout(() => {
+    targetIndex = serveTarget;
+    lastReturnIndex = serveTarget;
+    bounceBall();
+    zoneTone(targetIndex);
+    busy = false;
+    startTimer();
+    restartAutoScan();
+  }, 560 + ballMs);
+}
+
+function computerReturn() {
+  if (matchOver) return;
+  busy = true;
+  clearGameTimer();
+  stopAutoScan();
+  resetTimerVisual();
+
+  const d = difficulties[difficultyIndex];
+  const missAllowed = rallyHits >= rallyGoal;
+  const computerMisses = missAllowed && Math.random() < d.computerMissChance;
+  const oppIndex = Math.floor(Math.random() * 3);
+  const ballMs = Math.max(560, d.ballMs - rallyHits * 35);
+
+  moveOpponent(oppIndex);
+  setBallAnimated(opponentBallPositions[oppIndex], 250, 1.05);
+
+  setTimeout(() => {
+    swingOpponent();
+    setBallAnimated({ left:'50%', top:'47%' }, Math.floor(ballMs * 0.45), 1.42);
+  }, 280);
+
+  if (computerMisses) {
+    setTimeout(() => {
+      setBallAnimated({ left:'104%', top:'76%' }, Math.floor(ballMs * 0.65), 0.95);
+    }, 280 + Math.floor(ballMs * 0.45));
+    setTimeout(() => awardPoint('benny'), 650 + ballMs);
+    return;
+  }
+
+  const returnIndex = chooseDifferentReturn(lastReturnIndex);
+
+  setTimeout(() => {
+    setBallAnimated(bennyBallPositions[returnIndex], Math.floor(ballMs * 0.55), 1.15);
+  }, 280 + Math.floor(ballMs * 0.45));
+
+  setTimeout(() => {
+    targetIndex = returnIndex;
+    lastReturnIndex = returnIndex;
+    bounceBall();
+    zoneTone(targetIndex);
+    busy = false;
+    startTimer();
+    restartAutoScan();
+  }, 350 + ballMs);
+}
+
+function chooseMoveAndHit() {
+  if (busy || matchOver) return;
+  stopAutoScan();
+  busy = true;
+  clearGameTimer();
+
+  moveBenny(selectedIndex);
+  beep(440, 70);
+
+  setTimeout(() => {
+    if (selectedIndex !== targetIndex) {
+      awardPoint('computer');
+      return;
+    }
+
+    rallyHits++;
+    swingBenny();
+
+    const d = difficulties[difficultyIndex];
+    const ballMs = Math.max(540, d.ballMs - rallyHits * 35);
+
+    setBallAnimated({ left:'50%', top:'47%' }, Math.floor(ballMs * 0.40), 1.42);
+
+    const oppSide = opponentBallPositions[selectedIndex];
+    setTimeout(() => {
+      setBallAnimated(oppSide, Math.floor(ballMs * 0.60), 1.05);
+    }, Math.floor(ballMs * 0.40));
+
+    setTimeout(computerReturn, ballMs + 140);
+  }, 420);
+}
+
+function startNewGame() {
+  bennyScore = 0; computerScore = 0;
+  selectedIndex = 1; targetIndex = 1; lastReturnIndex = 1;
+  moveBenny(1); moveOpponent(1);
+  placeBallAtBennySide(1);
+  updateScoreDisplay();
+  startNewPoint();
+}
+
+// ─── Pause menu ──────────────────────────────────────────────────────────────
+function updatePauseMenuFocus() {
+  document.querySelectorAll('#pauseMenu .menuItem').forEach((el, i) =>
+    el.classList.toggle('focused', i === pauseMenuIndex));
+}
+
+function speakPauseItem() {
+  speak(['Continue', 'Main Menu', 'Help'][pauseMenuIndex]);
+}
+
+function openPause() {
+  if (paused || currentMenu !== 'game') return;
+  paused = true;
+  clearGameTimer();
+  stopAutoScan();
+  currentMenu = 'pause';
+  pauseMenuIndex = 0;
+  $('pauseOverlay').style.display = 'flex';
+  updatePauseMenuFocus();
+  speak('Game paused. Continue or Main Menu.');
+  restartAutoScan();
+}
+
+function closePause() {
+  $('pauseOverlay').style.display = 'none';
+  paused = false;
+  currentMenu = 'game';
+  stopAutoScan();
+  speak('Resuming.');
+  if (!matchOver && !busy) {
+    const d = difficulties[difficultyIndex];
+    if (!d.noTimer && timeLeft > 0) {
+      const limit = currentTimerLimit();
+      gameTimer = setInterval(() => {
+        timeLeft = Math.max(0, timeLeft - 0.1);
+        $('timeLeft').textContent = timeLeft.toFixed(1);
+        $('timerBar').style.width = Math.max(0, (timeLeft / limit) * 100) + '%';
+        if (timeLeft <= 2 && timeLeft > 1.9) beep(300, 80);
+        if (timeLeft <= 0) { clearGameTimer(); awardPoint('computer'); }
+      }, 100);
+    }
+    restartAutoScan();
+  }
+}
+
+function pauseGoMainMenu() {
+  $('pauseOverlay').style.display = 'none';
+  paused = false;
+  returnToTitleScreen();
+}
+
+function updatePauseBtn() {
+  const btn = $('pauseBtn');
+  if (currentMenu === 'game' || currentMenu === 'pause') btn.classList.add('visible');
+  else btn.classList.remove('visible');
+}
+
+function startMatch() {
+  started = true;
+  matchOver = false;
+  currentMenu = 'game';
+  stopAutoScan();
+  $('startOverlay').style.display  = 'none';
+  $('victoryOverlay').style.display = 'none';
+
+  bennyScore = 0; computerScore = 0;
+  bennyGames = 0; computerGames = 0;
+  gameNumber = 1;
+  selectedIndex = 1; targetIndex = 1; lastReturnIndex = 1;
+
+  updateScoreDisplay();
+  moveBenny(1); moveOpponent(1);
+  placeBallAtBennySide(1);
+  beep(523, 120);
+  updatePauseBtn();
+  startNewPoint();
+}
+
+function returnToTitleScreen() {
+  clearGameTimer();
+  stopAutoScan();
+  paused = false;
+  $('pauseOverlay').style.display = 'none';
+  started = false; busy = false; matchOver = false;
+  bennyScore = 0; computerScore = 0;
+  bennyGames = 0; computerGames = 0;
+  gameNumber = 1; rallyHits = 0;
+  selectedIndex = 1; targetIndex = 1; lastReturnIndex = 1;
+
+  updateScoreDisplay();
+  moveBenny(1); moveOpponent(1);
+  placeBallAtBennySide(1);
+  resetTimerVisual();
+  updateGlow();
+
+  $('victoryOverlay').style.display = 'none';
+  $('startOverlay').style.display   = 'flex';
+  $('settingsOverlay').style.display = 'none';
+  currentMenu = 'start';
+  menuIndex   = 0;
+  updateMainMenuFocus();
+  updateSettingsDisplay();
+  updatePauseBtn();
+  speak('Pickleball Rally. Choose your difficulty.');
+  restartAutoScan();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+updateScoreDisplay();
+updateGlow();
+resetTimerVisual();
+placeBallAtBennySide(1);
+updateMainMenuFocus();
+updateSettingsDisplay();
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    updateSettingsDisplay();
+    speak('Pickleball Rally. Choose your difficulty.');
+    restartAutoScan();
+  }, 600);
+});
+
+// ─── Mouse & touch support ────────────────────────────────────────────────────
+
+// Helper: treat a pointer event as a single activation (debounced so touch
+// doesn't fire both touchend and a synthesised click on the same tap).
+const lastPointerActivate = {};
+function pointerActivate(id, fn) {
+  const now = Date.now();
+  if (now - (lastPointerActivate[id] || 0) < 350) return;
+  lastPointerActivate[id] = now;
+  fn();
+}
+
+function addTap(el, id, fn) {
+  // touchend fires before the synthetic click, so use it as the primary path
+  // and ignore the later click on touch devices.
+  let touchFired = false;
+  el.addEventListener('touchend', e => {
+    e.preventDefault(); // stop synthetic click
+    touchFired = true;
+    pointerActivate(id, fn);
+  }, { passive: false });
+  el.addEventListener('click', e => {
+    if (touchFired) { touchFired = false; return; } // already handled by touchend
+    pointerActivate(id, fn);
+  });
+}
+
+// Pause button
+addTap($('pauseBtn'), 'pausebtn', () => {
+  if (currentMenu === 'game')  openPause();
+  else if (currentMenu === 'pause') closePause();
+});
+
+// Pause menu items
+document.querySelectorAll('#pauseMenu .menuItem').forEach((el, i) => {
+  addTap(el, 'pause-' + i, () => {
+    if (currentMenu !== 'pause') return;
+    pauseMenuIndex = i;
+    updatePauseMenuFocus();
+    if (i === 0) closePause();
+    else if (i === 1) pauseGoMainMenu();
+    else speak('I need help');
+  });
+});
+
+// Main menu items — click/tap to focus and activate
+document.querySelectorAll('#mainMenu .menuItem').forEach((el, i) => {
+  addTap(el, 'main-' + i, () => {
+    if (currentMenu !== 'start') return;
+    menuIndex = i;
+    updateMainMenuFocus();
+    speakMainItem();
+    stopAutoScan();
+    if (i < 4) { difficultyIndex = i; startMatch(); }
+    else if (i === 4) openSettings();
+    else goToHub();
+  });
+});
+
+// Settings menu items — click/tap to focus and activate
+document.querySelectorAll('#settingsMenu .menuItem').forEach((el, i) => {
+  addTap(el, 'settings-' + i, () => {
+    if (currentMenu !== 'settings') return;
+    settingsIndex = i;
+    updateSettingsMenuFocus();
+    activateSettingsItem(i);
+  });
+});
+
+// Court — delegated handler covers both zone taps and blank-court taps.
+// A zone tap selects that zone first; a blank-court tap hits with the
+// currently selected zone (same behaviour as Enter).
+function handleCourtPointer(e) {
+  if (currentMenu !== 'game' || busy || matchOver) return;
+  const zoneEl = e.target.closest('.zone');
+  if (zoneEl) {
+    const i = zones.indexOf(zoneEl);
+    if (i >= 0) { selectedIndex = i; updateGlow(); }
+  }
+  chooseMoveAndHit();
+}
+
+let courtTouchFired = false;
+$('court').addEventListener('touchend', e => {
+  e.preventDefault();
+  courtTouchFired = true;
+  pointerActivate('court', () => handleCourtPointer(e));
+}, { passive: false });
+$('court').addEventListener('click', e => {
+  if (courtTouchFired) { courtTouchFired = false; return; }
+  pointerActivate('court', () => handleCourtPointer(e));
+});
+</script>
+</body>
+</html>

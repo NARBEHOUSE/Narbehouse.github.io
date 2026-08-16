@@ -1,0 +1,8 @@
+{
+    "packs": [
+        "packs/demo/demo.json",
+        "../BENNYSMATCHYMATCH/packs/animals.json",
+        "../BENNYSMATCHYMATCH/packs/miscellaneous.json",
+        "../BENNYSMATCHYMATCH/packs/influencers/influencers.json"
+    ]
+}

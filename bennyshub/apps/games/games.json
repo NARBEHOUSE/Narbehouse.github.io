@@ -136,6 +136,22 @@
       "path": "apps/games/BENNYSSLOTMACHINE/index.html",
       "image": "images/games/bennysslotmachine.png",
       "genres": ["Casino", "Arcade"]
+    },
+    {
+      "id": "pickleballrally",
+      "title": "Pickleball Rally",
+      "description": "Rally against the computer by scanning to the right side of the court and returning every serve. In collaboration with SCSU, student creator: Lily Flack.",
+      "path": "apps/games/PICKLEBALLRALLY/index.html",
+      "image": "images/games/pickleballrally.png",
+      "genres": ["Sports", "Arcade"]
+    },
+    {
+      "id": "bennysshownsound",
+      "title": "Benny's Show n Sound",
+      "description": "A spinning wheel See 'n Say. Pick a category, spin the wheel, and hear each panel's name and sound when it lands.",
+      "path": "apps/games/BENNYSSHOWNSOUND/index.html",
+      "image": "images/games/shownsound.png",
+      "genres": ["Interactive", "Educational"]
     }
   ]
 }

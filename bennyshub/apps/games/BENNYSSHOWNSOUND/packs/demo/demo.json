@@ -1,0 +1,564 @@
+{
+  "categories": {
+    "Farm Animals": [
+      {
+        "image": "",
+        "emoji": "🐮",
+        "sound": [
+          "cow1.wav",
+          "cow2.wav"
+        ],
+        "title": "Cow",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🦆",
+        "sound": [
+          "duck1.wav",
+          "duck2.wav"
+        ],
+        "title": "Duck",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐷",
+        "sound": [
+          "pig1.wav",
+          "pig2.wav"
+        ],
+        "title": "Pig",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐑",
+        "sound": [
+          "sheep1.wav",
+          "sheep2.wav"
+        ],
+        "title": "Sheep",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐴",
+        "sound": [
+          "horse1.wav",
+          "horse2.wav"
+        ],
+        "title": "Horse",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐓",
+        "sound": [
+          "rooster1.wav",
+          "rooster2.wav"
+        ],
+        "title": "Rooster",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ],
+    "Vehicles": [
+      {
+        "image": "",
+        "emoji": "🚗",
+        "sound": [
+          "car1.wav"
+        ],
+        "title": "Car",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🚌",
+        "sound": [
+          "bus1.wav"
+        ],
+        "title": "Bus",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🚆",
+        "sound": [
+          "train1.wav"
+        ],
+        "title": "Train",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "⛵",
+        "sound": [
+          "boat1.wav"
+        ],
+        "title": "Boat",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "✈",
+        "sound": [
+          "aeroplane1.wav"
+        ],
+        "title": "Aeroplane",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🚀",
+        "sound": [
+          "rocket1.wav"
+        ],
+        "title": "Rocket",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🚲",
+        "sound": [
+          "bike1.wav"
+        ],
+        "title": "Bike",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🚜",
+        "sound": [
+          "tractor1.wav"
+        ],
+        "title": "Tractor",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ],
+    "Yum": [
+      {
+        "image": "",
+        "emoji": "🍕",
+        "sound": [
+          "pizza1.wav"
+        ],
+        "title": "Pizza",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🍦",
+        "sound": [
+          "ice_cream1.wav"
+        ],
+        "title": "Ice Cream",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🍎",
+        "sound": [
+          "apple1.wav"
+        ],
+        "title": "Apple",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ],
+    "Weather": [
+      {
+        "image": "",
+        "emoji": "☀",
+        "sound": [
+          "sunny1.wav"
+        ],
+        "title": "Sunny",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🌧",
+        "sound": [
+          "rainy1.wav"
+        ],
+        "title": "Rainy",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ],
+    "Zoo": [
+      {
+        "image": "",
+        "emoji": "🦁",
+        "sound": [
+          "lion1.wav"
+        ],
+        "title": "Lion",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐘",
+        "sound": [
+          "elephant1.wav"
+        ],
+        "title": "Elephant",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐒",
+        "sound": [
+          "monkey1.wav"
+        ],
+        "title": "Monkey",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🦒",
+        "sound": [
+          "giraffe1.wav"
+        ],
+        "title": "Giraffe",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🦓",
+        "sound": [
+          "zebra1.wav"
+        ],
+        "title": "Zebra",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐅",
+        "sound": [
+          "tiger1.wav"
+        ],
+        "title": "Tiger",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐧",
+        "sound": [
+          "penguin1.wav"
+        ],
+        "title": "Penguin",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐸",
+        "sound": [
+          "frog1.wav"
+        ],
+        "title": "Frog",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐍",
+        "sound": [
+          "snake1.wav"
+        ],
+        "title": "Snake",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐻",
+        "sound": [
+          "bear1.wav"
+        ],
+        "title": "Bear",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🐼",
+        "sound": [
+          "panda1.wav"
+        ],
+        "title": "Panda",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🦉",
+        "sound": [
+          "owl1.wav"
+        ],
+        "title": "Owl",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ],
+    "Big Feelings": [
+      {
+        "image": "",
+        "emoji": "😄",
+        "sound": [
+          "happy1.wav"
+        ],
+        "title": "Happy",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😢",
+        "sound": [
+          "sad1.wav"
+        ],
+        "title": "Sad",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🙃",
+        "sound": [
+          "silly1.wav"
+        ],
+        "title": "Silly",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😴",
+        "sound": [
+          "sleepy1.wav"
+        ],
+        "title": "Sleepy",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🤩",
+        "sound": [
+          "excited1.wav"
+        ],
+        "title": "Excited",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😠",
+        "sound": [
+          "cross1.wav"
+        ],
+        "title": "Cross",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😱",
+        "sound": [
+          "surprised1.wav"
+        ],
+        "title": "Surprised",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😎",
+        "sound": [
+          "cool1.wav"
+        ],
+        "title": "Cool",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🥰",
+        "sound": [
+          "love1.wav"
+        ],
+        "title": "Love",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😟",
+        "sound": [
+          "worried1.wav"
+        ],
+        "title": "Worried",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🥳",
+        "sound": [
+          "proud1.wav"
+        ],
+        "title": "Proud",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🤔",
+        "sound": [
+          "thinking1.wav"
+        ],
+        "title": "Thinking",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😋",
+        "sound": [
+          "yummy1.wav"
+        ],
+        "title": "Yummy",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🤢",
+        "sound": [
+          "yucky1.wav"
+        ],
+        "title": "Yucky",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🥺",
+        "sound": [
+          "shy1.wav"
+        ],
+        "title": "Shy",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "💪",
+        "sound": [
+          "brave1.wav"
+        ],
+        "title": "Brave",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😌",
+        "sound": [
+          "calm1.wav"
+        ],
+        "title": "Calm",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🤒",
+        "sound": [
+          "poorly1.wav"
+        ],
+        "title": "Poorly",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "😂",
+        "sound": [
+          "laughing1.wav"
+        ],
+        "title": "Laughing",
+        "altTitle": "",
+        "ttsText": ""
+      },
+      {
+        "image": "",
+        "emoji": "🤫",
+        "sound": [
+          "quiet1.wav"
+        ],
+        "title": "Quiet",
+        "altTitle": "",
+        "ttsText": ""
+      }
+    ]
+  },
+  "shownsound": {
+    "version": 1,
+    "categories": {
+      "Farm Animals": {
+        "palette": "Bright",
+        "spinMs": 3800
+      },
+      "Vehicles": {
+        "palette": "Candy",
+        "spinMs": 3800
+      },
+      "Yum": {
+        "palette": "Warm",
+        "spinMs": 3800
+      },
+      "Weather": {
+        "palette": [
+          "#4cc9f0",
+          "#ffd166"
+        ],
+        "spinMs": 3800
+      },
+      "Zoo": {
+        "palette": "Forest",
+        "spinMs": 3800
+      },
+      "Big Feelings": {
+        "palette": "Pastel",
+        "spinMs": 3800
+      }
+    }
+  }
+}
