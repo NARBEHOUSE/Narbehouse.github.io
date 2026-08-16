@@ -7,7 +7,17 @@
             this.config = config;
             // Convert Youtube watch URL to embed URL if necessary
             this.iframeSrc = this.convertYoutubeUrl(config.videoUrl);
-            
+
+            // No video recorded yet for this game -- show a placeholder in the
+            // video frame instead of an iframe pointed at nothing (which would
+            // just be a blank black box).
+            const videoAreaHtml = config.videoUrl
+                ? `<iframe id="benny-tutorial-iframe" style="position:absolute; top:0; left:0; width:100%; height:100%;" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
+                : `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:rgba(255,255,255,0.7); font-family:sans-serif;">
+                       <div style="font-size:48px;">🎬</div>
+                       <div style="font-size:18px; font-weight:bold;">Video coming soon</div>
+                   </div>`;
+
             // Inject Modal HTML
             const modalHtml = `
             <style>
@@ -50,7 +60,7 @@
                         <h2 style="margin-top:0; margin-bottom:15px; padding-right:30px; font-size: 24px;">${config.title}</h2>
                         
                         <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin-bottom:20px; background:#000; border-radius: 4px;">
-                             <iframe id="benny-tutorial-iframe" style="position:absolute; top:0; left:0; width:100%; height:100%;" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                             ${videoAreaHtml}
                         </div>
                         
                         <div style="background:#f0f7ff; padding:15px; border-left:4px solid #007bff; margin-bottom:20px; border-radius: 4px;">
@@ -132,9 +142,10 @@
             const modal = document.getElementById('benny-tutorial-modal');
             const iframe = document.getElementById('benny-tutorial-iframe');
             
-            // Set src to play (or load)
-            iframe.src = this.iframeSrc;
-            
+            // Set src to play (or load) -- no iframe exists when there's no
+            // video yet, just the "coming soon" placeholder.
+            if (iframe) iframe.src = this.iframeSrc;
+
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
             
@@ -155,8 +166,8 @@
             const iframe = document.getElementById('benny-tutorial-iframe');
             
             // Stop video by clearing src
-            iframe.src = '';
-            
+            if (iframe) iframe.src = '';
+
             modal.style.display = 'none';
             document.body.style.overflow = '';
         }
