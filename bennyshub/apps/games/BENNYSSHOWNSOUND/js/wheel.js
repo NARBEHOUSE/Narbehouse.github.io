@@ -361,8 +361,15 @@ function drawEmojiInBox(ctx, glyph, cx, cy, box, art) {
     ctx.textBaseline = 'alphabetic';
 
     const k = size / m.ref;
-    const offX = (fx - 0.5) * box;
-    const offY = (fy - 0.5) * box;
+    // Inverted relative to a naive (fx - 0.5): fx/fy are a focal point in
+    // CONTENT space, same convention drawCover() uses for images — the part
+    // of the content that should sit at box-centre, not a direct screen
+    // offset. Increasing fx there shifts the drawn image the OTHER way
+    // (more of it needs to move into the middle), so the glyph has to match
+    // that sign or it visibly drags backwards relative to every image panel
+    // sharing the exact same editor drag handler.
+    const offX = (0.5 - fx) * box;
+    const offY = (0.5 - fy) * box;
     // Place the pen so the INK box lands centred (plus the focal offset),
     // not the advance box.
     const dx = cx + offX - ((m.right - m.left) * k) / 2;
