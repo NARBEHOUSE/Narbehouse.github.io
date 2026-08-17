@@ -68,9 +68,13 @@ they're working on, pictures of their own family, a course short enough to
 finish in one sitting. **When you build something new here, ask early whether it
 can have an editor.** It is almost always worth it.
 
-Editors must be switch‑accessible too. If only a caregiver with a mouse can use
-the editor, that is an acceptable starting point — say so plainly in the UI —
-but the goal is a player building their own content independently.
+**Today's editors need a mouse and keyboard and are not switch‑operable.** That
+is an accepted starting point — they are caregiver tools, and they earn their
+place by what they let a caregiver build. But it makes the way *in* to them
+dangerous for a switch user, so **every editor sits behind a spoken warning
+dialog**. See §7, "Warn before a one‑way door" — that pattern is not optional.
+
+The longer‑term goal is a player building their own content independently.
 
 ### Independence is the whole point
 
@@ -395,6 +399,53 @@ Save progress as it happens, to `localStorage`. A player who gets tired
 mid‑session should come back to where they were. Access settings are global via
 the shared managers; game progress is the game's own.
 
+### Warn before a one‑way door
+
+**Any action that takes the player somewhere they cannot get back from with a
+switch must be behind a confirmation.** This is the single most important
+safety pattern in the hub, and it exists because of how scanning fails.
+
+A scan cursor moves on its own, or moves on a press the player may not have
+meant. A mis‑timed Enter is not a rare event — it is the normal failure mode of
+switch access. If a mis‑scan lands on a menu item that opens a mouse‑only
+editor, the player is now looking at a screen they cannot operate, cannot exit,
+and did not ask for. Nobody is coming to help unless somebody happens to walk
+past. That is the exact loss of independence this whole hub exists to prevent.
+
+The editors are the main case. **They need a mouse and keyboard, and are not
+switch‑operable.** Every game that has one already guards it:
+
+| Game | Guard |
+| --- | --- |
+| Trivia Master | Full overlay: "Opening the game editor will leave this site… You will not be able to scan and select with spacebar and enter." |
+| Benny's Mini Golf | "Mouse Required" modal, **also spoken aloud** |
+| Benny's Show n Sound | "Continue (mouse needed)" + spoken "The editor needs a mouse and keyboard." |
+| Benny's Matchy Match | `editorWarning` menu state |
+| Benny's Word Jumble | "Warning: This feature requires a mouse or touch input." |
+| Benny's P3GL | "Note: This feature is advanced and requires a mouse." |
+
+Copy this when you add anything similar:
+
+1. **Confirm first, always.** Never let a single select open a mouse‑only
+   screen. Put a dialog in front of it.
+2. **Put the safe option first in the scan order.** Cancel before Continue. If
+   the player mis‑scans *again* inside the warning dialog, the accident should
+   land on the way out, not the way in. Trivia Master and Mini Golf do this;
+   Matchy Match currently lists Continue first, which is the wrong way round.
+3. **Trap the scan inside the dialog.** While the warning is open, the scan list
+   must contain only the dialog's own buttons — a warning you can scan straight
+   past is not a warning. Trivia Master's `getScannables()` is the model: it
+   returns the overlay's items and nothing else while it is visible.
+4. **Say it out loud.** The player may not read. Mini Golf speaks the whole
+   warning; Show n Sound speaks a short form. A silent warning does not exist
+   for a large share of the players here.
+5. **Say what will happen, in plain words** — "you will not be able to scan and
+   select with spacebar and enter" beats "this feature is advanced."
+
+The same applies to anything else that strands a switch user: leaving the site,
+opening a new window, a file picker, or any external tool. If you cannot get
+back with a switch, warn before going in.
+
 ---
 
 ## 8. Per‑game notes
@@ -480,6 +531,8 @@ Before a game goes into `games.json`:
 - [ ] Reset Progress is two‑step
 - [ ] Exit Game sends `postMessage({ action: 'focusBackButton' })`
 - [ ] Mouse and touch work everywhere, and **no interaction requires a drag**
+- [ ] Anything mouse‑only or off‑site sits behind a **spoken confirm dialog**,
+      with Cancel first in the scan order and the scan trapped in the dialog
 - [ ] Progress saves and resumes
 - [ ] Readable at 100 % on a tablet
 - [ ] Added to `apps/games/games.json` with a thumbnail and genres

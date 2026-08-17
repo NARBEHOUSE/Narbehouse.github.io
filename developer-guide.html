@@ -574,6 +574,17 @@
         <div class="highlight-box">
           <p><strong>Direction of travel:</strong> holding a switch is itself an ability, and some players cannot sustain one. Pause is moving toward being a <em>scannable</em> item in every game, with the hold kept as a convenience. Favour a scannable pause entry in anything new.</p>
         </div>
+
+        <h3>Warn before a one-way door</h3>
+        <p>A mis-timed Enter is the normal failure mode of switch access, not a rare accident. If a mis-scan opens a screen the player cannot operate or exit — an editor, an external tool, a file picker, anything that leaves the site — they are stranded until somebody walks past. <strong>Anything mouse-only must sit behind a confirmation.</strong></p>
+        <p>The editors are the main case: they need a mouse and keyboard and are not switch-operable. Every game that has one already guards it — Trivia Master, Mini Golf, Show n Sound, Matchy Match, Word Jumble and P3GL. Match that pattern:</p>
+        <ul>
+          <li><strong>Confirm first.</strong> Never let a single select open a mouse-only screen</li>
+          <li><strong>Cancel before Continue</strong> in the scan order — if the player mis-scans again inside the warning, the accident should land on the way out</li>
+          <li><strong>Trap the scan inside the dialog</strong> — while it is open the scan list contains only its own buttons. A warning you can scan straight past is not a warning</li>
+          <li><strong>Speak it.</strong> The player may not read. A silent warning does not exist for a large share of players here</li>
+          <li><strong>Say what will happen in plain words</strong> — "you will not be able to scan and select with spacebar and enter" beats "this feature is advanced"</li>
+        </ul>
       </section>
 
       <section class="section" id="settings">
@@ -605,6 +616,7 @@
           <li>✓ Can every action be performed with only Spacebar and Return?</li>
           <li>✓ Can every action be performed with <strong>Return alone</strong>, with Auto Scan on?</li>
           <li>✓ Can the same action be performed with mouse or touch, with <strong>no dragging anywhere</strong>?</li>
+          <li>✓ Does anything mouse-only or off-site sit behind a spoken confirm, with Cancel first and the scan trapped in the dialog?</li>
           <li>✓ Do menu actions fire on <strong>release</strong>, not on press?</li>
           <li>✓ Does holding Spacebar scan backwards in every menu?</li>
           <li>✓ Does holding Return open Pause from anywhere in gameplay, with visible <em>and</em> audible feedback while holding?</li>
