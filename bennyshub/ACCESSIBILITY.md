@@ -621,6 +621,31 @@ pause as something you can *scan to and select*, with the hold gesture kept as a
 convenience rather than the only way in. When you build a new game, favour a
 scannable pause entry; do not go retrofitting the existing ones yet.
 
+**But understand the cost before you reach for it.** Making a control scannable
+is not free — it puts another stop on the scan cycle, and the player passes
+that stop on *every single pass*, for the whole session. A game whose only
+in‑play control is "fire" lets the player sit there and play. Add a scannable
+Pause, and now every shot means cycling past Pause to reach Fire. The player
+who never pauses still pays for it, on every shot, forever.
+
+So the honest trade is: **hold gestures cost nothing during play but exclude
+players who cannot hold; scannable controls include everyone but tax every
+action.** Neither is simply better.
+
+P3GL is the worked example of the current answer. It was deliberately built
+hold‑first — hold Space to aim, press Enter to fire, hold Enter for pause —
+which keeps play down to the fewest possible switch presses. A scannable
+aim‑to‑shoot button and a scannable Pause button are both straightforward to
+add later and are wanted eventually, but they would put more steps between the
+player and actually playing. **For now the hold‑based build is the right call
+for this game, and it works.**
+
+If you are weighing this for something new: prefer keeping the *primary
+gameplay action* off the scan cycle, and put the scannable pause somewhere it
+does not sit between the player and the thing they came to do. Or make it a
+setting, so a player who needs the scannable route can turn it on and a player
+who does not is not slowed down by it.
+
 **Hold‑to‑charge mechanics will get a no‑hold alternative.** Benny's Baseball
 charges the swing by holding, which suits most players but has the same problem
 as above. The plan is a setting modelled on Benny's Football, where the player
