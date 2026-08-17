@@ -169,10 +169,40 @@ strand a player who has learned the pattern everywhere else.
 | Gesture | Where | What it does |
 | --- | --- | --- |
 | **Space**, short press | Any menu | Move highlight forward — **on release** |
-| **Space**, hold ≥ 3 s | Any menu | Scan **backwards**, repeating at the scan interval |
+| **Space**, hold | Any menu | Scan **backwards**, repeating at the player's scan speed |
 | **Enter**, short press | Any menu | Select the highlighted item — **on release** |
-| **Enter**, hold ≥ 5 s | In‑game | Open the pause menu |
+| **Enter**, hold | In‑game | Open the pause menu |
 | Mouse click / tap | Anywhere | Same as selecting that item |
+
+### Which of these numbers the scan manager actually owns
+
+This trips people up, so be precise about it. **`NarbeScanManager` owns two
+values and no others:**
+
+- the **scan interval** — 1, 2, 3 or 4 seconds, the player's setting, which is
+  also the repeat rate once backwards scanning has started
+- the **250 ms input debounce**
+
+**It does not own the hold thresholds.** There is no backwards‑scan threshold
+and no pause threshold in `scan-manager.js` at all. Those are hard‑coded
+separately inside each game — the same `3000` appears in at least thirteen
+files under its own name (`longPress`, `SCAN_BACK_HOLD`, `HOLD_THRESHOLD`,
+`BACKWARDS_SCAN_THRESHOLD`), and Bowling writes it as `3.0` seconds because it
+runs off a Three.js clock.
+
+Two consequences:
+
+1. **The convention is ~3 s to start scanning backwards and ~5 s to pause**, and
+   new games should match it — but it is a convention held together by
+   copy‑paste, not a value anything enforces. A game can drift without breaking
+   a build or failing a test. P3GL already has (§12).
+2. **Never promise a specific duration in any text, player‑facing or not.** The
+   repeat rate genuinely varies per player, and the threshold is whatever that
+   particular game happens to hard‑code. "Hold Space to scan backwards" is true
+   everywhere; "hold for 3 seconds" is true only until someone edits one file.
+
+If these thresholds are ever worth standardising, the fix is to put them in
+`scan-manager.js` next to the values it already owns.
 
 ### Never quote these numbers to the player
 
@@ -209,18 +239,19 @@ function onKeyUp(e) {
 }
 ```
 
-### Why pause is a five‑second hold
+### Why pause is a long hold
 
 Pause has to be reachable from inside a game where both switches are already
 doing something else. A long hold is the only gesture left that cannot collide
-with gameplay. Five seconds is long enough that no one opens it by accident, so
-the gesture must be **discoverable while it happens** — otherwise it is a secret.
+with gameplay. It is deliberately long enough that no one opens it by accident,
+which means the gesture must be **discoverable while it happens** — otherwise
+it is a secret.
 
-Race Tracks does this properly and is worth copying:
-
-- at **2 s** a progress ring appears and starts filling
-- each second, a **rising beep** plays, so it works with eyes closed
-- at **5 s** the pause menu opens
+Race Tracks does this properly and is worth copying: partway through the hold a
+progress ring appears and starts filling, a **rising beep** plays each second so
+it works with eyes closed, and the menu opens when the ring completes. The
+player can see and hear that something is happening and that continuing to hold
+will finish it.
 
 Every game must also offer an **on‑screen Pause button** doing the same thing,
 for mouse, touch, and caregivers.
@@ -390,7 +421,7 @@ caregiver setting the game up for someone else.
 everything; the item arms first and only wipes on a second, deliberate select.
 
 ### Pause menu
-Opened by holding Enter ≥ 5 s, or the on‑screen Pause button. Standard items:
+Opened by holding Enter, or by the on‑screen Pause button. Standard items:
 **Continue**, **Restart**, **Settings**, **Main Menu**, **Exit Game**, and where
 useful a **Help** item that speaks a line without closing the menu.
 
@@ -532,8 +563,9 @@ Before a game goes into `games.json`:
 - [ ] Every action reachable with **Space and Enter only**
 - [ ] Every action reachable with **Enter alone**, with Auto Scan on
 - [ ] Menu actions fire on **release**, not press
-- [ ] Hold Space ≥ 3 s scans backwards in every menu
-- [ ] Hold Enter ≥ 5 s opens pause **from anywhere in gameplay**, with a visible
+- [ ] Holding Space scans backwards in every menu, repeating at the player's
+      scan speed from `NarbeScanManager` — not a rate you picked
+- [ ] Holding Enter opens pause **from anywhere in gameplay**, with a visible
       and audible indication while holding
 - [ ] An on‑screen Pause button does the same
 - [ ] Settings reachable from **both** the main menu and the pause menu
@@ -605,7 +637,7 @@ right now.
 on‑screen Pause button you scan to; others use the hold‑Enter gesture; most do
 both. The inconsistency is accepted for now.
 
-**One known deviation from the 5 s standard:** P3GL uses a **2 s** hold to open
+**One known deviation from the ~5 s convention:** P3GL uses a **2 s** hold to open
 its menu when Auto Scan is on, and 5 s when it is off
 (`this.autoScan ? 2000 : 5000`). No comment or commit message records why, and
 it is the only game that varies the hold by control scheme. Worth a decision
