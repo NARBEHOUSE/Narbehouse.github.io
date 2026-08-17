@@ -154,6 +154,14 @@
       "genres": ["Interactive", "Educational"]
     },
     {
+      "id": "bennysballista",
+      "title": "Benny's Ballista",
+      "description": "Lay siege to castles with a giant crossbow! Pick your angle and power from a list, watch the dotted arc show you exactly where the bolt lands, and bring the towers down. No timing and no rush - every shot is your choice.",
+      "path": "apps/games/BENNYSBALLISTA/index.html",
+      "image": "images/games/bennysballista.png",
+      "genres": ["Strategy", "Arcade"]
+    },
+    {
       "id": "bennysracetracks",
       "title": "Benny's Race Tracks",
       "description": "A 3D racing game you steer with a single switch - the game tells you which way to go with arrows, sound, and speech. Race 10 levels in a car, motorcycle, or spaceship, or pick the no-fail Cruise mode and just collect things along the way.",

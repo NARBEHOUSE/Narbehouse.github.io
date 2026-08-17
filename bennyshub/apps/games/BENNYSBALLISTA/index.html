@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Benny's Ballista</title>
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   Themes. Every colour in the game (canvas included) comes from one of these
+   four palettes, so switching profile repaints the world as well as the UI.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{
+  --fs: 100%;
+  --bg:#0a0a0a; --panel:#15161c; --panel2:#1d1f28; --line:#2e3140;
+  --text:#f2f4f8; --dim:#a6adbb;
+  --accent:#ff5c00; --accent2:#22d3ee; --violet:#8b5cf6;
+  --focus:#ffd400; --good:#3ddc84; --bad:#ff5470;
+  --sky1:#1b2a4a; --sky2:#3d5a80; --hill:#22304a; --ground:#3a5a40; --dirt:#2b3f30;
+  --wood:#a9682f; --stone:#8d939c; --glass:#7fe6ff; --barrel:#c9442f; --crown:#ffc93c; --steel:#4a5160;
+}
+/* "Ben Default" is the bare :root block above — the hub's brand colours.
+   "Dark" is the same darkness without the orange/cyan branding, for anyone who
+   finds the brand accents too loud. */
+body[data-theme="dark"]{
+  --bg:#0e1013; --panel:#171a1f; --panel2:#20242b; --line:#333944;
+  --text:#eef1f5; --dim:#9aa3b0;
+  --accent:#7aa2f7; --accent2:#9ece6a; --violet:#bb9af7;
+  --focus:#e0af68; --good:#9ece6a; --bad:#f7768e;
+  --sky1:#12161d; --sky2:#2a3140; --hill:#1a1f29; --ground:#39433a; --dirt:#282f29;
+  --wood:#96683c; --stone:#8a909a; --glass:#8fd3e8; --barrel:#b8574a; --crown:#e0af68; --steel:#454b57;
+}
+body[data-theme="light"]{
+  --bg:#eef1f6; --panel:#ffffff; --panel2:#e6eaf2; --line:#c3cad8;
+  --text:#12151c; --dim:#4d566b;
+  --accent:#c93f00; --accent2:#0d7c92; --violet:#6836d6;
+  /* --focus carries near-black text, so it has to stay bright enough to read
+     against it — a darker orange here drops below 4.5:1. */
+  --focus:#e08900; --good:#137a44; --bad:#b3123a;
+  --sky1:#bfe0ff; --sky2:#e8f4ff; --hill:#9dc0a6; --ground:#6aa06f; --dirt:#4d7350;
+  --wood:#b8763a; --stone:#a9b0ba; --glass:#6fd0ea; --barrel:#d1503a; --crown:#e3a900; --steel:#6b7385;
+}
+body[data-theme="contrast"]{
+  --bg:#000000; --panel:#000000; --panel2:#111111; --line:#ffffff;
+  --text:#ffffff; --dim:#e8e8e8;
+  --accent:#ffff00; --accent2:#00ffff; --violet:#ff00ff;
+  --focus:#ffff00; --good:#00ff66; --bad:#ff3b3b;
+  --sky1:#000000; --sky2:#101010; --hill:#202020; --ground:#303030; --dirt:#181818;
+  --wood:#ffa500; --stone:#ffffff; --glass:#00ffff; --barrel:#ff3b3b; --crown:#ffff00; --steel:#8a8a8a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:var(--fs)}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  height:100vh; overflow:hidden;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+
+#app{display:flex; flex-direction:column; height:100vh}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+#hdr{
+  display:flex; align-items:center; gap:.6rem;
+  padding:.4rem .7rem; background:var(--panel); border-bottom:3px solid var(--line);
+  flex:0 0 auto;
+}
+#ttl{font-size:1.25rem; font-weight:800; letter-spacing:.5px; color:var(--accent); white-space:nowrap}
+#ttl span{color:var(--accent2)}
+#hdrBtns{margin-left:auto; display:flex; gap:.4rem}
+.hbtn{
+  background:var(--panel2); color:var(--text); border:2px solid var(--line);
+  border-radius:.5rem; font:inherit; font-size:.95rem; font-weight:700;
+  min-height:2.6rem; min-width:2.6rem; padding:.3rem .7rem; cursor:pointer;
+}
+.hbtn:hover{border-color:var(--accent)}
+
+/* ── Stage ──────────────────────────────────────────────────────────────── */
+#stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; min-height:0; background:var(--bg)}
+#cvWrap{flex:1 1 auto; position:relative; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden}
+canvas{display:block; max-width:100%; max-height:100%; background:var(--sky1)}
+
+/* HUD floats over the canvas */
+#hud{
+  position:absolute; top:.5rem; left:50%; transform:translateX(-50%);
+  display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center;
+  pointer-events:none; z-index:3;
+}
+.pill{
+  background:rgba(0,0,0,.62); border:2px solid var(--line); border-radius:999px;
+  padding:.2rem .8rem; font-size:.95rem; font-weight:700; white-space:nowrap;
+}
+body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
+.pill b{color:var(--accent2)}
+
+/* ── Shot bar: the discrete scan lists ──────────────────────────────────── */
+#shotbar{
+  flex:0 0 auto; background:var(--panel); border-top:3px solid var(--line);
+  padding:.35rem .6rem; display:flex; flex-direction:column; gap:.3rem;
+}
+.lane{display:flex; align-items:center; gap:.4rem}
+.lane[hidden]{display:none}
+.laneLabel{
+  flex:0 0 5.2rem; font-size:.9rem; font-weight:800; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.lane.locked .laneLabel{color:var(--good)}
+.chips{display:flex; gap:.35rem; flex-wrap:wrap; flex:1 1 auto}
+.chip{
+  background:var(--panel2); border:2px solid var(--line); border-radius:.55rem;
+  color:var(--text); font:inherit; font-size:1rem; font-weight:700;
+  min-height:2.9rem; padding:.35rem .75rem; cursor:pointer; position:relative;
+}
+.chip .sub{display:block; font-size:.72rem; font-weight:600; color:var(--dim)}
+.chip.picked{border-color:var(--good); background:color-mix(in srgb, var(--good) 18%, var(--panel2))}
+.chip.last::after{
+  content:'last'; position:absolute; top:-.55rem; right:-.35rem;
+  background:var(--violet); color:#fff; font-size:.6rem; font-weight:800;
+  padding:.05rem .3rem; border-radius:.3rem;
+}
+.chip.focus{
+  border-color:var(--focus); background:var(--focus); color:#1a1400;
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
+}
+.chip.focus .sub{color:#3a2f00}
+.chip:disabled{opacity:.4; cursor:default}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+#ftr{
+  flex:0 0 auto; display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;
+  padding:.35rem .7rem; background:var(--panel); border-top:3px solid var(--line);
+  font-size:.85rem; color:var(--dim);
+}
+#ftrMode{font-weight:800; color:var(--accent)}
+#ftrTarget{font-weight:700; color:var(--text)}
+#ftrLegend{margin-left:auto; white-space:nowrap}
+kbd{
+  background:var(--panel2); border:1px solid var(--line); border-radius:.3rem;
+  padding:0 .3rem; font-family:inherit; font-weight:700; color:var(--text);
+}
+
+/* ── Overlays (menus, pause, results, help) ─────────────────────────────── */
+#overlay{
+  position:absolute; inset:0; z-index:10;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.82); padding:1rem; overflow:auto;
+}
+body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
+#overlay.on{display:flex}
+#panel{
+  background:var(--panel); border:3px solid var(--line); border-radius:1rem;
+  padding:1rem 1.1rem; width:min(46rem,100%); max-height:100%; overflow:auto;
+}
+#panelTitle{font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:.15rem}
+#panelSub{font-size:.95rem; color:var(--dim); margin-bottom:.8rem; line-height:1.45}
+#panelList{display:flex; flex-direction:column; gap:.45rem}
+.mi{
+  display:flex; align-items:center; gap:.6rem; text-align:left;
+  background:var(--panel2); border:2px solid var(--line); border-radius:.6rem;
+  color:var(--text); font:inherit; font-size:1.1rem; font-weight:700;
+  min-height:3.4rem; padding:.5rem .9rem; cursor:pointer; width:100%;
+}
+.mi .mval{margin-left:auto; color:var(--accent2); font-weight:800}
+.mi.focus{
+  border-color:var(--focus); background:var(--focus); color:#1a1400;
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
+}
+.mi.focus .mval{color:#3a2f00}
+.mi:disabled{opacity:.45; cursor:default}
+.mi.dim{opacity:.55}
+.mi.dim.focus{opacity:1}
+#panelNote{margin-top:.7rem; font-size:.85rem; color:var(--dim); line-height:1.5}
+#panelNote b{color:var(--text)}
+.stars{color:var(--crown); letter-spacing:.1em}
+
+/* Screen-reader live region — keeps the announced text in the DOM too. */
+#sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+@media (max-width:620px){
+  #ttl{font-size:1rem}
+  .laneLabel{flex-basis:4rem; font-size:.78rem}
+  #ftrLegend{display:none}
+}
+</style>
+</head>
+<body data-theme="ben">
+
+<div id="app">
+  <header id="hdr">
+    <div id="ttl">BENNY'S <span>BALLISTA</span></div>
+    <div id="hdrBtns">
+      <button class="hbtn" id="btnHelp"  title="How to play">? Help</button>
+      <button class="hbtn" id="btnSet"   title="Settings">Settings</button>
+      <button class="hbtn" id="btnExit"  title="Exit to hub">Exit</button>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="cvWrap">
+      <canvas id="cv" width="1280" height="720" aria-label="Ballista siege field"></canvas>
+      <div id="hud">
+        <div class="pill" id="pLevel">Level 1</div>
+        <div class="pill" id="pCrowns">Crowns <b>0</b></div>
+        <div class="pill" id="pBolts">Bolts <b>0</b></div>
+        <div class="pill" id="pScore">Score <b>0</b></div>
+      </div>
+    </div>
+
+    <div id="shotbar">
+      <div class="lane" id="laneAmmo"  hidden><span class="laneLabel">Ammo</span><div class="chips" id="chipsAmmo"></div></div>
+      <div class="lane" id="laneAngle">        <span class="laneLabel">Angle</span><div class="chips" id="chipsAngle"></div></div>
+      <div class="lane" id="lanePower">        <span class="laneLabel">Power</span><div class="chips" id="chipsPower"></div></div>
+    </div>
+
+    <div id="overlay">
+      <div id="panel">
+        <div id="panelTitle"></div>
+        <div id="panelSub"></div>
+        <div id="panelList"></div>
+        <div id="panelNote"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="ftr">
+    <span id="ftrMode">Menu</span>
+    <span id="ftrTarget"></span>
+    <span id="ftrLegend"><kbd>Space</kbd> next &nbsp;·&nbsp; <kbd>Return</kbd> select &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
+  </footer>
+</div>
+
+<div id="sr" aria-live="polite" role="status"></div>
+
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+
+<script>
+'use strict';
+/* ==========================================================================
+   BENNY'S BALLISTA
+   A siege game for one or two switches (Spacebar + Return).
+
+   The whole point of this game is that a projectile game can be played with
+   no timing at all. Every shot is assembled from named options you scan
+   through — angle, power, ammo — and the dotted arc on screen re-runs the
+   real physics before you commit, so the game tells you where the shot lands
+   and what it hits. Nothing here rewards a fast press.
+
+   See ../../../AGENTS.md for the rules this game is built to.
+   ========================================================================== */
+
+/* ── Tunables you might actually want to change ─────────────────────────── */
+const CFG = {
+  SPACE_HOLD_MS  : 3000,   // hold Space this long to start scanning by itself
+  RETURN_HOLD_MS : 3000,   // hold Return this long to back out / open Pause
+  SCAN_DIR_ON_HOLD: -1,    // -1 = backward (matches every other hub game), +1 = forward
+  W: 1280, H: 720,         // fixed design resolution; the canvas letterboxes to fit
+  GROUND_Y: 640,
+  MUZZLE_X: 150, MUZZLE_Y: 552,
+  GRAVITY: 1400,           // px/s^2
+  CELL: 44,                // block size
+  DT: 1/120,               // physics substep
+  WIN_PAUSE: 1.6           // seconds to hold on the wreckage before the results panel
+};
+
+/* Angles and powers are lists of named choices — never a swept meter.
+   These numbers are tuned, not arbitrary: every angle and every power has to
+   reach something on at least some levels, or it is a dead option taking up a
+   scan step. See README.md for the reachability check behind them. */
+const ANGLES = [
+  { deg:20, name:'20 degrees', sub:'Flat'  },
+  { deg:30, name:'30 degrees', sub:'Low'   },
+  { deg:38, name:'38 degrees', sub:''      },
+  { deg:45, name:'45 degrees', sub:'Arc'   },
+  { deg:52, name:'52 degrees', sub:''      },
+  { deg:60, name:'60 degrees', sub:'High'  },
+  { deg:70, name:'70 degrees', sub:'Lob'   }
+];
+const POWERS = [
+  { v: 850, name:'Soft'   },   // only reaches the near face of a close castle
+  { v: 960, name:'Medium' },
+  { v:1060, name:'Hard'   },
+  { v:1160, name:'Max'    }    // clears most walls, overshoots close targets
+];
+
+/* Ammo is strategy, not raw power — each one is better at something. */
+const AMMO = [
+  { id:'stone',    name:'Stone Bolt', sub:'All-round',   speed:1.00, dmg:1.0, r:9,  unlockAt:0 },
+  { id:'boulder',  name:'Boulder',    sub:'Smashes rock',speed:0.86, dmg:2.2, r:15, unlockAt:3 },
+  { id:'fire',     name:'Fire Bolt',  sub:'Burns wood',  speed:1.06, dmg:1.0, r:8,  unlockAt:6 },
+  { id:'splitter', name:'Splitter',   sub:'Splits in 3', speed:1.00, dmg:0.6, r:8,  unlockAt:9 }
+];
+
+/* ── Materials ──────────────────────────────────────────────────────────── */
+const MAT = {
+  W:{ id:'W', name:'wood beam',   hp: 40, css:'--wood',   solid:true  },
+  S:{ id:'S', name:'stone block', hp: 90, css:'--stone',  solid:true  },
+  I:{ id:'I', name:'glass pane',  hp: 12, css:'--glass',  solid:true  },
+  T:{ id:'T', name:'powder keg',  hp: 20, css:'--barrel', solid:true, explodes:true },
+  K:{ id:'K', name:'crown',       hp: 25, css:'--crown',  solid:true, crown:true },
+  X:{ id:'X', name:'steel girder',hp: Infinity, css:'--steel', solid:true }
+};
+
+/* ── Levels ─────────────────────────────────────────────────────────────────
+   Want to add a level? Copy a block below and draw a picture with letters.
+   The bottom row of the map sits on the ground. `dist` is how far away the
+   castle is (bigger = further). `par` is the bolt count worth three stars.
+
+     .  empty      W  wood        S  stone       I  glass
+     T  powder keg K  crown       X  steel (indestructible)
+   ────────────────────────────────────────────────────────────────────────── */
+const LEVELS = [
+  { name:'The Watchtower', dist:700, par:1, bolts:6, map:[
+    '..K..',
+    '.WWW.',
+    '.W.W.',
+    '.W.W.'
+  ]},
+  { name:'Twin Turrets', dist:700, par:2, bolts:6, map:[
+    '.K.....K.',
+    'WWW...WWW',
+    'W.W...W.W',
+    'W.W...W.W'
+  ]},
+  { name:'The Long Wall', dist:740, par:2, bolts:7, map:[
+    '....K....',
+    '.WWWWWWW.',
+    '.W..W..W.',
+    'SSSSSSSSS'
+  ]},
+  { name:'Stone Keep', dist:720, par:3, bolts:8, map:[
+    '...K...',
+    '.SSSSS.',
+    '.S.W.S.',
+    '.S.W.S.',
+    'SSSSSSS'
+  ]},
+  { name:'House of Glass', dist:760, par:2, bolts:7, map:[
+    '..K.K..',
+    '.IIIII.',
+    '.I...I.',
+    '.IWWWI.',
+    'SSSSSSS'
+  ]},
+  { name:'Powder Store', dist:700, par:2, bolts:7, map:[
+    '...K...',
+    '.WWWWW.',
+    '.W.T.W.',
+    '.W.T.W.',
+    'SSSSSSS'
+  ]},
+  { name:'The Barbican', dist:720, par:3, bolts:8, map:[
+    '.K.....K.',
+    'SSS.T.SSS',
+    'S.S.W.S.S',
+    'S.SWWWS.S',
+    'SSSSSSSSS'
+  ]},
+  { name:'Iron Gate', dist:780, par:3, bolts:9, map:[
+    '...K...',
+    '.WWWWW.',
+    '.WXXXW.',
+    '.WXTXW.',
+    'SSXXXSS'
+  ]},
+  { name:'The Rookery', dist:700, par:3, bolts:9, map:[
+    'K.......K',
+    'W.......W',
+    'WII...IIW',
+    'WSS.T.SSW',
+    'SSSSSSSSS'
+  ]},
+  { name:'Cliffside Fort', dist:760, par:4, bolts:10, map:[
+    '....K....',
+    '..SSSSS..',
+    '..S.T.S..',
+    'XXWWWWWXX',
+    'XXXXXXXXX'
+  ]},
+  { name:'The Citadel', dist:720, par:4, bolts:10, map:[
+    '.K..K..K.',
+    'SSWWWWWSS',
+    'S.W.T.W.S',
+    'S.WIIIW.S',
+    'SSSSSSSSS'
+  ]},
+  { name:"Benny's Bastion", dist:700, par:5, bolts:12, map:[
+    'K.......K',
+    'SS..K..SS',
+    'S.WWWWW.S',
+    'S.WXTXW.S',
+    'SSWWWWWSS',
+    'XXXXXXXXX'
+  ]}
+];
+
+/* ── Persistence ────────────────────────────────────────────────────────── */
+const SAVE_KEY = 'bennysballista_save';
+const SET_KEY  = 'bennysballista_settings';
+
+const settings = {
+  theme:'ben',          // ben | dark | light | contrast
+  fontScale:100,        // 100..200
+  sound:true,
+  endlessBolts:true     // on by default: bolts then only affect your star rating
+};
+
+const save = {
+  level:0,              // furthest level reached (index)
+  stars:{},             // levelIndex -> 1..3
+  totalScore:0
+};
+
+function loadAll(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SET_KEY) || 'null');
+    if (s) Object.assign(settings, s);
+  }catch(e){ /* corrupt settings shouldn't stop the game loading */ }
+  try{
+    const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (g) Object.assign(save, g);
+  }catch(e){ /* same for progress */ }
+}
+function saveSettings(){ try{ localStorage.setItem(SET_KEY, JSON.stringify(settings)); }catch(e){} }
+function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+/* ── Shared-module shims ────────────────────────────────────────────────────
+   Every one of these is optional at runtime: the game still works if a shared
+   script failed to load, it just loses that feature.
+   ────────────────────────────────────────────────────────────────────────── */
+const vm = () => window.NarbeVoiceManager || null;
+const sm = () => window.NarbeScanManager || null;
+
+/* Always hand this plain prose — never markup. Anything with tags or HTML
+   entities in it gets read out character by character ("and n b s p").
+   voice-manager.speak() already cancels the previous utterance and defers the
+   new one by a tick; calling cancel() here as well is the exact pattern its
+   own comment warns can wedge the speech engine in Chrome and Edge. */
+function speak(text){
+  if (!text) return;
+  const v = vm();
+  document.getElementById('sr').textContent = text;   // never blocks input
+  if (v) { try{ v.speak(String(text)); }catch(e){} }
+}
+function sfx(name, vol){
+  if (!settings.sound || !window.SafeAudio) return;
+  try{ SafeAudio.play(name, vol); }catch(e){}
+}
+function autoScanOn(){ const m = sm(); return m ? m.getSettings().autoScan : false; }
+function scanInterval(){ const m = sm(); return m ? m.getScanInterval() : 2000; }
+/* voice-manager stores this as `ttsEnabled`, not `enabled` — reading the wrong
+   key silently reports "On" forever, because undefined !== false. */
+function ttsOn(){
+  const v = vm();
+  try{ return v ? v.getSettings().ttsEnabled !== false : false; }catch(e){ return false; }
+}
+/* getVoiceDisplayName() takes the voice to describe. Called bare it just
+   returns "Default", so the row never appears to change. */
+function voiceName(){
+  const v = vm();
+  try{ return v ? v.getVoiceDisplayName(v.getCurrentVoice()) : 'n/a'; }catch(e){ return 'n/a'; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GAME STATE
+   ══════════════════════════════════════════════════════════════════════════ */
+const G = {
+  screen : 'menu',       // menu | play | fly | settle | won | overlay
+  stage  : 'angle',      // within 'play': ammo | angle | power
+  overlay: null,         // which menu is open, when screen === 'overlay'
+  levelIx: 0,
+  level  : null,
+  blocks : [],
+  parts  : [],
+  shots  : [],
+  crowns : 0,
+  bolts  : 0,
+  boltsUsed: 0,
+  score  : 0,
+  levelScore: 0,
+  pick   : { ammo:0, angle:3, power:2 },   // current committed picks
+  last   : { ammo:0, angle:3, power:2 },   // what the previous shot used
+  locked : {},                             // which stages are locked in this shot
+  scan   : -1,                             // -1 = nothing highlighted (also the deadzone)
+  menuIx : 0,
+  menuStack: [],
+  preview: null,
+  settleTimer: 0,
+  winTimer: 0,           // beat between the last crown falling and the results panel
+  shake  : 0,
+  camX   : 0,
+  supportDirty: false,
+  resumeScreen: null     // what to go back to when the pause menu closes
+};
+
+const timers = { space:null, spaceRepeat:null, ret:null, auto:null };
+const input  = { spaceDown:false, retDown:false, retLong:false };
+
+/* ── Elements ───────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const chipHolders = { ammo:$('chipsAmmo'), angle:$('chipsAngle'), power:$('chipsPower') };
+const lanes       = { ammo:$('laneAmmo'),  angle:$('laneAngle'),  power:$('lanePower') };
+
+/* Palette lookup. getComputedStyle is far too slow to call per block per frame,
+   so the whole palette is read once per theme change and served from a cache. */
+const PALETTE_VARS = [
+  '--bg','--panel','--panel2','--line','--text','--dim','--accent','--accent2',
+  '--violet','--focus','--good','--bad','--sky1','--sky2','--hill','--ground',
+  '--dirt','--wood','--stone','--glass','--barrel','--crown','--steel'
+];
+let PAL = {};
+function refreshPalette(){
+  const cs = getComputedStyle(document.body);
+  PAL = {};
+  for (const v of PALETTE_VARS) PAL[v] = cs.getPropertyValue(v).trim() || '#888';
+}
+function css(name){ return PAL[name] || '#888'; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LEVEL SETUP
+   ══════════════════════════════════════════════════════════════════════════ */
+function unlockedAmmo(){
+  return AMMO.filter(a => a.unlockAt === 0 || save.level >= a.unlockAt);
+}
+
+function buildLevel(ix, quiet){
+  const L = LEVELS[ix];
+  G.levelIx = ix;
+  G.level   = L;
+  G.blocks  = [];
+  G.parts   = [];
+  G.shots   = [];
+  G.boltsUsed = 0;
+  G.levelScore = 0;
+  G.bolts   = L.bolts;
+  G.shake   = 0;
+
+  const cell = CFG.CELL;
+  const rows = L.map.length;
+  L.cols = Math.max.apply(null, L.map.map(r => r.length));
+  for (let r = 0; r < rows; r++){
+    const row = L.map[r];
+    for (let c = 0; c < row.length; c++){
+      const ch = row[c];
+      if (ch === '.' || ch === ' ') continue;
+      const m = MAT[ch];
+      if (!m) continue;
+      G.blocks.push({
+        x: L.dist + c*cell, y: CFG.GROUND_Y - (rows-r)*cell,
+        w: cell, h: cell,
+        mat: m, hp: m.hp, maxHp: m.hp,
+        alive:true, falling:false, settled:true,
+        vy:0, rot:0, rotV:0, burn:0
+      });
+    }
+  }
+  G.crowns = G.blocks.filter(b => b.mat.crown).length;
+  // Run the support pass once up front. A well-drawn level is stable and this
+  // does nothing; a badly-drawn one visibly falls over instead of floating,
+  // which is the fastest way to spot the mistake.
+  resolveSupport();
+
+  // Keep the previous shot's picks — a player rarely wants to start over.
+  G.pick = { ammo:Math.min(G.last.ammo, unlockedAmmo().length-1), angle:G.last.angle, power:G.last.power };
+  G.locked = {};
+  enterShot(!quiet);
+}
+
+/* Which lanes this shot needs. Ammo only appears once you have a choice. */
+function stageOrder(){
+  return unlockedAmmo().length > 1 ? ['ammo','angle','power'] : ['angle','power'];
+}
+
+function enterShot(fresh){
+  G.screen = 'play';
+  G.locked = {};
+  G.stage  = stageOrder()[0];
+  G.scan   = -1;                       // nothing highlighted until the first Space
+  stopAutoScan();
+  renderChips();
+  updatePreview();
+  updateHud();
+  updateFooter();
+  if (fresh){
+    speak(`${G.level.name}. ${G.crowns} ${G.crowns===1?'crown':'crowns'} to destroy. Press space to start scanning.`);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SCAN LISTS
+   Each lane is a list of options plus one deadzone position at the end, so the
+   highlight always passes through "nothing" before wrapping back to the top.
+   ══════════════════════════════════════════════════════════════════════════ */
+function laneItems(stage){
+  if (stage === 'ammo')  return unlockedAmmo().map((a,i)=>({ label:a.name, sub:a.sub, ix:i }));
+  if (stage === 'angle') return ANGLES.map((a,i)=>({ label:a.name, sub:a.sub, ix:i }));
+  return POWERS.map((p,i)=>({ label:p.name, sub:'', ix:i }));
+}
+
+function renderChips(){
+  const order = stageOrder();
+  ['ammo','angle','power'].forEach(stage=>{
+    const show = order.indexOf(stage) !== -1;
+    lanes[stage].hidden = !show;
+    if (!show) return;
+
+    const holder = chipHolders[stage];
+    const items  = laneItems(stage);
+    holder.innerHTML = '';
+    items.forEach(it=>{
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.type = 'button';
+      b.innerHTML = it.sub ? `${it.label}<span class="sub">${it.sub}</span>` : it.label;
+      if (G.locked[stage] && G.pick[stage] === it.ix) b.classList.add('picked');
+      if (!G.locked[stage] && G.last[stage] === it.ix && G.boltsUsed > 0) b.classList.add('last');
+      if (G.screen === 'play' && G.stage === stage && G.scan === it.ix) b.classList.add('focus');
+      b.addEventListener('click', ()=>{                 // mouse is optional, never required
+        if (G.screen !== 'play' || G.stage !== stage) return;
+        G.scan = it.ix; renderChips(); updatePreview(); commit();
+      });
+      holder.appendChild(b);
+    });
+
+    lanes[stage].classList.toggle('locked', !!G.locked[stage]);
+  });
+}
+
+/* The scan position cycles 0..N where N is the deadzone (nothing highlighted). */
+function laneLen(){ return laneItems(G.stage).length; }
+
+function scanStep(dir){
+  const n = laneLen();
+  let v = (G.scan === -1) ? n : G.scan;          // -1 and n are the same place
+  v = (v + dir + (n+1)) % (n+1);
+  G.scan = (v === n) ? -1 : v;
+
+  renderChips();
+  updatePreview();
+  updateFooter();
+
+  if (G.scan === -1){
+    sfx('hover', .25);                            // deadzone: a tick, but no speech
+  } else {
+    sfx('hover', .5);
+    announceFocus();
+  }
+}
+
+function announceFocus(){
+  const it = laneItems(G.stage)[G.scan];
+  if (!it) return;
+  if (G.stage === 'power' || G.stage === 'angle'){
+    // Once both are known the arc is real, so say where it goes.
+    speak(`${it.label}. ${previewPhrase()}`);
+  } else {
+    speak(`${it.label}. ${it.sub}`);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TRAJECTORY PREVIEW
+   Runs the exact same integrator the live shot uses, so the dots never lie.
+   This is what replaces aiming skill: the game shows and says the outcome
+   before the player commits to it.
+   ══════════════════════════════════════════════════════════════════════════ */
+function shotParams(){
+  // Use the highlighted value where the player is currently scanning,
+  // otherwise whatever is already locked in.
+  const pk = Object.assign({}, G.pick);
+  if (G.screen === 'play' && G.scan !== -1) pk[G.stage] = G.scan;
+  const ammo  = unlockedAmmo()[Math.min(pk.ammo, unlockedAmmo().length-1)] || AMMO[0];
+  const ang   = ANGLES[pk.angle] || ANGLES[3];
+  const pow   = POWERS[pk.power] || POWERS[2];
+  const speed = pow.v * ammo.speed;
+  const rad   = ang.deg * Math.PI/180;
+  return { ammo, ang, pow, speed, vx: Math.cos(rad)*speed, vy: -Math.sin(rad)*speed };
+}
+
+function simulate(p, maxT){
+  const pts = [];
+  let x = CFG.MUZZLE_X, y = CFG.MUZZLE_Y, vx = p.vx, vy = p.vy, t = 0;
+  let hit = null;
+  const limit = maxT || 6;
+  while (t < limit){
+    vy += CFG.GRAVITY * CFG.DT;
+    x  += vx * CFG.DT;
+    y  += vy * CFG.DT;
+    t  += CFG.DT;
+    if (pts.length === 0 || Math.hypot(x-pts[pts.length-1].x, y-pts[pts.length-1].y) > 26) pts.push({x,y});
+
+    const b = blockAt(x, y, p.ammo.r);
+    if (b){ hit = { block:b, x, y }; break; }
+    if (y >= CFG.GROUND_Y){ hit = { block:null, x, y:CFG.GROUND_Y }; break; }
+    if (x > CFG.W + 400 || x < -200) break;
+  }
+  return { pts, hit };
+}
+
+function blockAt(x, y, r){
+  for (let i = 0; i < G.blocks.length; i++){
+    const b = G.blocks[i];
+    if (!b.alive) continue;
+    if (x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h) return b;
+  }
+  return null;
+}
+
+function updatePreview(){
+  if (G.screen !== 'play'){ G.preview = null; return; }
+  G.preview = simulate(shotParams());
+}
+
+/* A short spoken description of where the current arc ends up. */
+function previewPhrase(){
+  if (!G.preview || !G.level) return '';
+  const h = G.preview.hit;
+  if (!h) return 'flies off the field';
+  if (h.block){
+    const b = h.block;
+    const side = b.x + b.w/2 < G.level.dist + (G.level.cols*CFG.CELL)/2 ? 'left' : 'right';
+    return `hits the ${side} ${b.mat.name}`;
+  }
+  const castleL = G.level.dist, castleR = G.level.dist + G.level.cols*CFG.CELL;
+  if (h.x < castleL) return 'falls short';
+  if (h.x > castleR) return 'flies over';
+  return 'lands inside the castle';
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COMMITTING A SHOT
+   ══════════════════════════════════════════════════════════════════════════ */
+function commit(){
+  if (G.scan === -1){
+    speak('Nothing highlighted. Press space to keep scanning.');
+    return;
+  }
+  const stage = G.stage;
+  G.pick[stage] = G.scan;
+  G.locked[stage] = true;
+  sfx('select', .6);
+
+  const it = laneItems(stage)[G.scan];
+  const order = stageOrder();
+  const next  = order[order.indexOf(stage) + 1];
+
+  if (next){
+    G.stage = next;
+    G.scan  = -1;
+    renderChips(); updatePreview(); updateFooter();
+    speak(`${it.label} locked. Now pick ${next}.`);
+  } else {
+    speak(`${it.label}. Firing.`);
+    renderChips();
+    fire();
+  }
+}
+
+/* Return-hold: back out one lane, or open the pause menu from the first one. */
+function backOut(){
+  if (G.screen === 'overlay'){ closeOverlay(); return; }
+  if (G.screen !== 'play'){ openOverlay('pause'); return; }
+
+  const order = stageOrder();
+  const i = order.indexOf(G.stage);
+  if (i <= 0){ openOverlay('pause'); return; }
+
+  G.stage = order[i-1];
+  G.locked[G.stage] = false;
+  G.scan = G.pick[G.stage];
+  renderChips(); updatePreview(); updateFooter();
+  sfx('hover', .5);
+  speak(`Back to ${G.stage}.`);
+}
+
+function fire(){
+  const p = shotParams();
+  G.last = Object.assign({}, G.pick);
+  G.boltsUsed++;
+  if (!settings.endlessBolts) G.bolts--;
+
+  G.shots = [{
+    x:CFG.MUZZLE_X, y:CFG.MUZZLE_Y, vx:p.vx, vy:p.vy,
+    r:p.ammo.r, ammo:p.ammo, alive:true, trail:[], split:false, apexDone:false
+  }];
+  G.screen = 'fly';
+  G.preview = null;
+  stopAutoScan();
+  sfx('bust', .35);
+  updateHud(); updateFooter();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHYSICS
+   ══════════════════════════════════════════════════════════════════════════ */
+function damageBlock(b, dmg, fromAmmo){
+  if (!b.alive) return 0;
+  if (b.mat.hp === Infinity) return 0;             // steel just stops things
+
+  let d = dmg;
+  if (fromAmmo){
+    if (fromAmmo.id === 'fire'    && b.mat.id === 'W') d *= 3;
+    if (fromAmmo.id === 'boulder' && b.mat.id === 'S') d *= 1.6;
+  }
+  b.hp -= d;
+  if (b.hp > 0){
+    spawnParts(b, 4);
+    return 0;
+  }
+
+  // Destroyed.
+  const over = -b.hp;
+  b.alive = false;
+  G.supportDirty = true;             // whatever was resting on it may now fall
+  spawnParts(b, 14);
+  G.levelScore += b.mat.crown ? 500 : 100;
+  if (b.mat.crown){
+    G.crowns--;
+    sfx('score', .7);
+    // Stay quiet on the last crown: the results panel is about to announce the
+    // whole outcome, and two utterances in a row means the first gets cut off.
+    if (G.crowns > 0) speak('Crown down!');
+  } else {
+    sfx('select', .35);
+  }
+  if (b.mat.explodes) explode(b);
+  G.shake = Math.max(G.shake, b.mat.crown ? 10 : 6);
+  return over;                                      // energy carried into the next block
+}
+
+function explode(b){
+  const cx = b.x + b.w/2, cy = b.y + b.h/2, R = 100;
+  sfx('bust', .8);
+  G.shake = Math.max(G.shake, 16);
+  for (let i = 0; i < 30; i++){
+    const a = Math.random()*Math.PI*2, s = 120 + Math.random()*420;
+    G.parts.push({ x:cx, y:cy, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:.5+Math.random()*.5, col:css('--barrel'), size:3+Math.random()*4 });
+  }
+  // Copy the list first: damageBlock can chain into another keg.
+  G.blocks.slice().forEach(o=>{
+    if (!o.alive || o === b) return;
+    const d = Math.hypot(o.x+o.w/2-cx, o.y+o.h/2-cy);
+    if (d < R) damageBlock(o, 130 * (1 - d/R));
+  });
+}
+
+function spawnParts(b, n){
+  const col = css(b.mat.css);
+  for (let i = 0; i < n; i++){
+    const a = Math.random()*Math.PI*2, s = 60 + Math.random()*260;
+    G.parts.push({
+      x:b.x + Math.random()*b.w, y:b.y + Math.random()*b.h,
+      vx:Math.cos(a)*s, vy:Math.sin(a)*s - 60,
+      life:.35 + Math.random()*.6, col, size:2 + Math.random()*4
+    });
+  }
+}
+
+/* Support test — the heart of the collapse model.
+
+   A block stands if it can reach the ground through other blocks. Stacking
+   straight up is free; stepping sideways spends one unit of "span". That span
+   budget is what lets an archway hold: the lintel over a doorway is supported
+   by the legs at either end even though there is nothing directly beneath its
+   middle. Without it every castle with an arch in it falls down on load.
+
+   MAX_SPAN also stops the opposite mistake — a long slab can't hang in the air
+   off one remaining leg, its unsupported middle sags out and drops. */
+const MAX_SPAN = 2;
+
+function resolveSupport(){
+  const live = G.blocks.filter(b => b.alive && !b.falling);
+  for (const b of live) b.span = Infinity;
+
+  const queue = [];
+  for (const b of live){
+    if (b.y + b.h >= CFG.GROUND_Y - 2){ b.span = 0; queue.push(b); }   // on the ground
+  }
+
+  while (queue.length){
+    const c = queue.shift();
+    for (const b of live){
+      if (b === c) continue;
+      const xo = Math.min(b.x+b.w, c.x+c.w) - Math.max(b.x, c.x);
+      const yo = Math.min(b.y+b.h, c.y+c.h) - Math.max(b.y, c.y);
+
+      if (xo > 4 && Math.abs((b.y + b.h) - c.y) < 4){        // b rests on top of c
+        if (b.span > 0){ b.span = 0; queue.push(b); }
+        continue;
+      }
+      if (yo > 4 && (Math.abs((b.x + b.w) - c.x) < 4 || Math.abs(b.x - (c.x + c.w)) < 4)){
+        const s = c.span + 1;                                 // b is beside c
+        if (s <= MAX_SPAN && s < b.span){ b.span = s; queue.push(b); }
+      }
+    }
+  }
+
+  for (const b of live){
+    if (b.span === Infinity){
+      b.falling = true; b.settled = false;
+      b.vy = 0;
+      b.rotV = (Math.random()-.5) * 2.2;
+    }
+  }
+}
+
+function stepFalling(dt){
+  let anyMoving = false;
+  for (const b of G.blocks){
+    if (!b.alive || !b.falling) continue;
+    anyMoving = true;
+    b.vy += CFG.GRAVITY * dt;
+    b.y  += b.vy * dt;
+    b.rot += b.rotV * dt;
+
+    // Land on the ground or on the topmost settled block underneath us.
+    let floor = CFG.GROUND_Y;
+    let onto = null;
+    for (const c of G.blocks){
+      if (!c.alive || c === b || c.falling) continue;
+      const overlap = Math.min(b.x+b.w, c.x+c.w) - Math.max(b.x, c.x);
+      if (overlap > 4 && c.y >= b.y + b.h - 6 && c.y < floor){ floor = c.y; onto = c; }
+    }
+    if (b.y + b.h >= floor){
+      b.y = floor - b.h;
+      const impact = b.vy;
+      b.vy = 0; b.falling = false; b.settled = true;
+      b.rotV = 0;
+      b.rot *= .25;                                  // keep a little tilt for character
+      G.supportDirty = true;                         // it can hold things up again now
+      if (impact > 420){
+        const dmg = (impact - 380) * 0.16;
+        damageBlock(b, dmg);
+        if (onto) damageBlock(onto, dmg * 0.8);
+        sfx('hover', .5);
+        G.shake = Math.max(G.shake, 4);
+      }
+    }
+  }
+  return anyMoving;
+}
+
+function stepShots(dt){
+  for (const s of G.shots){
+    if (!s.alive) continue;
+
+    s.vy += CFG.GRAVITY * dt;
+    s.x  += s.vx * dt;
+    s.y  += s.vy * dt;
+
+    s.trail.push({x:s.x, y:s.y});
+    if (s.trail.length > 40) s.trail.shift();
+
+    // Splitter breaks apart at the top of its arc.
+    if (s.ammo.id === 'splitter' && !s.split && !s.apexDone && s.vy >= 0){
+      s.apexDone = true; s.split = true;
+      for (const off of [-0.14, 0.14]){
+        const c = Math.cos(off), sn = Math.sin(off);
+        G.shots.push({
+          x:s.x, y:s.y, vx:s.vx*c - s.vy*sn, vy:s.vx*sn + s.vy*c,
+          r:s.r, ammo:s.ammo, alive:true, trail:[], split:true, apexDone:true
+        });
+      }
+      sfx('hover', .8);
+    }
+
+    const b = blockAt(s.x, s.y, s.r);
+    if (b){
+      const speed = Math.hypot(s.vx, s.vy);
+      let energy = Math.pow(speed/100, 2) * 0.9 * s.ammo.dmg;
+      const carry = damageBlock(b, energy, s.ammo);
+      if (carry > 0 && b.mat.hp !== Infinity){
+        // Punched clean through — keep going with what's left.
+        const newSpeed = Math.sqrt(Math.max(0, carry) / (0.9 * s.ammo.dmg)) * 100;
+        const k = speed > 0 ? newSpeed/speed : 0;
+        s.vx *= k; s.vy *= k;
+        s.x += s.vx * dt * 2;
+        s.y += s.vy * dt * 2;
+        if (newSpeed < 180) s.alive = false;
+      } else {
+        s.alive = false;
+      }
+      if (!s.alive) spawnParts({x:s.x-6,y:s.y-6,w:12,h:12,mat:b.mat}, 8);
+    } else if (s.y >= CFG.GROUND_Y){
+      s.alive = false;
+      for (let i = 0; i < 8; i++){
+        const a = -Math.random()*Math.PI, sp = 40+Math.random()*180;
+        G.parts.push({ x:s.x, y:CFG.GROUND_Y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:.4, col:css('--dirt'), size:2+Math.random()*3 });
+      }
+      sfx('hover', .4);
+    } else if (s.x > CFG.W + 600 || s.x < -300){
+      s.alive = false;
+    }
+  }
+  G.shots = G.shots.filter(s => s.alive);
+}
+
+function stepParts(dt){
+  for (const p of G.parts){
+    p.vy += CFG.GRAVITY * 0.55 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.life -= dt;
+  }
+  G.parts = G.parts.filter(p => p.life > 0);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MAIN LOOP
+   ══════════════════════════════════════════════════════════════════════════ */
+let lastT = 0, accum = 0;
+
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!lastT) lastT = now;
+  let dt = (now - lastT)/1000;
+  lastT = now;
+  if (!isFinite(dt) || dt < 0) dt = 1/60;
+  dt = Math.min(dt, 0.05);
+
+  try{
+    if (G.screen === 'fly' || G.screen === 'settle' || G.screen === 'won'){
+      accum += dt;
+      let guard = 0;
+      while (accum >= CFG.DT && guard++ < 400){
+        stepShots(CFG.DT);
+        stepFalling(CFG.DT);
+        if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
+        accum -= CFG.DT;
+      }
+      stepParts(dt);
+
+      if (G.screen === 'fly' && G.shots.length === 0){
+        G.screen = 'settle';
+        G.settleTimer = 0;
+      }
+      if (G.screen === 'settle'){
+        G.settleTimer += dt;
+        const moving = G.blocks.some(b => b.alive && b.falling);
+        if (!moving && G.settleTimer > 0.7) endShot();
+        if (G.settleTimer > 8) endShot();            // safety net
+      } else if (G.screen === 'won'){
+        // Counted in the loop rather than a setTimeout, so pausing during the
+        // beat freezes it and resuming picks it back up.
+        G.winTimer += dt;
+        if (G.winTimer > CFG.WIN_PAUSE) levelComplete();
+      }
+      // Follow the shot, then drift home.
+      const lead = G.shots.length ? Math.max(0, G.shots[0].x - CFG.W*0.62) : 0;
+      G.camX += (lead - G.camX) * Math.min(1, dt*3);
+    } else {
+      // Not mid-shot, but rubble may still be coming to rest — and a level with
+      // a drawing mistake in it should visibly fall over rather than float.
+      if (G.blocks.some(b => b.alive && b.falling)){
+        accum += dt;
+        let guard = 0;
+        while (accum >= CFG.DT && guard++ < 400){
+          stepFalling(CFG.DT);
+          if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
+          accum -= CFG.DT;
+        }
+      } else {
+        accum = 0;
+      }
+      stepParts(dt);
+      G.camX += (0 - G.camX) * Math.min(1, dt*3);
+    }
+    if (G.shake > 0) G.shake = Math.max(0, G.shake - dt*22);
+
+    draw();
+  }catch(err){
+    console.error(err);
+    drawError(err);
+  }
+}
+
+function endShot(){
+  G.camX = 0;
+  updateHud();
+
+  if (G.crowns <= 0){
+    // Hold on the wrecked castle for a beat before the results panel covers it
+    // and starts talking. Swapping the screen out from under a fanfare, or
+    // cutting an announcement off mid-word, both feel like a bug to the player.
+    G.screen = 'won';
+    G.winTimer = 0;
+    sfx('win', .8);
+    updateFooter();
+    return;
+  }
+  if (!settings.endlessBolts && G.bolts <= 0){ outOfBolts(); return; }
+
+  const left = G.crowns === 1 ? '1 crown left' : `${G.crowns} crowns left`;
+  speak(left + '. Next shot.');
+  enterShot(false);
+}
+
+function levelComplete(){
+  const par = G.level.par;
+  const stars = G.boltsUsed <= par ? 3 : (G.boltsUsed <= par + 2 ? 2 : 1);
+  const bonus = settings.endlessBolts ? 0 : G.bolts * 150;
+  const earned = G.levelScore + bonus;
+
+  // Fold the level's points into the running total and zero the accumulator —
+  // the HUD shows score + levelScore, so leaving it set would count it twice.
+  G.score += earned;
+  G.levelScore = 0;
+  updateHud();
+
+  const prev = save.stars[G.levelIx] || 0;
+  if (stars > prev) save.stars[G.levelIx] = stars;
+  save.totalScore = Math.max(save.totalScore, G.score);
+
+  const nextIx = G.levelIx + 1;
+  const wasLocked = save.level < nextIx;
+  if (nextIx < LEVELS.length && wasLocked) save.level = nextIx;
+  saveProgress();
+
+  const newAmmo = AMMO.find(a => a.unlockAt === save.level && a.unlockAt !== 0);
+  openOverlay('results', { stars, bonus, earned, newAmmo });   // the win sound already played
+}
+
+function outOfBolts(){
+  sfx('lose', .7);
+  openOverlay('outofbolts');
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RENDERING
+   ══════════════════════════════════════════════════════════════════════════ */
+function fitCanvas(){
+  const wrap = $('cvWrap');
+  const scale = Math.min(wrap.clientWidth / CFG.W, wrap.clientHeight / CFG.H);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.style.width  = Math.floor(CFG.W * scale) + 'px';
+  cv.style.height = Math.floor(CFG.H * scale) + 'px';
+  cv.width  = Math.floor(CFG.W * scale * dpr);
+  cv.height = Math.floor(CFG.H * scale * dpr);
+  ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);
+}
+
+function draw(){
+  const W = CFG.W, H = CFG.H;
+  ctx.save();
+  const sx = G.shake ? (Math.random()-.5)*G.shake : 0;
+  const sy = G.shake ? (Math.random()-.5)*G.shake : 0;
+  ctx.translate(sx - G.camX, sy);
+
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, CFG.GROUND_Y);
+  sky.addColorStop(0, css('--sky1'));
+  sky.addColorStop(1, css('--sky2'));
+  ctx.fillStyle = sky;
+  ctx.fillRect(-400, -60, W + 1400, CFG.GROUND_Y + 60);
+
+  // Hills
+  ctx.fillStyle = css('--hill');
+  ctx.beginPath();
+  ctx.moveTo(-400, CFG.GROUND_Y);
+  for (let x = -400; x <= W + 1000; x += 40){
+    ctx.lineTo(x, CFG.GROUND_Y - 70 - Math.sin(x/230)*46 - Math.sin(x/71)*13);
+  }
+  ctx.lineTo(W + 1000, CFG.GROUND_Y);
+  ctx.closePath(); ctx.fill();
+
+  // Ground
+  ctx.fillStyle = css('--ground');
+  ctx.fillRect(-400, CFG.GROUND_Y, W + 1400, H - CFG.GROUND_Y + 60);
+  ctx.fillStyle = css('--dirt');
+  ctx.fillRect(-400, CFG.GROUND_Y + 26, W + 1400, H);
+
+  // Distance ticks help judge "falls short" vs "flies over" at a glance.
+  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 2;
+  for (let x = 300; x < W + 700; x += 100){
+    ctx.beginPath(); ctx.moveTo(x, CFG.GROUND_Y); ctx.lineTo(x, CFG.GROUND_Y + 14); ctx.stroke();
+  }
+
+  drawBlocks();
+  drawBallista();
+  if (G.preview) drawPreview();
+  drawShots();
+  drawParts();
+
+  ctx.restore();
+}
+
+function drawBlocks(){
+  for (const b of G.blocks){
+    if (!b.alive) continue;
+    ctx.save();
+    ctx.translate(b.x + b.w/2, b.y + b.h/2);
+    if (b.rot) ctx.rotate(b.rot);
+
+    const col = css(b.mat.css);
+    const dmg = b.mat.hp === Infinity ? 0 : 1 - (b.hp / b.maxHp);
+
+    if (b.mat.id === 'I'){
+      ctx.fillStyle = col; ctx.globalAlpha = .45;
+      ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = col;
+      ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h);
+      // A darker inner face so a wall of blocks doesn't read as one flat slab.
+      ctx.fillStyle = 'rgba(0,0,0,.18)';
+      ctx.fillRect(-b.w/2 + 5, -b.h/2 + 5, b.w - 10, b.h - 10);
+    }
+
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2;
+    ctx.strokeRect(-b.w/2, -b.h/2, b.w, b.h);
+
+    if (b.mat.crown){
+      ctx.fillStyle = css('--crown');
+      ctx.beginPath();
+      ctx.moveTo(-13, 8); ctx.lineTo(-16,-8); ctx.lineTo(-6,0); ctx.lineTo(0,-12);
+      ctx.lineTo(6,0);    ctx.lineTo(16,-8);  ctx.lineTo(13,8);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    if (b.mat.explodes){
+      ctx.fillStyle = 'rgba(0,0,0,.65)';
+      ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('!', 0, 0);
+    }
+    if (b.mat.id === 'X'){
+      ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-b.w/2+4,-b.h/2+4); ctx.lineTo(b.w/2-4,b.h/2-4);
+      ctx.moveTo(b.w/2-4,-b.h/2+4); ctx.lineTo(-b.w/2+4,b.h/2-4); ctx.stroke();
+    }
+
+    // Cracks as it takes damage.
+    if (dmg > 0.25){
+      ctx.strokeStyle = 'rgba(0,0,0,' + (0.3 + dmg*0.5) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-b.w/2+6, -b.h/2+10); ctx.lineTo(2, 2); ctx.lineTo(b.w/2-8, b.h/2-6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawBallista(){
+  const p = shotParams();
+  const bx = CFG.MUZZLE_X - 34, by = CFG.GROUND_Y;
+
+  // Frame
+  ctx.strokeStyle = css('--wood'); ctx.lineWidth = 13; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(bx - 26, by); ctx.lineTo(bx + 16, by - 78);
+  ctx.moveTo(bx + 44, by); ctx.lineTo(bx + 16, by - 78);
+  ctx.stroke();
+
+  // Wheels
+  ctx.fillStyle = css('--steel');
+  [[bx - 22, by - 12], [bx + 42, by - 12]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 3; ctx.stroke();
+  });
+
+  // Arm, pointed at the currently chosen angle
+  const rad = p.ang.deg * Math.PI/180;
+  ctx.save();
+  ctx.translate(CFG.MUZZLE_X - 16, CFG.MUZZLE_Y + 12);
+  ctx.rotate(-rad);
+  ctx.strokeStyle = css('--steel'); ctx.lineWidth = 14;
+  ctx.beginPath(); ctx.moveTo(-34, 0); ctx.lineTo(58, 0); ctx.stroke();
+  // Bow limbs
+  ctx.strokeStyle = css('--accent'); ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(46, -30); ctx.lineTo(58, 0); ctx.lineTo(46, 30); ctx.stroke();
+  // Loaded bolt, sized by ammo
+  if (G.screen === 'play'){
+    ctx.fillStyle = css('--accent2');
+    ctx.beginPath(); ctx.arc(30, 0, p.ammo.r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPreview(){
+  const pts = G.preview.pts, hit = G.preview.hit;
+  if (!pts.length) return;
+
+  ctx.save();
+  ctx.fillStyle = css('--accent2');
+  pts.forEach((p, i)=>{
+    const a = 1 - i/(pts.length + 6);
+    ctx.globalAlpha = Math.max(.22, a);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  if (hit){
+    // Impact marker: a ring plus crosshair on exactly what will be struck.
+    ctx.strokeStyle = hit.block ? css('--focus') : css('--dim');
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(hit.x, hit.y, 20, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(hit.x - 30, hit.y); ctx.lineTo(hit.x - 22, hit.y);
+    ctx.moveTo(hit.x + 22, hit.y); ctx.lineTo(hit.x + 30, hit.y);
+    ctx.moveTo(hit.x, hit.y - 30); ctx.lineTo(hit.x, hit.y - 22);
+    ctx.moveTo(hit.x, hit.y + 22); ctx.lineTo(hit.x, hit.y + 30);
+    ctx.stroke();
+    if (hit.block){
+      ctx.strokeStyle = css('--focus'); ctx.lineWidth = 4;
+      ctx.strokeRect(hit.block.x - 3, hit.block.y - 3, hit.block.w + 6, hit.block.h + 6);
+    }
+  }
+  ctx.restore();
+}
+
+function drawShots(){
+  for (const s of G.shots){
+    ctx.strokeStyle = s.ammo.id === 'fire' ? css('--accent') : css('--accent2');
+    ctx.lineWidth = 4; ctx.globalAlpha = .55;
+    ctx.beginPath();
+    s.trail.forEach((t,i)=> i ? ctx.lineTo(t.x,t.y) : ctx.moveTo(t.x,t.y));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = s.ammo.id === 'fire' ? css('--accent')
+                  : s.ammo.id === 'boulder' ? css('--stone') : css('--accent2');
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+
+function drawParts(){
+  for (const p of G.parts){
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
+    ctx.fillStyle = p.col;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawError(err){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle = '#ff5470'; ctx.font = '16px monospace';
+  ctx.fillText('Something went wrong: ' + (err && err.message), 20, 40);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HUD + FOOTER
+   ══════════════════════════════════════════════════════════════════════════ */
+function updateHud(){
+  if (!G.level){ return; }
+  $('pLevel').textContent  = `Level ${G.levelIx+1}: ${G.level.name}`;
+  $('pCrowns').innerHTML   = `Crowns <b>${G.crowns}</b>`;
+  $('pBolts').innerHTML    = settings.endlessBolts
+    ? `Bolts <b>&infin;</b>` : `Bolts <b>${Math.max(0,G.bolts)}</b>`;
+  $('pScore').innerHTML    = `Score <b>${G.score + G.levelScore}</b>`;
+}
+
+function updateFooter(){
+  const modeEl = $('ftrMode'), tgtEl = $('ftrTarget');
+  if (G.screen === 'overlay'){
+    modeEl.textContent = overlayTitle(G.overlay);
+    const items = menuItems();
+    tgtEl.textContent = (G.menuIx === -1 || !items[G.menuIx]) ? '—' : itemText(items[G.menuIx]);
+  } else if (G.screen === 'play'){
+    modeEl.textContent = `Choose ${G.stage}`;
+    const it = G.scan === -1 ? null : laneItems(G.stage)[G.scan];
+    tgtEl.textContent = it ? it.label : '—';
+  } else {
+    modeEl.textContent = G.screen === 'fly'  ? 'Shot in flight'
+                       : G.screen === 'won'  ? 'Castle destroyed!'
+                       : 'Settling';
+    tgtEl.textContent = '';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   OVERLAY MENUS
+   Item `text` is a function so toggles always render their live value.
+   ══════════════════════════════════════════════════════════════════════════ */
+const THEMES = [
+  { id:'ben',      name:'Ben Default' },
+  { id:'dark',     name:'Dark' },
+  { id:'light',    name:'Light' },
+  { id:'contrast', name:'High Contrast' }
+];
+
+let overlayData = {};
+let resetArmed = false;      // "Reset Progress" needs two selections, not one
+
+function starStr(n){ return '★★★'.slice(0, n) + '☆☆☆'.slice(0, 3-n); }
+
+const MENUS = {
+  main: () => [
+    { text: () => save.level > 0 ? `Continue — Level ${save.level+1}` : 'Start the Siege',
+      say : () => save.level > 0 ? `Continue. Level ${save.level+1}.` : 'Start the siege.',
+      act : () => { hideOverlay(); buildLevel(save.level); } },
+    { text: () => 'Choose a Level', act: () => openOverlay('levels') },
+    { text: () => 'How to Play',    act: () => openOverlay('help') },
+    { text: () => 'Settings',       act: () => openOverlay('settings') },
+    { text: () => 'Exit to Hub',    act: () => exitToHub() }
+  ],
+
+  levels: () => LEVELS.map((L,i)=>{
+    const locked = i > save.level;
+    return {
+      text: () => `${i+1}. ${L.name}${locked ? '  (locked)' : ''}`,
+      val : () => locked ? 'Locked' : starStr(save.stars[i] || 0),
+      // The star glyphs are for the eye only — spell it out for the ear.
+      say : () => `Level ${i+1}. ${L.name}. ${locked ? 'Locked.' : starsSpoken(save.stars[i] || 0)}`,
+      dis : locked,
+      act : () => { if (locked){ sfx('lose',.4); speak('That level is still locked. Finish the ones before it first.'); return; }
+                    hideOverlay(); buildLevel(i); }
+    };
+  }).concat([{ text: () => 'Back', act: () => closeOverlay() }]),
+
+  settings: () => [
+    { text: () => 'Speech',        val: () => ttsOn() ? 'On' : 'Off',
+      // Turning it off means the confirmation can't be voiced — it still goes to
+      // the live region, so a screen reader picks it up.
+      act : () => { const v = vm(); if (v) v.toggleTTS(); speak(ttsOn() ? 'Speech on' : 'Speech off'); } },
+    { text: () => 'Voice',         val: () => voiceName(),
+      say : () => 'Voice. ' + voiceName(),
+      act : () => {
+        const v = vm();
+        if (!v || !v.cycleVoice()){ speak('No other voices are available on this device.'); return; }
+        speak('Voice: ' + voiceName());   // say the new name in the new voice
+      } },
+    { text: () => 'Sound Effects', val: () => settings.sound ? 'On' : 'Off',
+      act : () => { settings.sound = !settings.sound;
+                    if (window.SafeAudio) SafeAudio.setEnabled(settings.sound);
+                    saveSettings(); speak('Sound ' + (settings.sound?'on':'off')); } },
+    { text: () => 'Auto Scan',     val: () => autoScanOn() ? 'On' : 'Off',
+      act : () => { const m = sm(); if (m) m.toggleAutoScan();
+                    speak('Auto scan ' + (autoScanOn()?'on':'off')); resetAutoScan(); } },
+    { text: () => 'Scan Speed',    val: () => (scanInterval()/1000) + ' sec',
+      act : () => { const m = sm(); if (m) m.cycleScanSpeed();
+                    speak('Scan speed ' + (scanInterval()/1000) + ' seconds'); resetAutoScan(); } },
+    { text: () => 'Colour Profile',val: () => (THEMES.find(t=>t.id===settings.theme)||THEMES[0]).name,
+      act : () => cycleTheme(1) },
+    { text: () => 'Text Size',     val: () => settings.fontScale + '%',
+      act : () => cycleFont(1) },
+    { text: () => 'Endless Bolts', val: () => settings.endlessBolts ? 'On' : 'Off',
+      act : () => { settings.endlessBolts = !settings.endlessBolts; saveSettings(); updateHud();
+                    speak('Endless bolts ' + (settings.endlessBolts?'on. You can never run out.':'off. Bolts are limited.')); } },
+    // Two-step, because a mis-scan should never be able to wipe the save.
+    { text: () => resetArmed ? 'Reset Progress — select again to confirm' : 'Reset Progress',
+      val : () => resetArmed ? 'Are you sure?' : '',
+      say : () => resetArmed ? 'Reset progress. Select again to confirm.' : 'Reset progress.',
+      act : () => {
+        if (!resetArmed){
+          resetArmed = true;
+          speak('This erases every level and star. Select it again to confirm, or scan past it to cancel.');
+          return;
+        }
+        resetArmed = false;
+        save.level = 0; save.stars = {}; save.totalScore = 0;
+        G.score = 0;
+        saveProgress();
+        speak('Progress reset. Back to level one.');
+      } },
+    { text: () => 'Back', act: () => closeOverlay() }
+  ],
+
+  pause: () => [
+    { text: () => 'Resume', act: () => closeOverlay() },
+    { text: () => 'Restart Level', act: () => { hideOverlay(); buildLevel(G.levelIx); } },
+    { text: () => 'Settings', act: () => openOverlay('settings') },
+    { text: () => 'How to Play', act: () => openOverlay('help') },
+    { text: () => 'Quit to Menu', act: () => toMainMenu() }
+  ],
+
+  results: () => {
+    const more = G.levelIx + 1 < LEVELS.length;
+    const list = [];
+    if (more) list.push({ text: () => `Next Level — ${LEVELS[G.levelIx+1].name}`,
+                          say : () => `Next level. ${LEVELS[G.levelIx+1].name}.`,
+                          act : () => { const n = G.levelIx+1; hideOverlay(); buildLevel(n); } });
+    else      list.push({ text: () => 'You have cleared every castle!', act: () => {} });
+    list.push({ text: () => 'Replay This Level', act: () => { hideOverlay(); buildLevel(G.levelIx); } });
+    list.push({ text: () => 'Choose a Level',    act: () => openOverlay('levels') });
+    list.push({ text: () => 'Main Menu',         act: () => toMainMenu() });
+    return list;
+  },
+
+  outofbolts: () => [
+    { text: () => 'Try Again', act: () => { hideOverlay(); buildLevel(G.levelIx); } },
+    { text: () => 'Turn On Endless Bolts',
+      act : () => { settings.endlessBolts = true; saveSettings(); hideOverlay(); buildLevel(G.levelIx);
+                    speak('Endless bolts on. Take as many shots as you like.'); } },
+    { text: () => 'Choose a Level', act: () => openOverlay('levels') },
+    { text: () => 'Main Menu', act: () => toMainMenu() }
+  ],
+
+  help: () => [
+    { text: () => 'Got it', act: () => closeOverlay() }
+  ]
+};
+
+function overlayTitle(which){
+  switch(which){
+    case 'main':       return "Benny's Ballista";
+    case 'levels':     return 'Choose a Level';
+    case 'settings':   return 'Settings';
+    case 'pause':      return 'Paused';
+    case 'results':    return 'Castle Destroyed!';
+    case 'outofbolts': return 'Out of Bolts';
+    case 'help':       return 'How to Play';
+    default:           return 'Menu';
+  }
+}
+
+function overlaySub(which){
+  switch(which){
+    case 'main':
+      return `Fire a giant crossbow at castles and bring the crowns down. Nothing here is timed — take as long as you like on every shot.<br>Best score: <b>${save.totalScore}</b> · Levels cleared: <b>${Object.keys(save.stars).length}</b> of ${LEVELS.length}`;
+    case 'levels':
+      return 'Clear a level to unlock the next one. New ammunition arrives at levels 4, 7 and 10.';
+    case 'results': {
+      const d = overlayData;
+      let s = `<span class="stars">${starStr(d.stars||0)}</span> &nbsp; ${G.boltsUsed} ${G.boltsUsed===1?'bolt':'bolts'} used (par ${G.level.par}) · <b>${d.earned||0}</b> points`;
+      if (d.bonus) s += ` (including a ${d.bonus} bolt bonus)`;
+      if (d.newAmmo) s += `<br><b>New ammunition unlocked: ${d.newAmmo.name} — ${d.newAmmo.sub}.</b>`;
+      return s;
+    }
+    case 'outofbolts':
+      return 'That castle is still standing. No penalty — take the level again, or switch on endless bolts and keep firing.';
+    case 'help':
+      return `<b>Two keys, that is all.</b><br>
+        <kbd>Space</kbd> moves the highlight to the next choice.<br>
+        <kbd>Space</kbd> held for 3 seconds scans by itself until you let go.<br>
+        <kbd>Return</kbd> picks whatever is highlighted.<br>
+        <kbd>Return</kbd> held for 3 seconds goes back one step, or opens this menu.<br><br>
+        <b>Taking a shot.</b> Pick an angle, then a power. The dotted line shows exactly where the bolt will go and the game says what it will hit, so you never have to guess or react. Destroy every crown to finish the level.<br><br>
+        <b>The pieces.</b> Wood breaks easily. Stone needs a hard hit. Glass shatters at a touch but holds nothing up. Powder kegs explode and take their neighbours with them. Steel never breaks — go around it.<br><br>
+        <b>Knock the legs out</b> and everything above comes down on its own. That is usually cheaper than hitting the crown directly.`;
+    default: return '';
+  }
+}
+
+function toMainMenu(){
+  hideOverlay();
+  // Reset the field to the furthest level so the menu has something behind it.
+  buildLevel(Math.min(save.level, LEVELS.length-1));
+  G.screen = 'menu';
+  openOverlay('main');
+}
+
+/* What each panel SAYS, as opposed to what it shows. Kept separate from
+   overlaySub() on purpose: that one is HTML, full of tags, entities and
+   symbols like ★ and · that a screen reader has no sensible way to voice. */
+function starsSpoken(n){
+  return n === 3 ? 'three stars' : n === 2 ? 'two stars' : n === 1 ? 'one star' : 'not cleared yet';
+}
+
+function overlaySpeech(which){
+  switch(which){
+    case 'main':
+      return "Benny's Ballista. Fire a giant crossbow at castles and bring the crowns down. "
+           + 'Nothing here is timed, so take as long as you like on every shot. '
+           + `Your best score is ${save.totalScore}. `
+           + `You have cleared ${Object.keys(save.stars).length} of ${LEVELS.length} levels.`;
+    case 'levels':
+      return 'Choose a level. Clear a level to unlock the next one. '
+           + 'New ammunition arrives at levels 4, 7 and 10.';
+    case 'settings':   return 'Settings.';
+    case 'pause':      return 'Paused.';
+    case 'results': {
+      const d = overlayData;
+      let s = `Castle destroyed! ${starsSpoken(d.stars || 0)}. `
+            + `You used ${G.boltsUsed} ${G.boltsUsed === 1 ? 'bolt' : 'bolts'}, `
+            + `and the target for this level is ${G.level.par}. `
+            + `You scored ${d.earned || 0} points.`;
+      if (d.newAmmo) s += ` New ammunition unlocked: ${d.newAmmo.name}. ${d.newAmmo.sub}.`;
+      return s;
+    }
+    case 'outofbolts':
+      return 'Out of bolts. That castle is still standing. There is no penalty. '
+           + 'You can take the level again, or switch on endless bolts and keep firing.';
+    case 'help':
+      return 'How to play. Two keys, that is all. '
+           + 'A short press of space moves the highlight to the next choice. '
+           + 'Holding space for three seconds scans by itself until you let go. '
+           + 'A short press of return picks whatever is highlighted. '
+           + 'Holding return for three seconds goes back one step, or opens the menu. '
+           + 'To take a shot, pick an angle, then a power. The dotted line shows exactly '
+           + 'where the bolt will go, and the game says what it will hit, so you never have '
+           + 'to guess or react. Destroy every crown to finish the level. '
+           + 'Wood breaks easily. Stone needs a hard hit. Glass shatters at a touch but holds '
+           + 'nothing up. Powder kegs explode and take their neighbours with them. '
+           + 'Steel never breaks, so go around it. '
+           + 'Knock the legs out and everything above comes down on its own. That is usually '
+           + 'cheaper than hitting a crown directly.';
+    default: return '';
+  }
+}
+
+function menuItems(){ return (MENUS[G.overlay] || MENUS.main)(); }
+function itemText(it){ return typeof it.text === 'function' ? it.text() : it.text; }
+function itemVal(it){ return it.val ? (typeof it.val === 'function' ? it.val() : it.val) : ''; }
+
+/* Rows whose on-screen value is a symbol supply their own spoken wording. */
+function itemSpeech(it){
+  if (it.say) return typeof it.say === 'function' ? it.say() : it.say;
+  const v = itemVal(it);
+  return itemText(it) + (v ? '. ' + v : '');
+}
+
+/* Dismiss the overlay outright — used whenever the next thing we do rebuilds
+   the scene anyway (starting or restarting a level). closeOverlay() is for
+   backing out to whatever was underneath. */
+function hideOverlay(){
+  $('overlay').classList.remove('on');
+  G.menuStack = [];
+  overlayData = {};
+  G.overlay = null;
+  G.resumeScreen = null;
+  stopAutoScan();
+}
+
+function openOverlay(which, data){
+  if (G.screen !== 'overlay'){
+    G.menuStack = [];
+    // Remember what we interrupted, so Resume puts a shot back in flight.
+    G.resumeScreen = ['play','fly','settle','won'].indexOf(G.screen) !== -1 ? G.screen : null;
+  } else {
+    G.menuStack.push({ which:G.overlay, ix:G.menuIx, data:overlayData });
+  }
+
+  overlayData = data || {};
+  resetArmed = false;
+  G.overlay = which;
+  G.screen  = 'overlay';
+  G.menuIx  = -1;                     // nothing highlighted until the first Space
+  stopAutoScan();
+  renderOverlay();
+  updateFooter();
+  sfx('select', .5);
+
+  speak(`${overlaySpeech(which)} Press space to scan.`);
+}
+
+function closeOverlay(){
+  const prev = G.menuStack.pop();
+  if (prev){
+    overlayData = prev.data || {};
+    G.overlay = prev.which;
+    G.menuIx  = prev.ix;              // restore the highlight we left behind
+    renderOverlay(); updateFooter();
+    const it = menuItems()[G.menuIx];
+    speak(`${overlayTitle(prev.which)}. ${it ? itemSpeech(it) : ''}`);
+    return;
+  }
+  $('overlay').classList.remove('on');
+  overlayData = {};
+  G.overlay = null;
+  stopAutoScan();
+
+  const back = G.resumeScreen;
+  G.resumeScreen = null;
+
+  if (back === 'fly' || back === 'settle' || back === 'won'){
+    G.screen = back;                       // mid-shot or mid-fanfare; let it finish
+    updateFooter();
+    speak('Resumed.');
+  } else if (back === 'play' && G.level && G.crowns > 0){
+    G.screen = 'play';
+    G.scan = -1;                           // nothing highlighted until the next Space
+    renderChips(); updatePreview(); updateFooter();
+    speak('Resumed. Press space to scan.');
+  } else {
+    G.screen = 'menu';
+    openOverlay('main');
+  }
+}
+
+function renderOverlay(){
+  $('overlay').classList.add('on');
+  $('panelTitle').textContent = overlayTitle(G.overlay);
+  $('panelSub').innerHTML     = overlaySub(G.overlay);
+
+  const list = $('panelList');
+  list.innerHTML = '';
+  menuItems().forEach((it, i)=>{
+    const b = document.createElement('button');
+    // Locked levels are dimmed but stay selectable — picking one explains why
+    // it is locked, which is friendlier than a dead button that says nothing.
+    b.className = 'mi' + (i === G.menuIx ? ' focus' : '') + (it.dis ? ' dim' : '');
+    b.type = 'button';
+    const v = itemVal(it);
+    b.innerHTML = `<span>${itemText(it)}</span>` + (v ? `<span class="mval">${v}</span>` : '');
+    // Clicks go through the same path as Return, so behaviour can't drift apart.
+    b.addEventListener('click', ()=>{ G.menuIx = i; menuSelect(); });
+    list.appendChild(b);
+  });
+
+  $('panelNote').innerHTML = G.overlay === 'help'
+    ? ''
+    : `<b>Space</b> next · <b>Return</b> select · <b>Return hold</b> back`;
+}
+
+function menuStep(dir){
+  const items = menuItems();
+  const n = items.length;
+  let v = (G.menuIx === -1) ? n : G.menuIx;
+  v = (v + dir + (n+1)) % (n+1);
+  G.menuIx = (v === n) ? -1 : v;
+
+  // Scanning away from an armed reset disarms it — that is the "cancel".
+  if (resetArmed) resetArmed = false;
+
+  renderOverlay(); updateFooter();
+  if (G.menuIx === -1){ sfx('hover', .25); return; }   // deadzone: tick, no speech
+  sfx('hover', .5);
+  const it = menuItems()[G.menuIx];
+  if (!it) return;
+  speak(itemSpeech(it));
+}
+
+function menuSelect(){
+  if (G.menuIx === -1){ speak('Nothing highlighted. Press space to keep scanning.'); return; }
+  const it = menuItems()[G.menuIx];
+  if (!it) return;
+  sfx('select', .6);
+
+  const before = G.overlay;
+  it.act();
+
+  // A toggle leaves us on the same menu, so redraw it — otherwise the row keeps
+  // showing the value the setting had before it was changed.
+  if (G.screen === 'overlay' && G.overlay === before){
+    renderOverlay();
+    updateFooter();
+  }
+}
+
+function cycleTheme(d){
+  let i = THEMES.findIndex(t => t.id === settings.theme);
+  i = (i + d + THEMES.length) % THEMES.length;
+  settings.theme = THEMES[i].id;
+  applyTheme(); saveSettings(); renderOverlay();
+  speak('Colours: ' + THEMES[i].name);
+}
+function cycleFont(d){
+  const steps = [100,125,150,175,200];
+  let i = steps.indexOf(settings.fontScale);
+  if (i === -1) i = 0;
+  i = (i + d + steps.length) % steps.length;
+  settings.fontScale = steps[i];
+  applyTheme(); saveSettings(); renderOverlay();
+  speak('Text size ' + settings.fontScale + ' percent');
+}
+function applyTheme(){
+  document.body.dataset.theme = settings.theme;
+  document.documentElement.style.setProperty('--fs', settings.fontScale + '%');
+  refreshPalette();                    // the canvas reads its colours from here
+  requestAnimationFrame(fitCanvas);
+}
+
+function exitToHub(){
+  speak('Exiting to the hub');
+  setTimeout(()=>{
+    if (window.parent && window.parent !== window){
+      window.parent.postMessage({ action:'focusBackButton' }, '*');
+    } else {
+      window.location.href = '../../../index.html';
+    }
+  }, 450);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   INPUT
+   Short presses fire on RELEASE and only when the hold never engaged — that
+   is what lets one physical switch serve as both "next" and "auto scan".
+   The 250ms double-fire guard lives in scan-manager.js; nothing here competes.
+   ══════════════════════════════════════════════════════════════════════════ */
+function scanNext(){
+  if (G.screen === 'overlay') menuStep(1);
+  else if (G.screen === 'play') scanStep(1);
+  resetAutoScan();
+}
+function scanPrev(){
+  if (G.screen === 'overlay') menuStep(-1);
+  else if (G.screen === 'play') scanStep(-1);
+}
+function selectCurrent(){
+  if (G.screen === 'overlay') menuSelect();
+  else if (G.screen === 'play') commit();
+}
+
+function startHoldScan(){
+  const dir = CFG.SCAN_DIR_ON_HOLD;
+  const step = () => (dir < 0 ? scanPrev() : scanNext());
+  step();
+  timers.spaceRepeat = setInterval(step, scanInterval());
+}
+
+function resetAutoScan(){
+  stopAutoScan();
+  if (!autoScanOn()) return;
+  if (G.screen !== 'play' && G.screen !== 'overlay') return;
+  const iv = scanInterval();
+  if (iv > 0) timers.auto = setInterval(()=>{
+    if (G.screen === 'overlay') menuStep(1);
+    else if (G.screen === 'play') scanStep(1);
+    else stopAutoScan();
+  }, iv);
+}
+function stopAutoScan(){
+  if (timers.auto){ clearInterval(timers.auto); timers.auto = null; }
+}
+
+document.addEventListener('keydown', e=>{
+  if (e.repeat) return;
+  if (e.code === 'Space'){
+    e.preventDefault();
+    if (input.spaceDown) return;
+    input.spaceDown = true;
+    timers.space = setTimeout(()=>{
+      timers.space = null;
+      startHoldScan();
+    }, CFG.SPACE_HOLD_MS);
+  }
+  else if (e.code === 'Enter' || e.code === 'NumpadEnter'){
+    e.preventDefault();
+    if (input.retDown) return;
+    input.retDown = true;
+    input.retLong = false;
+    timers.ret = setTimeout(()=>{
+      timers.ret = null;
+      input.retLong = true;
+      backOut();
+    }, CFG.RETURN_HOLD_MS);
+  }
+});
+
+document.addEventListener('keyup', e=>{
+  if (e.code === 'Space'){
+    e.preventDefault();
+    if (!input.spaceDown) return;
+    input.spaceDown = false;
+    if (timers.space){ clearTimeout(timers.space); timers.space = null; }
+    const wasHolding = !!timers.spaceRepeat;
+    if (timers.spaceRepeat){ clearInterval(timers.spaceRepeat); timers.spaceRepeat = null; }
+    if (!wasHolding) scanNext();   // short press only, and only on release
+  }
+  else if (e.code === 'Enter' || e.code === 'NumpadEnter'){
+    e.preventDefault();
+    if (!input.retDown) return;
+    input.retDown = false;
+    if (timers.ret){ clearTimeout(timers.ret); timers.ret = null; }
+    if (!input.retLong) selectCurrent();
+    input.retLong = false;
+  }
+});
+
+/* Header buttons — mouse is an optional extra for a caregiver, never required. */
+$('btnHelp').addEventListener('click', ()=> openOverlay('help'));
+$('btnSet').addEventListener('click', ()=> openOverlay('settings'));
+$('btnExit').addEventListener('click', exitToHub);
+
+/* The hub pushes its voice settings into the iframe when a game opens. */
+window.addEventListener('message', e=>{
+  const d = e.data;
+  if (d && d.type === 'narbe-voice-settings-changed' && d.settings){
+    const v = vm();
+    if (v && v.updateSettings) { try{ v.updateSettings(d.settings); }catch(err){} }
+  }
+});
+
+/* Keep scanning in step if the hub changes speed while a game is open. */
+if (sm()) sm().subscribe(()=> resetAutoScan());
+
+window.addEventListener('resize', fitCanvas);
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BOOT
+   ══════════════════════════════════════════════════════════════════════════ */
+function boot(){
+  loadAll();
+  applyTheme();
+  fitCanvas();
+
+  if (window.SafeAudio){
+    ['select','hover','score','bust','win','lose'].forEach(n => SafeAudio.preload(n));
+    SafeAudio.setEnabled(settings.sound);
+  }
+
+  // Build a level behind the menu so the opening screen isn't an empty field.
+  buildLevel(Math.min(save.level, LEVELS.length-1), true);
+  G.screen = 'menu';
+  openOverlay('main');
+
+  requestAnimationFrame(loop);
+}
+boot();
+</script>
+</body>
+</html>
