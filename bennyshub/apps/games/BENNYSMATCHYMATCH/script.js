@@ -914,6 +914,7 @@ function showEditorWarning() {
     state.menuState = 'editorWarning';
     state.menuIndex = -1;
     renderMenu();
+    speak("Warning. The editor opens in a new tab and needs a mouse. You will not be able to scan and select with your switch. Continue, or Cancel?");
 }
 
 function openEditor() {

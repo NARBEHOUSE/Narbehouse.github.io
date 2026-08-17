@@ -415,14 +415,14 @@ past. That is the exact loss of independence this whole hub exists to prevent.
 The editors are the main case. **They need a mouse and keyboard, and are not
 switch‑operable.** Every game that has one already guards it:
 
-| Game | Guard |
-| --- | --- |
-| Trivia Master | Full overlay: "Opening the game editor will leave this site… You will not be able to scan and select with spacebar and enter." |
-| Benny's Mini Golf | "Mouse Required" modal, **also spoken aloud** |
-| Benny's Show n Sound | "Continue (mouse needed)" + spoken "The editor needs a mouse and keyboard." |
-| Benny's Matchy Match | `editorWarning` menu state |
-| Benny's Word Jumble | "Warning: This feature requires a mouse or touch input." |
-| Benny's P3GL | "Note: This feature is advanced and requires a mouse." |
+| Game | On-screen | Spoken on open |
+| --- | --- | --- |
+| Trivia Master | Full overlay, plain wording | "Warning. Opening the game editor will leave this site." |
+| Benny's Mini Golf | "Mouse Required" modal | the entire warning, verbatim |
+| Benny's Word Jumble | "Warning: This feature requires a mouse or touch input…" | "Warning. This feature requires mouse input. Cancel. Proceed." |
+| Benny's Show n Sound | "Continue (mouse needed)" | "The editor needs a mouse and keyboard." |
+| Benny's P3GL | "…requires a mouse." | warns that it needs a mouse and that switch scanning will not work |
+| Benny's Matchy Match | `editorWarning` menu state | warns that it needs a mouse and that switch scanning will not work |
 
 Copy this when you add anything similar:
 
@@ -436,11 +436,18 @@ Copy this when you add anything similar:
    must contain only the dialog's own buttons — a warning you can scan straight
    past is not a warning. Trivia Master's `getScannables()` is the model: it
    returns the overlay's items and nothing else while it is visible.
-4. **Say it out loud.** The player may not read. Mini Golf speaks the whole
-   warning; Show n Sound speaks a short form. A silent warning does not exist
-   for a large share of the players here.
-5. **Say what will happen, in plain words** — "you will not be able to scan and
-   select with spacebar and enter" beats "this feature is advanced."
+4. **It must be spoken, the moment the dialog opens.** Not when the player
+   scans onto an option — *on open*. Many players do not read, and for them an
+   unspoken warning is not a weak warning, it is **no warning at all**: they
+   see a screen change they cannot interpret and press their switch again.
+   Speak the consequence before they can act on it.
+5. **Say what will happen, in plain words.** "You will not be able to scan and
+   select with your switch" beats "this feature is advanced." Name the thing
+   they lose — scanning — not the thing the feature is.
+
+Speaking only the option labels is not enough. A player hearing "Continue" and
+"Cancel" has been told there is a choice, but not what makes one of them
+dangerous.
 
 The same applies to anything else that strands a switch user: leaving the site,
 opening a new window, a file picker, or any external tool. If you cannot get

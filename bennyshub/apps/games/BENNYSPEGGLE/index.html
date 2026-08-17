@@ -1310,7 +1310,7 @@ class Game{
              this.warningPrevState = 'mainmenu';
              this.warningIndex = -1; // -1 = None selected
              this.lastMenuScan = performance.now() + 1000; // Reset scan timer
-             TTS.speak('Load Custom File. Cancel or Proceed?');
+             TTS.speak('Warning. This opens a file picker that needs a mouse. You will not be able to scan and select with your switch. Cancel or Proceed?');
           }
           else if(this.mainMenuIndex===3){
              // Settings
@@ -1358,7 +1358,7 @@ class Game{
                  this.warningPrevState = 'settings';
                  this.warningIndex = -1; // -1 = None selected
                  this.lastMenuScan = performance.now() + 1000; // Reset scan timer
-                 TTS.speak('Opening Level Creator. Cancel or Proceed?');
+                 TTS.speak('Warning. The Level Creator opens in a new tab and needs a mouse. You will not be able to scan and select with your switch. Cancel or Proceed?');
             } else {
                 this.appState = 'mainmenu';
                 this.lastMenuScan = performance.now() + 1000; // Reset scan timer
