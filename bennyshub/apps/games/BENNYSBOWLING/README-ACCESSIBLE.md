@@ -9,11 +9,11 @@ A community modification of the original “Benny’s Bowling” by iliagrigorev
 - Dedicated to @BEAMINBENNY
 
 ## What’s new in this Accessible Edition
-- Switch‑access menus: Space scans forward; hold Space ≥3s scans backward every 2s; Enter selects/toggles.
+- Switch‑access menus: Space scans forward; hold Space scans backward at the player's scan speed; Enter selects/toggles.
 - Position & Aim via Space: 5s oscillation left/right; resumes from where released; thicker aiming guide.
 - Charge & Throw via Enter: 0–3s charge with non‑linear power; quick tap = weaker, full hold = strong.
 - Text‑to‑Speech: English voices only (up to 8). Speaks menu focus, settings changes (ball style, alley theme), outcomes (“Strike!”), frame announcements, and final score. TTS cancels prior utterances to stay clear.
-- Pause: Hold Enter ≥5s or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu, Help). Help speaks "I need help" without closing the pause menu.
+- Pause: Hold Enter or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu, Help). Help speaks "I need help" without closing the pause menu.
 - 1–2 Players: Single Player and Two Player options. Each player chooses a ball style; scores tracked independently. Keyboard scanning works on menus.
 - Visuals: retro green/black UI; high‑contrast focus highlight; strike celebration banner.
 - Themes: 10 alley themes with animated walls/backdrops and cohesive lighting; alley tint adapts to theme.

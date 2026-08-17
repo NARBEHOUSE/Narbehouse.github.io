@@ -2429,7 +2429,7 @@ function handleEscapeKey() {
         case 'game-row':
             // During gameplay, ESC goes back to pause button focus or does nothing
             // Pause is triggered by holding Enter for 5 seconds instead
-            speak('Hold Enter for 5 seconds to pause.');
+            speak('Hold Enter to pause.');
             break;
         case 'game-over':
             // Return to main menu

@@ -339,7 +339,7 @@ RT.ui = (function () {
           : '<b>Two switches</b> (Auto Scan is off). Hold <b>SPACE</b> to move left, hold <b>ENTER</b> to move right.') +
         '<br><br><b>Mouse or touch:</b> move the pointer, or touch and drag, and the car goes to that lane.' +
         '<br><br>Drive through the <b>green doorways</b> — those lanes are always clear.' +
-        '<br><br>To pause: <b>hold ENTER</b> for 5 seconds.',
+        '<br><br>To pause: <b>hold ENTER</b>.',
       items: [
         { label: '🔁 Switch to ' + (isOneSwitch() ? 'Two Switches' : 'One Switch'),
           speech: 'Switch to ' + (isOneSwitch() ? 'two switches' : 'one switch'),
