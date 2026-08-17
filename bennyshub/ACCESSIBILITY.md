@@ -465,7 +465,7 @@ where each game's design work went.
 | --- | --- |
 | **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
 | **Benny's Bowling** | Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges 0–3 s for power, non‑linear. Confirms on **release**, not press. |
-| **Benny's P3GL** | Space starts the aim oscillation; hold reverses direction each pass for fine aim; release locks. Enter fires. The worked example in the older design guide. |
+| **Benny's P3GL** | Two‑switch: **hold** Space to sweep the aimer, release to stop — a short press only nudges it — and each new press reverses direction so the player walks it onto the target. One‑switch: the aimer oscillates on its own and Enter alone fires. Aimer Speed has four presets, defaulting to Super Slow. |
 | **Benny's Baseball / Football** | Turn‑based play calling — scan the options, select. No reflex component at all; a full season is playable by menu choice. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
 | **Pickleball Rally** | Rally returns via scan/select. Built with SCSU, student creator Lily Flack. |
@@ -498,7 +498,12 @@ game.
 
 ### Prefer
 - Turn‑based and stepwise mechanics
-- Oscillating aim the player *stops*, over aim the player *steers*
+- Oscillating aim the player *stops*, over aim the player *steers*. Offer both
+  forms where you can: **player‑driven** (moves only while held, each press
+  reverses — precise, but needs a hold) and **self‑driven** (sweeps on its own,
+  one press commits — needs no hold). P3GL swaps between them with Auto Scan
+- Make the speed of anything that moves on its own a **setting**, defaulted to
+  the slow, accessible end — P3GL's Aimer Speed defaults to Super Slow
 - Two‑stage selection (row, then column) to reach a grid
 - Generous or absent time limits
 - No‑fail modes alongside competitive ones — Race Tracks' Cruise mode is the

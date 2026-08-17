@@ -530,7 +530,7 @@
         <h3>The patterns that make hard genres work</h3>
         <p>These four patterns are what let a one-switch player do things that normally need a mouse and fast hands. Reach for them before concluding a mechanic is impossible.</p>
         <ul>
-          <li><strong>Oscillate and stop</strong> — instead of <em>aiming</em>, a marker sweeps back and forth on its own and the player stops it. This replaces pointing entirely. Used by Bowling (position, then angle), P3GL and Basketball Shooter</li>
+          <li><strong>Oscillate and stop</strong> — instead of <em>aiming</em>, a marker travels along the arc and the player stops it where they want it. This replaces pointing entirely. It has two forms, and a game should offer whichever matches the player's scheme: <em>player-driven</em> (the marker moves only while the switch is held, and each press reverses it — full control, needs a hold) and <em>self-driven</em> (the marker sweeps continuously and a single press commits — needs no hold at all). Bowling, P3GL and Basketball Shooter all use this; P3GL switches between the two forms with Auto Scan</li>
           <li><strong>Charge and release</strong> — instead of setting a power level, hold and let go; longer hold, more power, on a non-linear curve so short taps stay usable. Bowling, Football, Mini Golf. <em>Always plan a select-based alternative for players who cannot sustain a hold</em></li>
           <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats, Connect Four, Chess &amp; Checkers, Tic Tac Toe</li>
           <li><strong>Armed direction</strong> — one switch drives two directions by making <em>release</em> meaningful: press moves the armed way, letting go arms the other, so a quick tap swaps sides. Race Tracks' one-switch steering</li>
@@ -640,21 +640,35 @@
       <section class="section" id="example">
         <h2>Example: P3GL (Peggle-style Game) Input Setup</h2>
         
-        <p>Here's an example of how a two-button setup can power a complete skill-based puzzle game without requiring reaction timing:</p>
+        <p>P3GL is worth studying because the same game presents a <strong>different aiming model in each control scheme</strong> — and that is what lets one build serve both a two-switch player who wants control and a one-switch player who cannot hold a switch at all.</p>
 
         <div class="card">
-          <h3>P3GL Input Model</h3>
+          <h3>Two switches (Auto Scan off)</h3>
+          <p><strong>The player drives the aimer by holding.</strong> It does not sweep on its own.</p>
           <ul>
-            <li><strong>Spacebar (short press):</strong> Start the aim oscillation left to right</li>
-            <li><strong>Spacebar (long hold):</strong> Reverses the aim direction after each click, allowing fine-tuned aiming with one button</li>
-            <li><strong>Spacebar (release):</strong> Stops movement and locks in aim</li>
-            <li><strong>Return (short press):</strong> Fires the shot or launches the ball</li>
-            <li><strong>Return (long hold):</strong> Opens the pause or options menu (Resume, Restart, Exit)</li>
+            <li><strong>Spacebar (hold):</strong> the aimer sweeps while the switch is down, and stops the instant it is released. A brief press nudges it a little; a long hold moves it far</li>
+            <li><strong>Each new press reverses direction</strong>, so the player walks the aimer onto the target — over, back, in — instead of chasing a moving marker</li>
+            <li>The aimer also turns around by itself at the edges of its arc, so it can never be driven off the end</li>
+            <li><strong>Return (press):</strong> fires</li>
           </ul>
-          
-          <div class="highlight-box">
-            <p>This allows Ben to aim, adjust, and fire entirely with one button for control and one button for confirmation, keeping it accessible, predictable, and satisfying without any time-based input or precision demand.</p>
-          </div>
+        </div>
+
+        <div class="card">
+          <h3>One switch (Auto Scan on)</h3>
+          <p><strong>The aimer oscillates continuously on its own</strong> and Spacebar is not needed for aiming at all.</p>
+          <ul>
+            <li><strong>Return (press):</strong> fires at the current angle — the only input the game requires</li>
+            <li><strong>Return (hold):</strong> opens the menu. Note the hold is shortened to 2s here, against 5s in two-switch mode, because holding is harder for the players who need this mode</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Aimer Speed</h3>
+          <p>Four presets — <strong>Fast, Medium, Slow, Super Slow</strong> — defaulting to <em>Super Slow</em>. This is the difficulty dial for the whole game, and defaulting to the slowest setting is deliberate: it makes the game winnable first, and a player who wants more challenge can speed it up.</p>
+        </div>
+
+        <div class="highlight-box">
+          <p>Two things to take from this. <strong>The same mechanic can be expressed as "hold to move" or "press to commit"</strong> depending on the player's scheme — build both rather than picking one. And <strong>the speed of anything that moves on its own should be a setting</strong>, defaulted to the accessible end.</p>
         </div>
       </section>
 
