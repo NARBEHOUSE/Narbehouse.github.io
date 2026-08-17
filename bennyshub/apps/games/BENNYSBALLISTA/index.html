@@ -350,95 +350,126 @@ const MAT = {
    makes a wall topple and crash as one beam instead of five independent
    cells. Lowercase rubble is always its own small, light, easily-knocked-
    flying block and never welds to its neighbours.
+
+   Design philosophy for this set: every castle is built to be knocked down,
+   not shot apart piece by piece. Favour tall, thin, improbable-looking
+   supports over thick honest walls — a single well-placed hit should be able
+   to drop something that then wrecks its neighbours on the way to the
+   ground. Two authoring tricks make that pay off without any new engine
+   mechanics, both just ordinary letters placed with the bolt's flight path
+   (left to right, arcing) in mind:
+
+     - CLADDING. A shot only ever reaches a cell once it's punched through
+       whatever sits in front of it (the same row, one or more columns closer
+       to the muzzle). Put S in front of a W and the wood is armoured —
+       reaching it means a Boulder, a very hard direct Stone Bolt, or arcing
+       clean over the top. This is "wood partially clad in a hard material."
+     - WINDOWS. Put I in front of a W (or a T) instead of S and the same shot
+       shatters the glass and carries on into whatever it was hiding — one
+       shot, two kills, if the window and its target line up. Because glass
+       barely holds anything up, it's also fine to use it AS a leg: a
+       colonnade with one glass column among the stone ones is a deliberately
+       weak point, not a bug.
+
+   Neither trick needs the block doing the hiding to be tall — one cell of I
+   or S directly in front of a taller support is enough, because the merge
+   rule only welds same-letter runs *within a row*, never between rows.
    ────────────────────────────────────────────────────────────────────────── */
 const LEVELS = [
-  { name:'The Watchtower', dist:700, par:1, bolts:6, map:[
+  { name:'The Reed Tower', dist:700, par:1, bolts:6, map:[
     '..K..',
     '.WWW.',
     '.W.W.',
+    '.W.W.',
     '.W.W.'
   ]},
-  { name:'Twin Turrets', dist:700, par:2, bolts:6, map:[
+  { name:'Scaffold Twins', dist:700, par:2, bolts:7, map:[
     '.K.....K.',
-    'WWW...WWW',
-    'W.W...W.W',
-    'W.W...W.W'
+    'WWWWWWWWW',
+    'W.......W',
+    'W.......W'
   ]},
-  { name:'The Long Wall', dist:740, par:2, bolts:7, map:[
+  { name:'The Long Colonnade', dist:740, par:2, bolts:7, map:[
     '....K....',
     '.WWWWWWW.',
-    '.W..W..W.',
-    'SSSSSSSSS'
+    '.S.S.S.S.'
   ]},
-  { name:'Stone Keep', dist:720, par:3, bolts:8, map:[
-    '...K...',
-    '.SSSSS.',
-    '.S.W.S.',
-    '.S.W.S.',
-    'SSSSSSS'
+  { name:'Glasshouse Keep', dist:700, par:2, bolts:7, map:[
+    '.K..K',
+    '.W..W',
+    '.W..W',
+    'SW.IW',
+    'IW.SW',
+    'SW.SW'
   ]},
-  { name:'House of Glass', dist:760, par:2, bolts:7, map:[
-    '..K.K..',
-    '.IIIII.',
-    '.I...I.',
-    '.IWWWI.',
-    'SSSSSSS'
+  { name:'The Clad Pillar', dist:700, par:2, bolts:7, map:[
+    '.K',
+    '.W',
+    'SW',
+    'SW',
+    'SW',
+    'SW'
   ]},
-  { name:'Powder Store', dist:700, par:2, bolts:7, map:[
-    '...K...',
-    '.WWWWW.',
-    '.W.T.W.',
-    '.W.T.W.',
-    'SSSSSSS'
+  { name:'Powder Row', dist:700, par:3, bolts:8, map:[
+    '....K....',
+    '.WWWWWWW.',
+    'SW.....WS',
+    'IT.....TI',
+    'SW.....WS',
+    'SW.....WS'
   ]},
-  { name:'The Barbican', dist:720, par:3, bolts:8, map:[
+  { name:'The Timberworks', dist:720, par:3, bolts:9, map:[
     '.K.....K.',
-    'SSS.T.SSS',
-    'S.S.W.S.S',
-    'S.SWWWS.S',
-    'SSSSSSSSS'
+    '.WWWWWWW.',
+    '.W.....W.',
+    '.T.....W.',
+    '.W.....T.',
+    '.W..s..W.'
   ]},
-  { name:'Iron Gate', dist:780, par:3, bolts:9, map:[
+  { name:'Iron Gate', dist:760, par:3, bolts:9, map:[
     '...K...',
     '.WWWWW.',
+    '.W.X.W.',
+    '.T.X.W.',
     '.WXXXW.',
-    '.WXTXW.',
     'SSXXXSS'
   ]},
-  { name:'The Rookery', dist:700, par:3, bolts:9, map:[
+  { name:'The Rookery', dist:720, par:3, bolts:9, map:[
     'K.......K',
     'W.......W',
-    'WII...IIW',
-    'WSS.T.SSW',
-    'SSSSSSSSS'
+    'W..III..W',
+    'W..TsS..W'
   ]},
-  { name:'Cliffside Fort', dist:760, par:4, bolts:10, map:[
-    '....K....',
-    '..SSSSS..',
-    '..S.T.S..',
-    'XXWWWWWXX',
-    'XXXXXXXXX'
+  { name:'Cliffside Fort', dist:700, par:2, bolts:9, map:[
+    '..K..K..K..',
+    '..W..W..W..',
+    '.WWWWTWWWW.',
+    'XXXXXXXXXXX'
   ]},
-  { name:'The Citadel', dist:720, par:4, bolts:10, map:[
+  { name:'The Citadel', dist:740, par:4, bolts:11, map:[
     '.K..K..K.',
-    'SSWWWWWSS',
-    'S.W.T.W.S',
-    'S.WIIIW.S',
+    '.WWWWWWW.',
+    '.W..W..W.',
+    '.W..W..W.',
+    'SW..W.SW.',
+    'IW..W.IW.',
     'SSSSSSSSS'
   ]},
-  { name:"Benny's Bastion", dist:700, par:5, bolts:12, map:[
+  { name:"Benny's Bastion", dist:700, par:4, bolts:12, map:[
     'K.......K',
-    'SS..K..SS',
-    'S.WWWWW.S',
-    'S.WXTXW.S',
-    'SSWWWWWSS',
-    'XXXXXXXXX'
+    'W.......W',
+    'W.......W',
+    'W...K...W',
+    'W.WWWWW.W',
+    'W.W.T.W.W',
+    'WSWIIIWSW',
+    'WSWSSSWSW'
   ]},
-  { name:'The Rubble Yard', dist:740, par:3, bolts:9, map:[
-    '.ws...sw.',
-    '.WWWWWWW.',
-    '.W..K..W.',
-    '.SSSSSSS.'
+  { name:'The Rubble Yard', dist:700, par:3, bolts:10, map:[
+    '.ws..i..sw.',
+    '.WWWWWWWWW.',
+    '.W..K.K..W.',
+    '.SSSSTSSSS.'
   ]}
 ];
 

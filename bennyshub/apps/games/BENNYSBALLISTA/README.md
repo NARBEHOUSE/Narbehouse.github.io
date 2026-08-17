@@ -131,9 +131,10 @@ uppercase letter side by side in one row becomes a single wide rigid body — se
 Physics above.
 
 ```js
-{ name:'The Watchtower', dist:700, par:1, bolts:6, map:[
+{ name:'The Reed Tower', dist:700, par:1, bolts:6, map:[
   '..K..',
   '.WWW.',
+  '.W.W.',
   '.W.W.',
   '.W.W.'
 ]},
@@ -144,6 +145,22 @@ Physics above.
   shots overshoot.
 - `par` — the bolt count worth three stars.
 - `bolts` — the limit when Endless Bolts is switched off.
+
+The whole set is built around one idea: knocking the legs out from under a
+tall, thin structure is more fun than shooting the target directly, so favour
+spindly silhouettes with real voids in them over honest thick walls. Two
+letter tricks make that hide-and-reveal design possible without touching the
+engine, both exploiting the fact that a bolt only reaches a cell once it's
+gone through whatever sits in front of it (same row, closer to the muzzle) —
+see the comment above the `LEVELS` array for the full explanation:
+
+- Put `S` in front of a `W` to **clad** it — the wood behind is only
+  reachable with a Boulder, a very hard direct Stone Bolt, or a lob that
+  clears the cladding entirely.
+- Put `I` in front of a `W` or `T` to make it a **window** — any shot that
+  breaks the glass carries on into whatever was behind it in the same
+  motion. Glass is also weak enough to use as a leg on its own, as a
+  deliberately fragile point in an otherwise solid colonnade.
 
 Two things to check after drawing one:
 
