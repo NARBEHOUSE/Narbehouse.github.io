@@ -235,6 +235,8 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="js/box2d-entry.js" data-box2d-dir="js"></script>
+<script src="js/ballista-physics.js"></script>
 
 <script>
 'use strict';
@@ -264,22 +266,25 @@ const CFG = {
   DT: 1/120,               // physics substep
   WIN_PAUSE: 1.6,          // seconds to hold on the wreckage before the results panel
 
-  /* Rigid-body tuning. Everything here works in the same "impact > 380" scale
-     the original single-block landing check used, just applied generally now
-     that blocks can collide with each other and not only with the ground. */
-  AIR_DAMP          : 0.999,
-  GROUND_FRICTION    : 0.82,
-  RESTITUTION_GROUND : 0.12,
-  RESTITUTION_BLOCK  : 0.05,
-  FRICTION           : 0.5,
-  SPIN_SCALE         : 0.00026,
-  SOLVER_PASSES      : 3,
-  SLEEP_SPEED        : 14,     // px/s (+ a bit of angular speed) below which a block can fall asleep
-  SLEEP_TIME         : 0.35,   // seconds it has to stay that slow before it actually sleeps
-  IMPACT_THRESHOLD   : 380,    // px/s of closing speed before an impact starts doing damage
-  IMPACT_DMG_SCALE   : 0.16,
-  KNOCK_SCALE        : 0.55    // how much of a bolt's own velocity gets handed to what it hits
+  /* Rigid-body tuning — see js/ballista-physics.js and the README's "Physics"
+     section. PPM (pixels-per-metre) is what keeps Box2D, which is tuned for
+     objects roughly 0.1-10 metres across, working at board-cell scale: one
+     cell is one metre. IMPACT_THRESHOLD/IMPACT_DMG_SCALE/KNOCK_SCALE are
+     still in the original pixels-per-second scale the single-block landing
+     check used — the PPM conversion is what makes that stay true now that
+     the actual motion comes from Box2D instead of a hand-rolled integrator. */
+  PPM                 : 44,      // one board cell is one Box2D metre — set to CELL below
+  VEL_ITERATIONS      : 8,       // Box2D's own recommended defaults
+  POS_ITERATIONS      : 3,
+  BLOCK_FRICTION      : 0.6,
+  BLOCK_RESTITUTION   : 0.05,
+  GROUND_FRICTION     : 0.9,
+  GROUND_RESTITUTION  : 0.1,
+  IMPACT_THRESHOLD    : 380,     // px/s of closing speed before an impact starts doing damage
+  IMPACT_DMG_SCALE    : 0.16,
+  KNOCK_SCALE         : 0.55     // how much of a bolt's own velocity gets handed to what it hits
 };
+CFG.PPM = CFG.CELL;   // kept as one property, not two: they must never drift apart
 
 /* Angles and powers are lists of named choices — never a swept meter.
    These numbers are tuned, not arbitrary: every angle and every power has to
@@ -532,7 +537,6 @@ const G = {
   winTimer: 0,           // beat between the last crown falling and the results panel
   shake  : 0,
   camX   : 0,
-  supportDirty: false,
   resumeScreen: null     // what to go back to when the pause menu closes
 };
 
@@ -571,6 +575,9 @@ function buildLevel(ix, quiet){
   const L = LEVELS[ix];
   G.levelIx = ix;
   G.level   = L;
+  // Clear out the previous level's rigid bodies before dropping our
+  // reference to them — Box2D bodies aren't garbage-collected on their own.
+  for (const b of G.blocks) BallistaPhysics.destroyBlock(b.body);
   G.blocks  = [];
   G.parts   = [];
   G.shots   = [];
@@ -608,22 +615,22 @@ function buildLevel(ix, quiet){
         x = L.dist + c*cell; y = y0;
       }
 
+      const body = BallistaPhysics.addBlock(x, y, w, h, CFG.BLOCK_FRICTION, CFG.BLOCK_RESTITUTION);
       G.blocks.push({
-        x, y, w, h,
+        x, y, w, h, body,
         mat: m, hp: m.hp * runLen, maxHp: m.hp * runLen,
         mass: (w*h) / (cell*cell),
         seams: m.small ? 1 : runLen,          // >1 draws internal seam lines, see drawBlocks
-        alive:true, awake:false, settled:true, settleT:0,
-        vx:0, vy:0, rot:0, rotV:0, burn:0
+        alive:true, awake:true, rot:0, burn:0
       });
       c += runLen;
     }
   }
   G.crowns = G.blocks.filter(b => b.mat.crown).length;
-  // Run the support pass once up front. A well-drawn level is stable and this
-  // does nothing; a badly-drawn one visibly falls over instead of floating,
-  // which is the fastest way to spot the mistake.
-  resolveSupport();
+  // No support pass to run any more — every block is a real rigid body from
+  // the moment it's created, so Box2D itself is already deciding whether a
+  // well-drawn level stands and a badly-drawn one visibly falls over, before
+  // the very first frame is even drawn.
 
   // Keep the previous shot's picks — a player rarely wants to start over.
   G.pick = { ammo:Math.min(G.last.ammo, unlockedAmmo().length-1), angle:G.last.angle, power:G.last.power };
@@ -762,11 +769,20 @@ function simulate(p, maxT){
   return { pts, hit };
 }
 
+/* Blocks tumble to any angle now, so a hit test against their unrotated
+   x/y/w/h would be checking a box that no longer matches what's on screen —
+   exactly backwards from a piece lying at a steep angle. Instead, rotate the
+   query point into the block's own local (unrotated) frame and test there;
+   equivalent to testing against the true rotated rectangle. */
 function blockAt(x, y, r){
   for (let i = 0; i < G.blocks.length; i++){
     const b = G.blocks[i];
     if (!b.alive) continue;
-    if (x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h) return b;
+    const cx = b.x + b.w/2, cy = b.y + b.h/2;
+    const dx = x - cx, dy = y - cy;
+    const cos = Math.cos(-b.rot), sin = Math.sin(-b.rot);
+    const lx = dx*cos - dy*sin, ly = dx*sin + dy*cos;
+    if (lx + r > -b.w/2 && lx - r < b.w/2 && ly + r > -b.h/2 && ly - r < b.h/2) return b;
   }
   return null;
 }
@@ -874,8 +890,7 @@ function damageBlock(b, dmg, fromAmmo, impulse){
   b.hp -= d;
 
   if (impulse){
-    b.awake = true; b.settled = false; b.settleT = 0;
-    b.vx += impulse.vx; b.vy += impulse.vy;
+    BallistaPhysics.addVelocity(b.body, impulse.vx, impulse.vy);
   }
 
   if (b.hp > 0){
@@ -886,7 +901,8 @@ function damageBlock(b, dmg, fromAmmo, impulse){
   // Destroyed.
   const over = -b.hp;
   b.alive = false;
-  G.supportDirty = true;             // whatever was resting on it may now fall
+  BallistaPhysics.destroyBlock(b.body);   // Box2D wakes whatever was resting on it, on its own
+  b.body = null;
   spawnParts(b, 14);
   G.levelScore += b.mat.crown ? 500 : 100;
   if (b.mat.crown){
@@ -935,178 +951,35 @@ function spawnParts(b, n){
   }
 }
 
-/* Support test — the heart of the collapse model.
-
-   A block stands if it can reach the ground through other blocks. Stacking
-   straight up is free; stepping sideways spends one unit of "span". That span
-   budget is what lets an archway hold: the lintel over a doorway is supported
-   by the legs at either end even though there is nothing directly beneath its
-   middle. Without it every castle with an arch in it falls down on load.
-
-   MAX_SPAN also stops the opposite mistake — a long slab can't hang in the air
-   off one remaining leg, its unsupported middle sags out and drops. */
-const MAX_SPAN = 2;
-
-function resolveSupport(){
-  const live = G.blocks.filter(b => b.alive && !b.awake);
-  for (const b of live) b.span = Infinity;
-
-  const queue = [];
-  for (const b of live){
-    if (b.y + b.h >= CFG.GROUND_Y - 2){ b.span = 0; queue.push(b); }   // on the ground
-  }
-
-  while (queue.length){
-    const c = queue.shift();
-    for (const b of live){
-      if (b === c) continue;
-      const xo = Math.min(b.x+b.w, c.x+c.w) - Math.max(b.x, c.x);
-      const yo = Math.min(b.y+b.h, c.y+c.h) - Math.max(b.y, c.y);
-
-      if (xo > 4 && Math.abs((b.y + b.h) - c.y) < 4){        // b rests on top of c
-        if (b.span > 0){ b.span = 0; queue.push(b); }
-        continue;
-      }
-      if (yo > 4 && (Math.abs((b.x + b.w) - c.x) < 4 || Math.abs(b.x - (c.x + c.w)) < 4)){
-        const s = c.span + 1;                                 // b is beside c
-        if (s <= MAX_SPAN && s < b.span){ b.span = s; queue.push(b); }
-      }
-    }
-  }
-
-  for (const b of live){
-    if (b.span === Infinity){
-      b.awake = true; b.settled = false; b.settleT = 0;
-      b.vx = (Math.random()-.5) * 40;      // a small nudge so a straight drop still tips one way
-      b.rotV = (Math.random()-.5) * 2.2;
-    }
-  }
-}
-
 /* ══════════════════════════════════════════════════════════════════════════
-   PHYSICS SOLVER
-   `resolveSupport` above only decides WHICH blocks should be awake (falling,
-   knocked, or otherwise loose). Everything about how they actually move —
-   gravity, hitting the ground, and crucially hitting *each other* — happens
-   here. It is a small AABB impulse solver: gravity, then a few passes of
-   "push apart + bounce a little + bleed some speed to friction" so stacks of
-   blocks settle instead of jittering or sinking through one another. This is
-   what turns a knocked-out wall into a real collapse — the blocks above it
-   fall, hit the blocks beside them, and those get knocked over in turn,
-   instead of every block quietly free-falling straight through its neighbours
-   the way the old single-block "land on the thing below" model did.
+   PHYSICS STEP
+   The actual rigid-body simulation lives in js/ballista-physics.js (a Box2D
+   adapter) — this is just the per-frame glue: step the world, then pull each
+   block's new position/rotation back into the plain object the rest of the
+   game already reads. Impact damage is a before/after speed check rather
+   than a Box2D contact listener: simpler to reason about, and "this block
+   just got stopped hard" is exactly what a sudden loss of speed means,
+   whether that's landing, or crashing into a neighbour.
    ══════════════════════════════════════════════════════════════════════════ */
-function resolveGround(a, pass){
-  const depth = (a.y + a.h) - CFG.GROUND_Y;
-  if (depth <= 0) return;
-  a.y -= depth;
-  if (a.vy <= 0) return;
-
-  const impactSpeed = a.vy;
-  a.vy = -impactSpeed * CFG.RESTITUTION_GROUND;
-  a.vx   *= CFG.GROUND_FRICTION;
-  a.rotV *= CFG.GROUND_FRICTION;
-
-  if (pass === 0 && impactSpeed > CFG.IMPACT_THRESHOLD){
-    damageBlock(a, (impactSpeed - CFG.IMPACT_THRESHOLD) * CFG.IMPACT_DMG_SCALE);
-    sfx('hover', .5);
-    G.shake = Math.max(G.shake, 4);
-  }
-}
-
-function resolvePair(a, c, pass){
-  const ox = Math.min(a.x+a.w, c.x+c.w) - Math.max(a.x, c.x);
-  const oy = Math.min(a.y+a.h, c.y+c.h) - Math.max(a.y, c.y);
-  if (ox <= 0 || oy <= 0) return;
-
-  const invA = a.awake ? 1/a.mass : 0;
-  const invC = c.awake ? 1/c.mass : 0;
-  if (invA + invC === 0) return;             // two settled blocks never push each other
-
-  // Separate along whichever axis has the smaller overlap — the usual AABB
-  // trick for turning a penetration into a plausible push-apart direction.
-  let nx = 0, ny = 0, depth;
-  if (ox < oy){ nx = (a.x+a.w/2 < c.x+c.w/2) ? -1 : 1; depth = ox; }
-  else        { ny = (a.y+a.h/2 < c.y+c.h/2) ? -1 : 1; depth = oy; }
-
-  const corr = depth * 0.5;
-  const shareA = invA/(invA+invC), shareC = invC/(invA+invC);
-  a.x += nx*corr*shareA; a.y += ny*corr*shareA;
-  c.x -= nx*corr*shareC; c.y -= ny*corr*shareC;
-
-  const relVx = c.vx - a.vx, relVy = c.vy - a.vy;
-  const relN  = relVx*nx + relVy*ny;
-  if (relN > 0) return;                      // already moving apart
-
-  const j = -(1 + CFG.RESTITUTION_BLOCK) * relN / (invA + invC);
-  a.vx -= j*nx*invA; a.vy -= j*ny*invA;
-  c.vx += j*nx*invC; c.vy += j*ny*invC;
-
-  // Friction along the contact surface — what lets a toppling block slide
-  // down the face of its neighbour instead of just bouncing off it.
-  const tx = -ny, ty = nx;
-  const relT = relVx*tx + relVy*ty;
-  const maxT = Math.abs(j) * CFG.FRICTION;
-  const jt = Math.max(-maxT, Math.min(maxT, -relT/(invA+invC)));
-  a.vx -= jt*tx*invA; a.vy -= jt*ty*invA;
-  c.vx += jt*tx*invC; c.vy += jt*ty*invC;
-
-  // An off-centre contact spins a block instead of just stopping it dead —
-  // this is what makes a beam clipped near one end tip over rather than
-  // freeze in place.
-  if (a.awake){
-    const lever = nx ? (c.y+c.h/2)-(a.y+a.h/2) : (c.x+c.w/2)-(a.x+a.w/2);
-    a.rotV += j * invA * lever * CFG.SPIN_SCALE / a.mass;
-  }
-  if (c.awake){
-    const lever = nx ? (a.y+a.h/2)-(c.y+c.h/2) : (a.x+a.w/2)-(c.x+c.w/2);
-    c.rotV -= j * invC * lever * CFG.SPIN_SCALE / c.mass;
+function stepWorld(dt){
+  for (const b of G.blocks){
+    if (b.alive && b.awake) b._preSpeed = BallistaPhysics.speed(b.body);
   }
 
-  if (pass === 0 && Math.abs(relN) > CFG.IMPACT_THRESHOLD){
-    const dmg = (Math.abs(relN) - CFG.IMPACT_THRESHOLD) * CFG.IMPACT_DMG_SCALE * 0.7;
-    if (a.awake) damageBlock(a, dmg);
-    if (c.awake) damageBlock(c, dmg);
-  }
-}
-
-function stepPhysics(dt){
-  const blocks = G.blocks;
-
-  for (const b of blocks){
-    if (!b.alive || !b.awake) continue;
-    b.vy += CFG.GRAVITY * dt;
-    b.vx   *= CFG.AIR_DAMP;
-    b.rotV *= CFG.AIR_DAMP;
-    b.x += b.vx * dt;
-    b.y += b.vy * dt;
-    b.rot += b.rotV * dt;
-  }
-
-  for (let pass = 0; pass < CFG.SOLVER_PASSES; pass++){
-    for (let i = 0; i < blocks.length; i++){
-      const a = blocks[i];
-      if (!a.alive) continue;
-      for (let j = i+1; j < blocks.length; j++){
-        const c = blocks[j];
-        if (!c.alive) continue;
-        if (!a.awake && !c.awake) continue;
-        resolvePair(a, c, pass);
-      }
-      if (a.awake) resolveGround(a, pass);
-    }
-  }
+  BallistaPhysics.step(dt, CFG.VEL_ITERATIONS, CFG.POS_ITERATIONS);
 
   let anyMoving = false;
-  for (const b of blocks){
-    if (!b.alive || !b.awake) continue;
+  for (const b of G.blocks){
+    if (!b.alive) continue;
+    BallistaPhysics.sync(b);
+    if (!b.awake) continue;
     anyMoving = true;
-    const speed = Math.abs(b.vx) + Math.abs(b.vy) + Math.abs(b.rotV)*20;
-    if (speed < CFG.SLEEP_SPEED) b.settleT += dt; else b.settleT = 0;
-    if (b.settleT > CFG.SLEEP_TIME){
-      b.awake = false; b.settled = true;
-      b.vx = 0; b.vy = 0; b.rotV = 0;
-      G.supportDirty = true;                    // it can hold things up again now
+
+    const drop = (b._preSpeed || 0) - BallistaPhysics.speed(b.body);
+    if (drop > CFG.IMPACT_THRESHOLD){
+      damageBlock(b, (drop - CFG.IMPACT_THRESHOLD) * CFG.IMPACT_DMG_SCALE);
+      sfx('hover', .5);
+      G.shake = Math.max(G.shake, 4);
     }
   }
   return anyMoving;
@@ -1196,8 +1069,7 @@ function loop(now){
       let guard = 0;
       while (accum >= CFG.DT && guard++ < 400){
         stepShots(CFG.DT);
-        stepPhysics(CFG.DT);
-        if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
+        stepWorld(CFG.DT);
         accum -= CFG.DT;
       }
       stepParts(dt);
@@ -1227,8 +1099,7 @@ function loop(now){
         accum += dt;
         let guard = 0;
         while (accum >= CFG.DT && guard++ < 400){
-          stepPhysics(CFG.DT);
-          if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
+          stepWorld(CFG.DT);
           accum -= CFG.DT;
         }
       } else {
@@ -1484,8 +1355,15 @@ function drawPreview(){
     ctx.moveTo(hit.x, hit.y + 22); ctx.lineTo(hit.x, hit.y + 30);
     ctx.stroke();
     if (hit.block){
+      // Drawn in the block's own rotated frame — a tumbled piece gets a
+      // tilted highlight, matching what blockAt() actually tested against.
+      const b = hit.block;
+      ctx.save();
+      ctx.translate(b.x + b.w/2, b.y + b.h/2);
+      if (b.rot) ctx.rotate(b.rot);
       ctx.strokeStyle = css('--focus'); ctx.lineWidth = 4;
-      ctx.strokeRect(hit.block.x - 3, hit.block.y - 3, hit.block.w + 6, hit.block.h + 6);
+      ctx.strokeRect(-b.w/2 - 3, -b.h/2 - 3, b.w + 6, b.h + 6);
+      ctx.restore();
     }
   }
   ctx.restore();
@@ -2055,7 +1933,7 @@ window.addEventListener('resize', fitCanvas);
 /* ══════════════════════════════════════════════════════════════════════════
    BOOT
    ══════════════════════════════════════════════════════════════════════════ */
-function boot(){
+async function boot(){
   loadAll();
   applyTheme();
   fitCanvas();
@@ -2064,6 +1942,14 @@ function boot(){
     ['select','hover','score','bust','win','lose'].forEach(n => SafeAudio.preload(n));
     SafeAudio.setEnabled(settings.sound);
   }
+
+  // Box2D's WASM module loads asynchronously — everything physics-related
+  // (including the very first buildLevel call) waits for this.
+  const box2D = await Box2D();
+  BallistaPhysics.init(box2D, {
+    ppm: CFG.PPM, gravity: CFG.GRAVITY, groundY: CFG.GROUND_Y,
+    groundFriction: CFG.GROUND_FRICTION, groundRestitution: CFG.GROUND_RESTITUTION
+  });
 
   // Build a level behind the menu so the opening screen isn't an empty field.
   buildLevel(Math.min(save.level, LEVELS.length-1), true);

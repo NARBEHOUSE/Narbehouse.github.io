@@ -159,7 +159,8 @@
       "description": "Lay siege to castles with a giant crossbow! Pick your angle and power from a list, watch the dotted arc show you exactly where the bolt lands, and bring the towers down. No timing and no rush - every shot is your choice.",
       "path": "apps/games/BENNYSBALLISTA/index.html",
       "image": "images/games/bennysballista.png",
-      "genres": ["Strategy", "Arcade"]
+      "genres": ["Strategy", "Arcade"],
+      "needsServer": true
     },
     {
       "id": "bennysracetracks",

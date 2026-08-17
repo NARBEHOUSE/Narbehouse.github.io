@@ -3,7 +3,17 @@
 A siege game for one or two switches. You fire a giant crossbow at castles and
 bring the crowns down.
 
-Everything is one self-contained file: [`index.html`](index.html).
+The game itself is one file, [`index.html`](index.html), same as the rest of
+the hub — but the castles now run on real physics (see "Physics" below), which
+means a real physics engine: [`js/`](js/) vendors
+[Box2D compiled to WebAssembly](https://github.com/Birch-san/box2d-wasm).
+[Benny's Bowling](../BENNYSBOWLING/) made the same call with Ammo.js, for the
+same reason — hand-rolled collision math only gets you so far before a real
+engine is the more honest trade. **This means the game needs to be served over
+`http(s)://`, not opened as a `file://` page** — the WASM binary loads with
+`fetch`, which most browsers block from a bare local file. It's marked
+`"needsServer": true` in `games.json` for exactly this reason, same as
+`TRIVIAMASTER`.
 
 ## Why this game exists
 
@@ -52,13 +62,22 @@ hard enough to damage whatever is beneath it.
 
 ## Physics
 
-A bolt striking a piece doesn't just deal damage — it knocks the piece with real
-velocity. Once a piece is loose (hit hard enough to survive, or left standing on
-nothing), it tumbles under gravity and collides with everything else that's
-loose or still standing: it pushes neighbours, slides down the faces of blocks
-it lands on, spins from an off-centre hit or landing, and can crush or knock over
-whatever is underneath it when it comes down. That is what turns a single well-
-placed shot into a chain reaction instead of one block quietly vanishing.
+Every piece of every castle is a real Box2D rigid body from the moment the
+level loads — not a special case for "loose" pieces. That is deliberate: it
+means there is no hand-written "is this block held up?" check anywhere in the
+game. A well-built castle stands because Box2D's own contact solver is
+distributing weight through it via friction and normal force, exactly the way
+a real stack of blocks does. Knock the right piece out and the same solver is
+what makes everything that depended on it topple, slide down its neighbours'
+faces, and crash into whatever is next to it — a chain reaction, not one block
+quietly vanishing.
+
+A bolt striking a piece doesn't just deal damage, either — it hands the piece
+some of its own velocity, so a hit that doesn't destroy something still knocks
+it loose to go tumbling. Impact damage (from a hard landing, or one piece
+crashing into another) works by watching for a sudden drop in a piece's own
+speed — the physics engine doesn't need to be told when that happens, the game
+just notices it.
 
 Two piece sizes come out of this:
 
@@ -77,6 +96,13 @@ Two piece sizes come out of this:
   bad for "the leg holding up a lintel."
 
 "The Rubble Yard" (the last level) is built specifically to show both off.
+
+The actual Box2D wiring lives in [`js/ballista-physics.js`](js/ballista-physics.js)
+— a small adapter so the main script only ever deals in plain pixel
+coordinates and never touches Box2D's raw API (which works in metres, and
+whose objects need to be explicitly destroyed — there's no garbage collection
+on the WASM side). If you're changing how something moves, that file and
+`stepWorld()` in `index.html` are the two places to look.
 
 ## Ammunition
 
@@ -121,12 +147,14 @@ Physics above.
 
 Two things to check after drawing one:
 
-1. **It must stand up.** A block is held up if it can reach the ground through
-   other blocks; stepping sideways costs one unit of "span" and only two are
-   allowed. That is what lets an archway hold — the lintel over a doorway is
-   carried by the legs at either end. A span of three or more sags and falls, so
-   a beam wider than five with legs only at its ends will drop its middle. If a
-   castle collapses the moment the level loads, that is why.
+1. **It must stand up.** There's no hand-written rule to satisfy any more —
+   it's real physics, so a well-drawn castle just stands, the same way stacked
+   blocks would in real life. If it collapses the moment the level loads, that
+   means it genuinely wasn't standing on its own: check that every piece
+   either sits on the ground or on something wide enough underneath it. A long
+   lintel needs legs that are actually load-bearing (see the small-rubble
+   caveat under Physics above) — a beam spanning a wide gap with only
+   corner support can sag and fall, exactly like the real thing would.
 2. **It must be reachable.** Angles and powers are tuned so every option
    connects with something. If you move a castle a long way out, check that the
    weaker powers can still reach its near face — otherwise those scan steps
@@ -150,11 +178,27 @@ able to wipe a save.
 - Do not add input debouncing. `scan-manager.js` already installs a global 250 ms
   cooldown; a second one fights it.
 - `CFG` at the top holds the hold durations and the scan-on-hold direction, in
-  case the hub's conventions change. The same object also holds the physics
-  tuning (gravity, restitution, friction, sleep thresholds) — see `stepPhysics`,
-  `resolvePair` and `resolveGround`.
-- `resolveSupport` only decides which blocks *should* be loose; `stepPhysics` is
-  what actually moves and collides them. If you change one, check the other —
-  `resolveSupport` treats a block as immovable ground the instant it goes to
-  sleep, so a change to the sleep threshold changes what counts as "structure"
-  mid-collapse.
+  case the hub's conventions change. It also holds the Box2D tuning (`PPM`,
+  solver iteration counts, friction/restitution, the impact-damage thresholds)
+  — see `js/ballista-physics.js` and `stepWorld()`.
+- `boot()` is `async` and `await`s `Box2D()` before the first `buildLevel()`
+  call — the WASM module has to finish loading first. Nothing before that
+  point in `boot()` may depend on physics being ready.
+- Box2D bodies aren't garbage-collected: `buildLevel()` explicitly
+  `destroyBlock()`s every body from the outgoing level before building the
+  next one, and `damageBlock()`'s "destroyed" branch does the same the instant
+  a piece dies, rather than waiting for the next physics step. If you add a
+  new way for a block to leave the game, make sure it destroys the body too.
+- The one `b2World` (and its static ground body) is created once in `boot()`
+  and reused for the whole session — levels only ever add/remove their own
+  block bodies, never the world itself.
+
+## Third-party code
+
+`js/Box2D.js` / `js/Box2D.wasm` / `js/Box2D.simd.js` / `js/Box2D.simd.wasm` /
+`js/box2d-entry.js` are vendored unmodified from
+[`box2d-wasm`](https://github.com/Birch-san/box2d-wasm) (zlib licence — see
+`js/box2d-LICENSE.zlib.txt`) and bundle Google's
+[wasm-feature-detect](https://github.com/GoogleChromeLabs/wasm-feature-detect)
+(Apache 2.0 — see `js/box2d-LICENSE.wasm-feature-detect.txt`). Don't hand-edit
+these; pull a fresh copy from the npm package if Box2D itself needs updating.
