@@ -260,9 +260,25 @@ const CFG = {
   GROUND_Y: 640,
   MUZZLE_X: 150, MUZZLE_Y: 552,
   GRAVITY: 1400,           // px/s^2
-  CELL: 44,                // block size
+  CELL: 44,                // standard block size; small rubble is half this
   DT: 1/120,               // physics substep
-  WIN_PAUSE: 1.6           // seconds to hold on the wreckage before the results panel
+  WIN_PAUSE: 1.6,          // seconds to hold on the wreckage before the results panel
+
+  /* Rigid-body tuning. Everything here works in the same "impact > 380" scale
+     the original single-block landing check used, just applied generally now
+     that blocks can collide with each other and not only with the ground. */
+  AIR_DAMP          : 0.999,
+  GROUND_FRICTION    : 0.82,
+  RESTITUTION_GROUND : 0.12,
+  RESTITUTION_BLOCK  : 0.05,
+  FRICTION           : 0.5,
+  SPIN_SCALE         : 0.00026,
+  SOLVER_PASSES      : 3,
+  SLEEP_SPEED        : 14,     // px/s (+ a bit of angular speed) below which a block can fall asleep
+  SLEEP_TIME         : 0.35,   // seconds it has to stay that slow before it actually sleeps
+  IMPACT_THRESHOLD   : 380,    // px/s of closing speed before an impact starts doing damage
+  IMPACT_DMG_SCALE   : 0.16,
+  KNOCK_SCALE        : 0.55    // how much of a bolt's own velocity gets handed to what it hits
 };
 
 /* Angles and powers are lists of named choices — never a swept meter.
@@ -293,14 +309,26 @@ const AMMO = [
   { id:'splitter', name:'Splitter',   sub:'Splits in 3', speed:1.00, dmg:0.6, r:8,  unlockAt:9 }
 ];
 
-/* ── Materials ──────────────────────────────────────────────────────────── */
+/* ── Materials ──────────────────────────────────────────────────────────────
+   `family` is what ammo bonuses check (fire vs wood, boulder vs stone) — it is
+   shared between a material and its small-rubble version so a Fire Bolt still
+   triples damage on a small wood chunk, not just a full beam.
+   `mergeable` lets buildLevel() weld a run of the same uppercase letter in one
+   row into a single wide rigid body (a "long rectangle") instead of N
+   independent cells that happen to sit next to each other — see buildLevel().
+   The lowercase entries are half-size rubble: individually much weaker, never
+   merged, and light enough to go flying when something hits them.
+   ────────────────────────────────────────────────────────────────────────── */
 const MAT = {
-  W:{ id:'W', name:'wood beam',   hp: 40, css:'--wood',   solid:true  },
-  S:{ id:'S', name:'stone block', hp: 90, css:'--stone',  solid:true  },
-  I:{ id:'I', name:'glass pane',  hp: 12, css:'--glass',  solid:true  },
-  T:{ id:'T', name:'powder keg',  hp: 20, css:'--barrel', solid:true, explodes:true },
-  K:{ id:'K', name:'crown',       hp: 25, css:'--crown',  solid:true, crown:true },
-  X:{ id:'X', name:'steel girder',hp: Infinity, css:'--steel', solid:true }
+  W:{ id:'W', name:'wood beam',        hp: 40, css:'--wood',   solid:true, family:'wood',  mergeable:true },
+  S:{ id:'S', name:'stone block',      hp: 90, css:'--stone',  solid:true, family:'stone', mergeable:true },
+  I:{ id:'I', name:'glass pane',       hp: 12, css:'--glass',  solid:true, family:'glass', mergeable:true },
+  T:{ id:'T', name:'powder keg',       hp: 20, css:'--barrel', solid:true, explodes:true },
+  K:{ id:'K', name:'crown',            hp: 25, css:'--crown',  solid:true, crown:true },
+  X:{ id:'X', name:'steel girder',     hp: Infinity, css:'--steel', solid:true, mergeable:true },
+  w:{ id:'w', name:'small wood chunk',  hp: 14, css:'--wood',  solid:true, family:'wood',  small:true },
+  s:{ id:'s', name:'small stone chunk', hp: 30, css:'--stone', solid:true, family:'stone', small:true },
+  i:{ id:'i', name:'small glass shard', hp: 5,  css:'--glass', solid:true, family:'glass', small:true }
 };
 
 /* ── Levels ─────────────────────────────────────────────────────────────────
@@ -310,6 +338,13 @@ const MAT = {
 
      .  empty      W  wood        S  stone       I  glass
      T  powder keg K  crown       X  steel (indestructible)
+     w  small wood  s  small stone  i  small glass  (half-size rubble, see below)
+
+   A run of the same uppercase letter side by side in one row (e.g. "WWWWW")
+   becomes a single wide rigid body, not five separate ones — that is what
+   makes a wall topple and crash as one beam instead of five independent
+   cells. Lowercase rubble is always its own small, light, easily-knocked-
+   flying block and never welds to its neighbours.
    ────────────────────────────────────────────────────────────────────────── */
 const LEVELS = [
   { name:'The Watchtower', dist:700, par:1, bolts:6, map:[
@@ -393,6 +428,12 @@ const LEVELS = [
     'S.WXTXW.S',
     'SSWWWWWSS',
     'XXXXXXXXX'
+  ]},
+  { name:'The Rubble Yard', dist:740, par:3, bolts:9, map:[
+    '.ws...sw.',
+    '.WWWWWWW.',
+    '.W..K..W.',
+    '.SSSSSSS.'
   ]}
 ];
 
@@ -543,18 +584,39 @@ function buildLevel(ix, quiet){
   L.cols = Math.max.apply(null, L.map.map(r => r.length));
   for (let r = 0; r < rows; r++){
     const row = L.map[r];
-    for (let c = 0; c < row.length; c++){
+    const y0  = CFG.GROUND_Y - (rows-r)*cell;
+    let c = 0;
+    while (c < row.length){
       const ch = row[c];
-      if (ch === '.' || ch === ' ') continue;
+      if (ch === '.' || ch === ' '){ c++; continue; }
       const m = MAT[ch];
-      if (!m) continue;
+      if (!m){ c++; continue; }
+
+      // Weld a run of the same mergeable letter into one wide rigid body.
+      let runLen = 1;
+      if (m.mergeable){
+        while (c + runLen < row.length && row[c + runLen] === ch) runLen++;
+      }
+
+      let x, y, w, h;
+      if (m.small){
+        w = h = cell * 0.5;
+        x = L.dist + c*cell + (cell - w)/2;   // centred in its column
+        y = y0 + (cell - h);                  // resting on the floor of its own cell
+      } else {
+        w = runLen * cell; h = cell;
+        x = L.dist + c*cell; y = y0;
+      }
+
       G.blocks.push({
-        x: L.dist + c*cell, y: CFG.GROUND_Y - (rows-r)*cell,
-        w: cell, h: cell,
-        mat: m, hp: m.hp, maxHp: m.hp,
-        alive:true, falling:false, settled:true,
-        vy:0, rot:0, rotV:0, burn:0
+        x, y, w, h,
+        mat: m, hp: m.hp * runLen, maxHp: m.hp * runLen,
+        mass: (w*h) / (cell*cell),
+        seams: m.small ? 1 : runLen,          // >1 draws internal seam lines, see drawBlocks
+        alive:true, awake:false, settled:true, settleT:0,
+        vx:0, vy:0, rot:0, rotV:0, burn:0
       });
+      c += runLen;
     }
   }
   G.crowns = G.blocks.filter(b => b.mat.crown).length;
@@ -796,16 +858,26 @@ function fire(){
 /* ══════════════════════════════════════════════════════════════════════════
    PHYSICS
    ══════════════════════════════════════════════════════════════════════════ */
-function damageBlock(b, dmg, fromAmmo){
+/* `impulse` (optional {vx,vy}) is a knock — used for a direct bolt hit or an
+   explosion, never for the general physics solver, which already has its own
+   velocities. It wakes the block into the physics simulation even if it
+   would otherwise have survived undamaged sitting still. */
+function damageBlock(b, dmg, fromAmmo, impulse){
   if (!b.alive) return 0;
   if (b.mat.hp === Infinity) return 0;             // steel just stops things
 
   let d = dmg;
   if (fromAmmo){
-    if (fromAmmo.id === 'fire'    && b.mat.id === 'W') d *= 3;
-    if (fromAmmo.id === 'boulder' && b.mat.id === 'S') d *= 1.6;
+    if (fromAmmo.id === 'fire'    && b.mat.family === 'wood')  d *= 3;
+    if (fromAmmo.id === 'boulder' && b.mat.family === 'stone') d *= 1.6;
   }
   b.hp -= d;
+
+  if (impulse){
+    b.awake = true; b.settled = false; b.settleT = 0;
+    b.vx += impulse.vx; b.vy += impulse.vy;
+  }
+
   if (b.hp > 0){
     spawnParts(b, 4);
     return 0;
@@ -842,8 +914,12 @@ function explode(b){
   // Copy the list first: damageBlock can chain into another keg.
   G.blocks.slice().forEach(o=>{
     if (!o.alive || o === b) return;
-    const d = Math.hypot(o.x+o.w/2-cx, o.y+o.h/2-cy);
-    if (d < R) damageBlock(o, 130 * (1 - d/R));
+    const dx = o.x+o.w/2-cx, dy = o.y+o.h/2-cy;
+    const d = Math.hypot(dx, dy);
+    if (d >= R) return;
+    const dir = d > 0 ? { x:dx/d, y:dy/d } : { x:0, y:-1 };
+    damageBlock(o, 130 * (1 - d/R), null,
+      { vx: dir.x * 260 / o.mass, vy: dir.y * 260 / o.mass - 80 });
   });
 }
 
@@ -872,7 +948,7 @@ function spawnParts(b, n){
 const MAX_SPAN = 2;
 
 function resolveSupport(){
-  const live = G.blocks.filter(b => b.alive && !b.falling);
+  const live = G.blocks.filter(b => b.alive && !b.awake);
   for (const b of live) b.span = Infinity;
 
   const queue = [];
@@ -900,44 +976,137 @@ function resolveSupport(){
 
   for (const b of live){
     if (b.span === Infinity){
-      b.falling = true; b.settled = false;
-      b.vy = 0;
+      b.awake = true; b.settled = false; b.settleT = 0;
+      b.vx = (Math.random()-.5) * 40;      // a small nudge so a straight drop still tips one way
       b.rotV = (Math.random()-.5) * 2.2;
     }
   }
 }
 
-function stepFalling(dt){
-  let anyMoving = false;
-  for (const b of G.blocks){
-    if (!b.alive || !b.falling) continue;
-    anyMoving = true;
-    b.vy += CFG.GRAVITY * dt;
-    b.y  += b.vy * dt;
-    b.rot += b.rotV * dt;
+/* ══════════════════════════════════════════════════════════════════════════
+   PHYSICS SOLVER
+   `resolveSupport` above only decides WHICH blocks should be awake (falling,
+   knocked, or otherwise loose). Everything about how they actually move —
+   gravity, hitting the ground, and crucially hitting *each other* — happens
+   here. It is a small AABB impulse solver: gravity, then a few passes of
+   "push apart + bounce a little + bleed some speed to friction" so stacks of
+   blocks settle instead of jittering or sinking through one another. This is
+   what turns a knocked-out wall into a real collapse — the blocks above it
+   fall, hit the blocks beside them, and those get knocked over in turn,
+   instead of every block quietly free-falling straight through its neighbours
+   the way the old single-block "land on the thing below" model did.
+   ══════════════════════════════════════════════════════════════════════════ */
+function resolveGround(a, pass){
+  const depth = (a.y + a.h) - CFG.GROUND_Y;
+  if (depth <= 0) return;
+  a.y -= depth;
+  if (a.vy <= 0) return;
 
-    // Land on the ground or on the topmost settled block underneath us.
-    let floor = CFG.GROUND_Y;
-    let onto = null;
-    for (const c of G.blocks){
-      if (!c.alive || c === b || c.falling) continue;
-      const overlap = Math.min(b.x+b.w, c.x+c.w) - Math.max(b.x, c.x);
-      if (overlap > 4 && c.y >= b.y + b.h - 6 && c.y < floor){ floor = c.y; onto = c; }
-    }
-    if (b.y + b.h >= floor){
-      b.y = floor - b.h;
-      const impact = b.vy;
-      b.vy = 0; b.falling = false; b.settled = true;
-      b.rotV = 0;
-      b.rot *= .25;                                  // keep a little tilt for character
-      G.supportDirty = true;                         // it can hold things up again now
-      if (impact > 420){
-        const dmg = (impact - 380) * 0.16;
-        damageBlock(b, dmg);
-        if (onto) damageBlock(onto, dmg * 0.8);
-        sfx('hover', .5);
-        G.shake = Math.max(G.shake, 4);
+  const impactSpeed = a.vy;
+  a.vy = -impactSpeed * CFG.RESTITUTION_GROUND;
+  a.vx   *= CFG.GROUND_FRICTION;
+  a.rotV *= CFG.GROUND_FRICTION;
+
+  if (pass === 0 && impactSpeed > CFG.IMPACT_THRESHOLD){
+    damageBlock(a, (impactSpeed - CFG.IMPACT_THRESHOLD) * CFG.IMPACT_DMG_SCALE);
+    sfx('hover', .5);
+    G.shake = Math.max(G.shake, 4);
+  }
+}
+
+function resolvePair(a, c, pass){
+  const ox = Math.min(a.x+a.w, c.x+c.w) - Math.max(a.x, c.x);
+  const oy = Math.min(a.y+a.h, c.y+c.h) - Math.max(a.y, c.y);
+  if (ox <= 0 || oy <= 0) return;
+
+  const invA = a.awake ? 1/a.mass : 0;
+  const invC = c.awake ? 1/c.mass : 0;
+  if (invA + invC === 0) return;             // two settled blocks never push each other
+
+  // Separate along whichever axis has the smaller overlap — the usual AABB
+  // trick for turning a penetration into a plausible push-apart direction.
+  let nx = 0, ny = 0, depth;
+  if (ox < oy){ nx = (a.x+a.w/2 < c.x+c.w/2) ? -1 : 1; depth = ox; }
+  else        { ny = (a.y+a.h/2 < c.y+c.h/2) ? -1 : 1; depth = oy; }
+
+  const corr = depth * 0.5;
+  const shareA = invA/(invA+invC), shareC = invC/(invA+invC);
+  a.x += nx*corr*shareA; a.y += ny*corr*shareA;
+  c.x -= nx*corr*shareC; c.y -= ny*corr*shareC;
+
+  const relVx = c.vx - a.vx, relVy = c.vy - a.vy;
+  const relN  = relVx*nx + relVy*ny;
+  if (relN > 0) return;                      // already moving apart
+
+  const j = -(1 + CFG.RESTITUTION_BLOCK) * relN / (invA + invC);
+  a.vx -= j*nx*invA; a.vy -= j*ny*invA;
+  c.vx += j*nx*invC; c.vy += j*ny*invC;
+
+  // Friction along the contact surface — what lets a toppling block slide
+  // down the face of its neighbour instead of just bouncing off it.
+  const tx = -ny, ty = nx;
+  const relT = relVx*tx + relVy*ty;
+  const maxT = Math.abs(j) * CFG.FRICTION;
+  const jt = Math.max(-maxT, Math.min(maxT, -relT/(invA+invC)));
+  a.vx -= jt*tx*invA; a.vy -= jt*ty*invA;
+  c.vx += jt*tx*invC; c.vy += jt*ty*invC;
+
+  // An off-centre contact spins a block instead of just stopping it dead —
+  // this is what makes a beam clipped near one end tip over rather than
+  // freeze in place.
+  if (a.awake){
+    const lever = nx ? (c.y+c.h/2)-(a.y+a.h/2) : (c.x+c.w/2)-(a.x+a.w/2);
+    a.rotV += j * invA * lever * CFG.SPIN_SCALE / a.mass;
+  }
+  if (c.awake){
+    const lever = nx ? (a.y+a.h/2)-(c.y+c.h/2) : (a.x+a.w/2)-(c.x+c.w/2);
+    c.rotV -= j * invC * lever * CFG.SPIN_SCALE / c.mass;
+  }
+
+  if (pass === 0 && Math.abs(relN) > CFG.IMPACT_THRESHOLD){
+    const dmg = (Math.abs(relN) - CFG.IMPACT_THRESHOLD) * CFG.IMPACT_DMG_SCALE * 0.7;
+    if (a.awake) damageBlock(a, dmg);
+    if (c.awake) damageBlock(c, dmg);
+  }
+}
+
+function stepPhysics(dt){
+  const blocks = G.blocks;
+
+  for (const b of blocks){
+    if (!b.alive || !b.awake) continue;
+    b.vy += CFG.GRAVITY * dt;
+    b.vx   *= CFG.AIR_DAMP;
+    b.rotV *= CFG.AIR_DAMP;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.rot += b.rotV * dt;
+  }
+
+  for (let pass = 0; pass < CFG.SOLVER_PASSES; pass++){
+    for (let i = 0; i < blocks.length; i++){
+      const a = blocks[i];
+      if (!a.alive) continue;
+      for (let j = i+1; j < blocks.length; j++){
+        const c = blocks[j];
+        if (!c.alive) continue;
+        if (!a.awake && !c.awake) continue;
+        resolvePair(a, c, pass);
       }
+      if (a.awake) resolveGround(a, pass);
+    }
+  }
+
+  let anyMoving = false;
+  for (const b of blocks){
+    if (!b.alive || !b.awake) continue;
+    anyMoving = true;
+    const speed = Math.abs(b.vx) + Math.abs(b.vy) + Math.abs(b.rotV)*20;
+    if (speed < CFG.SLEEP_SPEED) b.settleT += dt; else b.settleT = 0;
+    if (b.settleT > CFG.SLEEP_TIME){
+      b.awake = false; b.settled = true;
+      b.vx = 0; b.vy = 0; b.rotV = 0;
+      G.supportDirty = true;                    // it can hold things up again now
     }
   }
   return anyMoving;
@@ -971,7 +1140,8 @@ function stepShots(dt){
     if (b){
       const speed = Math.hypot(s.vx, s.vy);
       let energy = Math.pow(speed/100, 2) * 0.9 * s.ammo.dmg;
-      const carry = damageBlock(b, energy, s.ammo);
+      const impulse = { vx: s.vx * CFG.KNOCK_SCALE / b.mass, vy: s.vy * CFG.KNOCK_SCALE / b.mass };
+      const carry = damageBlock(b, energy, s.ammo, impulse);
       if (carry > 0 && b.mat.hp !== Infinity){
         // Punched clean through — keep going with what's left.
         const newSpeed = Math.sqrt(Math.max(0, carry) / (0.9 * s.ammo.dmg)) * 100;
@@ -1026,7 +1196,7 @@ function loop(now){
       let guard = 0;
       while (accum >= CFG.DT && guard++ < 400){
         stepShots(CFG.DT);
-        stepFalling(CFG.DT);
+        stepPhysics(CFG.DT);
         if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
         accum -= CFG.DT;
       }
@@ -1038,7 +1208,7 @@ function loop(now){
       }
       if (G.screen === 'settle'){
         G.settleTimer += dt;
-        const moving = G.blocks.some(b => b.alive && b.falling);
+        const moving = G.blocks.some(b => b.alive && b.awake);
         if (!moving && G.settleTimer > 0.7) endShot();
         if (G.settleTimer > 8) endShot();            // safety net
       } else if (G.screen === 'won'){
@@ -1053,11 +1223,11 @@ function loop(now){
     } else {
       // Not mid-shot, but rubble may still be coming to rest — and a level with
       // a drawing mistake in it should visibly fall over rather than float.
-      if (G.blocks.some(b => b.alive && b.falling)){
+      if (G.blocks.some(b => b.alive && b.awake)){
         accum += dt;
         let guard = 0;
         while (accum >= CFG.DT && guard++ < 400){
-          stepFalling(CFG.DT);
+          stepPhysics(CFG.DT);
           if (G.supportDirty){ G.supportDirty = false; resolveSupport(); }
           accum -= CFG.DT;
         }
@@ -1196,7 +1366,7 @@ function drawBlocks(){
     const col = css(b.mat.css);
     const dmg = b.mat.hp === Infinity ? 0 : 1 - (b.hp / b.maxHp);
 
-    if (b.mat.id === 'I'){
+    if (b.mat.family === 'glass'){
       ctx.fillStyle = col; ctx.globalAlpha = .45;
       ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h);
       ctx.globalAlpha = 1;
@@ -1210,6 +1380,17 @@ function drawBlocks(){
 
     ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2;
     ctx.strokeRect(-b.w/2, -b.h/2, b.w, b.h);
+
+    // A merged run of cells is one rigid body physically, but keeps the seams
+    // between its original cells so a long wall still reads as built from
+    // blocks rather than one flat slab.
+    if (b.seams > 1){
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.5;
+      for (let k = 1; k < b.seams; k++){
+        const lx = -b.w/2 + k*(b.w/b.seams);
+        ctx.beginPath(); ctx.moveTo(lx, -b.h/2+3); ctx.lineTo(lx, b.h/2-3); ctx.stroke();
+      }
+    }
 
     if (b.mat.crown){
       ctx.fillStyle = css('--crown');

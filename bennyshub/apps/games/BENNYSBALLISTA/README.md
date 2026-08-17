@@ -50,6 +50,34 @@ Knocking the legs out from under a structure is usually cheaper than hitting a
 crown directly — anything left with no path down to the ground falls, and lands
 hard enough to damage whatever is beneath it.
 
+## Physics
+
+A bolt striking a piece doesn't just deal damage — it knocks the piece with real
+velocity. Once a piece is loose (hit hard enough to survive, or left standing on
+nothing), it tumbles under gravity and collides with everything else that's
+loose or still standing: it pushes neighbours, slides down the faces of blocks
+it lands on, spins from an off-centre hit or landing, and can crush or knock over
+whatever is underneath it when it comes down. That is what turns a single well-
+placed shot into a chain reaction instead of one block quietly vanishing.
+
+Two piece sizes come out of this:
+
+- **Long rectangles.** A run of the same wall/floor letter side by side in a row
+  (`WWWWW`, `SSSSSSS`, …) is built as one wide rigid body, not N separate cells —
+  so a wall topples and lands as a single beam. Heavier (wider) pieces resist
+  being knocked around more; a bolt that sends a single stone chunk flying will
+  barely nudge a five-wide wall.
+- **Small rubble squares** (`w`/`s`/`i` — see the level letters above) are half
+  the size of a normal block, much lighter, and never weld to their neighbours.
+  A light hit sends them flying rather than just damaging them in place, which
+  is what makes them fun to place as loose debris on top of a solid structure.
+  They are *not* reliable load-bearing supports: because they only fill the
+  bottom half of their map cell, anything drawn directly above one will have a
+  visible gap and fall — good for "a wobbly cap that flies off when clipped,"
+  bad for "the leg holding up a lintel."
+
+"The Rubble Yard" (the last level) is built specifically to show both off.
+
 ## Ammunition
 
 You start with the Stone Bolt. Clearing levels 3, 6 and 9 unlocks the rest. Each
@@ -70,8 +98,11 @@ Nothing in this game can be failed by being slow, and nothing is on a timer.
 ## Adding a level
 
 Levels are ASCII pictures in the `LEVELS` array near the top of the script. Copy
-one and draw a castle with the letters in the table above. The bottom row sits
-on the ground.
+one and draw a castle with the letters in the table above, plus the lowercase
+rubble letters (`w`, `s`, `i` — half-size, never merge, easily knocked flying)
+from the Physics section. The bottom row sits on the ground. A run of the same
+uppercase letter side by side in one row becomes a single wide rigid body — see
+Physics above.
 
 ```js
 { name:'The Watchtower', dist:700, par:1, bolts:6, map:[
@@ -119,4 +150,11 @@ able to wipe a save.
 - Do not add input debouncing. `scan-manager.js` already installs a global 250 ms
   cooldown; a second one fights it.
 - `CFG` at the top holds the hold durations and the scan-on-hold direction, in
-  case the hub's conventions change.
+  case the hub's conventions change. The same object also holds the physics
+  tuning (gravity, restitution, friction, sleep thresholds) — see `stepPhysics`,
+  `resolvePair` and `resolveGround`.
+- `resolveSupport` only decides which blocks *should* be loose; `stepPhysics` is
+  what actually moves and collides them. If you change one, check the other —
+  `resolveSupport` treats a block as immovable ground the instant it goes to
+  sleep, so a change to the sleep threshold changes what counts as "structure"
+  mid-collapse.
