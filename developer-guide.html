@@ -404,6 +404,10 @@
         Building accessible games and apps for Ben and families like ours. This guide provides comprehensive principles, input models, and best practices for creating experiences that work with just two keys: <strong>Spacebar</strong> and <strong>Return</strong>.
       </p>
 
+      <div class="highlight-box">
+        <p>This page is the overview. The full implementation reference — shared module APIs, the exact input contract, per-game input models, and known traps — lives in <a href="https://github.com/NARBEHOUSE/Narbehouse.github.io/blob/main/bennyshub/ACCESSIBILITY.md"><code>bennyshub/ACCESSIBILITY.md</code></a> in the repo. Where the two ever disagree, that file is the authority, because it is written from the shipped code.</p>
+      </div>
+
       <div class="toc">
         <h3>Quick Navigation</h3>
         <ul>
@@ -424,8 +428,11 @@
         <h2>Core Principles</h2>
         <ul>
           <li><strong>Entire app and every game must be fully usable with only two keys:</strong> Spacebar and Return, plus optional mouse or touch for caregivers or users who have those access options.</li>
-          <li><strong>No reflex or time-limit mechanics.</strong> Use puzzles, logic, sequencing, matching, turn-based choices, and exploration.</li>
-          <li><strong>All actions should be available through scanning and selection.</strong> Nothing should require precise timing.</li>
+          <li><strong>And fully usable with one key.</strong> With Auto Scan on, Return alone must reach everything. One switch is the real floor, not two.</li>
+          <li><strong>No reflex or precision demands.</strong> Nothing may depend on reacting fast or hitting a small target. Where a game does use time pressure or a fail state, it must come with a no-fail or menu-based alternative.</li>
+          <li><strong>All actions should be available through scanning and selection.</strong></li>
+          <li><strong>Independence is the measure.</strong> A player must get from the hub's front page, into a game, through its menus, into a round, out to pause and settings, and back to the hub, alone. A screen that quietly needs a second person is a serious bug.</li>
+          <li><strong>"One switch" describes an input, not a person.</strong> Build for the range: difficulty options, no-fail modes, and editors that let a caregiver tune content to the player.</li>
         </ul>
       </section>
 
@@ -436,7 +443,7 @@
           <h3>Spacebar Controls</h3>
           <ul>
             <li><strong>Short press (release):</strong> Move highlight forward in the current scan list. Activates on release so accidental holds don't trigger selection.</li>
-            <li><strong>Hold 3+ seconds:</strong> Enable auto-scan forward until release. Release stops auto-scan.</li>
+            <li><strong>Hold:</strong> Scan backwards through the list, repeating at the player's chosen scan speed. Release stops it. (Auto-scan is a saved setting, not a hold gesture — see Scanning Behavior.)</li>
           </ul>
         </div>
 
@@ -444,7 +451,7 @@
           <h3>Return Controls</h3>
           <ul>
             <li><strong>Short press (release):</strong> Select the currently highlighted item.</li>
-            <li><strong>Hold 1.5+ seconds:</strong> Open context or pause menus, or exit sub-modes. Use this for options, help, or a safe back button.</li>
+            <li><strong>Hold:</strong> Open the pause or context menu, or exit a sub-mode. Use this for options, help, or a safe back button. Always pair it with an on-screen button that does the same thing.</li>
           </ul>
         </div>
 
@@ -461,12 +468,15 @@
       <section class="section" id="scanning">
         <h2>Scanning Behavior</h2>
         <ul>
-          <li><strong>Scanning starts only after the first Spacebar press</strong> in a scene or game.</li>
-          <li><strong>Row scanning:</strong> Spacebar cycles rows, Return enters a row. Within a row, Spacebar cycles buttons, Return selects.</li>
-          <li><strong>Deadzone at wrap:</strong> Before a list wraps to the top, insert one scan step with no highlight to let the screen "rest."</li>
+          <li><strong>Two schemes, and every game supports both.</strong> The player picks once, in Settings, and the choice is shared across the whole hub by <code>NarbeScanManager</code>. <strong>Auto Scan off (default) = two switches:</strong> Spacebar moves the highlight, Return selects. <strong>Auto Scan on = one switch:</strong> the highlight advances by itself and Return is the only key needed.</li>
+          <li><strong>Scan speed is the player's setting, not yours.</strong> 1, 2, 3, or 4 seconds, read from <code>NarbeScanManager.getScanInterval()</code>. Never hard-code a scan interval, and never print one in help text.</li>
+          <li><strong>With Auto Scan off, scanning starts on the first Spacebar press</strong> in a scene. With Auto Scan on it starts by itself — a one-switch player must never have to press anything to get the cursor moving.</li>
+          <li><strong>Row scanning:</strong> Spacebar cycles rows, Return enters a row. Within a row, Spacebar cycles buttons, Return selects. This is how the grid games (Battle Boats, Connect Four, Chess &amp; Checkers) stay reachable with one switch.</li>
           <li><strong>Predictable loop order:</strong> Top to bottom, left to right. Never reorder during a session.</li>
           <li><strong>Focus memory:</strong> When returning from a submenu, restore highlight to the last focused item.</li>
+          <li><strong>Debounce is already handled.</strong> <code>scan-manager.js</code> enforces a 250 ms global cooldown after any release, so a bouncing switch or a tremor produces one clean press. Do not add your own.</li>
         </ul>
+        <p style="opacity:.75; font-size:.95em;"><em>Recommended but not yet standard: a "deadzone" step with no highlight before a list wraps back to the top, letting the screen rest and making the wrap audible. Only Benny Says does this today.</em></p>
       </section>
 
       <section class="section" id="visibility">
@@ -475,17 +485,24 @@
         <h3>Visual Design</h3>
         <ul>
           <li>High-contrast UI by default, large hit targets, generous spacing</li>
-          <li>Global font scaling controls with presets: 100, 125, 150, 175, 200 percent</li>
-          <li>Color profiles: High Contrast, Light, Dark, and Ben Default (brand colors)</li>
-          <li>Optional outline thickness control for the highlight ring</li>
+          <li><strong>Never signal state with colour alone</strong>, and make the highlight unmistakable — colour <em>and</em> thickness</li>
+          <li>The hub itself offers UI size (Default, Large, Larger, Largest), highlight colour (6), highlight style (Outline or Full Cell), text colour (7) and background theme (11). Match that vocabulary rather than inventing your own naming</li>
         </ul>
 
         <h3>Text-to-Speech</h3>
         <ul>
-          <li>TTS for all labels, menu names, states, and outcomes</li>
-          <li>Speak on focus and on selection</li>
-          <li>Provide a TTS rate control and a volume control</li>
+          <li>TTS for all labels, menu names, states, and outcomes, through <code>NarbeVoiceManager</code></li>
+          <li>Speak on focus and on selection, and speak outcomes</li>
+          <li><strong>Treat the voice manager as the single source of truth</strong> for whether TTS is on and which voice is selected — never keep your own copy of that state</li>
+          <li>Expose <em>TTS on/off</em> and <em>Voice</em> in your settings. Rate, pitch and volume exist in the manager and can be passed per-utterance, but no game currently surfaces them as controls</li>
+          <li>Keep spoken labels short — they are read at every scan step, and at a 1-second scan speed a long label becomes a drone</li>
           <li><strong>TTS should never block input</strong></li>
+        </ul>
+
+        <h3>Sound Effects</h3>
+        <ul>
+          <li>Use <code>SafeAudio</code>, never the Web Audio API — an <code>AudioContext</code> can take down the renderer in the Electron desktop build</li>
+          <li><code>SafeAudio.preload(name)</code> with <strong>no URL</strong> synthesises a built-in blip. Passing a URL that 404s permanently shadows the built-in, and it fails silently</li>
         </ul>
       </section>
 
@@ -505,28 +522,34 @@
         <h2>Game Mechanics That Work Well</h2>
         
         <div class="highlight-box">
-          <p><strong>Golden rule:</strong> Turn-based puzzles, no timers, no sudden fail states.</p>
+          <p><strong>Golden rule:</strong> remove the <em>precision and reaction</em> demand from a genre — not the genre itself. Almost any kind of game can be made switch-accessible. What cannot be made accessible is a control that requires fast, accurate, continuous input.</p>
         </div>
 
-        <h3>Recommended Mechanics</h3>
+        <p>An earlier version of this guide ruled out whole genres — racing, action, anything with a fail state. The hub has since shipped all of them successfully, so the guidance below reflects what actually works in practice.</p>
+
+        <h3>The patterns that make hard genres work</h3>
+        <p>These four patterns are what let a one-switch player do things that normally need a mouse and fast hands. Reach for them before concluding a mechanic is impossible.</p>
         <ul>
-          <li>Matching and memory games</li>
-          <li>Pattern sequencing and Simon-style repetition <em>(without timing)</em></li>
-          <li>Sorting and categorization</li>
-          <li>Grid navigation with obstacles and keys</li>
-          <li>Jigsaw or tile assembly with rotate and place</li>
-          <li>Spot the difference</li>
-          <li>Non-timed maze traversal with step-by-step moves</li>
-          <li>Logic puzzles with yes or no choices</li>
-          <li>Story choices with inventory gates</li>
-          <li>Picture building or coloring by areas, stepwise fills only</li>
-          <li>Word building with predictive suggestions</li>
-          <li>Simple math or shapes, one step at a time</li>
+          <li><strong>Oscillate and stop</strong> — instead of <em>aiming</em>, a marker sweeps back and forth on its own and the player stops it. This replaces pointing entirely. Used by Bowling (position, then angle), P3GL and Basketball Shooter</li>
+          <li><strong>Charge and release</strong> — instead of setting a power level, hold and let go; longer hold, more power, on a non-linear curve so short taps stay usable. Bowling, Football, Mini Golf. <em>Always plan a select-based alternative for players who cannot sustain a hold</em></li>
+          <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats, Connect Four, Chess &amp; Checkers, Tic Tac Toe</li>
+          <li><strong>Armed direction</strong> — one switch drives two directions by making <em>release</em> meaningful: press moves the armed way, letting go arms the other, so a quick tap swaps sides. Race Tracks' one-switch steering</li>
         </ul>
 
-        <h3>Mechanics to Avoid</h3>
+        <h3>Genres already proven here</h3>
+        <ul>
+          <li><strong>Turn-based and puzzle</strong> — matching, memory, sequencing, sorting, word building, trivia, logic, board games. The easiest to adapt and still the backbone of the hub</li>
+          <li><strong>Sports</strong> — Baseball and Football play a whole season through play-calling menus with no reaction element at all; Bowling, Mini Golf and Basketball use oscillate-and-stop</li>
+          <li><strong>Racing and action</strong> — Race Tracks steers with one switch and pairs a ten-level ladder with a no-fail Cruise mode. Bug Blaster is turn-paced tower defence</li>
+          <li><strong>Cause and effect</strong> — one press, immediate audio-visual payoff, no strategy required. Mega Slot and Show n Sound. Genuinely valuable for players who are building the idea that <em>their action causes a result</em>, and often the right first game for someone new to switch access</li>
+          <li><strong>Creative and editor-driven</strong> — Trivia Master, Matchy Match, Mini Golf's course editor. Highest replay value of anything in the hub, because a caregiver can tune the content to the player</li>
+        </ul>
+        <p style="opacity:.8; font-size:.95em;"><em>Genre vocabulary in use in <code>games.json</code>: Strategy, Sports, Arcade, Classic, Board, Educational, Memory, Interactive, Simulation, Action, Puzzle, Trivia, Casino, Racing. Reuse one of these where it fits — the hub's genre filter is built from this list.</em></p>
+
+        <h3>What to actually avoid</h3>
         <div class="card">
-          <p><strong>Never use:</strong> Timers, falling objects, health decay, platforming, reaction tests, QTEs, hold-to-aim precision, multi-axis analog control.</p>
+          <p><strong>Never require:</strong> reaction tests or quick-time events; continuous multi-axis control (steering plus speed at once); precise pointing at small targets; dragging; anything that punishes a slow or accidental press; and any fail state the player cannot see coming.</p>
+          <p style="margin-top:.6em;"><strong>Use with care, always paired with an alternative:</strong> timers, health or lives, and hold-to-charge. All three exist in shipped games and all three work — but only because a no-fail mode, generous limits, or a menu-based alternative sits alongside them.</p>
         </div>
       </section>
 
@@ -541,28 +564,38 @@
 
         <h3>Menus and Pause</h3>
         <ul>
-          <li><strong>Return hold opens Pause or Context anywhere.</strong> Include Resume, Restart, Help, Settings, Exit</li>
+          <li><strong>Holding Return opens Pause anywhere in gameplay.</strong> Include Continue, Restart, Settings, Main Menu and Exit Game</li>
+          <li><strong>Always pair the hold with an on-screen Pause button</strong> that does the same thing, for mouse, touch and caregivers</li>
+          <li>Make the hold visible <em>while it happens</em> — a filling ring and a rising beep, as Race Tracks does. A long hold with no feedback reads as a broken control</li>
           <li>Hold Return should also back out of sub-rows to row-select mode</li>
+          <li><strong>Settings must be reachable from the pause menu as well as the main menu</strong> — a scan speed that turns out to be too fast has to be fixable without abandoning the round</li>
+          <li><strong>Exit Game must tell the hub</strong>: <code>window.parent.postMessage({ action: 'focusBackButton' }, '*')</code>. Without it the player finishes your game and is stranded with focus on a dead screen</li>
         </ul>
+        <div class="highlight-box">
+          <p><strong>Direction of travel:</strong> holding a switch is itself an ability, and some players cannot sustain one. Pause is moving toward being a <em>scannable</em> item in every game, with the hold kept as a convenience. Favour a scannable pause entry in anything new.</p>
+        </div>
       </section>
 
       <section class="section" id="settings">
         <h2>Settings to Include</h2>
+        <p>Every game uses the same list, in this order. The consistency is part of the accessibility — a player who learns one settings screen has learned all of them.</p>
         <ul>
-          <li>TTS on/off, rate, volume</li>
-          <li>Highlight style: color, thickness, pulse on/off</li>
-          <li>Font size presets</li>
-          <li>Color profile and contrast</li>
-          <li>Scan speed for auto-scan</li>
-          <li>Audio cues on/off</li>
-          <li>Reduce motion on/off</li>
+          <li><strong>Text to Speech</strong> — On / Off</li>
+          <li><strong>Voice</strong> — cycles the available voices</li>
+          <li><em>Game-specific options</em> — difficulty, theme, ball style, direction help, and so on</li>
+          <li><strong>Auto Scan</strong> — labelled <code>On — One Switch</code> / <code>Off — Two Switches</code>, not just On/Off. It is the control-scheme selector, and the person changing it is often a caregiver setting the game up for someone else</li>
+          <li><strong>Scan Speed</strong> — 1s / 2s / 3s / 4s</li>
+          <li><strong>Sound Effects</strong> — On / Off</li>
+          <li><strong>Reset Progress</strong> — must be <strong>two-step</strong>; a single mis-scan should never erase everything</li>
+          <li><strong>← Back</strong></li>
         </ul>
+        <p>Auto Scan, Scan Speed, TTS and Voice are <strong>global</strong> — read and write them through <code>NarbeScanManager</code> and <code>NarbeVoiceManager</code> so a player configures their access once for the whole hub, not once per game. Game-specific options are yours to store.</p>
 
         <h3>Data and Persistence</h3>
         <ul>
           <li><strong>Auto-save progress</strong> on each selection that changes state</li>
           <li>Resume puts the player back in the exact frame with the previous highlight restored</li>
-          <li>Keep a per-game Settings profile, and a global default</li>
+          <li>Access settings are global via the shared managers; game progress is the game's own</li>
         </ul>
       </section>
 
@@ -570,15 +603,25 @@
         <h2>QA Checklist Before You Ship</h2>
         <ul>
           <li>✓ Can every action be performed with only Spacebar and Return?</li>
-          <li>✓ Can the same action be performed with mouse or touch when needed?</li>
-          <li>✓ Does scanning begin only after the first Spacebar press?</li>
-          <li>✓ Do Spacebar short, Spacebar hold, Return short, Return hold all behave as specified?</li>
-          <li>✓ Is there a deadzone before wrap?</li>
-          <li>✓ Are fonts readable at 100% on a tablet and adjustable to 200%?</li>
-          <li>✓ Does TTS read focus, selection, errors, and outcomes?</li>
-          <li>✓ Can the player open Pause with Return hold on every screen?</li>
-          <li>✓ Are there no timers or reflex steps anywhere?</li>
+          <li>✓ Can every action be performed with <strong>Return alone</strong>, with Auto Scan on?</li>
+          <li>✓ Can the same action be performed with mouse or touch, with <strong>no dragging anywhere</strong>?</li>
+          <li>✓ Do menu actions fire on <strong>release</strong>, not on press?</li>
+          <li>✓ Does holding Spacebar scan backwards in every menu?</li>
+          <li>✓ Does holding Return open Pause from anywhere in gameplay, with visible <em>and</em> audible feedback while holding?</li>
+          <li>✓ Is there an on-screen Pause button that does the same?</li>
+          <li>✓ Are Settings reachable from both the main menu and the pause menu?</li>
+          <li>✓ Do Auto Scan and Scan Speed read from <code>NarbeScanManager</code>, with no hard-coded interval?</li>
+          <li>✓ Does TTS read focus, selection, errors, and outcomes via <code>NarbeVoiceManager</code>?</li>
+          <li>✓ Is all sound through <code>SafeAudio</code>, with no <code>AudioContext</code>?</li>
+          <li>✓ Is Reset Progress two-step?</li>
+          <li>✓ Does Exit Game send <code>postMessage({ action: 'focusBackButton' })</code>?</li>
+          <li>✓ Does help text describe holds <strong>without quoting a number of seconds</strong>?</li>
+          <li>✓ Is there nothing that demands a fast reaction or a precise target?</li>
+          <li>✓ If the game has a fail state, timer, or hold-to-charge, is there a no-fail or menu-based alternative?</li>
+          <li>✓ Is it readable at 100% on a tablet?</li>
           <li>✓ Does the game auto-save and resume correctly?</li>
+          <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>
+          <li>✓ <strong>Has someone who is not you played it start to finish with one switch?</strong></li>
         </ul>
       </section>
 
