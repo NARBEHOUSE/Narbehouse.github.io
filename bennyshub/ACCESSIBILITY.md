@@ -605,6 +605,14 @@ right now.
 on‑screen Pause button you scan to; others use the hold‑Enter gesture; most do
 both. The inconsistency is accepted for now.
 
+**One known deviation from the 5 s standard:** P3GL uses a **2 s** hold to open
+its menu when Auto Scan is on, and 5 s when it is off
+(`this.autoScan ? 2000 : 5000`). No comment or commit message records why, and
+it is the only game that varies the hold by control scheme. Worth a decision
+when pause gets revisited — either it is a good idea that belongs everywhere,
+or it should fall back in line with the rest of the hub. Do not assume it was
+accidental, and do not assume it was deliberate.
+
 **Where it is going: pause should become a scannable item everywhere.** Holding
 a switch for five seconds is itself a physical demand, and some players cannot
 sustain a hold at all — for them the hold gesture is not an accessible route to
