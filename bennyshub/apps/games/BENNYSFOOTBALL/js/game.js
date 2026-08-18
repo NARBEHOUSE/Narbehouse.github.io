@@ -213,6 +213,12 @@ class GameScene extends Phaser.Scene {
             p.setPosition(ydToX(wallYard), FIELD.TOP + 64 + i * (fH - 128) / 4);
             p.setScale(1);
         });
+        // setPosition teleports these into the kickoff formation, and facing
+        // otherwise only comes from movement — without this, the instant jump
+        // reads as a one-tick sprint in whatever direction it happened to
+        // land, and that bogus facing then freezes until the first jog() call
+        // 700ms later. Square both teams up across the field immediately.
+        this._faceAcrossFormation(returnTeam, coverTeam);
 
         const fromX = ydToX(kickFromYard), toX = ydToX(catchYard);
         this.ball.visible = true; this.ball.carrier = null;
