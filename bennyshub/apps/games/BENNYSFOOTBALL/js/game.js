@@ -9,7 +9,7 @@
 class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
-    preload() { loadHelmets(this); }
+    preload() { loadHelmets(this); loadPlayerSprites(this); }
 
     init(data) {
         this.isSeason = !!data.isSeason;
@@ -459,16 +459,139 @@ class GameScene extends Phaser.Scene {
     makePlayer(colorObj, label) {
         const c = this.add.container(0, 0).setDepth(3);
         // Larger, darker shadow so every team color pops off the green field.
+        // Kept on the container so _updateCarrierShadow can recolour it: the
+        // ball carrier gets a white one, which is the clearest "who has it"
+        // cue available — white survives all three colourblind filters
+        // unchanged, since every row of those matrices sums to 1.
         const shadow = this.add.ellipse(3, 7, 34, 11, 0x000000, 0.52);
+        c._shadow = shadow;
+
+        if (playerSpritesReady(this)) {
+            const P = PLAYER_SPRITE, h = P.displayH;
+            // Put the measured foot line at footOffsetY so the body straddles
+            // the origin like the disc did and lands on the existing shadow.
+            const sy = P.footOffsetY - (P.footFrac - 0.5) * h;
+            // Coverage aura, behind the player and off until a play needs it.
+            const glow = this.add.sprite(0, sy, P.glowKey, 0)
+                .setDisplaySize(h, h).setVisible(false);
+            const jersey = this.add.sprite(0, sy, P.jerseyKey, 0)
+                .setDisplaySize(h, h).setTint(colorObj.hex);
+            const base = this.add.sprite(0, sy, P.baseKey, 0).setDisplaySize(h, h);
+            // The label rides above the helmet rather than across the chest,
+            // where the shoulder pads would swallow it.
+            const num = this.add.text(0, sy - h * 0.46, label,
+                { fontSize: '9px', fontFamily: 'Arial Black', color: '#ffffff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+            c.add([shadow, glow, jersey, base, num]);
+            c._label = num;
+            c._spr = { base, jersey, glow, dir: 0, phase: 0, lastX: null, lastY: null };
+            return c;
+        }
+
         const body = this.add.circle(0, 0, 13, colorObj.hex).setStrokeStyle(2.5, 0x000000);
         const shine = this.add.circle(-4, -4, 4, colorObj.light, 0.6);
         const num = this.add.text(0, 0, label, { fontSize: '9px', fontFamily: 'Arial Black', color: '#ffffff', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5);
         c.add([shadow, body, shine, num]);
+        c._label = num;
         return c;
     }
 
-    // Update the position label shown on a player sprite (list[3] is the text child).
-    _setPlayerLabel(p, label) { if (p && p.list && p.list[3]) p.list[3].setText(label); }
+    // Drive each sprite's facing and run-cycle frame from how the container
+    // actually moved this tick. Everything in this game moves players with
+    // tweens, so velocity is not stored anywhere — differencing position is
+    // what keeps the legs in step with whatever tween is running, including
+    // kickoff returns and tackle rushes that never go through jog().
+    _updatePlayerSprites(delta) {
+        if (!this.offense || !this.defense) return;
+        const P = PLAYER_SPRITE, RUN = P.anims.run;
+        const dt = Math.max(delta, 1) / 1000;
+        [...this.offense, ...this.defense].forEach(p => {
+            const s = p && p._spr;
+            if (!s) return;
+            if (s.lastX === null) { s.lastX = p.x; s.lastY = p.y; }
+            const dx = p.x - s.lastX, dy = p.y - s.lastY;
+            s.lastX = p.x; s.lastY = p.y;
+
+            let row, clip = null, frame = 0;
+            if (s.action) {
+                // A one-shot owns the sprite until it finishes. Facing was
+                // frozen when it started, so a throw does not pirouette if the
+                // QB drifts a pixel mid-animation.
+                const a = s.action;
+                a.t += dt * a.clip.fps;
+                const last = a.clip.frames - 1;
+                if (a.t >= a.clip.frames) {
+                    // A held clip (the tackle) stays on its last frame until
+                    // the next play sets up. Both formation paths release it
+                    // through _standDownedPlayers; releasing it here on
+                    // movement instead would stand players up early, which is
+                    // the opposite of staying down.
+                    if (a.clip.hold) a.t = last;
+                    else s.action = null;
+                }
+                if (s.action) {
+                    clip = a.clip;
+                    frame = Math.min(Math.floor(a.t), last);
+                    row = clip.row + frame;
+                }
+            }
+
+            if (row === undefined) {
+                const speed = Math.sqrt(dx * dx + dy * dy) / dt;
+                // A charging quarterback keeps the aim beginCharge gave them.
+                // Otherwise the drop-back tween, which can still be running,
+                // turns them back downfield the moment they drift a pixel.
+                const aiming = this.phase === 'charge' && p === this.offense[0];
+                if (speed > P.runSpeed && !aiming) {
+                    s.dir = spriteDirIndex(Math.atan2(dy, dx));
+                    // Advance the cycle by distance travelled, not wall time.
+                    s.phase += (speed * dt) / P.stridePx * RUN.frames;
+                } else {
+                    s.phase = 0;   // planted: hold the contact frame
+                }
+                // The carrier runs from the row set that has the ball modelled
+                // into their hand; everyone else from the empty-handed one.
+                clip = (this.ball && this.ball.carrier === p) ? P.anims.run_carry : RUN;
+                frame = ((Math.floor(s.phase) % clip.frames) + clip.frames) % clip.frames;
+                row = clip.row + frame;
+            }
+
+            // Does the art on screen already contain the ball? The drawn one is
+            // suppressed while it does.
+            s.showsBall = !!(clip && clip.ballFrames && clip.ballFrames.indexOf(frame) !== -1);
+
+            const idx = row * P.dirs + s.dir;
+            s.base.setFrame(idx);
+            s.jersey.setFrame(idx);
+            if (s.glow) s.glow.setFrame(idx);   // the aura follows the pose
+        });
+    }
+
+    // Play a one-shot action clip on a player. Safe to call for disc players
+    // and for any name the bake did not produce — both are simply ignored, so
+    // callers never have to check which rendering mode is active.
+    //
+    // `face` is the point the action is directed at — the receiver for a throw,
+    // the passer for a catch. Without it the clip plays in whatever direction
+    // the player last MOVED, and a quarterback stands still before the snap, so
+    // a throw would fire off toward the bottom of the screen with the arm
+    // swinging straight at the camera where none of it reads.
+    playPlayerAction(p, name, face) {
+        const s = p && p._spr;
+        if (!s) return;
+        const clip = PLAYER_SPRITE.anims[name];
+        if (!clip || clip.loop) return;
+        if (face && (face.x !== p.x || face.y !== p.y)) {
+            s.dir = spriteDirIndex(Math.atan2(face.y - p.y, face.x - p.x));
+        }
+        // Facing is then frozen for the duration; actions are performed, not
+        // steered.
+        s.action = { clip, t: 0 };
+    }
+
+    // Update the position label shown on a player sprite. Addressed by a stored
+    // reference rather than by child index, which silently pointed at the wrong
+    // child the moment the glow layer was inserted into the container.
+    _setPlayerLabel(p, label) { if (p && p._label) p._label.setText(label); }
 
     createTeams() {
         this.offense = OFFENSE_SETUP.map(s => {
@@ -503,9 +626,166 @@ class GameScene extends Phaser.Scene {
         return { off, def };
     }
 
+    // Where the ball sits when this player has it, and where a throw leaves
+    // from. Discs keep the original offset; sprites need chest height.
+    _carryPoint(p) {
+        const off = (p && p._spr) ? PLAYER_SPRITE.ballOffset : { x: 12, y: -2 };
+        return { x: p.x + off.x, y: p.y + off.y };
+    }
+
+    // Light every receiver with an aura in their coverage colour, and breathe
+    // the one currently selected. The aura is traced from each frame's own
+    // silhouette, so unlike a shape drawn at a fixed radius it always frames
+    // the player, in any pose, at any size.
+    _updateCoverageGlow(time) {
+        if (!this.offense || !this.defense) return;
+        const live = (this.phase === 'receiver' || this.phase === 'charge')
+            && this.receivers;
+        // Everything off first, so a glow can never outlive the play it
+        // belonged to.
+        [...this.offense, ...this.defense].forEach(p => {
+            if (p && p._spr && p._spr.glow) p._spr.glow.setVisible(false);
+        });
+        if (!live) return;
+
+        const h = PLAYER_SPRITE.displayH;
+        const sel = (this.phase === 'charge' && this.target)
+            ? this.target : this.receivers[this.recIndex];
+        const pulse = 0.5 + 0.5 * Math.sin(time * 0.007);
+
+        this.receivers.forEach(rr => {
+            const g = rr.player && rr.player._spr && rr.player._spr.glow;
+            if (!g) return;
+            const disp = rr.displayCov !== undefined
+                ? rr.displayCov : (rr.coverage || 0);
+            const a = coverageGlowAlpha(disp);
+            g.setVisible(true);
+            g.setTint(coverageGlowColor(disp));
+            if (rr === sel) {
+                // The selected receiver burns brighter and breathes, so "who am
+                // I throwing to" stays separable from "how covered is he".
+                g.setAlpha(Math.min(1, a * (0.9 + 0.35 * pulse)));
+                const k = 1.10 + 0.07 * pulse;
+                g.setDisplaySize(h * k, h * k);
+            } else {
+                g.setAlpha(a * 0.58);
+                g.setDisplaySize(h, h);
+            }
+        });
+    }
+
+    // The ball carrier stands on a white shadow instead of a black one, so who
+    // has the ball is readable at a glance without hunting for the ball itself.
+    // Works for discs as well as sprites.
+    _updateCarrierShadow() {
+        if (!this.offense || !this.defense) return;
+        const carrier = this.ball && this.ball.carrier;
+        [...this.offense, ...this.defense].forEach(p => {
+            const sh = p && p._shadow;
+            if (!sh) return;
+            const hot = (p === carrier);
+            if (sh._hot === hot) return;   // only touch it when it changes
+            sh._hot = hot;
+            // White needs more alpha than black to hold up against the turf.
+            sh.setFillStyle(hot ? 0xffffff : 0x000000, hot ? 0.82 : 0.52);
+        });
+    }
+
+    // Centre point for anything that marks a player — coverage highlights, the
+    // opposing QB's target reticle. Discs are unchanged; sprites need the
+    // marker lifted onto the body rather than left around their feet.
+    _markerCentre(p) {
+        return { x: p.x, y: p.y + (p && p._spr ? PLAYER_SPRITE.markerOffsetY : 0) };
+    }
+
+    _markerScale(p) {
+        return (p && p._spr) ? PLAYER_SPRITE.markerScale : 1.0;
+    }
+
+    // Turn a player to face a point without starting an action clip. Facing
+    // otherwise only updates from movement, and a quarterback stands still
+    // through the whole charge — so without this they aim downfield only at
+    // the instant of release.
+    facePlayer(p, target) {
+        const s = p && p._spr;
+        if (!s || !target) return;
+        const dx = target.x - p.x, dy = target.y - p.y;
+        if (dx === 0 && dy === 0) return;
+        s.dir = spriteDirIndex(Math.atan2(dy, dx));
+    }
+
+    // Square both formations up across the line of scrimmage. Facing otherwise
+    // only comes from whatever direction a player was last jogging, which is
+    // whatever the previous play happened to leave them pointed in — not
+    // necessarily at the other team. groupA/groupB can be (offense, defense)
+    // or, on a defensive series, (defense, offense): which array is which side
+    // doesn't matter, only which one is currently to the left/right of the
+    // other, so this reads that off their actual x positions instead of
+    // assuming.
+    _faceAcrossFormation(groupA, groupB) {
+        const avgX = list => list.reduce((s, p) => s + p.x, 0) / list.length;
+        const dir = avgX(groupB) >= avgX(groupA) ? 1 : -1;
+        groupA.forEach(p => this.facePlayer(p, { x: p.x + dir * 100, y: p.y }));
+        groupB.forEach(p => this.facePlayer(p, { x: p.x - dir * 100, y: p.y }));
+    }
+
+    // True while some player's sprite already has the football modelled into
+    // it. There is only ever one ball, so the drawn one stands down.
+    _ballIsModelled() {
+        return [...(this.offense || []), ...(this.defense || [])]
+            .some(p => p && p._spr && p._spr.showsBall);
+    }
+
+    // How long after a throw starts the ball actually leaves the hand. The
+    // release is baked into the art, so the flight has to wait for it instead
+    // of setting off during the wind-up.
+    _throwReleaseDelay(p) {
+        const clip = PLAYER_SPRITE.anims.throw;
+        if (!p || !p._spr || !clip || !clip.ballFrames.length) return 0;
+        return clip.ballFrames.length / clip.fps * 1000;
+    }
+
+    // Hard reset of every action clip, for an instant snap into formation at a
+    // drive start. The gradual path is _standDownedPlayers(); this one exists
+    // because a player teleported to a new line of scrimmage must not still be
+    // lying in the pose they fell in somewhere else.
+    _clearPlayerActions() {
+        [...(this.offense || []), ...(this.defense || [])].forEach(p => {
+            if (p && p._spr) p._spr.action = null;
+        });
+    }
+
+    // True while a player is playing or holding a knockdown. They stay where
+    // they fell for the whole transition instead of being jogged back to the
+    // line of scrimmage still face-down, and are stood up as the next play
+    // sets up.
+    _isDown(p) {
+        const a = p && p._spr && p._spr.action;
+        return !!(a && a.clip.hold);
+    }
+
+    // Stand up anyone still on the ground and send them to their spot. Called
+    // as a formation tween lands, which is the moment the next play sets up.
+    // Returns true if anyone had to get up, so the caller can hold the play
+    // menu back until they are actually in place.
+    _standDownedPlayers(offPos, defPos, duration) {
+        let any = false;
+        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
+        const send = (list, pos) => list.forEach((p, i) => {
+            if (!this._isDown(p)) return;
+            any = true;
+            p._spr.action = null;
+            this.jog(p, pos[i].x, pos[i].y, duration, undefined, faceUp);
+        });
+        send(this.offense, offPos);
+        send(this.defense, defPos);
+        return any;
+    }
+
     // Snap players to formation instantly (drive start / kickoff).
     repositionFormation(losYard) {
         const { off, def } = this.formationPositions(losYard);
+        this._clearPlayerActions();
         // Kill any leftover animation tweens so kickoff/play tweens can't override us.
         [...this.offense, ...this.defense].forEach(p => this.tweens.killTweensOf(p));
         this.offense.forEach((p, i) => { this.stopBob(p); p.setPosition(off[i].x, off[i].y); p.setScale(1); p.homeX = off[i].x; p.homeY = off[i].y; });
@@ -515,26 +795,44 @@ class GameScene extends Phaser.Scene {
         ['DL','DL','LB','CB','CB','S'].forEach((l, i) => this._setPlayerLabel(this.defense[i], l));
         // Ball rests in the QB's hands at the line of scrimmage.
         this.ball.carrier = this.offense[0];
+        this._faceAcrossFormation(this.offense, this.defense);
     }
 
     // Smoothly jog all players back into formation, then run the callback.
     tweenFormation(losYard, duration, cb) {
         const { off, def } = this.formationPositions(losYard);
+        // Deliberately no _clearPlayerActions() here: downed players are held
+        // in place and released by _standDownedPlayers as this tween lands.
         // Kill any leftover animation tweens so kickoff/play tweens can't override the formation.
         [...this.offense, ...this.defense].forEach(p => { this.tweens.killTweensOf(p); this.stopBob(p); });
-        this.offense.forEach((p, i) => { p.homeX = off[i].x; p.homeY = off[i].y; this.jog(p, off[i].x, off[i].y, duration, 'Sine.easeInOut'); });
-        this.defense.forEach((p, i) => this.jog(p, def[i].x, def[i].y, duration, 'Sine.easeInOut'));
+        // Facing otherwise only comes from the direction of this jog, which is
+        // wherever the previous play happened to leave a player relative to
+        // their spot — not at the defense. Hooking the jog's own onComplete
+        // (rather than timing a delayedCall off `duration`, which isn't what
+        // the tween actually runs at — see jog()) fires this exactly when each
+        // player really lands.
+        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
+        // Anyone knocked down stays down where they fell while the rest jog
+        // back; they get up as this tween lands.
+        this.offense.forEach((p, i) => { p.homeX = off[i].x; p.homeY = off[i].y; if (!this._isDown(p)) this.jog(p, off[i].x, off[i].y, duration, 'Sine.easeInOut', faceUp); });
+        this.defense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, def[i].x, def[i].y, duration, 'Sine.easeInOut', faceUp); });
         // Restore correct position labels for offensive phase.
         ['QB','RB','WR','WR','TE','OL'].forEach((l, i) => this._setPlayerLabel(this.offense[i], l));
         ['DL','DL','LB','CB','CB','S'].forEach((l, i) => this._setPlayerLabel(this.defense[i], l));
         // Ball follows the QB as the offense jogs back into formation.
         this.ball.carrier = this.offense[0]; this.ball.visible = true;
-        this.time.delayedCall(duration + 120, cb);
+        this.time.delayedCall(duration + 120, () => {
+            const gotUp = this._standDownedPlayers(off, def, 420);
+            this.time.delayedCall(gotUp ? 470 : 0, cb);
+        });
     }
 
     // ─── Animation helpers ─────────────────────────────────────────────────────
     // A little squash/stretch bob makes a moving player look like they're running.
     startBob(p) {
+        // The baked run cycle already carries the sense of running; squashing
+        // the sprite on top of it reads as a wobble rather than a stride.
+        if (p._spr) return;
         if (p._bob) return;
         p._bob = this.tweens.add({
             targets: p, scaleY: 0.84, scaleX: 1.12,
@@ -549,7 +847,7 @@ class GameScene extends Phaser.Scene {
 
     // Tween a player while bobbing; stops bobbing on arrival.
     // All player movement is slowed ~50% so the game reads better visually.
-    jog(p, x, y, duration, ease) {
+    jog(p, x, y, duration, ease, onComplete) {
         // Hard-clamp every destination so no animation can place a player outside
         // the visible field boundary, regardless of where it was called from.
         const cx = Phaser.Math.Clamp(x, FIELD.LEFT + 8, FIELD.RIGHT  - 8);
@@ -557,7 +855,11 @@ class GameScene extends Phaser.Scene {
         this.startBob(p);
         return this.tweens.add({
             targets: p, x: cx, y: cy, duration: duration * 1.5, ease: ease || 'Sine.easeInOut',
-            onComplete: () => this.stopBob(p)
+            // The actual tween runs at duration * 1.5 above, so a caller timing
+            // its own delayedCall off the `duration` it passed in fires before
+            // this really lands — hooking the real completion here instead
+            // means callers never have to know about that multiplier.
+            onComplete: () => { this.stopBob(p); if (onComplete) onComplete(); }
         });
     }
 
@@ -700,10 +1002,17 @@ class GameScene extends Phaser.Scene {
             ]
         };
         const pos = formations[playId] || formations.BALANCED;
+        // Facing otherwise only comes from the direction of that jog, which
+        // points wherever the new alignment happens to pull each defender —
+        // not at the offense. Hooking the jog's own onComplete (rather than a
+        // delayedCall guessing at the tween's duration) means this fires
+        // exactly when each player actually lands, however many are still
+        // moving if the player scans to another option first.
+        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
         this.offense.forEach((p, i) => {
             if (!pos[i]) return;
             this.tweens.killTweensOf(p); this.stopBob(p);
-            this.jog(p, pos[i].x, pos[i].y, 420, 'Sine.easeOut');
+            this.jog(p, pos[i].x, pos[i].y, 420, 'Sine.easeOut', faceUp);
         });
     }
 
@@ -714,6 +1023,16 @@ class GameScene extends Phaser.Scene {
             // so defenders visually pile on top of them.
             this._tackledPlayer = p;
             p.setDepth(2.0);
+            this.playPlayerAction(p, 'tackle');
+            if (p._spr) {
+                // The tackle clip already puts the player on the ground, so the
+                // spin that stands in for it on disc players would read as the
+                // sprite tipping over on top of its own fall.
+                this.time.delayedCall(600, () => {
+                    if (this._tackledPlayer === p) this._tackledPlayer = null;
+                });
+                return;
+            }
             this.tweens.add({
                 targets: p, angle: (Math.random() < 0.5 ? -28 : 28), duration: 120, yoyo: true,
                 onComplete: () => {
@@ -730,8 +1049,10 @@ class GameScene extends Phaser.Scene {
     // ─── Dynamic player depth sorting ──────────────────────────────────────────
     // Called every frame from update(). Players further down the field (higher Y)
     // appear closer to the camera and are drawn on top of players higher up.
-    // Special cases: the ball carrier is always on top (7.0); the player who just
-    // got tackled is pinned at the bottom (2.0) so defenders pile over them.
+    // The ball carrier gets a tiny bump so they win ties against teammates at
+    // about the same Y, without jumping in front of someone genuinely further
+    // down the field. The player who just got tackled is pinned at the bottom
+    // (2.0) so defenders pile over them.
     _sortPlayerDepths() {
         if (!this.offense || !this.defense) return;
         const carrier  = this.ball && this.ball.carrier;
@@ -740,18 +1061,22 @@ class GameScene extends Phaser.Scene {
         const allPlayers = [...this.offense, ...this.defense];
         allPlayers.forEach(p => {
             if (!p) return;
-            if (p === carrier) {
-                // Ball carrier always on top of the player layer.
-                p.setDepth(7.0);
-            } else if (p === tackled) {
+            if (p === tackled) {
                 // Tackled player is pinned under everyone.
                 p.setDepth(2.0);
-            } else {
-                // Y-sort: lower Y (far side of field) = lower depth;
-                // higher Y (near side) = higher depth, appears in front.
-                const t = Phaser.Math.Clamp((p.y - FIELD.TOP) / fieldH, 0, 1);
-                p.setDepth(2.5 + t * 4.0); // range 2.5 – 6.5
+                return;
             }
+            // Y-sort: lower Y (far side of field) = lower depth;
+            // higher Y (near side) = higher depth, appears in front.
+            const t = Phaser.Math.Clamp((p.y - FIELD.TOP) / fieldH, 0, 1);
+            // The carrier used to jump straight to the top of the whole player
+            // layer here, which was fine for a small disc and a faint shadow.
+            // With the taller sprite and the bright carrier shadow, jumping
+            // above someone standing further down the field (who should read
+            // as in front) drapes the carrier's body and shadow over them.
+            // A tiny bump only breaks ties against teammates at about the same
+            // Y — converging tacklers, a handoff — without overriding the sort.
+            p.setDepth(2.5 + t * 4.0 + (p === carrier ? 0.01 : 0)); // range 2.5 – 6.51
         });
     }
 
@@ -1487,9 +1812,12 @@ class GameScene extends Phaser.Scene {
             };
         });
 
-        // QB drops back a touch; line blocks.
-        this.jog(this.offense[0], losX - 50, midY, 800);
-        this.offense[5] && this.jog(this.offense[5], this.offense[5].x + 12, this.offense[5].y, 800);
+        // QB drops back a touch; line blocks. The drop-back travels backward
+        // away from the defense, so left uncorrected the QB ends up facing
+        // upfield — away from the receivers he's about to choose from.
+        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
+        this.jog(this.offense[0], losX - 50, midY, 800, undefined, faceUp);
+        this.offense[5] && this.jog(this.offense[5], this.offense[5].x + 12, this.offense[5].y, 800, undefined, faceUp);
 
         // Receivers run their routes; each covering defender sticks to his man.
         this.receivers.forEach(r => {
@@ -1680,6 +2008,10 @@ class GameScene extends Phaser.Scene {
 
     beginCharge() {
         this.phase = 'charge';
+        // Turn to the receiver now, not at the release. Aiming at the target
+        // the throw will actually use (the route endpoint) keeps it consistent
+        // with the facing playPlayerAction sets a moment later.
+        this.facePlayer(this.offense[0], this.target);
         this.power = 0; this.charging = false; this.passCuePlayed = false; this.passOverPlayed = false;
         // Accessibility: "Easy Throw" mode skips the charge entirely and throws
         // at ideal power so the player only needs to pick a receiver, not hold.
@@ -1803,12 +2135,17 @@ class GameScene extends Phaser.Scene {
 
         // Ball flight; faster ball when thrown harder.
         this.ball.visible = true; this.ball.carrier = null;
-        this.ball.x = qb.x; this.ball.y = qb.y; this.ball.flying = true;
+        const _qbPt = this._carryPoint(qb);
+        this.ball.x = _qbPt.x; this.ball.y = _qbPt.y; this.ball.flying = true;
+        this.playPlayerAction(qb, 'throw', r);
         const flightDur = Phaser.Math.Linear(820, 480, Phaser.Math.Clamp(power / 100, 0, 1));
         const tx = complete ? r.x : landX, ty = complete ? r.y : landY;
-        const flight = { x: qb.x, y: qb.y };
+        // The art holds the ball until frame 5, so the flight waits for the
+        // release rather than setting off during the wind-up.
+        const _release = this._throwReleaseDelay(qb);
+        const flight = { x: _qbPt.x, y: _qbPt.y };
         this.tweens.add({
-            targets: flight, x: tx, y: ty, duration: flightDur, ease: 'Sine.easeInOut',
+            targets: flight, x: tx, y: ty, duration: flightDur, delay: _release, ease: 'Sine.easeInOut',
             onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
             onComplete: () => {
                 this.ball.flying = false;
@@ -1828,6 +2165,7 @@ class GameScene extends Phaser.Scene {
         this.audio.play('catch');
         this.audio.play('crowd');
         this.audio.speak('Caught!', true);
+        this.playPlayerAction(r.player, 'catch', this.offense[0]);
         // Zoom in on the receiver so the player can see the run-after-catch.
         this._zoomOnPoint(r.player.x, r.player.y, 1.55, 260);
         const rec = r.player;
@@ -1913,6 +2251,7 @@ class GameScene extends Phaser.Scene {
             return d < bd ? p : best;
         }, this.defense[0]);
         this.ball.carrier = db;
+        this.playPlayerAction(db, 'catch', this.offense[0]);
         this.audio.speak('Intercepted!', true);
 
         // Defender returns the ball toward their own end zone (left).
@@ -2488,16 +2827,31 @@ class GameScene extends Phaser.Scene {
 
     tweenDefense(losYard, duration, cb) {
         const { oppOff, ourDef } = this.defenseFormationPositions(losYard);
+        // Defensive series run through here rather than tweenFormation, so
+        // this is the path that stands a tackled CPU ball carrier back up.
+        // As above, the release happens when the tween lands, not up front.
         // Kill any leftover animation tweens so kickoff/play tweens can't override the formation.
         [...this.offense, ...this.defense].forEach(p => { this.tweens.killTweensOf(p); this.stopBob(p); });
-        this.defense.forEach((p, i) => this.jog(p, oppOff[i].x, oppOff[i].y, duration));
-        this.offense.forEach((p, i) => this.jog(p, ourDef[i].x, ourDef[i].y, duration));
+        // Facing otherwise only comes from the direction of this jog. Hooking
+        // the jog's own onComplete (rather than timing a delayedCall off
+        // `duration`, which isn't what the tween actually runs at — see
+        // jog()) fires this exactly when each player really lands.
+        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
+        // Anyone knocked down stays down where they fell while the rest jog
+        // back; they get up as this tween lands.
+        this.defense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, oppOff[i].x, oppOff[i].y, duration, undefined, faceUp); });
+        this.offense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, ourDef[i].x, ourDef[i].y, duration, undefined, faceUp); });
         // Flip labels: this.defense sprites are now the opp offense; this.offense are our defense.
         ['QB','RB','WR','WR','TE','OL'].forEach((l, i) => this._setPlayerLabel(this.defense[i], l));
         ['DL','DL','LB','CB','CB','S'].forEach((l, i) => this._setPlayerLabel(this.offense[i], l));
         this.ball.carrier = null;
         this.ball.x = ydToX(losYard) + 24; this.ball.y = FIELD.MID_Y; this.ball.visible = true;
-        this.time.delayedCall(duration + 120, cb);
+        this.time.delayedCall(duration + 120, () => {
+            // Note the swap: on defence `this.defense` holds the opposing
+            // offence and `this.offense` holds our defenders.
+            const gotUp = this._standDownedPlayers(ourDef, oppOff, 420);
+            this.time.delayedCall(gotUp ? 470 : 0, cb);
+        });
     }
 
     showDefPlayCall() {
@@ -2579,8 +2933,10 @@ class GameScene extends Phaser.Scene {
             this.tweens.add({ targets: p, x: p.x + dx, y: p.y + dy, duration: 280, ease: 'Quad.easeOut' });
         });
 
-        // Spike the ball: it drops fast and bounces on the turf.
-        this.ball.x = scorer.x; this.ball.y = scorer.y - 12; this.ball.visible = true;
+        // Spike the ball: it drops fast and bounces on the turf. It has to
+        // leave the scorer's hands, which are chest height on a sprite.
+        const _spikePt = this._carryPoint(scorer);
+        this.ball.x = _spikePt.x; this.ball.y = _spikePt.y; this.ball.visible = true;
         this.tweens.add({
             targets: this.ball, y: scorer.y + 20, duration: 150, ease: 'Quad.easeIn',
             onComplete: () => this.tweens.add({
@@ -2814,18 +3170,24 @@ class GameScene extends Phaser.Scene {
         const wr = wrOverride || this.defense[2];     // CPU's intended receiver
         const myDef = defOverride || this.offense[3]; // our cornerback who breaks on the ball
         this.ball.visible = true; this.ball.carrier = null;
-        this.ball.x = qb.x; this.ball.y = qb.y;
+        const _qbPt = this._carryPoint(qb);
+        this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
+        this.playPlayerAction(qb, 'throw', wr);
         // Zoom onto the route endpoint so the pick is clearly visible.
         this._zoomOnPoint(wr.x, wr.y, 1.6, 320);
         this.audio.speak('Up for grabs!', true);
         // Our defender breaks toward the catch point.
         this.jog(myDef, wr.x - 6, wr.y - 10, 640, 'Sine.easeOut');
-        const flight = { x: qb.x, y: qb.y };
+        // The art holds the ball until frame 5, so the flight waits for the
+        // release rather than setting off during the wind-up.
+        const _release = this._throwReleaseDelay(qb);
+        const flight = { x: _qbPt.x, y: _qbPt.y };
         this.tweens.add({
-            targets: flight, x: wr.x - 6, y: wr.y - 10, duration: 660, ease: 'Sine.easeInOut',
+            targets: flight, x: wr.x - 6, y: wr.y - 10, duration: 660, delay: _release, ease: 'Sine.easeInOut',
             onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
             onComplete: () => {
                 this.ball.carrier = myDef;
+                this.playPlayerAction(myDef, 'catch', qb);
                 this.audio.play('interception'); this.audio.play('crowd_big');
                 this.audio.speak('Intercepted!', true);
                 this.tweens.killTweensOf(myDef); this.stopBob(myDef);
@@ -2909,7 +3271,9 @@ class GameScene extends Phaser.Scene {
         if (type === 'incomplete') {
             const qb = this.defense[0], wr = wrOverride || this.defense[2], myDef = defOverride || this.offense[3];
             this.ball.visible = true; this.ball.carrier = null;
-            this.ball.x = qb.x; this.ball.y = qb.y;
+            const _qbPt = this._carryPoint(qb);
+            this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
+            this.playPlayerAction(qb, 'throw', wr);
             this.audio.speak('Knocked away.', true);
             this.jog(myDef, wr.x + 4, wr.y - 6, 560, 'Sine.easeOut'); // defender contests
             // Everyone else is in motion too: receivers run routes, our defenders
@@ -2922,9 +3286,12 @@ class GameScene extends Phaser.Scene {
                 if (i === 3) return; // contesting defender handled above
                 this.jog(p, p.x - 14 + Math.random() * 24, p.y + (Math.random() - 0.5) * 40, 600 + Math.random() * 220);
             });
-            const flight = { x: qb.x, y: qb.y };
+            // The art holds the ball until frame 5, so the flight waits for the
+        // release rather than setting off during the wind-up.
+        const _release = this._throwReleaseDelay(qb);
+        const flight = { x: _qbPt.x, y: _qbPt.y };
             this.tweens.add({
-                targets: flight, x: wr.x, y: wr.y + 16, duration: 620, ease: 'Sine.easeIn',
+                targets: flight, x: wr.x, y: wr.y + 16, duration: 620, delay: _release, ease: 'Sine.easeIn',
                 onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
                 onComplete: () => { this.audio.play('fail'); this.ball.visible = false; done(); }
             });
@@ -3065,13 +3432,18 @@ class GameScene extends Phaser.Scene {
             // Show the ball flying from QB to receiver before the run-after-catch.
             const qb = this.defense[0];
             this.ball.visible = true; this.ball.carrier = null;
-            this.ball.x = qb.x; this.ball.y = qb.y;
+            const _qbPt = this._carryPoint(qb);
+            this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
+            this.playPlayerAction(qb, 'throw', carrier);
             this.audio.speak('Complete!', true);
             this.audio.play('throw');
             const flightDur = 380 + Math.abs(carrier.x - qb.x) * 0.55;
-            const flight = { x: qb.x, y: qb.y };
+            // The art holds the ball until frame 5, so the flight waits for the
+        // release rather than setting off during the wind-up.
+        const _release = this._throwReleaseDelay(qb);
+        const flight = { x: _qbPt.x, y: _qbPt.y };
             this.tweens.add({
-                targets: flight, x: carrier.x, y: carrier.y, duration: flightDur, ease: 'Sine.easeInOut',
+                targets: flight, x: carrier.x, y: carrier.y, duration: flightDur, delay: _release, ease: 'Sine.easeInOut',
                 onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
                 onComplete: () => {
                     this.audio.play('catch');
@@ -3430,6 +3802,7 @@ class GameScene extends Phaser.Scene {
             opts = [
                 { label: 'Continue Game', value: 'continue' },
                 { label: 'Settings',      value: 'settings' },
+                { label: 'Help',          value: 'help' },
                 { label: 'Main Menu',     value: 'menu' }
             ];
         }
@@ -3453,6 +3826,7 @@ class GameScene extends Phaser.Scene {
         else if (value === 'settings') { this.pauseView = 'settings'; this.showPauseMenu(); }
         else if (value === 'back') { this.pauseView = 'main'; this.showPauseMenu(); }
         else if (value === 'menu') { this.closePause(); this.scene.start('TitleScene'); }
+        else if (value === 'help') { a.speak('I need help', true); }
         else if (value === 'music') { a.toggleMusic(); this.showPauseMenu(idx); }
         else if (value === 'sfx') {
             a.settings.soundEnabled = !a.settings.soundEnabled;
@@ -3509,6 +3883,9 @@ class GameScene extends Phaser.Scene {
         // Dynamic depth sort: players closer to the bottom of the screen (higher Y)
         // are drawn on top; ball carrier always on top; tackled player under everyone.
         this._sortPlayerDepths();
+        this._updatePlayerSprites(delta);
+        this._updateCarrierShadow();
+        this._updateCoverageGlow(time);
 
         // Real-time game clock: ticks down only while a play is live.
         if (this.gs && this.gs.timeRemaining > 0 && this.clockShouldRun()) {
@@ -3523,10 +3900,14 @@ class GameScene extends Phaser.Scene {
             }
         }
 
-        // Ball tracks its carrier so it looks like it's being run with.
+        // Ball tracks its carrier so it looks like it's being run with. The
+        // (12, -2) offset was tuned against the 26px disc, whose middle sits at
+        // the container origin. A sprite is 52px tall and stands almost
+        // entirely ABOVE that origin, so the same offset drops the ball at the
+        // player's shins and reads as a loose ball rather than a carried one.
         if (this.ball.carrier) {
-            this.ball.x = this.ball.carrier.x + 12;
-            this.ball.y = this.ball.carrier.y - 2;
+            const pt = this._carryPoint(this.ball.carrier);
+            this.ball.x = pt.x; this.ball.y = pt.y;
         }
 
         // Line of scrimmage + first-down markers during live phases.
@@ -3539,7 +3920,8 @@ class GameScene extends Phaser.Scene {
             m.lineStyle(3, 0xffeb3b, 0.8); m.lineBetween(fdX, FIELD.TOP, fdX, FIELD.BOTTOM);
             // Show who the opposing QB is targeting so you can read the play.
             if (this.oppTarget) {
-                const t = this.oppTarget;
+                // Same correction as the coverage markers: centre on the body.
+                const t = this._markerCentre(this.oppTarget);
                 m.lineStyle(4, 0xff3b3b, 1); m.strokeCircle(t.x, t.y, 24);
                 m.lineStyle(2, 0xffffff, 0.9); m.strokeCircle(t.x, t.y, 30);
                 // crosshair
@@ -3597,16 +3979,23 @@ class GameScene extends Phaser.Scene {
             this.receivers.forEach((rr) => {
                 const cov  = rr.coverage || 0;
                 const disp = rr.displayCov !== undefined ? rr.displayCov : cov;
-                const px   = rr.player.x, py = rr.player.y;
+                const mc   = this._markerCentre(rr.player);
+                const ms   = this._markerScale(rr.player);
+                const px   = mc.x, py = mc.y;
 
-                // Base marker: filled + shadow outline + coloured outline at scale 1.
-                drawShape(disp, px, py, 1.0, cbGlowAlpha(disp), 6, cbHighlightColor(disp), 9);
+                // Sprites carry the state as a glow around their own outline
+                // (_updateCoverageGlow). Discs have no glow layer, so they keep
+                // the shape marker they have always used.
+                if (!rr.player._spr) {
+                    drawShape(disp, px, py, ms, cbGlowAlpha(disp), 6, cbHighlightColor(disp), 9);
+                }
 
                 // Connector lines to covering defenders.
                 (rr.defenders || []).forEach(def => {
                     if (!def) return;
+                    const dc = this._markerCentre(def);
                     m.lineStyle(3, 0xff5050, 0.65);
-                    m.lineBetween(px, py, def.x, def.y);
+                    m.lineBetween(px, py, dc.x, dc.y);
                 });
             });
 
@@ -3618,10 +4007,13 @@ class GameScene extends Phaser.Scene {
                 const pulse = 0.5 + 0.5 * Math.sin(time * 0.007); // 0.5–1.0
                 // Scale oscillates between 1.35 and 1.65 so the pulsing reticle
                 // is clearly larger than the static base marker underneath.
-                const scale = 1.35 + 0.30 * pulse;
-                // Black halo pass first (shadow), then white inner fill, then colour outline.
-                drawShape(rDisp, r.player.x, r.player.y, scale, 0, 4, 0xffffff, 9);
-                drawShape(rDisp, r.player.x, r.player.y, scale * 0.88, 0, 3, cbHighlightColor(rDisp), 0);
+                if (!r.player._spr) {
+                    const scale = (1.35 + 0.30 * pulse) * this._markerScale(r.player);
+                    const rc = this._markerCentre(r.player);
+                    // Black halo pass, then white inner fill, then colour outline.
+                    drawShape(rDisp, rc.x, rc.y, scale, 0, 4, 0xffffff, 9);
+                    drawShape(rDisp, rc.x, rc.y, scale * 0.88, 0, 3, cbHighlightColor(rDisp), 0);
+                }
             }
         }
 
@@ -3733,9 +4125,9 @@ class GameScene extends Phaser.Scene {
             this.meterGfx.clear();
         }
 
-        // Ball.
+        // Ball. Suppressed while a player's own art is carrying it.
         this.ballGfx.clear();
-        if (this.ball.visible) {
+        if (this.ball.visible && !this._ballIsModelled()) {
             this.ballGfx.fillStyle(0x000000, 0.25);
             this.ballGfx.fillEllipse(this.ball.x + 2, this.ball.y + 6, 16, 7);
             this.ballGfx.fillStyle(0x8d4a2b, 1);

@@ -87,6 +87,7 @@ const LS_AUDIO       = 'bennyFootball_audio';
 const LS_GAME_STATE  = 'bennyFootball_gameState';
 const LS_EASY_THROW  = 'bennyFootball_easyThrow';
 const LS_COLORBLIND  = 'bennyFootball_colorblind';
+const LS_SPRITE3D    = 'bennyFootball_sprite3d';
 
 // Returns true when the "no-charge" accessibility mode is enabled.
 // When on, passing auto-throws at ideal power right after receiver selection,
@@ -96,6 +97,145 @@ function easyThrowOn() {
 }
 function setEasyThrow(on) {
     try { localStorage.setItem(LS_EASY_THROW, on ? '1' : '0'); } catch(e) {}
+}
+
+// ─── 3D player sprites ───────────────────────────────────────────────────────
+// Players can render either as the original flat colour discs or as baked
+// sprites of a low-poly model (source + bake pipeline live in ./art). The
+// sprites are two layers: an untinted base carrying skin, silver pants, the
+// grey facemask and the black outline, plus a white jersey layer that gets
+// tinted to the team colour at runtime — so team identity is one texture, not
+// ten. Set the default to '0' to ship the discs instead.
+const PLAYER_SPRITE = {
+    baseKey:   'player_base',
+    jerseyKey: 'player_jersey',
+    // A white aura traced from each frame's own silhouette, tinted at runtime
+    // to the coverage colour. Baked rather than generated with Phaser's preFX
+    // so it survives on the Canvas renderer — this is the cue that says who is
+    // open, and it must not depend on getting WebGL.
+    glowKey:   'player_glow',
+    basePath:   'images/players/gridiron_base.png',
+    jerseyPath: 'images/players/gridiron_jersey.png',
+    glowPath:   'images/players/gridiron_glow.png',
+    frameW: 64, frameH: 64,
+    dirs: 8,            // yaw steps, 45° apart
+    // Clip table, copied from the bake manifest (images/players/gridiron.json).
+    // `row` is the first atlas row; a frame index is row * dirs + direction.
+    // `hold` keeps the last frame up instead of releasing back to the run,
+    // which is what a tackled player should do until the next snap.
+    //
+    // `ballFrames` are the frames whose art already contains the football,
+    // modelled into the player's hand. While one of those is on screen the
+    // separately drawn ball is hidden, or there would be two of them.
+    anims: {
+        run:       { row: 0,  frames: 8, loop: true, ballFrames: [] },
+        // Same run cycle, rendered from the composition that grafts the ball
+        // into the hand. The carrier uses this; everyone else uses `run`.
+        run_carry: { row: 8,  frames: 8, loop: true, ballFrames: [0,1,2,3,4,5,6,7] },
+        // The ball leaves the hand at frame 5 — the release is baked into the
+        // art, so the flight is delayed to match rather than starting on the
+        // wind-up.
+        throw:     { row: 16, frames: 8, fps: 15, ballFrames: [0,1,2,3,4] },
+        // Mirror image: the ball arrives at frame 4 and is secured.
+        catch:     { row: 24, frames: 6, fps: 13, ballFrames: [4,5] },
+        tackle:    { row: 30, frames: 6, fps: 12, hold: true, ballFrames: [0,1,2,3,4,5] }
+    },
+    // The disc is 26px across and spans y -13..+13 about the container origin,
+    // and every tackle/catch/distance calculation in the game treats that
+    // origin as the player. So the sprite has to straddle it the same way —
+    // seating it by the feet instead drops the whole body above the point the
+    // game thinks the player is at.
+    // On-field height of the 64px cell, not of the player (discs are 26
+    // across). The bake fits one camera across every clip, so adding the
+    // tackle — a wider, lower pose — shrank the standing figure inside its
+    // cell from ~88% to ~78%. This is scaled by that 1.12 to keep the player
+    // the same size on the field as before the action clips existed.
+    displayH: 52,
+    footOffsetY: 8,     // world y of the foot line, so it lands on the shadow
+    // Where the drawn ball rides when it is NOT part of the sprite — a loose
+    // ball, or a carrier still rendered as a disc. The body spans roughly
+    // y -40..+8 about the container origin, so this sits at chest height.
+    ballOffset: { x: 11, y: -20 },
+
+    // ── Coverage-highlight geometry ──────────────────────────────────────────
+    // The open / covered / doubled shapes are how the play is read, so their
+    // shapes and colours are left exactly as they were. What the taller sprite
+    // broke is where they sit: a disc straddles the container origin, so a
+    // marker centred there framed it, while a sprite stands almost entirely
+    // ABOVE that origin — the marker ended up ringing the legs with the helmet
+    // and pads outside it altogether.
+    //
+    // -16 is the middle of the sprite's body (it spans about -40..+8), and
+    // 1.10 restores the amount of colour left visible around the figure once
+    // it is properly centred: measured against the disc it is 109%, where
+    // centring alone would have been 84%.
+    markerOffsetY: -16,
+    markerScale: 1.10,
+    footFrac: 0.9219,   // where the feet sit in a frame — measured by the bake
+    // Below this speed (world px/sec) a player is standing, not running.
+    runSpeed: 10,
+    // World px of travel per full stride. Drives the cycle off actual speed so
+    // the legs never skate.
+    stridePx: 58
+};
+
+function sprite3dOn() {
+    try { return (localStorage.getItem(LS_SPRITE3D) || '1') === '1'; } catch(e) { return true; }
+}
+function setSprite3d(on) {
+    try { localStorage.setItem(LS_SPRITE3D, on ? '1' : '0'); } catch(e) {}
+}
+
+// Queue the player sprite sheets. Call from a scene's preload().
+function loadPlayerSprites(scene) {
+    const cfg = { frameWidth: PLAYER_SPRITE.frameW, frameHeight: PLAYER_SPRITE.frameH };
+    if (!scene.textures.exists(PLAYER_SPRITE.baseKey)) {
+        scene.load.spritesheet(PLAYER_SPRITE.baseKey, PLAYER_SPRITE.basePath, cfg);
+    }
+    if (!scene.textures.exists(PLAYER_SPRITE.jerseyKey)) {
+        scene.load.spritesheet(PLAYER_SPRITE.jerseyKey, PLAYER_SPRITE.jerseyPath, cfg);
+    }
+    if (!scene.textures.exists(PLAYER_SPRITE.glowKey)) {
+        scene.load.spritesheet(PLAYER_SPRITE.glowKey, PLAYER_SPRITE.glowPath, cfg);
+    }
+}
+
+// True only when the toggle is on AND both sheets actually loaded, so a missing
+// or corrupt PNG falls back to discs rather than rendering nothing.
+function playerSpritesReady(scene) {
+    if (!sprite3dOn()) return false;
+    const ok = scene.textures.exists(PLAYER_SPRITE.baseKey)
+            && scene.textures.exists(PLAYER_SPRITE.jerseyKey);
+    if (!ok && !playerSpritesReady._warned) {
+        playerSpritesReady._warned = true;
+        // Silence here is the trap: the setting reads 3D (localStorage works
+        // anywhere) while the art never arrived, so the game looks unchanged
+        // and nothing says why.
+        console.warn(
+            "[football] Players set to 3D, but the sprite sheets did not load — "
+            + "falling back to classic discs.\n"
+            + (location.protocol === 'file:'
+                ? "Cause: this page was opened with file://. Phaser fetches every "
+                  + "image over XHR, which a file:// page is not allowed to do, so "
+                  + "ALL art fails here — the team helmets are silently falling back "
+                  + "to their vector versions too. Run the hub with `npm start`, or "
+                  + "serve this folder over HTTP."
+                : "Check that images/players/gridiron_run_base.png and "
+                  + "_jersey.png exist and are reachable from this page.")
+        );
+    }
+    return ok;
+}
+
+// Screen heading (radians, +x right / +y down) -> direction column in the atlas.
+// The model faces +Z and the bake orbits the camera, so yaw 0 shows the player
+// facing the camera — i.e. toward the bottom of the screen. Walking through the
+// turnaround: yaw 0 faces down, 90 faces left, 180 faces up, 270 faces right,
+// which is heading + 270°.
+function spriteDirIndex(rad) {
+    const deg = rad * 180 / Math.PI;
+    const yaw = ((deg + 270) % 360 + 360) % 360;
+    return Math.round(yaw / (360 / PLAYER_SPRITE.dirs)) % PLAYER_SPRITE.dirs;
 }
 
 // ─── Colorblind mode ─────────────────────────────────────────────────────────
@@ -152,6 +292,30 @@ function cbHighlightColor(dispCov) {
 // Glow alpha paired with cbHighlightColor.
 function cbGlowAlpha(dispCov) {
     return dispCov === 0 ? 0.32 : (dispCov === 1 ? 0.36 : 0.44);
+}
+
+// ─── Coverage glow ───────────────────────────────────────────────────────────
+// The receiver aura uses its own palette rather than cbHighlightColor's,
+// because a glow has a constraint a filled outline does not: it must be
+// LUMINOUS. cbHighlightColor's colourblind `doubled` is dark slate #546e7a,
+// which is legible as a fill inside a stroked shape and cannot work as an aura
+// at all — a dark glow against dark turf is a contradiction.
+//
+// Normal mode keeps the blue / amber / red everyone already reads. The
+// colourblind triad is blue / yellow / white: white is maximally bright and is
+// the one colour that survives all three filters untouched, since every row of
+// those matrices sums to 1.
+function coverageGlowColor(dispCov) {
+    if (colorblindMode() === 'normal') {
+        return dispCov === 0 ? 0x2196f3 : (dispCov === 1 ? 0xffb300 : 0xff4040);
+    }
+    return dispCov === 0 ? 0x2196f3 : (dispCov === 1 ? 0xfdd835 : 0xffffff);
+}
+
+// Base opacity per state, before the selected-receiver pulse is applied.
+// Doubled sits highest so the most dangerous state is also the loudest.
+function coverageGlowAlpha(dispCov) {
+    return dispCov === 0 ? 0.72 : (dispCov === 1 ? 0.80 : 0.92);
 }
 
 // ─── Shared helmet drawing helper ────────────────────────────────────────────
