@@ -1502,18 +1502,23 @@ class GameScene extends Phaser.Scene {
                     outcome = 'Double Play';
                     gs.outs += 2;
                     gs.pendingBaseUpdate = () => {
-                        if (gs.bases.second && !gs.bases.third) gs.bases.third = gs.bases.second;
+                        if (gs.bases.second) {
+                            // A run can't score on the same play as a force out that ends the inning.
+                            if (gs.bases.third && gs.outs < R.MAX_OUTS) gs.score[this.battingScoreKey()]++;
+                            gs.bases.third = gs.bases.second;
+                        }
                         gs.bases.second = null;
                         gs.bases.first = null;
                     };
                 } else {
                     gs.outs++;
                     gs.pendingBaseUpdate = () => {
-                        if (gs.bases.first) {
-                            if (gs.bases.second && !gs.bases.third) gs.bases.third = gs.bases.second;
-                            gs.bases.second = gs.bases.first;
-                            gs.bases.first = null;
+                        if (gs.bases.second) {
+                            if (gs.bases.third && gs.outs < R.MAX_OUTS) gs.score[this.battingScoreKey()]++;
+                            gs.bases.third = gs.bases.second;
                         }
+                        gs.bases.second = gs.bases.first;
+                        gs.bases.first = null;
                     };
                 }
             } else {
@@ -1719,7 +1724,7 @@ class GameScene extends Phaser.Scene {
             push(0, 1);
             if (b.first) push(1, 2);
             if (b.first && b.second) push(2, 3);
-            if (b.second && b.third) push(3, 4);
+            if (b.first && b.second && b.third) push(3, 4);
         } else if (outcome === 'Double') {
             push(0, 2);
             if (b.first) push(1, 3);
@@ -2488,7 +2493,11 @@ class GameScene extends Phaser.Scene {
             ['first', 'second', 'third'].forEach(k => this.sendRunner(k, 1000));
             gs.pendingBaseUpdate = () => {
                 if (gs.bases.first) {
-                    if (gs.bases.second && !gs.bases.third) gs.bases.third = gs.bases.second;
+                    if (gs.bases.second) {
+                        // A run can't score on the same play as a force out that ends the inning.
+                        if (gs.bases.third && gs.outs < GAME_CONSTANTS.GAME_RULES.MAX_OUTS) gs.score[this.battingScoreKey()]++;
+                        gs.bases.third = gs.bases.second;
+                    }
                     gs.bases.second = gs.bases.first;
                     gs.bases.first = null;
                 }
@@ -2519,7 +2528,11 @@ class GameScene extends Phaser.Scene {
                             this.audio.play('crowd_big');
                             ['second', 'third'].forEach(k => this.sendRunner(k, 1000));
                             gs.pendingBaseUpdate = () => {
-                                if (gs.bases.second && !gs.bases.third) gs.bases.third = gs.bases.second;
+                                if (gs.bases.second) {
+                                    // A run can't score on the same play as a force out that ends the inning.
+                                    if (gs.bases.third && gs.outs < GAME_CONSTANTS.GAME_RULES.MAX_OUTS) gs.score[this.battingScoreKey()]++;
+                                    gs.bases.third = gs.bases.second;
+                                }
                                 gs.bases.second = null;
                             };
                             this.time.delayedCall(1600, () => { this._zoomOut(380); this.finishPlay('Double Play'); });
@@ -2528,7 +2541,10 @@ class GameScene extends Phaser.Scene {
                             this.audio.speak('Safe at first. One out.');
                             ['second', 'third'].forEach(k => this.sendRunner(k, 1000));
                             gs.pendingBaseUpdate = () => {
-                                if (gs.bases.second && !gs.bases.third) gs.bases.third = gs.bases.second;
+                                if (gs.bases.second) {
+                                    if (gs.bases.third) gs.score[this.battingScoreKey()]++;
+                                    gs.bases.third = gs.bases.second;
+                                }
                                 gs.bases.second = null;
                                 gs.bases.first = 'comp'; // batter reaches
                             };
@@ -2549,6 +2565,9 @@ class GameScene extends Phaser.Scene {
             this.audio.speak('Out at third!');
             ['batter', 'first', 'third'].forEach(k => this.sendRunner(k, 1000));
             gs.pendingBaseUpdate = () => {
+                // Forced home, throw went to 3rd instead — but no run counts if this force out is the 3rd out.
+                if (gs.bases.third && gs.outs < GAME_CONSTANTS.GAME_RULES.MAX_OUTS) gs.score[this.battingScoreKey()]++;
+                gs.bases.third = null;
                 gs.bases.second = null;              // lead runner out at 3rd
                 if (gs.bases.first) { gs.bases.second = gs.bases.first; }
                 gs.bases.first = 'comp';             // batter reaches
@@ -2686,16 +2705,15 @@ class GameScene extends Phaser.Scene {
         const team = this.battingScoreKey();
 
         if (outcome === 'Single') {
-            if (gs.bases.third && gs.bases.second) {
-                gs.score[team]++;
-                gs.bases.third = null;
-            }
-            if (gs.bases.second && gs.bases.first) {
-                if (!gs.bases.third) gs.bases.third = gs.bases.second;
-                gs.bases.second = null;
-            }
+            // Only forced runners must advance (a continuous chain from first,
+            // since the batter needs first). A runner not part of that chain
+            // (e.g. alone on 2nd/3rd with first open) is free to hold.
             if (gs.bases.first) {
-                if (!gs.bases.second) gs.bases.second = gs.bases.first;
+                if (gs.bases.second) {
+                    if (gs.bases.third) gs.score[team]++;
+                    gs.bases.third = gs.bases.second;
+                }
+                gs.bases.second = gs.bases.first;
             }
             gs.bases.first = batter;
 
@@ -2905,6 +2923,7 @@ class GameScene extends Phaser.Scene {
                 { value: 'tts', label: `Text-to-Speech: ${ttsOn ? 'ON' : 'OFF'}` },
                 { value: 'voice', label: `Voice: ${voiceName}` },
                 { value: 'nexttrack', label: 'Next Track' },
+                { value: 'help', label: 'Help' },
                 { value: 'quit', label: 'Quit to Title' }
             ],
             onSelect: (opt) => {
@@ -2925,6 +2944,7 @@ class GameScene extends Phaser.Scene {
                     this.showPauseMenu(resumeCb);
                 }
                 else if (opt.value === 'nexttrack') { this.audio.nextTrack(); this.showPauseMenu(resumeCb); }
+                else if (opt.value === 'help') { this.audio.speak('I need help', true); }
                 else if (opt.value === 'quit') { this.setMenu(null); this.scene.start('TitleScene'); }
             }
         }));
