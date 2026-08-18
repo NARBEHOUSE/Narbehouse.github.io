@@ -424,7 +424,7 @@
         <h2>Core Principles</h2>
         <ul>
           <li><strong>Entire app and every game must be fully usable with only two keys:</strong> Spacebar and Return, plus optional mouse or touch for caregivers or users who have those access options.</li>
-          <li><strong>No reflex or time-limit mechanics.</strong> Use puzzles, logic, sequencing, matching, turn-based choices, and exploration.</li>
+          <li><strong>No reflex or time-limit mechanics.</strong> Use puzzles, logic, sequencing, matching, turn-based choices, and exploration. Holding a switch to aim or charge is fine, on the terms in <a href="#mechanics">Hold to Aim, Hold to Charge</a>.</li>
           <li><strong>All actions should be available through scanning and selection.</strong> Nothing should require precise timing.</li>
         </ul>
       </section>
@@ -522,11 +522,26 @@
           <li>Picture building or coloring by areas, stepwise fills only</li>
           <li>Word building with predictive suggestions</li>
           <li>Simple math or shapes, one step at a time</li>
+          <li>Aim-and-shoot, when it is built the way the next section describes</li>
         </ul>
+
+        <h3>Hold to Aim, Hold to Charge</h3>
+        <div class="card">
+          <p>A sweeping aimer and a filling power bar are normally reaction tests, and those are banned. They are allowed here only when the timing is taken out of them, which takes all of the following. Benny's Ballista and Benny's Mini Golf are the games to copy.</p>
+          <ul>
+            <li><strong>No deadline.</strong> Hold as long as you like; nothing moves, decays or fails while you aim.</li>
+            <li><strong>The meter clamps at full.</strong> It never wraps round or bounces, so there is no sweet spot to miss and no penalty for a slow release.</li>
+            <li><strong>The aimer comes back.</strong> It reverses at each end of its travel and on each new press, so an overshoot costs only the wait.</li>
+            <li><strong>Sweep speed is a setting</strong>, with genuinely slow options, defaulting to a speed the player can stop on.</li>
+            <li><strong>Show and sound the meter</strong> while it moves &mdash; a visible bar plus non-speech audio. Never speech: it falls behind the meter and piles up on itself. Say where the shot lands when the player stops, not while they hold.</li>
+            <li><strong>A weak shot is a bad shot, not a failed one.</strong> No lives lost, no "too slow", no reset.</li>
+            <li><strong>Releasing should only stop the meter</strong>, with a separate press to fire, so a switch slipping out of a hand costs nothing.</li>
+          </ul>
+        </div>
 
         <h3>Mechanics to Avoid</h3>
         <div class="card">
-          <p><strong>Never use:</strong> Timers, falling objects, health decay, platforming, reaction tests, QTEs, hold-to-aim precision, multi-axis analog control.</p>
+          <p><strong>Never use:</strong> Timers, falling objects, health decay, platforming, reaction tests, QTEs, multi-axis analog control. A charge meter that punishes over-holding &mdash; one that wraps back to zero, bounces, or wants a release inside a sweet spot &mdash; is a reaction test wearing a power bar, and counts as one.</p>
         </div>
       </section>
 
@@ -578,6 +593,7 @@
           <li>✓ Does TTS read focus, selection, errors, and outcomes?</li>
           <li>✓ Can the player open Pause with Return hold on every screen?</li>
           <li>✓ Are there no timers or reflex steps anywhere?</li>
+          <li>✓ If a meter is held to aim or charge: does it clamp at full, reverse rather than stop, and never fire on release?</li>
           <li>✓ Does the game auto-save and resume correctly?</li>
         </ul>
       </section>
