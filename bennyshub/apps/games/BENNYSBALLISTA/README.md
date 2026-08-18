@@ -17,33 +17,56 @@ engine is the more honest trade. **This means the game needs to be served over
 
 ## Why this game exists
 
-Artillery games normally ask you to hold a button and let go at the right
-moment — a sweeping aimer, a filling power bar. [`AGENTS.md`](../../../../AGENTS.md)
-bans exactly that ("no hold-to-aim precision, no reaction tests"), and for good
-reason: it locks out the person this hub is built for.
+An artillery game has a sweeping aimer and a filling power bar. Normally both
+are reaction tests: let go at the wrong instant and the shot is wasted, which
+locks out the person this hub is built for.
 
-So this game takes the timing out completely. A shot is assembled from named
-choices you scan through with the spacebar — an angle, a power, and once you
-have unlocked more than one, an ammunition type. While you scan, a dotted line
-shows the exact path the bolt will take, and the game says out loud what it is
-about to hit: *"45 degrees. Hits the left wood beam."* Nothing is hidden and
-nothing is rushed. You can sit on a choice for an hour.
+This game keeps the sweep and the bar and takes the reaction out of them, along
+the lines [`AGENTS.md`](../../../../AGENTS.md) lays out under "Hold-to-charge
+and hold-to-sweep". Three things do that, and none of them is optional:
+
+- **The aimer turns round.** Hold Space and the angle sweeps up at two and a
+  half degrees per second. At 70° it reverses and comes straight back down, and
+  keeps doing that for as long as you hold. Overshooting the angle you wanted
+  costs you the wait for it to come past again, and nothing else.
+- **The power bar stops at full.** It fills at five percent a second and pins
+  itself at 100%. Holding on too long is never worse than letting go at the
+  perfect moment, because there is no perfect moment to miss. Let go early and
+  the next hold picks up where the last one stopped.
+- **Letting go never fires.** A release only ever *stops* the meter. Firing is a
+  separate press of Return, so a switch slipping out of a hand costs nothing.
+
+Between the two, a dotted line shows the exact path the bolt will take, and the
+game says out loud what it is about to hit — but only when you stop, never
+while a meter is moving: *"45 degrees. At 60 percent power, hits the left wood
+beam."* Nothing is hidden, nothing is rushed, and you can sit between presses
+for an hour.
 
 ## How to play
 
 | Input | What it does |
 |---|---|
-| **Space**, short press | Move the highlight to the next choice |
-| **Space**, held 3 seconds | Scan backwards by itself until you let go |
-| **Return**, short press | Pick whatever is highlighted |
+| **Space**, held | Sweeps the angle, then charges the power. Let go to stop. |
+| **Return**, short press | Stops a moving meter; otherwise locks the angle or fires the shot |
 | **Return**, held 3 seconds | Go back one step, or open the pause menu |
-| Mouse / touch | Optional. Click to pick. Never needed, never a drag. |
+| **Space**, short press | *In the ammunition list only:* move to the next choice |
+| **Space**, held 3 seconds | *In the ammunition list only:* scan backwards until you let go |
+| Mouse / touch | Optional. Hold a meter to move it, then press Lock or Fire. Never a drag. |
 
-Pick an **angle**, then a **power**, and the bolt fires. Destroy every crown to
-finish the level. Between each list the highlight passes through a blank
-"deadzone" step, so a list never wraps round without warning.
+A shot goes: ammunition (once you have more than one), then **angle**, then
+**power**, then Return to fire. Destroy every crown to finish the level.
 
-The scan lists only ever contain legal choices, so a selection can never fail.
+Each meter takes two Return presses, never one that does both jobs: the first
+stops the meter, the second commits it. That is what makes the whole thing work
+on a single switch — with **Auto Scan** on, both meters run by themselves and
+Return alone plays the game.
+
+Backing out with a Return-hold returns the power meter to zero, which is also
+how you take a second run at a shot you charged too far.
+
+In the ammunition list the highlight passes through a blank "deadzone" step
+before it wraps, same as every other list in the hub, and the list only ever
+contains legal choices, so a selection can never fail.
 
 ## What is in a castle
 
@@ -141,8 +164,8 @@ Physics above.
 ```
 
 - `dist` — how far away the castle stands. Keep it roughly **700–780**; much
-  further and the far side drifts off screen, much closer and the low-power
-  shots overshoot.
+  further and the far side drifts off screen, much closer and the bottom of the
+  power meter overshoots it.
 - `par` — the bolt count worth three stars.
 - `bolts` — the limit when Endless Bolts is switched off.
 
@@ -172,10 +195,12 @@ Two things to check after drawing one:
    lintel needs legs that are actually load-bearing (see the small-rubble
    caveat under Physics above) — a beam spanning a wide gap with only
    corner support can sag and fall, exactly like the real thing would.
-2. **It must be reachable.** Angles and powers are tuned so every option
-   connects with something. If you move a castle a long way out, check that the
-   weaker powers can still reach its near face — otherwise those scan steps
-   become dead options that only waste the player's presses.
+2. **It must be reachable.** The sweep covers 20–70° and the power meter maps
+   to 780–1160 muzzle speed (`AIM_MIN_DEG`/`AIM_MAX_DEG`, `POWER_MIN_V`/
+   `POWER_MAX_V` in `CFG`) — the same ground the old seven-angle, four-power
+   scan lists covered. If you move a castle a long way out, check that a
+   part-charged shot can still reach its near face, or the bottom half of the
+   meter becomes dead travel the player has to wait through.
 
 ## Settings
 
@@ -195,9 +220,20 @@ able to wipe a save.
 - Do not add input debouncing. `scan-manager.js` already installs a global 250 ms
   cooldown; a second one fights it.
 - `CFG` at the top holds the hold durations and the scan-on-hold direction, in
-  case the hub's conventions change. It also holds the Box2D tuning (`PPM`,
-  solver iteration counts, friction/restitution, the impact-damage thresholds)
-  — see `js/ballista-physics.js` and `stepWorld()`.
+  case the hub's conventions change, plus every number behind the two meters
+  (`AIM_DEG_PER_S`, `CHARGE_PCT_PER_S`, the angle and speed ranges, the tick
+  and beep spacing). It also holds the Box2D tuning (`PPM`, solver iteration
+  counts, friction/restitution, the impact-damage thresholds) — see
+  `js/ballista-physics.js` and `stepWorld()`.
+- Both meters advance in the frame loop (`stepMeters()`), not on a timer, so the
+  pause menu freezes them and resuming picks them up mid-charge.
+- Nothing is spoken while a meter moves. Everything the player is told about a
+  shot comes from `stopAim()` or `stopCharge()`, on release. Adding a "45
+  degrees… 46 degrees…" running commentary would put speech permanently behind
+  the meter and on top of itself — the sweep is silent on purpose.
+- `Space` means "scan backwards" in the ammunition list and "move the meter" in
+  the aim and power steps. `meterStage()` is what keeps those apart; don't let
+  the two paths merge.
 - `boot()` is `async` and `await`s `Box2D()` before the first `buildLevel()`
   call — the WASM module has to finish loading first. Nothing before that
   point in `boot()` may depend on physics being ready.

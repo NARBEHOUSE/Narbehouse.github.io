@@ -156,7 +156,7 @@
     {
       "id": "bennysballista",
       "title": "Benny's Ballista",
-      "description": "Lay siege to castles with a giant crossbow! Pick your angle and power from a list, watch the dotted arc show you exactly where the bolt lands, and bring the towers down. No timing and no rush - every shot is your choice.",
+      "description": "Lay siege to castles with a giant crossbow! Hold the spacebar to sweep your angle, hold it again to charge the shot, and watch the dotted arc show you exactly where the bolt lands. The aimer turns round and comes back, the power bar stops at full, and nothing fires until you say so - no timing and no rush.",
       "path": "apps/games/BENNYSBALLISTA/index.html",
       "image": "images/games/bennysballista.png",
       "genres": ["Strategy", "Arcade"],

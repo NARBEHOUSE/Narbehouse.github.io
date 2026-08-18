@@ -93,7 +93,7 @@ canvas{display:block; max-width:100%; max-height:100%; background:var(--sky1)}
 body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
 .pill b{color:var(--accent2)}
 
-/* ── Shot bar: the discrete scan lists ──────────────────────────────────── */
+/* ── Shot bar: the ammo list, then the two meters ───────────────────────── */
 #shotbar{
   flex:0 0 auto; background:var(--panel); border-top:3px solid var(--line);
   padding:.35rem .6rem; display:flex; flex-direction:column; gap:.3rem;
@@ -124,6 +124,35 @@ body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
 }
 .chip.focus .sub{color:#3a2f00}
 .chip:disabled{opacity:.4; cursor:default}
+.chip.act{font-weight:800; border-color:var(--accent); color:var(--accent)}
+.lane.active .chip.act{background:var(--accent); color:#0d1220; border-color:var(--accent)}
+
+/* ── Meters: the swept angle and the charged power ──────────────────────── */
+.meter{
+  flex:1 1 auto; position:relative; height:2.9rem; border-radius:.55rem;
+  background:var(--panel2); border:2px solid var(--line); overflow:hidden;
+}
+.meter .fill{
+  position:absolute; inset:0 auto 0 0; width:0%;
+  background:linear-gradient(90deg, var(--accent2), var(--accent));
+  transition:none;                      /* the loop already moves it every frame */
+}
+.meter .mval{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:1.05rem; color:var(--text);
+  text-shadow:0 1px 3px rgba(0,0,0,.65);
+}
+.meter.dim .fill{opacity:.35}
+.meter.dim .mval{color:var(--dim)}
+.lane.active .meter{border-color:var(--focus)}
+.lane.moving .meter{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent)}
+.lane.locked .meter{border-color:var(--good)}
+/* Ticks every 10% so the meter reads as a scale, not just a bar. */
+.meter::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(90deg,
+    transparent 0 calc(10% - 2px), rgba(255,255,255,.18) calc(10% - 2px) 10%);
+}
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 #ftr{
@@ -208,8 +237,18 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
 
     <div id="shotbar">
       <div class="lane" id="laneAmmo"  hidden><span class="laneLabel">Ammo</span><div class="chips" id="chipsAmmo"></div></div>
-      <div class="lane" id="laneAngle">        <span class="laneLabel">Angle</span><div class="chips" id="chipsAngle"></div></div>
-      <div class="lane" id="lanePower">        <span class="laneLabel">Power</span><div class="chips" id="chipsPower"></div></div>
+      <div class="lane" id="laneAim">
+        <span class="laneLabel">Angle</span>
+        <div class="meter" id="meterAim" role="progressbar" aria-label="Angle"
+             aria-valuemin="20" aria-valuemax="70" aria-valuenow="45"><div class="fill" id="fillAim"></div><span class="mval" id="valAim">45&deg;</span></div>
+        <button class="chip act" id="btnLockAim" type="button">Lock</button>
+      </div>
+      <div class="lane" id="lanePower">
+        <span class="laneLabel">Power</span>
+        <div class="meter" id="meterPower" role="progressbar" aria-label="Power"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fillPower"></div><span class="mval" id="valPower">0%</span></div>
+        <button class="chip act" id="btnFire" type="button">Fire</button>
+      </div>
     </div>
 
     <div id="overlay">
@@ -225,7 +264,7 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
   <footer id="ftr">
     <span id="ftrMode">Menu</span>
     <span id="ftrTarget"></span>
-    <span id="ftrLegend"><kbd>Space</kbd> next &nbsp;·&nbsp; <kbd>Return</kbd> select &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
+    <span id="ftrLegend"><kbd>Space hold</kbd> aim / charge &nbsp;·&nbsp; <kbd>Return</kbd> stop, then lock or fire &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
   </footer>
 </div>
 
@@ -245,10 +284,12 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
    A siege game for one or two switches (Spacebar + Return).
 
    The whole point of this game is that a projectile game can be played with
-   no timing at all. Every shot is assembled from named options you scan
-   through — angle, power, ammo — and the dotted arc on screen re-runs the
-   real physics before you commit, so the game tells you where the shot lands
-   and what it hits. Nothing here rewards a fast press.
+   no timing at all. The angle sweeps and the power charges while you hold the
+   spacebar, but neither one can be missed: the sweep turns round at the ends
+   and comes back, the charge stops dead at full, and letting go only ever
+   *stops* the meter — a separate press fires. Between the two, the dotted arc
+   re-runs the real physics and the game says out loud where the bolt lands.
+   Nothing here rewards a fast press or punishes a slow one.
 
    See ../../../AGENTS.md for the rules this game is built to.
    ========================================================================== */
@@ -258,6 +299,22 @@ const CFG = {
   SPACE_HOLD_MS  : 3000,   // hold Space this long to start scanning by itself
   RETURN_HOLD_MS : 3000,   // hold Return this long to back out / open Pause
   SCAN_DIR_ON_HOLD: -1,    // -1 = backward (matches every other hub game), +1 = forward
+
+  /* Hold-to-sweep aim and hold-to-charge power — see AGENTS.md, "Hold-to-charge
+     and hold-to-sweep". Both meters crawl on purpose: the player has to be able
+     to watch one approach the value they want and let go, not catch it. Neither
+     has a deadline, the sweep bounces at its ends instead of stopping, and the
+     charge clamps at full instead of wrapping, so there is no moment to miss. */
+  AIM_MIN_DEG      : 20,   // the old fixed angle list ran 20-70; the sweep keeps that range
+  AIM_MAX_DEG      : 70,
+  AIM_DEG_PER_S    : 2.5,  // a full 20 -> 70 sweep takes twenty seconds
+  AIM_TICK_DEG     : 5,    // soft tick every this many degrees while sweeping
+  CHARGE_PCT_PER_S : 5,    // 0 -> 100% in twenty seconds, the same pace as the sweep
+  CHARGE_TICK_PCT  : 10,   // beep every this much charge
+  POWER_MIN_V      : 780,  // 0% still leaves the muzzle: a weak shot, never a dud
+  POWER_MAX_V      : 1160, // the same top speed the old "Max" power had
+  DEFAULT_POWER_PCT: 60,   // what the very first shot of a session aims at
+  METER_PREVIEW_MS : 60,   // re-run the arc at most this often while a meter moves
   W: 1280, H: 720,         // fixed design resolution; the canvas letterboxes to fit
   GROUND_Y: 640,
   MUZZLE_X: 150, MUZZLE_Y: 552,
@@ -286,25 +343,13 @@ const CFG = {
 };
 CFG.PPM = CFG.CELL;   // kept as one property, not two: they must never drift apart
 
-/* Angles and powers are lists of named choices — never a swept meter.
-   These numbers are tuned, not arbitrary: every angle and every power has to
-   reach something on at least some levels, or it is a dead option taking up a
-   scan step. See README.md for the reachability check behind them. */
-const ANGLES = [
-  { deg:20, name:'20 degrees', sub:'Flat'  },
-  { deg:30, name:'30 degrees', sub:'Low'   },
-  { deg:38, name:'38 degrees', sub:''      },
-  { deg:45, name:'45 degrees', sub:'Arc'   },
-  { deg:52, name:'52 degrees', sub:''      },
-  { deg:60, name:'60 degrees', sub:'High'  },
-  { deg:70, name:'70 degrees', sub:'Lob'   }
-];
-const POWERS = [
-  { v: 850, name:'Soft'   },   // only reaches the near face of a close castle
-  { v: 960, name:'Medium' },
-  { v:1060, name:'Hard'   },
-  { v:1160, name:'Max'    }    // clears most walls, overshoots close targets
-];
+/* Angle and power used to be lists of named choices scanned one step at a
+   time. They are continuous now — swept and charged — but they cover the same
+   ground those lists did (20-70 degrees, 780-1160 muzzle speed), so every
+   castle in LEVELS is still reachable and the README's reachability check
+   still means what it says. The tunables are in CFG above. */
+const clampAim = deg => Math.max(CFG.AIM_MIN_DEG, Math.min(CFG.AIM_MAX_DEG, deg));
+const powerToSpeed = pct => CFG.POWER_MIN_V + (pct/100) * (CFG.POWER_MAX_V - CFG.POWER_MIN_V);
 
 /* Ammo is strategy, not raw power — each one is better at something. */
 const AMMO = [
@@ -545,7 +590,7 @@ function voiceName(){
    ══════════════════════════════════════════════════════════════════════════ */
 const G = {
   screen : 'menu',       // menu | play | fly | settle | won | overlay
-  stage  : 'angle',      // within 'play': ammo | angle | power
+  stage  : 'aim',        // within 'play': ammo | aim | power
   overlay: null,         // which menu is open, when screen === 'overlay'
   levelIx: 0,
   level  : null,
@@ -557,8 +602,17 @@ const G = {
   boltsUsed: 0,
   score  : 0,
   levelScore: 0,
-  pick   : { ammo:0, angle:3, power:2 },   // current committed picks
-  last   : { ammo:0, angle:3, power:2 },   // what the previous shot used
+  pick   : { ammo:0 },                     // ammo is still a scan list; angle and power are meters
+  last   : { ammo:0, aimDeg:45, powerPct:CFG.DEFAULT_POWER_PCT },  // what the previous shot used
+  aimDeg : 45,             // live angle, swept while Space is held
+  aimDir : 1,              // sweep direction; flips at both ends and on each new press
+  aimSwept: false,         // has the sweep run yet this shot — the first press must go up
+  aiming : false,          // is the sweep running right now
+  powerPct: CFG.DEFAULT_POWER_PCT,   // live power; the power step resets it to zero
+  charging: false,
+  charged : false,         // has this shot been charged at all — guards an instant misfire
+  aimTick : 0, powTick: 0, // last tick/beep step, so the sounds don't fire every frame
+  previewAt: 0,            // when the arc was last re-run, for the meter throttle
   locked : {},                             // which stages are locked in this shot
   scan   : -1,                             // -1 = nothing highlighted (also the deadzone)
   menuIx : 0,
@@ -577,8 +631,12 @@ const input  = { spaceDown:false, retDown:false, retLong:false };
 /* ── Elements ───────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
-const chipHolders = { ammo:$('chipsAmmo'), angle:$('chipsAngle'), power:$('chipsPower') };
-const lanes       = { ammo:$('laneAmmo'),  angle:$('laneAngle'),  power:$('lanePower') };
+const chipHolders = { ammo:$('chipsAmmo') };
+const lanes       = { ammo:$('laneAmmo'), aim:$('laneAim'), power:$('lanePower') };
+const meters      = {
+  aim  : { box:$('meterAim'),   fill:$('fillAim'),   val:$('valAim')   },
+  power: { box:$('meterPower'), fill:$('fillPower'), val:$('valPower') }
+};
 
 /* Palette lookup. getComputedStyle is far too slow to call per block per frame,
    so the whole palette is read once per theme change and served from a cache. */
@@ -664,82 +722,155 @@ function buildLevel(ix, quiet){
   // the very first frame is even drawn.
 
   // Keep the previous shot's picks — a player rarely wants to start over.
-  G.pick = { ammo:Math.min(G.last.ammo, unlockedAmmo().length-1), angle:G.last.angle, power:G.last.power };
+  G.pick = { ammo:Math.min(G.last.ammo, unlockedAmmo().length-1) };
   G.locked = {};
   enterShot(!quiet);
 }
 
 /* Which lanes this shot needs. Ammo only appears once you have a choice. */
 function stageOrder(){
-  return unlockedAmmo().length > 1 ? ['ammo','angle','power'] : ['angle','power'];
+  return unlockedAmmo().length > 1 ? ['ammo','aim','power'] : ['aim','power'];
 }
 
 function enterShot(fresh){
   G.screen = 'play';
   G.locked = {};
-  G.stage  = stageOrder()[0];
   G.scan   = -1;                       // nothing highlighted until the first Space
-  stopAutoScan();
-  renderChips();
-  updatePreview();
+  G.aimDeg = clampAim(G.last.aimDeg);
+  /* The aim step draws its arc at the power the last shot used, so "where does
+     this angle land" has a real answer instead of being measured against zero.
+     Reaching the power step is what resets the meter to nothing. */
+  G.powerPct = G.last.powerPct;
+  G.charged  = false;
+  G.aimTick = 0; G.powTick = 0;
+  beginStage(stageOrder()[0]);
   updateHud();
-  updateFooter();
   if (fresh){
-    speak(`${G.level.name}. ${G.crowns} ${G.crowns===1?'crown':'crowns'} to destroy. Press space to start scanning.`);
+    speak(`${G.level.name}. ${G.crowns} ${G.crowns===1?'crown':'crowns'} to destroy. ${stageHint()}`);
   }
 }
 
+/* ── Moving between the steps of a shot ─────────────────────────────────────
+   One door into every step, so auto-scan, the reset of the power meter and the
+   "nothing highlighted yet" rule can't drift apart between the half-dozen
+   places that change step. It deliberately says nothing: the caller speaks,
+   because what to say depends on what the player just did. `keep` means "don't
+   reset this step's value" — used when resuming from a pause, where wiping the
+   charge the player already built would be its own small betrayal.
+   ────────────────────────────────────────────────────────────────────────── */
+function beginStage(stage, opts){
+  opts = opts || {};
+  G.stage    = stage;
+  G.aiming   = false;
+  G.charging = false;
+  stopAutoScan();
+
+  if (stage === 'ammo'){
+    if (!opts.keep) G.scan = -1;       // nothing highlighted until the first Space
+    resetAutoScan();
+  } else if (stage === 'aim'){
+    // The first sweep of a shot always goes up, so the very first press isn't
+    // the one press in the game that reverses before it has moved.
+    if (!opts.keep){ G.aimDir = 1; G.aimSwept = false; }
+    if (autoScanOn()){ G.aiming = true; G.aimSwept = true; }  // one switch: it sweeps itself
+  } else if (stage === 'power'){
+    if (!opts.keep){ G.powerPct = 0; G.charged = false; G.powTick = 0; }
+    if (autoScanOn()) G.charging = true;
+  }
+
+  renderChips(); renderMeters(); updatePreview(true); updateFooter();
+}
+
+/* What to do next, in the wording that matches how this player is set up. */
+function stageHint(){
+  if (G.stage === 'ammo') return 'Choose ammunition. Press space to scan.';
+  if (G.stage === 'aim')  return autoScanOn()
+    ? 'Aiming. The angle is sweeping — press return to stop it.'
+    : 'Aiming. Hold space to sweep the angle, let go to stop it.';
+  return autoScanOn()
+    ? 'Power. The meter is filling — press return to stop it.'
+    : 'Power. Hold space to charge, let go to stop.';
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
-   THE SCAN LISTS
-   Each lane is a list of options plus one deadzone position at the end, so the
-   highlight always passes through "nothing" before wrapping back to the top.
+   THE AMMO SCAN LIST
+   Ammunition is a handful of named things, so it stays a scan list: Space taps
+   through it, Space held three seconds walks it backwards like every other
+   list in the hub, Return picks. Angle and power are meters instead — see
+   AIMING AND CHARGING below. The list carries one deadzone position at the
+   end, so the highlight passes through "nothing" before wrapping to the top.
    ══════════════════════════════════════════════════════════════════════════ */
 function laneItems(stage){
-  if (stage === 'ammo')  return unlockedAmmo().map((a,i)=>({ label:a.name, sub:a.sub, ix:i }));
-  if (stage === 'angle') return ANGLES.map((a,i)=>({ label:a.name, sub:a.sub, ix:i }));
-  return POWERS.map((p,i)=>({ label:p.name, sub:'', ix:i }));
+  if (stage !== 'ammo') return [];
+  return unlockedAmmo().map((a,i)=>({ label:a.name, sub:a.sub, ix:i }));
 }
 
 function renderChips(){
-  const order = stageOrder();
-  ['ammo','angle','power'].forEach(stage=>{
-    const show = order.indexOf(stage) !== -1;
-    lanes[stage].hidden = !show;
-    if (!show) return;
+  const show = stageOrder().indexOf('ammo') !== -1;
+  lanes.ammo.hidden = !show;
+  if (!show) return;
 
-    const holder = chipHolders[stage];
-    const items  = laneItems(stage);
-    holder.innerHTML = '';
-    items.forEach(it=>{
-      const b = document.createElement('button');
-      b.className = 'chip';
-      b.type = 'button';
-      b.innerHTML = it.sub ? `${it.label}<span class="sub">${it.sub}</span>` : it.label;
-      if (G.locked[stage] && G.pick[stage] === it.ix) b.classList.add('picked');
-      if (!G.locked[stage] && G.last[stage] === it.ix && G.boltsUsed > 0) b.classList.add('last');
-      if (G.screen === 'play' && G.stage === stage && G.scan === it.ix) b.classList.add('focus');
-      b.addEventListener('click', ()=>{                 // mouse is optional, never required
-        if (G.screen !== 'play' || G.stage !== stage) return;
-        G.scan = it.ix; renderChips(); updatePreview(); commit();
-      });
-      holder.appendChild(b);
+  const holder = chipHolders.ammo;
+  holder.innerHTML = '';
+  laneItems('ammo').forEach(it=>{
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.type = 'button';
+    b.innerHTML = it.sub ? `${it.label}<span class="sub">${it.sub}</span>` : it.label;
+    if (G.locked.ammo && G.pick.ammo === it.ix) b.classList.add('picked');
+    if (!G.locked.ammo && G.last.ammo === it.ix && G.boltsUsed > 0) b.classList.add('last');
+    if (G.screen === 'play' && G.stage === 'ammo' && G.scan === it.ix) b.classList.add('focus');
+    b.addEventListener('click', ()=>{                 // mouse is optional, never required
+      if (G.screen !== 'play' || G.stage !== 'ammo') return;
+      G.scan = it.ix; renderChips(); updatePreview(true); commit();
     });
-
-    lanes[stage].classList.toggle('locked', !!G.locked[stage]);
+    holder.appendChild(b);
   });
+
+  lanes.ammo.classList.toggle('locked', !!G.locked.ammo);
+}
+
+/* The two meters. Both stay on screen through the whole shot: while you aim,
+   the power bar shows what the arc is being drawn at, and while you charge,
+   the angle bar shows what you locked. */
+function renderMeters(){
+  const span   = CFG.AIM_MAX_DEG - CFG.AIM_MIN_DEG;
+  const aimPct = (clampAim(G.aimDeg) - CFG.AIM_MIN_DEG) / span * 100;
+  const deg    = Math.round(G.aimDeg);
+  const pct    = Math.round(G.powerPct);
+
+  meters.aim.fill.style.width = aimPct.toFixed(1) + '%';
+  meters.aim.val.textContent  = deg + '\u00B0';
+  meters.aim.box.setAttribute('aria-valuenow', deg);
+  meters.power.fill.style.width = G.powerPct.toFixed(1) + '%';
+  meters.power.val.textContent  = pct + '%';
+  meters.power.box.setAttribute('aria-valuenow', pct);
+
+  const playing = G.screen === 'play';
+  lanes.aim.classList.toggle('active',   playing && G.stage === 'aim');
+  lanes.aim.classList.toggle('moving',   G.aiming);
+  lanes.aim.classList.toggle('locked',   !!G.locked.aim);
+  lanes.power.classList.toggle('active', playing && G.stage === 'power');
+  lanes.power.classList.toggle('moving', G.charging);
+  lanes.power.classList.toggle('locked', !!G.locked.power);
+  // Dimmed during the aim step: it is showing last shot's power, not this one's.
+  meters.power.box.classList.toggle('dim', playing && G.stage !== 'power');
+  $('btnLockAim').disabled = !(playing && G.stage === 'aim');
+  $('btnFire').disabled    = !(playing && G.stage === 'power');
 }
 
 /* The scan position cycles 0..N where N is the deadzone (nothing highlighted). */
 function laneLen(){ return laneItems(G.stage).length; }
 
 function scanStep(dir){
+  if (G.stage !== 'ammo') return;      // the meters are held, not scanned
   const n = laneLen();
   let v = (G.scan === -1) ? n : G.scan;          // -1 and n are the same place
   v = (v + dir + (n+1)) % (n+1);
   G.scan = (v === n) ? -1 : v;
 
   renderChips();
-  updatePreview();
+  updatePreview(true);
   updateFooter();
 
   if (G.scan === -1){
@@ -751,14 +882,99 @@ function scanStep(dir){
 }
 
 function announceFocus(){
-  const it = laneItems(G.stage)[G.scan];
+  const it = laneItems('ammo')[G.scan];
   if (!it) return;
-  if (G.stage === 'power' || G.stage === 'angle'){
-    // Once both are known the arc is real, so say where it goes.
-    speak(`${it.label}. ${previewPhrase()}`);
+  speak(`${it.label}. ${it.sub}`);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AIMING AND CHARGING
+   Hold Space to sweep the angle or fill the power bar; let go to stop. Neither
+   can be missed. The sweep turns round at 20 and 70 degrees and comes straight
+   back, so overshooting costs nothing but the wait. The charge stops at full
+   and stays there, so holding too long is never worse than letting go at the
+   perfect moment — there is no perfect moment. Letting go only ever stops the
+   meter; a separate Return press locks the angle or fires the shot, which is
+   what keeps an accidental release from becoming a wasted bolt.
+
+   Nothing is spoken while either meter moves. Speech would run behind the
+   meter and pile up on itself, and it is the one thing here that can't be
+   interrupted cleanly. The player is told where the bolt lands the moment they
+   stop — in stopAim() and stopCharge() below, and nowhere else.
+   ══════════════════════════════════════════════════════════════════════════ */
+function meterStage(){
+  return G.screen === 'play' && (G.stage === 'aim' || G.stage === 'power');
+}
+
+function startMeter(){
+  if (!meterStage()) return;
+  stopAutoScan();
+  if (G.stage === 'aim'){
+    if (G.aiming) return;              // already sweeping under auto-scan; leave it be
+    if (G.aimSwept) G.aimDir *= -1;    // every press after the first comes back the other way
+    G.aimSwept = true;
+    G.aiming = true;
   } else {
-    speak(`${it.label}. ${it.sub}`);
+    if (G.charging) return;
+    G.charging = true;                 // picks up from where the last hold left off
   }
+  sfx('hover', .35);
+  renderMeters(); updateFooter();
+}
+
+function releaseMeter(){
+  if (G.aiming) stopAim();
+  else if (G.charging) stopCharge();
+}
+
+function stopAim(){
+  G.aiming = false;
+  updatePreview(true);
+  renderMeters(); updateFooter();
+  sfx('hover', .5);
+  speak(`${Math.round(G.aimDeg)} degrees. At ${Math.round(G.powerPct)} percent power, `
+      + `${previewPhrase()}. Press return to lock it in.`);
+}
+
+function stopCharge(){
+  G.charging = false;
+  updatePreview(true);
+  renderMeters(); updateFooter();
+  sfx('hover', .5);
+  // At the top of the meter there is nothing left to hold for, so say the way
+  // back out instead of offering more of what can't happen.
+  const full = G.powerPct >= 100;
+  speak(`${full ? 'Full power. ' : ''}${Math.round(G.powerPct)} percent. This shot ${previewPhrase()}. `
+      + (full ? 'Press return to fire, or hold return to go back and set the power again.'
+              : 'Press return to fire, or hold space to charge further.'));
+}
+
+/* Both meters advance in the frame loop rather than on a timer, so opening the
+   pause menu freezes them and closing it picks them back up exactly where they
+   were — the same reason the win fanfare is counted in the loop. */
+function stepMeters(dt){
+  if (G.screen !== 'play') return;
+  let moved = false;
+
+  if (G.stage === 'aim' && G.aiming){
+    G.aimDeg += G.aimDir * CFG.AIM_DEG_PER_S * dt;
+    if (G.aimDeg >= CFG.AIM_MAX_DEG){ G.aimDeg = CFG.AIM_MAX_DEG; G.aimDir = -1; }
+    if (G.aimDeg <= CFG.AIM_MIN_DEG){ G.aimDeg = CFG.AIM_MIN_DEG; G.aimDir =  1; }
+    const tick = Math.round(G.aimDeg / CFG.AIM_TICK_DEG);
+    if (tick !== G.aimTick){ G.aimTick = tick; sfx('hover', .16); }
+    moved = true;
+  }
+
+  if (G.stage === 'power' && G.charging){
+    G.powerPct = Math.min(100, G.powerPct + CFG.CHARGE_PCT_PER_S * dt);
+    G.charged  = true;
+    const step = Math.floor(G.powerPct / CFG.CHARGE_TICK_PCT);
+    if (step !== G.powTick){ G.powTick = step; sfx('hover', .3); }
+    if (G.powerPct >= 100){ stopCharge(); return; }   // clamped, and it says so
+    moved = true;
+  }
+
+  if (moved){ updatePreview(); renderMeters(); updateFooter(); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -768,16 +984,16 @@ function announceFocus(){
    before the player commits to it.
    ══════════════════════════════════════════════════════════════════════════ */
 function shotParams(){
-  // Use the highlighted value where the player is currently scanning,
-  // otherwise whatever is already locked in.
-  const pk = Object.assign({}, G.pick);
-  if (G.screen === 'play' && G.scan !== -1) pk[G.stage] = G.scan;
-  const ammo  = unlockedAmmo()[Math.min(pk.ammo, unlockedAmmo().length-1)] || AMMO[0];
-  const ang   = ANGLES[pk.angle] || ANGLES[3];
-  const pow   = POWERS[pk.power] || POWERS[2];
-  const speed = pow.v * ammo.speed;
-  const rad   = ang.deg * Math.PI/180;
-  return { ammo, ang, pow, speed, vx: Math.cos(rad)*speed, vy: -Math.sin(rad)*speed };
+  // Use the highlighted ammo while the player is scanning that list, otherwise
+  // whatever is already locked in; angle and power are always the live meters.
+  const list  = unlockedAmmo();
+  let ammoIx  = G.pick.ammo;
+  if (G.screen === 'play' && G.stage === 'ammo' && G.scan !== -1) ammoIx = G.scan;
+  const ammo  = list[Math.min(ammoIx, list.length-1)] || AMMO[0];
+  const deg   = clampAim(G.aimDeg);
+  const speed = powerToSpeed(G.powerPct) * ammo.speed;
+  const rad   = deg * Math.PI/180;
+  return { ammo, deg, pct:G.powerPct, speed, vx: Math.cos(rad)*speed, vy: -Math.sin(rad)*speed };
 }
 
 function simulate(p, maxT){
@@ -818,8 +1034,15 @@ function blockAt(x, y, r){
   return null;
 }
 
-function updatePreview(){
+/* `force` for anything the player did on purpose — a press, a release, a step
+   change. Left to itself the arc re-runs at most every METER_PREVIEW_MS while a
+   meter is moving: at two and a half degrees a second the difference is invisible,
+   and simulate() walks the whole castle for every point it plots. */
+function updatePreview(force){
   if (G.screen !== 'play'){ G.preview = null; return; }
+  const now = performance.now();
+  if (!force && now - G.previewAt < CFG.METER_PREVIEW_MS) return;
+  G.previewAt = now;
   G.preview = simulate(shotParams());
 }
 
@@ -842,30 +1065,55 @@ function previewPhrase(){
 /* ══════════════════════════════════════════════════════════════════════════
    COMMITTING A SHOT
    ══════════════════════════════════════════════════════════════════════════ */
+/* Return, short press. What it means depends on the step — and, in both meter
+   steps, on whether the meter is currently moving: the first press stops it,
+   the second one commits. Never one press that does both, because a player on
+   auto-scan needs "stop" to be a press of its own, and one rule for everyone
+   is a rule that can be learned once. */
 function commit(){
+  if (G.stage === 'ammo')  return commitAmmo();
+  if (G.stage === 'aim')   return lockAim();
+  if (G.stage === 'power') return confirmShot();
+}
+
+function commitAmmo(){
   if (G.scan === -1){
     speak('Nothing highlighted. Press space to keep scanning.');
     return;
   }
-  const stage = G.stage;
-  G.pick[stage] = G.scan;
-  G.locked[stage] = true;
+  G.pick.ammo   = G.scan;
+  G.locked.ammo = true;
   sfx('select', .6);
 
-  const it = laneItems(stage)[G.scan];
+  const it    = laneItems('ammo')[G.scan];
   const order = stageOrder();
-  const next  = order[order.indexOf(stage) + 1];
+  beginStage(order[order.indexOf('ammo') + 1]);
+  speak(`${it.label} locked. ${stageHint()}`);
+}
 
-  if (next){
-    G.stage = next;
-    G.scan  = -1;
-    renderChips(); updatePreview(); updateFooter();
-    speak(`${it.label} locked. Now pick ${next}.`);
-  } else {
-    speak(`${it.label}. Firing.`);
-    renderChips();
-    fire();
+function lockAim(){
+  if (G.aiming){ stopAim(); return; }          // first press stops the sweep
+  G.locked.aim = true;
+  sfx('select', .6);
+  const deg = Math.round(G.aimDeg);
+  beginStage('power');
+  speak(`${deg} degrees locked. ${stageHint()}`);
+}
+
+function confirmShot(){
+  if (G.charging){ stopCharge(); return; }     // first press stops the charge
+  if (!G.charged){
+    // Nothing has been charged yet, so this press is far more likely to be a
+    // mis-press than a deliberate shot at the bottom of the meter.
+    speak('No power yet. ' + (autoScanOn()
+      ? 'The meter fills by itself — press return to stop it where you want it.'
+      : 'Hold space to charge the shot, then press return to fire.'));
+    return;
   }
+  G.locked.power = true;
+  sfx('select', .6);
+  speak(`Firing at ${Math.round(G.powerPct)} percent.`);
+  fire();
 }
 
 /* Return-hold: back out one lane, or open the pause menu from the first one. */
@@ -877,17 +1125,30 @@ function backOut(){
   const i = order.indexOf(G.stage);
   if (i <= 0){ openOverlay('pause'); return; }
 
-  G.stage = order[i-1];
+  const prev = order[i-1];
   G.locked[G.stage] = false;
-  G.scan = G.pick[G.stage];
-  renderChips(); updatePreview(); updateFooter();
+  G.locked[prev]    = false;
+  if (G.stage === 'power'){
+    // Going back to the angle also puts the power meter back to the reference
+    // the aim step draws its arc at, so that step keeps telling the truth.
+    // Coming forward again starts the charge from zero, which is also how a
+    // player who charged too far gets a second run at it.
+    G.powerPct = G.last.powerPct;
+    G.charged  = false;
+  }
+  beginStage(prev);
+  if (prev === 'ammo'){                    // come back to the choice already made
+    G.scan = G.pick.ammo;
+    renderChips(); updatePreview(true); updateFooter();
+  }
   sfx('hover', .5);
-  speak(`Back to ${G.stage}.`);
+  speak(`Back to ${prev === 'aim' ? 'the angle' : prev}. ${stageHint()}`);
 }
 
 function fire(){
   const p = shotParams();
-  G.last = Object.assign({}, G.pick);
+  G.last = { ammo:G.pick.ammo, aimDeg:G.aimDeg, powerPct:G.powerPct };
+  G.aiming = false; G.charging = false;
   G.boltsUsed++;
   if (!settings.endlessBolts) G.bolts--;
 
@@ -899,7 +1160,7 @@ function fire(){
   G.preview = null;
   stopAutoScan();
   sfx('bust', .35);
-  updateHud(); updateFooter();
+  updateHud(); updateFooter(); renderMeters();
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1095,6 +1356,8 @@ function loop(now){
   dt = Math.min(dt, 0.05);
 
   try{
+    stepMeters(dt);            // no-op unless a meter is actually moving
+
     if (G.screen === 'fly' || G.screen === 'settle' || G.screen === 'won'){
       accum += dt;
       let guard = 0;
@@ -1165,8 +1428,8 @@ function endShot(){
   if (!settings.endlessBolts && G.bolts <= 0){ outOfBolts(); return; }
 
   const left = G.crowns === 1 ? '1 crown left' : `${G.crowns} crowns left`;
-  speak(left + '. Next shot.');
   enterShot(false);
+  speak(`${left}. Next shot. ${stageHint()}`);
 }
 
 function levelComplete(){
@@ -1343,8 +1606,8 @@ function drawBallista(){
     ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 3; ctx.stroke();
   });
 
-  // Arm, pointed at the currently chosen angle
-  const rad = p.ang.deg * Math.PI/180;
+  // Arm, pointed at the angle the meter is on right now
+  const rad = p.deg * Math.PI/180;
   ctx.save();
   ctx.translate(CFG.MUZZLE_X - 16, CFG.MUZZLE_Y + 12);
   ctx.rotate(-rad);
@@ -1359,6 +1622,20 @@ function drawBallista(){
     ctx.beginPath(); ctx.arc(30, 0, p.ammo.r, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
+
+  // The two numbers, right where the arc starts, so a player watching the
+  // trajectory never has to look down at the meters to read them.
+  if (G.screen === 'play'){
+    ctx.save();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // High enough to clear the arm at its steepest, so the numbers never sit under it.
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillRect(bx - 42, by - 208, 154, 34);
+    ctx.fillStyle = css('--text');
+    ctx.fillText(`${Math.round(G.aimDeg)}\u00B0  ·  ${Math.round(G.powerPct)}%`, bx + 35, by - 190);
+    ctx.restore();
+  }
 }
 
 function drawPreview(){
@@ -1451,9 +1728,17 @@ function updateFooter(){
     const items = menuItems();
     tgtEl.textContent = (G.menuIx === -1 || !items[G.menuIx]) ? '—' : itemText(items[G.menuIx]);
   } else if (G.screen === 'play'){
-    modeEl.textContent = `Choose ${G.stage}`;
-    const it = G.scan === -1 ? null : laneItems(G.stage)[G.scan];
-    tgtEl.textContent = it ? it.label : '—';
+    if (G.stage === 'ammo'){
+      modeEl.textContent = 'Choose ammunition';
+      const it = G.scan === -1 ? null : laneItems('ammo')[G.scan];
+      tgtEl.textContent = it ? it.label : '—';
+    } else if (G.stage === 'aim'){
+      modeEl.textContent = G.aiming ? 'Aiming — let go to stop' : 'Angle set — Return locks it';
+      tgtEl.textContent  = `${Math.round(G.aimDeg)}°`;
+    } else {
+      modeEl.textContent = G.charging ? 'Charging — let go to stop' : 'Power set — Return fires';
+      tgtEl.textContent  = `${Math.round(G.powerPct)}%`;
+    }
   } else {
     modeEl.textContent = G.screen === 'fly'  ? 'Shot in flight'
                        : G.screen === 'won'  ? 'Castle destroyed!'
@@ -1601,7 +1886,7 @@ function overlayTitle(which){
 function overlaySub(which){
   switch(which){
     case 'main':
-      return `Fire a giant crossbow at castles and bring the crowns down. Nothing here is timed — take as long as you like on every shot.<br>Best score: <b>${save.totalScore}</b> · Levels cleared: <b>${Object.keys(save.stars).length}</b> of ${LEVELS.length}`;
+      return `Fire a giant crossbow at castles and bring the crowns down. Nothing here is timed — hold the spacebar as long as you like, and nothing fires until you say so.<br>Best score: <b>${save.totalScore}</b> · Levels cleared: <b>${Object.keys(save.stars).length}</b> of ${LEVELS.length}`;
     case 'levels':
       return 'Clear a level to unlock the next one. New ammunition arrives at levels 4, 7 and 10.';
     case 'results': {
@@ -1615,11 +1900,12 @@ function overlaySub(which){
       return 'That castle is still standing. No penalty — take the level again, or switch on endless bolts and keep firing.';
     case 'help':
       return `<b>Two keys, that is all.</b><br>
-        <kbd>Space</kbd> moves the highlight to the next choice.<br>
-        <kbd>Space</kbd> held for 3 seconds scans by itself until you let go.<br>
-        <kbd>Return</kbd> picks whatever is highlighted.<br>
-        <kbd>Return</kbd> held for 3 seconds goes back one step, or opens this menu.<br><br>
-        <b>Taking a shot.</b> Pick an angle, then a power. The dotted line shows exactly where the bolt will go and the game says what it will hit, so you never have to guess or react. Destroy every crown to finish the level.<br><br>
+        <kbd>Space</kbd> held sweeps the angle, then fills the power bar. Let go to stop it.<br>
+        <kbd>Return</kbd> locks the angle, and fires the shot once it is charged.<br>
+        <kbd>Return</kbd> held for 3 seconds goes back one step, or opens this menu.<br>
+        In the ammunition list, <kbd>Space</kbd> taps to the next choice and, held for 3 seconds, scans backwards.<br><br>
+        <b>Taking a shot.</b> Hold <kbd>Space</kbd> and the angle sweeps up. It turns round at the top and comes back down on its own, so you can never miss the angle you wanted — just wait for it to come past again. Let go and the game tells you where that shot lands. <kbd>Return</kbd> locks it in.<br><br>
+        Then hold <kbd>Space</kbd> again to charge. The bar fills and <b>stops at full</b> — holding on too long is never worse than letting go early. Let go and the game tells you where it lands now. <b>Nothing fires until you press <kbd>Return</kbd>,</b> so letting go by accident costs you nothing.<br><br>
         <b>The pieces.</b> Wood breaks easily. Stone needs a hard hit. Glass shatters at a touch but holds nothing up. Powder kegs explode and take their neighbours with them. Steel never breaks — go around it.<br><br>
         <b>Knock the legs out</b> and everything above comes down on its own. That is usually cheaper than hitting the crown directly.`;
     default: return '';
@@ -1645,7 +1931,8 @@ function overlaySpeech(which){
   switch(which){
     case 'main':
       return "Benny's Ballista. Fire a giant crossbow at castles and bring the crowns down. "
-           + 'Nothing here is timed, so take as long as you like on every shot. '
+           + 'Nothing here is timed. Hold the spacebar as long as you like, and nothing '
+           + 'fires until you press return. '
            + `Your best score is ${save.totalScore}. `
            + `You have cleared ${Object.keys(save.stars).length} of ${LEVELS.length} levels.`;
     case 'levels':
@@ -1667,13 +1954,18 @@ function overlaySpeech(which){
            + 'You can take the level again, or switch on endless bolts and keep firing.';
     case 'help':
       return 'How to play. Two keys, that is all. '
-           + 'A short press of space moves the highlight to the next choice. '
-           + 'Holding space for three seconds scans by itself until you let go. '
-           + 'A short press of return picks whatever is highlighted. '
+           + 'Hold space to sweep the angle. It turns round at the top and comes back down '
+           + 'on its own, so you can never miss the angle you wanted. Let go to stop it, '
+           + 'and the game tells you where that shot would land. '
+           + 'Press return to lock the angle in. '
+           + 'Then hold space again to charge the shot. The power bar fills and stops at '
+           + 'full, so holding on too long is never worse than letting go early. Let go to '
+           + 'stop, and the game tells you where it lands now. '
+           + 'Nothing fires until you press return, so letting go by accident costs nothing. '
            + 'Holding return for three seconds goes back one step, or opens the menu. '
-           + 'To take a shot, pick an angle, then a power. The dotted line shows exactly '
-           + 'where the bolt will go, and the game says what it will hit, so you never have '
-           + 'to guess or react. Destroy every crown to finish the level. '
+           + 'In the ammunition list, a short press of space moves to the next choice, and '
+           + 'holding space for three seconds scans backwards. '
+           + 'Destroy every crown to finish the level. '
            + 'Wood breaks easily. Stone needs a hard hit. Glass shatters at a touch but holds '
            + 'nothing up. Powder kegs explode and take their neighbours with them. '
            + 'Steel never breaks, so go around it. '
@@ -1753,9 +2045,10 @@ function closeOverlay(){
     speak('Resumed.');
   } else if (back === 'play' && G.level && G.crowns > 0){
     G.screen = 'play';
-    G.scan = -1;                           // nothing highlighted until the next Space
-    renderChips(); updatePreview(); updateFooter();
-    speak('Resumed. Press space to scan.');
+    // keep:true — a player who paused mid-charge comes back to the charge they
+    // had, not to an empty meter.
+    beginStage(G.stage, { keep:true });
+    speak(`Resumed. ${stageHint()}`);
   } else {
     G.screen = 'menu';
     openOverlay('main');
@@ -1871,6 +2164,12 @@ function scanPrev(){
   if (G.screen === 'overlay') menuStep(-1);
   else if (G.screen === 'play') scanStep(-1);
 }
+/* Where a scan list is what's on screen. Space-hold means "scan backwards" in
+   a list and "move the meter" in the aim and power steps; scoping it by step is
+   what lets both be true without either one surprising the player. */
+function inScanList(){
+  return G.screen === 'overlay' || (G.screen === 'play' && G.stage === 'ammo');
+}
 function selectCurrent(){
   if (G.screen === 'overlay') menuSelect();
   else if (G.screen === 'play') commit();
@@ -1886,12 +2185,12 @@ function startHoldScan(){
 function resetAutoScan(){
   stopAutoScan();
   if (!autoScanOn()) return;
-  if (G.screen !== 'play' && G.screen !== 'overlay') return;
+  if (!inScanList()) return;             // the meters move themselves, not by ticks
   const iv = scanInterval();
   if (iv > 0) timers.auto = setInterval(()=>{
+    if (!inScanList()){ stopAutoScan(); return; }
     if (G.screen === 'overlay') menuStep(1);
-    else if (G.screen === 'play') scanStep(1);
-    else stopAutoScan();
+    else scanStep(1);
   }, iv);
 }
 function stopAutoScan(){
@@ -1904,10 +2203,14 @@ document.addEventListener('keydown', e=>{
     e.preventDefault();
     if (input.spaceDown) return;
     input.spaceDown = true;
-    timers.space = setTimeout(()=>{
-      timers.space = null;
-      startHoldScan();
-    }, CFG.SPACE_HOLD_MS);
+    if (meterStage()){
+      startMeter();              // aim and power move from the first instant of the hold
+    } else {
+      timers.space = setTimeout(()=>{
+        timers.space = null;
+        startHoldScan();
+      }, CFG.SPACE_HOLD_MS);
+    }
   }
   else if (e.code === 'Enter' || e.code === 'NumpadEnter'){
     e.preventDefault();
@@ -1930,6 +2233,7 @@ document.addEventListener('keyup', e=>{
     if (timers.space){ clearTimeout(timers.space); timers.space = null; }
     const wasHolding = !!timers.spaceRepeat;
     if (timers.spaceRepeat){ clearInterval(timers.spaceRepeat); timers.spaceRepeat = null; }
+    if (meterStage()){ releaseMeter(); return; }
     if (!wasHolding) scanNext();   // short press only, and only on release
   }
   else if (e.code === 'Enter' || e.code === 'NumpadEnter'){
@@ -1941,6 +2245,26 @@ document.addEventListener('keyup', e=>{
     input.retLong = false;
   }
 });
+
+/* Meters by mouse or touch: press and hold to move one, let go to stop it,
+   then press the Lock or Fire button. Optional, same as everywhere else in the
+   hub, and never a drag — a press and a release is the whole gesture. */
+function bindMeter(box, stage){
+  const down = e => {
+    if (G.screen !== 'play' || G.stage !== stage) return;
+    e.preventDefault(); startMeter();
+  };
+  box.addEventListener('mousedown', down);
+  box.addEventListener('touchstart', down, { passive:false });
+}
+bindMeter(meters.aim.box,   'aim');
+bindMeter(meters.power.box, 'power');
+// Released anywhere: dragging off the meter mid-hold must still stop it.
+window.addEventListener('mouseup',  ()=>{ if (meterStage()) releaseMeter(); });
+window.addEventListener('touchend', ()=>{ if (meterStage()) releaseMeter(); });
+
+$('btnLockAim').addEventListener('click', ()=>{ if (G.screen === 'play' && G.stage === 'aim')   lockAim(); });
+$('btnFire')   .addEventListener('click', ()=>{ if (G.screen === 'play' && G.stage === 'power') confirmShot(); });
 
 /* Header buttons — mouse is an optional extra for a caregiver, never required. */
 $('btnHelp').addEventListener('click', ()=> openOverlay('help'));
