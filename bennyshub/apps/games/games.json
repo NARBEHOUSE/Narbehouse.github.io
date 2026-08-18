@@ -169,6 +169,14 @@
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
       "genres": ["Racing", "Arcade"]
+    },
+    {
+      "id": "bennysfishmaster",
+      "title": "Benny's FishMaster",
+      "description": "Cast a line into procedurally generated lakes, work a self-paced catch sequence to land your fish, and sell your catch to buy better rods and bait. No timing, no reaction speed - just pick your spot and reel it in.",
+      "path": "apps/games/BENNYSFISHMASTER/index.html",
+      "image": "images/games/bennysfishmaster.png",
+      "genres": ["Sports", "Simulation"]
     }
   ]
 }
