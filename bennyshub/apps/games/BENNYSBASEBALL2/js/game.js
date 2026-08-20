@@ -18,6 +18,10 @@
 class GameScene extends Phaser.Scene {
     constructor() { super('GameScene'); }
 
+    preload() {
+        if (typeof bb2LoadSprites === 'function') bb2LoadSprites(this);
+    }
+
     create(data) {
         this.audio = audioSys();
         this.season = seasonMgr();
@@ -104,6 +108,7 @@ class GameScene extends Phaser.Scene {
                 const keys = Object.keys(this.fielders);
                 const f = this.fielders[keys[Math.floor(Math.random() * keys.length)]];
                 if (!f || !f.active || this.tweens.isTweening(f)) return;
+                if (f._bb2 && f._busy) return;   // never interrupt a delivery
                 this.tweens.add({
                     targets: f,
                     x: f.x + Phaser.Math.Between(-6, 6),
@@ -481,6 +486,13 @@ class GameScene extends Phaser.Scene {
     }
 
     makePlayer(colorObj, label) {
+        // PILOT: only positions listed in BB2_POSITION_SHEETS get a sprite
+        // (currently just 'P'). Everyone else falls through to the circle
+        // below, so the two styles sit side by side for comparison.
+        if (typeof bb2MakePlayer === 'function') {
+            const sprite = bb2MakePlayer(this, colorObj, label, label);
+            if (sprite) return sprite;
+        }
         const c = this.add.container(0, 0).setDepth(3);
         const shadow = this.add.ellipse(3, 7, 34, 11, 0x000000, 0.52);
         const body = this.add.circle(0, 0, 13, colorObj.hex).setStrokeStyle(2.5, 0x000000);
@@ -645,6 +657,7 @@ class GameScene extends Phaser.Scene {
 
     // ─── Animation helpers (ported patterns from football) ──────────────────
     startBob(p) {
+        if (p && p._bb2) { p.runAnim(); return; }
         if (p._bob) return;
         p._bob = this.tweens.add({
             targets: p, scaleY: 0.84, scaleX: 1.12,
@@ -653,6 +666,7 @@ class GameScene extends Phaser.Scene {
     }
 
     stopBob(p) {
+        if (p && p._bb2) { p.idleAnim(); return; }
         if (p._bob) { p._bob.stop(); p._bob = null; }
         p.setScale(1);
     }
@@ -660,10 +674,25 @@ class GameScene extends Phaser.Scene {
     // All player movement is slowed ~50% so the game reads better visually
     // (same rule as the football game)
     jog(p, x, y, duration, ease, cb) {
+        if (p && p._bb2) p.faceFrom(x - p.x, y - p.y);
         this.startBob(p);
+        // A second jog can begin while an earlier one is still running (a
+        // fielder redirected mid-play, or a dugout entry overtaken by the
+        // first play). The OLD tween's onComplete would then fire and stop the
+        // bob / reset the animation on a player who is still moving, leaving a
+        // sprite sliding across the field frozen in its idle pose. Only the
+        // newest jog is allowed to end the movement state.
+        const seq = (p._jogSeq = (p._jogSeq || 0) + 1);
         return this.tweens.add({
             targets: p, x, y, duration: duration * 1.5, ease: ease || 'Sine.easeInOut',
-            onComplete: () => { this.stopBob(p); if (cb) cb(); }
+            onUpdate: () => { if (p && p._bb2) p.syncDepth(); },
+            onComplete: () => {
+                // Only the newest jog resets the animation, but the callback
+                // ALWAYS fires: animatePlayerContact() chains the rest of the
+                // play off it, so swallowing it would hang the game.
+                if (p._jogSeq === seq) this.stopBob(p);
+                if (cb) cb();
+            }
         });
     }
 
@@ -1036,6 +1065,19 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+    // Pitcher delivery. With an animated pitcher the ball is spawned by the
+    // release FRAME, so the arm and the ball can never drift apart; the plain
+    // circle keeps the old squash tween and a fixed delay.
+    deliverPitch(fallbackDelay, cb) {
+        const pitcher = this.fielders.P;
+        if (pitcher && pitcher._bb2 && pitcher.playPitch) {
+            pitcher.playPitch(cb);
+            return;
+        }
+        this.tweens.add({ targets: pitcher, scaleY: 1.2, duration: 240, yoyo: true, ease: 'Sine.easeInOut' });
+        this.time.delayedCall(fallbackDelay, cb);
+    }
+
     beginInteractivePitch() {
         const gs = this.gs;
         this.resetInteractiveBatting();
@@ -1051,12 +1093,7 @@ class GameScene extends Phaser.Scene {
         this.audio.speak(`${gs.selectedPitch}, ${gs.selectedPitchLocation}!`, true);
 
         // Pitcher windup, then the deliberately slow pitch (7.5s — v1 accessibility pacing)
-        const pitcher = this.fielders.P;
-        this.tweens.add({
-            targets: pitcher, scaleY: 1.2, duration: 300, yoyo: true, ease: 'Sine.easeInOut'
-        });
-
-        this.time.delayedCall(650, () => {
+        this.deliverPitch(650, () => {
             if (!this.ib.active) return;
             const from = FIELD.MOUND;
             const to = { x: FIELD.HOME.x, y: FIELD.HOME.y - 6 };
@@ -1252,17 +1289,27 @@ class GameScene extends Phaser.Scene {
     // The catcher receives any pitch that isn't hit, then tosses it back to
     // the pitcher — the ball never just vanishes at the plate. Possession is
     // held for the whole catch-and-return so nothing can interrupt it.
+    // Play a catcher animation if he is a sprite; a no-op for the circle.
+    catcherAnim(name) {
+        const c = this.fielders && this.fielders.C;
+        if (c && c._bb2) c.setAnim(name);
+    }
+
     catchAtPlate() {
         const glove = { x: FIELD.FIELDER_HOMES.C.x, y: FIELD.FIELDER_HOMES.C.y - 6 };
         this._ballBusy = (this._ballBusy || 0) + 1;
         this.ballArc({ x: this.ball.x, y: this.ball.y }, glove, 200, 4, () => {
             this.audio.play('catch');
+            this.catcherAnim('receive');
             this.time.delayedCall(320, () => {
                 this.audio.play('throw');
+                this.catcherAnim('rise_throw');
                 this.ballArc(glove, FIELD.MOUND, 480, 30, () => {
                     this.audio.play('catch');
                     this.ball.setVisible(false);
                     this.releaseBall();
+                    // Back down into the crouch, ready for the next pitch
+                    this.time.delayedCall(260, () => this.catcherAnim('crouch_idle'));
                 });
             });
         });
@@ -2107,10 +2154,8 @@ class GameScene extends Phaser.Scene {
         // Close-up on the duel for the pitch and the CPU's swing
         this.setBattingCamera(true);
 
-        const pitcher = this.fielders.P;
-        this.tweens.add({ targets: pitcher, scaleY: 1.2, duration: 240, yoyo: true, ease: 'Sine.easeInOut' });
         // Unhurried beats so the announcer finishes each line before the next
-        this.time.delayedCall(800, () => {
+        this.deliverPitch(800, () => {
             const dur = this.cpuPitchFlight(cell.pitch, () => {
                 if (outcome === 'Hit By Pitch') {
                     // The ball rides in and clips the batter
@@ -2479,6 +2524,8 @@ class GameScene extends Phaser.Scene {
     // Successful throw: record the out, then handle the double-play relay
     applyThrowOut(targetBase, fielderPos) {
         const gs = this.gs;
+        // A play at the plate is the catcher's tag
+        if (targetBase === 'home') this.catcherAnim('tag_home');
         gs.outs++;
 
         if (targetBase === 'first') {
