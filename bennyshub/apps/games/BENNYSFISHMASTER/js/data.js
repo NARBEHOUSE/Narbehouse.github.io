@@ -30,11 +30,16 @@ window.FishMasterData = (function () {
     { id: 'bass',         name: 'Largemouth Bass',      biomeIds: ['shallows', 'weedbed'],             difficultyTier: 3, lengthRange: [10, 24],  weightRange: [1, 8],      baseValuePerWeight: 3, unlockLakeId: 'lake1' },
     { id: 'pike',         name: 'Northern Pike',        biomeIds: ['weedbed'],                         difficultyTier: 4, lengthRange: [18, 44],  weightRange: [2, 20],     baseValuePerWeight: 4, unlockLakeId: 'lake1' },
     { id: 'perch',        name: 'Yellow Perch',         biomeIds: ['dropoff', 'rockyshore'],           difficultyTier: 2, lengthRange: [5, 12],   weightRange: [0.2, 1.5],  baseValuePerWeight: 2, unlockLakeId: 'lake1' },
+    { id: 'rockbass',     name: 'Rock Bass',            biomeIds: ['rockyshore'],                      difficultyTier: 2, lengthRange: [6, 10],   weightRange: [0.3, 1.5],  baseValuePerWeight: 2, unlockLakeId: 'lake1' },
+    { id: 'crappie',      name: 'Black Crappie',        biomeIds: ['shallows', 'weedbed'],             difficultyTier: 2, lengthRange: [8, 15],   weightRange: [0.5, 3],    baseValuePerWeight: 3, unlockLakeId: 'lake1' },
     { id: 'walleye',      name: 'Walleye',              biomeIds: ['dropoff'],                         difficultyTier: 3, lengthRange: [12, 30],  weightRange: [1, 10],     baseValuePerWeight: 5, unlockLakeId: 'lake2' },
     { id: 'smallmouth',   name: 'Smallmouth Bass',      biomeIds: ['rockyshore'],                      difficultyTier: 3, lengthRange: [9, 20],   weightRange: [1, 6],      baseValuePerWeight: 4, unlockLakeId: 'lake2' },
     { id: 'catfish',      name: 'Channel Catfish',      biomeIds: ['deepchannel'],                     difficultyTier: 4, lengthRange: [14, 36],  weightRange: [2, 25],     baseValuePerWeight: 3, unlockLakeId: 'lake2' },
+    { id: 'carp',         name: 'Common Carp',          biomeIds: ['shallows', 'dropoff'],             difficultyTier: 3, lengthRange: [16, 34],  weightRange: [4, 30],     baseValuePerWeight: 2, unlockLakeId: 'lake2' },
+    { id: 'burbot',       name: 'Burbot',               biomeIds: ['deepchannel'],                     difficultyTier: 4, lengthRange: [15, 30],  weightRange: [1, 8],      baseValuePerWeight: 5, unlockLakeId: 'lake2' },
     { id: 'sturgeon',     name: 'Lake Sturgeon',        biomeIds: ['deepchannel'],                     difficultyTier: 5, lengthRange: [36, 84],  weightRange: [10, 120],   baseValuePerWeight: 6, unlockLakeId: 'lake3' },
     { id: 'muskie',       name: 'Muskellunge',          biomeIds: ['weedbed', 'deepchannel'],          difficultyTier: 5, lengthRange: [30, 60],  weightRange: [8, 40],     baseValuePerWeight: 7, unlockLakeId: 'lake3' },
+    { id: 'gar',          name: 'Longnose Gar',         biomeIds: ['weedbed', 'deepchannel'],          difficultyTier: 4, lengthRange: [24, 48],  weightRange: [3, 18],     baseValuePerWeight: 4, unlockLakeId: 'lake3' },
     // Secret bonus fish — see the "??? Pill Bottle" bait below. Lives in every
     // biome so any lake can turn it up once the bait is equipped.
     { id: 'largemouth_dingus', name: 'Largemouth Dingus', biomeIds: ['shallows', 'weedbed', 'dropoff', 'rockyshore', 'deepchannel'], difficultyTier: 3, lengthRange: [12, 12], weightRange: [5, 5], baseValuePerWeight: 0, unlockLakeId: 'lake1', secret: true }
@@ -171,9 +176,11 @@ window.FishMasterData = (function () {
         { id: 'l1_weight15', type: 'catchWeight',                       amount: 15, description: 'Catch a cumulative 15 lbs of fish' },
         { id: 'l1_pike1',    type: 'catchCount',  speciesId: 'pike',    amount: 1,  description: 'Catch a Northern Pike' },
         { id: 'l1_sunfish4', type: 'catchCount',  speciesId: 'sunfish', amount: 4,  description: 'Catch 4 Sunfish' },
+        { id: 'l1_rockbass3',type: 'catchCount',  speciesId: 'rockbass',amount: 3,  description: 'Catch 3 Rock Bass' },
+        { id: 'l1_crappie3', type: 'catchCount',  speciesId: 'crappie', amount: 3,  description: 'Catch 3 Black Crappie' },
         { id: 'l1_any6',     type: 'catchCount',                        amount: 6,  description: 'Catch any 6 fish' }
       ],
-      unlocks: { nextLakeId: 'lake2', speciesIds: ['walleye', 'smallmouth', 'catfish'], baitIds: ['spinnerbait', 'stinkbait'], rodIds: ['longshot'] }
+      unlocks: { nextLakeId: 'lake2', speciesIds: ['walleye', 'smallmouth', 'catfish', 'carp', 'burbot'], baitIds: ['spinnerbait', 'stinkbait'], rodIds: ['longshot'] }
     },
     {
       id: 'lake2', name: 'Blackwater Reservoir',
@@ -184,10 +191,12 @@ window.FishMasterData = (function () {
         { id: 'l2_walleye24',    type: 'catchLength', speciesId: 'walleye',    amount: 24, description: 'Catch a Walleye 24 inches or longer' },
         { id: 'l2_catfish2',     type: 'catchCount',  speciesId: 'catfish',    amount: 2,  description: 'Catch 2 Channel Catfish' },
         { id: 'l2_smallmouth3',  type: 'catchCount',  speciesId: 'smallmouth', amount: 3,  description: 'Catch 3 Smallmouth Bass' },
+        { id: 'l2_carp24',       type: 'catchLength', speciesId: 'carp',       amount: 24, description: 'Catch a Common Carp 24 inches or longer' },
+        { id: 'l2_burbot2',      type: 'catchCount',  speciesId: 'burbot',     amount: 2,  description: 'Catch 2 Burbot' },
         { id: 'l2_weight60',     type: 'catchWeight',                          amount: 60, description: 'Catch a cumulative 60 lbs of fish' },
         { id: 'l2_any8',         type: 'catchCount',                           amount: 8,  description: 'Catch any 8 fish' }
       ],
-      unlocks: { nextLakeId: 'lake3', speciesIds: ['sturgeon', 'muskie'], baitIds: [], rodIds: ['titanium'] }
+      unlocks: { nextLakeId: 'lake3', speciesIds: ['sturgeon', 'muskie', 'gar'], baitIds: [], rodIds: ['titanium'] }
     },
     {
       id: 'lake3', name: 'Old Sawmill Lake',
@@ -197,6 +206,7 @@ window.FishMasterData = (function () {
       objectivePool: [
         { id: 'l3_sturgeon1',  type: 'catchCount',  speciesId: 'sturgeon', amount: 1,   description: 'Catch a Lake Sturgeon' },
         { id: 'l3_muskie2',    type: 'catchCount',  speciesId: 'muskie',   amount: 2,   description: 'Catch 2 Muskellunge' },
+        { id: 'l3_gar1',       type: 'catchCount',  speciesId: 'gar',      amount: 1,   description: 'Catch a Longnose Gar' },
         { id: 'l3_weight150',  type: 'catchWeight',                        amount: 150, description: 'Catch a cumulative 150 lbs of fish' },
         { id: 'l3_any10',      type: 'catchCount',                         amount: 10,  description: 'Catch any 10 fish' }
       ],

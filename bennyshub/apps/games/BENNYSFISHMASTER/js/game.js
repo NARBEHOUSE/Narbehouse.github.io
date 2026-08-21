@@ -97,7 +97,7 @@ function defaultSave() {
     // largemouth_dingus is quietly unlocked from the start — it just never
     // shows up in ordinary narration and is near-unreachable without the
     // secret bait equipped (see biteWeightedFishPool).
-    unlockedSpecies: ['sunfish', 'bass', 'pike', 'perch', 'largemouth_dingus'],
+    unlockedSpecies: ['sunfish', 'bass', 'pike', 'perch', 'rockbass', 'crappie', 'largemouth_dingus'],
     unlockedBait: ['plainworm', 'nightcrawler', 'minnowlure'],
     unlockedRods: ['starter', 'castmaster'],
     lakeProgress: {},
