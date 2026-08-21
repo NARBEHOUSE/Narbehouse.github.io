@@ -147,6 +147,52 @@ body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
   box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
 }
 .chip.focus .sub{color:#3a2f00}
+.chip:disabled{opacity:.4; cursor:default}
+.chip.act{font-weight:800; border-color:var(--accent); color:var(--accent); flex:0 0 auto}
+.lane.active .chip.act{background:var(--accent); color:#0d1220; border-color:var(--accent)}
+
+/* ── Power meter: the charged cast ───────────────────────────────────────────
+   Same meter as BENNYSBALLISTA's, deliberately — that game is the reference
+   implementation for hold-to-charge and a second dialect would only be a
+   second thing to learn. See AGENTS.md, "Hold-to-charge and hold-to-sweep".
+   ────────────────────────────────────────────────────────────────────────── */
+.meter{
+  flex:1 1 auto; position:relative; height:2.9rem; border-radius:.55rem;
+  background:var(--panel2); border:2px solid var(--line); overflow:hidden;
+}
+.meter .fill{
+  position:absolute; inset:0 auto 0 0; width:0%;
+  background:linear-gradient(90deg, var(--accent2), var(--accent));
+  transition:none;                      /* the loop already moves it every frame */
+}
+.meter .mval{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  gap:.5rem; font-weight:800; font-size:1.05rem; color:var(--text);
+  text-shadow:0 1px 3px rgba(0,0,0,.65);
+}
+.meter .mval .msub{font-weight:700; font-size:.85rem; opacity:.9}
+.meter.dim .fill{opacity:.35}
+.meter.dim .mval{color:var(--dim)}
+.lane.active .meter{border-color:var(--focus)}
+.lane.moving .meter{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent)}
+.lane.locked .meter{border-color:var(--good)}
+/* Ticks every 10% so the meter reads as a scale, not just a bar. */
+.meter::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(90deg,
+    transparent 0 calc(10% - 2px), rgba(255,255,255,.18) calc(10% - 2px) 10%);
+}
+/* Where each depth band starts on the meter, so "how hard do I have to throw
+   to reach the weeds" is a thing you can see, not a thing you memorise. */
+.meter .bandmark{
+  position:absolute; top:0; bottom:0; width:3px; background:var(--text); opacity:.45;
+}
+.meter .reachcap{
+  position:absolute; top:0; bottom:0; right:0; background:rgba(0,0,0,.45);
+  border-left:2px dashed var(--bad);
+}
+body[data-theme="light"] .meter .reachcap{background:rgba(0,0,0,.18)}
+
 
 #bitingBar{display:flex; align-items:center; justify-content:center; min-height:3.5rem; font-weight:700; color:var(--dim)}
 
@@ -165,6 +211,44 @@ body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
 .seqstep.wrong{ opacity:.5; text-decoration:line-through }
 .seqstep.pending{ opacity:.4 }
 #catchHint{font-size:.85rem; color:var(--dim)}
+
+/* ── The catch light ────────────────────────────────────────────────────────
+   The row of Red/Blue squares above is a record of what has happened; THIS is
+   the thing that says what to press. A whole side of the screen fades up and
+   back down like a lamp on a dimmer — blue on the left for Return, red on the
+   right for Space — so the cue is findable without reading anything small, and
+   which side it is on tells Ben which way to turn his head.
+
+   It breathes at CFG.GLOW_PERIOD_S, roughly one lungful, which is far below
+   anything that could read as a flash: this is a lamp, not a strobe, and it
+   carries no deadline of any kind — the step waits as long as it takes. Under
+   prefers-reduced-motion game.js holds it at a steady brightness instead of
+   breathing at all.
+   ────────────────────────────────────────────────────────────────────────── */
+#catchGlow{position:fixed; inset:0; z-index:50; pointer-events:none; display:none}
+#catchGlow.on{display:block}
+.glowSide{
+  position:absolute; top:0; bottom:0; width:42vw;
+  display:flex; align-items:center;
+}
+#glowLeft{left:0;  justify-content:flex-start}
+#glowRight{right:0; justify-content:flex-end}
+/* The breathing lives on its own layer. Opacity on the side would fade the
+   whole subtree with it, and a word that dims to nothing at the bottom of
+   every breath is exactly the thing this was built to stop being. */
+.glowWash{position:absolute; inset:0; opacity:0}
+#glowLeft  .glowWash{background:linear-gradient(to right, var(--seqblue), transparent)}
+#glowRight .glowWash{background:linear-gradient(to left,  var(--seqred),  transparent)}
+.glowLabel{
+  position:relative; opacity:0; padding:0 2.2vw;
+  color:#fff; text-shadow:0 0 6px rgba(0,0,0,.9), 0 2px 14px rgba(0,0,0,.85);
+  font-weight:800; line-height:1.1; text-align:center;
+}
+.glowSide.active .glowLabel{opacity:1}
+.glowLabel .gword{display:block; font-size:clamp(1.6rem,5vw,3.4rem); letter-spacing:.04em}
+.glowLabel .gkey{display:block; font-size:clamp(.9rem,2.2vw,1.5rem); font-weight:700}
+body[data-theme="light"] .glowLabel{color:#0b0d12; text-shadow:0 2px 10px rgba(255,255,255,.8)}
+
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 #ftr{
@@ -247,13 +331,18 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
     <div id="bottombar">
       <div id="castLanes">
         <div class="lane" id="laneDirection"><span class="laneLabel">Direction</span><div class="chips" id="chipsDirection"></div></div>
-        <div class="lane" id="lanePower"><span class="laneLabel">Power</span><div class="chips" id="chipsPower"></div></div>
+        <div class="lane" id="lanePower">
+          <span class="laneLabel">Power</span>
+          <div class="meter" id="meterPower" role="progressbar" aria-label="Cast power"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fillPower"></div><div id="bandMarks"></div><span class="mval" id="valPower">0%</span></div>
+          <button class="chip act" id="btnCast" type="button">Cast</button>
+        </div>
       </div>
       <div id="bitingBar" hidden><span id="bitingMsg"></span></div>
       <div id="catchBar" hidden>
         <div id="catchTitle"></div>
         <div id="catchSteps"></div>
-        <div id="catchHint">Space = Red · Return = Blue · no rush</div>
+        <div id="catchHint">Blue light on the left = Return · Red light on the right = Space · no rush</div>
       </div>
     </div>
 
@@ -270,8 +359,17 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
   <footer id="ftr">
     <span id="ftrMode">Menu</span>
     <span id="ftrTarget"></span>
-    <span id="ftrLegend"><kbd>Space</kbd> next &nbsp;·&nbsp; <kbd>Return</kbd> select &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
+    <span id="ftrLegend"><kbd>Space</kbd> next / hold to charge &nbsp;·&nbsp; <kbd>Return</kbd> select or cast &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
   </footer>
+</div>
+
+<!-- The catch light. Outside #app on purpose: it is meant to wash the whole
+     window, and it sits below #overlay's own stacking context so opening the
+     pause menu is never fought over by a lamp. game.js only ever turns it on
+     during the catch sequence. -->
+<div id="catchGlow" aria-hidden="true">
+  <div class="glowSide" id="glowLeft"><div class="glowWash" id="washLeft"></div><div class="glowLabel"><span class="gword">BLUE</span><span class="gkey">Press Return</span></div></div>
+  <div class="glowSide" id="glowRight"><div class="glowWash" id="washRight"></div><div class="glowLabel"><span class="gword">RED</span><span class="gkey">Press Space</span></div></div>
 </div>
 
 <div id="sr" aria-live="polite" role="status"></div>

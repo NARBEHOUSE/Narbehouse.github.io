@@ -3,14 +3,21 @@
    BENNY'S FISHMASTER
    A fishing-trip sim for one or two switches (Spacebar + Return).
 
-   Casting has no hold-to-aim power bar: you scan a Direction list, then a
-   Power list, and a dotted line previews exactly where the lure lands and
-   what lives there before you commit — the same trick BENNYSBALLISTA uses
-   for aiming without reflexes. Landing a bite is a self-paced colour
-   sequence with no clock and no timeout; a wrong press never fails you,
-   it only lowers the catch's quality, and a very low quality run just means
-   junk comes up on the line instead of the fish. Nothing here can be failed
-   by being slow.
+   Casting is a direction and a power. Direction stays a scan list of lake
+   sectors, because five named pie-slices is exactly what a scan list is good
+   at. Power is a charge meter you hold Space to fill and Return to cast —
+   BENNYSBALLISTA's arrangement, copied deliberately rather than invented
+   again (AGENTS.md, "Hold-to-charge and hold-to-sweep"): the meter clamps at
+   full instead of wrapping, letting go only stops it, and a dotted line
+   previews exactly where the lure lands and what lives there the whole time.
+   There is no sweet spot and nothing to miss.
+
+   Landing a bite is a self-paced colour sequence with no clock and no
+   timeout, cued by a whole side of the screen fading up like a lamp — blue
+   left for Return, red right for Space. A wrong press never fails you, it
+   only lowers the catch's quality, and a very low quality run just means junk
+   comes up on the line instead of the fish. Nothing here can be failed by
+   being slow.
 
    See ../../../AGENTS.md for the rules this game is built to.
    ========================================================================== */
@@ -31,7 +38,24 @@ const CFG = {
   W: 1280, H: 720,         // fixed design resolution; canvas letterboxes to fit
   BOAT_X: 640, BOAT_Y: 660,
   LAKE_MAX_R: 560,
-  BAND_FRAC: { near: 0.35, mid: 0.65, far: 1.0 },
+  // Band edges live in lakegen.js (LG.BAND_FRAC) because rod reach is measured
+  // against the same radius and the two tables only make sense side by side.
+
+  /* Hold-to-charge casting. Deliberately slow — AGENTS.md asks for "a speed Ben
+     can actually stop on, not a demo-friendly one" — so a full charge takes
+     twenty seconds, the same pace BENNYSBALLISTA sweeps and charges at. The
+     meter stops dead at 100% and stays there; over-holding is never worse than
+     stopping at the perfect moment, because there is no perfect moment. */
+  CHARGE_PCT_PER_S: 5,
+  CHARGE_TICK_PCT : 10,    // click every this much charge, so the ear tracks it too
+  MIN_CAST_FRAC   : 0.06,  // even a 0% cast plops in the water beside the boat
+
+  /* The catch light: one slow breath between GLOW_MIN and GLOW_MAX opacity.
+     2.4 seconds a cycle is a lamp on a dimmer, nowhere near flashing, and it
+     is a cue only — the sequence waits however long it waits. */
+  GLOW_PERIOD_S: 2.4,
+  GLOW_MIN: 0.12,
+  GLOW_MAX: 0.55,
 
   BITING_DURATION: 0.9,    // seconds; skippable cosmetic delay, never a reaction window
 
@@ -54,6 +78,10 @@ const QUALITY_BUCKETS = [
 /* ── Persistence ────────────────────────────────────────────────────────── */
 const SAVE_KEY = 'bennysfishmaster_save';
 const SET_KEY  = 'bennysfishmaster_settings';
+/* v2: objectives are chosen per lake from a pool and validated against what
+   the lake can actually deliver, so a v1 save's fixed objective list and its
+   counters no longer describe anything real. See migrateSave(). */
+const SAVE_VERSION = 2;
 
 const settings = { theme: 'ben', fontScale: 100, sound: true };
 
@@ -75,10 +103,29 @@ function defaultSave() {
     currentLakeId: 'lake1',
     creel: [],
     sawDingusReveal: false,
-    version: 1
+    version: SAVE_VERSION
   };
 }
 let save = defaultSave();
+
+/* A v1 save carries a per-lake objective list that was fixed in data.js and a
+   set of counters against it. Objectives are picked from a pool now and
+   validated against the lake, so those counters point at nothing. Money, gear,
+   the creel and which lakes are cleared all carry over untouched; only
+   in-progress objective counters restart, and they restart against objectives
+   that are actually completable. Dropping objectiveIds is the whole migration:
+   ensureLakeProgress re-picks whatever it finds missing. */
+function migrateSave() {
+  if ((save.version || 1) >= SAVE_VERSION) { save.version = SAVE_VERSION; return; }
+  const lakes = save.lakeProgress || {};
+  Object.keys(lakes).forEach(id => {
+    const p = lakes[id];
+    if (!p) return;
+    delete p.objectiveIds;
+    delete p.objectives;
+  });
+  save.version = SAVE_VERSION;
+}
 
 function loadAll() {
   try {
@@ -89,6 +136,7 @@ function loadAll() {
     const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (g) Object.assign(save, g);
   } catch (e) { /* same for progress */ }
+  migrateSave();
 }
 function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (e) {} }
 function saveProgress() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
@@ -134,19 +182,32 @@ const G = {
   overlay: null,
   lakeId: null,
   LAKE: null,
-  pick: { direction: 2, power: 0 },
+  pick: { direction: 2 },   // direction is still a scan list; power is a meter
   locked: {},
   scan: -1,
   menuIx: 0,
   menuStack: [],
   preview: null,
   lastLanding: null,
+
+  /* The cast charge. `charging` is "the meter is moving right now", `charged`
+     is "it has moved at all this cast" — the second one is what stops a stray
+     Return from flinging the line nowhere. `lastPowerPct` is what the previous
+     cast used, so the direction step can preview at a distance the player has
+     actually thrown before instead of guessing. */
+  powerPct: 0,
+  charging: false,
+  charged: false,
+  powTick: 0,
+  lastPowerPct: 100,
+
   bitingTimer: 0,
   animTime: 0,          // wall clock for the surface drift, art only
   rodTip: null,         // where paintBoat put the rod tip, so the line starts there
   bitingResolved: false,
   pendingBite: null,
   catch: null,          // { category, speciesId, sequence, stepIndex, correctCount, results }
+  glowT: 0,             // catch-light phase, advanced in the loop so a pause freezes it
   postCatchQueue: [],
   resumeScreen: null
 };
@@ -157,8 +218,12 @@ const input  = { spaceDown: false, retDown: false, retLong: false };
 /* ── Elements ───────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
-const chipHolders = { direction: $('chipsDirection'), power: $('chipsPower') };
+const chipHolders = { direction: $('chipsDirection') };
 const lanes       = { direction: $('laneDirection'), power: $('lanePower') };
+const powerMeter  = { box: $('meterPower'), fill: $('fillPower'), val: $('valPower'), marks: $('bandMarks') };
+const glow        = { root: $('catchGlow'), left: $('glowLeft'), right: $('glowRight'),
+                      washLeft: $('washLeft'), washRight: $('washRight') };
+
 
 /* Palette cache — read once per theme change, not per frame. */
 const PALETTE_VARS = [
@@ -184,14 +249,23 @@ function css(name) { return PAL[name] || '#888'; }
    The painted pond is expensive to build and never changes within a session,
    so it lives in an offscreen bitmap keyed by lake + seed + colour profile.
    The key is checked at draw time rather than invalidated by hand, so no
-   future caller can forget to refresh it. */
+   future caller can forget to refresh it.
+
+   GEOM is the whole contract between gameplay and paint: art.js gets the frame,
+   the boat, the reference radius and the band edges, and everything it draws
+   follows from those. bandFrac is read from lakegen rather than CFG so the band
+   table keeps exactly one home.
+   ────────────────────────────────────────────────────────────────────────── */
 const GEOM = {
   W: CFG.W, H: CFG.H,
   boatX: CFG.BOAT_X, boatY: CFG.BOAT_Y,
-  maxR: CFG.LAKE_MAX_R, bandFrac: CFG.BAND_FRAC
+  maxR: CFG.LAKE_MAX_R, bandFrac: LG.BAND_FRAC
 };
 const lakeArt = { bitmap: null, key: '' };
 const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+/* One query, two users: the pond's surface drift and the catch light's breath
+   both stand still for someone who has asked for less motion. Read live rather
+   than cached at boot, so changing the setting takes effect without a reload. */
 function reducedMotion() { return !!(motionQuery && motionQuery.matches); }
 // High Contrast is a real accessibility profile, not a skin: the pond keeps
 // its shape there but drops gradients and texture for flat fills and outlines.
@@ -210,36 +284,206 @@ function lakeBitmap() {
 /* ══════════════════════════════════════════════════════════════════════════
    LAKE / SESSION SETUP
    ══════════════════════════════════════════════════════════════════════════ */
+/* ── Reach: what water a rod can actually put a lure into ────────────────── */
+function rodById(id) { return D.RODS.find(r => r.id === id) || D.RODS[0]; }
+
+/* The best rod the player is ABLE to have here, not the one they happen to be
+   holding — every rod in unlockedRods is buyable with money that fishing always
+   earns, so an objective behind a rod upgrade is a thing to work towards, not a
+   wall. What is NOT allowed is an objective behind a rod this lake never
+   unlocks; that is the case objectiveFeasible() exists to throw out. */
+function bestUnlockedRod() {
+  return (save.unlockedRods || ['starter'])
+    .map(rodById)
+    .reduce((best, r) => (!best || r.reachFrac > best.reachFrac ? r : best), null) || D.RODS[0];
+}
+
+/* How much fishable water this direction has, as a fraction of CFG.LAKE_MAX_R.
+   This is the shape term every reach and band calculation multiplies by, and
+   with art.js loaded it is the PAINTED shoreline (inset to keep casts off the
+   rocks) rather than the bare radiusMul circle — so what the game says about a
+   cast and where the bobber lands are the same fact. radiusMul is the fallback
+   when art.js is missing, which is also what the flat wedge lake draws.
+
+   Note the painted bank carries its own seeded noise on top of radiusMul, so
+   this spreads WIDER than radiusMul does (~0.67-1.12 against 0.85-1.15). The
+   rod reach table in data.js is derived from that spread; the two move
+   together or the progression breaks. */
+function waterFracFor(sector) {
+  if (A && G.LAKE) return A.waterRadius(G.LAKE, sector.bearing, GEOM) / CFG.LAKE_MAX_R;
+  return sector.radiusMul;
+}
+
+/* How far this rod can throw in this direction — its own reach, or the far
+   bank, whichever comes first. Nothing is gained by casting onto dry land. */
+function maxReachFrac(sector, rodItem) {
+  return Math.min((rodItem || rod()).reachFrac, waterFracFor(sector));
+}
+
+function reachableBiomeIds(lake, rodItem) {
+  const out = [];
+  lake.sectors.forEach(s => {
+    LG.reachableBands(maxReachFrac(s, rodItem), waterFracFor(s)).forEach(band => {
+      const id = s.biomesByBand[band];
+      if (out.indexOf(id) === -1) out.push(id);
+    });
+  });
+  return out;
+}
+
+/* Every species this lake will actually hand over: it has to live in water the
+   rod can reach, and it has to be unlocked. Secret fish are excluded — the
+   Dingus is a joke, not a target, and objectives never count it. */
+function catchableSpeciesIds(lake, rodItem) {
+  const biomes = reachableBiomeIds(lake, rodItem);
+  return D.FISH.filter(f =>
+    !f.secret &&
+    save.unlockedSpecies.indexOf(f.id) !== -1 &&
+    f.biomeIds.some(b => biomes.indexOf(b) !== -1)
+  ).map(f => f.id);
+}
+
+/* ── Objective feasibility ───────────────────────────────────────────────────
+   The one rule: an objective may only be handed out if this lake, as generated,
+   can actually deliver it. That means the species is unlocked, it lives in a
+   biome this lake owns, that biome is inside the reach of a rod available here,
+   and the number being asked for is inside the species' own range. A lake is
+   still free to CONTAIN fish that are out of reach — that is what a better rod
+   is for — it just can't set one as homework.
+   ────────────────────────────────────────────────────────────────────────── */
+const MAX_CATCHES_FOR_WEIGHT = 8;   // a weight target shouldn't need a grind
+
+function objectiveFeasible(obj, catchableIds) {
+  if (!catchableIds.length) return false;
+
+  if (obj.speciesId) {
+    if (catchableIds.indexOf(obj.speciesId) === -1) return false;
+    const f = fishById(obj.speciesId);
+    if (!f) return false;
+    // "24 inches or longer" is only fair if the fish grows that long at all.
+    if (obj.type === 'catchLength') return f.lengthRange[1] >= obj.amount;
+    if (obj.type === 'catchWeight') return f.weightRange[1] * MAX_CATCHES_FOR_WEIGHT >= obj.amount;
+    return true;
+  }
+
+  // No species named: any fish counts, so it only has to be reachable at all.
+  if (obj.type === 'catchLength') return false;   // meaningless without a species
+  if (obj.type === 'catchWeight') {
+    const heaviest = catchableIds.reduce((m, id) => Math.max(m, fishById(id).weightRange[1]), 0);
+    return heaviest * MAX_CATCHES_FOR_WEIGHT >= obj.amount;
+  }
+  return true;
+}
+
+function objectivePool(template) { return template.objectivePool || []; }
+function objectiveById(template, id) { return objectivePool(template).find(o => o.id === id); }
+
+/**
+ * Picks a lake's seed and its objectives together, because neither one is
+ * decidable alone: which fish are reachable depends on the shape the seed
+ * rolled, and whether the objectives are fair depends on which fish are
+ * reachable.
+ *
+ * Re-rolls the seed up to SEED_TRIES times looking for a lake that can deliver
+ * the template's PREFERRED objectives — the first `objectiveCount` entries in
+ * the pool, the hand-authored ones. Failing that it keeps the roll that could
+ * satisfy the most pool entries and takes those in preference order, which is
+ * why every pool ends with a species-agnostic objective: there is always
+ * something left that any lake with fish in it can satisfy.
+ */
+const SEED_TRIES = 32;
+
+function pickLakeSetup(template) {
+  const rodItem = bestUnlockedRod();
+  const count = template.objectiveCount || 2;
+  const pool = objectivePool(template);
+  let best = null;
+
+  for (let attempt = 0; attempt < SEED_TRIES; attempt++) {
+    const seed = Math.floor(Math.random() * 1e9);
+    const catchable = catchableSpeciesIds(LG.generateLake(template, seed), rodItem);
+    const feasible = pool.filter(o => objectiveFeasible(o, catchable));
+    if (pool.slice(0, count).every(o => objectiveFeasible(o, catchable))) {
+      return { seed, objectiveIds: pool.slice(0, count).map(o => o.id) };
+    }
+    if (!best || feasible.length > best.feasible.length) best = { seed, feasible };
+  }
+
+  return { seed: best.seed, objectiveIds: best.feasible.slice(0, count).map(o => o.id) };
+}
+
 function ensureLakeProgress(lakeId) {
-  if (!save.lakeProgress[lakeId]) {
-    const template = lakeTemplateById(lakeId);
-    save.lakeProgress[lakeId] = {
-      seed: Math.floor(Math.random() * 1e9),
-      objectives: template.objectives.map(() => ({ current: 0 })),
-      completed: false
+  const template = lakeTemplateById(lakeId);
+  let p = save.lakeProgress[lakeId];
+
+  // Missing entirely (first visit), or carrying objectives that no longer
+  // resolve — a v1 save, or a data.js edit that renamed a pool entry. Either
+  // way the fix is the same: pick the lake and its objectives over again.
+  const stale = !p || !Array.isArray(p.objectiveIds) || !p.objectiveIds.length ||
+                p.objectiveIds.some(id => !objectiveById(template, id));
+  if (stale) {
+    const setup = pickLakeSetup(template);
+    p = save.lakeProgress[lakeId] = {
+      seed: setup.seed,
+      objectiveIds: setup.objectiveIds,
+      objectives: setup.objectiveIds.map(() => ({ current: 0 })),
+      completed: p ? !!p.completed : false
     };
   }
-  return save.lakeProgress[lakeId];
+  // Counters and objectives can only ever be the same length.
+  if (!Array.isArray(p.objectives) || p.objectives.length !== p.objectiveIds.length) {
+    p.objectives = p.objectiveIds.map((id, i) => (p.objectives && p.objectives[i]) || { current: 0 });
+  }
+  return p;
+}
+
+/* The live objectives for a lake, resolved from the ids in the save. Every
+   read of "what am I doing here" goes through this rather than reaching into
+   data.js, so the pool stays a menu of candidates and this stays the answer. */
+function lakeObjectives(lakeId) {
+  const template = lakeTemplateById(lakeId);
+  const p = save.lakeProgress[lakeId];
+  if (!p || !p.objectiveIds) return [];
+  return p.objectiveIds.map(id => objectiveById(template, id)).filter(Boolean);
+}
+
+/* If an objective's fish is out of the CURRENT rod's reach, say which rod
+   fixes that. The objective is still completable — that is guaranteed before
+   it is ever handed out — this is just the part the player can't see. */
+function objectiveGearHint(obj) {
+  if (!obj.speciesId || !G.LAKE) return '';
+  const have = catchableSpeciesIds(G.LAKE, rod());
+  if (have.indexOf(obj.speciesId) !== -1) return '';
+  const better = D.RODS
+    .filter(r => r.reachFrac > rod().reachFrac && save.unlockedRods.indexOf(r.id) !== -1)
+    .filter(r => catchableSpeciesIds(G.LAKE, r).indexOf(obj.speciesId) !== -1)
+    .sort((a, b) => a.cost - b.cost)[0];
+  const fish = fishById(obj.speciesId).name;
+  return better
+    ? ` The ${fish} is out past what the ${rod().name} can throw — the ${better.name} in the shop reaches it.`
+    : ` The ${fish} is out past what the ${rod().name} can throw here.`;
 }
 
 function objectivesSpokenPhrase(lakeId) {
-  const template = lakeTemplateById(lakeId);
   const progress = save.lakeProgress[lakeId];
   if (progress.completed) return 'All objectives complete for this lake.';
-  return template.objectives.map((obj, i) => `${obj.description}: ${progress.objectives[i].current} of ${obj.amount}.`).join(' ');
+  return lakeObjectives(lakeId)
+    .map((obj, i) => `${obj.description}: ${progress.objectives[i].current} of ${obj.amount}.${objectiveGearHint(obj)}`)
+    .join(' ');
 }
 
 function shortObjLabel(obj) {
-  if (obj.type === 'catchCount')  return obj.speciesId ? fishById(obj.speciesId).name : 'Catches';
+  if (obj.type === 'catchCount')  return obj.speciesId ? fishById(obj.speciesId).name : 'Any fish';
   if (obj.type === 'catchWeight') return (obj.speciesId ? fishById(obj.speciesId).name + ' lbs' : 'Total lbs');
   if (obj.type === 'catchLength') return fishById(obj.speciesId).name + ' in';
   return 'Objective';
 }
 function objectivesShortText(lakeId) {
-  const template = lakeTemplateById(lakeId);
   const progress = save.lakeProgress[lakeId];
   if (progress.completed) return 'Objectives complete!';
-  return template.objectives.map((obj, i) => `${shortObjLabel(obj)} ${progress.objectives[i].current}/${obj.amount}`).join(' · ');
+  return lakeObjectives(lakeId)
+    .map((obj, i) => `${shortObjLabel(obj)} ${progress.objectives[i].current}/${obj.amount}`)
+    .join(' · ');
 }
 
 function enterLake(lakeId, quiet) {
@@ -248,7 +492,8 @@ function enterLake(lakeId, quiet) {
   save.currentLakeId = lakeId;
   G.lakeId = lakeId;
   G.LAKE = LG.generateLake(template, progress.seed);
-  G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2), power: 0 };
+  G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2) };
+  G.lastPowerPct = 100;
   G.postCatchQueue = [];
   saveProgress();
   enterCast(!quiet);
@@ -284,47 +529,54 @@ function biomeNarrationPhrase(biomeId) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CASTING — SCAN LISTS
+   CASTING — A SCAN LIST, THEN A METER
+   Direction stays a scan list: five named pie-slices is exactly the shape a
+   scan list handles well. Power is a charge meter instead of a list of named
+   tiers, because "how hard do I throw" is a continuous thing and the old four
+   tiers had two rods reaching identical water. See AIMING THE POWER below.
    ══════════════════════════════════════════════════════════════════════════ */
 function stageOrder() { return ['direction', 'power']; }
 
-function laneItems(stage) {
-  if (stage === 'direction') return G.LAKE.sectors.map((s, i) => ({ label: s.bearingLabel, ix: i }));
-  return rod().powerTiers.map((p, i) => ({ label: p.name, ix: i }));
-}
-function laneLen() { return laneItems(G.stage).length; }
+function laneItems() { return G.LAKE.sectors.map((s, i) => ({ label: s.bearingLabel, ix: i })); }
+function laneLen() { return laneItems().length; }
 
-function subLabelFor(stage, ix) {
-  const tiers = rod().powerTiers;
-  if (stage === 'direction') {
-    const band = tiers[Math.min(G.pick.power, tiers.length - 1)].band;
-    return D.BIOMES[LG.biomeAt(G.LAKE, ix, band)].name;
-  }
-  const band = tiers[ix].band;
-  return D.BIOMES[LG.biomeAt(G.LAKE, G.pick.direction, band)].name;
+/* What the direction chips say underneath: where a cast at the power the
+   player last used would land if they went this way. It matches the dotted
+   line on the canvas exactly, on purpose — two previews that disagree would be
+   worse than one. */
+function dirSubLabel(ix) {
+  return D.BIOMES[computeLanding({ dirIx: ix }).biomeId].name;
 }
 
 function renderChips() {
-  ['direction', 'power'].forEach(stage => {
-    const holder = chipHolders[stage];
-    const items = laneItems(stage);
-    holder.innerHTML = '';
-    items.forEach(it => {
-      const b = document.createElement('button');
-      b.className = 'chip';
-      b.type = 'button';
-      const sub = subLabelFor(stage, it.ix);
-      b.innerHTML = sub ? `${it.label}<span class="sub">${sub}</span>` : it.label;
-      if (G.locked[stage] && G.pick[stage] === it.ix) b.classList.add('picked');
-      if (G.screen === 'cast' && G.stage === stage && G.scan === it.ix) b.classList.add('focus');
-      b.addEventListener('click', () => {           // mouse is optional, never required
-        if (G.screen !== 'cast' || G.stage !== stage) return;
-        G.scan = it.ix; renderChips(); updatePreview(); commit();
-      });
-      holder.appendChild(b);
+  const holder = chipHolders.direction;
+  holder.innerHTML = '';
+  laneItems().forEach(it => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.type = 'button';
+    b.innerHTML = `${it.label}<span class="sub">${dirSubLabel(it.ix)}</span>`;
+    if (G.locked.direction && G.pick.direction === it.ix) b.classList.add('picked');
+    if (G.screen === 'cast' && G.stage === 'direction' && G.scan === it.ix) b.classList.add('focus');
+    b.addEventListener('click', () => {             // mouse is optional, never required
+      if (G.screen !== 'cast' || G.stage !== 'direction') return;
+      G.scan = it.ix; renderChips(); updatePreview(); commit();
     });
-    lanes[stage].classList.toggle('locked', !!G.locked[stage]);
+    holder.appendChild(b);
   });
+  lanes.direction.classList.toggle('locked', !!G.locked.direction);
+  lanes.direction.classList.toggle('active', G.screen === 'cast' && G.stage === 'direction');
+}
+
+/* The sublabels answer "where would THIS power land if I went that way", so
+   they have to move with the meter. Rewriting the text in place rather than
+   calling renderChips() every frame: rebuilding five buttons sixty times a
+   second would also rebuild five click handlers sixty times a second, and a
+   sublabel left frozen at the power it was first drawn at is exactly the kind
+   of quiet lie the single computeLanding() is meant to prevent. */
+function updateChipSubs() {
+  const subs = chipHolders.direction.querySelectorAll('.chip .sub');
+  for (let i = 0; i < subs.length; i++) subs[i].textContent = dirSubLabel(i);
 }
 
 function scanStep(dir) {
@@ -340,92 +592,259 @@ function scanStep(dir) {
 }
 
 function announceFocus() {
-  const it = laneItems(G.stage)[G.scan];
+  const it = laneItems()[G.scan];
   if (!it) return;
   const landing = computeLanding();
-  speak(`${it.label}. ${biomeNarrationPhrase(landing.biomeId)}`);
+  speak(`${it.label}. ${reachPhrase(G.scan)} Landing in ${biomeNarrationPhrase(landing.biomeId)}`);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    LANDING PREVIEW
+   One function for "where does a cast go", so the dotted line, the chip
+   sublabels, the meter readout and the spoken narration can never drift into
+   telling the player four different things.
    ══════════════════════════════════════════════════════════════════════════ */
-function computeLanding() {
-  const pk = Object.assign({}, G.pick);
-  if (G.screen === 'cast' && G.scan !== -1) pk[G.stage] = G.scan;
+/* One number for "how hard is this cast", read by the preview, the chips, the
+   meter and the narration alike. During the direction step it holds the power
+   the LAST cast used — the meter shows that, dimmed, so a direction preview is
+   drawn at a distance the player has actually thrown rather than at a guess.
+   Reaching the power step is what resets it to nothing (beginStage). */
+function currentPowerPct() { return G.powerPct; }
 
-  const sector = G.LAKE.sectors[pk.direction] || G.LAKE.sectors[0];
-  const tiers = rod().powerTiers;
-  const tier = tiers[Math.min(pk.power, tiers.length - 1)];
-  const band = tier.band;
+function computeLanding(opts) {
+  opts = opts || {};
+  let dirIx = (opts.dirIx != null) ? opts.dirIx : G.pick.direction;
+  if (opts.dirIx == null && G.screen === 'cast' && G.stage === 'direction' && G.scan !== -1) dirIx = G.scan;
+
+  const sector = G.LAKE.sectors[dirIx] || G.LAKE.sectors[0];
+  const pct = (opts.pct != null) ? opts.pct : currentPowerPct();
+
+  // Reach is clamped to the water's edge: over-charging lands at the back of
+  // the pond, never on the rocks, and never costs anything.
+  const water = waterFracFor(sector);
+  const thrown = rod().reachFrac * (pct / 100);
+  const frac = Math.max(CFG.MIN_CAST_FRAC, Math.min(thrown, water));
+  const band = LG.bandForFrac(frac, water);
   const biomeId = LG.biomeAt(G.LAKE, sector.index, band);
-  // With the pond art loaded the landing radius comes from the painted
-  // shoreline, so a far cast lands on water instead of on the rock rim; the
-  // near/mid/far proportions (CFG.BAND_FRAC) are the same either way.
-  const radius = A ? A.bandRadius(G.LAKE, sector.index, band, GEOM)
-                   : CFG.LAKE_MAX_R * CFG.BAND_FRAC[band] * sector.radiusMul;
-  let point;
-  if (A) {
-    point = A.project(sector.bearing, radius, GEOM);
-  } else {
+  const radius = CFG.LAKE_MAX_R * frac;
+  // art.js's project() is the one place a (bearing, radius) becomes a pixel —
+  // it carries the perspective squash, so calling it is what keeps the bobber
+  // on the patch of water the game just narrated.
+  const point = A ? A.project(sector.bearing, radius, GEOM) : (() => {
     const angleRad = (sector.bearing - 90) * Math.PI / 180;
-    point = { x: CFG.BOAT_X + radius * Math.cos(angleRad), y: CFG.BOAT_Y + radius * Math.sin(angleRad) };
-  }
-  return { sector, tier, band, biomeId, radius, point };
+    return { x: CFG.BOAT_X + radius * Math.cos(angleRad), y: CFG.BOAT_Y + radius * Math.sin(angleRad) };
+  })();
+  const capped = thrown > water + 1e-9;
+  return { sector, pct, band, biomeId, radius, frac, point, capped, water };
 }
 function updatePreview() { G.preview = (G.screen === 'cast') ? computeLanding() : null; }
+
+/* Which biomes this direction opens up with the rod in hand — the thing that
+   actually decides whether a direction is worth casting in. */
+function reachPhrase(dirIx) {
+  const sector = G.LAKE.sectors[dirIx] || G.LAKE.sectors[0];
+  const bands = LG.reachableBands(maxReachFrac(sector, rod()), waterFracFor(sector));
+  const names = [];
+  bands.forEach(b => {
+    const n = D.BIOMES[sector.biomesByBand[b]].name;
+    if (names.indexOf(n) === -1) names.push(n);
+  });
+  return `You can reach ${joinNames(names)} this way.`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AIMING THE POWER — hold Space to charge, Return to cast
+   BENNYSBALLISTA's arrangement, matched rather than re-invented: Space holds
+   the meter and Return commits it, which leaves Return-hold free to be the
+   ordinary 1.5-second back/pause with no threshold to push out (AGENTS.md,
+   "The pause-menu conflict").
+
+   Nothing about it can be missed. The meter clamps at 100% and stays there, so
+   holding too long is never worse than letting go at the right moment. Letting
+   go only STOPS the meter — a separate Return press casts — so a switch
+   slipping out of a hand costs nothing, and the player can stop, listen to
+   where the line would land, and hold again to add more.
+
+   Nothing is spoken while the meter moves: speech would run behind it and pile
+   up on itself. The player is told where the lure lands the moment they stop,
+   in stopCharge(), and nowhere else.
+   ══════════════════════════════════════════════════════════════════════════ */
+function meterStage() { return G.screen === 'cast' && G.stage === 'power'; }
+
+function startMeter() {
+  if (!meterStage()) return;
+  stopAutoScan();
+  if (G.charging) return;      // already filling under auto-scan; leave it be
+  G.charging = true;           // picks up from where the last hold left off
+  sfx('hover', .35);
+  renderMeters(); updateFooter();
+}
+
+function releaseMeter() {
+  if (G.charging) stopCharge();
+}
+
+function stopCharge() {
+  G.charging = false;
+  updatePreview(); updateChipSubs();
+  renderMeters(); updateFooter();
+  sfx('hover', .5);
+  const l = computeLanding();
+  const full = G.powerPct >= 100;
+  const where = l.capped
+    ? `${Math.round(G.powerPct)} percent — that is as far as the lake goes this way. `
+    : `${Math.round(G.powerPct)} percent. `;
+  speak(`${full ? 'Full power. ' : ''}${where}${LG.BAND_LABEL[l.band]}: ${biomeNarrationPhrase(l.biomeId)} `
+      + (full ? 'Press return to cast, or hold return to go back and set it again.'
+              : 'Press return to cast, or hold space to charge further.'));
+}
+
+/* The meter advances in the frame loop rather than on a timer, so opening the
+   pause menu freezes it and closing it picks up exactly where it was. */
+function stepMeter(dt) {
+  if (!meterStage() || !G.charging) return;
+  G.powerPct = Math.min(100, G.powerPct + CFG.CHARGE_PCT_PER_S * dt);
+  G.charged = true;
+  const step = Math.floor(G.powerPct / CFG.CHARGE_TICK_PCT);
+  if (step !== G.powTick) { G.powTick = step; sfx('hover', .3); }
+  if (G.powerPct >= 100) { stopCharge(); return; }   // clamped, and it says so
+  updatePreview(); updateChipSubs(); renderMeters(); updateFooter();
+}
+
+function renderMeters() {
+  const playing = G.screen === 'cast';
+  const pct = Math.round(G.powerPct);
+  const l = G.LAKE ? computeLanding() : null;
+
+  powerMeter.fill.style.width = G.powerPct.toFixed(1) + '%';
+  powerMeter.val.innerHTML = l
+    ? `${pct}% <span class="msub">${LG.BAND_LABEL[l.band]} · ${D.BIOMES[l.biomeId].name}</span>`
+    : `${pct}%`;
+  powerMeter.box.setAttribute('aria-valuenow', pct);
+
+  lanes.power.classList.toggle('active', playing && G.stage === 'power');
+  lanes.power.classList.toggle('moving', G.charging);
+  // Dimmed while picking a direction: it's showing last cast's power, not this
+  // cast's, exactly as Ballista dims its power bar during the aim step.
+  powerMeter.box.classList.toggle('dim', playing && G.stage !== 'power');
+  $('btnCast').disabled = !(playing && G.stage === 'power');
+
+  renderBandMarks();
+}
+
+/* Where the depth bands fall ON THE METER for the chosen direction, so "how
+   hard do I have to throw to reach the weeds" is visible rather than
+   memorised. The meter runs 0-100% of THIS ROD's reach, so a band edge past
+   the end of the bar is water this rod simply cannot get to — it's left off
+   instead of drawn somewhere misleading. */
+function renderBandMarks() {
+  if (!G.LAKE) { powerMeter.marks.innerHTML = ''; return; }
+  const sector = G.LAKE.sectors[(G.screen === 'cast' && G.stage === 'direction' && G.scan !== -1) ? G.scan : G.pick.direction]
+              || G.LAKE.sectors[0];
+  const reach = rod().reachFrac;
+  const water = waterFracFor(sector);
+  let html = '';
+  LG.BANDS.forEach((band, i) => {
+    if (i === LG.BANDS.length - 1) return;          // no mark at the water's edge
+    const at = LG.BAND_FRAC[band] * water / reach * 100;
+    if (at > 0 && at < 100) html += `<div class="bandmark" style="left:${at.toFixed(2)}%"></div>`;
+  });
+  // Everything past the water's edge is the same spot on the pond; show it
+  // capped rather than pretending the last stretch of the meter does something.
+  const cap = water / reach * 100;
+  if (cap < 100) html += `<div class="reachcap" style="left:${cap.toFixed(2)}%"></div>`;
+  powerMeter.marks.innerHTML = html;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    COMMITTING A CAST
    ══════════════════════════════════════════════════════════════════════════ */
-function commit() {
-  if (G.scan === -1) { speak('Nothing highlighted. Press space to keep scanning.'); return; }
-  const stage = G.stage;
-  G.pick[stage] = G.scan;
-  G.locked[stage] = true;
-  sfx('select', .6);
+/* One door into each step, so auto-scan and the reset of the power meter can't
+   drift apart between the several places that change step. `keep` means "don't
+   wipe the charge" — used when resuming from a pause, where throwing away the
+   charge the player already built would be its own small betrayal. */
+function beginStage(stage, opts) {
+  opts = opts || {};
+  G.stage = stage;
+  G.charging = false;
+  stopAutoScan();
 
-  const it = laneItems(stage)[G.scan];
-  const order = stageOrder();
-  const next = order[order.indexOf(stage) + 1];
-
-  if (next) {
-    G.stage = next; G.scan = -1;
-    renderChips(); updatePreview(); updateFooter();
-    speak(`${it.label} locked. Now pick power.`);
+  if (stage === 'direction') {
+    if (!opts.keep) G.scan = -1;      // nothing highlighted until the first Space
+    G.powerPct = G.lastPowerPct;      // preview at a distance already thrown
+    G.charged = false;
+    G.powTick = 0;
+    resetAutoScan();
   } else {
-    speak(`${it.label}. Casting.`);
-    renderChips();
-    castLine();
+    if (!opts.keep) { G.powerPct = 0; G.charged = false; G.powTick = 0; }
+    if (autoScanOn()) G.charging = true;   // one switch: the meter fills itself
   }
+
+  renderChips(); renderMeters(); updatePreview(); updateFooter();
+}
+
+function stageHint() {
+  if (G.stage === 'direction') return 'Press space to scan directions.';
+  return autoScanOn()
+    ? 'The power meter is filling — press return to stop it.'
+    : 'Hold space to charge the cast, let go to stop.';
+}
+
+/* Return, short press. In the direction list it picks; on the power meter it
+   stops a moving meter first and only casts on a second press, which is what
+   keeps an accidental release from throwing the line nowhere. */
+function commit() {
+  if (G.stage === 'power') { confirmCast(); return; }
+
+  if (G.scan === -1) { speak('Nothing highlighted. Press space to keep scanning.'); return; }
+  G.pick.direction = G.scan;
+  G.locked.direction = true;
+  sfx('select', .6);
+  const it = laneItems()[G.scan];
+  beginStage('power');
+  speak(`${it.label} locked. ${reachPhrase(G.pick.direction)} ${stageHint()}`);
+}
+
+function confirmCast() {
+  if (G.charging) { stopCharge(); return; }        // first press stops the meter
+  if (!G.charged) {
+    // Nothing charged yet, so this press is far likelier to be a mis-press
+    // than a deliberate cast off the end of the rod tip.
+    speak('No power yet. ' + (autoScanOn()
+      ? 'The meter fills by itself — press return to stop it where you want it.'
+      : 'Hold space to charge the cast, then press return to throw it.'));
+    return;
+  }
+  G.locked.power = true;
+  G.lastPowerPct = G.powerPct;
+  sfx('select', .6);
+  renderMeters();
+  castLine();
 }
 
 /* Return-hold: back out one stage, or open the pause menu. Reachable from
    every screen, per AGENTS.md. */
 function backOut() {
   if (G.screen === 'overlay') { closeOverlay(); return; }
-  if (G.screen === 'cast') {
-    const order = stageOrder();
-    const i = order.indexOf(G.stage);
-    if (i <= 0) { openOverlay('pause'); return; }
-    G.stage = order[i - 1];
-    G.locked[G.stage] = false;
-    G.scan = G.pick[G.stage];
+  if (G.screen === 'cast' && G.stage === 'power') {
+    G.locked.direction = false;
+    G.locked.power = false;
+    beginStage('direction', { keep: true });
+    G.scan = G.pick.direction;
     renderChips(); updatePreview(); updateFooter();
     sfx('hover', .5);
-    speak(`Back to ${G.stage}.`);
+    speak('Back to direction. Press space to scan.');
     return;
   }
-  openOverlay('pause'); // biting, catch, or menu behind an unopened overlay
+  openOverlay('pause'); // direction stage, biting, catch, or menu
 }
 
 function enterCast(fresh) {
   G.screen = 'cast';
   G.locked = {};
-  G.stage = 'direction';
-  G.scan = -1;
   updateBottomBar();
-  stopAutoScan();
-  renderChips(); updatePreview(); updateHud(); updateFooter();
+  beginStage('direction');
+  updateHud();
   if (fresh) speak('Press space to start scanning directions.');
 }
 
@@ -482,7 +901,7 @@ function castLine() {
   renderBitingBar();
   updateFooter();
   sfx('select', .6);
-  speak(`Casting toward ${D.BIOMES[landing.biomeId].name}...`);
+  speak(`Casting ${Math.round(landing.pct)} percent toward ${D.BIOMES[landing.biomeId].name}...`);
 }
 
 function resolveBiting() {
@@ -512,19 +931,21 @@ function randomSequence(n) {
 function stepPrompt(i) {
   const c = G.catch.sequence[i];
   return c === 'red'
-    ? `Step ${i + 1} of ${G.catch.sequence.length}: Red. Press Space.`
-    : `Step ${i + 1} of ${G.catch.sequence.length}: Blue. Press Return.`;
+    ? `Step ${i + 1} of ${G.catch.sequence.length}: red light on the right. Press Space.`
+    : `Step ${i + 1} of ${G.catch.sequence.length}: blue light on the left. Press Return.`;
 }
 
 function startCatchSequence(bite) {
   const n = sequenceLengthFor(bite);
   G.catch = { category: bite.category, speciesId: bite.speciesId || null, sequence: randomSequence(n), stepIndex: 0, correctCount: 0, results: [] };
   G.screen = 'catch';
+  G.glowT = 0;                // the lamp starts dark and comes up, every time
   updateBottomBar();
   renderCatchBar();
+  updateCatchGlow();
   updateFooter();
   const intro = bite.category === 'fish' ? "Something's on the line!" : "Something's tugging on your line.";
-  speak(`${intro} Match each colour at your own pace, no rush. ${stepPrompt(0)}`);
+  speak(`${intro} Follow the light at your own pace, no rush. ${stepPrompt(0)}`);
 }
 
 function catchPress(color) {
@@ -614,8 +1035,9 @@ function updateObjectives(outcome) {
   const progress = save.lakeProgress[lakeId];
   if (!progress || progress.completed) return { completed: false };
   const template = lakeTemplateById(lakeId);
+  const objectives = lakeObjectives(lakeId);
 
-  template.objectives.forEach((obj, i) => {
+  objectives.forEach((obj, i) => {
     const p = progress.objectives[i];
     if (obj.type === 'catchCount') {
       if (!obj.speciesId || outcome.id === obj.speciesId) p.current = Math.min(obj.amount, p.current + 1);
@@ -626,7 +1048,8 @@ function updateObjectives(outcome) {
     }
   });
 
-  const allDone = template.objectives.every((obj, i) => progress.objectives[i].current >= obj.amount);
+  const allDone = objectives.length > 0 &&
+                  objectives.every((obj, i) => progress.objectives[i].current >= obj.amount);
   if (allDone) {
     progress.completed = true;
     applyLakeUnlocks(template);
@@ -708,7 +1131,7 @@ function drawLake() {
     const aEnd = (s.bearing + half - 90) * Math.PI / 180;
     let rPrev = 0;
     LG.BANDS.forEach(band => {
-      const rOuter = CFG.LAKE_MAX_R * CFG.BAND_FRAC[band] * s.radiusMul;
+      const rOuter = CFG.LAKE_MAX_R * LG.BAND_FRAC[band] * s.radiusMul;
       const biome = D.BIOMES[s.biomesByBand[band]];
       drawWedge(CFG.BOAT_X, CFG.BOAT_Y, rPrev, rOuter, aStart, aEnd, css(biome.cssVar));
       rPrev = rOuter;
@@ -742,6 +1165,47 @@ function drawBoat() {
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = css('--panel2');
   ctx.fillRect(-10, -16, 20, 12);
+  ctx.restore();
+}
+
+/* How far the rod in hand can throw, drawn as one dashed line curving across
+   the pond. Water beyond it is water this rod cannot fish — the visible half of
+   what a rod upgrade buys, and the reason a direction can be worth choosing.
+
+   Walked in small bearing steps through art.js's project() rather than drawn as
+   a canvas arc: the pond is in a squashed perspective, so a true circle would
+   sit off the water it is supposed to describe. Interpolating radiusMul between
+   sector centres (as the painted bank does) also keeps this a smooth curve
+   instead of five disconnected arcs. */
+function drawReachLimit() {
+  if (!G.LAKE) return;
+  const half = LG.ARC_DEG / 2;
+  const reach = rod().reachFrac;
+  const pts = [];
+  for (let b = -half; b <= half + 0.001; b += 2) {
+    const water = A ? A.waterRadius(G.LAKE, b, GEOM) / CFG.LAKE_MAX_R : LG.radiusMulAt(G.LAKE, b);
+    if (reach >= water - 0.005) { pts.push(null); continue; }   // rod outreaches the pond here
+    const r = CFG.LAKE_MAX_R * reach;
+    pts.push(A ? A.project(b, r, GEOM)
+               : { x: CFG.BOAT_X + r * Math.cos((b - 90) * Math.PI / 180),
+                   y: CFG.BOAT_Y + r * Math.sin((b - 90) * Math.PI / 180) });
+  }
+  ctx.save();
+  // Kept deliberately faint. The pond art dropped the hard sector dividers on
+  // purpose, and a bright fence across a painted lake would put that clutter
+  // straight back; this only has to read as "past here is out of reach", and
+  // the meter's own band marks carry the same fact more precisely.
+  ctx.setLineDash([8, 14]);
+  ctx.strokeStyle = css('--bad');
+  ctx.globalAlpha = .38;
+  ctx.lineWidth = 2.5;
+  let drawing = false;
+  pts.forEach(p => {
+    if (!p) { if (drawing) { ctx.stroke(); drawing = false; } return; }
+    if (!drawing) { ctx.beginPath(); ctx.moveTo(p.x, p.y); drawing = true; }
+    else ctx.lineTo(p.x, p.y);
+  });
+  if (drawing) ctx.stroke();
   ctx.restore();
 }
 
@@ -797,12 +1261,13 @@ function draw() {
   drawLake();
   if (A && G.LAKE && !artFlat() && !reducedMotion()) A.paintSurface(ctx, G.LAKE, G.animTime, css, GEOM);
   // The aim highlight replaces the old hard sector dividers: one patch of
-  // water lit up rather than the whole lake permanently sliced. The biome is
+  // water lit up rather than the whole pond permanently sliced. The biome is
   // still spoken by announceFocus() and printed on the cast chip, so this is
   // a visual aid, never the only channel.
   if (A && G.LAKE && G.screen === 'cast' && G.preview) {
     A.paintFocusCell(ctx, G.LAKE, G.preview.sector.index, G.preview.band, css, GEOM, { flat: artFlat() });
   }
+  if (G.screen === 'cast') drawReachLimit();
   drawBoat();
   if (G.screen === 'cast') drawPreview();
   if (G.screen === 'biting' || G.screen === 'catch') drawRipple();
@@ -827,6 +1292,43 @@ function updateBottomBar() {
 function renderBitingBar() {
   const biome = G.lastLanding ? D.BIOMES[G.lastLanding.biomeId].name : '';
   $('bitingMsg').textContent = `Casting toward ${biome}... (press Space or Return to skip ahead)`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CATCH LIGHT
+   The row of squares in the bottom bar is a RECORD — what has been pressed and
+   how it went. This is the INSTRUCTION, and it is the size of half the window
+   because the squares were not: a whole side of the screen fades up and back
+   down like a lamp on a dimmer. Blue on the left means Return, red on the
+   right means Space, and which side it is on is the part that says which way
+   to turn your head.
+
+   It is a cue and nothing more. There is no clock behind it, the step waits
+   however long it waits, and the brightness carries no meaning — a dim moment
+   is not a closing window. The cycle is CFG.GLOW_PERIOD_S seconds, far slower
+   than anything that could read as a flash, and prefers-reduced-motion holds
+   it steady instead. Phase advances from the frame loop's dt, so opening the
+   pause menu stops it dead rather than letting it run on behind the panel.
+   ══════════════════════════════════════════════════════════════════════════ */
+function updateCatchGlow() {
+  const on = G.screen === 'catch' && !!G.catch;
+  glow.root.classList.toggle('on', on);
+  if (!on) {
+    glow.left.classList.remove('active');
+    glow.right.classList.remove('active');
+    return;
+  }
+  const expected = G.catch.sequence[G.catch.stepIndex];
+  // Cosine so it eases at both ends — a lamp coming up and going back down,
+  // with no hard edge anywhere in the cycle.
+  const breath = 0.5 - 0.5 * Math.cos(2 * Math.PI * (G.glowT / CFG.GLOW_PERIOD_S));
+  const a = CFG.GLOW_MIN + (CFG.GLOW_MAX - CFG.GLOW_MIN) * (reducedMotion() ? 0.75 : breath);
+
+  const isRed = expected === 'red';
+  glow.washLeft.style.opacity  = isRed ? '0' : a.toFixed(3);
+  glow.washRight.style.opacity = isRed ? a.toFixed(3) : '0';
+  glow.left.classList.toggle('active', !isRed);
+  glow.right.classList.toggle('active', isRed);
 }
 
 function renderCatchBar() {
@@ -860,9 +1362,13 @@ function updateFooter() {
     modeEl.textContent = overlayTitle(G.overlay);
     const items = menuItems();
     tgtEl.textContent = (G.menuIx === -1 || !items[G.menuIx]) ? '—' : itemText(items[G.menuIx]);
+  } else if (G.screen === 'cast' && G.stage === 'power') {
+    modeEl.textContent = G.charging ? 'Charging the cast' : 'Set the power';
+    const l = computeLanding();
+    tgtEl.textContent = `${Math.round(G.powerPct)}% · ${LG.BAND_LABEL[l.band]} · ${D.BIOMES[l.biomeId].name}`;
   } else if (G.screen === 'cast') {
-    modeEl.textContent = `Choose ${G.stage}`;
-    const it = G.scan === -1 ? null : laneItems(G.stage)[G.scan];
+    modeEl.textContent = 'Choose direction';
+    const it = G.scan === -1 ? null : laneItems()[G.scan];
     tgtEl.textContent = it ? it.label : '—';
   } else if (G.screen === 'biting') {
     modeEl.textContent = 'Casting...';
@@ -968,20 +1474,21 @@ const MENUS = {
         rows.push({
           text: () => `${r.name}${equipped ? ' (Equipped)' : ''}`,
           val: () => equipped ? 'Equipped' : 'Equip', dis: equipped,
-          say: () => equipped ? `${r.name}. Already equipped.` : `${r.name}. Select to equip.`,
-          act: () => { if (equipped) return; save.equippedRodId = r.id; saveProgress(); speak(`${r.name} equipped.`); }
+          say: () => `${r.name}. ${r.reachNote} ${equipped ? 'Already equipped.' : 'Select to equip.'}`,
+          act: () => { if (equipped) return; save.equippedRodId = r.id; saveProgress(); updateHud(); speak(`${r.name} equipped. ${r.reachNote}`); }
         });
       } else {
         rows.push({
           text: () => r.name, val: () => `$${r.cost}`,
-          say: () => `${r.name}. Costs ${r.cost} dollars.`,
+          say: () => `${r.name}. ${r.reachNote} Costs ${r.cost} dollars.`,
           act: () => {
             if (save.money < r.cost) { speak('Not enough money for that rod.'); return; }
             save.money -= r.cost;
             save.ownedRods.push(r.id);
             save.equippedRodId = r.id;
             saveProgress();
-            speak(`${r.name} purchased and equipped.`);
+            updateHud();
+            speak(`${r.name} purchased and equipped. ${r.reachNote}`);
           }
         });
       }
@@ -992,6 +1499,25 @@ const MENUS = {
   },
 
   equipbait: () => {
+    /* Reached from the pause menu, equipping is the whole errand, so it hands
+       the player straight back to the water instead of making them walk back
+       out through the menus they came in by. Reached from the shop it stays put,
+       because there they are probably buying and equipping several things. */
+    const equip = b => {
+      save.equippedBaitId = b.id;
+      saveProgress();
+      updateHud();
+      if (overlayData.resumeAfter) {
+        G.menuStack = [];
+        closeOverlay();
+        // Spoken after the close, not before: closeOverlay says its own
+        // "resumed" line, and the last thing said is the thing that gets heard.
+        speak(`${b.name} on the line. ${stageHint()}`);
+        return;
+      }
+      speak(`${b.name} equipped.`);
+    };
+
     const rows = D.BAIT.filter(b => !b.secret && save.unlockedBait.includes(b.id)).map(b => {
       const owned = b.free ? Infinity : (save.ownedBait[b.id] || 0);
       const equipped = save.equippedBaitId === b.id;
@@ -1001,7 +1527,7 @@ const MENUS = {
         val: () => canEquip ? (equipped ? 'Equipped' : 'Equip') : 'None owned',
         dis: equipped || !canEquip,
         say: () => equipped ? `${b.name}. Already equipped.` : (canEquip ? `${b.name}. Select to equip.` : `${b.name}. You have none — buy some first.`),
-        act: () => { if (equipped || !canEquip) return; save.equippedBaitId = b.id; saveProgress(); speak(`${b.name} equipped.`); }
+        act: () => { if (equipped || !canEquip) return; equip(b); }
       };
     });
     if ((save.ownedBait['secret_t_pill'] || 0) > 0) {
@@ -1011,7 +1537,7 @@ const MENUS = {
         text: () => `${b.name}${equipped ? ' (Equipped)' : ''}`,
         val: () => equipped ? 'Equipped' : 'Equip', dis: equipped,
         say: () => equipped ? `${b.name}. Already equipped.` : `${b.name}. Select to equip.`,
-        act: () => { if (equipped) return; save.equippedBaitId = b.id; saveProgress(); speak(`${b.name} equipped.`); }
+        act: () => { if (equipped) return; equip(b); }
       });
     }
     rows.push({ text: () => 'Back', act: () => closeOverlay() });
@@ -1048,13 +1574,32 @@ const MENUS = {
     return rows;
   },
 
+  /* The fish finder is where "out of reach" is said out loud. A lake is allowed
+     to hold water the rod in hand cannot get to — that is what a rod upgrade is
+     for — so the honest thing is to show it and label it, rather than hide it
+     and let the player wonder why a fish never bites. (Objectives are a
+     different matter: those are checked against what IS reachable before they
+     are ever handed out. See objectiveFeasible.) */
   fishfinder: () => {
     const template = lakeTemplateById(G.lakeId || save.currentLakeId);
-    const rows = template.biomeIds.map(biomeId => ({
-      text: () => D.BIOMES[biomeId].name,
-      say: () => biomeNarrationPhrase(biomeId),
-      act: () => speak(biomeNarrationPhrase(biomeId))
-    }));
+    const inReach = G.LAKE ? reachableBiomeIds(G.LAKE, rod()) : [];
+    const seen = [];
+    const rows = template.biomeIds.filter(id => {
+      if (seen.indexOf(id) !== -1) return false;
+      seen.push(id);
+      return true;
+    }).map(biomeId => {
+      const reachable = inReach.indexOf(biomeId) !== -1;
+      const line = () => `${biomeNarrationPhrase(biomeId)} ${reachable
+        ? 'Your rod reaches it.'
+        : 'Your rod cannot reach it yet — a longer one would.'}`;
+      return {
+        text: () => D.BIOMES[biomeId].name,
+        val: () => reachable ? 'In reach' : 'Out of reach',
+        say: line,
+        act: () => speak(line())
+      };
+    });
     rows.push({ text: () => 'Back', act: () => closeOverlay() });
     return rows;
   },
@@ -1085,7 +1630,7 @@ const MENUS = {
         hideOverlay();
         G.lakeId = save.currentLakeId;
         G.LAKE = LG.generateLake(lakeTemplateById(G.lakeId), ensureLakeProgress(G.lakeId).seed);
-        G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2), power: 0 };
+        G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2) };
         G.screen = 'menu';
         openOverlay('main');
         speak('Progress reset.');
@@ -1093,8 +1638,17 @@ const MENUS = {
     { text: () => 'Back', act: () => closeOverlay() }
   ],
 
+  /* Swap Bait sits second on purpose. Changing bait is the thing you want most
+     often mid-trip and it used to cost four presses to reach through the shop —
+     Resume, scan to Shop, into Shop, scan to Change Bait, in again — before you
+     had even picked a bait. From here it is one scan step and a select, and
+     equipping closes the whole stack straight back to the water rather than
+     leaving you to walk back out through it (see `resumeAfter`). */
   pause: () => [
     { text: () => 'Resume', act: () => closeOverlay() },
+    { text: () => `Swap Bait — currently ${equippedBait().name}`,
+      say: () => `Swap bait. You have ${equippedBait().name} on the line.`,
+      act: () => openOverlay('equipbait', { resumeAfter: true }) },
     { text: () => 'Bait & Tackle Shop', act: () => openOverlay('shop') },
     { text: () => 'Creel (Sell Catch)', act: () => openOverlay('creel') },
     { text: () => 'Fish Finder', act: () => openOverlay('fishfinder') },
@@ -1172,9 +1726,10 @@ function overlaySub(which) {
         <kbd>Space</kbd> held for 3 seconds scans by itself until you let go.<br>
         <kbd>Return</kbd> picks whatever is highlighted.<br>
         <kbd>Return</kbd> held for 1.5 seconds goes back one step, or opens this menu.<br><br>
-        <b>Casting.</b> Pick a direction, then a power. Each choice tells you what biome it reaches and what fish live there — no guessing, no timing. Better rods reach farther bands.<br><br>
-        <b>Landing it.</b> When something bites, match a row of Red and Blue steps at your own pace — Space for Red, Return for Blue. There’s no clock. Missing a step just lowers the catch’s quality; a very low score means junk comes up instead of the fish.<br><br>
-        <b>Selling &amp; gear.</b> Sell your catch in the Creel, then spend the money on bait (shifts the odds toward certain fish) and rods (reach farther bands permanently).`;
+        <b>Casting — direction, then power.</b> Scan the direction chips and press <kbd>Return</kbd> to lock one in. Then <b>hold <kbd>Space</kbd> to charge</b> the power meter and let go to stop it — letting go never throws the line, it only stops the meter, so you can stop, listen to where the cast would land, and hold again to add more. Press <kbd>Return</kbd> to cast. The meter stops dead at full: holding too long is never worse than letting go at the right moment, because there is no right moment. The dotted line and the meter both name the water you are about to land in the whole time.<br><br>
+        <b>How far you can throw.</b> The dashed red arc is your rod's limit — water past it needs a longer rod. The marks on the power meter are where the water gets deeper, and the lake is shorter in some directions than others, so a direction can put deep water inside your reach that another one doesn't.<br><br>
+        <b>Landing it.</b> When something bites, a side of the screen glows and fades like a lamp: <b>blue on the left means <kbd>Return</kbd></b>, <b>red on the right means <kbd>Space</kbd></b>. There is no clock — the light waits as long as you need, and how bright it happens to be means nothing. Missing a step just lowers the catch's quality; a very low score means junk comes up instead of the fish.<br><br>
+        <b>Selling &amp; gear.</b> Sell your catch in the Creel, then spend the money on bait (shifts the odds toward certain fish) and rods (reach deeper water, permanently). <b>Swap Bait</b> is on the pause menu so you don't have to walk through the shop for it.`;
     default: return '';
   }
 }
@@ -1205,9 +1760,14 @@ function overlaySpeech(which) {
       return 'How to play. Two keys, that is all. A short press of space moves the highlight to the next choice. '
            + 'Holding space for three seconds scans by itself until you let go. A short press of return picks whatever is highlighted. '
            + 'Holding return for one and a half seconds goes back one step, or opens the menu. '
-           + 'To cast, pick a direction, then a power. Each choice tells you what part of the lake it reaches and what fish live there, so you never have to guess. '
-           + "When something bites, match a row of red and blue steps at your own pace. There is no clock. Missing a step only lowers the catch's quality; "
-           + 'a very low score means junk comes up instead of the fish. Sell your catch in the creel, then spend the money on bait and rods.';
+           + 'To cast, scan the directions and press return to lock one in. Then hold space to charge the power meter and let go to stop it. '
+           + 'Letting go never throws the line; it only stops the meter, so you can stop, hear where the cast would land, and hold again to add more. '
+           + 'Press return to cast. The meter stops at full and stays there, so holding too long is never worse than letting go at the right moment. '
+           + 'A longer rod throws further and reaches deeper water, and the lake is shorter in some directions than others, so direction matters too. '
+           + 'When something bites, one side of the screen glows and fades like a lamp. Blue on the left means press return. Red on the right means press space. '
+           + 'There is no clock, the light waits as long as you need, and how bright it is means nothing. '
+           + "Missing a step only lowers the catch's quality; a very low score means junk comes up instead of the fish. "
+           + 'Sell your catch in the creel, then spend the money on bait and rods. Swap bait is on the pause menu, so you do not have to go through the shop for it.';
     default: return '';
   }
 }
@@ -1277,10 +1837,11 @@ function closeOverlay() {
     speak(`Resumed. ${G.catch ? stepPrompt(G.catch.stepIndex) : ''}`);
   } else if (back === 'cast') {
     G.screen = 'cast';
-    G.scan = -1;
     updateBottomBar();
-    renderChips(); updatePreview(); updateFooter();
-    speak('Resumed. Press space to scan.');
+    // `keep` on purpose: coming back from the pause menu must not wipe the
+    // charge the player had already built, or the highlight they had scanned to.
+    beginStage(G.stage, { keep: true });
+    speak(`Resumed. ${stageHint()}`);
   } else {
     G.screen = 'menu';
     openOverlay('main');
@@ -1383,16 +1944,25 @@ function exitToHub() {
 /* ══════════════════════════════════════════════════════════════════════════
    INPUT
    ══════════════════════════════════════════════════════════════════════════ */
+/* A scan list is anywhere Space steps and Space-held walks backwards. The power
+   meter is not one of those: there Space IS the charge, so backward scanning is
+   scoped out of it the way the reference games scope theirs (AGENTS.md, "The
+   backward-scan conflict"). Everywhere the player is picking from a list, the
+   3-second backward hold still works exactly as it does hub-wide. */
+function inScanList() {
+  return G.screen === 'overlay' || (G.screen === 'cast' && G.stage === 'direction');
+}
+
 function scanNext() {
   if (G.screen === 'overlay') menuStep(1);
-  else if (G.screen === 'cast') scanStep(1);
+  else if (G.screen === 'cast' && G.stage === 'direction') scanStep(1);
   else if (G.screen === 'biting') resolveBiting();
   else if (G.screen === 'catch') catchPress('red');
   resetAutoScan();
 }
 function scanPrev() {
   if (G.screen === 'overlay') menuStep(-1);
-  else if (G.screen === 'cast') scanStep(-1);
+  else if (G.screen === 'cast' && G.stage === 'direction') scanStep(-1);
 }
 function selectCurrent() {
   if (G.screen === 'overlay') menuSelect();
@@ -1410,12 +1980,12 @@ function startHoldScan() {
 function resetAutoScan() {
   stopAutoScan();
   if (!autoScanOn()) return;
-  if (G.screen !== 'cast' && G.screen !== 'overlay') return;
+  if (!inScanList()) return;              // the meter moves itself, not by ticks
   const iv = scanInterval();
   if (iv > 0) timers.auto = setInterval(() => {
+    if (!inScanList()) { stopAutoScan(); return; }
     if (G.screen === 'overlay') menuStep(1);
-    else if (G.screen === 'cast') scanStep(1);
-    else stopAutoScan();
+    else scanStep(1);
   }, iv);
 }
 function stopAutoScan() {
@@ -1428,7 +1998,11 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     if (input.spaceDown) return;
     input.spaceDown = true;
-    timers.space = setTimeout(() => { timers.space = null; startHoldScan(); }, CFG.SPACE_HOLD_MS);
+    if (meterStage()) {
+      startMeter();            // the charge moves from the first instant of the hold
+    } else {
+      timers.space = setTimeout(() => { timers.space = null; startHoldScan(); }, CFG.SPACE_HOLD_MS);
+    }
   } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
     e.preventDefault();
     if (input.retDown) return;
@@ -1445,6 +2019,7 @@ document.addEventListener('keyup', e => {
     if (timers.space) { clearTimeout(timers.space); timers.space = null; }
     const wasHolding = !!timers.spaceRepeat;
     if (timers.spaceRepeat) { clearInterval(timers.spaceRepeat); timers.spaceRepeat = null; }
+    if (meterStage()) { releaseMeter(); return; }   // release only ever stops it
     if (!wasHolding) scanNext();
   } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
     e.preventDefault();
@@ -1455,6 +2030,21 @@ document.addEventListener('keyup', e => {
     input.retLong = false;
   }
 });
+
+/* The meter by mouse or touch: press and hold to fill it, let go to stop it,
+   then press Cast. Optional, same as everywhere else in the hub, and never a
+   drag — a press and a release is the whole gesture. */
+const meterDown = e => {
+  if (!meterStage()) return;
+  e.preventDefault();
+  startMeter();
+};
+powerMeter.box.addEventListener('mousedown', meterDown);
+powerMeter.box.addEventListener('touchstart', meterDown, { passive: false });
+// Released anywhere: sliding off the meter mid-hold must still stop it.
+window.addEventListener('mouseup',  () => { if (meterStage()) releaseMeter(); });
+window.addEventListener('touchend', () => { if (meterStage()) releaseMeter(); });
+$('btnCast').addEventListener('click', () => { if (meterStage()) confirmCast(); });
 
 $('btnHelp').addEventListener('click', () => openOverlay('help'));
 $('btnSet').addEventListener('click', () => openOverlay('settings'));
@@ -1488,6 +2078,9 @@ function loop(now) {
       G.bitingTimer += dt;
       if (G.bitingTimer >= CFG.BITING_DURATION) resolveBiting();
     }
+    stepMeter(dt);
+    if (G.screen === 'catch') G.glowT = (G.glowT + dt) % CFG.GLOW_PERIOD_S;
+    updateCatchGlow();
     draw();
   } catch (err) {
     console.error(err);
@@ -1508,7 +2101,7 @@ function boot() {
   G.lakeId = save.currentLakeId;
   const progress = ensureLakeProgress(G.lakeId);
   G.LAKE = LG.generateLake(lakeTemplateById(G.lakeId), progress.seed);
-  G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2), power: 0 };
+  G.pick = { direction: Math.floor(G.LAKE.sectors.length / 2) };
   saveProgress();
 
   enterCast(true);

@@ -5,8 +5,8 @@
  * ever needs to exist as a forward-facing fan, not a closed shape. A lake is
  * SECTOR_COUNT pie slices spanning a fixed forward arc; each slice has a
  * radius wobble (a hand-rolled, seeded fake-Perlin — a few sine waves, no
- * noise library) so no two lakes look identical, and a near/mid/far band of
- * biome ids drawn from that lake template's biomeIds list.
+ * noise library) so no two lakes look identical, and a near/mid/far/deep band
+ * of biome ids taken from that lake template's biomeIds list.
  *
  * Everything here is a pure function of (lakeTemplate, seed): regenerating a
  * lake from its stored seed always reproduces the same layout, so nothing
@@ -17,8 +17,24 @@ window.FishMasterLakeGen = (function () {
 
   const SECTOR_COUNT = 5;
   const ARC_DEG = 140; // total forward arc, centred on straight-ahead (0deg)
-  const BANDS = ['near', 'mid', 'far'];
-  const BAND_LABEL = { near: 'Near', mid: 'Mid-range', far: 'Far' };
+  const BANDS = ['near', 'mid', 'far', 'deep'];
+  const BAND_LABEL = { near: 'Near', mid: 'Mid-range', far: 'Far', deep: 'Deep water' };
+
+  // Where each band ENDS, as a fraction of the fishable water in that
+  // direction. With art.js loaded that is the painted shoreline inset by
+  // WATER_INSET (art.js's waterRadius), not a bare CFG.LAKE_MAX_R circle, so
+  // the bands follow the organic bank instead of cutting arcs across it. Rod
+  // reach (data.js `reachFrac`) is measured against the same water, so these
+  // numbers and the rod numbers have to be read together — see the reach table
+  // in data.js's RODS comment.
+  const BAND_FRAC = { near: 0.28, mid: 0.52, far: 0.78, deep: 1.0 };
+
+  // How much a sector's outer edge may differ from the average. Kept tight on
+  // purpose: rod reach is compared against band edges that this scales, so a
+  // wilder wobble would smear the "which rod reaches which water" table in
+  // data.js into something no player could predict.
+  const RADIUS_MUL_MIN = 0.85;
+  const RADIUS_MUL_MAX = 1.15;
 
   // Deterministic PRNG (mulberry32) — same seed always produces the same
   // sequence, which is what lets a lake's layout survive a page reload.
@@ -40,18 +56,34 @@ window.FishMasterLakeGen = (function () {
     return 'Far Right';
   }
 
+  /* A lake template names four biomes in depth order. Anything shorter is
+     padded by cycling, so a half-authored template still generates rather than
+     throwing — the objective feasibility filter in game.js is what decides
+     whether the result is playable, not this function. */
+  function fourBiomes(biomeIds) {
+    const out = [];
+    for (let i = 0; i < 4; i++) out.push(biomeIds[i % biomeIds.length]);
+    return out;
+  }
+
   /**
    * Builds SECTOR_COUNT sectors across the forward arc. Each sector gets:
    *  - bearing: degrees from straight ahead, negative = left
-   *  - radiusMul: 0.7-1.3, a seeded wobble so lake shape varies per seed
-   *  - biomesByBand: { near, mid, far } -> biome id, cyclically assigned from
-   *    the lake template's biomeIds with a seeded jitter so bands don't line
-   *    up identically across every sector.
+   *  - radiusMul: RADIUS_MUL_MIN-MAX, a seeded wobble so lake shape varies
+   *  - biomesByBand: { near, mid, far, deep } -> biome id.
+   *
+   * The template's four biomes are read as two pairs — [near/mid] and
+   * [far/deep] — and each pair is flipped or not per sector on a seeded coin
+   * toss. Depth order is never broken (a deep-water biome never turns up in
+   * the near band), so "cast further" always means "fish deeper" and a rod
+   * upgrade always opens water that really was unreachable. What direction
+   * buys you is which of the pair sits closer: cast left and the weeds may be
+   * right off the boat, cast right and you have to throw past the shallows to
+   * find them.
    */
   function generateLake(lakeTemplate, seed) {
     const rand = mulberry32(seed);
-    const biomeIds = lakeTemplate.biomeIds;
-    const n = biomeIds.length;
+    const biomeIds = fourBiomes(lakeTemplate.biomeIds);
     const step = ARC_DEG / (SECTOR_COUNT - 1);
     const sectors = [];
 
@@ -59,15 +91,16 @@ window.FishMasterLakeGen = (function () {
       const bearing = -ARC_DEG / 2 + step * i;
       // Two seeded sine waves stand in for real Perlin noise — cheap, smooth,
       // and reproducible from the same seed without vendoring a library.
-      const noise = 0.15 * Math.sin(seed * 0.13 + i * 1.7) + 0.10 * Math.sin(seed * 0.31 + i * 3.1);
-      const radiusMul = Math.max(0.7, Math.min(1.3, 1 + noise));
+      const noise = 0.09 * Math.sin(seed * 0.13 + i * 1.7) + 0.06 * Math.sin(seed * 0.31 + i * 3.1);
+      const radiusMul = Math.max(RADIUS_MUL_MIN, Math.min(RADIUS_MUL_MAX, 1 + noise));
 
-      const offset = i % n;
-      const jitter = Math.floor(rand() * n);
+      const flipShallow = rand() < 0.5;
+      const flipDeep = rand() < 0.5;
       const biomesByBand = {
-        near: biomeIds[offset % n],
-        mid:  biomeIds[(offset + 1 + (jitter % Math.max(1, n - 1))) % n],
-        far:  biomeIds[(offset + 2) % n]
+        near: biomeIds[flipShallow ? 1 : 0],
+        mid:  biomeIds[flipShallow ? 0 : 1],
+        far:  biomeIds[flipDeep ? 3 : 2],
+        deep: biomeIds[flipDeep ? 2 : 3]
       };
 
       sectors.push({ index: i, bearing, bearingLabel: bearingLabel(bearing), radiusMul, biomesByBand });
@@ -79,6 +112,29 @@ window.FishMasterLakeGen = (function () {
   function biomeAt(lake, sectorIndex, band) {
     const s = lake.sectors[sectorIndex];
     return s ? s.biomesByBand[band] : null;
+  }
+
+  /* The band a cast lands in, given how far it went as a fraction of
+     CFG.LAKE_MAX_R. Band edges scale with the sector's own radiusMul, which is
+     why the same distance is "far water" in a short direction and only
+     "mid-range" in a long one. */
+  function bandForFrac(frac, radiusMul) {
+    for (const band of BANDS) {
+      if (frac <= BAND_FRAC[band] * radiusMul + 1e-9) return band;
+    }
+    return BANDS[BANDS.length - 1];
+  }
+
+  /* Which bands a given reach can actually put a lure into, for this sector.
+     A band is in reach once you can get past the end of the one before it. */
+  function reachableBands(reachFrac, radiusMul) {
+    const out = [];
+    let prevEdge = 0;
+    for (const band of BANDS) {
+      if (reachFrac > prevEdge + 1e-9) out.push(band);
+      prevEdge = BAND_FRAC[band] * radiusMul;
+    }
+    return out.length ? out : [BANDS[0]];
   }
 
   /**
@@ -101,8 +157,12 @@ window.FishMasterLakeGen = (function () {
     return sectors[i].radiusMul * (1 - smooth) + sectors[i + 1].radiusMul * smooth;
   }
 
-  // mulberry32 is exported so art.js can seed its own decoration (boulder
-  // placement, lily pads) off the same lake seed — one PRNG, one source of
-  // determinism, so a lake's art reloads identical to its layout.
-  return { generateLake, biomeAt, radiusMulAt, mulberry32, BANDS, BAND_LABEL, ARC_DEG, SECTOR_COUNT };
+  return {
+    generateLake, biomeAt, bandForFrac, reachableBands, radiusMulAt,
+    // mulberry32 is exported so art.js can seed its own decoration (boulder
+    // placement, lily pads) off the same lake seed — one PRNG, one source of
+    // determinism, so a lake's art reloads identical to its layout.
+    mulberry32,
+    BANDS, BAND_LABEL, BAND_FRAC, ARC_DEG, SECTOR_COUNT
+  };
 })();
