@@ -41,34 +41,67 @@ window.FishMasterData = (function () {
   ];
 
   // ── Rods (permanent gear) ─────────────────────────────────────────────────
-  // `reachFrac` is how far a rod throws at full charge, as a fraction of
-  // CFG.LAKE_MAX_R. The depth bands (LG.BAND_FRAC) are fractions of the
-  // FISHABLE WATER in a direction, which with art.js loaded is the painted
-  // shoreline inset by WATER_INSET — so reach and the pond's shape interact:
-  // the same rod reaches the deep channel where the pond runs short and falls
-  // into the drop-off where it runs long. That is what makes both a rod
-  // upgrade and a choice of direction matter, instead of the old named power
-  // tiers where two of the four rods reached exactly the same water.
+  // `reachFt` is how far a rod throws at full charge, in real feet — the same
+  // unit each lake's `maxRadiusFt` (below) is measured in. At runtime a rod's
+  // actual reachFrac (fraction of CFG.LAKE_MAX_R, what every band/landing
+  // calculation in game.js actually uses) is reachFt divided by the CURRENT
+  // lake's maxRadiusFt, computed fresh by game.js's reachFracOf() rather than
+  // stored here — the same rod throws a smaller fraction of a bigger lake.
+  // That division is the whole progression: a rod bought on a small lake goes
+  // slack on a bigger one, which is what makes the next rod worth buying
+  // instead of a number going up for its own sake. Every value below is a
+  // multiple of 25 feet, the standard unit this game measures both rods and
+  // lakes against.
   //
-  // These four numbers are DERIVED, not chosen by feel. The painted bank runs
-  // 0.666-1.123 of LAKE_MAX_R (radiusMul 0.85-1.15 times art.js's own seeded
-  // shoreline noise of +/-0.11, times WATER_INSET 0.88), so with band edges at
-  // .28/.52/.78/1.0 each rod has a window it must sit inside:
+  // The depth bands (LG.BAND_FRAC) are fractions of the FISHABLE WATER in a
+  // direction, which with art.js loaded is the painted shoreline inset by
+  // WATER_INSET — so reach and the pond's shape interact: the same rod reaches
+  // the deep channel where the pond runs short and falls into the drop-off
+  // where it runs long.
   //
-  //   starter     > .28x1.123 = .315  (mid everywhere)   < .52x0.666 = .346  (never far)
-  //   castmaster  > .346  (far somewhere)                < .78x0.666 = .519  (never deep)
-  //   longshot    > .52x1.123 = .584  (far everywhere)   < .78x1.123 = .876  (not deep everywhere)
-  //   titanium    > .876  (deep everywhere)
+  // Each reachFt is DERIVED, not chosen by feel, against its own HOME lake
+  // (the lake named in unlockLakeId — where it is first sold). Two passes go
+  // into that derivation:
   //
-  // Widen radiusMul, or art.js's shoreline noise, or move a band edge, and
-  // these windows move with them — the values below stop being correct and the
-  // progression quietly breaks. Re-derive from the bounds above if any of that
-  // changes; `starter` in particular has only a .03 window to sit in.
+  // 1. A coarse worst-case bound: the painted bank runs 0.666-1.123 of a
+  //    lake's maxRadiusFt (radiusMul 0.85-1.15 times art.js's own seeded
+  //    shoreline noise of +/-0.11, times WATER_INSET 0.88), so with band edges
+  //    at .28/.52/.78/1.0, reachFt / homeLake.maxRadiusFt has to clear:
+  //
+  //      starter     > .28x1.123 = .315  (mid everywhere)   < .52x0.666 = .346  (never far)
+  //      castmaster  > .346  (far somewhere)                < .78x0.666 = .519  (never deep)
+  //      longshot    > .52x1.123 = .584  (far everywhere)   < .78x1.123 = .876  (not deep everywhere)
+  //      titanium    > .876  (deep everywhere)
+  //
+  //    That bound uses the worst 5-sector alignment the noise could produce,
+  //    which real generated lakes rarely land on — a rod sitting right above
+  //    a band's floor by this measure can still miss that band on 4 of 5
+  //    sectors in practice (confirmed by simulating LG.generateLake against
+  //    real seeds: at the floor, castmaster reached "far" on only 1-3 of 5).
+  //
+  // 2. A Monte Carlo check against thousands of actual generateLake() rolls,
+  //    counting how many of the 5 sectors actually land in the intended band.
+  //    castmaster's 125ft clears "far" on all 5 sectors ~96% of the time (and
+  //    the rest, 4 of 5), with an incidental "deep" sector in only ~4% of
+  //    lakes — a bonus in the shortest direction, not a break in the design.
+  //    longshot and titanium already hit their bands on 5/5 sectors at the
+  //    coarse-bound numbers, so only castmaster needed the second pass.
+  //
+  // Carried to a LATER (bigger) lake, the same reachFt divides by a larger
+  // maxRadiusFt and slides into a weaker window there — e.g. castmaster's
+  // 125ft, which clears "far" everywhere at Cedar Hollow Pond (225ft), only
+  // reaches "mid" at Blackwater Reservoir (350ft: 125/350 = .357). That
+  // relegation is intentional; it's what makes the rod sold at the bigger
+  // lake worth buying.
+  //
+  // Widen radiusMul, art.js's shoreline noise, or move a band edge, and both
+  // passes need re-running — the coarse bound as a sanity floor, the
+  // simulation as the actual target.
   const RODS = [
-    { id: 'starter',    name: 'Starter Rod',      cost: 0,    reachFrac: 0.330, reachNote: 'Reaches the mid-range water in any direction.',                   unlockLakeId: 'lake1' },
-    { id: 'castmaster', name: 'CastMaster 3000',  cost: 150,  reachFrac: 0.470, reachNote: 'Reaches the far water where the pond runs short.',                unlockLakeId: 'lake1' },
-    { id: 'longshot',   name: 'Longshot Pro',     cost: 500,  reachFrac: 0.660, reachNote: 'Reaches the far water anywhere, and the deep water where short.', unlockLakeId: 'lake2' },
-    { id: 'titanium',   name: 'Titanium Ace',     cost: 1400, reachFrac: 1.050, reachNote: 'Reaches the deep water in every direction.',                      unlockLakeId: 'lake3' }
+    { id: 'starter',    name: 'Starter Rod',      cost: 0,    reachFt: 75,  reachNote: 'Casts up to 75 feet at full charge.',  unlockLakeId: 'lake1' },
+    { id: 'castmaster', name: 'CastMaster 3000',  cost: 150,  reachFt: 125, reachNote: 'Casts up to 125 feet at full charge.', unlockLakeId: 'lake1' },
+    { id: 'longshot',   name: 'Longshot Pro',     cost: 500,  reachFt: 225, reachNote: 'Casts up to 225 feet at full charge.', unlockLakeId: 'lake2' },
+    { id: 'titanium',   name: 'Titanium Ace',     cost: 1400, reachFt: 500, reachNote: 'Casts up to 500 feet at full charge.', unlockLakeId: 'lake3' }
   ];
 
   // ── Bait & lures (consumable, repurchasable once unlocked) ───────────────
@@ -120,9 +153,17 @@ window.FishMasterData = (function () {
   // that cannot be completed on the level it belongs to.
   //
   // unlocks: what becomes available once every objective is complete.
+  //
+  // `maxRadiusFt` is how far this lake's fishable water reaches, in the same
+  // feet a rod's `reachFt` (see the RODS comment) is measured in — the two
+  // divide at runtime (game.js reachFracOf()) into the reachFrac every band
+  // and landing calculation actually uses. Each lake is 125 feet bigger than
+  // the last: the water isn't harder to fish as you progress, it's bigger,
+  // which is what a rod upgrade is actually buying back.
   const LAKE_TEMPLATES = [
     {
       id: 'lake1', name: 'Cedar Hollow Pond',
+      maxRadiusFt: 225,
       biomeIds: ['shallows', 'weedbed', 'dropoff', 'rockyshore'],
       objectiveCount: 2,
       objectivePool: [
@@ -136,6 +177,7 @@ window.FishMasterData = (function () {
     },
     {
       id: 'lake2', name: 'Blackwater Reservoir',
+      maxRadiusFt: 350,
       biomeIds: ['shallows', 'rockyshore', 'dropoff', 'deepchannel'],
       objectiveCount: 2,
       objectivePool: [
@@ -149,6 +191,7 @@ window.FishMasterData = (function () {
     },
     {
       id: 'lake3', name: 'Old Sawmill Lake',
+      maxRadiusFt: 475,
       biomeIds: ['shallows', 'weedbed', 'dropoff', 'deepchannel'],
       objectiveCount: 2,
       objectivePool: [

@@ -41,12 +41,13 @@ const CFG = {
   // Band edges live in lakegen.js (LG.BAND_FRAC) because rod reach is measured
   // against the same radius and the two tables only make sense side by side.
 
-  /* Hold-to-charge casting. Deliberately slow — AGENTS.md asks for "a speed Ben
-     can actually stop on, not a demo-friendly one" — so a full charge takes
-     twenty seconds, the same pace BENNYSBALLISTA sweeps and charges at. The
-     meter stops dead at 100% and stays there; over-holding is never worse than
-     stopping at the perfect moment, because there is no perfect moment. */
-  CHARGE_PCT_PER_S: 5,
+  /* Hold-to-charge casting. Still well inside AGENTS.md's "a speed Ben can
+     actually stop on" — BENNYSMINIGOLF's own Fast setting charges at this same
+     10-second pace, it just isn't the only speed offered there. A full charge
+     takes ten seconds; the meter stops dead at 100% and stays there, so
+     over-holding is never worse than stopping at the perfect moment, because
+     there is no perfect moment. */
+  CHARGE_PCT_PER_S: 10,
   CHARGE_TICK_PCT : 10,    // click every this much charge, so the ear tracks it too
   MIN_CAST_FRAC   : 0.06,  // even a 0% cast plops in the water beside the boat
 
@@ -287,15 +288,27 @@ function lakeBitmap() {
 /* ── Reach: what water a rod can actually put a lure into ────────────────── */
 function rodById(id) { return D.RODS.find(r => r.id === id) || D.RODS[0]; }
 
+/* A rod's reachFt (data.js) is fixed; how much of the water that actually is
+   is not — it's divided by the CURRENT lake's maxRadiusFt, so the same rod
+   reaches a smaller slice of a bigger lake. This is the one place that
+   division happens; every reachFrac used below reads through here rather than
+   off a stored field. See data.js's RODS comment for why. */
+function reachFracOf(rodItem, template) {
+  const t = template || (G.LAKE && lakeTemplateById(G.LAKE.lakeId)) || D.LAKE_TEMPLATES[0];
+  return rodItem.reachFt / t.maxRadiusFt;
+}
+
 /* The best rod the player is ABLE to have here, not the one they happen to be
    holding — every rod in unlockedRods is buyable with money that fishing always
    earns, so an objective behind a rod upgrade is a thing to work towards, not a
    wall. What is NOT allowed is an objective behind a rod this lake never
-   unlocks; that is the case objectiveFeasible() exists to throw out. */
+   unlocks; that is the case objectiveFeasible() exists to throw out. Compared
+   by reachFt, not reachFrac: reachFt is a fixed per-rod number, so "which rod
+   is stronger" doesn't need a lake in hand to answer. */
 function bestUnlockedRod() {
   return (save.unlockedRods || ['starter'])
     .map(rodById)
-    .reduce((best, r) => (!best || r.reachFrac > best.reachFrac ? r : best), null) || D.RODS[0];
+    .reduce((best, r) => (!best || r.reachFt > best.reachFt ? r : best), null) || D.RODS[0];
 }
 
 /* How much fishable water this direction has, as a fraction of CFG.LAKE_MAX_R.
@@ -315,15 +328,21 @@ function waterFracFor(sector) {
 }
 
 /* How far this rod can throw in this direction — its own reach, or the far
-   bank, whichever comes first. Nothing is gained by casting onto dry land. */
-function maxReachFrac(sector, rodItem) {
-  return Math.min((rodItem || rod()).reachFrac, waterFracFor(sector));
+   bank, whichever comes first. Nothing is gained by casting onto dry land.
+   `template` is passed explicitly rather than read off G.LAKE because
+   reachableBiomeIds() below is also called from pickLakeSetup() against a
+   CANDIDATE lake, before it's ever assigned to G.LAKE — using the global
+   there would score reach against whichever lake the player is currently
+   standing on, not the one being generated. */
+function maxReachFrac(sector, rodItem, template) {
+  return Math.min(reachFracOf(rodItem || rod(), template), waterFracFor(sector));
 }
 
 function reachableBiomeIds(lake, rodItem) {
+  const template = lakeTemplateById(lake.lakeId);
   const out = [];
   lake.sectors.forEach(s => {
-    LG.reachableBands(maxReachFrac(s, rodItem), waterFracFor(s)).forEach(band => {
+    LG.reachableBands(maxReachFrac(s, rodItem, template), waterFracFor(s)).forEach(band => {
       const id = s.biomesByBand[band];
       if (out.indexOf(id) === -1) out.push(id);
     });
@@ -455,7 +474,7 @@ function objectiveGearHint(obj) {
   const have = catchableSpeciesIds(G.LAKE, rod());
   if (have.indexOf(obj.speciesId) !== -1) return '';
   const better = D.RODS
-    .filter(r => r.reachFrac > rod().reachFrac && save.unlockedRods.indexOf(r.id) !== -1)
+    .filter(r => r.reachFt > rod().reachFt && save.unlockedRods.indexOf(r.id) !== -1)
     .filter(r => catchableSpeciesIds(G.LAKE, r).indexOf(obj.speciesId) !== -1)
     .sort((a, b) => a.cost - b.cost)[0];
   const fish = fishById(obj.speciesId).name;
@@ -622,11 +641,14 @@ function computeLanding(opts) {
   // Reach is clamped to the water's edge: over-charging lands at the back of
   // the pond, never on the rocks, and never costs anything.
   const water = waterFracFor(sector);
-  const thrown = rod().reachFrac * (pct / 100);
+  const thrown = reachFracOf(rod()) * (pct / 100);
   const frac = Math.max(CFG.MIN_CAST_FRAC, Math.min(thrown, water));
   const band = LG.bandForFrac(frac, water);
   const biomeId = LG.biomeAt(G.LAKE, sector.index, band);
   const radius = CFG.LAKE_MAX_R * frac;
+  // Real-world distance for narration/UI — frac is already relative to this
+  // lake's own maxRadiusFt, so it converts straight across.
+  const distanceFt = Math.round(frac * lakeTemplateById(G.LAKE.lakeId).maxRadiusFt);
   // art.js's project() is the one place a (bearing, radius) becomes a pixel —
   // it carries the perspective squash, so calling it is what keeps the bobber
   // on the patch of water the game just narrated.
@@ -635,7 +657,7 @@ function computeLanding(opts) {
     return { x: CFG.BOAT_X + radius * Math.cos(angleRad), y: CFG.BOAT_Y + radius * Math.sin(angleRad) };
   })();
   const capped = thrown > water + 1e-9;
-  return { sector, pct, band, biomeId, radius, frac, point, capped, water };
+  return { sector, pct, band, biomeId, radius, frac, point, capped, water, distanceFt };
 }
 function updatePreview() { G.preview = (G.screen === 'cast') ? computeLanding() : null; }
 
@@ -692,8 +714,8 @@ function stopCharge() {
   const l = computeLanding();
   const full = G.powerPct >= 100;
   const where = l.capped
-    ? `${Math.round(G.powerPct)} percent — that is as far as the lake goes this way. `
-    : `${Math.round(G.powerPct)} percent. `;
+    ? `${Math.round(G.powerPct)} percent — about ${l.distanceFt} feet, as far as the lake goes this way. `
+    : `${Math.round(G.powerPct)} percent, about ${l.distanceFt} feet. `;
   speak(`${full ? 'Full power. ' : ''}${where}${LG.BAND_LABEL[l.band]}: ${biomeNarrationPhrase(l.biomeId)} `
       + (full ? 'Press return to cast, or hold return to go back and set it again.'
               : 'Press return to cast, or hold space to charge further.'));
@@ -718,7 +740,7 @@ function renderMeters() {
 
   powerMeter.fill.style.width = G.powerPct.toFixed(1) + '%';
   powerMeter.val.innerHTML = l
-    ? `${pct}% <span class="msub">${LG.BAND_LABEL[l.band]} · ${D.BIOMES[l.biomeId].name}</span>`
+    ? `${pct}% <span class="msub">${l.distanceFt} ft · ${LG.BAND_LABEL[l.band]} · ${D.BIOMES[l.biomeId].name}</span>`
     : `${pct}%`;
   powerMeter.box.setAttribute('aria-valuenow', pct);
 
@@ -741,7 +763,7 @@ function renderBandMarks() {
   if (!G.LAKE) { powerMeter.marks.innerHTML = ''; return; }
   const sector = G.LAKE.sectors[(G.screen === 'cast' && G.stage === 'direction' && G.scan !== -1) ? G.scan : G.pick.direction]
               || G.LAKE.sectors[0];
-  const reach = rod().reachFrac;
+  const reach = reachFracOf(rod());
   const water = waterFracFor(sector);
   let html = '';
   LG.BANDS.forEach((band, i) => {
@@ -1180,7 +1202,7 @@ function drawBoat() {
 function drawReachLimit() {
   if (!G.LAKE) return;
   const half = LG.ARC_DEG / 2;
-  const reach = rod().reachFrac;
+  const reach = reachFracOf(rod());
   const pts = [];
   for (let b = -half; b <= half + 0.001; b += 2) {
     const water = A ? A.waterRadius(G.LAKE, b, GEOM) / CFG.LAKE_MAX_R : LG.radiusMulAt(G.LAKE, b);

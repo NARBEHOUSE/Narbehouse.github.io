@@ -32,7 +32,7 @@ a power:
    switch slipping out of a hand costs nothing: you can stop, hear where the
    cast would land, and hold again to add more.
 
-The meter fills 0 → 100% in twenty seconds and then **stops dead at the top**.
+The meter fills 0 → 100% in ten seconds and then **stops dead at the top**.
 Holding too long is never worse than letting go at the right moment, because
 there is no right moment — there is no sweet spot, no timer, and no penalty for
 a slow release. A dotted line and the meter's own readout name the exact biome
@@ -88,27 +88,44 @@ shallow biomes sits closest to the boat, and which deep one sits at the back,
 changes with the direction you cast. Depth order itself never breaks, so casting
 further always means fishing deeper.
 
-A rod's `reachFrac` is how far it throws at full charge. Band edges are
-fractions of the fishable water in a direction — which the painted shoreline
-decides — so reach and pond shape interact: the same rod reaches the deep
-channel where the pond runs short and falls into the drop-off where it runs
-long:
+## Lakes get bigger, not just harder
 
-| Rod | Reaches |
-|---|---|
-| Starter Rod | Mid-range in every direction; never the far water |
-| CastMaster 3000 | The far water where the lake runs short |
-| Longshot Pro | Far everywhere; deep where the lake runs short |
-| Titanium Ace | The deep water in every direction, out to the far bank |
+Each lake has its own `maxRadiusFt` — how far its fishable water actually
+reaches, in feet — and it grows every level: Cedar Hollow Pond is 225 feet
+across, Blackwater Reservoir 350, Old Sawmill Lake 475. A rod's `reachFt` is
+how far *it* throws at full charge, also in feet, and is fixed once bought.
+What actually decides where a cast lands is the ratio of the two, computed
+fresh for whichever lake you're standing on — so the same rod reaches a
+smaller slice of a bigger lake. That's the whole point of a rod upgrade: the
+water didn't get harder to fish, it got bigger, and the old rod goes slack.
 
-The faint dashed curve on the water is the rod's limit, and the marks on the
-power meter are where the water gets deeper — so "how hard do I have to throw to
-reach the weeds" is something you can see rather than memorise.
+| Rod | Reach | On its home lake |
+|---|---|---|
+| Starter Rod | 75 ft | Mid-range in every direction; never the far water |
+| CastMaster 3000 | 125 ft | The far water in every direction (occasionally deeper, where the lake runs shortest) |
+| Longshot Pro | 225 ft | Far everywhere; deep in most directions |
+| Titanium Ace | 500 ft | The deep water in every direction, out to the far bank |
 
-Those four `reachFrac` numbers are derived from the shoreline's measured spread,
-not chosen by feel — the derivation is in `data.js`'s `RODS` comment, and
-`starter` has only a 0.03 window to sit in. Widening `radiusMul`, changing
-art.js's shoreline noise, or moving a band edge invalidates them.
+Carry a rod to a *later* lake and it slides down a tier — a CastMaster that
+reaches "far everywhere" at Cedar Hollow Pond only reaches "mid" at Blackwater
+Reservoir, because the same 125 feet is a smaller fraction of 350 feet than it
+is of 225. The faint dashed curve on the water is the current rod's limit at
+the current lake, and the marks on the power meter are where the water gets
+deeper — so "how hard do I have to throw to reach the weeds" is something you
+can see rather than memorise. The meter and the cast narration both call out
+the actual distance in feet as you charge.
+
+Both the rod numbers and the lake numbers are derived from the shoreline's
+measured spread — the derivation is in `data.js`'s `RODS` and `LAKE_TEMPLATES`
+comments. A coarse worst-case bound gets each rod in the right neighbourhood,
+but that bound is conservative enough that a rod sitting right above it can
+still miss its intended band on most sectors of a real generated lake — that's
+what undersized CastMaster's original 100ft, reaching "far" on only 1-3 of 5
+sectors instead of "everywhere". Rods past that first pass get a Monte Carlo
+check against thousands of actual `generateLake()` rolls to confirm they hit
+their band on most or all of the 5 sectors in practice, not just on paper.
+Widening `radiusMul`, changing art.js's shoreline noise, or moving a band edge
+invalidates both passes.
 
 ## Objectives are always completable
 
@@ -189,11 +206,12 @@ and rods.
 
 ### Gameplay
 
-- `LG.BAND_FRAC` (lakegen) and each rod's `reachFrac` (data) only make sense
-  read together: both are measured against the fishable water in a direction,
-  which the painted bank decides, and the reach table
-  in data.js's `RODS` comment is the derivation. Changing either one without the
-  other is what would quietly break rod progression.
+- `LG.BAND_FRAC` (lakegen), each rod's `reachFt`, and each lake's `maxRadiusFt`
+  (both data.js) only make sense read together: a rod's actual reachFrac is
+  `reachFt / currentLake.maxRadiusFt` (game.js `reachFracOf()`), and that's
+  what every band and landing calculation actually uses. The reach table in
+  data.js's `RODS` comment is the derivation. Changing any one of the three
+  without re-deriving the others is what would quietly break rod progression.
 - `computeLanding()` is the single answer to "where does a cast go" — the dotted
   line, the direction chips' sublabels, the meter readout and the spoken
   narration all read it, so they cannot drift into saying four different things.
