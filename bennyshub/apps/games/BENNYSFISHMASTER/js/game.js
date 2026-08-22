@@ -1429,6 +1429,7 @@ function secretBaitRow() {
       save.money -= bait.costPerUnit;
       save.ownedBait[bait.id] = (save.ownedBait[bait.id] || 0) + 1;
       saveProgress();
+      updateHud();
       speak('Purchased. Better equip it and see what bites.');
     }
   };
@@ -1478,6 +1479,7 @@ const MENUS = {
           save.money -= bait.costPerUnit;
           save.ownedBait[bait.id] = (save.ownedBait[bait.id] || 0) + 1;
           saveProgress();
+          updateHud();
           speak(`Bought one ${bait.name}.`);
         }
       });
@@ -1577,6 +1579,7 @@ const MENUS = {
         save.money += item.value;
         save.creel.splice(i, 1);
         saveProgress();
+        updateHud();
         speak(`Sold for ${item.value} dollars.`);
         renderOverlay();
       }
@@ -1588,6 +1591,7 @@ const MENUS = {
         save.money += total;
         save.creel = [];
         saveProgress();
+        updateHud();
         speak(`Sold everything for ${total} dollars.`);
         renderOverlay();
       }
