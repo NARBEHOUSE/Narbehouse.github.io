@@ -40,8 +40,8 @@ window.FishMasterData = (function () {
     { id: 'sturgeon',     name: 'Lake Sturgeon',        biomeIds: ['deepchannel'],                     difficultyTier: 5, lengthRange: [36, 84],  weightRange: [10, 120],   baseValuePerWeight: 6, unlockLakeId: 'lake3' },
     { id: 'muskie',       name: 'Muskellunge',          biomeIds: ['weedbed', 'deepchannel'],          difficultyTier: 5, lengthRange: [30, 60],  weightRange: [8, 40],     baseValuePerWeight: 7, unlockLakeId: 'lake3' },
     { id: 'gar',          name: 'Longnose Gar',         biomeIds: ['weedbed', 'deepchannel'],          difficultyTier: 4, lengthRange: [24, 48],  weightRange: [3, 18],     baseValuePerWeight: 4, unlockLakeId: 'lake3' },
-    // Secret bonus fish — see the "??? Pill Bottle" bait below. Lives in every
-    // biome so any lake can turn it up once the bait is equipped.
+    // Secret bonus fish — see the "Vitamin T" secret bait below. Lives in
+    // every biome so any lake can turn it up once the bait is equipped.
     { id: 'largemouth_dingus', name: 'Largemouth Dingus', biomeIds: ['shallows', 'weedbed', 'dropoff', 'rockyshore', 'deepchannel'], difficultyTier: 3, lengthRange: [12, 12], weightRange: [5, 5], baseValuePerWeight: 0, unlockLakeId: 'lake1', secret: true }
   ];
 
@@ -118,9 +118,10 @@ window.FishMasterData = (function () {
     { id: 'minnowlure',    name: 'Minnow Lure',     costPerUnit: 5,    biasTable: { walleye: 1.8, perch: 1.4, smallmouth: 1.3 },        unlockLakeId: 'lake1' },
     { id: 'spinnerbait',   name: 'Spinnerbait',     costPerUnit: 8,    biasTable: { pike: 1.9, muskie: 1.5 },                           unlockLakeId: 'lake2' },
     { id: 'stinkbait',     name: 'Stink Bait',      costPerUnit: 6,    biasTable: { catfish: 2.0, sturgeon: 1.4 },                      unlockLakeId: 'lake2' },
-    // Secret bonus bait — not shown until it's been unlocked (see game.js
-    // shop rendering), priced deliberately absurd.
-    { id: 'secret_t_pill', name: '??? Pill Bottle', costPerUnit: 5000, biasTable: { largemouth_dingus: 60 }, unlockLakeId: 'lake1', secret: true }
+    // Secret bonus bait — shown as "?????" in the shop until every lake's
+    // objectives are cleared (see game.js secretBaitRow), then revealed under
+    // its real name below and made purchasable. Priced deliberately absurd.
+    { id: 'secret_t_pill', name: 'Vitamin T', costPerUnit: 5000, biasTable: { largemouth_dingus: 60 }, unlockLakeId: 'lake1', secret: true }
   ];
 
   // ── Non-fish catches ──────────────────────────────────────────────────────

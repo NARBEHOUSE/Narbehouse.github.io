@@ -1417,14 +1417,29 @@ const THEMES = [
 let overlayData = {};
 let resetArmed = false;
 
+/* True once every lake's objectives are cleared — the trigger that reveals
+   and unlocks the secret bait. Lakes never un-complete, so this only ever
+   flips from false to true. */
+function allLakesCleared() {
+  return D.LAKE_TEMPLATES.every(t => {
+    const p = save.lakeProgress[t.id];
+    return p && p.completed;
+  });
+}
+
 function secretBaitRow() {
   const bait = D.BAIT.find(b => b.id === 'secret_t_pill');
   const owned = save.ownedBait[bait.id] || 0;
+  const unlocked = allLakesCleared();
   return {
-    text: () => bait.name,
-    val: () => `Owned ${owned} · Buy $${bait.costPerUnit}`,
-    say: () => `${bait.name}. Smells like fish, mostly. You have ${owned}. Buy one for ${bait.costPerUnit} dollars.`,
+    text: () => unlocked ? bait.name : '?????',
+    val: () => unlocked ? `Owned ${owned} · Buy $${bait.costPerUnit}` : 'Locked',
+    dis: !unlocked,
+    say: () => unlocked
+      ? `${bait.name}. Smells like fish, mostly. You have ${owned}. Buy one for ${bait.costPerUnit} dollars.`
+      : 'Secret.',
     act: () => {
+      if (!unlocked) { speak('Secret.'); return; }
       if (save.money < bait.costPerUnit) { speak('Not enough money for that yet.'); return; }
       save.money -= bait.costPerUnit;
       save.ownedBait[bait.id] = (save.ownedBait[bait.id] || 0) + 1;

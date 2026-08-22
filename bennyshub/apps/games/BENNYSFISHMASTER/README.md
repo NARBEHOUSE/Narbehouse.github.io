@@ -237,11 +237,14 @@ and rods.
   objective counters restart, because v1's objectives were a fixed list that no
   longer describes anything. `ensureLakeProgress` re-picks anything whose ids
   are missing or no longer resolve, so renaming a pool entry in data.js is safe.
-- The secret `??? Pill Bottle` bait and `Largemouth Dingus` fish are a small
-  easter egg: the fish only enters a biome's bite pool once that exact bait
-  is equipped (see `biteWeightedFishPool`), and objectives never count it. Its
-  reveal screen is a placeholder — a real photo is meant to replace it later,
-  and it's built to degrade gracefully in the meantime, the same way
+- The secret `Vitamin T` bait and `Largemouth Dingus` fish are a small easter
+  egg: the bait shows as `?????` and can't be bought until every lake's
+  objectives are cleared (`allLakesCleared`, checked in `secretBaitRow`), at
+  which point it's revealed under its real name for $5000. The fish only
+  enters a biome's bite pool once that exact bait is equipped (see
+  `biteWeightedFishPool`), and objectives never count it. Its reveal screen is
+  a placeholder — a real photo is meant to replace it later, and it's built to
+  degrade gracefully in the meantime, the same way
   `tutorial-modal.js` placeholders a missing video.
 - No `fetch()` of local JSON/WASM happens anywhere in this game, so
   `"needsServer"` would be `false` in `games.json` — unlike `BENNYSBALLISTA`
