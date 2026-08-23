@@ -160,6 +160,14 @@
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
       "genres": ["Racing", "Arcade"]
+    },
+    {
+      "id": "bennysblackjack",
+      "title": "Benny's Blackjack",
+      "description": "A simple, switch-accessible single-player Blackjack game. Hit or Stand to beat the dealer with 1-switch and 2-switch controls.",
+      "path": "apps/games/BENNYSBLACKJACK/index.html",
+      "image": "images/games/bennysblackjack.png",
+      "genres": ["Card", "Classic", "Strategy"]
     }
   ]
 }

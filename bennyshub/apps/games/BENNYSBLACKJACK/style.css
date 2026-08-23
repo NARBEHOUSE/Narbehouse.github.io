@@ -1,0 +1,779 @@
+/* Benny's Blackjack — Modern High-Contrast Accessible Card Game Styling */
+
+:root {
+  --bg-felt: #0c3322;
+  --bg-table: radial-gradient(circle at 50% 30%, #155737 0%, #0c3322 75%, #071f14 100%);
+  --text-light: #f8fafc;
+  --text-muted: #cbd5e1;
+  --accent-gold: #f59e0b;
+  --focus-ring: #ffe600;
+  --focus-glow: rgba(255, 230, 0, 0.85);
+  
+  --card-bg: #ffffff;
+  --card-border: #94a3b8;
+  --card-red: #dc2626;
+  --card-black: #0f172a;
+  --card-back-bg: #1e293b;
+  
+  --btn-hit: #15803d;
+  --btn-hit-hover: #16a34a;
+  --btn-stand: #b91c1c;
+  --btn-stand-hover: #dc2626;
+  --btn-next: #1d4ed8;
+  --btn-next-hover: #2563eb;
+  --btn-pause: #334155;
+  --btn-pause-hover: #475569;
+  
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-felt);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  color: var(--text-light);
+}
+
+#game-app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-table);
+  position: relative;
+}
+
+/* ── HEADER & SCOREBOARD ─────────────────────────────────────────────── */
+
+#app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  background: rgba(12, 31, 22, 0.85);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  min-height: 58px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-logo-icon {
+  font-size: 26px;
+}
+
+.hub-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#scoreboard-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-pill {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.stat-pill strong {
+  color: var(--accent-gold);
+  font-size: 1.1rem;
+  margin-left: 4px;
+}
+
+/* ── MAIN CONTENT & SCREENS ─────────────────────────────────────────── */
+
+#app-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+.screen-view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.screen-view.active {
+  display: flex;
+  opacity: 1;
+}
+
+/* ── MAIN MENU SCREEN ─────────────────────────────────────────────────── */
+
+.menu-card {
+  background: rgba(15, 30, 22, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 32px 40px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  animation: fadeInPop 0.3s ease-out;
+}
+
+.menu-hero {
+  margin-bottom: 24px;
+}
+
+.hero-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.menu-heading {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.menu-tagline {
+  font-size: 1rem;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ── BUTTON STYLING & FOCUS CONTRACT ────────────────────────────────── */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 24px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: 3px solid transparent;
+  background: #1e293b;
+  color: #ffffff;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+  background: #047857;
+}
+
+.btn-primary:hover {
+  background: #059669;
+}
+
+.btn-danger {
+  background: #991b1b;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.btn-warning {
+  background: #854d0e;
+}
+
+.btn-warning:hover {
+  background: #a16207;
+}
+
+/* Universal High-Visibility Highlight Ring for Switch Access */
+.scannable.focused,
+.btn:focus-visible {
+  border-color: var(--focus-ring) !important;
+  box-shadow: 0 0 0 3px var(--focus-ring), 0 0 20px var(--focus-glow) !important;
+  transform: scale(1.04);
+  z-index: 100;
+}
+
+.scannable:active {
+  transform: scale(0.98);
+}
+
+.btn-icon {
+  font-size: 1.3rem;
+}
+
+/* ── BLACKJACK GAMEPLAY TABLE ────────────────────────────────────────── */
+
+#screen-game {
+  justify-content: space-between;
+  padding: 12px 20px;
+}
+
+#status-banner {
+  background: rgba(0, 0, 0, 0.65);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  padding: 10px 24px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  width: 90%;
+  max-width: 820px;
+  margin-bottom: 8px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#status-banner.win {
+  border-color: #22c55e;
+  background: rgba(20, 83, 45, 0.85);
+  color: #86efac;
+}
+
+#status-banner.lose {
+  border-color: #ef4444;
+  background: rgba(127, 29, 29, 0.85);
+  color: #fca5a5;
+}
+
+#status-banner.tie {
+  border-color: var(--accent-gold);
+  background: rgba(113, 63, 18, 0.85);
+  color: #fde047;
+}
+
+#blackjack-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 920px;
+  padding: 8px 0;
+}
+
+.hand-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.hand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hand-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+.hand-badge {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--accent-gold);
+  color: var(--accent-gold);
+  font-size: 1.2rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 999px;
+  min-width: 44px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.hand-badge.bust {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.hand-badge.blackjack {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: #0f3821;
+}
+
+.cards-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  min-height: 140px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.table-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  margin: 4px 0;
+  opacity: 0.8;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+}
+
+.rules-hint {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* ── PLAYING CARD GRAPHICS ─────────────────────────────────────────────── */
+
+.playing-card {
+  width: 96px;
+  height: 138px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 8px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.playing-card.card-deal-anim {
+  animation: cardDeal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.playing-card.red {
+  color: var(--card-red);
+}
+
+.playing-card.black {
+  color: var(--card-black);
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.card-corner.top-left {
+  align-self: flex-start;
+}
+
+.card-corner.bottom-right {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.card-suit-mini {
+  font-size: 0.95rem;
+}
+
+.card-center-suit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  pointer-events: none;
+}
+
+/* Face-down Hole Card */
+.playing-card.card-back {
+  background: #1e293b radial-gradient(circle, #2d3e58 10%, #0f172a 90%);
+  border: 3px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.playing-card.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px dashed rgba(245, 158, 11, 0.6);
+  border-radius: var(--radius-sm);
+}
+
+.playing-card.card-back::after {
+  content: '♠';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.4rem;
+  color: var(--accent-gold);
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+@keyframes cardDeal {
+  0% {
+    opacity: 0;
+    transform: translateY(-25px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── ACTION CONTROLS BAR ─────────────────────────────────────────────── */
+
+.action-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 820px;
+  padding: 6px 0;
+}
+
+.btn-action {
+  flex: 1;
+  max-width: 220px;
+  min-height: 68px;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.btn-hit {
+  background: var(--btn-hit);
+}
+
+.btn-hit:hover {
+  background: var(--btn-hit-hover);
+}
+
+.btn-stand {
+  background: var(--btn-stand);
+}
+
+.btn-stand:hover {
+  background: var(--btn-stand-hover);
+}
+
+.btn-next {
+  background: var(--btn-next);
+  max-width: 320px;
+}
+
+.btn-next:hover {
+  background: var(--btn-next-hover);
+}
+
+.btn-pause {
+  background: var(--btn-pause);
+  max-width: 140px;
+}
+
+.btn-pause:hover {
+  background: var(--btn-pause-hover);
+}
+
+/* ── MODALS (HOW TO PLAY, SETTINGS, PAUSE) ────────────────────────────── */
+
+.modal-dialog {
+  background: rgba(15, 30, 22, 0.96);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 28px 36px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  max-width: 580px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: fadeInPop 0.25s ease-out;
+}
+
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.dialog-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 12px;
+}
+
+.dialog-header h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.howto-section h3 {
+  font-size: 1.15rem;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+
+.howto-section ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.45;
+}
+
+.howto-section code {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--focus-ring);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-dialog {
+  width: 100%;
+  background: #334155;
+}
+
+.btn-dialog:hover {
+  background: #475569;
+}
+
+/* Settings list */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  min-height: 56px;
+}
+
+.setting-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.setting-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+/* ── PAUSE PROGRESS RING OVERLAY ─────────────────────────────────────── */
+
+.pause-ring-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.pause-ring-overlay.active {
+  display: flex;
+}
+
+.pause-ring-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 2px solid var(--accent-gold);
+  padding: 28px 36px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.15);
+  stroke-width: 10;
+}
+
+.progress-ring-bar {
+  fill: none;
+  stroke: var(--focus-ring);
+  stroke-width: 10;
+  stroke-dasharray: 314.159; /* 2 * PI * 50 */
+  stroke-dashoffset: 314.159;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.pause-ring-label {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* ── FOOTER HINT ─────────────────────────────────────────────────────── */
+
+#app-footer {
+  padding: 8px 16px;
+  background: rgba(7, 18, 12, 0.9);
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  min-height: 34px;
+}
+
+/* ── ANIMATIONS ──────────────────────────────────────────────────────── */
+
+@keyframes fadeInPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── RESPONSIVE ADAPTATIONS ──────────────────────────────────────────── */
+
+@media (max-height: 700px) {
+  #app-header {
+    padding: 6px 16px;
+    min-height: 48px;
+  }
+  .hub-title {
+    font-size: 1.1rem;
+  }
+  .playing-card {
+    width: 82px;
+    height: 118px;
+    padding: 4px 6px;
+  }
+  .card-rank {
+    font-size: 1.1rem;
+  }
+  .card-center-suit {
+    font-size: 1.8rem;
+  }
+  .btn {
+    min-height: 56px;
+    padding: 10px 18px;
+    font-size: 1.05rem;
+  }
+  #status-banner {
+    font-size: 1.15rem;
+    padding: 6px 16px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .playing-card {
+    width: 74px;
+    height: 106px;
+    padding: 4px 6px;
+  }
+  .cards-container {
+    gap: 8px;
+    min-height: 110px;
+  }
+  .card-rank {
+    font-size: 1rem;
+  }
+  .card-center-suit {
+    font-size: 1.6rem;
+  }
+  .action-bar {
+    gap: 8px;
+  }
+  .btn-action {
+    font-size: 1.05rem;
+  }
+}

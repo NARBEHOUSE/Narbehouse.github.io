@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Benny's Blackjack</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-app">
+    <!-- Top Scoreboard Bar -->
+    <header id="app-header">
+      <div class="logo-area">
+        <span class="hub-logo-icon">🃏</span>
+        <span class="hub-title">Benny's Blackjack</span>
+      </div>
+      <div id="scoreboard-banner" aria-label="Session Scoreboard">
+        <div class="stat-pill"><span class="stat-label">Won:</span> <strong id="stat-won">0</strong></div>
+        <div class="stat-pill"><span class="stat-label">Lost:</span> <strong id="stat-lost">0</strong></div>
+        <div class="stat-pill"><span class="stat-label">Streak:</span> <strong id="stat-streak">0</strong></div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main id="app-main">
+      <!-- MAIN MENU SCREEN -->
+      <section id="screen-menu" class="screen-view active" aria-labelledby="menu-title">
+        <div class="menu-card">
+          <div class="menu-hero">
+            <div class="hero-icon">🂡 🂱</div>
+            <h1 id="menu-title" class="menu-heading">Benny's Blackjack</h1>
+            <p class="menu-tagline">Single-Player Switch-Accessible Card Game</p>
+          </div>
+          <div id="main-menu-options" class="menu-list" role="menu">
+            <button type="button" class="btn btn-menu btn-primary scannable" data-action="play" role="menuitem">
+              <span class="btn-icon">▶</span>
+              <span class="btn-text">Play Game</span>
+            </button>
+            <button type="button" class="btn btn-menu scannable" data-action="howto" role="menuitem">
+              <span class="btn-icon">❓</span>
+              <span class="btn-text">How to Play</span>
+            </button>
+            <button type="button" class="btn btn-menu scannable" data-action="settings" role="menuitem">
+              <span class="btn-icon">⚙️</span>
+              <span class="btn-text">Settings</span>
+            </button>
+            <button type="button" class="btn btn-menu btn-danger scannable" data-action="exit" role="menuitem">
+              <span class="btn-icon">🏠</span>
+              <span class="btn-text">Exit Game</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAMEPLAY SCREEN -->
+      <section id="screen-game" class="screen-view" aria-label="Blackjack Table">
+        <!-- Status Banner -->
+        <div id="status-banner" role="status" aria-live="polite">
+          <span id="status-text">Welcome to Benny's Blackjack!</span>
+        </div>
+
+        <div id="blackjack-table">
+          <!-- Dealer Hand Area -->
+          <div class="hand-area" id="dealer-area">
+            <div class="hand-header">
+              <span class="hand-title">Dealer</span>
+              <span class="hand-badge" id="dealer-badge" aria-label="Dealer Hand Value">0</span>
+            </div>
+            <div class="cards-container" id="dealer-cards" role="region" aria-label="Dealer Cards">
+              <!-- Cards dynamically injected -->
+            </div>
+          </div>
+
+          <div class="table-divider">
+            <div class="divider-line"></div>
+            <div class="rules-hint">Tie goes to Player • Dealer stands on 17</div>
+            <div class="divider-line"></div>
+          </div>
+
+          <!-- Player Hand Area -->
+          <div class="hand-area" id="player-area">
+            <div class="hand-header">
+              <span class="hand-title">Player</span>
+              <span class="hand-badge" id="player-badge" aria-label="Player Hand Value">0</span>
+            </div>
+            <div class="cards-container" id="player-cards" role="region" aria-label="Player Cards">
+              <!-- Cards dynamically injected -->
+            </div>
+          </div>
+        </div>
+
+        <!-- In-Game Action Bar -->
+        <div id="in-game-actions" class="action-bar" role="toolbar" aria-label="Game Controls">
+          <!-- Action buttons injected/toggled via JS -->
+          <button type="button" id="btn-hit" class="btn btn-action btn-hit scannable" data-action="hit">
+            <span class="btn-icon">➕</span>
+            <span class="btn-text">Hit</span>
+          </button>
+          <button type="button" id="btn-stand" class="btn btn-action btn-stand scannable" data-action="stand">
+            <span class="btn-icon">✋</span>
+            <span class="btn-text">Stand</span>
+          </button>
+          <button type="button" id="btn-next" class="btn btn-action btn-next scannable" data-action="next" style="display: none;">
+            <span class="btn-icon">🃏</span>
+            <span class="btn-text">Next Hand</span>
+          </button>
+          <button type="button" id="btn-pause" class="btn btn-action btn-pause scannable" data-action="pause">
+            <span class="btn-icon">⏸</span>
+            <span class="btn-text">Pause</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- HOW TO PLAY SCREEN -->
+      <section id="screen-howto" class="screen-view" aria-labelledby="howto-title">
+        <div class="modal-dialog">
+          <div class="dialog-header">
+            <h2 id="howto-title">❓ How to Play Benny's Blackjack</h2>
+          </div>
+          <div class="dialog-content">
+            <div class="howto-section">
+              <h3>🎯 Blackjack Rules</h3>
+              <ul>
+                <li>Get as close to <strong>21</strong> as possible without going over (busting).</li>
+                <li><strong>Aces</strong> count as <strong>11</strong> or <strong>1</strong> automatically to maximize your hand.</li>
+                <li>Face cards (Jack, Queen, King) count as <strong>10</strong>.</li>
+                <li><strong>Hit</strong> to draw another card. <strong>Stand</strong> to keep your hand.</li>
+                <li>When you stand, Dealer reveals their hole card and draws until reaching <strong>17</strong> or higher.</li>
+                <li><strong>Tie goes to the player!</strong> If hand totals are equal, the player wins!</li>
+              </ul>
+            </div>
+            <div class="howto-section">
+              <h3>🕹️ Switch Controls</h3>
+              <ul>
+                <li><strong>Two-Switch Mode:</strong> Tap <code>Space</code> to move highlight. Hold <code>Space</code> to scan backwards. Tap <code>Enter</code> to select.</li>
+                <li><strong>One-Switch Mode (Auto Scan):</strong> Highlight advances automatically. Tap <code>Enter</code> to select current item.</li>
+                <li><strong>In-Game Pause:</strong> Hold <code>Enter</code> or select the on-screen Pause button anytime.</li>
+                <li><strong>Touch / Mouse:</strong> Tap or click any button directly.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-dialog scannable" data-action="back-to-menu">
+              <span class="btn-icon">←</span>
+              <span class="btn-text">Back to Main Menu</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS SCREEN -->
+      <section id="screen-settings" class="screen-view" aria-labelledby="settings-title">
+        <div class="modal-dialog">
+          <div class="dialog-header">
+            <h2 id="settings-title">⚙️ Settings</h2>
+          </div>
+          <div class="settings-list" role="menu">
+            <button type="button" class="btn btn-setting scannable" data-action="toggle-tts" role="menuitem">
+              <span class="setting-title">Text to Speech</span>
+              <span class="setting-val" id="val-tts">On</span>
+            </button>
+            <button type="button" class="btn btn-setting scannable" data-action="cycle-voice" role="menuitem">
+              <span class="setting-title">Voice</span>
+              <span class="setting-val" id="val-voice">Default</span>
+            </button>
+            <button type="button" class="btn btn-setting scannable" data-action="toggle-autoscan" role="menuitem">
+              <span class="setting-title">Auto Scan</span>
+              <span class="setting-val" id="val-autoscan">Off — Two Switches</span>
+            </button>
+            <button type="button" class="btn btn-setting scannable" data-action="cycle-speed" role="menuitem">
+              <span class="setting-title">Scan Speed</span>
+              <span class="setting-val" id="val-speed">2.0s</span>
+            </button>
+            <button type="button" class="btn btn-setting scannable" data-action="toggle-sound" role="menuitem">
+              <span class="setting-title">Sound Effects</span>
+              <span class="setting-val" id="val-sound">On</span>
+            </button>
+            <button type="button" class="btn btn-setting btn-warning scannable" data-action="reset-stats" role="menuitem">
+              <span class="setting-title">Reset Stats</span>
+              <span class="setting-val" id="val-reset">Reset</span>
+            </button>
+            <button type="button" class="btn btn-dialog scannable" data-action="back-settings" role="menuitem">
+              <span class="btn-icon">←</span>
+              <span class="btn-text">Back</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAUSE MODAL SCREEN -->
+      <section id="screen-pause" class="screen-view modal-overlay" aria-labelledby="pause-title">
+        <div class="modal-dialog">
+          <div class="dialog-header">
+            <h2 id="pause-title">⏸️ Game Paused</h2>
+          </div>
+          <div class="menu-list" role="menu">
+            <button type="button" class="btn btn-menu btn-primary scannable" data-action="pause-continue" role="menuitem">
+              <span class="btn-icon">▶</span>
+              <span class="btn-text">Continue</span>
+            </button>
+            <button type="button" class="btn btn-menu scannable" data-action="pause-restart" role="menuitem">
+              <span class="btn-icon">🔄</span>
+              <span class="btn-text">Restart Hand</span>
+            </button>
+            <button type="button" class="btn btn-menu scannable" data-action="pause-settings" role="menuitem">
+              <span class="btn-icon">⚙️</span>
+              <span class="btn-text">Settings</span>
+            </button>
+            <button type="button" class="btn btn-menu scannable" data-action="pause-menu" role="menuitem">
+              <span class="btn-icon">🏠</span>
+              <span class="btn-text">Main Menu</span>
+            </button>
+            <button type="button" class="btn btn-menu btn-danger scannable" data-action="exit" role="menuitem">
+              <span class="btn-icon">🚪</span>
+              <span class="btn-text">Exit Game</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Enter Hold Pause Indicator Overlay -->
+    <div id="pause-hold-indicator" class="pause-ring-overlay" aria-hidden="true">
+      <div class="pause-ring-box">
+        <svg class="progress-ring" width="120" height="120">
+          <circle class="progress-ring-bg" cx="60" cy="60" r="50"></circle>
+          <circle id="pause-ring-bar" class="progress-ring-bar" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="pause-ring-label">Holding to Pause...</div>
+      </div>
+    </div>
+
+    <!-- Accessibility Bottom Hint Bar -->
+    <footer id="app-footer">
+      <span class="hint-text">Tap Space = Next • Hold Space = Scan Back • Enter = Select • Hold Enter = Pause</span>
+    </footer>
+  </div>
+
+  <!-- Shared Benny's Hub Accessibility Scripts (in strict required order) -->
+  <script src="../../../shared/safe-audio.js"></script>
+  <script src="../../../shared/voice-manager.js"></script>
+  <script src="../../../shared/ios-audio-fix.js"></script>
+  <script src="../../../shared/scan-manager.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
