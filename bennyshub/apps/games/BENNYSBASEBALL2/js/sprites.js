@@ -91,6 +91,42 @@ const BB2_SHEETS = {
             throw_relay:  { start: 9,  count: 4, rate: 12, repeat: 0 },
             wall_watch:   { start: 13, count: 2, rate: 2,  repeat: -1 }
         }
+    },
+    'batter-actions': {
+        file: 'images/sprites/batter-actions.png',
+        // The bat is baked into every frame here, replacing the separate
+        // rotating bat-shape image the circle-era batter used. defaultFacing
+        // and the idle/celebrate/dejected aliases below make sure the
+        // generic idleAnim() call (fired whenever a jog/stopBob settles the
+        // batter, e.g. stepping in from the dugout) shows 'stance' — WITH
+        // the bat — instead of falling through to player-base's bare-handed
+        // idle_front, which it shares for run/celebrate/dejected otherwise.
+        defaultFacing: 'back',
+        aliases: { idle_front: 'stance', idle_back: 'stance', celebrate: 'stance', dejected: 'hit_by_pitch' },
+        anims: {
+            stance:       { start: 0,  count: 2, rate: 2,  repeat: -1 },
+            load_bunt:    { start: 2,  count: 2, rate: 3,  repeat: -1 },
+            load_normal:  { start: 4,  count: 2, rate: 3,  repeat: -1 },
+            load_power:   { start: 6,  count: 2, rate: 4,  repeat: -1 },
+            // Same 5 frames for both swing keys — only the playback rate
+            // differs. That is the "just an animation speed difference"
+            // simplification for normal vs. power: a slower, weightier
+            // sweep for power rather than a second authored pose set.
+            swing_normal: { start: 8,  count: 5, rate: 16, repeat: 0 },
+            swing_power:  { start: 8,  count: 5, rate: 11, repeat: 0 },
+            bunt:         { start: 13, count: 3, rate: 9,  repeat: 0 },
+            hit_by_pitch: { start: 16, count: 2, rate: 6,  repeat: 0 },
+            take_off:     { start: 18, count: 2, rate: 10, repeat: 0 }
+        }
+    },
+    'runner-actions': {
+        file: 'images/sprites/runner-actions.png',
+        anims: {
+            lead_off:    { start: 0, count: 2, rate: 3,  repeat: -1 },
+            slide:       { start: 2, count: 4, rate: 14, repeat: 0 },
+            safe_stand:  { start: 6, count: 3, rate: 6,  repeat: 0 },
+            out_walkoff: { start: 9, count: 4, rate: 4,  repeat: 0 }
+        }
     }
 };
 
@@ -105,7 +141,9 @@ const BB2_POSITION_SHEETS = {
     '3B': ['player-base', 'infield-actions'],
     LF: ['player-base', 'outfield-actions'],
     CF: ['player-base', 'outfield-actions'],
-    RF: ['player-base', 'outfield-actions']
+    RF: ['player-base', 'outfield-actions'],
+    B:  ['batter-actions', 'player-base'],
+    R:  ['runner-actions', 'player-base']
 };
 
 // ─── Index palette (must match bb2_sprites.py exactly) ─────────────────────
@@ -118,7 +156,7 @@ const BB2_PAL = {
     skin:    [0xe8, 0xb9, 0x8a],
     skinsh:  [0xc0, 0x8a, 0x5a],
     glove:   [0x6b, 0x4a, 0x2a],
-    bat:     [0xd9, 0xb3, 0x80],
+    bat:     [0xf5, 0xde, 0x8c],
     white:   [0xf2, 0xf2, 0xf2],
     dark:    [0x1a, 0x1a, 0x1a]
 };
@@ -288,16 +326,17 @@ function bb2MakePlayer(scene, colorObj, label, posKey) {
 
     // Resolve an animation name to the sheet that actually holds it.
     c._resolve = (name) => {
+        // Sheets are checked in order, and each sheet's OWN alias is
+        // consulted before falling through to a later sheet's direct
+        // definition. This lets a more specific sheet override a shared one
+        // — e.g. the batter's 'idle_front' alias to 'stance' (WITH the bat)
+        // must win over player-base's plain 'idle_front', even though
+        // player-base defines that name directly and sits later in the list.
         for (const s of sheets) {
-            if (BB2_SHEETS[s].anims[name]) return texFor[s] + '|' + name;
-        }
-        // Fall back to a sheet's own equivalent pose — a catcher has no
-        // 'idle_front', he has 'crouch_idle'.
-        for (const s of sheets) {
-            const al = BB2_SHEETS[s].aliases;
-            if (al && al[name] && BB2_SHEETS[s].anims[al[name]]) {
-                return texFor[s] + '|' + al[name];
-            }
+            const def = BB2_SHEETS[s];
+            const al = def.aliases;
+            if (al && al[name] && def.anims[al[name]]) return texFor[s] + '|' + al[name];
+            if (def.anims[name]) return texFor[s] + '|' + name;
         }
         return null;
     };
