@@ -61,14 +61,51 @@ const BB2_SHEETS = {
             follow_through:  { start: 11, count: 3, rate: 10, repeat: 0 },
             fielding_stance: { start: 14, count: 2, rate: 2,  repeat: -1 }
         }
+    },
+    'firstbase-actions': {
+        file: 'images/sprites/firstbase-actions.png',
+        anims: {
+            stretch_catch:  { start: 0,  count: 4, rate: 12, repeat: 0 },
+            ready_at_bag:   { start: 4,  count: 2, rate: 2,  repeat: -1 },
+            field_grounder: { start: 6,  count: 4, rate: 10, repeat: 0 },
+            throw:          { start: 10, count: 2, rate: 12, repeat: 0 }
+        }
+    },
+    'infield-actions': {
+        file: 'images/sprites/infield-actions.png',
+        anims: {
+            ready:          { start: 0,  count: 2, rate: 2,  repeat: -1 },
+            field_grounder: { start: 2,  count: 4, rate: 10, repeat: 0 },
+            throw:          { start: 6,  count: 4, rate: 12, repeat: 0 },
+            receive_at_bag: { start: 10, count: 3, rate: 10, repeat: 0 },
+            tag:            { start: 13, count: 3, rate: 10, repeat: 0 },
+            dive:           { start: 16, count: 2, rate: 8,  repeat: 0 }
+        }
+    },
+    'outfield-actions': {
+        file: 'images/sprites/outfield-actions.png',
+        anims: {
+            ready:        { start: 0,  count: 2, rate: 2,  repeat: -1 },
+            catch_fly:    { start: 2,  count: 4, rate: 10, repeat: 0 },
+            field_bounce: { start: 6,  count: 3, rate: 10, repeat: 0 },
+            throw_relay:  { start: 9,  count: 4, rate: 12, repeat: 0 },
+            wall_watch:   { start: 13, count: 2, rate: 2,  repeat: -1 }
+        }
     }
 };
 
 // Which sheets each position needs. Positions absent from this map fall back to
 // the plain circle in makePlayer() — that is what keeps the pilot to one player.
 const BB2_POSITION_SHEETS = {
-    P: ['player-base', 'pitcher-actions'],
-    C: ['catcher']
+    P:  ['player-base', 'pitcher-actions'],
+    C:  ['catcher'],
+    '1B': ['player-base', 'firstbase-actions'],
+    '2B': ['player-base', 'infield-actions'],
+    SS: ['player-base', 'infield-actions'],
+    '3B': ['player-base', 'infield-actions'],
+    LF: ['player-base', 'outfield-actions'],
+    CF: ['player-base', 'outfield-actions'],
+    RF: ['player-base', 'outfield-actions']
 };
 
 // ─── Index palette (must match bb2_sprites.py exactly) ─────────────────────
