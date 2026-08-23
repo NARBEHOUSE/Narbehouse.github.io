@@ -267,7 +267,9 @@ class SettingsScene extends Phaser.Scene {
             { label: `TTS: ${ttsOn ? 'ON' : 'OFF'}`,            value: 'tts' },
             { label: `Voice: ${voiceName}`,                       value: 'voice' },
             { label: `Auto Scan: ${autoScan ? 'ON' : 'OFF'}`,   value: 'autoscan' },
-            { label: `Scan Speed: ${scanSec}s`,                   value: 'scanspeed' }
+            { label: `Scan Speed: ${scanSec}s`,                   value: 'scanspeed' },
+            { label: `High Contrast: ${bb2HighContrast() ? 'ON' : 'OFF'}`, value: 'highcontrast',
+                hint: 'brighter team colors and a white outline, easier to see against the field' }
         ];
         if (season.isActive()) {
             opts.push({ label: 'RESET SEASON', value: 'reset_season', hint: 'wipe all season data' });
@@ -340,6 +342,11 @@ class SettingsScene extends Phaser.Scene {
             }
             const newSec = nm && nm.getSettings ? ((nm.getSettings().scanInterval || 2000) / 1000).toFixed(1) : '?';
             a.speak(`Scan speed ${newSec} seconds.`, true);
+            this._buildMenu(idx);
+        } else if (value === 'highcontrast') {
+            const now = !bb2HighContrast();
+            bb2SetHighContrast(now);
+            a.speak(now ? 'High contrast on.' : 'High contrast off.', true);
             this._buildMenu(idx);
         } else if (value === 'reset_season') {
             this._confirmingReset = true;
