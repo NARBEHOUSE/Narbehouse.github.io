@@ -560,12 +560,17 @@ class GameScene extends Phaser.Scene {
 
         const bc = this.battingColor();
         this.batter = this.makePlayer(bc, 'B');
-        // Bat: v1-exact placement — knob pivots at the batter's center (4px
-        // up), resting at -135° (up-back over the shoulder)
-        this.ensureBatTexture();
-        this.bat = this.add.image(0, -4, 'bat-shape').setOrigin(0.07, 0.5).setAngle(-135);
-        this.batter.add(this.bat);
-        this.startBatWaggle();
+        this.bat = null;
+        if (!this.batter._bb2) {
+            // Circle fallback only — the sprite batter has the bat baked
+            // into its own frames (batter-actions.png).
+            // Bat: v1-exact placement — knob pivots at the batter's center
+            // (4px up), resting at -135° (up-back over the shoulder)
+            this.ensureBatTexture();
+            this.bat = this.add.image(0, -4, 'bat-shape').setOrigin(0.07, 0.5).setAngle(-135);
+            this.batter.add(this.bat);
+            this.startBatWaggle();
+        }
         if (fromPoint) {
             this.batter.setPosition(fromPoint.x, fromPoint.y);
             this.time.delayedCall(200, () => this.jog(this.batter, FIELD.BATTER_BOX.x, FIELD.BATTER_BOX.y, 950, 'Sine.easeOut'));
@@ -579,6 +584,7 @@ class GameScene extends Phaser.Scene {
     batterTakesOff() {
         if (this._batterRunning) return this.batter;
         this._batterRunning = true;
+        this.bb2Anim(this.batter, 'take_off');
         if (this.bat && this.bat.active) {
             this.tweens.killTweensOf(this.bat);
             // Re-anchor the bat to the world at its current spot, then let it
@@ -1044,7 +1050,30 @@ class GameScene extends Phaser.Scene {
         const throwPreDelay = 250, throwFlightMs = 620;
         const ballArriveMs = throwPreDelay + throwFlightMs;
         const runnerArriveMs = success ? Math.max(500, ballArriveMs - 200) : ballArriveMs + 260;
-        if (runner) this.jog(runner, target.x + 16, target.y - 14, runnerArriveMs / 1.5, 'Quad.easeIn');
+        if (runner) {
+            // Not routed through jog() — its own onComplete always calls
+            // stopBob/idleAnim, which on a caught-stealing runner would fire
+            // AFTER the ballArc callback below sets 'out_walkoff' (the throw
+            // can arrive before the runner does) and silently revert it back
+            // to a plain idle. Driving the tween directly here, the same way
+            // sendRunner() does for a contested base, keeps this sprite's
+            // final pose under this function's control.
+            this.tweens.killTweensOf(runner);
+            if (runner._bb2) runner.faceFrom(target.x - runner.x, target.y - runner.y);
+            this.startBob(runner);
+            if (runner._bb2) {
+                this.time.delayedCall(Math.max(0, runnerArriveMs - 260), () => this.bb2Anim(runner, 'slide'));
+            }
+            this.tweens.add({
+                targets: runner, x: target.x + 16, y: target.y - 14,
+                duration: runnerArriveMs, ease: 'Quad.easeIn',
+                onUpdate: () => { if (runner._bb2) runner.syncDepth(); },
+                onComplete: () => {
+                    if (runner._bb2) this.bb2Anim(runner, success ? 'safe_stand' : 'out_walkoff');
+                    else this.stopBob(runner);
+                }
+            });
+        }
         this.time.delayedCall(throwPreDelay, () => {
             this.audio.play('throw');
             this.ballArc(FIELD.FIELDER_HOMES.C, target, throwFlightMs, 46, () => {
@@ -1147,6 +1176,7 @@ class GameScene extends Phaser.Scene {
         this.audio.startChargeSound();
         this.powerMeter.setVisible(true);
         this.updatePowerMeter(0);
+        this.bb2Anim(this.batter, 'load_bunt');
 
         this.chargeMonitor = this.time.addEvent({
             delay: 50, loop: true,
@@ -1156,13 +1186,17 @@ class GameScene extends Phaser.Scene {
                 const pct = Math.min(hold / GAME_CONSTANTS.TIMING.SWING_POWER_MAX, 1.0);
                 this.audio.updateChargeSound(pct);
                 this.updatePowerMeter(hold);
+                // The coil deepens bunt -> normal -> power so the charge
+                // tier reads on the batter's body, not just the meter.
                 if (hold >= GAME_CONSTANTS.TIMING.SWING_BUNT_MAX && this.ib.announcedSwingType === 'bunt') {
                     this.audio.speak('Normal swing', true);
                     this.ib.announcedSwingType = 'normal';
+                    this.bb2Anim(this.batter, 'load_normal');
                 }
                 if (hold >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN && this.ib.announcedSwingType === 'normal') {
                     this.audio.speak('Power swing', true);
                     this.ib.announcedSwingType = 'power';
+                    this.bb2Anim(this.batter, 'load_power');
                 }
             }
         });
@@ -1211,7 +1245,7 @@ class GameScene extends Phaser.Scene {
         this.setBattingCamera(false); // pull back out to watch the outcome
         if (this.meter) this.meter.setVisible(false);
         this.audio.play('swing');
-        this.animateBatterSwing(this.ib.swingType === 'bunt');
+        this.animateBatterSwing(this.ib.swingType);
         // The ball is AT the plate the instant the bat whips — contact and
         // launch happen in the same beat as the swing
         if (this.ball.visible) this.ball.setPosition(FIELD.HOME.x, FIELD.HOME.y - 6);
@@ -1257,12 +1291,33 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // v1-EXACT swing, straight from the original Player.js/AnimationSystem:
-    // start -135° (up-left back stance), rotate counter-clockwise to -405°
-    // (up-right follow-through) — linear, 300ms — hold 200ms, snap back to
-    // the stance. Bunt: -135° → 0° (bat squared at the pitcher).
-    // Used for BOTH the player's swing and the CPU batter's.
-    animateBatterSwing(isBunt) {
+    // Used for BOTH the player's swing and the CPU batter's. swingType is
+    // 'bunt' | 'normal' | 'power'; the sprite batter plays a distinct 'bunt'
+    // pose but shares one 'swing' frame set for normal/power, distinguished
+    // only by playback rate (see the comment on swing_normal/swing_power in
+    // sprites.js). Falls through to the v1-exact bat-rotation tween below
+    // for the circle-fallback batter.
+    animateBatterSwing(swingType) {
+        const isBunt = swingType === 'bunt';
+        if (this.batter && this.batter._bb2) {
+            const batterRef = this.batter;
+            const animName = isBunt ? 'bunt' : (swingType === 'power' ? 'swing_power' : 'swing_normal');
+            batterRef.setAnim(animName, true);
+            const durMs = isBunt ? 420 : (swingType === 'power' ? 600 : 400);
+            this.time.delayedCall(durMs, () => {
+                // Only settle back to the stance if this is still the same
+                // at-bat AND he hasn't taken off running in the meantime —
+                // forcing 'stance' back on a runner would fight run_<dir>.
+                if (this.batter === batterRef && batterRef.active && !this._batterRunning) {
+                    batterRef.setAnim('stance', true);
+                }
+            });
+        }
+        // v1-EXACT swing, straight from the original Player.js/AnimationSystem:
+        // start -135° (up-left back stance), rotate counter-clockwise to -405°
+        // (up-right follow-through) — linear, 300ms — hold 200ms, snap back to
+        // the stance. Bunt: -135° → 0° (bat squared at the pitcher).
+        // Circle fallback only.
         if (!this.bat || !this.bat.active) return;
         this.tweens.killTweensOf(this.bat);
         if (isBunt) {
@@ -1354,6 +1409,7 @@ class GameScene extends Phaser.Scene {
             gs.pendingBaseUpdate = () => this.updateBases('Walk', 'user');
             gs.balls = 0; gs.strikes = 0;
             this.audio.speak('Hit by pitch!');
+            this.bb2Anim(this.batter, 'hit_by_pitch');
             this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
             return;
         }
@@ -1947,16 +2003,29 @@ class GameScene extends Phaser.Scene {
         this.resetBatter();
     }
 
-    // Send a play-runner the rest of the way to a base over `ms`
-    sendRunner(key, ms, targetBase) {
+    // Send a play-runner the rest of the way to a base over `ms`. Pass
+    // { slide: true, out } for the one runner actually racing a throw (a
+    // "contested" base per SPRITE-PLAN.md) — he slides in just before
+    // arrival and settles into safe_stand/out_walkoff instead of the plain
+    // idle every other, uncontested advance uses.
+    sendRunner(key, ms, targetBase, opts) {
         const r = this.playRunners && this.playRunners[key];
         if (!r) return;
         const to = targetBase ? BASE_COORDS[targetBase] : r.to;
         this.tweens.killTweensOf(r.sprite);
         this.startBob(r.sprite);
+        if (r._slideCall) { r._slideCall.remove(false); r._slideCall = null; }
+        const contested = opts && opts.slide && r.sprite._bb2;
+        if (contested) {
+            const slideAt = Math.max(0, ms - 260);
+            r._slideCall = this.time.delayedCall(slideAt, () => this.bb2Anim(r.sprite, 'slide'));
+        }
         this.tweens.add({
             targets: r.sprite, x: to.x + 16, y: to.y - 14, duration: ms, ease: 'Linear',
-            onComplete: () => this.stopBob(r.sprite)
+            onComplete: () => {
+                if (contested) this.bb2Anim(r.sprite, opts.out ? 'out_walkoff' : 'safe_stand');
+                else this.stopBob(r.sprite);
+            }
         });
     }
 
@@ -1975,7 +2044,7 @@ class GameScene extends Phaser.Scene {
         // Runner races the ball: loses by a step on an out, beats it when safe
         if (runnerKey) {
             const arriveMs = out ? throwTimeMs + 420 : Math.max(320, throwTimeMs - 120);
-            this.sendRunner(runnerKey, arriveMs, targetBase);
+            this.sendRunner(runnerKey, arriveMs, targetBase, { slide: true, out });
         }
 
         this.audio.play('throw');
@@ -2206,6 +2275,7 @@ class GameScene extends Phaser.Scene {
                     this.audio.play('tag');
                     this.cameras.main.shake(140, 0.006);
                     this.ball.setVisible(false);
+                    this.bb2Anim(this.batter, 'hit_by_pitch');
                     if (this.batter && this.batter.active) {
                         this.tweens.add({ targets: this.batter, x: this.batter.x - 10, duration: 90, yoyo: true, repeat: 1 });
                     }
@@ -2223,7 +2293,7 @@ class GameScene extends Phaser.Scene {
             if (cpuSwings) {
                 // Swing timed so the whip crosses the zone as the ball arrives
                 this.time.delayedCall(Math.max(0, dur - 190), () => {
-                    this.animateBatterSwing(false);
+                    this.animateBatterSwing('normal');
                     this.audio.play('swing');
                 });
             }
@@ -2512,7 +2582,7 @@ class GameScene extends Phaser.Scene {
                 targets: this.ball, x: bag.x + 7, y: bag.y - 1, duration: runMs, ease: 'Linear',
                 onComplete: () => { this.releaseBall(); }
             });
-            if (runnerKey) this.sendRunner(runnerKey, out ? runMs + 280 : Math.max(180, runMs - 220), targetBase);
+            if (runnerKey) this.sendRunner(runnerKey, out ? runMs + 280 : Math.max(180, runMs - 220), targetBase, { slide: true, out });
 
             this.time.delayedCall(runMs, () => {
                 this.audio.play(out ? 'tag' : 'catch');
