@@ -671,6 +671,12 @@ class GameScene extends Phaser.Scene {
         p.setScale(1);
     }
 
+    // One-shot action animation, silently ignored on circle-fallback players
+    // or positions whose sheet doesn't define that anim.
+    bb2Anim(p, name) {
+        if (p && p._bb2) p.setAnim(name, true);
+    }
+
     // All player movement is slowed ~50% so the game reads better visually
     // (same rule as the football game)
     jog(p, x, y, duration, ease, cb) {
@@ -1615,6 +1621,7 @@ class GameScene extends Phaser.Scene {
             this.ballArc(home, over, 1700, 150, () => {
                 this.ball.setVisible(false);
                 this.audio.play('homer');
+                this.bb2Anim(this.fielders.CF, 'wall_watch');
                 this.cameras.main.shake(240, 0.012);
                 this.bigMessage('HOME RUN!', 2200);
                 // Full view for the trot: the batter (and everyone aboard)
@@ -1637,6 +1644,7 @@ class GameScene extends Phaser.Scene {
             const spot = FIELD.FIELDER_HOMES[catcherPos];
             this.ballArc(home, spot, 1400, 170, () => {
                 this.audio.play('catch');
+                this.bb2Anim(this.fielders[catcherPos], 'catch_fly');
                 this._zoomOnPoint(spot.x, spot.y, 1.7, 300);
                 this.bigMessage('CAUGHT!', 1200);
                 this.time.delayedCall(1300, () => { this._zoomOut(350); this.time.delayedCall(400, cb); });
@@ -1658,6 +1666,7 @@ class GameScene extends Phaser.Scene {
             this.ballArc(home, spot, 520, 22, () => {
                 this.jog(fielder, spot.x + 4, spot.y - 4, 260, 'Quad.easeOut', () => {
                     this.audio.play('catch');
+                    this.bb2Anim(fielder, 'field_grounder');
                     this.releaseBall();
                     const seq = outcome === 'Triple Play' ? ['third', 'second', 'first']
                               : outcome === 'Double Play' ? ['second', 'first']
@@ -1684,9 +1693,20 @@ class GameScene extends Phaser.Scene {
                         this.animateThrowRace({
                             fromXY, throwerPos, targetBase: base,
                             out: true, throwTimeMs: t, runnerKey: runnerForBase[base]
-                        }, () => throwNext(BASE_COORDS[base], this.coveringFielder(base, throwerPos), chain.slice(1)));
+                        }, () => {
+                            // Same beat: on a double/triple play the cover man
+                            // pivots to throw the next leg — give his catch a
+                            // moment to read before he winds up again.
+                            const nextThrower = this.coveringFielder(base, throwerPos);
+                            const nextBase = BASE_COORDS[base];
+                            this.time.delayedCall(180, () => throwNext(nextBase, nextThrower, chain.slice(1)));
+                        });
                     };
-                    throwNext(spot, fielderPos, seq);
+                    // A beat so field_grounder is actually visible before the
+                    // throw animation takes the sprite over — otherwise the
+                    // two setAnim calls land in the same tick and the fielding
+                    // pose never renders a frame.
+                    this.time.delayedCall(220, () => throwNext(spot, fielderPos, seq));
                 });
             });
             return;
@@ -1709,13 +1729,16 @@ class GameScene extends Phaser.Scene {
             this.ballArc(home, spot, 620, 16, () => {
                 this.jog(fielder, spot.x + 4, spot.y - 4, 340, 'Quad.easeOut', () => {
                     this.audio.play('catch');
+                    this.bb2Anim(fielder, 'field_grounder');
                     this.releaseBall();
                     const target = this.gs.bases.first ? 'second' : 'first';
                     const runnerKey = target === 'second' ? 'first' : 'batter';
                     const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
                     const t = this.throwFlightMs(spot, target, arm);
                     this._zoomOnPoint(BASE_COORDS[target].x, BASE_COORDS[target].y, 1.5, Math.max(260, t));
-                    this.animateThrowRace({
+                    // Same beat as the Ground Out path — let field_grounder
+                    // actually render before the throw takes the sprite over.
+                    this.time.delayedCall(220, () => this.animateThrowRace({
                         fromXY: spot, throwerPos: fielderPos, targetBase: target,
                         out: false, throwTimeMs: t, runnerKey
                     }, () => {
@@ -1729,7 +1752,7 @@ class GameScene extends Phaser.Scene {
                             this._zoomOut(360);
                             this.time.delayedCall(380, cb);
                         });
-                    });
+                    }));
                 });
             });
             return;
@@ -1951,8 +1974,13 @@ class GameScene extends Phaser.Scene {
         }
 
         this.audio.play('throw');
+        this.bb2Anim(this.fielders[throwerPos], ['LF', 'CF', 'RF'].includes(throwerPos) ? 'throw_relay' : 'throw');
         this.ballArc(fromXY, bag, throwTimeMs, Math.min(60, throwTimeMs * 0.09), () => {
             this.audio.play(out ? 'tag' : 'catch');
+            // The 1B stretch is the one iconic pose that overrides the plain
+            // receive — every other bag just gets a routine catch or tag.
+            this.bb2Anim(cover, (coverPos === '1B' && targetBase === 'first') ? 'stretch_catch'
+                                : out ? 'tag' : 'receive_at_bag');
             // Ball stays live at the bag — finishPlay tosses it to the mound
             const r = runnerKey && this.playRunners && this.playRunners[runnerKey];
             if (out && r) {
@@ -1991,15 +2019,20 @@ class GameScene extends Phaser.Scene {
         const finalThrow = (fromXY, throwerPos) => {
             const arm = (FIELDER_RATINGS[throwerPos] || { arm: 3 }).arm;
             const t = this.throwFlightMs(fromXY, targetBase, arm);
-            const hold = Math.max(0, (runnerEtaMs + 280) - (this.time.now - t0) - t);
+            // Floor of 220ms so a fielding pose set immediately before this
+            // call (field_bounce) gets a beat on screen before the throw
+            // animation takes the sprite over.
+            const hold = Math.max(220, (runnerEtaMs + 280) - (this.time.now - t0) - t);
             this.time.delayedCall(hold, () => {
                 this.audio.play('throw');
+                this.bb2Anim(this.fielders[throwerPos], ['LF', 'CF', 'RF'].includes(throwerPos) ? 'throw_relay' : 'throw');
                 const cover = this.fielders[this.coveringFielder(targetBase, throwerPos)];
                 this.tweens.killTweensOf(cover);
                 this.jog(cover, BASE_COORDS[targetBase].x + 9, BASE_COORDS[targetBase].y + 9, Math.max(200, t * 0.8));
                 this._zoomOnPoint(BASE_COORDS[targetBase].x, BASE_COORDS[targetBase].y, 1.5, Math.max(260, t));
                 this.ballArc(fromXY, BASE_COORDS[targetBase], t, Math.min(50, t * 0.09), () => {
                     this.audio.play('catch');
+                    this.bb2Anim(cover, 'receive_at_bag');
                     this.bigMessage('SAFE!', 1200);
                     this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}.`);
                     this.audio.play('crowd');
@@ -2031,17 +2064,23 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(300, () => {
                 this.jog(this.fielders[chaserPos], rollSpot.x + 4, rollSpot.y - 4, 420, 'Quad.easeOut', () => {
                     this.audio.play('catch');
+                    this.bb2Anim(this.fielders[chaserPos], 'field_bounce');
                     this.releaseBall();
                     if (isTriple) {
                         // Classic outfield-to-third relay through the cutoff man
                         this._ballBusy = (this._ballBusy || 0) + 1;
                         const armChaser = (FIELDER_RATINGS[chaserPos] || { arm: 3 }).arm;
                         const t1 = Math.max(240, this.throwFlightMs(rollSpot, targetBase, armChaser) * 0.5);
-                        this.audio.play('throw');
-                        this.ballArc(rollSpot, relaySpot, t1, 24, () => {
-                            this.audio.play('catch');
-                            this.releaseBall();
-                            this.time.delayedCall(180, () => finalThrow(relaySpot, cutoffPos));
+                        // Let field_bounce render before throw_relay takes over.
+                        this.time.delayedCall(220, () => {
+                            this.audio.play('throw');
+                            this.bb2Anim(this.fielders[chaserPos], 'throw_relay');
+                            this.ballArc(rollSpot, relaySpot, t1, 24, () => {
+                                this.audio.play('catch');
+                                this.bb2Anim(this.fielders[cutoffPos], 'receive_at_bag');
+                                this.releaseBall();
+                                this.time.delayedCall(180, () => finalThrow(relaySpot, cutoffPos));
+                            });
                         });
                     } else {
                         // A plain double is a direct throw from the gap to 2nd
