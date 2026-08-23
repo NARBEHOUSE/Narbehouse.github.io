@@ -188,6 +188,19 @@ function bb2HighContrast() {
     } catch (e) { return false; }
 }
 
+// Written from SettingsScene's "High Contrast" toggle. Read fresh by every
+// bb2VariantTexture() build, so the very next game created after the toggle
+// picks it up — there is no in-game access point to this setting today, so
+// no live sprite re-key is needed.
+function bb2SetHighContrast(on) {
+    try {
+        const key = GAME_CONSTANTS.STORAGE_KEYS.PREFERENCES;
+        const p = JSON.parse(localStorage.getItem(key) || '{}');
+        p.highContrast = !!on;
+        localStorage.setItem(key, JSON.stringify(p));
+    } catch (e) { /* localStorage unavailable — setting just won't persist */ }
+}
+
 // Deterministic, NOT random: createTeams(true) rebuilds every fielder at each
 // half-inning swap, so a random tone would reshuffle the whole roster every
 // inning. Hashing (team, position) keeps the shortstop the same person all game.

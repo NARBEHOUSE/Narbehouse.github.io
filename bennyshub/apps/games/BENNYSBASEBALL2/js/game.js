@@ -485,12 +485,15 @@ class GameScene extends Phaser.Scene {
         if (this.powerMeter) this.powerMeter.setVisible(false);
     }
 
-    makePlayer(colorObj, label) {
-        // PILOT: only positions listed in BB2_POSITION_SHEETS get a sprite
-        // (currently just 'P'). Everyone else falls through to the circle
-        // below, so the two styles sit side by side for comparison.
+    // posKey selects the BB2_POSITION_SHEETS entry and defaults to label —
+    // every real call site passes a position ('P', '1B', 'B', 'R', ...) as
+    // both. The on-deck batter is the one exception: it wants the 'B' sheet
+    // (stance, with the bat) but no on-screen text, so it passes them
+    // separately. Falls back to the plain numbered circle whenever a sheet
+    // is missing, so the game stays playable at every commit.
+    makePlayer(colorObj, label, posKey) {
         if (typeof bb2MakePlayer === 'function') {
-            const sprite = bb2MakePlayer(this, colorObj, label, label);
+            const sprite = bb2MakePlayer(this, colorObj, label, posKey || label);
             if (sprite) return sprite;
         }
         const c = this.add.container(0, 0).setDepth(3);
@@ -577,6 +580,27 @@ class GameScene extends Phaser.Scene {
         } else {
             this.batter.setPosition(FIELD.BATTER_BOX.x, FIELD.BATTER_BOX.y);
         }
+        this.updateOnDeckBatter();
+    }
+
+    // Fills the on-deck circle nearest the batting team's dugout with a
+    // stance-looping sprite. Pure atmosphere — this game has no roster, so
+    // it is not literally "the next hitter", just a body standing there.
+    // Only ever built from the sprite path: two overlapping v1-style number
+    // circles at this small a scale would read as a duplication bug, not a
+    // background detail, so the circle fallback simply shows nothing here.
+    updateOnDeckBatter() {
+        this.clearOnDeckBatter();
+        const sprite = this.makePlayer(this.battingColor(), '', 'B');
+        if (!sprite._bb2) { sprite.destroy(); return; }
+        const x = this.isPlayerBatting() ? FIELD.HOME.x - 155 : FIELD.HOME.x + 155;
+        sprite.setPosition(x, FIELD.HOME.y + 28).setScale(0.75);
+        this.onDeckBatter = sprite;
+    }
+
+    clearOnDeckBatter() {
+        if (this.onDeckBatter && this.onDeckBatter.active) this.onDeckBatter.destroy();
+        this.onDeckBatter = null;
     }
 
     // On contact the batter DROPS THE BAT at the plate and becomes the runner.
@@ -610,6 +634,7 @@ class GameScene extends Phaser.Scene {
             if (this.bat && this.bat.active) { this.tweens.killTweensOf(this.bat); this.bat.destroy(); this.bat = null; }
             if (this.batter && this.batter.active) { this.tweens.killTweensOf(this.batter); this.batter.destroy(); }
             this.batter = null;
+            this.clearOnDeckBatter();
             return;
         }
         const dug = this.isPlayerBatting() ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
@@ -1972,12 +1997,20 @@ class GameScene extends Phaser.Scene {
                 x: Phaser.Math.Linear(leg.from.x, leg.to.x, 0.42) + 16,
                 y: Phaser.Math.Linear(leg.from.y, leg.to.y, 0.42) - 14
             };
-            this.startBob(sprite);
-            this.tweens.add({
-                targets: sprite, x: hold.x, y: hold.y, duration: 950, ease: 'Quad.easeOut',
-                onComplete: () => this.stopBob(sprite)
-            });
             this.playRunners[leg.key] = { sprite, to: leg.to, from: leg.from, isBatter };
+            const begin = () => {
+                this.startBob(sprite);
+                this.tweens.add({
+                    targets: sprite, x: hold.x, y: hold.y, duration: 950, ease: 'Quad.easeOut',
+                    onComplete: () => this.stopBob(sprite)
+                });
+            };
+            // The batter's take_off pose (bat dropping, first step) needs a
+            // beat on screen before startBob()'s runAnim() takes the sprite
+            // over — the same same-tick clobber the fielder batch found
+            // between field_grounder and throw.
+            if (isBatter && sprite._bb2) this.time.delayedCall(180, begin);
+            else begin();
         });
         // Hide static dots only for the runners that actually took off
         ['first', 'second', 'third'].forEach(k => {
@@ -2495,6 +2528,7 @@ class GameScene extends Phaser.Scene {
         this.ballArc(FIELD.HOME, spot, 540, 20, () => {
             this.jog(fielder, spot.x + 4, spot.y - 4, 280, 'Quad.easeOut', () => {
                 this.audio.play('catch');
+                this.bb2Anim(fielder, 'field_grounder');
                 this.releaseBall();
                 this._zoomOnPoint(spot.x, spot.y, 1.4, 280);
                 this.audio.speak(`Ground ball to ${FIELDER_NAMES[fielderPos]}!`);
@@ -2586,6 +2620,11 @@ class GameScene extends Phaser.Scene {
 
             this.time.delayedCall(runMs, () => {
                 this.audio.play(out ? 'tag' : 'catch');
+                // He carried the ball in himself rather than receiving a
+                // throw, so 'stretch_catch' (which reads as catching
+                // something arcing in) would be wrong even at first base —
+                // just the plain secure-the-ball / tag poses.
+                this.bb2Anim(fielder, out ? 'tag' : 'receive_at_bag');
                 if (out) {
                     this.cameras.main.shake(140, 0.006);
                     this.applyThrowOut(targetBase, fielderPos);
