@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Benny's FishMaster</title>
 <style>
+/* Typewriter face for the catch-reveal card only (.panel-catch, set in
+   game.js's renderOverlay) — a fish tale reads like a field report. Same
+   @import-with-fallback pattern BENNYSSLOTMACHINE uses for its Google Fonts;
+   'Courier New'/monospace stand in if the network request never lands. */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
 /* ──────────────────────────────────────────────────────────────────────────
    Themes. Every colour in the game (canvas included) comes from one of these
    four palettes, so switching profile repaints the world as well as the UI.
@@ -295,6 +301,90 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
 .mi.dim.focus{opacity:1}
 #panelNote{margin-top:.7rem; font-size:.85rem; color:var(--dim); line-height:1.5}
 #panelNote b{color:var(--text)}
+
+/* ── Catch-reveal card ───────────────────────────────────────────────────
+   Large on purpose — this is the one payoff moment after a catch, and it
+   needs to read clearly for a low-vision player, not just a decorative
+   flourish. .catchArt is real painted art (checked-in fish/junk/valuable
+   PNGs); the emoji fallback below it only ever fires for the one id that
+   still has no art (the secret Dingus) or a future id whose data ships
+   before its art does — same degradation the Dingus reveal itself uses. */
+.catchCard{text-align:center; padding:.5rem 0 1rem}
+.catchArt{display:block; max-width:min(70%,18rem); max-height:14rem; margin:0 auto .6rem; object-fit:contain}
+.catchArtPlaceholder{font-size:5rem; line-height:1; margin-bottom:.6rem}
+.catchStat{font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:.3rem}
+.catchNote{font-size:1rem; color:var(--dim); margin-bottom:.3rem}
+.catchQuip{font-size:1rem; font-style:italic; color:var(--dim)}
+
+/* High Contrast flattens the painted art the same way art.js flattens the
+   pond (README: "black water and white rock so the shoreline still reads as
+   a silhouette") — grayscale strips the soft watercolour hue variation a
+   low-vision player can't rely on, and the heavy contrast/brightness push
+   turns wash gradients into something closer to bold, legible tone bands.
+   Scoped to just the art, not the card text, which already inherits this
+   profile's own high-contrast colour variables. */
+body[data-theme="contrast"] .catchArt,
+body[data-theme="contrast"] .catchArtPlaceholder{
+  filter: grayscale(1) contrast(1.6) brightness(1.1);
+}
+
+/* Field-report look for the catch card specifically — game.js's renderOverlay
+   toggles .panel-catch on #panel only while G.overlay is 'catchreveal', so
+   every other menu keeps the regular UI face. Special Elite has one weight;
+   letter-spacing does the "typed" lift that font-weight can't here. */
+.panel-catch #panelTitle{font-family:'Special Elite','Courier New',monospace; letter-spacing:.03em}
+.panel-catch .catchStat, .panel-catch .catchNote, .panel-catch .catchQuip{
+  font-family:'Special Elite','Courier New',monospace; letter-spacing:.02em;
+}
+
+/* Catch-card backgrounds — a player preference (Settings > Catch Card Style,
+   game.js's cycleCardStyle()), not theme-driven, so unlike everything else in
+   this file the text colours here are fixed rather than var(--text) etc.:
+   a photo background can't be relied on to contrast with whichever of the
+   four colour profiles happens to be active. background-size:cover fills
+   #panel's own padded box; its border-radius + overflow:auto already clip it
+   to the rounded corners. The `#panel` prefix on every rule below is load-
+   bearing, not decoration — #panel's own `background:var(--panel)` shorthand
+   (an ID selector) otherwise wins over a same-property class selector
+   regardless of source order, and silently resets background-image back out. */
+#panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center; }
+#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b }
+#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8 }
+#panel.panel-catch.cardbg-plaque .catchNote,
+#panel.panel-catch.cardbg-plaque .catchQuip,
+#panel.panel-catch.cardbg-plaque #panelNote{ color:#e2d8bc }
+#panel.panel-catch.cardbg-plaque #panelNote b{ color:#f0e6c8 }
+
+#panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center; }
+#panel.panel-catch.cardbg-certificate #panelTitle{ color:#8a3b12 }
+#panel.panel-catch.cardbg-certificate .catchStat{ color:#2a2013 }
+#panel.panel-catch.cardbg-certificate .catchNote,
+#panel.panel-catch.cardbg-certificate .catchQuip,
+#panel.panel-catch.cardbg-certificate #panelNote{ color:#4a3f28 }
+#panel.panel-catch.cardbg-certificate #panelNote b{ color:#2a2013 }
+
+/* Neither background is a solid fill with a heavy outline, so neither can be
+   flattened into High Contrast's rules the way the pond or a catch photo can
+   (see the .catchArt filter above) — suppressed outright back to the profile's
+   own plain black panel and its own high-contrast text colours. `#panel` kept
+   in every selector here too, so this beats the same-specificity rules above
+   regardless of source order — see the note there. */
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate{
+  background-image:none;
+}
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelTitle,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelTitle{ color:var(--accent) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchStat,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchStat{ color:var(--text) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchQuip,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchQuip,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote{ color:var(--dim) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote b,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote b{ color:var(--text) }
 
 #sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 

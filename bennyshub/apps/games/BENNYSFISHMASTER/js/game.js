@@ -84,7 +84,7 @@ const SET_KEY  = 'bennysfishmaster_settings';
    counters no longer describe anything real. See migrateSave(). */
 const SAVE_VERSION = 2;
 
-const settings = { theme: 'ben', fontScale: 100, sound: true };
+const settings = { theme: 'ben', fontScale: 100, sound: true, cardStyle: 'plaque' };
 
 function defaultSave() {
   return {
@@ -1008,6 +1008,36 @@ function rollValuableItem() {
   return { type: 'valuable', id: item.id, name: item.name, value: item.value };
 }
 
+/* The reveal card's quip line. A few per item (data.js's ITEM_QUIPS) so the
+   same line doesn't land twice in a row — lastQuipIx is runtime-only, not
+   saved, since which quip you saw last is not something worth persisting. */
+const lastQuipIx = {};
+function pickQuip(itemId) {
+  const quips = D.ITEM_QUIPS[itemId];
+  if (!quips || !quips.length) return null;
+  if (quips.length === 1) return quips[0];
+  let ix;
+  do { ix = Math.floor(Math.random() * quips.length); } while (ix === lastQuipIx[itemId]);
+  lastQuipIx[itemId] = ix;
+  return quips[ix];
+}
+
+/* Fish art is images/fish/<id>.png, junk and valuables are images/items/<id>.png
+   — both approved and checked in. Only the secret Dingus has no art (its
+   reveal is a separate, deliberately ceremonial overlay — see dingusreveal).
+   The emoji map is a safety net for that case and for any future item id
+   that ships data before its art does; same graceful-degradation the Dingus
+   reveal itself uses for its still-missing photo. */
+const CATCH_PLACEHOLDER_EMOJI = {
+  boot: '👞', tire: '🛞', tincan: '🥫', weeds: '🌿',
+  wallet: '👛', phone: '📱', watch: '⌚', ring: '💍'
+};
+function catchArtSrc(outcome) {
+  if (outcome.type === 'fish') return outcome.secret ? null : `images/fish/${outcome.id}.png`;
+  if (outcome.type === 'junk' || outcome.type === 'valuable') return `images/items/${outcome.id}.png`;
+  return null;
+}
+
 function resolveCatch() {
   const c = G.catch;
   const quality = Math.round(100 * c.correctCount / c.sequence.length);
@@ -1026,19 +1056,29 @@ function resolveCatch() {
     outcome = rollJunkItem();
   }
   G.catch = null;
-  applyOutcome(outcome, quality);
+  applyOutcome(outcome);
 }
 
-function speakCatchResult(outcome, quality) {
+/* 'Old Boot' and 'Old Wristwatch' both need "an", not "a" — everything else
+   in FISH/ITEM_TABLE happens to start with a consonant sound today, but the
+   check costs nothing and stops the next vowel-led name from reading wrong. */
+function aOrAn(name, capitalize) {
+  const article = /^[aeiou]/i.test(name) ? 'an' : 'a';
+  return capitalize ? article[0].toUpperCase() + article.slice(1) : article;
+}
+
+/* Text only — the catchreveal/dingusreveal overlay that opens right after
+   applyOutcome() speaks this itself (openOverlay always speaks), so a speak()
+   call here would just be talked over and never heard. */
+function catchResultSpeech(outcome) {
   if (outcome.demoted) {
-    speak(`The ${outcome.demotedFrom} got away — a ${outcome.name} came up instead. Quality was too low that time.`);
+    return `The ${outcome.demotedFrom} got away — ${aOrAn(outcome.name)} ${outcome.name} came up instead. Quality was too low that time.`;
   } else if (outcome.type === 'fish') {
-    speak(`Caught a ${outcome.name}! ${outcome.length} inches, ${outcome.weight} pounds. ${outcome.qualityLabel} catch, worth ${outcome.value} dollars.`);
+    return `Caught ${aOrAn(outcome.name)} ${outcome.name}! ${outcome.length} inches, ${outcome.weight} pounds. ${outcome.qualityLabel} catch, worth ${outcome.value} dollars.`;
   } else if (outcome.type === 'valuable') {
-    speak(`Reeled in a ${outcome.name}, worth ${outcome.value} dollars.`);
-  } else {
-    speak(`Just a ${outcome.name}. Not worth anything, but fun to keep.`);
+    return `Reeled in ${aOrAn(outcome.name)} ${outcome.name}, worth ${outcome.value} dollars.`;
   }
+  return `Just ${aOrAn(outcome.name)} ${outcome.name}.`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1080,7 +1120,7 @@ function updateObjectives(outcome) {
   return { completed: false };
 }
 
-function applyOutcome(outcome, quality) {
+function applyOutcome(outcome) {
   save.creel.push(Object.assign({}, outcome));
   const dingusFirstCatch = (outcome.type === 'fish' && outcome.id === 'largemouth_dingus' && !save.sawDingusReveal);
   if (dingusFirstCatch) save.sawDingusReveal = true;
@@ -1089,11 +1129,16 @@ function applyOutcome(outcome, quality) {
   if (outcome.type === 'fish' && !outcome.secret) lakeInfo = updateObjectives(outcome);
 
   saveProgress();
-  speakCatchResult(outcome, quality);
   updateHud();
 
+  // Every catch gets a reveal card — the Dingus's first catch gets its own
+  // ceremonial one instead, not both back to back.
   const queue = [];
-  if (dingusFirstCatch) queue.push({ which: 'dingusreveal' });
+  if (dingusFirstCatch) {
+    queue.push({ which: 'dingusreveal' });
+  } else {
+    queue.push({ which: 'catchreveal', data: { outcome, quip: (outcome.type === 'fish') ? null : pickQuip(outcome.id) } });
+  }
   if (lakeInfo.completed) queue.push({ which: 'lakecomplete', data: lakeInfo });
   G.postCatchQueue = queue;
   advancePostCatchQueue();
@@ -1414,6 +1459,16 @@ const THEMES = [
   { id: 'contrast', name: 'High Contrast' }
 ];
 
+/* The catch-reveal card's background — a player preference, same as Colour
+   Profile or Text Size. CSS (index.html) suppresses both under High Contrast
+   regardless of which is picked here: a plaque/certificate photo can't be
+   flattened into that profile's solid-fill, heavy-outline rules the way the
+   pond or a catch photo can, so it doesn't try. */
+const CARD_STYLES = [
+  { id: 'plaque',      name: 'Plaque' },
+  { id: 'certificate', name: 'Certificate' }
+];
+
 let overlayData = {};
 let resetArmed = false;
 
@@ -1660,6 +1715,10 @@ const MENUS = {
       act: () => cycleTheme(1) },
     { text: () => 'Text Size', val: () => settings.fontScale + '%',
       act: () => cycleFont(1) },
+    { text: () => 'Catch Card Style', val: () => (CARD_STYLES.find(s => s.id === settings.cardStyle) || CARD_STYLES[0]).name,
+      say: () => 'Catch card style. ' + (CARD_STYLES.find(s => s.id === settings.cardStyle) || CARD_STYLES[0]).name
+        + (settings.theme === 'contrast' ? '. Not shown in High Contrast, which keeps a plain card.' : ''),
+      act: () => cycleCardStyle(1) },
     { text: () => resetArmed ? 'Reset Progress — select again to confirm' : 'Reset Progress',
       val: () => resetArmed ? 'Are you sure?' : '',
       say: () => resetArmed ? 'Reset progress. Select again to confirm.' : 'Reset progress.',
@@ -1717,6 +1776,10 @@ const MENUS = {
     { text: () => 'Continue', act: () => { hideOverlay(); advancePostCatchQueue(); } }
   ],
 
+  catchreveal: () => [
+    { text: () => 'Continue', act: () => { hideOverlay(); advancePostCatchQueue(); } }
+  ],
+
   help: () => [{ text: () => 'Got it', act: () => closeOverlay() }]
 };
 
@@ -1732,6 +1795,10 @@ function overlayTitle(which) {
     case 'pause': return 'Paused';
     case 'lakecomplete': return 'Lake Cleared!';
     case 'dingusreveal': return 'A Legend Surfaces';
+    case 'catchreveal': {
+      const o = overlayData.outcome;
+      return o.demoted ? `${o.demotedFrom} Got Away` : o.name;
+    }
     case 'help': return 'How to Play';
     default: return 'Menu';
   }
@@ -1761,6 +1828,19 @@ function overlaySub(which) {
         <b>Largemouth Dingus!</b><br>
         <span style="font-size:.85rem;color:var(--dim)">(photo of Ari coming soon)</span>
       </div>`;
+    case 'catchreveal': {
+      const o = overlayData.outcome;
+      const art = catchArtSrc(o);
+      const media = art
+        ? `<img class="catchArt" src="${art}" alt="">`
+        : `<div class="catchArt catchArtPlaceholder" aria-hidden="true">${CATCH_PLACEHOLDER_EMOJI[o.id] || '🐟'}</div>`;
+      let s = `<div class="catchCard">${media}`;
+      if (o.demoted) s += `<div class="catchNote">${aOrAn(o.name, true)} ${o.name} came up instead.</div>`;
+      if (o.type === 'fish') s += `<div class="catchStat">${o.length} in · ${o.weight} lb · ${o.qualityLabel}</div>`;
+      else if (o.type === 'valuable') s += `<div class="catchStat">$${o.value}</div>`;
+      if (overlayData.quip) s += `<div class="catchQuip">${overlayData.quip}</div>`;
+      return s + '</div>';
+    }
     case 'help':
       return `<b>Two keys, that is all.</b><br>
         <kbd>Space</kbd> moves the highlight to the next choice.<br>
@@ -1797,6 +1877,8 @@ function overlaySpeech(which) {
       return s;
     }
     case 'dingusreveal': return 'A legend surfaces. Largemouth Dingus! A photo of Ari is coming soon.';
+    case 'catchreveal':
+      return catchResultSpeech(overlayData.outcome) + (overlayData.quip ? ` ${overlayData.quip}` : '');
     case 'help':
       return 'How to play. Two keys, that is all. A short press of space moves the highlight to the next choice. '
            + 'Holding space for three seconds scans by itself until you let go. A short press of return picks whatever is highlighted. '
@@ -1891,6 +1973,9 @@ function closeOverlay() {
 
 function renderOverlay() {
   $('overlay').classList.add('on');
+  const onCatchCard = G.overlay === 'catchreveal';
+  $('panel').classList.toggle('panel-catch', onCatchCard);
+  CARD_STYLES.forEach(s => $('panel').classList.toggle('cardbg-' + s.id, onCatchCard && settings.cardStyle === s.id));
   $('panelTitle').textContent = overlayTitle(G.overlay);
   $('panelSub').innerHTML = overlaySub(G.overlay);
 
@@ -1954,6 +2039,14 @@ function cycleTheme(d) {
   settings.theme = THEMES[i].id;
   applyTheme(); saveSettings(); renderOverlay();
   speak('Colours: ' + THEMES[i].name);
+}
+function cycleCardStyle(d) {
+  let i = CARD_STYLES.findIndex(s => s.id === settings.cardStyle);
+  if (i === -1) i = 0;
+  i = (i + d + CARD_STYLES.length) % CARD_STYLES.length;
+  settings.cardStyle = CARD_STYLES[i].id;
+  saveSettings(); renderOverlay();
+  speak('Catch card style: ' + CARD_STYLES[i].name);
 }
 function cycleFont(d) {
   const steps = [100, 125, 150, 175, 200];

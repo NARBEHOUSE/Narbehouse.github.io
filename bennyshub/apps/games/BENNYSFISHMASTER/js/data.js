@@ -135,8 +135,25 @@ window.FishMasterData = (function () {
     valuable: [
       { id: 'wallet', name: 'Soggy Wallet',        value: 25 },
       { id: 'phone',  name: 'Cracked Cell Phone',  value: 40 },
+      { id: 'watch',  name: 'Old Wristwatch',      value: 60 },
       { id: 'ring',   name: 'Gold Ring',           value: 80 }
     ]
+  };
+
+  // ── Catch-reveal quips ──────────────────────────────────────────────────────
+  // A few lines per non-fish item so the reveal card (game.js's catchreveal
+  // overlay) doesn't repeat itself catch after catch — pickQuip() rotates
+  // through these and skips whichever ran last. Fish don't get an entry: their
+  // card shows length/weight/quality instead of a quip.
+  const ITEM_QUIPS = {
+    boot:   ["Somebody's missing this.", "No sign of the other one.", "At least it's not on your foot.", "A boot. The lake's most reliable catch.", "Not worth anything, but fun to keep."],
+    tire:   ["Not exactly a keeper.", "Someone's spare, once.", "It'll never hold air again.", "The lake's tackle box, apparently.", "Not worth anything, but fun to keep."],
+    tincan: ["Vintage, if nothing else.", "Empty. Has been for a while.", "A can. A very old one.", "Recycling this feels optimistic.", "Not worth anything, but fun to keep."],
+    weeds:  ["Pond salad.", "You've caught... plants.", "The lake fought back with vegetation.", "Free of charge, unfortunately.", "Not worth anything, but fun to keep."],
+    wallet: ["No ID inside — just receipts.", "Someone's having a rough week.", "Still smells like the lake.", "Cash is fine. Cards, less so."],
+    phone:  ["Still has 4% battery. Somehow.", "The screen's had better days.", "Hope they had cloud backup.", "Definitely not waterproof."],
+    watch:  ["Stopped at 3:15. Forever.", "Still ticking, somehow.", "The strap didn't survive the lake.", "Someone's very confused about the time."],
+    ring:   ["No engraving. No story. Just gold.", "Someone's going to be upset about this.", "Shinier than anything else in the creel.", "Worth checking your own hand, honestly."]
   };
 
   // ── Lakes & level objectives ──────────────────────────────────────────────
@@ -215,5 +232,5 @@ window.FishMasterData = (function () {
     }
   ];
 
-  return { BIOMES, FISH, RODS, BAIT, ITEM_TABLE, LAKE_TEMPLATES };
+  return { BIOMES, FISH, RODS, BAIT, ITEM_TABLE, ITEM_QUIPS, LAKE_TEMPLATES };
 })();

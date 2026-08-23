@@ -199,10 +199,61 @@ and rods.
   would sit off the water it describes. It is drawn faint on purpose: the art
   pass removed the hard sector dividers, and a bright fence would put that
   clutter straight back.
-- **Still placeholder:** the fish and the non-fish catches have no art yet —
-  a catch is text and speech only, and the Dingus reveal is still an emoji.
-  Cartoon drawings for those are the next pass, and they belong in `art.js`
-  alongside the pond. This is why the game is still not in `games.json`.
+### The catch-reveal card
+
+- Every catch — fish, junk, or a valuable — opens a full-screen card (the
+  `catchreveal` overlay in `game.js`) instead of returning straight to
+  casting: big art, then a fish's length/weight/quality or a valuable's
+  dollar value, then a quip for anything that isn't a fish. This is a
+  separate system from the painted pond above: the art here is `<img>`
+  elements in overlay HTML, not anything drawn through `art.js`/`project()`.
+- Fish art is `images/fish/<id>.png`; junk and valuables are
+  `images/items/<id>.png` (`catchArtSrc()`) — both approved through the
+  generate → anatomy-check → chroma-key pipeline in
+  `Projects\Assets\fishmaster-{fish,junk,valuables}\`. Only the secret Dingus
+  has no art: its own reveal is still an emoji placeholder.
+  `CATCH_PLACEHOLDER_EMOJI` is the fallback for that case and for any future
+  item id whose data ships before its art does.
+- Junk and valuables get a quip instead of a stat line (`D.ITEM_QUIPS` in
+  `data.js`, a few lines per item so catching the same boot twice in a row
+  doesn't read the same line twice — `pickQuip()` in `game.js` tracks the
+  last one shown per item id at runtime and skips it, not saved).
+- A quality roll too low to land the fish on the line comes up as junk
+  instead (`resolveCatch()`'s `demoted` outcome); its card leads with
+  "`<Species> Got Away`" and a note naming what came up instead, before the
+  same junk quip.
+- The Dingus's own first-catch reveal (`dingusreveal`) still pre-empts the
+  generic card once, on purpose — it is the one deliberately ceremonial
+  catch in the game. Any *later* Dingus catch gets the ordinary card like
+  any other fish.
+- The card's text (title, stat line, note, quip) switches to a typewriter
+  face (Special Elite, via `.panel-catch` — `renderOverlay()` toggles that
+  class on `#panel` only while `G.overlay === 'catchreveal'`) so it reads
+  like a field report instead of the game's normal UI chrome. Every other
+  overlay is unaffected.
+- The card's background is a player preference — **Catch Card Style** in
+  Settings, `CARD_STYLES` + `cycleCardStyle()` in `game.js` — Plaque (dark
+  walnut, brass border) or Certificate (aged parchment, gold filigree). A
+  third candidate, Old Newspaper, was probed and dropped: its blurred-print
+  texture read as too busy next to the card's own text. `renderOverlay()`
+  toggles `cardbg-<id>` on `#panel` alongside `panel-catch`; the CSS pairs
+  each background with its own **fixed** text colours (not the theme's
+  `--text`/`--accent`/`--dim`) because a photo background can't be relied on
+  to contrast with whichever of the four colour profiles is active — every
+  rule doing this is prefixed `#panel` on purpose, since `#panel`'s own
+  `background:` shorthand (an ID selector) otherwise wins over a same-
+  property class selector regardless of source order and silently drops the
+  image.
+- Neither background style shows under High Contrast — a photo can't be
+  flattened into that profile's solid-fill/heavy-outline rules the way the
+  pond or a catch photo can (see the `.catchArt` grayscale+contrast filter
+  above, which *does* survive into that profile). `body[data-theme="contrast"]`
+  rules force `background-image:none` and put every card text colour back on
+  the theme's own `--accent`/`--text`/`--dim`, at matching `#panel`-prefixed
+  specificity so they reliably beat the style rules instead of losing to
+  source order.
+- **This is why the game is still not in `games.json`**: the Dingus's real
+  photo is the one piece left before it can go live.
 
 ### Gameplay
 
