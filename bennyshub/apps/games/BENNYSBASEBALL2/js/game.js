@@ -751,6 +751,15 @@ class GameScene extends Phaser.Scene {
         if (this._ballBusy === 0) this.setBallSpin(false);
     }
 
+    // Visually tucks the ball away the instant it's secured in a glove —
+    // separate from this.ball.visible, which has to stay true for the
+    // nextPlay()/returnBallToPitcher() "is this play still resolving" gate.
+    // Alpha snaps back to 1 the next time ballArc()/cpuPitchFlight() sends it
+    // anywhere, so callers never need to pair this with an un-hide.
+    hideHeldBall() {
+        this.ball.setAlpha(0);
+    }
+
     // Spin control that can never crash even if the tween was killed
     setBallSpin(on) {
         const s = this.ball && this.ball.spin;
@@ -784,7 +793,7 @@ class GameScene extends Phaser.Scene {
         const durations = { Fastball: 600, Changeup: 900, Curveball: 800, Slider: 700, Knuckleball: 1000 };
         const duration = durations[pitchType] || 700;
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
-        this.ball.setVisible(true);
+        this.ball.setVisible(true).setAlpha(1);
         this.ball.setPosition(from.x, from.y);
         this.setBallSpin(true);
         this._ballBusy = (this._ballBusy || 0) + 1;
@@ -815,7 +824,7 @@ class GameScene extends Phaser.Scene {
     // end-of-play toss to the pitcher) can grab it mid-flight.
     ballArc(from, to, duration, arcHeight, cb) {
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
-        this.ball.setVisible(true);
+        this.ball.setVisible(true).setAlpha(1);
         this.ball.setPosition(from.x, from.y);
         this.setBallSpin(true);
         this._ballBusy = (this._ballBusy || 0) + 1;
@@ -1114,6 +1123,7 @@ class GameScene extends Phaser.Scene {
             this.audio.play('throw');
             this.ballArc(FIELD.FIELDER_HOMES.C, target, throwFlightMs, 46, () => {
                 this.audio.play('tag');
+                this.hideHeldBall();
                 this.cameras.main.shake(120, 0.005);
                 if (success) {
                     this.gs.bases[targetBase] = this.gs.bases[fromBase];
@@ -1409,6 +1419,7 @@ class GameScene extends Phaser.Scene {
         this.ballArc({ x: this.ball.x, y: this.ball.y }, glove, 200, 4, () => {
             this.audio.play('catch');
             this.catcherAnim('receive');
+            this.hideHeldBall();
             this.time.delayedCall(320, () => {
                 this.audio.play('throw');
                 this.catcherAnim('rise_throw');
@@ -1759,6 +1770,7 @@ class GameScene extends Phaser.Scene {
             this.ballArc(home, spot, 1400, 170, () => {
                 this.audio.play('catch');
                 this.bb2Anim(this.fielders[catcherPos], 'catch_fly');
+                this.hideHeldBall();
                 this._zoomOnPoint(spot.x, spot.y, 1.7, 300);
                 this.bigMessage('CAUGHT!', 1200);
                 this.time.delayedCall(1300, () => { this._zoomOut(350); this.time.delayedCall(400, cb); });
@@ -1782,6 +1794,7 @@ class GameScene extends Phaser.Scene {
                     this.audio.play('catch');
                     this.bb2Anim(fielder, 'field_grounder');
                     this.releaseBall();
+                    this.hideHeldBall();
                     const seq = outcome === 'Triple Play' ? ['third', 'second', 'first']
                               : outcome === 'Double Play' ? ['second', 'first']
                               : ['first'];
@@ -1845,6 +1858,7 @@ class GameScene extends Phaser.Scene {
                     this.audio.play('catch');
                     this.bb2Anim(fielder, 'field_grounder');
                     this.releaseBall();
+                    this.hideHeldBall();
                     const target = this.gs.bases.first ? 'second' : 'first';
                     const runnerKey = target === 'second' ? 'first' : 'batter';
                     const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
@@ -2137,6 +2151,7 @@ class GameScene extends Phaser.Scene {
             // receive — every other bag just gets a routine catch or tag.
             this.bb2Anim(cover, (coverPos === '1B' && targetBase === 'first') ? 'stretch_catch'
                                 : out ? 'tag' : 'receive_at_bag');
+            this.hideHeldBall();
             // Ball stays live at the bag — finishPlay tosses it to the mound
             const r = runnerKey && this.playRunners && this.playRunners[runnerKey];
             if (out && r) {
@@ -2189,6 +2204,7 @@ class GameScene extends Phaser.Scene {
                 this.ballArc(fromXY, BASE_COORDS[targetBase], t, Math.min(50, t * 0.09), () => {
                     this.audio.play('catch');
                     this.bb2Anim(cover, 'receive_at_bag');
+                    this.hideHeldBall();
                     this.bigMessage('SAFE!', 1200);
                     this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}.`);
                     this.audio.play('crowd');
@@ -2222,6 +2238,7 @@ class GameScene extends Phaser.Scene {
                     this.audio.play('catch');
                     this.bb2Anim(this.fielders[chaserPos], 'field_bounce');
                     this.releaseBall();
+                    this.hideHeldBall();
                     if (isTriple) {
                         // Classic outfield-to-third relay through the cutoff man
                         this._ballBusy = (this._ballBusy || 0) + 1;
@@ -2235,6 +2252,7 @@ class GameScene extends Phaser.Scene {
                                 this.audio.play('catch');
                                 this.bb2Anim(this.fielders[cutoffPos], 'receive_at_bag');
                                 this.releaseBall();
+                                this.hideHeldBall();
                                 this.time.delayedCall(180, () => finalThrow(relaySpot, cutoffPos));
                             });
                         });
@@ -2503,6 +2521,8 @@ class GameScene extends Phaser.Scene {
             const spot = FIELD.FIELDER_HOMES[catcherPos];
             this.ballArc(FIELD.HOME, spot, 1300, 160, () => {
                 this.audio.play('catch');
+                this.bb2Anim(this.fielders[catcherPos], 'catch_fly');
+                this.hideHeldBall();
                 this._zoomOnPoint(spot.x, spot.y, 1.7, 300);
                 this.bigMessage('CAUGHT!', 1200);
                 this.audio.speak('Pop fly. Out!');
@@ -2579,6 +2599,7 @@ class GameScene extends Phaser.Scene {
                 this.audio.play('catch');
                 this.bb2Anim(fielder, 'field_grounder');
                 this.releaseBall();
+                this.hideHeldBall();
                 this._zoomOnPoint(spot.x, spot.y, 1.4, 280);
                 this.audio.speak(`Ground ball to ${FIELDER_NAMES[fielderPos]}!`);
                 this.time.delayedCall(700, () => {
@@ -2659,7 +2680,9 @@ class GameScene extends Phaser.Scene {
             this._zoomOnPoint(bag.x, bag.y, 1.6, Math.max(300, runMs));
             this.tweens.killTweensOf(fielder);
             this.jog(fielder, bag.x + 7, bag.y + 7, runMs / 1.5);
-            // The ball rides in his glove
+            // The ball rides in his glove — visible again for the carry, since
+            // startGroundballPlay's fielding hid it a moment ago.
+            this.ball.setAlpha(1);
             this._ballBusy = (this._ballBusy || 0) + 1;
             this.tweens.add({
                 targets: this.ball, x: bag.x + 7, y: bag.y - 1, duration: runMs, ease: 'Linear',
@@ -2674,6 +2697,7 @@ class GameScene extends Phaser.Scene {
                 // something arcing in) would be wrong even at first base —
                 // just the plain secure-the-ball / tag poses.
                 this.bb2Anim(fielder, out ? 'tag' : 'receive_at_bag');
+                this.hideHeldBall();
                 if (out) {
                     this.cameras.main.shake(140, 0.006);
                     this.applyThrowOut(targetBase, fielderPos);
@@ -2854,7 +2878,9 @@ class GameScene extends Phaser.Scene {
         this.ballArc(FIELD.HOME, spot, 700, 14, () => {
             this.jog(fielder, spot.x + 4, spot.y - 4, 300, 'Quad.easeOut', () => {
                 this.audio.play('catch');
+                this.bb2Anim(fielder, 'field_bounce');
                 this.releaseBall();
+                this.hideHeldBall();
                 if (!contested) {
                     this.audio.speak('Single.');
                     ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
