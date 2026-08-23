@@ -592,7 +592,14 @@ class GameScene extends Phaser.Scene {
     updateOnDeckBatter() {
         this.clearOnDeckBatter();
         const sprite = this.makePlayer(this.battingColor(), '', 'B');
-        if (!sprite._bb2) { sprite.destroy(); return; }
+        if (!sprite._bb2) {
+            // Circle fallback has an infinite breathing tween on its
+            // children (see makePlayer()) — kill it before destroying, the
+            // same as every other teardown site in this file does.
+            this.tweens.killTweensOf(sprite.list);
+            sprite.destroy();
+            return;
+        }
         const x = this.isPlayerBatting() ? FIELD.HOME.x - 155 : FIELD.HOME.x + 155;
         sprite.setPosition(x, FIELD.HOME.y + 28).setScale(0.75);
         this.onDeckBatter = sprite;
@@ -702,10 +709,14 @@ class GameScene extends Phaser.Scene {
         p.setScale(1);
     }
 
-    // One-shot action animation, silently ignored on circle-fallback players
-    // or positions whose sheet doesn't define that anim.
+    // One-shot action animation, silently ignored on circle-fallback players,
+    // positions whose sheet doesn't define that anim, or a sprite that has
+    // since been destroyed — several of these calls fire from a
+    // delayedCall scheduled earlier in a play, and the sprite it targets
+    // can be destroyed (a new batter, a cleared runner) before that timer
+    // fires.
     bb2Anim(p, name) {
-        if (p && p._bb2) p.setAnim(name, true);
+        if (p && p._bb2 && p.active) p.setAnim(name, true);
     }
 
     // All player movement is slowed ~50% so the game reads better visually
@@ -1231,6 +1242,12 @@ class GameScene extends Phaser.Scene {
         if (this.chargeMonitor) { this.chargeMonitor.remove(); this.chargeMonitor = null; }
         this.audio.stopChargeSound();
         this.hidePowerMeter();
+        // Covers the "missed the pitch entirely" path (onPitchComplete),
+        // where nothing else ever reverts the load_bunt/normal/power pose
+        // the charge hold left him in. Harmless on the normal release path
+        // too — executeSwing() overwrites it with the real swing/bunt anim
+        // in the same tick, before a frame renders.
+        this.bb2Anim(this.batter, 'stance');
     }
 
     // Hold released — port of v1 onSwingRelease (hold time → swing type,
@@ -1329,7 +1346,12 @@ class GameScene extends Phaser.Scene {
             const animName = isBunt ? 'bunt' : (swingType === 'power' ? 'swing_power' : 'swing_normal');
             batterRef.setAnim(animName, true);
             const durMs = isBunt ? 420 : (swingType === 'power' ? 600 : 400);
-            this.time.delayedCall(durMs, () => {
+            // Cancel-and-reschedule, same pattern as sendRunner()'s
+            // _slideCall — a second swing on the same batter before the
+            // first's revert fires would otherwise leave a stale timer that
+            // stomps the newer swing's in-progress pose back to 'stance'.
+            if (this._swingRevertCall) { this._swingRevertCall.remove(false); this._swingRevertCall = null; }
+            this._swingRevertCall = this.time.delayedCall(durMs, () => {
                 // Only settle back to the stance if this is still the same
                 // at-bat AND he hasn't taken off running in the meantime —
                 // forcing 'stance' back on a runner would fight run_<dir>.
@@ -1435,7 +1457,13 @@ class GameScene extends Phaser.Scene {
             gs.balls = 0; gs.strikes = 0;
             this.audio.speak('Hit by pitch!');
             this.bb2Anim(this.batter, 'hit_by_pitch');
-            this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
+            // animateAdvances() calls batterTakesOff() synchronously, which
+            // would force 'take_off' over 'hit_by_pitch' in the same tick —
+            // give the flinch a beat first, matching the CPU-pitching HBP
+            // path's identical 700ms pause.
+            this.time.delayedCall(700, () => {
+                this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
+            });
             return;
         }
 
@@ -1999,6 +2027,8 @@ class GameScene extends Phaser.Scene {
             };
             this.playRunners[leg.key] = { sprite, to: leg.to, from: leg.from, isBatter };
             const begin = () => {
+                if (!sprite.active) return;
+                if (sprite._bb2) sprite.faceFrom(hold.x - sprite.x, hold.y - sprite.y);
                 this.startBob(sprite);
                 this.tweens.add({
                     targets: sprite, x: hold.x, y: hold.y, duration: 950, ease: 'Quad.easeOut',
@@ -2008,9 +2038,16 @@ class GameScene extends Phaser.Scene {
             // The batter's take_off pose (bat dropping, first step) needs a
             // beat on screen before startBob()'s runAnim() takes the sprite
             // over — the same same-tick clobber the fielder batch found
-            // between field_grounder and throw.
-            if (isBatter && sprite._bb2) this.time.delayedCall(180, begin);
-            else begin();
+            // between field_grounder and throw. The timer is stashed on the
+            // playRunners record so sendRunner() can cancel it if it sends
+            // this same runner on before it fires (a force at first thrown
+            // faster than 180ms would otherwise start a second, competing
+            // tween on top of this one).
+            if (isBatter && sprite._bb2) {
+                this.playRunners[leg.key]._beginCall = this.time.delayedCall(180, begin);
+            } else {
+                begin();
+            }
         });
         // Hide static dots only for the runners that actually took off
         ['first', 'second', 'third'].forEach(k => {
@@ -2021,6 +2058,12 @@ class GameScene extends Phaser.Scene {
     clearContactRunners() {
         if (this.playRunners) {
             Object.values(this.playRunners).forEach(r => {
+                // Neither timer is tied to the tween lifecycle killTweensOf
+                // manages, so an interrupted/short-circuited play could
+                // otherwise leave one pending and firing bb2Anim on a
+                // sprite this loop is about to destroy.
+                if (r._beginCall) { r._beginCall.remove(false); r._beginCall = null; }
+                if (r._slideCall) { r._slideCall.remove(false); r._slideCall = null; }
                 this.tweens.killTweensOf(r.sprite);
                 if (!r.isBatter) r.sprite.destroy();
             });
@@ -2046,8 +2089,14 @@ class GameScene extends Phaser.Scene {
         if (!r) return;
         const to = targetBase ? BASE_COORDS[targetBase] : r.to;
         this.tweens.killTweensOf(r.sprite);
-        this.startBob(r.sprite);
+        // Cancel the batter's still-pending take_off->run handoff (see
+        // startContactRunners()) if this runner is being sent on before it
+        // fired — otherwise it would start a second tween on top of this
+        // one a moment later.
+        if (r._beginCall) { r._beginCall.remove(false); r._beginCall = null; }
         if (r._slideCall) { r._slideCall.remove(false); r._slideCall = null; }
+        if (r.sprite._bb2) r.sprite.faceFrom(to.x - r.sprite.x, to.y - r.sprite.y);
+        this.startBob(r.sprite);
         const contested = opts && opts.slide && r.sprite._bb2;
         if (contested) {
             const slideAt = Math.max(0, ms - 260);
