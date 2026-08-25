@@ -68,7 +68,10 @@ const BB2_SHEETS = {
             stretch_catch:  { start: 0,  count: 4, rate: 12, repeat: 0 },
             ready_at_bag:   { start: 4,  count: 2, rate: 2,  repeat: -1 },
             field_grounder: { start: 6,  count: 4, rate: 10, repeat: 0 },
-            throw:          { start: 10, count: 2, rate: 12, repeat: 0 }
+            throw:          { start: 10, count: 2, rate: 12, repeat: 0 },
+            // Ball secured, waiting on the throw decision — the last
+            // field_grounder frame held as a loop instead of a one-shot.
+            hold:           { start: 9,  count: 1, rate: 1,  repeat: -1 }
         }
     },
     'infield-actions': {
@@ -79,7 +82,10 @@ const BB2_SHEETS = {
             throw:          { start: 6,  count: 4, rate: 12, repeat: 0 },
             receive_at_bag: { start: 10, count: 3, rate: 10, repeat: 0 },
             tag:            { start: 13, count: 3, rate: 10, repeat: 0 },
-            dive:           { start: 16, count: 2, rate: 8,  repeat: 0 }
+            dive:           { start: 16, count: 2, rate: 8,  repeat: 0 },
+            // Ball secured, waiting on the throw decision — the last
+            // field_grounder frame held as a loop instead of a one-shot.
+            hold:           { start: 5,  count: 1, rate: 1,  repeat: -1 }
         }
     },
     'outfield-actions': {
@@ -89,7 +95,10 @@ const BB2_SHEETS = {
             catch_fly:    { start: 2,  count: 4, rate: 10, repeat: 0 },
             field_bounce: { start: 6,  count: 3, rate: 10, repeat: 0 },
             throw_relay:  { start: 9,  count: 4, rate: 12, repeat: 0 },
-            wall_watch:   { start: 13, count: 2, rate: 2,  repeat: -1 }
+            wall_watch:   { start: 13, count: 2, rate: 2,  repeat: -1 },
+            // Ball secured, waiting on the throw decision — the last
+            // field_bounce frame held as a loop instead of a one-shot.
+            hold:         { start: 8,  count: 1, rate: 1,  repeat: -1 }
         }
     },
     'batter-actions': {

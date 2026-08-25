@@ -2574,11 +2574,18 @@ class GameScene extends Phaser.Scene {
                 this.audio.play('catch');
                 this.bb2Anim(fielder, 'field_grounder');
                 this.releaseBall();
+                // The ball is in the glove now, not floating on the grass —
+                // it stays hidden through the throw-decision menu and only
+                // reappears once resolveGroundThrow() actually sends it flying.
+                this.ball.setVisible(false);
                 this._zoomOnPoint(spot.x, spot.y, 1.4, 280);
                 this.audio.speak(`Ground ball to ${FIELDER_NAMES[fielderPos]}!`);
                 this.time.delayedCall(700, () => {
                     this._zoomOut(300);
-                    this.time.delayedCall(320, () => this.showThrowMenu(fielderPos, spot));
+                    this.time.delayedCall(320, () => {
+                        this.bb2Anim(fielder, 'hold');
+                        this.showThrowMenu(fielderPos, spot);
+                    });
                 });
             });
         });
@@ -2654,7 +2661,9 @@ class GameScene extends Phaser.Scene {
             this._zoomOnPoint(bag.x, bag.y, 1.6, Math.max(300, runMs));
             this.tweens.killTweensOf(fielder);
             this.jog(fielder, bag.x + 7, bag.y + 7, runMs / 1.5);
-            // The ball rides in his glove
+            // The ball rides in his glove — visible again now that he's
+            // actually moving with it, after sitting hidden through the menu.
+            this.ball.setVisible(true).setPosition(spot.x, spot.y);
             this._ballBusy = (this._ballBusy || 0) + 1;
             this.tweens.add({
                 targets: this.ball, x: bag.x + 7, y: bag.y - 1, duration: runMs, ease: 'Linear',
@@ -2835,7 +2844,11 @@ class GameScene extends Phaser.Scene {
         this.ballArc(FIELD.HOME, spot, 700, 14, () => {
             this.jog(fielder, spot.x + 4, spot.y - 4, 300, 'Quad.easeOut', () => {
                 this.audio.play('catch');
+                this.bb2Anim(fielder, 'field_bounce');
                 this.releaseBall();
+                // Ball's in the glove now — hide it until a throw (if any)
+                // actually sends it flying again.
+                this.ball.setVisible(false);
                 if (!contested) {
                     this.audio.speak('Single.');
                     ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
@@ -2848,6 +2861,7 @@ class GameScene extends Phaser.Scene {
                 this.time.delayedCall(700, () => {
                     this._zoomOut(300);
                     this.time.delayedCall(320, () => {
+                        this.bb2Anim(fielder, 'hold');
                         const options = getCutdownThrowOptions(contested);
                         const chips = { second: '2ND', third: '3RD', home: 'HOME', hold: 'PITCHER' };
                         const targets = options.map(o => ({
