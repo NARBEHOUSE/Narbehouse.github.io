@@ -141,11 +141,15 @@ class WordSearchGame {
     // --- Audio ---
     // Built-in SafeAudio voices only. Web Audio is off limits here: an
     // AudioContext can take down the renderer in the Electron desktop build.
+    // The soft sine voices, not the square-wave ones. A step sound fires on
+    // every scan tick and every letter, so timbre matters more than level: the
+    // old square blip was the same loudness but wore thin fast.
     playSystemSound(type) {
         if (!window.SafeAudio) return;
-        const map = { step: 'select', found: 'score', miss: 'bust', win: 'win' };
+        const map = { step: 'tick', found: 'chime', miss: 'nudge', win: 'win', hint: 'pop' };
+        const vol = { step: 0.6, found: 0.7, miss: 0.55, win: 0.65, hint: 0.7 };
         const name = map[type];
-        if (name) window.SafeAudio.play(name, type === 'step' ? 0.45 : 0.7);
+        if (name) window.SafeAudio.play(name, vol[type] === undefined ? 0.7 : vol[type]);
     }
 
     createPauseOverlay() {
@@ -832,6 +836,10 @@ class WordSearchGame {
                     <li>Tapping letter by letter still works if you prefer it.</li>
                     <li>A tap only builds the run when it is spelling a word still on the list, so a wrong tap costs nothing and never counts as a miss &mdash; it just starts a new word from there.</li>
                     <li><b>Tap the letter you started from</b> to back out one step at a time: first it clears the letters you stretched out, then it returns to picking a letter, then to picking a row. Keep tapping the same letter to go all the way back.</li>
+                </ul>
+                <h3>Stuck?</h3>
+                <ul>
+                    <li>Open the pause menu and choose <b>Give Hint</b>. It circles the first letter of one of the words you still need in yellow and drops you straight back into the game. The circle stays until you find that word, and asking again picks a different word.</li>
                 </ul>
                 <h3>Picking what to play</h3>
                 <ul>
@@ -1669,12 +1677,19 @@ class WordSearchGame {
 
         const scanRow = (this.phase === 'row' && item && item.type === 'row') ? item.r : -1;
 
+        // Hinted first letters stay circled until their word is found.
+        const hintKeys = new Set();
+        this.targets.forEach(t => {
+            if (!t.found && t.hint) hintKeys.add(`${t.hint.r},${t.hint.c}`);
+        });
+
         for (let r = 0; r < this.gridSize; r++) {
             for (let c = 0; c < this.gridSize; c++) {
                 const el = document.getElementById(`c-${r}-${c}`);
                 if (!el) continue;
                 const cls = ['cell'];
                 if (this.foundCells.has(`${r},${c}`)) cls.push('found');
+                if (hintKeys.has(`${r},${c}`)) cls.push('hint');
                 if (r === scanRow) {
                     cls.push('row-scan', 'row-edge-top', 'row-edge-bottom');
                     if (c === 0) cls.push('row-edge-left');
@@ -1818,6 +1833,53 @@ class WordSearchGame {
             this.updatePauseHighlights();
             this.startAutoScan();
         }, 1800);
+    }
+
+    // Where a word sits in the grid. Either end is a fair place to start
+    // tracing from, so the first placement found is good enough.
+    findWordStart(word) {
+        for (let r = 0; r < this.gridSize; r++) {
+            for (let c = 0; c < this.gridSize; c++) {
+                for (const di of this.allowedDirs) {
+                    const d = DIRECTIONS[di];
+                    if (this.runLength(r, c, di) < word.length) continue;
+                    let hit = true;
+                    for (let i = 0; i < word.length; i++) {
+                        if (this.grid[r + d.dr * i][c + d.dc * i] !== word[i]) { hit = false; break; }
+                    }
+                    if (hit) return { r, c };
+                }
+            }
+        }
+        return null;
+    }
+
+    // Circles the first letter of one word still to find, then drops straight
+    // back into the game — a hint is no use if you have to close a menu to act
+    // on it.
+    // Words that have not been hinted yet come first, so repeated hints spread
+    // out rather than landing on the same word twice.
+    giveHint() {
+        const unfound = this.targets.filter(t => !t.found);
+        if (!unfound.length) {
+            this.resumeGame();
+            return this.speak('You have found them all.');
+        }
+
+        const fresh = unfound.filter(t => !t.hint);
+        const pool = fresh.length ? fresh : unfound;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+
+        const at = pick.hint || this.findWordStart(pick.word);
+        if (!at) {
+            this.resumeGame();
+            return this.speak('No hint available for the words left.');
+        }
+        pick.hint = at;
+
+        this.resumeGame();
+        this.playSystemSound('hint');
+        this.speak(`Hint. ${pick.word} starts in row ${at.r + 1}.`);
     }
 
     revealSolution() {
@@ -2095,6 +2157,7 @@ class WordSearchGame {
             <button class="menu-button" onclick="game.resumeGame()">Continue Game</button>
             <button class="menu-button" onclick="game.showSettingsMenu(true)">Settings</button>
             <button class="menu-button" onclick="game.startPuzzle(${this.settings.lastCategoryIndex})">New Puzzle</button>
+            <button class="menu-button" onclick="game.giveHint()">Give Hint</button>
             <button class="menu-button" onclick="game.revealSolution()">Show Answers</button>
             <button class="menu-button" onclick="game.showMainMenu()">Main Menu</button>
         `;

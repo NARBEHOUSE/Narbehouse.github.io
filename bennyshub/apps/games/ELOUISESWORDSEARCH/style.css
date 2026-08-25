@@ -254,6 +254,7 @@ body {
 }
 
 .cell {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -315,6 +316,26 @@ body {
 }
 
 .cell.found.path { color: #000; }
+
+/* A hinted first letter is circled until its word is found. Drawn as a ring on
+   a pseudo-element rather than as a background or border, so the scan
+   highlight, the selection path and the found styling can all pass over it
+   without masking it. The cell is square, so the percentage inset gives a true
+   circle at every grid size. */
+.cell.hint::after {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 8%;
+    right: 8%;
+    bottom: 8%;
+    border-radius: 50%;
+    border: 0.32vmin solid #ffd24a;
+    box-shadow: 0 0 0.9vmin rgba(255, 210, 74, 0.8),
+                inset 0 0 0.7vmin rgba(255, 210, 74, 0.45);
+    pointer-events: none;
+    z-index: 6;
+}
 
 .cell.wrong {
     background-color: #d93025;

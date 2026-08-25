@@ -156,6 +156,30 @@ window.SafeAudio = (function () {
       { t: 0.15, f: 330, d: 0.16, type: 'triangle', vol: 0.19 },
       { t: 0.30, f: 247, d: 0.42, type: 'triangle', vol: 0.20, curve: 2.0 },
       { t: 0.30, f: 123, d: 0.42, type: 'sine',     vol: 0.10, curve: 2.0 }
+    ],
+
+    /* ── Soft set ──────────────────────────────────────────────────────────
+     * Pure sines with a slower attack, for games that fire a sound on every
+     * scan step. Square waves get grating fast when you hear them a few
+     * hundred times a session; the 8-10ms attack is what takes the click off
+     * the front of the note. Same loudness as the sharper voices above, just
+     * a gentler timbre.
+     */
+    tick: () => [
+      { t: 0, f: 760, f2: 900, d: 0.055, type: 'sine', vol: 0.13, curve: 2.8, atk: 0.008 }
+    ],
+    pop: () => [
+      { t: 0,    f: 520,  f2: 780,  d: 0.09, type: 'sine', vol: 0.16, curve: 2.4, atk: 0.010 },
+      { t: 0.01, f: 1040, f2: 1560, d: 0.09, type: 'sine', vol: 0.05, curve: 3.0 }
+    ],
+    chime: () => [
+      { t: 0,    f: 784,  d: 0.13, type: 'sine', vol: 0.15, curve: 2.6, atk: 0.008 },
+      { t: 0.10, f: 1047, d: 0.30, type: 'sine', vol: 0.14, curve: 3.0, atk: 0.008 },
+      { t: 0.10, f: 1568, d: 0.26, type: 'sine', vol: 0.045, curve: 3.4 }
+    ],
+    nudge: () => [
+      { t: 0, f: 420, f2: 300, d: 0.20, type: 'sine', vol: 0.15, curve: 2.2, atk: 0.010 },
+      { t: 0, f: 210, f2: 150, d: 0.20, type: 'sine', vol: 0.06, curve: 2.2 }
     ]
   };
 
