@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Search Editor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            height: 100vh;
+            box-sizing: border-box;
+            gap: 20px;
+        }
+
+        #sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        #category-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .cat-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cat-item:hover, .cat-item.active { background-color: #e6f7ff; }
+        .cat-item .name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cat-item .count { color: #888; font-size: 0.85em; flex-shrink: 0; }
+
+        .search-bar { padding: 10px; border-bottom: 1px solid #ddd; }
+        .search-bar input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #editor-area {
+            flex-grow: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 24px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+        }
+
+        h2 { margin: 0; color: #333; }
+        h3 { margin: 0 0 6px 0; color: #333; font-size: 1.05em; }
+        label { font-weight: bold; color: #555; }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+        input[type="text"], textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:disabled { opacity: 0.5; cursor: default; }
+
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover:not(:disabled) { background: #218838; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover:not(:disabled) { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background: #5a6268; }
+
+        #toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        #word-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+            align-content: flex-start;
+        }
+
+        .chip {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chip.bad { background: #fff1f0; border-color: #ffa39e; color: #a8071a; }
+        .chip button {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 1.1em;
+            line-height: 1;
+            color: #666;
+            cursor: pointer;
+        }
+
+        #validation {
+            font-size: 0.9em;
+            color: #a8071a;
+            min-height: 1.2em;
+            white-space: pre-line;
+        }
+
+        .hint { color: #666; font-size: 0.88em; line-height: 1.5; }
+
+        #status-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="search-bar">
+            <input type="text" id="filter-input" placeholder="Search categories..." oninput="editor.renderList()">
+        </div>
+        <div style="padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+            <span id="count-display">0 categories</span>
+            <button class="btn-success" onclick="editor.newCategory()" style="padding: 3px 10px; font-size: 12px;">+ New</button>
+        </div>
+        <div id="category-list"></div>
+    </div>
+
+    <div id="editor-area">
+        <div id="toolbar">
+            <div style="display:flex; gap: 10px; align-items: center;">
+                <button class="btn-success" onclick="editor.newLibrary()" title="Start a fresh empty word list">New List</button>
+                <label>Name:</label>
+                <input type="text" id="filename-input" placeholder="Filename" style="padding: 6px; width: 150px;">
+                <span style="font-size: 0.8em; color: #888;">.json</span>
+            </div>
+            <div style="display:flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="btn-primary" onclick="editor.saveToLocalStorage()" title="Save into this browser so the game can use it">Save to browser</button>
+                <button class="btn-secondary" onclick="editor.downloadJSON()" title="Download as a JSON file">Download</button>
+                <input type="file" id="file-upload" accept=".json" style="display:none" onchange="editor.uploadJSON(this)">
+                <button class="btn-secondary" onclick="document.getElementById('file-upload').click()" title="Load from a JSON file">Load</button>
+                <button class="btn-secondary" onclick="editor.loadBuiltIn()" title="Start from the built-in word list">Load Built In</button>
+                <button class="btn-secondary" style="background:#17a2b8; border-color:#17a2b8; color:#fff;" onclick="BennyTutorial.show()" title="Watch the tutorial">&#10067; View Tutorial</button>
+                <button class="btn-secondary" onclick="window.close()">Exit</button>
+            </div>
+        </div>
+
+        <h2 id="editing-title">No category selected</h2>
+
+        <div class="form-group">
+            <label for="cat-name-input">Category Name</label>
+            <input type="text" id="cat-name-input" placeholder="e.g. Farm Animals" oninput="editor.markDirty()">
+        </div>
+
+        <div class="form-group">
+            <label for="words-input">Words</label>
+            <p class="hint" style="margin: 0;">
+                One word per line, or separated by commas. Letters only &mdash; spaces, hyphens and
+                punctuation are stripped automatically. Words must be 3 to 10 letters.
+            </p>
+            <p class="hint" style="margin: 0;">
+                Just drop in every word you want; the game draws a fresh random handful each round.
+                Difficulty picks by length, so give a category a spread of both short and long words:
+                <b>Easy</b> uses 3&ndash;5 letters (needs 5), <b>Medium</b> 5&ndash;7 (needs 10),
+                <b>Hard</b> 6&ndash;10 (needs 20). The counter below tells you if a band is short.
+            </p>
+            <textarea id="words-input" oninput="editor.markDirty(); editor.updatePreview()" placeholder="LION&#10;TIGER&#10;BEAR"></textarea>
+        </div>
+
+        <div>
+            <h3>Preview <span id="preview-count" style="font-weight:normal; color:#888;"></span></h3>
+            <div id="word-chips"></div>
+            <div id="validation"></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="editor.applyChanges()">Apply Changes</button>
+            <button class="btn-secondary" onclick="editor.sortWords()">Sort A&ndash;Z</button>
+            <button class="btn-secondary" onclick="editor.dedupeWords()">Remove Duplicates</button>
+            <button class="btn-secondary" onclick="editor.stripInvalid()">Drop Unusable Words</button>
+            <button class="btn-danger" onclick="editor.deleteCategory()" style="margin-left:auto;">Delete Category</button>
+        </div>
+
+        <p class="hint" style="margin-top: auto;">
+            <b>Save to browser</b> makes this list available in the game under
+            <i>Settings &rarr; Word List</i>. <b>Download</b> writes a file you can keep or share,
+            and the game's <i>Load File...</i> button reads it back.
+        </p>
+    </div>
+
+    <div id="status-bar"></div>
+
+    <script src="editor.js"></script>
+    <script src="../../../shared/tutorial-modal.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            BennyTutorial.init({
+                title: "Elouise's Word Search Editor",
+                // No video yet -- tutorial-modal.js shows its "coming soon"
+                // placeholder in the video frame until a real link is dropped
+                // in here. Nothing else needs to change when that happens.
+                videoUrl: '',
+                localStorageKey: 'bennyHubSeenTutorial_elouisesWordSearch'
+            });
+        });
+    </script>
+</body>
+</html>

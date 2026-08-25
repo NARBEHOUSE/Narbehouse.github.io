@@ -1,0 +1,538 @@
+:root {
+    --highlight-color: #ffff00;
+    --highlight-bg-mode: #ffffff;
+    --highlight-text-mode: #333333;
+    --highlight-box-shadow: 0 0 1.5vh var(--highlight-color), inset 0 0 1vh rgba(255, 255, 255, 0.5);
+    --grid-n: 10;
+    /* Only the word bank sits beside the board, so the grid gets the rest —
+       less the slim category header above it. */
+    --board-size: min(83vh, 74vw);
+    --cell: calc(var(--board-size) / var(--grid-n));
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #2193b0, #6dd5ed);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    color: white;
+    transition: background 0.5s;
+}
+
+#game-container {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---------- Ambient menu backdrop ----------
+   A letter grid behind the menus that quietly plays the game to itself: words
+   from the real word list appear in the noise and light up one letter at a
+   time. Purely decorative, never interactive, and hidden during play. */
+#menu-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+#menu-bg.on { opacity: 1; }
+
+#menu-bg-grid {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    font-family: 'Arial Black', 'Segoe UI', sans-serif;
+    font-weight: bold;
+    line-height: 1;
+}
+
+#menu-bg-grid .bg-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.11);
+    border-radius: 0.4vmin;
+    transition: color 0.55s ease, text-shadow 0.55s ease, box-shadow 0.55s ease;
+}
+
+/* A letter the backdrop has just "found". */
+#menu-bg-grid .bg-cell.lit {
+    color: var(--highlight-color);
+    text-shadow: 0 0 1.1vmin var(--highlight-color);
+    box-shadow: inset 0 0 0 0.18vmin rgba(255, 255, 255, 0.22);
+}
+
+/* Darkens the middle so menu text stays readable over the letters. */
+#menu-bg-veil {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at center,
+            rgba(0, 0, 0, 0.55) 0%,
+            rgba(0, 0, 0, 0.34) 45%,
+            rgba(0, 0, 0, 0.12) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #menu-bg-grid .bg-cell { transition: none; }
+}
+
+#main-content {
+    flex-grow: 1;
+    width: 100%;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+#main-content::-webkit-scrollbar { display: none; }
+
+/* ---------- Menus ---------- */
+.menu-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8vmin;
+    color: white;
+    margin-bottom: 4vh;
+    text-align: center;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.4);
+    letter-spacing: 2px;
+}
+
+.menu-button {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-size: 4vmin;
+    padding: 2vh 6vw;
+    border: 0.5vmin solid transparent;
+    border-radius: 50px;
+    margin: 1.5vh;
+    cursor: pointer;
+    box-shadow: 0 0.6vh 1vh rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    font-weight: bold;
+    width: 80vw;
+    max-width: 800px;
+    text-align: center;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    height: auto;
+    min-height: 2em;
+    display: block;
+}
+
+.menu-button:hover {
+    transform: translateY(-0.3vh);
+    box-shadow: 0 0.8vh 1.5vh rgba(0,0,0,0.3);
+    background: white;
+}
+
+.menu-button:active {
+    transform: translateY(0.1vh);
+    box-shadow: 0 0.4vh 0.6vh rgba(0,0,0,0.2);
+}
+
+.highlight {
+    border-color: var(--highlight-color) !important;
+    background-color: var(--highlight-bg-mode) !important;
+    transform: scale(1.05);
+    box-shadow: var(--highlight-box-shadow) !important;
+    z-index: 5;
+    color: var(--highlight-text-mode) !important;
+}
+
+.color-swatch {
+    display: inline-block;
+    width: 3vmin;
+    height: 3vmin;
+    border: 0.3vmin solid #666;
+    vertical-align: middle;
+    margin-left: 1vw;
+    box-shadow: 0 0.2vh 0.5vh rgba(0,0,0,0.3);
+}
+
+#menu-list.grid-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2vmin;
+    width: 84%;
+    max-width: 1000px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+#menu-list.grid-menu .menu-button {
+    width: 100%;
+    margin: 0;
+    font-size: 3vmin;
+    padding: 1.5vh 2vw;
+    min-height: 8vh;
+    height: 100%;
+}
+
+.span-2 { grid-column: span 2; }
+
+/* ---------- Game layout ---------- */
+#game-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2vmin;
+    flex-shrink: 0;
+    margin-bottom: 1vh;
+    max-width: 96vw;
+}
+
+#header-category {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 4.2vmin;
+    letter-spacing: 1px;
+    text-shadow: 0.25vh 0.25vh 0.5vh rgba(0,0,0,0.45);
+    line-height: 1.1;
+}
+
+#header-difficulty {
+    font-size: 2.1vmin;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.9;
+    background: rgba(0, 0, 0, 0.3);
+    border: 0.2vmin solid rgba(255, 255, 255, 0.3);
+    border-radius: 3vmin;
+    padding: 0.5vh 1.8vmin;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#play-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3vmin;
+    width: 100%;
+    padding: 0 2vmin;
+    box-sizing: border-box;
+}
+
+#board-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-n), var(--cell));
+    grid-template-rows: repeat(var(--grid-n), var(--cell));
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 1.2vmin;
+    padding: 0.6vmin;
+    box-shadow: 0 1vh 2.5vh rgba(0,0,0,0.35);
+    border: 0.3vmin solid rgba(255,255,255,0.25);
+}
+
+.cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: calc(var(--cell) * 0.52);
+    line-height: 1;
+    color: #ffffff;
+    text-shadow: 0.15vmin 0.15vmin 0.3vmin rgba(0,0,0,0.55);
+    border-radius: 0.5vmin;
+    box-sizing: border-box;
+    border: 0.28vmin solid transparent;
+    cursor: pointer;
+    transition: background-color 0.12s, border-color 0.12s, transform 0.12s;
+}
+
+/* whole-row highlight during the row scan */
+.cell.row-scan {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+.cell.row-scan.row-edge-top { border-top-color: var(--highlight-color); }
+.cell.row-scan.row-edge-bottom { border-bottom-color: var(--highlight-color); }
+.cell.row-scan.row-edge-left { border-left-color: var(--highlight-color); }
+.cell.row-scan.row-edge-right { border-right-color: var(--highlight-color); }
+
+/* the scanning cursor / chosen start cell */
+.cell.cursor {
+    background-color: var(--highlight-bg-mode);
+    color: var(--highlight-text-mode);
+    border-color: var(--highlight-color);
+    box-shadow: var(--highlight-box-shadow);
+    transform: scale(1.08);
+    z-index: 4;
+}
+
+/* cells previewed by the aimer */
+.cell.aim {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.8);
+    color: #222;
+}
+
+/* cells in the committed selection path */
+.cell.path {
+    background-color: var(--highlight-color);
+    color: #000;
+    border-color: #ffffff;
+    text-shadow: none;
+}
+
+/* start of the path stays emphasised */
+.cell.path-start {
+    box-shadow: 0 0 1.4vmin #ffffff;
+}
+
+.cell.found {
+    background-color: rgba(0, 0, 0, 0.42);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+.cell.found.path { color: #000; }
+
+.cell.wrong {
+    background-color: #d93025;
+    color: #fff;
+    border-color: #fff;
+}
+
+/* ---------- Aimer ---------- */
+#aimer {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 9;
+    width: calc(var(--cell) * 3.4);
+    height: calc(var(--cell) * 0.9);
+    transform-origin: calc(var(--cell) * 0.45) 50%;
+    transition: transform 0.14s ease-out;
+}
+
+#aimer .shaft {
+    position: absolute;
+    left: calc(var(--cell) * 0.45);
+    top: 50%;
+    height: 0.9vmin;
+    width: calc(var(--cell) * 2.6);
+    transform: translateY(-50%);
+    background: linear-gradient(90deg, rgba(255,255,255,0.15), var(--highlight-color));
+    border-radius: 1vmin;
+    box-shadow: 0 0 1.4vmin var(--highlight-color);
+}
+
+#aimer .head {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: calc(var(--cell) * 0.5) solid var(--highlight-color);
+    border-top: calc(var(--cell) * 0.3) solid transparent;
+    border-bottom: calc(var(--cell) * 0.3) solid transparent;
+    filter: drop-shadow(0 0 0.8vmin var(--highlight-color));
+}
+
+/* ---------- Side panel ---------- */
+#side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+    width: 20vw;
+    max-width: 280px;
+    min-width: 150px;
+}
+
+.panel-card {
+    background: rgba(0, 0, 0, 0.32);
+    border: 0.28vmin solid rgba(255, 255, 255, 0.28);
+    border-radius: 1.2vmin;
+    padding: 1.4vmin 1.8vmin;
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
+}
+
+.panel-card.highlight {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    border-color: var(--highlight-color) !important;
+    box-shadow: 0 0 2vmin var(--highlight-color) !important;
+    transform: none;
+}
+
+.panel-heading {
+    font-size: 2.1vmin;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 0.8vmin;
+}
+
+#word-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0.4vmin 0.8vmin;
+    max-height: 72vh;
+    /* A scroll container clips on BOTH axes, so the padding is what keeps the
+       word being read from being shaved off as it lights up. */
+    padding: 0.8vmin;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+#word-list::-webkit-scrollbar { display: none; }
+
+.wl-word {
+    /* inline-block always, not just while reading: transforms do not apply to
+       plain inline elements, and switching display mid-highlight reflows. */
+    display: inline-block;
+    font-size: 2.2vmin;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    /* The pill is reserved on every word, so lighting one up changes colour
+       rather than layout — nothing shifts and nothing has to grow into space
+       that is not there. */
+    padding: 0.2vmin 0.7vmin;
+    border: 0.2vmin solid transparent;
+    border-radius: 0.7vmin;
+    transition: color 0.18s ease, background-color 0.18s ease,
+                border-color 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.wl-word.done {
+    text-decoration: line-through;
+    opacity: 0.45;
+}
+
+/* The word currently being spoken during a word-bank readout. The lift is kept
+   small on purpose: the reserved pill and the list's padding absorb it, so the
+   word never gets shaved off against the edge of the scrolling list. */
+.wl-word.reading {
+    color: var(--highlight-color);
+    background-color: rgba(0, 0, 0, 0.35);
+    border-color: var(--highlight-color);
+    text-shadow: 0 0 0.9vmin var(--highlight-color);
+    transform: scale(1.06);
+    opacity: 1;
+}
+
+#result-message {
+    font-size: 3.2vmin;
+    font-weight: bold;
+    min-height: 4.5vh;
+    text-align: center;
+    text-shadow: 0.2vh 0.2vh 0.4vh rgba(0,0,0,0.5);
+    margin-top: 1vh;
+}
+
+/* ---------- Pause ---------- */
+.pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pause-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8vmin;
+    color: white;
+    margin-bottom: 3vh;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+#pause-button {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 60;
+    user-select: none;
+    border: 2px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+#pause-button.highlight {
+    background: var(--highlight-color);
+    border-color: white;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--highlight-color);
+}
+
+#pause-button .bars {
+    width: 20px;
+    height: 22px;
+    background: currentColor;
+    clip-path: polygon(0 0, 35% 0, 35% 100%, 0 100%, 0 0, 65% 0, 100% 0, 100% 100%, 65% 100%, 65% 0);
+    color: white;
+}
+#pause-button.highlight .bars { color: #000; }
+
+/* ---------- How to play ---------- */
+.howto-body {
+    background: rgba(0,0,0,0.35);
+    border: 0.28vmin solid rgba(255,255,255,0.3);
+    border-radius: 1.4vmin;
+    padding: 2.5vmin 3vmin;
+    width: 80vw;
+    max-width: 900px;
+    font-size: 2.6vmin;
+    line-height: 1.55;
+    max-height: 58vh;
+    overflow-y: auto;
+}
+
+.howto-body h3 {
+    margin: 1.6vh 0 0.6vh 0;
+    font-size: 3vmin;
+}
+
+.howto-body ul { margin: 0.4vh 0; padding-left: 4vmin; }
+
+/* ---------- Narrow screens: stack the panel under the board ---------- */
+@media (max-aspect-ratio: 1/1) {
+    :root { --board-size: min(62vh, 96vw); }
+    #play-area { flex-direction: column; gap: 1.5vh; }
+    #side-panel { width: 96vw; max-width: none; }
+    #word-list { max-height: 14vh; }
+    #header-category { font-size: 5vmin; }
+    #header-difficulty { font-size: 2.6vmin; }
+}

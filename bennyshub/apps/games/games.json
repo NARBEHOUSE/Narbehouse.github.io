@@ -121,6 +121,14 @@
       "genres": ["Puzzle", "Educational"]
     },
     {
+      "id": "elouiseswordsearch",
+      "title": "Elouise's Word Search",
+      "description": "Hunt hidden words in a letter grid, one switch at a time. Pick a row, pick a letter, spin the aimer to point the way the word runs, then stretch it out. Words hide sideways, diagonally and backwards. Thirteen categories with over 1500 words, three difficulty levels, and an editor to build your own word lists.",
+      "path": "apps/games/ELOUISESWORDSEARCH/index.html",
+      "image": "images/games/elouiseswordsearch.png",
+      "genres": ["Puzzle", "Educational"]
+    },
+    {
       "id": "triviamaster",
       "title": "Trivia Master",
       "description": "A trivia game engine that lets you build your own trivia games! Add pictures and videos to make it more fun!",
