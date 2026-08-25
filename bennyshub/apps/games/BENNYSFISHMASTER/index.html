@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Benny's FishMaster</title>
+<style>
+/* Typewriter face for the catch-reveal card only (.panel-catch, set in
+   game.js's renderOverlay) — a fish tale reads like a field report. Same
+   @import-with-fallback pattern BENNYSSLOTMACHINE uses for its Google Fonts;
+   'Courier New'/monospace stand in if the network request never lands. */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Themes. Every colour in the game (canvas included) comes from one of these
+   four palettes, so switching profile repaints the world as well as the UI.
+   Same four profiles and variable-naming convention as BENNYSBALLISTA.
+
+   The bank, rock, water and planting variables are the pond art palette used
+   by js/art.js. The three sighted profiles carry naturalistic pond colours;
+   High Contrast deliberately flattens them to black water and white rock so
+   the shoreline still reads as a silhouette (art.js's `flat` mode). The biome
+   variables changed role with the art pass: they are now translucent tints
+   laid over the water gradient, not opaque wedge fills.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{
+  --fs: 100%;
+  --bg:#0a0a0a; --panel:#15161c; --panel2:#1d1f28; --line:#2e3140;
+  --text:#f2f4f8; --dim:#a6adbb;
+  --accent:#ff5c00; --accent2:#22d3ee; --violet:#8b5cf6;
+  --focus:#ffd400; --good:#3ddc84; --bad:#ff5470;
+  --seqred:#ff3b3b; --seqblue:#2196f3;
+  --water-near:#1b3a5c; --water-far:#05141f; --boat:#8a5a2b;
+  --biome-shallows:#5bb0ff; --biome-weedbed:#2fae5a; --biome-dropoff:#35507a;
+  --biome-rockyshore:#8d939c; --biome-deepchannel:#101f33;
+  --bank-grass:#4a7a35; --bank-soil:#54412b; --foliage-dark:#20401f; --foliage-light:#5c9440;
+  --rock-light:#a49a8d; --rock-mid:#736a61; --rock-dark:#3a352f; --sand:#c9b184;
+  --water-shallow:#39a0a6; --water-mid:#1d6070; --water-deep:#0a2c3d; --glint:#d9f6ff;
+  --lily:#39914a; --reed:#7a9c3f; --log:#4b3a28; --boat-dark:#5c3a18; --angler:#d9b48a;
+}
+body[data-theme="dark"]{
+  --bg:#0e1013; --panel:#171a1f; --panel2:#20242b; --line:#333944;
+  --text:#eef1f5; --dim:#9aa3b0;
+  --accent:#7aa2f7; --accent2:#9ece6a; --violet:#bb9af7;
+  --focus:#e0af68; --good:#9ece6a; --bad:#f7768e;
+  --seqred:#f7768e; --seqblue:#7aa2f7;
+  --water-near:#1c2735; --water-far:#0c1119; --boat:#7a5636;
+  --biome-shallows:#6fa8dc; --biome-weedbed:#5a8f5f; --biome-dropoff:#35415a;
+  --biome-rockyshore:#7d838d; --biome-deepchannel:#171d28;
+  --bank-grass:#2f4a2b; --bank-soil:#3a2f22; --foliage-dark:#16281a; --foliage-light:#3c5f34;
+  --rock-light:#7c7970; --rock-mid:#55524c; --rock-dark:#2a2825; --sand:#8f8467;
+  --water-shallow:#2b5f6b; --water-mid:#173d4c; --water-deep:#091d29; --glint:#9fc9d8;
+  --lily:#2e6b39; --reed:#5b7434; --log:#3a2d20; --boat-dark:#513a22; --angler:#b39273;
+}
+body[data-theme="light"]{
+  --bg:#eef1f6; --panel:#ffffff; --panel2:#e6eaf2; --line:#c3cad8;
+  --text:#12151c; --dim:#4d566b;
+  --accent:#c93f00; --accent2:#0d7c92; --violet:#6836d6;
+  --focus:#e08900; --good:#137a44; --bad:#b3123a;
+  --seqred:#c62839; --seqblue:#0d5bc9;
+  --water-near:#bfe0ff; --water-far:#e8f4ff; --boat:#8a5a2b;
+  --biome-shallows:#79c2ff; --biome-weedbed:#4caf6d; --biome-dropoff:#5d7fa3;
+  --biome-rockyshore:#a9b0ba; --biome-deepchannel:#43597a;
+  --bank-grass:#7cb35b; --bank-soil:#8a6f4a; --foliage-dark:#3f7a3a; --foliage-light:#9ccf6a;
+  --rock-light:#d8d2c6; --rock-mid:#a9a094; --rock-dark:#6d675e; --sand:#e6d5a8;
+  --water-shallow:#7fd4d8; --water-mid:#3f9fb5; --water-deep:#1b5f7e; --glint:#ffffff;
+  --lily:#5fae52; --reed:#8fae4b; --log:#7a5c3c; --boat-dark:#6b4520; --angler:#e8c49c;
+}
+body[data-theme="contrast"]{
+  --bg:#000000; --panel:#000000; --panel2:#111111; --line:#ffffff;
+  --text:#ffffff; --dim:#e8e8e8;
+  --accent:#ffff00; --accent2:#00ffff; --violet:#ff00ff;
+  --focus:#ffff00; --good:#00ff66; --bad:#ff3b3b;
+  --seqred:#ff3b3b; --seqblue:#00aaff;
+  --water-near:#101010; --water-far:#000000; --boat:#ffa500;
+  --biome-shallows:#00ffff; --biome-weedbed:#00ff66; --biome-dropoff:#6666ff;
+  --biome-rockyshore:#ffffff; --biome-deepchannel:#202020;
+  --bank-grass:#000000; --bank-soil:#000000; --foliage-dark:#000000; --foliage-light:#000000;
+  --rock-light:#ffffff; --rock-mid:#bbbbbb; --rock-dark:#000000; --sand:#ffff00;
+  --water-shallow:#000000; --water-mid:#000000; --water-deep:#000000; --glint:#ffffff;
+  --lily:#00ff66; --reed:#00ff66; --log:#ffffff; --boat-dark:#000000; --angler:#ffff00;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:var(--fs)}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  height:100vh; overflow:hidden;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+
+#app{display:flex; flex-direction:column; height:100vh}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+#hdr{
+  display:flex; align-items:center; gap:.6rem;
+  padding:.4rem .7rem; background:var(--panel); border-bottom:3px solid var(--line);
+  flex:0 0 auto;
+}
+#ttl{font-size:1.25rem; font-weight:800; letter-spacing:.5px; color:var(--accent); white-space:nowrap}
+#ttl span{color:var(--accent2)}
+#hdrBtns{margin-left:auto; display:flex; gap:.4rem}
+.hbtn{
+  background:var(--panel2); color:var(--text); border:2px solid var(--line);
+  border-radius:.5rem; font:inherit; font-size:.95rem; font-weight:700;
+  min-height:2.6rem; min-width:2.6rem; padding:.3rem .7rem; cursor:pointer;
+}
+.hbtn:hover{border-color:var(--accent)}
+
+/* ── Stage ──────────────────────────────────────────────────────────────── */
+#stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; min-height:0; background:var(--bg)}
+#cvWrap{flex:1 1 auto; position:relative; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden}
+canvas{display:block; max-width:100%; max-height:100%; background:var(--bank-grass)}
+
+#hud{
+  position:absolute; top:.5rem; left:50%; transform:translateX(-50%);
+  display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center;
+  pointer-events:none; z-index:3;
+}
+.pill{
+  background:rgba(0,0,0,.62); border:2px solid var(--line); border-radius:999px;
+  padding:.2rem .8rem; font-size:.95rem; font-weight:700; white-space:nowrap;
+}
+body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
+.pill b{color:var(--accent2)}
+
+/* ── Bottom bar: casting lanes / biting message / catch sequence ──────────── */
+#bottombar{
+  flex:0 0 auto; background:var(--panel); border-top:3px solid var(--line);
+  padding:.35rem .6rem; display:flex; flex-direction:column; gap:.3rem; min-height:5rem;
+}
+/* Author display rules below would otherwise beat the UA [hidden]{display:none}
+   default (same pitfall BENNYSBALLISTA's own `.lane[hidden]` guards against) —
+   these three sections are mutually exclusive, toggled by updateBottomBar(). */
+#castLanes[hidden], #bitingBar[hidden], #catchBar[hidden]{display:none}
+.lane{display:flex; align-items:center; gap:.4rem}
+.laneLabel{
+  flex:0 0 5.2rem; font-size:.9rem; font-weight:800; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.lane.locked .laneLabel{color:var(--good)}
+.chips{display:flex; gap:.35rem; flex-wrap:wrap; flex:1 1 auto}
+.chip{
+  background:var(--panel2); border:2px solid var(--line); border-radius:.55rem;
+  color:var(--text); font:inherit; font-size:1rem; font-weight:700;
+  min-height:2.9rem; padding:.35rem .75rem; cursor:pointer; position:relative;
+}
+.chip .sub{display:block; font-size:.72rem; font-weight:600; color:var(--dim)}
+.chip.picked{border-color:var(--good); background:color-mix(in srgb, var(--good) 18%, var(--panel2))}
+.chip.focus{
+  border-color:var(--focus); background:var(--focus); color:#1a1400;
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
+}
+.chip.focus .sub{color:#3a2f00}
+.chip:disabled{opacity:.4; cursor:default}
+.chip.act{font-weight:800; border-color:var(--accent); color:var(--accent); flex:0 0 auto}
+.lane.active .chip.act{background:var(--accent); color:#0d1220; border-color:var(--accent)}
+
+/* ── Power meter: the charged cast ───────────────────────────────────────────
+   Same meter as BENNYSBALLISTA's, deliberately — that game is the reference
+   implementation for hold-to-charge and a second dialect would only be a
+   second thing to learn. See AGENTS.md, "Hold-to-charge and hold-to-sweep".
+   ────────────────────────────────────────────────────────────────────────── */
+.meter{
+  flex:1 1 auto; position:relative; height:2.9rem; border-radius:.55rem;
+  background:var(--panel2); border:2px solid var(--line); overflow:hidden;
+}
+.meter .fill{
+  position:absolute; inset:0 auto 0 0; width:0%;
+  background:linear-gradient(90deg, var(--accent2), var(--accent));
+  transition:none;                      /* the loop already moves it every frame */
+}
+.meter .mval{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  gap:.5rem; font-weight:800; font-size:1.05rem; color:var(--text);
+  text-shadow:0 1px 3px rgba(0,0,0,.65);
+}
+.meter .mval .msub{font-weight:700; font-size:.85rem; opacity:.9}
+.meter.dim .fill{opacity:.35}
+.meter.dim .mval{color:var(--dim)}
+.lane.active .meter{border-color:var(--focus)}
+.lane.moving .meter{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent)}
+.lane.locked .meter{border-color:var(--good)}
+/* Ticks every 10% so the meter reads as a scale, not just a bar. */
+.meter::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(90deg,
+    transparent 0 calc(10% - 2px), rgba(255,255,255,.18) calc(10% - 2px) 10%);
+}
+/* Where each depth band starts on the meter, so "how hard do I have to throw
+   to reach the weeds" is a thing you can see, not a thing you memorise. */
+.meter .bandmark{
+  position:absolute; top:0; bottom:0; width:3px; background:var(--text); opacity:.45;
+}
+.meter .reachcap{
+  position:absolute; top:0; bottom:0; right:0; background:rgba(0,0,0,.45);
+  border-left:2px dashed var(--bad);
+}
+body[data-theme="light"] .meter .reachcap{background:rgba(0,0,0,.18)}
+
+
+#bitingBar{display:flex; align-items:center; justify-content:center; min-height:3.5rem; font-weight:700; color:var(--dim)}
+
+#catchBar{display:flex; flex-direction:column; gap:.4rem; align-items:center}
+#catchTitle{font-weight:800; color:var(--accent)}
+#catchSteps{display:flex; gap:.5rem}
+.seqstep{
+  width:3.1rem; height:3.1rem; border-radius:.6rem; border:3px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:1.3rem; color:#fff;
+}
+.seqstep.red{ background:color-mix(in srgb, var(--seqred) 45%, var(--panel2)); border-color:var(--seqred); }
+.seqstep.blue{ background:color-mix(in srgb, var(--seqblue) 45%, var(--panel2)); border-color:var(--seqblue); }
+.seqstep.current{ box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent); border-color:var(--focus); }
+.seqstep.correct{ opacity:.5 }
+.seqstep.wrong{ opacity:.5; text-decoration:line-through }
+.seqstep.pending{ opacity:.4 }
+#catchHint{font-size:.85rem; color:var(--dim)}
+
+/* ── The catch light ────────────────────────────────────────────────────────
+   The row of Red/Blue squares above is a record of what has happened; THIS is
+   the thing that says what to press. A whole side of the screen fades up and
+   back down like a lamp on a dimmer — blue on the left for Return, red on the
+   right for Space — so the cue is findable without reading anything small, and
+   which side it is on tells Ben which way to turn his head.
+
+   It breathes at CFG.GLOW_PERIOD_S, roughly one lungful, which is far below
+   anything that could read as a flash: this is a lamp, not a strobe, and it
+   carries no deadline of any kind — the step waits as long as it takes. Under
+   prefers-reduced-motion game.js holds it at a steady brightness instead of
+   breathing at all.
+   ────────────────────────────────────────────────────────────────────────── */
+#catchGlow{position:fixed; inset:0; z-index:50; pointer-events:none; display:none}
+#catchGlow.on{display:block}
+.glowSide{
+  position:absolute; top:0; bottom:0; width:42vw;
+  display:flex; align-items:center;
+}
+#glowLeft{left:0;  justify-content:flex-start}
+#glowRight{right:0; justify-content:flex-end}
+/* The breathing lives on its own layer. Opacity on the side would fade the
+   whole subtree with it, and a word that dims to nothing at the bottom of
+   every breath is exactly the thing this was built to stop being. */
+.glowWash{position:absolute; inset:0; opacity:0}
+#glowLeft  .glowWash{background:linear-gradient(to right, var(--seqblue), transparent)}
+#glowRight .glowWash{background:linear-gradient(to left,  var(--seqred),  transparent)}
+.glowLabel{
+  position:relative; opacity:0; padding:0 2.2vw;
+  color:#fff; text-shadow:0 0 6px rgba(0,0,0,.9), 0 2px 14px rgba(0,0,0,.85);
+  font-weight:800; line-height:1.1; text-align:center;
+}
+.glowSide.active .glowLabel{opacity:1}
+.glowLabel .gword{display:block; font-size:clamp(1.6rem,5vw,3.4rem); letter-spacing:.04em}
+.glowLabel .gkey{display:block; font-size:clamp(.9rem,2.2vw,1.5rem); font-weight:700}
+body[data-theme="light"] .glowLabel{color:#0b0d12; text-shadow:0 2px 10px rgba(255,255,255,.8)}
+
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+#ftr{
+  flex:0 0 auto; display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;
+  padding:.35rem .7rem; background:var(--panel); border-top:3px solid var(--line);
+  font-size:.85rem; color:var(--dim);
+}
+#ftrMode{font-weight:800; color:var(--accent)}
+#ftrTarget{font-weight:700; color:var(--text)}
+#ftrLegend{margin-left:auto; white-space:nowrap}
+kbd{
+  background:var(--panel2); border:1px solid var(--line); border-radius:.3rem;
+  padding:0 .3rem; font-family:inherit; font-weight:700; color:var(--text);
+}
+
+/* ── Overlays (menus, pause, results, help) ─────────────────────────────── */
+#overlay{
+  position:absolute; inset:0; z-index:10;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.82); padding:1rem; overflow:auto;
+}
+body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
+#overlay.on{display:flex}
+#panel{
+  background:var(--panel); border:3px solid var(--line); border-radius:1rem;
+  padding:1rem 1.1rem; width:min(46rem,100%); max-height:100%; overflow:auto;
+}
+#panelTitle{font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:.15rem}
+#panelSub{font-size:.95rem; color:var(--dim); margin-bottom:.8rem; line-height:1.45}
+#panelList{display:flex; flex-direction:column; gap:.45rem}
+.mi{
+  display:flex; align-items:center; gap:.6rem; text-align:left;
+  background:var(--panel2); border:2px solid var(--line); border-radius:.6rem;
+  color:var(--text); font:inherit; font-size:1.1rem; font-weight:700;
+  min-height:3.4rem; padding:.5rem .9rem; cursor:pointer; width:100%;
+}
+.mi .mval{margin-left:auto; color:var(--accent2); font-weight:800}
+.mi.focus{
+  border-color:var(--focus); background:var(--focus); color:#1a1400;
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
+}
+.mi.focus .mval{color:#3a2f00}
+.mi.dim{opacity:.55}
+.mi.dim.focus{opacity:1}
+#panelNote{margin-top:.7rem; font-size:.85rem; color:var(--dim); line-height:1.5}
+#panelNote b{color:var(--text)}
+
+/* Small item portrait in a shop row — the rod rows' tighter crop on the
+   handle/reel (rodIconSrc in game.js) and the secret bait's bottle art alike,
+   both checked-in art reused at this size, not a separate icon set. */
+.shopIcon{width:2.4rem; height:2.4rem; object-fit:contain; vertical-align:middle; margin-right:.5rem}
+body[data-theme="contrast"] .shopIcon{filter: grayscale(1) contrast(1.6) brightness(1.1)}
+
+/* ── Catch-reveal card ───────────────────────────────────────────────────
+   Large on purpose — this is the one payoff moment after a catch, and it
+   needs to read clearly for a low-vision player, not just a decorative
+   flourish. .catchArt is real painted art (checked-in fish/junk/valuable
+   PNGs); the emoji fallback below it only ever fires for the one id that
+   still has no art (the secret Dingus) or a future id whose data ships
+   before its art does — same degradation the Dingus reveal itself uses. */
+.catchCard{text-align:center; padding:.5rem 0 1rem}
+.catchArt{display:block; max-width:min(70%,18rem); max-height:14rem; margin:0 auto .6rem; object-fit:contain}
+.catchArtPlaceholder{font-size:5rem; line-height:1; margin-bottom:.6rem}
+.catchStat{font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:.3rem}
+.catchNote{font-size:1rem; color:var(--dim); margin-bottom:.3rem}
+.catchQuip{font-size:1rem; font-style:italic; color:var(--dim)}
+
+/* High Contrast flattens the painted art the same way art.js flattens the
+   pond (README: "black water and white rock so the shoreline still reads as
+   a silhouette") — grayscale strips the soft watercolour hue variation a
+   low-vision player can't rely on, and the heavy contrast/brightness push
+   turns wash gradients into something closer to bold, legible tone bands.
+   Scoped to just the art, not the card text, which already inherits this
+   profile's own high-contrast colour variables. */
+body[data-theme="contrast"] .catchArt,
+body[data-theme="contrast"] .catchArtPlaceholder{
+  filter: grayscale(1) contrast(1.6) brightness(1.1);
+}
+
+/* Field-report look for the catch/rod/Dingus-reveal cards specifically —
+   game.js's renderOverlay toggles .panel-catch on #panel only while G.overlay
+   is 'catchreveal', 'rodreveal', or 'dingusreveal', so every other menu keeps
+   the regular UI face. Special Elite has one weight; letter-spacing does the
+   "typed" lift that font-weight can't here. */
+.panel-catch #panelTitle{font-family:'Special Elite','Courier New',monospace; letter-spacing:.03em}
+.panel-catch .catchStat, .panel-catch .catchNote, .panel-catch .catchQuip{
+  font-family:'Special Elite','Courier New',monospace; letter-spacing:.02em;
+}
+
+/* Catch-card backgrounds — a player preference (Settings > Catch Card Style,
+   game.js's cycleCardStyle()), not theme-driven, so unlike everything else in
+   this file the text colours here are fixed rather than var(--text) etc.:
+   a photo background can't be relied on to contrast with whichever of the
+   four colour profiles happens to be active. background-size:cover fills
+   #panel's own padded box; its border-radius + overflow:auto already clip it
+   to the rounded corners. The `#panel` prefix on every rule below is load-
+   bearing, not decoration — #panel's own `background:var(--panel)` shorthand
+   (an ID selector) otherwise wins over a same-property class selector
+   regardless of source order, and silently resets background-image back out. */
+/* The plaque photo's own brass frame runs bright gold along its outer edge.
+   #panel's aspect ratio isn't fixed (its height is just whatever the card's
+   content needs), so background-size:cover crops that image differently per
+   panel shape — on a panel narrower/taller than the plaque's own 4:3 (a
+   mobile-width window, mainly) cover stops cropping the frame at all and
+   crops the sides instead, sliding the bright gold bar in behind #panelTitle
+   and #panelNote instead of past the walnut field they're designed to sit
+   on. #ffcf6b-on-gold there is close to unreadable. A dark text-shadow halo
+   — the same fix .mval (above) already uses for text over an unpredictable
+   background — keeps every plaque text colour legible against the frame
+   without weakening it against the walnut it usually sits on. */
+#panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center; }
+#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
+#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
+#panel.panel-catch.cardbg-plaque .catchNote,
+#panel.panel-catch.cardbg-plaque .catchQuip,
+#panel.panel-catch.cardbg-plaque #panelNote{ color:#e2d8bc; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
+#panel.panel-catch.cardbg-plaque #panelNote b{ color:#f0e6c8 }
+
+#panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center; }
+#panel.panel-catch.cardbg-certificate #panelTitle{ color:#8a3b12 }
+#panel.panel-catch.cardbg-certificate .catchStat{ color:#2a2013 }
+#panel.panel-catch.cardbg-certificate .catchNote,
+#panel.panel-catch.cardbg-certificate .catchQuip,
+#panel.panel-catch.cardbg-certificate #panelNote{ color:#4a3f28 }
+#panel.panel-catch.cardbg-certificate #panelNote b{ color:#2a2013 }
+
+/* Neither background is a solid fill with a heavy outline, so neither can be
+   flattened into High Contrast's rules the way the pond or a catch photo can
+   (see the .catchArt filter above) — suppressed outright back to the profile's
+   own plain black panel and its own high-contrast text colours. `#panel` kept
+   in every selector here too, so this beats the same-specificity rules above
+   regardless of source order — see the note there. */
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate{
+  background-image:none;
+}
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelTitle,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelTitle{ color:var(--accent) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchStat,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchStat{ color:var(--text) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchQuip,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchQuip,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote{ color:var(--dim) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote b,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote b{ color:var(--text) }
+
+#sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+@media (max-width:620px){
+  #ttl{font-size:1rem}
+  .laneLabel{flex-basis:4rem; font-size:.78rem}
+  #ftrLegend{display:none}
+}
+</style>
+</head>
+<body data-theme="ben">
+
+<div id="app">
+  <header id="hdr">
+    <div id="ttl">BENNY'S <span>FISHMASTER</span></div>
+    <div id="hdrBtns">
+      <button class="hbtn" id="btnHelp" title="How to play">? Help</button>
+      <button class="hbtn" id="btnSet"  title="Settings">Settings</button>
+      <button class="hbtn" id="btnExit" title="Exit to hub">Exit</button>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="cvWrap">
+      <canvas id="cv" width="1280" height="720" aria-label="Lake view"></canvas>
+      <div id="hud">
+        <div class="pill" id="pLake">Lake</div>
+        <div class="pill" id="pMoney">Money <b>$0</b></div>
+        <div class="pill" id="pObjective"></div>
+        <div class="pill" id="pGear"></div>
+      </div>
+    </div>
+
+    <div id="bottombar">
+      <div id="castLanes">
+        <div class="lane" id="laneDirection"><span class="laneLabel">Direction</span><div class="chips" id="chipsDirection"></div></div>
+        <div class="lane" id="lanePower">
+          <span class="laneLabel">Power</span>
+          <div class="meter" id="meterPower" role="progressbar" aria-label="Cast power"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fillPower"></div><div id="bandMarks"></div><span class="mval" id="valPower">0%</span></div>
+          <button class="chip act" id="btnCast" type="button">Cast</button>
+        </div>
+      </div>
+      <div id="bitingBar" hidden><span id="bitingMsg"></span></div>
+      <div id="catchBar" hidden>
+        <div id="catchTitle"></div>
+        <div id="catchSteps"></div>
+        <div id="catchHint">Blue light on the left = Return · Red light on the right = Space · no rush</div>
+      </div>
+    </div>
+
+    <div id="overlay">
+      <div id="panel">
+        <div id="panelTitle"></div>
+        <div id="panelSub"></div>
+        <div id="panelList"></div>
+        <div id="panelNote"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="ftr">
+    <span id="ftrMode">Menu</span>
+    <span id="ftrTarget"></span>
+    <span id="ftrLegend"><kbd>Space</kbd> next / hold to charge &nbsp;·&nbsp; <kbd>Return</kbd> select or cast &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
+  </footer>
+</div>
+
+<!-- The catch light. Outside #app on purpose: it is meant to wash the whole
+     window, and it sits below #overlay's own stacking context so opening the
+     pause menu is never fought over by a lamp. game.js only ever turns it on
+     during the catch sequence. -->
+<div id="catchGlow" aria-hidden="true">
+  <div class="glowSide" id="glowLeft"><div class="glowWash" id="washLeft"></div><div class="glowLabel"><span class="gword">BLUE</span><span class="gkey">Press Return</span></div></div>
+  <div class="glowSide" id="glowRight"><div class="glowWash" id="washRight"></div><div class="glowLabel"><span class="gword">RED</span><span class="gkey">Press Space</span></div></div>
+</div>
+
+<div id="sr" aria-live="polite" role="status"></div>
+
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="js/data.js"></script>
+<script src="js/lakegen.js"></script>
+<script src="js/art.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

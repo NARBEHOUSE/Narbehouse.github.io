@@ -169,6 +169,14 @@
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
       "genres": ["Racing", "Arcade"]
+    },
+    {
+      "id": "bennysfishmaster",
+      "title": "Benny's FishMaster",
+      "description": "A fishing-trip sim for one or two switches. Pick a direction, charge the cast, then follow the light at your own pace to land whatever bites. Sell your catch to buy better rods and reach deeper water across three lakes.",
+      "path": "apps/games/BENNYSFISHMASTER/index.html",
+      "image": "images/games/bennysfishmaster.png",
+      "genres": ["Simulation", "Strategy"]
     }
   ]
 }
