@@ -210,10 +210,11 @@ and rods.
 - Fish art is `images/fish/<id>.png`; junk and valuables are
   `images/items/<id>.png` (`catchArtSrc()`) — both approved through the
   generate → anatomy-check → chroma-key pipeline in
-  `Projects\Assets\fishmaster-{fish,junk,valuables}\`. Only the secret Dingus
-  has no art: its own reveal is still an emoji placeholder.
-  `CATCH_PLACEHOLDER_EMOJI` is the fallback for that case and for any future
-  item id whose data ships before its art does.
+  `Projects\Assets\fishmaster-{fish,junk,valuables}\`. The secret Dingus now
+  has real art too (`images/fish/largemouth_dingus.png`, hand-composited —
+  see "Gameplay" below), so `catchArtSrc()` no longer special-cases
+  `outcome.secret` to null. `CATCH_PLACEHOLDER_EMOJI` remains as the fallback
+  for any future item id whose data ships before its art does.
 - Junk and valuables get a quip instead of a stat line (`D.ITEM_QUIPS` in
   `data.js`, a few lines per item so catching the same boot twice in a row
   doesn't read the same line twice — `pickQuip()` in `game.js` tracks the
@@ -252,8 +253,13 @@ and rods.
   the theme's own `--accent`/`--text`/`--dim`, at matching `#panel`-prefixed
   specificity so they reliably beat the style rules instead of losing to
   source order.
-- **This is why the game is still not in `games.json`**: the Dingus's real
-  photo is the one piece left before it can go live.
+- Rods get the same reveal treatment: buying one in the Shop opens a
+  `rodreveal` overlay (full art, `reachNote`, and a one-line description per
+  rod in `data.js`), reusing `catchreveal`'s plaque/certificate styling and
+  High Contrast handling rather than a second card look. Rod art lives at
+  `images/rods/<id>.png` (full) and `images/rods/<id>-icon.png` (a tighter
+  crop for the Shop row and menu chips); the icon class is `.shopIcon` (not
+  `.rodIcon` — renamed once the secret bait started sharing it).
 
 ### Gameplay
 
@@ -291,12 +297,12 @@ and rods.
 - The secret `Vitamin T` bait and `Largemouth Dingus` fish are a small easter
   egg: the bait shows as `?????` and can't be bought until every lake's
   objectives are cleared (`allLakesCleared`, checked in `secretBaitRow`), at
-  which point it's revealed under its real name for $5000. The fish only
-  enters a biome's bite pool once that exact bait is equipped (see
-  `biteWeightedFishPool`), and objectives never count it. Its reveal screen is
-  a placeholder — a real photo is meant to replace it later, and it's built to
-  degrade gracefully in the meantime, the same way
-  `tutorial-modal.js` placeholders a missing video.
+  which point it's revealed under its real name for $5000, now with its own
+  art (`images/bait/secret_t_pill.png`). The fish only enters a biome's bite
+  pool once that exact bait is equipped (see `biteWeightedFishPool`), and
+  objectives never count it. Both now have real art rather than placeholders;
+  the Dingus's first-catch ceremony (`dingusreveal`) and every later catch
+  use the same hand-composited photo (see "The catch-reveal card" above).
 - No `fetch()` of local JSON/WASM happens anywhere in this game, so
   `"needsServer"` would be `false` in `games.json` — unlike `BENNYSBALLISTA`
   and `TRIVIAMASTER`, which genuinely need to fetch local assets.
