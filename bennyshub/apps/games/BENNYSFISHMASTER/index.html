@@ -302,6 +302,12 @@ body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
 #panelNote{margin-top:.7rem; font-size:.85rem; color:var(--dim); line-height:1.5}
 #panelNote b{color:var(--text)}
 
+/* Small item portrait in a shop row — the rod rows' tighter crop on the
+   handle/reel (rodIconSrc in game.js) and the secret bait's bottle art alike,
+   both checked-in art reused at this size, not a separate icon set. */
+.shopIcon{width:2.4rem; height:2.4rem; object-fit:contain; vertical-align:middle; margin-right:.5rem}
+body[data-theme="contrast"] .shopIcon{filter: grayscale(1) contrast(1.6) brightness(1.1)}
+
 /* ── Catch-reveal card ───────────────────────────────────────────────────
    Large on purpose — this is the one payoff moment after a catch, and it
    needs to read clearly for a low-vision player, not just a decorative
@@ -328,10 +334,11 @@ body[data-theme="contrast"] .catchArtPlaceholder{
   filter: grayscale(1) contrast(1.6) brightness(1.1);
 }
 
-/* Field-report look for the catch card specifically — game.js's renderOverlay
-   toggles .panel-catch on #panel only while G.overlay is 'catchreveal', so
-   every other menu keeps the regular UI face. Special Elite has one weight;
-   letter-spacing does the "typed" lift that font-weight can't here. */
+/* Field-report look for the catch/rod/Dingus-reveal cards specifically —
+   game.js's renderOverlay toggles .panel-catch on #panel only while G.overlay
+   is 'catchreveal', 'rodreveal', or 'dingusreveal', so every other menu keeps
+   the regular UI face. Special Elite has one weight; letter-spacing does the
+   "typed" lift that font-weight can't here. */
 .panel-catch #panelTitle{font-family:'Special Elite','Courier New',monospace; letter-spacing:.03em}
 .panel-catch .catchStat, .panel-catch .catchNote, .panel-catch .catchQuip{
   font-family:'Special Elite','Courier New',monospace; letter-spacing:.02em;
@@ -347,12 +354,23 @@ body[data-theme="contrast"] .catchArtPlaceholder{
    bearing, not decoration — #panel's own `background:var(--panel)` shorthand
    (an ID selector) otherwise wins over a same-property class selector
    regardless of source order, and silently resets background-image back out. */
+/* The plaque photo's own brass frame runs bright gold along its outer edge.
+   #panel's aspect ratio isn't fixed (its height is just whatever the card's
+   content needs), so background-size:cover crops that image differently per
+   panel shape — on a panel narrower/taller than the plaque's own 4:3 (a
+   mobile-width window, mainly) cover stops cropping the frame at all and
+   crops the sides instead, sliding the bright gold bar in behind #panelTitle
+   and #panelNote instead of past the walnut field they're designed to sit
+   on. #ffcf6b-on-gold there is close to unreadable. A dark text-shadow halo
+   — the same fix .mval (above) already uses for text over an unpredictable
+   background — keeps every plaque text colour legible against the frame
+   without weakening it against the walnut it usually sits on. */
 #panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center; }
-#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b }
-#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8 }
+#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
+#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
 #panel.panel-catch.cardbg-plaque .catchNote,
 #panel.panel-catch.cardbg-plaque .catchQuip,
-#panel.panel-catch.cardbg-plaque #panelNote{ color:#e2d8bc }
+#panel.panel-catch.cardbg-plaque #panelNote{ color:#e2d8bc; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
 #panel.panel-catch.cardbg-plaque #panelNote b{ color:#f0e6c8 }
 
 #panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center; }

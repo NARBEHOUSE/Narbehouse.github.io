@@ -1023,20 +1023,27 @@ function pickQuip(itemId) {
 }
 
 /* Fish art is images/fish/<id>.png, junk and valuables are images/items/<id>.png
-   — both approved and checked in. Only the secret Dingus has no art (its
-   reveal is a separate, deliberately ceremonial overlay — see dingusreveal).
-   The emoji map is a safety net for that case and for any future item id
-   that ships data before its art does; same graceful-degradation the Dingus
-   reveal itself uses for its still-missing photo. */
+   — all approved and checked in, the secret Dingus included (its first catch
+   still gets its own separate, deliberately ceremonial overlay — see
+   dingusreveal — but every catch after that uses this like any other fish).
+   The emoji map is a safety net for any future item id that ships data
+   before its art does. */
 const CATCH_PLACEHOLDER_EMOJI = {
   boot: '👞', tire: '🛞', tincan: '🥫', weeds: '🌿',
   wallet: '👛', phone: '📱', watch: '⌚', ring: '💍'
 };
 function catchArtSrc(outcome) {
-  if (outcome.type === 'fish') return outcome.secret ? null : `images/fish/${outcome.id}.png`;
+  if (outcome.type === 'fish') return `images/fish/${outcome.id}.png`;
   if (outcome.type === 'junk' || outcome.type === 'valuable') return `images/items/${outcome.id}.png`;
   return null;
 }
+
+/* Rod art, checked in like the fish/item art above: the full painted rod for
+   the rod-reveal card (images/rods/<id>.png) and a tighter crop on the
+   handle/reel for the shop's rod rows (images/rods/<id>-icon.png), both from
+   the same approved fishmaster-rods batch. */
+function rodArtSrc(r) { return `images/rods/${r.id}.png`; }
+function rodIconSrc(r) { return `images/rods/${r.id}-icon.png`; }
 
 function resolveCatch() {
   const c = G.catch;
@@ -1482,12 +1489,17 @@ function allLakesCleared() {
   });
 }
 
+/* No art at all while locked — "?????" is a mystery, not a preview — so the
+   icon only ever appears alongside the real name, the same moment it stops
+   being a mystery. */
 function secretBaitRow() {
   const bait = D.BAIT.find(b => b.id === 'secret_t_pill');
   const owned = save.ownedBait[bait.id] || 0;
   const unlocked = allLakesCleared();
+  const icon = `<img class="shopIcon" src="images/bait/${bait.id}.png" alt="">`;
   return {
     text: () => unlocked ? bait.name : '?????',
+    html: () => unlocked ? `${icon}${bait.name}` : '?????',
     val: () => unlocked ? `Owned ${owned} · Buy $${bait.costPerUnit}` : 'Locked',
     dis: !unlocked,
     say: () => unlocked
@@ -1558,8 +1570,9 @@ const MENUS = {
       const owned = save.ownedRods.includes(r.id);
       const unlocked = save.unlockedRods.includes(r.id);
       const equipped = save.equippedRodId === r.id;
+      const rodRowIcon = `<img class="shopIcon" src="${rodIconSrc(r)}" alt="">`;
       if (!unlocked) {
-        rows.push({ text: () => `${r.name} (Locked)`, dis: true,
+        rows.push({ text: () => `${r.name} (Locked)`, html: () => `${rodRowIcon}${r.name} (Locked)`, dis: true,
           say: () => `${r.name}. Still locked. Clear more lake objectives to unlock it.`,
           act: () => speak('That rod is still locked. Clear more lake objectives to unlock it.') });
         return;
@@ -1567,13 +1580,14 @@ const MENUS = {
       if (owned) {
         rows.push({
           text: () => `${r.name}${equipped ? ' (Equipped)' : ''}`,
+          html: () => `${rodRowIcon}${r.name}${equipped ? ' (Equipped)' : ''}`,
           val: () => equipped ? 'Equipped' : 'Equip', dis: equipped,
           say: () => `${r.name}. ${r.reachNote} ${equipped ? 'Already equipped.' : 'Select to equip.'}`,
           act: () => { if (equipped) return; save.equippedRodId = r.id; saveProgress(); updateHud(); speak(`${r.name} equipped. ${r.reachNote}`); }
         });
       } else {
         rows.push({
-          text: () => r.name, val: () => `$${r.cost}`,
+          text: () => r.name, html: () => `${rodRowIcon}${r.name}`, val: () => `$${r.cost}`,
           say: () => `${r.name}. ${r.reachNote} Costs ${r.cost} dollars.`,
           act: () => {
             if (save.money < r.cost) { speak('Not enough money for that rod.'); return; }
@@ -1582,7 +1596,7 @@ const MENUS = {
             save.equippedRodId = r.id;
             saveProgress();
             updateHud();
-            speak(`${r.name} purchased and equipped. ${r.reachNote}`);
+            openOverlay('rodreveal', { rod: r });
           }
         });
       }
@@ -1779,6 +1793,12 @@ const MENUS = {
   catchreveal: () => [
     { text: () => 'Continue', act: () => { hideOverlay(); advancePostCatchQueue(); } }
   ],
+  // Reached only from the shop (openOverlay('rodreveal', ...) right after a
+  // purchase), so unlike catchreveal/dingusreveal it's a normal stacked
+  // overlay — Continue just pops back to the shop it was bought from.
+  rodreveal: () => [
+    { text: () => 'Continue', act: () => closeOverlay() }
+  ],
 
   help: () => [{ text: () => 'Got it', act: () => closeOverlay() }]
 };
@@ -1799,6 +1819,7 @@ function overlayTitle(which) {
       const o = overlayData.outcome;
       return o.demoted ? `${o.demotedFrom} Got Away` : o.name;
     }
+    case 'rodreveal': return overlayData.rod.name;
     case 'help': return 'How to Play';
     default: return 'Menu';
   }
@@ -1823,11 +1844,7 @@ function overlaySub(which) {
       return s;
     }
     case 'dingusreveal':
-      return `<div style="text-align:center;padding:1rem 0;">
-        <div style="font-size:3rem;">🐟</div>
-        <b>Largemouth Dingus!</b><br>
-        <span style="font-size:.85rem;color:var(--dim)">(photo of Ari coming soon)</span>
-      </div>`;
+      return `<div class="catchCard"><img class="catchArt" src="images/fish/largemouth_dingus.png" alt=""><div class="catchStat">Largemouth Dingus!</div></div>`;
     case 'catchreveal': {
       const o = overlayData.outcome;
       const art = catchArtSrc(o);
@@ -1840,6 +1857,12 @@ function overlaySub(which) {
       else if (o.type === 'valuable') s += `<div class="catchStat">$${o.value}</div>`;
       if (overlayData.quip) s += `<div class="catchQuip">${overlayData.quip}</div>`;
       return s + '</div>';
+    }
+    case 'rodreveal': {
+      const r = overlayData.rod;
+      return `<div class="catchCard"><img class="catchArt" src="${rodArtSrc(r)}" alt="">`
+        + `<div class="catchStat">${r.reachNote}</div>`
+        + `<div class="catchQuip">${r.description}</div></div>`;
     }
     case 'help':
       return `<b>Two keys, that is all.</b><br>
@@ -1876,9 +1899,13 @@ function overlaySpeech(which) {
       if (u.rodIds.length) s += ` New rod unlocked: ${u.rodIds.map(id => D.RODS.find(r => r.id === id).name).join(', ')}.`;
       return s;
     }
-    case 'dingusreveal': return 'A legend surfaces. Largemouth Dingus! A photo of Ari is coming soon.';
+    case 'dingusreveal': return 'A legend surfaces. Largemouth Dingus!';
     case 'catchreveal':
       return catchResultSpeech(overlayData.outcome) + (overlayData.quip ? ` ${overlayData.quip}` : '');
+    case 'rodreveal': {
+      const r = overlayData.rod;
+      return `${r.name} purchased and equipped. ${r.description} ${r.reachNote}`;
+    }
     case 'help':
       return 'How to play. Two keys, that is all. A short press of space moves the highlight to the next choice. '
            + 'Holding space for three seconds scans by itself until you let go. A short press of return picks whatever is highlighted. '
@@ -1897,6 +1924,13 @@ function overlaySpeech(which) {
 
 function menuItems() { return (MENUS[G.overlay] || MENUS.main)(); }
 function itemText(it) { return typeof it.text === 'function' ? it.text() : it.text; }
+/* Separate from itemText on purpose: renderOverlay's panelList buttons are
+   built with innerHTML (so a row can carry a decorative <img> icon, e.g. the
+   shop's rod rows), but the footer's target readout and the speech fallback
+   both set textContent/read the string aloud — an item without its own
+   `html` just reuses its plain `text`, and one that sets `html` (icon markup)
+   still needs a plain `text` for those two so raw tags don't leak into them. */
+function itemHtml(it) { return it.html ? (typeof it.html === 'function' ? it.html() : it.html) : itemText(it); }
 function itemVal(it) { return it.val ? (typeof it.val === 'function' ? it.val() : it.val) : ''; }
 function itemSpeech(it) {
   if (it.say) return typeof it.say === 'function' ? it.say() : it.say;
@@ -1973,7 +2007,7 @@ function closeOverlay() {
 
 function renderOverlay() {
   $('overlay').classList.add('on');
-  const onCatchCard = G.overlay === 'catchreveal';
+  const onCatchCard = G.overlay === 'catchreveal' || G.overlay === 'rodreveal' || G.overlay === 'dingusreveal';
   $('panel').classList.toggle('panel-catch', onCatchCard);
   CARD_STYLES.forEach(s => $('panel').classList.toggle('cardbg-' + s.id, onCatchCard && settings.cardStyle === s.id));
   $('panelTitle').textContent = overlayTitle(G.overlay);
@@ -1986,7 +2020,7 @@ function renderOverlay() {
     b.className = 'mi' + (i === G.menuIx ? ' focus' : '') + (it.dis ? ' dim' : '');
     b.type = 'button';
     const v = itemVal(it);
-    b.innerHTML = `<span>${itemText(it)}</span>` + (v ? `<span class="mval">${v}</span>` : '');
+    b.innerHTML = `<span>${itemHtml(it)}</span>` + (v ? `<span class="mval">${v}</span>` : '');
     b.addEventListener('click', () => { G.menuIx = i; menuSelect(); });
     list.appendChild(b);
   });

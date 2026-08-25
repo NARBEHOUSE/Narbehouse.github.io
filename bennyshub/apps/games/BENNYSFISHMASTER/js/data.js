@@ -102,11 +102,14 @@ window.FishMasterData = (function () {
   // Widen radiusMul, art.js's shoreline noise, or move a band edge, and both
   // passes need re-running — the coarse bound as a sanity floor, the
   // simulation as the actual target.
+  // `description` is flavor text for the rod-reveal card (game.js's
+  // rodreveal overlay, shown the moment a rod is bought) — reachNote covers
+  // the mechanical fact, description is the one line of character alongside it.
   const RODS = [
-    { id: 'starter',    name: 'Starter Rod',      cost: 0,    reachFt: 75,  reachNote: 'Casts up to 75 feet at full charge.',  unlockLakeId: 'lake1' },
-    { id: 'castmaster', name: 'CastMaster 3000',  cost: 150,  reachFt: 125, reachNote: 'Casts up to 125 feet at full charge.', unlockLakeId: 'lake1' },
-    { id: 'longshot',   name: 'Longshot Pro',     cost: 500,  reachFt: 225, reachNote: 'Casts up to 225 feet at full charge.', unlockLakeId: 'lake2' },
-    { id: 'titanium',   name: 'Titanium Ace',     cost: 1400, reachFt: 500, reachNote: 'Casts up to 500 feet at full charge.', unlockLakeId: 'lake3' }
+    { id: 'starter',    name: 'Starter Rod',      cost: 0,    reachFt: 75,  reachNote: 'Casts up to 75 feet at full charge.',  unlockLakeId: 'lake1', description: "Comes standard. Nothing wrong with it, exactly." },
+    { id: 'castmaster', name: 'CastMaster 3000',  cost: 150,  reachFt: 125, reachNote: 'Casts up to 125 feet at full charge.', unlockLakeId: 'lake1', description: "A stiffer blank and a longer cast, for the price of an afternoon's earnings." },
+    { id: 'longshot',   name: 'Longshot Pro',     cost: 500,  reachFt: 225, reachNote: 'Casts up to 225 feet at full charge.', unlockLakeId: 'lake2', description: "Built to reach water the CastMaster can only look at." },
+    { id: 'titanium',   name: 'Titanium Ace',     cost: 1400, reachFt: 500, reachNote: 'Casts up to 500 feet at full charge.', unlockLakeId: 'lake3', description: "The last rod you'll need. After this, it's the lake that's the limit." }
   ];
 
   // ── Bait & lures (consumable, repurchasable once unlocked) ───────────────
