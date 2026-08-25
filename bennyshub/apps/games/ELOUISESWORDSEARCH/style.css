@@ -240,6 +240,12 @@ body {
     display: grid;
     grid-template-columns: repeat(var(--grid-n), var(--cell));
     grid-template-rows: repeat(var(--grid-n), var(--cell));
+    /* Dragging across letters must not be read as a page scroll or a text
+       selection, or the browser cancels the gesture mid-word. */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     background: rgba(0, 0, 0, 0.25);
     border-radius: 1.2vmin;
     padding: 0.6vmin;

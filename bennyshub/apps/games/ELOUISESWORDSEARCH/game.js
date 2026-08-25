@@ -340,6 +340,7 @@ class WordSearchGame {
         }
         this.loadLibrary();
         this.setupInput();
+        this.setupPointerInput();
 
         // scan-manager also fires this on a `storage` event, so a change made in
         // the hub or another tab reaches a game already running.
@@ -731,6 +732,7 @@ class WordSearchGame {
     showPlayMenu() {
         this.state.mode = 'mode_select';
         this.state.modeSelectIndex = 0;
+        this.pauseOverlay.style.display = 'none';
         this.startMenuBackdrop();
         this.renderPlayMenu();
         this.speak('Play Game. Pick a category and a difficulty, then start.');
@@ -798,15 +800,16 @@ class WordSearchGame {
     showHowTo() {
         this.state.mode = 'howto';
         this.state.modeSelectIndex = 0;
+        this.pauseOverlay.style.display = 'none';
         this.startMenuBackdrop();
         this.mainContent.innerHTML = `
             <div class="menu-title" style="font-size:6vmin; margin-bottom:2vh;">How To Play</div>
             <div class="howto-body">
                 <h3>Four steps to find a word</h3>
                 <ul>
-                    <li><b>1. Pick a row.</b> The board starts quiet, and your first press moves to the top row. The scan then works down one row at a time, reading out that row's letters as it goes. Select the row your word starts in.</li>
+                    <li><b>1. Pick a row.</b> The board starts quiet, and your first press moves to the top row. The scan then works down one row at a time. Select the row your word starts in.</li>
                     <li><b>2. Pick a letter.</b> The scan moves across that row. Select the first letter of your word.</li>
-                    <li><b>3. Aim.</b> An arrow spins all the way around your letter. Select it when it points the way your word runs &mdash; words hide sideways, up, down, diagonally, and spelled backwards.</li>
+                    <li><b>3. Aim.</b> Picking a letter does not choose a direction yet. Press again and an arrow appears, spinning all the way around your letter. Select it when it points the way your word runs &mdash; words hide sideways, up, down, diagonally, and spelled backwards.</li>
                     <li><b>4. Stretch it out.</b> Each press adds one more letter in that direction. The moment the lit letters spell a word from the list it is claimed for you &mdash; there is nothing to confirm.</li>
                 </ul>
                 <p style="margin: 1vh 0 0 0;">Enter still works as a check: press it on a run you think is right and you will be told whether it is on the list.</p>
@@ -824,8 +827,10 @@ class WordSearchGame {
                 </ul>
                 <h3>Mouse or touch</h3>
                 <ul>
-                    <li>Tap the letters of a word as you read them. When they spell a word from the list it is claimed for you, so a wrong tap costs nothing.</li>
-                    <li>Tap any other letter to start a new word from there.</li>
+                    <li><b>Two taps is enough.</b> Tap the first letter, then tap any letter in line with it &mdash; sideways, up, down or diagonally &mdash; and everything between them fills in. Tap the last letter of the word and the whole word is claimed. No need to hit every letter.</li>
+                    <li><b>Or drag.</b> Press on the first letter and sweep to the end of the word. The run follows your finger and snaps to the nearest line, so it does not have to be exact.</li>
+                    <li>Tapping letter by letter still works if you prefer it.</li>
+                    <li>A tap only builds the run when it is spelling a word still on the list, so a wrong tap costs nothing and never counts as a miss &mdash; it just starts a new word from there.</li>
                     <li><b>Tap the letter you started from</b> to back out one step at a time: first it clears the letters you stretched out, then it returns to picking a letter, then to picking a row. Keep tapping the same letter to go all the way back.</li>
                 </ul>
                 <h3>Picking what to play</h3>
@@ -835,7 +840,7 @@ class WordSearchGame {
                 </ul>
                 <h3>Helpful settings</h3>
                 <ul>
-                    <li><b>Read Row Letters</b> speaks every letter in a row as you scan past it. Turn it off for a quicker scan.</li>
+                    <li><b>Read Row Letters</b> speaks every letter in a row as you scan past it, so you can hunt a word by ear. It applies only with <b>Auto Scan off</b> &mdash; auto scan steps on before a long row can finish being read, so it announces just the row number instead.</li>
                     <li><b>Speed</b> sets how long each auto scan step waits. Turn it up if you want the row letters read all the way out.</li>
                     <li><b>Open Word List Editor</b> is in Settings, for building your own categories.</li>
                 </ul>
@@ -854,6 +859,10 @@ class WordSearchGame {
         this.state.fromPause = fromPause;
         this.state.mode = 'settings';
         this.state.settingsIndex = 0;
+        // Coming from the pause menu, its overlay has to come down or it sits on
+        // top of the settings it just opened. Back returns to the pause menu,
+        // which puts the overlay up again.
+        this.pauseOverlay.style.display = 'none';
         this.startMenuBackdrop();
         this.renderSettingsMenu();
         this.speak('Settings');
@@ -899,7 +908,7 @@ class WordSearchGame {
                 <button class="menu-button" onclick="game.toggleHighlightColor()" data-spoken="Highlight Color: ${hColor.name}">Color: <div class="color-swatch" style="${swatch}"></div></button>
                 <button class="menu-button" onclick="game.toggleHighlightStyle()">Style: ${s.highlightStyle === 'outline' ? 'Outline' : 'Full'}</button>
                 <button class="menu-button" onclick="game.toggleDifficulty()" data-spoken="Difficulty ${d.label}">Difficulty: ${d.label}</button>
-                <button class="menu-button" onclick="game.toggleRowLetters()" data-spoken="Read Row Letters: ${s.rowLetters ? 'On' : 'Off'}. Reads every letter in a row as you scan past it.">Read Row Letters: ${s.rowLetters ? 'On' : 'Off'}</button>
+                <button class="menu-button" onclick="game.toggleRowLetters()" data-spoken="Read Row Letters: ${s.rowLetters ? 'On' : 'Off'}. Reads every letter in a row as you scan past it. Only with Auto Scan off.">Read Row Letters: ${s.rowLetters ? 'On' : 'Off'}</button>
                 <button class="menu-button" onclick="game.toggleDataSource()">Word List: ${this.esc(this.getSourceLabel())}</button>
                 <button class="menu-button" onclick="game.uploadCustomFile()">Load File...</button>
                 <button class="menu-button span-2" onclick="game.openEditor()">Open Word List Editor</button>
@@ -1193,7 +1202,9 @@ class WordSearchGame {
         let cells = '';
         for (let r = 0; r < this.gridSize; r++) {
             for (let c = 0; c < this.gridSize; c++) {
-                cells += `<div class="cell" id="c-${r}-${c}" onclick="game.onCellClick(${r},${c})">${this.grid[r][c]}</div>`;
+                // No onclick: taps and drags both come through the pointer
+                // handlers, so one gesture is never counted twice.
+                cells += `<div class="cell" id="c-${r}-${c}" data-r="${r}" data-c="${c}">${this.grid[r][c]}</div>`;
             }
         }
 
@@ -1240,12 +1251,16 @@ class WordSearchGame {
     // --- Phase machinery ---
     enterPhase(phase, silent = false) {
         this.phase = phase;
-        // The row scan opens at rest: index -1 means nothing is highlighted, so
-        // the board is quiet until the player acts and the very first press
-        // lands on the top row rather than skipping past it.
-        this.phaseIndex = phase === 'row' ? -1 : 0;
+        // Row and aim both open at rest: index -1 means nothing is highlighted
+        // yet. For rows that puts the first press on the top row instead of
+        // skipping past it; for aiming it means picking a letter does not
+        // immediately commit to a direction — the arrow only appears once the
+        // player asks for it.
+        this.phaseIndex = (phase === 'row' || phase === 'aim') ? -1 : 0;
 
         if (phase === 'aim') {
+            // Pre-loaded but not shown, so the first press starts the arrow on
+            // a real direction rather than jumping a step.
             const dirs = this.availableDirs();
             this.dirIndex = dirs.length ? dirs[0] : 0;
             this.aimAngle = this.baseAngle(this.dirIndex);
@@ -1391,7 +1406,10 @@ class WordSearchGame {
     // its letters left to right, comma separated so the voice pauses between
     // them instead of trying to pronounce the row as one word.
     rowSpeech(r) {
-        if (!this.settings.rowLetters) return 'Row ' + (r + 1);
+        // Auto scan steps on long before a fifteen letter row can be read out,
+        // so the letters would only ever be cut off mid-row. Read them only when
+        // the player is setting the pace themselves.
+        if (!this.settings.rowLetters || this.autoScanEnabled()) return 'Row ' + (r + 1);
         return `Row ${r + 1}. ${this.grid[r].join(', ')}`;
     }
 
@@ -1601,6 +1619,9 @@ class WordSearchGame {
 
     currentPathCells() {
         if (this.phase === 'aim') {
+            // At rest only the chosen letter is lit: no direction has been asked
+            // for yet, so showing one would be guessing on the player's behalf.
+            if (this.phaseIndex < 0) return [{ r: this.startR, c: this.startC }];
             // Two cells is the preview: enough to read the direction without
             // committing to a length.
             const len = Math.min(2, this.runLength(this.startR, this.startC, this.dirIndex));
@@ -1688,7 +1709,8 @@ class WordSearchGame {
         const aimer = document.getElementById('aimer');
         if (!aimer) return;
 
-        if (this.phase !== 'aim') {
+        // Hidden until a direction has actually been asked for.
+        if (this.phase !== 'aim' || this.phaseIndex < 0) {
             aimer.style.display = 'none';
             return;
         }
@@ -1849,7 +1871,143 @@ class WordSearchGame {
     }
 
     // --- Mouse / touch ---
-    // Tap letters as you read them. The run is only ever submitted when it
+
+    // Pointer input is wired once on the document, so it survives every board
+    // re-render, and every handler bails out unless the gesture actually began
+    // on a grid cell during play. Nothing here touches the keyboard path.
+    setupPointerInput() {
+        this.drag = null;
+        document.addEventListener('pointerdown', e => this.onPointerDown(e));
+        document.addEventListener('pointermove', e => this.onPointerMove(e));
+        document.addEventListener('pointerup', e => this.onPointerUp(e));
+        document.addEventListener('pointercancel', () => { this.drag = null; });
+    }
+
+    cellFromPoint(x, y) {
+        const el = document.elementFromPoint(x, y);
+        const cell = el && el.closest ? el.closest('.cell') : null;
+        if (!cell || cell.dataset.r === undefined) return null;
+        return { r: Number(cell.dataset.r), c: Number(cell.dataset.c) };
+    }
+
+    onPointerDown(e) {
+        if (this.state.mode !== 'game' || this.state.inputFrozen) return;
+        const at = this.cellFromPoint(e.clientX, e.clientY);
+        if (!at) return;
+        this.drag = { id: e.pointerId, r: at.r, c: at.c, moved: false, run: null };
+    }
+
+    onPointerMove(e) {
+        const d = this.drag;
+        if (!d || e.pointerId !== d.id) return;
+
+        const at = this.cellFromPoint(e.clientX, e.clientY);
+        if (!at || (at.r === d.r && at.c === d.c)) return;
+
+        // The first real movement commits the starting letter, so a drag never
+        // has to be preceded by a tap.
+        if (!d.moved) {
+            d.moved = true;
+            this.clearBankState();
+            this.startR = d.r;
+            this.startC = d.c;
+            this.phase = 'aim';
+            this.phaseIndex = -1;
+        }
+
+        const run = this.nearestRun(at.r, at.c);
+        if (!run) return;
+        if (d.run && d.run.di === run.di && d.run.n === run.n) return;
+        d.run = run;
+
+        // Sweeping is a continuous gesture, so unlike discrete taps it shows the
+        // run wherever the finger goes. Auto-accept still only fires on a real
+        // word, so passing over nonsense costs nothing.
+        this.dirIndex = run.di;
+        this.aimAngle = this.baseAngle(run.di);
+        if (!this.growRun(run.n)) {
+            this.phase = 'aim';
+            this.phaseIndex = -1;
+            this.updateGameHighlights();
+        }
+        if (e.cancelable) e.preventDefault();
+    }
+
+    onPointerUp(e) {
+        const d = this.drag;
+        if (!d || e.pointerId !== d.id) return;
+        this.drag = null;
+
+        // A press that never moved is a tap, and goes through the tap logic so
+        // both routes stay in one place.
+        if (!d.moved) return this.onCellClick(d.r, d.c);
+    }
+
+    // Snap an arbitrary cell onto the nearest of the eight rays from the start,
+    // so a sweep that wanders a little off the line still traces the line the
+    // player clearly means. Forgiving on purpose: this is the route for someone
+    // who cannot hit each letter exactly.
+    nearestRun(r, c) {
+        const dr = r - this.startR;
+        const dc = c - this.startC;
+        if (!dr && !dc) return null;
+
+        const want = Math.atan2(dr, dc);
+        let best = null;
+        for (const di of this.allowedDirs) {
+            const d = DIRECTIONS[di];
+            let diff = Math.abs(want - Math.atan2(d.dr, d.dc));
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            if (!best || diff < best.diff) best = { di, diff, d };
+        }
+        if (!best) return null;
+
+        // How far along that ray the pointer has actually reached.
+        const reach = Math.round(dr * best.d.dr + dc * best.d.dc);
+        const room = this.runLength(this.startR, this.startC, best.di) - 1;
+        const steps = Math.max(1, Math.min(reach, room));
+        return { di: best.di, n: steps + 1 };
+    }
+
+    // The run from the starting letter out to (r, c), when that cell sits
+    // squarely on one of the eight rays and the direction is allowed.
+    exactRun(r, c) {
+        const dr = r - this.startR;
+        const dc = c - this.startC;
+        const steps = Math.max(Math.abs(dr), Math.abs(dc));
+        if (!steps) return null;
+        if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return null;
+
+        const di = DIRECTIONS.findIndex(d => d.dr === dr / steps && d.dc === dc / steps);
+        if (di === -1 || !this.allowedDirs.includes(di)) return null;
+        return { di, n: steps + 1 };
+    }
+
+    lettersAlong(di, n) {
+        const d = DIRECTIONS[di];
+        let out = '';
+        for (let i = 0; i < n; i++) {
+            const r = this.startR + d.dr * i;
+            const c = this.startC + d.dc * i;
+            if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) return null;
+            out += this.grid[r][c];
+        }
+        return out;
+    }
+
+    // Is this run the beginning of a word still to find? A word can be traced
+    // from either end, so the reversed spelling counts as well.
+    isTargetPrefix(letters) {
+        if (!letters) return false;
+        return this.targets.some(t => {
+            if (t.found) return false;
+            const back = t.word.split('').reverse().join('');
+            return t.word.startsWith(letters) || back.startsWith(letters);
+        });
+    }
+
+    // Tap letters as you read them, or tap the first and then any letter in line
+    // with it to fill the run in one go. The run is only ever submitted when it
     // spells a word that is actually on the list, so a wrong tap costs nothing
     // and never counts as a miss. Tapping the first letter again wipes the
     // attempt so you can start that word over.
@@ -1876,27 +2034,22 @@ class WordSearchGame {
             return;
         }
 
-        // Only the very next letter along the run counts as carrying on. Anything
-        // else starts a new word, so a tap is never quietly swallowed into an
-        // attempt the player has already moved on from — which is what any cell
-        // merely in line with a stale starting letter used to do.
-        if (this.phase === 'extend') {
-            const next = this.pathCell(this.currentPathCells().length);
-            if (next.r === r && next.c === c && this.growRun(this.currentPathCells().length + 1)) return;
-        } else if (committed) {
-            const dr = r - this.startR;
-            const dc = c - this.startC;
-            if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1) {
-                const dirIdx = DIRECTIONS.findIndex(d => d.dr === dr && d.dc === dc);
-                if (dirIdx !== -1 && this.allowedDirs.includes(dirIdx)) {
-                    const prevDir = this.dirIndex;
-                    this.dirIndex = dirIdx;
-                    if (this.growRun(2)) {
-                        this.aimAngle = this.baseAngle(dirIdx);
-                        return;
-                    }
-                    this.dirIndex = prevDir;
+        // Tap any letter in line with the one you started from and the whole run
+        // fills in, so a word can be taken in two taps instead of one per
+        // letter. It only follows the jump when the run is actually spelling one
+        // of the words still to find, which is what stops a tap on some
+        // unrelated cell that happens to share a line from being swallowed into
+        // this attempt — any other cell starts a new word instead.
+        if (committed) {
+            const run = this.exactRun(r, c);
+            if (run && this.isTargetPrefix(this.lettersAlong(run.di, run.n))) {
+                const prevDir = this.dirIndex;
+                this.dirIndex = run.di;
+                if (this.growRun(run.n)) {
+                    this.aimAngle = this.baseAngle(run.di);
+                    return;
                 }
+                this.dirIndex = prevDir;
             }
         }
 
