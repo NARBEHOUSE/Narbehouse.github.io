@@ -17,8 +17,18 @@ const IMITATION_THROW_TIME_MIN = 3.5;
 const IMITATION_THROW_TIME_MAX = 7.0;
 const IMITATION_THROW_POSITION_MAX = 0.3;
 const IMITATION_THROW_ANGLE_MAX = Math.PI / 18.0;
-const CHARGE_TIME_MAX = 3.0; // seconds for max charge
-const CHARGE_POWER_CURVE = 2.5; // >1 makes long holds much stronger vs short taps
+const CHARGE_TIME_MAX = 5.0; // seconds for max charge (matches Benny's Mini Golf)
+// >1 keeps an accidental tap weak. Tuned against CHARGE_TIME_MAX: at 2.5 a
+// five-second window put 90% of the power in the last two seconds, which
+// made every shot feeble unless held to the very end.
+const CHARGE_POWER_CURVE = 1.6;
+// Holding Enter opens the pause menu. It has to outlast a full charge, or
+// winding a shot all the way up would pause the game instead of bowling it.
+const PAUSE_HOLD_TIME = CHARGE_TIME_MAX + 3.0;
+// Aiming audio cue: the miss distance treated as "completely off". There is no
+// on-target constant -- that threshold falls out of the ball and pin radii in
+// aimCueTarget().
+const AIM_CUE_RANGE = 0.5;
 
 var container, scene, camera, clock, renderer, ppi;
 var ambientLight = null, dirLight = null; // global lights for theming
@@ -79,8 +89,7 @@ function initSafeAudio() {
 	if (sfxInitialized || !window.SafeAudio) return;
 	window.SafeAudio.preload('rolling', 'sound/rolling-ball.wav');
 	window.SafeAudio.preload('pin', 'sound/single-pin.mp3');
-	// No select.wav ever shipped with this game — preloading a URL here would
-	// register a 404 and silence the blip. Let SafeAudio synthesise the built-in.
+	// No select.wav ships with the game; SafeAudio synthesises this one.
 	window.SafeAudio.preload('select');
 	sfxInitialized = true;
 	console.log('[Bowling] SafeAudio initialized');
@@ -104,6 +113,57 @@ function playSfx(src, volume) {
 	}
 }
 
+// The rolling sample is under a second long, but a softly-thrown ball takes
+// longer than that to reach the pins -- and for a player who can't see the ball,
+// silence is indistinguishable from the ball having stopped. Loop it for the
+// length of the roll and track the ball's speed with the volume.
+//
+// ROLL_VOLUME scales the whole roll -- both the one-shot on release and the loop.
+// The sample was normalised up to sit level with the pin and strike hits, which
+// left the roll itself louder than it needs to be; 0.7 pulls it back without
+// touching the speed-tracking dynamics below.
+const ROLL_VOLUME = 0.7;
+var rollingLoopEl = null;
+var rollingLoopPlaying = false;
+
+function startRollingLoop() {
+	if (!SFX_ENABLED) return;
+	try {
+		if (!rollingLoopEl) {
+			rollingLoopEl = new Audio('sound/rolling-ball.wav');
+			rollingLoopEl.loop = true;
+		}
+		rollingLoopEl.volume = ROLL_VOLUME;
+		rollingLoopEl.currentTime = 0;
+		var pr = rollingLoopEl.play();
+		if (pr && pr.catch) pr.catch(function(){});
+		rollingLoopPlaying = true;
+	} catch (e) {}
+}
+
+function updateRollingLoop(player) {
+	if (!rollingLoopPlaying || !rollingLoopEl) return;
+	try {
+		var body = player.physics.ballBody;
+		var v = body.getLinearVelocity();
+		var speed = Math.sqrt(v.x() * v.x() + v.y() * v.y() + v.z() * v.z());
+		var onLane = player.ballMesh.position.z > LANE_END_Z;
+		if (!player.physics.simulationActive || !onLane || speed < 0.6) {
+			stopRollingLoop();
+			return;
+		}
+		// Fade with speed so the roll audibly slows as the ball loses pace, but
+		// keep a high floor: a softly-thrown ball still has to be clearly heard.
+		rollingLoopEl.volume = ROLL_VOLUME * Math.max(0.6, Math.min(1.0, speed / BALL_VELOCITY_MAX));
+	} catch (e) { stopRollingLoop(); }
+}
+
+function stopRollingLoop() {
+	rollingLoopPlaying = false;
+	if (!rollingLoopEl) return;
+	try { rollingLoopEl.pause(); rollingLoopEl.currentTime = 0; } catch (e) {}
+}
+
 var ambientController = null;
 
 function ensureAmbient() {
@@ -122,8 +182,13 @@ function stopAmbient() {
 var settings = {
 	music: false,
 	sfx: true,
-	ballStyleIndex: 0,
+	playerCount: 1,
+	// One ball style per player; index 0 is player 1.
+	ballStyles: [0, 6, 7, 9],
 	themeIndex: 0,
+	// Non-speech audio cues, independently switchable (see cues.js)
+	chargeCues: true,
+	aimCues: true,
 	// Aimer color selection (0..5); default 2 = green
 	aimerColorIndex: 2
 };
@@ -134,6 +199,20 @@ var userHasInteracted = false;
 // Ball skins: name + preview + apply function
 var BALL_SKINS = []; // will be filled by buildBallSkins()
 var THEMES = [];
+
+// Up to four players share one lane pair, hot-seat style. Each gets a colour
+// that identifies them on the scoreboard, a default ball to match, and their own
+// lane in the house so the camera has somewhere to move to.
+const MAX_PLAYERS = 4;
+const PLAYER_COLORS = [
+	{ name: 'Red',    hex: 0xff5555, css: '#ff6b6b', ball: 0 },   // Classic Red
+	{ name: 'Blue',   hex: 0x5599ff, css: '#6ba8ff', ball: 6 },   // Solid Blue
+	{ name: 'Green',  hex: 0x55dd77, css: '#5ce08a', ball: 7 },   // Solid Green
+	{ name: 'Orange', hex: 0xffaa44, css: '#ffb14d', ball: 9 }    // Solid Orange
+];
+
+var activePlayerIndex = 0;
+var rebuildSettingsItems = function () {};   // assigned when the settings UI is built
 
 // Aimer color presets
 var AIM_COLORS = [
@@ -492,6 +571,17 @@ var menuScanHeld = false;
 var menuHoldStart = 0.0;
 var menuLastBackStep = 0.0;
 var menuBackScanAnnounced = false; // TTS announced flag
+// Pre-game setup screen: the choices that belong to a match rather than to the
+// machine, kept out of Settings so the settings scan list stays short.
+var setupDiv = null;
+var setupItems = [];
+var setupFocusIndex = 0;
+var setupScanHeld = false;
+var setupHoldStart = 0.0;
+var setupLastBackStep = 0.0;
+var setupBackScanAnnounced = false;
+var rebuildSetupItems = function () {};
+
 var settingsItems = [];          // array of {el, key, type}
 var settingsFocusIndex = 0;
 var settingsScanHeld = false;
@@ -589,13 +679,13 @@ function init() {
 	container.appendChild(renderer.domElement);
 
 	scoresDiv = document.createElement("div");
-	scoresDiv.style = "position: fixed; left: 50%; top: 8px; transform: translate(-50%, 0); z-index: 1000;";
+	scoresDiv.style = "position: fixed; left: 50%; top: calc(8px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); transform-origin: 50% 0; z-index: 1000; will-change: transform;";
 	container.appendChild(scoresDiv);
 
 	// Charge bar UI (hidden by default)
 	chargeBar = document.createElement("div");
 	// Position under the scoreboard (will be refined dynamically)
-	chargeBar.style = "position: fixed; left: 50%; top: 56px; transform: translateX(-50%); width: 280px; height: 14px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; display: none; z-index: 1000;";
+	chargeBar.style = "position: fixed; left: 50%; top: 56px; transform: translateX(-50%); width: min(280px, 76vw); height: 14px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; display: none; z-index: 1000;";
 	chargeFill = document.createElement("div");
 	chargeFill.style = "height: 100%; width: 0%; background: linear-gradient(90deg, #33cc33, #00ff99); box-shadow: 0 0 8px #00ff99;";
 	chargeBar.appendChild(chargeFill);
@@ -616,8 +706,9 @@ function init() {
 		'display: none'
 	].join(';');
 	helpTipsDiv.innerHTML = [
-		'<div>Drag ball to position; drag forward to throw.</div>',
-		'<div>Keyboard: Space = move, Enter = aim, Space = set angle, Hold Enter = charge, release to bowl.</div>'
+		'<div data-tips="full">Drag ball to position; drag forward to throw.</div>',
+		'<div data-tips="full">Keyboard: Space = move, Enter = aim, Space = set angle, Hold Enter = charge, release to bowl.</div>',
+		'<div data-tips="brief" style="display:none">Space = move &middot; Enter = aim &middot; hold Enter = bowl</div>'
 	].join('');
 	container.appendChild(helpTipsDiv);
 
@@ -626,6 +717,7 @@ function init() {
 	pauseUIButton.textContent = 'PAUSE';
 	pauseUIButton.style = "position: fixed; left: 12px; bottom: 12px; z-index: 1500; padding:8px 12px; color:#00ff99; background:#000000; border:2px solid #00ff99; border-radius:8px; font-weight:800; letter-spacing:1px; cursor:pointer; box-shadow:0 0 8px #00ff99;";
 	pauseUIButton.onclick = function(){ if (gameState === 'playing') { openPauseMenu(); } };
+	pauseUIButton.style.display = 'none';   // only shown during play
 	container.appendChild(pauseUIButton);
 
 	// XXX How to get pixel density?
@@ -664,11 +756,101 @@ function setAnisotropy(parent, anisotropy) {
 	});
 }
 
+// Hot-seat multiplayer: exactly one player has the controls at a time, and
+// that is the one every input path already asks for.
 function getLocalPlayer() {
-	if (!players) {
+	if (!players || !players.length) {
 		return undefined;
 	}
-	return players.find(p => p.local);
+	var i = Math.max(0, Math.min(players.length - 1, activePlayerIndex));
+	return players[i];
+}
+
+// Everything below assumes exactly one player holds the controls at a time.
+function syncActivePlayerFlags() {
+	if (!players) return;
+	for (var i = 0; i < players.length; i++) {
+		players[i].local = (i === activePlayerIndex);
+	}
+}
+
+function applyBallStylesToPlayers() {
+	if (!players) return;
+	for (var i = 0; i < players.length; i++) {
+		applyBallStyle(players[i].ballMesh, ballStyleFor(players[i].index));
+	}
+}
+
+// Clear anything left over from the previous player's shot so nobody inherits a
+// half-finished aim or a live charge.
+function resetShotState() {
+	aimingMode = false;
+	aimHeld = false;
+	spaceHeld = false;
+	charging = false;
+	enterHeld = false;
+	currentAimAngle = 0.0;
+	if (chargeBar) chargeBar.style.display = 'none';
+	if (typeof BowlCues !== 'undefined') BowlCues.stopAll();
+	stopRollingLoop();
+	var p = getLocalPlayer();
+	if (p) setAimHelperVisible(p, false);
+}
+
+function allPlayersFinished() {
+	if (!players || !players.length) return false;
+	for (var i = 0; i < players.length; i++) {
+		if (!players[i].scores.gameOver) return false;
+	}
+	return true;
+}
+
+// Hand over to the next player who still has frames left. With one player this
+// just re-announces the frame, exactly as it did before.
+function advanceTurn() {
+	if (!players || !players.length) return;
+	if (allPlayersFinished()) { showGameOver(); return; }
+
+	var n = players.length;
+	var next = activePlayerIndex;
+	for (var k = 1; k <= n; k++) {
+		var cand = (activePlayerIndex + k) % n;
+		if (!players[cand].scores.gameOver) { next = cand; break; }
+	}
+	var spokeStrike = players[activePlayerIndex]._spokeStrikeThisRoll;
+	players[activePlayerIndex]._spokeStrikeThisRoll = false;
+
+	activePlayerIndex = next;
+	syncActivePlayerFlags();
+	resetShotState();
+	renderScoreboard();
+
+	var p = players[activePlayerIndex];
+	var frameNo = p.scores.frameNumber + 1;
+	var message = (players.length > 1)
+			? (p.label + ', frame ' + frameNo)
+			: ('Frame ' + frameNo);
+	var announce = function () { speakText(message); };
+	// Don't talk over the strike call that just fired.
+	if (spokeStrike) { setTimeout(announce, 1200); } else { announce(); }
+}
+
+function playerCount() {
+	return Math.max(1, Math.min(MAX_PLAYERS, settings.playerCount | 0));
+}
+
+function ballStyleFor(playerIndex) {
+	var i = Math.max(0, Math.min(MAX_PLAYERS - 1, playerIndex | 0));
+	var v = settings.ballStyles[i];
+	return (typeof v === 'number') ? v : PLAYER_COLORS[i].ball;
+}
+
+function playerColor(playerIndex) {
+	return PLAYER_COLORS[Math.max(0, Math.min(MAX_PLAYERS - 1, playerIndex | 0))];
+}
+
+function playerLabel(playerIndex) {
+	return 'Player ' + (playerIndex + 1);
 }
 
 function addPlayer(id, local, slot) {
@@ -688,6 +870,10 @@ function addPlayer(id, local, slot) {
 	}
 
 	var ballMesh = ballProtoMesh.clone();
+	// Object3D.clone() shares material references, so without this every
+	// player's ball would be the same material and the last style applied
+	// would repaint all of them.
+	giveOwnMaterials(ballMesh);
 	ballMesh.castShadow = true;
 	group.add(ballMesh);
 
@@ -713,6 +899,17 @@ function addPlayer(id, local, slot) {
 	applyEnvMapToActors();
 
 	return player;
+}
+
+// Detach a cloned object's materials from the prototype it was cloned from, so
+// it can be restyled without affecting its siblings.
+function giveOwnMaterials(root) {
+	root.traverse(function (obj) {
+		if (!obj.isMesh || !obj.material) return;
+		obj.material = Array.isArray(obj.material)
+				? obj.material.map(function (m) { return m ? m.clone() : m; })
+				: obj.material.clone();
+	});
 }
 
 // Bright polished-white pin finish; the GLTF texture supplies the red bands.
@@ -924,8 +1121,9 @@ function updateImitation(imitation, dt) {
 	var velocity = BALL_VELOCITY_MIN + Math.random() * (BALL_VELOCITY_MAX - BALL_VELOCITY_MIN);
 	imitation.player.physics.positionBall(position, false);
 	imitation.player.physics.releaseBall(velocity, angle);
-	// SFX: ball rolling for imitation throws too
-	playSfx('sound/rolling-ball.wav', 1.0);
+	// SFX: ball rolling for imitation throws too. No looping roll here: that
+	// element belongs to whoever is actually bowling.
+	playSfx('sound/rolling-ball.wav', ROLL_VOLUME);
 }
 
 function initScene() {
@@ -944,10 +1142,20 @@ function initScene() {
 
 	// Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
 	document.addEventListener('narbe-input-cancelled', function(e) {
-		if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
-			var wasMenuHeld = menuScanHeld;
-			var wasSettingsHeld = settingsScanHeld;
-			var wasPauseHeld = pauseScanHeld;
+		// The shared scan manager filters out presses shorter than the user's
+		// tremor threshold, and it swallows the keyup of a rejected press. Any
+		// hold state we set on keydown must therefore be released here, or it
+		// stays stuck and the game behaves as though the switch were still held
+		// (ball oscillating, aim sweeping, charge bar filling). The hub pushes
+		// its own, higher, threshold into this iframe over postMessage, which is
+		// why this only ever bit when the game was launched from the hub.
+		if (!e.detail) return;
+		var tooShort = (e.detail.reason === 'too-short');
+		var isSpace = (e.detail.key === ' ' || e.detail.code === 'Space');
+		var isEnter = (e.detail.key === 'Enter' || e.detail.code === 'Enter'
+				|| e.detail.code === 'NumpadEnter');
+
+		if (isSpace) {
 			menuScanHeld = false;
 			menuHoldStart = 0.0;
 			menuBackScanAnnounced = false;
@@ -957,9 +1165,18 @@ function initScene() {
 			pauseScanHeld = false;
 			pauseHoldStart = 0.0;
 			pauseBackScanAnnounced = false;
+			// Gameplay: stop the oscillation the swallowed keyup would have stopped.
+			spaceHeld = false;
+			aimHeld = false;
+			setupScanHeld = false;
+			setupHoldStart = 0.0;
+			setupBackScanAnnounced = false;
 			// If cancelled due to 'too-short', still perform forward scan in menu - user intended to press
-			if (e.detail.reason === 'too-short' && (gameState === 'menu' || gameState === 'paused')) {
-				if (settingsDiv && settingsDiv.style.display === 'flex') {
+			if (tooShort && (gameState === 'menu' || gameState === 'paused')) {
+				if (setupIsOpen()) {
+					setupFocusIndex = (setupFocusIndex + 1) % setupItems.length;
+					applySetupFocus();
+				} else if (settingsDiv && settingsDiv.style.display === 'flex') {
 					settingsFocusIndex = (settingsFocusIndex + 1) % settingsItems.length;
 					applySettingsFocus();
 				} else if (gameState === 'menu') {
@@ -971,18 +1188,31 @@ function initScene() {
 				}
 			}
 		}
-		if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+
+		if (isEnter) {
 			var wasEnterHeld = enterHeld;
 			enterHeld = false;
 			enterHoldStart = 0.0;
 			// If cancelled due to 'too-short', still perform select in menu - user intended to press
-			if (e.detail.reason === 'too-short' && wasEnterHeld && (gameState === 'menu' || gameState === 'paused')) {
-				if (settingsDiv && settingsDiv.style.display === 'flex') {
+			if (tooShort && wasEnterHeld && (gameState === 'menu' || gameState === 'paused')) {
+				if (setupIsOpen()) {
+					handleSetupEnter();
+				} else if (settingsDiv && settingsDiv.style.display === 'flex') {
 					handleSettingsEnter();
 				} else if (gameState === 'menu') {
 					handleMainMenuEnter();
 				} else {
 					handlePauseMenuEnter();
+				}
+			} else if (gameState === 'playing') {
+				if (charging) {
+					// Abort the charge rather than bowling: a press the filter
+					// rejected was never meant to be a throw.
+					cancelCharge();
+				} else if (wasEnterHeld) {
+					// Otherwise let the press stand as a normal release, so the
+					// player can still advance from positioning into aiming.
+					handleGameInputUp();
 				}
 			}
 		}
@@ -1001,7 +1231,7 @@ function initScene() {
 			'left:50%','top:22%','transform:translate(-50%, -50%) scale(0.8)',
 			'opacity:0','z-index:2300','pointer-events:none',
 			'font-family:"Courier New", monospace','font-weight:900','letter-spacing:3px',
-			'font-size:64px','color:#ffe066',
+			'font-size:clamp(26px, 9vw, 64px)','color:#ffe066',
 			'text-shadow:0 0 12px #ffcc33, 0 0 24px #ffaa00, 0 0 40px #ff8800',
 			'filter: drop-shadow(0 0 10px rgba(255,170,0,0.6))',
 			'transition: opacity 380ms ease, transform 380ms ease'
@@ -1055,7 +1285,7 @@ function updateGame(player, dt) {
 		// Apply scoring
 		player.scores.addThrowResult(beatenPinCount);
 		if (player.local) {
-			renderScoreboard(player.scores);
+			renderScoreboard();
 			// Announce outcome of this roll (TTS)
 			// Prefer an emphatic "Strike!" when applicable
 			try {
@@ -1070,30 +1300,36 @@ function updateGame(player, dt) {
 			} catch(e) { speakLatestRollOutcome(player.scores); }
 		}
 
+		// The turn ends when the frame closes -- on a strike that is the first
+		// ball, otherwise the second. In the tenth frame closeFrame() sets
+		// gameOver instead of advancing, so that counts as the frame ending too.
+		var turnOver = (prevFrameNumber != player.scores.frameNumber) || player.scores.gameOver;
+
 		if (!player.scores.gameOver) {
 			var pinsMask;
-			if ((prevFrameNumber != player.scores.frameNumber) || (standingPinsMask == 0)) {
+			if (turnOver || (standingPinsMask == 0)) {
 				pinsMask = -1;
 			} else {
 				pinsMask = standingPinsMask;
 			}
 			player.physics.resetPhysics(false, pinsMask);
-			if (player.local && (prevFrameNumber != player.scores.frameNumber)) {
-				// Announce next frame number; if a strike was just spoken, delay to avoid canceling it
-				var announce = function(){ speakText("Frame " + (player.scores.frameNumber + 1)); };
-				if (player._spokeStrikeThisRoll) { player._spokeStrikeThisRoll = false; setTimeout(announce, 1200); }
-				else { announce(); }
+		} else {
+			// Done for the game: leave a full rack standing on their lane.
+			player.physics.resetPhysics(false, -1);
+		}
+
+		if (player.local && turnOver) {
+			if (allPlayersFinished()) {
+				showGameOver();
+				return; // stop further processing this frame
 			}
-		} else if (player.local) {
-			// Game over: show title screen with final score, TTS the score, then return to menu
-			var finalScore = player.scores && (typeof player.scores.score === 'number') ? player.scores.score : 0;
-			showGameOver(finalScore);
-			speakText('Game over. Final score: ' + finalScore);
-			return; // stop further processing this frame
+			advanceTurn();
+			return;
 		}
 	}
 
 	syncView(player);
+	if (player.local) updateRollingLoop(player);
 
 	// Track simulation state transitions
 	player._prevSimActive = player.physics.simulationActive;
@@ -1115,21 +1351,27 @@ function updateScene(dt) {
 		var scanInt = (sm ? sm.getScanInterval() : 2000) / 1000.0;
 		if (sm && sm.getSettings().autoScan) {
 			if ((now - autoScanLastTime) >= scanInt) {
+				// New game setup
+				if (setupIsOpen() && !setupScanHeld) {
+					setupFocusIndex = (setupFocusIndex + 1) % setupItems.length;
+					applySetupFocus();
+					autoScanLastTime = now;
+				}
 				// Settings
-				if (settingsDiv && settingsDiv.style.display === 'flex' && !settingsScanHeld) {
+				else if (settingsDiv && settingsDiv.style.display === 'flex' && !settingsScanHeld) {
 					settingsFocusIndex = (settingsFocusIndex + 1) % settingsItems.length;
 					applySettingsFocus();
 					autoScanLastTime = now;
 				}
 				// Menu
-				else if (gameState === 'menu' && (!settingsDiv || settingsDiv.style.display !== 'flex') && !menuScanHeld) {
+				else if (gameState === 'menu' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && !menuScanHeld) {
 					if (menuFocusIndex === -1) menuFocusIndex = 0;
 					else menuFocusIndex = (menuFocusIndex + 1) % mainMenuItems.length;
 					applyMenuFocus();
 					autoScanLastTime = now;
 				}
 				// Pause
-				else if (gameState === 'paused' && (!settingsDiv || settingsDiv.style.display !== 'flex') && !pauseScanHeld) {
+				else if (gameState === 'paused' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && !pauseScanHeld) {
 					if (pauseFocusIndex === -1) pauseFocusIndex = 0;
 					else pauseFocusIndex = (pauseFocusIndex + 1) % pauseMenuItems.length;
 					applyPauseFocus();
@@ -1138,8 +1380,24 @@ function updateScene(dt) {
 			}
 		}
 
+		// Setup screen backward scan every 2s after a 3s hold
+		if (setupIsOpen() && setupScanHeld) {
+			var heldSetup = Math.max(0.0, now - setupHoldStart);
+			if (heldSetup >= 3.0) {
+				if (!setupBackScanAnnounced) {
+					setupBackScanAnnounced = true;
+					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
+				}
+				if ((now - setupLastBackStep) >= 2.0) {
+					setupLastBackStep = now;
+					setupFocusIndex = (setupFocusIndex - 1 + setupItems.length) % setupItems.length;
+					applySetupFocus();
+				}
+			}
+		}
+
 		// Main menu backward scan every 2s after 3s hold
-		if (gameState === 'menu' && (!settingsDiv || settingsDiv.style.display !== 'flex') && menuScanHeld) {
+		if (gameState === 'menu' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && menuScanHeld) {
 			var held = Math.max(0.0, now - menuHoldStart);
 			if (held >= 3.0) {
 				if (!menuBackScanAnnounced) {
@@ -1233,6 +1491,11 @@ function updateScene(dt) {
 			updateAimHelper(localPlayer);
 		}
 
+		// Aiming tone. It runs while the player is actively lining the shot up
+		// -- sweeping the ball across the approach, or in aiming mode -- and
+		// hands over to the charge ladder once they start winding up.
+		updateAimCue(localPlayer);
+
 		// Update charge bar while charging
 		if (aimingMode && charging) {
 			var now = t;
@@ -1244,15 +1507,18 @@ function updateScene(dt) {
 				chargeFill.style.width = Math.round(kVis * 100) + "%";
 				positionChargeBarUnderScore();
 			}
+			// Same number the bar shows, so the ear and the eye agree.
+			if (typeof BowlCues !== 'undefined') BowlCues.updateCharge(kVis);
 		} else {
 			if (chargeBar) chargeBar.style.display = "none";
 		}
 	}
 
-	// Enter hold to open pause menu (5s)
-	if (gameState === 'playing' && enterHeld) {
+	// Enter hold to open pause menu. While charging, holding Enter already
+	// means "wind up the shot", so it must never also mean "pause".
+	if (gameState === 'playing' && enterHeld && !charging) {
 		var now2 = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
-		if ((now2 - enterHoldStart) >= 5.0) {
+		if ((now2 - enterHoldStart) >= PAUSE_HOLD_TIME) {
 			enterHeld = false;
 			openPauseMenu();
 		}
@@ -1304,8 +1570,8 @@ function resizeViewport() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize(window.innerWidth, window.innerHeight);
-	// Reposition the charge bar under the score after layout changes
-	positionChargeBarUnderScore();
+	// Rescale the scoreboard and reflow the hints for the new viewport.
+	layoutUI();
 }
 
 function syncMeshToBody(mesh, body) {
@@ -1317,7 +1583,7 @@ function syncMeshToBody(mesh, body) {
 }
 
 function syncView(player) {
-	if (player.local || player.physics.simulationActive) {
+	if (player.local) {
 		player.ballMesh.visible = true;
 		syncMeshToBody(player.ballMesh, player.physics.ballBody);
 	} else {
@@ -1330,7 +1596,9 @@ function syncView(player) {
 	for (var i = 0; i < player.physics.pinBodies.length; i++) {
 		var pinBody = player.physics.pinBodies[i];
 		var pinMesh = player.pinMeshes[i];
-		if (pinBody) {
+		// Every player keeps their own rack on the same lane, so only the one
+		// taking their turn may be drawn or the racks would overlap.
+		if (pinBody && player.local) {
 			pinMesh.visible = true;
 			syncMeshToBody(pinMesh, pinBody);
 		} else {
@@ -1413,11 +1681,20 @@ function handleGameInputDown() {
 	if (aimingMode && !charging) {
 		charging = true;
 		chargeStartTime = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+		if (typeof BowlCues !== 'undefined') { BowlCues.stopAim(); BowlCues.startCharge(); }
 		if (chargeBar) {
 			chargeBar.style.display = "block";
 			chargeFill.style.width = "0%";
 		}
 	}
+}
+
+// Abandon a charge in progress without bowling. Used when the tremor filter
+// rejects the press that started it, and whenever gameplay is interrupted.
+function cancelCharge() {
+	charging = false;
+	if (typeof BowlCues !== 'undefined') BowlCues.stopCharge();
+	if (chargeBar) chargeBar.style.display = "none";
 }
 
 function handleGameInputUp() {
@@ -1454,7 +1731,9 @@ function handleGameInputUp() {
 		var velocity = BALL_VELOCITY_MIN + (BALL_VELOCITY_MAX - BALL_VELOCITY_MIN) * kPow;
 		
 		localPlayer.physics.releaseBall(velocity, currentAimAngle);
-		playSfx('sound/rolling-ball.wav', 1.0);
+		if (typeof BowlCues !== 'undefined') BowlCues.stopAll();
+		playSfx('sound/rolling-ball.wav', ROLL_VOLUME);
+		startRollingLoop();
 		
 		charging = false;
 		aimingMode = false;
@@ -1565,7 +1844,8 @@ function onActionUp(clientX, clientY, time) {
 		var angle = Math.atan2(-releaseVector.x, -releaseVector.z);
 		localPlayer.physics.releaseBall(velocity, angle);
 		// SFX: ball rolling
-		playSfx('sound/rolling-ball.wav', 1.0);
+		playSfx('sound/rolling-ball.wav', ROLL_VOLUME);
+		startRollingLoop();
 	}
 
 	pickingBall = false;
@@ -1618,6 +1898,17 @@ function onDocumentTouchEnd(event) {
 function onDocumentKeyDown(event) {
 	// Menu/paused keyboard controls override gameplay
 	if (gameState === 'menu' || gameState === 'paused') {
+		if (setupIsOpen()) {
+			if (event.code === 'Space') {
+				event.preventDefault();
+				if (!setupScanHeld) {
+					setupScanHeld = true;
+					setupHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+					setupLastBackStep = setupHoldStart;
+				}
+			}
+			return;
+		}
 		if (settingsDiv && settingsDiv.style.display === 'flex') {
 			// Settings menu
 			if (event.code === 'Space') {
@@ -1713,6 +2004,26 @@ function onDocumentKeyDown(event) {
 
 function onDocumentKeyUp(event) {
 	if (gameState === 'menu' || gameState === 'paused') {
+		if (setupIsOpen()) {
+			if (event.code === 'Space') {
+				event.preventDefault();
+				var tS = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+				if (Math.max(0.0, tS - setupHoldStart) < 3.0) {
+					setupFocusIndex = (setupFocusIndex + 1) % setupItems.length;
+					applySetupFocus();
+				}
+				setupScanHeld = false;
+				setupBackScanAnnounced = false;
+				return;
+			}
+			if (event.code === 'Enter') {
+				event.preventDefault();
+				if (event.repeat) return;
+				handleSetupEnter();
+				return;
+			}
+			return;
+		}
 		if (settingsDiv && settingsDiv.style.display === 'flex') {
 			if (event.code === 'Space') {
 				event.preventDefault();
@@ -1812,8 +2123,10 @@ function onDocumentKeyUp(event) {
 
 			// Fire!
 			localPlayer.physics.releaseBall(velocity, currentAimAngle);
+			if (typeof BowlCues !== 'undefined') BowlCues.stopAll();
 			// SFX: ball rolling
-			playSfx('sound/rolling-ball.wav', 1.0);
+			playSfx('sound/rolling-ball.wav', ROLL_VOLUME);
+			startRollingLoop();
 
 			// Cleanup aiming state
 			charging = false;
@@ -1829,8 +2142,8 @@ function onDocumentKeyUp(event) {
 function handleMainMenuEnter() {
 	if (menuFocusIndex < 0) return; // No selection yet
 	var idx = menuFocusIndex % mainMenuItems.length;
-	if (idx === 0) { // Play Game
-		startGame();
+	if (idx === 0) { // Play Game -> choose players, balls and theme first
+		showSetup();
 	} else if (idx === 1) { // Settings
 		showSettings();
 		applySettingsFocus();
@@ -1872,18 +2185,31 @@ function loadSettings() {
 			settings.music = !!obj.music;
 			settings.sfx = !!obj.sfx;
 			settings.voiceIndex = obj.voiceIndex | 0;
-			if (typeof obj.ballStyleIndex === 'number') {
-				settings.ballStyleIndex = obj.ballStyleIndex | 0;
-			} else if (typeof obj.ballColorIndex === 'number') {
-				// Backward compatibility: map old color index to a style
-				settings.ballStyleIndex = (obj.ballColorIndex | 0);
-			}
 			if (typeof obj.themeIndex === 'number') {
 				settings.themeIndex = obj.themeIndex | 0;
+			}
+			if (typeof obj.playerCount === 'number') {
+				settings.playerCount = Math.max(1, Math.min(MAX_PLAYERS, obj.playerCount | 0));
+			}
+			if (Array.isArray(obj.ballStyles)) {
+				for (var bi = 0; bi < MAX_PLAYERS; bi++) {
+					if (typeof obj.ballStyles[bi] === 'number') {
+						settings.ballStyles[bi] = obj.ballStyles[bi] | 0;
+					}
+				}
+			} else if (typeof obj.ballStyleIndex === 'number') {
+				// Carried over from when there was a single shared ball style.
+				settings.ballStyles[0] = obj.ballStyleIndex | 0;
 			}
 			// Load aimer color if present (independent of themeIndex)
 			if (typeof obj.aimerColorIndex === 'number') {
 				settings.aimerColorIndex = obj.aimerColorIndex | 0;
+			}
+			if (typeof obj.chargeCues === 'boolean') {
+				settings.chargeCues = obj.chargeCues;
+			}
+			if (typeof obj.aimCues === 'boolean') {
+				settings.aimCues = obj.aimCues;
 			}
 		}
 	} catch (e) {}
@@ -1953,9 +2279,9 @@ function buildMenus() {
 
 	// Main Menu
 	mainMenuDiv = document.createElement('div');
-	mainMenuDiv.style = "position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(10,10,20,0.9) 0%, rgba(5,5,10,0.95) 60%, rgba(0,0,0,1) 100%); z-index:2000;";
+	mainMenuDiv.style = "position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(6,8,14,0.42) 0%, rgba(4,5,10,0.62) 60%, rgba(0,0,0,0.82) 100%); z-index:2000;";
 	var box = document.createElement('div');
-	box.style = "min-width:420px; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.4); box-shadow:0 0 24px #00ff99; text-align:center;";
+	box.style = "width:min(420px, 92vw); box-sizing:border-box; max-height:90vh; overflow:auto; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(2,10,8,0.82); box-shadow:0 0 24px #00ff99; text-align:center;";
 	var title = document.createElement('div');
 	title.textContent = "Benny's Bowling";
 	title.style = "font-family: 'Courier New', monospace; font-size: 34px; color:#00ffcc; letter-spacing:2px; text-shadow:0 0 8px #00ff99, 0 0 16px #00ffaa; margin-bottom:18px;";
@@ -1964,7 +2290,9 @@ function buildMenus() {
 	var playBtn = document.createElement('button');
 	playBtn.textContent = 'PLAY GAME';
 	playBtn.style = btnStyle;
-	playBtn.onclick = () => startGame();
+	// Mouse and touch go through the same setup screen as the keyboard path
+	// in handleMainMenuEnter -- they must not diverge.
+	playBtn.onclick = () => showSetup();
 	var settingsBtn = document.createElement('button');
 	settingsBtn.textContent = 'SETTINGS';
 	settingsBtn.style = btnStyle;
@@ -1982,12 +2310,15 @@ function buildMenus() {
 
 	// Settings Panel
 	settingsDiv = document.createElement('div');
-	settingsDiv.style = "position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,1) 100%); z-index:2100;";
+	settingsDiv.style = "position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.78) 100%); z-index:2100;";
 	var sbox = document.createElement('div');
-	sbox.style = "min-width:480px; padding:20px 24px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.4); color:#eaffff; font-family: 'Courier New', monospace; box-shadow:0 0 24px #00ff99;";
+	sbox.style = "width:min(480px, 94vw); box-sizing:border-box; max-height:88vh; overflow:auto; padding:20px 24px; border:3px solid #00ff99; border-radius:12px; background:rgba(2,10,8,0.88); color:#eaffff; font-family: 'Courier New', monospace; box-shadow:0 0 24px #00ff99;";
 	sbox.innerHTML = "<div style='font-weight:800; font-size:22px; margin-bottom:8px; color:#00ffcc; text-shadow:0 0 8px #00ff99;'>Settings</div>";
 
-	function makeRow(getLabel, getValue, onEnter, withSwatch) {
+	// `swatchUpdater` paints the little preview disc. It has to be supplied by
+	// the caller because only the caller knows which player's ball the row is
+	// showing.
+	function makeRow(getLabel, getValue, onEnter, withSwatch, swatchUpdater, container) {
 		var row = document.createElement('div');
 		row.style = "display:flex; align-items:center; justify-content:space-between; margin:10px 0; padding:8px 10px; border:2px solid #00ff99; border-radius:8px; background: rgba(0, 20, 14, 0.35); box-shadow: 0 0 8px #00ff99 inset;";
 		var left = document.createElement('div'); left.textContent = getLabel(); left.style = 'color:#00ffcc; font-weight:800; letter-spacing:1px;';
@@ -1996,13 +2327,20 @@ function buildMenus() {
 		rightWrap.appendChild(val);
 		var swatch = null;
 		if (withSwatch) {
-			swatch = document.createElement('div'); swatch.style = 'width:26px; height:26px; border-radius:50%; border:2px solid #00ffcc; box-shadow:0 0 10px #00ffcc; background:#008866;';
+			swatch = document.createElement('div');
+			swatch.style = 'width:26px; height:26px; border-radius:50%; border:2px solid #00ffcc; box-shadow:0 0 10px #00ffcc; background:#111111;';
 			rightWrap.appendChild(swatch);
 		}
 		row.appendChild(left); row.appendChild(rightWrap);
-		row._update = () => { val.textContent = getValue(); if (swatch) updateBallSwatch(swatch); };
+		row._update = () => {
+			val.textContent = getValue();
+			if (swatch && swatchUpdater) swatchUpdater(swatch);
+		};
 		row.onclick = onEnter;
-		sbox.appendChild(row);
+		(container || sbox).appendChild(row);
+		// Paint it once now: without this the disc keeps its placeholder colour
+		// until the row is first activated, so a red ball showed up green.
+		row._update();
 		return row;
 	}
 
@@ -2053,20 +2391,33 @@ function buildMenus() {
 		speakText('Voice changed to ' + displayName);
 	}
 
-	function updateBallSwatch(el) {
-		var skin = BALL_SKINS[Math.abs(settings.ballStyleIndex) % BALL_SKINS.length];
+	function skinName(idx) {
+		var skin = BALL_SKINS[Math.abs(idx) % BALL_SKINS.length];
+		return (skin && skin.name) ? skin.name : '';
+	}
+
+	function updateBallSwatchFor(el, playerIndex) {
+		var skin = BALL_SKINS[Math.abs(ballStyleFor(playerIndex)) % BALL_SKINS.length];
 		if (skin && skin.preview) {
 			el.style.background = `url(${skin.preview}) center/cover no-repeat, #003322`;
 		}
 	}
 
-	function cycleBallStyle() {
-		settings.ballStyleIndex = (settings.ballStyleIndex + 1) % BALL_SKINS.length;
+	function cycleBallStyleFor(playerIndex) {
+		settings.ballStyles[playerIndex] = (ballStyleFor(playerIndex) + 1) % BALL_SKINS.length;
 		saveSettings();
-		applyBallStyleToLocal();
+		applyBallStylesToPlayers();
+		try { speakText(playerLabel(playerIndex) + ' ball ' + skinName(ballStyleFor(playerIndex))); } catch(e) {}
+	}
+
+	function cyclePlayerCount() {
+		settings.playerCount = playerCount() % MAX_PLAYERS + 1;
+		saveSettings();
+		refreshPlayerRows();
+		rebuildSetupItems();
+		applySetupFocus();
 		try {
-			var skin = BALL_SKINS[Math.abs(settings.ballStyleIndex) % BALL_SKINS.length];
-			if (skin && skin.name) speakText('Ball style ' + skin.name);
+			speakText(playerCount() === 1 ? 'One player' : playerCount() + ' players');
 		} catch(e) {}
 	}
 
@@ -2079,7 +2430,17 @@ function buildMenus() {
 		ttsRow._update(); 
 	}, false);
 	var musicRow = makeRow(()=>'Music', ()=> settings.music? 'ON':'OFF', ()=>{ settings.music=!settings.music; saveSettings(); applySettings(); musicRow._update(); }, false);
-	var sfxRow = makeRow(()=>'Sound Effects', ()=> settings.sfx? 'ON':'OFF', ()=>{ settings.sfx=!settings.sfx; saveSettings(); applySettings(); sfxRow._update(); }, false);
+	var sfxRow = makeRow(()=>'Sound Effects', ()=> settings.sfx? 'ON':'OFF', ()=>{ settings.sfx=!settings.sfx; saveSettings(); SFX_ENABLED = !!settings.sfx; sfxRow._update(); }, false);
+	var chargeCueRow = makeRow(()=>'Charge Sound', ()=> settings.chargeCues? 'ON':'OFF', ()=>{
+		settings.chargeCues = !settings.chargeCues;
+		saveSettings(); applySettings(); chargeCueRow._update();
+		try { speakText('Charge sound ' + (settings.chargeCues ? 'on' : 'off')); } catch(e){}
+	}, false);
+	var aimCueRow = makeRow(()=>'Aim Sound', ()=> settings.aimCues? 'ON':'OFF', ()=>{
+		settings.aimCues = !settings.aimCues;
+		saveSettings(); applySettings(); aimCueRow._update();
+		try { speakText('Aim sound ' + (settings.aimCues ? 'on' : 'off')); } catch(e){}
+	}, false);
 	var voiceRow = makeRow(()=>'Voice', ()=> getVoiceName(), ()=>{ cycleVoice(); voiceRow._update(); }, false);
 	var autoScanRow = makeRow(()=>'Auto Scan', ()=> (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) ? 'ON' : 'OFF', ()=>{
 		if (window.NarbeScanManager) {
@@ -2098,11 +2459,89 @@ function buildMenus() {
 			scanSpeedRow._update();
 		}
 	}, false);
-	var ballRow = makeRow(()=>'Ball Style', ()=> BALL_SKINS[Math.abs(settings.ballStyleIndex)%BALL_SKINS.length].name, ()=>{ cycleBallStyle(); ballRow._update(); }, true);
-	// Alley Theme row (place after Ball Style)
+	// ---- Game setup screen -------------------------------------------
+	// These are per-match choices, so they live here rather than in Settings:
+	// it keeps the settings scan list short, and the theme can be seen changing
+	// on the alley behind this panel.
+	setupDiv = document.createElement('div');
+	setupDiv.style = "position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.52) 65%, rgba(0,0,0,0.76) 100%); z-index:2100;";
+	var gbox = document.createElement('div');
+	gbox.style = "width:min(460px, 94vw); box-sizing:border-box; max-height:88vh; overflow:auto; padding:20px 24px; border:3px solid #00ff99; border-radius:12px; background:rgba(2,10,8,0.88); color:#eaffff; font-family: 'Courier New', monospace; box-shadow:0 0 24px #00ff99;";
+	gbox.innerHTML = "<div style='font-weight:800; font-size:22px; margin-bottom:8px; color:#00ffcc; text-shadow:0 0 8px #00ff99;'>New Game</div>";
+
+	var playersRow = makeRow(()=>'Players', ()=> String(playerCount()), ()=>{
+		cyclePlayerCount(); playersRow._update();
+	}, false, null, gbox);
+
+	// One ball row per player. Rows above the current player count are hidden
+	// rather than rebuilt, so the scan order stays stable.
+	var ballRows = [];
+	for (var pi = 0; pi < MAX_PLAYERS; pi++) {
+		(function(idx){
+			var row = makeRow(
+				()=> (playerCount() > 1 ? playerLabel(idx) + ' Ball' : 'Ball Color'),
+				()=> skinName(ballStyleFor(idx)),
+				()=>{ cycleBallStyleFor(idx); ballRows[idx]._update(); },
+				true,
+				function (el) { updateBallSwatchFor(el, idx); },
+				gbox);
+			row._playerIndex = idx;
+			// Tint the label with the player's colour so the pairing is obvious.
+			if (row.firstChild && row.firstChild.style) {
+				row.firstChild.style.color = playerColor(idx).css;
+			}
+			ballRows.push(row);
+		})(pi);
+	}
+
 	function getThemeName(){ return THEMES.length ? THEMES[Math.abs(settings.themeIndex)%THEMES.length].name : 'Default'; }
-	function cycleTheme(){ settings.themeIndex = (settings.themeIndex + 1) % THEMES.length; saveSettings(); applyTheme(settings.themeIndex); try { var t = THEMES[Math.abs(settings.themeIndex)%THEMES.length]; if (t && t.name) speakText('Theme ' + t.name); } catch(e) {} }
-	var themeRow = makeRow(()=>'Alley Theme', ()=> getThemeName(), ()=>{ cycleTheme(); themeRow._update(); }, false);
+	function cycleTheme(){
+		settings.themeIndex = (settings.themeIndex + 1) % THEMES.length;
+		saveSettings();
+		applyTheme(settings.themeIndex);
+		try { var t = THEMES[Math.abs(settings.themeIndex)%THEMES.length]; if (t && t.name) speakText('Theme ' + t.name); } catch(e) {}
+	}
+	var themeRow = makeRow(()=>'Alley Theme', ()=> getThemeName(), ()=>{ cycleTheme(); themeRow._update(); }, false, null, gbox);
+
+	var startBtn = document.createElement('button');
+	startBtn.textContent = 'START GAME';
+	startBtn.style = 'display:block; width:100%; margin:14px 0 6px 0; padding:12px 14px; color:#00ff99; background:#000000; border:2px solid #00ff99; border-radius:8px; font-weight:800; letter-spacing:1px; cursor:pointer; box-shadow:0 0 10px #00ff99;';
+	startBtn.onclick = function(){ hideSetup(); startGame(); };
+	gbox.appendChild(startBtn);
+
+	var setupBackBtn = document.createElement('button');
+	setupBackBtn.textContent = 'Back';
+	setupBackBtn.style = 'display:block; width:100%; padding:10px 14px; color:#00ff99; background:#000000; border:2px solid #00ff99; border-radius:8px; font-weight:800; letter-spacing:1px; cursor:pointer; box-shadow:0 0 10px #00ff99;';
+	setupBackBtn.onclick = function(){ hideSetup(); showMainMenu(); applyMenuFocus(); };
+	gbox.appendChild(setupBackBtn);
+
+	setupDiv.appendChild(gbox);
+	document.body.appendChild(setupDiv);
+
+	function refreshPlayerRows() {
+		for (var i = 0; i < ballRows.length; i++) {
+			var visible = (i < playerCount());
+			ballRows[i].style.display = visible ? 'flex' : 'none';
+			if (visible) {
+				ballRows[i].firstChild.textContent = (playerCount() > 1)
+						? playerLabel(i) + ' Ball' : 'Ball Color';
+				ballRows[i]._update();
+			}
+		}
+	}
+	refreshPlayerRows();
+
+	rebuildSetupItems = function () {
+		var rows = [playersRow];
+		for (var i = 0; i < playerCount(); i++) { rows.push(ballRows[i]); }
+		rows.push(themeRow, startBtn, setupBackBtn);
+		setupItems = rows.map(function (el) {
+			return { el: el, action: function () { el.onclick(); } };
+		});
+		if (setupFocusIndex >= setupItems.length) setupFocusIndex = 0;
+	};
+	rebuildSetupItems();
+
 	// Aimer Color row
 	function getAimerColorName(){ var c=AIM_COLORS[Math.abs(settings.aimerColorIndex)%AIM_COLORS.length]; return c?c.name:'Green'; }
 	function cycleAimerColor(){ settings.aimerColorIndex=(settings.aimerColorIndex+1)%AIM_COLORS.length; saveSettings(); applyAimerStyleToLocal(); try{ speakText && speakText('Aimer color ' + getAimerColorName()); }catch(e){} }
@@ -2120,7 +2559,7 @@ function buildMenus() {
 	pauseMenuDiv = document.createElement('div');
 	pauseMenuDiv.style = "position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(10,10,20,0.9) 0%, rgba(5,5,10,0.95) 60%, rgba(0,0,0,1) 100%); z-index:2050;";
 	var pbox = document.createElement('div');
-	pbox.style = "min-width:420px; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.4); box-shadow:0 0 24px #00ff99; text-align:center;";
+	pbox.style = "width:min(420px, 92vw); box-sizing:border-box; max-height:90vh; overflow:auto; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.4); box-shadow:0 0 24px #00ff99; text-align:center;";
 	var ptitle = document.createElement('div');
 	ptitle.textContent = "Paused";
 	ptitle.style = "font-family: 'Courier New', monospace; font-size: 30px; color:#00ffcc; letter-spacing:2px; text-shadow:0 0 8px #00ff99, 0 0 16px #00ffaa; margin-bottom:18px;";
@@ -2137,7 +2576,7 @@ function buildMenus() {
 	gameOverDiv = document.createElement('div');
 	gameOverDiv.style = "position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(10,10,20,0.9) 0%, rgba(5,5,10,0.95) 60%, rgba(0,0,0,1) 100%); z-index:2100;";
 	var gobox = document.createElement('div');
-	gobox.style = "min-width:420px; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.55); box-shadow:0 0 24px #00ff99; text-align:center;";
+	gobox.style = "width:min(420px, 92vw); box-sizing:border-box; max-height:90vh; overflow:auto; padding:24px 28px; border:3px solid #00ff99; border-radius:12px; background:rgba(0,0,0,0.55); box-shadow:0 0 24px #00ff99; text-align:center;";
 	var gotitle = document.createElement('div');
 	gotitle.textContent = "Game Over";
 	gotitle.style = "font-family: 'Courier New', monospace; font-size: 32px; color:#00ffcc; letter-spacing:2px; text-shadow:0 0 8px #00ff99, 0 0 16px #00ffaa; margin-bottom:12px;";
@@ -2165,18 +2604,19 @@ function buildMenus() {
 	pauseFocusIndex = -1;
 	// Don't apply focus initially - user must press spacebar first
 
-	settingsItems = [
-		{ el: ttsRow, action: ()=> ttsRow.onclick() },
-		{ el: musicRow, action: ()=> musicRow.onclick() },
-		{ el: sfxRow, action: ()=> sfxRow.onclick() },
-		{ el: voiceRow, action: ()=> voiceRow.onclick() },
-		{ el: autoScanRow, action: ()=> autoScanRow.onclick() },
-		{ el: scanSpeedRow, action: ()=> scanSpeedRow.onclick() },
-		{ el: ballRow, action: ()=> ballRow.onclick() },
-		{ el: themeRow, action: ()=> themeRow.onclick() },
-		{ el: aimerRow, action: ()=> aimerRow.onclick() },
-		{ el: closeBtn, action: ()=> closeBtn.onclick() }
-	];
+	// Built through a function because the per-player ball rows come and go
+	// with the player count, and switch scanning must never land on a hidden row.
+	rebuildSettingsItems = function () {
+		var rows = [
+			ttsRow, musicRow, sfxRow, chargeCueRow, aimCueRow, voiceRow,
+			autoScanRow, scanSpeedRow, aimerRow, closeBtn
+		];
+		settingsItems = rows.map(function (el) {
+			return { el: el, action: function () { el.onclick(); } };
+		});
+		if (settingsFocusIndex >= settingsItems.length) settingsFocusIndex = 0;
+	};
+	rebuildSettingsItems();
 	settingsFocusIndex = 0;
 }
 
@@ -2255,10 +2695,84 @@ function exitGame() {
 	}
 }
 
-function showMainMenu() { if (mainMenuDiv) mainMenuDiv.style.display = 'flex'; gameState = 'menu'; }
+function showMainMenu() {
+	hideSetup();
+	if (mainMenuDiv) mainMenuDiv.style.display = 'flex';
+	gameState = 'menu';
+}
 function hideMainMenu() { if (mainMenuDiv) mainMenuDiv.style.display = 'none'; }
+function showSetup() {
+	if (!setupDiv) return;
+	setupDiv.style.display = 'flex';
+	hideMainMenu();
+	gameState = 'menu';
+	setupFocusIndex = 0;
+	setupScanHeld = false;
+	setupBackScanAnnounced = false;
+	setupHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+	autoScanLastTime = setupHoldStart;
+	rebuildSetupItems();
+	applySetupFocus();
+}
+
+function hideSetup() { if (setupDiv) setupDiv.style.display = 'none'; }
+
+function setupIsOpen() { return !!(setupDiv && setupDiv.style.display === 'flex'); }
+
+function applySetupFocus() {
+	setupItems.forEach(function (item, idx) {
+		var el = item.el;
+		var focused = (idx === setupFocusIndex);
+		el.style.outline = focused ? '3px solid #00ff99' : 'none';
+		el.style.boxShadow = focused ? '0 0 14px #00ff99' : 'none';
+		var isButton = (el.tagName === 'BUTTON');
+		el.style.background = focused ? '#00ff99' : (isButton ? '#000000' : 'rgba(0, 20, 14, 0.35)');
+		if (isButton) {
+			el.style.color = focused ? '#000000' : '#00ff99';
+		} else {
+			var left = el.firstChild, right = el.lastChild;
+			if (left && left.style) {
+				left.style.color = focused ? '#000000'
+						: (typeof el._playerIndex === 'number' ? playerColor(el._playerIndex).css : '#00ffcc');
+			}
+			if (right && right.firstChild && right.firstChild.style) {
+				right.firstChild.style.color = focused ? '#000000' : '#cffff6';
+			}
+		}
+	});
+	// Speak the focused row so the screen is usable without sight.
+	try {
+		var cur = setupItems[setupFocusIndex] && setupItems[setupFocusIndex].el;
+		if (cur) {
+			var label = (cur.tagName === 'BUTTON')
+					? cur.textContent
+					: ((cur.firstChild ? cur.firstChild.textContent : '') + ' ' +
+					   (cur.lastChild && cur.lastChild.firstChild ? cur.lastChild.firstChild.textContent : ''));
+			speakText(label);
+		}
+	} catch (e) {}
+}
+
+function handleSetupEnter() {
+	var item = setupItems[setupFocusIndex % setupItems.length];
+	if (!item) return;
+	if (typeof item.action === 'function') item.action();
+}
+
+// Remembers which screen to restore when Settings closes.
+var settingsReturnTo = null;
+
 function showSettings() {
 	if (settingsDiv) {
+		if (mainMenuDiv && mainMenuDiv.style.display === 'flex') {
+			settingsReturnTo = 'menu';
+			mainMenuDiv.style.display = 'none';
+		} else if (pauseMenuDiv && pauseMenuDiv.style.display === 'flex') {
+			settingsReturnTo = 'pause';
+			pauseMenuDiv.style.display = 'none';
+		} else {
+			settingsReturnTo = null;
+		}
 		settingsDiv.style.display = 'flex';
 		// Ensure scanning starts at the top and proceeds one-by-one
 		settingsFocusIndex = 0;
@@ -2267,16 +2781,29 @@ function showSettings() {
 		applySettingsFocus();
 	}
 }
-function hideSettings() { if (settingsDiv) settingsDiv.style.display = 'none'; }
+function hideSettings() {
+	if (settingsDiv) settingsDiv.style.display = 'none';
+	// Put back whichever menu we covered up.
+	if (settingsReturnTo === 'menu' && mainMenuDiv) {
+		mainMenuDiv.style.display = 'flex';
+		applyMenuFocus();
+	} else if (settingsReturnTo === 'pause' && pauseMenuDiv) {
+		pauseMenuDiv.style.display = 'flex';
+		applyPauseFocus();
+	}
+	settingsReturnTo = null;
+}
 function showPauseMenu() { if (pauseMenuDiv) pauseMenuDiv.style.display = 'flex'; }
 function hidePauseMenu() { if (pauseMenuDiv) pauseMenuDiv.style.display = 'none'; }
 
 function openPauseMenu() {
+	stopRollingLoop();
 	// Cancel aim/charge UI if any
 	var p = getLocalPlayer();
 	if (p) {
 		aimingMode = false; aimHeld = false; charging = false; setAimHelperVisible(p, false);
 	}
+	if (typeof BowlCues !== 'undefined') BowlCues.stopAll();
 	if (chargeBar) chargeBar.style.display = 'none';
 	gameState = 'paused';
 	showPauseMenu();
@@ -2306,6 +2833,12 @@ function applySettings() {
 	if (window.SafeAudio) {
 		window.SafeAudio.setEnabled(SFX_ENABLED);
 	}
+	if (!SFX_ENABLED) stopRollingLoop();
+	// The cues are sound effects too, so the master SFX switch gates them.
+	if (typeof BowlCues !== 'undefined') {
+		BowlCues.setChargeEnabled(SFX_ENABLED && settings.chargeCues !== false);
+		BowlCues.setAimEnabled(SFX_ENABLED && settings.aimCues !== false);
+	}
 }
 
 function updatePauseUIButtonVisibility() {
@@ -2320,6 +2853,7 @@ function updateHelpTipsVisibility() {
 	try {
 		if (!helpTipsDiv) return;
 		helpTipsDiv.style.display = (gameState === 'playing') ? 'block' : 'none';
+		if (gameState === 'playing') layoutHelpTips();
 	} catch(e){}
 }
 
@@ -2327,21 +2861,33 @@ function startGame() {
 	// Mark that user has interacted (required for audio autoplay)
 	userHasInteracted = true;
 	
-	hideMainMenu(); hideSettings();
+	hideMainMenu(); hideSettings(); hideSetup();
 	// Clean previous players
 	if (players && players.length) {
 		for (var i = players.length - 1; i >= 0; i--) {
 			removePlayer(players[i].id);
 		}
 	}
-	var player = addPlayer(0, true, 0);
-	// Apply current ball style to the new player's ball
-	applyBallStyle(player.ballMesh, settings.ballStyleIndex);
+	// Every player bowls the centre lane in turn, so they all share slot 0.
+	// Only the player at the wheel is drawn (see syncView).
+	var count = playerCount();
+	for (var pi = 0; pi < count; pi++) {
+		var p = addPlayer(pi, pi === 0, 0);
+		p.index = pi;
+		p.color = playerColor(pi);
+		p.label = playerLabel(pi);
+	}
+	activePlayerIndex = 0;
+	syncActivePlayerFlags();
+	applyBallStylesToPlayers();
 	// Reset UI elements
 	aimingMode = false; aimHeld = false; charging = false;
 	if (chargeBar) chargeBar.style.display = 'none';
-	renderScoreboard(player.scores);
+	renderScoreboard();
 	gameState = 'playing';
+	if (count > 1) {
+		try { speakText(playerLabel(0) + ', frame 1'); } catch(e) {}
+	}
 	// Start ambient bowling background (only if user has interacted)
 	if (userHasInteracted) {
 		ensureAmbient();
@@ -2356,9 +2902,12 @@ function startGame() {
 	menuFocusIndex = -1; settingsFocusIndex = 0;
 	updatePauseUIButtonVisibility();
 	updateHelpTipsVisibility();
+	layoutUI();
 }
 
 function returnToMenu() {
+	if (typeof BowlCues !== 'undefined') BowlCues.stopAll();
+	stopRollingLoop();
 	// Remove all players from scene
 	if (players && players.length) {
 		for (var i = players.length - 1; i >= 0; i--) {
@@ -2374,11 +2923,44 @@ function returnToMenu() {
 	stopAmbient();
 }
 
-function showGameOver(finalScore) {
+function showGameOver() {
 	try {
 		if (!gameOverDiv) returnToMenu();
+		resetShotState();
+
+		var list = (players || []).slice();
+		var best = -1;
+		for (var i = 0; i < list.length; i++) {
+			var sc = list[i].scores.totalScore || 0;
+			if (sc > best) best = sc;
+		}
+		var winners = list.filter(function (pl) { return (pl.scores.totalScore || 0) === best; });
+
 		var label = document.getElementById('bb_game_over_score');
-		if (label) { label.textContent = 'Final Score: ' + (finalScore||0); }
+		if (label) {
+			if (list.length <= 1) {
+				label.textContent = 'Final Score: ' + best;
+			} else {
+				var rows = list.map(function (pl) {
+					var sc = pl.scores.totalScore || 0;
+					var win = (sc === best);
+					return '<div style="display:flex; justify-content:space-between; gap:16px; align-items:center;'
+						+ ' padding:3px 0; color:' + pl.color.css + '; font-weight:' + (win ? '900' : '700') + ';">'
+						+ '<span>' + pl.label + (win ? ' ★' : '') + '</span><span>' + sc + '</span></div>';
+				}).join('');
+				label.innerHTML = rows;
+			}
+		}
+
+		// Speak the result before the overlay times out.
+		if (list.length <= 1) {
+			speakText('Game over. Final score: ' + best);
+		} else if (winners.length === 1) {
+			speakText('Game over. ' + winners[0].label + ' wins with ' + best + '.');
+		} else {
+			speakText('Game over. It is a tie at ' + best + '.');
+		}
+
 		// End gameplay state
 		gameState = 'menu';
 		if (pauseUIButton) pauseUIButton.style.display = 'none';
@@ -2414,14 +2996,9 @@ function showStrikeCelebration() {
 	} catch(e) {}
 }
 
-// Back-compat wrapper now delegates to style-based application
-function applyBallColorToLocal() {
-	applyBallStyleToLocal();
-}
-
 function applyBallStyleToLocal() {
 	var p = getLocalPlayer(); if (!p) return;
-	applyBallStyle(p.ballMesh, settings.ballStyleIndex);
+	applyBallStyle(p.ballMesh, ballStyleFor(p.index));
 	// Refresh aimer style as well
 	applyAimerStyleToLocal();
 }
@@ -2466,16 +3043,6 @@ function refreshBallSheen(player) {
 	player.ballSheen.material.needsUpdate = true;
 }
 
-function applyBallColor(ballMesh, colorIdx) {
-	var hex = BALL_COLORS[(colorIdx|0) % BALL_COLORS.length];
-	ballMesh.traverse(function(obj){
-		if (obj.isMesh && obj.material) {
-			if (obj.material.color) obj.material.color.setHex(hex);
-			if (obj.material.emissive) obj.material.emissive.setHex(0x000000);
-		}
-	});
-}
-
 function ensureAimHelper(player) {
 	if (player.aimHelper) { return; }
 	var group = new THREE.Group();
@@ -2501,6 +3068,61 @@ function ensureAimHelper(player) {
 	player.ballMesh.parent.add(group);
 	player.aimHelper = group;
 	setAimHelperVisible(player, false);
+}
+
+// Where the ball would be by the time it reaches a given point down the lane,
+// assuming a straight roll. Deliberately unclamped: a line that runs off the
+// side of the lane needs to report a big number so the cue can say "gutter"
+// rather than quietly pretending the ball came back.
+function predictedBallX(player, z) {
+	var angle = aimingMode ? currentAimAngle : 0.0;
+	return player.physics.releasePosition - (BALL_LINE - z) * Math.tan(angle);
+}
+
+// What the aiming cue should report: how far the current line is from actually
+// striking a pin, and whether it strikes one at all.
+//
+// This has to follow the pins that are still standing rather than a fixed
+// point. On a spare with one pin out on the right, aiming down the middle is a
+// miss and aiming right is the shot, so a cue anchored to the head pin's spot
+// would say exactly the wrong thing.
+function aimCueTarget(player) {
+	var hitRadius = BALL_RADIUS + PIN_RADIUS_MAX;
+	var nearestMiss = null;   // signed distance to the closest standing pin
+	var firstHit = null;      // signed distance at the first pin actually struck
+	var firstHitZ = -Infinity;
+	for (var i = 0; i < PIN_COUNT; i++) {
+		if (!player.physics.pinBodies[i]) continue;   // already knocked down
+		var pin = player.pinMeshes[i].position;
+		var x = predictedBallX(player, pin.z);
+		var miss = x - pin.x;
+		if (nearestMiss === null || Math.abs(miss) < Math.abs(nearestMiss)) {
+			nearestMiss = miss;
+		}
+		// Once the ball's centre passes the edge of the lane bed it has
+		// dropped into the gutter and cannot reach anything.
+		var onLane = Math.abs(x) <= LANE_HALF_WIDTH;
+		// The ball reaches the nearest pin first, so among the pins it would
+		// touch, the one with the largest z is the one actually struck.
+		if (onLane && Math.abs(miss) <= hitRadius && pin.z > firstHitZ) {
+			firstHitZ = pin.z;
+			firstHit = miss;
+		}
+	}
+	if (nearestMiss === null) { return { error: 0, onTarget: false }; }
+	return {
+		error: (firstHit !== null) ? firstHit : nearestMiss,
+		onTarget: (firstHit !== null)
+	};
+}
+
+function updateAimCue(player) {
+	if (typeof BowlCues === 'undefined') return;
+	var active = player && !player.physics.simulationActive && !charging
+			&& (aimingMode || spaceHeld);
+	if (!active) { BowlCues.stopAim(); return; }
+	var target = aimCueTarget(player);
+	BowlCues.updateAim(target.error, AIM_CUE_RANGE, target.onTarget);
 }
 
 function setAimHelperVisible(player, visible) {
@@ -2535,7 +3157,10 @@ function applyAimerStyleToLocal() {
 	}
 }
 
-function renderScoreboard(scores) {
+function renderScoreboard() {
+	var active = getLocalPlayer();
+	if (!active) { return; }
+	var scores = active.scores;
 	// Inline styles for a compact bowling scoreboard
 	var sbStyle = "display:flex; gap:6px; align-items:flex-start; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:10px; backdrop-filter: blur(2px); color:#fff; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,sans-serif;";
 	var frameStyle = "display:flex; flex-direction:column; border:2px solid rgba(255,255,255,0.6); border-radius:6px; overflow:hidden; background:rgba(0,0,0,0.25);";
@@ -2553,7 +3178,34 @@ function renderScoreboard(scores) {
 		return '<div style="' + totalStyle + '">' + txt + '</div>';
 	}
 
-	var html = '<div style="' + sbStyle + '">';
+	// With more than one player the sheet on screen belongs to whoever is up,
+	// so it has to say so -- and the others still need their running totals
+	// visible or nobody can tell who is winning.
+	var header = '';
+	if (players && players.length > 1) {
+		var chips = '';
+		for (var pn = 0; pn < players.length; pn++) {
+			var pl = players[pn];
+			var isActive = (pn === activePlayerIndex);
+			chips += '<div style="display:flex; align-items:center; gap:5px; padding:2px 8px; border-radius:999px;'
+				+ ' border:2px solid ' + (isActive ? pl.color.css : 'rgba(255,255,255,0.25)') + ';'
+				+ ' background:' + (isActive ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.3)') + ';'
+				+ ' opacity:' + (isActive ? '1' : '0.65') + ';">'
+				+ '<span style="width:10px; height:10px; border-radius:50%; background:' + pl.color.css + '; display:inline-block;"></span>'
+				+ '<span style="font-weight:800; font-size:11px;">P' + (pn + 1) + '</span>'
+				+ '<span style="font-weight:700; font-size:12px;">' + (pl.scores.totalScore || 0) + '</span>'
+				+ (pl.scores.gameOver ? '<span style="font-size:10px; opacity:0.7;">done</span>' : '')
+				+ '</div>';
+		}
+		header = '<div style="display:flex; gap:6px; justify-content:center; align-items:center; margin-bottom:5px;'
+			+ ' font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:#fff;">'
+			+ '<span style="font-weight:800; font-size:11px; letter-spacing:1px; color:' + active.color.css + ';">'
+			+ active.label.toUpperCase() + '’S TURN</span>'
+			+ chips + '</div>';
+	}
+
+	var html = '<div style="display:flex; flex-direction:column; align-items:center;">' + header
+			+ '<div style="' + sbStyle + '">';
 
 	// Frames 1..9 (index 0..8)
 	for (var i = 0; i < FRAME_COUNT - 1; i++) {
@@ -2588,19 +3240,91 @@ function renderScoreboard(scores) {
 		+ '</div>';
 	html += totalPanel;
 
-	html += '</div>';
+	html += '</div></div>';
 
 	scoresDiv.innerHTML = html;
-	// After rendering, ensure the charge bar sits right below the score UI
+	// Content width changes as frames fill in, so rescale before repositioning.
+	layoutScoreboard();
 	positionChargeBarUnderScore();
 }
 
 // Helper: position charge bar right under the scoreboard at the top
+// The scoreboard is a fixed ten-frame grid roughly 660px wide. Rather than
+// reflow it -- a bowling scoresheet only reads correctly as one row -- measure
+// it and scale it down to whatever the viewport can spare. On a phone in
+// portrait that lands around 0.55, which keeps every frame on screen and
+// legible; on a desktop the scale stays at 1 and nothing changes.
+const SCORE_MIN_SCALE = 0.42;
+const SCORE_SIDE_MARGIN = 8;
+
+function layoutScoreboard() {
+	try {
+		if (!scoresDiv || !scoresDiv.firstChild) return;
+		var inner = scoresDiv.firstChild;
+		// offsetWidth is the unscaled layout width, so measuring it is safe even
+		// though we are about to scale the element it lives in.
+		var natural = inner.offsetWidth;
+		if (!natural) return;
+		var available = Math.max(80, window.innerWidth - 2 * SCORE_SIDE_MARGIN);
+		var scale = Math.min(1, available / natural);
+		if (scale < SCORE_MIN_SCALE) scale = SCORE_MIN_SCALE;
+		scoresDiv.style.transform = 'translateX(-50%) scale(' + scale.toFixed(4) + ')';
+		scoresDiv._scale = scale;
+	} catch (e) {}
+}
+
+// Narrow screens can't fit the two-line keyboard hint beside the Pause button,
+// so drop to a single short line and lift it above the button.
+function layoutHelpTips() {
+	try {
+		if (!helpTipsDiv) return;
+		// Short landscape phones need the compact hint just as much as narrow
+		// portrait ones -- there the hint is stealing vertical space, not width.
+		var narrow = (window.innerWidth < 700 || window.innerHeight < 500);
+		// The ball sits low and centred, so a centred hint box lands right on
+		// top of it once the viewport is short. Dock the compact hint into the
+		// bottom-right corner instead -- clear of the ball and of the Pause
+		// button in the opposite corner.
+		if (narrow) {
+			helpTipsDiv.style.left = 'auto';
+			helpTipsDiv.style.right = 'calc(8px + env(safe-area-inset-right, 0px))';
+			helpTipsDiv.style.transform = 'none';
+			helpTipsDiv.style.bottom = 'calc(8px + env(safe-area-inset-bottom, 0px))';
+			helpTipsDiv.style.maxWidth = 'min(58vw, 320px)';
+			helpTipsDiv.style.fontSize = '10px';
+			helpTipsDiv.style.textAlign = 'right';
+		} else {
+			helpTipsDiv.style.left = '50%';
+			helpTipsDiv.style.right = '';
+			helpTipsDiv.style.transform = 'translateX(-50%)';
+			helpTipsDiv.style.bottom = '12px';
+			helpTipsDiv.style.maxWidth = '';
+			helpTipsDiv.style.fontSize = '';
+			helpTipsDiv.style.textAlign = 'center';
+		}
+		var full = helpTipsDiv.querySelectorAll('[data-tips="full"]');
+		for (var i = 0; i < full.length; i++) {
+			full[i].style.display = narrow ? 'none' : '';
+		}
+		var brief = helpTipsDiv.querySelectorAll('[data-tips="brief"]');
+		for (var j = 0; j < brief.length; j++) {
+			brief[j].style.display = narrow ? '' : 'none';
+		}
+	} catch (e) {}
+}
+
+function layoutUI() {
+	layoutScoreboard();
+	layoutHelpTips();
+	positionChargeBarUnderScore();
+}
+
 function positionChargeBarUnderScore() {
 	try {
 		if (!chargeBar || !scoresDiv) return;
+		// getBoundingClientRect already accounts for the scale we applied, so
+		// the bar tracks the scoreboard at any size.
 		var rect = scoresDiv.getBoundingClientRect();
-		// Place 8px below the bottom of the scoreboard box
 		var y = Math.max(0, Math.round(rect.bottom + 8));
 		chargeBar.style.top = y + 'px';
 		chargeBar.style.left = '50%';

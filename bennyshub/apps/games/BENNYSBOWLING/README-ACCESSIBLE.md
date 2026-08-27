@@ -9,19 +9,21 @@ A community modification of the original “Benny’s Bowling” by iliagrigorev
 - Dedicated to @BEAMINBENNY
 
 ## What’s new in this Accessible Edition
-- Switch‑access menus: Space scans forward; hold Space scans backward at the player's scan speed; Enter selects/toggles.
+- Switch‑access menus: Space scans forward; hold Space ≥3s scans backward every 2s; Enter selects/toggles.
 - Position & Aim via Space: 5s oscillation left/right; resumes from where released; thicker aiming guide.
-- Charge & Throw via Enter: 0–3s charge with non‑linear power; quick tap = weaker, full hold = strong.
+- Charge & Throw via Enter: 0–5s charge with non‑linear power; quick tap = weaker, full hold = strong. A rising five‑note ladder tracks the power as it climbs, and a repeating chirp marks full charge.
 - Text‑to‑Speech: English voices only (up to 8). Speaks menu focus, settings changes (ball style, alley theme), outcomes (“Strike!”), frame announcements, and final score. TTS cancels prior utterances to stay clear.
-- Pause: Hold Enter or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu, Help). Help speaks "I need help" without closing the pause menu.
-- 1–2 Players: Single Player and Two Player options. Each player chooses a ball style; scores tracked independently. Keyboard scanning works on menus.
+- Pause: Hold Enter ≥8s (never while charging a shot) or click the on‑screen Pause button; keyboard scanning in Pause Menu (Continue, Settings, Main Menu, Help). Help speaks "I need help" without closing the pause menu.
+- 1–4 Players: hot‑seat on the centre lane. Each player picks a ball colour and keeps their own scoresheet; the game names whose turn it is, skips finished players, and ranks everyone at the end. Keyboard scanning works on menus.
 - Visuals: retro green/black UI; high‑contrast focus highlight; strike celebration banner.
 - Themes: 10 alley themes with animated walls/backdrops and cohesive lighting; alley tint adapts to theme.
 - Environment: gutter‑aware floor (center + recessed gutters), aligned side/back walls and scenic backdrop; original alley mesh hidden.
 - Pins readability: pins stay bright white with very subtle lighting effects.
 - Audio:
   - Ambient loop during gameplay: sound/bowling‑bg.wav (~30% volume).
-  - Rolling SFX on throw: sound/rolling‑ball.wav.
+  - Rolling SFX on throw: sound/rolling‑ball.wav, looped for the length of the roll and tracking the ball's speed, at 70% volume so it sits under the pin hits.
+  - Aim cues (Settings → Aim Sound): soft sine blips that speed up, rise in pitch and pan towards centre as the aim converges, with a chime the moment the line will strike a pin. Tracks the pins still standing, so on a spare it rewards aiming at what's left rather than at the centre of the lane.
+  - Charge cues (Settings → Charge Sound): a rising five‑note ladder, one note per 20% of power, plus a repeating chirp at full charge.
   - Per‑pin drop SFX: sound/single‑pin.mp3.
   - Music toggle uses music/music (1).mp3; respects Settings → Music.
 

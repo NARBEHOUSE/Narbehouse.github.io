@@ -669,8 +669,10 @@ var BowlAlley = (function () {
 			g.add(a);
 			alleys[slot] = a;
 
-			// Standing pins on the neighbouring lanes so the house looks busy.
-			if (slot !== 0 && Math.abs(slot) === 1 && typeof opts.makePins === "function") {
+			// Standing racks on every neighbouring lane so the house looks busy.
+			// The outer pair are small on screen but their absence reads as two
+			// empty lanes right at the edge of frame.
+			if (slot !== 0 && typeof opts.makePins === "function") {
 				var pins = opts.makePins();
 				if (pins) {
 					pins.position.x = a.position.x;

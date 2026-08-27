@@ -43,7 +43,7 @@
     {
       "id": "bennysbowling",
       "title": "Benny's Bowling",
-      "description": "A fun simple bowling game with physics and realistic sound effects. Choose your a ball style or fun background theme.",
+      "description": "A bowling game with real physics on a full alley. Play on your own or hot-seat with up to 4 players, each with their own ball color and scoresheet. Audio cues let you bowl by ear: rising notes as you charge the shot, and blips that speed up and pan across as your aim lines up on the pins still standing. Ten alley themes to choose from.",
       "path": "apps/games/BENNYSBOWLING/index.html",
       "image": "images/games/bennysbowling.png",
       "genres": ["Sports", "Simulation"]
