@@ -1,395 +1,763 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Benny's FishMaster</title>
 <style>
-/* Typewriter face for the catch-reveal card only (.panel-catch, set in
-   game.js's renderOverlay) — a fish tale reads like a field report. Same
-   @import-with-fallback pattern BENNYSSLOTMACHINE uses for its Google Fonts;
-   'Courier New'/monospace stand in if the network request never lands. */
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-
 /* ──────────────────────────────────────────────────────────────────────────
-   Themes. Every colour in the game (canvas included) comes from one of these
-   four palettes, so switching profile repaints the world as well as the UI.
-   Same four profiles and variable-naming convention as BENNYSBALLISTA.
+   Colour profiles. Every colour in the game — the 3D world included — comes
+   from one of these four palettes, so switching profile repaints the lake as
+   well as the UI. Same four profiles and naming convention as FishMaster I
+   and BENNYSBALLISTA.
 
-   The bank, rock, water and planting variables are the pond art palette used
-   by js/art.js. The three sighted profiles carry naturalistic pond colours;
-   High Contrast deliberately flattens them to black water and white rock so
-   the shoreline still reads as a silhouette (art.js's `flat` mode). The biome
-   variables changed role with the art pass: they are now translucent tints
-   laid over the water gradient, not opaque wedge fills.
+   Anything the 3D layer reads MUST also be listed in PALETTE_VARS in game.js,
+   or css() silently returns grey. (Trap 6.)
    ────────────────────────────────────────────────────────────────────────── */
 :root{
+  --hook:#b8bcc2;
+
+  --cork:#c9a978; --reel-body:#8d949c;
+
+  --shop-beam:#8a6b48;
+
+  --shop-wall:#c9a678; --shop-floor:#8a6440; --pegboard:#d8bb8e; --glass:#bfe4f2;
+  --keeper-shirt:#4a6b3d; --keeper-cap:#2f4858; --trophy:#3f6b52;
+
+  --fish-dark:#0d2b38; --fish-target:#12503c; --roof:#7a4a3a;
+
+  --boat:#f4f1e8; --boat-trim:#d2352b; --boat-deck:#e4d9c2; --boat-dark:#33302c;
+  --shirt:#2f6690; --jeans:#3a4a63; --cap:#d2352b; --vest:#e8a33d;
+
   --fs: 100%;
+
+  /* UI chrome — papercraft card stock, from Race Tracks */
+  --paper:#fff8e7; --paper2:#ffeecd; --ink:#3b2a1c; --ink2:#7a6350;
   --bg:#0a0a0a; --panel:#15161c; --panel2:#1d1f28; --line:#2e3140;
   --text:#f2f4f8; --dim:#a6adbb;
   --accent:#ff5c00; --accent2:#22d3ee; --violet:#8b5cf6;
   --focus:#ffd400; --good:#3ddc84; --bad:#ff5470;
-  --seqred:#ff3b3b; --seqblue:#2196f3;
-  --water-near:#1b3a5c; --water-far:#05141f; --boat:#8a5a2b;
+
+  /* Zone classification. Green = holds the mission target, amber = other fish.
+     Colour is never the only signal — see the ring shapes in art.js and the
+     words on the edge panels. */
+  --zone-target:#3ddc84; --zone-other:#ffb02e; --zone-none:#4a4a52;
+
+  /* Reel states */
+  --reel-good:#3ddc84; --reel-high:#ff5470; --reel-low:#ffb02e;
+
+  /* Biomes */
   --biome-shallows:#5bb0ff; --biome-weedbed:#2fae5a; --biome-dropoff:#35507a;
   --biome-rockyshore:#8d939c; --biome-deepchannel:#101f33;
+
+  /* The lake */
+  --water-shallow:#39a0a6; --water-mid:#1d6070; --water-deep:#0a2c3d; --glint:#d9f6ff;
+  --water-near:#1b3a5c; --water-far:#05141f;
+  --sky-low:#dff2f7; --sky-mid:#8fd2f0; --sky-high:#3d9ee0; --fogcol:#cfe9f2;
+
+  /* Shore, scenery, boat */
   --bank-grass:#4a7a35; --bank-soil:#54412b; --foliage-dark:#20401f; --foliage-light:#5c9440;
   --rock-light:#a49a8d; --rock-mid:#736a61; --rock-dark:#3a352f; --sand:#c9b184;
-  --water-shallow:#39a0a6; --water-mid:#1d6070; --water-deep:#0a2c3d; --glint:#d9f6ff;
-  --lily:#39914a; --reed:#7a9c3f; --log:#4b3a28; --boat-dark:#5c3a18; --angler:#d9b48a;
+  --lily:#39914a; --reed:#7a9c3f; --log:#4b3a28;
+  --angler:#e0a878;
+  --dock:#7a5a3a; --shack:#9c6b45; --rod:#2f2a26; --line-mono:#f4f4f0; --bobber:#ff3b3b;
 }
 body[data-theme="dark"]{
+  --hook:#8a8f96;
+
+  --cork:#9c8058; --reel-body:#6b727a;
+
+  --shop-beam:#5e482f;
+
+  --shop-wall:#8a7154; --shop-floor:#5c452e; --pegboard:#94815f; --glass:#7fa8b8;
+  --keeper-shirt:#38512f; --keeper-cap:#22343d; --trophy:#2c4c3a;
+
+  --fish-dark:#0a1b24; --fish-target:#17423a; --roof:#5c3830;
+
+  --boat:#d7d3c8; --boat-trim:#a82a22; --boat-deck:#bdb49f; --boat-dark:#23211e;
+  --shirt:#274f6d; --jeans:#2c384b; --cap:#a82a22; --vest:#b87f2e;
+
+  --paper:#20242b; --paper2:#171a1f; --ink:#eef1f5; --ink2:#9aa3b0;
   --bg:#0e1013; --panel:#171a1f; --panel2:#20242b; --line:#333944;
   --text:#eef1f5; --dim:#9aa3b0;
   --accent:#7aa2f7; --accent2:#9ece6a; --violet:#bb9af7;
   --focus:#e0af68; --good:#9ece6a; --bad:#f7768e;
-  --seqred:#f7768e; --seqblue:#7aa2f7;
-  --water-near:#1c2735; --water-far:#0c1119; --boat:#7a5636;
+  --zone-target:#9ece6a; --zone-other:#e0af68; --zone-none:#2b303a;
+  --reel-good:#9ece6a; --reel-high:#f7768e; --reel-low:#e0af68;
   --biome-shallows:#6fa8dc; --biome-weedbed:#5a8f5f; --biome-dropoff:#35415a;
   --biome-rockyshore:#7d838d; --biome-deepchannel:#171d28;
+  --water-shallow:#2b5f6b; --water-mid:#173d4c; --water-deep:#091d29; --glint:#9fc9d8;
+  --water-near:#1c2735; --water-far:#0c1119;
+  --sky-low:#3a4457; --sky-mid:#252d3d; --sky-high:#151a25; --fogcol:#2b3444;
   --bank-grass:#2f4a2b; --bank-soil:#3a2f22; --foliage-dark:#16281a; --foliage-light:#3c5f34;
   --rock-light:#7c7970; --rock-mid:#55524c; --rock-dark:#2a2825; --sand:#8f8467;
-  --water-shallow:#2b5f6b; --water-mid:#173d4c; --water-deep:#091d29; --glint:#9fc9d8;
-  --lily:#2e6b39; --reed:#5b7434; --log:#3a2d20; --boat-dark:#513a22; --angler:#b39273;
+  --lily:#2e6b39; --reed:#5b7434; --log:#3a2d20;
+  --angler:#c08e63;
+  --dock:#5a422a; --shack:#6d4c30; --rod:#1d1a17; --line-mono:#d6d6d0; --bobber:#e0524f;
 }
 body[data-theme="light"]{
+  --hook:#c9ced4;
+
+  --cork:#dcc199; --reel-body:#a8b0b8;
+
+  --shop-beam:#a8845c;
+
+  --shop-wall:#e6cfa8; --shop-floor:#a67f52; --pegboard:#efd9ac; --glass:#d8f0fa;
+  --keeper-shirt:#5f8a4d; --keeper-cap:#3f5f70; --trophy:#4f8a68;
+
+  --fish-dark:#2b5f70; --fish-target:#14795a; --roof:#9c5f4a;
+
+  --boat:#ffffff; --boat-trim:#e0342f; --boat-deck:#f0e7d2; --boat-dark:#4a453e;
+  --shirt:#3a7cab; --jeans:#4a5c78; --cap:#e0342f; --vest:#f5b74e;
+
+  --paper:#ffffff; --paper2:#e6eaf2; --ink:#12151c; --ink2:#4d566b;
   --bg:#eef1f6; --panel:#ffffff; --panel2:#e6eaf2; --line:#c3cad8;
   --text:#12151c; --dim:#4d566b;
   --accent:#c93f00; --accent2:#0d7c92; --violet:#6836d6;
   --focus:#e08900; --good:#137a44; --bad:#b3123a;
-  --seqred:#c62839; --seqblue:#0d5bc9;
-  --water-near:#bfe0ff; --water-far:#e8f4ff; --boat:#8a5a2b;
+  --zone-target:#137a44; --zone-other:#c07000; --zone-none:#b9c0cc;
+  --reel-good:#137a44; --reel-high:#b3123a; --reel-low:#c07000;
   --biome-shallows:#79c2ff; --biome-weedbed:#4caf6d; --biome-dropoff:#5d7fa3;
   --biome-rockyshore:#a9b0ba; --biome-deepchannel:#43597a;
+  --water-shallow:#7fd4d8; --water-mid:#3f9fb5; --water-deep:#1b5f7e; --glint:#ffffff;
+  --water-near:#bfe0ff; --water-far:#e8f4ff;
+  --sky-low:#eaf7ff; --sky-mid:#b4e2f7; --sky-high:#6cc0e8; --fogcol:#dcf0f8;
   --bank-grass:#7cb35b; --bank-soil:#8a6f4a; --foliage-dark:#3f7a3a; --foliage-light:#9ccf6a;
   --rock-light:#d8d2c6; --rock-mid:#a9a094; --rock-dark:#6d675e; --sand:#e6d5a8;
-  --water-shallow:#7fd4d8; --water-mid:#3f9fb5; --water-deep:#1b5f7e; --glint:#ffffff;
-  --lily:#5fae52; --reed:#8fae4b; --log:#7a5c3c; --boat-dark:#6b4520; --angler:#e8c49c;
+  --lily:#5fae52; --reed:#8fae4b; --log:#7a5c3c;
+  --angler:#e8c49c;
+  --dock:#a07c52; --shack:#c08f5f; --rod:#4a423a; --line-mono:#2a2a26; --bobber:#e0342f;
 }
+/* High Contrast is a profile, not a skin: solid fills, heavy outlines, no
+   gradients or texture. art.js reads --flat to drop its paper grain. */
 body[data-theme="contrast"]{
+  --hook:#ffffff;
+
+  --cork:#ffff00; --reel-body:#ffffff;
+
+  --shop-beam:#ffffff;
+
+  --shop-wall:#000000; --shop-floor:#000000; --pegboard:#ffffff; --glass:#00ffff;
+  --keeper-shirt:#00ff66; --keeper-cap:#ffffff; --trophy:#00ff66;
+
+  --fish-dark:#ffffff; --fish-target:#00ff66; --roof:#ffa500;
+
+  --boat:#ffffff; --boat-trim:#ff3b3b; --boat-deck:#ffffff; --boat-dark:#000000;
+  --shirt:#00ffff; --jeans:#000000; --cap:#ff3b3b; --vest:#ffff00;
+
+  --paper:#000000; --paper2:#111111; --ink:#ffffff; --ink2:#e8e8e8;
   --bg:#000000; --panel:#000000; --panel2:#111111; --line:#ffffff;
   --text:#ffffff; --dim:#e8e8e8;
   --accent:#ffff00; --accent2:#00ffff; --violet:#ff00ff;
   --focus:#ffff00; --good:#00ff66; --bad:#ff3b3b;
-  --seqred:#ff3b3b; --seqblue:#00aaff;
-  --water-near:#101010; --water-far:#000000; --boat:#ffa500;
+  --zone-target:#00ff66; --zone-other:#ffff00; --zone-none:#404040;
+  --reel-good:#00ff66; --reel-high:#ff3b3b; --reel-low:#ffff00;
   --biome-shallows:#00ffff; --biome-weedbed:#00ff66; --biome-dropoff:#6666ff;
   --biome-rockyshore:#ffffff; --biome-deepchannel:#202020;
+  --water-shallow:#000000; --water-mid:#000000; --water-deep:#000000; --glint:#ffffff;
+  --water-near:#101010; --water-far:#000000;
+  --sky-low:#000000; --sky-mid:#000000; --sky-high:#000000; --fogcol:#000000;
   --bank-grass:#000000; --bank-soil:#000000; --foliage-dark:#000000; --foliage-light:#000000;
   --rock-light:#ffffff; --rock-mid:#bbbbbb; --rock-dark:#000000; --sand:#ffff00;
-  --water-shallow:#000000; --water-mid:#000000; --water-deep:#000000; --glint:#ffffff;
-  --lily:#00ff66; --reed:#00ff66; --log:#ffffff; --boat-dark:#000000; --angler:#ffff00;
+  --lily:#00ff66; --reed:#00ff66; --log:#ffffff;
+  --angler:#ffff00;
+  --dock:#ffffff; --shack:#ffa500; --rod:#ffffff; --line-mono:#ffffff; --bobber:#ff3b3b;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{font-size:var(--fs)}
-body{
-  background:var(--bg); color:var(--text);
-  font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-  height:100vh; overflow:hidden;
-  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+html,body{
+  width:100%; height:100%; overflow:hidden;
+  background:var(--bg); color:var(--ink);
+  font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;
+  user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
+  /* On a touch device a drag that starts on the game must steer the boat, not
+     bounce the page or trigger pull-to-refresh - and holding a control for
+     three seconds must not raise a selection or callout. */
+  overscroll-behavior:none; touch-action:manipulation;
+  -webkit-touch-callout:none;
+  position:fixed; inset:0;
 }
 
-#app{display:flex; flex-direction:column; height:100vh}
+#app{position:fixed; inset:0}
 
-/* ── Header ─────────────────────────────────────────────────────────────── */
-#hdr{
-  display:flex; align-items:center; gap:.6rem;
-  padding:.4rem .7rem; background:var(--panel); border-bottom:3px solid var(--line);
-  flex:0 0 auto;
+/* ── 3D canvas ──────────────────────────────────────────────────────────── */
+#canvasWrap{position:absolute; inset:0; z-index:0; touch-action:none}
+#canvasWrap canvas{display:block; width:100%; height:100%}
+
+/* ── Reusable paper surface ─────────────────────────────────────────────── */
+.paper{
+  background:
+    repeating-linear-gradient(102deg, rgba(180,150,110,.045) 0 2px, transparent 2px 7px),
+    linear-gradient(168deg, var(--paper) 0%, var(--paper2) 100%);
+  border:4px solid var(--ink);
+  box-shadow:0 8px 0 rgba(0,0,0,.22), 0 18px 34px rgba(0,0,0,.4);
 }
-#ttl{font-size:1.25rem; font-weight:800; letter-spacing:.5px; color:var(--accent); white-space:nowrap}
-#ttl span{color:var(--accent2)}
-#hdrBtns{margin-left:auto; display:flex; gap:.4rem}
-.hbtn{
-  background:var(--panel2); color:var(--text); border:2px solid var(--line);
-  border-radius:.5rem; font:inherit; font-size:.95rem; font-weight:700;
-  min-height:2.6rem; min-width:2.6rem; padding:.3rem .7rem; cursor:pointer;
+body[data-theme="contrast"] .paper{ background:var(--paper); box-shadow:none }
+
+/* ── Loading ────────────────────────────────────────────────────────────── */
+#loading{
+  position:absolute; inset:0; z-index:90;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  background:linear-gradient(165deg, var(--sky-low) 0%, var(--water-shallow) 55%, var(--water-deep) 100%);
+  color:var(--ink); font-size:1.7rem; font-weight:bold;
 }
-.hbtn:hover{border-color:var(--accent)}
+#loading .spinner{
+  width:70px; height:70px; border-radius:50%;
+  border:8px solid rgba(128,128,128,.2); border-top-color:var(--ink);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg) } }
 
-/* ── Stage ──────────────────────────────────────────────────────────────── */
-#stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; min-height:0; background:var(--bg)}
-#cvWrap{flex:1 1 auto; position:relative; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden}
-canvas{display:block; max-width:100%; max-height:100%; background:var(--bank-grass)}
 
+/* The armed side: thick ink outline, a lift, and an inward arrow. */
+
+/* ── "Fish spotted" ───────────────────────────────────────────────────────
+   A card that pops in on the side the shoal is on, carrying the fish's own
+   picture and colour. It fills as you hold the boat over toward it, so turning
+   in has something to watch.
+   ────────────────────────────────────────────────────────────────────────── */
+.spotArrow{
+  position:absolute; top:50%; z-index:12;
+  --spotcol:#8fd2f0; --enter:0;
+  width:150px; margin-top:-96px; padding:10px 8px 12px;
+  /* Tappable. For a mouse or a finger this card IS the way to go and fish -
+     press it and the boat heads over - so it has to take a pointer. Switch
+     players never reach it, and do not need to: holding the helm over does
+     the same job with the one control they have. */
+  display:none; text-align:center; pointer-events:auto; cursor:pointer;
+  transition:transform .1s ease, box-shadow .1s ease;
+  border:5px solid var(--ink); border-radius:16px;
+  background:var(--paper); color:var(--ink);
+  box-shadow:0 7px 0 rgba(0,0,0,.28);
+}
+.spotArrow.on{ display:block; animation:spotIn .32s ease-out }
+#spotLeft { left:18px }
+#spotRight{ right:18px }
+@keyframes spotIn{
+  from{ opacity:0; transform:scale(.7) }
+  to  { opacity:1; transform:scale(1) }
+}
+.spotChevron{
+  font-size:2.1rem; line-height:1; color:var(--spotcol);
+  -webkit-text-stroke:2px var(--ink); animation:spotNudge 1.1s ease-in-out infinite;
+}
+#spotRight .spotChevron{ animation-name:spotNudgeR }
+@keyframes spotNudge { 0%,100%{ transform:translateX(0) } 50%{ transform:translateX(-6px) } }
+@keyframes spotNudgeR{ 0%,100%{ transform:translateX(0) } 50%{ transform:translateX(6px) } }
+.spotFish{
+  display:block; width:100%; max-height:66px; object-fit:contain; margin:2px auto 4px;
+}
+.spotName{ font-size:.92rem; font-weight:bold; line-height:1.15 }
+.spotWord{ font-size:.8rem; color:var(--ink2); margin-top:2px }
+.spotArrow:active{ transform:translateY(3px) scale(.97); box-shadow:0 3px 0 rgba(0,0,0,.28) }
+/* Committed to this one: it stops inviting and starts confirming. */
+.spotArrow.going{ background:var(--focus) }
+/* Past what this rod can throw: dimmed, and it says so in words. */
+.spotArrow:not(.reach){ opacity:.6; filter:grayscale(.5) }
+.spotBar{
+  margin-top:7px; height:9px; border:2px solid var(--ink);
+  border-radius:6px; background:rgba(0,0,0,.15); overflow:hidden;
+}
+.spotBar > i{
+  display:block; height:100%; width:calc(var(--enter) * 100%);
+  background:var(--spotcol);
+}
+.spotArrow.turning{ box-shadow:0 0 0 5px var(--focus), 0 9px 0 rgba(0,0,0,.3) }
+@media (prefers-reduced-motion: reduce){
+  .spotArrow.on{ animation:none }
+  .spotChevron{ animation:none }
+}
+
+/* The bite wash — a lamp on a dimmer, not a strobe. Its brightness carries no
+   information and no deadline. Held steady under reduced motion. */
+#biteWash{
+  position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0;
+  background:radial-gradient(ellipse at 50% 60%, transparent 35%, var(--zone-target) 140%);
+}
+#biteWash.on{ animation:breathe 2.4s ease-in-out infinite }
+@keyframes breathe{ 0%,100%{opacity:.12} 50%{opacity:.55} }
+
+/* ── Big direction cue ──────────────────────────────────────────────────── */
+#cue{
+  position:absolute; left:50%; top:16%; transform:translateX(-50%);
+  z-index:14; display:none; text-align:center; pointer-events:none;
+  padding:14px 30px; border-radius:16px;
+  background:rgba(0,0,0,.55); color:#fff;
+  text-shadow:0 3px 0 rgba(0,0,0,.6);
+}
+#cue.on{ display:block }
+#cueArrow{ font-size:4rem; line-height:1 }
+#cueText { font-size:1.9rem; font-weight:bold; letter-spacing:.05em }
+#cueSub  { font-size:1.1rem; opacity:.9; margin-top:2px }
+
+/* ── Big centre message (FISH ON, HOOK IT, prompts) ─────────────────────── */
+#bigMsg{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  z-index:16; display:none; text-align:center; pointer-events:none;
+  font-size:clamp(2rem, 7vw, 4.6rem); font-weight:bold; color:#fff;
+  text-shadow:0 0 18px rgba(0,0,0,.9), 0 5px 0 rgba(0,0,0,.5);
+  letter-spacing:.03em; line-height:1.1;
+}
+#bigMsg.on{ animation:pop .45s ease-out }
+@keyframes pop{ from{ transform:translate(-50%,-50%) scale(.5); opacity:0 } to{ transform:translate(-50%,-50%) scale(1); opacity:1 } }
+
+/* ── The reel: hold and it comes in ─────────────────────────────────────── */
+#reel{
+  position:absolute; left:50%; bottom:12%; transform:translateX(-50%);
+  z-index:15; display:none; width:min(74vw, 620px); pointer-events:none;
+}
+#reel.on{ display:block }
+#reelPrompt{
+  text-align:center; font-size:clamp(1.3rem,3.6vw,2.1rem); font-weight:bold;
+  color:#fff; text-shadow:0 0 14px rgba(0,0,0,.9), 0 3px 0 rgba(0,0,0,.5);
+  margin-bottom:10px; letter-spacing:.04em;
+}
+#reelProgressOuter{
+  height:40px; border:5px solid var(--ink); border-radius:12px;
+  background:rgba(0,0,0,.55); overflow:hidden;
+}
+#reelProgressBar{
+  height:100%; width:0%; background:var(--reel-low);
+  transition:width .1s linear, background .2s ease;
+}
+#reel.holding #reelProgressBar{ background:var(--reel-good) }
+
+/* A run: the whole meter goes red and the prompt changes to LET IT RUN. */
+#reel.running #reelPrompt, #reel.warning #reelPrompt{ color:var(--reel-high) }
+#reel.running #reelProgressOuter{ border-color:var(--reel-high) }
+#reelStrainOuter{
+  display:none; margin-top:8px; height:22px;
+  border:4px solid var(--reel-high); border-radius:10px;
+  background:rgba(0,0,0,.55); overflow:hidden;
+}
+#reelStrainBar{
+  height:100%; width:0%; background:var(--reel-high);
+  transition:width .08s linear;
+}
+
+/* ── Full-screen wash ───────────────────────────────────────────────────── */
+#flash{ position:absolute; inset:0; z-index:17; pointer-events:none; opacity:0 }
+#flash.on{ animation:washOut .62s ease-out }
+#flash.bite{ background:radial-gradient(ellipse at 50% 55%, transparent 30%, var(--zone-target) 130%) }
+#flash.lost{ background:radial-gradient(ellipse at 50% 55%, transparent 20%, var(--reel-high) 120%) }
+@keyframes washOut{ from{ opacity:.85 } to{ opacity:0 } }
+@media (prefers-reduced-motion: reduce){
+  #flash.on{ animation:none; opacity:.3 }
+}
+
+/* ── Casting: the aimer, then the power meter ──────────────────────────── */
+#charge{
+  position:absolute; left:50%; bottom:11%; transform:translateX(-50%);
+  z-index:15; display:none; width:min(80vw, 640px); text-align:center;
+  pointer-events:none;
+}
+#charge.on{ display:block }
+
+
+#chargeLabel{
+  font-size:clamp(1.1rem,3vw,1.7rem); font-weight:bold; color:#fff;
+  text-shadow:0 0 14px rgba(0,0,0,.9), 0 3px 0 rgba(0,0,0,.5); letter-spacing:.03em;
+}
+#charge.best #chargeLabel{ color:var(--zone-target) }
+
+#chargeOuter{
+  margin:10px auto 0; height:40px; width:100%;
+  border:5px solid var(--ink); border-radius:12px;
+  background:rgba(0,0,0,.55); overflow:hidden;
+}
+#chargeBar{
+  height:100%; width:0%; background:var(--focus);
+  transition:width .06s linear, background .2s ease;
+}
+#charge.good #chargeBar{ background:var(--zone-other) }
+#charge.best #chargeBar{ background:var(--zone-target) }
+
+.castHint{
+  margin-top:6px; font-size:.95rem; color:#fff; opacity:.85;
+  text-shadow:0 2px 6px rgba(0,0,0,.9);
+}
+
+/* ── Where the boat sits across the lane ───────────────────────────────── */
+#steerBar{
+  position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
+  z-index:12; display:none; width:min(44vw,340px); height:14px;
+  border:3px solid var(--ink); border-radius:9px; background:rgba(0,0,0,.45);
+}
+#steerBar.on{ display:block }
+#steerPip{
+  position:absolute; top:-6px; width:20px; height:20px; margin-left:-10px;
+  border-radius:50%; background:var(--focus); border:3px solid var(--ink);
+  transition:left .08s linear;
+}
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
 #hud{
-  position:absolute; top:.5rem; left:50%; transform:translateX(-50%);
-  display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center;
-  pointer-events:none; z-index:3;
+  position:absolute; inset:0; z-index:10; pointer-events:none;
+  display:none; padding:16px 20px;
 }
-.pill{
-  background:rgba(0,0,0,.62); border:2px solid var(--line); border-radius:999px;
-  padding:.2rem .8rem; font-size:.95rem; font-weight:700; white-space:nowrap;
+#hud.on{ display:block }
+#hudTop{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px }
+#hudLeft, #hudRight{ display:flex; flex-direction:column; gap:8px; align-items:flex-start }
+#hudRight{ align-items:flex-end }
+.hudPanel{
+  background:rgba(0,0,0,.55); color:#fff; border:3px solid var(--ink);
+  border-radius:10px; padding:7px 13px; font-size:1.05rem; font-weight:bold;
+  text-shadow:0 2px 0 rgba(0,0,0,.5);
 }
-body[data-theme="light"] .pill{background:rgba(255,255,255,.85)}
-.pill b{color:var(--accent2)}
+#hudMission{ font-size:1.15rem }
+#hudTarget { background:rgba(0,0,0,.68) }
+#hudTarget.done{ background:var(--zone-target); color:var(--ink) }
 
-/* ── Bottom bar: casting lanes / biting message / catch sequence ──────────── */
-#bottombar{
-  flex:0 0 auto; background:var(--panel); border-top:3px solid var(--line);
-  padding:.35rem .6rem; display:flex; flex-direction:column; gap:.3rem; min-height:5rem;
+/* ── Hold-to-pause ring ─────────────────────────────────────────────────── */
+#holdRing{
+  position:absolute; right:22px; bottom:22px; z-index:18;
+  width:92px; height:92px; opacity:0; transition:opacity .15s ease; pointer-events:none;
 }
-/* Author display rules below would otherwise beat the UA [hidden]{display:none}
-   default (same pitfall BENNYSBALLISTA's own `.lane[hidden]` guards against) —
-   these three sections are mutually exclusive, toggled by updateBottomBar(). */
-#castLanes[hidden], #bitingBar[hidden], #catchBar[hidden]{display:none}
-.lane{display:flex; align-items:center; gap:.4rem}
-.laneLabel{
-  flex:0 0 5.2rem; font-size:.9rem; font-weight:800; color:var(--dim);
-  text-transform:uppercase; letter-spacing:.06em;
-}
-.lane.locked .laneLabel{color:var(--good)}
-.chips{display:flex; gap:.35rem; flex-wrap:wrap; flex:1 1 auto}
-.chip{
-  background:var(--panel2); border:2px solid var(--line); border-radius:.55rem;
-  color:var(--text); font:inherit; font-size:1rem; font-weight:700;
-  min-height:2.9rem; padding:.35rem .75rem; cursor:pointer; position:relative;
-}
-.chip .sub{display:block; font-size:.72rem; font-weight:600; color:var(--dim)}
-.chip.picked{border-color:var(--good); background:color-mix(in srgb, var(--good) 18%, var(--panel2))}
-.chip.focus{
-  border-color:var(--focus); background:var(--focus); color:#1a1400;
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
-}
-.chip.focus .sub{color:#3a2f00}
-.chip:disabled{opacity:.4; cursor:default}
-.chip.act{font-weight:800; border-color:var(--accent); color:var(--accent); flex:0 0 auto}
-.lane.active .chip.act{background:var(--accent); color:#0d1220; border-color:var(--accent)}
-
-/* ── Power meter: the charged cast ───────────────────────────────────────────
-   Same meter as BENNYSBALLISTA's, deliberately — that game is the reference
-   implementation for hold-to-charge and a second dialect would only be a
-   second thing to learn. See AGENTS.md, "Hold-to-charge and hold-to-sweep".
-   ────────────────────────────────────────────────────────────────────────── */
-.meter{
-  flex:1 1 auto; position:relative; height:2.9rem; border-radius:.55rem;
-  background:var(--panel2); border:2px solid var(--line); overflow:hidden;
-}
-.meter .fill{
-  position:absolute; inset:0 auto 0 0; width:0%;
-  background:linear-gradient(90deg, var(--accent2), var(--accent));
-  transition:none;                      /* the loop already moves it every frame */
-}
-.meter .mval{
+#holdRing.on{ opacity:1 }
+#holdRing svg{ width:100%; height:100%; transform:rotate(-90deg) }
+#holdRing .bg  { fill:none; stroke:rgba(0,0,0,.45); stroke-width:9 }
+#holdRing .fill{ fill:none; stroke:var(--focus); stroke-width:9; stroke-linecap:round;
+                 stroke-dasharray:251.3; stroke-dashoffset:251.3 }
+#holdRingLabel{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  gap:.5rem; font-weight:800; font-size:1.05rem; color:var(--text);
-  text-shadow:0 1px 3px rgba(0,0,0,.65);
+  font-size:.8rem; font-weight:bold; color:#fff; text-shadow:0 2px 4px rgba(0,0,0,.8);
 }
-.meter .mval .msub{font-weight:700; font-size:.85rem; opacity:.9}
-.meter.dim .fill{opacity:.35}
-.meter.dim .mval{color:var(--dim)}
-.lane.active .meter{border-color:var(--focus)}
-.lane.moving .meter{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent)}
-.lane.locked .meter{border-color:var(--good)}
-/* Ticks every 10% so the meter reads as a scale, not just a bar. */
-.meter::after{
-  content:''; position:absolute; inset:0; pointer-events:none;
-  background:repeating-linear-gradient(90deg,
-    transparent 0 calc(10% - 2px), rgba(255,255,255,.18) calc(10% - 2px) 10%);
+
+/* -- Pulling in to fish --------------------------------------------------
+   The boat never stops by itself: you lean toward a shoal and HOLD. That is a
+   good rule, but it was invisible - the boat simply stopped one day and
+   started fishing. This says it out loud while it is happening, and the bar
+   says how much longer.
+   ------------------------------------------------------------------------ */
+#pullIn{
+  position:absolute; left:50%; bottom:118px; transform:translateX(-50%);
+  z-index:17; display:none; text-align:center; pointer-events:none;
+  padding:14px 30px; border-radius:18px;
+  border:5px solid var(--ink); background:var(--paper); color:var(--ink);
+  box-shadow:0 8px 0 rgba(0,0,0,.3);
 }
-/* Where each depth band starts on the meter, so "how hard do I have to throw
-   to reach the weeds" is a thing you can see, not a thing you memorise. */
-.meter .bandmark{
-  position:absolute; top:0; bottom:0; width:3px; background:var(--text); opacity:.45;
+#pullIn.on{ display:block }
+#pullInText{ font-size:1.5rem; font-weight:bold; line-height:1.1 }
+#pullInWho{ font-size:1.05rem; opacity:.85; margin-top:3px }
+#pullInHint{ font-size:.92rem; opacity:.7; margin-top:7px }
+#pullInBar{
+  margin-top:10px; width:250px; height:16px; border-radius:9px;
+  border:3px solid var(--ink); background:rgba(0,0,0,.14); overflow:hidden;
 }
-.meter .reachcap{
-  position:absolute; top:0; bottom:0; right:0; background:rgba(0,0,0,.45);
-  border-left:2px dashed var(--bad);
+#pullInBar i{
+  display:block; height:100%; width:0%;
+  background:var(--focus); transition:width .08s linear;
 }
-body[data-theme="light"] .meter .reachcap{background:rgba(0,0,0,.18)}
+/* Nearly there. */
+#pullIn.almost{ background:var(--focus) }
+#pullIn.almost #pullInBar i{ background:var(--good, #3f8f4f) }
+/* Decided. Nothing is being asked any more, so it steps back: no bar to
+   watch, no colour shouting, just a quiet note that the boat is on its way. */
+#pullIn.going{ background:var(--paper); opacity:.92 }
+#pullIn.going #pullInBar{ display:none }
 
+/* ── The scan frame ───────────────────────────────────────────────────────
+   Corner brackets rather than a glow.
 
-#bitingBar{display:flex; align-items:center; justify-content:center; min-height:3.5rem; font-weight:700; color:var(--dim)}
+   A glow was the wrong tool. Bloom around a chunky flat-shaded model has to
+   come from somewhere — an inflated shell gives a rim that is fat on broad
+   faces and pinched at corners, and a sprite behind the object leaks out
+   through every gap in it, between the shop's pilings and straight through
+   the boat's open cockpit. Both read as light landing on random polygons.
 
-#catchBar{display:flex; flex-direction:column; gap:.4rem; align-items:center}
-#catchTitle{font-weight:800; color:var(--accent)}
-#catchSteps{display:flex; gap:.5rem}
-.seqstep{
-  width:3.1rem; height:3.1rem; border-radius:.6rem; border:3px solid var(--line);
-  display:flex; align-items:center; justify-content:center;
-  font-weight:800; font-size:1.3rem; color:#fff;
-}
-.seqstep.red{ background:color-mix(in srgb, var(--seqred) 45%, var(--panel2)); border-color:var(--seqred); }
-.seqstep.blue{ background:color-mix(in srgb, var(--seqblue) 45%, var(--panel2)); border-color:var(--seqblue); }
-.seqstep.current{ box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent); border-color:var(--focus); }
-.seqstep.correct{ opacity:.5 }
-.seqstep.wrong{ opacity:.5; text-decoration:line-through }
-.seqstep.pending{ opacity:.4 }
-#catchHint{font-size:.85rem; color:var(--dim)}
-
-/* ── The catch light ────────────────────────────────────────────────────────
-   The row of Red/Blue squares above is a record of what has happened; THIS is
-   the thing that says what to press. A whole side of the screen fades up and
-   back down like a lamp on a dimmer — blue on the left for Return, red on the
-   right for Space — so the cue is findable without reading anything small, and
-   which side it is on tells Ben which way to turn his head.
-
-   It breathes at CFG.GLOW_PERIOD_S, roughly one lungful, which is far below
-   anything that could read as a flash: this is a lamp, not a strobe, and it
-   carries no deadline of any kind — the step waits as long as it takes. Under
-   prefers-reduced-motion game.js holds it at a steady brightness instead of
-   breathing at all.
+   Brackets have none of that. They are drawn in the UI layer, so they are the
+   same crisp weight on every object at every distance, they never interact
+   with geometry, and they carry the same --focus-on---ink colours as a scanned
+   menu row. They also mark WITHOUT covering: you can still see the thing.
    ────────────────────────────────────────────────────────────────────────── */
-#catchGlow{position:fixed; inset:0; z-index:50; pointer-events:none; display:none}
-#catchGlow.on{display:block}
-.glowSide{
-  position:absolute; top:0; bottom:0; width:42vw;
-  display:flex; align-items:center;
+#scanFrame{
+  position:absolute; z-index:14; display:none; pointer-events:none;
+  /* Glides to the next target rather than blinking there, so the scan reads
+     as one marker moving over the scene. */
+  transition:left .16s ease, top .16s ease, width .16s ease, height .16s ease;
 }
-#glowLeft{left:0;  justify-content:flex-start}
-#glowRight{right:0; justify-content:flex-end}
-/* The breathing lives on its own layer. Opacity on the side would fade the
-   whole subtree with it, and a word that dims to nothing at the bottom of
-   every breath is exactly the thing this was built to stop being. */
-.glowWash{position:absolute; inset:0; opacity:0}
-#glowLeft  .glowWash{background:linear-gradient(to right, var(--seqblue), transparent)}
-#glowRight .glowWash{background:linear-gradient(to left,  var(--seqred),  transparent)}
-.glowLabel{
-  position:relative; opacity:0; padding:0 2.2vw;
-  color:#fff; text-shadow:0 0 6px rgba(0,0,0,.9), 0 2px 14px rgba(0,0,0,.85);
-  font-weight:800; line-height:1.1; text-align:center;
+#scanFrame.on{ display:block }
+#scanFrame i{
+  position:absolute; width:26px; height:26px;
+  border:6px solid var(--focus);
+  /* An ink edge under the bracket so it holds up over pale water and dark
+     timber alike — never colour alone. */
+  filter:drop-shadow(0 0 0 var(--ink)) drop-shadow(2px 2px 0 rgba(0,0,0,.45));
 }
-.glowSide.active .glowLabel{opacity:1}
-.glowLabel .gword{display:block; font-size:clamp(1.6rem,5vw,3.4rem); letter-spacing:.04em}
-.glowLabel .gkey{display:block; font-size:clamp(.9rem,2.2vw,1.5rem); font-weight:700}
-body[data-theme="light"] .glowLabel{color:#0b0d12; text-shadow:0 2px 10px rgba(255,255,255,.8)}
+#scanFrame i:nth-child(1){ left:-6px;  top:-6px;    border-right:none; border-bottom:none; border-radius:10px 0 0 0 }
+#scanFrame i:nth-child(2){ right:-6px; top:-6px;    border-left:none;  border-bottom:none; border-radius:0 10px 0 0 }
+#scanFrame i:nth-child(3){ left:-6px;  bottom:-6px; border-right:none; border-top:none;    border-radius:0 0 0 10px }
+#scanFrame i:nth-child(4){ right:-6px; bottom:-6px; border-left:none;  border-top:none;    border-radius:0 0 10px 0 }
+@keyframes scanBreathe{ 0%,100%{ opacity:1 } 50%{ opacity:.55 } }
+#scanFrame.on i{ animation:scanBreathe 1.5s ease-in-out infinite }
+@media (prefers-reduced-motion: reduce){
+  #scanFrame{ transition:none }
+  #scanFrame.on i{ animation:none }
+}
+body[data-motion="still"] #scanFrame{ transition:none }
+body[data-motion="still"] #scanFrame.on i{ animation:none }
 
-
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-#ftr{
-  flex:0 0 auto; display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;
-  padding:.35rem .7rem; background:var(--panel); border-top:3px solid var(--line);
-  font-size:.85rem; color:var(--dim);
+/* ── World scan: the dock's things are the choices ──────────────────────── */
+#worldLabels{ position:absolute; inset:0; z-index:13; pointer-events:none; display:none }
+#worldLabels.on{ display:block }
+.worldLabel{
+  position:absolute; transform:translate(-50%,-100%);
+  padding:8px 14px; border-radius:12px; white-space:nowrap;
+  border:4px solid var(--ink); background:var(--paper); color:var(--ink);
+  font-size:1.05rem; font-weight:bold; text-align:center;
+  box-shadow:0 5px 0 rgba(0,0,0,.28);
+  opacity:.72; transition:opacity .15s ease, transform .15s ease;
 }
-#ftrMode{font-weight:800; color:var(--accent)}
-#ftrTarget{font-weight:700; color:var(--text)}
-#ftrLegend{margin-left:auto; white-space:nowrap}
-kbd{
-  background:var(--panel2); border:1px solid var(--line); border-radius:.3rem;
-  padding:0 .3rem; font-family:inherit; font-weight:700; color:var(--text);
+.worldLabel .sub{ display:block; font-size:.82em; font-weight:normal; opacity:.75 }
+/* Focus is fill + outline + lift + scale, exactly like a scanned menu row. */
+.worldLabel.focused{
+  opacity:1; background:var(--focus);
+  transform:translate(-50%,-100%) scale(1.05) translateY(-4px);
+  box-shadow:0 0 0 5px var(--ink), 0 9px 0 rgba(0,0,0,.3);
+}
+/* A tail so the plate clearly belongs to the thing under it. */
+.worldLabel::after{
+  content:''; position:absolute; left:50%; bottom:-13px; margin-left:-9px;
+  border:9px solid transparent; border-top-color:var(--ink);
+}
+.worldLabel.focused::after{ border-top-color:var(--ink) }
+
+/* Hung underneath instead: the tail flips to the top and points up at what it
+   names. Used where a plate above would cover the thing itself. */
+.worldLabel.below{ transform:translate(-50%, 0) }
+.worldLabel.below.focused{ transform:translate(-50%, 0) scale(1.05) translateY(4px) }
+.worldLabel.below::after{
+  top:-13px; bottom:auto;
+  border-top-color:transparent; border-bottom-color:var(--ink);
 }
 
-/* ── Overlays (menus, pause, results, help) ─────────────────────────────── */
+/* The objective, as a paper note pinned up in the corner of the sky. Out of
+   the water, clear of the boat and the shop, and legible against the lightest
+   part of the frame. */
+#dockHud{
+  position:absolute; left:26px; top:24px; z-index:12;
+  display:none; text-align:left;
+  /* It is a choice you can click, not just a readout. */
+  pointer-events:auto; cursor:pointer;
+  width:min(30vw, 300px); padding:16px 20px 18px;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(101deg, rgba(180,150,110,.05) 0 2px, transparent 2px 7px),
+    linear-gradient(168deg, var(--paper) 0%, var(--paper2) 100%);
+  border:4px solid var(--ink); border-radius:4px;
+  box-shadow:0 7px 0 rgba(0,0,0,.22), 0 16px 28px rgba(0,0,0,.35);
+  transform:rotate(-1.4deg);
+}
+#dockHud.on{ display:block }
+/* It takes its turn in the scan like anything else you can pick, so it gets
+   the same unmistakable focus state as a menu row. */
+#dockHud.focused{
+  background:var(--focus);
+  box-shadow:0 0 0 5px var(--ink), 0 11px 0 rgba(0,0,0,.3);
+  transform:rotate(-1.4deg) scale(1.04) translateY(-4px);
+}
+#dockHud.focused #dockMission, #dockHud.focused #dockGear{ color:var(--ink) }
+/* A strip of tape holding it up. */
+#dockHud::before{
+  content:''; position:absolute; top:-12px; left:50%; margin-left:-38px;
+  width:76px; height:24px; transform:rotate(-3deg);
+  background:rgba(255,255,255,.45); border:2px solid rgba(0,0,0,.16);
+}
+body[data-theme="contrast"] #dockHud{ background:var(--paper); box-shadow:none }
+body[data-theme="contrast"] #dockHud::before{ display:none }
+#dockMission{
+  font-size:.85rem; font-weight:bold; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink2);
+}
+#dockTask{ font-size:1.3rem; font-weight:bold; margin:4px 0 8px; line-height:1.2 }
+#dockGear, #dockMoney{ font-size:.92rem; color:var(--ink2); line-height:1.5 }
+
+/* ── Fishing by hand ──────────────────────────────────────────────────────
+   Big, obvious, thumb-sized. They only ever show the beat you are actually
+   on, so there is never a row of buttons to read.
+   ────────────────────────────────────────────────────────────────────────── */
+#touchControls{
+  position:absolute; left:0; right:0; bottom:22px; z-index:16;
+  display:flex; gap:12px; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+.tcBtn{
+  display:none; pointer-events:auto; cursor:pointer; user-select:none;
+  padding:16px 26px; border-radius:16px; text-align:center;
+  border:5px solid var(--ink); background:var(--paper); color:var(--ink);
+  font-size:1.25rem; font-weight:bold; line-height:1.1;
+  box-shadow:0 7px 0 rgba(0,0,0,.28);
+  transition:transform .08s ease, box-shadow .08s ease, background .12s ease;
+}
+.tcBtn.on{ display:block }
+.tcBtn:active, .tcBtn.held{
+  background:var(--focus);
+  transform:translateY(4px);
+  box-shadow:0 3px 0 rgba(0,0,0,.28);
+}
+/* These take their turn in the scan too, so they need the same focus state
+   every other choice has. Without this rule "Troll On" was scanned to, spoken,
+   and left looking exactly as it had a moment before. */
+.tcBtn.focused{
+  background:var(--focus); color:var(--ink);
+  box-shadow:0 0 0 5px var(--ink), 0 8px 0 rgba(0,0,0,.3);
+  transform:translateY(-3px) scale(1.05);
+}
+.tcArrow{ font-size:1.9rem; padding:12px 20px }
+.tcSide{ font-size:1.05rem; padding:12px 18px; opacity:.9 }
+#tcHook{ background:var(--zone-target); font-size:1.6rem }
+@media (max-width: 760px){
+  .tcBtn{ font-size:1.05rem; padding:13px 16px }
+  .tcArrow{ font-size:1.5rem; padding:10px 13px }
+}
+
+/* ── Pause button (mouse / touch; outside the scan order) ───────────────── */
+#pauseBtn{
+  position:absolute; left:18px; bottom:18px; z-index:18; display:none;
+  padding:10px 16px; border-radius:12px; cursor:pointer; text-align:center;
+  background:rgba(0,0,0,.6); color:#fff; border:3px solid var(--ink);
+  font-size:.95rem; font-weight:bold; line-height:1.2;
+}
+#pauseBtn.on{ display:block }
+/* It takes its turn in the scan like any other choice, so it needs the same
+   unmistakable focus state the menu rows have. */
+#pauseBtn.focused{
+  background:var(--focus); color:var(--ink);
+  box-shadow:0 0 0 5px var(--ink), 0 8px 0 rgba(0,0,0,.3);
+  transform:scale(1.1) translateY(-3px);
+}
+
+/* ── Overlay (every menu and card shares one panel) ─────────────────────── */
 #overlay{
-  position:absolute; inset:0; z-index:10;
-  display:none; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.82); padding:1rem; overflow:auto;
+  position:absolute; inset:0; z-index:40; display:none;
+  align-items:center; justify-content:center; padding:20px;
+  /* No backdrop blur: it softens the whole 3D scene behind the card, which
+     reads as a rendering fault rather than depth, and costs a full-screen
+     pass every frame. A plain dim does the job. */
+  background:rgba(10,14,18,.45);
 }
-body[data-theme="light"] #overlay{background:rgba(230,236,245,.93)}
-#overlay.on{display:flex}
+#overlay.on{ display:flex }
+/* Dock-side screens keep the 3D scene visible: the card sits to one side
+   instead of covering the shop and the boat it is talking about. */
+#overlay.side{ justify-content:flex-start; padding-left:min(6vw,64px); background:transparent }
+#overlay.side #panel{ width:min(52vw, 560px) }
+@media (max-width: 900px){
+  #overlay.side{ justify-content:center; padding-left:20px }
+  #overlay.side #panel{ width:min(94vw,720px) }
+}
+
+/* Named #panel, not #overlayCard, so FishMaster I's catch-card background
+   rules port across verbatim. Those are all #panel-prefixed on purpose: the
+   `background` shorthand as an ID selector beats same-property class rules
+   regardless of source order. (Trap 7 — keep it that way.) */
 #panel{
-  background:var(--panel); border:3px solid var(--line); border-radius:1rem;
-  padding:1rem 1.1rem; width:min(46rem,100%); max-height:100%; overflow:auto;
+  width:min(94vw, 720px); max-height:92vh; overflow-y:auto;
+  padding:26px 30px; border-radius:18px; text-align:center;
+  background:
+    repeating-linear-gradient(102deg, rgba(180,150,110,.045) 0 2px, transparent 2px 7px),
+    linear-gradient(168deg, var(--paper) 0%, var(--paper2) 100%);
+  border:5px solid var(--ink);
+  box-shadow:0 10px 0 rgba(0,0,0,.22), 0 22px 40px rgba(0,0,0,.45);
+  color:var(--ink); position:relative;
 }
-#panelTitle{font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:.15rem}
-#panelSub{font-size:.95rem; color:var(--dim); margin-bottom:.8rem; line-height:1.45}
-#panelList{display:flex; flex-direction:column; gap:.45rem}
-.mi{
-  display:flex; align-items:center; gap:.6rem; text-align:left;
-  background:var(--panel2); border:2px solid var(--line); border-radius:.6rem;
-  color:var(--text); font:inherit; font-size:1.1rem; font-weight:700;
-  min-height:3.4rem; padding:.5rem .9rem; cursor:pointer; width:100%;
+body[data-theme="contrast"] #panel{ background:var(--paper); box-shadow:none }
+
+/* Sticky-tape corners. Suppressed in High Contrast and behind a card photo. */
+#panel::before, #panel::after{
+  content:''; position:absolute; top:-13px; width:74px; height:26px;
+  background:rgba(255,255,255,.42); border:2px solid rgba(0,0,0,.18);
+  transform:rotate(-6deg);
 }
-.mi .mval{margin-left:auto; color:var(--accent2); font-weight:800}
-.mi.focus{
-  border-color:var(--focus); background:var(--focus); color:#1a1400;
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 45%, transparent);
+#panel::before{ left:24px }
+#panel::after { right:24px; transform:rotate(5deg) }
+body[data-theme="contrast"] #panel::before,
+body[data-theme="contrast"] #panel::after,
+#panel.panel-catch::before, #panel.panel-catch::after{ display:none }
+
+#panelArt  { font-size:3.2rem; line-height:1; margin-bottom:6px }
+#panelTitle{ font-size:clamp(1.5rem,4.4vw,2.3rem); margin-bottom:6px; line-height:1.15 }
+#panelSub  { font-size:1.05rem; color:var(--ink2); margin-bottom:14px; line-height:1.4 }
+#panelStats{ font-size:1.05rem; margin-top:14px; line-height:1.5 }
+#panelHint { font-size:.9rem; color:var(--ink2); margin-top:16px }
+
+/* ── Scan list ──────────────────────────────────────────────────────────── */
+#panelMenu{ display:flex; flex-direction:column; gap:10px; margin:6px 0 }
+.menuItem{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 18px; border-radius:12px; cursor:pointer;
+  border:4px solid var(--ink); background:var(--paper);
+  font-size:1.2rem; font-weight:bold; text-align:left;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
-.mi.focus .mval{color:#3a2f00}
-.mi.dim{opacity:.55}
-.mi.dim.focus{opacity:1}
-#panelNote{margin-top:.7rem; font-size:.85rem; color:var(--dim); line-height:1.5}
-#panelNote b{color:var(--text)}
-
-/* Small item portrait in a shop row — the rod rows' tighter crop on the
-   handle/reel (rodIconSrc in game.js) and the secret bait's bottle art alike,
-   both checked-in art reused at this size, not a separate icon set. */
-.shopIcon{width:2.4rem; height:2.4rem; object-fit:contain; vertical-align:middle; margin-right:.5rem}
-body[data-theme="contrast"] .shopIcon{filter: grayscale(1) contrast(1.6) brightness(1.1)}
-
-/* ── Catch-reveal card ───────────────────────────────────────────────────
-   Large on purpose — this is the one payoff moment after a catch, and it
-   needs to read clearly for a low-vision player, not just a decorative
-   flourish. .catchArt is real painted art (checked-in fish/junk/valuable
-   PNGs); the emoji fallback below it only ever fires for the one id that
-   still has no art (the secret Dingus) or a future id whose data ships
-   before its art does — same degradation the Dingus reveal itself uses. */
-.catchCard{text-align:center; padding:.5rem 0 1rem}
-.catchArt{display:block; max-width:min(70%,18rem); max-height:14rem; margin:0 auto .6rem; object-fit:contain}
-.catchArtPlaceholder{font-size:5rem; line-height:1; margin-bottom:.6rem}
-.catchStat{font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:.3rem}
-.catchNote{font-size:1rem; color:var(--dim); margin-bottom:.3rem}
-.catchQuip{font-size:1rem; font-style:italic; color:var(--dim)}
-
-/* High Contrast flattens the painted art the same way art.js flattens the
-   pond (README: "black water and white rock so the shoreline still reads as
-   a silhouette") — grayscale strips the soft watercolour hue variation a
-   low-vision player can't rely on, and the heavy contrast/brightness push
-   turns wash gradients into something closer to bold, legible tone bands.
-   Scoped to just the art, not the card text, which already inherits this
-   profile's own high-contrast colour variables. */
-body[data-theme="contrast"] .catchArt,
-body[data-theme="contrast"] .catchArtPlaceholder{
-  filter: grayscale(1) contrast(1.6) brightness(1.1);
+.menuItem .val{ font-weight:normal; color:var(--ink2); font-size:1rem }
+.menuItem.locked{ opacity:.4; cursor:default }
+/* Focus is fill + outline + lift + scale — unmistakable, and never colour alone. */
+.menuItem.focused{
+  background:var(--focus); transform:scale(1.045) translateY(-2px);
+  box-shadow:0 0 0 5px var(--ink), 0 8px 0 rgba(0,0,0,.3);
 }
+body[data-theme="contrast"] .menuItem.focused{ background:var(--focus); color:#000 }
 
-/* Field-report look for the catch/rod/Dingus-reveal cards specifically —
-   game.js's renderOverlay toggles .panel-catch on #panel only while G.overlay
-   is 'catchreveal', 'rodreveal', or 'dingusreveal', so every other menu keeps
-   the regular UI face. Special Elite has one weight; letter-spacing does the
-   "typed" lift that font-weight can't here. */
-.panel-catch #panelTitle{font-family:'Special Elite','Courier New',monospace; letter-spacing:.03em}
+/* ══════════════════════════════════════════════════════════════════════════
+   CATCH / ROD REVEAL CARDS — ported from FishMaster I.
+   Typewriter face for the reveal only: a fish tale reads like a field report.
+   No @import — ground rule §2.6 forbids CDN requests, so Courier New is the
+   offline typewriter. Special Elite is used if the system happens to have it.
+   ══════════════════════════════════════════════════════════════════════════ */
+.catchArt{ display:block; max-width:min(70%,18rem); max-height:14rem; margin:0 auto .6rem; object-fit:contain }
+.catchArtPlaceholder{ font-size:5rem; line-height:1; margin-bottom:.6rem }
+.catchStat{ font-size:1.15rem; margin-bottom:.2rem }
+.catchNote{ font-size:1rem; color:var(--ink2); margin-bottom:.3rem }
+/* Gear on the mission note: a picture each for the rod and the bait, so what
+   you are carrying can be recognised without reading. */
+.gearRow{ display:flex; gap:14px; justify-content:center; margin-top:4px }
+.gearCell{
+  flex:1 1 0; min-width:0; padding:10px 8px 12px;
+  border:3px solid var(--ink); border-radius:12px; background:var(--paper);
+}
+.gearArt{ display:block; max-width:100%; max-height:5.2rem; margin:0 auto .4rem; object-fit:contain }
+.gearEmoji{ display:block; font-size:3.4rem; line-height:1; margin-bottom:.3rem }
+.gearName{ font-weight:bold; font-size:1.02rem; line-height:1.2 }
+.gearNote{ font-size:.82rem; color:var(--ink2); margin-top:2px; line-height:1.3 }
+body[data-theme="contrast"] .gearArt{ filter:grayscale(1) contrast(1.6) }
+
+.needLine{ font-size:1.25rem; font-weight:bold; line-height:1.3 }
+.needCount{
+  font-size:1.6rem; font-weight:bold; margin:6px 0 10px;
+  color:var(--ink);
+}
+.needTip{ font-size:1rem; font-style:italic; color:var(--ink2); line-height:1.45 }
+
+.catchQuip{ font-size:1rem; font-style:italic; color:var(--ink2) }
+
+.panel-catch #panelTitle{ font-family:'Special Elite','Courier New',monospace; letter-spacing:.03em }
 .panel-catch .catchStat, .panel-catch .catchNote, .panel-catch .catchQuip{
   font-family:'Special Elite','Courier New',monospace; letter-spacing:.02em;
 }
 
-/* Catch-card backgrounds — a player preference (Settings > Catch Card Style,
-   game.js's cycleCardStyle()), not theme-driven, so unlike everything else in
-   this file the text colours here are fixed rather than var(--text) etc.:
-   a photo background can't be relied on to contrast with whichever of the
-   four colour profiles happens to be active. background-size:cover fills
-   #panel's own padded box; its border-radius + overflow:auto already clip it
-   to the rounded corners. The `#panel` prefix on every rule below is load-
-   bearing, not decoration — #panel's own `background:var(--panel)` shorthand
-   (an ID selector) otherwise wins over a same-property class selector
-   regardless of source order, and silently resets background-image back out. */
-/* The plaque photo's own brass frame runs bright gold along its outer edge.
-   #panel's aspect ratio isn't fixed (its height is just whatever the card's
-   content needs), so background-size:cover crops that image differently per
-   panel shape — on a panel narrower/taller than the plaque's own 4:3 (a
-   mobile-width window, mainly) cover stops cropping the frame at all and
-   crops the sides instead, sliding the bright gold bar in behind #panelTitle
-   and #panelNote instead of past the walnut field they're designed to sit
-   on. #ffcf6b-on-gold there is close to unreadable. A dark text-shadow halo
-   — the same fix .mval (above) already uses for text over an unpredictable
-   background — keeps every plaque text colour legible against the frame
-   without weakening it against the walnut it usually sits on. */
-#panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center; }
-#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
-#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
+/* Card-stock backgrounds (Settings → Catch Card Style). #panel-prefixed. */
+#panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center }
+#panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
+#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
 #panel.panel-catch.cardbg-plaque .catchNote,
 #panel.panel-catch.cardbg-plaque .catchQuip,
-#panel.panel-catch.cardbg-plaque #panelNote{ color:#e2d8bc; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9); }
-#panel.panel-catch.cardbg-plaque #panelNote b{ color:#f0e6c8 }
+#panel.panel-catch.cardbg-plaque #panelSub{ color:#e2d8bc; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
 
-#panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center; }
+#panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center }
 #panel.panel-catch.cardbg-certificate #panelTitle{ color:#8a3b12 }
 #panel.panel-catch.cardbg-certificate .catchStat{ color:#2a2013 }
 #panel.panel-catch.cardbg-certificate .catchNote,
 #panel.panel-catch.cardbg-certificate .catchQuip,
-#panel.panel-catch.cardbg-certificate #panelNote{ color:#4a3f28 }
-#panel.panel-catch.cardbg-certificate #panelNote b{ color:#2a2013 }
+#panel.panel-catch.cardbg-certificate #panelSub{ color:#4a3f28 }
 
-/* Neither background is a solid fill with a heavy outline, so neither can be
-   flattened into High Contrast's rules the way the pond or a catch photo can
-   (see the .catchArt filter above) — suppressed outright back to the profile's
-   own plain black panel and its own high-contrast text colours. `#panel` kept
-   in every selector here too, so this beats the same-specificity rules above
-   regardless of source order — see the note there. */
+/* High Contrast suppresses the card photos outright and keeps the art's
+   grayscale+contrast filter, so the fish still reads as a silhouette. */
+body[data-theme="contrast"] .catchArt,
+body[data-theme="contrast"] .catchArtPlaceholder{ filter:grayscale(1) contrast(1.6) }
 body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque,
 body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate{
-  background-image:none;
+  background-image:none; background-color:var(--panel);
 }
 body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelTitle,
 body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelTitle{ color:var(--accent) }
@@ -399,96 +767,176 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchNote,
 body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchNote,
 body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque .catchQuip,
 body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate .catchQuip,
-body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote,
-body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote{ color:var(--dim) }
-body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelNote b,
-body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelNote b{ color:var(--text) }
+body[data-theme="contrast"] #panel.panel-catch.cardbg-plaque #panelSub,
+body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ color:var(--dim) }
 
-#sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+/* ── Reduced motion: no shimmer, no breathing, no pop ───────────────────── */
+@media (prefers-reduced-motion: reduce){
+  #biteWash.on{ animation:none; opacity:.34 }
+  #bigMsg.on{ animation:none }
+  #loading .spinner{ animation:none }
+  .menuItem{ transition:none }
+}
 
-@media (max-width:620px){
-  #ttl{font-size:1rem}
-  .laneLabel{flex-basis:4rem; font-size:.78rem}
-  #ftrLegend{display:none}
+@media (max-width: 760px){
+  #panel{ padding:20px 18px }
+  .menuItem{ font-size:1.05rem; padding:12px 14px }
 }
 </style>
 </head>
 <body data-theme="ben">
-
 <div id="app">
-  <header id="hdr">
-    <div id="ttl">BENNY'S <span>FISHMASTER</span></div>
-    <div id="hdrBtns">
-      <button class="hbtn" id="btnHelp" title="How to play">? Help</button>
-      <button class="hbtn" id="btnSet"  title="Settings">Settings</button>
-      <button class="hbtn" id="btnExit" title="Exit to hub">Exit</button>
-    </div>
-  </header>
+  <div id="canvasWrap"></div>
 
-  <main id="stage">
-    <div id="cvWrap">
-      <canvas id="cv" width="1280" height="720" aria-label="Lake view"></canvas>
-      <div id="hud">
-        <div class="pill" id="pLake">Lake</div>
-        <div class="pill" id="pMoney">Money <b>$0</b></div>
-        <div class="pill" id="pObjective"></div>
-        <div class="pill" id="pGear"></div>
+  <!-- Screen-edge colour glow + the bite wash -->
+  <!-- Fish spotted, this way. One per side. -->
+  <div id="spotLeft" class="spotArrow">
+    <div class="spotChevron">◀</div>
+    <img class="spotFish" alt="">
+    <div class="spotName"></div>
+    <div class="spotWord">Fish spotted!</div>
+    <div class="spotBar"><i></i></div>
+  </div>
+  <div id="spotRight" class="spotArrow">
+    <div class="spotChevron">▶</div>
+    <img class="spotFish" alt="">
+    <div class="spotName"></div>
+    <div class="spotWord">Fish spotted!</div>
+    <div class="spotBar"><i></i></div>
+  </div>
+  <div id="biteWash"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hudTop">
+      <div id="hudLeft">
+        <div class="hudPanel" id="hudMission">Mission 1</div>
+        <div class="hudPanel" id="hudTarget">Sunfish 0 / 3</div>
+        <div class="hudPanel" id="hudHint" style="display:none"></div>
+      </div>
+      <div id="hudRight">
+        <div class="hudPanel" id="hudRod">Starter Rod</div>
+        <div class="hudPanel" id="hudMoney">$0</div>
       </div>
     </div>
+  </div>
 
-    <div id="bottombar">
-      <div id="castLanes">
-        <div class="lane" id="laneDirection"><span class="laneLabel">Direction</span><div class="chips" id="chipsDirection"></div></div>
-        <div class="lane" id="lanePower">
-          <span class="laneLabel">Power</span>
-          <div class="meter" id="meterPower" role="progressbar" aria-label="Cast power"
-               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fillPower"></div><div id="bandMarks"></div><span class="mval" id="valPower">0%</span></div>
-          <button class="chip act" id="btnCast" type="button">Cast</button>
-        </div>
-      </div>
-      <div id="bitingBar" hidden><span id="bitingMsg"></span></div>
-      <div id="catchBar" hidden>
-        <div id="catchTitle"></div>
-        <div id="catchSteps"></div>
-        <div id="catchHint">Blue light on the left = Return · Red light on the right = Space · no rush</div>
-      </div>
+
+  <!-- Big cue + centre message -->
+  <div id="cue">
+    <div id="cueArrow">⬅</div>
+    <div id="cueText">LEFT</div>
+    <div id="cueSub"></div>
+  </div>
+  <div id="bigMsg"></div>
+
+  <!-- The reel: one bar, filling while held -->
+  <div id="reel">
+    <div id="reelPrompt">PRESS AND HOLD</div>
+    <div id="reelProgressOuter"><div id="reelProgressBar"></div></div>
+    <div id="reelStrainOuter"><div id="reelStrainBar"></div></div>
+  </div>
+
+  <!-- A wash over everything: the take landing, or the line parting -->
+  <div id="flash"></div>
+
+  <!-- The aimer: a dial showing where the cast is pointed -->
+
+  <!-- The power meter. Stops dead at full, and casts by itself. -->
+  <div id="charge">
+    <div id="chargeLabel">OPEN WATER</div>
+    <div id="chargeOuter"><div id="chargeBar"></div></div>
+    <div class="castHint">Hold to push it out &bull; let go to cast</div>
+  </div>
+
+  <!-- Where the boat sits across the lane -->
+  <div id="steerBar"><div id="steerPip"></div></div>
+
+  <!-- Hold-to-pause ring -->
+  <div id="holdRing">
+    <svg viewBox="0 0 92 92">
+      <circle class="bg"   cx="46" cy="46" r="40"></circle>
+      <circle class="fill" cx="46" cy="46" r="40"></circle>
+    </svg>
+    <div id="holdRingLabel">Pause</div>
+  </div>
+
+  <!-- Name plates for the things you can scan to at the dock. They are DOM,
+       not 3D, so the text stays crisp and takes the theme like every other
+       label in the game. -->
+  <!-- The one thing in the whole game that says "this is what you are on".
+       It sits on 3D objects and on buttons alike, so scanning looks the same
+       wherever it happens to be. -->
+  <!-- Turning in to fish takes a moment of holding, and nothing said so.
+       This is that moment made obvious: what you are pulling in on, and how
+       much longer to hold it. -->
+  <div id="pullIn">
+    <div id="pullInText">Pulling in to fish</div>
+    <div id="pullInWho"></div>
+    <div id="pullInBar"><i></i></div>
+    <div id="pullInHint"></div>
+  </div>
+
+  <div id="scanFrame"><i></i><i></i><i></i><i></i></div>
+
+  <div id="worldLabels"></div>
+
+  <!-- What you need to know while standing on the dock, without a menu -->
+  <div id="dockHud">
+    <div id="dockMission">Mission 1</div>
+    <div id="dockTask">Catch 3 Sunfish</div>
+    <div id="dockGear">Starter Rod • Plain Worm</div>
+    <div id="dockMoney">$0</div>
+  </div>
+
+  <!-- Fishing by hand. These carry the same three beats the switches do —
+       aim, take the spot, push the cast out — plus hooking and reeling, so a
+       mouse or a finger can play the whole game without a switch. -->
+  <div id="touchControls">
+    <div class="tcBtn tcArrow" id="tcAimL" data-act="aimL">◀</div>
+    <div class="tcBtn tcMain"  id="tcLock" data-act="lock">Take the spot</div>
+    <div class="tcBtn tcArrow" id="tcAimR" data-act="aimR">▶</div>
+    <div class="tcBtn tcMain"  id="tcCast" data-act="cast">Hold to cast</div>
+    <div class="tcBtn tcMain"  id="tcHook" data-act="hook">Hook it!</div>
+    <div class="tcBtn tcMain"  id="tcReel" data-act="reel">Reel</div>
+    <div class="tcBtn tcSide"  id="tcTroll" data-act="troll">Troll on</div>
+  </div>
+
+  <div id="pauseBtn">⏸<br>Pause</div>
+
+  <!-- Every menu and card shares this one panel -->
+  <div id="overlay">
+    <div id="panel">
+      <div id="panelArt"></div>
+      <h2  id="panelTitle">Benny's FishMaster</h2>
+      <p   id="panelSub"></p>
+      <div id="panelMenu"></div>
+      <div id="panelStats"></div>
+      <p   id="panelHint"><strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select</p>
     </div>
+  </div>
 
-    <div id="overlay">
-      <div id="panel">
-        <div id="panelTitle"></div>
-        <div id="panelSub"></div>
-        <div id="panelList"></div>
-        <div id="panelNote"></div>
-      </div>
-    </div>
-  </main>
-
-  <footer id="ftr">
-    <span id="ftrMode">Menu</span>
-    <span id="ftrTarget"></span>
-    <span id="ftrLegend"><kbd>Space</kbd> next / hold to charge &nbsp;·&nbsp; <kbd>Return</kbd> select or cast &nbsp;·&nbsp; <kbd>Return hold</kbd> back / menu</span>
-  </footer>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Filling the lake&hellip;</div>
+  </div>
 </div>
 
-<!-- The catch light. Outside #app on purpose: it is meant to wash the whole
-     window, and it sits below #overlay's own stacking context so opening the
-     pause menu is never fought over by a lamp. game.js only ever turns it on
-     during the catch sequence. -->
-<div id="catchGlow" aria-hidden="true">
-  <div class="glowSide" id="glowLeft"><div class="glowWash" id="washLeft"></div><div class="glowLabel"><span class="gword">BLUE</span><span class="gkey">Press Return</span></div></div>
-  <div class="glowSide" id="glowRight"><div class="glowWash" id="washRight"></div><div class="glowLabel"><span class="gword">RED</span><span class="gkey">Press Space</span></div></div>
-</div>
-
-<div id="sr" aria-live="polite" role="status"></div>
-
+<!-- Hub-shared managers: scan speed, auto-scan, TTS and voice all come from
+     the hub. This game adds no duplicate options. (Ground rule §2.5) -->
 <script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
-<script src="js/data.js"></script>
-<script src="js/lakegen.js"></script>
+
+<script src="js/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
 <script src="js/art.js"></script>
+<script src="js/world.js"></script>
+<script src="js/data.js"></script>
 <script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
