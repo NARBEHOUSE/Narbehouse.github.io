@@ -1672,16 +1672,28 @@ RT.game = (function () {
   function ownsBait(id) { return (save.baits || []).indexOf(id) >= 0; }
 
   /**
-   * The lure on the hook.
+   * The lure on the hook: whichever one you own that this job's fish actually
+   * go for. Failing that the job's own named lure, and failing that the plain
+   * worm that came with the boat.
    *
-   * The job's own lure if it has been bought; failing that, whichever owned
-   * lure this job's fish actually go for; failing that, the plain worm that
-   * came with the boat. A mission NAMES the lure it was built around - that
-   * is a thing to go and buy, not a thing to be handed.
+   * The suitability test USED to come second, after "the job's own lure if it
+   * has been bought". That branch is unreachable in practice — loadSave()
+   * hands you the current mission's lure if you are missing it — so the lure
+   * was always the one the mission was named after, and the rule described
+   * here never ran.
+   *
+   * That mattered because ten of the twenty-seven species missions name a lure
+   * with no bias for their own target, and biteWeightedFishPool() reads a
+   * missing bias as 0.45 — it tips the odds AWAY from the fish you were asked
+   * to catch. Mission 3 is the plain case: catch three crappie, on the
+   * nightcrawler, which does not list crappie; the crappie lure (wax worm) is
+   * sold in the shop that same visit and could not get onto the hook.
+   *
+   * A lure you own and paid for is now used when it suits the job better,
+   * which is the whole reason the shop sells it. Where the named lure IS the
+   * best for the target it still wins, unchanged.
    */
   function bestBaitFor(m) {
-    const want = m && m.baitId;
-    if (want && ownsBait(want)) return baitById(want);
     const target = m && m.target && m.target.speciesId;
     const owned = (save.baits || ['plainworm']).map(baitById).filter(Boolean);
     if (target) {
@@ -1690,6 +1702,11 @@ RT.game = (function () {
         return suited.sort((a, b) => b.biasTable[target] - a.biasTable[target])[0];
       }
     }
+    /* No owned lure names this fish — or the job has no one species to name
+       (a weight target). The lure the job was built around is the best guess
+       left. */
+    const want = m && m.baitId;
+    if (want && ownsBait(want)) return baitById(want);
     return owned[owned.length - 1] || baitById('plainworm');
   }
 
@@ -1715,7 +1732,14 @@ RT.game = (function () {
       missionN: m.n, missionText: m.text, free: !!m.free,
       target: targetProgressText(m, save.progressValue),
       targetDone: done,
-      rodName: rodById(m.rodId).name,
+      /* The rod in your hands, not the one the job is named after.
+         `m.rodId` is what the mission was BALANCED around — a target to reach,
+         not proof you own it. A job can be handed in without buying its rod
+         (turnInState.canTurnIn), so a player who could not afford the
+         CastMaster started mission 9 being told they were holding one while
+         they fished with the starter. The dock card has always used bestRod();
+         this is the same answer, on the water. */
+      rodName: bestRod().name,
       baitName: equippedBait().name,
       gear: ownedGear(),
       money: save.money,
@@ -2852,6 +2876,26 @@ RT.game = (function () {
 
   const Scene = (function () {
     let sc = null, cam = null, rend = null;
+    /**
+     * How deep the boat floats, in hull-local units.
+     *
+     * It used to be placed 0.30 ABOVE the water, which put the whole hull in
+     * the air: the keel sits at local y≈0.02, so the boat rested on the
+     * surface like a toy in a bath rather than displacing anything.
+     *
+     * The hull's boot stripe (station fractions 0.40–0.53) says where the
+     * waterline is meant to be, which would be about 1.0. What stops her going
+     * that deep is the inside of the boat, not the outside: the bilge floor in
+     * art.js closes the hull at local y 0.93 at its lowest station, and the
+     * bob swings ±0.10 either way. Float her deeper than 0.83 and the lake
+     * comes up through her own floor.
+     *
+     * 0.75 is as deep as she goes with that margin kept — the waterline sits
+     * on the boot stripe, everything below it is under an opaque surface, and
+     * the cockpit stays dry at the top of every bob.
+     */
+    const BOAT_DRAUGHT = 0.75;
+
     let lake = null, boatObj = null, rodObj = null, bobberObj = null;
     let dockGroup = null, dockBoat = null, dockShopLat = 0;
     let shopRoom = null, shopLights = [];
@@ -3065,7 +3109,7 @@ RT.game = (function () {
       dockBoat = { dist: boatDist, lateral: -(bankAt(boatDist) - 16) };
       lake.pointAt(dockBoat.dist, dockBoat.lateral, _v);
       boatObj.position.copy(_v);
-      boatObj.position.y += 0.30;
+      boatObj.position.y -= BOAT_DRAUGHT;
       boatObj.rotation.y = fr.yaw;
       // Hung UNDER the boat: a plate above it sat right across the hull.
       dockTargets.push({ key: 'boat', obj: boatObj, radius: 5.5,
@@ -3425,7 +3469,8 @@ RT.game = (function () {
           patch.position.copy(_v);
           const pfr = lake.frameAt(spot.dist + sh.along);
           patch.rotation.y = pfr.yaw;
-          patch.rotation.z = -pfr.bank;
+          // No roll: the water is level now (see world.js lakeBank), so rolling
+          // this to the route's bank would lift one edge off the surface.
           sc.add(patch);
           patchObjs.set(key, patch);
 
@@ -3437,9 +3482,10 @@ RT.game = (function () {
           g.position.y += 0.06;
           const fr = lake.frameAt(spot.dist + sh.along);
           g.rotation.y = fr.yaw;
-          // Anything flat on the water follows the banking, or its outer edge
-          // sinks through the surface wherever the route banks. (Trap 2.)
-          g.rotation.z = -fr.bank;
+          /* Trap 2 used to say: anything flat on the water follows the banking,
+             or its outer edge sinks through the surface. That was true while
+             the surface was banked. It is level now, so the rule inverts —
+             rolling this would be what lifts an edge off the water. */
           sc.add(g);
           shoalObjs.set(key, g);
         }
@@ -3556,7 +3602,7 @@ RT.game = (function () {
       lake.pointAt(dist, off, _v);
       bob += dt;
       boatObj.position.copy(_v);
-      boatObj.position.y += Math.sin(bob * 1.1) * 0.10 + 0.30;
+      boatObj.position.y += Math.sin(bob * 1.1) * 0.10 - BOAT_DRAUGHT;
       // Y rotation is frame.yaw, never frame.heading. (Trap 1.)
       // frame.yaw keeps it pointing down the route; run.yaw is the steering
       // swing on top of that. (Trap 1: never frame.heading.)

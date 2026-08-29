@@ -1627,6 +1627,21 @@ RT.art = (function () {
     // its silhouette.
     g.add(part(hullSheer(S, 0.34), matRed, { cast: false }));
 
+    /* A closed bilge floor, just above the waterline.
+     *
+     * The hull is an open shell and the cockpit sole below is inset well clear
+     * of the sides, which leaves a slot down each flank. That was invisible
+     * while the boat was parked ABOVE the water — there was nothing down there
+     * to see. Now that she actually floats (BOAT_DRAUGHT in game.js) the lake
+     * surface passes through the hull, and those slots looked straight down at
+     * open water inside the boat.
+     *
+     * hullBottom() closes it: one surface across the full section, following
+     * the hull's own shape, so there is no gap left at any station. At 0.45 it
+     * sits above the waterline everywhere and still below the sole, so it is
+     * only ever glimpsed edge-on in the slots — as floor, not as lake. */
+    g.add(part(hullBottom(S, 0.45), matDeck, { cast: false, receive: true }));
+
     /* Cockpit sole, inset well clear of the sides. */
     const soleY = 1.14;
     // Runs well forward, UNDER the foredeck, so there is no line of sight

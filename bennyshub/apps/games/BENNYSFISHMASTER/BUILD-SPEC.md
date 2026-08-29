@@ -1,16 +1,31 @@
 # Benny's FishMaster II — Build Spec
 
-Implementation spec. Everything needed to build the game is in this file; the
-design doc (`switchedgames-fishmaster2-design-doc.md`) explains *why* and is
-optional reading.
+Implementation spec. The design doc (`switchedgames-fishmaster2-design-doc.md`)
+explains *why* and is optional reading.
 
-**Source folders you will copy from:**
+> **Status: BUILT AND SHIPPED.** This started as a spec to build from and is now
+> a description of a game that exists. Where the two disagreed, the code won and
+> this document was corrected to match (reconciled 2026-08-29). Sections marked
+> **‡** record a deliberate departure from the original plan — those are settled
+> decisions, not bugs, and should not be "fixed" back.
+>
+> **`js/data.js` is authoritative** for the mission ladder, rods, bait and shop
+> stock. This file describes their *shape and rules*; it no longer duplicates the
+> tables, because duplicating them is what let this document drift in the first
+> place.
+
+**It shipped in place of FishMaster I**, in the folder `BENNYSFISHMASTER/`. The
+2D canvas game that used to live there — its pond, `lakegen.js` and README — is
+gone from `main`. Its **art and reveal cards were carried over verbatim** and are
+still what the game uses: fish, junk, valuables, rods, bait, card backgrounds and
+the Dingus photo.
+
+**Built from:**
 - `../BENNYSRACETRACKS/` — the engine. Three.js, papercraft art kit, scan engine,
-  switch input, level ladder, renderer.
-- `../BENNYSFISHMASTER/` — the content. Fish data, catch/rod reveal cards, card
-  artwork.
-
-**Do not modify either source folder.** Both games stay playable.
+  switch input, level ladder, renderer. **Do not modify it**; Race Tracks stays
+  playable.
+- FishMaster I — the content, taken from git history now that the folder itself
+  has been replaced.
 
 ---
 
@@ -21,8 +36,13 @@ across a lake. Fish zones come past on the left and the right. The player pulls
 over at a zone, then chooses to cast or keep going. Landing a fish is one hold
 gesture with an ease-off prompt.
 
-Eleven missions, each with one target species. Rods and bait upgrade automatically
-between missions — there is no shop and no money to spend.
+**Thirty-one missions ‡** (thirty ordinary, plus a hidden finale), each with one
+target species or a weight to land.
+
+**Money is real and gear is priced ‡** — the original plan had no shop and
+nothing to spend on. What has not changed is the rule underneath it: **money
+never blocks progress.** A job is handed in the moment the fish are caught, whether
+or not its gear was bought, and gear only ever shifts the odds. See §8.4.
 
 **The player's entire input is three gestures on one key (Return):**
 
@@ -66,9 +86,9 @@ under 400 ms is a gesture this game's players cannot make.
 ## 3. Files
 
 ```
-BENNYSFISHMASTER2/
+BENNYSFISHMASTER/          the folder FishMaster I used to occupy
   index.html      shell, all overlays, HUD, all CSS
-  images/         copied verbatim from ../BENNYSFISHMASTER/images/
+  images/         FishMaster I's images, carried over verbatim
   js/three.min.js copied verbatim from ../BENNYSRACETRACKS/js/
   js/util.js      copied verbatim from ../BENNYSRACETRACKS/js/
   js/main.js      copied verbatim from ../BENNYSRACETRACKS/js/
@@ -76,9 +96,11 @@ BENNYSFISHMASTER2/
   js/art.js       from RACETRACKS, add boat, dock, rod, water, zone rings
   js/world.js     from RACETRACKS, adapt: water track instead of road
   js/ui.js        from RACETRACKS, add edge panels, HUD, new overlays
-  js/data.js      from FISHMASTER, edits in §4
+  js/data.js      from FISHMASTER, changes in §4
   js/game.js      NEW — written from scratch, see §5–§9
 ```
+
+FishMaster I's `README.md` is gone; this file replaces it.
 
 Load order in `index.html`: `three.min.js`, `util.js`, `audio.js`, `art.js`,
 `world.js`, `data.js`, `game.js`, `ui.js`, `main.js`.
@@ -88,10 +110,26 @@ one constant, which moves into `data.js` (§4).
 
 ---
 
-## 4. `js/data.js` — exact changes
+## 4. `js/data.js`
 
-Start from `../BENNYSFISHMASTER/js/data.js`. Keep `BIOMES`, `FISH`, `BAIT`,
-`ITEM_TABLE` and `ITEM_QUIPS` exactly as they are. Make these four changes.
+Built from FishMaster I's `data.js`. `BIOMES`, `FISH`, `ITEM_TABLE` and
+`ITEM_QUIPS` carried over unchanged. What differs from FishMaster I:
+
+- `RODS` replaced (§4.1) and `LAKE_TEMPLATES` collapsed to one `LAKE` (§4.2).
+- `BIOME_RING` added (§4.2b), `MISSIONS` added (§4.3).
+- **`BAIT` expanded to eleven entries ‡** — ten ordinary lures plus Vitamin T.
+  Bait is the frequent half of the upgrade curve: a rod arrives about every
+  eight missions, a new lure every two or three, so the tacklebox keeps changing
+  even while the rod does not. Each lure biases species actually reachable when
+  it is handed over. The ladder is
+  `plainworm → nightcrawler → waxworm → bobberrig → jitterbug → minnowlure →
+  spinnerbait → leechrig → stinkbait → deepjig → secret_t_pill`.
+- **`SHOP_STOCK` added ‡** — the tackle shop's four lines of comfort gear
+  (§8.4). None of it is required to finish the game.
+- **`RODS` and `BAIT` each gained a `look` field ‡** — a shape and two colours,
+  used to build the rod and the lure on the hook from primitives in 3D. Only
+  the secret bait has real artwork, so everything else is described rather than
+  drawn.
 
 ### 4.1 Replace `RODS`
 
@@ -109,8 +147,8 @@ comment block entirely.
 //   castmaster 325/500 = .65  -> + far
 //   longshot   425/500 = .85  -> + deep
 //   titanium   500/500 = 1.00 -> whole lake
-// All values are multiples of 25 ft. `cost` is flavour on the reveal card only;
-// nothing is purchased in this game.
+// All values are multiples of 25 ft. `cost` is what the counter charges when
+// the rod is handed over (§8.4) — it is not flavour, but it never blocks a job.
 const RODS = [
   { id:'starter',    name:'Starter Rod',     cost:0,    reachFt:175, reachNote:'Casts up to 175 feet.', description:"Comes standard. Nothing wrong with it, exactly." },
   { id:'castmaster', name:'CastMaster 3000', cost:150,  reachFt:325, reachNote:'Casts up to 325 feet.', description:"A stiffer blank and a longer cast." },
@@ -119,7 +157,8 @@ const RODS = [
 ];
 ```
 
-`unlockLakeId` is removed from `RODS`. Nothing reads it.
+`unlockLakeId` is removed from `RODS`. Nothing reads it. As shipped each rod also
+carries a `look` (§4), which the block above omits for readability.
 
 ### 4.2 Replace `LAKE_TEMPLATES` with one `LAKE`
 
@@ -183,88 +222,59 @@ Which gives, per rod:
 Every mission in `MISSIONS` (§4.3) is consistent with this table — check it if you
 change either one.
 
-### 4.3 Add `MISSIONS` — the whole difficulty curve
+### 4.3 `MISSIONS` — the whole difficulty curve
 
-Ten entries, played in order. `rodId` is what the player holds *during* that
-mission. `biomes` is which biomes zones may be drawn from. A mission's target
-species must live in one of its own `biomes`, and every biome listed must be
-inside `rodId`'s reach — both are asserted at boot (§10.2).
+**Thirty-one entries ‡**, played in order. The original plan was ten plus a
+hidden eleventh; it shipped as thirty plus a hidden thirty-first, because ten
+missions did not give the bait ladder room to breathe and reached the last rod
+far too quickly.
 
-```js
-const MISSIONS = [
-  { n:1,  rodId:'starter',    baitId:'plainworm',
-    biomes:['shallows','weedbed'],
-    target:{ type:'catchCount', speciesId:'sunfish', amount:4 },
-    text:'Catch 4 Sunfish' },
+**The exact table lives in `js/data.js` and is authoritative.** What follows is
+its shape and the rules it must keep.
 
-  { n:2,  rodId:'starter',    baitId:'nightcrawler',
-    biomes:['shallows','weedbed'],
-    target:{ type:'catchCount', speciesId:'bass', amount:3 },
-    text:'Catch 3 Largemouth Bass',
-    grantsRodId:'castmaster' },          // handed over AFTER this mission
+Per entry: `rodId` is what the player holds *during* that mission; `baitId` is
+what is on the hook; `biomes` is which biomes zones may be drawn from; `target`
+is the job; `text` is the one-line brief. Optional: `grantsRodId` /
+`grantsBaitId` (handed over **after** that mission is turned in), plus
+`hidden`, `allGreen`, `finale` and `revealsSecret`.
 
-  { n:3,  rodId:'castmaster', baitId:'nightcrawler',
-    biomes:['shallows','weedbed','rockyshore'],
-    target:{ type:'catchCount', speciesId:'crappie', amount:3 },
-    text:'Catch 3 Black Crappie' },
+**The rod ladder.** One rod per ring of the lake, each held for a long stretch:
 
-  { n:4,  rodId:'castmaster', baitId:'spinnerbait',
-    biomes:['weedbed','rockyshore','dropoff'],
-    target:{ type:'catchCount', speciesId:'pike', amount:1 },
-    text:'Catch a Northern Pike' },
+| Rod | Missions | Handed over after |
+|---|---|---|
+| Starter Rod | 1–8 | — (held from the start) |
+| CastMaster 3000 | 9–16 | mission 8 |
+| Longshot Pro | 17–24 | mission 16 |
+| Titanium Ace | 25–30 | mission 24 |
+| Titanium Ace + Vitamin T | 31 (hidden finale) | mission 30 |
 
-  { n:5,  rodId:'castmaster', baitId:'minnowlure',
-    biomes:['shallows','rockyshore','dropoff'],
-    target:{ type:'catchCount', speciesId:'perch', amount:3 },
-    text:'Catch 3 Yellow Perch',
-    grantsRodId:'longshot' },
+**The bait ladder** runs underneath it, a new lure every two or three missions,
+handed over after missions 1, 3, 5, 7, 9, 12, 15, 17, 20 and 30 (§4).
 
-  { n:6,  rodId:'longshot',   baitId:'minnowlure',
-    biomes:['rockyshore','dropoff','weedbed'],
-    target:{ type:'catchCount', speciesId:'smallmouth', amount:3 },
-    text:'Catch 3 Smallmouth Bass' },
+**Three target types ‡**, not two:
 
-  { n:7,  rodId:'longshot',   baitId:'minnowlure',
-    biomes:['dropoff','rockyshore','deepchannel'],
-    target:{ type:'catchLength', speciesId:'walleye', amount:24 },
-    text:'Catch a Walleye 24 inches or longer' },
+| `target.type` | Means | Example |
+|---|---|---|
+| `catchCount` | *n* of one species | *"Catch 3 Sunfish"* |
+| `catchLength` | one of a species at or over *n* inches | *"Catch a Walleye 24 inches or longer"* |
+| `catchWeight` | *n* lbs of **any** fish in one trip | *"Land 30 lbs of fish in one trip"* |
 
-  { n:8,  rodId:'longshot',   baitId:'stinkbait',
-    biomes:['dropoff','deepchannel','weedbed'],
-    target:{ type:'catchCount', speciesId:'catfish', amount:2 },
-    text:'Catch 2 Channel Catfish',
-    grantsRodId:'titanium' },
+`catchWeight` has no `speciesId`. It is the ladder's pressure valve: it cannot
+be blocked by one uncooperative species, and it makes a trip full of bycatch
+count for something.
 
-  { n:9,  rodId:'titanium',   baitId:'spinnerbait',
-    biomes:['weedbed','deepchannel','dropoff'],
-    target:{ type:'catchCount', speciesId:'muskie', amount:2 },
-    text:'Catch 2 Muskellunge' },
+**Invariants, asserted at boot (§14, test 8):** a mission's target species must live
+in one of its own `biomes`, and every biome listed must be inside `rodId`'s
+reach. `RT.game.__test.auditMissions()` walks all thirty-one and checks both.
 
-  { n:10, rodId:'titanium',   baitId:'stinkbait',
-    biomes:['deepchannel','dropoff','rockyshore'],
-    target:{ type:'catchCount', speciesId:'sturgeon', amount:1 },
-    text:'Catch a Lake Sturgeon' },
+Mission 31 is **hidden until mission 30 is turned in** — it must not appear in
+the ladder, the save UI, or any "missions remaining" count before then. The gate
+is `save.highestMission > 30`. Turning in mission 30 sets `revealsSecret` and
+hands over Vitamin T, which is the entire unlock (§8.3b).
 
-  // ── The real last fish ────────────────────────────────────────────────────
-  // Hidden until mission 10 clears. The Dingus is gated by BAIT, not by biome
-  // or rod: FishMaster I's biteWeightedFishPool() only puts it in a pool when
-  // 'secret_t_pill' (Vitamin T) is the equipped bait. Since bait is now set per
-  // mission, setting baitId here IS the entire unlock — no new gating code.
-  // It lives in all five biomes, so every zone on this mission is a target zone.
-  { n:11, rodId:'titanium',   baitId:'secret_t_pill',
-    biomes:['shallows','weedbed','rockyshore','dropoff','deepchannel'],
-    target:{ type:'catchCount', speciesId:'largemouth_dingus', amount:1 },
-    text:'Catch the Largemouth Dingus',
-    hidden:true, allGreen:true, finale:true }
-];
-```
-
-Mission 11 is **hidden until mission 10 is cleared** — it must not appear in the
-ladder, the save UI, or any "missions remaining" count before then. Clearing
-mission 10 reveals it.
-
-Species never used as a target (carp, rock bass, burbot, gar) still appear as
-bycatch and still sell. That is intended.
+**Every one of the fifteen species is a target at some point ‡** — including
+carp, rock bass, burbot and gar, which the original plan had written off as
+bycatch only. Thirty missions turned out to be room enough for all of them.
 
 ### 4.4 `unlockLakeId` on `FISH` and `BAIT` becomes dead
 
@@ -275,8 +285,11 @@ lives in.
 ### 4.5 Export
 
 ```js
-return { BIOMES, FISH, RODS, BAIT, ITEM_TABLE, ITEM_QUIPS, LAKE, BAND_FRAC, BIOME_RING, MISSIONS };
+return { BIOMES, FISH, RODS, BAIT, SHOP_STOCK, ITEM_TABLE, ITEM_QUIPS,
+         LAKE, BAND_FRAC, BIOME_RING, RING_INNER, biomeFishable, MISSIONS };
 ```
+
+`SHOP_STOCK`, `RING_INNER` and the `biomeFishable` helper are exported too ‡.
 
 ---
 
@@ -361,21 +374,37 @@ Reuse Race Tracks' `world.js` track generation. The road ribbon becomes a water
 ribbon; curves and hills become the route bending around points and swelling
 gently. Keep `terrainRise()` and `bankOffset()`.
 
-| Constant | Value | Notes |
+All of these live in `CFG` in `game.js`. **The names and several values changed
+in the build ‡** — the table below is what shipped.
+
+| `CFG` constant | Value | Notes |
 |---|---|---|
-| `BOAT_SPEED` | `14` units/s | Race Tracks' cars run 26–46. A boat trolls. Constant — never varies by mission. |
-| `ZONE_LENGTH` | `180` units | ≈ **12.9 s** alongside at `BOAT_SPEED`. This is the whole pull-over window. |
-| `ZONE_GAP` | `250`–`450` units, seeded | ≈ 18–32 s between zones |
-| `ZONE_OFFSET` | `26` units | how far off the centre line a zone sits |
-| `CUE_LEAD` | `3.5` s | fixed; never tightens by mission |
-| `PULLOVER_TIME` | `1.2` s | ease across, motor to idle, come to rest |
-| `TRACK_LENGTH` | endless | regenerate chunks ahead; the track never runs out |
+| `BOAT_SPEED` | `17` units/s | Race Tracks' cars run 26–46. A boat trolls. Constant — never varies by mission. |
+| `SPOT_WINDOW` | `260` units | ≈ **15 s** alongside. This is the whole pull-over window. |
+| `SPOT_GAP_MIN` / `MAX` | `840`–`1200` units, seeded | ≈ **49–71 s** between spots |
+| `SPOT_RADIUS` | `17` units | the spot's own size |
+| `LANE_HALF` | `46` units | half the lane; with `STEER_SPEED` `26` it is ≈1.8 s from centre to edge |
+| `CUE_LEAD` | `20` **units**, not seconds | ≈1.2 s of warning; fixed, never tightens by mission |
+| `STOP_TIME` / `RUN_UP_TIME` / `ARRIVE_MAX` | `1.1` / `0.45` / `1.5` s | ease across, motor to idle, come to rest |
+| `SPOT_COOLOFF` | `4` fish | a spot cools off after four (§8.1) |
+| track length | endless | regenerate chunks ahead; the track never runs out |
+
+**The long ride between spots is deliberate ‡.** Roughly a minute of open water
+between fishing spots reads as slow on paper; it is the intended pace, and the
+ride is part of the experience rather than dead time. Do not "fix" it by raising
+`BOAT_SPEED` or shrinking `SPOT_GAP_*`.
+
+A "pull-over" is **continuous steering, not a discrete command**: holding steers
+laterally at `STEER_SPEED`, and it takes ≈1.8 s just to cross from the centre
+line to the lane edge. A hold shorter than that looks exactly like a dead
+control — worth knowing when scripting tests.
 
 The track has no finish line. A mission ends when its target is caught (§8.3).
 
 ### 6.2 Generating a zone
 
-For each zone slot, seeded on `hash('m' + missionN + ':z' + index)`:
+For each zone slot, seeded on `U.hash('m' + missionN + ':spot' + index)` — the
+whole slot is deterministic in `(mission, index, sinceTarget)`:
 
 1. Pick a `biome` from the current mission's `biomes` array.
 2. Pick a `side`: left or right.
@@ -390,19 +419,33 @@ For each zone slot, seeded on `hash('m' + missionN + ':z' + index)`:
 
 ### 6.3 Pairing
 
-About **45%** of zone slots place a zone on *both* sides at once. A pair is
-**never two greens** — that is a choice with no content. A pair is either
-green+amber or amber+amber.
+**`PAIR_CHANCE` = 0.55 ‡** — about **55%** of zone slots place a zone on *both*
+sides at once. On a mixed mission a pair is **never two greens** — that is a
+choice with no content — so a pair is either green+amber or amber+amber.
 
-**Exception — mission 11.** The Dingus lives in all five biomes, so every zone on
-that mission is a target zone. When `mission.allGreen` is set, skip the
-never-two-greens rule and render every zone green. The last mission is a victory
-lap and is the one place the player cannot choose wrong.
+**Exception — all-target missions ‡.** The rule is skipped whenever
+`isAllTarget(m)` is true, which is broader than originally planned:
+
+```js
+function isAllTarget(m) { return !!m.allGreen || otherBiomes(m).length === 0; }
+```
+
+That is `mission.allGreen` (the hidden finale, where the Dingus lives in all five
+biomes) **or any mission whose target species lives in every biome that mission
+draws from** — the second case was not anticipated when this was written. It
+catches **9 of the 31 missions**, where both sides are always green and the
+left/right choice therefore carries no difference.
+
+This is accepted, not a defect. Those missions are early-ladder ones where the
+job is simply "catch some of the fish that lives here", and offering a wrong
+side would be inventing a mistake for the player to make. The acceptance test in
+§14 is scoped to mixed missions accordingly.
 
 Across any rolling window of three zone slots, **at least one green zone must
 appear.** Enforce this with a counter, not by luck: if two slots pass with no
 green, force the next one green. This is what makes "hold out for better water" a
-strategy rather than a gamble.
+strategy rather than a gamble. Verified in the shipped build — the longest
+target-less run across 1000 slots per mission is 1.
 
 ### 6.4 Announcing a zone
 
@@ -466,8 +509,8 @@ A two-row scan list, shown on arrival and again after every catch:
 
 The cast is automatic and has no direction or power. Then:
 
-1. Wait `4`–`12` s (seeded). Ambient only — water, a loon, the boat rocking.
-   Nothing is asked of the player.
+1. Wait `BITE_WAIT_MIN`–`BITE_WAIT_MAX` = **`3`–`7` s ‡** (seeded). Ambient only
+   — water, a loon, the boat rocking. Nothing is asked of the player.
 2. Roll the bite using FishMaster I's existing `rollBite()` /
    `biteWeightedFishPool()`, restricted to the zone's biome, with the mission's
    auto-equipped bait applied through its `biasTable`. **This is where a wrong
@@ -478,15 +521,21 @@ The cast is automatic and has no direction or power. Then:
 4. Announce on four channels: spoken *"Fish on!"*, a rising two-note **centred**
    (not panned — there is no direction here) tone, the bobber going under with
    the rod tip bending, a large **HOOK IT — PRESS** prompt, and a screen-edge
-   glow breathing once every `2.4` s.
+   glow breathing once every `TEASE_EVERY` = `2.2` s.
 
 The breathing wash is a lamp on a dimmer, not a strobe. Its brightness at any
 moment carries **no** information and **no** deadline. Under
 `prefers-reduced-motion` it holds at a steady level instead of breathing.
 
-**Tap Return to hook.** If the player does nothing for `6` s, the fish lets go —
-*"it let go — bait's still on"* — and a new bite starts in `3`–`5` s. Repeat
-forever. Nothing is lost, ever.
+**Press Return to hook** — on the way *down*, never a tap (§1). If the player
+does nothing for `HOOK_MIN`–`HOOK_MAX` = **`7`–`12` s ‡** (seeded), the fish
+spits the hook — *"Missed it — it spat the hook. Bait's still on."* — and a new
+bite starts in `REBITE_MIN`–`REBITE_MAX` = `3`–`5` s. Repeat forever. Nothing is
+lost, ever.
+
+A **Bite Alarm** from the shop (§8.4) lengthens this window rather than
+shortening it: `hookMin`/`hookMax` take the *larger* of the base and the alarm's
+value, up to `19`–`27` s at the top tier.
 
 ### 7.3 The reel — the model
 
@@ -631,19 +680,23 @@ When the target completes:
    *"the channel's open to you now."*
 5. Return to the dock with the next mission ready.
 
-### 8.3b Mission 10 and mission 11
+### 8.3b Mission 30 and mission 31
 
-**Mission 10 (the sturgeon) is not the end.** Its results card is a big one — the
-biggest fish in the lake — and it ends by revealing that there is one more:
+*(Originally specified as missions 10 and 11; the ladder grew to 31 ‡ — see §4.3.
+The beats are unchanged, only the numbers.)*
+
+**Mission 30 (two sturgeon) is not the end.** Its results card is a big one — the
+biggest fish in the lake — and it ends by revealing that there is one more. The
+entry carries `grantsBaitId:'secret_t_pill'` and `revealsSecret:true`:
 
 > *"That's every fish in this lake. Every fish anyone's ever caught here, anyway.
 > There's a rumour about one more."*
 
 Then hand over the **Vitamin T** bait with a reveal card in the `rodreveal`
 overlay's style, using `images/bait/secret_t_pill.png` and its absurd $5000 price
-as the joke it was always meant to be. Mission 11 is now visible and ready.
+as the joke it was always meant to be. Mission 31 is now visible and ready.
 
-**Mission 11 (the Dingus)** is the finale:
+**Mission 31 (the Dingus)** is the finale:
 
 - FishMaster I's **`dingusreveal` overlay pre-empts the ordinary catch card** for
   this catch. It is the one deliberately ceremonial catch in the game and it keeps
@@ -663,29 +716,89 @@ Money accrues from the catch (`baseValuePerWeight × weight`, plus valuables'
 `value`) and is banked automatically at the end of a trip. It is shown in the HUD
 and on the results card because *"you earned this"* is the point of the upgrade.
 
-**Nothing is ever purchased and no money threshold gates anything.** Rod and bait
-come from `MISSIONS[].rodId` / `.baitId` / `.grantsRodId`. Mission number is the
-only gate — a money threshold could be missed by bad luck and would leave the
-player holding a rod too short for the mission they were just given.
+**No money threshold ever gates progression** — but gear itself is priced ‡, so
+be precise about where the line falls.
+
+`MISSIONS[].grantsRodId` / `.grantsBaitId` name the gear offered at the counter
+when that mission is turned in, and `takeGrant()` charges `grant.cost` for it
+(bait at a discount off `costPerUnit`). Being short means you simply do not take
+it yet — the dock reads *"Next job needs Nightcrawler — $36 (need $36 more)"*.
+
+**What matters is that turning the job in does not require it:**
+
+```js
+canTurnIn: done,                                   // the fish is the job
+canTakeGrant: !!grant && affordable && !grantTaken // money and the shelf, separately
+```
+
+This was deliberately loosened during the build. Requiring the gear first
+"turned a receipt into a requirement and left people who had done the hard part
+being told no". A player who never buys anything keeps fishing with `bestRod()`
+— the best rod they own, not the one the mission names — which changes the odds
+(`rodHolds`) and never blocks a mission.
+
+**The tackle shop ‡** sells the rest: `SHOP_STOCK` is four lines of comfort gear,
+three tiers each, on the shelf every visit. The original plan had nothing to buy
+at all, which left eighteen of the thirty-one missions with no use for money and
+a late game where one sturgeon paid more than everything in the game cost put
+together. **None of it is needed to finish** — every item makes the fishing
+*kinder*, which is the right sort of thing to sell to somebody playing on one
+switch.
+
+| Line | What it does | `effect` keys |
+|---|---|---|
+| Fish Finder | more warning, longer to steer in, fewer empty hooks | `window`, `lead`, `junk` |
+| Line | longer before a run parts the line | `snap` |
+| Bite Alarm | the fish stays on the hook longer before it spits (§7.2) | `hookMin`, `hookMax` |
+| Cooler | the shop pays more for what is in the hold | `sell` |
+
+Prices climb about 4× a tier so the top tiers still mean something once sturgeon
+money is coming in. `effect` is read by `game.js` — **none of these numbers are
+flavour.**
 
 ### 8.5 The dock
 
-Between missions the player sits on the dock: boat tied up, shack standing there
-as scenery, lake behind. **The boat is the only interactive thing. One press
-launches.**
+Between missions the player sits on the dock: boat tied up, shack standing there,
+lake behind. It is where the mission card is read and where a rod upgrade is
+handed over. Settings and Exit live on the title screen and the pause menu.
 
-The dock is where the mission card is read and where a rod upgrade is handed over.
-It is not a menu and has no shop. Settings and Exit live on the title screen and
-the pause menu.
+**The dock is a scan world with four stops ‡**, not a single button — the shack
+became a real tackle shop (§8.4) rather than scenery:
+
+| Stop | Goes to |
+|---|---|
+| Mission note | the brief card |
+| Tackle shop | inside the shack — gear and the keeper list |
+| Take the boat out | starts the trip |
+| Main menu | the title screen |
+
+It is driven by the same scan rules as any card: with Auto Scan **on**, the
+highlight cycles and one press picks; with it **off**, Space steps forward, held
+Space steps backward, and Return picks (§5.3).
 
 ### 8.6 Saves
 
-New save key (`bennysfishmaster2`), version 1. **No migration from FishMaster I** —
-the structures do not correspond.
+Save key is **`fishmaster` ‡** (not the `bennysfishmaster2` planned here) at
+`SAVE_VERSION` **2**. Since this build replaced FishMaster I *in place*, it
+inherits its predecessor's save key — so **the version check is what does the
+migrating**: `loadSave()` keeps a stored save only when
+`raw.version === SAVE_VERSION`, and anything older falls back to
+`defaultSave()`. A FishMaster I save is therefore discarded rather than
+misread, which is the intent the original "new save key" line was reaching for.
 
-Save: `highestMission`, `currentMission`, `lifetimeMoney`, `creel`, and per-mission
-best fish. **Do not save gear** — derive it from mission number, which removes a
-whole class of desync bug.
+Within version 2, new fields are added by `Object.assign(defaultSave(), raw)`,
+so adding one does **not** need a version bump.
+
+Saved: `currentMission`, `highestMission`, `progressValue`, `grantTaken`,
+`hold`, `money`, `lifetimeEarned`, `gear`, `rods`, `baits`, `completed`,
+`creel`, `best`, plus the `cardStyle` / `theme` / `cueLevel` preferences.
+
+**Gear is saved ‡**, contrary to the original "do not save gear, derive it from
+mission number". Once rods and lures became things you own and buy (§8.4), the
+mission number stopped being able to describe them — a player may be on mission
+12 still holding the starter rod. `rods` and `baits` are owned lists, and
+`loadSave()` repairs an empty or missing one by granting the current mission's
+rod and bait, so nobody is ever demoted by an update.
 
 Missions are fixed and repeatable, seeded on `hash('mission:' + n)`, the way Race
 Tracks seeds its levels. Lake geometry is never saved, only its seed.
@@ -859,9 +972,17 @@ way Race Tracks was tested.
 
 **Must pass before this ships:**
 
+Much of this runs far faster **in-page than in real time**: the rules are pure
+functions over seeds, reachable through `RT.game.__test` (`generateSpot`,
+`rollBite`, `biteWeightedFishPool`, `auditMissions`, …). Tests 7, 8 and 9 in
+particular are loops in `browser_evaluate`, not hours of driving a boat. Only
+*feel* — pacing, readability, whether a gesture is comfortable — needs real play.
+
 1. **One-switch playthrough.** A bot that only ever presses `Return` — tapping to
-   flip, holding to commit — completes all eleven missions, including the hidden
-   one. This is Ben's rig. If this fails, nothing else matters.
+   flip, holding to commit — completes all thirty-one missions, including the
+   hidden one. This is Ben's rig. If this fails, nothing else matters.
+   Remember a commit is *continuous steering* (§6.1): hold well past 1.8 s or the
+   boat never reaches the zone and the control looks dead.
 2. **Gesture boundaries.** On the track, holds of `0.3 / 0.5 / 2.0 / 4.9 / 5.1` s
    produce: nothing / pull-over / pull-over / pull-over / pause-menu-and-no-
    pull-over.
@@ -876,14 +997,23 @@ way Race Tracks was tested.
    progresses, slowly, and never deadlocks. This is the real test of "a wrong zone
    is less likely, not punished".
 7. **Green-density audit.** Over 1000 zone slots per mission, no window of three
-   consecutive slots lacks a green, and no pair is two greens.
-8. **Reach audit.** Walk all eleven missions: no mission may generate a zone outside
-   its `rodId`'s `reachFrac`, and every mission's target species must live in one
-   of that mission's `biomes`. Assert at boot, not just in tests.
-9. **Dingus gating.** Across a full playthrough of missions 1–10, the Largemouth
-   Dingus must **never** appear in a bite pool, on any seed, in any biome. On
-   mission 11 it must be reliably catchable. Also confirm mission 11 is absent
-   from every screen until mission 10 clears.
+   consecutive slots lacks a green. **On mixed missions only**, no pair is two
+   greens — the 9 missions where `isAllTarget()` holds are exempt by design
+   (§6.3), so scope the assertion or it fails on a correct build.
+   *Last run: longest target-less streak across all 31 missions was 1.*
+8. **Reach audit.** Walk all thirty-one missions: no mission may generate a zone
+   outside its `rodId`'s `reachFrac`, and every mission's target species must live
+   in one of that mission's `biomes`. Asserted at boot, and exposed as
+   `RT.game.__test.auditMissions()`. *Last run: passes.*
+9. **Dingus gating.** Across missions 1–30, the Largemouth Dingus must **never**
+   appear in a bite pool, on any seed, in any biome, on any bait. On mission 31 it
+   must be reliably catchable. Also confirm mission 31 is absent from every screen
+   until mission 30 is turned in (`save.highestMission > 30`).
+   *Last run: zero leaks across all mission/biome/bait combinations; 92–95% of the
+   pool in every biome on the finale.*
+   Note the probe shape — `biteWeightedFishPool()` returns `{f, w}` wrappers, so
+   read `x.f.id`. Reading `x.id` yields undefined everywhere and looks exactly
+   like perfect gating.
 10. **Draw calls.** Under 600 while driving, on every mission.
 11. **Profiles.** Play a full mission in each of the four colour profiles and in
     High Contrast, and with `prefers-reduced-motion` forced on. Nothing grey,
@@ -900,24 +1030,41 @@ unlike `BENNYSBALLISTA` and `TRIVIAMASTER`. Add a thumbnail at
 Locked in so the build is not blocked. Each is cheap to change; the location is
 given.
 
+Updated to what shipped. **‡ marks a decision the build changed.**
+
 | Decision | Where to change it |
 |---|---|
-| The dock stays, one press to launch, no shop | §8.5 |
+| The dock is a four-stop scan world with a working tackle shop ‡ | §8.5 |
 | A trip ends when the mission target is caught; the track has no finish line | §6.1, §8.3 |
-| Eleven missions (11 hidden), rods handed over after 2 / 5 / 8 | `MISSIONS`, §4.3 |
-| One target species per mission | `MISSIONS[].target`, §4.3 |
-| Zone cools off after 4 fish | §8.1 |
-| Bite wait 4–12 s | §7.2 |
-| ~45% of slots are pairs; a green at least every 3 slots | §6.3 |
+| Thirty-one missions (31 hidden), rods handed over after 8 / 16 / 24 ‡ | `MISSIONS`, §4.3 |
+| One target species per mission — or a weight, with no species ‡ | `MISSIONS[].target`, §4.3 |
+| Zone cools off after 4 fish (`SPOT_COOLOFF`) | §8.1 |
+| Bite wait 3–7 s ‡; hook window 7–12 s ‡ | §7.2 |
+| ~55% of slots are pairs ‡; a green at least every 3 slots | §6.3 |
+| Nine missions are all-green, so the pair rule is scoped to mixed ones ‡ | §6.3, §14.7 |
+| Gear is priced and owned, and is saved rather than derived ‡ | §8.4, §8.6 |
+| ~50–71 s of open water between spots — deliberately slow ‡ | §6.1 |
 | Quality never loses the fish | §7.6 |
 | Fishing camera is over-the-shoulder from inside the boat | §7 |
-
-| The Largemouth Dingus is the last fish in the game — hidden mission 11 | `MISSIONS`, §4.3 and §8.3b |
-
-**Nothing is left open.** This spec is complete enough to build from.
+| The Largemouth Dingus is the last fish in the game — hidden mission 31 ‡ | `MISSIONS`, §4.3 and §8.3b |
 
 ## 17. Naming
 
-`BENNYSFISHMASTER2` is a working folder name and should not ship. When the name is
-chosen, the folder, the `games.json` id, the save key (§8.6) and the thumbnail all
-have to agree.
+**Settled ‡.** `BENNYSFISHMASTER2` was never used. The game shipped *in place of*
+FishMaster I and inherited its identity throughout, so everything already agrees:
+
+| | |
+|---|---|
+| folder | `BENNYSFISHMASTER/` |
+| `games.json` id | `bennysfishmaster` |
+| save key (§8.6) | `fishmaster` |
+| thumbnail | `images/games/bennysfishmaster.png` |
+| title | **Benny's FishMaster** — no "II" in anything player-facing |
+
+The "II" survives only in this document's own heading, as the name of the
+rebuild rather than of the game.
+
+**Known stale ‡:** the `games.json` *description* still describes FishMaster I —
+it mentions charging the cast, buying rods and *"three lakes"*, none of which
+this game has. It is player-facing copy, so it is left for a deliberate rewrite
+rather than changed in passing.

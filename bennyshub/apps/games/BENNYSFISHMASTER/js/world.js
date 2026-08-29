@@ -806,17 +806,35 @@ RT.world = (function () {
   const BEHIND = 1;           // and behind
 
   /**
-   * Banking, clamped to the water's edge rather than the road's.
+   * Banking on a lake: none. Water is level, and this returns zero.
    *
-   * Same reasoning as bankOffset(): the shift grows with distance from the
-   * centreline, so without a clamp a 0.2 rad bank would lift the far shore
-   * hundreds of units. Everything flat on the water — the surface, the shore
-   * seam, the zone rings, every prop — goes through THIS one function, or the
-   * outer edge sinks through the surface wherever the route banks. (Trap 2/3.)
+   * It used to tilt the whole sheet about the route the way a road banks into
+   * a bend — `-off * sin(bank)`, clamped to the water's edge rather than the
+   * road's. On a road that is right, and Race Tracks still does it. On a lake
+   * it was the single biggest thing making the horizon look wrong, for two
+   * reasons that compound:
+   *
+   *   1. The lever arm is the lateral offset, and the sheet is WATER_HALF
+   *      wide. A 0.076 rad bank — normal for this route's curviness — puts the
+   *      far edge 39 units above the boat on one side and 39 below on the
+   *      other. Measured on a real trip, the water spanned 74 units of height
+   *      with the camera sitting 4.6 above it.
+   *   2. Each node banks by its OWN curvature, so the sheet is not even a
+   *      plane. It is a twisted ribbon, and the far shore rides that twist:
+   *      it dips, swells and snakes along its length as you pass.
+   *
+   * A tilted plane would at least be invisible if the view rolled with it —
+   * but the camera never rolls. `cam.lookAt()` is called with the default
+   * world up, in every camera in the game. So the tilt bought nothing and
+   * cost a warped horizon.
+   *
+   * The boat still leans (`boatObj.rotation.z`), which is the honest place for
+   * that cue: the boat heels over in a turn, the lake does not. And with the
+   * surface actually level, nothing flat on it needs rotating to match any
+   * more — see the callers in game.js, which no longer do. (Trap 2/3.)
    */
-  function lakeBank(node, off) {
-    const clamped = U.clamp(off, -WATER_HALF, WATER_HALF);
-    return -clamped * Math.sin(node.bank);
+  function lakeBank(/* node, off */) {
+    return 0;
   }
 
   /**
@@ -929,6 +947,14 @@ RT.world = (function () {
     const cSoil         = col(C.bankSoil,     '#54412b');
     const cSand         = col(C.sand,         '#c9b184');
     const fogHex        = C.fog || '#cfe9f2';
+    /* What the far hills are made of. Theme colours, so High Contrast gets its
+       own flat pair and the dusk profile does not end up with noon-green hills
+       sitting on a dark lake. */
+    const HILL_COLORS = [
+      C.foliageDark  || '#3f7a3a',
+      C.bankGrass    || '#4a7a35',
+      C.foliageLight || '#5f9a45'
+    ];
 
     const line = makeCentreline(seed, 0.0018, 1.1);
     const group = new THREE.Group();
@@ -938,8 +964,24 @@ RT.world = (function () {
        Tracks' hard sun: less contrast on the water, more on the rings. */
     /* Brought in close. The shoals you fish are all within about 110 units,
        so they stay perfectly clear, while the bank - now 300 to 400 out - sits
-       deep enough in the haze to read as distance rather than as a wall. */
-    scene.fog = new THREE.Fog(new THREE.Color(fogHex).getHex(), 150, 520);
+       deep enough in the haze to read as distance rather than as a wall.
+
+       The far end used to be 520, which is nearer than the land itself: the
+       bank runs out to SHORE_OUTER, so every bit of it was pinned at 100% fog
+       and the far shore read as a white void with trees floating in it rather
+       than as land. Reaching past the shoreline lets the near bank keep its
+       grass and sand and only the genuinely distant water haze out.
+
+       SHORE_OUTER is the ceiling, not a taste: fog is the only thing closing
+       off this world - there is no hill backdrop behind the lake - so it has
+       to be complete by the time the land ribbon stops, or the ribbon's outer
+       edge shows as a seam against the sky. At SHORE_OUTER the factor is
+       exactly 1, which hides that edge and still leaves the bank at ~66% of
+       its own colour where the shoreline actually is.
+
+       The water does NOT use this range - it has its own (see waterMat), so
+       moving this cannot bring back the hard waterline. */
+    scene.fog = new THREE.Fog(new THREE.Color(fogHex).getHex(), 150, SHORE_OUTER);
     scene.background = new THREE.Color(fogHex);
 
     const skyMat = new THREE.MeshBasicMaterial({
@@ -999,6 +1041,56 @@ RT.world = (function () {
       metalness: 0,
       flatShading: false
     });
+
+    /* ── Horizon haze, for the water only ──────────────────────────────────
+     *
+     * Scene fog is tuned for OBJECTS standing up out of the lake: nothing
+     * fades until 150 units, and everything is gone by 520. On a flat sheet
+     * seen from four units above it, that range is useless. The camera is so
+     * close to the surface that distance runs away almost immediately —
+     * 150 units out is nine pixels below the horizon and 520 is three, so the
+     * whole fog gradient collapses into a handful of pixels and the lake ends
+     * in a hard cut against the fogged bank instead of hazing into it.
+     *
+     * So the water gets its own range, starting very close and reaching much
+     * further. Same fog colour, so it still meets the sky and the far bank
+     * seamlessly — but the blend is now spread over a broad band near the
+     * horizon, which is what distance over water actually looks like.
+     *
+     * This has to be the water's own uniforms rather than a change to
+     * scene.fog: pulling the scene's fogNear in this far would put haze on
+     * the boat and on fish a few units away.
+     */
+    /* Tuned by eye against the horizon, not derived. The far end is what
+       matters: it has to be reached while the water is still well below the
+       horizon, or the gradient bunches up into the same hard line it was
+       meant to fix. 240 puts the last of the haze about ten pixels down,
+       and leaves the near and middle water — everything you actually fish
+       in — close to its own colour. */
+    const HAZE_NEAR = 20;    // haze starts just past the bow
+    const HAZE_FAR  = 240;   // and is complete well short of the horizon
+    waterMat.onBeforeCompile = function (shader) {
+      shader.uniforms.hazeNear = { value: HAZE_NEAR };
+      shader.uniforms.hazeFar  = { value: HAZE_FAR };
+      waterMat.userData.haze = shader.uniforms;   // retunable without a rebuild
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <fog_pars_fragment>',
+          '#include <fog_pars_fragment>\nuniform float hazeNear;\nuniform float hazeFar;'
+        )
+        .replace(
+          '#include <fog_fragment>',
+          [
+            '#ifdef USE_FOG',
+            '  float hazeFactor = smoothstep( hazeNear, hazeFar, vFogDepth );',
+            '  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, hazeFactor );',
+            '#endif'
+          ].join('\n')
+        );
+    };
+    /* Different shader source from any other MeshStandardMaterial, so it must
+       not share their compiled program. */
+    waterMat.customProgramCacheKey = function () { return 'lakeWaterHaze'; };
     const shoreMat = A.paper(0xffffff, { flat: true });
     shoreMat.vertexColors = true;
 
@@ -1233,6 +1325,31 @@ RT.world = (function () {
             A.outline(log);
             place(log, n, off, true);
           }
+        }
+      }
+
+      /* Soft hills well back from the water, closing off the horizon.
+       *
+       * With the lake level (see lakeBank) the far bank is honestly what a
+       * flat shore looks like from four units above the water: a thin strip
+       * under a lot of sky. shoreRise rolls it a little, but ±20 units of
+       * relief seen from 600 away is about fifteen pixels, so the horizon had
+       * no shape to it. These give the basin a far side.
+       *
+       * Sparse and big: one every ~100 units of route, scaled up hard,
+       * because Race Tracks' hills are sized to be read at 230–420 and these
+       * sit at 500–900 where that would be a few pixels of nothing. They are
+       * placed past the bank planting so trees read in front of them, and
+       * they fall inside the fog, so they haze out rather than ending.
+       */
+      for (let i = 6; i < nodes.length - 4; i += 26) {
+        const n = nodes[i];
+        for (const dir of [-1, 1]) {
+          if (!r.chance(0.72)) continue;
+          const off = dir * (shoreEdge(n, dir) + r.range(250, 520));
+          const h = A.hillBackdrop(r, HILL_COLORS);
+          h.scale.setScalar(r.range(2.2, 4.2));
+          place(h, n, off, false);
         }
       }
     }
