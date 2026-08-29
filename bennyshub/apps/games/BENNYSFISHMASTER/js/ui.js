@@ -345,7 +345,9 @@ RT.ui = (function () {
     applyWorldFocus();
     U.speak(worldItems[worldIndex].speech);
     AU.menuMove();
-    startWorldScan();
+    // While Space is held to scan backwards, the forward auto-scan must stay
+    // off — the same rule step() follows in a menu.
+    if (!didBackHold) startWorldScan();
   }
 
   function worldActivate() {
@@ -2067,7 +2069,22 @@ RT.ui = (function () {
     spent[k] = false;
     AU.resume();
 
-    if (ctx() === 'world') return;      // resolved on release
+    if (ctx() === 'world') {
+      // Hold Space to scan backwards, exactly as a menu does. Two switches
+      // only — on one switch Space is unused and auto-scan does the stepping.
+      if (k === 'Space' && !isOneSwitch() && !backHoldTimer && !backRepeatTimer) {
+        didBackHold = false;
+        backHoldTimer = setTimeout(() => {
+          backHoldTimer = null;
+          didBackHold = true;
+          stopWorldScan();
+          worldStep(-1);
+          const s = U.sm();
+          backRepeatTimer = setInterval(() => worldStep(-1), s ? s.getScanInterval() : SCAN_BACK_REPEAT);
+        }, SCAN_BACK_HOLD);
+      }
+      return;      // otherwise resolved on release
+    }
 
     if (ctx() === 'menu') {
       // Hold Space in a menu to scan backwards.
@@ -2134,8 +2151,17 @@ RT.ui = (function () {
     if (ctx() === 'world') {
       // Two switches: Space steps, Enter picks. One switch: auto-scan does the
       // stepping and the single press picks, exactly as in a menu.
-      if (k === 'Space' && !isOneSwitch()) worldStep(1);
-      else worldActivate();
+      if (k === 'Space' && !isOneSwitch()) {
+        // A held Space that had begun scanning backwards ends here: drop the
+        // timers, resume the forward auto-scan, and swallow this release so it
+        // is not also read as a forward step.
+        clearTimeout(backHoldTimer); backHoldTimer = null;
+        clearInterval(backRepeatTimer); backRepeatTimer = null;
+        if (didBackHold) { didBackHold = false; startWorldScan(); return; }
+        worldStep(1);
+      } else {
+        worldActivate();
+      }
       return;
     }
 
@@ -2212,6 +2238,15 @@ RT.ui = (function () {
       if (e && e.detail && e.detail.reason === 'too-short' && !wasBackScanning) {
         if (k === 'Space') step(1);
         else if (k === 'Enter') activate();
+      }
+      return;
+    }
+    if (ctx() === 'world') {
+      // A cancelled (too-short) press in the world resolves the same way a
+      // real release would, unless it was the tail of a backward scan.
+      if (e && e.detail && e.detail.reason === 'too-short' && !wasBackScanning) {
+        if (k === 'Space' && !isOneSwitch()) worldStep(1);
+        else worldActivate();
       }
       return;
     }
