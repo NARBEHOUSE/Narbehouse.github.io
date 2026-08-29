@@ -116,11 +116,14 @@ window.FishMasterData = (function () {
     { id: 'alarm', name: 'Bite Alarm', icon: String.fromCodePoint(0x1F514),
       blurb: 'The fish stays on longer, so there is more time to hook it.',
       tiers: [
-        { name: 'Bell Clip',     cost: 110,  effect: { hookMin: 2.4, hookMax: 6.2 },
+        /* These have to stay ABOVE CFG.HOOK_MIN/HOOK_MAX, which are already
+           long: hookMin/hookMax take the larger of the two, so an alarm that
+           asked for less than the base window would simply do nothing. */
+        { name: 'Bell Clip',     cost: 110,  effect: { hookMin: 10, hookMax: 16 },
           note: 'No more snatched takes.' },
-        { name: 'Electronic',    cost: 460,  effect: { hookMin: 3.2, hookMax: 7.0 },
+        { name: 'Electronic',    cost: 460,  effect: { hookMin: 14, hookMax: 21 },
           note: 'Plenty of time on every bite.' },
-        { name: 'Twin Sensor',   cost: 1750, effect: { hookMin: 4.2, hookMax: 8.0 },
+        { name: 'Twin Sensor',   cost: 1750, effect: { hookMin: 19, hookMax: 27 },
           note: 'It will wait for you.' }
       ] },
     { id: 'cooler', name: 'Cooler', icon: String.fromCodePoint(0x1F9CA),

@@ -13,11 +13,15 @@
  * The switch vocabulary, which never changes meaning within a context:
  *
  *   steering   hold  = go that way        tap = swap the armed side (1-switch)
- *   aiming     hold  = swing the aimer    tap = lock it in
- *   charging   hold  = build power        tap = cast now  (full auto-casts)
- *   fish on    tap   = hook it
+ *   aiming     hold  = swing the aimer (SPACE)
+ *   casting    press = start pushing it out, let go = throw  (full auto-casts)
+ *   fish on    press = hook it
  *   reeling    hold  = bring it in
  *   any card   tap   = pick the highlighted row
+ *
+ * Note which way round those last few are. Nothing in play needs a SHORT
+ * press: casting and hooking happen the instant the switch goes down, and a
+ * switch held for a minute does the same thing as one held for a second.
  *
  * Doing nothing is safe in every single one of them.
  */
@@ -249,7 +253,13 @@ RT.ui = (function () {
   /** Step inside the tackle shop — a room, scanned exactly like the dock. */
   function openShop() {
     G.enterShop();
-    enterWorld('shop', () => G.turnInState().done ? indexOfKey('tackle') : indexOfKey('keeper'));
+    /* The shopkeeper, always - he is the whole reason to come in.
+     *
+     * With a job finished this used to open on the tackle wall, because the
+     * gear had to be bought before the job could be handed in. He does all of
+     * that himself now (sell, gear, hand in, one press), so starting anywhere
+     * else means scanning past him to reach the only thing that matters. */
+    enterWorld('shop', () => indexOfKey('keeper'));
   }
 
   /**
@@ -259,6 +269,14 @@ RT.ui = (function () {
   function enterWorld(place, pickStart) {
     worldPlace = place;
     showOverlay(false);
+    /* Whatever switch was down when this opened must not count as a press on
+       it. The spot's choices arrive at the end of something the player was
+       HOLDING - the helm on the way in, or the reel winding the line home -
+       so their release would otherwise land on the highlighted row and pick
+       it before they had seen the card. Same guard the overlay uses. */
+    ignoreUntilRelease.Space = ignoreUntilRelease.Space || keyDown.Space;
+    ignoreUntilRelease.Enter = ignoreUntilRelease.Enter || keyDown.Enter;
+    clearKeys();
     worldOn = true;
     worldItems = place === 'shop' ? G.shopTargets()
                : place === 'spot' ? G.spotTargets()
@@ -429,9 +447,21 @@ RT.ui = (function () {
     $('dockGear').innerHTML =
       '<b>' + b.progress + '</b>' +
       '<br>' + b.rod.name + ' &bull; ' + b.bait.name +
+      (b.gear && b.gear.length
+        ? '<br><span style="opacity:.85">' +
+          b.gear.map(g => g.icon + ' ' + g.name).join(' &bull; ') + '</span>'
+        : '') +
       '<br><b>$' + b.money + '</b>' +
       (b.hold ? ' <span style="opacity:.75">+ ' + b.hold + ' to sell</span>' : '') +
-      (b.done ? '<br><span style="opacity:.8">Head for the tackle shop.</span>' : '');
+      (b.done ? '<br><span style="opacity:.8">Head for the tackle shop.</span>' : '') +
+      /* What the next job needs, and whether it is already paid for. Said
+         here, all trip long, so the money in the tin has an obvious purpose
+         rather than being a number that goes up. */
+      (b.nextGear
+        ? '<br><span style="opacity:.85">Next job needs ' + b.nextGear.name + ' &mdash; $' +
+          b.nextGear.cost + (b.nextGear.short ? ' (need $' + b.nextGear.short + ' more)' : ' \u2713') +
+          '</span>'
+        : '');
     $('dockMoney').textContent = '';
   }
 
@@ -532,6 +562,22 @@ RT.ui = (function () {
           { label: 'Voice', value: voiceName,
             speech: 'Voice, ' + voiceName,
             action: () => { if (v) { v.cycleVoice(); refresh(); U.speak('Voice changed'); } } },
+
+          /* Size limits. On, a fish under the limit goes back and counts for
+             nothing; off, everything you land is yours. It is a flavour rule,
+             so it is a setting - if putting fish back turns out to be one
+             thing too many to keep track of, it comes straight off. */
+          { label: 'Size Limits', value: G.keepersOn() ? 'On — small fish go back' : 'Off — keep everything',
+            speech: G.keepersOn()
+              ? 'Size limits on. Fish under the limit go back in the water.'
+              : 'Size limits off. Everything you land is yours.',
+            action: () => {
+              G.setKeepers(!G.keepersOn());
+              refresh();
+              U.speak(G.keepersOn()
+                ? 'Size limits on. A fish under the limit goes back.'
+                : 'Size limits off. You keep everything you land.');
+            } },
 
           /* Auto Scan doubles as the control scheme across the whole hub, so
              the row says which scheme it picks rather than just on or off. */
@@ -634,26 +680,67 @@ RT.ui = (function () {
 
 
 
+    /* -- The log ------------------------------------------------------------
+       Every fish in the lake on one sheet: the ones you have had, with the
+       best of them, and the ones you have not, as a grey outline and the water
+       they live in. The mission ladder ends; this does not, and it is the
+       reason to go back out once it has. */
     creel: () => {
       const sv = G.getSave();
-      const best = Object.keys(sv.best).map(id => {
-        const f = G.fishById(id);
-        return { name: f ? f.name : id, ...sv.best[id] };
-      }).sort((a, b) => b.weight - a.weight).slice(0, 6);
-      const rows = best.length
-        ? best.map(b => b.name + ' — ' + b.length + '&quot;, ' + b.weight + ' lbs').join('<br>')
-        : 'Nothing in the creel yet.';
+      const log = G.fishLog();
+      const got = log.filter(f => f.caught > 0);
+
+      /* One row per species, and every row is a scan stop.
+       *
+       * It was a wall of little cards: fine to look at, useless to somebody
+       * who cannot read them and has no way to put the cursor on one. As rows
+       * they take their turn in the scan like everything else in the hub, and
+       * landing on one says the whole entry out loud - best fish, how many,
+       * and the size limit. Pressing simply says it again, which is what
+       * somebody who missed it the first time actually wants.
+       */
+      const line = (f) => {
+        const had = f.caught > 0;
+        if (had) {
+          return f.name + '. Your best is ' + (f.best ? f.best.length + ' inches, ' +
+                 f.best.weight + ' pounds' : 'landed') + '. ' +
+                 (f.caught > 1 ? 'You have landed ' + f.caught + '. ' : '') +
+                 'Keepers have to be ' + f.keeper + ' inches.';
+        }
+        return f.name + '. Not caught yet. ' +
+               (f.waters.length ? 'Lives in the ' + f.waters.join(' and the ') + '. ' : '') +
+               'Keepers have to be ' + f.keeper + ' inches.';
+      };
+
+      const rows = log.map(f => {
+        const had = f.caught > 0;
+        return {
+          label: '<img class="logRowArt' + (had ? '' : ' unseen') + '" src="' + f.art +
+                 '" alt="" onerror="this.style.display=\'none\'">' +
+                 '<span class="logRowName' + (had ? '' : ' unseen') + '">' + f.name + '</span>',
+          value: had
+            ? (f.best ? f.best.length + '\u2033  ' + f.best.weight + ' lbs' : 'Landed') +
+              (f.caught > 1 ? '  \u00b7 ' + f.caught : '')
+            : f.keeper + '\u2033+ keeper',
+          speech: line(f),
+          // Pressing a row repeats it. Nothing to lose your place over.
+          action: (function (t) { return function () { U.speak(t); }; })(line(f))
+        };
+      });
+      rows.push({ label: '\u2190 Back', speech: 'Back', action: () => setScreen('keeper') });
+
       return {
-        art: '🐟',
-        title: 'Your Creel',
-        sub: sv.creel.length + ' fish landed &nbsp;•&nbsp; $' + sv.lifetimeEarned + ' earned all told',
-        stats: rows,
-        items: [{ label: '← Back', speech: 'Back', action: () => setScreen('keeper') }],
-        speech: 'Your creel. ' + sv.creel.length + ' fish landed.'
+        art: '\ud83c\udfa3',
+        title: 'Your Fishing Log',
+        sub: got.length + ' of ' + log.length + ' species &nbsp;\u2022&nbsp; ' +
+             sv.creel.length + ' fish landed &nbsp;\u2022&nbsp; $' + sv.lifetimeEarned + ' earned all told',
+        stats: '',
+        items: rows,
+        speech: 'Your fishing log. ' + got.length + ' of ' + log.length +
+                ' species caught, ' + sv.creel.length + ' fish landed. ' +
+                'Scan the list to hear each one.'
       };
     },
-
-
 
     /* ── Talking to the shopkeeper: the catch, the job, and a tip. ─────── */
     keeper: () => {
@@ -661,22 +748,65 @@ RT.ui = (function () {
       const list = [];
       let sub, stats;
 
-      if (st.hold) {
-        // He always leads with the catch. Selling is one press and he does the
-        // rest — it exists to make coming back in feel like something.
+      /* The JOB comes first, always.
+       *
+       * He used to lead with the scales whenever there were fish in the hold,
+       * which meant that walking in with a finished job and a full boat got
+       * you a card about selling and no mention of the job at all - and then
+       * a second visit for the gear, and a third to hand it in. Finishing the
+       * job is the thing being played for, so it is the first thing on the
+       * card and it is one press: he buys the fish, sells you the gear the
+       * next job needs, and takes the job in, in that order. */
+      if (st.done) {
+        /* Caught the fish? Then the job goes in. Full stop.
+         *
+         * This card used to hide the hand-in behind being able to afford the
+         * NEXT job's gear - a hangover from when the gear was a precondition -
+         * so three sunfish and an empty wallet got you a card that would only
+         * sell your catch. The gear is a nice-to-have on the way past now: he
+         * buys it for you if the money is there, and says so if it is not. */
+        const g = st.grantTaken ? null : st.grant;
+        const cost = g ? g.cost : 0;
+        const after = st.money + st.holdValue;        // what the sale will leave
+        const canAffordGear = !g || after >= cost;
+        sub = '"Nice work. Let\'s settle up, then."';
+        stats = '<div class="needLine">' + st.mission.text + ' &mdash; done.</div>';
+        if (st.hold) {
+          stats += '<div class="needCount">He\'ll take the <b>' + st.hold +
+                   '</b> in the hold for <b>$' + st.holdValue + '</b>.</div>';
+        }
+        if (g) {
+          stats += '<div class="needTip">The next job wants the <b>' + g.name +
+                   '</b> &mdash; <b>$' + cost + '</b>' +
+                   (canAffordGear
+                     ? '. He\'ll put it in the boat.'
+                     : ', which is <b>$' + (cost - after) + '</b> more than you\'ll have. ' +
+                       'The job still goes in — come back for the gear when you have it.') +
+                   '</div>';
+        }
+        list.push({ label: '\u2705 Hand In the Job', speech: 'Hand in the job',
+                    action: doHandIn });
+      } else if (st.canTakeGrant) {
+        /* No job to hand in yet, but the next one's gear is on the shelf and
+           the money is in the tin. He will sell it across the counter rather
+           than sending anybody to look for the right wall. */
+        sub = '"Saving up for the ' + st.grant.name + '? I have it right here."';
+        stats = '<div class="needLine">' + st.grant.name + ' &mdash; <b>$' + st.grant.cost + '</b></div>' +
+                '<div class="needTip">' + st.grant.note + '</div>' +
+                '<div class="needCount">The next job is built around it.</div>';
+        list.push({ label: '&#127907; Buy the ' + st.grant.name + ' — $' + st.grant.cost,
+                    speech: 'Buy the ' + st.grant.name + ', ' + st.grant.cost + ' dollars',
+                    action: doTakeGrant });
+        if (st.hold) {
+          list.push({ label: '💰 Sell the Catch — $' + st.holdValue,
+                      speech: 'Sell the catch, ' + st.holdValue + ' dollars', action: doSell });
+        }
+      } else if (st.hold) {
+        // No job to hand in, but a full boat: the scales, then.
         sub = '"Great catch! Let\'s have a look at those."';
         stats = '<b>' + st.hold + ' in the hold</b> &mdash; worth <b>$' + st.holdValue + '</b>' +
                 '<br><span style="opacity:.8">He is already reaching for the scales.</span>';
         list.push({ label: '💰 Sell the Catch', speech: 'Sell the catch', action: doSell });
-      } else if (st.canTurnIn) {
-        sub = '"Nice work. Let\'s have it, then."';
-        stats = '<b>' + st.mission.text + '</b> — done.';
-        list.push({ label: '✅ Hand It In', speech: 'Hand it in', action: doTurnIn });
-      } else if (st.done) {
-        sub = '"Job\'s done — but get your gear off the wall first."';
-        stats = '<b>' + st.grant.name + '</b> is waiting on the tackle wall.';
-        list.push({ label: '🎣 Go to the Tackle', speech: 'Go to the tackle',
-                    action: () => setScreen('tackle') });
       } else {
         // What he needs, then where they are, then the choices — the card
         // reads top to bottom the way he would say it.
@@ -687,7 +817,7 @@ RT.ui = (function () {
         list.push({ label: '👍 Right you are', speech: 'Right you are', action: backToShop });
       }
 
-      list.push({ label: '🐟 Show Me the Creel', speech: 'Show me the creel',
+      list.push({ label: '\ud83d\udcd6 The Fishing Log', speech: 'The fishing log',
                   action: () => setScreen('creel') });
       list.push({ label: '← Back', speech: 'Back', action: backToShop });
 
@@ -697,16 +827,76 @@ RT.ui = (function () {
         sub, stats, items: list,
         // Spoken as a sentence — "you have 2 of 3 Sunfish, one more" — rather
         // than reading the card's own shorthand out loud.
-        speech: st.hold
+        speech: st.done
+          ? (function () {
+              const g = st.grantTaken ? null : st.grant;
+              const after = st.money + st.holdValue;
+              if (g && after < g.cost) {
+                return 'Nice work, that is the job done. Hand it in and he will buy the fish. ' +
+                       'The ' + g.name + ' for the next job is ' + (g.cost - after) +
+                       ' dollars more than you will have, so come back for it when you can.';
+              }
+              return 'Nice work, that is the job done. Hand it in and he will buy the fish' +
+                     (g ? ' and put the ' + g.name + ' in the boat for the next one.' : '.');
+            })()
+          : st.canTakeGrant
+          ? ('He has the ' + st.grant.name + ' for ' + st.grant.cost +
+             ' dollars, and the next job is built around it.' +
+             (st.hold ? ' He will buy your ' + st.hold + ' fish too.' : ''))
+          : st.hold
           ? 'Great catch! He will buy those ' + st.hold + ' for ' + st.holdValue + ' dollars.'
-          : st.canTurnIn ? 'Nice work. That is the job done — hand it in.'
-          : st.done ? "Job's done, but get your gear off the wall first."
           : "Here's what I need. " + st.mission.text + '. ' +
             st.targetSpeech + ' ' + st.tip
       };
     },
 
     /* ── What the scales said. ──────────────────────────────────────────── */
+    /* -- One look in the tacklebox before untying ------------------------
+       Never a refusal. It names what is missing, says what it would change,
+       and puts the two honest choices side by side: go and buy it, or go
+       fishing as you are. */
+    gearcheck: () => {
+      const b = G.missionBrief();
+      const rod = b.wantedRod, bait = b.wantedBait;
+      const list = [];
+      let stats = '<div class="needLine">' + b.text + '</div>';
+
+      if (rod) {
+        stats += '<div class="needTip">&#127907; This job was built for the <b>' + rod.name +
+                 '</b>. On the ' + b.rod.name + ' the big ones will mostly shake the hook.' +
+                 '</div>';
+      }
+      if (bait) {
+        stats += '<div class="needTip">&#129713; Its lure is the <b>' + bait.name +
+                 '</b>. On the ' + b.bait.name + ' the fish it wants come along slower.' +
+                 '</div>';
+      }
+      stats += '<div class="needCount">&#128181; <b>$' + b.money + '</b> in the tin</div>';
+
+      list.push({ label: '\ud83c\udfa3 Go to the Tackle Shop',
+                  speech: 'Go to the tackle shop', action: openShop });
+      list.push({ label: '\u26f5 Go Fishing Anyway',
+                  speech: 'Go fishing anyway', action: goFishingAnyway });
+      list.push({ label: '\u2190 Back to the Dock', speech: 'Back to the dock',
+                  action: backToDock });
+
+      return {
+        art: '\ud83e\uddf0',
+        title: 'Before you go',
+        sub: rod && bait ? "You're missing the rod and the lure this one wants."
+             : rod ? "You're missing the rod this one wants."
+             : "You're missing the lure this one wants.",
+        stats,
+        items: list,
+        speech: 'Before you go. ' + b.text + '. ' +
+                (rod ? 'This job was built for the ' + rod.name + ', and you have the ' +
+                       b.rod.name + '. ' : '') +
+                (bait ? 'Its lure is the ' + bait.name + ', and you have the ' +
+                        b.bait.name + '. ' : '') +
+                'You can go to the tackle shop, or go fishing anyway \u2014 both are fine.'
+      };
+    },
+
     sold: () => {
       const r = lastSale || { total: 0, count: 0 };
       const best = r.best;
@@ -741,19 +931,65 @@ RT.ui = (function () {
       } else if (st.grantTaken) {
         sub = st.grant.name + ' — already yours.';
         stats += '<div style="opacity:.8;margin-bottom:10px">' + st.grant.note + '</div>';
-      } else if (!st.done) {
-        sub = st.grant.name + ' — <b>$' + st.grant.cost + '</b>';
-        stats += '<div style="margin-bottom:10px"><span style="opacity:.8">' + st.grant.note +
-                 '</span><br>Finish the job first — <b>' + st.mission.text + '</b>.</div>';
       } else if (!st.affordable) {
         sub = st.grant.name + ' — <b>$' + st.grant.cost + '</b>';
-        stats += '<div style="margin-bottom:10px">Another <b>$' + st.short +
+        stats += '<div class="needNext">&#11088; The next job needs this</div>' +
+                 '<div style="margin-bottom:10px">Another <b>$' + st.short +
                  '</b> and it is yours.</div>';
       } else {
+        /* The one thing on this wall that is not optional: the next job is
+           built around it, and the shopkeeper will sell it to you as part of
+           handing the current one in. Said plainly, and marked. */
         sub = st.grant.name + ' — <b>$' + st.grant.cost + '</b>';
-        stats += '<div style="margin-bottom:10px;opacity:.8">' + st.grant.note + '</div>';
-        list.push({ label: '&#128722; Take the ' + st.grant.name,
-                    speech: 'Take the ' + st.grant.name, action: doTakeGrant });
+        stats += '<div class="needNext">&#11088; The next job needs this</div>' +
+                 '<div style="margin-bottom:10px;opacity:.8">' + st.grant.note + '</div>';
+        list.push({ label: '&#128722; Buy the ' + st.grant.name + ' — $' + st.grant.cost,
+                    speech: 'Buy the ' + st.grant.name + ', ' + st.grant.cost + ' dollars. ' +
+                            'The next job needs it.', action: doTakeGrant });
+      }
+
+      /* Rods, on the wall, for as long as they are unowned.
+       *
+       * They used to exist only as a job's hand-over, which meant a rod you
+       * did not buy at that exact moment was gone for good - and since the
+       * job can now be handed in without it, that would have stranded
+       * somebody on the starter rod with money in their pocket. */
+      const rod = G.nextRod();
+      if (rod) {
+        const canAfford = st.money >= rod.cost;
+        stats += '<div style="text-align:left;line-height:1.6;margin-bottom:10px">' +
+                 '&#127907; <b>' + rod.name + '</b> — $' + rod.cost +
+                 (canAfford ? '' : ' <span style="opacity:.6">(need $' +
+                                   (rod.cost - st.money) + ' more)</span>') +
+                 '<br><span style="opacity:.75;font-size:.92em">' + rod.reachNote + ' ' +
+                 rod.description + '</span></div>';
+        if (canAfford) {
+          list.push({ label: '&#127907; Buy the ' + rod.name + ' — $' + rod.cost,
+                      speech: 'Buy the ' + rod.name + ', ' + rod.cost + ' dollars. ' +
+                              rod.reachNote,
+                      action: () => doBuyRod(rod.id) });
+        }
+      }
+
+      /* And the lure this job was built around. Same reasoning as the rods:
+         it used to exist only as the PREVIOUS job's hand-over, so anybody who
+         skipped it was fishing the whole mission on a plain worm with no way
+         to put that right. */
+      const bait = G.nextBait();
+      if (bait) {
+        const canAfford = st.money >= bait.cost;
+        stats += '<div style="text-align:left;line-height:1.6;margin-bottom:10px">' +
+                 '&#129713; <b>' + bait.name + '</b> — $' + bait.cost +
+                 (canAfford ? '' : ' <span style="opacity:.6">(need $' +
+                                   (bait.cost - st.money) + ' more)</span>') +
+                 '<br><span style="opacity:.75;font-size:.92em">This job\'s lure. ' +
+                 bait.note + '</span></div>';
+        if (canAfford) {
+          list.push({ label: '&#129713; Buy the ' + bait.name + ' — $' + bait.cost,
+                      speech: 'Buy the ' + bait.name + ', ' + bait.cost + ' dollars. ' +
+                              'It is the lure this job wants.',
+                      action: () => doBuyBait(bait.id) });
+        }
       }
 
       const tip = G.gearAdvice();
@@ -770,9 +1006,16 @@ RT.ui = (function () {
           stats += g.icon + ' <b>' + g.name + '</b> — <span style="opacity:.7">' +
                    g.ownedName + ', the best there is</span><br>';
         } else {
+          /* What you already own on this line, said first. The shelf only ever
+             showed the NEXT tier up, so the flasher you bought last visit was
+             invisible the moment you owned it. */
           stats += g.icon + ' <b>' + g.next.name + '</b> — $' + g.next.cost +
                    (g.affordable ? '' : ' <span style="opacity:.6">(need $' + g.short + ' more)</span>') +
-                   '<br><span style="opacity:.75;font-size:.92em">' + g.next.note + '</span><br>';
+                   '<br><span style="opacity:.75;font-size:.92em">' + g.next.note + '</span>' +
+                   (g.ownedName
+                     ? '<br><span style="opacity:.75;font-size:.92em">&#10003; You have the <b>' +
+                       g.ownedName + '</b></span>'
+                     : '') + '<br>';
         }
       });
       stats += '</div>';
@@ -807,15 +1050,20 @@ RT.ui = (function () {
     /* -- What you just bought. --------------------------------------------- */
     bought: () => {
       const b = lastBuy || {};
+      const bought = b.name || 'It';
       return {
         art: b.icon || '&#128722;',
-        title: b.name || 'Bought',
-        sub: '"Good choice. That will help."',
-        stats: '<div class="catchStat">' + (b.note || '') + '</div>' +
+        title: b.name ? (b.name + ' — bought') : 'Bought',
+        sub: '"Good choice. That is on your boat now."',
+        stats: '<div class="catchStat"><b>&#10003; ' + (b.icon || '') + ' ' +
+               bought + '</b> is yours' +
+               (b.line ? ' — it is your ' + b.line.toLowerCase() : '') + '</div>' +
+               '<div class="catchStat">' + (b.note || '') + '</div>' +
                '<div class="catchStat">$' + (b.cost || 0) + ' — you have <b>$' +
                G.getSave().money + '</b> left</div>',
         items: [{ label: '&#128077; Ok', speech: 'Ok', action: () => setScreen('tackle') }],
-        speech: b.name + '. ' + (b.note || '') + ' That cost ' + (b.cost || 0) +
+        speech: 'Bought. The ' + bought + ' is on your boat now. ' + (b.note || '') +
+                ' That cost ' + (b.cost || 0) +
                 ' dollars. You have ' + G.getSave().money + ' left.'
       };
     },
@@ -849,7 +1097,20 @@ RT.ui = (function () {
       if (b.grant) {
         stats += '<br>🛒 Next from the shop: <b>' + b.grant.name + '</b> — $' + b.grant.cost +
                  (b.grantTaken ? ' <span style="opacity:.7">(got it)</span>'
-                  : b.affordable ? '' : ' <span style="opacity:.7">(need $' + b.short + ' more)</span>');
+                  : b.affordable ? ' <span style="opacity:.7">(you can buy it now)</span>'
+                  : ' <span style="opacity:.7">(need $' + b.short + ' more)</span>');
+      }
+      /* The job was balanced around a rod you have not got. Say so - it is
+         the difference between "this is hard" and "this is broken". */
+      if (b.wantedRod) {
+        stats += '<br>&#9888;&#65039; Built for the <b>' + b.wantedRod.name + '</b>. ' +
+                 'You can fish it with the ' + b.rod.name + ', but the big ones will ' +
+                 'mostly shake the hook.';
+      }
+      if (b.wantedBait) {
+        stats += '<br>&#9888;&#65039; This job\'s lure is the <b>' + b.wantedBait.name +
+                 '</b>. On the ' + b.bait.name + ' the fish it wants come along a good ' +
+                 'deal slower.';
       }
       stats += '<br><br><span style="opacity:.85"><i>"' + b.tip + '"</i></span></div>';
       // What would make the next trip go better, in the words of the fish.
@@ -867,16 +1128,51 @@ RT.ui = (function () {
              (b.done ? '<span style="color:var(--good)"><b>Done — take it to the tackle shop.</b></span>'
                      : 'So far: <b>' + b.progress + '</b>'),
         stats,
-        items: [{ label: '← Back to the Dock', speech: 'Back to the dock', action: backToDock }],
+        /* The gear the ladder needs next, offered from the note itself.
+         *
+         * The note is where somebody goes to ask "what am I meant to be
+         * doing?", and part of the answer was sometimes "buy something you
+         * cannot reach from here" - back to the dock, find the shop, scan in.
+         * If there is gear outstanding, the way to it is on this card. */
+        /* The way to the gear - but ONLY when there is gear to be had.
+         *
+         * The gear for the next job is handed over when this one is finished,
+         * so a row saying "go and get the CastMaster" while the job is still
+         * running sends somebody to a shelf that tells them no. The note says
+         * what is coming and what it costs either way; the row appears when
+         * the man will actually sell it. */
+        items: (function () {
+          const rows = [];
+          if (b.nextGear && b.nextGear.ready) {
+            rows.push({
+              label: '&#127907; Get the ' + b.nextGear.name + ' — $' + b.nextGear.cost,
+              speech: 'Go to the tackle shop for the ' + b.nextGear.name + ', ' +
+                      b.nextGear.cost + ' dollars. The next job needs it.',
+              action: openShop
+            });
+          }
+          rows.push({ label: '← Back to the Dock', speech: 'Back to the dock', action: backToDock });
+          return rows;
+        })(),
         // Gear is read out too: someone who cannot see the pictures still hears
         // exactly what they are carrying.
         speech: 'Mission ' + b.n + '. ' + b.text + '. ' +
                 (b.done ? 'That is done — take it to the tackle shop.' : b.progress + ' so far.') +
                 ' You are carrying the ' + b.rod.name + '. ' + b.rod.reachNote +
+                (b.wantedRod ? ' This job was built for the ' + b.wantedRod.name +
+                               ', so the big ones will mostly shake the hook.' : '') +
+                (b.wantedBait ? ' Its lure is the ' + b.wantedBait.name +
+                                ', and without it the fish it wants come slower.' : '') +
                 ' Your bait is ' + b.bait.name + '.' +
                 ' You have ' + b.money + ' dollars' +
                 (b.hold ? ', and ' + b.hold + ' fish in the hold worth ' + b.holdValue + '.' : '.') +
-                ' ' + b.tip + (adv ? ' ' + adv.speech : '')
+                ' ' + b.tip + (adv ? ' ' + adv.speech : '') +
+                (b.nextGear
+                  ? ' The next job needs the ' + b.nextGear.name + ', ' + b.nextGear.cost +
+                    ' dollars. ' +
+                    (b.nextGear.short ? 'You are ' + b.nextGear.short + ' short.'
+                                      : 'You can buy it now, at the shop.')
+                  : '')
       };
     },
 
@@ -884,17 +1180,49 @@ RT.ui = (function () {
       const d = cardData || {};
       const o = d.outcome || {};
       let stats = '';
-      if (o.type === 'fish') {
+      if (o.type === 'fish' && o.released) {
+        /* Under the limit. Shown as a rule rather than a loss: the size, the
+           limit it missed, and no scolding. */
+        stats = '<div class="catchStat">' + o.length + ' inches &nbsp;•&nbsp; ' + o.weight + ' lbs</div>' +
+                '<div class="releaseBadge">&#8617;&#65039; Too small &mdash; back it goes</div>' +
+                '<div class="releaseNote">Keepers must be <b>' + o.keeper + ' inches</b>.' +
+                ' Nothing lost &mdash; cast again.</div>';
+      } else if (o.type === 'fish') {
         stats = '<div class="catchStat">' + o.length + ' inches &nbsp;•&nbsp; ' + o.weight + ' lbs</div>' +
                 '<div class="catchStat">' + o.qualityLabel + ' catch &nbsp;•&nbsp; $' + o.value + '</div>';
+        // The best one you have ever had of this fish, said the moment it is.
+        if (o.isBest) {
+          stats += '<div class="catchNote"><b>&#127942; Your biggest ' + o.name + ' yet' +
+                   (o.beat ? ' &mdash; beats ' + o.beat + ' lbs' : '') + '</b></div>';
+        }
       } else if (o.type === 'valuable') {
         stats = '<div class="catchStat">Worth $' + o.value + '</div>';
+      } else if (o.gearMiss) {
+        /* An empty hook, and one line about why. The only place in the game
+           where the shop's purpose is obvious, so it says the rod and the fix
+           and nothing else. */
+        stats = '<div class="releaseBadge">&#127907; Too big for the ' + o.rodName + '</div>' +
+                '<div class="releaseNote">The hook came back empty.' +
+                (o.betterRod ? ' A <b>' + o.betterRod + '</b> would hold it \u2014 sell a few fish and it is yours.'
+                             : '') + '</div>';
       }
-      if (d.quip) stats += '<div class="catchQuip">' + d.quip + '</div>';
-      if (d.justCompleted) stats += '<div class="catchNote"><b>That completes the mission!</b></div>';
-      else if (d.advanced) stats += '<div class="catchNote">' + d.targetText + '</div>';
+      if (d.quip && !o.gearMiss) stats += '<div class="catchQuip">' + d.quip + '</div>';
+      /* The job, in the biggest type on the card.
+       *
+       * "It counted" and "here is where that leaves you" are the two things a
+       * player is actually asking at this moment, and they were a line of
+       * small grey text under the weight. Now: a badge that says it counted,
+       * the count itself large, and a row of pips for reading it without
+       * reading it. */
+      if (d.justCompleted) {
+        stats += '<div class="countBadge done">&#11088; That completes the job!</div>' +
+                 '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
+      } else if (d.advanced) {
+        stats += '<div class="countBadge">&#9989; That one counts</div>' +
+                 '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
+      }
       return {
-        art: artOrEmoji(d.art, d.placeholder),
+        art: artOrEmoji(d.art, o.type === 'empty' ? '&#129693;' : d.placeholder),
         title: o.name || 'Something',
         stats,
         items: [{ label: '👍 Ok', speech: 'Ok', action: dismissCatch }],
@@ -925,10 +1253,18 @@ RT.ui = (function () {
         title: g.name || 'Something new',
         sub: g.kind === 'rod' ? "That's a good haul. Enough for a real rod."
                               : 'Something new for the tacklebox.',
+        /* When it comes out of the bag matters as much as what it is.
+           Buying a rod and then seeing "Starter Rod" on the HUD for the rest
+           of the trip reads as a purchase that did not take - so the card
+           says plainly that this one is for the next job. */
         stats: '<div class="catchStat">' + (g.note || '') + '</div>' +
-               '<div class="catchQuip">' + (g.description || '') + '</div>',
+               '<div class="catchQuip">' + (g.description || '') + '</div>' +
+               '<div class="catchNote">In the boat for the <b>next job</b> &mdash; ' +
+               'this one finishes with what you are carrying.</div>',
         items: [{ label: '👍 Take It', speech: 'Take it', action: backToShop }],
-        speech: (g.name || '') + '. ' + (g.note || '') + ' ' + (g.description || '')
+        speech: (g.name || '') + '. ' + (g.note || '') + ' ' + (g.description || '') +
+                ' You will be using it on the next job; this one finishes with the gear ' +
+                'you are carrying.'
       };
     },
 
@@ -957,17 +1293,41 @@ RT.ui = (function () {
       };
     },
 
+    /* One card for the whole visit: what he paid you, what he sold you, and
+       what the next job is. Three cards' worth of reading, on one sheet, in
+       the order it happened. */
     missiondone: () => {
       const t = lastTurnIn || {};
       const next = t.next;
+      let stats = '';
+      if (t.sold) {
+        stats += '<div class="catchStat">Sold <b>' + t.sold.count + '</b> for <b>$' +
+                 t.sold.total + '</b></div>';
+      }
+      if (t.bought) {
+        stats += '<div class="catchStat">Bought the <b>' + t.bought.name + '</b> &mdash; $' +
+                 t.bought.cost + '<br><span style="opacity:.8">' +
+                 (t.bought.note || 'It is in the boat.') + '</span></div>';
+      }
+      /* One job does NOT get its next line printed: the one that hands over
+         Vitamin T. What comes after that is the secret, and it is the
+         shopkeeper's rumour to tell (secretreveal, one card along) - not a
+         to-do list item reading "Catch the Largemouth Dingus". */
+      if (next && t.mission && next.n !== t.mission.n && !t.revealsSecret) {
+        stats += '<div class="catchNote">Next up: <b>' + next.text + '</b></div>';
+      }
       return {
         art: '🏅',
         title: 'Mission ' + (t.mission ? t.mission.n : '') + ' complete',
         sub: t.mission ? t.mission.text : '',
-        stats: next && t.mission && next.n !== t.mission.n
-          ? 'Next up: <b>' + next.text + '</b>' : '',
-        items: [{ label: '▶ Continue', speech: 'Continue', action: openDock }],
-        speech: 'Mission complete.' + (next ? ' Next up, ' + next.text : '')
+        stats,
+        items: [{ label: '▶ Continue', speech: 'Continue',
+                  // Straight on to the rumour, when there is one.
+                  action: t.revealsSecret ? () => setScreen('secretreveal') : openDock }],
+        speech: 'Mission complete.' +
+                (t.sold ? ' He paid ' + t.sold.total + ' dollars for the fish.' : '') +
+                (t.bought ? ' The ' + t.bought.name + ' is in the boat.' : '') +
+                (t.revealsSecret ? '' : (next ? ' Next up, ' + next.text : ''))
       };
     },
 
@@ -1028,19 +1388,45 @@ RT.ui = (function () {
            (emoji || '🐟') + '</div>\'">';
   }
 
+  /** Filled and empty circles for a job counted in whole fish. */
+  function pipRow(p) {
+    if (!p || !p.need || p.need > 12) return '';
+    let out = '<div class="pipRow" aria-hidden="true">';
+    for (let i = 0; i < p.need; i++) {
+      out += '<span class="pip' + (i < p.have ? ' full' : '') + '"></span>';
+    }
+    return out + '</div>';
+  }
+
   function catchSpeech(o, d) {
     const a = /^[aeiou]/i.test(o.name || '') ? 'an' : 'a';
     let s;
-    if (o.type === 'fish') {
+    if (o.type === 'fish' && o.released) {
+      s = 'Caught ' + a + ' ' + o.name + ', ' + o.length + ' inches. Keepers have to be ' +
+          o.keeper + ' inches, so back it goes. Nothing lost.';
+    } else if (o.type === 'fish') {
       s = 'Caught ' + a + ' ' + o.name + '! ' + o.length + ' inches, ' + o.weight +
           ' pounds. ' + o.qualityLabel + ' catch, worth ' + o.value + ' dollars.';
     } else if (o.type === 'valuable') {
       s = 'Reeled in ' + a + ' ' + o.name + ', worth ' + o.value + ' dollars.';
+    } else if (o.gearMiss) {
+      s = 'Something big took it and came off. The hook came back empty \u2014 too much for the ' +
+          o.rodName + '.' + (o.betterRod ? ' A ' + o.betterRod + ' would hold it.' : '');
     } else {
       s = 'Just ' + a + ' ' + o.name + '.';
     }
+    /* The joke on the card, said out loud.
+     *
+     * "Someone's having a rough week" is the whole reason a soggy wallet is
+     * in this game, and it was print-only - which is to say it did not exist
+     * for the player it was written for. */
+    /* Not on a gear miss: "the lake fought back with vegetation" is a joke
+       about a weed, and this was a fish that got away with your bait. */
+    if (d.quip && !o.gearMiss) s += ' ' + d.quip;
+    /* Spoken the way somebody would say it - "two of three, one more to go" -
+       rather than reading the card's shorthand out. */
     if (d.justCompleted) s += ' That completes the mission!';
-    else if (d.advanced) s += ' ' + d.targetText;
+    else if (d.advanced) s += ' ' + (d.targetSpoken || d.targetText);
     return s;
   }
 
@@ -1051,13 +1437,35 @@ RT.ui = (function () {
   let lastTurnIn = null;
 
 
+  /**
+   * Untying, with one look in the tacklebox first.
+   *
+   * Going out for muskellunge on a starter rod and a plain worm is allowed -
+   * it always will be - but nobody should find out an hour later that the
+   * reason nothing was landing was a lure they could have bought on the way
+   * past. So: if the job names gear that has not been bought, say so once,
+   * offer the shop, and take "go anyway" for an answer.
+   */
+  let skipGearCheck = false;
+
   function castOff() {
+    const b = G.missionBrief();
+    if (!skipGearCheck && (b.wantedRod || b.wantedBait)) {
+      setScreen('gearcheck');
+      return;
+    }
+    skipGearCheck = false;
     stopAutoScan(); clearKeys();
     AU.resume(); AU.startWater(); AU.motorUp();
     // The run has to exist before the overlay comes down: showOverlay() reads
     // `G.run` to decide whether the HUD and side panels are live.
     G.castOff();
     showOverlay(false);
+  }
+
+  function goFishingAnyway() {
+    skipGearCheck = true;
+    castOff();
   }
 
   let lastSale = null;
@@ -1069,15 +1477,47 @@ RT.ui = (function () {
     setScreen('sold');
   }
 
-  function doTurnIn() {
-    const res = G.turnInMission();
-    if (!res) { setScreen('keeper'); return; }
-    lastTurnIn = res;
-    if (res.finale) { setScreen('finale'); return; }
+  /**
+   * Sell, buy the next job's gear, hand the job in - one press, one card.
+   * See handInJob() in game.js for why these three are a single act.
+   */
+  function doHandIn() {
+    const done = G.handInJob();
+    if (!done || !done.result) {
+      /* The gear turned out to be dearer than the fish. The sale still
+         happened, so show THAT rather than a buzz and a card that looks
+         unchanged - being told nothing after a press is the one outcome that
+         leaves somebody stuck. */
+      if (done && done.sold) { lastSale = done.sold; AU.menuSelect(); setScreen('sold'); return; }
+      AU.menuBlocked();
+      setScreen('keeper');
+      return;
+    }
+    lastTurnIn = Object.assign({}, done.result, { sold: done.sold, bought: done.grant });
+    AU.menuSelect();
+    if (done.result.finale) { setScreen('finale'); return; }
     setScreen('missiondone');
   }
 
   let lastBuy = null;
+
+  /** A lure off the wall. Same card as any other purchase. */
+  function doBuyBait(id) {
+    const got = G.buyBait(id);
+    if (!got) { AU.menuBlocked(); return; }
+    lastBuy = got;
+    AU.menuSelect();
+    setScreen('bought');
+  }
+
+  /** A rod off the wall. Same card as any other purchase. */
+  function doBuyRod(id) {
+    const got = G.buyRod(id);
+    if (!got) { AU.menuBlocked(); return; }
+    lastBuy = got;
+    AU.menuSelect();
+    setScreen('bought');
+  }
 
   /** Buy a tier off the shelf and show what it does. */
   function doBuy(id) {
@@ -1185,6 +1625,17 @@ RT.ui = (function () {
     $('hudTarget').textContent = h.target;
     $('hudTarget').classList.toggle('done', h.targetDone);
     $('hudRod').textContent = h.rodName;
+    /* Bought gear, on screen, permanently. Everything in the shop changes a
+       number somewhere and nothing else, so a purchase left no trace you
+       could point at afterwards - "did that even do anything?" is not a
+       question a shop should leave you with. */
+    const gear = h.gear || [];
+    const gearEl = $('hudGear');
+    gearEl.innerHTML = gear.map(g => '<span title="' + g.line + ': ' + g.name + '">' +
+                                     g.icon + '</span>').join(' ');
+    gearEl.style.display = gear.length ? '' : 'none';
+    gearEl.setAttribute('aria-label',
+      gear.length ? gear.map(g => g.name).join(', ') : '');
     $('hudMoney').textContent = '$' + h.money;
     $('hudHint').textContent = h.hint || '';
     $('hudHint').style.display = h.hint ? '' : 'none';
@@ -1204,6 +1655,7 @@ RT.ui = (function () {
     paintPullIn(z);
     $('steerPip').style.left = (50 + z.lateral * 50) + '%';
     $('steerBar').classList.toggle('on', !overlayOn && !!G.run && G.isSteering());
+    paintArmed();
   }
 
   /* Pressing a fish card sends the boat to those fish. It is the pointer's
@@ -1296,7 +1748,23 @@ RT.ui = (function () {
     if (pullTick >= 0.62) { pullTick = 0; AU.pullTick(f); }
   }
 
-  function onSteer() { /* the panels repaint on the next onSpots */ }
+  /**
+   * Which way the next press will steer.
+   *
+   * Only worth showing on one switch, where the two directions take turns and
+   * the player has to be able to see whose turn it is; on two switches the
+   * left switch goes left and there is nothing to say.
+   */
+  function onSteer() { paintArmed(); }
+
+  function paintArmed() {
+    const l = $('steerArrowL'), r = $('steerArrowR');
+    if (!l || !r) return;
+    const on = !overlayOn && !!G.run && G.isSteering() && isOneSwitch();
+    const armed = G.getArmed();
+    l.classList.toggle('on', on && armed === 'left');
+    r.classList.toggle('on', on && armed === 'right');
+  }
 
   let cueTimer = null, glowTimer = null;
 
@@ -1494,10 +1962,11 @@ RT.ui = (function () {
        land, hold to push the cast out, let go to throw. Pressing takes the
        spot and starts the charge in the same motion, so there is no separate
        "lock it in" step for someone using a finger. */
+    // Held down, it hooks the fish and goes straight on reeling it in.
+    if (st === S.HOOKING) { if (G.hookFish()) G.setReelHold(true); return; }
     if (st === S.AIM) {
       G.setAimFrac(fracFromClientX(e.clientX));
-      G.lockAim();
-      G.setCharging(true);
+      G.beginCharge();
       return;
     }
     if (st === S.CHARGE) { G.setCharging(true); return; }
@@ -1580,6 +2049,10 @@ RT.ui = (function () {
       return;
     }
     if (st === S.REELING) { G.setReelHold(keyDown.Enter || (!one && keyDown.Space)); return; }
+    /* Line out with nothing on it: holding winds it back toward the boat, and
+       letting go stops it there. The same hold as playing a fish, because it
+       is the same handle. */
+    if (st === S.WAITING) { G.setReelHold(keyDown.Enter || (!one && keyDown.Space)); return; }
   }
 
   function onKeyDown(e) {
@@ -1612,6 +2085,41 @@ RT.ui = (function () {
       return;
     }
     applyHold();
+    handleGamePress(k);
+  }
+
+  /**
+   * A press in play that must happen on the way DOWN.
+   *
+   * Everything else in the game is resolved on release, because a tap and a
+   * hold mean different things. These two cannot be: hooking a fish and
+   * casting are the moments where waiting for the switch to come back up
+   * either misses the window or, worse, needs a short tap to work at all -
+   * and a short tap is exactly what this game may never ask for.
+   */
+  function handleGamePress(k) {
+    if (ctx() !== 'game' || !G.run) return;
+    const st = G.state, S = G.S;
+
+    /* Fish on: the press hooks it. Holding the switch down through the whole
+       take used to hook nothing until you let go, by which time it was gone.
+
+       Then applyHold AGAIN, because the state changed underneath it: the first
+       call ran while this was still a take, and reeling is a hold. One press
+       that hooks the fish and then does nothing with the switch still down is
+       two presses' work, and the second one is the one nobody should have to
+       make. */
+    if (st === S.HOOKING) { if (G.hookFish()) applyHold(); return; }
+
+    /* Aiming: ENTER goes straight onto the meter and starts pushing the cast
+       out - there is no "lock it in" step to tap through any more. Letting go
+       throws it, and a full meter throws by itself, so the whole cast is one
+       press of one switch, held for as long as you like.
+
+       One switch is left alone: ENTER is the only control there, so it still
+       has to sweep the aimer first and take the aim when it comes up. */
+    if (st === S.AIM && k === 'Enter' && !isOneSwitch()) { G.beginCharge(); return; }
+
   }
 
   function onKeyUp(e) {
@@ -1656,11 +2164,15 @@ RT.ui = (function () {
     const st = G.state, S = G.S;
     const tap = dur < TAP_MAX_MS;
 
-    if (st === S.HOOKING) { G.hookFish(); return; }
+    // Only a fallback: the press already hooked it (handleGamePress). This
+    // catches a take that landed while no press of ours was on record.
+    if (st === S.HOOKING) { if (G.hookFish()) applyHold(); return; }
     if (st === S.AIM) {
-      // Enter takes the spot. On two switches Space only ever sweeps, so
-      // letting go of it must not lock anything in.
-      if (k === 'Enter' && (tap || isOneSwitch())) G.lockAim();
+      /* Only one switch ever gets here: on two, ENTER started the meter on
+         the way down (handleGamePress) and the state is already CHARGE. On
+         one, ENTER is the aimer, so taking the aim is what letting go means.
+         Space never locks anything in - it only ever sweeps. */
+      if (k === 'Enter' && isOneSwitch()) G.lockAim();
       return;
     }
     if (st === S.CHARGE) {
@@ -1669,10 +2181,14 @@ RT.ui = (function () {
       return;
     }
     if (st === S.STEER) {
-      // One switch: a tap swaps which way the next hold will steer. A mouse
-      // or finger is already pointing at where it wants to go, so there is
-      // nothing to arm and a tap there means nothing.
-      if (isOneSwitch() && tap && !fromPointer) G.flipArmed();
+      /* One switch: EVERY release arms the other way, so pressing again
+         steers back - left, right, left, right - exactly as Race Tracks does
+         it. It used to need a quick tap to swap sides, which meant a player
+         who only holds could steer one way and then never the other.
+
+         A mouse or a finger is already pointing at where it wants to go, so
+         there is nothing to arm and a release there means nothing. */
+      if (isOneSwitch() && !fromPointer) G.flipArmed();
       return;
     }
   }
@@ -1752,7 +2268,7 @@ RT.ui = (function () {
     el.classList.add('on');
   }
 
-  const TC = ['tcAimL', 'tcLock', 'tcAimR', 'tcCast', 'tcHook', 'tcReel', 'tcTroll'];
+  const TC = ['tcAimL', 'tcAimR', 'tcCast', 'tcHook', 'tcReel', 'tcReelIn', 'tcTroll'];
 
   function wireTouchControls() {
     const press = (id, down, up) => {
@@ -1779,12 +2295,14 @@ RT.ui = (function () {
     // Aim: hold an arrow to swing the rod that way.
     press('tcAimL', () => G.setAimSweep(true, -1), () => G.setAimSweep(false));
     press('tcAimR', () => G.setAimSweep(true, 1), () => G.setAimSweep(false));
-    // Take the spot you are aiming at.
-    press('tcLock', () => {}, () => G.lockAim());
-    // Push the cast out, and let go to throw it.
-    press('tcCast', () => G.setCharging(true), () => G.releaseCast());
+    /* One button for the whole cast, in both beats: pressing it while aiming
+       takes the aim and starts the meter, pressing it on the meter keeps
+       pushing, and letting go throws it. */
+    press('tcCast', () => G.beginCharge(), () => G.releaseCast());
     press('tcHook', () => {}, () => G.hookFish());
     press('tcReel', () => G.setReelHold(true), () => G.setReelHold(false));
+    // Nothing on the end of it: hold to wind it back toward the boat.
+    press('tcReelIn', () => G.setReelHold(true), () => G.setReelHold(false));
     press('tcTroll', () => {}, () => { G.chooseTroll(); });
   }
 
@@ -1796,11 +2314,11 @@ RT.ui = (function () {
     if (!overlayOn && G.run && (!worldOn || G.state === G.S.SPOT)) {
       const st = G.state, S = G.S;
       if (st === S.SPOT) { on.tcTroll = true; }
-      else if (st === S.AIM) { on.tcAimL = on.tcAimR = on.tcLock = on.tcTroll = true; }
+      else if (st === S.AIM) { on.tcAimL = on.tcAimR = on.tcCast = on.tcTroll = true; }
       else if (st === S.CHARGE) { on.tcCast = true; }
       else if (st === S.HOOKING) { on.tcHook = true; }
       else if (st === S.REELING) { on.tcReel = true; }
-      else if (st === S.WAITING) { on.tcTroll = true; }
+      else if (st === S.WAITING) { on.tcReelIn = on.tcTroll = true; }
     }
     for (const id of TC) {
       const el = $(id);
@@ -1814,6 +2332,18 @@ RT.ui = (function () {
   /* Per frame: keep the dock's name plates on their objects, and keep the
      fishing buttons matched to whichever beat the player is on. */
   function tick() {
+    /* Holding a switch when the fish takes.
+     *
+     * A press hooks it (handleGamePress), but somebody who was already
+     * holding the switch down when the take landed never generates one - so
+     * the hold itself hooks the fish the moment there is a fish to hook.
+     * There is no reason to ever NOT hook a take, so this cannot cost
+     * anybody anything. */
+    if (ctx() === 'game' && G.run && G.state === G.S.HOOKING &&
+        (keyDown.Space || keyDown.Enter || pointerHeld)) {
+      // And the hold carries straight on into the reel, as above.
+      if (G.hookFish()) { applyHold(); if (pointerHeld) G.setReelHold(true); }
+    }
     positionWorldLabels();
     // The frame has to be re-placed every frame, not just on a scan step: the
     // boat bobs at its mooring and the camera drifts, and a marker that stays

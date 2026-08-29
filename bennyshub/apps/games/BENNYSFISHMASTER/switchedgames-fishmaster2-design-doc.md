@@ -484,10 +484,15 @@ The breathing wash is inherited from FishMaster I's catch light and keeps its
 rules: *a lamp on a dimmer, not a strobe*, no deadline carried by the brightness,
 and under `prefers-reduced-motion` it holds steady instead of breathing.
 
-**Press Return to hook it.** There is no window to miss in any meaningful sense:
-if the player does not press, the fish nibbles off, the game says *"it let go —
-bait's still on"*, and another bite comes in a few seconds. No penalty, no lost
-bait, no lost trip.
+**Press Return to hook it** — on the way down, held or not; a take is never
+waiting on a switch coming back up. There is no window to miss in any meaningful
+sense: a take stays on for seven to twelve seconds before it lets go (a Bite
+Alarm stretches that to as much as twenty-seven), the prompt stays up for all of
+it and the take is called again every few seconds while it waits. If the player
+does not press, the fish nibbles off, the game says *"it let go — bait's still
+on"*, and another bite comes in a few seconds. No penalty, no lost bait, no lost
+trip. And a line that is out can always be wound back in empty, so waiting is
+never a room with one door.
 
 ### The reel — hold to reel, ease off when it's tight
 
@@ -643,9 +648,12 @@ on one switch:
 
 | Gesture | On the track | On a card | On a fish |
 |---|---|---|---|
-| **tap** | flip the armed side | select the highlighted row | hook it |
+| **press** | flip the armed side | select the highlighted row | hook it |
 | **hold** | pull over (release commits) | — | reel |
 | **do nothing** | let the zone pass | let auto-scan cycle | let the fish sit |
+
+A press is a press: it lands on the way down and holding it longer never
+changes what it did. Nothing in play is a *tap*.
 
 Three gestures, and *do nothing* is always safe in all three columns. That is the
 entire input surface, and keeping it this small is the point of the rewrite.

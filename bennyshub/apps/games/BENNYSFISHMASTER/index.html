@@ -341,6 +341,9 @@ body[data-theme="contrast"] .paper{ background:var(--paper); box-shadow:none }
 #flash.on{ animation:washOut .62s ease-out }
 #flash.bite{ background:radial-gradient(ellipse at 50% 55%, transparent 30%, var(--zone-target) 130%) }
 #flash.lost{ background:radial-gradient(ellipse at 50% 55%, transparent 20%, var(--reel-high) 120%) }
+/* A fish that counted toward the job. Warm and gold, and a different colour
+   from the bite's wash, so the two can never be read as the same event. */
+#flash.count{ background:radial-gradient(ellipse at 50% 55%, transparent 25%, var(--good) 125%) }
 @keyframes washOut{ from{ opacity:.85 } to{ opacity:0 } }
 @media (prefers-reduced-motion: reduce){
   #flash.on{ animation:none; opacity:.3 }
@@ -385,6 +388,16 @@ body[data-theme="contrast"] .paper{ background:var(--paper); box-shadow:none }
   border:3px solid var(--ink); border-radius:9px; background:rgba(0,0,0,.45);
 }
 #steerBar.on{ display:block }
+/* The armed side, on one switch. Off to the side of the bar and only lit on
+   the side the next press will steer, so it says one thing and only one. */
+.steerArrow{
+  position:absolute; top:50%; transform:translateY(-50%);
+  display:none; font-size:1.5rem; line-height:1; color:var(--focus);
+  text-shadow:0 0 0 var(--ink), 0 2px 0 rgba(0,0,0,.5);
+}
+.steerArrow.on{ display:block }
+#steerArrowL{ right:calc(100% + 12px) }
+#steerArrowR{ left:calc(100% + 12px) }
 #steerPip{
   position:absolute; top:-6px; width:20px; height:20px; margin-left:-10px;
   border-radius:50%; background:var(--focus); border:3px solid var(--ink);
@@ -607,12 +620,66 @@ body[data-theme="contrast"] #dockHud::before{ display:none }
 .tcArrow{ font-size:1.9rem; padding:12px 20px }
 .tcSide{ font-size:1.05rem; padding:12px 18px; opacity:.9 }
 #tcHook{ background:var(--zone-target); font-size:1.6rem }
+#hudGear{ font-size:1.35rem; letter-spacing:3px; padding:5px 11px }
 @media (max-width: 760px){
   .tcBtn{ font-size:1.05rem; padding:13px 16px }
   .tcArrow{ font-size:1.5rem; padding:10px 13px }
 }
 
 /* ── Pause button (mouse / touch; outside the scan order) ───────────────── */
+/* -- The fishing log ----------------------------------------------------
+   One card per species. A fish you have had is in full colour with its best
+   weight under it; one you have not is a grey outline and the water it lives
+   in, which is a lead rather than a blank. */
+/* The one purchase the ladder actually requires. */
+.needNext{
+  display:inline-block; margin:0 0 8px; padding:5px 12px; border-radius:999px;
+  border:3px solid var(--ink); background:var(--focus); color:var(--ink);
+  font-weight:bold; font-size:.92rem;
+}
+
+/* -- "That one counts" ---------------------------------------------------
+   The mission counter in the corner is small, and small is no use across a
+   room. On the catch card the same fact gets a badge, big type and pips. */
+/* Under the limit: it goes back. Blue-grey rather than red - this is not a
+   failure, it is a rule of the lake, and nothing was lost by it. */
+.releaseBadge{
+  display:inline-block; margin:6px 0 4px; padding:6px 14px; border-radius:999px;
+  /* A fixed pale slate rather than a theme colour: this badge sits on the
+     dark wooden card as often as on cream paper, and --panel2 is dark in two
+     of the four themes - which put grey text on a grey badge. */
+  border:3px solid var(--ink); background:#cfd8dd; color:#1b2226;
+  font-weight:bold; font-size:1rem;
+}
+.releaseNote{ font-size:1.05rem; margin:2px 0 6px }
+#panel.panel-catch.cardbg-plaque .releaseNote{ color:#e2d8bc;
+  text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
+#panel.panel-catch.cardbg-certificate .releaseNote{ color:#4a3f28 }
+
+.countBadge{
+  display:inline-block; margin:6px 0 4px; padding:6px 14px; border-radius:999px;
+  border:3px solid var(--ink); background:var(--good); color:var(--ink);
+  font-weight:bold; font-size:1rem;
+}
+.countBadge.done{ background:var(--focus) }
+.countBig{ font-size:1.9rem; font-weight:bold; line-height:1.15; margin:4px 0 6px;
+  letter-spacing:.01em }
+.pipRow{ display:flex; gap:8px; justify-content:center; margin:2px 0 8px }
+.pip{
+  width:18px; height:18px; border-radius:50%;
+  border:3px solid var(--ink); background:transparent;
+}
+.pip.full{ background:var(--good) }
+
+/* A row per species in the log: the fish, its name, and the best of it on
+   the right. Uncaught ones are silhouettes - the shape is a clue, and that is
+   all it is meant to be. */
+.logRowArt{ height:34px; width:52px; object-fit:contain; margin-right:10px; vertical-align:middle }
+.logRowArt.unseen{ filter:grayscale(1) brightness(0.35) contrast(1.4) }
+.logRowName{ vertical-align:middle }
+.logRowName.unseen{ opacity:.72 }
+body[data-theme="contrast"] .logRowArt.unseen{ filter:grayscale(1) brightness(2) }
+
 #pauseBtn{
   position:absolute; left:18px; bottom:18px; z-index:18; display:none;
   padding:10px 16px; border-radius:12px; cursor:pointer; text-align:center;
@@ -705,6 +772,15 @@ body[data-theme="contrast"] .menuItem.focused{ background:var(--focus); color:#0
    No @import — ground rule §2.6 forbids CDN requests, so Courier New is the
    offline typewriter. Special Elite is used if the system happens to have it.
    ══════════════════════════════════════════════════════════════════════════ */
+/* The one button on a catch card is smaller than a menu row, and stands
+   clear of the text above it: a focused row scales up, lifts, and wears a
+   5px outline and a drop shadow, all of which reach outside its own box and
+   were landing on the count and the pips. */
+.panel-catch #panelMenu{ margin-top:18px }
+.panel-catch .menuItem{ padding:9px 16px; font-size:1.05rem; border-width:3px }
+.panel-catch .menuItem.focused{ transform:scale(1.02) translateY(-1px);
+  box-shadow:0 0 0 4px var(--ink), 0 5px 0 rgba(0,0,0,.3) }
+
 .catchArt{ display:block; max-width:min(70%,18rem); max-height:14rem; margin:0 auto .6rem; object-fit:contain }
 .catchArtPlaceholder{ font-size:5rem; line-height:1; margin-bottom:.6rem }
 .catchStat{ font-size:1.15rem; margin-bottom:.2rem }
@@ -739,14 +815,19 @@ body[data-theme="contrast"] .gearArt{ filter:grayscale(1) contrast(1.6) }
 /* Card-stock backgrounds (Settings → Catch Card Style). #panel-prefixed. */
 #panel.panel-catch.cardbg-plaque{ background-image:url('images/cardbg/plaque.png'); background-size:cover; background-position:center }
 #panel.panel-catch.cardbg-plaque #panelTitle{ color:#ffcf6b; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
-#panel.panel-catch.cardbg-plaque .catchStat{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
+#panel.panel-catch.cardbg-plaque .catchStat,
+#panel.panel-catch.cardbg-plaque .countBig{ color:#f0e6c8; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
+/* The pips have to read off a dark plaque as well as off cream paper, so on
+   the dark backs they get a light rim instead of the ink one. */
+#panel.panel-catch.cardbg-plaque .pip{ border-color:#f0e6c8 }
 #panel.panel-catch.cardbg-plaque .catchNote,
 #panel.panel-catch.cardbg-plaque .catchQuip,
 #panel.panel-catch.cardbg-plaque #panelSub{ color:#e2d8bc; text-shadow:0 0 5px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.9) }
 
 #panel.panel-catch.cardbg-certificate{ background-image:url('images/cardbg/certificate.png'); background-size:cover; background-position:center }
 #panel.panel-catch.cardbg-certificate #panelTitle{ color:#8a3b12 }
-#panel.panel-catch.cardbg-certificate .catchStat{ color:#2a2013 }
+#panel.panel-catch.cardbg-certificate .catchStat,
+#panel.panel-catch.cardbg-certificate .countBig{ color:#2a2013 }
 #panel.panel-catch.cardbg-certificate .catchNote,
 #panel.panel-catch.cardbg-certificate .catchQuip,
 #panel.panel-catch.cardbg-certificate #panelSub{ color:#4a3f28 }
@@ -816,6 +897,9 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
       </div>
       <div id="hudRight">
         <div class="hudPanel" id="hudRod">Starter Rod</div>
+        <!-- Gear bought from the shop, so owning it is visible from the helm
+             and not just a number in the rules. -->
+        <div class="hudPanel" id="hudGear" style="display:none"></div>
         <div class="hudPanel" id="hudMoney">$0</div>
       </div>
     </div>
@@ -846,11 +930,16 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
   <div id="charge">
     <div id="chargeLabel">OPEN WATER</div>
     <div id="chargeOuter"><div id="chargeBar"></div></div>
-    <div class="castHint">Hold to push it out &bull; let go to cast</div>
+    <div class="castHint">Hold to push it out &bull; let go to cast &bull; full throws itself</div>
   </div>
 
-  <!-- Where the boat sits across the lane -->
-  <div id="steerBar"><div id="steerPip"></div></div>
+  <!-- Where the boat sits across the lane, and - on one switch - which way
+       the next press will take it. -->
+  <div id="steerBar">
+    <div id="steerPip"></div>
+    <div class="steerArrow" id="steerArrowL">◀</div>
+    <div class="steerArrow" id="steerArrowR">▶</div>
+  </div>
 
   <!-- Hold-to-pause ring -->
   <div id="holdRing">
@@ -889,16 +978,17 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
     <div id="dockMoney">$0</div>
   </div>
 
-  <!-- Fishing by hand. These carry the same three beats the switches do —
-       aim, take the spot, push the cast out — plus hooking and reeling, so a
-       mouse or a finger can play the whole game without a switch. -->
+  <!-- Fishing by hand. These carry the same beats the switches do — aim,
+       push the cast out, let go — plus hooking and reeling, so a mouse or a
+       finger can play the whole game without a switch. There is no "take the
+       spot" button any more: pressing cast while aiming does both. -->
   <div id="touchControls">
     <div class="tcBtn tcArrow" id="tcAimL" data-act="aimL">◀</div>
-    <div class="tcBtn tcMain"  id="tcLock" data-act="lock">Take the spot</div>
-    <div class="tcBtn tcArrow" id="tcAimR" data-act="aimR">▶</div>
     <div class="tcBtn tcMain"  id="tcCast" data-act="cast">Hold to cast</div>
+    <div class="tcBtn tcArrow" id="tcAimR" data-act="aimR">▶</div>
     <div class="tcBtn tcMain"  id="tcHook" data-act="hook">Hook it!</div>
     <div class="tcBtn tcMain"  id="tcReel" data-act="reel">Reel</div>
+    <div class="tcBtn tcMain"  id="tcReelIn" data-act="reelin">Hold to reel in</div>
     <div class="tcBtn tcSide"  id="tcTroll" data-act="troll">Troll on</div>
   </div>
 

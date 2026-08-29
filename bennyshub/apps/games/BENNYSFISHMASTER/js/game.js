@@ -50,8 +50,21 @@ RT.game = (function () {
                   the other way, and nothing happens. Keep holding and you go
                   in. This is the whole point - the decision is never taken
                   away from the player, and never has to be made quickly. */
-    LEAN_ARM:     1.6,
-    PULL_OVER:    3.0,
+    /* Both of these were more than twice as long. Between them and a run-up
+       at trolling speed, asking to fish where the card said there were fish
+       was the better part of half a minute of holding a switch over. The
+       meter still has to fill - you can always change your mind, and it still
+       says so on screen - it just fills in about the time it takes to read
+       the card, and the boat is at the fish straight after. */
+    LEAN_ARM:     0.7,
+    PULL_OVER:    1.5,
+    /* Stopping where nothing has been called is a different act, and keeps the
+       old, deliberate hold. Steering across the lane means holding the helm
+       over for two or three seconds at a stretch, and at the short timings
+       that would stop the boat every time somebody simply wanted to be on the
+       other side of the lake. */
+    LEAN_ARM_OPEN:  1.6,
+    PULL_OVER_OPEN: 3.0,
 
     /* Fishing spots */
     /* Room to breathe: a long approach, a long window to turn in, and a
@@ -77,9 +90,37 @@ RT.game = (function () {
        enough ahead that somebody who needs time to react still has plenty
        of it left after they have read the card. */
     CUE_LEAD:     20.0,    // seconds of warning before a spot comes up
+    /* Open water at the start of every trip.
+       The first spot used to sit 260 units out, and a spot is called from
+       CUE_LEAD ahead of itself - 340 units - so the first one was already
+       being announced before the boat had left the dock. You were fishing
+       before you had finished setting off. This is the stretch of nothing
+       that comes first: time to get under way, look at the lake, and settle
+       before the game asks for a decision. */
+    TROLL_GRACE:  10.0,    // seconds of open water before the first spot is called
     SPOT_WINDOW:  260,     // how far either side of a spot you may turn in
     STOP_TIME:    1.1,     // easing to a halt at a spot
+    /* Getting there once you have committed.
+       The pull-over meter IS the wait, and it is the only one. The moment it
+       fills, the boat takes you to the fish: it opens up, runs the last of the
+       way and settles, all of it inside ARRIVE_MAX. It used to hold the helm
+       over and TROLL the rest of the way at seventeen units a second, so
+       committing the moment a card appeared - which is exactly what somebody
+       who needs time to decide does - bought fifteen seconds of watching the
+       water go by with nothing to press. */
+    RUN_UP_TIME:  0.45,    // extra time for a full SPOT_WINDOW run-up
+    ARRIVE_MAX:   1.5,     // and never longer than this, however far it was
     LEAVE_TIME:   1.1,
+    /* The fish comes up on the line, head first, and hangs there long enough
+       to be looked at. It does NOT come aboard: swinging it in put a fish the
+       size of a door across the lens, and the card that follows is where you
+       read what you caught anyway. */
+    LAND_TIME:    1.6,
+    LAND_LIFT:    3.5,     // how high the hook comes up: the angler's eye line
+    /* Inches per world unit, measured off the rod in the angler's hands: the
+       blank is 4.1 units for a seven-foot rod. Everything the player can
+       compare the fish to is in this frame, so it has to be honest. */
+    UNITS_PER_IN: 0.0488,
 
     /* Casting.
        A rod's reach maps onto how far it can throw across the water, and the
@@ -106,13 +147,36 @@ RT.game = (function () {
     /* The bite. How long it stays on the hook varies every time: a long take
        is a gift, a short one you have to be ready for. Missing costs nothing
        but the wait — it bites again. */
-    BITE_WAIT_MIN: 4,
-    BITE_WAIT_MAX: 12,
-    HOOK_MIN:      1.7,    // a snatchy take — you have to be watching
-    HOOK_MAX:      5.5,    // a proper sit-down take
+    /* The wait for a bite. Twelve seconds of a float on flat water was the
+       longest stretch in the game with nothing to look at and nothing to do,
+       which is exactly the kind of dead air this game cannot afford. It is
+       shorter now, and it is no longer empty: the shoal comes over and circles
+       the bait (Scene.syncShoals), and the float dips a couple of times before
+       the real take. None of that is a cue to press anything - the take, when
+       it comes, is still announced on its own four channels. */
+    BITE_WAIT_MIN: 3,
+    BITE_WAIT_MAX: 7,
+    /* A nibble: the float dips, a small sound, and nothing else happens. It
+       exists so the take has something to be the payoff OF. */
+    TEASE_EVERY:   2.2,
+    /* How long a take stays on before the fish spits the hook.
+       Nothing here is a reaction test. The banner stays up for the whole
+       window, the take is called again while it waits, and missing one costs
+       only the pause before the next bite — so this is set long enough that
+       somebody with no reflexes at all still lands fish, and the Bite Alarm
+       lengthens it from there (it can only ever add — see hookMin/hookMax). */
+    HOOK_MIN:      7.0,    // the shortest take in the game
+    HOOK_MAX:     12.0,    // a proper sit-down take
+    HOOK_NUDGE:    3.5,    // "fish on" said again while the take waits
     REBITE_MIN:    3,
     REBITE_MAX:    5,
     NUDGE_EVERY:   5,      // "press and hold to reel it in", repeated forever
+    /* Winding an empty line back in. Hold and it comes; let go and it stops
+       where it is and goes on fishing from there. It is a retrieve, not an
+       escape hatch: the bait is still in the water the whole way in, and a
+       fish can take it at any point. */
+    REEL_IN_SPEED: 11,     // units/s the lure travels back toward the boat
+    REEL_IN_DONE:  3.5,    // this close to the rail and the line is in
 
     /* The fight. A hooked fish makes runs: the line goes tight and you have to
        LET GO until it tires. Keep hauling through a run and the strain builds
@@ -124,12 +188,33 @@ RT.game = (function () {
     RUN_MIN_S:      1.3,
     RUN_MAX_S:      2.5,
     RUN_WARN_S:     0.7,   // warning before the line goes tight
+    /* What a run costs, as a fraction of the bar per second.
+       A running fish TAKES LINE - that is what a run is - and the bar sat
+       frozen through it, so the fish appeared to teleport back out and then
+       back in again when it tired. Deliberately small: a two-second run costs
+       about a seventh of the bar, which is enough to feel and never enough to
+       make a fish unlandable. Nothing here can be failed by waiting. */
+    RUN_TAKE:       0.07,
 
     /* Bite-category odds, cumulative. Whatever is left over is a fish.
        A cast that lands on open water instead of a shoal uses OPEN instead —
        still fish, just thinner. That is the whole cost of a poor cast. */
     BITE:      { NOTHING: 0.08, VALUABLE: 0.05, JUNK: 0.12 },
     BITE_OPEN: { NOTHING: 0.30, VALUABLE: 0.05, JUNK: 0.22 },
+
+    /* What share of the fish caught on a named shoal are the species the
+       card named. The card is a promise - "Largemouth Bass on the left" - and
+       it was being kept only in the sense that bass were somewhere in the
+       biome's table: pull in on your own fish and the biome would hand you
+       three of everything else first. The rest of the roll still comes off
+       the biome, so other species do turn up, just not instead of the fish
+       you steered across the lake for. */
+    SHOAL_NAMED_SHARE: 0.75,
+    /* ...and how much of that promise survives the wrong lure. The card says
+       Largemouth Bass and bass is what mostly takes it - IF the thing on your
+       hook is something a bass wants. On a plain worm they are still there,
+       still catchable, and noticeably slower to come. */
+    WRONG_BAIT_SHARE: 0.4,
 
     SPOT_COOLOFF: 4,       // fish from one shoal before they move on
     CULL_DIST: 620
@@ -303,6 +388,16 @@ RT.game = (function () {
          the default object back from Object.assign, so nothing needs a save
          version bump. */
       gear: { finder: 0, line: 0, alarm: 0, cooler: 0 },
+      /* The rods actually owned, oldest first. Everyone starts with the one
+         that came with the boat; the rest are bought. What you FISH with is
+         the best of these (bestRod), not whatever rod the mission happens to
+         name - a mission names the rod it was balanced around, and that is a
+         target to reach, not a loan. */
+      rods: ['starter'],
+      /* And the lures. The plain worm comes in the box and is free forever;
+         every other one is bought. What is ON THE HOOK is the best of these
+         for the job in hand - never a lure the shop has not sold you. */
+      baits: ['plainworm'],
       completed: false,      // the Dingus is caught; the lake is open
       creel: [],
       best: {},
@@ -316,6 +411,14 @@ RT.game = (function () {
   function loadSave() {
     const raw = U.load(SAVE_KEY, null);
     save = (raw && raw.version === SAVE_VERSION) ? Object.assign(defaultSave(), raw) : defaultSave();
+    /* A save from before rods were owned rather than assumed. Whatever rod the
+       mission they are on was balanced around, they have been fishing with it
+       for hours - so they own it. Nobody gets demoted by an update. */
+    if (!Array.isArray(save.rods) || !save.rods.length) save.rods = ['starter'];
+    if (!Array.isArray(save.baits) || !save.baits.length) save.baits = ['plainworm'];
+    const m = missionByN(save.currentMission) || {};
+    if (m.rodId && save.rods.indexOf(m.rodId) < 0) save.rods.push(m.rodId);
+    if (m.baitId && save.baits.indexOf(m.baitId) < 0) save.baits.push(m.baitId);
     return save;
   }
   function persist() { U.save(SAVE_KEY, save); }
@@ -359,6 +462,10 @@ RT.game = (function () {
 
   function grantFor(m) {
     if (m.grantsRodId) {
+      /* Bought off the wall already? Then there is nothing to hand over. The
+         wall sells rods outright now, so the same rod must not be sold twice
+         or stand between anybody and their finished job. */
+      if (ownsRod(m.grantsRodId)) return null;
       const rod = rodById(m.grantsRodId);
       return { kind: 'rod', id: rod.id, name: rod.name, cost: rod.cost,
                note: rod.reachNote, description: rod.description, art: rodArtSrc(rod) };
@@ -390,10 +497,24 @@ RT.game = (function () {
       tip: missionTip(m),
       targetSpeech: targetSpeech(m, save.progressValue),
       hold: holdCount(), holdValue: holdValue(),
-      // The gear comes off the wall BEFORE the job is handed in, so nobody can
-      // start a mission without the rod that mission assumes they hold.
-      canTurnIn: done && grantTaken,
-      canTakeGrant: !!grant && done && affordable && !grantTaken,
+      /* The fish is the job.
+       *
+       * This used to be `done && grantTaken` - catch the pike, then buy the
+       * next rod, THEN you may hand it in - which turned a receipt into a
+       * requirement and left people who had done the hard part being told no.
+       * What gear does now is decide the odds out on the water (rodHolds), and
+       * that is the honest place for it: the rod is why the fish was hard to
+       * land, not a form to be countersigned afterwards. */
+      canTurnIn: done,
+      /* Money in the tin and the thing on the shelf: that is the whole test.
+       *
+       * It used to need the JOB finished as well, which produced the worst
+       * kind of shop - "CastMaster 3000, $150" on the wall, $200 in your
+       * pocket, and no way to buy it and no plain statement of why. The gate
+       * was there to stop anyone starting the next mission without its gear,
+       * and canTurnIn already does that job on its own: the job cannot be
+       * handed in until the gear is bought, whenever it was bought. */
+      canTakeGrant: !!grant && affordable && !grantTaken,
       isLast: m.n >= D.MISSIONS.length
     };
   }
@@ -420,8 +541,11 @@ RT.game = (function () {
   function spotWindow()  { return CFG.SPOT_WINDOW * (gearEffect('finder').window || 1); }
   function cueLead()     { return CFG.CUE_LEAD + (gearEffect('finder').lead || 0); }
   function strainSnap()  { return gearEffect('line').snap || CFG.STRAIN_SNAP_S; }
-  function hookMin()     { return gearEffect('alarm').hookMin || CFG.HOOK_MIN; }
-  function hookMax()     { return gearEffect('alarm').hookMax || CFG.HOOK_MAX; }
+  /* Math.max, not `||`: the base window is already generous, so a bite alarm
+     is only ever allowed to make a take LONGER. Taking the gear's own number
+     outright is how buying one could have shortened the wait it sells. */
+  function hookMin()     { return Math.max(CFG.HOOK_MIN, gearEffect('alarm').hookMin || 0); }
+  function hookMax()     { return Math.max(CFG.HOOK_MAX, gearEffect('alarm').hookMax || 0); }
   function sellRate()    { return gearEffect('cooler').sell || 1; }
   /* How much of the empty-hook rate survives. A fish finder is pointed at
      actual fish, so it should mean fewer casts that come back with a boot or
@@ -429,6 +553,55 @@ RT.game = (function () {
   function junkRate()    { return gearEffect('finder').junk || 1; }
 
   /** What the shop has on the shelf right now, and what you could take home. */
+  /**
+   * Every fish in the lake, and what you have done about it.
+   *
+   * The creel was six lines of text about the biggest six. This is the whole
+   * table: what you have caught, how big the best one was, and - for the ones
+   * you have not - which water they live in, so an empty row is a place to go
+   * rather than a blank. It is built from data the game already had; the only
+   * thing missing was somewhere to look at it.
+   */
+  function fishLog() {
+    const rows = [];
+    for (const f of D.FISH) {
+      const best = save.best[f.id] || null;
+      /* The secret fish stays a secret until it is caught. Listing it as a
+         gap to fill would give away that there is one. */
+      if (f.secret && !best) continue;
+      const caught = save.creel.filter(c => c.id === f.id).length;
+      rows.push({
+        id: f.id, name: f.name, art: 'images/fish/' + f.id + '.png',
+        color: f.color, keeper: keeperLength(f),
+        waters: (f.biomeIds || []).map(biomeName),
+        caught, best,
+        tier: f.difficultyTier || 3
+      });
+    }
+    return rows;
+  }
+
+  /**
+   * The gear on the boat right now, in the order the shop lists it.
+   *
+   * Buying something used to change nothing you could see: the shelf went on
+   * showing the NEXT tier up, and the only trace of a purchase was a number
+   * quietly moving somewhere in the rules. This is what the HUD, the dock and
+   * the shop all read to say "you own this".
+   */
+  function ownedGear() {
+    const out = [];
+    for (const line of D.SHOP_STOCK) {
+      const t = ownedTier(line.id);
+      if (!t) continue;
+      out.push({ id: line.id, icon: line.icon, line: line.name,
+                 name: line.tiers[t - 1].name, tier: t,
+                 note: line.tiers[t - 1].note,
+                 maxed: t >= line.tiers.length });
+    }
+    return out;
+  }
+
   function shopStock() {
     return D.SHOP_STOCK.map(line => {
       const owned = ownedTier(line.id);
@@ -474,9 +647,35 @@ RT.game = (function () {
   function gearAdvice() {
     const m = run ? run.mission : currentMission();
     const want = m.target && m.target.speciesId ? fishById(m.target.speciesId) : null;
-    const rod = rodById(m.rodId);
+    const rod = bestRod();
 
-    // 1. Is the rod the thing holding this mission back?
+    /* 1. The next job's gear, when money is the only thing in the way.
+     *
+     * First, on purpose. "A better rod would help" is a fact; "it is forty
+     * dollars away, and fish are what pay for it" is a thing to go and do -
+     * which is the only kind of advice worth giving somebody who is asking
+     * what to do next. */
+    const st = turnInState();
+    if (st.grant && !st.grantTaken && !st.affordable) {
+      return {
+        kind: 'grant',
+        text: 'The <b>' + st.grant.name + '</b> is <b>$' + st.short + '</b> away. ' +
+              'Catch a few more and sell them to the shopkeeper — that is what pays for it.',
+        speech: 'The ' + st.grant.name + ' is ' + st.short + ' dollars away. Catch a few ' +
+                'more fish and sell them to the shopkeeper. That is what pays for it.'
+      };
+    }
+    if (st.canTakeGrant) {
+      return {
+        kind: 'grant',
+        text: 'You can afford the <b>' + st.grant.name + '</b> — <b>$' + st.grant.cost +
+              '</b>. The next job is built around it.',
+        speech: 'You can afford the ' + st.grant.name + ', ' + st.grant.cost +
+                ' dollars. The next job is built around it.'
+      };
+    }
+
+    // 2. Is the rod the thing holding this mission back?
     if (want) {
       const cls = ROD_CLASS[rod.id] || 3;
       if ((want.difficultyTier || 3) > cls) {
@@ -484,16 +683,22 @@ RT.game = (function () {
         if (better) {
           return {
             kind: 'rod',
+            /* A rod comes up the ladder: it is a job's grant, bought at the
+               counter once the money is there. The shelf beside this advice
+               sells finders, line, alarms and coolers, so the wording has to
+               point at the ladder and not at the shelf. */
             text: 'A better rod would help with <b>' + want.name + '</b> — ' +
-                  'the <b>' + better.name + '</b> is built for fish that size.',
+                  'the <b>' + better.name + '</b> is built for fish that size. ' +
+                  'It comes up the ladder, one job at a time.',
             speech: 'A better rod would help with ' + want.name + '. The ' +
-                    better.name + ' is built for fish that size.'
+                    better.name + ' is built for fish that size, and it comes up ' +
+                    'the ladder one job at a time.'
           };
         }
       }
     }
 
-    // 2. Otherwise, the best thing on the shelf you can already afford.
+    // 3. Otherwise, the best thing on the shelf you can already afford.
     const affordable = shopStock().filter(g => !g.maxed && g.affordable);
     if (affordable.length) {
       // Cheapest first, so the advice is always the next step rather than a
@@ -548,8 +753,46 @@ RT.game = (function () {
     if (!st.canTakeGrant) return null;
     save.money = Math.max(0, save.money - st.grant.cost);
     save.grantTaken = st.mission.n;
+    // Handed over is owned, and it stays owned.
+    if (st.grant.kind === 'rod' && !ownsRod(st.grant.id)) save.rods.push(st.grant.id);
+    if (st.grant.kind === 'bait' && !ownsBait(st.grant.id)) save.baits.push(st.grant.id);
     persist();
+    pushHud();
     return st.grant;
+  }
+
+  /**
+   * Everything the counter owes you, in one press.
+   *
+   * Coming in with a job finished used to be three separate conversations
+   * with the same man: sell the fish, then go to the tackle wall for the gear
+   * the next job needs, then come back and hand the job in - in that order,
+   * and only that order, because the gear is paid for out of the fish money
+   * and the job cannot be handed in without it. Every one of those steps was
+   * a menu to find, and getting them out of order left you stuck with no way
+   * of knowing why.
+   *
+   * So it is one action now. Sell what is in the hold, buy the gear the next
+   * job needs (it still costs what it costs - nothing here is free), hand the
+   * job in, and say what happened on one card. If the money still is not
+   * enough after selling, nothing is bought and nothing is handed in: the
+   * card says how much more is needed, which is the one thing the player
+   * actually has to know.
+   */
+  function handInJob() {
+    const st = turnInState();
+    if (!st.done) return null;
+    const sold = sellCatch();                    // null if the hold was empty
+    const after = turnInState();                 // the sale may have paid for the gear
+    /* A grant that costs nothing is never left behind: Vitamin T is free, and
+       the last mission cannot be fished without it. */
+    const grant = after.canTakeGrant ? takeGrant() : null;
+    const result = turnInMission();
+    return {
+      sold, grant, result,
+      short: result ? 0 : turnInState().short,
+      gearName: after.grant ? after.grant.name : null
+    };
   }
 
   /** Take the upgrade, bank the mission, move to the next one. */
@@ -650,15 +893,40 @@ RT.game = (function () {
       if (t.key === 'tackle') {
         if (!st.grant)            { sub = 'Nothing new in'; speech = 'Tackle. Nothing new in just now.'; }
         else if (st.grantTaken)   { sub = st.grant.name + ' — got it'; speech = 'Tackle. You already have the ' + st.grant.name + '.'; }
-        else if (!st.done)        { sub = st.grant.name + ' — $' + st.grant.cost; speech = 'Tackle. ' + st.grant.name + ', ' + st.grant.cost + ' dollars, once the job is done.'; }
         else if (!st.affordable)  { sub = 'Short by $' + st.short; speech = 'Tackle. The ' + st.grant.name + ' needs another ' + st.short + ' dollars.'; }
-        else                      { sub = 'Take the ' + st.grant.name; speech = 'Tackle. The ' + st.grant.name + ' is yours for ' + st.grant.cost + ' dollars.'; }
+        else                      { sub = 'Buy the ' + st.grant.name + ' — $' + st.grant.cost;
+                                    speech = 'Tackle. The ' + st.grant.name + ' is yours for ' + st.grant.cost + ' dollars. The next job needs it.'; }
       } else if (t.key === 'keeper') {
-        if (st.hold)              { sub = 'Sell your catch — $' + st.holdValue;
-                                    speech = 'The shopkeeper. Great catch! He will buy those ' + st.hold + ' for ' + st.holdValue + ' dollars.'; }
-        else if (st.canTurnIn)    { sub = 'Hand the job in'; speech = 'The shopkeeper, ready to take your job in.'; }
-        else if (st.done)         { sub = 'Gear up first'; speech = 'The shopkeeper. Job done — get your gear off the wall first.'; }
-        else                      { sub = st.progressText; speech = 'The shopkeeper. ' + st.progressText + ' so far.'; }
+        /* The finished job first, whatever else is going on, because he now
+           settles the whole visit in one press - the fish, the gear the next
+           job needs, and the job itself. "Gear up first" is gone with the
+           trip to the tackle wall that used to come before this. */
+        if (st.done) {
+          const g = st.grantTaken ? null : st.grant;
+          const after = st.money + st.holdValue;
+          if (g && after < g.cost) {
+            sub = 'Short by $' + (g.cost - after);
+            speech = 'The shopkeeper. The job is done, but the ' + g.name +
+                     ' for the next one needs another ' + (g.cost - after) +
+                     ' dollars, even after the fish.';
+          } else {
+            sub = 'Hand the job in' + (st.hold ? ' — and sell $' + st.holdValue : '');
+            speech = 'The shopkeeper, ready to take your job in' +
+                     (st.hold ? ' and buy your catch' : '') +
+                     (g ? ', and to sell you the ' + g.name + ' for the next one.' : '.');
+          }
+        } else if (st.canTakeGrant) {
+          // He will sell you the next job's gear across the counter, too.
+          sub = 'Buy the ' + st.grant.name + ' — $' + st.grant.cost;
+          speech = 'The shopkeeper. He has the ' + st.grant.name + ' for ' + st.grant.cost +
+                   ' dollars, and the next job needs it.';
+        } else if (st.hold) {
+          sub = 'Sell your catch — $' + st.holdValue;
+          speech = 'The shopkeeper. Great catch! He will buy those ' + st.hold + ' for ' + st.holdValue + ' dollars.';
+        } else {
+          sub = st.progressText;
+          speech = 'The shopkeeper. ' + st.progressText + ' so far.';
+        }
       } else {
         sub = 'Back to the dock';
       }
@@ -675,12 +943,35 @@ RT.game = (function () {
       n: m.n, text: m.text,
       progress: st.progressText,
       done: st.done,
-      rod: rodById(m.rodId), bait: baitById(m.baitId),
-      rodArt: rodIconSrc(rodById(m.rodId)), baitArt: baitArt(baitById(m.baitId)),
+      rod: bestRod(), bait: bestBaitFor(m),
+      /* What the mission was balanced around, when that is not what you are
+         carrying: the honest version of "this one is going to be hard". */
+      wantedRod: (ROD_CLASS[m.rodId] || 3) > (ROD_CLASS[bestRodId()] || 3)
+                   ? rodById(m.rodId) : null,
+      nextRod: nextRod(),
+      gear: ownedGear(),
+      rodArt: rodIconSrc(bestRod()), baitArt: baitArt(bestBaitFor(m)),
+      /* The lure this job was built around, when it is not the one on the
+         hook: the honest "this is going to be slower than it should be". */
+      wantedBait: (m.baitId && !ownsBait(m.baitId)) ? baitById(m.baitId) : null,
       money: st.money,
       grant: st.grant, short: st.short, affordable: st.affordable,
       grantTaken: st.grantTaken,
       tip: missionTip(m),
+      /* What the next job needs and what it costs, said while there is still
+         time to save up for it rather than only at the counter. */
+      nextGear: (function () {
+        const g = grantFor(m);
+        if (!g || save.grantTaken === m.n) return null;
+        /* `ready` is the whole point: the gear is handed over when the JOB is
+           done, so telling somebody to go and get it before then sends them to
+           a shelf that will refuse them. The note can say what is coming and
+           what it costs; it may only offer the way there once it is actually
+           on sale. */
+        return { name: g.name, kind: g.kind, cost: g.cost,
+                 short: Math.max(0, g.cost - save.money),
+                 ready: st.canTakeGrant };
+      })(),
       caught: save.creel.length,
       earned: save.lifetimeEarned,
       hold: holdCount(), holdValue: holdValue()
@@ -777,9 +1068,11 @@ RT.game = (function () {
     }
     const have = Math.floor(value), need = t.amount;
     const left = Math.max(0, need - have);
-    const plural = need === 1 ? name : name + 's';
-    if (left <= 0) return 'You have all ' + need + ' ' + plural + '.';
-    return 'You have ' + have + ' of ' + need + ' ' + plural + '. ' +
+    /* No 's'. Fish species do not take one - three Sunfish, two Bass, a dozen
+       Pike - and the voice saying "one of three Sunfishs" is the kind of thing
+       that makes a game sound like a spreadsheet reading itself out. */
+    if (left <= 0) return 'You have all ' + need + ' ' + name + '.';
+    return 'You have ' + have + ' of ' + need + ' ' + name + '. ' +
            (left === 1 ? 'One more.' : left + ' more to go.');
   }
 
@@ -930,6 +1223,41 @@ RT.game = (function () {
     return isObjective ? Math.max(k, 0.55) : k;
   }
 
+  /**
+   * Whether this rod can HOLD a fish this size, once one has taken the bait.
+   *
+   * rodOdds() only weights the pool, and a weight is relative: in water that
+   * holds nothing but muskellunge, the pool normalises and a starter rod
+   * landed them all day. That is how the whole ladder could be walked on the
+   * gear you began with, and why the shop had nothing to sell that mattered.
+   *
+   * So there is a second, ABSOLUTE test at the moment of the take. Fail it and
+   * the line comes back with weed on it: the fish was there, it took the bait,
+   * and the rod was not enough for it. Nothing is lost - no bait, no money, no
+   * progress, and the next bite is seconds away - but you are told plainly
+   * what happened and what would fix it.
+   *
+   * The fish the mission actually asks for keeps a floor: mission 8 wants a
+   * pike on the starter rod on purpose, and that stretch is what makes the
+   * CastMaster feel earned. A wall is not a stretch.
+   */
+  function rodHolds(f, rodId, isObjective) {
+    const cls = ROD_CLASS[rodId] || 3;
+    const over = (f.difficultyTier || 3) - cls;
+    if (over <= 0) return 1;
+    /* One class over is a fish that mostly wins; two or more is a fish that
+       almost always does. Measured on a shoal the card named: a pike on the
+       starter rod comes to hand on about one bite in seven, and on the
+       CastMaster on three in four. That five-fold difference IS the reason to
+       buy the rod - it was 36% either way before, which is why the shop had
+       nothing to sell that mattered. */
+    const k = over === 1 ? 0.18 : 0.05;
+    /* The mission's own fish keeps a floor, but a low one: the ladder must not
+       become a wall for somebody who cannot yet afford the rod, and fishing
+       easier water for the money is always an option. */
+    return isObjective ? Math.max(k, 0.15) : k;
+  }
+
   /** The species this mission is actually asking for, if it names one. */
   function objectiveSpecies() {
     const m = run ? run.mission : currentMission();
@@ -938,23 +1266,33 @@ RT.game = (function () {
 
   function biteWeightedFishPool(biomeId, baitId, rodId) {
     const bait = baitById(baitId);
-    const rod = rodId || (run ? run.mission.rodId : currentMission().rodId);
+    const rod = rodId || bestRodId();
     return D.FISH.filter(f => {
       if (!f.biomeIds.includes(biomeId)) return false;
       // The secret fish only enters a pool when its own bait is equipped, and
       // bait is set per mission — so that baitId IS the whole Dingus unlock.
       if (f.secret) return !!(bait.biasTable && bait.biasTable[f.id]);
       return true;
-    }).map(f => ({
-      f,
-      // Bait tips the odds toward a species; the rod decides whether you were
-      // ever really in the game for it.
-      w: (((bait.biasTable && bait.biasTable[f.id]) || 1) *
-          rodOdds(f, rod, f.id === objectiveSpecies()))
-    })).filter(x => x.w > 0);
+    }).map(f => {
+      const bias = (bait.biasTable && bait.biasTable[f.id]) || 0;
+      /* Bait tips the odds toward a species, and the ABSENCE of the right bait
+         tips them away from the one the job is about. A lure that names your
+         fish is worth about four times one that does not - which is the whole
+         reason to buy the lure the job was built around, and small enough that
+         the wrong lure is a slog and never a wall. */
+      const baitW = bias || (f.id === objectiveSpecies() ? 0.45 : 1);
+      return { f, w: baitW * rodOdds(f, rod, f.id === objectiveSpecies()) };
+    }).filter(x => x.w > 0);
   }
 
-  function rollBite(biomeId, baitId, onShoal, rnd, rodId) {
+  /**
+   * What is on the end of the line this time.
+   *
+   * `namedId` is the species the shoal was announced as - the one on the card
+   * and in the spoken cue. On a shoal, most bites are that fish; everything
+   * else comes off the biome's own table as before.
+   */
+  function rollBite(biomeId, baitId, onShoal, rnd, rodId, namedId) {
     const rand = rnd || Math.random;
     const base = onShoal ? CFG.BITE : CFG.BITE_OPEN;
     /* A finder shrinks the two outcomes nobody wants. Whatever it takes off
@@ -968,15 +1306,60 @@ RT.game = (function () {
 
     const pool = biteWeightedFishPool(biomeId, baitId, rodId);
     if (!pool.length) return { category: 'nothing' };
+    const heldRod = rodId || bestRodId();
+    /* Every fish that takes the bait goes through the same gate: is this rod
+       enough for it? Weed if not, and it is the same answer whether the fish
+       came from the shoal's own promise or from the biome's table. */
+    const taken = (id) => {
+      const f = fishById(id);
+      if (!f) return { category: 'nothing' };
+      if (rand() < rodHolds(f, heldRod, id === objectiveSpecies())) {
+        return { category: 'fish', speciesId: id };
+      }
+      return { category: 'empty', gearMiss: true, tooBig: f.name };
+    };
+
+    /* Keep the card's promise - as far as the lure on the hook can keep it.
+       Only when the cast is actually ON the shoal, and only for a fish the rod
+       and bait could have produced anyway (it is in the pool, so its weight is
+       above zero). */
+    const lure = baitById(baitId || equippedBaitId());
+    const lureSuits = !!(lure && lure.biasTable && namedId && lure.biasTable[namedId]);
+    const namedShare = CFG.SHOAL_NAMED_SHARE * (lureSuits ? 1 : CFG.WRONG_BAIT_SHARE);
+    if (onShoal && namedId && pool.some(x => x.f.id === namedId) &&
+        rand() < namedShare) {
+      return taken(namedId);
+    }
     const total = pool.reduce((s, x) => s + x.w, 0);
     let pick = rand() * total;
-    for (const x of pool) { pick -= x.w; if (pick <= 0) return { category: 'fish', speciesId: x.f.id }; }
-    return { category: 'fish', speciesId: pool[pool.length - 1].f.id };
+    for (const x of pool) { pick -= x.w; if (pick <= 0) return taken(x.f.id); }
+    return taken(pool[pool.length - 1].f.id);
   }
 
   function bucketFor(q) {
     return QUALITY_BUCKETS.find(b => q >= b.min && q <= b.max) || QUALITY_BUCKETS[QUALITY_BUCKETS.length - 1];
   }
+  /**
+   * The smallest one of these you are allowed to keep.
+   *
+   * Taken off the species' own length range rather than written down sixteen
+   * times: the bottom fifth of the range is a short fish. So most of what you
+   * land is a keeper, a poor scrap of a reel-in sometimes is not, and the
+   * inches printed on the card suddenly mean something.
+   *
+   * Nothing about this can be failed. An undersized fish goes back, the game
+   * says why, and the next bite is along in a few seconds.
+   */
+  function keeperLength(f) {
+    if (!f || !f.lengthRange) return 0;
+    const lo = f.lengthRange[0], hi = f.lengthRange[1];
+    return Math.max(1, Math.round(lo + (hi - lo) * 0.2));
+  }
+
+  /** Is the size limit being enforced at all? A setting, and off is fine. */
+  function keepersOn() { return save.keepers !== false; }
+  function setKeepers(on) { save.keepers = !!on; persist(); }
+
   function rollFishCatch(speciesId, quality) {
     const f = fishById(speciesId);
     const b = bucketFor(quality);
@@ -989,11 +1372,19 @@ RT.game = (function () {
     const value = f.baseValuePerWeight > 0
       ? Math.max(1, Math.round(t.pay + weight * f.baseValuePerWeight * t.rate))
       : 0;
+    const keeper = keeperLength(f);
     return { type: 'fish', id: f.id, name: f.name, length, weight, value,
-             qualityLabel: b.label, quality, secret: !!f.secret, tier: f.difficultyTier };
+             qualityLabel: b.label, quality, secret: !!f.secret, tier: f.difficultyTier,
+             keeper,
+             /* A short fish. The secret one is never short - it is the end of
+                the game and it is not going back in the water. */
+             released: keepersOn() && !f.secret && length < keeper };
   }
+  /* Boot, tyre, tin can, weeds - all four still come up, as they always have.
+     They are the lake's own joke and they are nothing to do with gear. */
   function rollJunkItem() {
-    const i = D.ITEM_TABLE.junk[Math.floor(Math.random() * D.ITEM_TABLE.junk.length)];
+    const table = D.ITEM_TABLE.junk;
+    const i = table[Math.floor(Math.random() * table.length)];
     return { type: 'junk', id: i.id, name: i.name, value: 0 };
   }
   function rollValuableItem() {
@@ -1018,6 +1409,7 @@ RT.game = (function () {
   };
   function catchArtSrc(o) {
     if (o.type === 'fish') return 'images/fish/' + o.id + '.png';
+    if (o.type === 'empty') return null;      // nothing came up; nothing to show
     if (o.type === 'junk' || o.type === 'valuable') return 'images/items/' + o.id + '.png';
     return null;
   }
@@ -1040,10 +1432,32 @@ RT.game = (function () {
 
   /** Quality never loses the fish. The only way one does not land is the
       junk/valuable roll made at bite time, unrelated to how it was reeled. */
-  function resolveCatch(category, speciesId, quality) {
+  function resolveCatch(category, speciesId, quality, bite) {
     if (category === 'fish')     return rollFishCatch(speciesId, quality);
     if (category === 'valuable') return rollValuableItem();
+    /* Something took it and came off: the hook comes up bare.
+     *
+     * This used to hand back a tangle of weeds, which meant the card carried a
+     * weed, a weed's joke, and a lecture about rods all at once - three
+     * different stories about one event. An empty hook is the one thing that
+     * is actually true, and the only thing that needs saying with it is what
+     * would have held the fish. */
+    if (category === 'empty' || (bite && bite.gearMiss)) {
+      const rod = equippedRod();
+      const better = betterRodFor(bite && bite.tooBig);
+      return { type: 'empty', id: 'empty', name: 'It got away', value: 0,
+               gearMiss: true, tooBig: bite && bite.tooBig,
+               rodName: rod ? rod.name : 'this rod',
+               betterRod: better ? better.name : null };
+    }
     return rollJunkItem();
+  }
+
+  /** The first rod in the list that could hold this species. */
+  function betterRodFor(speciesName) {
+    const f = D.FISH.find(x => x.name === speciesName);
+    if (!f) return null;
+    return D.RODS.find(r => (ROD_CLASS[r.id] || 3) >= (f.difficultyTier || 3)) || null;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -1062,6 +1476,10 @@ RT.game = (function () {
     WAITING: 'waiting',    // waiting for a bite — sit here forever if you like
     HOOKING: 'hooking',    // fish on, waiting to be hooked — also forever
     REELING: 'reeling',
+    /* The fish leaves the water, swings over the rail and drops into the boat.
+       No input, no choice, about a second and a half - the payoff the whole
+       trip is for, which until now was a screen transition. */
+    LANDING: 'landing',
     CARD:    'card',
     LEAVING: 'leaving'
   };
@@ -1091,9 +1509,9 @@ RT.game = (function () {
     const m = currentMission();
     return {
       mission: m,
-      rod: rodById(m.rodId),
-      bait: baitById(m.baitId),
-      range: castRange(m.rodId),
+      rod: bestRod(),
+      bait: equippedBait(),
+      range: castRange(bestRodId()),
       state: S.STEER,
       dist: 0,
       lateral: 0,
@@ -1107,7 +1525,11 @@ RT.game = (function () {
       spotIndex: 0,
       sinceTarget: 0,
       pending: [],
-      nextSpotDist: 260,
+      /* Far enough out that TROLL_GRACE seconds pass before it is called -
+         measured against the CURRENT cue lead, so a fish finder (which calls
+         spots from further off) lengthens the warning without eating into
+         the quiet start. */
+      nextSpotDist: CFG.BOAT_SPEED * (CFG.TROLL_GRACE + cueLead()),
       current: null,         // the spot we stopped at
       timer: 0,
       lateralTarget: null,   // set by mouse/touch; null while switches are driving
@@ -1200,8 +1622,91 @@ RT.game = (function () {
   function quitToMenu() { run = null; paused = false; RT.scene.showAttract(); }
 
   /** The rod and bait for whatever mission is being played right now. */
-  function equippedRod()  { return rodById((run ? run.mission : currentMission()).rodId); }
-  function equippedBait() { return baitById((run ? run.mission : currentMission()).baitId); }
+  /**
+   * The best rod owned. This is the rod in the angler's hands, everywhere:
+   * how far a cast goes, what it can hold, what the HUD says, what is drawn.
+   */
+  function bestRod() {
+    const owned = (save.rods || ['starter']).filter(id => rodById(id));
+    if (!owned.length) return rodById('starter');
+    return owned.map(rodById)
+                .sort((a, b) => (ROD_CLASS[b.id] || 3) - (ROD_CLASS[a.id] || 3) ||
+                                b.reachFt - a.reachFt)[0];
+  }
+  function bestRodId() { return bestRod().id; }
+  function ownsRod(id) { return (save.rods || []).indexOf(id) >= 0; }
+  /** The next rod up from the one being used, and what it costs. */
+  /**
+   * The lure this job wants and you have not got, with what it costs.
+   *
+   * Only ever the CURRENT job's lure - the shelf is not a catalogue of every
+   * lure in the game, it is the one thing that would make today's fishing go
+   * better. */
+  function nextBait() {
+    const m = currentMission();
+    if (!m || !m.baitId || ownsBait(m.baitId)) return null;
+    const b = baitById(m.baitId);
+    if (!b) return null;
+    return { id: b.id, name: b.name,
+             cost: b.id === 'secret_t_pill' ? 0 : Math.round(b.costPerUnit * BAIT_GRANT_MULT),
+             note: baitBlurb(b) };
+  }
+
+  function nextRod() {
+    const cls = ROD_CLASS[bestRodId()] || 3;
+    return D.RODS.find(r => !ownsRod(r.id) &&
+                            ((ROD_CLASS[r.id] || 3) > cls || r.reachFt > bestRod().reachFt)) || null;
+  }
+  function buyRod(id) {
+    const r = rodById(id);
+    if (!r || ownsRod(id) || save.money < r.cost) return null;
+    save.money -= r.cost;
+    save.rods.push(id);
+    persist();
+    pushHud();
+    return { kind: 'rod', id: r.id, name: r.name, cost: r.cost,
+             note: r.reachNote, description: r.description, art: rodArtSrc(r) };
+  }
+
+  function equippedRod()  { return bestRod(); }
+  function ownsBait(id) { return (save.baits || []).indexOf(id) >= 0; }
+
+  /**
+   * The lure on the hook.
+   *
+   * The job's own lure if it has been bought; failing that, whichever owned
+   * lure this job's fish actually go for; failing that, the plain worm that
+   * came with the boat. A mission NAMES the lure it was built around - that
+   * is a thing to go and buy, not a thing to be handed.
+   */
+  function bestBaitFor(m) {
+    const want = m && m.baitId;
+    if (want && ownsBait(want)) return baitById(want);
+    const target = m && m.target && m.target.speciesId;
+    const owned = (save.baits || ['plainworm']).map(baitById).filter(Boolean);
+    if (target) {
+      const suited = owned.filter(b => b.biasTable && b.biasTable[target]);
+      if (suited.length) {
+        return suited.sort((a, b) => b.biasTable[target] - a.biasTable[target])[0];
+      }
+    }
+    return owned[owned.length - 1] || baitById('plainworm');
+  }
+
+  function equippedBait() { return bestBaitFor(run ? run.mission : currentMission()); }
+  function equippedBaitId() { return equippedBait().id; }
+  function buyBait(id) {
+    const b = baitById(id);
+    if (!b || ownsBait(id)) return null;
+    const cost = b.id === 'secret_t_pill' ? 0 : Math.round(b.costPerUnit * BAIT_GRANT_MULT);
+    if (save.money < cost) return null;
+    save.money -= cost;
+    save.baits.push(id);
+    persist();
+    pushHud();
+    return { kind: 'bait', id: b.id, name: b.name, cost: cost,
+             note: baitBlurb(b), description: '', art: baitArtSrc(b) };
+  }
 
   function pushHud() {
     const m = run ? run.mission : currentMission();
@@ -1211,7 +1716,8 @@ RT.game = (function () {
       target: targetProgressText(m, save.progressValue),
       targetDone: done,
       rodName: rodById(m.rodId).name,
-      baitName: baitById(m.baitId).name,
+      baitName: equippedBait().name,
+      gear: ownedGear(),
       money: save.money,
       finale: !!m.finale,
       hint: done ? 'Head back to the dock' : ''
@@ -1235,11 +1741,11 @@ RT.game = (function () {
       right: near ? shoalInfo(s, 'right') : null,
       alongside: !!along,
       entering: run.enterSide,
-      enterFrac: U.clamp((run.enterT || 0) / CFG.PULL_OVER, 0, 1),
+      enterFrac: U.clamp((run.enterT || 0) / pullOverTime(run.enterSide), 0, 1),
       /* Past the window the decision is made and the boat is simply running up
          to the fish. The UI needs to know, or it goes on asking you to keep
          holding - and ticking at you - long after you have committed. */
-      committed: (run.enterT || 0) >= CFG.PULL_OVER,
+      committed: (run.enterT || 0) >= pullOverTime(run.enterSide),
       // What you are pulling in ON, so the banner can name it.
       /* What is over there, if anything, and whether we have got there yet.
          Read off the spot the CARD is showing, not just the one we are level
@@ -1318,7 +1824,16 @@ RT.game = (function () {
     pushAim();
   }
 
-  /** One switch: releasing arms the other way, so a tap swaps direction. */
+  /**
+   * One switch: every release arms the other way.
+   *
+   * The same scheme Race Tracks uses, and for the same reason - with one
+   * switch there is no way to say "left" or "right", so the two take turns:
+   * press and hold to go the armed way, let go, and the next press goes the
+   * other way. It flips on the RELEASE of any press, long or short, because
+   * asking for a quick tap to change sides asks for the one gesture this
+   * game's players cannot make.
+   */
   function flipArmed() {
     if (!run) return;
     run.armed = run.armed === 'left' ? 'right' : 'left';
@@ -1328,8 +1843,9 @@ RT.game = (function () {
   }
   function getArmed() { return run ? run.armed : 'right'; }
 
-  /* ── Aiming. Peggle's convention: hold to sweep, release to stop, tap to
-       lock, and each fresh hold reverses the sweep. ────────────────────── */
+  /* ── Aiming. Hold to sweep, release to stop, and each fresh hold reverses
+       the sweep. Taking the aim is not a beat of its own any more: the press
+       that takes it is the press that starts the cast (beginCharge). ───── */
 
   /** Straight out over the fishing side: -90 degrees to port, +90 to starboard. */
   function aimCentre() { return (run && run.fishSide === 'left') ? -Math.PI / 2 : Math.PI / 2; }
@@ -1344,7 +1860,8 @@ RT.game = (function () {
     run.aimSweeping = false;
     run.power = 0;
     run.powTick = 0;
-    say('Aim your cast. Hold to swing it round, tap to lock it in.');
+    say('Aim your cast. Hold to swing it round. Press and hold to push the ' +
+        'cast out, then let go to throw it.');
     pushAim();
   }
 
@@ -1354,14 +1871,38 @@ RT.game = (function () {
     run.aimSweeping = !!on;
   }
 
-  function lockAim() {
+  /**
+   * Take the direction and move to the meter.
+   *
+   * `quiet` is for beginCharge, where the meter is already running and being
+   * told the aim is "locked" first is a beat that no longer exists.
+   */
+  function lockAim(quiet) {
     if (!run || run.state !== S.AIM) return;
     run.state = S.CHARGE;
     run.aimSweeping = false;
     run.charging = false;
-    say('Locked. Now hold to charge the cast.');
+    if (!quiet) say('Locked. Now hold to push the cast out.');
     fire('onAim', null);
     pushCharge();
+  }
+
+  /**
+   * One press does the whole cast: taking the aim and starting the meter are
+   * the same act, and letting go throws it.
+   *
+   * There used to be a lock-in step between them, and it could only be worked
+   * by a TAP - a press under 400ms. A switch held the way switches are
+   * actually held simply never locked anything in, so the aimer sat there and
+   * the cast never happened. Nothing in this game may require a short press.
+   */
+  function beginCharge() {
+    if (!run) return;
+    if (run.state === S.AIM) {
+      lockAim(true);
+      say('Let go to cast.');
+    }
+    setCharging(true);
   }
 
   function setCharging(on) {
@@ -1388,6 +1929,23 @@ RT.game = (function () {
   }
 
   /**
+   * The shoal under a point on the water, if any.
+   *
+   * Used by the cast to decide where it landed and by the retrieve to keep
+   * asking on the way back, so both answer the question the same way.
+   */
+  function shoalAt(along, lateral) {
+    let shoal = null, best = Infinity;
+    const spot = run.current;
+    if (!spot) return null;
+    for (const sh of spot.shoals) {
+      const d = Math.hypot(spot.dist + sh.along - along, sh.lateral - lateral);
+      if (d < sh.radius && d < best) { best = d; shoal = sh; }
+    }
+    return shoal;
+  }
+
+  /**
    * Where a cast at this angle and power comes down, in track space, and which
    * shoal (if any) it lands on. Angle 0 is straight over the bow, positive to
    * starboard.
@@ -1396,15 +1954,7 @@ RT.game = (function () {
     const d = run.range * U.clamp(frac, 0, 1);
     const along = run.dist + Math.cos(angle) * d;
     const lateral = run.lateral + Math.sin(angle) * d;
-    let shoal = null, best = Infinity;
-    const spot = run.current;
-    if (spot) {
-      for (const sh of spot.shoals) {
-        const dd = Math.hypot(lateral - sh.lateral, along - (spot.dist + sh.along));
-        if (dd < sh.radius && dd < best) { best = dd; shoal = sh; }
-      }
-    }
-    return { along, lateral, d, angle, shoal };
+    return { along, lateral, d, angle, shoal: shoalAt(along, lateral) };
   }
 
   function pushAim() {
@@ -1431,11 +1981,24 @@ RT.game = (function () {
     });
   }
 
-  /** Tap while a fish is on: hook it. */
+  /** A press - any press, however long it is held - while a fish is on. */
   function hookFish() {
     if (!run || run.state !== S.HOOKING) return false;
     run.state = S.REELING;
     run.timer = 0;
+    /* How big it is, 0..1, taken from the top of the species' weight range.
+     * A sturgeon and a sunfish used to differ only in how long the bar took to
+     * fill. Everything that CAN carry weight now does: how far the rod hoops
+     * over, how the boat heels, and how low the reel sounds. None of it asks
+     * anything of the player - it is the difference between being told you
+     * have hooked something big and being able to feel it.
+     */
+    run.fightSize = (function () {
+      if (run.bite.category !== 'fish') return 0.15;
+      const f = fishById(run.bite.speciesId);
+      const top = (f && f.weightRange && f.weightRange[1]) || 4;
+      return U.clamp(Math.pow(top / 60, 0.5), 0.1, 1);
+    })();
     const tier = run.bite.category === 'fish'
       ? (fishById(run.bite.speciesId).difficultyTier || 3) : 2;
     const t = TIERS[tier] || TIERS[3];
@@ -1459,6 +2022,60 @@ RT.game = (function () {
 
   let reelHolding = false;
   function setReelHold(on) { reelHolding = !!on; }
+
+  /**
+   * Winding an empty line back in.
+   *
+   * Waiting for a bite used to be a room with one door: the only way off the
+   * water was to hook something. Now the switch retrieves - hold it and the
+   * lure comes back toward the boat, let go and it stops there and carries on
+   * fishing. It is not a cancel button and it is not instant, because the
+   * cast is still in the water: a fish can take it halfway back, which is
+   * exactly what a retrieve is FOR.
+   *
+   * Reel it all the way to the rail and the line is in; then you cast again,
+   * or troll on. Called every frame from updateWaiting while the switch is
+   * down. Returns true when the line has come all the way in.
+   */
+  function reelInLine(dt) {
+    if (!run || !run.landing) return false;
+    const side = run.fishSide === 'left' ? -1 : 1;
+    const homeAlong = run.dist + 0.6;
+    const homeLat = run.lateral + side * CFG.RAIL_OFF;
+    const dA = homeAlong - run.landing.along;
+    const dL = homeLat - run.landing.lateral;
+    const gap = Math.hypot(dA, dL);
+
+    if (gap <= CFG.REEL_IN_DONE) {
+      RT.audio.stopReelLoop();
+      RT.audio.reelStop();
+      run.reelSound = false;
+      run.bite = null;
+      run.biteAt = 0;
+      run.timer = 0;
+      // The float and hook go back to the rod tip: that is what "in" looks like.
+      run.landing = null;
+      fire('onBig', null);
+      fire('onBiteWash', false);
+      say('Line in. Cast again, or troll on.');
+      openSpotCard(false);
+      return true;
+    }
+
+    const step = Math.min(gap, CFG.REEL_IN_SPEED * dt);
+    run.landing.along += (dA / gap) * step;
+    run.landing.lateral += (dL / gap) * step;
+    /* Whatever water it is over NOW is the water it is fishing. Drag a lure
+       off a weed bed and the weed bed's fish stop being the ones on offer -
+       which is the honest version of a retrieve, and it makes where you stop
+       reeling a real decision rather than a cosmetic one. */
+    const sh = shoalAt(run.landing.along, run.landing.lateral);
+    run.landing.shoal = sh;
+    run.onShoal = !!sh;
+    run.biteBiome = sh ? sh.biome : run.biteBiome;
+    run.biteNamed = sh ? (sh.fishId || null) : null;
+    return false;
+  }
 
   /* ── Choices on the spot card ─────────────────────────────────────────── */
 
@@ -1507,6 +2124,7 @@ RT.game = (function () {
       case S.WAITING: updateWaiting(dt); break;
       case S.HOOKING: updateHooking(dt); break;
       case S.REELING: updateReeling(dt); break;
+      case S.LANDING: updateLanding(dt); break;
       case S.LEAVING: updateLeaving(dt); break;
       default: break;
     }
@@ -1607,7 +2225,7 @@ RT.game = (function () {
         run.enterSide = null; run.enterT = 0; run.leanSide = null; run.leanT = 0;
       } else {
         run.enterSide = run.pullLock;
-        run.enterT = CFG.PULL_OVER;      // already decided
+        run.enterT = pullOverTime(run.pullLock);   // already decided
         const t = spotToEnter(run.pullLock);
         if (t) enterSpot(t, run.pullLock);
         pushSpots();
@@ -1625,7 +2243,7 @@ RT.game = (function () {
       run.enterSide = null;
     } else if (lean) {
       run.leanT += dt;
-      if (run.leanT >= CFG.LEAN_ARM) {
+      if (run.leanT >= leanArm(lean)) {
         if (!run.enterSide) {
           // The offer opens. Say what is over there, if anything is.
           run.enterSide = lean;
@@ -1633,10 +2251,11 @@ RT.game = (function () {
           announcePullOver(lean);
         }
         run.enterT += dt;
-        if (run.enterT >= CFG.PULL_OVER) {
-          /* Null means "the fish you asked for are still ahead" - so the helm
-             stays over (run.enterSide is still set, which holds the turn) and
-             we pull in the moment we draw level with them. */
+        if (run.enterT >= pullOverTime(lean)) {
+          /* The meter is full, so we go NOW - even if the shoal it named is
+             still up ahead. Closing that gap is the arrival's job (enterSpot
+             sets arriveDist and updateArrive runs the boat up to it), not
+             another wait at trolling speed. */
           const target = spotToEnter(lean);
           if (target) enterSpot(target, lean);
         }
@@ -1645,6 +2264,21 @@ RT.game = (function () {
 
     pushSpots();
   }
+
+  /**
+   * How long the two beats of a pull-over take on this side.
+   *
+   * Fish that have been CALLED get the short version: the card is up, the
+   * player has been told what is over there by name, and making them hold the
+   * helm over for another four and a half seconds is a queue, not a decision.
+   * Open water keeps the long hold - see LEAN_ARM_OPEN.
+   */
+  function calledOn(side) {
+    const s = activeSpot();
+    return !!(s && s.cued && s.shoals.some(x => x.side === side));
+  }
+  function leanArm(side)      { return calledOn(side) ? CFG.LEAN_ARM  : CFG.LEAN_ARM_OPEN; }
+  function pullOverTime(side) { return calledOn(side) ? CFG.PULL_OVER : CFG.PULL_OVER_OPEN; }
 
   /** The spot the boat is level with right now, if any. */
   function alongsideSpot() {
@@ -1674,13 +2308,14 @@ RT.game = (function () {
        but a rod throws 50-75. Stopping anywhere in that window was how you
        could pull over for a muskellunge and be told there was nothing in
        reach: the boat had halted a couple of hundred units short of the fish
-       it had just committed to.
+       it had just committed to. The answer is not to make the player wait
+       until they draw level - it is to go to the fish, which is what
+       enterSpot's arriveDist does.
 
-       Three answers:
-         a spot   - close enough to fish from, so go in
-         null     - the fish are still ahead: hold the turn and keep going
-         open     - no card on this side, so this is a deliberate stop on open
-                    water, which is allowed and immediate
+       Two answers, and both of them are immediate:
+         a spot   - the card's fish, wherever along the route they are
+         open     - no card on this side (or no rod for it), so this is a
+                    deliberate stop on open water, which is always allowed
     */
     const openWater = { index: -1, dist: run.dist, shoals: [],
                         cued: true, spent: false, open: true };
@@ -1688,8 +2323,6 @@ RT.game = (function () {
     const sh = spot && spot.cued && spot.shoals.find(x => x.side === side);
     if (!sh) return openWater;
 
-    const shoalAlong = spot.dist + sh.along;
-    const stopDist = run.dist + CFG.BOAT_SPEED * CFG.STOP_TIME * 0.5;
     const bestLat = U.clamp(sh.lateral, -CFG.LANE_HALF, CFG.LANE_HALF);
 
     /* Only the ACROSS-the-lake gap has to be inside the rod, because the boat
@@ -1701,9 +2334,15 @@ RT.game = (function () {
        nothing in reach. */
     const lateralGap = Math.abs(sh.lateral - bestLat);
     if (lateralGap > run.range * 0.92) return openWater;  // no rod for it here
-    if (shoalAlong > stopDist + 5) return null;           // still coming up
-    if (shoalAlong < run.dist - 70) return openWater;     // well past it now
+    /* Ahead of us or behind us, it does not matter: if the CARD is up, the
+       card is a promise, and putting the helm over honours it.
+       This used to give up on a shoal seventy units astern - while the card
+       for it stayed on screen for another two hundred - so pulling over for
+       the pike the game was still showing dropped you in open water and told
+       you there was nothing in reach. The card's own window (alongsideSpot,
+       one spotWindow either side) is now the only window there is. */
     return spot;
+
   }
 
   /**
@@ -1718,16 +2357,20 @@ RT.game = (function () {
     if (side !== 'left' && side !== 'right') return false;
     run.pullLock = side;
     run.leanSide = side;
-    run.leanT = CFG.LEAN_ARM;
+    run.leanT = leanArm(side);
     if (run.enterSide !== side) { run.enterSide = side; announcePullOver(side); }
-    run.enterT = CFG.PULL_OVER;
+    run.enterT = pullOverTime(side);
     return true;
   }
 
   /** Said once, when the offer to pull over opens. */
   function announcePullOver(side) {
-    const along = alongsideSpot();
-    const sh = along && along.shoals.find(x => x.side === side);
+    /* The spot the CARD is showing, not just one we are already level with.
+       Pulling over the moment the fish are called - which is the whole point
+       of calling them early - was answered with "pulling over to fish here",
+       as though there were nothing over there at all. */
+    const spot = activeSpot();
+    const sh = spot && spot.cued && spot.shoals.find(x => x.side === side);
     if (cueLevel >= 1) RT.audio.panTone(side);
     if (sh) {
       say('Pulling over for ' + (sh.fishName || 'fish') +
@@ -1750,6 +2393,16 @@ RT.game = (function () {
     run.arriveLat = sh ? U.clamp(sh.lateral, -CFG.LANE_HALF, CFG.LANE_HALF) : run.lateral;
     // ...and level with it along the route, so the fish end up on the beam.
     run.arriveDist = sh ? spot.dist + sh.along : null;
+    /* The run-up. Committing early - the moment the card appears - can leave
+       most of SPOT_WINDOW still to cover, so the arrival gets a little longer
+       for a longer gap and the boat opens up to cover it. Capped, because
+       "and then we get there" has to stay a beat and not a journey. */
+    run.arriveFrom = run.dist;
+    // Distance either way: the fish can be astern, and dropping back to them
+    // is the same move as running up to them.
+    const gap = (run.arriveDist === null) ? 0 : Math.abs(run.arriveDist - run.dist);
+    run.arriveTime = Math.min(CFG.ARRIVE_MAX,
+                              CFG.STOP_TIME + CFG.RUN_UP_TIME * (gap / CFG.SPOT_WINDOW));
     run.steerDir = 0;
     run.lateralTarget = null;
     run.enterT = 0;
@@ -1757,7 +2410,8 @@ RT.game = (function () {
     run.leanSide = null;
     run.leanT = 0;
     run.pullLock = null;
-    RT.audio.motorIdle();
+    // Opening up to get there, then dropping to idle once we have (updateArrive).
+    if (gap > 12) RT.audio.motorUp(); else RT.audio.motorIdle();
   }
 
   function announceSpot(spot) {
@@ -1795,11 +2449,16 @@ RT.game = (function () {
     run.timer += dt;
     // Way comes off, the helm centres, and the boat settles — then the rod
     // comes out. Nothing else happens until it has actually stopped.
-    const k = U.smoothstep(Math.min(1, run.timer / CFG.STOP_TIME));
-    // Coast to a halt - or ease onto the shoal's own mark if there is one, so
-    // the fish finish up abeam rather than somewhere off the quarter.
+    const T = run.arriveTime || CFG.STOP_TIME;
+    const k = U.smoothstep(Math.min(1, run.timer / T));
+    /* Run up onto the shoal's own mark and stop there, on a schedule that
+       always finishes: a plain ease from where we committed to where the fish
+       are. It used to DAMP toward the mark, which never quite arrives - so on
+       a long gap the boat was still short of the fish when the card opened,
+       and the only fix on offer was trolling the distance first. */
     if (run.arriveDist !== undefined && run.arriveDist !== null) {
-      run.dist = U.damp(run.dist, run.arriveDist, 3.0, dt);
+      run.dist = U.lerp(run.arriveFrom !== undefined ? run.arriveFrom : run.dist,
+                        run.arriveDist, k);
     } else {
       run.dist += CFG.BOAT_SPEED * (1 - k) * dt;
     }
@@ -1809,8 +2468,9 @@ RT.game = (function () {
     run.yaw = U.damp(run.yaw, 0, 3.5, dt);
     run.steerDir = 0;
     run.lateralTarget = null;
-    if (run.timer >= CFG.STOP_TIME) {
+    if (run.timer >= T) {
       run.yaw = 0;
+      RT.audio.motorIdle();
       openSpotCard(false);
     }
   }
@@ -1856,24 +2516,57 @@ RT.game = (function () {
     run.biteBiome = sh ? sh.biome
       : U.rng(U.hash('open' + Math.floor(run.dist))).pick(run.mission.biomes);
     run.onShoal = !!sh;
+    // The species the shoal was announced as, so the bites match the card.
+    run.biteNamed = sh ? (sh.fishId || null) : null;
     const r = U.rng(U.hash('bite' + run.mission.n + ':' + Math.floor(run.dist) + ':' + Math.round(run.power)));
     run.biteAt = r.range(CFG.BITE_WAIT_MIN, CFG.BITE_WAIT_MAX);
-    run.bite = rollBite(run.biteBiome, run.mission.baitId, run.onShoal);
+    run.teaseT = 0;
+    run.bite = rollBite(run.biteBiome, equippedBaitId(), run.onShoal,
+                        null, null, run.biteNamed);
   }
 
   function rebite() {
     const r = U.rng(U.hash('rebite' + run.mission.n + ':' + Math.floor(run.dist * 7 + run.timer * 13)));
     run.biteAt = r.range(CFG.REBITE_MIN, CFG.REBITE_MAX);
-    run.bite = rollBite(run.biteBiome, run.mission.baitId, run.onShoal);
+    run.teaseT = 0;
+    run.bite = rollBite(run.biteBiome, equippedBaitId(), run.onShoal,
+                        null, null, run.biteNamed);
     run.timer = 0;
   }
 
   function updateWaiting(dt) {
+    /* The retrieve, while the switch is down. It runs BEFORE the bite clock,
+       so a fish that takes this frame takes it wherever the lure has just got
+       to - and reaching the rail ends the wait outright. */
+    /* The handle turning, as a LOOP - the same one a fish gets, at the same
+       speed. It was a click per frame, sixty a second, which is not a reel:
+       it is a scream. Started once when the retrieve begins and stopped the
+       moment the switch comes up. */
+    if (reelHolding && run.landing) {
+      if (!run.reelSound) { RT.audio.reelStart(0.2); run.reelSound = true; }
+      if (reelInLine(dt)) return;
+    } else if (run.reelSound) {
+      RT.audio.stopReelLoop();
+      RT.audio.reelStop();
+      run.reelSound = false;
+    }
     run.timer += dt;
+
+    /* Nibbles on the way to the take. Small, quiet, and deliberately NOT the
+       thing you press on - the take is loud, spoken, and washes the screen.
+       A nibble is the float twitching while the fish makes its mind up. */
+    run.teaseT = (run.teaseT || 0) + dt;
+    if (run.teaseT >= CFG.TEASE_EVERY && run.timer < run.biteAt - 0.6) {
+      run.teaseT = 0;
+      run.teaseAt = 0;                 // Scene reads this to dip the float
+      RT.audio.nibble();
+    }
     if (run.timer < run.biteAt) return;
     if (run.bite.category === 'nothing') { say('Nothing yet. Still out there.'); rebite(); return; }
     run.state = S.HOOKING;
     run.timer = 0;
+    run.hookNudge = 0;
+    run.teaseT = 0;
     // How long it holds on is different every time, so a bite is something to
     // watch for rather than a formality.
     const hr = U.rng(U.hash('hook' + run.mission.n + ':' + Math.floor(run.dist * 31 + run.biteAt * 97)));
@@ -1887,6 +2580,14 @@ RT.game = (function () {
 
   function updateHooking(dt) {
     run.timer += dt;
+    /* Said again while the take waits. The banner and the wash are already up
+       the whole time; this is for somebody who was looking somewhere else when
+       it landed, and it is a reminder, never a countdown. */
+    run.hookNudge = (run.hookNudge || 0) + dt;
+    if (run.hookNudge >= CFG.HOOK_NUDGE) {
+      run.hookNudge = 0;
+      say('Fish on. Press to hook it.');
+    }
     // Miss the window and it spits the hook. Then it bites again, and again,
     // for as long as you care to sit there — a missed take costs only time.
     if (run.timer >= run.hookWindow) {
@@ -1936,7 +2637,7 @@ RT.game = (function () {
         r.phase = 'reel';
         r.runIx++;
         fire('onBig', null);
-        RT.audio.reelClick();
+        RT.audio.reelClick(run.fightSize);
         say('She\'s tiring — reel!');
       }
     }
@@ -1944,6 +2645,8 @@ RT.game = (function () {
     const running = (r.phase === 'run');
 
     if (running) {
+      // A run takes line back: the bar goes with it, and so does the float.
+      r.progress = Math.max(0, r.progress - CFG.RUN_TAKE * dt);
       // Hauling against a running fish is the only way to lose one.
       if (reelHolding) r.strain = Math.min(1, r.strain + dt / strainSnap());
       else             r.strain = Math.max(0, r.strain - dt / CFG.STRAIN_EASE_S);
@@ -1958,7 +2661,7 @@ RT.game = (function () {
 
     if (reelHolding !== r.wasHolding) {
       r.wasHolding = reelHolding;
-      if (reelHolding && !running) RT.audio.reelStart(); else RT.audio.stopReelLoop();
+      if (reelHolding && !running) RT.audio.reelStart(run.fightSize); else RT.audio.stopReelLoop();
     }
 
     // A reminder, never a countdown.
@@ -1995,7 +2698,7 @@ RT.game = (function () {
   function landFish() {
     const r = run.reel;
     const q = r.total > 0 ? Math.round(100 * U.clamp(r.held / r.total, 0, 1)) : 100;
-    const outcome = resolveCatch(run.bite.category, run.bite.speciesId, q);
+    const outcome = resolveCatch(run.bite.category, run.bite.speciesId, q, run.bite);
     outcome.quality = q;
     RT.audio.stopReelLoop();
     RT.audio.splash();
@@ -2005,40 +2708,111 @@ RT.game = (function () {
     /* Nothing is paid out here. What you land goes in the hold and is worth
        something only once the shop buys it — which is what makes coming back
        in with a full boat feel like anything. */
+    /* A short fish never comes aboard: no hold, no money, no creel, no
+       personal best, and no progress on the job. It cost nothing but the cast,
+       and the game says so out loud on the way past. */
+    if (outcome.released) outcome.value = 0;
     if (outcome.value) {
       save.hold.push({ id: outcome.id, name: outcome.name, value: outcome.value,
                        type: outcome.type });
     }
     run.tripMoney += outcome.value || 0;
-    if (outcome.type === 'fish') {
+    if (outcome.type === 'fish' && !outcome.released) {
       run.tripCatch.push({ id: outcome.id, name: outcome.name,
                            length: outcome.length, weight: outcome.weight });
       save.creel.push({ id: outcome.id, length: outcome.length,
                         weight: outcome.weight, m: run.mission.n });
+      /* A personal best is the cheapest pride in any fishing game: the data
+         was already here, nothing ever said so. */
       const b = save.best[outcome.id];
       if (!b || outcome.weight > b.weight) {
+        outcome.isBest = true;
+        outcome.beat = b ? b.weight : 0;
         save.best[outcome.id] = { length: outcome.length, weight: outcome.weight };
       }
     }
     const wasDone = targetComplete(run.mission, save.progressValue);
-    const advanced = applyToTarget(run.mission, outcome);
+    const advanced = outcome.released ? false : applyToTarget(run.mission, outcome);
     const nowDone = targetComplete(run.mission, save.progressValue);
     run.lastCatch = outcome;
-    run.state = S.CARD;
+    /* Everything is decided here - the fish is caught, the hold is heavier,
+       the mission has moved - but the CARD waits for the landing beat, so the
+       first thing that happens is the fish coming out of the water and not a
+       sheet of paper sliding over the top of it. */
+    run.cardPending = {
+      which: (outcome.type === 'fish' && outcome.id === 'largemouth_dingus')
+               ? 'dingusreveal' : 'catchreveal',
+      outcome,
+      // No quip on an empty hook: there is nothing there to be funny about.
+      quip: (outcome.type === 'fish' || outcome.type === 'empty')
+              ? null : pickQuip(outcome.id),
+      art: catchArtSrc(outcome),
+      placeholder: CATCH_PLACEHOLDER_EMOJI[outcome.id] || '\ud83d\udc1f',
+      advanced,
+      justCompleted: !wasDone && nowDone,
+      targetText: targetProgressText(run.mission, save.progressValue),
+      targetSpoken: targetSpeech(run.mission, save.progressValue),
+      /* Pips for a job counted in whole fish, so the progress can be READ at a
+         glance rather than parsed: three circles, two of them filled. */
+      pips: (function () {
+        const t = run.mission.target;
+        if (!t || t.type === 'freeRoam' || t.type === 'catchLength') return null;
+        if (t.type === 'catchWeight') return null;
+        return { have: Math.floor(save.progressValue), need: t.amount };
+      })()
+    };
+    run.state = S.LANDING;
+    run.timer = 0;
     persist();
     pushHud();
 
-    const isDingus = outcome.type === 'fish' && outcome.id === 'largemouth_dingus';
-    fire('onCard', {
-      which: isDingus ? 'dingusreveal' : 'catchreveal',
-      outcome,
-      quip: outcome.type === 'fish' ? null : pickQuip(outcome.id),
-      art: catchArtSrc(outcome),
-      placeholder: CATCH_PLACEHOLDER_EMOJI[outcome.id] || '🐟',
-      advanced,
-      justCompleted: !wasDone && nowDone,
-      targetText: targetProgressText(run.mission, save.progressValue)
-    });
+    /* Did that one count?
+     *
+     * The mission counter lives in the corner of the screen in small text,
+     * which is no use to somebody who cannot read small text across a room.
+     * So the game says so, out loud, the moment the fish is out of the water:
+     * a rising figure that means "that was one of yours", and then the count
+     * spoken in words. The card that follows repeats it in large type with
+     * pips, because being told once is not the same as being able to check.
+     */
+    if (outcome.gearMiss) {
+      /* The one moment the shop's whole purpose is legible: something too big
+         took it, the rod was not enough, and here is the rod that would be. */
+      RT.audio.spitHook();
+      say('Something big took that one and came off \u2014 too much for the ' +
+          outcome.rodName + '. The hook came back empty. ' +
+          (outcome.betterRod ? 'A ' + outcome.betterRod + ' would hold it.'
+                             : 'You need a stronger rod.'));
+    } else if (outcome.released) {
+      RT.audio.release();
+      say('A ' + outcome.name + ', but it is under ' + outcome.keeper +
+          ' inches. Back it goes.');
+    } else if (advanced) {
+      RT.audio.missionTick(save.progressValue, run.mission.target.amount);
+      fire('onFlash', 'count');
+      say(('A ' + outcome.name + '. ') +
+          (nowDone ? 'That is the job done!'
+                   : targetSpeech(run.mission, save.progressValue)));
+    } else if (outcome.type === 'fish') {
+      say(outcome.isBest ? ('A ' + outcome.name + '. Your biggest yet.')
+                         : ('A ' + outcome.name + '.'));
+    }
+  }
+
+  /**
+   * Out of the water, over the rail, into the boat.
+   *
+   * Nothing is asked for and nothing can go wrong here - it is a beat, not a
+   * step. The scene does the lifting (updateRod reads LANDING off the run);
+   * this only decides when the card is allowed to arrive.
+   */
+  function updateLanding(dt) {
+    run.timer += dt;
+    if (run.timer < CFG.LAND_TIME) return;
+    RT.audio.splash();
+    run.state = S.CARD;
+    fire('onCard', run.cardPending);
+    run.cardPending = null;
   }
 
   function updateLeaving(dt) {
@@ -2083,15 +2857,22 @@ RT.game = (function () {
     let shopRoom = null, shopLights = [];
     let dockTargets = [], dockFocus = 0, focusObj = null;
     const shoalObjs = new Map();
+    // The water's own dressing for each shoal - pads, rocks, a shelf edge.
+    const patchObjs = new Map();
 
     const camPos = new THREE.Vector3();
     const camLook = new THREE.Vector3();
     const _v = new THREE.Vector3();
     const _v2 = new THREE.Vector3();
+    const _v3 = new THREE.Vector3();
     const _lo = new THREE.Vector3();      // label anchor offset
+    // The fish being landed, and the rings it leaves on the water.
+    let catchObj = null, catchFor = null, catchLen = 1;
+    const rings = [];
     const _lq = new THREE.Quaternion();
     let bob = 0, clock = 0, mode = 'attract', attractDist = 60;
     let aimLine = null, landMark = null;
+    let focusTarget = null;
 
     function reducedMotion() {
       return typeof matchMedia === 'function' &&
@@ -2147,6 +2928,9 @@ RT.game = (function () {
       dockTargets = [];
       for (const g of shoalObjs.values()) sc.remove(g);
       shoalObjs.clear();
+      for (const g of patchObjs.values()) sc.remove(g);
+      patchObjs.clear();
+      clearCatch();
     }
 
     function buildWorld(seed) {
@@ -2306,12 +3090,27 @@ RT.game = (function () {
      */
     function setSpotTargets() {
       dockTargets = [];
-      if (rodObj) {
-        // The plate rides partway UP the blank — the rod's own origin is the
-        // butt, which sits below the bottom of the frame.
-        dockTargets.push({ key: 'cast', obj: rodObj, pos: new THREE.Vector3(),
-                           localOff: new THREE.Vector3(0, 0.85, 0), labelY: 0 });
-      }
+      /* The thing being chosen here is a CAST, and a cast goes in the water.
+       *
+       * The target used to be the rod, and a scan marker round the rod is a
+       * marker round whatever the rod happens to be doing: the blank bends,
+       * the line runs out to wherever the last cast landed, the float rides
+       * on the end of it. The bracket went from a patch of water to most of
+       * the screen and back again, and none of it meant anything.
+       *
+       * So it is a fixed square of water off the fishing side - the same
+       * square every time, at the same place, whatever the rod is up to. */
+      dockTargets.push({ key: 'cast', obj: null, water: true,
+                         pos: new THREE.Vector3(), labelY: 0.9 });
+      updateCastTarget();
+    }
+
+    /** Where that square of water is, from where the boat is right now. */
+    function updateCastTarget() {
+      const t = dockTargets.find(x => x && x.water);
+      if (!t || !lake || !run) return;
+      const side = run.fishSide === 'left' ? -1 : 1;
+      lake.pointAt(run.dist + 6, run.lateral + side * CAST_MARK_OFF, t.pos);
     }
 
 
@@ -2327,10 +3126,41 @@ RT.game = (function () {
     function setDockFocus(i) {
       dockFocus = i;
       const t = dockTargets[i];
+      focusTarget = t || null;
       focusObj = (t && t.obj && t.obj.parent) ? t.obj : null;
     }
 
     const _fBox = new THREE.Box3();
+    const _fL = new THREE.Vector3(), _fR = new THREE.Vector3();
+    /* How far off the rail the cast marker sits, and how wide it is drawn.
+       Both in world units, so the bracket keeps its size against the lake and
+       shrinks with distance the way everything else does. */
+    const CAST_MARK_OFF = 17;
+    const CAST_MARK_R = 7;
+
+    /**
+     * The bracket for a square of open water.
+     *
+     * Measured across the boat's own beam and drawn square, so it is the same
+     * shape wherever the route has turned to.
+     */
+    function waterFocusRect(t) {
+      if (!cam || !lake || !run) return null;
+      updateCastTarget();
+      const fr = lake.frameAt(run.dist);
+      _fL.copy(t.pos).addScaledVector(fr.right, -CAST_MARK_R);
+      _fR.copy(t.pos).addScaledVector(fr.right, CAST_MARK_R);
+      _fL.project(cam);
+      _fR.project(cam);
+      if (_fL.z > 1 || _fR.z > 1) return null;
+      const W = window.innerWidth, H = window.innerHeight;
+      const x0 = (Math.min(_fL.x, _fR.x) * 0.5 + 0.5) * W;
+      const x1 = (Math.max(_fL.x, _fR.x) * 0.5 + 0.5) * W;
+      const cy = (0.5 - ((_fL.y + _fR.y) * 0.5) * 0.5) * H;
+      // Never so small it cannot be seen, never so big it is a border.
+      const half = U.clamp((x1 - x0) * 0.5, 46, W * 0.24);
+      return { x: (x0 + x1) * 0.5 - half, y: cy - half * 0.7, w: half * 2, h: half * 1.4 };
+    }
     const _fPt = new THREE.Vector3();
 
     /**
@@ -2343,6 +3173,8 @@ RT.game = (function () {
      * fishing is close enough to the eye to do exactly that.
      */
     function focusScreenRect() {
+      // A patch of water has no object to measure, so it is framed by hand.
+      if (focusTarget && focusTarget.water) return waterFocusRect(focusTarget);
       if (!focusObj || !cam) return null;
       _fBox.setFromObject(focusObj);
       if (_fBox.isEmpty()) return null;
@@ -2508,6 +3340,57 @@ RT.game = (function () {
       else if (run) startTrip(run);
     }
 
+    /** How long the fish on the line is, in world units. Zero when there is none. */
+    function catchLenOf() { return catchObj ? catchLen * 0.55 : 0; }
+
+    function clearCatch() {
+      if (catchObj) { sc.remove(catchObj); catchObj = null; catchFor = null; }
+      while (rings.length) sc.remove(rings.pop());
+    }
+
+    /**
+     * The fish that is being lifted, built once per catch.
+     *
+     * Junk and lost tackle get no model - a boot does not leap - but the beat
+     * still plays, so the line comes up empty-handed and the card follows.
+     */
+    function ensureCatch(r) {
+      const o = r.lastCatch;
+      if (!o) return null;
+      if (catchObj && catchFor === o) return catchObj;
+      clearCatch();
+      const art = catchArtSrc(o);
+      if (!art) return null;
+      if (o.type === 'fish') {
+        /* Its real length against the rod, in world units: a sunfish comes up
+           the size of a hand and a sturgeon is longer than the angler is tall,
+           because that is what the numbers on the card say and the two should
+           never disagree. */
+        catchLen = U.clamp((o.length || 10) * CFG.UNITS_PER_IN, 0.3, 3.2);
+        catchObj = RT.art.fishCard(art, catchLen, { hang: 'mouth' });
+      } else {
+        /* A boot, a tin can, a phone, a wristwatch. They came up on the same
+           line and they get the same moment - it is half the joke of the game,
+           and a trip that only ever showed you the fish would be hiding the
+           funniest thing in it. Hung from the top, because a boot has no jaw
+           to be hooked by. */
+        catchLen = 0.55;
+        catchObj = RT.art.fishCard(art, catchLen, { hang: 'top' });
+      }
+      catchFor = o;
+      sc.add(catchObj);
+
+      // The hole it came out of.
+      const side = r.fishSide === 'left' ? -1 : 1;
+      const ring = RT.art.splashRing(new THREE.Color(css('--glint')).getHex());
+      lake.pointAt(r.dist + 0.6, r.lateral + side * CFG.RAIL_OFF, _v3);
+      ring.position.copy(_v3);
+      ring.userData.t = 0;
+      rings.push(ring);
+      sc.add(ring);
+      return catchObj;
+    }
+
     /** One shoal object per shoal near the boat; the rest are culled. */
     function syncShoals(r) {
       const want = new Set();
@@ -2527,11 +3410,31 @@ RT.game = (function () {
             color: new THREE.Color(sh.fishColor ||
                      css(sh.isTarget ? '--fish-target' : '--fish-dark')).getHex()
           });
+          /* The water over it, dressed for what lives there. Same place,
+             same yaw, same bank as the shoal - it IS the shoal, seen from
+             above - so it is built and culled on exactly the same terms. */
+          const patch = RT.art.biomePatch({
+            biome: sh.biome, seed: sh.seed ^ 0x5f3a, radius: sh.radius * 1.15,
+            colors: {
+              sand: css('--sand'), lily: css('--lily'), reed: css('--reed'),
+              deep: css('--water-deep'), glint: css('--glint'), rock: css('--rock-mid'),
+              biome: css('--biome-' + sh.biome)
+            }
+          });
           lake.pointAt(spot.dist + sh.along, sh.lateral, _v);
+          patch.position.copy(_v);
+          const pfr = lake.frameAt(spot.dist + sh.along);
+          patch.rotation.y = pfr.yaw;
+          patch.rotation.z = -pfr.bank;
+          sc.add(patch);
+          patchObjs.set(key, patch);
+
           g.position.copy(_v);
-          // Just under the surface rather than down in the dark, so the fish
-          // are visible from the helm on the way past.
-          g.position.y += 0.26;
+          /* Just under the surface rather than down in the dark, so the fish
+             are visible from the helm on the way past - but BELOW everything
+             the biome patch lays on the water (art.js, PATCH_Y), because a
+             fish swims under a lily pad and not over it. */
+          g.position.y += 0.06;
           const fr = lake.frameAt(spot.dist + sh.along);
           g.rotation.y = fr.yaw;
           // Anything flat on the water follows the banking, or its outer edge
@@ -2544,10 +3447,50 @@ RT.game = (function () {
       for (const [k, g] of Array.from(shoalObjs.entries())) {
         if (!want.has(k)) { sc.remove(g); shoalObjs.delete(k); }
       }
+      for (const [k, g] of Array.from(patchObjs.entries())) {
+        if (!want.has(k)) { sc.remove(g); patchObjs.delete(k); }
+      }
+      const still = reducedMotion();
+      for (const g of patchObjs.values()) RT.art.updateBiomePatch(g, clock, still);
+
+      if (r.state !== S.LANDING && catchObj) clearCatch();
+      for (let i = rings.length - 1; i >= 0; i--) {
+        rings[i].userData.t += lastDt;
+        if (!RT.art.updateSplashRing(rings[i], rings[i].userData.t)) {
+          sc.remove(rings[i]);
+          rings.splice(i, 1);
+        }
+      }
+
+      /* Fish that know the bait is there.
+       *
+       * The wait for a bite was the one stretch of this game with nothing to
+       * watch: a float sitting on flat water for up to twelve seconds. Now the
+       * shoal you cast into notices - a couple of them break off and circle
+       * the float, closer the longer it has been down. It carries no deadline
+       * and asks for nothing; it is just the difference between waiting and
+       * watching something about to happen. */
+      const bobberAt = (r.state === S.WAITING || r.state === S.HOOKING) ? bobberObj : null;
+      const nearShoal = bobberAt && r.landing && r.landing.shoal ? r.landing.shoal : null;
+      if (nearShoal) {
+        for (const [k, g] of patchObjs.entries()) {
+          if (!shoalObjs.has(k)) continue;
+          const sg = shoalObjs.get(k);
+          const isOurs = Math.abs(sg.position.x - bobberObj.position.x) < 60 &&
+                         Math.abs(sg.position.z - bobberObj.position.z) < 60;
+          RT.art.drawShoalTo(sg, isOurs ? bobberObj.position : null,
+                             r.state === S.HOOKING ? 1 : U.clamp(r.timer / 6, 0, 1), still);
+        }
+      } else {
+        for (const sg of shoalObjs.values()) RT.art.drawShoalTo(sg, null, 0, still);
+      }
       for (const g of shoalObjs.values()) RT.art.updateShoal(g, clock);
     }
 
+    let lastDt = 0;
+
     function update(dt, r, isPaused) {
+      lastDt = isPaused ? 0 : dt;
       if (!isPaused) clock += dt;
       // The shop is a room with no lake behind it, so it is handled before
       // the lake guard below.
@@ -2630,13 +3573,31 @@ RT.game = (function () {
       /* Heels into the turn. +X is starboard, and a positive Z rotation lifts
          +X, so leaning starboard-down in a starboard turn is negative. */
       boatObj.rotation.z = -fr.bank + Math.sin(bob * 0.8) * 0.02
-                        - (run ? (run.yaw || 0) : 0) * 0.20;
+                        - (run ? (run.yaw || 0) : 0) * 0.20
+                        + heelFromFish();
       boatObj.rotation.x = Math.sin(bob * 1.4) * 0.015;
       // The wheel turns further than the boat does — it is geared, and it is
       // the one thing in view that shows the helm answering.
       if (boatObj.userData.wheel) {
         boatObj.userData.wheel.rotation.z = -(run ? (run.yaw || 0) : 0) * 2.4;
       }
+    }
+
+    /**
+     * A fish heavy enough to pull the boat over does.
+     *
+     * Toward the rail it is being played off, more of it while it runs, and
+     * nothing at all for a sunfish. Small numbers on purpose: the horizon
+     * moving a degree reads as weight, and moving five reads as a shipwreck.
+     */
+    function heelFromFish() {
+      if (!run || (run.state !== S.REELING && run.state !== S.LANDING)) return 0;
+      const size = run.fightSize || 0;
+      if (size < 0.25) return 0;
+      const side = run.fishSide === 'left' ? -1 : 1;
+      const running = run.reel && run.reel.phase === 'run';
+      const k = size * (running ? 0.055 : 0.03) * (run.state === S.LANDING ? 0.7 : 1);
+      return side * k * (0.85 + Math.sin(clock * 1.7) * 0.15);
     }
 
     const _fwd = new THREE.Vector3();
@@ -2752,6 +3713,17 @@ RT.game = (function () {
         .addScaledVector(_fwd, Math.cos(look) * 26)
         .addScaledVector(fr.right, Math.sin(look) * 26);
       _v2.y -= 1.4;
+      /* Landing: look AT the fish, not out across the lake. The eye going up
+         with it is most of what makes it feel like something being lifted -
+         and it saves hoisting the fish over the treeline to get it in shot. */
+      if (r.state === S.LANDING) {
+        _v2.copy(bobberObj.position);
+        _v2.y -= catchLenOf();
+        camLook.lerp(_v2, 1 - Math.exp(-6.5 * dt));
+        cam.position.copy(camPos);
+        cam.lookAt(camLook);
+        return;
+      }
       camLook.lerp(_v2, 1 - Math.exp(-4.0 * dt));
       cam.position.copy(camPos);
       cam.lookAt(camLook);
@@ -2759,8 +3731,17 @@ RT.game = (function () {
 
     /** Where the bobber is in track space, for both the rod and the camera. */
     function bobberTrack(r) {
-      if (!r.landing) return null;
       const S2 = S;
+      /* Landing first, and WITHOUT asking where the cast came down: the fish
+         is alongside now, on the rail it was played from, and the lift in
+         updateRod hangs off this one point. Behind the r.landing guard, a
+         beat that ran with no cast on record put the line - and the camera
+         looking at it - up at the rod tip pointing at the sky. */
+      if (r.state === S2.LANDING) {
+        const lside = r.fishSide === 'left' ? -1 : 1;
+        return { along: r.dist + 0.6, lat: r.lateral + lside * CFG.RAIL_OFF };
+      }
+      if (!r.landing) return null;
       if (r.state === S2.FLYING) {
         const t = U.clamp(r.timer / 0.75, 0, 1);
         /* It leaves from the ROD TIP. Starting the flight on the boat's own
@@ -2774,8 +3755,12 @@ RT.game = (function () {
       if (r.state === S2.REELING && r.reel) {
         const p = r.reel.progress;
         // A running fish takes line back out and swings off to the side.
-        const away = r.reel.phase === 'run' ? 0.22 : 0;
-        const k = U.clamp(p - away, 0, 1);
+        /* No fudge factor here any more. The float used to be shoved 22% of
+           the way back out the instant a run started and snapped forward
+           again when it ended, because the PROGRESS was frozen and something
+           had to show the run. The progress moves for real now (RUN_TAKE), so
+           the float simply follows it. */
+        const k = U.clamp(p, 0, 1);
         /* It comes in to the rail you are standing at — beside you — not to a
            point off the bow. The angler is amidships on the fishing side, so
            that is where a landed fish ends up. */
@@ -2858,11 +3843,23 @@ RT.game = (function () {
         lift = 0.22;
       } else if (r.state === S.REELING) {
         lift = 0.55;                     // rod held high while playing it
+      } else if (r.state === S.LANDING) {
+        lift = 0.66;                     // held higher still, swinging it in
       }
 
       rodObj.quaternion.copy(_rodQ);
       rodObj.rotateX(-0.92 + lift);
       rodObj.rotateZ(hand * -0.26);    // and raked outboard
+
+      /* Hook and bait go away while something is hanging off them.
+         The hook is inside the fish's mouth once it is caught, so drawing it
+         over the top of the card - which is what a billboard at the same point
+         does - reads as a hook floating in front of the fish. */
+      /* Hidden only when something is hanging off it. When the fish came off,
+         the empty hook IS the news. */
+      const onLine = (r.state === S.LANDING && !!catchObj);
+      if (rodObj.userData.hook) rodObj.userData.hook.visible = !onLine;
+      if (rodObj.userData.baitHold) rodObj.userData.baitHold.visible = !onLine;
 
       const bt = bobberTrack(r);
       if (!bt) {
@@ -2880,17 +3877,62 @@ RT.game = (function () {
       if (bt) {
         lake.pointAt(bt.along, bt.lat, _v2);
         if (r.state === S.FLYING) _v2.y += Math.sin(U.clamp(r.timer / 0.75, 0, 1) * Math.PI) * 6;
+        /* A nibble pulls the float under for a moment. run.teaseAt is set to
+           zero the instant it happens and counted up here, so the dip is a
+           short curve and then it bobs back - the same shape a real one has. */
+        if (r.state === S.WAITING && r.teaseAt !== undefined && r.teaseAt !== null) {
+          r.teaseAt += dt;
+          const k = U.clamp(r.teaseAt / 0.85, 0, 1);
+          if (k < 1) _v2.y -= Math.sin(k * Math.PI) * 0.55;
+          else r.teaseAt = null;
+        }
         if (r.state === S.HOOKING) { _v2.y -= 0.5 + Math.sin(r.timer * 7) * 0.12; bend = 0.5; }
+        if (r.state === S.LANDING) {
+          /* Straight up, out of the water, and there it hangs.
+             The lift is the fish's own length plus a little, so a small one
+             clears the surface and a big one is not hauled into the sky. */
+          const t = U.clamp(r.timer / CFG.LAND_TIME, 0, 1);
+          /* Up to eye level, always.
+           *
+           * This used to be the catch's own length plus a bit, which is fine
+           * for a pike and useless for a sunfish: four inches of fish lifted
+           * four inches out of the water hangs behind the hull, and all the
+           * player sees is a line going over the side. The camera stands at
+           * the rail about 3.2 above the water, so the hook comes up to just
+           * above that and everything on it is in shot - a small one at eye
+           * level, a big one hanging down from it. */
+          const top = CFG.LAND_LIFT;
+          _v2.y += U.smoothstep(U.clamp(t / 0.55, 0, 1)) * top;
+          bend = 0.62 - 0.2 * t;         // the rod stays loaded: it is holding a fish
+
+          const fish = ensureCatch(r);
+          if (fish) {
+            /* Hung from the hook in its jaw. Head up, tail down, side-on to
+               whoever is looking - so what you see is the fish on the card,
+               the size the card says it is. */
+            fish.position.copy(_v2);
+            const swing = Math.sin(clock * 3.1) * 0.05 * (1 - t * 0.5);
+            const kick = Math.sin(clock * 12) * 0.06 * Math.max(0, 1 - t * 1.6);
+            // A fish hangs head-up from its jaw; junk just dangles and turns.
+            const hang = (r.lastCatch && r.lastCatch.type === 'fish') ? Math.PI / 2 : 0;
+            RT.art.faceFishCard(fish, cam.position, hang + swing + kick);
+          }
+        }
         if (r.state === S.REELING) {
           _v2.y -= 0.35;
           /* With the rod already held high there is less of it left to bend,
              so these are gentler than they were. A run still hoops it over —
              that is the one moment the blank should look loaded. */
           const rl = r.reel;
-          bend = rl && rl.phase === 'run'
+          // Weight on the line, in the only unit a rod has: how far it bends.
+          const big = 0.75 + (r.fightSize || 0.3) * 0.9;
+          bend = (rl && rl.phase === 'run'
             ? 0.55 + (rl.strain || 0) * 0.22
-            : 0.16 + (reelHolding ? 0.20 : 0.04);
+            : 0.16 + (reelHolding ? 0.20 : 0.04)) * big;
         }
+        /* Proud of the pads, the stains and the fish. See PATCH_Y in art.js:
+           the float is top of that stack, always. */
+        _v2.y += 0.3;
         bobberObj.position.copy(_v2);
       }
       RT.art.updateRodRig(rodObj, bend, bobberObj.position);
@@ -2966,11 +4008,15 @@ RT.game = (function () {
     isPlaying, isSteering, isFishing, isFighting,
     pause, resume, quitToMenu,
     setSteer, setLateralTarget, clearPointerSteer, pullOverTo, setAimFrac, flipArmed, getArmed,
-    startAim, setAimSweep, lockAim, setCharging, releaseCast,
+    startAim, setAimSweep, lockAim, beginCharge, setCharging, releaseCast,
     hookFish, setReelHold, chooseTroll, afterCatchCard,
     callbacks,
     css, refreshPalette, PALETTE_VARS,
     getCueLevel, cycleCueLevel,
+    keeperLength, keepersOn, setKeepers,
+    bestRod, bestRodId, ownsRod, nextRod, buyRod,
+    ownsBait, equippedBait, buyBait, nextBait,
+    __rodHolds: (f, rod, obj) => rodHolds(f, rod, obj),
     getTheme, setTheme, getCardStyle, setCardStyle,
     getSave, resetProgress, visibleMissions, missionByN, currentMission, isFinished,
     dockTargets, shopTargets, spotTargets, missionBrief, setDockFocus: (i) => RT.scene.setDockFocus(i),
@@ -2978,14 +4024,14 @@ RT.game = (function () {
     __land: () => landFish(),   // drive a landing through the real path
     // Balance probes: the real roll functions, so a simulation cannot drift
     // from what the game actually does.
-    __rollBite: (b, bait, onShoal, rod) => rollBite(b, bait, onShoal, null, rod),
+    __rollBite: (b, bait, onShoal, rod, named) => rollBite(b, bait, onShoal, null, rod, named),
     __rollFish: (id, q) => rollFishCatch(id, q),
     __spotToEnter: (side) => spotToEnter(side),
     dockLabelPositions: () => RT.scene.dockLabelPositions(),
     focusScreenRect: () => RT.scene.focusScreenRect(),
     pickTarget: (x, y) => RT.scene.pickTarget(x, y),
-    turnInState, turnInMission, takeGrant, grantFor, missionTip, targetSpeech,
-    shopStock, buyStock, ownedTier, gearAdvice,
+    turnInState, turnInMission, handInJob, takeGrant, grantFor, missionTip, targetSpeech,
+    shopStock, buyStock, ownedTier, ownedGear, gearAdvice, fishLog,
     /* The five knobs the shop moves, so a test can watch a purchase land
        rather than trusting that it did. */
     __knobs: () => ({ window: spotWindow(), lead: cueLead(), snap: strainSnap(),

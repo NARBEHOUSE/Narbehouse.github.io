@@ -250,6 +250,40 @@ RT.audio = (function () {
     tone(1568, 0.7, { type: 'sine', vol: 0.16, delay: 0.55 });
   }
 
+  /**
+   * That fish was one of the ones the job wanted.
+   *
+   * A rising three-note figure, and the whole figure rises as the job fills
+   * up: the third of three sounds higher than the first of three, so the ear
+   * is told both THAT it counted and roughly how far along it is. Warm
+   * triangles, clearly not the bite alarm and clearly not a menu blip.
+   *
+   * `have` and `need` are the counts after the catch; call it with neither
+   * and it plays the middle of the range.
+   */
+  function missionTick(have, need) {
+    const k = (need > 0) ? Math.max(0, Math.min(1, (have || 0) / need)) : 0.5;
+    const base = 392 + 130 * k;                    // G4 up toward C5
+    [0, 4, 7].forEach((semi, i) => {
+      tone(base * Math.pow(2, semi / 12), 0.26, {
+        type: 'triangle', vol: 0.16, delay: i * 0.085
+      });
+    });
+  }
+
+  /**
+   * One going back in the water.
+   *
+   * Soft, low, and over quickly - two falling notes and a small plop. It must
+   * not sound like a mistake, because it is not one: the fish was under the
+   * limit and the limit is a rule, not a penalty.
+   */
+  function release() {
+    tone(392, 0.14, { type: 'sine', vol: 0.09 });
+    tone(294, 0.20, { type: 'sine', vol: 0.08, delay: 0.11 });
+    tone(160, 0.09, { type: 'sine', vol: 0.07, delay: 0.24 });
+  }
+
   function fail() {
     [440, 392, 330, 262].forEach((f, i) =>
       tone(f, 0.3, { type: 'triangle', vol: 0.18, delay: i * 0.14 }));
@@ -371,7 +405,11 @@ RT.audio = (function () {
       filt.type = 'lowpass';
       filt.frequency.value = 520;
       waterGain = c.createGain();
-      waterGain.gain.value = 0.07;
+      /* The bed the whole game sits on, so it has to stay under everything -
+         under the speech above all, which is how the game explains itself.
+         Down 40% on what it was: it was loud enough to be listened TO rather
+         than heard, and a constant hiss is tiring long before it is noticed. */
+      waterGain.gain.value = 0.042;
       waterSrc.connect(filt); filt.connect(waterGain); waterGain.connect(master);
       waterSrc.start();
     } catch (e) { waterSrc = null; }
@@ -402,7 +440,8 @@ RT.audio = (function () {
       }
       const t = now();
       motorGain.gain.cancelScheduledValues(t);
-      motorGain.gain.setTargetAtTime(0.012 + 0.030 * U.clamp(level, 0, 1), t, 0.35);
+      // Also down 40%: it runs for the whole trip and never stops.
+      motorGain.gain.setTargetAtTime(0.007 + 0.018 * U.clamp(level, 0, 1), t, 0.35);
       motorOsc.frequency.setTargetAtTime(52 + 26 * U.clamp(level, 0, 1), t, 0.4);
     } catch (e) { /* ignore */ }
   }
@@ -422,6 +461,16 @@ RT.audio = (function () {
   }
 
   /** Rising two-note, CENTRED — there is no direction in a bite. (§7.2) */
+  /**
+   * A nibble. Deliberately small: one soft low knock, nothing like biteAlert's
+   * rising two-note call. If these two are ever confusable the tease has
+   * become a false alarm, which is worse than no tease at all.
+   */
+  function nibble() {
+    tone(196, 0.07, { type: 'sine', vol: 0.05 });
+    tone(147, 0.10, { type: 'sine', vol: 0.04, delay: 0.06 });
+  }
+
   function biteAlert() {
     tone(587, 0.16, { type: 'triangle', vol: 0.24 });
     tone(880, 0.26, { type: 'triangle', vol: 0.24, delay: 0.15 });
@@ -432,12 +481,23 @@ RT.audio = (function () {
   let reelTimer = null, creakAt = 0;
 
   /** Steady clicking while the line is coming in. */
-  function reelStart() {
+  /* The loop while the handle is turning. `size` is the fish being played,
+     0..1: a heavy one comes in slower and lower, which is the sound of a reel
+     under load rather than a reel being wound. */
+  function reelStart(size) {
     stopReelLoop();
     if (!enabled) return;
-    reelTimer = setInterval(() => tone(1200, 0.03, { type: 'square', vol: 0.05 }), 130);
+    const k = Math.max(0, Math.min(1, size || 0));
+    const hz = 1200 - k * 480;
+    reelTimer = setInterval(() => tone(hz, 0.03, { type: 'square', vol: 0.05 }),
+                            130 + k * 90);
   }
-  function reelClick() { tone(1200, 0.04, { type: 'square', vol: 0.07 }); }
+  /* `size` is 0..1 from the fish being played, so a big one clicks lower and
+     slower on the ear. Called with nothing, it is the old click exactly. */
+  function reelClick(size) {
+    const k = Math.max(0, Math.min(1, size || 0));
+    tone(1200 - k * 520, 0.04 + k * 0.03, { type: 'square', vol: 0.07 });
+  }
   function stopReelLoop() {
     if (reelTimer) { clearInterval(reelTimer); reelTimer = null; }
   }
@@ -510,7 +570,7 @@ RT.audio = (function () {
     resume, setEnabled, isEnabled,
     // fishmaster
     panTone, nothingThere, startWater, stopWater, motorIdle, motorUp, motorLevel, stopMotor,
-    cast, chargeTick, aimTick, biteAlert, spitHook, runWarn, lineSnap, reelStart, reelClick, reelStop, stopReelLoop, lineCreak, freeSpool,
+    cast, chargeTick, aimTick, biteAlert, nibble, missionTick, release, spitHook, runWarn, lineSnap, reelStart, reelClick, reelStop, stopReelLoop, lineCreak, freeSpool,
     splash, wake,
     startEngine, updateEngine, stopEngine,
     cue, cleared, crash, bump, pickup, boost, stunt, shield,

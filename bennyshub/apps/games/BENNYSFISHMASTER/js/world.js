@@ -775,9 +775,8 @@ RT.world = (function () {
     };
   }
 
-
   /* ══════════════════════════════════════════════════════════════════════
-     FISHMASTER — the endless lake
+     FISHMASTER II — the endless lake
      Same centreline machinery as a race track: the road ribbon becomes a
      water ribbon, and the curves and hills become the route bending around
      points and swelling gently. terrainRise() and bankOffset() are kept.
@@ -789,29 +788,17 @@ RT.world = (function () {
      chunks ahead of the boat and disposed behind it.
      ══════════════════════════════════════════════════════════════════════ */
 
-  /* The lake.
-   *
-   * WATER_HALF is the flat water plane's half-width — it always reaches past
-   * the shoreline, because the LAND is what carves the lake's shape: the bed
-   * rises through the water plane wherever there is bank, so the shoreline is
-   * simply the contour where bedRise() crosses zero. That is what turns two
-   * parallel banks (a river) into bays, points and open water (a lake), from
-   * one height function rather than a special case.
-   *
-   * LANE_HALF is how far the boat can steer either side of the route. It is a
-   * fraction of the water so there is always open lake beyond the player.
-   */
-  const WATER_HALF = 470;     // the sheet has to reach the opened-out bank
-  const LANE_HALF = 48;
-  const SHORE_NEAR = 120;     // closest the bank ever comes, down by the dock
-  const SHORE_FAR = 205;      // furthest it retreats, down by the dock
-  /* And then the lake opens out. The dock needs a bank close enough to build a
-     jetty onto, but out on the water a shoreline permanently 150 units away is
-     a hard band across the horizon that follows you the whole trip. These push
-     it back once the dock is behind you, far enough that the haze takes it. */
-  const SHORE_HOLD = 240;     // the bank stays put for this long past the dock
-  const SHORE_OPEN = 900;     // and takes this long to open out fully
-  const SHORE_WIDEN = 180;    // by this much
+  /* The boat's lane, the water sheet, and the band the shoreline wanders
+     through. The lane is the only one of these the player can feel: it is
+     how far the helm will take you off the route. The rest is scenery.
+
+     The bank sits 300 to 400 units out, which is far enough that it reads
+     as the other side of a lake rather than as a wall beside the boat, and
+     close enough to be worth looking at. */
+  const LANE_HALF = 46;       // how far either side of the route the boat may go
+  const WATER_HALF = 520;     // half-width of the water sheet, past the far bank
+  const SHORE_NEAR = 300;     // the waterline never comes in closer than this
+  const SHORE_FAR = 400;      // ...nor goes out further than this
   const SHORE_OUTER = 900;    // where the land ribbon stops; the fog eats it
   const CHUNK_NODES = 105;    // 105 * SEG = 420 units, Race Tracks' merge chunk
   const CHUNK_LEN = CHUNK_NODES * SEG;
@@ -828,51 +815,52 @@ RT.world = (function () {
    * outer edge sinks through the surface wherever the route banks. (Trap 2/3.)
    */
   function lakeBank(node, off) {
-    const clamped = U.clamp(off, -LANE_HALF * 1.6, LANE_HALF * 1.6);
+    const clamped = U.clamp(off, -WATER_HALF, WATER_HALF);
     return -clamped * Math.sin(node.bank);
   }
 
   /**
-   * Where the bank starts on one side, at this point along the route.
+   * Where the waterline is on this side of the route, at this node.
    *
-   * Two low-frequency sines with different periods per side, so the two shores
-   * wander independently — they never sit parallel, which is the whole
-   * difference between a lake and a river. The route itself stays in open
-   * water because the nearest the bank ever comes is SHORE_NEAR.
+   * It wanders, or the lake is a canal. Two slow sines against the node index,
+   * a different phase per bank, so the two shores are never a mirror image of
+   * one another and the boat is never exactly in the middle of anything.
+   *
+   * Everything that has to know where the water ends comes through here: the
+   * bank geometry, the colour of the water and the sand, the reeds, the dock,
+   * and the props on the shore. One answer, so nothing can stand in the lake.
    */
-  function shoreEdge(n, side) {
-    const ph = side < 0 ? 0 : 2.2;
-    const w = 0.5 + 0.5 * (Math.sin(n.i * 0.0037 + ph) * 0.62 +
-                           Math.sin(n.i * 0.0091 + ph * 1.7) * 0.38);
-    const base = SHORE_NEAR + (SHORE_FAR - SHORE_NEAR) * U.clamp(w, 0, 1);
-    /* Held close for the first stretch so the dock, the jetty and the shop -
-       all of which are placed relative to THIS - are exactly where they were,
-       then eased back out into open water. */
-    const along = n.i * SEG;
-    const open = U.smoothstep(U.clamp((along - SHORE_HOLD) / SHORE_OPEN, 0, 1));
-    return base + open * SHORE_WIDEN;
+  function shoreEdge(n, dir) {
+    const side = dir < 0 ? 0 : 1;
+    const w = Math.sin(n.i * 0.0041 + side * 2.37) * 0.6 +
+              Math.sin(n.i * 0.0125 - side * 1.13) * 0.4;
+    return SHORE_NEAR + (SHORE_FAR - SHORE_NEAR) * (0.5 + 0.5 * w);
   }
 
   /**
-   * Height of the lake bed at a lateral offset, relative to the water surface.
-   * Negative is under water, positive is dry land — so the shoreline is
-   * wherever this crosses zero, and bays and points come out of it for free.
-   *
-   * Used by the land ribbon AND by prop placement, so nothing hovers or sinks.
-   * (Trap 3.)
+   * Height of the ground at a lateral offset: the bed under the water, then
+   * the bank rising away past the waterline. Used by the shore ribbon AND by
+   * prop placement, so nothing hovers and nothing sinks. (Trap 3.)
    */
   function shoreRise(n, off) {
+    const a = Math.abs(off);
     const edge = shoreEdge(n, off < 0 ? -1 : 1);
-    const d = Math.abs(off) - edge;
-    if (d <= 0) {
-      // Under water: shelves down away from the bank, deepest out in the lake.
-      const deep = U.smoothstep(U.clamp(-d / 90, 0, 1));
-      return -0.6 - 3.2 * deep;
-    }
-    const rise = Math.sin(n.i * 0.031 + off * 0.012) * 2.2 +
+    const d = a - edge;
+    // Under water: the bed drops away from the margin, gently.
+    if (d <= 0) return -0.35 - U.smoothstep(U.clamp(-d / 90, 0, 1)) * 1.6;
+    /* Ashore, and OUT of the water fast.
+     *
+     * A bank that eases up over seventy units is a bank that is still under
+     * the surface for the first thirty of them, and everything standing on it
+     * - the tackle shop above all - looks like it is standing in the lake.
+     * Sand first, up clear of the water within a couple of paces, and only
+     * then the ground rolling away inland. */
+    const roll = Math.sin(n.i * 0.031 + off * 0.012) * 2.2 +
                  Math.sin(n.i * 0.011 - off * 0.005) * 5.5 +
                  Math.sin(n.i * 0.006 + off * 0.002) * 12.0;
-    return -0.6 + (3.0 + rise) * U.smoothstep(U.clamp(d / 80, 0, 1)) - d * 0.0022;
+    const beach = U.smoothstep(U.clamp(d / 6, 0, 1)) * 1.15;
+    const bank = U.smoothstep(U.clamp((d - 6) / 85, 0, 1)) * (3.2 + roll);
+    return -0.35 + beach + bank - d * 0.002;
   }
 
   /**
@@ -927,10 +915,6 @@ RT.world = (function () {
     return { nodes, extendTo, get length() { return nodes.length * SEG; } };
   }
 
-  /**
-   * @param {THREE.Scene} scene
-   * @param {object} cfg { seed, colors, flat, reducedMotion }
-   */
   function buildLake(scene, cfg) {
     cfg = cfg || {};
     const seed = (cfg.seed || 1) >>> 0;
@@ -965,6 +949,27 @@ RT.world = (function () {
     const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 20, 14), skyMat);
     sky.renderOrder = -10;
     scene.add(sky);
+
+    /* Clouds. Race Tracks has had them all along and the lake never did, which
+       is most of why one trip looked exactly like the next: the sky was a
+       painted dome and nothing in it ever moved. They sit high and drift
+       slowly across the route, and they are the cheapest sense of weather
+       there is. */
+    const clouds = new THREE.Group();
+    clouds.name = 'lakeClouds';
+    scene.add(clouds);
+    (function seedClouds() {
+      const cr = U.rng(U.hash('lakecloud' + seed));
+      for (let i = 0; i < 16; i++) {
+        const c = A.cloud(cr);
+        c.userData.drift = cr.range(0.6, 1.8) * (cr.chance(0.5) ? 1 : -1);
+        c.userData.spanX = 900;
+        c.position.set(cr.range(-450, 450), cr.range(90, 190), cr.range(-450, 450));
+        c.scale.setScalar(cr.range(1.4, 3.2));
+        c.rotation.y = cr.range(0, 6.283);
+        clouds.add(c);
+      }
+    })();
 
     const hemi = new THREE.HemisphereLight(0xd6efff, 0x5f7a55, 2.2);
     scene.add(hemi);
@@ -1160,6 +1165,59 @@ RT.world = (function () {
           }
         }
 
+        /* Somewhere to have got to.
+         *
+         * Reeds and trees make a shore; they do not make a PLACE. Every few
+         * hundred units there is now something you could point at from the
+         * helm - a jetty, a boathouse, a beached rowboat, a heron standing on
+         * a snag - so trolling reads as going somewhere rather than as the
+         * same bank looping past. Scenery only: none of it is in the water
+         * you fish, and none of it can be hit. */
+        if (r.chance(0.09)) {
+          const dir = r.sign();
+          const edge = shoreEdge(n, dir);
+          const kind = r.int(0, 3);
+          const mark = new THREE.Group();
+          if (kind === 0) {
+            // A jetty, running out from the bank.
+            const j = A.jetty(r.range(6, 11), { dock: C.dock, dark: C.log });
+            j.rotation.y = Math.PI / 2;
+            mark.add(j);
+            place(mark, n, dir * (edge - 5), true);
+          } else if (kind === 1) {
+            // A boathouse up on the bank, roof to the water.
+            const wall = A.paper(C.shack || 0xb08d5f), roof = A.paper(C.roof || 0x7a3b2e);
+            mark.add(A.part(new THREE.BoxGeometry(5.2, 3.4, 4.6), wall, { pos: [0, 1.7, 0] }));
+            mark.add(A.part(new THREE.ConeGeometry(4.4, 2.1, 4), roof,
+                            { pos: [0, 4.4, 0], rot: [0, Math.PI / 4, 0] }));
+            A.ink(mark);
+            place(mark, n, dir * (edge + r.range(6, 16)), false);
+          } else if (kind === 2) {
+            // A rowboat pulled up on the sand, upside down.
+            const hull = A.part(new THREE.SphereGeometry(1.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+                                A.paper(C.hull || 0xdcd3c2), { pos: [0, 0.2, 0], rot: [Math.PI, 0, 0] });
+            hull.scale.set(1, 0.55, 2.4);
+            mark.add(hull);
+            A.ink(mark);
+            place(mark, n, dir * (edge + r.range(1, 6)), false);
+          } else {
+            // A heron on a snag, standing in the shallows.
+            const snag = A.part(new THREE.CylinderGeometry(0.3, 0.36, 3.2, 6),
+                                A.paper(C.log || 0x4b3a28), { pos: [0, 0.5, 0], rot: [0.35, 0, 0.2] });
+            mark.add(snag);
+            const body = A.part(new THREE.SphereGeometry(0.42, 8, 6), A.paper(0xb9c4cc),
+                                { pos: [0, 2.2, 0] });
+            body.scale.set(1, 1.5, 1);
+            mark.add(body);
+            mark.add(A.part(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 5), A.paper(0xb9c4cc),
+                            { pos: [0, 3.1, 0], rot: [0.2, 0, 0] }));
+            mark.add(A.part(new THREE.ConeGeometry(0.09, 0.5, 4), A.paper(0xe8c34a),
+                            { pos: [0, 3.6, 0.28], rot: [1.4, 0, 0] }));
+            A.ink(mark);
+            place(mark, n, dir * (edge - r.range(2, 9)), true);
+          }
+        }
+
         // A buoy or a deadhead out in open water, clear of the boat's lane.
         if (r.chance(0.14)) {
           const off = r.sign() * r.range(LANE_HALF + 8, LANE_HALF + 60);
@@ -1240,7 +1298,25 @@ RT.world = (function () {
     const _sunOffset = new THREE.Vector3(-0.5, 1.0, 0.4).normalize().multiplyScalar(140);
     let scroll = 0;
 
+    /**
+     * Keep the sky over the boat, and let the weather move through it.
+     *
+     * The clouds are parked relative to the camera rather than the route -
+     * a lake this long would otherwise leave them all behind in the first
+     * minute - and they wrap round when they reach the edge of the dome.
+     */
+    function driftClouds(dt, cameraPos) {
+      if (!clouds) return;
+      clouds.position.set(cameraPos.x, 0, cameraPos.z);
+      for (const c of clouds.children) {
+        c.position.x += (c.userData.drift || 1) * dt;
+        if (c.position.x > 460) c.position.x = -460;
+        else if (c.position.x < -460) c.position.x = 460;
+      }
+    }
+
     function update(dt, cameraPos, focusPos) {
+      driftClouds(dt, cameraPos);
       sky.position.copy(cameraPos);
       sun.target.position.copy(focusPos);
       sun.position.copy(focusPos).add(_sunOffset);
@@ -1256,6 +1332,12 @@ RT.world = (function () {
     function dispose() {
       for (const ci of Array.from(chunks.keys())) disposeChunk(ci);
       scene.remove(group);
+      /* The clouds hang off the SCENE rather than the lake's group, because
+         they follow the camera rather than the route - so they have to be
+         taken down by hand, or every trip leaves its weather behind for the
+         next one to fly through. */
+      clouds.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+      scene.remove(clouds);
       scene.remove(sky);
       scene.remove(hemi);
       scene.remove(amb);

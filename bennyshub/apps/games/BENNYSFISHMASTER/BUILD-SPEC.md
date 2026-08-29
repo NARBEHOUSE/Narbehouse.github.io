@@ -28,11 +28,16 @@ between missions — there is no shop and no money to spend.
 
 | Gesture | On the track | On a card | On a hooked fish |
 |---|---|---|---|
-| tap | flip which side is armed | select the highlighted row | hook it |
+| press | flip which side is armed | select the highlighted row | hook it |
 | hold | pull over to the armed side | — | reel |
 | nothing | let the zone go past | let auto-scan cycle | fish waits |
 
 Doing nothing is safe in every context.
+
+**Nothing in play may require a SHORT press.** Hooking a fish and casting both
+happen on the way DOWN, the instant the switch closes, and a switch held for a
+minute does exactly what one held for a second does. A gesture that only counts
+under 400 ms is a gesture this game's players cannot make.
 
 ---
 

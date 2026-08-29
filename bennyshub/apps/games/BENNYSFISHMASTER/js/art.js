@@ -2113,6 +2113,10 @@ RT.art = (function () {
     const hook = fishHook(0.85, c);
     hook.position.set(0, -0.27, 0);
     bob.add(hook);
+    /* Kept so the landing can put it away. A hooked fish hangs from its jaw
+       with the hook inside its mouth, and a hook drawn in front of the fish is
+       a hook floating in mid-air next to it. */
+    g.userData.hook = hook;
     /* And whatever is on it. Sat on the bend of the hook rather than the
        shank, which is where bait actually goes and where it stays visible
        against the water instead of hiding behind the wire. */
@@ -2120,6 +2124,8 @@ RT.art = (function () {
     baitHold.position.set(0.05, -0.47, 0);
     bob.add(baitHold);
     g.userData.baitHold = baitHold;
+    // The dropper below the float, hidden with the hook for the same reason.
+    g.userData.dropper = bob.children[bob.children.length - 2];
     if (c.baitLook) baitHold.add(baitModel(c.baitLook, 0.85));
     ink(bob);
     g.userData.bobber = bob;
@@ -2334,6 +2340,94 @@ RT.art = (function () {
   }
 
   /**
+   * The fish you actually caught, hanging on the line.
+   *
+   * It is the species' OWN picture — the same watercolour the catch card and
+   * the shop use — printed on a card and hung from the hook. A modelled fish
+   * was the obvious thing to build and the wrong thing to look at: it could
+   * not be a pike rather than a bass, and this game already owns sixteen
+   * paintings that are unmistakably one species each. A paper cut-out of a
+   * painting is also exactly what everything else in this world is made of.
+   *
+   * The group's origin is the MOUTH, because that is where the hook is: the
+   * caller puts this at the end of the line and rotates it, and the fish
+   * swings from its jaw the way a fish on a line does.
+   *
+   * `lenUnits` is the fish's real length in world units — see catchLen in the
+   * scene, which works it out from the inches actually rolled against the rod
+   * in the angler's hands.
+   */
+  function fishCard(url, lenUnits, opts) {
+    const byTop = !!(opts && opts.hang === 'top');
+    const g = new THREE.Group();
+    const inner = new THREE.Group();
+    g.add(inner);
+
+    const L = Math.max(0.2, lenUnits || 1);
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
+      color: 0xffffff, depthWrite: true
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(L, L * 0.4), mat);
+    inner.add(mesh);
+    /* Head-right art, so the mouth is the right-hand edge. The offset goes on
+       the MESH and the rotation on the group around it - put both on the same
+       object and the card turns about its own middle while staying half a
+       fish away from the hook, which is a fish swimming in mid-air beside the
+       line rather than hanging off it.
+
+       Junk has no jaw to be hooked by, so it hangs from its top edge instead
+       and simply swings. */
+    if (!byTop) mesh.position.x = -L * 0.46;
+
+    const tex = new THREE.TextureLoader().load(url, (t) => {
+      const img = t.image;
+      if (!img || !img.width) return;
+      const h = L * (img.height / img.width);
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.PlaneGeometry(L, h);
+      if (byTop) mesh.position.set(0, -h * 0.46, 0);
+      if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace;
+      mat.needsUpdate = true;
+    });
+    mat.map = tex;
+    g.userData.inner = inner;
+    g.userData.mesh = mesh;
+    return g;
+  }
+
+  /**
+   * Turn a hanging fish to face whoever is looking at it, and hang it from the
+   * angle given. `tilt` is radians about the hook: PI/2 is straight down from
+   * the jaw, which is head-up, tail-down — the way one comes out of the water.
+   */
+  function faceFishCard(g, camPos, tilt) {
+    if (!g) return;
+    g.rotation.y = Math.atan2(camPos.x - g.position.x, camPos.z - g.position.z);
+    if (g.userData.inner) g.userData.inner.rotation.z = tilt;
+  }
+
+  /**
+   * The ring a fish leaves when it comes out of the water. Grows and fades on
+   * its own clock; the caller just keeps handing it the seconds.
+   */
+  function splashRing(color) {
+    const m = surfaceDisc(1, color === undefined ? 0xd9f6ff : color, 0.09,
+                          { opacity: 0.5, segments: 20, renderOrder: 2 });
+    m.userData.ring = true;
+    return m;
+  }
+
+  /** @returns false once it has finished and should be thrown away. */
+  function updateSplashRing(m, t) {
+    const k = t / 0.9;
+    if (k >= 1) return false;
+    m.scale.setScalar(1 + k * 5.5);
+    m.material.opacity = 0.5 * (1 - k);
+    return true;
+  }
+
+  /**
    * A shoal marking one fishing spot: several fish of the given species size,
    * milling about inside `radius`. Each keeps its own orbit so the group
    * drifts rather than rotating as a rigid disc.
@@ -2360,14 +2454,252 @@ RT.art = (function () {
     return g;
   }
 
+  /* ══════════════════════════════════════════════════════════════════════
+     WHAT THE WATER LOOKS LIKE OVER A SHOAL
+
+     The card says "Weed Bed on the left". The lake used to say nothing at all:
+     every shoal was the same handful of fish shapes over the same flat green
+     water, so the one piece of information the game most wants acted on lived
+     only in text and in speech.
+
+     These are the surface signatures. A weed bed has pads and reeds standing
+     in it, a rocky shore has rocks breaking the surface, a drop-off has a pale
+     shelf with dark water past it. They are big, high contrast, and readable
+     from a long way off, because their whole job is to be seen from the helm
+     before anything has to be decided — and they are scenery, never obstacles:
+     nothing here is in the way and nothing here can be hit.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Heights are staggered, and the order matters more than the numbers:
+     water < the fish < patch floor < wash < pads < the float.
+     The fish are the lowest thing of the lot on purpose: they are IN the lake,
+     so a lily pad passes over one and hides it, and the weed stain tints it.
+     Drawn above the pads they read as fish lying on top of the weed.
+     The float has to be top of that stack. It is the one thing on the lake
+     the player is actually watching, and a lily pad drawn over it is a lily
+     pad that has hidden the whole point of the cast. */
+  const PATCH_Y = { floor: 0.09, wash: 0.13, pad: 0.18, above: 0.22 };
+
+  /** A flat disc lying on the water: sand, deep water, foam, a lily pad. */
+  function surfaceDisc(radius, color, y, opts) {
+    opts = opts || {};
+    const m = new THREE.Mesh(
+      new THREE.CircleGeometry(radius, opts.segments || 18),
+      new THREE.MeshBasicMaterial({
+        color: color, transparent: true,
+        opacity: opts.opacity === undefined ? 0.55 : opts.opacity,
+        depthWrite: false, side: THREE.DoubleSide
+      })
+    );
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = y;
+    m.renderOrder = opts.renderOrder || 1;
+    return m;
+  }
+
+  /**
+   * The water over a shoal, dressed for its biome.
+   *
+   * opts: { biome, seed, radius, colors: { sand, lily, reed, rock, deep, glint } }
+   */
+  function biomePatch(opts) {
+    const o = opts || {};
+    const r = U.rng((o.seed >>> 0) || 7);
+    const R = o.radius || 16;
+    const C = o.colors || {};
+    const g = new THREE.Group();
+    const moving = [];
+
+    const col = (v, fallback) => new THREE.Color(v || fallback).getHex();
+    const sand  = col(C.sand,  '#c9b184');
+    const lily  = col(C.lily,  '#39914a');
+    const reed  = col(C.reed,  '#7a9c3f');
+    const deep  = col(C.deep,  '#0a2c3d');
+    const glint = col(C.glint, '#d9f6ff');
+    const rock  = col(C.rock,  '#7d7468');
+    /* The card for this shoal is painted in the biome's colour, and so is the
+       water under it. That is the whole trick: the colour on the card and the
+       colour on the lake are the same colour, so "weed bed on the left" can be
+       answered by looking rather than by reading. */
+    const biome = col(C.biome, '#2f7d5a');
+
+    /** Somewhere inside the shoal, in the ring between `a` and `b` of R. */
+    const spot = (a, b) => {
+      const ang = r.range(0, Math.PI * 2), rad = R * r.range(a, b);
+      return [Math.cos(ang) * rad, Math.sin(ang) * rad];
+    };
+
+    /**
+     * The stain of colour that says which water this is, built from a handful
+     * of overlapping discs rather than one.
+     *
+     * A single disc of this size reads as a tarpaulin laid on the lake - a
+     * perfect circle with visible straight edges, which is the one shape
+     * nothing in nature has. Four or five of them overlapping give a soft
+     * uneven outline for the same two draw calls' worth of nothing.
+     */
+    const stain = (color, opacity, spread) => {
+      const n = 5;
+      for (let i = 0; i < n; i++) {
+        const d = surfaceDisc(R * r.range(0.36, 0.6), color, PATCH_Y.floor,
+                              { opacity: opacity, segments: 22 });
+        const ang = (i / n) * Math.PI * 2 + r.range(-0.5, 0.5);
+        const rad = i === 0 ? 0 : R * (spread === undefined ? 0.42 : spread) * r.range(0.5, 1);
+        d.position.set(Math.cos(ang) * rad, PATCH_Y.floor, Math.sin(ang) * rad);
+        g.add(d);
+      }
+    };
+
+    if (o.biome === 'shallows') {
+      // Bright sand you can see the bottom of, and a scatter of pebbles.
+      stain(biome, 0.2);
+      stain(sand, 0.16, 0.3);
+      for (let i = 0; i < 7; i++) {
+        const xz = spot(0.15, 0.9);
+        const pebble = part(new THREE.DodecahedronGeometry(r.range(0.3, 0.6), 0),
+                            paper(sand), { pos: [xz[0], PATCH_Y.wash, xz[1]], cast: false });
+        pebble.scale.y = 0.5;
+        g.add(pebble);
+      }
+    } else if (o.biome === 'weedbed') {
+      /* Pads and reeds — the one biome that is unmistakable at any distance,
+         and the reason a weed bed reads as somewhere a pike would live. */
+      stain(biome, 0.17);
+      for (let i = 0; i < 10; i++) {
+        const xz = spot(0.1, 0.95);
+        const pr = r.range(0.55, 1.15);
+        const pad = part(new THREE.CylinderGeometry(pr, pr, 0.1, 7),
+                         paper(lily), { pos: [xz[0], PATCH_Y.pad, xz[1]], cast: false, receive: true });
+        outline(pad);
+        pad.userData.bob = { phase: r.range(0, 6.28), amp: r.range(0.04, 0.1), y: PATCH_Y.pad };
+        moving.push(pad);
+        g.add(pad);
+      }
+      for (let i = 0; i < 5; i++) {
+        const xz = spot(0.45, 1.0);
+        const clump = new THREE.Group();
+        for (let k = 0, n = r.int(4, 7); k < n; k++) {
+          clump.add(part(new THREE.CylinderGeometry(0.05, 0.1, r.range(1.9, 3.4), 4),
+                         paper(reed),
+                         { pos: [r.range(-0.8, 0.8), r.range(1.0, 1.7), r.range(-0.8, 0.8)], cast: false }));
+        }
+        clump.position.set(xz[0], PATCH_Y.above, xz[1]);
+        clump.userData.sway = { phase: r.range(0, 6.28), amp: r.range(0.03, 0.08) };
+        moving.push(clump);
+        g.add(clump);
+      }
+    } else if (o.biome === 'rockyshore') {
+      // Rocks breaking the surface, each in its own collar of foam.
+      stain(biome, 0.16);
+      for (let i = 0; i < 6; i++) {
+        const xz = spot(0.12, 0.95);
+        const size = r.range(0.9, 2.2);
+        const rk = part(new THREE.DodecahedronGeometry(size, 0), paper(rock),
+                        { pos: [xz[0], PATCH_Y.wash + size * 0.15, xz[1]], receive: true });
+        rk.rotation.set(r.range(0, 3), r.range(0, 3), r.range(0, 3));
+        rk.scale.y = r.range(0.55, 0.9);
+        outline(rk);
+        g.add(rk);
+        const foam = surfaceDisc(size * 1.7, glint, PATCH_Y.wash, { opacity: 0.3, segments: 12 });
+        foam.position.set(xz[0], PATCH_Y.wash, xz[1]);
+        g.add(foam);
+      }
+    } else if (o.biome === 'dropoff') {
+      /* A shelf, and then the bottom falls away. Two discs: the pale ledge,
+         and the dark water it drops into. */
+      stain(biome, 0.18);
+      g.add(surfaceDisc(R * 0.6, deep, PATCH_Y.wash, { opacity: 0.34, segments: 24 }));
+      g.add(surfaceDisc(R * 0.33, deep, PATCH_Y.pad, { opacity: 0.34, segments: 24 }));
+      for (let i = 0; i < 4; i++) {
+        const ang = (i / 4) * Math.PI * 2 + r.range(-0.3, 0.3);
+        g.add(part(new THREE.BoxGeometry(r.range(2.4, 4.2), 0.14, 0.5), paper(glint),
+                   { pos: [Math.cos(ang) * R * 0.66, PATCH_Y.pad, Math.sin(ang) * R * 0.66],
+                     rot: [0, -ang, 0], cast: false }));
+      }
+    } else {
+      /* Deep channel: no bottom to see at all, just cold water and the lines
+         the current draws on the surface. */
+      stain(biome, 0.2);
+      g.add(surfaceDisc(R * 0.78, deep, PATCH_Y.wash, { opacity: 0.3, segments: 24 }));
+      for (let i = 0; i < 6; i++) {
+        const xz = spot(0.1, 0.95);
+        const streak = part(new THREE.BoxGeometry(r.range(4, 9), 0.1, r.range(0.35, 0.7)),
+                            paper(glint), { pos: [xz[0], PATCH_Y.wash, xz[1]], cast: false });
+        streak.rotation.y = r.range(-0.25, 0.25);
+        streak.userData.drift = { from: xz[0], span: r.range(6, 14),
+                                  speed: r.range(0.05, 0.12), phase: r.range(0, 6.28) };
+        moving.push(streak);
+        g.add(streak);
+      }
+    }
+
+    g.userData.moving = moving;
+    return g;
+  }
+
+  /**
+   * Gentle life in a patch: pads riding the ripple, reeds swaying, current
+   * lines sliding. `still` holds everything where it is for
+   * prefers-reduced-motion, which the whole game honours.
+   */
+  function updateBiomePatch(g, t, still) {
+    const moving = g && g.userData && g.userData.moving;
+    if (!moving) return;
+    for (let i = 0; i < moving.length; i++) {
+      const m = moving[i], d = m.userData;
+      if (still) { if (d.bob) m.position.y = d.bob.y; continue; }
+      if (d.bob)   m.position.y = d.bob.y + Math.sin(t * 0.9 + d.bob.phase) * d.bob.amp;
+      if (d.sway)  m.rotation.z = Math.sin(t * 0.7 + d.sway.phase) * d.sway.amp;
+      if (d.drift) {
+        const k = (t * d.drift.speed + d.drift.phase / 6.28) % 1;
+        m.position.x = d.drift.from + (k - 0.5) * d.drift.span;
+      }
+    }
+  }
+
+  /**
+   * Point a shoal at something \u2014 a float sitting on the water above it.
+   *
+   * `strength` runs 0..1 and is how interested they are; the caller grows it
+   * with the length of the wait. Passing null lets them go back to milling
+   * about. Nothing about this is a deadline or a cue to act on: it is the
+   * water looking alive while there is nothing to do.
+   */
+  function drawShoalTo(shoal, worldPoint, strength, still) {
+    if (!shoal || !shoal.userData.fish) return;
+    if (!worldPoint || still) { shoal.userData.attract = null; return; }
+    const local = shoal.userData._att || (shoal.userData._att = new THREE.Vector3());
+    local.copy(worldPoint);
+    // The shoal group carries the route's yaw and bank, so the float has to
+    // come into ITS frame before it can be swum toward.
+    shoal.worldToLocal(local);
+    shoal.userData.attract = { p: local, k: Math.max(0, Math.min(1, strength || 0)) };
+  }
+
   /** Drift a shoal. Called every frame with the scene clock. */
   function updateShoal(shoal, t) {
     const kids = shoal.userData.fish;
     if (!kids) return;
+    const att = shoal.userData.attract;
+    // Only some of them come over. A shoal that turned as one body would read
+    // as a shoal being moved, rather than as fish noticing something.
+    const curious = att ? Math.max(2, Math.round(kids.length * 0.45)) : 0;
     for (let i = 0; i < kids.length; i++) {
       const f = kids[i], s = f.userData.swim;
       const a = s.phase + t * s.speed;
       const rr = s.orbit + Math.sin(t * 0.5 + s.bobPhase) * s.wob;
+      if (att && i < curious) {
+        // Tighter and tighter circles around the bait, the longer it is down.
+        const pull = att.k * (0.55 + 0.45 * ((i % 3) / 3));
+        const ring = 2.0 + i * 0.55;
+        const ax = att.p.x + Math.cos(a * 1.7) * ring;
+        const az = att.p.z + Math.sin(a * 1.7) * ring;
+        f.position.set(Math.cos(a) * rr + (ax - Math.cos(a) * rr) * pull,
+                       0,
+                       Math.sin(a) * rr + (az - Math.sin(a) * rr) * pull);
+        f.rotation.y = -a * 1.7 + (s.speed > 0 ? -Math.PI / 2 : Math.PI / 2);
+        continue;
+      }
       f.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr);
       // Head the way it is swimming: the shape's nose is +X, so the heading
       // angle goes straight into rotation.y with the usual -Z-model sign flip.
@@ -2913,6 +3245,8 @@ RT.art = (function () {
     // fishmaster
     waterTexture, boat, angler, dock, rodRig, updateRodRig, zoneRing,
     fishHook, baitModel, fishSilhouette, fishShoal, updateShoal, tackleShop, jetty,
+    biomePatch, updateBiomePatch, surfaceDisc, drawShoalTo,
+    fishCard, faceFishCard, splashRing, updateSplashRing,
     shopInterior, castMarker,
     signBoard, crate, barrel, dryingRack, lifeRing, benchSeat, tackleClutter, dockLamp,
     exitMat
