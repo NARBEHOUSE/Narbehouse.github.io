@@ -168,6 +168,14 @@
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
       "genres": ["Racing", "Arcade"]
+    },
+    {
+      "id": "narbeanimalfriends",
+      "title": "NARBE Animal Friends",
+      "description": "A colourful barnyard peekaboo game - press a switch and the barn doors swing open as an animal steps out to say hello. No score, no timer, no losing.",
+      "path": "apps/games/NARBEANIMALFRIENDS/index.html",
+      "image": "images/games/narbeanimalfriends.png",
+      "genres": ["Interactive", "Educational"]
     }
   ]
 }

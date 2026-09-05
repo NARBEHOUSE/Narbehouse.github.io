@@ -1,0 +1,1493 @@
+﻿/*
+ * NARBE Animal Friends - the DOM interface layer.
+ *
+ * The stage may be rich; the interface obeys the hub's visual rules without
+ * exception. Targets are 64px or bigger, spacing is generous, the highlight is
+ * colour AND thickness, and nothing signals state by colour alone.
+ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #0d0b14;
+    font-family: 'Segoe UI', 'Trebuchet MS', Arial, sans-serif;
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#naf {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- the stage */
+
+.naf-stage {
+    position: absolute;
+    inset: 0;
+    background: #0d0b14;
+}
+
+.naf-stage-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* The DOM interface always sits above whichever renderer is mounted. */
+.s2d, .naf-stage-canvas { z-index: 0; }
+
+/* The barn hit target. Large, and only outlined when it is the focused item -
+   the barn itself is the picture, this is just the thing you select. */
+/* The one thing the player selects in Open the Barn. A real, visible, labelled
+   button below the scene - the barn itself is never focused. Sized well past the
+   64px minimum, and clear of both the stamp board and the scene. */
+.naf-btn.naf-open-barn {
+    position: absolute;
+    left: 50%;
+    bottom: 4vh;
+    /* Kept deliberately compact: the barn's doors swing wide open just above it,
+       and a wider button had them meeting. Still far over the 64px minimum. */
+    margin-left: calc(min(300px, 62vw) / -2);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: min(300px, 62vw);
+    min-height: 78px;
+    padding: 12px 20px;
+    font-size: clamp(18px, 2.4vw, 26px);
+    font-weight: 800;
+    color: #fff6e4;
+    background: #b8382f;
+    border: 5px solid #fff6e4;
+    border-radius: 24px;
+    box-shadow: 0 6px 0 #6d1f19, 0 14px 30px rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.naf-btn.naf-open-barn.show { display: flex; }
+
+.naf-open-barn .naf-menu-label { flex: 0 0 auto; }
+
+.naf-open-barn .naf-icon-chip {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 246, 228, 0.22);
+}
+
+.naf-open-barn .naf-icon { width: 28px; height: 28px; }
+
+.naf-open-barn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #6d1f19, 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------------------------ the HUD */
+
+.naf-hud {
+    position: absolute;
+    inset: 0;
+    display: none;
+    pointer-events: none;
+}
+
+.naf-hud.show { display: block; }
+
+/* Five slots that always fit across, however narrow the screen. Sizing them
+   from vw alone let the row grow wider than the viewport and the end ones were
+   simply clipped away. */
+.naf-stamps {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--stamp-gap);
+    --stamp-gap: clamp(4px, 1.2vw, 12px);
+    --stamp-size: min(80px, calc((100vw - 24px - 4 * var(--stamp-gap)) / 5));
+}
+
+.naf-stamp {
+    position: relative;
+    width: var(--stamp-size);
+    height: var(--stamp-size);
+    flex: 0 0 auto;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(12, 10, 20, 0.45);
+}
+
+.naf-stamp.empty {
+    border: 4px dashed rgba(255, 246, 228, 0.75);
+}
+
+.naf-stamp.filled {
+    border: 4px solid #4a2c1a;
+    background: #fff6e4;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+    animation: naf-stamp-in 320ms ease-out;
+}
+
+.naf-stamp img {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+}
+
+/* A new friend arriving: a bounce in, and a ring of light that spreads and
+   fades. Motion and light rather than a word, because it has to land for a
+   player who is not reading anything. */
+@keyframes naf-stamp-in {
+    0%   { transform: scale(1.6) rotate(-14deg); opacity: 0; }
+    55%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+    100% { transform: none; opacity: 1; }
+}
+
+.naf-stamp.filled::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 22px;
+    border: 4px solid #fff3c4;
+    opacity: 0;
+    pointer-events: none;
+    animation: naf-friend-pop 620ms ease-out;
+}
+
+@keyframes naf-friend-pop {
+    0%   { transform: scale(0.6); opacity: 0.95; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Bottom left, where the rest of the hub puts it. Pause is a scannable item, so
+   it needs an explicit z-index: the choice row is a full-width strip painted
+   after the HUD, and without this the button sits underneath it. */
+.naf-btn.naf-pause-btn {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    z-index: 3;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 4px solid #fff6e4;
+    background: #45506b;
+    color: #fff6e4;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* ------------------------------------------------------------ choice rows */
+
+.naf-choices {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 16px 10px;
+    /* NO ground of its own. The renderer already draws the ground, and painting
+       a second one here meant matching a measured colour that then had to be
+       re-measured every time the scene changed - and where the barn came down
+       close to the cards, that painted band covered the front of it. The cards
+       are cream with a dark border and a drop shadow, so they carry themselves
+       against the grass without help. */
+    background: none;
+}
+
+/* Only the content scales, so the backdrop still spans the whole screen.
+   Anchored at the bottom, so a big pool shrinks in place rather than drifting
+   up into the stamp board. */
+.naf-choices-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: scale(var(--choices-scale, 1));
+    transform-origin: bottom center;
+}
+
+.naf-choices.show { display: flex; }
+
+/* Sits well clear of the first row: the focus ring on a card reaches about 11px
+   past its own edge, and at a tighter gap the ring ran into this line. */
+/* No scrim behind it any more, so the text carries its own contrast: a dark
+   outline plus a soft shadow, which reads on grass or on black. */
+.naf-choice-prompt {
+    margin-bottom: 10px;
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-weight: 800;
+    text-shadow:
+        1px 1px 0 rgba(20, 12, 6, 0.9), -1px 1px 0 rgba(20, 12, 6, 0.9),
+        1px -1px 0 rgba(20, 12, 6, 0.9), -1px -1px 0 rgba(20, 12, 6, 0.9),
+        0 3px 10px rgba(0, 0, 0, 0.85);
+}
+
+/* nowrap is deliberate: showChoices sizes the cards to fit the row exactly, and
+   a row that wraps is what made the bottom of the screen look uneven. */
+.naf-choice-row {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: var(--choice-gap, 12px);   /* set alongside --choice-w in showChoices */
+}
+
+/* `.naf-btn` is declared later in this file, so these need the extra class to
+   win on specificity rather than order. */
+/* Width is set per row in showChoices so the whole pool fits on one line. */
+.naf-btn.naf-choice {
+    width: var(--choice-w, clamp(104px, 15vw, 158px));
+    /* A little taller than the width alone would need, so a two-word name
+       wrapped onto its own second line (Tropical / Fish) has room below the
+       picture without crowding the card's border. */
+    min-height: calc(var(--choice-w, 124px) * 1.18);
+    flex: 0 0 auto;
+    padding: 6px 4px 4px;
+    border-radius: 18px;
+    border: 4px solid #4a2c1a;
+    background: #fff6e4;
+    color: #3d2718;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    /* Sits directly on the grass now, so it needs a real shadow under it to lift
+       off the ground rather than relying on a band behind it. */
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: transform 110ms ease;
+}
+
+.naf-choice img {
+    width: 62%;
+    aspect-ratio: 1;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Sized from the card, not the viewport, so it stays in proportion when the
+   cards shrink to keep the rows even. Wraps within the card rather than
+   running past its fixed width - a long name (Tropical Fish, Sea Snail) at
+   nowrap was overflowing into the scan highlight around the card instead of
+   staying inside it. The row above stays nowrap; only this label wraps.
+   word-break is deliberately NOT break-word here: a one-word name that was
+   still too wide for the card (Butterfly) was breaking mid-word instead of
+   wrapping - keep-all keeps every word whole, wrapping only at the space in a
+   two-word name; showChoices() sizes the card itself wide enough that a
+   single long word fits without needing to break at all. */
+.naf-choice-name {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 4%;
+    font-size: clamp(11px, calc(var(--choice-w, 110px) * 0.17), 19px);
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: normal;
+}
+
+/* Pointing back at the target after a wrong pick. Motion and a ring, never
+   colour alone. */
+.naf-choice.naf-point {
+    animation: naf-point 700ms ease-in-out 3;
+    border-color: #fff;
+}
+
+@keyframes naf-point {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-12px) scale(1.06); }
+}
+
+/* -------------------------------------------------------------- the banner */
+
+/* Dead centre of the stage - NOT the bottom, where the choice row and the
+   press button live: a caption anchored there was sitting on top of the very
+   things a switch user needs to scan to, unreadable and unscannable both. The
+   reveal sequence in reveal.js already gives a clear, caption-free look at the
+   animal before this appears and another after it is gone (see Beat 6), so it
+   is fine for the words to sit over the animal in between - that is the one
+   moment they are not the main event. */
+.naf-banner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.94);
+    padding: 12px 24px;
+    border-radius: 16px;
+    background: rgba(12, 10, 20, 0.88);
+    border: 3px solid #ffd700;
+    font-size: clamp(15px, 2.2vw, 21px);
+    font-weight: 800;
+    text-align: center;
+    max-width: 80vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.naf-banner.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* ------------------------------------------------------------- overlays */
+
+/* The same place the game itself shows, behind the card. The card is fully
+   opaque, so nothing here costs any contrast.
+
+   The four --bg-*-art layers are PNGs drawn at runtime by skinBackdrop() in
+   js/ui.js using js/scenery.js - the very same canvas painters the 3D stage
+   builds its own textures from - so the menu and the gameplay view are
+   literally the same artwork rather than two drawings of it. The gradient
+   underneath is the fallback for a device where that drawing failed (see the
+   catch in skinBackdrop), which is why it stays a complete sky-over-ground
+   picture on its own.
+
+   Layer order, front to back the way `background` stacks: the flower bed and
+   the dressing (fence / coral / acacia) sit along the ground line, the hills
+   behind them, the sky behind everything. The two ground layers are pinned to
+   the bottom and repeat across; the hills sit on the horizon at 70%, the same
+   line the fallback gradient changes colour on. */
+.naf-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    overflow: hidden;               /* nothing scrolls; fitCard() scales instead */
+    background:
+        var(--bg-bed-art, none) left bottom / auto 22% repeat-x,
+        var(--bg-dressing-art, none) left 82% / auto 20% repeat-x,
+        var(--bg-hills-art, none) left 70% / 100% 26% no-repeat,
+        /* Only down to the horizon at 70%, NOT the full height. The sky canvas
+           ends in a warm horizon glow (see theme.sky in zones.js), so stretched
+           over the whole overlay that glow filled the bottom third and read as
+           a band of sand behind the barn. Ending it on the horizon lets the
+           ground stops below take that band instead - grass at the barn, tank
+           sand at the aquarium, dry gold on the safari. */
+        var(--bg-sky-art, none) left top / 100% 70% no-repeat,
+        radial-gradient(circle at 12% 16%,
+            var(--bg-sun, rgba(255, 249, 214, 0.95)) 0 5%, transparent 22%),
+        linear-gradient(
+            var(--bg-sky-0, #1d5f9e) 0%,
+            var(--bg-sky-1, #4fa2d8) 34%,
+            var(--bg-sky-2, #a9dcf3) 58%,
+            var(--bg-sky-3, #ffd79a) 70%,
+            var(--bg-ground-0, #6d9c3d) 70%,
+            var(--bg-ground-1, #4d7a2c) 100%);
+}
+
+.naf-overlay.show { display: flex; }
+
+/* Two slow clouds drifting BEHIND the card. Both need an explicit z-index:
+   without one, ::after paints after the card and drifts over the buttons. */
+.naf-overlay::before,
+.naf-overlay::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    border-radius: 999px;
+    background: var(--bg-cloud, rgba(255, 255, 255, 0.9));
+    filter: blur(6px);
+    pointer-events: none;
+}
+
+.naf-overlay::before {
+    width: 220px; height: 74px; top: 12%; left: -240px;
+    animation: naf-drift 64s linear infinite;
+}
+
+.naf-overlay::after {
+    width: 160px; height: 56px; top: 30%; left: -180px;
+    animation: naf-drift 92s linear infinite 14s;
+}
+
+@keyframes naf-drift {
+    to { transform: translateX(calc(100vw + 260px)); }
+}
+
+/* Bubbles drifting up through the tank, behind the card. Five real elements
+   built by bubbleLayer() in ui.js - an element only has two pseudo-element
+   slots, which is why this looked like one lonely bubble when it was built
+   from ::before/::after. Each carries its own column, size, speed, delay and
+   sideways drift as custom properties, so they never rise as a set.
+
+   Hidden everywhere but the tank. [data-zone] is set by skinBackdrop() in
+   ui.js, which also draws each zone's real scenery into the --bg-*-art layers
+   above. */
+.naf-bubbles {
+    position: absolute;
+    inset: 0;
+    z-index: 0;              /* same layer as the drifting clouds, behind the card */
+    overflow: hidden;
+    pointer-events: none;
+    display: none;
+}
+
+[data-zone="aquarium"] .naf-bubbles { display: block; }
+
+.naf-bubble {
+    position: absolute;
+    left: var(--b-x, 50%);
+    bottom: -8%;             /* starts just off the bottom edge */
+    width: var(--b-size, 14px);
+    height: var(--b-size, 14px);
+    border-radius: 50%;
+    /* Lit from the top left, like a real bubble, rather than a flat dot. */
+    background:
+        radial-gradient(circle at 32% 28%,
+            rgba(255, 255, 255, 0.95) 0 18%,
+            rgba(255, 255, 255, 0.34) 42%,
+            rgba(255, 255, 255, 0.10) 72%,
+            rgba(255, 255, 255, 0.22) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34);
+    animation: naf-rise var(--b-secs, 10s) linear var(--b-delay, 0s) infinite;
+}
+
+/* Wobbles sideways on the way up rather than travelling in a straight line,
+   which is what reads as water rather than as a dot on a timer. */
+@keyframes naf-rise {
+    0%   { transform: translate(0, 0); opacity: 0; }
+    12%  { opacity: 0.85; }
+    50%  { transform: translate(var(--b-drift, 12px), -55vh); }
+    85%  { opacity: 0.7; }
+    100% { transform: translate(0, -108vh); opacity: 0; }
+}
+
+/* Motion off means motion off - the bubbles hold still like everything else. */
+@media (prefers-reduced-motion: reduce) {
+    .naf-bubble { animation: none; opacity: 0.6; }
+}
+
+/* The card is never scrolled and never clipped. It lays out at its natural size
+   and fitCard() scales it down if the viewport is too small to hold it, so
+   everything is always on one page. */
+/* A card shaped like the barn: pitched roof, hay loft, and the wall below it
+   carrying the buttons. The roof polygon stretches to the card's width, so the
+   silhouette holds at any size while the outline stays an even thickness. */
+/* The whole menu IS the barn: a big pitched roof over a red barn wall with the
+   buttons on its doors. Narrower than a plain card so the barn reads tall
+   rather than squat. */
+/* 78vw, not 90: the roof's eaves overhang the walls by 16% and the whole barn
+   has to stay inside the screen. At 90vw the eaves were being clipped. */
+.naf-barnframe {
+    position: relative;
+    z-index: 1;
+    width: min(470px, 78vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+    animation: naf-card-in 260ms ease-out;
+}
+
+/* A painted sign hung above the barn, sized to its own text rather than to the
+   barn's width. The extra class beats the plain .naf-title rule below.
+   Its colour follows the zone, like the rest of the frame. */
+.naf-barnframe .naf-title-above {
+    width: auto;
+    max-width: 100%;
+    background: var(--frame-wall, #b8382f);
+    border: 5px solid var(--frame-edge, #4a2c1a);
+    border-radius: 14px;
+    padding: 6px 22px;
+    margin: 0 0 8px;
+    color: #fff6e4;
+    font-size: clamp(19px, 3.2vw, 32px);
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28), 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* The wall is the building itself - planks, glass or poles with trim, not a
+   white card. The roof's eaves overhang it, as a barn's do.
+   Every colour comes from --frame-*, which skinFrame() in js/ui.js sets from
+   the zone's theme, so the menu's building matches the game's exactly. */
+.naf-barnframe .naf-card {
+    width: 100%;
+    transform: none;
+    animation: none;
+    border-top: 0;
+    border-radius: 0 0 6px 6px;      /* a building sits square on the ground */
+    padding: 14px 18px 16px;
+    color: #fff6e4;
+    background:
+        /* trim boards along the top and bottom of the wall */
+        linear-gradient(var(--frame-trim, #fff6e4) 0 9px, transparent 9px) top / 100% no-repeat,
+        linear-gradient(transparent calc(100% - 9px), var(--frame-trim, #fff6e4) 0) bottom / 100% no-repeat,
+        /* vertical board-and-batten siding */
+        repeating-linear-gradient(90deg,
+            rgba(0, 0, 0, 0.13) 0 2px, rgba(0, 0, 0, 0) 2px 24px),
+        var(--frame-wall, #b8382f);
+}
+
+/* The tank's wall is GLASS: water behind a frame, with broad highlights down it
+   and a pale band of air along the top. The trim boards become the tank's frame,
+   so they are drawn heavier than the barn's. */
+.naf-barnframe[data-shape="tank"] .naf-card {
+    background:
+        linear-gradient(var(--frame-trim, #e8f7fb) 0 13px, transparent 13px) top / 100% no-repeat,
+        linear-gradient(transparent calc(100% - 13px), var(--frame-trim, #e8f7fb) 0) bottom / 100% no-repeat,
+        /* the air above the water line */
+        linear-gradient(rgba(232, 250, 255, 0.75) 0 26px, transparent 26px) top / 100% no-repeat,
+        /* broad glass highlights */
+        repeating-linear-gradient(90deg,
+            rgba(255, 255, 255, 0.16) 0 26px, rgba(255, 255, 255, 0) 26px 96px),
+        /* the water */
+        linear-gradient(var(--frame-glass, #a8e4f4), var(--frame-wall, #2f7f9e));
+}
+
+/* The lodge's wall is a stockade: round poles lashed to two rails. */
+.naf-barnframe[data-shape="thatch"] .naf-card {
+    background:
+        linear-gradient(transparent calc(100% - 9px), var(--frame-trim, #e5d6ae) 0) bottom / 100% no-repeat,
+        /* the two rails */
+        linear-gradient(rgba(58, 42, 20, 0.42) 0 7px, transparent 7px) 0 22% / 100% no-repeat,
+        linear-gradient(rgba(58, 42, 20, 0.42) 0 7px, transparent 7px) 0 76% / 100% no-repeat,
+        /* the poles, each with a lit side and a shaded one */
+        repeating-linear-gradient(90deg,
+            rgba(255, 236, 196, 0.16) 0 4px,
+            rgba(0, 0, 0, 0) 4px 12px,
+            rgba(58, 42, 20, 0.34) 12px 16px),
+        var(--frame-wall, #8a6a3c);
+}
+
+.naf-card-barn .naf-sub,
+.naf-card-barn .naf-hint {
+    color: var(--frame-ink, #fff6e4);
+    text-shadow: 0 2px 0 var(--frame-ink-shadow, rgba(0, 0, 0, 0.32));
+}
+
+/* The question, painted inside the roof rather than sitting on the wall: a
+   board hanging under the loft window/porthole/sign, matched to the size and
+   weight of the buttons below it rather than left as a quiet caption.
+   Fixed dark-on-light colours rather than the --frame-* set: this sits over
+   vertical boards, a glass dome or a straw fringe in turn, and a dark
+   translucent plate reads over all three without needing a per-zone tint. */
+.naf-roof-cta {
+    position: absolute;
+    left: 50%;
+    bottom: 4%;
+    transform: translateX(-50%);
+    width: 84%;
+    margin: 0;
+    padding: 4px 12px;
+    font-size: clamp(17px, 2.2vw, 24px);
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.18;
+    color: #fff6e4;
+    background: rgba(20, 13, 9, 0.64);
+    border-radius: 12px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+    white-space: normal;
+    overflow-wrap: break-word;
+    pointer-events: none;
+}
+
+/* The tank's roof is a shallow dome (aspect-ratio 3.5:1 below) rather than a
+   tall gambrel, and the porthole alone already fills most of that height -
+   shrinking the text to fit above the wall read as out of place next to the
+   full-size board on the barn and the lodge. Neither .naf-roof nor
+   .naf-barnframe clip their overflow, so instead this sits in the lower half
+   of the hood - clear of the vent slots across the crown - and is left free
+   to run past the bottom of the shallow roof box into the top of the wall, at
+   the same size as every other zone's board, for a cohesive menu. */
+.naf-barnframe[data-shape="tank"] .naf-roof-cta {
+    top: 62%;
+    bottom: auto;
+}
+
+/* The gambrel - a steep lower slope to a knee, then a shallow run to the apex.
+   That is the shape that reads as "barn" rather than "house".
+   Its height follows the barn's WIDTH, so the pitch stays the same whatever the
+   viewport does. A roof tied to vh looked flat and undersized on wide screens. */
+/* The overhang is a PERCENTAGE, so it scales with the barn instead of being a
+   fixed 74px that swamped the walls on a phone. */
+.naf-roof {
+    position: relative;
+    display: block;
+    width: 116%;
+    aspect-ratio: 2.05 / 1;          /* taller than it was; more barn, less shed */
+    height: auto;
+    /* Overlaps the wall so the roof's bottom stroke is buried in it and the two
+       read as one shape rather than two stacked pieces. */
+    margin-bottom: -5px;
+}
+
+/* A hood is a shallow slab, not a pitch. Given the barn's 2.05 it towered over
+   the tank and pushed the whole frame down under the fit scale. */
+.naf-barnframe[data-shape="tank"] .naf-roof { aspect-ratio: 3.5 / 1; }
+
+/* The lodge's roof board carries the same question as the barn's, at the same
+   size (see .naf-roof-cta), but the straw roof's own silhouette leaves it a
+   touch less room at the sides than the gambrel does - a little extra
+   overhang gives the text the width it needs without shrinking it, and the
+   board itself is widened along with it so both actually grow together.
+   Widening only ever pushes the eaves further out over the sky background,
+   never over the wall's buttons below, so this is free to be generous. */
+.naf-barnframe[data-shape="thatch"] .naf-roof { width: 132%; }
+.naf-barnframe[data-shape="thatch"] .naf-roof-cta { width: 92%; }
+
+/* Fills the roof exactly, so the SVG's own 100%/100% still resolves against a
+   real box even though it is no longer .naf-roof's direct child - see the note
+   in barnCard() on why the art has its own wrapper. */
+.naf-roof-art { display: block; width: 100%; height: 100%; }
+
+.naf-roof svg { display: block; width: 100%; height: 100%; }
+
+/* fill comes from the shingle pattern in the markup; this is only the outline */
+.naf-roof polygon {
+    stroke: #4a2c1a;
+    stroke-width: 6;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;   /* even outline despite the stretch */
+}
+
+/* What sits in the roof: a paned loft window, a round port, or a hung sign -
+   the same three features the game's buildings carry. */
+.naf-loft {
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    width: clamp(42px, 13%, 76px);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    background: var(--frame-glass, #bfe3f2);
+    border: 5px solid var(--frame-trim, #fff6e4);
+    border-radius: 3px;
+    box-shadow: 0 0 0 4px var(--frame-edge, #4a2c1a);
+}
+
+/* The window bars. */
+.naf-loft::before,
+.naf-loft::after {
+    content: '';
+    position: absolute;
+    background: var(--frame-trim, #fff6e4);
+}
+
+.naf-loft::before { left: 0; right: 0; top: 50%; height: 5px; margin-top: -2.5px; }
+.naf-loft::after  { top: 0; bottom: 0; left: 50%; width: 5px; margin-left: -2.5px; }
+
+/* No tank rules here on purpose. The hood has no feature above the hatch -
+   roofSvg() renders no .naf-loft at all for the tank, matching the game, where
+   the riveted port was taken out of tankFacade(). The porthole styling that
+   used to sit here is gone with it rather than being left to style an element
+   that is never built. */
+
+/* A carved board hung on the face of the thatch, wider than it is tall, with
+   cut lines standing in for lettering. */
+.naf-barnframe[data-shape="thatch"] .naf-loft {
+    top: 40%;
+    width: clamp(58px, 19%, 104px);
+    aspect-ratio: 2.3;
+    border-radius: 4px;
+    border-color: var(--frame-edge, #3a2a14);
+    box-shadow: 0 -14px 0 -11px var(--frame-edge, #3a2a14);   /* the hanging strap */
+}
+
+.naf-barnframe[data-shape="thatch"] .naf-loft::before {
+    left: 14%;
+    right: 14%;
+    top: 50%;
+    height: 4px;
+    margin-top: -2px;
+    background: rgba(58, 42, 20, 0.5);
+    box-shadow: 0 -9px 0 rgba(58, 42, 20, 0.5), 0 9px 0 rgba(58, 42, 20, 0.5);
+}
+
+.naf-barnframe[data-shape="thatch"] .naf-loft::after { display: none; }
+
+/* The big double doors the menu buttons sit on, inset from the barn walls. */
+.naf-doors {
+    width: 92%;
+    margin: 10px auto 8px;
+    padding: 16px 14px;
+    gap: 20px;                       /* room for the highlight around each button */
+    /* Deliberately NOT themed: the buttons sit on this, and their contrast is
+       measured against a cream ground. Only its frame follows the zone. */
+    background: #fff6e4;
+    border: 5px solid var(--frame-edge, #4a2c1a);
+    border-radius: 6px;
+}
+
+/* The main menu's doors hold two stacked groups - the three places, then the
+   shorter utility row - rather than one flat list, so it needs its own flow.
+   Compounded with .naf-doors and .naf-list because both of those are declared
+   further down this file and would otherwise win on source order. */
+.naf-doors.naf-menu-doors {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* How to Play, Settings and Exit, three across under the places. They are the
+   grown-up doors, so they are smaller and quieter than the three that matter -
+   but still full-height touch targets, and still in scan order. */
+.naf-list.naf-util-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 0;
+}
+
+.naf-menu-item.naf-menu-util {
+    flex-direction: column;
+    gap: 6px;
+    min-height: clamp(64px, 9vh, 84px);
+    padding: 8px 8px;
+    font-size: clamp(13px, 1.5vw, 17px);
+    text-align: center;
+    line-height: 1.1;
+}
+
+.naf-menu-util .naf-menu-label { flex: 0 0 auto; }
+.naf-menu-util .naf-icon-chip { width: 32px; height: 32px; border-radius: 10px; }
+
+/* Where you were last. A cream keyline plus a corner tick, so it does not rely
+   on colour alone and cannot be mistaken for the scan highlight. */
+.naf-menu-item.naf-menu-here {
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.32), inset 0 0 0 3px #f6efe2;
+}
+
+.naf-menu-item.naf-menu-here::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #f6efe2;
+}
+
+.naf-menu-item { position: relative; }
+
+.naf-card {
+    position: relative;
+    z-index: 1;                     /* above the drifting clouds */
+    width: min(660px, 94vw);
+    padding: 16px 20px 20px;
+    border-radius: 26px;
+    background: #fff6e4;
+    border: 6px solid #4a2c1a;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+    animation: naf-card-in 260ms ease-out;
+}
+
+/* Animates `translate` and opacity only - `transform` is reserved for the fit
+   scale, so the two never fight. */
+@keyframes naf-card-in {
+    from { translate: 0 10px; opacity: 0; }
+    to   { translate: 0 0; opacity: 1; }
+}
+
+/* The title sits on a barn-red board with the barn's cream trim above it. */
+.naf-title {
+    font-size: clamp(22px, 3.6vw, 38px);
+    font-weight: 800;
+    text-align: center;
+    color: #fff6e4;
+    background: #b8382f;
+    border: 4px solid #4a2c1a;
+    border-radius: 16px;
+    padding: 10px 16px;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* How to Play's title is a real <button> - it is what reads the page aloud.
+   It already looked like one (a coloured plate with a dark border), so this
+   only has to undo what a button does differently from a heading: buttons do
+   not inherit the page font and size themselves to their text rather than
+   filling the line. The scan highlight needs nothing special - it recolours
+   that 4px border and lays its band flush against it, same as any button. */
+.naf-title-btn {
+    display: block;
+    width: 100%;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.naf-sub {
+    text-align: center;
+    color: #5b3a24;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: clamp(14px, 1.8vw, 19px);
+}
+
+/* The gap has to clear the focus ring, which reaches ~11px past a button's own
+   edge. Anything tighter and the highlight touches its neighbours as it scans. */
+.naf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+/* Inside the menu's doors the two groups carry their own spacing, so the list
+   must not add a top margin of its own between them. */
+.naf-menu-doors .naf-list { margin-top: 0; }
+
+.naf-hint {
+    margin-top: 12px;
+    text-align: center;
+    color: #6b4a30;
+    font-weight: 600;
+    font-size: clamp(12px, 1.5vw, 16px);
+}
+
+.naf-no-hints .naf-hint { display: none; }
+
+.naf-help-body p {
+    margin: 10px 2px;
+    color: #3d2718;
+    font-size: clamp(15px, 1.9vw, 20px);
+    line-height: 1.55;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.naf-btn {
+    font-family: inherit;
+    color: #fff;
+    background: #45506b;
+    border: 4px solid #2a1a10;
+    border-radius: 18px;
+    cursor: pointer;
+}
+
+/* Deep fills with white text, so the highlight reads whatever colour the player
+   has chosen. Colour here is decoration - every item is also named and spoken. */
+.naf-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: clamp(56px, 8.6vh, 76px);
+    padding: 10px 18px;
+    font-size: clamp(17px, 2.2vw, 24px);
+    font-weight: 800;
+    text-align: left;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.32);
+    transition: transform 110ms ease, box-shadow 110ms ease;
+}
+
+.naf-menu-item:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.32);
+}
+
+.naf-menu-label { flex: 1; }
+
+.naf-icon-chip {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.naf-icon {
+    width: 30px;
+    height: 30px;
+    stroke: currentColor;
+    stroke-width: 3.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.naf-icon-dot { fill: currentColor; stroke: none; }
+
+[data-tone="red"]   { background: #b8382f; }
+[data-tone="green"] { background: #2c7a34; }
+[data-tone="blue"]  { background: #1d6a9c; }
+[data-tone="teal"]  { background: #15756a; }
+[data-tone="plum"]  { background: #6a3d9a; }
+[data-tone="slate"] { background: #45506b; }
+/* Dry-grass brown for the safari. Dark enough that the cream label on it stays
+   well above 4.5:1, which the lighter savanna yellows do not manage. */
+[data-tone="amber"] { background: #8a5518; }
+
+/* Settings rows: wood-toned, cream text, values right-aligned. */
+.naf-row {
+    min-height: clamp(52px, 7.8vh, 70px);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: #5b3a24;
+    color: #fff6e4;
+    font-size: clamp(16px, 2vw, 22px);
+    text-align: left;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28);
+}
+
+.naf-row-label { font-weight: 800; }
+
+.naf-row-value {
+    color: #ffd79a;
+    font-weight: 700;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ------------------------------------------------------- the name panel
+   Sits on the cream settings card, so its text has to be dark - it inherits
+   white from the body otherwise and disappears. */
+
+.naf-name-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.naf-name-note {
+    color: #3d2718;
+    font-size: clamp(13px, 1.6vw, 17px);
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: left;
+}
+
+.naf-name-input {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: clamp(20px, 2.8vw, 30px);
+    font-weight: 700;
+    color: #fff6e4;
+    background: #5b3a24;
+    border: 5px solid #4a2c1a;
+    border-radius: 16px;
+    box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.naf-name-input::placeholder {
+    color: rgba(255, 246, 228, 0.55);
+    font-weight: 600;
+}
+
+.naf-name-input:focus {
+    outline: 5px solid #ffd700;
+    outline-offset: 3px;
+}
+
+/* The on-screen keyboard: ABC order, matching the hub's own keyboard tools -
+   including their row-then-key scan order. A .naf-key-row wraps each row of
+   keys as its own element, so the SAME single-item highlight this whole game
+   already uses can land on either a whole row (choosing which row to drill
+   into) or one key inside it, without a second highlight mechanism. */
+.naf-keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.naf-key-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    padding: 3px;
+    border: 3px solid transparent;
+    border-radius: 12px;
+}
+
+/* Space and Backspace get their own two-across row rather than two more
+   squares in a six-column one, so they stay easy to find by shape alone
+   rather than by reading every label while scanning past. */
+.naf-key-row-ctrl {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.naf-key {
+    min-height: 46px;
+    padding: 4px 4px;
+    font-family: inherit;
+    font-size: clamp(16px, 2vw, 22px);
+    font-weight: 800;
+    color: #fff6e4;
+    background: #6a4530;
+    border: 3px solid #4a2c1a;
+    border-radius: 10px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.32);
+    transition: transform 110ms ease, box-shadow 110ms ease;
+}
+
+.naf-key:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.32);
+}
+
+.naf-key-wide {
+    font-size: clamp(14px, 1.7vw, 18px);
+    background: #45506b;
+}
+
+/* -------------------------------------------------------- the scan highlight
+   A real CSS outline, colour and thickness, that you can prove is correct in
+   devtools. Never reimplemented in WebGL.
+
+   ONE BAND. Both styles used to draw several concentric rings - a recoloured
+   border, then a 3px gap, then a coloured outline, then a dark ring, then a
+   glow - which read as two or three separate bands rather than as one thing
+   marking one button, and made it genuinely hard to tell what was selected.
+   Now the border and the outline are the same colour with NO offset between
+   them, so they merge into a single continuous band; the fill style is one
+   solid block. The gap was the whole problem: it is what split the band in two.
+
+   Never colour alone, still: the band is 7px thick and the button lifts. Both
+   of those survive if the colour itself cannot be distinguished.
+
+   --focus-color and --focus-ink are set per item by paint() in js/input.js,
+   from the player's Highlight Color choice. */
+
+/* Bold Band: the chosen colour drawn round the button. */
+.naf-focus {
+    outline: 7px solid var(--focus-color, #ffd700);
+    outline-offset: 0;
+    border-color: var(--focus-color, #ffd700) !important;
+    transform: translateY(-2px);
+}
+
+/* Block: the button becomes the chosen colour. The label flips to that
+   colour's ink so it stays readable on Gold and on Black alike. */
+.naf-focus-full {
+    background: var(--focus-color, #ffd700) !important;
+    color: var(--focus-ink, #1a1008) !important;
+    border-color: var(--focus-color, #ffd700) !important;
+    outline: 7px solid var(--focus-color, #ffd700);
+    outline-offset: 0;
+    transform: translateY(-2px);
+}
+
+.naf-focus-full .naf-choice-name,
+.naf-focus-full .naf-menu-label,
+.naf-focus-full .naf-row-label,
+.naf-focus-full .naf-row-value { color: var(--focus-ink, #1a1008); }
+
+/* A ring rather than a fill: a translucent black wash disappeared on a dark
+   highlight colour, and there is no way to tint from a hex custom property. */
+.naf-focus-full .naf-icon-chip {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008);
+}
+
+/* ==========================================================================
+   The DOM-only renderer: the Simple preset, and the WebGL fallback.
+   No shadows, no shaft, no dust, no parallax, no camera. The minimum on screen
+   at once - but the animal keeps moving, because it is clutter that gets
+   removed, not life.
+   ========================================================================== */
+
+.s2d {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+    --door-ms: 1100ms;
+    --out-ms: 1000ms;
+    --animal-scale: 1;
+
+    /* The zone's palette. stage2d.js overwrites every one of these from the
+       current zone's theme; the values here are the barn's, so the stylesheet
+       still describes a complete scene on its own. */
+    --s2d-sky-top: #3a86c8;
+    --s2d-sky-mid: #9fd4ee;
+    --s2d-sky-low: #ffd7a2;
+    --s2d-ground-far: #6f9a3c;
+    --s2d-ground-near: #8cb44e;
+    --s2d-wall: #c24236;
+    --s2d-wall-edge: #7d2a24;
+    --s2d-trim: #f6efe2;
+    --s2d-door: #c24236;
+    --s2d-interior: #100a07;
+    --s2d-shaft: rgba(255, 226, 160, 0.65);
+    --s2d-shaft-out: rgba(255, 214, 140, 0);
+    --s2d-seam: #ffd88a;
+}
+
+.s2d-sky, .s2d-ground { display: none; }
+
+/* Acting as the fallback for a richer preset, it earns a little dressing. */
+.s2d-preset-full .s2d-sky,
+.s2d-preset-bright .s2d-sky {
+    display: block;
+    position: absolute;
+    inset: 0 0 34% 0;
+    background: linear-gradient(var(--s2d-sky-top), var(--s2d-sky-mid) 62%, var(--s2d-sky-low));
+}
+
+.s2d-preset-full .s2d-ground,
+.s2d-preset-bright .s2d-ground {
+    display: block;
+    position: absolute;
+    inset: 66% 0 0 0;
+    background: linear-gradient(var(--s2d-ground-far), var(--s2d-ground-near));
+}
+
+/* Sits between the stamp board above and the Open the Barn button below, and
+   never under either of them. */
+.s2d-barn {
+    position: absolute;
+    left: 50%;
+    top: 47%;
+    transform: translate(-50%, -50%);
+    width: min(42vh, 64vw);
+    height: min(52vh, 78vw);
+    perspective: 900px;
+}
+
+/* Animal Appears moves the animal within the doorway, not the barn. */
+.s2d-at-left  .s2d-animal-wrap { margin-left: -38%; }
+.s2d-at-right .s2d-animal-wrap { margin-left: -8%; }
+
+.s2d-nudge { animation: s2d-nudge 240ms ease-out; }
+
+@keyframes s2d-nudge {
+    0%, 100% { transform: translate(-50%, -50%); }
+    40%      { transform: translate(-50%, calc(-50% + 6px)); }
+}
+
+/* The doorway, and the dark field behind it. */
+.s2d-interior {
+    position: absolute;
+    left: 18%;
+    bottom: 4%;
+    width: 64%;
+    height: 84%;
+    background: var(--s2d-interior);
+    border-radius: 10px 10px 0 0;
+}
+
+.s2d-preset-contrast .s2d-interior { background: #000; }
+
+/* The aquarium has no doorway to be dark behind - the glass is full of water
+   everywhere, all the time. The interior fills almost the whole frame instead
+   of sitting inset where a door opening would be, so it reads as one
+   continuous tank rather than a barn wearing the wrong paint. */
+.s2d[data-doors="swim"] .s2d-interior {
+    left: 4%;
+    bottom: 4%;
+    width: 92%;
+    height: 92%;
+    border-radius: 8px;
+}
+
+.s2d-facade {
+    position: absolute;
+    inset: 0;
+    border: 10px solid var(--s2d-trim);
+    border-radius: 14px;
+    pointer-events: none;
+}
+
+.s2d-preset-simple .s2d-facade { border-color: #ffffff; }
+
+.s2d-preset-full .s2d-facade,
+.s2d-preset-bright .s2d-facade {
+    background:
+        linear-gradient(var(--s2d-wall) 0 22%, transparent 22%);
+    box-shadow: inset 0 0 0 10px var(--s2d-trim);
+    border-color: var(--s2d-wall-edge);
+}
+
+.s2d-shaft {
+    position: absolute;
+    left: 18%;
+    bottom: 4%;
+    width: 64%;
+    height: 84%;
+    opacity: 0;
+    background: radial-gradient(ellipse at 50% 100%,
+        var(--s2d-shaft), var(--s2d-shaft-out) 70%);
+    transition: opacity 400ms ease;
+    pointer-events: none;
+}
+
+.s2d-open .s2d-shaft { opacity: 0.9; }
+.s2d-preset-simple .s2d-shaft { display: none; }
+/* No doorway for a beam of light to shine through - the aquarium keeps its
+   glass evenly lit instead. */
+.s2d[data-doors="swim"] .s2d-shaft { display: none; }
+.s2d-bloom { animation: s2d-bloom 700ms ease-out; }
+
+@keyframes s2d-bloom {
+    0%   { filter: brightness(2.4); }
+    100% { filter: none; }
+}
+
+/* The thin line of light at the seam between the closed leaves. */
+.s2d-seam {
+    position: absolute;
+    left: 50%;
+    bottom: 4%;
+    width: 6px;
+    height: 84%;
+    margin-left: -3px;
+    background: var(--s2d-seam);
+    box-shadow: 0 0 18px 4px var(--s2d-seam);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* No leaves, so no seam between them either. */
+.s2d[data-doors="swim"] .s2d-seam { display: none; }
+
+.s2d-seam-on { animation: s2d-seam var(--seam-ms, 900ms) ease-in-out; }
+
+@keyframes s2d-seam {
+    0%, 100% { opacity: 0; }
+    50%      { opacity: 1; }
+}
+
+.s2d-open .s2d-seam { opacity: 0; }
+
+/* Two leaves closing one opening. Which edge each is hinged to is the zone's,
+   set as data-doors by stage2d.js - so the three mechanics below are three CSS
+   rules rather than three code paths. */
+.s2d-door {
+    position: absolute;
+    bottom: 4%;
+    width: 32%;
+    height: 84%;
+    background: var(--s2d-door);
+    border: 6px solid var(--s2d-trim);
+    transition: transform var(--door-ms, 1100ms) cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.s2d-preset-simple .s2d-door,
+.s2d-preset-contrast .s2d-door {
+    background: #3a3a3a;
+    border-color: #ffffff;
+}
+
+/* swing: hinged at the OUTER edges, turning out into the open. The default. */
+.s2d-door-l { left: 18%; transform-origin: left center; }
+.s2d-door-r { right: 18%; transform-origin: right center; }
+
+.s2d-open .s2d-door-l { transform: rotateY(-100deg); }
+.s2d-open .s2d-door-r { transform: rotateY(100deg); }
+
+/* gate: the same outer hinges, turning the other way, so the leaves fold back
+   against the inside of the stockade instead of swinging out into the park.
+   Hinging them at their inner edges instead - the first thing "opens inward"
+   suggests - leaves both leaves standing edge-on in the middle of the doorway,
+   across whoever is walking out of it. Shorter travel, because a gate folded
+   flat against the inside wall has nowhere further to go. */
+.s2d[data-doors="gate"].s2d-open .s2d-door-l { transform: rotateY(84deg); }
+.s2d[data-doors="gate"].s2d-open .s2d-door-r { transform: rotateY(-84deg); }
+
+/* swim: no leaves at all. The aquarium has no door - see .s2d-interior and
+   .s2d-animal-wrap above/below for what replaces it. The box clips its own
+   overflow so the swim travel reads as crossing the visible tank rather than
+   sliding in from outside the whole barn-shaped frame. */
+.s2d[data-doors="swim"] .s2d-door { display: none; }
+.s2d[data-doors="swim"] .s2d-barn { overflow: hidden; }
+
+.s2d-shake { animation: s2d-shake 120ms linear infinite; }
+
+@keyframes s2d-shake {
+    0%, 100% { margin-left: 0; }
+    50%      { margin-left: 3px; }
+}
+
+/* The animal. Moves out of the dark, and keeps a bob once it is out. */
+.s2d-animal-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 8%;
+    width: 46%;
+    height: 62%;
+    margin-left: -23%;
+    opacity: 0;
+    transform-origin: 50% 100%;
+    transition: opacity var(--out-ms, 1000ms) ease,
+                scale var(--out-ms, 1000ms) cubic-bezier(0.2, 1.3, 0.4, 1);
+    scale: calc(var(--animal-scale) * 0.55);
+    pointer-events: none;
+}
+
+.s2d-out .s2d-animal-wrap {
+    opacity: 1;
+    scale: var(--animal-scale);
+}
+
+/* swim: the animal slides in from a screen edge instead of growing in place.
+   The travel itself is driven straight from JS as an inline transform, in
+   bringOut()/putAway() in stage2d.js, rather than through a class-toggled
+   rule here: an inline style always wins the cascade over any selector, which
+   sidesteps having two rules of different specificity both trying to own the
+   same property through a class switch - the failure mode there is a transform
+   that silently keeps resolving from the "resting" rule even once the class
+   meant to override it is present. This block only widens the transition list
+   so the existing opacity/scale animation also covers transform smoothly. */
+.s2d[data-doors="swim"] .s2d-animal-wrap {
+    transition: opacity var(--out-ms, 1000ms) ease,
+                scale var(--out-ms, 1000ms) cubic-bezier(0.2, 1.3, 0.4, 1),
+                transform var(--out-ms, 1000ms) ease-in-out;
+}
+
+.s2d-animal {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom;      /* stands on the floor, does not float */
+    /* Half the offset it used to be: this filter sits on an element inside
+       .s2d-animal-wrap, which the reveal scales up 2x (see REVEAL_SCALE in
+       stage2d.js) - a fixed-pixel shadow set before that doubling reads as
+       doubled itself once the animal is, drifting out from under its feet. */
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+    /* The idle bob's rotation pivots from here - the same "feet" pivot the
+       wrap used before the bob moved onto this element, see startBob(). */
+    transform-origin: 50% 100%;
+}
+
+.s2d-preset-simple .s2d-animal { filter: none; }
+
+.s2d-pop { animation: s2d-pop 400ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+
+@keyframes s2d-pop {
+    0%   { scale: var(--animal-scale); }
+    35%  { scale: calc(var(--animal-scale) * 1.16); }
+    100% { scale: var(--animal-scale); }
+}
+
+/* -------------------------------------------------------------- narrow screens */
+
+@media (max-width: 700px) {
+    .naf-card { padding: 14px; }
+    .naf-stamp { border-width: 3px; }
+    .naf-btn.naf-pause-btn { width: 64px; height: 64px; left: 12px; bottom: 12px; }
+}
+
+/* On a phone the bottom of the screen is entirely cards - two rows of four, edge
+   to edge - so a bottom-left Pause button lands on top of one of them. It moves
+   to the top left, and the friend board shifts right to clear it. */
+@media (max-width: 620px) {
+    .naf-btn.naf-pause-btn {
+        width: 56px;
+        height: 56px;
+        left: 10px;
+        top: 10px;
+        bottom: auto;
+        font-size: 22px;
+    }
+    .naf-stamps {
+        left: calc(50% + 32px);
+        --stamp-size: min(64px, calc((100vw - 96px - 4 * var(--stamp-gap)) / 5));
+    }
+}
+
+/* A narrow portrait phone. At 78vw the barn is a thin tower and every label
+   wraps to two lines, which makes the card taller, which makes the fit scale
+   smaller, which makes the barn thinner still. Giving it nearly the full width
+   and dropping "Visit the" breaks that loop: one line per label, and the barn
+   comes out both wider and taller. */
+@media (max-width: 430px) {
+    .naf-barnframe { width: 94vw; }
+    .naf-visit { display: none; }
+    .naf-list.naf-util-row { gap: 8px; }
+    .naf-menu-item.naf-menu-util { font-size: 12px; padding: 6px 2px; }
+    .naf-menu-util .naf-icon-chip { width: 28px; height: 28px; }
+}
+
+/* A short landscape screen (a 844x390 phone, say) gets two columns rather than
+   a scaled-down single column, so the buttons stay large enough to hit. */
+@media (max-height: 520px) and (min-width: 620px) {
+    /* The gap has to clear the focus ring on BOTH axes here, not just between
+       stacked rows - side by side, 8px let the highlight touch its neighbour. */
+    .naf-list:not(.naf-util-row) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    /* On a short landscape screen the menu goes to two rows of three: the places
+       across the top, the grown-up doors below. Stacking three places and then a
+       row would have made the whole barn scale to about 45%, taking every button
+       under 40px - the scale is shared by the card, so height saved anywhere is
+       size gained everywhere. */
+    .naf-menu-doors .naf-list:not(.naf-util-row) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    .naf-doors.naf-menu-doors { gap: 12px; padding: 10px; }
+
+    /* Both rows go icon-over-label, and "Visit the" is dropped: at a third of a
+       470px barn there is not room for it, and the place's name is the part that
+       carries the meaning. The words stay in the DOM for the screen reader. */
+    .naf-menu .naf-menu-item {
+        flex-direction: column;
+        gap: 4px;
+        min-height: 54px;
+        padding: 6px 4px;
+        font-size: clamp(12px, 1.4vw, 15px);
+        text-align: center;
+        line-height: 1.1;
+    }
+    .naf-menu .naf-menu-label { flex: 0 0 auto; }
+    .naf-menu .naf-icon-chip { width: 26px; height: 26px; border-radius: 8px; }
+    .naf-visit { display: none; }
+
+    /* The roof's height normally follows the barn's WIDTH, which on a 390px-tall
+       screen made it 266px - two thirds of the viewport for a decoration. Here it
+       is pinned instead, so the buttons get the height rather than the pitch.
+       The SVG stretches (preserveAspectRatio="none"), so it just flattens. */
+    .naf-roof { aspect-ratio: auto; height: 84px; }
+
+    /* Trim the rest of the chrome for the same reason: everything the frame does
+       not need is height the buttons get back through the shared fit scale. */
+    .naf-barnframe .naf-title-above {
+        font-size: clamp(15px, 2.4vw, 21px);
+        padding: 3px 14px;
+        margin-bottom: 4px;
+    }
+    .naf-barnframe .naf-card { padding: 10px 12px 12px; }
+    .naf-card-barn .naf-sub { font-size: 13px; }
+    .naf-card-barn .naf-hint { font-size: 11px; }
+
+    .naf-doors { padding: 12px; gap: 16px; }
+    .naf-title { padding: 6px 12px; margin-bottom: 6px; }
+    .naf-sub, .naf-hint { margin: 4px 0 0; }
+}
+
+/* Card width and height come from --choice-w, which showChoices sizes to the
+   pool and the screen, so this block only trims the fixed chrome. */
+@media (max-height: 520px) {
+    .naf-stamps { top: 8px; --stamp-size: min(48px, calc((100vw - 24px - 4 * var(--stamp-gap)) / 5)); }
+    .naf-stamp { border-radius: 12px; border-width: 3px; }
+    .naf-choices { padding: 8px 12px 12px; }
+    .naf-btn.naf-open-barn { min-height: 72px; bottom: 2.5vh; }
+    .naf-open-barn .naf-icon-chip { width: 42px; height: 42px; }
+}

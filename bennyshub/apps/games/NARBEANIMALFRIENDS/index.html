@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NARBE Animal Friends</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="naf"></div>
+
+<!-- Shared hub modules, in the hub's required order, before any game script. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+
+<!-- Three.js, vendored locally and version-matched to the hub (r155).
+     Never from a CDN: the hub runs offline in the Electron build, and
+     cross-origin assets blank out in WebGL. -->
+<script src="vendor/three.min.js" onerror="console.warn('three.min.js not loaded - the Simple renderer will be used')"></script>
+
+<!-- Game modules -->
+<script src="js/settings.js"></script>
+<script src="js/zones.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/facts.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/music.js"></script>
+<script src="js/gamesong.js"></script>
+<script src="js/scenery.js"></script>
+<script src="js/stage2d.js"></script>
+<script src="js/stage3d.js"></script>
+<script src="js/reveal.js"></script>
+<script src="js/input.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
