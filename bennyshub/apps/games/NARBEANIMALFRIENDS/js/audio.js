@@ -358,7 +358,9 @@ NAF.Audio = (function () {
     }
 
     function applyVolume() {
-        if (window.SafeAudio) window.SafeAudio.setVolume(NAF.Settings.get('volume'));
+        // SafeAudio has no master-volume setter (see shared/safe-audio.js) -
+        // play() and playAnimal() below already multiply NAF.Settings.get('volume')
+        // into every call, so there is nothing to push here.
     }
 
     /**
