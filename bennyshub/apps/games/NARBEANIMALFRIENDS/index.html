@@ -10,20 +10,6 @@
 
 <div id="naf"></div>
 
-<script>
-window.__log = [];
-new MutationObserver(function (muts) {
-  muts.forEach(function (m) {
-    if (m.attributeName === 'class' && m.target.classList.contains('naf-menu')) {
-      window.__log.push({t: performance.now(), cls: m.target.className, stack: new Error().stack});
-    }
-  });
-}).observe(document.body, {attributes: true, subtree: true, attributeFilter: ['class']});
-window.addEventListener('error', function (e) {
-  window.__log.push({t: performance.now(), errorMsg: e.message, errorStack: e.error && e.error.stack});
-});
-</script>
-
 <!-- Shared hub modules, in the hub's required order, before any game script. -->
 <script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
@@ -36,20 +22,20 @@ window.addEventListener('error', function (e) {
 <script src="vendor/three.min.js" onerror="console.warn('three.min.js not loaded - the Simple renderer will be used')"></script>
 
 <!-- Game modules -->
-<script src="js/settings.js?cb=99"></script>
-<script src="js/zones.js?cb=99"></script>
-<script src="js/animals.js?cb=99"></script>
-<script src="js/facts.js?cb=99"></script>
-<script src="js/audio.js?cb=99"></script>
-<script src="js/music.js?cb=99"></script>
-<script src="js/gamesong.js?cb=99"></script>
-<script src="js/scenery.js?cb=99"></script>
-<script src="js/stage2d.js?cb=99"></script>
-<script src="js/stage3d.js?cb=99"></script>
-<script src="js/reveal.js?cb=99"></script>
-<script src="js/input.js?cb=99"></script>
-<script src="js/ui.js?cb=99"></script>
-<script src="js/main.js?cb=99"></script>
+<script src="js/settings.js"></script>
+<script src="js/zones.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/facts.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/music.js"></script>
+<script src="js/gamesong.js"></script>
+<script src="js/scenery.js"></script>
+<script src="js/stage2d.js"></script>
+<script src="js/stage3d.js"></script>
+<script src="js/reveal.js"></script>
+<script src="js/input.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 
 </body>
 </html>
