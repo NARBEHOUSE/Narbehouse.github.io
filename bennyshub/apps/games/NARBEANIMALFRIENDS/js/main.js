@@ -324,16 +324,21 @@ NAF.Game = (function () {
     }
 
     /**
-     * Exit back to the hub. Without this message the player reaches the end of
-     * the game and is stranded with focus nowhere.
+     * Exit back to the hub. Without this the player reaches the end of the
+     * game and is stranded with focus nowhere.
+     *
+     * The hub runs apps in an iframe and listens for a `focusBackButton`
+     * message to close it. Outside the hub there is no parent to tell, so we
+     * navigate to the hub page directly. Same pattern as Show n Sound,
+     * Football, Dice and Bowling.
      */
     function exit() {
         NAF.Reveal.cancel();
         NAF.Voice.speak('Goodbye.');
-        try {
+        if (window.parent && window.parent !== window) {
             window.parent.postMessage({ action: 'focusBackButton' }, '*');
-        } catch (e) {
-            console.warn('[NAF] Could not message the hub:', e);
+        } else {
+            window.location.href = '../../../index.html';
         }
     }
 
