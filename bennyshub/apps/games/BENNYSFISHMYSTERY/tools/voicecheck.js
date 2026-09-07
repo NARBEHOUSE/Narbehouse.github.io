@@ -251,6 +251,12 @@ ok(oddLength.length === 0,
     require('path').join(__dirname, '..', 'js', 'game.js'), 'utf8');
   ok(/function say\(text\)[\s\S]{0,600}?U\.speakEvent\(text\)/.test(gameSrc),
      'everything the lake says goes through the queue, not straight to the voice');
+  /* EXCEPT THE FIGHT, which is the one thing on the lake that cannot wait
+     its turn. Held here so nobody quietly routes it back through say(). */
+  ok(/function sayFight\(text[\s\S]{0,400}?U\.speakUrgent\(text\)/.test(gameSrc),
+     'the fight cuts in rather than queueing behind the lake');
+  ok(/sayFight\(run\.bite\.category === 'fish'[^\n]*, true\)/.test(gameSrc),
+     'and the start of a run is never the line that gets swallowed');
 
   const heard = [];
   let busy = false;
@@ -295,6 +301,19 @@ ok(oddLength.length === 0,
     await wait(900);
     ok(heard.indexOf('a shoal you have left behind') < 0,
        'pressing a switch drops what the world was waiting to say');
+
+    /* A RUN CANNOT WAIT. Seven tenths of a second of warning, so the line
+       goes out over whatever is being said rather than after it. */
+    heard.length = 0; busy = true;
+    U.speakEvent('a shoal you have left behind');
+    U.speakUrgent("She's running!");
+    ok(heard.length === 1 && heard[0] === "She's running!",
+       'a run is said the instant it starts, over whatever was talking (' +
+       heard.join(' / ') + ')');
+    busy = false;
+    await wait(900);
+    ok(heard.indexOf('a shoal you have left behind') < 0,
+       'and the stale line behind it is dropped rather than said late');
 
     const res2 = H.results();
     console.log();

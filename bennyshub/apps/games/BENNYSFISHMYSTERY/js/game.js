@@ -6322,7 +6322,7 @@ RT.game = (function () {
       r.phase = 'warn';
       r.phaseT = 0;
       RT.audio.runWarn();
-      sayFight(run.bite.category === 'fish' ? "She's running!" : "It's away!");
+      sayFight(run.bite.category === 'fish' ? "She's running!" : "It's away!", true);
       fire('onBig', 'GET READY');
     } else if (r.phase === 'warn') {
       r.phaseT += dt;
@@ -6402,19 +6402,30 @@ RT.game = (function () {
 
   /** The line parts. The fish is gone — and another one is already down there. */
   /**
-   * A line about the fight, which will not cut the last one off.
+   * A line about the fight, said the moment the fight turns.
    *
-   * The fight is carried by three spoken lines and every utterance cancels
-   * the one before it, so two arriving close together are heard as half of
-   * each. Somebody who cannot watch the strain bar is playing this on the
-   * words alone; the big text on screen changes instantly regardless.
+   * These deliberately do NOT go through say(). The lake's queue waits for
+   * the voice to go quiet, and what it waits behind while you are reeling
+   * is "press and hold to reel it in" - three seconds of it, and a beat
+   * after. The warning before a run is RUN_WARN_S: seven tenths of a
+   * second. So the queue delivered "she's running" several seconds after
+   * the line had already been hauled tight, and somebody going on the
+   * words alone had no way to know to let go. Reported in those words.
+   *
+   * So the fight barges in. Whatever is talking stops, the lake's backlog
+   * is dropped, and the news about the fish is said now.
+   *
+   * The 1.25s gap stays, so two fight lines close together are not heard
+   * as half of each - but `always` overrides it, because the start of a
+   * run is the one line that must never be the one that got swallowed.
    */
   let fightSaidAt = -99;
-  function sayFight(text) {
+  function sayFight(text, always) {
     const now = clockSeconds();
-    if (now - fightSaidAt < 1.25) return false;
+    if (!always && now - fightSaidAt < 1.25) return false;
     fightSaidAt = now;
-    say(text);
+    if (cueLevel >= 2) U.speakUrgent(text);
+    fire('onSpeak', text);
     return true;
   }
 

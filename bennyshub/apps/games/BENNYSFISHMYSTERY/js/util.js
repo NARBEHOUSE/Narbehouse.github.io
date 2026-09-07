@@ -285,6 +285,29 @@ RT.util = (function () {
     if (!sayTimer) sayTimer = setTimeout(sayPump, SAY_GAP);
   }
 
+  /**
+   * Something that cannot wait: the fish is running, let go NOW.
+   *
+   * speakEvent() is politeness, and politeness has a price. It waits for
+   * the voice to go quiet, and the line it is usually waiting behind -
+   * "press and hold to reel it in" - takes two or three seconds to say,
+   * with a beat after it. A run gives less than a second of warning. So a
+   * player who is going on the words alone was told the fish was running
+   * long after it had gone, which is no warning at all.
+   *
+   * This one barges in: the backlog is thrown away, a clip that is playing
+   * is stopped, and the words go straight out. Use it only for the handful
+   * of lines that are about something happening to you RIGHT NOW - being
+   * a second late is the whole fault it exists to fix.
+   */
+  function speakUrgent(text) {
+    if (!text) return;
+    dropEvents();
+    if (voAudio) { try { voAudio.pause(); } catch (e) { /* already gone */ } voAudio = null; }
+    sysSpeak(text);
+    sayFrom = Date.now();
+  }
+
   /** Pressing something means you have moved on: the world's queue is stale. */
   function dropEvents() {
     sayQ = [];
@@ -301,6 +324,6 @@ RT.util = (function () {
     clamp, lerp, damp, smoothstep,
     load, save,
     $, addTap,
-    vm, sm, speak, speakSeq, speakEvent, dropEvents, voHas
+    vm, sm, speak, speakSeq, speakEvent, speakUrgent, dropEvents, voHas
   };
 })();
