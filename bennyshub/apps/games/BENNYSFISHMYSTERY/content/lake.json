@@ -1,0 +1,567 @@
+{
+ "_README": {
+  "what": "Whispering Lake. One body of water; progress is how far out and how deep you can get.",
+  "workflow": "Drag the shoreline, the island, the soundings, the ledges and the places in editor.html. The bed is not authored - it is interpolated from the soundings and stepped at the ledges - so one chart edit moves the world, the map and the editor together.",
+  "units": "Distances in world units (the hull is 9.4 long, so a unit is about half a metre). Depths in feet, because that is how the tiers and the dialogue talk about them.",
+  "axes": "-Z is north, matching the engine. The dock is the origin.",
+  "ledges": "A ledge is where the bottom STEPS. Soundings alone cannot say that: blending 16 ft and 32 ft gives a slope, and a slope is not a drop-off. `nearFt` is the side the dock is on."
+ },
+ "name": "Whispering Lake",
+ "dock": {
+  "x": 0,
+  "z": 0
+ },
+ "shore": [
+  [
+   60,
+   70
+  ],
+  [
+   430,
+   40
+  ],
+  [
+   790,
+   -70
+  ],
+  [
+   1020,
+   -310
+  ],
+  [
+   1130,
+   -570
+  ],
+  [
+   1040,
+   -830
+  ],
+  [
+   330,
+   -1010
+  ],
+  [
+   470,
+   -1190
+  ],
+  [
+   1090,
+   -1290
+  ],
+  [
+   1260,
+   -1610
+  ],
+  [
+   1220,
+   -1990
+  ],
+  [
+   980,
+   -2330
+  ],
+  [
+   560,
+   -2530
+  ],
+  [
+   60,
+   -2590
+  ],
+  [
+   -430,
+   -2490
+  ],
+  [
+   -810,
+   -2270
+  ],
+  [
+   -1010,
+   -1950
+  ],
+  [
+   -990,
+   -1610
+  ],
+  [
+   -770,
+   -1310
+  ],
+  [
+   -250,
+   -1130
+  ],
+  [
+   -430,
+   -970
+  ],
+  [
+   -1090,
+   -890
+  ],
+  [
+   -1490,
+   -710
+  ],
+  [
+   -1530,
+   -390
+  ],
+  [
+   -1260,
+   -150
+  ],
+  [
+   -790,
+   -30
+  ],
+  [
+   -300,
+   50
+  ]
+ ],
+ "island": [
+  [
+   140,
+   -1930
+  ],
+  [
+   360,
+   -2000
+  ],
+  [
+   430,
+   -2160
+  ],
+  [
+   300,
+   -2300
+  ],
+  [
+   60,
+   -2310
+  ],
+  [
+   -110,
+   -2180
+  ],
+  [
+   -80,
+   -1990
+  ]
+ ],
+ "soundings": [
+  {
+   "x": 0,
+   "z": -25,
+   "ft": 2
+  },
+  {
+   "x": 0,
+   "z": -80,
+   "ft": 5
+  },
+  {
+   "x": 0,
+   "z": -150,
+   "ft": 8
+  },
+  {
+   "x": 300,
+   "z": -110,
+   "ft": 7
+  },
+  {
+   "x": -260,
+   "z": -95,
+   "ft": 5
+  },
+  {
+   "x": 640,
+   "z": -230,
+   "ft": 15
+  },
+  {
+   "x": -680,
+   "z": -280,
+   "ft": 15
+  },
+  {
+   "x": -1060,
+   "z": -480,
+   "ft": 22
+  },
+  {
+   "x": -1230,
+   "z": -700,
+   "ft": 18
+  },
+  {
+   "x": -820,
+   "z": -640,
+   "ft": 25
+  },
+  {
+   "x": -430,
+   "z": -480,
+   "ft": 18
+  },
+  {
+   "x": -700,
+   "z": -860,
+   "ft": 28
+  },
+  {
+   "x": 130,
+   "z": -400,
+   "ft": 18
+  },
+  {
+   "x": 520,
+   "z": -520,
+   "ft": 25
+  },
+  {
+   "x": 860,
+   "z": -640,
+   "ft": 28
+  },
+  {
+   "x": -120,
+   "z": -700,
+   "ft": 28
+  },
+  {
+   "x": 450,
+   "z": -840,
+   "ft": 32
+  },
+  {
+   "x": 755,
+   "z": -775,
+   "ft": 35
+  },
+  {
+   "x": 40,
+   "z": -1230,
+   "ft": 72
+  },
+  {
+   "x": -180,
+   "z": -1350,
+   "ft": 68
+  },
+  {
+   "x": 620,
+   "z": -1330,
+   "ft": 80
+  },
+  {
+   "x": 470,
+   "z": -1520,
+   "ft": 75
+  },
+  {
+   "x": 830,
+   "z": -1375,
+   "ft": 70
+  },
+  {
+   "x": 790,
+   "z": -1620,
+   "ft": 72
+  },
+  {
+   "x": 120,
+   "z": -1560,
+   "ft": 80
+  },
+  {
+   "x": -330,
+   "z": -1620,
+   "ft": 70
+  },
+  {
+   "x": -600,
+   "z": -1860,
+   "ft": 118
+  },
+  {
+   "x": 0,
+   "z": -1800,
+   "ft": 78
+  },
+  {
+   "x": 640,
+   "z": -1960,
+   "ft": 124
+  },
+  {
+   "x": 830,
+   "z": -2250,
+   "ft": 105
+  },
+  {
+   "x": 320,
+   "z": -2430,
+   "ft": 52
+  },
+  {
+   "x": -320,
+   "z": -2260,
+   "ft": 95
+  },
+  {
+   "x": 220,
+   "z": -1880,
+   "ft": 25
+  },
+  {
+   "x": 490,
+   "z": -2100,
+   "ft": 22
+  },
+  {
+   "x": 80,
+   "z": -2370,
+   "ft": 32
+  }
+ ],
+ "ledges": [
+  {
+   "id": "dropoff",
+   "name": "The Drop-Off",
+   "note": "Across the narrows. Thirty-five feet on the town side, seventy-five on the far one, over about seventy units. The bottom drops like a cliff past the buoys - the reason a kayak is worth buying, and where the pike patrol.",
+   "line": [
+    [
+     -250,
+     -1080
+    ],
+    [
+     -40,
+     -1055
+    ],
+    [
+     180,
+     -1040
+    ],
+    [
+     330,
+     -1030
+    ]
+   ],
+   "nearFt": 35,
+   "farFt": 75,
+   "width": 70,
+   "reach": 320
+  },
+  {
+   "id": "islandshelf",
+   "name": "The Island Shelf",
+   "note": "The bottom comes up hard on the south side of Foggy Island - twelve feet of gravel with the best part of fifty either side of it. The shallowest water in the lake sits in the middle of the deepest, which is the sort of thing people build stories about.",
+   "line": [
+    [
+     -60,
+     -1900
+    ],
+    [
+     190,
+     -1855
+    ],
+    [
+     430,
+     -1900
+    ],
+    [
+     520,
+     -2050
+    ]
+   ],
+   "nearFt": 118,
+   "farFt": 22,
+   "width": 60,
+   "reach": 220
+  }
+ ],
+ "stages": [
+  {
+   "id": "foot",
+   "name": "The Shoreline",
+   "vessel": null,
+   "reach": 95,
+   "speed": 0,
+   "depthFt": [
+    0,
+    10
+   ],
+   "water": "the dock and the shoreline"
+  },
+  {
+   "id": "canoe",
+   "name": "The Shallow Bay",
+   "vessel": "canoe",
+   "reach": 780,
+   "speed": 8.5,
+   "depthFt": [
+    10,
+    35
+   ],
+   "water": "the shallow bay and the weedbeds"
+  },
+  {
+   "id": "kayak",
+   "name": "The Deep Drop-Off",
+   "vessel": "kayak",
+   "reach": 1650,
+   "speed": 12.5,
+   "depthFt": [
+    35,
+    75
+   ],
+   "water": "the drop-off and the deep hole"
+  },
+  {
+   "id": "motorboat",
+   "name": "The Abyssal Trench",
+   "vessel": "motorboat",
+   "reach": 3200,
+   "speed": 22,
+   "depthFt": [
+    75,
+    999
+   ],
+   "water": "the centre fog and the trench"
+  }
+ ],
+ "extent": {
+  "minX": -1499,
+  "maxX": 1235,
+  "minZ": -2565,
+  "maxZ": 62
+ },
+ "places": [
+  {
+   "id": "q04.place",
+   "quest": "q04",
+   "kind": "net",
+   "label": "the reed beds",
+   "x": 1,
+   "z": -65,
+   "depthFt": 5,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q08.place",
+   "quest": "q08",
+   "kind": "salvage",
+   "label": "the shallow scrap markers",
+   "x": 101,
+   "z": -315,
+   "depthFt": 17,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q09.place",
+   "quest": "q09",
+   "kind": "clue",
+   "label": "the west weed beds",
+   "x": -374,
+   "z": -340,
+   "depthFt": 17,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q11.place",
+   "quest": "q11",
+   "kind": "clue",
+   "label": "the shallow drop-off",
+   "x": 251,
+   "z": -690,
+   "depthFt": 28,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q18.place",
+   "quest": "q18",
+   "kind": "clue",
+   "label": "the drop-off ledges",
+   "x": 176,
+   "z": -1040,
+   "depthFt": 55,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q21.place",
+   "quest": "q21",
+   "kind": "clue",
+   "label": "the submerged log jam",
+   "x": -74,
+   "z": -1090,
+   "depthFt": 67,
+   "breakdown": false,
+   "note": "The submerged log jam. `feature` is what is actually HERE - the lake builds the timber at these coordinates whether or not the job that mentions it is the one you are on.",
+   "feature": "logjam"
+  },
+  {
+   "id": "q22.place",
+   "quest": "q22",
+   "kind": "clue",
+   "label": "the seventy-five-foot edge",
+   "x": -249,
+   "z": -1140,
+   "depthFt": 73,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q26.place",
+   "quest": "q26",
+   "kind": "incident",
+   "label": "the centre fog",
+   "x": 676,
+   "z": -1940,
+   "depthFt": 124,
+   "breakdown": true,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q27.place",
+   "quest": "q27",
+   "kind": "clue",
+   "label": "the edge of the fog",
+   "x": 76,
+   "z": -1190,
+   "depthFt": 74,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q34.place",
+   "quest": "q34",
+   "kind": "story",
+   "label": "the abyssal trench",
+   "x": 676,
+   "z": -1940,
+   "depthFt": 124,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  },
+  {
+   "id": "q35.place",
+   "quest": "q35",
+   "kind": "finale",
+   "label": "the abyssal trench",
+   "x": 676,
+   "z": -1940,
+   "depthFt": 124,
+   "breakdown": false,
+   "note": "Found by tools/gen_quests.js. Drag it in the editor."
+  }
+ ]
+}

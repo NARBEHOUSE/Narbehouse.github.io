@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  The map of the lake, on its own, at whatever size you ask for.
+
+  tools/mapart.js opens this in a headless browser and photographs it, which
+  is the only way to judge a drawing: the headless suites can check that a
+  label sits over the right depth of water, and no suite can tell you the
+  chart looks blurred. Open it in a normal browser too - it takes ?w= and ?h=
+  for the size.
+-->
+<meta charset="utf-8">
+<title>Whispering Lake — the chart</title>
+<style>
+  html, body { margin: 0; background: #10202c; }
+  canvas { display: block; }
+</style>
+<canvas id="c"></canvas>
+<script src="../js/util.js"></script>
+<script src="../js/content.generated.js"></script>
+<script src="../js/lake.js"></script>
+<script src="../js/minimap.js"></script>
+<script>
+  (function () {
+    const q = new URLSearchParams(location.search);
+    const W = Number(q.get('w') || 1280), H = Number(q.get('h') || 720);
+    const cv = document.getElementById('c');
+    cv.width = W; cv.height = H;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const chart = RT.lake.chart(RT.content.lake);
+    const you = q.get('where') === 'deep'
+      ? { x: -300, z: -1500, head: 2.1, label: 'You (in the motorboat)' }
+      : { x: chart.dock.x, z: chart.dock.z, head: 0, label: 'You (at the dock)' };
+    const out = RT.minimap.drawMap(cv, chart, you);
+    window.__map = out;
+    document.title = 'chart drawn: ' + (out ? out.labels.length : 0) + ' labels';
+  })();
+</script>

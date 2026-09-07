@@ -6,7 +6,10 @@
       "description": "A simon says style game where you need to match the growing sequence every round",
       "path": "apps/games/BENNYSAYS/index.html",
       "image": "images/games/bennysays.png",
-      "genres": ["Memory", "Interactive"]
+      "genres": [
+        "Memory",
+        "Interactive"
+      ]
     },
     {
       "id": "bennysbaseball",
@@ -14,7 +17,10 @@
       "description": "A full baseball simluation game with no reaction needed, simply make choices and play a full season of baseball.",
       "path": "apps/games/BENNYSBASEBALL2/index.html",
       "image": "images/games/bennysbaseball.png",
-      "genres": ["Sports", "Strategy"]
+      "genres": [
+        "Sports",
+        "Strategy"
+      ]
     },
     {
       "id": "bennysbasketball",
@@ -22,7 +28,10 @@
       "description": "A fun basketball shooting game with special bonus mode to try to get the highest score possible.",
       "path": "apps/games/BENNYSBASKETBALLSHOOTER/index.html",
       "image": "images/games/bennysbasketball.png",
-      "genres": ["Sports", "Arcade"]
+      "genres": [
+        "Sports",
+        "Arcade"
+      ]
     },
     {
       "id": "bennysfootball",
@@ -30,7 +39,10 @@
       "description": "Pick your team color and play a 16-game season of football! Call your plays, time your passes, and win 10 games to make the single-elimination playoffs - or go 16-0 for a straight shot at the championship.",
       "path": "apps/games/BENNYSFOOTBALL/index.html",
       "image": "images/games/bennysfootball.png",
-      "genres": ["Sports", "Strategy"]
+      "genres": [
+        "Sports",
+        "Strategy"
+      ]
     },
     {
       "id": "bennysbattleboats",
@@ -38,7 +50,11 @@
       "description": "A classic battleship-style game where you place your fleet and try to sink the enemy's ships. Play against the computer or challenge a friend in 2-player mode!",
       "path": "apps/games/BENNYSBATTLEBOATS/index.html",
       "image": "images/games/battleboats.png",
-      "genres": ["Strategy", "Classic", "Board"]
+      "genres": [
+        "Strategy",
+        "Classic",
+        "Board"
+      ]
     },
     {
       "id": "bennysbowling",
@@ -46,7 +62,10 @@
       "description": "Bowling with real physics on a full alley. Hot-seat up to 4 players, each with their own ball and scoresheet. Audio cues let you charge and aim the shot by ear. Ten alley themes.",
       "path": "apps/games/BENNYSBOWLING/index.html",
       "image": "images/games/bennysbowling.png",
-      "genres": ["Sports", "Simulation"]
+      "genres": [
+        "Sports",
+        "Simulation"
+      ]
     },
     {
       "id": "bennysbugblaster",
@@ -54,7 +73,10 @@
       "description": "A tower defense style game where you squash bugs with your boot and have to buy items to keep your defenses up against the bugs.",
       "path": "apps/games/BENNYSBUGBLASTER/index.html",
       "image": "images/games/bennysbugblaster.png",
-      "genres": ["Strategy", "Action"]
+      "genres": [
+        "Strategy",
+        "Action"
+      ]
     },
     {
       "id": "bennyscheckers",
@@ -62,7 +84,11 @@
       "description": "Play classic Chess or Checkers against the computer or with a friend!",
       "path": "apps/games/BENNYSCHESSCHECKERS/index.html",
       "image": "images/games/bennyscheckers.png",
-      "genres": ["Classic", "Board", "Strategy"]
+      "genres": [
+        "Classic",
+        "Board",
+        "Strategy"
+      ]
     },
     {
       "id": "bennysconnectfour",
@@ -70,7 +96,11 @@
       "description": "Drop pieces and connect four in a row to win! Play against the computer or challenge a friend.",
       "path": "apps/games/BENNYSCONNECTFOUR/index.html",
       "image": "images/games/connectfour.png",
-      "genres": ["Classic", "Board", "Strategy"]
+      "genres": [
+        "Classic",
+        "Board",
+        "Strategy"
+      ]
     },
     {
       "id": "bennysmatchymatch",
@@ -78,7 +108,10 @@
       "description": "Previously called concentration. A fun matching game with competitive modes and cooperative play. This comes with an editor app to make your own games!",
       "path": "apps/games/BENNYSMATCHYMATCH/index.html",
       "image": "images/games/bennysmatchymatch.png",
-      "genres": ["Memory", "Puzzle"]
+      "genres": [
+        "Memory",
+        "Puzzle"
+      ]
     },
     {
       "id": "bennysminigolf",
@@ -86,7 +119,10 @@
       "description": "A top-down minigolf game you can play with up to four people. The balls have collision on so have fun smacking eachothers balls around! This game has a level editor to create your own golf courses.",
       "path": "apps/games/BENNYSMINIGOLF/index.html",
       "image": "images/games/bennysminigolf.png",
-      "genres": ["Sports", "Simulation"]
+      "genres": [
+        "Sports",
+        "Simulation"
+      ]
     },
     {
       "id": "bennyspeggle",
@@ -94,7 +130,10 @@
       "description": "A peggle style game with a campaign/level editor built in. Have fun making different kinds of peg blasting games!",
       "path": "apps/games/BENNYSPEGGLE/index.html",
       "image": "images/games/bennyspeggle.png",
-      "genres": ["Arcade", "Action"]
+      "genres": [
+        "Arcade",
+        "Action"
+      ]
     },
     {
       "id": "bennystictactoe",
@@ -102,7 +141,10 @@
       "description": "Play tic tac toe against the computer or against your friends.",
       "path": "apps/games/BENNYSTICTACTOE/index.html",
       "image": "images/games/bennystictactoe.png",
-      "genres": ["Strategy", "Classic"]
+      "genres": [
+        "Strategy",
+        "Classic"
+      ]
     },
     {
       "id": "bennysdice",
@@ -110,7 +152,10 @@
       "description": "A 3D dice game with Free Throw, Yarkle, and Fahtzee modes. Roll dice with realistic physics!",
       "path": "apps/games/BENNYSDICE/index.html",
       "image": "images/games/bennysdice.png",
-      "genres": ["Classic", "Board"]
+      "genres": [
+        "Classic",
+        "Board"
+      ]
     },
     {
       "id": "bennyswordjumble",
@@ -118,7 +163,10 @@
       "description": "A word puzzle game where you have to rearrange the word to advance.",
       "path": "apps/games/BENNYSWORDJUMBLE/index.html",
       "image": "images/games/bennyswordjumble.png",
-      "genres": ["Puzzle", "Educational"]
+      "genres": [
+        "Puzzle",
+        "Educational"
+      ]
     },
     {
       "id": "elouiseswordsearch",
@@ -126,7 +174,10 @@
       "description": "Hunt hidden words in a letter grid, one switch at a time. Pick a row, pick a letter, spin the aimer to point the way the word runs, then stretch it out. Words hide sideways, diagonally and backwards. Thirteen categories with over 1500 words, three difficulty levels, and an editor to build your own word lists.",
       "path": "apps/games/ELOUISESWORDSEARCH/index.html",
       "image": "images/games/elouiseswordsearch.png",
-      "genres": ["Puzzle", "Educational"]
+      "genres": [
+        "Puzzle",
+        "Educational"
+      ]
     },
     {
       "id": "triviamaster",
@@ -134,7 +185,10 @@
       "description": "A trivia game engine that lets you build your own trivia games! Add pictures and videos to make it more fun!",
       "path": "apps/games/TRIVIAMASTER/index.html",
       "image": "images/games/triviamaster.png",
-      "genres": ["Educational", "Trivia"],
+      "genres": [
+        "Educational",
+        "Trivia"
+      ],
       "needsServer": true
     },
     {
@@ -143,7 +197,10 @@
       "description": "A fun casino-style slot machine game with bonus modes, multiple themes, and exciting sound effects!",
       "path": "apps/games/BENNYSSLOTMACHINE/index.html",
       "image": "images/games/bennysslotmachine.png",
-      "genres": ["Casino", "Arcade"]
+      "genres": [
+        "Casino",
+        "Arcade"
+      ]
     },
     {
       "id": "pickleballrally",
@@ -151,7 +208,10 @@
       "description": "Rally against the computer by scanning to the right side of the court and returning every serve. In collaboration with SCSU, student creator: Lily Flack.",
       "path": "apps/games/PICKLEBALLRALLY/index.html",
       "image": "images/games/pickleballrally.png",
-      "genres": ["Sports", "Arcade"]
+      "genres": [
+        "Sports",
+        "Arcade"
+      ]
     },
     {
       "id": "bennysshownsound",
@@ -159,7 +219,10 @@
       "description": "A spinning wheel See 'n Say. Pick a category, spin the wheel, and hear each panel's name and sound when it lands.",
       "path": "apps/games/BENNYSSHOWNSOUND/index.html",
       "image": "images/games/shownsound.png",
-      "genres": ["Interactive", "Educational"]
+      "genres": [
+        "Interactive",
+        "Educational"
+      ]
     },
     {
       "id": "bennysracetracks",
@@ -167,7 +230,10 @@
       "description": "A 3D racing game you steer with a single switch - the game tells you which way to go with arrows, sound, and speech. Race 10 levels in a car, motorcycle, or spaceship, or pick the no-fail Cruise mode and just collect things along the way.",
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
-      "genres": ["Racing", "Arcade"]
+      "genres": [
+        "Racing",
+        "Arcade"
+      ]
     },
     {
       "id": "narbeanimalfriends",
@@ -175,7 +241,21 @@
       "description": "A colourful barnyard peekaboo game - press a switch and the barn doors swing open as an animal steps out to say hello. No score, no timer, no losing.",
       "path": "apps/games/NARBEANIMALFRIENDS/index.html",
       "image": "images/games/narbeanimalfriends.png",
-      "genres": ["Interactive", "Educational"]
+      "genres": [
+        "Interactive",
+        "Educational"
+      ]
+    },
+    {
+      "id": "bennysfishmystery",
+      "title": "Benny's Fish Mystery",
+      "description": "Thirty-eight jobs down one lake for Walt's research station: tag them, log them, put every one back. Something out in the middle takes propellers off boats, and nobody has been out there and come back with anything but a story. Work up from a hand net to a motorboat and find out what it is.",
+      "path": "apps/games/BENNYSFISHMYSTERY/index.html",
+      "image": "images/games/bennysfishmystery.png",
+      "genres": [
+        "Simulation",
+        "Strategy"
+      ]
     }
   ]
 }

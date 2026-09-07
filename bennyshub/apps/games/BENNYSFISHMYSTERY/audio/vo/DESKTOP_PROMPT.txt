@@ -1,0 +1,59 @@
+Read this file:
+
+F:\PROJECT FILES\WEBSITES\NARBE LLC WEBSITE\bennyshub\apps\games\BENNYSFISHMYSTERY\audio\vo\TO_RECORD.md
+
+It lists 3 lines of dialogue for a character called Walt, an old shopkeeper at
+a lake tackle shop. Generate each one with ElevenLabs using the voice
+"Matthew Schmitz" (warm mountain man) - the same voice the other 181 lines in
+that folder were recorded in.
+
+For each entry in that file:
+
+  - The heading is the filename, e.g.  ### `q31_send.mp3`
+  - The line to speak is the blockquote under it, the line starting with ">".
+    Speak ONLY that text. Do not read the heading, do not read the italic
+    "Where it plays" line, and do not add, trim or reword anything - the words
+    are checked against the game's script.
+
+Save them as mp3s, named exactly as their headings say, into:
+
+  F:\PROJECT FILES\WEBSITES\NARBE LLC WEBSITE\bennyshub\apps\games\BENNYSFISHMYSTERY\audio\vo\
+
+ALL THREE ARE NEW FILES. Nothing in that folder is being replaced, so a bad
+take costs nothing - it can simply be done again.
+
+WHY THESE THREE EXIST. Each one replaces a briefing that was standing in the
+wrong place in time - Walt reacting to something the player had not done yet.
+The old recordings are NOT deleted: two of them move to the moment they were
+always true. So all three of these are him SENDING YOU OUT, and none of them
+should sound like a reaction to anything.
+
+  q26_send   Job 28. He has just sold you the motorboat and warned you off the
+             centre fog, and he can see perfectly well that you are going to
+             go and look anyway. Fond, resigned, and underneath it genuinely
+             worried - the last third of the line is a man making you promise
+             to call him. Not a telling-off.
+
+  q31_send   Job 34. Sending you down into the trench for one last fish: a
+             fifteen-pound lake trout at eighty feet, on the Pro Rod. This is
+             a working scientist asking for the last number in a column, not a
+             challenge. Warm and matter-of-fact. (The excited "a fifteen-pound
+             lake trout from a hundred feet down! Wow!" you recorded earlier
+             now plays when you actually bring her in, which is where it
+             belongs.)
+
+  q34_send   Job 37. The big one: everything is built, everything is aboard,
+             and he is sending you out to the middle to play the Warden's sonar
+             into a hundred and twenty feet of water. Quiet, steady, a little
+             bit solemn. The last clause - "you are not out there on your own"
+             - is the whole point of the line: he is staying on the radio.
+
+WHEN THEY ARE IN THAT FOLDER, tell me and I will wire them up - or run this,
+which writes the manifest itself:
+
+  python tools/record_voice.py
+
+and then this, which checks every line has a home and that none of them is
+read too fast or too slow to be Walt:
+
+  node tools/voicecheck.js

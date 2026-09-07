@@ -1,0 +1,1053 @@
+{
+ "_README": {
+  "what": "Everything Whispering Lake is stocked with, for the Junior Warden game: the fish you tag and release, the artifacts on the bottom that become the Acoustic Sonar, and the gear ladder that gets you out to them.",
+  "workflow": "Edited in editor.html, or by hand. tools/build_content.py bundles this into js/content.generated.js so the game loads one file.",
+  "tagging": "Fish are never kept. You reel one in, clip a field tag on its fin, log it and let it go. The logbook is what Walt is paying for - the job is the wage, not the fish. Quest 1 is the one exception to the hook: the minnows and shiners are netted, and they go in the survey tank.",
+  "depths": "Every fish has a depth band in FEET and the chart says how deep it is anywhere, so where a fish lives is a fact about the lake. The four zones are the shoreline (0-10), the shallow bay (10-35), the deep drop-off (35-75) and the abyssal trench (75-120+). A rod has a depth rating, and a line cast into deeper water than its rating is too short to reach the fish.",
+  "gear": "A net nets and a rod hooks. `netOnly` fish cannot be caught on a hook and `needsHook` fish cannot be netted. A magnet turns the rod into a salvage tool; nothing on the bottom comes up without one. A rod has two numbers: castFt is how far it throws and rangeFt is how deep it fishes. Both are in feet, and the world is built at 0.61 units to the foot, so the game throws exactly the distance printed on the rod.",
+  "money": "Jobs are the wage. The one exception is the growth study: Walt pays a couple of dollars a tag for the three common fish he is tracking (studyBounty), which is what fills a tank or patches a hull. It is deliberately small - it can be earned off the dock on foot, so an empty tank and an empty tin is a morning's fishing rather than a dead end, and it will never buy a motorboat.",
+  "art": "Each fish carries headFacing - which way it is painted, left or right. The game hangs a landed fish from the hook in its jaw, so it has to turn the picture a quarter turn the right way round; guessing put the head-left ones upside down.",
+  "depth": "depthFt is where a fish can be hooked, and it is set by the lake's summer layers rather than by what the quest ladder would find convenient. Whispering Lake stratifies: warm to about twenty-five feet, a thermocline through the thirties and forties, and cold water below that. Warmwater fish - bass, bluegill, crappie, catfish - stay above it. Coldwater fish - cisco, lake trout - live below it and cannot come up in summer. Pike, perch and walleye work the band in between. Changing a range here changes which vessel can reach that fish, so run tools/playtest.js after.",
+  "litter": "Junk is what the lake gives you instead of a fish, and there are six of them so it is not the same snag every time. Anything with a value is LITTER - Walt pays a dollar or three at the counter for taking it out of the water, which is a small good deed rather than a living. The weeds are worth nothing because weeds are not litter. None of it counts as scrap: that is iron off the bottom, on a magnet.",
+  "tags": "studyBounty is what Walt pays for a TAG - the fish measured, logged and put back. Every fish has one: a dollar for the shoreline minnows, five for a lake trout, and a great deal for the one nobody has landed. It is deliberately small money against the jobs, which are the wage: a trip's tags fill a tank or patch a hull. What it is never is nothing, because 'he will take that tag for $0' is the game thanking a player for their morning with a shrug."
+ },
+ "fish": [
+  {
+   "id": "minnow",
+   "name": "Minnow",
+   "note": "Silver and wriggling in the shoreline shallows. Scooped by the netful for Walt's survey tank - three to eight a dip.",
+   "depthFt": [
+    0,
+    8
+   ],
+   "tier": 1,
+   "netOnly": true,
+   "needsHook": false,
+   "lengthIn": [
+    1.5,
+    3.5
+   ],
+   "weightLb": [
+    0.02,
+    0.1
+   ],
+   "perLb": 0,
+   "colour": "#c9d4c0",
+   "headFacing": "left",
+   "studyBounty": 2
+  },
+  {
+   "id": "golden_shiner",
+   "name": "Golden Shiner",
+   "note": "Shoals of them in the weedy shallows along the shore, brassy gold on the flank. The commonest bait minnow there is, and what Walt wants in the survey tank - three to five inches of them, a netful at a time.",
+   "depthFt": [
+    0,
+    8
+   ],
+   "tier": 1,
+   "netOnly": true,
+   "needsHook": false,
+   "lengthIn": [
+    2.5,
+    5
+   ],
+   "weightLb": [
+    0.03,
+    0.12
+   ],
+   "perLb": 0,
+   "colour": "#d9b451",
+   "headFacing": "left",
+   "studyBounty": 2
+  },
+  {
+   "id": "sunfish",
+   "name": "Sunfish",
+   "note": "Beds in the shallows in spring; through the summer the big ones sit on the deep weed edge in twelve or fifteen feet. Bluegill, pumpkinseed, redear - Walt logs them all as sunfish, and pays a couple of dollars a tag for the growth record.",
+   "depthFt": [
+    1,
+    18
+   ],
+   "tier": 1,
+   "needsHook": true,
+   "lengthIn": [
+    4,
+    9
+   ],
+   "weightLb": [
+    0.2,
+    1.1
+   ],
+   "perLb": 0,
+   "colour": "#f4bf3a",
+   "headFacing": "right",
+   "studyBounty": 2
+  },
+  {
+   "id": "perch",
+   "name": "Yellow Perch",
+   "note": "The deepest of the panfish - schools working the flats and the top of the break, down to thirty feet in the heat. Walt is tracking their growth year on year, and pays a couple of dollars a tag for the record.",
+   "depthFt": [
+    4,
+    32
+   ],
+   "tier": 2,
+   "needsHook": true,
+   "lengthIn": [
+    5,
+    12
+   ],
+   "weightLb": [
+    0.2,
+    1.6
+   ],
+   "perLb": 0,
+   "colour": "#e0a83c",
+   "headFacing": "right",
+   "studyBounty": 4
+  },
+  {
+   "id": "bass",
+   "name": "Largemouth Bass",
+   "note": "Cover fish: lily pads, sunk timber, the shade under the boards. Four to twenty feet, and out to twenty-four on deep structure when it turns hot.",
+   "depthFt": [
+    4,
+    24
+   ],
+   "tier": 3,
+   "needsHook": true,
+   "lengthIn": [
+    9,
+    23
+   ],
+   "weightLb": [
+    0.9,
+    7.5
+   ],
+   "perLb": 0,
+   "colour": "#4f9c3f",
+   "headFacing": "right",
+   "studyBounty": 6
+  },
+  {
+   "id": "crappie",
+   "name": "Black Crappie",
+   "note": "Brush in eight or ten feet early on, then suspended out over twenty and thirty as the water warms. Walt is tracking their growth year on year, and pays a couple of dollars a tag for the record.",
+   "depthFt": [
+    8,
+    30
+   ],
+   "tier": 2,
+   "needsHook": true,
+   "lengthIn": [
+    7,
+    15
+   ],
+   "weightLb": [
+    0.4,
+    2.8
+   ],
+   "perLb": 0,
+   "colour": "#7f97b3",
+   "headFacing": "right",
+   "studyBounty": 4
+  },
+  {
+   "id": "catfish",
+   "name": "Channel Catfish",
+   "note": "Bottom fish, and a warmwater one - it holds above the cold layer and will not drop into it. Twelve to forty-five feet by day, right down onto the thermocline, and up into the shallows after dark.",
+   "depthFt": [
+    12,
+    45
+   ],
+   "tier": 4,
+   "needsHook": true,
+   "lengthIn": [
+    13,
+    34
+   ],
+   "weightLb": [
+    1.5,
+    22
+   ],
+   "perLb": 0,
+   "colour": "#7d7166",
+   "headFacing": "right",
+   "studyBounty": 8
+  },
+  {
+   "id": "pike",
+   "name": "Northern Pike",
+   "note": "Lies in the weed and along the edge where it stops. Six to twenty feet for most of them; the big ones follow the break down onto the thermocline at forty-five in high summer, which is as deep as a pike will go.",
+   "depthFt": [
+    6,
+    45
+   ],
+   "tier": 4,
+   "needsHook": true,
+   "lengthIn": [
+    16,
+    40
+   ],
+   "weightLb": [
+    1.8,
+    14
+   ],
+   "perLb": 0,
+   "colour": "#5c7a4a",
+   "headFacing": "right",
+   "studyBounty": 8
+  },
+  {
+   "id": "walleye",
+   "name": "Walleye",
+   "note": "The breakline fish - fifteen to thirty-five feet, out to forty-five in clear water. Those eyes are built for low light, which is why they feed at dusk and go quiet under a bright sky.",
+   "depthFt": [
+    12,
+    45
+   ],
+   "tier": 3,
+   "needsHook": true,
+   "lengthIn": [
+    12,
+    30
+   ],
+   "weightLb": [
+    0.8,
+    11
+   ],
+   "perLb": 0,
+   "colour": "#a08a3c",
+   "headFacing": "right",
+   "studyBounty": 6
+  },
+  {
+   "id": "cisco",
+   "name": "Cisco",
+   "note": "Lake herring: a small silver schooling fish of the cold layer, forty-five feet and down, where the water holds at fifty degrees all summer. Half of what a lake trout eats out here is cisco.",
+   "depthFt": [
+    42,
+    95
+   ],
+   "tier": 2,
+   "needsHook": true,
+   "lengthIn": [
+    8,
+    15
+   ],
+   "weightLb": [
+    0.3,
+    1.6
+   ],
+   "perLb": 0,
+   "colour": "#a9c0cf",
+   "headFacing": "left",
+   "studyBounty": 4
+  },
+  {
+   "id": "laketrout",
+   "name": "Lake Trout",
+   "note": "Cold water below the thermocline - fifty feet and deeper, and the big ones at ninety and a hundred off the fog boundary. They cannot come up in summer; the top of this lake would cook them.",
+   "depthFt": [
+    50,
+    125
+   ],
+   "tier": 5,
+   "needsHook": true,
+   "lengthIn": [
+    18,
+    38
+   ],
+   "weightLb": [
+    3,
+    26
+   ],
+   "perLb": 0,
+   "colour": "#6f8c9c",
+   "headFacing": "left",
+   "studyBounty": 10
+  },
+  {
+   "id": "barnaby",
+   "name": "Barnaby",
+   "note": "THE FINALE. Old Whisper - a thirty-year-old giant Lake Sturgeon, silver-scaled, trained by the 1994 Lake Warden. Not a monster: he has been guarding the sunken sanctuary and pulling propellers off noisy boats. He rises to the sonar's chime, not to a hook.",
+   "depthFt": [
+    110,
+    130
+   ],
+   "tier": 6,
+   "secret": true,
+   "needsHook": false,
+   "lengthIn": [
+    72,
+    96
+   ],
+   "weightLb": [
+    120,
+    200
+   ],
+   "perLb": 0,
+   "colour": "#a9b7c6",
+   "headFacing": "right",
+   "studyBounty": 80
+  },
+  {
+   "id": "ghost_perch",
+   "name": "Ghost Perch",
+   "note": "An albino yellow perch - no stripes, no gold, pink through the gill plate. One in a hundred thousand hatches like this and none of them lives long in clear water. This one is full grown.",
+   "depthFt": [
+    2,
+    10
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "earthworm",
+    "biomeId": "shoreline",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    7,
+    13
+   ],
+   "weightLb": [
+    0.3,
+    1.4
+   ],
+   "perLb": 0,
+   "colour": "#e8e4d8",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "chrome_dace",
+   "name": "Chrome Dace",
+   "note": "A dace the length of your hand with scales like new nickel, chasing a spoon in a foot of water. Nobody has ever put one in a book.",
+   "depthFt": [
+    0,
+    9
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "spoon",
+    "biomeId": "shoreline",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    4,
+    7
+   ],
+   "weightLb": [
+    0.05,
+    0.2
+   ],
+   "perLb": 0,
+   "colour": "#dfe6ea",
+   "headFacing": "left",
+   "studyBounty": 25
+  },
+  {
+   "id": "bowfin",
+   "name": "Bowfin",
+   "note": "A living fossil with a lung: an olive log of a fish that has been in fresh water since before there were lakes to be in. It can breathe air, and it will bite the boat.",
+   "depthFt": [
+    8,
+    30
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "shiner_bait",
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    20,
+    34
+   ],
+   "weightLb": [
+    3,
+    12
+   ],
+   "perLb": 0,
+   "colour": "#4d5a3a",
+   "headFacing": "left",
+   "studyBounty": 25
+  },
+  {
+   "id": "white_catfish",
+   "name": "White Catfish",
+   "note": "Pale as a peeled stick, blue-white in the barbels. A southern fish that has no business this far north, sat in the mud of the bay as if it grew there.",
+   "depthFt": [
+    12,
+    34
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "stinkbait",
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    14,
+    22
+   ],
+   "weightLb": [
+    1.2,
+    6
+   ],
+   "perLb": 0,
+   "colour": "#cfd3cf",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "tiger_muskie",
+   "name": "Tiger Muskellunge",
+   "note": "A muskellunge crossed with a northern pike - barred down the flank like its name, sterile, and never stocked in this water. Something put it here.",
+   "depthFt": [
+    10,
+    34
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "spoon",
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    34,
+    48
+   ],
+   "weightLb": [
+    9,
+    26
+   ],
+   "perLb": 0,
+   "colour": "#a3873f",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "burbot",
+   "name": "Burbot",
+   "note": "The only freshwater cod there is: mottled, eel-tailed, cold-water, and awake at night when nothing else is. Fishermen call it the lawyer. Nobody is sure why.",
+   "depthFt": [
+    38,
+    74
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "earthworm",
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    18,
+    30
+   ],
+   "weightLb": [
+    2,
+    9
+   ],
+   "perLb": 0,
+   "colour": "#6a6247",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "sterlet",
+   "name": "Sterlet",
+   "note": "A young sturgeon. Bony plates down the back, a snout like a trowel, and the same slow patient eye as something a great deal bigger further out. Barnaby has not been alone down there.",
+   "depthFt": [
+    40,
+    75
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "deep_rig",
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    22,
+    36
+   ],
+   "weightLb": [
+    3,
+    11
+   ],
+   "perLb": 0,
+   "colour": "#9aa7b4",
+   "headFacing": "left",
+   "studyBounty": 25
+  },
+  {
+   "id": "american_eel",
+   "name": "American Eel",
+   "note": "Born in the Sargasso Sea and swum here, up rivers and over wet grass, to sit in the ledges for twenty years. Every eel in this lake was a long way away once.",
+   "depthFt": [
+    36,
+    75
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "stinkbait",
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    26,
+    44
+   ],
+   "weightLb": [
+    1.5,
+    7
+   ],
+   "perLb": 0,
+   "colour": "#43483a",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "blue_pike",
+   "name": "Blue Pike",
+   "note": "Declared extinct in 1983. A blue-backed walleye of the deep cold water with an eye the size of a dime, and there has not been a confirmed one in forty years. This is a confirmed one.",
+   "depthFt": [
+    78,
+    125
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "deep_rig",
+    "biomeId": "trench",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    15,
+    22
+   ],
+   "weightLb": [
+    1.4,
+    4.5
+   ],
+   "perLb": 0,
+   "colour": "#6f93b8",
+   "headFacing": "right",
+   "studyBounty": 25
+  },
+  {
+   "id": "deepwater_cisco",
+   "name": "Deepwater Cisco",
+   "note": "Gone from every lake anybody thought to look in. It lives below eighty feet and nowhere else, which is exactly the water that has been shut behind a log jam and a fog bank for thirty years.",
+   "depthFt": [
+    80,
+    130
+   ],
+   "tier": 4,
+   "secret": true,
+   "needsHook": true,
+   "mystery": {
+    "baitId": "shiner_bait",
+    "biomeId": "trench",
+    "chance": 0.005
+   },
+   "lengthIn": [
+    12,
+    18
+   ],
+   "weightLb": [
+    0.6,
+    2.2
+   ],
+   "perLb": 0,
+   "colour": "#b9c8d4",
+   "headFacing": "left",
+   "studyBounty": 25
+  }
+ ],
+ "items": [
+  {
+   "id": "floating_litter",
+   "name": "Floating Litter",
+   "kind": "junk",
+   "value": 0,
+   "netOnly": true,
+   "note": "Cans, wrappers, a bag. Netted off the surface near the reed beds, because the baby fish need somewhere clean to grow. The job pays; the litter does not.",
+   "mass": true,
+   "weight": 14
+  },
+  {
+   "id": "tincan",
+   "name": "Rusty Can",
+   "kind": "junk",
+   "value": 2,
+   "note": "Empty, and has been for years. Taking it out of the water is worth a dollar to Walt and rather more than that to the fry that would otherwise swim into it.",
+   "weight": 18
+  },
+  {
+   "id": "weeds",
+   "name": "Tangle of Weeds",
+   "kind": "junk",
+   "value": 0,
+   "note": "Half the weed bed, wound round your hook. Not litter, not worth anything - just what happens when you fish an edge.",
+   "weight": 34
+  },
+  {
+   "id": "boot",
+   "name": "Old Boot",
+   "kind": "junk",
+   "value": 2,
+   "note": "The left one. Nobody has ever found the right. Out of the lake it goes.",
+   "weight": 15
+  },
+  {
+   "id": "wallet",
+   "name": "Soggy Wallet",
+   "kind": "junk",
+   "value": 4,
+   "note": "No cash, just receipts, and the card in it expired a long time ago. Walt bins it and pays you for the trouble.",
+   "weight": 2.5
+  },
+  {
+   "id": "phone",
+   "name": "Cracked Cell Phone",
+   "kind": "junk",
+   "value": 4,
+   "note": "Somebody leaned out too far. It has been in the lake longer than it was ever in a pocket, and it is full of things that should not be.",
+   "weight": 4
+  },
+  {
+   "id": "tire",
+   "name": "Waterlogged Tire",
+   "kind": "junk",
+   "value": 6,
+   "note": "Heavy, filthy and full of lake. A tyre in the shallows leaches into the water for fifty years, so this is the most useful thing you will land all day.",
+   "weight": 12
+  },
+  {
+   "id": "scrap_metal",
+   "name": "Scrap Metal",
+   "kind": "scrap",
+   "value": 6,
+   "note": "Fifty years of dropped iron and lost gear. Walt has no use for it by the pound - but when a job calls for scrap, this is the scrap.",
+   "mass": true,
+   "art": [
+    "scrap_metal",
+    "scrap_wire",
+    "scrap_sheet",
+    "scrap_tube"
+   ],
+   "weight": 30
+  },
+  {
+   "id": "lost_anchor",
+   "name": "Lost Anchor",
+   "kind": "scrap",
+   "value": 9,
+   "note": "A mushroom anchor somebody cut loose rather than haul up. Heavy, honest iron, and it counts as scrap when a job wants some.",
+   "weight": 8
+  },
+  {
+   "id": "ring",
+   "name": "Gold Ring",
+   "kind": "valuable",
+   "value": 30,
+   "note": "A plain gold band, no inscription anybody can read any more. Somebody somewhere has a story about losing this, and it is not a happy one.",
+   "weight": 0.8
+  },
+  {
+   "id": "watch",
+   "name": "Stopped Wristwatch",
+   "kind": "valuable",
+   "value": 14,
+   "note": "Stopped at twenty past four, some year or other. Walt says the case is worth something to somebody even if the works are finished.",
+   "weight": 1.2
+  },
+  {
+   "id": "snapped_propeller",
+   "name": "Snapped Propeller",
+   "kind": "story",
+   "value": 0,
+   "note": "CLUE 1. Bronze, off Big Mac's 2008 speedboat. Not bitten - a hardened tree root jammed straight into the drive pin."
+  },
+  {
+   "id": "brass_frame",
+   "name": "Waterlogged Brass Frame",
+   "kind": "story",
+   "value": 0,
+   "note": "CLUE 2. Solid brass under the mud, with mounting brackets. Walt sets it in a tray of oil on the workbench."
+  },
+  {
+   "id": "gear_assembly",
+   "name": "Gear Assembly",
+   "kind": "story",
+   "value": 0,
+   "note": "CLUE 3. The teeth match the brass frame exactly. Walt mounts them inside it."
+  },
+  {
+   "id": "sound_comb",
+   "name": "Sound Comb",
+   "kind": "story",
+   "value": 0,
+   "note": "CLUE 4. Music-box tines, thick and heavy, tuned far too low for human ears - built to carry through deep water."
+  },
+  {
+   "id": "warden_lockbox",
+   "name": "1994 Warden's Lockbox",
+   "kind": "story",
+   "value": 0,
+   "note": "The iron lockbox with the 1994 Lake Warden seal. Inside: the Warden's journal, the sonar blueprint, and the name Barnaby."
+  },
+  {
+   "id": "winding_key",
+   "name": "Winding Key",
+   "kind": "story",
+   "value": 0,
+   "note": "The last piece. Right where the motorboat stalled at the edge of the fog."
+  },
+  {
+   "id": "warden_bell",
+   "name": "The Warden's Bell",
+   "kind": "story",
+   "value": 0,
+   "granted": true,
+   "note": "Tarnished brass. Barnaby carries it up from the sanctuary and passes it over the gunwale. Not on the bottom - handed to you."
+  },
+  {
+   "id": "silver_locket",
+   "name": "Silver Locket",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "shoreline",
+    "chance": 0.005
+   },
+   "note": "Oval, tarnished black, and it still opens. There is a photograph inside and the water never got to it."
+  },
+  {
+   "id": "brass_harmonica",
+   "name": "Brass Harmonica",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "shoreline",
+    "chance": 0.005
+   },
+   "note": "A ten-hole harp, green with the lake, every reed rusted flat. Somebody sat on this dock and played it."
+  },
+  {
+   "id": "gold_bracelet",
+   "name": "Gold Bracelet",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "note": "Fine chain, a broken clasp, and not a mark of corrosion on it - gold does not care how long it sits in a lake."
+  },
+  {
+   "id": "railroad_watch",
+   "name": "Railroad Pocket Watch",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "note": "A railwayman's watch, seventeen jewels, the case screwed shut against the weather. The hands stopped at twenty past four."
+  },
+  {
+   "id": "skeleton_key",
+   "name": "Skeleton Key",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "bay",
+    "chance": 0.005
+   },
+   "note": "Iron, hand-cut, longer than your finger. Whatever it opened has not existed for a very long time."
+  },
+  {
+   "id": "brass_compass",
+   "name": "Brass Boat Compass",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "note": "Binnacle-mounted, gimbals seized, the card still floating in its oil. It points north. It has been pointing north down there the whole time."
+  },
+  {
+   "id": "steel_cash_box",
+   "name": "Steel Cash Box",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "note": "A shop strongbox with the lid sprung and the lake inside it. Empty, and it was thrown in that way."
+  },
+  {
+   "id": "dog_tags",
+   "name": "Dog Tags",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "dropoff",
+    "chance": 0.005
+   },
+   "note": "Two stamped tags on a ball chain. The name is still readable, and Walt goes very quiet and says he knows who to give them to."
+  },
+  {
+   "id": "ships_lantern",
+   "name": "Ship's Lantern",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "trench",
+    "chance": 0.005
+   },
+   "note": "A brass oil lantern off a working boat, glass unbroken, wick still in it. Nothing on this lake has carried one of these in sixty years."
+  },
+  {
+   "id": "service_revolver",
+   "name": "Rusted Revolver",
+   "kind": "relic",
+   "value": 0,
+   "unique": true,
+   "relic": {
+    "biomeId": "trench",
+    "chance": 0.005
+   },
+   "note": "Seized solid with rust, cylinder full of lake mud, and Walt does not touch it twice - it goes straight in a bag for the sheriff, and he writes down where it came up."
+  }
+ ],
+ "vessels": [
+  {
+   "id": "foot",
+   "name": "On foot",
+   "price": 0,
+   "owned": true,
+   "reach": 95,
+   "speed": 0,
+   "note": "Standing on the boards. Where everyone starts, with five dollars and a mesh net."
+  },
+  {
+   "id": "canoe",
+   "name": "Red Rental Canoe",
+   "price": 20,
+   "rental": true,
+   "reach": 780,
+   "speed": 8.5,
+   "wearRate": 0,
+   "maxDepthFt": 35,
+   "note": "Walt's rental. Twenty dollars puts the deposit down and the oars in your hands; it is not yours, so there is nothing to repair. Opens the shallow bay and the weedbeds. It does not like the drop-off."
+  },
+  {
+   "id": "kayak",
+   "name": "Yellow Kayak",
+   "price": 250,
+   "durability": true,
+   "reach": 1650,
+   "speed": 12.5,
+   "wearRate": 1.0,
+   "maxDepthFt": 75,
+   "note": "Yours, permanently, with a hull to look after. Sleek and fast, and takes you past the thirty-five-foot drop-off. Submerged logs scuff her; Walt patches her for cash or scrap."
+  },
+  {
+   "id": "motorboat",
+   "name": "Motorboat",
+   "price": 1000,
+   "durability": true,
+   "burnsFuel": true,
+   "reach": 3200,
+   "speed": 22,
+   "wearRate": 1.2,
+   "maxDepthFt": 999,
+   "note": "A wheel and a throttle. The only thing that reaches the centre fog."
+  }
+ ],
+ "rods": [
+  {
+   "id": "hand_net",
+   "name": "Mesh Hand Net",
+   "price": 0,
+   "owned": false,
+   "tier": 1,
+   "isNet": true,
+   "canHook": false,
+   "rangeFt": 4,
+   "note": "Walt's, handed over the counter on the first morning and never asked for back. Scoops minnows, shiners and litter off the shoreline.",
+   "castFt": 8,
+   "rodClass": 1
+  },
+  {
+   "id": "bamboo_rod",
+   "name": "Bamboo Rod",
+   "price": 20,
+   "tier": 1,
+   "canHook": true,
+   "rangeFt": 12,
+   "note": "Bought with the first twenty-five dollars, with a tub of earthworms. Thirty feet, which is the dock edge and the pilings. Fishes twelve feet down.",
+   "bundlesBait": "earthworm",
+   "castFt": 30,
+   "rodClass": 2
+  },
+  {
+   "id": "fiber_rod",
+   "name": "Fiber Rod",
+   "price": 45,
+   "tier": 3,
+   "canHook": true,
+   "rangeFt": 35,
+   "note": "Enough backbone for a bass, and sinks a line to the bottom of the shallow bay. Sixty feet - out past the lily pads, or across a weedbed from the canoe. Fishes to thirty-five.",
+   "castFt": 60,
+   "rodClass": 4
+  },
+  {
+   "id": "carbon_rod",
+   "name": "Carbon Rod",
+   "price": 75,
+   "tier": 4,
+   "canHook": true,
+   "rangeFt": 75,
+   "note": "Holds a pike off the ledge and a catfish out of fifty feet of mud. Ninety feet, which reaches over the drop-off from the last water a kayak may sit in. Fishes to seventy-five.",
+   "castFt": 90,
+   "rodClass": 5
+  },
+  {
+   "id": "pro_rod",
+   "name": "Pro Rod",
+   "price": 200,
+   "tier": 6,
+   "canHook": true,
+   "rangeFt": 130,
+   "note": "Walt hands it over before the deep survey. A hundred and thirty feet, from the edge of the fog into the deep hole. Fishes to a hundred and thirty down.",
+   "castFt": 130,
+   "rodClass": 6
+  }
+ ],
+ "baits": [
+  {
+   "id": "earthworm",
+   "name": "Earthworms",
+   "price": 0,
+   "free": true,
+   "note": "A tub with the bamboo rod, and free forever after. Panfish.",
+   "float": true
+  },
+  {
+   "id": "shiner_bait",
+   "name": "Live Shiners",
+   "price": 3,
+   "bias": {
+    "bass": 40,
+    "pike": 25
+   },
+   "note": "Out of the bait tank you filled yourself. A live shiner is what a bass or a pike would rather have than anything on a hook.",
+   "float": true
+  },
+  {
+   "id": "spoon",
+   "name": "Silver Spoon",
+   "price": 8,
+   "bias": {
+    "pike": 45,
+    "laketrout": 20
+   },
+   "note": "For anything that hunts by movement. Worked along the ledge. Fished without a float - the line runs straight to it.",
+   "float": false
+  },
+  {
+   "id": "stinkbait",
+   "name": "Stink Bait",
+   "price": 6,
+   "bias": {
+    "catfish": 55
+   },
+   "note": "Exactly as advertised. For the bottom mud. Fished without a float - the line runs straight to it.",
+   "float": false
+  },
+  {
+   "id": "deep_rig",
+   "name": "Deep Rig",
+   "price": 15,
+   "bias": {
+    "laketrout": 50
+   },
+   "note": "Gets a bait down past the thermocline and keeps it there. Fished without a float - the line runs straight to it.",
+   "float": false
+  }
+ ],
+ "tools": [
+  {
+   "id": "tagging_tool",
+   "name": "Warden Tagging Tool",
+   "price": 0,
+   "owned": true,
+   "kind": "tag",
+   "note": "On the rod from the start. Clips a numbered field tag to the fin so the fish can go straight back."
+  },
+  {
+   "id": "magnet_1",
+   "name": "Magnet Lure #1",
+   "price": 30,
+   "kind": "magnet",
+   "power": 1,
+   "note": "Attaches to the line. Drops over the shallow scrap markers in the bay and brings up iron - and, once, a propeller."
+  },
+  {
+   "id": "magnet_2",
+   "name": "Magnet #2",
+   "price": 50,
+   "kind": "magnet",
+   "power": 2,
+   "note": "Stronger, and works down the drop-off. What the gear assembly and the sound comb come up on."
+  },
+  {
+   "id": "heavy_magnet",
+   "name": "Heavy Magnet",
+   "price": 100,
+   "kind": "magnet",
+   "power": 3,
+   "note": "Lifts from the trench. Needed for the final checks before the sanctuary."
+  },
+  {
+   "id": "acoustic_sonar",
+   "name": "Acoustic Sonar",
+   "price": 0,
+   "kind": "sonar",
+   "crafted": true,
+   "note": "Not bought - BUILT, piece by piece on Walt's workbench from the brass frame, the gears, the sound comb, the winding key and three scrap pieces. Sends warm low chimes into the water instead of motor noise. Barnaby knows the tune."
+  }
+ ]
+}

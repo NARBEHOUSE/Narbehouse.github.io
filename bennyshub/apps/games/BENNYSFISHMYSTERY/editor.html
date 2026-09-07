@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Whispering Lake — Story &amp; Chart Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --ink:#16222c; --paper:#f4efe4; --panel:#fffdf7; --line:#d9d0bd; --accent:#1d6f8a; --warn:#b3432b; --ok:#2e7d4f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 14px/1.45 system-ui, Segoe UI, Roboto, sans-serif; color:var(--ink); background:var(--paper); display:grid; grid-template-columns: 340px 1fr 420px; grid-template-rows: 48px 1fr; height:100vh; }
+  header { grid-column: 1 / -1; display:flex; align-items:center; gap:12px; padding:0 14px; background:var(--ink); color:#fff; }
+  header h1 { font-size:16px; margin:0 12px 0 0; font-weight:600; }
+  header button, .btn { background:#fff; color:var(--ink); border:0; border-radius:6px; padding:6px 10px; font:inherit; cursor:pointer; }
+  header button.primary { background:#ffd23f; }
+  header .status { margin-left:auto; opacity:.85; font-size:13px; }
+  aside, main, section.right { overflow:auto; }
+  aside { border-right:1px solid var(--line); background:var(--panel); }
+  section.right { border-left:1px solid var(--line); background:var(--panel); padding:12px; }
+  main { position:relative; display:flex; flex-direction:column; }
+  #chart { flex:1; width:100%; height:100%; display:block; cursor:crosshair; background:#c9bd93; }
+  .toolbar { display:flex; gap:6px; padding:6px 10px; border-bottom:1px solid var(--line); background:var(--panel); font-size:13px; align-items:center; flex-wrap:wrap; }
+  .toolbar label { display:flex; gap:4px; align-items:center; }
+  .qrow { display:grid; grid-template-columns: 34px 1fr auto; gap:6px; padding:7px 10px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center; }
+  .qrow:hover { background:#f1ebdc; }
+  .qrow.sel { background:#e2eef2; border-left:3px solid var(--accent); }
+  .qrow .n { font-weight:700; color:#556; }
+  .qrow .t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qrow .k { font-size:11px; padding:1px 6px; border-radius:10px; background:#e8e2d2; }
+  .stage-foot .k { background:#d9efd3; } .stage-canoe .k { background:#d3e8f4; } .stage-kayak .k { background:#e0d9f4; } .stage-motorboat .k { background:#f4d9d3; }
+  .qrow.bad { outline:2px solid var(--warn); outline-offset:-2px; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 10px; padding:8px 10px; }
+  legend { font-weight:600; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:#556; }
+  .f { display:grid; grid-template-columns: 96px 1fr; gap:6px; align-items:center; margin:4px 0; }
+  .f label { font-size:12px; color:#445; }
+  input, select, textarea { font:inherit; padding:4px 6px; border:1px solid var(--line); border-radius:5px; background:#fff; width:100%; }
+  textarea { min-height:52px; resize:vertical; }
+  .line { display:grid; grid-template-columns: 78px 1fr; gap:6px; margin:4px 0; align-items:start; }
+  .line code { font-size:11px; color:#667; padding-top:6px; }
+  .chip { display:inline-block; padding:2px 8px; margin:2px 4px 2px 0; border-radius:10px; background:#e8e2d2; font-size:12px; cursor:pointer; }
+  .chip.on { background:var(--accent); color:#fff; }
+  .problems { color:var(--warn); font-size:12px; white-space:pre-wrap; }
+  .fine { color:var(--ok); font-size:12px; }
+  #hover { position:absolute; left:10px; bottom:10px; background:rgba(22,34,44,.85); color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; pointer-events:none; }
+  small.help { display:block; color:#667; font-size:11px; margin-top:2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Whispering Lake — Story &amp; Chart</h1>
+  <button id="addQuest">+ Quest</button>
+  <button id="addSounding">+ Sounding</button>
+  <button id="addPlace">+ Place for quest</button>
+  <button id="copyAI">Copy for AI</button>
+  <button id="dlQuests" class="primary">Download quests.json</button>
+  <button id="dlLake" class="primary">Download lake.json</button>
+  <button id="dlBundle">Download content.generated.js</button>
+  <span class="status" id="status">Loaded from js/content.generated.js. Edits live in this page until you download.</span>
+</header>
+
+<aside>
+  <div class="toolbar">
+    <strong id="qcount"></strong>
+    <label><input type="checkbox" id="onlyBad"> only problems</label>
+  </div>
+  <div id="qlist"></div>
+</aside>
+
+<main>
+  <div class="toolbar">
+    <label><input type="checkbox" id="showSound" checked> soundings</label>
+    <label><input type="checkbox" id="showShore" checked> shore points</label>
+    <label><input type="checkbox" id="showPlaces" checked> places</label>
+    <label><input type="checkbox" id="showStages" checked> vessel reach</label>
+    <span style="margin-left:auto;color:#667">drag a point to move it &middot; double-click a sounding to set its depth &middot; right-click removes</span>
+  </div>
+  <canvas id="chart"></canvas>
+  <div id="hover">—</div>
+</main>
+
+<section class="right" id="detail"></section>
+
+<script src="js/content.generated.js"></script>
+<script src="js/lake.js"></script>
+<script>
+(function () {
+  'use strict';
+  const C = window.RT && RT.content;
+  if (!C || !C.lake || !C.quests) { document.body.innerHTML = '<p style="padding:20px">js/content.generated.js is missing or empty. Run <code>python tools/build_content.py</code> first.</p>'; return; }
+  const lake = C.lake, Q = C.quests, roster = C.roster || {};
+  const walt = Q.walt = Q.walt || {};
+  Q.nudges = Q.nudges || {};
+  lake.places = lake.places || [];
+  const STAGES = ['foot', 'canoe', 'kayak', 'motorboat'];
+  const KINDS = ['net', 'tag', 'salvage', 'clue', 'trade', 'buy', 'repair', 'debt', 'incident', 'story', 'finale'];
+  const NEEDS = ['catchCount', 'catchWeight', 'catchWeightOne', 'recoverItem', 'reachSpot', 'ringBell', 'tradeScrap', 'ownVessel', 'ownTool', 'repairVessel', 'clearDebt'];
+  const fish = (roster.fish || []).map(f => f.id), items = (roster.items || []).map(i => i.id);
+  const vessels = (roster.vessels || []).map(v => v.id), tools = (roster.tools || []).map(t => t.id), rods = (roster.rods || []).map(r => r.id);
+
+  const $ = (id) => document.getElementById(id);
+  let chart = RT.lake.chart(lake);
+  let sel = 0;
+  const status = (t) => { $('status').textContent = t; };
+
+  /* ── Problems: what would strand a quest ────────────────────────────── */
+  function problemsOf(q, i) {
+    const out = [];
+    const ids = Q.quests.map(x => x.id);
+    (q.needs || []).forEach(n => {
+      const j = ids.indexOf(n);
+      if (j < 0) out.push('needs "' + n + '" which does not exist');
+      else if (j >= i) out.push('needs "' + n + '" which comes AFTER it in the ladder');
+    });
+    const t = q.need || {};
+    if (NEEDS.indexOf(t.type) < 0) out.push('unknown need type "' + t.type + '"');
+    if (t.speciesId && fish.indexOf(t.speciesId) < 0) out.push('unknown fish "' + t.speciesId + '"');
+    if (t.itemId && items.indexOf(t.itemId) < 0) out.push('unknown item "' + t.itemId + '"');
+    if (t.vesselId && vessels.indexOf(t.vesselId) < 0) out.push('unknown vessel "' + t.vesselId + '"');
+    if (t.toolId && tools.indexOf(t.toolId) < 0) out.push('unknown tool "' + t.toolId + '"');
+    if (STAGES.indexOf(q.stage) < 0) out.push('unknown stage "' + q.stage + '"');
+    if (t.type === 'recoverItem' || t.type === 'reachSpot') {
+      if (q.at !== 'counter' && !lake.places.some(p => p.quest === q.id) && t.type === 'reachSpot')
+        out.push('reachSpot with no place on the chart and not at the counter');
+    }
+    const st = (lake.stages || []).find(s => s.id === q.stage);
+    const pl = lake.places.find(p => p.quest === q.id);
+    if (pl && st) {
+      const ft = chart.depthAt(pl.x, pl.z), r = chart.fromDock(pl.x, pl.z);
+      if (ft <= 0) out.push('its place is on dry land');
+      if (r > st.reach) out.push('its place is ' + Math.round(r) + ' from the dock; the ' + q.stage + ' reaches ' + st.reach);
+      const v = (roster.vessels || []).find(x => x.id === (st.vessel || 'foot'));
+      if (v && v.maxDepthFt && ft > v.maxDepthFt) out.push('its place is in ' + Math.round(ft) + ' ft; the ' + v.name + ' is rated to ' + v.maxDepthFt);
+    }
+    if (t.speciesId && st) {
+      const f = (roster.fish || []).find(x => x.id === t.speciesId);
+      if (f && (f.depthFt[0] >= st.depthFt[1] + 5)) out.push(t.speciesId + ' lives deeper than this stage fishes');
+    }
+    ['brief', 'done'].forEach(k => (q.say && q.say[k] || []).forEach(cue => { if (!walt[cue]) out.push('Walt cue "' + cue + '" has no line'); }));
+    return out;
+  }
+
+  /* ── The list ───────────────────────────────────────────────────────── */
+  function renderList() {
+    const onlyBad = $('onlyBad').checked;
+    let bad = 0;
+    $('qlist').innerHTML = Q.quests.map((q, i) => {
+      const pr = problemsOf(q, i);
+      if (pr.length) bad++;
+      if (onlyBad && !pr.length) return '';
+      return '<div class="qrow stage-' + q.stage + (i === sel ? ' sel' : '') + (pr.length ? ' bad' : '') + '" data-i="' + i + '">' +
+             '<span class="n">' + (i + 1) + '</span><span class="t">' + esc(q.title || q.id) + '</span><span class="k">' + q.stage + ' · ' + q.kind + '</span></div>';
+    }).join('');
+    $('qcount').textContent = Q.quests.length + ' quests' + (bad ? ' · ' + bad + ' with problems' : ' · all good');
+    Array.from(document.querySelectorAll('.qrow')).forEach(el => el.onclick = () => { sel = +el.dataset.i; render(); });
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  /* ── The detail panel ───────────────────────────────────────────────── */
+  function field(label, html, help) { return '<div class="f"><label>' + label + '</label><div>' + html + (help ? '<small class="help">' + help + '</small>' : '') + '</div></div>'; }
+  function select(id, val, opts, allowEmpty) {
+    return '<select data-k="' + id + '">' + (allowEmpty ? '<option value="">—</option>' : '') +
+           opts.map(o => '<option' + (o === val ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>';
+  }
+  function input(id, val, type) { return '<input data-k="' + id + '" type="' + (type || 'text') + '" value="' + esc(val == null ? '' : val) + '">'; }
+
+  function renderDetail() {
+    const q = Q.quests[sel];
+    if (!q) { $('detail').innerHTML = '<p>No quest selected.</p>'; return; }
+    q.need = q.need || { type: 'catchCount', amount: 1 };
+    q.reward = q.reward || { money: 0 };
+    q.say = q.say || { brief: [], nudge: [], done: [] };
+    const t = q.need, rw = q.reward;
+    const pr = problemsOf(q, sel);
+    const pl = lake.places.find(p => p.quest === q.id);
+    let h = '';
+    h += '<fieldset><legend>Quest ' + (sel + 1) + ' · ' + esc(q.id) + '</legend>';
+    h += field('Title', input('title', q.title));
+    h += field('Card', '<textarea data-k="card">' + esc(q.card) + '</textarea>', 'What the HUD and the counter show.');
+    h += field('Stage', select('stage', q.stage, STAGES));
+    h += field('Kind', select('kind', q.kind, KINDS));
+    h += field('At', select('at', q.at || '', ['counter'], true), '"counter" for things done at the shop; blank for out on the water.');
+    h += field('Player says', input('player', q.player), 'Spoken by the system voice when the quest is picked.');
+    h += '</fieldset>';
+
+    h += '<fieldset><legend>Need</legend>';
+    h += field('Type', select('need.type', t.type, NEEDS));
+    h += field('Amount', input('need.amount', t.amount == null ? '' : t.amount, 'number'), 'Count, pounds, or scrap pieces.');
+    h += field('Fish', select('need.speciesId', t.speciesId || '', fish, true));
+    h += field('Item', select('need.itemId', t.itemId || '', items, true));
+    h += field('Vessel', select('need.vesselId', t.vesselId || '', vessels, true), 'ownVessel, or "must be in this vessel".');
+    h += field('Tool', select('need.toolId', t.toolId || '', tools, true));
+    h += field('Min depth ft', input('need.minDepthFt', t.minDepthFt == null ? '' : t.minDepthFt, 'number'));
+    h += field('Flag', input('need.flag', t.flag), 'reachSpot: the flag set when the place is reached.');
+    h += field('Net only', '<input type="checkbox" data-k="need.netOnly"' + (t.netOnly ? ' checked' : '') + '>');
+    h += '</fieldset>';
+
+    h += '<fieldset><legend>Reward</legend>';
+    h += field('Money $', input('reward.money', rw.money || 0, 'number'));
+    h += field('Grants rod', select('reward.grantsRodId', rw.grantsRodId || '', rods, true));
+    h += field('Grants tool', select('reward.grantsToolId', rw.grantsToolId || '', tools, true));
+    h += field('Grants item', select('reward.grantsItemId', rw.grantsItemId || '', items, true));
+    h += field('Adds debt $', input('reward.debt', rw.debt == null ? '' : rw.debt, 'number'), 'The incident\'s tow.');
+    h += field('Free repair', '<input type="checkbox" data-k="reward.repair"' + (rw.repair ? ' checked' : '') + '>');
+    h += field('Title', input('reward.title', rw.title));
+    h += '</fieldset>';
+
+    h += '<fieldset><legend>Depends on</legend><div>' +
+         Q.quests.slice(0, sel).map(x => '<span class="chip' + ((q.needs || []).indexOf(x.id) >= 0 ? ' on' : '') + '" data-dep="' + x.id + '">' + esc(x.id) + '</span>').join('') +
+         '</div><small class="help">Click to toggle. Only earlier quests can be depended on.</small></fieldset>';
+
+    h += '<fieldset><legend>Place on the chart</legend>';
+    if (pl) {
+      const ft = chart.depthAt(pl.x, pl.z), r = chart.fromDock(pl.x, pl.z);
+      h += field('Label', input('place.label', pl.label));
+      h += field('Where', 'x ' + Math.round(pl.x) + ', z ' + Math.round(pl.z) + ' · ' + ft.toFixed(0) + ' ft · ' + Math.round(r) + ' from the dock', 'Drag the ring on the chart to move it.');
+      h += '<button class="btn" data-act="removePlace">Remove place</button>';
+    } else {
+      h += '<p style="margin:4px 0">No place. Use <b>+ Place for quest</b>, then click the chart.</p>';
+    }
+    h += '</fieldset>';
+
+    h += '<fieldset><legend>Walt says</legend>';
+    ['brief', 'nudge', 'done'].forEach(k => {
+      const cues = q.say[k] || [];
+      h += '<div style="margin:4px 0"><b>' + k + '</b> <button class="btn" data-act="addCue" data-cue="' + k + '" style="padding:1px 6px">+ line</button></div>';
+      cues.forEach(cue => {
+        h += '<div class="line"><code>' + esc(cue) + '</code><textarea data-walt="' + esc(cue) + '">' + esc(walt[cue] || '') + '</textarea></div>';
+      });
+    });
+    h += '</fieldset>';
+
+    h += '<fieldset><legend>Check</legend>' + (pr.length ? '<div class="problems">' + esc(pr.join('\n')) + '</div>' : '<div class="fine">Nothing wrong with this one.</div>') + '</fieldset>';
+    h += '<button class="btn" data-act="moveUp">▲ earlier</button> <button class="btn" data-act="moveDown">▼ later</button> <button class="btn" data-act="delete" style="color:var(--warn)">Delete quest</button>';
+    $('detail').innerHTML = h;
+
+    // wiring
+    Array.from($('detail').querySelectorAll('[data-k]')).forEach(el => {
+      el.onchange = () => {
+        const path = el.dataset.k.split('.');
+        let v = el.type === 'checkbox' ? el.checked : el.value;
+        if (el.type === 'number') v = v === '' ? undefined : +v;
+        if (v === '' ) v = undefined;
+        let o = q;
+        if (path[0] === 'place') { if (pl) pl[path[1]] = v; render(); return; }
+        for (let i = 0; i < path.length - 1; i++) { o[path[i]] = o[path[i]] || {}; o = o[path[i]]; }
+        if (v === undefined || v === false) delete o[path[path.length - 1]]; else o[path[path.length - 1]] = v;
+        render();
+      };
+    });
+    Array.from($('detail').querySelectorAll('[data-walt]')).forEach(el => {
+      el.oninput = () => { walt[el.dataset.walt] = el.value; };
+    });
+    Array.from($('detail').querySelectorAll('[data-dep]')).forEach(el => {
+      el.onclick = () => {
+        q.needs = q.needs || [];
+        const i = q.needs.indexOf(el.dataset.dep);
+        if (i >= 0) q.needs.splice(i, 1); else q.needs.push(el.dataset.dep);
+        render();
+      };
+    });
+    Array.from($('detail').querySelectorAll('[data-act]')).forEach(el => {
+      el.onclick = () => {
+        const a = el.dataset.act;
+        if (a === 'removePlace') { lake.places = lake.places.filter(p => p.quest !== q.id); }
+        if (a === 'addCue') { const k = el.dataset.cue; const cue = q.id + '_' + k + '_' + ((q.say[k] || []).length + 1); q.say[k] = (q.say[k] || []).concat([cue]); walt[cue] = ''; }
+        if (a === 'moveUp' && sel > 0) { Q.quests.splice(sel - 1, 0, Q.quests.splice(sel, 1)[0]); sel--; }
+        if (a === 'moveDown' && sel < Q.quests.length - 1) { Q.quests.splice(sel + 1, 0, Q.quests.splice(sel, 1)[0]); sel++; }
+        if (a === 'delete' && confirm('Delete ' + q.id + '?')) { Q.quests.splice(sel, 1); lake.places = lake.places.filter(p => p.quest !== q.id); sel = Math.max(0, sel - 1); }
+        renumber(); render();
+      };
+    });
+  }
+  function renumber() { Q.quests.forEach((q, i) => { q.n = i + 1; }); }
+
+  /* ── The chart ──────────────────────────────────────────────────────── */
+  const cv = $('chart'), ctx = cv.getContext('2d');
+  let view = null;      // {x0, z0, scale}
+  let raster = null;
+  let drag = null;      // {kind, ref}
+  let placing = null;   // quest id waiting for a click
+
+  function fit() {
+    const e = chart.extent, pad = 120;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = w; cv.height = h;
+    const sx = w / (e.maxX - e.minX + pad * 2), sz = h / (e.maxZ - e.minZ + pad * 2);
+    const scale = Math.min(sx, sz);
+    view = { scale, x0: (e.minX + e.maxX) / 2 - w / 2 / scale, z0: (e.minZ + e.maxZ) / 2 - h / 2 / scale };
+    raster = null;
+  }
+  const toPx = (x, z) => [(x - view.x0) * view.scale, (z - view.z0) * view.scale];
+  const toWorld = (px, pz) => [px / view.scale + view.x0, pz / view.scale + view.z0];
+  function depthCol(ft) { return ft <= 0 ? null : ft < 10 ? '#92d6ea' : ft < 35 ? '#4ea6cc' : ft < 75 ? '#2b6f9b' : '#12395c'; }
+
+  function buildRaster() {
+    const w = cv.width, h = cv.height, step = 3;
+    const off = document.createElement('canvas'); off.width = w; off.height = h;
+    const c = off.getContext('2d');
+    for (let py = 0; py < h; py += step) for (let px = 0; px < w; px += step) {
+      const [x, z] = toWorld(px + step / 2, py + step / 2);
+      const ft = chart.depthAt(x, z);
+      c.fillStyle = depthCol(ft) || (chart.toShore(x, z) < 45 ? '#a3b478' : '#c9bd93');
+      c.fillRect(px, py, step, step);
+    }
+    raster = off;
+  }
+
+  function drawChart() {
+    if (!view) fit();
+    if (!raster) buildRaster();
+    ctx.drawImage(raster, 0, 0);
+    // contour-ish labels at the zone boundaries: the stage reach rings
+    if ($('showStages').checked) {
+      const d = toPx(lake.dock.x, lake.dock.z);
+      (lake.stages || []).forEach((s, i) => {
+        ctx.beginPath(); ctx.setLineDash([6, 6]); ctx.strokeStyle = ['#2e7d4f', '#1d6f8a', '#5a3fa0', '#b3432b'][i] || '#000';
+        ctx.lineWidth = 1.2; ctx.arc(d[0], d[1], s.reach * view.scale, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = ctx.strokeStyle; ctx.font = '11px system-ui'; ctx.fillText(s.id + ' ' + s.reach, d[0] + 4, d[1] - s.reach * view.scale - 3);
+      });
+    }
+    if ($('showShore').checked) {
+      ctx.fillStyle = '#5a3a22';
+      (lake.shore || []).forEach(p => { const [px, pz] = toPx(p[0], p[1]); ctx.fillRect(px - 3, pz - 3, 6, 6); });
+      ctx.fillStyle = '#7a5a32';
+      (lake.island || []).forEach(p => { const [px, pz] = toPx(p[0], p[1]); ctx.fillRect(px - 3, pz - 3, 6, 6); });
+    }
+    if ($('showSound').checked) {
+      (lake.soundings || []).forEach(s => {
+        const [px, pz] = toPx(s.x, s.z);
+        ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#123'; ctx.lineWidth = 1; ctx.arc(px, pz, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.fillText(String(Math.round(s.ft)), px + 7, pz + 4);
+      });
+    }
+    (lake.ledges || []).forEach(L => {
+      ctx.beginPath(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2;
+      (L.line || []).forEach((p, i) => { const [px, pz] = toPx(p[0], p[1]); if (i) ctx.lineTo(px, pz); else ctx.moveTo(px, pz); });
+      ctx.stroke();
+    });
+    if ($('showPlaces').checked) {
+      lake.places.forEach(p => {
+        const [px, pz] = toPx(p.x, p.z);
+        const isSel = Q.quests[sel] && Q.quests[sel].id === p.quest;
+        ctx.beginPath(); ctx.strokeStyle = isSel ? '#ff3b1f' : '#ffd23f'; ctx.lineWidth = isSel ? 3 : 2; ctx.arc(px, pz, 8, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#16222c'; ctx.font = '11px system-ui'; ctx.fillText(p.quest + ' ' + (p.label || ''), px + 11, pz + 4);
+      });
+    }
+    // dock
+    const d = toPx(lake.dock.x, lake.dock.z);
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(d[0] - 5, d[1] - 5, 10, 10);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.fillText('DOCK', d[0] + 8, d[1] + 4);
+  }
+
+  function hit(px, pz) {
+    const R = 9;
+    const near = (x, z) => { const [a, b] = toPx(x, z); return Math.hypot(a - px, b - pz) <= R; };
+    for (const p of lake.places) if (near(p.x, p.z)) return { kind: 'place', ref: p };
+    if ($('showSound').checked) for (const s of lake.soundings) if (near(s.x, s.z)) return { kind: 'sounding', ref: s };
+    if ($('showShore').checked) {
+      for (const p of lake.shore) if (near(p[0], p[1])) return { kind: 'shore', ref: p };
+      for (const p of (lake.island || [])) if (near(p[0], p[1])) return { kind: 'shore', ref: p };
+    }
+    for (const L of (lake.ledges || [])) for (const p of L.line) if (near(p[0], p[1])) return { kind: 'shore', ref: p };
+    return null;
+  }
+  function rechart() { chart = RT.lake.chart(lake); raster = null; }
+
+  cv.addEventListener('mousedown', (e) => {
+    const r = cv.getBoundingClientRect(); const px = e.clientX - r.left, pz = e.clientY - r.top;
+    if (e.button === 2) return;
+    if (placing) {
+      const [x, z] = toWorld(px, pz);
+      const q = Q.quests.find(q => q.id === placing);
+      lake.places = lake.places.filter(p => p.quest !== placing);
+      lake.places.push({ id: placing + '.place', quest: placing, kind: q ? q.kind : 'clue', label: (q && q.title ? q.title.toLowerCase() : 'the place'),
+                         x: Math.round(x), z: Math.round(z), depthFt: Math.round(chart.depthAt(x, z)), breakdown: q ? q.kind === 'incident' : false,
+                         note: 'Placed in editor.html' });
+      placing = null; status('Place set. Drag it to move it.'); render(); return;
+    }
+    drag = hit(px, pz);
+    if (drag && drag.kind === 'place') { const q = Q.quests.findIndex(q => q.id === drag.ref.quest); if (q >= 0) { sel = q; renderList(); renderDetail(); } }
+  });
+  cv.addEventListener('mousemove', (e) => {
+    const r = cv.getBoundingClientRect(); const px = e.clientX - r.left, pz = e.clientY - r.top;
+    const [x, z] = toWorld(px, pz);
+    const ft = chart.depthAt(x, z);
+    $('hover').textContent = Math.round(x) + ', ' + Math.round(z) + '  ·  ' + (ft > 0 ? ft.toFixed(0) + ' ft, ' + Math.round(chart.fromDock(x, z)) + ' from the dock · ' + (chart.stageAt ? (chart.stageAt(x, z) || {}).id || '' : '') : 'land') + (placing ? '  ·  click to place ' + placing : '');
+    if (!drag) return;
+    if (drag.kind === 'place') { drag.ref.x = Math.round(x); drag.ref.z = Math.round(z); drag.ref.depthFt = Math.round(ft); drawChart(); }
+    else if (drag.kind === 'sounding') { drag.ref.x = Math.round(x); drag.ref.z = Math.round(z); rechart(); drawChart(); }
+    else if (drag.kind === 'shore') { drag.ref[0] = Math.round(x); drag.ref[1] = Math.round(z); rechart(); drawChart(); }
+  });
+  window.addEventListener('mouseup', () => { if (drag) { drag = null; render(); } });
+  cv.addEventListener('dblclick', (e) => {
+    const r = cv.getBoundingClientRect(); const h = hit(e.clientX - r.left, e.clientY - r.top);
+    if (h && h.kind === 'sounding') { const v = prompt('Depth in feet at this sounding', h.ref.ft); if (v !== null && !isNaN(+v)) { h.ref.ft = +v; rechart(); render(); } }
+  });
+  cv.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const r = cv.getBoundingClientRect(); const h = hit(e.clientX - r.left, e.clientY - r.top);
+    if (!h) return;
+    if (h.kind === 'sounding' && lake.soundings.length > 4 && confirm('Remove this sounding?')) lake.soundings.splice(lake.soundings.indexOf(h.ref), 1);
+    if (h.kind === 'place' && confirm('Remove this place?')) lake.places.splice(lake.places.indexOf(h.ref), 1);
+    if (h.kind === 'shore') { const arr = [lake.shore, lake.island || []].find(a => a.indexOf(h.ref) >= 0); if (arr && arr.length > 4 && confirm('Remove this shore point?')) arr.splice(arr.indexOf(h.ref), 1); }
+    rechart(); render();
+  });
+  ['showSound', 'showShore', 'showPlaces', 'showStages'].forEach(id => $(id).onchange = drawChart);
+  $('onlyBad').onchange = renderList;
+  window.addEventListener('resize', () => { fit(); drawChart(); });
+
+  /* ── Header actions ─────────────────────────────────────────────────── */
+  $('addQuest').onclick = () => {
+    const n = Q.quests.length + 1, id = 'q' + String(n).padStart(2, '0');
+    Q.quests.splice(sel + 1, 0, { id, n, stage: Q.quests[sel] ? Q.quests[sel].stage : 'foot', kind: 'tag', title: 'New quest', card: 'What to do',
+      needs: Q.quests[sel] ? [Q.quests[sel].id] : [], need: { type: 'catchCount', amount: 3 }, reward: { money: 10 }, say: { brief: [], nudge: [], done: [] }, player: '' });
+    sel++; renumber(); render();
+  };
+  $('addSounding').onclick = () => { placing = null; const [x, z] = toWorld(cv.width / 2, cv.height / 2); lake.soundings.push({ x: Math.round(x), z: Math.round(z), ft: 20 }); rechart(); render(); status('Sounding added in the middle. Drag it; double-click to set its depth.'); };
+  $('addPlace').onclick = () => { placing = Q.quests[sel].id; status('Click the chart to place ' + placing + '.'); };
+  function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click(); }
+  $('dlQuests').onclick = () => download('quests.json', JSON.stringify(Q, null, 1));
+  $('dlLake').onclick = () => download('lake.json', JSON.stringify(lake, null, 1));
+  $('dlBundle').onclick = () => download('content.generated.js', '/**\n * GENERATED by editor.html - do not edit.\n */\nwindow.RT = window.RT || {};\nRT.content = ' + JSON.stringify(C, null, 1) + ';\n');
+  $('copyAI').onclick = () => {
+    const lines = Q.quests.map((q, i) => (i + 1) + '. [' + q.id + ' · ' + q.stage + ' · ' + q.kind + '] ' + q.title + ' — ' + q.card +
+      ' | need ' + JSON.stringify(q.need) + ' | reward ' + JSON.stringify(q.reward) + ' | needs ' + (q.needs || []).join(',') +
+      ((q.say && q.say.brief || []).map(c => '\n   WALT (' + c + '): ' + (walt[c] || '')).join('')) + (q.player ? '\n   PLAYER: ' + q.player : ''));
+    const text = 'WHISPERING LAKE — quest ladder (' + Q.quests.length + ' quests)\n\n' + lines.join('\n') + '\n\nPLACES: ' + JSON.stringify(lake.places.map(p => ({ q: p.quest, x: p.x, z: p.z, ft: p.depthFt, label: p.label })));
+    navigator.clipboard.writeText(text).then(() => status('Copied ' + text.length + ' characters. Paste it to the AI with what you want changed.'), () => prompt('Copy this', text));
+  };
+
+  function render() { renderList(); renderDetail(); drawChart(); }
+  fit(); render();
+})();
+</script>
+</body>
+</html>
