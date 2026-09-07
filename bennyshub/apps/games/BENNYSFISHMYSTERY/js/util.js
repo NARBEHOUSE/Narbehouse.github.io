@@ -84,16 +84,46 @@ RT.util = (function () {
    * Pointer activation that survives the touch → synthetic-click double fire.
    * Mirrors the helper used by the other hub games.
    */
+  /* THE CLICK THAT ARRIVES AFTER THE TAP HAS BEEN DEALT WITH.
+     A browser follows a touch with mouse events it makes up from it, and the
+     last of them is a click - as much as a third of a second later.
+     preventDefault() on touchend is meant to stop them, and does, as long as
+     the element that was touched is still there for it to apply to.
+
+     Choosing a row of a menu DESTROYS that element: the card re-renders and
+     every row is built again. The delayed click then lands on whatever now
+     sits under the finger - a row of the menu that just opened - and that
+     row is a different element with its own, untouched, guard. So it fired,
+     and the choice made a second choice by itself. Reported exactly: "when I
+     click on one of the menus in Walt's shop it will also click on the menu
+     right after that menu."
+
+     The guard therefore cannot live on the element, because the element does
+     not survive long enough to hold it. It is a moment in TIME instead: a
+     click arriving within GHOST_MS of a finger touching anything at all came
+     from that finger, not from somebody choosing again.
+
+     Longer than the 300ms a browser waits, comfortably short of the gap
+     between two things a person meant to press. */
+  const GHOST_MS = 900;
+  let lastTouchAt = 0;
+  function noteTouch() { lastTouchAt = Date.now(); }
+  try {
+    document.addEventListener('touchstart', noteTouch, true);
+    document.addEventListener('touchend', noteTouch, true);
+  } catch (e) { /* no DOM to watch: a check running under node */ }
+
   function addTap(el, fn) {
     if (!el) return;
-    let touchFired = false;
     el.addEventListener('touchend', (e) => {
       e.preventDefault();
-      touchFired = true;
+      noteTouch();
       fn(e);
     }, { passive: false });
     el.addEventListener('click', (e) => {
-      if (touchFired) { touchFired = false; return; }
+      /* A mouse, or the ghost of a tap already answered? Only the first of
+         those is somebody making a choice. */
+      if (Date.now() - lastTouchAt < GHOST_MS) return;
       fn(e);
     });
   }
