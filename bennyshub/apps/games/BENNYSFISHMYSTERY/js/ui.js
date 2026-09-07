@@ -319,6 +319,24 @@ RT.ui = (function () {
     }
   }
 
+  /* A CARD FITTED TO A SCREEN THAT HAS SINCE CHANGED SHAPE. fitPanel() only
+     ever ran when a card was opened. Turn a phone from upright to sideways
+     and 844 points of height become 390 with the card still up, and it kept
+     the size it was drawn at and hung off the bottom. The address bar
+     sliding away is the same event, a little smaller. Debounced, because a
+     rotation fires a burst of these and re-fitting is a measure-and-scale
+     loop, not a free one. */
+  let refitTimer = null;
+  function refitSoon() {
+    if (refitTimer) clearTimeout(refitTimer);
+    refitTimer = setTimeout(function () {
+      refitTimer = null;
+      if (overlayOn) fitPanel();
+    }, 140);
+  }
+  window.addEventListener('resize', refitSoon);
+  window.addEventListener('orientationchange', refitSoon);
+
   function render() {
     const menu = $('panelMenu');
     menu.innerHTML = '';
@@ -969,6 +987,41 @@ RT.ui = (function () {
      SCREENS
      ══════════════════════════════════════════════════════════════════════ */
 
+  /* WHAT TO PRESS, ON THE THING BEING HELD. A phone has no space bar and
+     telling somebody to press one is worse than saying nothing at all. But a
+     switch interface arrives as a keyboard on a tablet, which is a touch
+     screen - so this ADDS the tap rather than replacing the keys, and
+     nobody's instructions disappear. */
+  function isTouchScreen() {
+    try {
+      return !!(window.matchMedia &&
+                window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+    } catch (e) { return false; }
+  }
+  /* HOW MANY JOBS GO ON A PAGE OF THE LOG.
+     Ten is what the card holds on a desktop screen. A phone on its side has
+     390 points of height for a card that wants 780 of them, and fitPanel()
+     stops shrinking a row at the size it can still be read across a room -
+     so the PAGE gets shorter rather than the letters. Turning a page is
+     something the scan can do; a row off the bottom of the glass is not.
+
+     Gated on exactly the queries the stylesheet uses for the same screens,
+     so a desktop window keeps its ten however it happens to be sized. */
+  function logPageSize() {
+    try {
+      if (window.matchMedia('(max-height: 460px) and (min-width: 620px)').matches) return 6;
+      if (window.matchMedia('(max-width: 560px)').matches) return 6;
+    } catch (e) { /* no matchMedia to ask: the desktop number is the safe one */ }
+    return 10;
+  }
+
+  function defaultHint() {
+    const keys = isOneSwitch()
+      ? '<strong>ENTER</strong> picks the highlighted row'
+      : '<strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select';
+    return isTouchScreen() ? ('Tap a row to pick it &bull; ' + keys) : keys;
+  }
+
   function setScreen(name, opts) {
     opts = opts || {};
     screen = name;
@@ -990,9 +1043,7 @@ RT.ui = (function () {
        Choices always sit at the bottom, under the thing they are answering. */
     const panelEl = $('panel'), menuEl = $('panelMenu'), statsEl = $('panelStats');
     panelEl.insertBefore(statsEl, menuEl);
-    $('panelHint').innerHTML = meta.hint ||
-      (isOneSwitch() ? '<strong>ENTER</strong> picks the highlighted row'
-                     : '<strong>SPACE</strong> to scan &bull; <strong>ENTER</strong> to select');
+    $('panelHint').innerHTML = meta.hint || defaultHint();
 
     items = meta.items || [];
     layout = meta.layout || 'list';
@@ -2568,7 +2619,7 @@ RT.ui = (function () {
          columns and shrinking both help and neither is enough at a size
          anybody can read. So it turns pages, and the page it opens on is the
          page with your own job on it. */
-      const PAGE = 10;
+      const PAGE = logPageSize();
       const pages = Math.max(1, Math.ceil(L.rows.length / PAGE));
       if (logPage === null) {
         const at = L.rows.findIndex(function (r) { return r.current; });

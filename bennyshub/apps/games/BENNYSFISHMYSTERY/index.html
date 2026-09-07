@@ -1351,6 +1351,107 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
   #panel{ padding:20px 18px }
   .menuItem{ font-size:1.05rem; padding:12px 14px }
 }
+/* ── ON A PHONE ───────────────────────────────────────────────────────────
+   Everything from here down is behind a query about the SIZE of the screen
+   or the kind of pointer on it. A desktop window matches none of them, so
+   what a mouse sees is exactly what it saw before this block existed.
+
+   Measured at 390x844 and 360x640 (upright), 844x390 and 667x375 (sideways)
+   against 1280x720, which is the shape everything here was composed for.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* -- A PHONE HELD UPRIGHT -------------------------------------------------
+   The dock note was the worst of it. `min(30vw, 300px)` comes out at 117px
+   on a 390-wide screen, which wrapped "Go and see Walt in the tackle shop"
+   one word to a line and pushed "Whispering Lake" out through its own
+   border. A floor under the width fixes the note and moves nothing else. */
+@media (max-width: 560px){
+  #dockHud{
+    left:14px; top:14px;
+    width:min(74vw, 300px); padding:20px 16px 14px;
+    /* Less tilt as well: 1.4 degrees on a narrow card throws its bottom
+       corner further out than the margin it has left to give. */
+    transform:rotate(-0.8deg);
+  }
+  #dockHud.focused{ transform:rotate(-0.8deg) scale(1.03) translateY(-3px) }
+  #dockZone{ font-size:1.15rem }
+  #dockTask{ font-size:1.1rem }
+
+  /* The corner readouts, which were wrapping "Mesh Hand Net" onto a second
+     line and pushing the money down over the water. */
+  #hud{ padding:10px 12px }
+  .hudPanel{ font-size:.82rem; padding:5px 9px; border-width:2px }
+  #hudMission{ font-size:.9rem }
+
+  /* OPTIONS WAS SITTING ON TOP OF THE BUTTONS. The row of touch buttons is
+     centred across the whole width; the pause button is pinned to the
+     bottom-left corner. On a 390 screen those are the same place, and
+     "Scoop again" could not be pressed without pressing Options. So the
+     buttons move up clear of it, and may wrap if there are three. */
+  #touchControls{ bottom:84px; flex-wrap:wrap; padding:0 10px; gap:8px }
+
+  /* THE READOUTS GO UP, THE BUTTONS STAY DOWN. Three buttons on a 360-wide
+     screen is two rows of them, and anything pinned a fixed distance above a
+     row that can grow was going to end up underneath it - the reel bar sat
+     54px into "Reel" that way. A tall screen has room to separate them for
+     good: the bars are only ever READ, so they go up under the corner
+     readouts and the bottom of the glass belongs to the thumb.
+
+     Clear of the big word in the middle of the screen as well, which during
+     a fight is saying LET IT RUN over the top of everything. */
+  #reel    { top:20%; bottom:auto; width:min(88vw, 620px) }
+  #charge  { top:20%; bottom:auto; width:min(90vw, 640px) }
+  #steerBar{ top:20%; bottom:auto; width:min(60vw, 340px) }
+
+  /* The same trick a phone on its side gets, for the small upright one.
+     `minmax(240px, 1fr)` is a single column on a 360-wide screen, which is
+     why the mission log ran 216px off the bottom of one.
+
+     The number has to clear the GAP as well as the card's padding: a 360
+     screen leaves about 302px inside the card, and two 148s plus the 12px
+     between them is 308 - three columns' worth of arithmetic to land back on
+     one column. Hence 130 and a narrower gap, which is two with room over. */
+  #panelMenu.cols{
+    grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+    gap:8px;
+  }
+
+  /* The shoal card is a sixth of a 390 screen, and it sits at the middle of
+     it - which is where the label naming the spot is drawn, so the label was
+     printed straight across the fish's name. Narrower, and up into the third
+     of the screen the labels do not reach. */
+  .spotArrow{ width:116px; top:32%; margin-top:-40px }
+  #spotLeft{ left:10px }
+  #spotRight{ right:10px }
+}
+
+/* -- A PHONE TURNED SIDEWAYS ----------------------------------------------
+   390 points of height, and the mission log wants 784 of them. fitPanel()
+   scales a card down but stops at 0.62 on purpose - below that it cannot be
+   read across a room - so the log ran 116px off the bottom and the fishing
+   log ran off a 375. The answer is the width, which a phone on its side has
+   plenty of: a third column takes a third off the height without making a
+   single letter smaller. */
+@media (max-height: 460px) and (min-width: 620px){
+  #panelMenu.cols{ grid-template-columns:repeat(auto-fit, minmax(178px, 1fr)) }
+  #panel{ padding:16px 18px 14px }
+  #panelTitle{ font-size:1.5rem }
+  #panelHint{ margin-top:8px; font-size:.8rem }
+  #overlay{ padding:10px }
+  #touchControls{ bottom:10px }
+  #reel{ bottom:16% }
+  #charge{ bottom:15% }
+  #pauseBtn{ padding:7px 12px; font-size:.85rem }
+}
+
+/* -- A FINGER RATHER THAN A MOUSE -----------------------------------------
+   Rows had come down to 28px on a short screen. Apple and Google both put
+   the smallest thing worth asking anybody to hit at 44, and the people this
+   game is built for do not all have a steady aim. */
+@media (pointer: coarse){
+  #panelMenu:not(.grid) .menuItem{ min-height:44px }
+  #pauseBtn, #mapClose{ min-height:44px; box-sizing:border-box }
+}
 </style>
 </head>
 <body data-theme="ben">
