@@ -653,7 +653,7 @@ RT.game = (function () {
        against odds of nil. The fish collection wants no particular thing,
        which is the whole game of it. */
     if (t.type === 'collectSet' && t.set === 'relics')
-      return { kind: 'magnet', what: 'the Heavy Magnet' };
+      return { kind: 'magnet', toolId: 'heavy_magnet', what: 'the Heavy Magnet' };
     if (t.type === 'recoverItem') {
       const rec = (D.ITEMS || []).find(i => i.id === t.itemId) || {};
       if (rec.netOnly) return { kind: 'net', what: 'the hand net' };
@@ -663,10 +663,23 @@ RT.game = (function () {
        without a magnet. */
     if (t.type === 'tradeScrap') return { kind: 'magnet', what: 'a magnet' };
     if (t.netOnly || m.kind === 'net') return { kind: 'net', what: 'the hand net' };
-    if (t.speciesId) {
-      const f = fishById(t.speciesId);
-      if (f) return { kind: 'rod', what: 'a rod that fishes ' + Math.round(f.depthFt[0]) + ' feet down',
-                      minFt: f.depthFt[0] };
+    if (t.speciesId || t.minDepthFt) {
+      const f = t.speciesId ? fishById(t.speciesId) : null;
+      /* THE DEEPER OF THE TWO. This asked only where the FISH starts, and a
+         job can ask for the same fish out of deeper water than that: job 33
+         wants lake trout from eighty feet, and a lake trout starts at fifty.
+         So the check passed the Carbon Rod, which fishes seventy-five - a rod
+         that physically cannot reach the water the job counts. Every trout it
+         landed came from shallower than eighty and none of them counted, with
+         no warning at any point. Reported: "I should be using the pro rod and
+         it says the carbon rod is right for the job", and before that, "I
+         caught a lake trout but it didn't count toward my 0/3". */
+      const need = Math.max(f ? f.depthFt[0] : 0, t.minDepthFt || 0);
+      if (need > 0) {
+        return { kind: 'rod',
+                 what: 'a rod that fishes ' + Math.round(need) + ' feet down',
+                 minFt: need };
+      }
     }
     return null;
   }
@@ -722,6 +735,16 @@ RT.game = (function () {
       return { ok: false, need: 'the hand net', why: 'This one is netted, not hooked.' };
     if (want.kind === 'magnet' && !(tool && tool.kind === 'magnet'))
       return { ok: false, need: 'a magnet', why: 'Nothing comes up off the bottom without one.' };
+    /* AND THE RIGHT MAGNET. The ten unique finds come up on the heavy one and
+       on nothing else - rollRelicBite() asks for that tool by name - so going
+       out on a lighter magnet is an afternoon that cannot produce a single
+       one of them, with the check waving you off the dock. The same shape of
+       dead end as a rod that cannot reach the depth the job counts. */
+    if (want.kind === 'magnet' && want.toolId && (!tool || tool.id !== want.toolId)) {
+      const need = (roster().tools || []).find(function (x) { return x.id === want.toolId; });
+      return { ok: false, need: 'the ' + ((need && need.name) || want.toolId),
+               why: 'Nothing lighter will lift those off the bottom.' };
+    }
     if (want.kind === 'rod' && rod.isNet)
       return { ok: false, need: 'a rod', why: 'A net will not take a fish this size.' };
     if (want.kind === 'rod' && want.minFt && rod.reachFt < want.minFt)
@@ -1224,6 +1247,24 @@ RT.game = (function () {
        had, and will never have again. Without this they would never get a map
        at all, and Options would be missing a row for the rest of the game. */
     if (!save.hasMap && (save.briefed || 0) >= 1) save.hasMap = true;
+    /* A BOAT LEFT ON THE TRAILER FOREVER.
+       The fog job takes the motorboat off you and the counter gives it back -
+       but only if the job is handed in while that code is running. A save that
+       got the flag and then moved on some other way keeps it for good, and a
+       kayak cannot reach the water job 33 is about: the helper finds no shoal
+       out there, falls back to open water, and the trout card never appears
+       again. Reported exactly that way, and it is a dead end - the ladder
+       cannot be finished from inside it.
+       So: once the job that took the boat is behind you, you have it back.
+       Nothing else can clear it and nothing else needs to. */
+    if (save.towedBoat) {
+      let inc = 0;
+      for (let n = 1; n <= 90; n++) {
+        const q = missionByN(n);
+        if (q && q.kind === 'incident') { inc = q.n; break; }
+      }
+      if (inc && (save.currentMission || 1) > inc) save.towedBoat = '';
+    }
     return save;
   }
   function persist() { U.save(SAVE_KEY, save); }
@@ -2341,6 +2382,19 @@ RT.game = (function () {
        on the first fish landed. Scored by reachFlag(), not from here. */
     if (t.type === 'reachSpot') return false;
 
+    /* SCORED OFF THE SAVE, NOT OFF THE LINE.
+       The collections - ten fish in no book, ten things somebody lost - are
+       counted by what is HELD (see STATE_NEEDS and setHeld), because each one
+       is one to a lake and must still count when it turns up on the way to
+       something else. The bottom of this function is a plain fishing counter
+       that credits anything with no speciesId on it, so a sunfish on "catch
+       all ten fish that are in no book" came back with a green tick and "that
+       one counts" - while the count itself stayed at 0 of 10, because the
+       count is read from the set and a sunfish is in every book there is.
+       Reported exactly that way. Landing one of the ten still records it, up
+       at the top of finishLanding, where it belongs. */
+    if (STATE_NEEDS[t.type]) return false;
+
     if (outcome.type !== 'fish') return false;
     /* Cumulative, and species-agnostic: "land 12 lbs of fish, all told". Quest
        one is netted bait for the tank, and a sunfish on a hook is not that. */
@@ -2993,6 +3047,25 @@ RT.game = (function () {
     return (dx * rx + dz * rz) >= 0 ? 'right' : 'left';
   }
 
+  /**
+   * Which way something is, in words that are true at a tiller.
+   *
+   * Left or right off the sign of one number has no word for "you are
+   * already pointed at it" - so a channel dead ahead, with the bow on it,
+   * was announced as "off to your left". Reported: "it says steer for the
+   * channel 85 yards off to your left but it's right in front of me."
+   *
+   * One arc, used by the spoken line and by the badge, so the two can never
+   * say different things about the same bearing.
+   */
+  const AHEAD_DEG = 20;
+  function bearingWords(off) {
+    const deg = Math.abs(off) * 180 / Math.PI;
+    if (deg > 150) return 'behind you';
+    if (deg <= AHEAD_DEG) return 'straight ahead';
+    return off < 0 ? 'off to your left' : 'off to your right';
+  }
+
   /** How far ahead of the bow, in units. Negative is astern. */
   function aheadOf(sh) {
     const dx = sh.x - run.x, dz = sh.z - run.z;
@@ -3276,11 +3349,15 @@ RT.game = (function () {
          there is a way through and the player needs to be told where it is,
          in the only terms that help at a tiller - which side, how far. */
       if (bar) {
-        const gapSide = ((bar.gapX - run.x) * Math.cos(run.head) +
-                         (bar.z - run.z) * Math.sin(run.head)) >= 0 ? 'right' : 'left';
+        /* The bearing to the gap, not the sign of a dot product - see
+           bearingWords. Nosed into the timber with the channel dead ahead,
+           this used to send you sideways along the pile. */
+        const gdx = bar.gapX - run.x, gdz = bar.z - run.z;
+        let goff = Math.atan2(gdx, -gdz) - run.head;
+        while (goff > Math.PI) goff -= Math.PI * 2;
+        while (goff < -Math.PI) goff += Math.PI * 2;
         say('The log jam is right across the water here. The channel through it is ' +
-            yards(Math.hypot(bar.gapX - run.x, bar.z - run.z)) + ' yards to your ' +
-            gapSide + '.');
+            yards(Math.hypot(gdx, gdz)) + ' yards ' + bearingWords(goff) + '.');
         return;
       }
       say(tooDeep
@@ -3459,13 +3536,13 @@ RT.game = (function () {
         if (cueLevel >= 1) RT.audio.panTone(now);
         fire('onCue', {
           left: now === 'left', right: now === 'right',
-          leftTarget: now === 'left' && isWanted(call.fishId),
-          rightTarget: now === 'right' && isWanted(call.fishId),
+          leftTarget: now === 'left' && wantsShoal(call),
+          rightTarget: now === 'right' && wantsShoal(call),
           text: now === 'left' ? 'FISH LEFT' : 'FISH RIGHT'
         });
         fire('onEdgeGlow', {
-          left: now === 'left' ? (isWanted(call.fishId) ? 'target' : 'other') : null,
-          right: now === 'right' ? (isWanted(call.fishId) ? 'target' : 'other') : null
+          left: now === 'left' ? (wantsShoal(call) ? 'target' : 'other') : null,
+          right: now === 'right' ? (wantsShoal(call) ? 'target' : 'other') : null
         });
       }
     }
@@ -3481,7 +3558,7 @@ RT.game = (function () {
         x: sh.x, z: sh.z, spent: !!run.taken[sh.key], cued: !!run.cued[sh.key],
         shoals: [{
           x: sh.x, z: sh.z, fishName: sh.fishName, fishColor: sh.fishColor,
-          isTarget: !!sh.isPlace || isWanted(sh.fishId), fishId: sh.fishId,
+          isTarget: wantsShoal(sh), fishId: sh.fishId,
           isPlace: !!sh.isPlace, biome: sh.biome || null
         }]
       });
@@ -3496,10 +3573,33 @@ RT.game = (function () {
     return !!(t && t.speciesId && t.speciesId === fishId);
   }
 
+  /**
+   * The job's fish, in the water the job actually asked for.
+   *
+   * "That is your fish, pull over" was said of ANY shoal of the right
+   * species, and a job can name a depth as well: job 33 counts lake trout
+   * only from eighty feet down. So the game called a sixty-foot trout shoal
+   * "yours", sent the boat to it, and then refused to credit what came up.
+   * Reported: "mission 33 says that is your fish, though I need to be in
+   * water more than 75 feet for that mission, so it might be confusing."
+   *
+   * The species alone still answers isWanted(), which is what the tackle box
+   * and the lure rules are about. This is the question the VOICE and the
+   * cards should be asking.
+   */
+  function wantsShoal(sh) {
+    if (!sh) return false;
+    if (sh.isPlace) return true;
+    if (!isWanted(sh.fishId)) return false;
+    const t = (currentMission() || {}).target;
+    if (t && t.minDepthFt && (sh.ft || 0) < t.minDepthFt) return false;
+    return true;
+  }
+
   /** Say what is down there, and which way to steer for it. */
   function announceShoal(sh) {
     const side = sideOf(sh);
-    const wanted = !!sh.isPlace || isWanted(sh.fishId);
+    const wanted = wantsShoal(sh);
     run.armed = side;
     /* Which side this was called on, so the claim can be corrected when the
        boat turns rather than left standing. */
@@ -3656,7 +3756,7 @@ RT.game = (function () {
     /* The job's place first, then the job's fish, then whatever is nearest -
        pulling over beside the thing you came out for must never land you on
        a perch shoal that happened to be closer. */
-    const pick = ok.find(sh => sh.isPlace) || ok.find(sh => isWanted(sh.fishId)) || ok[0];
+    const pick = ok.find(sh => sh.isPlace) || ok.find(sh => wantsShoal(sh)) || ok[0];
     return asSpot(pick, side);
   }
 
@@ -3672,7 +3772,7 @@ RT.game = (function () {
            as a fish long after the shoal itself knew better. */
         magnetSpot: !!sh.magnetSpot, art: sh.art || null,
         fishId: sh.fishId, fishName: sh.fishName, fishColor: sh.fishColor,
-        fishLength: sh.fishLength, isTarget: !!sh.isPlace || isWanted(sh.fishId),
+        fishLength: sh.fishLength, isTarget: wantsShoal(sh),
         biome: sh.biome || null, isPlace: !!sh.isPlace,
         radius: sh.radius, count: sh.count, seed: sh.seed, pool: sh.pool
       }],
@@ -5228,7 +5328,7 @@ RT.game = (function () {
     const now = clockSeconds();
     if (dist <= cueRange() && now - guideSaid > 14) {
       guideSaid = now;
-      const way = deg > 150 ? 'behind you' : off < 0 ? 'off to your left' : 'off to your right';
+      const way = bearingWords(off);
       say(g.channel
         ? ('The log jam is across the water. Steer for the channel, ' + way + ', ' +
            yards(dist) + ' yards.')
@@ -5238,7 +5338,7 @@ RT.game = (function () {
                       label: g.label || 'Your fish',
                       side: off < 0 ? 'left' : 'right', behind: deg > 150,
                       /* Dead ahead is worth SAYING rather than worth hiding. */
-                      ahead: deg < 12,
+                      ahead: deg <= AHEAD_DEG,
                       /* Whether the helper is actually steering right now, so
                          the arrow can say so rather than leaving the player
                          wondering why the boat is turning on its own. */
@@ -5732,7 +5832,7 @@ RT.game = (function () {
       /* A cell's shoal has no `isTarget` of its own - that is added when it
          becomes a spot - so ask the job directly. Without this the aimer never
          said "that is your fish" about anything. */
-      isTarget: !!(l.shoal && (l.shoal.isPlace || isWanted(l.shoal.fishId)))
+      isTarget: wantsShoal(l.shoal)
     });
   }
 
@@ -5762,7 +5862,7 @@ RT.game = (function () {
       /* A cell's shoal has no `isTarget` of its own - that is added when it
          becomes a spot - so ask the job directly. Without this the aimer never
          said "that is your fish" about anything. */
-      isTarget: !!(l.shoal && (l.shoal.isPlace || isWanted(l.shoal.fishId))),
+      isTarget: wantsShoal(l.shoal),
       /* In FEET. It was passing world units into a meter that prints "ft"
          after them, so a thirty-foot cast was labelled eighteen. */
       distance: Math.round(l.d / 0.61)
@@ -6432,7 +6532,7 @@ RT.game = (function () {
            variable rather than saying what is going on. */
         /* And the words match the colour: the water you came for is "yours",
            anything else in the way is just "the fish". */
-        const yours = l.shoal.isPlace || isWanted(l.shoal.fishId) ||
+        const yours = wantsShoal(l.shoal) ||
                       !!(run.current && !run.current.open && l.shoal.key === run.current.key);
         say(hasMagnet() ? (l.shoal.isPlace ? 'Over the salvage - let go.'
                                            : 'Over the bottom you want - let go.')
@@ -8082,7 +8182,7 @@ RT.game = (function () {
         want.add(key);
         if (patchObjs.has(key)) continue;
         const style = PATCH_STYLE[sh.biome] || 'dropoff';
-        const isTarget = !!sh.isPlace || isWanted(sh.fishId);
+        const isTarget = wantsShoal(sh);
         /* The water over it, dressed for what lives there. */
         const patch = RT.art.biomePatch({
           biome: style, seed: sh.seed ^ 0x5f3a, radius: sh.radius * 1.15,

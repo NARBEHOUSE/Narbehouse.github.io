@@ -2374,6 +2374,16 @@ RT.ui = (function () {
       } else if (d.advanced) {
         stats += '<div class="countBadge">' + ic('done') + ' That one counts</div>' +
                  '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
+      } else if (o.firstEver) {
+        /* ONE OF THE TEN. The collections are counted from what is held, not
+           from a per-catch counter, so they never earned the "that one
+           counts" badge - and once the badge stopped being handed out wrongly
+           to every sunfish, landing an actual one of the ten said nothing at
+           all. This is the moment the whole last hour of the game is about,
+           so it gets the biggest thing on the card. */
+        stats += '<div class="countBadge done">' + ic('star') +
+                 ' One in no book — nobody has logged this' + '</div>' +
+                 '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
       } else if (d.missedDepth) {
         /* THE RIGHT FISH OUT OF THE WRONG WATER. Said as plainly as the
            under-the-limit badge says its piece: what happened, the number
@@ -2865,6 +2875,8 @@ RT.ui = (function () {
     }
     /* Spoken the way somebody would say it - "two of three, one more to go" -
        rather than reading the card's shorthand out. */
+    if (o.firstEver) s += ' One in no book — nobody has logged this one. ' +
+                          (d.targetSpoken || d.targetText || '');
     if (d.justCompleted) s += ' That completes the mission!';
     else if (d.advanced) s += ' ' + (d.targetSpoken || d.targetText);
     else if (d.missedDepth) {
@@ -3379,7 +3391,17 @@ RT.ui = (function () {
        concerned - and this one is played by people who may be listening
        rather than watching. */
     el.classList.toggle('steering', !!g.steering);
-    $('guideArrow').style.transform = 'rotate(' + (g.angle * 180 / Math.PI) + 'deg)';
+    /* UP IS STRAIGHT ON. `angle` is the bearing off the bow - zero when the
+       spot is dead ahead - and the glyph is a RIGHT-pointing arrow, so a
+       plain rotation drew "carry straight on" as "turn right". It sat there
+       pointing right for most of every trip, because most of every trip is
+       spent pointed at the thing. Reported: "the quest helper direction arrow
+       is always pointing right - it should point straight up when we are
+       aiming at the spot."
+       Ninety degrees back puts the glyph's nose where the bow is: up for
+       ahead, right for a turn to starboard, down for behind. */
+    $('guideArrow').style.transform =
+      'rotate(' + (g.angle * 180 / Math.PI - 90) + 'deg)';
     /* The engine works the yards out. `dist / 3` here read a world unit as a
        foot, and a unit is 0.61 of one, so every range on screen was short by a
        factor of one and two thirds: the "184 yards" a player was told about

@@ -119,9 +119,19 @@ for (let n = 1; n <= 35; n++) {
   if (!t.speciesId) continue;
   const want = G.jobLure && G.jobLure();
   if (!want) continue;                        // panfish: a worm is right
-  G.equipKit('carbon_rod', 'earthworm', '');
+  /* A ROD DEEP ENOUGH FOR THIS JOB, so what comes back is about the LURE.
+     This used to fit the carbon rod every time. Once jobWants() started
+     asking for the depth the JOB counts rather than the depth the fish
+     starts at, the carbon rod stopped being enough for the eighty-foot
+     trout jobs - and the check read a perfectly correct complaint about the
+     rod as a complaint about the lure. */
+  const deepRod = (G.shopRods() || [])
+    .filter(function (r) { return !r.isNet; })
+    .sort(function (a, b) { return (b.reachFt || 0) - (a.reachFt || 0); })[0];
+  const rodId = deepRod ? deepRod.id : 'carbon_rod';
+  G.equipKit(rodId, 'earthworm', '');
   const wrong = G.kitCheck();
-  G.equipKit('carbon_rod', want.id, '');
+  G.equipKit(rodId, want.id, '');
   const right = G.kitCheck();
   if (wrong && !wrong.ok) warned++; else silent.push(n);
   ok(!!(wrong && !wrong.ok),
