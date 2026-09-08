@@ -2834,6 +2834,15 @@ RT.game = (function () {
     if (!p) return null;
     if (m.target.type === 'reachSpot' && hasFlag(m.target.flag)) return null;
     if (m.target.type === 'recoverItem' && save.progressValue >= (m.target.amount || 1)) return null;
+    /* AND ONCE THE JOB IS DONE, WHATEVER SHAPE IT IS.
+       reachSpot has its flag and recoverItem has its count, and the two lines
+       above turn those places off. The bell has neither - it is a ringBell
+       target - so its place stayed on the water and the whole scene played
+       again every time the boat came back over the trench. Reported: "it
+       keeps replaying the quest TTS when I go back to the abyssal trench."
+       A place is where a job happens, and a finished job does not happen
+       twice. Ordinary shoals are untouched; this is only the gold ring. */
+    if (targetComplete(m, save.progressValue)) return null;
     /* A PLACE COMES BACK. "Trolling on" means not now, not never - but it
        marks the water behind you as spent, and that is right for a patch of
        perch and wrong for the one spot the whole job is about. Reported on

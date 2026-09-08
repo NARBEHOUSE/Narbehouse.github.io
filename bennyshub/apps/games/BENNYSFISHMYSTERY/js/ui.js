@@ -1562,14 +1562,36 @@ RT.ui = (function () {
                 openDock();
                 return;
               }
+              /* AND THEN SAY THE JOB IS DONE.
+                 The sonar and the bell finish their mission out on the water.
+                 There is no fish, so there is no catch card - and
+                 dismissCatch() was the only thing in the game that ever
+                 raised "Mission Complete". So the scene played, the trip
+                 trolled on, and nothing anywhere told the player it was over:
+                 "they end and then they just stay out there and don't notify
+                 us that the mission is complete."
+                 Same card a finishing catch gets, with the same two ways out
+                 of it - back to the shop to hand it in, or stay out. */
+              const finish = function () {
+                if (G.turnInState && G.turnInState().done) {
+                  AU.fanfare();
+                  setScreen('targetmet');
+                  return true;
+                }
+                return false;
+              };
               /* A SCENE RATHER THAN A SENTENCE. The sonar and the bell play
                  out on the water with the card off the screen, and the trip
                  picks up when the last line lands. */
               if (r && r.scene) {
                 playScene(r.scene, function () {
-                  if (G.chooseTroll) G.chooseTroll();
+                  if (!finish() && G.chooseTroll) G.chooseTroll();
                 });
+                return;
               }
+              /* A beat with no scene has already trolled on inside takeBeat -
+                 only the announcement was missing. */
+              finish();
             } },
           /* Options is the pause card everywhere else in the game, not a
              screen of its own - and it has to be reachable from here like it
