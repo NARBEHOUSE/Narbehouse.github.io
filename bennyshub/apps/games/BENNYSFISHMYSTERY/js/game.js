@@ -8860,7 +8860,14 @@ RT.game = (function () {
          it in front of the fish looks like a hook floating in mid-air. A
          magnet is the other way round: what comes up is stuck TO it, and
          hiding it left a rusty can rising out of the lake on a bare line. */
-      if (rodObj.userData.magnet) rodObj.userData.magnet.visible = mag;
+      if (rodObj.userData.magnet) {
+        rodObj.userData.magnet.visible = mag;
+        /* Which magnet, not just whether. See setHeavy in js/art.js. */
+        if (rodObj.userData.magnet.userData.setHeavy) {
+          const t0 = equippedTool();
+          rodObj.userData.magnet.userData.setHeavy(!!(t0 && t0.id === 'heavy_magnet'));
+        }
+      }
       lastRigCalc = { mag: mag, onLine: onLine, bare: bare, state: r.state };
       /* And the float comes off with them. Nobody hangs a magnet under a
          bobber - it goes to the bottom and gets dragged back. */

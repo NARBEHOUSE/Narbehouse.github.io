@@ -486,13 +486,49 @@ body[data-motion="still"] #charge.inZone #chargeLabel{ animation:none }
   transform-origin:0 50%; animation:sonarSweep 2.2s linear infinite;
 }
 @keyframes sonarSweep{ from{ transform:rotate(0deg) } to{ transform:rotate(360deg) } }
+/* THE THING ON THE DISH IS A FISH. It was a round dot, which on a sonar
+   reads as "a contact" and not as "the biggest animal in the lake coming up
+   at you". Same silhouette as the shadow in the water, so the two are
+   plainly the same creature. */
 #sonarDish .blip{
-  position:absolute; left:50%; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px;
-  border-radius:50%; background:rgba(120,255,170,.9);
-  box-shadow:0 0 18px rgba(120,255,170,.9);
+  position:absolute; left:50%; top:50%; width:96px; height:36px; margin:-18px 0 0 -48px;
   transform:scale(.25); opacity:0; transition:transform 1.1s ease, opacity .5s ease;
 }
+#sonarDish .blip svg{ width:100%; height:100%; display:block;
+  filter:drop-shadow(0 0 10px rgba(120,255,170,.85)) }
+#sonarDish .blip svg path{ fill:rgba(150,255,190,.95) }
 #sonar.rising .blip{ transform:scale(1); opacity:1 }
+
+/* ── Barnaby ──────────────────────────────────────────────────────────────
+   A shadow under the boat, not a picture on a card: he is meant to be felt
+   passing rather than looked at. Drawn over the lake and under everything
+   that has to stay readable, and he takes no pointer. */
+#barnaby{
+  /* HIGH ENOUGH TO BE SEEN. At 58% the bow of the boat cut him in half and
+     what showed was a grey smudge behind the gunwale. */
+  position:absolute; left:50%; top:52%; z-index:9;
+  width:min(52vw, 640px); pointer-events:none;
+  transform:translate(-50%,-50%); opacity:0;
+}
+#barnaby[hidden]{ display:none !important }
+#barnaby svg{ width:100%; height:auto; display:block }
+#barnaby .body{ fill:rgba(3,26,34,.85) }
+#barnaby .bell{ display:none; fill:#d8a11f; stroke:#d8a11f; stroke-width:4;
+  stroke-linecap:round }
+#barnaby.withbell .bell{ display:block }
+#barnaby.on{ animation:barnabyPass 13s ease-in-out forwards }
+@keyframes barnabyPass{
+  0%   { transform:translate(-86%,-50%) scale(.66); opacity:0 }
+  18%  { opacity:.5 }
+  80%  { opacity:.5 }
+  100% { transform:translate(-6%,-50%) scale(1.08); opacity:0 }
+}
+/* Somebody who has asked for no movement still gets to see him - he simply
+   hangs there in the water instead of swimming past. */
+@media (prefers-reduced-motion: reduce){
+  #barnaby.on{ animation:none; opacity:.5 }
+}
+body[data-motion="still"] #barnaby.on{ animation:none; opacity:.5 }
 #sonarRead{
   display:flex; gap:10px; align-items:baseline; color:#8dffb8;
   font-family:'Special Elite','Courier New',monospace; letter-spacing:.08em;
@@ -1484,7 +1520,8 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
     <div id="sonarDish">
       <i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
       <i class="sweep"></i>
-      <i class="blip"></i>
+      <i class="blip"><svg viewBox="0 0 300 110" aria-hidden="true">
+        <path d="M 8,58 C 40,44 70,40 110,42 C 150,44 190,50 232,44 L 264,18 L 252,57 L 278,88 L 236,70 C 196,80 150,86 110,80 C 70,74 38,70 8,58 Z"/><path d="M 166,44 L 186,18 L 202,47 Z"/></svg></i>
     </div>
     <div id="sonarRead">
       <b>SONAR</b>
@@ -1607,6 +1644,26 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
   </div>
 
   <div id="scanFrame"><i></i><i></i><i></i><i></i></div>
+
+  <!-- BARNABY. The sonar scene is about something enormous coming up out of
+       the dark, and it played out as a dish and a paragraph: "I didn't see
+       Barnaby at all during the sonar thing." So he is drawn - a shadow that
+       rises through the water, passes, and is gone. Silhouette rather than a
+       painting: it scales to any screen, needs no file, and a shape in dark
+       water is what you would actually see. -->
+  <div id="barnaby" hidden aria-hidden="true">
+    <svg viewBox="0 0 300 132">
+      <path class="body" d="M 8,58 C 40,44 70,40 110,42 C 150,44 190,50 232,44 L 264,18 L 252,57 L 278,88 L 236,70 C 196,80 150,86 110,80 C 70,74 38,70 8,58 Z"/>
+      <path class="body" d="M 166,44 L 186,18 L 202,47 Z"/>
+      <path class="body" d="M 98,70 L 114,94 L 136,75 Z"/>
+      <g class="bell">
+        <path d="M 54,74 L 54,86"/>
+        <path d="M 38,112 C 38,88 70,88 70,112 Z"/>
+        <path d="M 34,112 L 74,112"/>
+        <circle cx="54" cy="119" r="5"/>
+      </g>
+    </svg>
+  </div>
 
   <div id="worldLabels"></div>
 

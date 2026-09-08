@@ -1696,14 +1696,16 @@ RT.art = (function () {
        unless there is one on the line, and when there is, the float, the hook
        and the bait are hidden instead - see updateRod in js/game.js. */
     const magnet = new THREE.Group();
+    /* Held out here so the heavy/light swap below can repaint them. */
+    let steel, poles;
     (function buildMagnet() {
       /* Its own light grey rather than the hook's, and a little self-lit. A
          hook is meant to disappear against the water; this is meant to be
          seen from the rod, and the float group it hangs under is scaled down
          with distance so the magnet straddles the surface and the water tint
          takes the submerged half of it down to near-black. */
-      const steel = paper(0xdfe4ea, { noMap: true, emissive: 0xa9b4c0, emissiveIntensity: 0.8 });
-      const poles = paper(0xe8392b, { noMap: true, emissive: 0xc22a18, emissiveIntensity: 0.85 });
+      steel = paper(0xdfe4ea, { noMap: true, emissive: 0xa9b4c0, emissiveIntensity: 0.8 });
+      poles = paper(0xe8392b, { noMap: true, emissive: 0xc22a18, emissiveIntensity: 0.85 });
       /* THE SIZE OF A MAGNET. This was built two and a half feet across, on
          the same reasoning as the float above it: a few inches at thirty feet
          is two pixels. That reasoning died when the submerged rig stopped
@@ -1744,6 +1746,26 @@ RT.art = (function () {
     const MAG_K = 0.13;
     magnet.scale.setScalar(MAG_K);
     magnet.userData.k = MAG_K;
+    /* THE HEAVY ONE IS A DIFFERENT LUMP OF IRON.
+       Both magnets hung the same bright little horseshoe off the line, so
+       there was no way to see which was on - and the last job in the game
+       turns on having the heavy one. Reported: "the heavy magnet should have
+       a different looking lure on the line vs the original magnet."
+       Half again as big, and cast iron with brass poles rather than painted
+       steel and red - the difference reads at a glance and at a distance,
+       which is where it is seen from. */
+    magnet.userData.setHeavy = function (on) {
+      if (magnet.userData.heavy === !!on) return;
+      magnet.userData.heavy = !!on;
+      const k = MAG_K * (on ? 1.5 : 1);
+      magnet.scale.setScalar(k);
+      magnet.userData.k = k;
+      magnet.position.set(0, -0.34 * k, 0);
+      steel.color.setHex(on ? 0x8a8f96 : 0xdfe4ea);
+      if (steel.emissive) steel.emissive.setHex(on ? 0x555b62 : 0xa9b4c0);
+      poles.color.setHex(on ? 0xd8a11f : 0xe8392b);
+      if (poles.emissive) poles.emissive.setHex(on ? 0xa8790c : 0xc22a18);
+    };
     magnet.position.set(0, -0.34 * MAG_K, 0);
     magnet.visible = false;
     bob.add(magnet);

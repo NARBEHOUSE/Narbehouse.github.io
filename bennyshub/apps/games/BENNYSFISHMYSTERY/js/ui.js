@@ -476,6 +476,28 @@ RT.ui = (function () {
 
      The card comes off the screen first so there is nothing to press through
      it, and the trip picks up again when the last line is done. */
+  /**
+   * Barnaby, in the water.
+   *
+   * The two scenes at the end of the game are ABOUT him and neither showed
+   * him: "I didn't see Barnaby at all during the sonar thing... I should
+   * probably see a giant shadow of a fish in front of me." So the shadow
+   * rises, passes, and goes. `bell` hangs the warden's bell off him, which is
+   * what the last scene is about.
+   */
+  function showBarnaby(on, bell) {
+    const el = $('barnaby');
+    if (!el) return;
+    if (!on) { el.classList.remove('on', 'withbell'); el.hidden = true; return; }
+    el.classList.toggle('withbell', !!bell);
+    el.hidden = false;
+    /* Restart the pass even if he is already up - the class has to go off and
+       come back on for the animation to run a second time. */
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  }
+
   function playScene(scene, done) {
     if (!scene) { if (done) done(); return; }
     showOverlay(false);
@@ -498,8 +520,16 @@ RT.ui = (function () {
         .reduce(function (t, it) { return t + 900 + String(it.text || '').length * 55; }, 300);
       setTimeout(function () { if (AU[scene.sfx]) AU[scene.sfx](); }, wait);
     }
+    /* THE BELL SCENE SHOWS HIM TOO. It is the moment he is given the bell
+       and the whole game has been pointed at it; it was a paragraph over an
+       empty lake. He comes up as the bell is struck and goes down with the
+       last line - "he goes down slowly, the way something goes when it is not
+       being chased". */
+    const bellScene = scene.sfx === 'bellToll';
+    if (bellScene) showBarnaby(true, true);
     U.speakSeq(items, null, function () {
       if (stop) stop();
+      showBarnaby(false);
       if (done) done();
     });
     lastSaid = { seq: items, tail: null };
@@ -535,14 +565,17 @@ RT.ui = (function () {
       if (k > 0.35) {
         box.classList.add('rising');
         /* Something down there answers, once - the same chime an octave and a
-           half below, coming back up out of the dark. */
-        if (!answered) { answered = true; AU.sonarEcho(); }
+           half below, coming back up out of the dark. And it is not only a
+           sound: the shadow of it comes up past the boat at the same moment
+           the dish paints it. */
+        if (!answered) { answered = true; AU.sonarEcho(); showBarnaby(true, false); }
       }
       if (k >= 1) { clearInterval(tick); tick = null; }
     }, 120);
     return function () {
       if (tick) { clearInterval(tick); tick = null; }
       AU.stopSonar();
+      showBarnaby(false);
       box.hidden = true;
       box.classList.remove('rising');
       if (read) read.textContent = '120 ft';
