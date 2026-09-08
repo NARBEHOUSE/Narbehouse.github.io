@@ -971,9 +971,10 @@
    "price": 3,
    "bias": {
     "bass": 40,
-    "pike": 25
+    "pike": 25,
+    "cisco": 45
    },
-   "note": "Out of the bait tank you filled yourself. A live shiner is what a bass or a pike would rather have than anything on a hook.",
+   "note": "Out of the bait tank you filled yourself. A live shiner is what a bass or a pike would rather have than anything on a hook - and down in the cold layer it is the only thing a cisco is looking for.",
    "float": true
   },
   {

@@ -547,6 +547,8 @@ RT.game = (function () {
      no way to take one out, and a canoe in the save they could not reach. It
      is not a fact about the player, so it is not in the save. */
   let tripOnFoot = false;
+  /* Whether the reason for the smaller boat has been said this session. */
+  let towedSaid = false;
 
   /** Which vessel is being used, as a roster record. */
   function vessel() {
@@ -586,6 +588,18 @@ RT.game = (function () {
    * Except when the job says so: the kayak recon happens while the motorboat
    * is on Walt's trailer.
    */
+  /**
+   * Is this boat in the water, or on Walt's trailer with the stern open?
+   *
+   * Owning a boat and being able to take it out stopped being the same thing
+   * the moment the drive pin went. Reported: "after we drive the boat into
+   * the fog and need a tow, I can immediately take the boat out again" - the
+   * engine is dead in the words Walt says and fine in the game's arithmetic,
+   * and the next job hands over a kayak precisely BECAUSE the motorboat is in
+   * pieces.
+   */
+  function boatUsable(id) { return !!id && id !== save.towedBoat; }
+
   function bestVesselId() {
     /* On the boards on purpose. Picking the jetty rather than the boat means
        fishing on foot for this trip, whatever is tied up beside it - which is
@@ -593,10 +607,17 @@ RT.game = (function () {
     if (tripOnFoot) return 'foot';
     const m = currentMission();
     if (m && m.target && m.target.vesselId && m.target.type === 'recoverItem' &&
-        ownsVessel(m.target.vesselId)) return m.target.vesselId;
+        ownsVessel(m.target.vesselId) && boatUsable(m.target.vesselId)) {
+      return m.target.vesselId;
+    }
     let best = 'foot', far = -1;
     (roster().vessels || []).forEach(function (v) {
-      if (ownsVessel(v.id) && (v.reach || 0) > far) { best = v.id; far = v.reach || 0; }
+      /* A towed boat is skipped rather than refused, so the ladder simply
+         drops a rung: the kayak, then the canoe, then the boards. Refusing
+         outright would strand a player at the dock with nothing to press. */
+      if (ownsVessel(v.id) && boatUsable(v.id) && (v.reach || 0) > far) {
+        best = v.id; far = v.reach || 0;
+      }
     });
     return best;
   }
@@ -708,6 +729,152 @@ RT.game = (function () {
                why: 'The ' + rod.name + ' only fishes ' + rod.reachFt + ' feet.' };
     return { ok: true };
   }
+
+  /**
+   * The kit already in the locker that would answer the check.
+   *
+   * kitCheck() says what is WRONG. This says whether anything you already OWN
+   * would put it right, and what would have to move - so the warning at the
+   * slip can offer to do it there and then, instead of sending somebody back
+   * through the shop to find the tackle box on the wall. That round trip is
+   * four cards deep and it is where the job gets lost: asked for on behalf of
+   * players who set out, are told the lure is wrong, and cannot hold on to
+   * why they went inside by the time they get there.
+   *
+   * Owning is the whole test. Where the answer is a lure that has not been
+   * bought, the shop really is the only place to get it, this returns null,
+   * and the warning goes on saying so.
+   *
+   * Returns null when nothing is wrong, or when nothing owned would fix it.
+   */
+  function kitFix() {
+    const bad = kitCheck();
+    if (!bad || bad.ok) return null;
+
+    const rod0 = save.kitRodId || '', bait0 = save.kitBaitId || '', tool0 = save.kitToolId || '';
+    const wasRod = equippedRod(), wasBait = equippedBait(), wasTool = equippedTool();
+
+    const baits = (save.baits || []).slice();
+    const magnets = (roster().tools || []).filter(function (t) {
+      return ownsTool(t.id) && t.kind === 'magnet';
+    });
+
+    /* THE SMALLEST CHANGE THAT WORKS, and then the BEST one.
+       The rod already in the boat is tried first, so a lure problem is never
+       answered by swapping the rod as well. When that rod is itself the
+       problem, the rest go longest-reaching first: kitCheck() only asks for a
+       minimum, so taking the first that scrapes past it meant standing on job
+       40 with a Pro Rod in the locker and being told to fit the bamboo. Nets
+       last, because a net is only ever right for a job that asks for one, and
+       the check will say so. */
+    const rodIds = (D.RODS || []).filter(function (r) { return ownsRod(r.id); })
+                                 .map(function (r) { return r.id; });
+    rodIds.sort(function (a, b2) {
+      if (a === rod0 || b2 === rod0) return (b2 === rod0 ? 1 : 0) - (a === rod0 ? 1 : 0);
+      const ra = rodById(a), rb = rodById(b2);
+      if (!!ra.isNet !== !!rb.isNet) return ra.isNet ? 1 : -1;
+      return (rb.reachFt || 0) - (ra.reachFt || 0);
+    });
+
+    /* And on the line, the game's OWN best answer first: an empty kitBaitId
+       means equippedBait() picks the best lure it owns for this job, which is
+       a better choice than whichever line happens to sort first. The explicit
+       ones follow for the jobs that empty cannot satisfy, and the magnets
+       after those, because a magnet takes the lure off. */
+    const lines = [];
+    const seen = {};
+    const addBait = function (id) {
+      if (!id || seen['b' + id]) return;
+      seen['b' + id] = 1; lines.push({ baitId: id });
+    };
+    const addTool = function (id) {
+      if (!id || seen['t' + id]) return;
+      seen['t' + id] = 1; lines.push({ toolId: id });
+    };
+    /* THIS JOB'S OWN LURE, FIRST OF ALL. The check is a MINIMUM - it asks
+       whether the box can do the job at all, not whether it is the right box -
+       so anything that merely passes it was being fitted and called done.
+       Reported after the card packed a Deep Rig for the cisco job: legal, and
+       nothing a cisco would look at. Where the fish has a lure made for it,
+       that lure is the answer and nothing else is. */
+    const mLure = currentMission();
+    const wantLure = mLure && mLure.target && lureFor(mLure.target.speciesId);
+    if (wantLure && ownsBait(wantLure.id)) addBait(wantLure.id);
+    /* Then the game's own pick - an empty kitBaitId means equippedBait()
+       chooses the best lure owned for this job, which is the same answer by a
+       different route on every job that has one. */
+    lines.push({ none: true });
+    addBait(bait0);
+    baits.forEach(addBait);
+    addTool(tool0);
+    magnets.forEach(function (t) { addTool(t.id); });
+
+    let hit = null;
+    for (let i = 0; i < rodIds.length && !hit; i++) {
+      for (let j = 0; j < lines.length && !hit; j++) {
+        save.kitRodId = rodIds[i];
+        save.kitBaitId = lines[j].baitId || '';
+        save.kitToolId = lines[j].toolId || '';
+        /* NULL IS A PASS. kitCheck() returns null when the job asks nothing
+           of the box at all - castOff() reads it that way, warning only on a
+           definite `!ok` - and testing for `c.ok` alone threw away every
+           good answer on the jobs that name no gear. It made the offer
+           vanish on exactly the workshop and hand-in jobs where somebody had
+           rowed back in with a magnet still on. */
+        const c = kitCheck();
+        if (!c || c.ok) {
+          hit = { rodId: rodIds[i], baitId: lines[j].baitId, toolId: lines[j].toolId,
+                  rod: equippedRod(), bait: equippedBait(), tool: equippedTool() };
+        }
+      }
+    }
+    /* Put the box back exactly as it was. Nothing above is a decision, it is
+       a search, and a search must not change the thing it searches. */
+    save.kitRodId = rod0; save.kitBaitId = bait0; save.kitToolId = tool0;
+    if (!hit) return null;
+
+    /* Name only what actually MOVES. Offering to fit a rod that is already in
+       the boat reads as the game not knowing what you are carrying. */
+    const lineOf = function (tool, bait) {
+      return tool ? tool.name : ((bait && bait.id !== 'none') ? bait.name : null);
+    };
+    const lineWas = lineOf(wasTool, wasBait), lineNow = lineOf(hit.tool, hit.bait);
+    const rodMoves = hit.rod.id !== wasRod.id;
+    const lineMoves = lineNow !== lineWas;
+    if (!rodMoves && !lineMoves) return null;
+
+    const bits = [];
+    if (rodMoves) bits.push('the ' + hit.rod.name);
+    if (lineMoves && lineNow) bits.push('the ' + lineNow);
+    const what = bits.join(' and ');
+
+    return {
+      rodId: hit.rodId, baitId: hit.baitId, toolId: hit.toolId,
+      rodName: hit.rod.name, lineName: lineNow,
+      rodMoves: rodMoves, lineMoves: lineMoves,
+      what: what, why: bad.why,
+      label: 'Put ' + what + ' on',
+      speech: 'Put ' + what + ' on and go. ' + bad.why +
+              ' It changes here, so there is no trip back to the shop.'
+    };
+  }
+
+  /**
+   * Fit what kitFix() found.
+   *
+   * Here rather than on the screen, because equipKit() takes a lure OR a
+   * magnet and quietly takes the other off - passing both would set one and
+   * then undo it, and nothing on a card should have to know that.
+   */
+  function applyKitFix(fix) {
+    if (!fix) return null;
+    if (fix.toolId) return equipKit(fix.rodId, undefined, fix.toolId);
+    if (fix.baitId) return equipKit(fix.rodId, fix.baitId, undefined);
+    /* Nothing named on the line: clear BOTH, and equippedBait() goes back to
+       picking the best lure owned for the job. */
+    return equipKit(fix.rodId, '', '');
+  }
+
   /**
    * Is this gear on Walt's shelf yet?
    *
@@ -976,6 +1143,15 @@ RT.game = (function () {
          there is nothing on the end of the line to fish with. */
       tackleBroken: false,
       tackleBreaks: 0,
+      /* THE BOAT WALT TOWED IN. Set to a vessel id when a job ends with the
+         engine dead at the end of his line, and cleared when he takes the job
+         in - which is the moment he has actually looked at it. While it is
+         set that boat is not in the water, so the ladder drops back to the
+         one below it: the trench is out of reach, and the next job hands you
+         a kayak because the motorboat is in pieces on the hard. An old save
+         has never seen this field, gets '' from Object.assign, and behaves
+         exactly as it did. */
+      towedBoat: '',
       /* Walt's map of the lake, handed over in the first conversation. Until
          then Options has no map on it, because you have not got one. */
       hasMap: false,
@@ -1528,6 +1704,17 @@ RT.game = (function () {
     if (m.grantsToolId && !ownsTool(m.grantsToolId)) save.tools = (save.tools || []).concat([m.grantsToolId]);
     if (m.grantsItemId && (save.items || []).indexOf(m.grantsItemId) < 0) save.items = (save.items || []).concat([m.grantsItemId]);
     if (m.addsDebt && RT.economy) { RT.economy.addDebt(m.addsDebt); save.flags = save.flags || {}; save.flags.hadDebt = 1; }
+    /* AND HE FIXES THE BOAT. Handing the job in at the counter IS the
+       conversation about the boat - it is where he says what is broken and
+       what the tab will be - so the repair belongs here and nowhere else.
+       The tab the job already carries is what it costs; there is no second
+       bill for the same drive pin. */
+    if (save.towedBoat) {
+      const fixed = (roster().vessels || []).find(v => v.id === save.towedBoat);
+      save.towedBoat = '';
+      say('He puts a new drive pin in the ' + ((fixed && fixed.name) || 'boat') +
+          ' while you stand there. She is yours again.');
+    }
     /* ON THE HOUSE. Both of these have to be told out loud: a number in the
        corner of the screen quietly not going down is not a gift anybody
        notices. */
@@ -4443,6 +4630,16 @@ RT.game = (function () {
   function castOff() {
     if (!bestRod()) { say('You have nothing to fish with yet. Walt has a net.'); RT.audio.menuBlocked(); return false; }
     if (!isBriefed()) { say('See Walt first. He has a job for you.'); RT.audio.menuBlocked(); return false; }
+    /* WHY YOU ARE IN THE SMALL BOAT. Said once a trip rather than every time:
+       a boat quietly changing under somebody who cannot see the dock reads as
+       the game losing track of what they own. */
+    if (save.towedBoat && !towedSaid) {
+      towedSaid = true;
+      const b = (roster().vessels || []).find(v => v.id === save.towedBoat);
+      say('The ' + ((b && b.name) || 'boat') + ' is still on Walt\u2019s trailer with the ' +
+          'stern open. Go and see him when you are ready \u2014 until then you are in the ' +
+          (vessel().name || 'one below it') + '.');
+    }
     run = newRun(save.currentMission);
     paused = false;
     RT.scene.startTrip(run);
@@ -6042,6 +6239,12 @@ RT.game = (function () {
     if (j.kind === 'incident') {
       /* The motor stalls at the edge of the fog. Walt comes out and tows you
          in, and the tow goes on the tab - which is the next few jobs. */
+      /* AND THE BOAT STAYS IN. It came back on the end of his line with the
+         drive pin snapped; it does not go out again until he has had it,
+         which is when this job is handed in at the counter. The vessel is
+         read BEFORE returnToDock(), because that is the boat the trip was
+         made in. */
+      save.towedBoat = vessel().id;
       run.towing = flag;
       say((j.say && j.say.done) || 'The motor coughs, and stops. Walt is on his way out.');
       fire('onFlash', 'UNDER TOW');
@@ -8917,6 +9120,9 @@ RT.game = (function () {
       return toolIconSrc(t);
     },
     ownsRod, ownsBait,
+    /* What would put the box right without a trip to the shop, and the way
+       to fit it. Null whenever the shop is genuinely the only answer. */
+    kitFix, applyKitFix,
     /* What you own, for the box to lay out. Ladder order, nets first, so the
        list reads the way the game was learned. */
     shopRods: () => D.RODS.filter(r => ownsRod(r.id))

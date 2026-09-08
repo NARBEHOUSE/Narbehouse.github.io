@@ -1849,6 +1849,11 @@ RT.ui = (function () {
       const b = G.missionBrief();
       const rod = b.wantedRod, bait = b.wantedBait;
       const kc = G.kitCheck && G.kitCheck();
+      /* WHAT COULD BE PUT RIGHT WITHOUT LEAVING THE SLIP. Worked out before a
+         word of the card is written, because it changes what the card should
+         SAY as well as what it offers: telling somebody the tackle box is on
+         a wall inside the shop is unhelpful when the answer is one row down. */
+      const fix = G.kitFix && G.kitFix();
       const list = [];
       let stats = '<div class="needLine">' + b.text + '</div>';
       if (kc && !kc.ok) {
@@ -1857,8 +1862,8 @@ RT.ui = (function () {
            shop they had just come out of - which reads as the game undoing
            their trip. It says where the change is made instead. */
         stats += '<div class="needTip">' + ic('warn') + ' ' + kc.why +
-                 ' This one needs <b>' + kc.need + '</b> and you have not got it on. ' +
-                 'The tackle box is on the wall in the shop.</div>';
+                 ' This one needs <b>' + kc.need + '</b> and you have not got it on.' +
+                 (fix ? '' : ' The tackle box is on the wall in the shop.') + '</div>';
       }
 
       if (rod) {
@@ -1873,6 +1878,38 @@ RT.ui = (function () {
       }
       stats += '<div class="needCount">' + ic('money') + ' <b>$' + b.money + '</b> in the tin</div>';
 
+      /* THE CHANGE MADE HERE, AT THE SLIP.
+         The tackle box lives on the wall inside the shop, so putting the
+         right lure on used to mean going in, finding the box, finding the
+         tray, choosing, and coming back out - four cards deep, and the place
+         where somebody who has trouble holding on to what they set out to do
+         loses the job entirely. When something already in the locker would
+         answer the check, it is offered as one row and one press.
+
+         Only ever from what is OWNED. Where the answer is a lure that has
+         not been bought the shop is still the only place to get it, kitFix()
+         returns null, and the rows below are the whole choice as before. */
+      if (fix) {
+        stats += '<div class="needCount">' + ic('ok') + ' You already have <b>' +
+                 fix.what + '</b> in the box \u2014 it can go on from here.</div>';
+        list.push({
+          /* The gear in the label, where it is read; "and go" off to the
+             right, where a row's consequence goes. Both in one line was
+             "Put the Carbon Rod and the Deep Rig on and go fishing", which
+             is a sentence nobody can take in at a glance. */
+          label: '' + ic('tacklebox') + ' ' + fix.label,
+          value: 'and go',
+          speech: fix.speech,
+          action: function () {
+            G.applyKitFix(fix);
+            /* Say what changed before the card goes: the box was packed for
+               them, and a change nobody announced is a change nobody made. */
+            U.speak('On goes ' + fix.what + '. Off you go.');
+            goFishingAnyway();
+          }
+        });
+      }
+
       list.push({ label: '' + ic('rod') + ' Go to the Tackle Shop',
                   speech: 'Go to the tackle shop', action: openShop });
       list.push({ label: '\u26f5 Go Fishing Anyway',
@@ -1883,9 +1920,17 @@ RT.ui = (function () {
       return {
         art: icon('tacklebox', '' + ic('tacklebox') + ''),
         title: 'Before you go',
+        /* WHAT IS ACTUALLY WRONG. The last branch used to be the catch-all,
+           so a card raised because a NET was on the boat announced "you're
+           missing the lure this one wants" - about a job with no lure in it.
+           The wanted rod and lure are the soft, advisory case; a failed
+           kitCheck is the hard one and gets to speak for itself. */
         sub: rod && bait ? "You're missing the rod and the lure this one wants."
              : rod ? "You're missing the rod this one wants."
-             : "You're missing the lure this one wants.",
+             : bait ? "You're missing the lure this one wants."
+             : (kc && !kc.ok)
+               ? ('What is in the boat will not do this one — it needs ' + kc.need + '.')
+               : "You're missing the lure this one wants.",
         stats,
         items: list,
         speech: 'Before you go. ' + b.text + '. ' +
@@ -1895,6 +1940,8 @@ RT.ui = (function () {
                        b.rod.name + '. ' : '') +
                 (bait ? 'Its lure is the ' + bait.name + ', and you have the ' +
                         b.bait.name + '. ' : '') +
+                (fix ? 'You already have ' + fix.what + ' in the box, and the first ' +
+                       'choice puts it on and takes you straight out. ' : '') +
                 'You can go to the tackle shop, or go fishing anyway \u2014 both are fine.'
       };
     },
