@@ -2374,6 +2374,15 @@ RT.ui = (function () {
       } else if (d.advanced) {
         stats += '<div class="countBadge">' + ic('done') + ' That one counts</div>' +
                  '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
+      } else if (d.missedDepth) {
+        /* THE RIGHT FISH OUT OF THE WRONG WATER. Said as plainly as the
+           under-the-limit badge says its piece: what happened, the number
+           that decided it, and what to do differently. */
+        stats += '<div class="releaseBadge">' + ic('warn') + ' Not deep enough to count</div>' +
+                 '<div class="releaseNote">That one came up from <b>' + d.missedDepth.at +
+                 ' ft</b>. This job counts them from <b>' + d.missedDepth.need +
+                 ' ft</b> down \u2014 same fish, deeper water.</div>' +
+                 '<div class="countBig">' + d.targetText + '</div>' + pipRow(d.pips);
       }
       return {
         art: artOrEmoji(d.art, o.type === 'empty' ? '' + ic('hook') + '' : d.placeholder),
@@ -2858,6 +2867,13 @@ RT.ui = (function () {
        rather than reading the card's shorthand out. */
     if (d.justCompleted) s += ' That completes the mission!';
     else if (d.advanced) s += ' ' + (d.targetSpoken || d.targetText);
+    else if (d.missedDepth) {
+      /* Somebody going on the words alone gets no badge to look at, so this
+         is the only place the reason exists for them. */
+      s += ' That one does not count \u2014 it came up from ' + d.missedDepth.at +
+           ' feet, and this job wants them from ' + d.missedDepth.need +
+           ' feet down. Same fish, deeper water. ' + (d.targetSpoken || d.targetText);
+    }
     return s;
   }
 

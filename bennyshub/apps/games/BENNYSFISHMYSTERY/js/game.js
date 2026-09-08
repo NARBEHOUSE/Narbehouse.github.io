@@ -3097,7 +3097,29 @@ RT.game = (function () {
    */
   function viaChannel(toX, toZ) {
     if (!run) return null;
-    const b = barred(run.x, run.z, toX, toZ);
+    let b = barred(run.x, run.z, toX, toZ);
+    /* THE JAM IS THERE WHETHER OR NOT THIS PARTICULAR LINE CLIPS IT.
+       crossesBarrier() answers about one straight line, and a diagonal at
+       something across the water often passes the END of the timber - so the
+       boat set off on it, ran most of the way over, discovered the pile and
+       turned to follow it. Reported: "it goes to the far right or left and
+       then realises there's a jam and then tries to go around it."
+       If where you are going is on the other SIDE of the jam, the channel is
+       the way there from the first stroke, not a correction made on arrival. */
+    if (!b) {
+      const L = chart();
+      const bars = (L && L.barriers) || [];
+      if (!(L && L.inBarrier && L.inBarrier(run.x, run.z))) {
+        for (let i = 0; i < bars.length; i++) {
+          const c = bars[i];
+          /* Opposite sides of the timber's own line, and far enough off it
+             that this is a crossing rather than sitting in the mouth. */
+          if ((run.z > c.z) === (toZ > c.z)) continue;
+          if (Math.abs(run.z - c.z) <= c.half && Math.abs(toZ - c.z) <= c.half) continue;
+          b = c; break;
+        }
+      }
+    }
     if (!b) return null;
     const side = run.z > b.z ? 1 : -1;            // which side of the jam we are on
     const clear = b.half + 30;
@@ -3157,7 +3179,23 @@ RT.game = (function () {
          never came. */
       const _tight = boatSpeed() / Math.max(0.05, CFG.YAW_MAX * CFG.TURN_RATE);
       const _gap = g ? Math.hypot(g.x - run.x, g.z - run.z) : 0;
-      if (g && _gap > offerRange()) {
+      /* CIRCLING IS ARRIVING.
+         The helper used to let go of the tiller inside the offer - and the
+         throttle stayed on. The boat ran through the spot in about ten
+         seconds at motorboat speed, the helper picked the same goal up on the
+         way out, turned round and came back: ten laps in five minutes on job
+         33, never once stopping. Reported as "it never settles on a spot -
+         says stuff is 50 yards away and then steers to another spot 400 yards
+         away over and over again", which is one shoal and a very wide lap.
+
+         So it does not let go. It keeps the helm over and holds the shoal,
+         which at a turning circle of speed / (YAW_MAX * TURN_RATE) is 32
+         units for the motorboat and less for everything smaller - well inside
+         the seventy-three the card is offered on. The boat circles the fish
+         with the offer up, and waits to be told. Stopping stays the player's
+         call, made with the same press as everywhere else. */
+      const _here = !!g && _gap <= offerRange() * 0.95;
+      if (g) {
         /* Round the bar, not across it. */
         let off = clearHeading(g.x, g.z) - run.head;
         while (off > Math.PI) off -= Math.PI * 2;
@@ -3168,7 +3206,11 @@ RT.game = (function () {
            player saw as an arrow spinning. It holds its course instead: the
            boat runs past, gets its room back, and comes round on a line that
            works. Each pass is a straighter one, so it converges. */
-        const pointless = _gap < _tight * 1.05 && Math.abs(off) > 1.05;
+        /* Holding course when the target is inside the turning circle is what
+           lets a long approach converge instead of walking round the fish.
+           Once the boat is ON the spot, walking round the fish is the whole
+           point, so the guard lifts. */
+        const pointless = !_here && _gap < _tight * 1.05 && Math.abs(off) > 1.05;
         /* Small enough to actually null. At 0.06 the assist sat on the edge
            of its own dead band - the boat ran straight while the arrow held a
            steady three and a half degrees off, which reads as the helper
@@ -3183,9 +3225,17 @@ RT.game = (function () {
             say('Quest helper steering you to ' + (g.label || 'the spot') + '.');
           }
         }
+        /* Said once, as the boat comes onto it. Somebody going on the words
+           alone has to be told that the circling is deliberate and that the
+           next press is theirs. */
+        if (_here && run.helperCircling !== g.key) {
+          run.helperCircling = g.key;
+          say('Here it is — ' + (g.label || 'the spot') +
+              '. Holding you over it. Press to fish it.');
+        }
+        if (!_here && run.helperCircling === g.key) run.helperCircling = null;
       } else if (run.helperHand) {
         run.helperHand = false;
-        if (g) say('There you are. Your boat again.');
       }
     }
     run.yaw = U.damp(run.yaw, want, CFG.YAW_RATE, dt);
@@ -3532,13 +3582,45 @@ RT.game = (function () {
     return sh && sh.isPlace ? offerRange() * 1.5 : offerRange();
   }
 
+  /**
+   * With the helper on, ONE spot is on offer: the one it is steering to.
+   *
+   * Steering somebody to a lake trout shoal while handing them a cisco card
+   * on the way is two instructions at once, and the card is the one they can
+   * press - so the trip becomes a run of wrong stops and the target appears
+   * to wander. Reported, more than once: "it goes from one shoal to another
+   * instead of targeting the singular spot, which is what I continue to ask
+   * for."
+   *
+   * Free driving is exactly what it was. Turn the helper off in Options and
+   * every shoal is on offer again - that is the mode it is for.
+   */
+  function helperOnlyKey() {
+    if (!run || save.helper === false) return null;
+    const h = run.helperAt;
+    if (!h || h.water || !h.key) return null;
+    if (run.taken[h.key]) return null;
+    return h.key;
+  }
+
   function activeSpotNow() {
     /* THE OFFER, not the call. A card is an invitation to fish HERE. */
     const near = shoalsNear(run.x, run.z, offerRange() * 1.5);
+    const only = helperOnlyKey();
     const usable = near.filter(function (sh) {
-      return !run.taken[sh.key] && aheadOf(sh) >= -40 && fishableShoal(sh) &&
-             Math.hypot(sh.x - run.x, sh.z - run.z) <= offerFor(sh);
+      if (run.taken[sh.key]) return false;
+      if (!fishableShoal(sh)) return false;
+      if (Math.hypot(sh.x - run.x, sh.z - run.z) > offerFor(sh)) return false;
+      /* The shoal the helper is holding stays on offer the whole way round
+         the circle. Astern for half of every lap is not "you have passed it",
+         and dropping the card there is what made it flicker on and off while
+         the boat held station. */
+      if (only && sh.key === only) return true;
+      return aheadOf(sh) >= -40;
     });
+    if (only) {
+      return usable.find(function (sh) { return sh.key === only; }) || null;
+    }
     if (!usable.length) return null;
     /* The job's own place outranks a closer shoal of something else - it is
        the reason the trip is happening. This preference used to live in the
@@ -3556,6 +3638,17 @@ RT.game = (function () {
    */
   function spotToEnter(side) {
     const near = shoalsNear(run.x, run.z, offerRange() * 1.5);
+    /* One spot at a time while the helper is steering - see helperOnlyKey.
+       Its shoal is taken on whichever side it happens to be, because the
+       boat is going round it and the side changes every few seconds. */
+    const only = helperOnlyKey();
+    if (only) {
+      const mine = near.find(function (sh) {
+        return sh.key === only && !run.taken[sh.key] && fishableShoal(sh) &&
+               Math.hypot(sh.x - run.x, sh.z - run.z) <= offerFor(sh);
+      });
+      return mine ? asSpot(mine, side) : openWaterSpot();
+    }
     const ok = near.filter(sh => !run.taken[sh.key] && aheadOf(sh) >= -40 &&
                                  sideOf(sh) === side && fishableShoal(sh) &&
                                  Math.hypot(sh.x - run.x, sh.z - run.z) <= offerFor(sh));
@@ -4560,6 +4653,9 @@ RT.game = (function () {
       /* What the quest helper is steering for, held rather than re-chosen -
          and whether its hand is on the tiller this moment. */
       helperAt: null, helperHand: false,
+      /* The spot it has settled over and is holding, so the arrival is
+         announced once rather than every lap. */
+      helperCircling: null,
       /* Which way round an obstacle the helm committed to, so it does not
          change its mind every frame. */
       dodge: 0,
@@ -5340,10 +5436,19 @@ RT.game = (function () {
   function questSpot() {
     const pl = placeShoal();
     if (pl) return { x: pl.x, z: pl.z, label: pl.fishName || 'Your job' };
-    const g = RT.game.jobFish ? RT.game.jobFish() : null;
-    if (g) return { x: g.x, z: g.z, label: g.label || 'Your fish' };
+    /* WHAT THE TILLER IS STEERING FOR, not what a fresh search would pick.
+       jobFish() searches outward in rings FROM THE BOAT, so its answer moves
+       with the boat: the gold ring on the chart hopped from one shoal to the
+       next every few seconds while the helper quietly held a single one.
+       Reported: "I watched the spot change on the map, it keeps ping ponging
+       me around the map in all directions" - the mark and the tiller were
+       two different opinions. The held goal comes first now, and the search
+       is only asked when nothing is holding one: at the dock, or before the
+       first goal is chosen. */
     const held = run && run.helperAt;
-    return held ? { x: held.x, z: held.z, label: held.label || 'Your fish' } : null;
+    if (held) return { x: held.x, z: held.z, label: held.label || 'Your fish' };
+    const g = RT.game.jobFish ? RT.game.jobFish() : null;
+    return g ? { x: g.x, z: g.z, label: g.label || 'Your fish' } : null;
   }
 
   function mapState() {
@@ -6873,6 +6978,26 @@ RT.game = (function () {
     const wasDone = targetComplete(run.mission, save.progressValue);
     const advanced = outcome.released ? false : applyToTarget(run.mission, outcome);
     const nowDone = targetComplete(run.mission, save.progressValue);
+    /* AND WHY IT DID NOT COUNT.
+       A job with a depth on it turns away a fish of exactly the right species
+       without a word: the card prints the length, the weight and the quality,
+       and simply has no badge on it. Reported on job 33 - "I used manual mode
+       and caught a lake trout but it didn't count toward my 0/3, so something
+       is wrong" - and from where the player sits that is indistinguishable
+       from the game being broken.
+
+       The depth the fish came up from is the one thing they cannot see, so
+       that is the thing to say. Only for the RIGHT fish: a perch on a lake
+       trout job is its own explanation. */
+    const missedDepth = (function () {
+      if (advanced || outcome.released || outcome.type !== 'fish') return null;
+      const t0 = run.mission && run.mission.target;
+      if (!t0 || !t0.minDepthFt) return null;
+      if (t0.speciesId && outcome.id !== t0.speciesId) return null;
+      const at = Math.round(outcome.depthFt || 0);
+      if (at >= t0.minDepthFt) return null;   // turned away for some other reason
+      return { at: at, need: t0.minDepthFt };
+    })();
     run.lastCatch = outcome;
     /* Everything is decided here - the fish is caught, the hold is heavier,
        the mission has moved - but the CARD waits for the landing beat, so the
@@ -6888,6 +7013,7 @@ RT.game = (function () {
       art: catchArtSrc(outcome),
       placeholder: CATCH_PLACEHOLDER_EMOJI[outcome.id] || '' + ic('fish') + '',
       advanced,
+      missedDepth,
       justCompleted: !wasDone && nowDone,
       targetText: targetProgressText(run.mission, save.progressValue),
       targetSpoken: targetSpeech(run.mission, save.progressValue),
