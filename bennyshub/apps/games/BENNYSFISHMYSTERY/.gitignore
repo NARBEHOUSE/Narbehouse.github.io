@@ -1,0 +1,37 @@
+# Creator files - kept on this machine, kept OFF the site.
+#
+# This repo IS the published site: everything committed here is served at
+# narbehouse.github.io. None of the files below is needed to play the game, so
+# none of them belongs on a public page. They still live in this folder - they
+# are ignored, not deleted - so the harness and the editor work exactly as
+# before locally.
+#
+# What the game actually loads is index.html, js/, images/, audio/vo/*.mp3,
+# audio/vo/index.json and ../../../shared/*. That is the whole runtime.
+
+# The test harness and the picture-taking scripts (~50 files).
+tools/
+
+# The lake/quest editor. Not linked from anywhere in the game - unlike
+# BENNYSPEGGLE's editor.html, which its game opens in a window and which
+# therefore has to stay published.
+editor.html
+
+# The authoring source for the content bundle. Safe to keep out of the repo:
+# `python tools/build_content.py` writes js/content.generated.js from these,
+# and that bundle carries the same data byte for byte - the _README authoring
+# notes included - so content/ can be rebuilt from what ships if it is ever
+# lost. Edit these, run the build, commit the bundle.
+content/
+
+# Instructions for whoever is recording Walt's lines. audio/vo/index.json is
+# NOT here: the game fetches it at runtime to find the clips.
+audio/vo/TO_RECORD.md
+audio/vo/DESKTOP_PROMPT.txt
+
+# Screenshots the browser tools drop in this folder as they run.
+desktop_*.png
+phone-land_*.png
+phone-port_*.png
+small-land_*.png
+small-port_*.png
