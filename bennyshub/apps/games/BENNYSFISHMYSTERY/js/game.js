@@ -2904,7 +2904,22 @@ RT.game = (function () {
        longer wants it, a few lines above. */
     if (run && placeShoal._c && placeShoal._c.id === p.id && run.taken[placeShoal._c.key]) {
       const away = Math.hypot(placeShoal._c.x - run.x, placeShoal._c.z - run.z) > offerRange() + 30;
-      if (away || clockSeconds() - (run.placeOff || 0) > 12) delete run.taken[placeShoal._c.key];
+      if (away || clockSeconds() - (run.placeOff || 0) > 12) {
+        delete run.taken[placeShoal._c.key];
+        /* AND IT IS WORTH SAYING AGAIN. A shoal is announced once a trip -
+           `said` - so the place came back onto the card in silence, and a
+           card nobody is told about is a card that did not come back. With
+           the arrow on, its own "here it is, holding you over it" covered
+           this up; with the arrow OFF, which is free driving, the second
+           approach to the one spot the job is about said nothing at all.
+           Reported on job 9: "when I troll on, if I don't complete the quest
+           then the magnet fishing card doesn't pop up again."
+           Only the job's place forgets, and only when it un-spends - the
+           same narrow door `taken` uses. Every ordinary patch of perch is
+           still called once, because a lake that re-announces every shoal
+           you circle is a lake that will not stop talking. */
+        delete run.said[placeShoal._c.key];
+      }
     }
     if (!placeShoal._c || placeShoal._c.id !== p.id) {
       /* FISHED FROM THE EDGE OF IT. A place that is also a barrier - the log

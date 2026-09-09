@@ -1926,7 +1926,7 @@ RT.content = {
     "say": {
      "brief": "Drop it over the shallow scrap markers out in the bay. People have been dropping iron and lost gear in this lake for fifty years. Pull me up three pieces of scrap metal, and I'll clean those scuffs off your canoe for free!",
      "nudge": "Drop that magnet over the scrap markers. Three pieces gets your canoe cleaned.",
-     "done": "Three good pieces of iron - that's the sonar housing sorted. Nice work with that magnet, kid."
+     "done": "Three good pieces of iron, and every one of them worth having. Bring the canoe round and those scuffs come off her, on me, like I said. Nice work with that magnet, kid."
     },
     "lines": {
      "brief": [
@@ -3176,7 +3176,7 @@ RT.content = {
    "q18_send": "That brass frame has empty mountings in it, kid - whatever bolted into them is still down there. The drop-off is where the frame came from, so that's where the rest of it will be. Get the magnet down deep and drag it.",
    "q21_send": "There's a log jam out in the deep water, and things collect in a log jam. If the rest of this machine went in where the frame did, the current will have walked it out that way. Take the magnet to the deep jam and see what comes up.",
    "q22_send": "Seventy-five feet, kid - the deep edge. The old Warden's station went down somewhere along there in the flood, and a station means records. That's heavy magnet work and a long haul up, but if there's anything left of ninety-four, that's where it is.",
-   "q08_done": "Three good pieces of iron - that's the sonar housing sorted. Nice work with that magnet, kid.",
+   "q08_done": "Three good pieces of iron, and every one of them worth having. Bring the canoe round and those scuffs come off her, on me, like I said. Nice work with that magnet, kid.",
    "q10_done": "Five pounds if she's an ounce, tagged and swimming. That's a proper bass, kid.",
    "q17_done": "Three catfish off the mud and all three logged. You're getting the hang of the deep water.",
    "q20_done": "A ten-pound pike off the deep weed edge! Tagged, logged and back in. That's the biggest thing in this lake with teeth - well, the biggest one anybody's ever landed.",
