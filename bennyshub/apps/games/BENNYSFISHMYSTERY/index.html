@@ -790,8 +790,9 @@ body[data-motion="still"] #scanFrame.on i{ animation:none }
    bearing whenever nobody else is steering; the badge says so, because a
    boat that turns by itself with no explanation reads as a fault. */
 #guide.steering{ background:var(--focus); box-shadow:0 6px 0 rgba(0,0,0,.25), 0 0 0 3px var(--ink) }
-#guide.steering #guideArrow{ animation:zonePulse 1.2s ease-in-out infinite }
-body[data-motion="still"] #guide.steering #guideArrow{ animation:none }
+/* And it does not throb either. The badge pulsed while the helper had the
+   tiller, which is most of a trip - a second source of movement on the one
+   thing that should sit still. */
 /* The fish card is a button for anybody with a mouse or a finger: pressing it
    sends the boat to those fish, which is the pointer's whole version of
    holding the helm over. */
@@ -799,7 +800,11 @@ body[data-motion="still"] #guide.steering #guideArrow{ animation:none }
 .spotArrow .spotTap{ display:block; font-size:.78rem; font-weight:normal; opacity:.8 }
 @media (hover: none) { .spotArrow .spotTap::after { content:'Tap to fish here' } }
 @media (hover: hover) { .spotArrow .spotTap::after { content:'Click to fish here' } }
-#guideArrow{ font-size:1.7rem; line-height:1; transform-origin:50% 50% }
+/* Nose up, once, in the stylesheet: the glyph is a right-pointing arrow, so
+   a quarter turn back is what makes it read as "up". Nothing rotates it
+   after this - see onGuide in js/ui.js. */
+#guideArrow{ font-size:1.7rem; line-height:1; transform-origin:50% 50%;
+             transform:rotate(-90deg) }
 #guideText{ font-size:1.05rem; line-height:1.2 }
 #guideText small{ display:block; font-weight:normal; font-size:.85rem; color:var(--ink2) }
 

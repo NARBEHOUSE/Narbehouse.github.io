@@ -3446,17 +3446,17 @@ RT.ui = (function () {
        concerned - and this one is played by people who may be listening
        rather than watching. */
     el.classList.toggle('steering', !!g.steering);
-    /* UP IS STRAIGHT ON. `angle` is the bearing off the bow - zero when the
-       spot is dead ahead - and the glyph is a RIGHT-pointing arrow, so a
-       plain rotation drew "carry straight on" as "turn right". It sat there
-       pointing right for most of every trip, because most of every trip is
-       spent pointed at the thing. Reported: "the quest helper direction arrow
-       is always pointing right - it should point straight up when we are
-       aiming at the spot."
-       Ninety degrees back puts the glyph's nose where the bow is: up for
-       ahead, right for a turn to starboard, down for behind. */
-    $('guideArrow').style.transform =
-      'rotate(' + (g.angle * 180 / Math.PI - 90) + 'deg)';
+    /* THE ARROW DOES NOT MOVE.
+       It used to be turned to the bearing every frame, which meant it swung
+       about as the boat yawed - a few degrees each way, all the time, and
+       whole quarter-turns when the helper came round. Reported: "the little
+       direction arrow seems to rotate and oscillate in 45 degrees and it's
+       distracting... just have it point directly up as an icon, it doesn't
+       need to point the direction we are supposed to go."
+       So it is a badge now, not an instrument: fixed pointing up, in the
+       stylesheet, and nothing here touches it. Which way to go is the
+       helper's job - it has the tiller - and the words underneath still say
+       the bearing for anybody who wants it. */
     /* The engine works the yards out. `dist / 3` here read a world unit as a
        foot, and a unit is 0.61 of one, so every range on screen was short by a
        factor of one and two thirds: the "184 yards" a player was told about
