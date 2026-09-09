@@ -1656,7 +1656,7 @@ RT.content = {
      "netOnly": true
     },
     "reward": {
-     "money": 30
+     "money": 25
     },
     "player": "I want to become a real fisherman!",
     "say": {
@@ -1715,7 +1715,7 @@ RT.content = {
     "say": {
      "brief": "You can use that money right now to buy this bamboo rod and a container of earthworms. Now, see these sunfish hanging around the dock? We don't keep 'em to eat - we tag 'em! Catch three sunfish, clip a field tag on their fin, and let 'em go. Bring me the tag data when you're done.",
      "nudge": "Three sunfish, tagged and let go. They're right under the boards.",
-     "done": "Tag data uploaded! Excellent work. You've got a real gentle touch with those fish, kid."
+     "done": "Logbook updated! Excellent work. You've got a real gentle touch with those fish, kid."
     },
     "lines": {
      "brief": [
@@ -1778,7 +1778,7 @@ RT.content = {
      "amount": 5
     },
     "reward": {
-     "money": 15
+     "money": 12
     },
     "player": "I can clean that up right now.",
     "say": {
@@ -1817,7 +1817,7 @@ RT.content = {
     ],
     "player": "How do I get out onto the lake?",
     "say": {
-     "brief": "You're moving fast, Junior Warden! Tag five more mixed panfish off the dock edge. Once you upload that data, you'll have enough cash to put a deposit down on my rental canoe and get off this dock!",
+     "brief": "You're moving fast, Junior Warden! Tag five more mixed panfish off the dock edge. Once that data's logged, you'll have enough cash to put a deposit down on my rental canoe and get off this dock!",
      "nudge": "Five more panfish and that canoe deposit is yours.",
      "done": "Five panfish tagged and logged - and that's your deposit money, kid. Twenty dollars puts the oars in your hands and that red canoe at the end of the slip is yours for the day. Say the word and she's yours."
     },
@@ -1926,7 +1926,7 @@ RT.content = {
     "say": {
      "brief": "Drop it over the shallow scrap markers out in the bay. People have been dropping iron and lost gear in this lake for fifty years. Pull me up three pieces of scrap metal, and I'll clean those scuffs off your canoe for free!",
      "nudge": "Drop that magnet over the scrap markers. Three pieces gets your canoe cleaned.",
-     "done": "Three good pieces of iron, and every one of them worth having. Bring the canoe round and those scuffs come off her, on me, like I said. Nice work with that magnet, kid."
+     "done": "Three good pieces of iron. Nice work with that magnet, kid."
     },
     "lines": {
      "brief": [
@@ -2098,7 +2098,7 @@ RT.content = {
     },
     "at": "counter",
     "reward": {
-     "money": 60
+     "money": 50
     },
     "player": "What can I do with all this scrap metal?",
     "say": {
@@ -2134,7 +2134,7 @@ RT.content = {
     },
     "player": "How close am I to buying the Kayak?",
     "say": {
-     "brief": "Tag and release six more shallow bay fish. Once you upload that logbook, you'll have enough cash to buy your very own yellow Kayak! No more paying daily canoe rentals.",
+     "brief": "Tag and release six more shallow bay fish. Once that's logged, you'll have enough cash to buy your very own yellow Kayak! No more paying daily canoe rentals.",
      "nudge": "Six more bay fish and that kayak's yours.",
      "done": "That is the money, kid - enough for the kayak. She is tied up at the end of the boards whenever you are ready for her."
     },
@@ -2208,7 +2208,7 @@ RT.content = {
     },
     "player": "What fish patrol the deep cliff ledges?",
     "say": {
-     "brief": "Northern pike hang on the weed edge and follow the break down - thirty-five to forty-five feet is as deep as they go, and that is the deepest water your kayak will sit over. Paddle out, work the edge, and tag two of them for me.",
+     "brief": "Northern pike hang on the weed edge and follow the break down - thirty-five to forty-five feet is as deep as they go. Paddle out, work the edge, and tag two of them for me.",
      "nudge": "Pike patrol the rock ledges past the buoys. Two tags, kid.",
      "done": "Those northern pike put up a real fight, didn't they? Great tags."
     },
@@ -2247,7 +2247,7 @@ RT.content = {
     "player": "Are there catfish down at fifty feet?",
     "say": {
      "brief": "Drop your line to the bottom in forty feet. Catfish are a warmwater fish - they hold on the mud above the cold layer and will not go down into it, whatever anybody tells you. Tag three of the big ones for me.",
-     "nudge": "Straight down to the mud at fifty feet. Three big catfish.",
+     "nudge": "Straight down to the mud at forty feet. Three big catfish.",
      "done": "Three catfish off the mud and all three logged. You're getting the hang of the deep water."
     },
     "lines": {
@@ -2382,7 +2382,7 @@ RT.content = {
     "player": "Is there a trophy fish near the deep log jam?",
     "say": {
      "brief": "There is a ten-pounder working the outside weed line in forty feet of water - the old ones drop down the break as the day warms. Tag her and let her go, and mind your line.",
-     "nudge": "Ten-pounder, at the log jam in sixty feet. Keep him out of the branches.",
+     "nudge": "Ten-pounder, on the outside weed line in forty feet. Keep him out of the pads.",
      "done": "A ten-pound pike off the deep weed edge! Tagged, logged and back in. That's the biggest thing in this lake with teeth - well, the biggest one anybody's ever landed."
     },
     "lines": {
@@ -2560,7 +2560,7 @@ RT.content = {
     },
     "player": "Am I ready for the Motorboat?",
     "say": {
-     "brief": "Tag eight more deep-water fish. Upload that data, and you'll hit one thousand dollars - enough to buy my brand new motorboat!",
+     "brief": "Tag eight more deep-water fish. Get it logged, and you'll hit one thousand dollars - enough to buy my brand new motorboat!",
      "nudge": "Eight deep-water fish and that motorboat's yours.",
      "done": "A thousand dollars, kid. That is the motorboat paid for, whenever you want to sign for her."
     },
@@ -3101,12 +3101,12 @@ RT.content = {
    "q01d": "Hold on, one more thing before you go. Here's a map of the lake - take it, you're gonna need it. Whole thing's on there: the shoreline, the bay, the drop-off, and the deep water out in the middle. It won't tell you where the fish are. Nothing will. But it'll stop you getting turned around out there, and on this lake that matters.",
    "q02a": "Look at all those minnows! Fantastic work, kid - that's my survey tank stocked for the season. Here's your twenty-five dollars cash, fair and square.",
    "q02b": "You can use that money right now to buy this bamboo rod and a container of earthworms. Now, see these sunfish hanging around the dock? We don't keep 'em to eat - we tag 'em! Catch three sunfish, clip a field tag on their fin, and let 'em go. Bring me the tag data when you're done.",
-   "q03a": "Tag data uploaded! Excellent work. You've got a real gentle touch with those fish, kid.",
+   "q03a": "Logbook updated! Excellent work. You've got a real gentle touch with those fish, kid.",
    "q03b": "Next up: yellow perch! They love hiding right next to the wooden dock pilings. Catch and tag three of 'em so we can track how fast they're growing this summer.",
    "q04a": "Logbook updated! Perfect. Hey, while you're standing out on the dock, look down near the reed beds. Someone left a bunch of floating trash!",
    "q04b": "Grab your hand net and scoop out five pieces of litter. We keep this water clean so the baby fish have a safe place to grow.",
    "q05a": "Thanks for clearing out that trash. The lake looks better already, and I put twelve bucks in your hand for the trouble.",
-   "q05b": "You're moving fast, Junior Warden! Tag five more mixed panfish off the dock edge. Once you upload that data, you'll have enough cash to put a deposit down on my rental canoe and get off this dock!",
+   "q05b": "You're moving fast, Junior Warden! Tag five more mixed panfish off the dock edge. Once that data's logged, you'll have enough cash to put a deposit down on my rental canoe and get off this dock!",
    "q06a": "Five panfish tagged and logged - and that's your deposit money, kid. Twenty dollars puts the oars in your hands and that red canoe at the end of the slip is yours for the day. Say the word and she's yours.",
    "q06b": "Head out into Shallow Bay, near the lily pads in fifteen feet of water. Largemouth bass love ambush hunting under those big green leaves. Tag two of 'em and bring back the log!",
    "q07a": "Two largemouth bass, healthy and tagged! Outstanding.",
@@ -3126,11 +3126,11 @@ RT.content = {
    "q13a": "Logbook updated! Nice catfish.",
    "q13b": "Hey, if you've got five pieces of scrap metal in your inventory from magnet-fishing, trade 'em to me at the counter. I'll give you fifty dollars of shop credit toward your gear!",
    "q14a": "You're doing great, kid. You're almost there!",
-   "q14b": "Tag and release six more shallow bay fish. Once you upload that logbook, you'll have enough cash to buy your very own yellow Kayak! No more paying daily canoe rentals.",
+   "q14b": "Tag and release six more shallow bay fish. Once that's logged, you'll have enough cash to buy your very own yellow Kayak! No more paying daily canoe rentals.",
    "q15a": "She's all yours! That yellow Kayak is sleek, fast, and can handle deeper water.",
    "q15b": "She'll easily take you past the thirty-five-foot drop-off. Just keep an eye on her hull durability bar down at the bottom of your screen. Hitting submerged logs out there will scuff her up, but you can always bring her back to me for repairs!",
    "q16a": "Welcome to the Deep Hole, kid! The bottom drops like a cliff right past those buoys, all the way down to seventy-five feet.",
-   "q16b": "Northern pike hang on the weed edge and follow the break down - thirty-five to forty-five feet is as deep as they go, and that is the deepest water your kayak will sit over. Paddle out, work the edge, and tag two of them for me.",
+   "q16b": "Northern pike hang on the weed edge and follow the break down - thirty-five to forty-five feet is as deep as they go. Paddle out, work the edge, and tag two of them for me.",
    "q17a": "Those northern pike put up a real fight, didn't they? Great tags.",
    "q17b": "Drop your line to the bottom in forty feet. Catfish are a warmwater fish - they hold on the mud above the cold layer and will not go down into it, whatever anybody tells you. Tag three of the big ones for me.",
    "q18a": "Aha! Look at this!",
@@ -3147,7 +3147,7 @@ RT.content = {
    "q23a": "Kid! Dried that page out overnight, careful as I could. Warden's own hand, plain as day: 'I call him Barnaby.' Barnaby. That's not what you name a monster.",
    "q23b": "Thirty years we've all been calling him Old Whisper, blaming him for every snapped line and every bad night out there — and near as I can tell, he's just an old sturgeon doing exactly what he was told to do back in ninety-four. Guarding this place.",
    "q24a": "Logbook updated! You're doing incredible work out there.",
-   "q24b": "Tag eight more deep-water fish. Upload that data, and you'll hit one thousand dollars - enough to buy my brand new motorboat!",
+   "q24b": "Tag eight more deep-water fish. Get it logged, and you'll hit one thousand dollars - enough to buy my brand new motorboat!",
    "q25a": "She's all yours! A real motorboat with a steering wheel and a throttle.",
    "q25b": "But listen to me very carefully, kid. Stay away from the center fog. The water out there drops into an abyssal trench over one hundred and twenty feet deep. No boat engine has survived out there in thirty years!",
    "q26a": "I told you, kid! I warned ya!",
@@ -3176,7 +3176,7 @@ RT.content = {
    "q18_send": "That brass frame has empty mountings in it, kid - whatever bolted into them is still down there. The drop-off is where the frame came from, so that's where the rest of it will be. Get the magnet down deep and drag it.",
    "q21_send": "There's a log jam out in the deep water, and things collect in a log jam. If the rest of this machine went in where the frame did, the current will have walked it out that way. Take the magnet to the deep jam and see what comes up.",
    "q22_send": "Seventy-five feet, kid - the deep edge. The old Warden's station went down somewhere along there in the flood, and a station means records. That's heavy magnet work and a long haul up, but if there's anything left of ninety-four, that's where it is.",
-   "q08_done": "Three good pieces of iron, and every one of them worth having. Bring the canoe round and those scuffs come off her, on me, like I said. Nice work with that magnet, kid.",
+   "q08_done": "Three good pieces of iron. Nice work with that magnet, kid.",
    "q10_done": "Five pounds if she's an ounce, tagged and swimming. That's a proper bass, kid.",
    "q17_done": "Three catfish off the mud and all three logged. You're getting the hang of the deep water.",
    "q20_done": "A ten-pound pike off the deep weed edge! Tagged, logged and back in. That's the biggest thing in this lake with teeth - well, the biggest one anybody's ever landed.",
@@ -3261,10 +3261,10 @@ RT.content = {
    "q14": "Six more bay fish and that kayak's yours.",
    "q15": "The yellow kayak's two hundred and fifty. Come see me at the counter.",
    "q16": "Pike patrol the rock ledges past the buoys. Two tags, kid.",
-   "q17": "Straight down to the mud at fifty feet. Three big catfish.",
+   "q17": "Straight down to the mud at forty feet. Three big catfish.",
    "q18": "There's more of that brass down the drop-off. Keep the magnet down.",
    "q19": "Bring the kayak up to the workshop and we'll patch her.",
-   "q20": "Ten-pounder, at the log jam in sixty feet. Keep him out of the branches.",
+   "q20": "Ten-pounder, on the outside weed line in forty feet. Keep him out of the pads.",
    "q21": "Try the magnet at the deep log jam. Something's still down there.",
    "q22": "The seventy-five-foot edge, kid. Heavy magnet work.",
    "q23": "Two lake trout in seventy feet. Cold water, deep line.",
