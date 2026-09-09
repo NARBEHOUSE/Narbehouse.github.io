@@ -684,6 +684,28 @@ RT.game = (function () {
     return null;
   }
   /** Is the kit in the boat right for the job? Said plainly, never enforced. */
+  /**
+   * How much of what bites in this job's water would be the fish it asks for,
+   * on a given lure. The best of the job's biomes, because that is the water
+   * a player would fish.
+   */
+  function targetShareOn(m, baitId) {
+    const t = m && m.target;
+    if (!t || !t.speciesId) return 0;
+    /* The rod IN THE BOAT, not the best one owned: rodOdds weights the pool
+       by what the rod can hold, so asking with a different rod answers about
+       a trip nobody is taking. */
+    const rod = equippedRod().id;
+    let best = 0;
+    (targetBiomes(m) || []).forEach(function (b) {
+      const pool = biteWeightedFishPool(b, baitId, rod) || [];
+      let tot = 0, mine = 0;
+      pool.forEach(function (x) { tot += x.w; if (x.f.id === t.speciesId) mine += x.w; });
+      if (tot > 0 && mine / tot > best) best = mine / tot;
+    });
+    return best;
+  }
+
   function kitCheck() {
     const rod0 = equippedRod();
     /* A NET CATCHES MINNOWS AND SHINERS. Nothing else, ever - the pool is
@@ -728,6 +750,35 @@ RT.game = (function () {
                       ((on && on.name) ? 'the ' + on.name : 'that') + '.' };
       }
     }
+    /* A LURE THAT WORKS AGAINST THE JOB.
+       The panfish - sunfish, perch, crappie, walleye - have no lure of their
+       own on purpose: they take whatever is on the hook, which is what keeps
+       the free worms worth having. But a lure with a bias for something ELSE
+       in the same water does not leave them alone, it buries them. On job 7
+       crappie are a third of what bites on a worm and a twelfth of it on live
+       shiners - which are made for the bass in that same bay - and the box
+       said "what you are carrying will do it". Reported: "black crappie on
+       mission 7 should be using worms... it says shiners are ready for the
+       job... I didn't catch a single crappie with shiners."
+       Every other test above asks whether the box CAN do the job. This one
+       asks whether it is quietly costing you the afternoon, which is the
+       thing a player cannot see. Doubling, not any improvement at all -
+       nagging over a few percent would make the warning worthless. */
+    if (m0 && m0.target && m0.target.speciesId && !hasMagnet() && !rod0.isNet) {
+      const onNow = targetShareOn(m0, equippedBaitId());
+      let betterId = null, betterShare = onNow;
+      (save.baits || []).forEach(function (id) {
+        const sh = targetShareOn(m0, id);
+        if (sh > betterShare * 2) { betterShare = sh; betterId = id; }
+      });
+      if (betterId) {
+        const b2 = baitById(betterId), f2 = fishById(m0.target.speciesId);
+        return { ok: false, need: 'the ' + b2.name,
+                 why: withArticle((f2 && f2.name) || 'that fish') + ' mostly ignores the ' +
+                      equippedBait().name + ' - it is made for something else in that water.' };
+      }
+    }
+
     const want = jobWants();
     if (!want) return null;
     const rod = rod0, tool = equippedTool();
@@ -4987,7 +5038,14 @@ RT.game = (function () {
       .filter(function (m) { return m.n <= cur; })
       .map(function (m) {
         const done = m.n < cur;
-        const rod = rodById(m.rodId);
+        /* ONLY IF THE JOB NAMES ONE. rodById() falls back to the first rod
+           in the list so that the game always has something to fish with -
+           and the first rod is the Mesh Hand Net. None of the forty written
+           jobs carries a rodId, so every line of the log claimed the net.
+           Reported: "my mission log is wrong too, it says all my rods are
+           the mesh handnet." A job that names no rod shows no rod, which is
+           what the bait beside it has always done. */
+        const rod = m.rodId ? rodById(m.rodId) : null;
         const bait = D.BAIT.find(function (b) { return b.id === m.baitId; });
         return {
           n: m.n,
@@ -5119,11 +5177,27 @@ RT.game = (function () {
   function bestBaitFor(m) {
     const target = m && m.target && m.target.speciesId;
     const owned = (save.baits || []).map(baitById).filter(Boolean);
-    if (target) {
-      const suited = owned.filter(b => b.biasTable && b.biasTable[target]);
-      if (suited.length) {
-        return suited.sort((a, b) => b.biasTable[target] - a.biasTable[target])[0];
-      }
+    if (target && owned.length) {
+      /* THE ONE WITH THE BEST CHANCE, measured rather than assumed.
+         This used to sort on the bias table, which answers "which lure NAMES
+         this fish" - and the panfish have no lure of their own on purpose, so
+         it answered nothing for them and fell through to the last lure in the
+         tray. That is how a crappie job went out with a Deep Rig on, and how
+         live shiners - made for the bass in that same bay, where they bury a
+         crappie four to one - could be called ready for it.
+         Asked properly instead: of everything that bites in that water, how
+         much of it would be the fish you were sent for? Ties go to the
+         cheapest, which is the free worm - the panfish all tie at a third of
+         the water, and a worm is what anybody would put on. */
+      let best = null, bestShare = -1;
+      owned.forEach(function (b) {
+        const sh = targetShareOn(m, b.id);
+        const cheaper = best && (b.costPerUnit || 0) < (best.costPerUnit || 0);
+        if (sh > bestShare + 1e-9 || (Math.abs(sh - bestShare) < 1e-9 && cheaper)) {
+          bestShare = sh; best = b;
+        }
+      });
+      if (best && bestShare > 0) return best;
     }
     /* No owned lure names this fish — or the job has no one species to name
        (a weight target). The lure the job was built around is the best guess
