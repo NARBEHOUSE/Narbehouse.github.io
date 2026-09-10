@@ -796,6 +796,33 @@ RT.game = (function () {
       return { ok: false, need: 'the ' + ((need && need.name) || want.toolId),
                why: 'Nothing lighter will lift those off the bottom.' };
     }
+    /* AND THE LINE HAS TO REACH THE BOTTOM.
+       A salvage job happens at ONE marked place with a known depth, and a
+       magnet that cannot be lowered to the bottom cannot drag it. jobWants()
+       returns early for recoverItem - "a magnet", and nothing about depth -
+       so the box was passed as fine on job 19 with a rod that fishes
+       thirty-five feet over fifty-five feet of water, and the game then
+       flashed LINE TOO SHORT on every cast. Reported: "Mission 19 says the
+       rod won't go deep enough but it says it's the right one for the job...
+       we are stuck at Mission 19 with no rod to be able to do the job."
+       The ladder was always built for this: the deepest salvage place is
+       seventy-four feet, the Carbon Rod fishes seventy-five, it goes on the
+       shelf at job 16 - the job before the first deep one - and by job 19 the
+       jobs have paid out well over its seventy-five dollars. Nobody has to be
+       stuck; they only had to be told. Now they are told at the slip, and
+       kitFix offers the rod from the locker.
+       Only where the job HAS a place: "trade five scrap" and the ten relics
+       come up off any bottom, so they get no depth to meet. Netted litter
+       floats and is exempt by being want.kind 'net'. */
+    if (want.kind === 'magnet') {
+      const pl = placeShoal();
+      if (pl && pl.ft > rod.reachFt) {
+        return { ok: false,
+                 need: 'a rod that fishes ' + Math.round(pl.ft) + ' ft down',
+                 why: 'The ' + rod.name + ' only fishes ' + rod.reachFt +
+                      ' feet and that lot is lying in ' + Math.round(pl.ft) + '.' };
+      }
+    }
     if (want.kind === 'rod' && rod.isNet)
       return { ok: false, need: 'a rod', why: 'A net will not take a fish this size.' };
     if (want.kind === 'rod' && want.minFt && rod.reachFt < want.minFt)
@@ -5867,7 +5894,11 @@ RT.game = (function () {
     if (run.landing.tooDeep) fire('onFlash', 'LINE TOO SHORT');
     say(run.landing.tooDeep
           ? 'Line too short! That is ' + Math.round(run.landing.depthFt) + ' feet of water and the ' +
-            run.rod.name + ' fishes to ' + run.rod.reachFt + '. Nothing down there will see it.'
+            run.rod.name + ' fishes to ' + run.rod.reachFt + '. ' +
+            /* A magnet is not ignored by fish down there - it never gets down
+               there at all. Same fault, two different pictures. */
+            (hasMagnet() ? 'The magnet never touches the bottom.'
+                         : 'Nothing down there will see it.')
           : (run.landing.onShore || run.landing.tooDeep)
           ? 'That one is on the beach. Nothing bites on sand \u2014 wind it back in.'
           : (BAND_SAID[run.landing.band] || 'Cast') +
@@ -6207,7 +6238,15 @@ RT.game = (function () {
        nothing at all, which is what dragging a magnet over a lake bottom is
        actually like. Rolled per unit dragged rather than per frame, so it
        does not depend on the frame rate. */
-    if (hasMagnet() && !run.magFound) {
+    /* NOT IF THE LINE NEVER GOT THERE. The cast already says LINE TOO SHORT
+       when the water is deeper than the rod fishes, and then the magnet was
+       dragged along an imaginary bottom and brought scrap up anyway - the
+       game contradicting its own warning. Reported: "the TTS says line too
+       short but I'm able to pull up scrap metal still... or the line is too
+       short and I'm going to pull up stuff and it's not supposed to."
+       It is not supposed to. The warning is the true one - see the depth test
+       in kitCheck(), which now stops you at the slip rather than out here. */
+    if (hasMagnet() && !run.magFound && !(run.landing && run.landing.tooDeep)) {
       /* Per unit dragged, so a long throw is worth more than a short one and
          the frame rate has nothing to do with it. Over the job's own water it
          is worth doing - that is where the thing the job is about lies - and
