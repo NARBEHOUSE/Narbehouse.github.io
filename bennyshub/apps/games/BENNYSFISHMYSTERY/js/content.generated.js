@@ -1893,7 +1893,7 @@ RT.content = {
     "say": {
      "brief": "Black crappies travel in schools near the outer weed edges in twenty feet of water. Paddle out steady, drop your line right along the weedline, and tag four of 'em for the sanctuary database.",
      "nudge": "Crappies run the outer weedline in twenty feet. Four of 'em.",
-     "done": "Before you paddle back out, take this - Magnet Lure Number One! It attaches right to your line."
+     "done": "Before you paddle back out - Magnet Lure Number One, there on the counter. Thirty dollars, and it attaches right to your line. That is how we get at what is lying on the bottom."
     },
     "lines": {
      "brief": [
@@ -2032,7 +2032,7 @@ RT.content = {
     "say": {
      "brief": "There's a shallow drop-off where the mud goes soft, and every so often somebody's magnet comes back heavier than it went down. Work that edge for me. Something metal is sitting in that mud, and I don't think it fell there on its own.",
      "nudge": "Something's in the mud at the shallow drop-off. Keep dragging that magnet.",
-     "done": "What in the world... let me see that! It's caked in lake mud, but under the grime... that's solid brass. It looks like a frame for some old mechanical device. See these mounting brackets? I'm setting this right here on the corner of my workbench in a tray of oil to soak off the rust. Whatever this was... it didn't sink by accident. The sun's getting low over the trees, kid. Perfect timing for catfish!"
+     "done": "What in the world... let me see that! It's caked in lake mud, but under the grime... that's solid brass. It looks like a frame for some old mechanical device. See these mounting brackets? I'm setting this right here on the corner of my workbench in a tray of oil to soak off the rust. Whatever this was... it never belonged on a lake bottom. The sun's getting low over the trees, kid. Perfect timing for catfish!"
     },
     "lines": {
      "brief": [
@@ -2448,9 +2448,9 @@ RT.content = {
     },
     "player": "What's down at seventy-five feet?",
     "say": {
-     "brief": "Seventy-five feet, kid - the deep edge. The old Warden's station went down somewhere along there in the flood, and a station means records. That's heavy magnet work and a long haul up, but if there's anything left of ninety-four, that's where it is.",
+     "brief": "Seventy-five feet, kid - the deep edge. Every piece you have brought me has come from further out and deeper down than the last, and that has got me remembering something. The autumn after the flood, the Warden lost his boat out on that shelf. Loaded past her marks, they said, and nobody ever thought to ask what with. Heavy magnet work and a long haul up - but if there's anything left of ninety-four, that's where it is.",
      "nudge": "The seventy-five-foot edge, kid. Heavy magnet work.",
-     "done": "Whoa — hold on, let me get a grip on that. That is heavy for a box that size. Would you look at that seal, stamped right into the lid. Lake Warden, nineteen ninety-four. This has been sitting down there since the flood took the station. There's a journal in here, kid. Water's got into it, but I can just make out the last page... 'The flood of ninety-four sank our underwater sanctuary station. My loyal sturgeon stayed behind to guard the baby fish. I call him...' ...and that's as far as I can get. Rest of the page is stuck together. Give me tonight to dry it out proper before it falls apart in my hands."
+     "done": "Whoa — hold on, let me get a grip on that. That is heavy for a box that size. Would you look at that seal, stamped right into the lid. Lake Warden, nineteen ninety-four. That is his strongbox, kid. This never washed out here - it went over the side with the boat. He was carrying it home. There's a journal in here, kid. Water's got into it, but I can just make out the last page... 'The flood of ninety-four sank our underwater sanctuary station. My loyal sturgeon stayed behind to guard the baby fish. I call him...' ...and that's as far as I can get. Rest of the page is stuck together. Give me tonight to dry it out proper before it falls apart in my hands."
     },
     "lines": {
      "brief": [
@@ -3078,7 +3078,7 @@ RT.content = {
     },
     "player": "Everything's still down there?",
     "say": {
-     "brief": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since the sixties, and everything that ever went over the side of a boat is still lying on it. Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back. They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
+     "brief": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it. Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back. They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
      "nudge": "Heavy magnet, and ten unique things off the bottom. Take your time.",
      "done": "All ten. A locket with a face still in it, a watch stopped at twenty past four, and a set of tags I am going to drive round to a house tonight. You gave this lake its memory back, kid. Go on - go fishing. It is yours now."
     },
@@ -3111,7 +3111,7 @@ RT.content = {
    "q06b": "Head out into Shallow Bay, near the lily pads in fifteen feet of water. Largemouth bass love ambush hunting under those big green leaves. Tag two of 'em and bring back the log!",
    "q07a": "Two largemouth bass, healthy and tagged! Outstanding.",
    "q07b": "Black crappies travel in schools near the outer weed edges in twenty feet of water. Paddle out steady, drop your line right along the weedline, and tag four of 'em for the sanctuary database.",
-   "q08a": "Before you paddle back out, take this - Magnet Lure Number One! It attaches right to your line.",
+   "q08a": "Before you paddle back out - Magnet Lure Number One, there on the counter. Thirty dollars, and it attaches right to your line. That is how we get at what is lying on the bottom.",
    "q08b": "Drop it over the shallow scrap markers out in the bay. People have been dropping iron and lost gear in this lake for fifty years. Pull me up three pieces of scrap metal, and I'll clean those scuffs off your canoe for free!",
    "q09a": "Whoa! Hold on a second... where did you pull this up?!",
    "q09b": "Look at those blade marks! This bronze propeller belonged to Big Mac's speedboat back in 2008. He used to tear through those shallow weeds like he owned the place, scaring off all the spawning bass.",
@@ -3120,7 +3120,7 @@ RT.content = {
    "q10b": "There's a giant five-pound largemouth bass lurking in the deepest lily pads on the west side. Set your hook clean, tag her up, and let her go!",
    "q11a": "What in the world... let me see that!",
    "q11b": "It's caked in lake mud, but under the grime... that's solid brass. It looks like a frame for some old mechanical device. See these mounting brackets?",
-   "q11c": "I'm setting this right here on the corner of my workbench in a tray of oil to soak off the rust. Whatever this was... it didn't sink by accident.",
+   "q11c": "I'm setting this right here on the corner of my workbench in a tray of oil to soak off the rust. Whatever this was... it never belonged on a lake bottom.",
    "q12a": "The sun's getting low over the trees, kid. Perfect timing for catfish!",
    "q12b": "Channel catfish feed along the muddy shallow banks right around dusk. Get two of 'em tagged and logged before you head into the dock for the night.",
    "q13a": "Logbook updated! Nice catfish.",
@@ -3142,7 +3142,7 @@ RT.content = {
    "q21a": "Kid... would you look at these. Fine little metal tines, packed in tight — that's not scrap, that's a comb out of a music box.",
    "q21b": "Pluck one and it hums way down low, lower than anything I'd tune for a tune. This wasn't built to play for people. Somebody built this to talk to something underwater.",
    "q22a": "Whoa — hold on, let me get a grip on that. That is heavy for a box that size.",
-   "q22b": "Would you look at that seal, stamped right into the lid. Lake Warden, nineteen ninety-four. This has been sitting down there since the flood took the station.",
+   "q22b": "Would you look at that seal, stamped right into the lid. Lake Warden, nineteen ninety-four. That is his strongbox, kid. This never washed out here - it went over the side with the boat. He was carrying it home.",
    "q22c": "There's a journal in here, kid. Water's got into it, but I can just make out the last page... 'The flood of ninety-four sank our underwater sanctuary station. My loyal sturgeon stayed behind to guard the baby fish. I call him...' ...and that's as far as I can get. Rest of the page is stuck together. Give me tonight to dry it out proper before it falls apart in my hands.",
    "q23a": "Kid! Dried that page out overnight, careful as I could. Warden's own hand, plain as day: 'I call him Barnaby.' Barnaby. That's not what you name a monster.",
    "q23b": "Thirty years we've all been calling him Old Whisper, blaming him for every snapped line and every bad night out there — and near as I can tell, he's just an old sturgeon doing exactly what he was told to do back in ninety-four. Guarding this place.",
@@ -3175,7 +3175,7 @@ RT.content = {
    "q11_send": "There's a shallow drop-off where the mud goes soft, and every so often somebody's magnet comes back heavier than it went down. Work that edge for me. Something metal is sitting in that mud, and I don't think it fell there on its own.",
    "q18_send": "That brass frame has empty mountings in it, kid - whatever bolted into them is still down there. The drop-off is where the frame came from, so that's where the rest of it will be. Get the magnet down deep and drag it.",
    "q21_send": "There's a log jam out in the deep water, and things collect in a log jam. If the rest of this machine went in where the frame did, the current will have walked it out that way. Take the magnet to the deep jam and see what comes up.",
-   "q22_send": "Seventy-five feet, kid - the deep edge. The old Warden's station went down somewhere along there in the flood, and a station means records. That's heavy magnet work and a long haul up, but if there's anything left of ninety-four, that's where it is.",
+   "q22_send": "Seventy-five feet, kid - the deep edge. Every piece you have brought me has come from further out and deeper down than the last, and that has got me remembering something. The autumn after the flood, the Warden lost his boat out on that shelf. Loaded past her marks, they said, and nobody ever thought to ask what with. Heavy magnet work and a long haul up - but if there's anything left of ninety-four, that's where it is.",
    "q08_done": "Three good pieces of iron. Nice work with that magnet, kid.",
    "q10_done": "Five pounds if she's an ounce, tagged and swimming. That's a proper bass, kid.",
    "q17_done": "Three catfish off the mud and all three logged. You're getting the hang of the deep water.",
@@ -3235,7 +3235,7 @@ RT.content = {
    "q36_d": "So go and find them. Every lure in that box, every corner of the water, and no map for it - I have not got one. Ten of them, kid. Catch all ten and report back to me.",
    "q36_nudge": "Ten fish nobody has in a book. Every lure, every corner - and no, I cannot tell you where.",
    "q36_done": "Ten. TEN fish, and not one of them in a book on my shelf - a perch with no colour in it, a pike crossed with something, and a blue pike that has been extinct since before you were born. This is not a logbook any more, kid. This is a paper.",
-   "q37_a": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since the sixties, and everything that ever went over the side of a boat is still lying on it.",
+   "q37_a": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it.",
    "q37_b": "Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back.",
    "q37_c": "They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
    "q37_nudge": "Heavy magnet, and ten unique things off the bottom. Take your time.",
