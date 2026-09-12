@@ -3113,7 +3113,26 @@ RT.game = (function () {
        The arrow itself is unaffected. When it is ON it still only points at
        water the kit in the boat can work, because a helper that steers you
        somewhere useless is worse than none. */
-    const yourCall = save.helper === false || isSolved();
+    /* AND WHEN THERE IS NO JOB LEFT TO KEEP YOU ON.
+       The test below holds each boat to its own water, and the only exception
+       it can make is for the job's OWN fish - so a job that names no fish at
+       all, or one already finished and sitting in your pocket waiting to be
+       handed in, had no exception to make and every shoal shallower than the
+       boat's band disappeared. In the motorboat that is nearly all the water
+       between the dock and the deep.
+       That is not just a dull trip. The pull-over only exists when a shoal
+       has been called on the side you are holding - see the helm code - so a
+       player with two switches and no card has no way to stop the boat, no
+       way to reach Options, and no way home. Reported on job 27: "when I have
+       a mission complete and then I take the boat out, fish cards don't show
+       up... I just get stuck trolling with only the ability to turn left or
+       right."
+       So the filter lifts the moment there is nothing to protect. Every fish
+       job still keeps its boat honest, which is what the rule was for. */
+    const m0 = currentMission();
+    const t0 = m0 && m0.target;
+    const noJobToHold = !t0 || !t0.speciesId || targetComplete(m0, save.progressValue);
+    const yourCall = save.helper === false || isSolved() || noJobToHold;
     if (yourCall) return true;
     if (!home && band.minFt && sh.ft < band.minFt - 3) {
       /* EXCEPT FOR THE FISH THE JOB ASKS FOR.
