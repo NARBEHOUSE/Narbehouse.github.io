@@ -2750,7 +2750,7 @@ RT.content = {
     "say": {
      "brief": "Hand me those three heavy scrap metal pieces! I'm using the brass from Big Mac's old prop to forge the outer housing.",
      "nudge": "Three heavy pieces of scrap and I'll forge the housing.",
-     "done": "Done! The Acoustic Sonar is mounted right to your motorboat stern. Instead of noisy motor vibrations, it sends out gentle, warm musical chimes that Barnaby recognizes!"
+     "done": "That is the housing forged - Big Mac's own brass, and it came up lovely. Now the slow part, kid. Every one of those gears seated true, and that comb tuned by ear until it hums the way the Warden drew it. Leave it with me a while and do not let me rush it."
     },
     "lines": {
      "brief": [
@@ -2820,7 +2820,7 @@ RT.content = {
     },
     "player": "Heading out to ninety feet now!",
     "say": {
-     "brief": "Take this Pro Rod. While I do the final electrical wiring checks on the sonar, take your motorboat to the fog boundary and tag three deep lake trout at ninety feet.",
+     "brief": "Take this Pro Rod. While I get the last of those gears seated and that comb tuned, take your motorboat to the fog boundary and tag three deep lake trout at ninety feet.",
      "nudge": "Three trout at ninety feet, on the Pro Rod.",
      "done": "Three lake trout off the bottom at ninety feet, all three tagged and back in the cold. Nobody has that data, kid. Nobody."
     },
@@ -3157,8 +3157,8 @@ RT.content = {
    "q28a": "You found the winding key! And look at this paper from the 1994 lockbox... it's a blueprint schematic!",
    "q28b": "Kid! The brass frame, the gears, the sound comb, the winding key... we haven't been building a random music box on my counter... we've been building the old Warden's Acoustic Sonar!",
    "q29a": "Hand me those three heavy scrap metal pieces! I'm using the brass from Big Mac's old prop to forge the outer housing.",
-   "q29b": "Done! The Acoustic Sonar is mounted right to your motorboat stern. Instead of noisy motor vibrations, it sends out gentle, warm musical chimes that Barnaby recognizes!",
-   "q30a": "Take this Pro Rod. While I do the final electrical wiring checks on the sonar, take your motorboat to the fog boundary and tag three deep lake trout at ninety feet.",
+   "q29b": "That is the housing forged - Big Mac's own brass, and it came up lovely. Now the slow part, kid. Every one of those gears seated true, and that comb tuned by ear until it hums the way the Warden drew it. Leave it with me a while and do not let me rush it.",
+   "q30a": "Take this Pro Rod. While I get the last of those gears seated and that comb tuned, take your motorboat to the fog boundary and tag three deep lake trout at ninety feet.",
    "q31a": "A fifteen-pound lake trout from a hundred feet down! Wow! That Pro Rod handled the line tension beautifully.",
    "q31b": "You've become a master angler, kid. Truly.",
    "q32a": "Every single dollar of your repair debt is paid off from your tag bounties! You're completely square with the shop, Junior Warden.",

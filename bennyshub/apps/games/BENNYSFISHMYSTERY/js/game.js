@@ -6607,7 +6607,20 @@ RT.game = (function () {
          made in. */
       save.towedBoat = vessel().id;
       run.towing = flag;
-      say((j.say && j.say.done) || 'The motor coughs, and stops. Walt is on his way out.');
+      /* WHAT HAPPENS HERE, NOT WHAT WALT SAYS LATER.
+         `say.done` is his speech at the counter - "I told you, kid! I warned
+         ya!... Barnaby stopped your boat!" - and it is recorded in his own
+         voice as q26a and q26b for the hand-in. Reading it out HERE meant the
+         system voice delivered his telling-off the instant the motor died,
+         out in the fog, and then he said the same thing again properly when
+         you got back. Reported: "when we break down seeing the abyssal spot
+         the TTS says 'I told ya kid' but that's walts line when we turn in
+         the mission... it should just say get a tow and then I hear it at the
+         shop."
+         So out here the lake describes what just happened to the boat, and
+         Walt keeps his line for the counter. */
+      say('The motor coughs once and stops. Sit tight, kid - Walt is on his ' +
+          'way out to tow you in.');
       fire('onFlash', 'UNDER TOW');
       RT.audio.stopMotor();
       return { towing: true, trip: returnToDock() };
