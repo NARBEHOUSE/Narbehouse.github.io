@@ -35,3 +35,9 @@ phone-land_*.png
 phone-port_*.png
 small-land_*.png
 small-port_*.png
+
+# Scratch probes written at the game root while debugging. They are throwaway
+# and this folder is served to the public, so they must never be committed -
+# one slipped through on 2026-09-12 and had to be pulled back out.
+/*.js
+!/index.html
