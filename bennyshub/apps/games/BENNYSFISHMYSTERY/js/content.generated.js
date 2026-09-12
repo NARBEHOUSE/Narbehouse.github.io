@@ -2992,7 +2992,7 @@ RT.content = {
     "stage": "motorboat",
     "kind": "finale",
     "title": "Passing the Torch",
-    "card": "Motor out to the trench and ring the Warden's bell where he can hear it",
+    "card": "Motor out to the trench, cut the engine, and meet him properly",
     "needs": [
      "q34"
     ],
@@ -3009,7 +3009,7 @@ RT.content = {
     "player": "What do I do when I find him?",
     "say": {
      "brief": "Then go back out there and meet him properly. Take the sonar, take your time, and whatever he does - let him do it. I will be right here on the radio.",
-     "nudge": "Take the bell, kid. He's offering it to you.",
+     "nudge": "Back out to the middle, kid. Cut the engine, let the sonar play, and let him come to you.",
      "done": "He did it! Barnaby knows the lake is in good hands now! From this day on, the deep center is an official Wildlife Sanctuary, and you are officially the Chief Junior Warden of Whispering Lake! I'm so proud of you, kid!"
     },
     "lines": {
@@ -3279,7 +3279,7 @@ RT.content = {
    "q32": "Square the tab and we're ready.",
    "q33": "Heavy magnet, Pro Rod, sonar. Then the fog.",
    "q34": "Cut the engine out there and let the sonar play.",
-   "q35": "Take the bell, kid. He's offering it to you."
+   "q35": "Back out to the middle, kid. Cut the engine, let the sonar play, and let him come to you."
   },
   "waltPools": {
    "log": [

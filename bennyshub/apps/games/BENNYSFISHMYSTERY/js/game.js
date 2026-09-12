@@ -6522,7 +6522,15 @@ RT.game = (function () {
          120 ft trench, cut the engine and play the sonar". */
       text: m.text || (m.say && m.say.brief) || '',
       action: incident ? 'Wait for the tow'
-            : bell ? 'Take the bell and ring it'
+            /* NOT THE BELL, NOT YET. Barnaby brings it up and puts it in
+               your hand inside the scene this card starts - "there is
+               something in his mouth... the old Warden's bell" - so naming it
+               here gave the ending away seconds early, and implied the player
+               already knew about a thing nobody has ever seen. Reported:
+               "Walt says take the bell, he's offering it to you, but he
+               wouldn't know Barnaby has a bell." What you came out here to do
+               is meet him. */
+            : bell ? 'Cut the engine and meet him'
             : sonar ? 'Play the sonar' : (m.action || 'Do it'),
       label: (run.current.shoals[0] && run.current.shoals[0].fishName) || null
     });
