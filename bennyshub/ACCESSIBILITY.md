@@ -101,19 +101,51 @@ emulates a keyboard, and that interface sends exactly one thing:
 | Switch 1 | `Space` keydown / keyup |
 | Switch 2 | `Enter` keydown / keyup (also `NumpadEnter`) |
 
-That is the whole hardware story. **A game that handles `Space` and `Enter`
-correctly is switch‑accessible.** You never talk to switch hardware; you handle
-two keys.
+For the great majority of hardware that is the whole story. **A game that
+handles `Space` and `Enter` correctly is switch‑accessible.** You never talk to
+switch hardware; you handle two keys.
+
+### Why those two keys
+
+They are not an arbitrary pick, and they are not a formal standard either. They
+are the vendors' own default: AbleNet's Blue2 ships configured as Space and
+Enter (switchable to 1/2/3/4), and Pretorian states plainly that "to provide
+switch access to most AT software, Space and Enter is often all that you will
+need." They also match the web platform — a native HTML `<button>` activates on
+**both** Space and Enter — so the hub is using the two keys the browser, the
+screen reader and every keyboard user already treat as "move on" and "choose."
+
+The relevant standard underneath all of it is **WCAG 2.1.1 Keyboard**: every
+function must be operable through a keyboard interface. Which keys is our call.
+
+### The exception: interfaces that send no keys at all
+
+Some hardware does not emulate a keyboard. AbleNet's **Hook+** uses Apple's
+Assistive Switch Events, and anything driving **iOS Switch Control** or a
+similar platform switch API works the same way — the operating system does the
+scanning and delivers a *tap* to whatever is highlighted, and no `keydown` ever
+arrives.
+
+**This is why mouse and touch support is not a caregiver nicety.** It is the
+entire access route for those players. A control that only responds to Space and
+Enter is invisible to them; one that is a real, clickable element works. Treat
+consequence 3 below as accessibility, not convenience.
+
+One thing genuinely untested: platform Switch Control runs *its own* scan over
+the page, which may collide with the hub's Auto Scan. Nobody has tried it. If
+you have the hardware, that is a worthwhile afternoon.
 
 Three consequences that catch people out:
 
 1. **A switch has no "click" — it has a press and a release, and they can be far
    apart.** Never act on `keydown` for a menu action. See §4.
 2. **There is no third key.** Not Escape, not arrow keys, not letters. If your
-   feature needs a third input, redesign the feature.
+   feature needs a third input, redesign the feature. (There is no remapping
+   setting either — §12 records why, and where it would go if ever built.)
 3. **Mouse and touch must also work, in parallel** — for caregivers, for
-   therapists setting a game up, for players who do have touch or eye‑gaze.
-   They are an *addition*, never the only route.
+   therapists setting a game up, for players who have touch or eye‑gaze, and for
+   the platform‑switch‑API users above. For everyone else they are an
+   *addition*; for those users they are the only route in.
 
 ---
 
@@ -181,7 +213,8 @@ values and no others:**
 
 - the **scan interval** — 1, 2, 3 or 4 seconds, the player's setting, which is
   also the repeat rate once backwards scanning has started
-- the **250 ms input debounce**
+- the **input sensitivity** — 50, 100, 200 or 300 ms, the player's setting,
+  used for the debounce and the anti‑rapid‑press check
 
 **It does not own the hold thresholds.** There is no backwards‑scan threshold
 and no pause threshold in `scan-manager.js` at all. Those are hard‑coded
@@ -259,10 +292,34 @@ for mouse, touch, and caregivers.
 ### Debounce is handled for you — mostly
 
 `shared/scan-manager.js` installs capturing listeners on `keydown`, `keyup`,
-`mousedown`, `mouseup`, `click`, `touchstart`, and `touchend` and enforces a
-**250 ms global cooldown** after any valid release. A switch that physically
-bounces, or a player with a tremor who double‑hits, gets one clean press. You do
-not need to write your own debounce, and you should not.
+`mousedown`, `mouseup`, `click`, `touchstart` and `touchend`, and filters
+Space/Enter through the player's **Input Sensitivity** setting — 50, 100, 200 or
+300 ms, defaulting to 50. A switch that physically bounces, or a player with a
+tremor who double‑hits, gets one clean press. You do not need to write your own
+debounce, and you should not.
+
+**It is a buffer after a press, not a minimum press length.** A press of any
+duration counts — tap it, or hold it for four seconds — and then nothing else
+registers until the buffer has elapsed. Two checks do the work:
+
+| Check | What it blocks |
+| --- | --- |
+| **Cooldown after a valid release** | a second press arriving too soon after the last one |
+| **Anti‑rapid‑press** | a new press arriving too soon after the previous *release*, so fast tapping is not read as one long hold |
+
+Both block a keydown **and** consume its matching keyup, so a filtered press
+never reaches a game half‑finished. And because press *length* is never
+filtered, the hold gestures behave identically at every setting — hold‑to‑scan‑backwards
+and hold‑to‑pause work the same at 300 ms as at 50 ms.
+
+**Mouse and touch are not filtered.** They are direct navigation for caregivers
+and therapists, not switch input, and bounce is a property of physical switches.
+
+**One deliberate difference from the desktop hub.** Desktop has a third check: it
+rejects presses *shorter* than the threshold by swallowing the keyup. That is not
+ported, and must not be, because by the time the keyup arrives the game has
+already seen the keydown and started whatever the press begins. Swallowing the
+keyup leaves that running with nothing to stop it — see §11.
 
 ---
 
@@ -370,7 +427,7 @@ where one fits.
 
 **Games run in an iframe** inside the hub, with a `← Back` button in the header.
 
-**Exiting back to the hub** is a message, and all 20 games implement it:
+**Exiting back to the hub** is a message, and all 23 games implement it:
 
 ```js
 window.parent.postMessage({ action: 'focusBackButton' }, '*');
@@ -406,7 +463,7 @@ round*. The canonical set, in this order
 | --- | --- |
 | Text to Speech | On / Off |
 | Voice | cycles available voices |
-| *(game‑specific options)* | e.g. Direction Help, Ball Style, Theme |
+| *(game‑specific options)* | e.g. Direction Help, Ball Style, Theme — and any timing/hold toggle §9 calls for |
 | **Auto Scan** | `On — One Switch` / `Off — Two Switches` |
 | **Scan Speed** | 1 s / 2 s / 3 s / 4 s |
 | Sound Effects | On / Off |
@@ -421,9 +478,15 @@ caregiver setting the game up for someone else.
 everything; the item arms first and only wipes on a second, deliberate select.
 
 ### Pause menu
-Opened by holding Enter, or by the on‑screen Pause button. Standard items:
-**Continue**, **Restart**, **Settings**, **Main Menu**, **Exit Game**, and where
-useful a **Help** item that speaks a line without closing the menu.
+Opened by holding Enter, or by the on‑screen Pause button — **both, always**. The
+hold alone is not enough: a player who cannot sustain a hold has no way in
+through it. Standard items: **Continue**, **Restart**, **Settings**, **Main
+Menu**, **Exit Game**, and where useful a **Help** item that speaks a line
+without closing the menu.
+
+In a new game, prefer making Pause something the player can also **scan to and
+select**, with the hold kept as a shortcut. §12 covers what that costs and when
+it is the right call.
 
 ### Persistence
 Save progress as it happens, to `localStorage`. A player who gets tired
@@ -488,7 +551,7 @@ back with a switch, warn before going in.
 
 ## 8. Per‑game notes
 
-All 20 games implement the §4 contract, the pause menu, the settings screen, and
+All 23 games implement the §4 contract, the pause menu, the settings screen, and
 the `focusBackButton` exit message. What varies is the *in‑game* input, which is
 where each game's design work went.
 
@@ -497,19 +560,21 @@ where each game's design work went.
 | **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
 | **Benny's Bowling** | Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges 0–3 s for power, non‑linear. Confirms on **release**, not press. |
 | **Benny's P3GL** | Two‑switch: **hold** Space to sweep the aimer, release to stop — a short press only nudges it — and each new press reverses direction so the player walks it onto the target. One‑switch: the aimer oscillates on its own and Enter alone fires. Aimer Speed has four presets, defaulting to Super Slow. |
-| **Benny's Baseball / Football** | Turn‑based play calling — scan the options, select. No reflex component at all; a full season is playable by menu choice. |
+| **Benny's Baseball** | Turn‑based play calling — scan the options, select — with one exception: the swing is **hold Enter to charge**, 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. That is a timing mechanic; §9 governs it. |
+| **Benny's Football** | Turn‑based play calling — scan the options, select. Throws scan the receivers and select one, then **hold Enter to charge** the power; field goals aim, then charge. **Easy Throw** in settings drops the charge and keeps the selection: pick the receiver and it throws at ideal power. The hub's shipped example of the §9 rule. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
 | **Pickleball Rally** | Rally returns via scan/select. Built with SCSU, student creator Lily Flack. |
 | **Benny's Mini Golf** | Aim oscillation then power charge, same family as Bowling. Up to 4 players; includes a course editor. |
 | **Benny's Battle Boats** | Two‑stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2‑D grid with one switch. |
 | **Chess & Checkers, Connect Four, Tic Tac Toe** | Same two‑stage grid selection; scan pieces/columns, select, scan destinations, select. |
-| **Benny's Matchy Match** | Scan cards, select to flip. Memory, no timer. Includes a pack editor. |
+| **Benny's Matchy Match** | Two‑stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
 | **Benny Says** | Simon‑style sequence repetition, deliberately **without** the timing pressure of the original. |
 | **Benny's Word Jumble / Trivia Master** | Scan letters or answers, select. Trivia Master includes a builder for your own quizzes. |
 | **Benny's Dice** | Select to roll, scan to choose which dice to keep. Yarkle, Fahtzee, Free Throw modes. |
 | **Benny's Bug Blaster** | Tower defence — scan placement positions and upgrades, select. Turn‑paced, not twitch. |
 | **Benny's Mega Slot** | Cause and effect: one press spins, immediate audio‑visual payoff. |
 | **Benny's Show n Sound** | Cause and effect: a spinning‑wheel See 'n Say. Press to spin, hear the panel named. Phaser‑based. |
+| **Benny's Fish Mystery** | Aim and charge the cast by scan, then **press to set the hook while the take is on** and **hold to reel**, easing off on a run. Timed on the hook, hold‑based on the reel; §9 governs both. Three.js, with a content editor. |
 
 For in‑game specifics beyond this, each game's own source is authoritative;
 Bowling additionally ships a full `README-ACCESSIBLE.md` documenting its
@@ -521,11 +586,154 @@ game.
 ## 9. Design rules
 
 ### Never require
-- Timing precision, reflexes, or reaction tests
+- Timing precision, reflexes, reaction tests, or a sustained hold **as the only
+  way through** — these are allowed as *a* route, never as the only one. See
+  "Timing may be a challenge, never a requirement" below
 - Dragging, or holding one input while operating another
 - More than two inputs, ever
 - Reading, without speech as an alternative
 - Two hands, or any specific limb
+
+### Timing may be a challenge, never a requirement
+
+The rule above says never require timing. It does not say timing cannot exist.
+
+Some games are the thing they are because of a moment of timing — a swing
+charged and released against a pitch, a hook set while the fish is still on, a
+jump that has to leave the ground before the gap does. Strip the moment out
+entirely and you do not get an easier game; you get a menu that plays itself,
+and you have taken something away from every player who could meet the window
+and enjoyed meeting it.
+
+For a player who can meet a timing window, that window is the game. For a
+player who cannot, it is a wall, and slowing it down does not turn a reaction
+test into something they can do — it just makes the wall arrive later. So the
+rule is not "remove it." The rule is:
+
+> **Any mechanic that depends on timing, reflex, or a sustained hold must ship
+> alongside a route through it that needs neither — and a setting that switches
+> between the two.**
+
+Both are real versions of the game. The no‑timing one is not a practice mode,
+not a baby mode, and not worth fewer points — it plays the same game, scores
+the same way, and unlocks the same things.
+
+**Separate the decision from the execution.** This is the whole method, and it
+is easier than it sounds. Almost every timed action in a game is two things
+stacked together:
+
+- **A decision** — which receiver, what kind of swing, where to aim, whether to
+  take the shot at all. This is the interesting part, and the player should keep
+  making it.
+- **An execution** — holding for the right duration, releasing on the right
+  frame, pressing inside a window. This is the part that tests the body rather
+  than the judgement, and it is the part the toggle removes.
+
+**Keep the decision. Drop the execution.** Football is the clean example: the
+decision is *which receiver*, and the player scans and selects one either way.
+With the charge on, they then hold to set power. With **Easy Throw** on, the
+selection is the whole action — pick the receiver and it throws at ideal power.
+Nothing about the choice changed; only the wrist did.
+
+So the three common shapes resolve like this:
+
+| Timed form | What is left when the execution comes out |
+| --- | --- |
+| **Hold to charge**, release for strength, power or distance | The selection that was already there carries the action on its own and the game supplies the power (Football's Easy Throw). Where the power level *was itself* the decision, name the levels and let the player scan them — Bunt / Normal / Power, Light / Normal / Full |
+| **React inside a window** that opens and closes on its own | Hold the window open until the player selects. The decision survives; the deadline does not |
+| **Hold to sustain** something — a reel, a throttle, a brake | Resolve it in discrete steps, one press per step, or as a single select that plays out on its own |
+
+**The game still resolves the outcome.** A selected swing is not an automatic
+hit and a selected hook is not a guaranteed fish. The choice goes into the same
+resolution the timed version fed, alongside difficulty, position, and luck —
+exactly the way a turn‑based play call already resolves. The player chose; they
+did not skip.
+
+**Two options is the whole shape of it.** The setting is a toggle, not a
+difficulty ladder: charge, or do not charge. Do not add a menu step that decides
+nothing — if the action already has a selection in it, that selection *is* the
+no‑hold version, and the toggle just stops asking for the hold afterwards.
+
+**There is already one of these in the hub.** Benny's Football throws by
+scanning the receivers and selecting one; with the charge on, a hold then sets
+the power. **Easy Throw** in settings drops that second half — select the
+receiver and it throws at ideal power, and field goals kick at ideal power once
+the aim is locked — so a full season plays with no sustained press anywhere. It
+is offered in both the main‑menu and the pause settings, it persists, and it is
+spoken on toggle. That is the shape to copy. The one thing to do better is the
+name: "Easy Throw" labels the player rather than the mechanic, and only the hint
+underneath says what actually changes.
+
+**A setting is what lets both players have what they need.** §12 sets out the
+honest trade: a hold keeps play quick and direct for a player who can manage
+one, and shuts out a player who cannot, while putting a control on the scan
+cycle lets everyone in and adds a step in front of every action for the rest of
+the session. A toggle settles that instead of dodging it — the player who needs
+the select route turns it on, and the player who does not is never left waiting
+on a step they will never use. That is why this rule asks for *a setting*, not
+for "make everything scannable." It is usually a smaller change than it sounds,
+too: the select form appears **at the moment it is needed** — a swing menu when
+the pitch comes — rather than becoming a permanent stop on the way to every
+shot.
+
+**Where the setting lives.** It is an ordinary game‑specific settings item, in
+the slot §7 reserves for them, and it must be reachable from **both** the
+main‑menu settings and the pause‑menu settings. A player who discovers
+mid‑round that they cannot meet the window has to be able to fix it without
+abandoning the round — the same reason Scan Speed appears in both places.
+Persist it with the game's other settings.
+
+**Label it by what it changes, not by who it is for.** "Swing: Hold to Charge /
+Pick a Swing" tells a caregiver exactly what will be different. "Easy Mode"
+tells them nothing, and tells the player something untrue about themselves.
+
+**Not every game here does this yet, and that is worth saying plainly.** The
+hub was built around what Ben can do. The controls were tuned to one person's
+movements, and that is why they work as well as they do — they were tested
+against a real body every day, not against a guideline. The reach turned out to
+be much wider than one player, which is the whole reason the hub was opened up.
+
+But building around one person's capabilities means the places where other
+people's differ did not always get designed for. Charge‑and‑release is the
+clearest case: it suits Ben, it suits a lot of players, and for a player who
+cannot sustain a hold it is simply a closed door. That is not a flaw in the
+games — they do what they were built to do — it is the next thing to build.
+
+So: **some shipped games do not have the alternative yet, and will get it.**
+Which ones still owe a toggle, and what each toggle is planned to be, lives in
+§12 — that is where current status belongs, and it will go out of date as the
+work lands. This section is the rule going forward. It applies to anything built
+from here on, and it is the direction the existing games are moving in.
+
+**Default to the reachable form in anything new.** Same reasoning as P3GL's
+Aimer Speed defaulting to Super Slow: a player who cannot meet the window may
+never get far enough into the game to find the setting that would have let them
+in, while a player who wants the timed version will find it in the first
+minute. A game that already shipped with the timed form keeps its current
+default when the setting is added, so nobody's game changes under them.
+
+**What this rule does not overturn.** Some sustained holds in the hub have no
+alternative today, and this rule does not retroactively make them bugs:
+
+- **Hold Space to scan backwards** and **hold Enter to pause** — the §4 contract
+  gestures. Backwards scan is a shortcut, not a requirement; the forward scan
+  reaches everything on its own. Pause is the real gap, and §12 carries both the
+  reasoning and the direction for it.
+- **Controls where the hold *is* the control** rather than a charge laid on top
+  of one — Race Tracks' hold‑to‑steer, P3GL's hold‑to‑sweep. These are
+  continuous inputs, not timed windows, and §12 explains why the hold‑first
+  build is the current answer for them.
+
+Those are known, recorded, and not open work. The rule governs what you build
+from here, and it is the direction the rest is moving in — it is not an
+instruction to go retrofitting.
+
+**This is not a licence for reflex games.** The timed form still owes
+everything else in this document — it fires on release, it needs no drag, no
+second limb, no third input, and an accidental press must not cost the player
+anything they cannot recover from. And the toggle is not a way to defer the
+design: if you cannot describe how the game plays without the timing or the
+hold, the mechanic is not ready to build.
 
 ### Prefer
 - Turn‑based and stepwise mechanics
@@ -535,7 +743,8 @@ game.
   one press commits — needs no hold). P3GL swaps between them with Auto Scan
 - Make the speed of anything that moves on its own a **setting**, defaulted to
   the slow, accessible end — P3GL's Aimer Speed defaults to Super Slow
-- Two‑stage selection (row, then column) to reach a grid
+- Two‑stage selection (row, then column) to reach a grid — Battle Boats,
+  Connect Four, Chess & Checkers, Tic Tac Toe and Matchy Match all use it
 - Generous or absent time limits
 - No‑fail modes alongside competitive ones — Race Tracks' Cruise mode is the
   pattern
@@ -575,6 +784,10 @@ Before a game goes into `games.json`:
 - [ ] Reset Progress is two‑step
 - [ ] Exit Game sends `postMessage({ action: 'focusBackButton' })`
 - [ ] Mouse and touch work everywhere, and **no interaction requires a drag**
+- [ ] Any timing, reflex, or hold‑to‑charge mechanic has a **route through it
+      needing neither timing nor a hold, behind a settings toggle**, offered in
+      both the main‑menu and pause‑menu settings (§9; games that predate the
+      rule are tracked in §12)
 - [ ] Anything mouse‑only or off‑site sits behind a **spoken confirm dialog**,
       with Cancel first in the scan order and the scan trapped in the dialog
 - [ ] Progress saves and resumes
@@ -590,22 +803,44 @@ That last one is the only test that actually counts.
 
 Honest notes for whoever works on this next.
 
-**`narbe-input-cancelled` is listened for but never dispatched.** Ten games
-register a handler for this event, and several carry comments explaining that
-the scan manager fires it when it swallows a key‑up. **It does not.** Nothing in
-`shared/` dispatches any custom event. The handlers are dead code today. They
-are also harmless, because the debounce blocks a keydown and its matching keyup
-together — so a game never sees an orphaned press. But if anyone ever changes
-`scan-manager.js` to block a keyup whose keydown got through, games *will*
-strand mid‑input (a held steer that never stops), and these handlers are the
-intended safety net. Either wire up the dispatch or delete the listeners; do not
-leave the comments claiming a contract that isn't implemented.
+**`narbe-input-cancelled` is listened for but still never dispatched — and this
+is now a known blocker, not a curiosity.** Eleven games register a handler for
+it. They are not wrong: they were written against the *desktop* scan manager,
+which fires the event when it discards a press for being too short. The web
+build has never had that check, so the handlers have never run.
 
-**`getInputSensitivity()` has gone missing twice.** It has been removed by a
-revert and by a rewrite, and each time it silently broke Space/Enter in every
-game that calls it — a `TypeError` inside a keyup handler, invisible to the
-player, who simply finds the game unresponsive. If switch input dies across
-multiple games at once, check this method exists before anything else.
+**This was tested the hard way.** The Input Sensitivity port briefly brought
+desktop's minimum‑hold check across, which swallows the keyup of a too‑short
+press. Twelve of the twenty‑three games have no `narbe-input-cancelled` handler,
+and they stranded immediately: Benny Says sets `spaceIsDown` on keydown and only
+clears it on keyup, so a swallowed keyup left it scanning backwards forever,
+with releasing the switch doing nothing. Bowling, which *does* have the handler,
+was fine. The check was removed again the same day.
+
+So the position is:
+
+- **Do not add a minimum‑hold check** until either every game handles
+  `narbe-input-cancelled`, or the guard buffers the keydown rather than blocking
+  the keyup. Blocking a keyup whose keydown already reached the game is the bug.
+- **The eleven handlers are harmless** and should stay — they are the safety net
+  the day someone does this properly.
+- **Games missing the handler**, for whoever picks this up: Benny Says, Baseball,
+  Basketball Shooter, Chess & Checkers, Dice, Football, P3GL, Show n Sound, Tic
+  Tac Toe, Word Jumble, Elouise's Word Search, Pickleball Rally.
+
+**`getInputSensitivity()` kept going missing, and now we know why.** It was
+removed by a revert and by a rewrite, and each time it silently broke
+Space/Enter in games that call it — a `TypeError` inside a keyup handler,
+invisible to the player, who simply finds the game unresponsive.
+
+The cause was not carelessness. Until the Input Sensitivity port, the web build
+of `scan-manager.js` had a **stub**: a getter with no setter, returning a
+hard‑coded constant, with nothing in the hub able to change it. It read exactly
+like dead code, so it kept getting pruned. The working version had always been
+in the desktop hub; the web fork simply never received it.
+
+It is now a real setting, so the incentive to delete it is gone. If switch input
+dies across multiple games at once, still check this method exists first.
 
 **`developer-guide.html` used to disagree with the shipped code** — it described
 hold‑Space as enabling *forward* auto‑scan and put the pause hold at 1.5 s.
@@ -653,16 +888,17 @@ pause as something you can *scan to and select*, with the hold gesture kept as a
 convenience rather than the only way in. When you build a new game, favour a
 scannable pause entry; do not go retrofitting the existing ones yet.
 
-**But understand the cost before you reach for it.** Making a control scannable
-is not free — it puts another stop on the scan cycle, and the player passes
-that stop on *every single pass*, for the whole session. A game whose only
-in‑play control is "fire" lets the player sit there and play. Add a scannable
-Pause, and now every shot means cycling past Pause to reach Fire. The player
-who never pauses still pays for it, on every shot, forever.
+**But understand what it adds before you reach for it.** Making a control
+scannable puts another stop on the scan cycle, and the player meets that stop on
+*every single pass*, for the whole session. A game whose only in‑play control is
+"fire" lets the player settle in and play. Add a scannable Pause, and every shot
+now means waiting through Pause to reach Fire — a player who never opens the
+pause menu is still waiting on it, all session.
 
-So the honest trade is: **hold gestures cost nothing during play but exclude
-players who cannot hold; scannable controls include everyone but tax every
-action.** Neither is simply better.
+So the honest trade is: **a hold keeps play quick and direct for the players who
+can manage one, and shuts out the players who cannot; a scannable control lets
+everyone in, and puts a step between every player and the thing they came to
+do.** Neither is simply better.
 
 P3GL is the worked example of the current answer. It was deliberately built
 hold‑first — hold Space to aim, press Enter to fire, hold Enter for pause —
@@ -678,17 +914,71 @@ does not sit between the player and the thing they came to do. Or make it a
 setting, so a player who needs the scannable route can turn it on and a player
 who does not is not slowed down by it.
 
-**Hold‑to‑charge mechanics will get a no‑hold alternative.** Benny's Baseball
-charges the swing by holding, which suits most players but has the same problem
-as above. The plan is a setting modelled on Benny's Football, where the player
-**selects the type of swing** from a menu instead of holding to charge — same
-game, no sustained press required. Not to be implemented now; it is recorded so
-the next hold‑to‑charge mechanic gets designed with a menu alternative from the
-start.
+**Hold‑to‑charge and timing mechanics will get a select‑based alternative.**
+Two games need one today.
+
+**Benny's Baseball** charges the swing by holding, and the release has to land
+against the pitch. The plan is the same two‑option toggle Football already
+ships as **Easy Throw** — charge, or do not. Baseball differs from Football in
+one way that matters: Football's throw already carries a selection (which
+receiver), so switching the charge off leaves a complete action behind, whereas
+the baseball swing has no selection under it — take the hold away and nothing
+is left to decide. So the toggle supplies one: the player **selects the type of
+swing**, Bunt, Normal or Power, and the game resolves contact. Bunting instead
+of swinging for the fence is a real decision about the at‑bat, which is why a
+menu belongs here and not on the throw. Same game, no sustained press, no
+release window.
+
+**Benny's Fish Mystery** asks for a press to set the hook inside the take
+window, and then a sustained hold to reel. The plan is a setting that holds the
+hook window open until the player scans and selects it, and that resolves the
+reel in steps rather than one long press.
+
+**Neither is open work, and the timed versions are not bugs.** Both games play
+correctly as they stand, and the timed form stays — it is the challenge, for
+the players who want it. What is missing is the other route through it. The
+rule both settings will satisfy is written up in §9, "Timing may be a challenge,
+never a requirement"; read that before building the next mechanic of this kind,
+so it arrives with its alternative already designed instead of needing one
+bolted on.
+
+**Remappable keys: understood, deliberately not built.** Space and Enter are
+hard{NB}coded everywhere — all 23 games compare `e.code` directly, across roughly
+190 sites — so there is no setting a player can change if their hardware sends
+something else.
+
+**Why that has not mattered much.** Nearly every switch interface is configurable
+on the hardware or driver side: the box is programmed to emit whichever key you
+want, so a family whose interface sends the wrong thing usually fixes it there,
+once, without the games changing. Remapping in the app would duplicate a knob
+most players already have.
+
+**Why it is not nothing.** Some cheap interfaces are fixed{NB}function. Some emit
+mouse clicks or gamepad buttons rather than keys. And eye{NB}gaze and head{NB}tracking
+users arrive through a different route again.
+
+**The shape it would take, if it is ever built.** Not 190 edits. A translation
+layer inside `scan-manager.js` is the only sane route: it already intercepts
+every input in the capture phase, so it can swallow an alternative key and
+re{NB}dispatch it as Space or Enter, and no game needs to know. Two cautions for
+whoever does it:
+
+- A synthetic `KeyboardEvent` has `isTrusted: false` and its `preventDefault()`
+  does not suppress the real key's default action — so the *original* event must
+  be `preventDefault()`ed as it is swallowed, or Space will scroll the page.
+- It is the same class of change as the minimum{NB}hold check in §11: anything that
+  intercepts one half of a press and not the other strands games. Deliver
+  keydown and keyup as a matched pair or not at all.
+
+Not open work. Recorded so the next person does not start by editing 23 games.
 
 The pattern behind all three: **any interaction that requires holding a switch
-should eventually have a select‑based equivalent.** Holding is an ability, and
-not every player has it.
+should have a way through that does not.** Whether that is a menu the player
+scans or the game simply supplying the value, as Football's Easy Throw does, is
+a per‑mechanic call — §9 sets out how to choose. Holding is an ability, and not
+every player has it. For anything new, that is a requirement and §9 states it. For
+what is already here, it is the direction — the entries above are the list, and
+they are not open work until someone picks one up deliberately.
 
 ---
 

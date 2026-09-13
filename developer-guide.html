@@ -429,7 +429,7 @@
         <ul>
           <li><strong>Entire app and every game must be fully usable with only two keys:</strong> Spacebar and Return, plus optional mouse or touch for caregivers or users who have those access options.</li>
           <li><strong>And fully usable with one key.</strong> With Auto Scan on, Return alone must reach everything. One switch is the real floor, not two.</li>
-          <li><strong>No reflex or precision demands.</strong> Nothing may depend on reacting fast or hitting a small target. Where a game does use time pressure or a fail state, it must come with a no-fail or menu-based alternative.</li>
+          <li><strong>No reflex or precision demand without a way around it.</strong> Timing windows, charge-and-release and fail states are allowed &mdash; several shipped games use them, and for players who can meet them they <em>are</em> the game. What is not allowed is making one the <em>only</em> route through. Anything you build here pairs such a mechanic with an alternative that needs no timing and no hold &mdash; either the game supplies the value itself, or the player scans a choice instead &mdash; and a setting that switches between the two. Football's <code>Easy Throw</code> is the pattern to copy. Some of the older games in the hub do not have this yet; they are being updated as they are revisited, and the reason is worth understanding &mdash; see <a href="#mechanics">Game Mechanics That Work Well</a>.</li>
           <li><strong>All actions should be available through scanning and selection.</strong></li>
           <li><strong>Independence is the measure.</strong> A player must get from the hub's front page, into a game, through its menus, into a round, out to pause and settings, and back to the hub, alone. A screen that quietly needs a second person is a serious bug.</li>
           <li><strong>"One switch" describes an input, not a person.</strong> Build for the range: difficulty options, no-fail modes, and editors that let a caregiver tune content to the player.</li>
@@ -510,12 +510,12 @@
       <section class="section" id="layout">
         <h2>Layout and Components</h2>
         <ul>
-          <li><strong>Consistent header:</strong> Title, Help, Settings, Exit to Main Menu</li>
+          <li><strong>Help, Settings and Exit to Main Menu must be reachable</strong> from the game's own menus &mdash; put them wherever they fit the game</li>
           <li><strong>Footer:</strong> Current mode, current scan target name, and a simple legend: <code>Space = next</code>, <code>Return = select</code>, <code>Return hold = menu</code></li>
           <li>All dialogs and menus scannable using the same pattern as gameplay</li>
           <li>Large buttons, minimum 64px height on tablet</li>
           <li>Avoid small tap targets</li>
-          <li><strong>Never require keyboard keys other than Spacebar and Return</strong></li>
+          <li><strong>Never require keyboard keys other than Spacebar and Return.</strong> These two are hard-coded throughout the hub and there is no remapping setting &mdash; most switch interfaces are configurable on the hardware side, so a box that sends the wrong key is fixed there. If remapping is ever added it belongs in <code>scan-manager.js</code> as a central translation layer, not in each game</li>
         </ul>
       </section>
 
@@ -523,24 +523,30 @@
         <h2>Game Mechanics That Work Well</h2>
         
         <div class="highlight-box">
-          <p><strong>Golden rule:</strong> remove the <em>precision and reaction</em> demand from a genre — not the genre itself. Almost any kind of game can be made switch-accessible. What cannot be made accessible is a control that requires fast, accurate, continuous input.</p>
+          <p><strong>Golden rule:</strong> make the <em>precision and reaction</em> demand optional &mdash; do not throw out the genre, and do not throw out the challenge either. Almost any kind of game can be made switch-accessible. What cannot be made accessible is a control that requires fast, accurate, continuous input <em>with no other route through it</em>. If a mechanic needs one, build the alternative alongside it and let a setting choose.</p>
         </div>
 
-        <p>An earlier version of this guide ruled out whole genres — racing, action, anything with a fail state. The hub has since shipped all of them successfully, so the guidance below reflects what actually works in practice.</p>
+        <p>An earlier version of this guide ruled out whole genres &mdash; racing, action, anything with a fail state. The hub has since shipped all of them successfully, so the guidance below reflects what actually works in practice.</p>
+
+        <div class="card" style="margin:1em 0;">
+          <p><strong>Where the existing games stand, honestly.</strong> Benny's Hub was built around what Ben can do. The controls were tuned to one person's movements and tested against a real body every day rather than against a guideline, which is a large part of why they work as well as they do. The reach turned out to be far wider than one player, and that is why the hub was opened up at all.</p>
+          <p style="margin-top:.6em;">The cost of building that way is that the places where other people's capabilities differ did not always get designed for. Charge-and-release is the clearest example: it suits Ben, it suits a lot of players, and for someone who cannot sustain a hold it is simply a closed door. That is not a flaw in those games &mdash; they do what they were built to do &mdash; it is the next thing to build.</p>
+          <p style="margin-top:.6em;">So <strong>some games in the hub do not yet offer the no-hold alternative, and will be updated as they are revisited.</strong> Football's <code>Easy Throw</code> already does it. The guidance below is what to follow for anything new, and the direction the rest is heading &mdash; it is not a report on what every game does today.</p>
+        </div>
 
         <h3>The patterns that make hard genres work</h3>
         <p>These four patterns are what let a one-switch player do things that normally need a mouse and fast hands. Reach for them before concluding a mechanic is impossible.</p>
         <ul>
           <li><strong>Oscillate and stop</strong> — instead of <em>aiming</em>, a marker travels along the arc and the player stops it where they want it. This replaces pointing entirely. It has two forms, and a game should offer whichever matches the player's scheme: <em>player-driven</em> (the marker moves only while the switch is held, and each press reverses it — full control, needs a hold) and <em>self-driven</em> (the marker sweeps continuously and a single press commits — needs no hold at all). Bowling, P3GL and Basketball Shooter all use this; P3GL switches between the two forms with Auto Scan</li>
-          <li><strong>Charge and release</strong> — instead of setting a power level, hold and let go; longer hold, more power, on a non-linear curve so short taps stay usable. Bowling, Football, Mini Golf. <em>Always plan a select-based alternative for players who cannot sustain a hold</em></li>
-          <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats, Connect Four, Chess &amp; Checkers, Tic Tac Toe</li>
+          <li><strong>Charge and release</strong> — instead of setting a power level, hold and let go; longer hold, more power, on a non-linear curve so short taps stay usable. Bowling, Football, Baseball, Mini Golf. <em>Build a no-hold alternative beside it, behind a setting</em> &mdash; two options, charge or don't. The method is to <strong>separate the decision from the execution and keep only the decision</strong>. Football is the worked example: a throw is <em>scan the receivers, select one</em>, and then a hold for power. <code>Easy Throw</code> drops the hold and keeps the selection &mdash; pick the receiver and it throws at ideal power &mdash; so a player who cannot sustain a hold still plays the whole season. Where an action has no selection under the charge, give it one (a named swing or power level) rather than leaving the player nothing to choose. It sits in both the main-menu and the pause settings and persists &mdash; that is the shape to copy</li>
+          <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats, Connect Four, Chess &amp; Checkers, Tic Tac Toe, Matchy Match</li>
           <li><strong>Armed direction</strong> — one switch drives two directions by making <em>release</em> meaningful: press moves the armed way, letting go arms the other, so a quick tap swaps sides. Race Tracks' one-switch steering</li>
         </ul>
 
         <h3>Genres already proven here</h3>
         <ul>
           <li><strong>Turn-based and puzzle</strong> — matching, memory, sequencing, sorting, word building, trivia, logic, board games. The easiest to adapt and still the backbone of the hub</li>
-          <li><strong>Sports</strong> — Baseball and Football play a whole season through play-calling menus with no reaction element at all; Bowling, Mini Golf and Basketball use oscillate-and-stop</li>
+          <li><strong>Sports</strong> &mdash; Baseball and Football play a whole season through play-calling menus, with a hold-to-charge on top for the swing, the throw and the kick; Football makes that charge optional with <code>Easy Throw</code>. Bowling, Mini Golf and Basketball use oscillate-and-stop</li>
           <li><strong>Racing and action</strong> — Race Tracks steers with one switch and pairs a ten-level ladder with a no-fail Cruise mode. Bug Blaster is turn-paced tower defence</li>
           <li><strong>Cause and effect</strong> — one press, immediate audio-visual payoff, no strategy required. Mega Slot and Show n Sound. Genuinely valuable for players who are building the idea that <em>their action causes a result</em>, and often the right first game for someone new to switch access</li>
           <li><strong>Creative and editor-driven</strong> — Trivia Master, Matchy Match, Mini Golf's course editor. Highest replay value of anything in the hub, because a caregiver can tune the content to the player</li>
@@ -549,8 +555,8 @@
 
         <h3>What to actually avoid</h3>
         <div class="card">
-          <p><strong>Never require:</strong> reaction tests or quick-time events; continuous multi-axis control (steering plus speed at once); precise pointing at small targets; dragging; anything that punishes a slow or accidental press; and any fail state the player cannot see coming.</p>
-          <p style="margin-top:.6em;"><strong>Use with care, always paired with an alternative:</strong> timers, health or lives, and hold-to-charge. All three exist in shipped games and all three work — but only because a no-fail mode, generous limits, or a menu-based alternative sits alongside them.</p>
+          <p><strong>Never, in any form:</strong> continuous multi-axis control (steering plus speed at once); precise pointing at small targets; dragging; anything that punishes a slow or accidental press; and any fail state the player cannot see coming.</p>
+          <p style="margin-top:.6em;"><strong>Allowed, but never as the only route:</strong> reaction tests and timed windows, quick-time moments, timers, health or lives, and hold-to-charge. All of these exist in shipped games and all of them work &mdash; but only because a no-fail mode, a generous limit, or a no-hold alternative sits alongside them, chosen by a setting. The mechanic is not the problem; being the <em>only</em> way through is.</p>
         </div>
       </section>
 
@@ -560,22 +566,24 @@
           <li><strong>On focus change:</strong> Speak the item name and show a strong highlight</li>
           <li><strong>On selection:</strong> Speak confirmation and show a brief glow or scale pulse</li>
           <li><strong>On error or locked action:</strong> Speak a short helpful line (e.g., "Need the key for this door")</li>
-          <li><strong>Always provide Undo or Back</strong> in the context menu reached by Return hold</li>
+          <li><strong>Always provide Undo or Back</strong> in the pause/context menu &mdash; whichever way the player reaches it (holding Return, the on-screen Pause button, or a scannable Pause item)</li>
         </ul>
 
         <h3>Menus and Pause</h3>
         <ul>
-          <li><strong>Holding Return opens Pause anywhere in gameplay.</strong> Include Continue, Restart, Settings, Main Menu and Exit Game</li>
-          <li><strong>Always pair the hold with an on-screen Pause button</strong> that does the same thing, for mouse, touch and caregivers</li>
+          <li><strong>Pause must be reachable from anywhere in gameplay.</strong> Include Continue, Restart, Settings, Main Menu and Exit Game</li>
+          <li><strong>Offer at least two ways in.</strong> Holding Return is the baseline gesture, and it must always be paired with an <strong>on-screen Pause button</strong> that does the same thing, for mouse, touch and caregivers. A player who cannot sustain a hold has no way in through the gesture alone &mdash; see <em>Direction of travel</em> below</li>
           <li>Make the hold visible <em>while it happens</em> — a filling ring and a rising beep, as Race Tracks does. A long hold with no feedback reads as a broken control</li>
           <li>Hold Return should also back out of sub-rows to row-select mode</li>
           <li><strong>Settings must be reachable from the pause menu as well as the main menu</strong> — a scan speed that turns out to be too fast has to be fixable without abandoning the round</li>
           <li><strong>Exit Game must tell the hub</strong>: <code>window.parent.postMessage({ action: 'focusBackButton' }, '*')</code>. Without it the player finishes your game and is stranded with focus on a dead screen</li>
         </ul>
         <div class="highlight-box">
-          <p><strong>Direction of travel:</strong> holding a switch is itself an ability, and some players cannot sustain one. Pause is moving toward being a <em>scannable</em> item in every game, with the hold kept as a convenience. Favour a scannable pause entry in anything new.</p>
-          <p style="margin-top:.7em;"><strong>But know what it costs.</strong> A scannable control is another stop on the scan cycle, and the player passes it on <em>every pass, all session</em>. If firing is the only in-play action, the player can just play; add a scannable Pause and every shot means cycling past Pause to reach Fire — a tax paid even by players who never pause. Hold gestures cost nothing during play but exclude players who cannot hold; scannable controls include everyone but tax every action. Neither is simply better.</p>
-          <p style="margin-top:.7em;">Where you can, keep the <em>primary gameplay action</em> off the scan cycle, put the scannable pause somewhere it does not sit between the player and the thing they came to do, or make it a setting so only the players who need it pay for it.</p>
+          <p><strong>Where the hub is today:</strong> nearly every game reaches Pause by <strong>holding Return</strong>, and most also put an on-screen Pause button on the HUD. That button is for mouse, touch and caregivers &mdash; in most games it is <em>not</em> in the scan cycle, so a switch-only player still has the hold as their single route in.</p>
+          <p style="margin-top:.7em;"><strong>Direction of travel:</strong> holding a switch is itself an ability, and some players cannot sustain one. For them the hold gesture is not a convenient route to Pause, it is a locked door. So Pause is being made a <strong>scannable item</strong> &mdash; something the player can scan to and select &mdash; with the hold kept as a shortcut rather than the only way in.</p>
+          <p style="margin-top:.7em;">This is rolling out gradually, newest games first, rather than as a sweep through all of them. <strong>Benny's Dice</strong> already does it (before the first roll, Roll and Pause are the only two scannable controls) and so does <strong>NARBE Animal Friends</strong>. The rest still rely on the hold. <strong>Favour a scannable pause entry in anything new</strong>; do not go retrofitting the existing games without asking, because the trade below is real.</p>
+          <p style="margin-top:.7em;"><strong>But know what it adds.</strong> A scannable control is another stop on the scan cycle, and the player meets it on <em>every pass, all session</em>. If firing is the only in-play action, the player can settle in and play; add a scannable Pause and every shot now means waiting through Pause to reach Fire &mdash; and a player who never opens the pause menu is still waiting on it. A hold keeps play quick and direct for the players who can manage one and shuts out the players who cannot; a scannable control lets everyone in and puts a step between every player and the thing they came to do. Neither is simply better.</p>
+          <p style="margin-top:.7em;">Where you can, keep the <em>primary gameplay action</em> off the scan cycle, put the scannable pause somewhere it does not sit between the player and the thing they came to do, or make it a setting &mdash; so the players who need it have it, and the players who do not are not left waiting on it.</p>
         </div>
 
         <h3>Warn before a one-way door</h3>
@@ -596,7 +604,7 @@
         <ul>
           <li><strong>Text to Speech</strong> — On / Off</li>
           <li><strong>Voice</strong> — cycles the available voices</li>
-          <li><em>Game-specific options</em> — difficulty, theme, ball style, direction help, and so on</li>
+          <li><em>Game-specific options</em> &mdash; difficulty, theme, ball style, direction help, and any timing or hold toggle the game owes (Football's <code>Easy Throw</code>)</li>
           <li><strong>Auto Scan</strong> — labelled <code>On — One Switch</code> / <code>Off — Two Switches</code>, not just On/Off. It is the control-scheme selector, and the person changing it is often a caregiver setting the game up for someone else</li>
           <li><strong>Scan Speed</strong> — 1s / 2s / 3s / 4s</li>
           <li><strong>Sound Effects</strong> — On / Off</li>
@@ -631,8 +639,8 @@
           <li>✓ Is Reset Progress two-step?</li>
           <li>✓ Does Exit Game send <code>postMessage({ action: 'focusBackButton' })</code>?</li>
           <li>✓ Does help text describe holds <strong>without quoting a number of seconds</strong>?</li>
-          <li>✓ Is there nothing that demands a fast reaction or a precise target?</li>
-          <li>✓ If the game has a fail state, timer, or hold-to-charge, is there a no-fail or menu-based alternative?</li>
+          <li>✓ Is there nothing that demands precise pointing, a drag, or two axes at once?</li>
+          <li>✓ If the game has a timed window, reaction moment, fail state, timer, or hold-to-charge, is there a no-fail alternative that needs no timing and no hold, <strong>behind a setting</strong>, offered in both the main-menu and the pause settings?</li>
           <li>✓ Is it readable at 100% on a tablet?</li>
           <li>✓ Does the game auto-save and resume correctly?</li>
           <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>
