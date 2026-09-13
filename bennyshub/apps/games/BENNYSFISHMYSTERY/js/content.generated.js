@@ -3041,8 +3041,8 @@ RT.content = {
     },
     "player": "The fog's gone? I thought that jam would be there for ever.",
     "say": {
-     "brief": "Sit down a minute, Chief Warden. Something has happened out there. That fog is off the water for the first time since I was your age, and Barnaby has pulled the whole log jam apart - shoved it clean off the channel like it was brush. Which means the lake is calm, kid. All of it. No fog, no timber, no hull getting chewed up just for being out in the deep - you can go anywhere on this water now and take your time about it. And I will tell you what I think is out there. Thirty years shut behind that jam, nothing fished, nothing counted - there could be a dozen fish in this lake that are not in any book I own. So go and find them. Every lure in that box, every corner of the water, and no map for it - I have not got one. Ten of them, kid. Catch all ten and report back to me.",
-     "nudge": "Ten fish nobody has in a book. Every lure, every corner - and no, I cannot tell you where.",
+     "brief": "Sit down a minute, Chief Warden. Something has happened out there. That fog is off the water for the first time since I was your age, and Barnaby has pulled the whole log jam apart - shoved it clean off the channel like it was brush. Which means the lake is calm, kid. All of it. No fog, no timber, no hull getting chewed up just for being out in the deep - you can go anywhere on this water now and take your time about it. And I will tell you what I think is out there. Thirty years shut behind that jam, nothing fished, nothing counted - there could be a dozen fish in this lake that are not in any book I own. So go and find them. Every lure in that box, every corner of the water, and no map for it - I have not got one. Ten of them, kid. Catch all ten and report back to me. And one more while you are out there. That bottom has been shut away just as long as the water above it, so put the heavy magnet on when the casting tires you and drag it - ten things somebody lost and wanted back. Two hunts, kid, and no order to them. Whichever takes you that morning.",
+     "nudge": "Ten fish nobody has in a book, and ten lost things on the heavy magnet. Whichever you fancy - and no, I cannot tell you where any of it is.",
      "done": "Ten. TEN fish, and not one of them in a book on my shelf - a perch with no colour in it, a pike crossed with something, and a blue pike that has been extinct since before you were born. This is not a logbook any more, kid. This is a paper."
     },
     "lines": {
@@ -3050,7 +3050,8 @@ RT.content = {
       "q36_a",
       "q36_b",
       "q36_c",
-      "q36_d"
+      "q36_d",
+      "q36_e"
      ],
      "done": [
       "q36_done"
@@ -3078,7 +3079,7 @@ RT.content = {
     },
     "player": "Everything's still down there?",
     "say": {
-     "brief": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it. Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back. They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
+     "brief": "Now then - the other half, the one I mentioned. The last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it. Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back. They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
      "nudge": "Heavy magnet, and ten unique things off the bottom. Take your time.",
      "done": "All ten. A locket with a face still in it, a watch stopped at twenty past four, and a set of tags I am going to drive round to a house tonight. You gave this lake its memory back, kid. Go on - go fishing. It is yours now."
     },
@@ -3234,16 +3235,17 @@ RT.content = {
    "q36_b": "Which means the lake is calm, kid. All of it. No fog, no timber, no hull getting chewed up just for being out in the deep - you can go anywhere on this water now and take your time about it.",
    "q36_c": "And I will tell you what I think is out there. Thirty years shut behind that jam, nothing fished, nothing counted - there could be a dozen fish in this lake that are not in any book I own.",
    "q36_d": "So go and find them. Every lure in that box, every corner of the water, and no map for it - I have not got one. Ten of them, kid. Catch all ten and report back to me.",
-   "q36_nudge": "Ten fish nobody has in a book. Every lure, every corner - and no, I cannot tell you where.",
+   "q36_nudge": "Ten fish nobody has in a book, and ten lost things on the heavy magnet. Whichever you fancy - and no, I cannot tell you where any of it is.",
    "q36_done": "Ten. TEN fish, and not one of them in a book on my shelf - a perch with no colour in it, a pike crossed with something, and a blue pike that has been extinct since before you were born. This is not a logbook any more, kid. This is a paper.",
-   "q37_a": "One more thing, and it is the last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it.",
+   "q37_a": "Now then - the other half, the one I mentioned. The last I will ask of you. That bottom out there has been shut away since ninety-four, and everything that ever went over the side of a boat is still lying on it.",
    "q37_b": "Heavy magnet, kid. That is the only thing that will lift what I am after. Ten unique things - not scrap, not tin cans. Things somebody lost and wanted back.",
    "q37_c": "They will be a long time coming. They are lying anywhere at all and there is one of each, so when you have got one that is the only one there is. Bring me all ten.",
    "q37_nudge": "Heavy magnet, and ten unique things off the bottom. Take your time.",
    "q37_done": "All ten. A locket with a face still in it, a watch stopped at twenty past four, and a set of tags I am going to drive round to a house tonight. You gave this lake its memory back, kid. Go on - go fishing. It is yours now.",
    "q26_send": "I know that look, kid. You are going to go and see for yourself, aren't you. Everybody does. Go on then - but keep her slow, keep your eyes up, and if that engine so much as coughs out there, you sit tight and you get on the radio. I will come and get you.",
    "q31_send": "One more piece of rod work and we are done with it. There is an old lake trout down in that trench that will go fifteen pounds - eighty feet and better, right down in the cold. That Pro Rod was built for exactly that fish. Tag her, put her straight back, and I will have the last of my numbers.",
-   "q34_send": "Right then. That is everything, and it is all aboard. Out to the middle, kid, cut your engine, and let the sonar play down into it. I will have the radio on beside me the whole time - whatever happens out there, you are not out there on your own."
+   "q34_send": "Right then. That is everything, and it is all aboard. Out to the middle, kid, cut your engine, and let the sonar play down into it. I will have the radio on beside me the whole time - whatever happens out there, you are not out there on your own.",
+   "q36_e": "And one more while you are out there. That bottom has been shut away just as long as the water above it, so put the heavy magnet on when the casting tires you and drag it - ten things somebody lost and wanted back. Two hunts, kid, and no order to them. Whichever takes you that morning."
   },
   "nudges": {
    "q01": "No rush, kid. Thirty little fish - the shoreline's full of 'em.",
