@@ -972,7 +972,7 @@
             <span class="kicker">Setting</span>
             <div class="btn-title">Auto Scan</div>
             <div class="row">
-              <p class="desc">Automatically move focus every 2 seconds</p>
+              <p class="desc">Automatically move focus on the timing you select</p>
               <span class="pill" id="autoscan-status">Off</span>
             </div>
           </button>
@@ -983,6 +983,15 @@
             <div class="row">
               <p class="desc">Change auto/backward scan speed</p>
               <span class="pill" id="scanspeed-status">Medium</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="sensitivity-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Input Sensitivity</div>
+            <div class="row">
+              <p class="desc">Anti-tremor filter threshold</p>
+              <span class="pill" id="sensitivity-status">50ms</span>
             </div>
           </button>
 
@@ -1339,6 +1348,7 @@
       // Apply scan speed
       let autoScan = false;
       let scanSpeedName = 'Medium';
+      let sensitivityName = '50ms';
       
       if (window.NarbeScanManager) {
           const scanSettings = window.NarbeScanManager.getSettings();
@@ -1347,17 +1357,25 @@
           // Map index to name
           const speedNames = ['Fast (1s)', 'Medium (2s)', 'Slow (3s)', 'Super Slow (4s)'];
           scanSpeedName = speedNames[scanSettings.scanSpeedIndex] || 'Medium (2s)';
+          
+          // Map sensitivity index to name
+          const sensitivityNames = ['50ms', '100ms', '200ms', '300ms'];
+          sensitivityName = sensitivityNames[scanSettings.inputSensitivityIndex] || '50ms';
       }
 
       document.getElementById('scanspeed-status').textContent = scanSpeedName;
+      
+      const sensitivityStatus = document.getElementById('sensitivity-status');
+      if (sensitivityStatus) sensitivityStatus.textContent = sensitivityName;
 
       // Apply auto scan setting
       document.getElementById('autoscan-status').textContent = autoScan ? 'On' : 'Off';
       
-      // Update autoscan description
-      const speedSec = getScanDelay() / 1000;
+      // Auto Scan runs at whatever Scan Speed is set to, so the description
+      // points at that setting rather than naming a duration that then has to
+      // be kept in sync with it.
       const autoScanDesc = document.querySelector('#autoscan-toggle .desc');
-      if(autoScanDesc) autoScanDesc.textContent = `Automatically move focus every ${speedSec} seconds`;
+      if(autoScanDesc) autoScanDesc.textContent = 'Automatically move focus on the timing you select';
 
       if (autoScan) {
         // Restart to apply new speed if changed
@@ -1502,6 +1520,16 @@
       }
     });
 
+    document.getElementById('sensitivity-toggle').addEventListener('click', () => {
+      if (window.NarbeScanManager) {
+          const newIndex = window.NarbeScanManager.cycleInputSensitivity();
+          const sensitivityNames = ['50 milliseconds', '100 milliseconds', '200 milliseconds', '300 milliseconds'];
+          const name = sensitivityNames[newIndex] || '50 milliseconds';
+          applySettings();
+          speak(`Input sensitivity changed to ${name}`);
+      }
+    });
+
     document.getElementById('uisize-toggle').addEventListener('click', () => {
       const sizes = ['default', 'large', 'larger', 'largest'];
       const currentIndex = sizes.indexOf(settings.uiSize || 'default');
@@ -1569,6 +1597,12 @@
       // Sync scan settings in case they changed in the app
       if (window.NarbeScanManager) {
           window.NarbeScanManager.reload();
+          // Clear input state left over from the game. A key still flagged when
+          // the iframe closed would keep blocking the hub's own scanning, and
+          // the player has no way to clear it themselves.
+          if (window.NarbeScanManager.resetInputState) {
+            window.NarbeScanManager.resetInputState();
+          }
       }
 
       const activeScreen = document.querySelector('.screen.active');
