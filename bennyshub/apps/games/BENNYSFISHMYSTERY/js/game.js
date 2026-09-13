@@ -2259,8 +2259,29 @@ RT.game = (function () {
     ownTool:      (t, v) => v ? 'Bought ' + ic('done') : 'Buy the ' + toolNameById(t.toolId),
     repairVessel: (t, v) => v ? 'Patched ' + ic('done') : 'Pay for a repair',
     clearDebt:    (t, v) => v ? 'Tab cleared ' + ic('done') : 'Clear the tab',
-    collectSet:   (t, v) => v >= t.amount ? 'All ' + t.amount + ' found ' + ic('done')
-                                          : v + ' / ' + t.amount + ' found'
+    /* BOTH HUNTS AT ONCE, once the lake has gone quiet.
+       rollMysteryBite and rollRelicBite are gated on isSolved(), not on which
+       job is current - so from the moment the bell is rung the ten odd fish
+       and the ten lost things are BOTH being found, and both land in the save
+       rather than in a per-job counter. Only one was ever on screen, which
+       made the last stretch read as two chores in a queue instead of what it
+       is: an open lake with two things worth hunting. Reported: "at the end of
+       the game we should have both quests to try to fulfill - it's an open
+       world challenge where you just experiment and try to find rare stuff and
+       bring it back to Walt."
+       So the card carries both counts, whichever of the two is current. */
+    collectSet:   (t, v) => {
+      const amt = t.amount || 10;
+      if (!isSolved())
+        return v >= amt ? 'All ' + amt + ' found ' + ic('done') : v + ' / ' + amt + ' found';
+      /* With both running, each half has to say WHAT it is counting - "3 / 10
+         found" beside "4 / 10 found" is two numbers and no nouns. */
+      const other = t.set === 'relics' ? 'mystery' : 'relics';
+      const mineName = t.set === 'relics' ? 'lost things' : 'odd fish';
+      const otherName = other === 'relics' ? 'lost things' : 'odd fish';
+      return v + ' / ' + amt + ' ' + mineName + (v >= amt ? ' ' + ic('done') : '') +
+             '  ·  ' + setHeld(other).length + ' / ' + amt + ' ' + otherName;
+    }
   };
   function vesselNameById(id) { const v = (roster().vessels || []).find(x => x.id === id); return v ? v.name : id; }
   function toolNameById(id) { const t = (roster().tools || []).find(x => x.id === id); return t ? t.name : id; }
@@ -2346,10 +2367,23 @@ RT.game = (function () {
          the water over many trips, and "at the counter" would be telling a
          player to go and stand in a shop for ten hours. */
       if (t.type === 'collectSet') {
-        const left = Math.max(0, t.amount - stateValue(t));
-        return w + '. ' + (left <= 0 ? 'Go and tell Walt.'
-               : left === 1 ? 'One more, somewhere out there.'
-               : left + ' still out there somewhere.');
+        /* Built from the count rather than from `w`, because `w` now carries
+           BOTH tallies - reusing it here said each number twice. */
+        const amt = t.amount || 10, got = stateValue(t);
+        const left = Math.max(0, amt - got);
+        const mineName = t.set === 'relics' ? 'lost things' : 'odd fish';
+        let out = got + ' of ' + amt + ' ' + mineName + '. ' +
+                  (left <= 0 ? 'Go and tell Walt.'
+                   : left === 1 ? 'One more, somewhere out there.'
+                   : left + ' still out there somewhere.');
+        /* The other hunt is running too - see STATE_WORDS.collectSet - so
+           somebody listening rather than reading hears about it as well. */
+        if (isSolved()) {
+          const other = t.set === 'relics' ? 'mystery' : 'relics';
+          const otherName = other === 'relics' ? 'lost things on the magnet' : 'odd fish';
+          out += ' And ' + setHeld(other).length + ' of ' + amt + ' ' + otherName + '.';
+        }
+        return out;
       }
       return w + '. At the counter.';
     }
@@ -2712,7 +2746,16 @@ RT.game = (function () {
     /* A bare line comes before anything else: there is no fishing at all
        until it is sorted, and it costs nothing. */
     if (save.tackleBroken) {
-      const cue = (save.tackleBreaks || 1) > 1 ? 'tackle_lost_again' : 'tackle_lost_1';
+      /* AND A DIFFERENT ONE ONCE WE KNOW WHAT IS DOWN THERE.
+         Both originals are written from inside the mystery - "THIS is why
+         people don't come here any more" and "something strange about this
+         water, one of these days I'd like to know what it is". After the bell
+         there is nothing strange about it, and Walt is the man who found out,
+         so a bare hook is just a bare hook. Reported: "that line should change
+         because we already know about barnaby since we completed the core
+         missions." */
+      const cue = isSolved() ? 'tackle_lost_after'
+                : (save.tackleBreaks || 1) > 1 ? 'tackle_lost_again' : 'tackle_lost_1';
       return { kind: 'tackle', label: 'A new hook and float', speech: 'Get a new hook and float',
                done: false, cue: cue,
                text: (RT.quests && RT.quests.line(cue)) || 'Here. New hook, new float, on me.' };
