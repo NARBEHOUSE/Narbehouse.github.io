@@ -93,32 +93,25 @@ body {
     z-index: 1;
 }
 
-#header {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 10px 20px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 100%);
-    color: var(--neon-gold);
-    font-size: 20px;
-    font-weight: bold;
-    font-family: 'Orbitron', sans-serif;
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-    position: absolute;
-    top: 0;
-    z-index: 10;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-}
+/* The #header bar was removed: on the main menu it repeated the menu's own
+   title, and in game it repeated the credit counter on the machine itself. */
 
 #main-content {
     flex-grow: 1;
+    /* Flex items default to min-height:auto, which stops them shrinking below
+       their content - so this box would grow to the machine's full height and
+       push it off screen. */
+    min-height: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 50px 10px 10px;
+    padding: 10px;
+    /* The machine is scaled to fit by script.js. Once scaled it paints smaller
+       than its layout box, so hide the leftover box rather than let it raise
+       scrollbars a switch user could never operate. */
+    overflow: hidden;
 }
 
 /* Canvas Layers */
@@ -336,6 +329,7 @@ body {
     justify-content: center;
     width: 100%;
     height: 100%;
+    min-height: 0; /* see #main-content - same reason */
     padding: 5px;
 }
 
@@ -1572,9 +1566,10 @@ body {
 
 /* Landscape adjustments */
 @media (max-height: 600px) {
-    #main-content {
-        padding-top: 45px;
-    }
+    /* #main-content padding-top used to be 45px here to clear the removed
+       #header. On a short viewport that was pure loss - it is the height we
+       most need. Scaling now handles short screens (see fitMachineToViewport
+       in script.js), so the padding stays symmetric. */
     
     .slot-machine {
         padding: 10px 15px;
@@ -1606,4 +1601,23 @@ body {
     .info-panel {
         display: none;
     }
+}
+
+/* ============================================
+   PHOTOSENSITIVITY NOTICE
+   Shown under the main menu. Deliberately quiet - it is information for
+   someone deciding whether to play, not an alarm - but high enough contrast
+   to pass the same bar as the rest of the UI.
+   ============================================ */
+.photo-warning {
+    margin-top: 1.4em;
+    max-width: 34ch;
+    text-align: center;
+    font-size: 1rem;
+    line-height: 1.45;
+    color: #ffe9a8;
+    background: rgba(0, 0, 0, 0.55);
+    border: 2px solid rgba(255, 210, 90, 0.65);
+    border-radius: 10px;
+    padding: 0.6em 0.9em;
 }

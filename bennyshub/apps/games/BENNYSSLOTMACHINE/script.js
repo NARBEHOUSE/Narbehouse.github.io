@@ -941,6 +941,15 @@ function showMainMenu() {
     document.getElementById('slot-machine')?.classList.remove('bonus-mode');
 
     renderMenu('menu-container', menus.main, "MEGA SLOTS", `💰 Credits: ${state.credits}`);
+
+    // Photosensitivity notice. Main menu only, and not spoken - it is read by
+    // the person deciding whether to play, and a line repeated aloud on every
+    // return to the menu would just become noise.
+    const notice = document.createElement('div');
+    notice.className = 'photo-warning';
+    notice.textContent = 'Contains flashing lights on wins and bonuses.';
+    document.getElementById('menu-container').appendChild(notice);
+
     speak("Mega Slots. Play");
     startAutoScan();
 }
@@ -1228,10 +1237,75 @@ function startGame() {
 
     updateGameUI();
     updateHighlights();
+    fitMachineToViewport();
     startAutoScan();
     startBackgroundMusic();
 
     speak(`Let's play! ${state.credits} credits. Spin`);
+}
+
+/**
+ * Scale the slot machine so it always fits the viewport.
+ *
+ * The machine is laid out in fixed pixels (the reel window alone is 270px), so
+ * below a certain height it simply does not fit and the top gets cropped. A
+ * player using two switches cannot scroll, so anything off-screen is gone - it
+ * has to fit, at every window size, or it is not reachable.
+ *
+ * Scaling the whole machine keeps the design intact instead of trying to make
+ * forty individual pixel values responsive. The element's layout box stays its
+ * natural size; only the painting shrinks, and since the parent centres it the
+ * result stays centred and fully visible.
+ */
+function fitMachineToViewport() {
+    const machine = document.getElementById('slot-machine');
+    if (!machine || !machine.offsetParent) return;   // not visible right now
+
+    // Measure unscaled, or each pass would compound the previous scale.
+    machine.style.transform = 'none';
+    const naturalW = machine.offsetWidth;
+    const naturalH = machine.offsetHeight;
+    if (!naturalW || !naturalH) return;
+
+    // Measure against the VIEWPORT, never against an ancestor.
+    //
+    // Every wrapper between here and the viewport (#main-content,
+    // .game-container) is a flex item, and a flex item's default
+    // min-height:auto means it cannot shrink below its own content. Ask any of
+    // them how tall they are and they answer with the machine's height, so the
+    // ratio comes out as 1 and nothing ever scales. The viewport is the only
+    // box in the chain that is genuinely fixed.
+    const MARGIN = 16; // breathing room so the glow border is not flush to the edge
+    const availW = document.documentElement.clientWidth  - MARGIN;
+    const availH = document.documentElement.clientHeight - MARGIN;
+    if (availW <= 0 || availH <= 0) return;
+
+    // Never scale up - the design is built for its natural size.
+    const scale = Math.min(1, availW / naturalW, availH / naturalH);
+
+    if (scale < 1) {
+        machine.style.transformOrigin = 'center center';
+        machine.style.transform = `scale(${scale})`;
+    } else {
+        machine.style.transform = '';
+    }
+}
+
+// Refit whenever the space available changes. ResizeObserver catches the hub
+// resizing our iframe, which does not always surface as a window resize.
+window.addEventListener('resize', fitMachineToViewport);
+window.addEventListener('orientationchange', fitMachineToViewport);
+// Re-fit once layout has settled: web fonts and emoji metrics land after first
+// paint and change the machine's natural height.
+window.addEventListener('load', () => requestAnimationFrame(fitMachineToViewport));
+if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitMachineToViewport).catch(() => {});
+}
+if (typeof ResizeObserver !== 'undefined') {
+    window.addEventListener('load', () => {
+        const host = document.getElementById('main-content');
+        if (host) new ResizeObserver(fitMachineToViewport).observe(host);
+    });
 }
 
 function resumeGame() {
@@ -2387,7 +2461,6 @@ function updateGameUI() {
     const betDisplay = document.getElementById('bet-display');
     if (betDisplay) betDisplay.innerText = `BET: ${state.bet}`;
 
-    document.getElementById('status-display').innerText = `💎 Credits: ${state.credits}`;
 }
 
 // --- Input Handling ---
