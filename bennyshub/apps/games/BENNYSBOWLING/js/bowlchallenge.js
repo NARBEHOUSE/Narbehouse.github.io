@@ -22,9 +22,6 @@ const CHARGE_TIME_MAX = 5.0; // seconds for max charge (matches Benny's Mini Gol
 // five-second window put 90% of the power in the last two seconds, which
 // made every shot feeble unless held to the very end.
 const CHARGE_POWER_CURVE = 1.6;
-// Holding Enter opens the pause menu. It has to outlast a full charge, or
-// winding a shot all the way up would pause the game instead of bowling it.
-const PAUSE_HOLD_TIME = CHARGE_TIME_MAX + 3.0;
 // Aiming audio cue: the miss distance treated as "completely off". There is no
 // on-target constant -- that threshold falls out of the ball and pin radii in
 // aimCueTarget().
@@ -596,9 +593,20 @@ var pauseHoldStart = 0.0;
 var pauseLastBackStep = 0.0;
 var pauseBackScanAnnounced = false; // TTS announced flag
 var autoScanLastTime = 0.0; // Added for Auto Scan support
-// Enter hold to pause
+// Enter press in flight during play
 var enterHeld = false;
 var enterHoldStart = 0.0;
+// Gameplay scan layer. Holding Enter cannot open the pause menu here -- that
+// gesture already means "charge the shot" -- so the pause menu becomes a scan
+// target sitting alongside the ball. Every turn starts on the ball.
+var GAMEPLAY_SCAN_ITEMS = ['Bowling ball', 'Pause'];
+var gameplayScanIndex = 0;
+var ballSelected = false;            // false => the scanner owns Space and Enter
+var gameplayScanHeld = false;
+var gameplayHoldStart = 0.0;
+var gameplayLastBackStep = 0.0;
+var gameplayBackScanAnnounced = false;
+var gameplayScanWasActive = false;    // activation edge, for the Auto Scan clock
 
 class Player {
 	constructor(id, local, physics, scores, ballMesh, pinMeshes) {
@@ -707,8 +715,10 @@ function init() {
 	].join(';');
 	helpTipsDiv.innerHTML = [
 		'<div data-tips="full">Drag ball to position; drag forward to throw.</div>',
-		'<div data-tips="full">Keyboard: Space = move, Enter = aim, Space = set angle, Hold Enter = charge, release to bowl.</div>',
-		'<div data-tips="brief" style="display:none">Space = move &middot; Enter = aim &middot; hold Enter = bowl</div>'
+		'<div data-tips="full" data-tips-mode="scan">Space = scan (hold to scan backwards), Enter = select the ball or Pause.</div>',
+		'<div data-tips="full" data-tips-mode="ball">Space = move, Enter = lock, Space = aim, hold Enter = charge, release to bowl.</div>',
+		'<div data-tips="brief" data-tips-mode="scan" style="display:none">Space = scan &middot; Enter = select</div>',
+		'<div data-tips="brief" data-tips-mode="ball" style="display:none">Space = move &middot; Enter = lock &middot; hold Enter = bowl</div>'
 	].join('');
 	container.appendChild(helpTipsDiv);
 
@@ -717,6 +727,7 @@ function init() {
 	pauseUIButton.textContent = 'PAUSE';
 	pauseUIButton.style = "position: fixed; left: 12px; bottom: 12px; z-index: 1500; padding:8px 12px; color:#00ff99; background:#000000; border:2px solid #00ff99; border-radius:8px; font-weight:800; letter-spacing:1px; cursor:pointer; box-shadow:0 0 8px #00ff99;";
 	pauseUIButton.onclick = function(){ if (gameState === 'playing') { openPauseMenu(); } };
+	pauseUIButton.setAttribute('aria-label', 'Pause');
 	pauseUIButton.style.display = 'none';   // only shown during play
 	container.appendChild(pauseUIButton);
 
@@ -795,6 +806,7 @@ function resetShotState() {
 	stopRollingLoop();
 	var p = getLocalPlayer();
 	if (p) setAimHelperVisible(p, false);
+	armGameplayScanLayer();
 }
 
 function allPlayersFinished() {
@@ -1171,8 +1183,13 @@ function initScene() {
 			setupScanHeld = false;
 			setupHoldStart = 0.0;
 			setupBackScanAnnounced = false;
+			gameplayScanHeld = false;
+			gameplayHoldStart = 0.0;
+			gameplayBackScanAnnounced = false;
 			// If cancelled due to 'too-short', still perform forward scan in menu - user intended to press
-			if (tooShort && (gameState === 'menu' || gameState === 'paused')) {
+			if (tooShort && gameplayScanActive()) {
+				stepGameplayScan(1);
+			} else if (tooShort && (gameState === 'menu' || gameState === 'paused')) {
 				if (setupIsOpen()) {
 					setupFocusIndex = (setupFocusIndex + 1) % setupItems.length;
 					applySetupFocus();
@@ -1204,6 +1221,10 @@ function initScene() {
 				} else {
 					handlePauseMenuEnter();
 				}
+			} else if (tooShort && wasEnterHeld && gameplayScanActive()) {
+				// The scan layer owns this press: let it select, exactly as a
+				// too-short press still selects in the menus.
+				handleGameplayScanEnter();
 			} else if (gameState === 'playing') {
 				if (charging) {
 					// Abort the charge rather than bowling: a press the filter
@@ -1340,6 +1361,56 @@ function updateScene(dt) {
 		for (var i = 0; i < imitations.length; i++) {
 			updateImitation(imitations[i], dt);
 		}
+	}
+
+	// Gameplay scan layer timers. Same contract as every menu in the hub: a
+	// short Space steps forward, a 3s hold scans backwards at the player's scan
+	// interval until the switch is released, and Auto Scan steps on its own.
+	// The list being two items long changes nothing about the gesture.
+	if (gameplayScanActive()) {
+		var nowG = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+		var smG = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
+		var scanIntG = (smG ? smG.getScanInterval() : 2000) / 1000.0;
+
+		// The layer sleeps while the ball rolls, so restart the Auto Scan clock
+		// the moment it wakes -- otherwise the whole roll counts as dwell time
+		// and the scanner steps off the ball on the first frame back.
+		if (!gameplayScanWasActive) {
+			gameplayScanWasActive = true;
+			autoScanLastTime = nowG;
+		}
+
+		if (smG && smG.getSettings().autoScan && !gameplayScanHeld) {
+			if ((nowG - autoScanLastTime) >= scanIntG) {
+				autoScanLastTime = nowG;
+				stepGameplayScan(1);
+			}
+		}
+
+		if (gameplayScanHeld) {
+			var heldG = Math.max(0.0, nowG - gameplayHoldStart);
+			if (heldG >= 3.0) {
+				if (!gameplayBackScanAnnounced) {
+					gameplayBackScanAnnounced = true;
+					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
+				}
+				if ((nowG - gameplayLastBackStep) >= scanIntG) {
+					gameplayLastBackStep = nowG;
+					stepGameplayScan(-1);
+				}
+			}
+		}
+
+		applyGameplayScanFocus(false);
+		updateBallScanPulse(nowG);
+	} else {
+		// Not the player's moment to choose: drop both highlights so nothing
+		// glows while the ball is rolling or a menu is up.
+		setBallScanHighlight(false);
+		setPauseScanHighlight(false);
+		gameplayScanHeld = false;
+		gameplayBackScanAnnounced = false;
+		gameplayScanWasActive = false;
 	}
 
 	// Handle menu/pause scanning timers when in menu or paused
@@ -1514,16 +1585,6 @@ function updateScene(dt) {
 		}
 	}
 
-	// Enter hold to open pause menu. While charging, holding Enter already
-	// means "wind up the shot", so it must never also mean "pause".
-	if (gameState === 'playing' && enterHeld && !charging) {
-		var now2 = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
-		if ((now2 - enterHoldStart) >= PAUSE_HOLD_TIME) {
-			enterHeld = false;
-			openPauseMenu();
-		}
-	}
-
 	// Animate ambient effects per theme. Only the mural and the lamps move --
 	// the alley itself is fixed geometry that has to stay put under the physics.
 	if (themeEnv && themeEnv.key) {
@@ -1658,6 +1719,8 @@ function intersectTouchPlane(ray) {
 
 // Helper for Unified Input (Keyboard Enter, Mouse Click, Touch Tap)
 function handleGameInputDown() {
+	// Before the ball is picked, Space and Enter belong to the scanner.
+	if (gameplayScanActive()) return;
 	var localPlayer = getLocalPlayer();
 	if (!localPlayer) return;
 	if (localPlayer.physics.simulationActive) return;
@@ -1698,6 +1761,7 @@ function cancelCharge() {
 }
 
 function handleGameInputUp() {
+	if (gameplayScanActive()) return;
 	var localPlayer = getLocalPlayer();
 	if (!localPlayer) return;
 	if (localPlayer.physics.simulationActive) return;
@@ -1740,6 +1804,8 @@ function handleGameInputUp() {
 		aimHeld = false;
 		setAimHelperVisible(localPlayer, false);
 		if (chargeBar) chargeBar.style.display = "none";
+		// The ball is gone: the next one starts back at the scan layer.
+		armGameplayScanLayer();
 	}
 }
 
@@ -1747,7 +1813,8 @@ function onActionDown(clientX, clientY, time) {
 	// If Auto Scan is ON, act as Enter input
 	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
 	if (sm && sm.getSettings().autoScan) {
-		handleGameInputDown();
+		// At the scan layer a tap is a select, and it lands on release.
+		if (!gameplayScanActive()) handleGameInputDown();
 		return; // Skip drag logic
 	}
 
@@ -1772,6 +1839,8 @@ function onActionDown(clientX, clientY, time) {
 
 	pickSphere.center.set(localPlayer.physics.releasePosition, BALL_HEIGHT, BALL_LINE);
 	if (raycaster.ray.intersectsSphere(pickSphere)) {
+		// Grabbing the ball is a mouse user picking it out of the scan layer.
+		if (!ballSelected) selectBallForPlay(false);
 		pickOffset = dragPoint.x - localPlayer.physics.releasePosition;
 		pickPoint.copy(dragPoint);
 		pickingBall = true;
@@ -1822,7 +1891,11 @@ function onActionUp(clientX, clientY, time) {
 	// If Auto Scan is ON, act as Enter input
 	var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
 	if (sm && sm.getSettings().autoScan) {
-		handleGameInputUp();
+		if (gameplayScanActive()) {
+			handleGameplayScanEnter();
+		} else {
+			handleGameInputUp();
+		}
 		pickingBall = false; // Ensure no lingering drag state
 		return;
 	}
@@ -1945,6 +2018,28 @@ function onDocumentKeyDown(event) {
 			return;
 		}
 	}
+	// Gameplay scan layer owns both keys until the ball is selected.
+	if (gameplayScanActive()) {
+		if (event.code === 'Space') {
+			event.preventDefault();
+			if (event.repeat) return;
+			if (!gameplayScanHeld) {
+				gameplayScanHeld = true;
+				gameplayHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+				gameplayLastBackStep = gameplayHoldStart;
+			}
+			return;
+		}
+		if (event.code === 'Enter') {
+			event.preventDefault();
+			if (event.repeat) return;
+			enterHeld = true;
+			enterHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+			return;
+		}
+		return;
+	}
+
 	if (event.code === "Space") {
 		// Prevent page scroll on space
 		event.preventDefault();
@@ -2077,6 +2172,30 @@ function onDocumentKeyUp(event) {
 			return;
 		}
 	}
+	// Gameplay scan layer owns both keys until the ball is selected.
+	if (gameplayScanActive()) {
+		if (event.code === 'Space') {
+			event.preventDefault();
+			var tG = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+			// A short press steps forward. A long hold has already been
+			// scanning backwards, so releasing it only stops the scan.
+			if (Math.max(0.0, tG - gameplayHoldStart) < 3.0) {
+				stepGameplayScan(1);
+			}
+			gameplayScanHeld = false;
+			gameplayBackScanAnnounced = false;
+			return;
+		}
+		if (event.code === 'Enter') {
+			event.preventDefault();
+			enterHeld = false;
+			if (event.repeat) return;
+			handleGameplayScanEnter();
+			return;
+		}
+		return;
+	}
+
 	if (event.code === "Space") {
 		event.preventDefault();
 		if (aimingMode) {
@@ -2134,6 +2253,8 @@ function onDocumentKeyUp(event) {
 			aimHeld = false;
 			setAimHelperVisible(localPlayer, false);
 			if (chargeBar) chargeBar.style.display = "none";
+			// The ball is gone: the next one starts back at the scan layer.
+			armGameplayScanLayer();
 			return;
 		}
 	}
@@ -2821,6 +2942,7 @@ function resumeGame() {
 	gameState = 'playing';
 	// reset scanning states
 	pauseScanHeld = false; menuScanHeld = false; settingsScanHeld = false;
+	armGameplayScanLayer();
 	updatePauseUIButtonVisibility();
 	updateHelpTipsVisibility();
 }
@@ -2839,6 +2961,201 @@ function applySettings() {
 		BowlCues.setChargeEnabled(SFX_ENABLED && settings.chargeCues !== false);
 		BowlCues.setAimEnabled(SFX_ENABLED && settings.aimCues !== false);
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Gameplay scan layer
+//
+// Two scan objects while a turn is live: the ball and the pause button. It
+// exists because holding Enter during play already means "charge the shot", so
+// the old hold-to-pause gesture could not survive alongside it. Making pause a
+// scan target is how the rest of the hub solves the same problem.
+// ---------------------------------------------------------------------------
+
+// True only when the player can actually choose: their turn, ball at rest, no
+// menu up, and the ball not already picked.
+function gameplayScanActive() {
+	if (gameState !== 'playing') return false;
+	if (ballSelected) return false;
+	var p = getLocalPlayer();
+	if (!p || p.physics.simulationActive) return false;
+	if (pickingBall || positioningBall || rollingBall) return false;
+	return true;
+}
+
+// Every ball starts back on the ball itself, so the player never has to
+// remember where the scanner was left.
+function armGameplayScanLayer() {
+	ballSelected = false;
+	gameplayScanIndex = 0;
+	gameplayScanHeld = false;
+	gameplayBackScanAnnounced = false;
+	gameplayHoldStart = 0.0;
+	gameplayLastBackStep = 0.0;
+	gameplayScanWasActive = false;
+	autoScanLastTime = (typeof clock !== 'undefined' && typeof clock.getElapsedTime === 'function')
+			? clock.getElapsedTime() : 0.0;
+	updateHelpTipsMode();
+}
+
+// dir is +1 forward, -1 backward. Both wrap, so backward scanning behaves here
+// exactly as it does in a ten-item menu.
+function stepGameplayScan(dir) {
+	var n = GAMEPLAY_SCAN_ITEMS.length;
+	gameplayScanIndex = ((gameplayScanIndex + dir) % n + n) % n;
+	applyGameplayScanFocus(true);
+}
+
+function applyGameplayScanFocus(announce) {
+	var onPause = (gameplayScanIndex === 1);
+	setPauseScanHighlight(onPause);
+	setBallScanHighlight(!onPause);
+	if (announce) speakText(GAMEPLAY_SCAN_ITEMS[gameplayScanIndex]);
+}
+
+function handleGameplayScanEnter() {
+	if (gameplayScanIndex === 1) {
+		openPauseMenu();
+		return;
+	}
+	selectBallForPlay(true);
+}
+
+// Leaving the scan layer for the shot itself. From here the controls are the
+// ones the game always had: Space moves, Enter locks, Space aims, hold Enter
+// charges, release bowls.
+function selectBallForPlay(announce) {
+	var p = getLocalPlayer();
+	if (!p || p.physics.simulationActive) return;
+	ballSelected = true;
+	gameplayScanHeld = false;
+	gameplayBackScanAnnounced = false;
+	setBallScanHighlight(false);
+	setPauseScanHighlight(false);
+	updateHelpTipsMode();
+	if (announce) speakText('Move the ball');
+}
+
+// The pause button is a DOM node, so it takes exactly the focus treatment the
+// menu items use.
+function setPauseScanHighlight(on) {
+	try {
+		if (!pauseUIButton) return;
+		on = !!on;
+		if (pauseUIButton._scanFocused === on) return;
+		pauseUIButton._scanFocused = on;
+		pauseUIButton.style.outline = on ? '3px solid #00ff99' : 'none';
+		pauseUIButton.style.background = on ? '#00ff99' : '#000000';
+		pauseUIButton.style.color = on ? '#000000' : '#00ff99';
+		pauseUIButton.style.boxShadow = on ? '0 0 20px #00ff99' : '0 0 8px #00ff99';
+	} catch(e) {}
+}
+
+// The ball is a 3D object and cannot take the green outline the menu items use.
+// It gets a pulsing ring on the lane around it instead, plus a light emissive
+// lift on the ball itself.
+//
+// The ring carries the signal and the lift only supports it. Washing the ball
+// in emissive green on its own was tried first and read as "faded", not
+// "selected": the skins own the ball's colour, and adding green to a saturated
+// red just desaturates it. A ring on the floor is unambiguous, survives every
+// skin, and never covers the ball it is pointing at.
+var ballHighlight = null;
+
+var BALL_SCAN_RING_COLOR = 0x00ff99;
+
+function ensureBallScanRing(player) {
+	if (player._scanRing) return player._scanRing;
+	if (!player.ballMesh || !player.ballMesh.parent) return null;
+	var inner = BALL_RADIUS * 1.45;
+	var outer = BALL_RADIUS * 2.15;
+	var geo = new THREE.RingGeometry(inner, outer, 48);
+	var mat = new THREE.MeshBasicMaterial({
+		color: BALL_SCAN_RING_COLOR,
+		transparent: true,
+		opacity: 0.8,
+		side: THREE.DoubleSide,
+		// Depth testing stays ON so the ball occludes the far side of the ring.
+		// Without it the ring paints straight across the ball it is marking.
+		depthWrite: false
+	});
+	var ring = new THREE.Mesh(geo, mat);
+	ring.rotation.x = -Math.PI / 2;   // lay it flat on the lane
+	ring.visible = false;
+	player.ballMesh.parent.add(ring);
+	player._scanRing = ring;
+	return ring;
+}
+
+function setBallScanHighlight(on) {
+	if (!on) {
+		if (!ballHighlight) return;
+		if (ballHighlight.ring) ballHighlight.ring.visible = false;
+		ballHighlight.entries.forEach(function (e) {
+			e.mat.emissive.setHex(e.emissive);
+			if ('emissiveIntensity' in e.mat) e.mat.emissiveIntensity = e.intensity;
+			e.mat.needsUpdate = true;
+		});
+		ballHighlight = null;
+		return;
+	}
+
+	var p = getLocalPlayer();
+	if (!p || !p.ballMesh) return;
+	if (ballHighlight && ballHighlight.mesh === p.ballMesh) return;
+	// A different player's ball is lit: put that one back first.
+	setBallScanHighlight(false);
+
+	var entries = [];
+	p.ballMesh.traverse(function (obj) {
+		if (!obj.isMesh || !obj.material) return;
+		var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+		for (var i = 0; i < mats.length; i++) {
+			var m = mats[i];
+			if (!m || !m.emissive) continue;
+			entries.push({
+				mat: m,
+				emissive: m.emissive.getHex(),
+				intensity: ('emissiveIntensity' in m) ? m.emissiveIntensity : 1.0
+			});
+		}
+	});
+
+	var ring = ensureBallScanRing(p);
+	if (ring) ring.visible = true;
+	ballHighlight = { mesh: p.ballMesh, entries: entries, ring: ring, player: p };
+}
+
+function updateBallScanPulse(t) {
+	if (!ballHighlight) return;
+	var s = Math.sin(t * 4.0);
+
+	// Keep the lift small: enough that the ball reads as live, not so much that
+	// it buries the skin the player chose.
+	var k = 0.16 + 0.12 * s;
+	ballHighlight.entries.forEach(function (e) {
+		e.mat.emissive.setHex(BALL_SCAN_RING_COLOR);
+		if ('emissiveIntensity' in e.mat) e.mat.emissiveIntensity = k;
+	});
+
+	var ring = ballHighlight.ring;
+	if (!ring) return;
+	var p = ballHighlight.player;
+	// Follow the ball rather than the lane: on a spare the ball sits wherever
+	// the last shot left it.
+	var x = (p && p.physics) ? p.physics.releasePosition : 0.0;
+	ring.position.set(x, BASE_HEIGHT + 0.004, BALL_LINE);
+	var scale = 1.0 + 0.10 * s;
+	ring.scale.set(scale, scale, 1.0);
+	ring.material.opacity = 0.62 + 0.28 * s;
+}
+
+// Show the hints belonging to whichever layer currently has the controls.
+function updateHelpTipsMode() {
+	try {
+		if (!helpTipsDiv) return;
+		layoutHelpTips();
+	} catch(e) {}
 }
 
 function updatePauseUIButtonVisibility() {
@@ -2900,6 +3217,7 @@ function startGame() {
 	// Reset menu scanning states
 	menuScanHeld = false; settingsScanHeld = false;
 	menuFocusIndex = -1; settingsFocusIndex = 0;
+	armGameplayScanLayer();
 	updatePauseUIButtonVisibility();
 	updateHelpTipsVisibility();
 	layoutUI();
@@ -3302,13 +3620,20 @@ function layoutHelpTips() {
 			helpTipsDiv.style.fontSize = '';
 			helpTipsDiv.style.textAlign = 'center';
 		}
+		// A hint line tagged with a layer only shows while that layer has the
+		// controls, so the player is never told to aim while they are scanning.
+		var mode = ballSelected ? 'ball' : 'scan';
+		var wrongLayer = function (el) {
+			var m = el.getAttribute('data-tips-mode');
+			return !!m && m !== mode;
+		};
 		var full = helpTipsDiv.querySelectorAll('[data-tips="full"]');
 		for (var i = 0; i < full.length; i++) {
-			full[i].style.display = narrow ? 'none' : '';
+			full[i].style.display = (narrow || wrongLayer(full[i])) ? 'none' : '';
 		}
 		var brief = helpTipsDiv.querySelectorAll('[data-tips="brief"]');
 		for (var j = 0; j < brief.length; j++) {
-			brief[j].style.display = narrow ? '' : 'none';
+			brief[j].style.display = (narrow && !wrongLayer(brief[j])) ? '' : 'none';
 		}
 	} catch (e) {}
 }

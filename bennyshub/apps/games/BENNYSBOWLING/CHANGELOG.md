@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026‑09 — Gameplay scan layer
+- **The pause menu is now a scan object.** Holding Enter during play means "charge the shot", so the hold‑to‑pause gesture could not survive alongside it and has been removed. Every ball now opens on a two‑object scan layer — the bowling ball and the Pause button — which is how the rest of the hub reaches a pause menu when the hold gesture is already taken.
+- The layer follows the same scan contract as every menu in the hub: a short Space steps forward, a long hold announces "Backwards scanning" and steps backward at the player's scan interval **until the switch is released**, Enter selects, and Auto Scan steps on its own. The list being two items long changes nothing about the gesture.
+- The ball is highlighted first on every ball, so a player who only wants to bowl presses Enter and gets the shot they always had: Space moves, Enter locks, Space aims, hold Enter charges, release bowls.
+- The ball is marked by a pulsing green ring on the lane around it, plus a light emissive lift on the ball itself. Emissive alone was tried first and read as "faded" rather than "selected" — the skins own the ball's colour, and adding green to a saturated red just desaturates it. The ring is unambiguous, survives every skin, and the ball occludes its far side so it never paints over what it is marking. The Pause button takes the same green focus treatment the menu items use.
+- The layer sleeps while the ball is rolling and wakes when it stops, restarting the Auto Scan clock as it wakes so the roll does not count as dwell time and step the scanner off the ball.
+
 ## 2026‑08 — Multiplayer, audio cues and mobile layout
 - **Fixed a stuck-switch bug that only appeared inside the hub.** The shared scan manager filters out presses shorter than the user's tremor threshold and swallows the keyup of a rejected press. The game reset its menu scan state on the resulting `narbe-input-cancelled` event but never its gameplay state, so a quick tap left `spaceHeld` set and the ball oscillated as though the switch were still held. The hub pushes its own, higher, threshold into the iframe over `postMessage`, which is why launching `index.html` directly never showed it.
 - Up to 4 players, hot-seat on the centre lane. Each has a colour, their own ball, and their own scoresheet; the scoreboard names whose turn it is and shows everyone's running total. Turn passes when a frame closes, finished players are skipped, and the game-over screen ranks all players and names the winner.
