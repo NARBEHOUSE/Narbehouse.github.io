@@ -313,6 +313,33 @@ animations
     key 0% pose=front_set
     key 100% pose=front_set
 
+  # A place kick contacts the low ball before the high follow-through.
+  anim placekick dur=0.83
+    ch thigh.r pitch 0%=0 22%=30 44%=-6 67%=-62 89%=-35 100%=0
+    ch shin.r pitch 0%=4 22%=45 44%=4 67%=6 89%=14 100%=4
+    ch foot.r pitch 0%=0 22%=12 44%=-12 67%=-18 89%=-8 100%=0
+    ch chest pitch 0%=0 22%=8 44%=-4 67%=-9 100%=0
+    ch upperarm.l pitch 0%=0 22%=-24 44%=-32 67%=-36 100%=0
+    ch upperarm.r pitch 0%=0 22%=20 44%=24 67%=28 100%=0
+    ch upperarm.l tilt 0%=0 22%=18 67%=24 100%=0
+    ch upperarm.r tilt 0%=0 22%=-18 67%=-24 100%=0
+
+  pose holder_set
+    pelvis pitch=10
+    chest pitch=28
+    head pitch=-24
+    thigh.l pitch=-78
+    shin.l pitch=100
+    thigh.r pitch=12
+    shin.r pitch=105
+    upperarm.l pitch=-38 tilt=8
+    upperarm.r pitch=-38 tilt=-8
+    forearm.* pitch=18
+
+  anim holder loop dur=1
+    key 0% pose=holder_set
+    key 100% pose=holder_set
+
   # Hands out in front, weight over the pads; not an idle pose at contact.
   anim block loop dur=0.8
     ch chest pitch 0%=-8 50%=-14 100%=-8

@@ -242,6 +242,67 @@ for(const id of ['INSIDE_RUN','OUTSIDE_RUN']) {
     assert(new Set(yards).size>=4,'runs produce varied gains');
     distribution[id]={min:Math.min(...yards),max:Math.max(...yards),average:+(yards.reduce((a,b)=>a+b,0)/yards.length).toFixed(2)};
 }
+for(const us of [true,false]) for(const pat of [false,true]) for(const classic of [false,true]) {
+    seed=17;const yard=us?(pat?85:65):(pat?3:35),s=fixture(yard,!us,classic);
+    s.kickToOpponent=()=>{s.result={kickoff:'them'};};s.kickoffToUs=()=>{s.result={kickoff:'us'};};
+    s.isPAT=pat;s.fgDist=pat?20:52;s.aimWindow=.3;
+    if(us)s.kickFieldGoal(0,100);else if(pat)s.oppKickPAT();else s.oppKickFG();
+    s.until(()=>!!s._placeKick);
+    const set=s._placeKick;
+    assert.equal(set.kicker.role,'K');assert.equal(set.holder.role,'H');assert.equal(set.snapper.role,'LS');
+    assert.notEqual(set.kicker,set.holder,'holder does not take the kick');
+    const holderPosition=[set.holder.x,set.holder.y];
+    let heldBall=false,kickPose=false,followThrough=false;
+    while(!s.result&&s.now<24000) {
+        if(!set.struck)assert.equal(s.gs.score[us?'us':'them'],0,'no score before foot contact');
+        s.tick();heldBall ||= !!s.ball.placed;
+        kickPose ||= set.kicker._spr?.action?.clip===P.anims.placekick;
+        if(!classic) {
+            assert.equal(set.holder._spr.sheet,P.actions.baseKey,'holder uses the kneeling sheet');
+            assert.equal(Math.floor(set.holder._spr.base.frame/P.dirs),P.anims.holder.row,'holder stays visibly kneeling');
+            followThrough ||= set.struck && set.kicker._spr.sheet===P.actions.baseKey
+                && Math.floor(set.kicker._spr.base.frame/P.dirs)===P.anims.placekick.row+6;
+        }
+        assert.deepEqual([set.holder.x,set.holder.y],holderPosition,'holder stays planted through the kick');
+    }
+    assert(s.result,'field goal sequence completes');assert(heldBall,'snap reaches the holder before the approach');
+    if(!classic) {
+        assert(kickPose,'the kicker plays the dedicated place-kick animation');
+        assert(followThrough,'the kicking leg follows through after ball release');
+    }
+    assert.equal(s.gs.score[us?'us':'them'],pat?1:3);
+    assert.equal(s.log.filter(e=>e.key==='snap').length,1);assert.equal(s.log.filter(e=>e.key==='kick').length,1);
+}
+for(const [aim,power] of [[1,100],[0,0]]) {
+    const s=fixture(65);s.fgDist=52;s.aimWindow=.3;
+    s.kickFieldGoal(aim,power);s.until(()=>s.result,24000);
+    assert.equal(s.gs.score.us,0,'wide and short kicks do not score');
+    assert(s._placeKick.struck,'misses still animate a complete kick');
+    assert.equal(s.log.filter(e=>e.key==='kick').length,1);
+}
+{
+    const s=fixture(65);s.input={on(){},off(){}};
+    s.beginFgAim();assert.equal(s.phase,'transition','aim waits for the special-teams formation');
+    s.until(()=>s.phase==='fgaim');
+    assert.equal(s.ball.x,s._placeKick.snapper.x,'ball waits at the long snapper');
+    for(let i=0;i<180;i++)s.tick();
+    assert.equal(Math.floor(s._placeKick.holder._spr.base.frame/P.dirs),P.anims.holder.row);
+    assert.equal(Math.floor(s._placeKick.snapper._spr.base.frame/P.dirs),P.anims.stance_ol.row);
+    assert.equal(s.log.filter(e=>e.key==='snap').length,0,'aiming does not snap the ball');
+}
+if(process.argv.includes('--record-kick')) {
+    const s=fixture(65);s.fgDist=52;s.aimWindow=.3;s.kickToOpponent=()=>{s.result={done:true};};
+    let ready=false;s._setupPlaceKick(true,65,()=>ready=true);s.until(()=>ready);s.phase='fgaim';
+    const frames=[],start=s.now;
+    for(let i=0;i<100&&!s.result;i++) {
+        if(i===15){s.phase='anim';s.kickFieldGoal(0,100);}
+        s.tick(1000/30);
+        frames.push({time:s.now-start,ball:{x:s.ball.x,y:s.ball.y,visible:s.ball.visible,placed:s.ball.placed},struck:!!s._placeKick.struck,
+            players:s.offense.concat(s.defense).map(p=>({x:p.x,y:p.y,frame:p._spr.base.frame,sheet:p._spr.sheet,role:p.role}))});
+    }
+    fs.mkdirSync(path.join(__dirname,'out'),{recursive:true});
+    fs.writeFileSync(path.join(__dirname,'out/kick-playback.json'),JSON.stringify({frames}));
+}
 if(process.argv.includes('--record')) {
     const s=fixture(30);seed=61;const frames=[];s.execRun(PLAYS.OUTSIDE_RUN);
     while(!s.result&&s.now<15000){s.tick(1000/30);frames.push({time:s.now,ball:s.ball.carrier?s.offense.concat(s.defense).indexOf(s.ball.carrier):-1,
@@ -252,4 +313,4 @@ if(process.argv.includes('--record')) {
 if(process.argv.includes('--verbose'))console.log(JSON.stringify(report,null,2));
 console.log('Run distribution (100 seeded plays each):',distribution);
 console.log('Passing focus (px/s and px/s²):',focusMetrics.map(({positions,...metrics})=>metrics));
-console.log('Gameplay checks passed: contact and yardage, bounds, goal lines, routes, accessible selection waits, passing, interceptions, recovery, movement ownership, pause, both kickoff/punt directions and 120 CPU play calls.');
+console.log('Gameplay checks passed: contact and yardage, bounds, goal lines, routes, accessible selection waits, passing, interceptions, recovery, movement ownership, pause, both kickoff/punt directions, field goals and extra points for both teams, and 120 CPU play calls.');

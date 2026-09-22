@@ -72,8 +72,9 @@ const png = (f) => {
 };
 const want = { w: meta.directions * meta.frameWidth, h: meta.rows * meta.frameHeight };
 check(want.w <= 4096 && want.h <= 4096, 'atlas stays within a 4096px texture');
-check(P.anims.kick.strikeFrame >= 0 && P.anims.kick.strikeFrame < P.anims.kick.frames,
-  'kick contact frame is inside the clip');
+for (const name of ['kick','placekick'])
+  check(P.anims[name].strikeFrame >= 0 && P.anims[name].strikeFrame < P.anims[name].frames,
+    name + ' contact frame is inside the clip');
 for (const f of ['gridiron_base.png', 'gridiron_jersey.png', 'gridiron_glow.png']) {
   let got;
   try { got = png(f); } catch (e) { check(false, `${f} is missing`); continue; }

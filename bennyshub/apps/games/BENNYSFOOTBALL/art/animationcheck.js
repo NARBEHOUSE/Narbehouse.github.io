@@ -136,7 +136,7 @@ for (const phase of ['playcall','defcall','transition','message']) {
     assert(inClip(p, 'idle'));
     assert.equal(p._spr.showsBall, false);
 }
-for (const classic of [false, true]) {
+for (const clipName of ['kick','placekick']) for (const classic of [false, true]) {
     const { scene, p } = fixture();
     if (classic) delete p._spr;
     let arrival, timer, strikes = 0, kicks = 0;
@@ -146,15 +146,16 @@ for (const classic of [false, true]) {
     };
     scene.time = { delayedCall: (delay, done) => { timer = { delay, done }; } };
     scene.audio = { play: key => { assert.equal(key, 'kick'); kicks++; } };
-    scene._kickFrom(p, { x: 300, y: 200 }, { x: 900, y: 200 }, () => strikes++);
+    scene._kickFrom(p, { x: 300, y: 200 }, { x: 900, y: 200 }, () => strikes++, clipName);
     assert.equal(strikes, 0, 'approach must finish before launch');
     assert.equal(scene.ball.carrier, null);
     arrival();
     assert.equal(strikes, 0, 'wind-up must finish before launch');
-    assert.equal(timer.delay, classic ? 0 : P.anims.kick.strikeFrame / P.anims.kick.fps * 1000);
+    const clip=P.anims[clipName];
+    assert.equal(timer.delay, classic ? 0 : clip.strikeFrame / clip.fps * 1000);
     if (!classic) {
         scene._updatePlayerSprites(timer.delay);
-        assert.equal(row(p), P.anims.kick.row + P.anims.kick.strikeFrame);
+        assert.equal(row(p), clip.row + clip.strikeFrame);
     }
     timer.done();
     assert.equal(strikes, 1);
@@ -180,8 +181,9 @@ for (const method of ['kickFieldGoal', 'oppKickFG', 'oppKickPAT']) {
         audio: { play() {}, speak() {} }, time: { delayedCall: (delay, done) => done() },
         tweens: { add: () => flights++ }, jog() {}, _zoomOut() {},
         idealKickPower: () => 70,
-        _kickFrom: (kicker, spot, target, onStrike) => {
-            assert(Number.isFinite(spot.x) && Number.isFinite(spot.y));
+        _runPlaceKick: (us, yard, target, onStrike) => {
+            assert.equal(us,method==='kickFieldGoal');
+            assert(Number.isFinite(yard));
             assert(Number.isFinite(target.x));
             strike = onStrike;
         }

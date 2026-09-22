@@ -71,6 +71,8 @@ ACTION_CLIPS = [
     {"name": "celebrate", "anim": "celebrate", "frames": 8},
     {"name": "stance_ol", "anim": "stance_ol", "frames": 1, "ground": True},
     {"name": "stance_dl", "anim": "stance_dl", "frames": 1, "ground": True},
+    {"name": "placekick", "anim": "placekick", "frames": 10, "ground": True},
+    {"name": "holder", "anim": "holder", "frames": 1, "ground": True},
 ]
 
 

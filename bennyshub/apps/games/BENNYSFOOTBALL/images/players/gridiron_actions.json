@@ -13,7 +13,7 @@
     270.0,
     315.0
   ],
-  "rows": 24,
+  "rows": 35,
   "footFrac": 0.9688,
   "anims": {
     "recover": {
@@ -46,6 +46,20 @@
     },
     "stance_dl": {
       "row": 23,
+      "frames": 1,
+      "loop": true,
+      "ground": true,
+      "ballFrames": []
+    },
+    "placekick": {
+      "row": 24,
+      "frames": 10,
+      "loop": false,
+      "ground": true,
+      "ballFrames": []
+    },
+    "holder": {
+      "row": 34,
       "frames": 1,
       "loop": true,
       "ground": true,

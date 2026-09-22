@@ -732,9 +732,9 @@ class GameScene extends Phaser.Scene {
                 // into their hand; everyone else from the empty-handed one.
                 const carrying = this.ball && this.ball.carrier === p;
                 const preSnap = this._lineFormationReady && !s.moving && !carrying
-                    && ['playcall', 'defcall', 'transition', 'message'].includes(this.phase);
+                    && ['playcall', 'defcall', 'transition', 'message', 'fgaim', 'fgcharge'].includes(this.phase);
                 const stance = preSnap && (p.role === 'DL' ? P.anims.stance_dl
-                    : p.role === 'OL' || p.role === 'TE' ? P.anims.stance_ol : null);
+                    : ['OL','TE','LS'].includes(p.role) ? P.anims.stance_ol : null);
                 clip = p._blocking && !carrying ? P.anims.block : s.moving ? (carrying ? P.anims.run_carry : RUN)
                     : stance || (carrying ? P.anims.idle_carry : P.anims.idle);
                 const phase = p._blocking ? (s.blockPhase = (s.blockPhase || 0) + dt * P.anims.block.fps)
@@ -764,7 +764,7 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // Play a one-shot action clip on a player. Safe to call for disc players
+    // Play a one-shot action or held pose. Safe to call for disc players
     // and for any name the bake did not produce — both are simply ignored, so
     // callers never have to check which rendering mode is active.
     //
@@ -777,7 +777,7 @@ class GameScene extends Phaser.Scene {
         const s = p && p._spr;
         if (!s) return;
         const clip = PLAYER_SPRITE.anims[name];
-        if (!clip || clip.loop) return;
+        if (!clip || (clip.loop && !clip.hold)) return;
         if (face && (face.x !== p.x || face.y !== p.y)) {
             s.dir = spriteDirIndex(Math.atan2(face.y - p.y, face.x - p.x));
         }
@@ -953,24 +953,93 @@ class GameScene extends Phaser.Scene {
 
     // Approach the ball, plant, and launch only when the boot reaches contact.
     // Shared by both teams, field goals, extra points, punts and kickoffs.
-    _kickFrom(p, spot, target, onStrike) {
+    _kickFrom(p, spot, target, onStrike, clipName = 'kick') {
         this.ball.carrier = null;
         this.ball.visible = true;
         this.ball.x = spot.x; this.ball.y = spot.y;
         const direction = target.x >= spot.x ? 1 : -1;
+        const clip = PLAYER_SPRITE.anims[clipName];
+        const contact = clip.contactOffsets && p._spr
+            ? clip.contactOffsets[direction > 0 ? 6 : 2] : { x: direction * 12, y: 0 };
         this.tweens.killTweensOf(p);
         this.stopBob(p);
-        const approachX = spot.x - direction * 12;
-        const duration = this._capJogDur(p, approachX, spot.y, 200);
-        this.jog(p, approachX, spot.y, duration, 'Sine.easeOut', () => {
-            this.playPlayerAction(p, 'kick', target);
-            const clip = PLAYER_SPRITE.anims.kick;
+        const approachX = spot.x - contact.x, approachY = spot.y - contact.y;
+        const duration = this._capJogDur(p, approachX, approachY, clipName === 'placekick' ? 320 : 200);
+        this.jog(p, approachX, approachY, duration, 'Sine.easeOut', () => {
+            this.playPlayerAction(p, clipName, clipName === 'placekick' ? { x: target.x, y: p.y } : target);
             const delay = p._spr ? clip.strikeFrame / clip.fps * 1000 : 0;
             this.time.delayedCall(delay, () => {
+                this.ball.placed = false;
                 this.audio.play('kick');
                 onStrike();
             });
         });
+    }
+
+    _placeKickSpot(yard, dir) {
+        return this._motion().point(ydToX(yard) - dir * 49, FIELD.MID_Y);
+    }
+
+    _setupPlaceKick(us, yard, then) {
+        const dir = us ? 1 : -1, los = ydToX(yard), y = FIELD.MID_Y;
+        const attack = us ? this.offense : this.defense, defend = us ? this.defense : this.offense;
+        const spot = this._placeKickSpot(yard, dir);
+        const positions = [
+            { x: spot.x + dir * 12, y: y - 8 }, // holder, behind the ball so the kicking leg stays visible
+            { x: spot.x - dir * 42, y: y - 23 }, // kicker's angled approach
+            { x: los - dir * 8, y: y - 65 },
+            { x: los - dir * 8, y: y - 30 },
+            { x: los - dir * 8, y: y + 45 },
+            { x: los - dir * 4, y }             // long snapper
+        ].map(p => this._motion().point(p.x, p.y));
+        const rush = [-65,-30,0,45,-110,110].map((dy,i) =>
+            this._motion().point(los + dir * (i < 4 ? 17 : 38), y + dy));
+        ['H','K','OL','OL','OL','LS'].forEach((role,i) => this._setPlayerLabel(attack[i],role));
+        ['DL','DL','DL','DL','LB','LB'].forEach((role,i) => this._setPlayerLabel(defend[i],role));
+        this.ball.carrier = null; this.ball.visible = false;
+        this._resetFormation(us ? positions : rush, us ? rush : positions, 600, () => {
+            this._placeKick = { us, yard, dir, spot, attack, defend, holder: attack[0], kicker: attack[1],
+                snapper: attack[5], epoch: this._motion().epoch };
+            this.playPlayerAction(attack[0], 'holder', spot);
+            this.facePlayer(attack[1], spot);
+            this.ball.x = attack[5].x; this.ball.y = attack[5].y + 4;
+            this.ball.carrier = null; this.ball.visible = true; this.ball.placed = false;
+            then();
+        });
+    }
+
+    _runPlaceKick(us, yard, target, onStrike) {
+        const perform = () => {
+            const set = this._placeKick, motion = this._motion();
+            this._lineFormationReady = false;
+            this.ball.carrier = null; this.ball.visible = true;
+            this.audio.play('snap');
+            const snap = { t: 0 }, from = { x: set.snapper.x, y: set.snapper.y + 4 };
+            this.tweens.add({ targets: snap, t: 1, duration: 320, ease: 'Linear',
+                onUpdate: () => {
+                    this.ball.x = from.x + (set.spot.x - from.x) * snap.t;
+                    this.ball.y = from.y + (set.spot.y - from.y) * snap.t - Math.sin(snap.t * Math.PI) * 10;
+                },
+                onComplete: () => {
+                    this.ball.x = set.spot.x; this.ball.y = set.spot.y; this.ball.placed = true;
+                    // The protection meets the rush in front of the holder.
+                    set.attack.slice(2).forEach((p,i) => {
+                        const d = set.defend[[0,1,3,2][i]];
+                        motion.route(p, [{ x: p.x + set.dir * 7, y: p.y }], 40, () => { p._blocking = true; });
+                        motion.route(d, [{ x: p.x + set.dir * 26, y: p.y }], 48, () => {
+                            d._blocking = true; motion.face(d,p);
+                        });
+                    });
+                    motion.after(120, () => this._kickFrom(set.kicker, set.spot, target, () => {
+                        set.struck = true;
+                        onStrike();
+                    }, 'placekick'));
+                }
+            });
+        };
+        const set = this._placeKick;
+        if (set && set.us === us && set.yard === yard && set.epoch === this._motion().epoch && !set.struck) perform();
+        else this._setupPlaceKick(us, yard, perform);
     }
 
     // Hard reset of every action clip, for an instant snap into formation at a
@@ -1497,7 +1566,7 @@ class GameScene extends Phaser.Scene {
         if (this.playPanel) { this.playPanel.destroy(); this.playPanel = null; }
         if (this.playDiagram) { this.playDiagram.destroy(); this.playDiagram = null; }
         const play = PLAYS[playId];
-        this.audio.play('snap');
+        if (play.kind !== 'fg') this.audio.play('snap');
         if (play.kind === 'run') this.execRun(play);
         else if (play.kind === 'pass') this.startPass(play);
         else if (play.kind === 'fg') this.execFieldGoal();
@@ -2122,13 +2191,17 @@ class GameScene extends Phaser.Scene {
     beginExtraPoint() {
         this.isPAT = true;
         this.showPlayers(true);
-        this.repositionFormation(85);
         this.gs.ballPosition = 85;
         this.updateHUD();
         this.beginFgAim();
     }
 
     beginFgAim() {
+        this.phase = 'transition';
+        this._setupPlaceKick(true, this.gs.ballPosition, () => this._beginFgAimReady());
+    }
+
+    _beginFgAimReady() {
         this.phase = 'fgaim';
         this._aimHeld = false;
         if (this.isPAT) {
@@ -2148,7 +2221,7 @@ class GameScene extends Phaser.Scene {
         // Zoom to show both the kicker AND the goal posts in frame.
         // Pan to the midpoint between ball and uprights; zoom just enough to
         // make the posts readable without pushing the kicker off-screen.
-        const _fgBallX = ydToX(this.gs.ballPosition);
+        const _fgBallX = this._placeKickSpot(this.gs.ballPosition, 1).x;
         const _fgGoalX = FIELD.GOAL_R + 30;
         const _fgMidX = (_fgBallX + _fgGoalX) / 2;
         const _fgZoom = this.isPAT ? 1.25 : 1.15;
@@ -2227,8 +2300,7 @@ class GameScene extends Phaser.Scene {
         const onTarget = Math.abs(aim) <= this.aimWindow;
         const made = enough && onTarget;
 
-        const start = { x: ydToX(this.gs.ballPosition), y: FIELD.MID_Y };
-        this.ball.visible = true; this.ball.carrier = null; this.ball.x = start.x; this.ball.y = start.y;
+        const start = this._placeKickSpot(this.gs.ballPosition, 1);
         const goalX = FIELD.GOAL_R + 30;
         const reach = Phaser.Math.Clamp(power / ideal, 0.4, 1.12);
         const endX = enough ? goalX : start.x + (goalX - start.x) * reach;
@@ -2236,7 +2308,7 @@ class GameScene extends Phaser.Scene {
         const endY = FIELD.MID_Y + aim * 60 + (onTarget ? 0 : (aim >= 0 ? 55 : -55));
         const peak = 70 + this.fgDist * 1.4;
 
-        this._kickFrom(this.offense[0], start, { x: goalX, y: endY }, () => {
+        this._runPlaceKick(true, this.gs.ballPosition, { x: goalX, y: endY }, () => {
             this.tweens.add({
                 targets: start, x: endX, y: endY, duration: 880, ease: 'Quad.easeOut',
                 onUpdate: (tw) => {
@@ -2277,7 +2349,7 @@ class GameScene extends Phaser.Scene {
     // sweeping aim indicator.
     drawFgAim() {
         const m = this.markerGfx;
-        const kx = ydToX(this.gs.ballPosition), ky = FIELD.MID_Y;
+        const kx = this._placeKickSpot(this.gs.ballPosition, 1).x, ky = FIELD.MID_Y;
         const goalX = FIELD.GOAL_R;
         const spread = 150;
         // Cone fan from the kick spot toward the goal.
@@ -2651,15 +2723,15 @@ class GameScene extends Phaser.Scene {
         if (this.playLabel) { this.playLabel.destroy(); this.playLabel = null; }
         if (this.playPanel) { this.playPanel.destroy(); this.playPanel = null; }
         if (this.playDiagram) { this.playDiagram.destroy(); this.playDiagram = null; }
-        this.audio.play('snap');
 
         // On 4th down the opponent's coach decides whether to kick instead of run a play.
         if (this.opp.down >= 4) {
             const shortYardage = this.opp.toGo <= 4;  // close enough to go for it
             if (this.opp.yard <= 38) { this.oppKickFG(); return; }       // in range → field goal
-            if (!shortYardage && this.opp.yard >= 55) { this.oppPunt(); return; }  // deep & not short yardage → punt
+            if (!shortYardage && this.opp.yard >= 55) { this.audio.play('snap'); this.oppPunt(); return; }  // deep & not short yardage → punt
             // short yardage or 39-54 yard range → go for it (fall through and run a play)
         }
+        this.audio.play('snap');
         this.resolveOppPlay(DEF_PLAYS[defId]);
     }
 
@@ -2938,15 +3010,15 @@ class GameScene extends Phaser.Scene {
 
     oppKickFG() {
         this.phase = 'oppanim';
-        const start = { x: ydToX(this.opp.yard), y: FIELD.MID_Y };
+        const start = this._placeKickSpot(this.opp.yard, -1);
         const fgDist = this.opp.yard + 17;
         const made = Math.random() < Phaser.Math.Clamp(1.05 - fgDist / 60, 0.35, 0.95);
         this.ball.visible = true; this.ball.carrier = null;
         const goalX = FIELD.GOAL_L - 30;
-        this._kickFrom(this.defense[0], start, { x: goalX, y: FIELD.MID_Y }, () => {
+        this._runPlaceKick(false, this.opp.yard, { x: goalX, y: FIELD.MID_Y }, () => {
             this.tweens.add({
                 targets: start, x: goalX, y: FIELD.MID_Y + (made ? 0 : 70), duration: 900, ease: 'Quad.easeOut',
-                onUpdate: (tw) => { this.ball.x = start.x; this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * (70 + fgDist); },
+                onUpdate: (tw) => { this.ball.x = start.x; this.ball.y = start.y - Math.sin(tw.progress * Math.PI) * (70 + fgDist); },
                 onComplete: () => {
                     this.ball.visible = false;
                     if (made) {
@@ -3004,10 +3076,9 @@ class GameScene extends Phaser.Scene {
         this.audio.speak(`${this.oppColor.name} kicking the extra point.`, true);
         this.time.delayedCall(900, () => {
             const made = Math.random() < 0.94;
-            const startX = ydToX(3), goalX = FIELD.GOAL_L - 30;
-            const start = { x: startX, y: FIELD.MID_Y };
-            this.ball.x = start.x; this.ball.y = start.y; this.ball.visible = true;
-            this._kickFrom(this.defense[0], start, { x: goalX, y: FIELD.MID_Y }, () => {
+            const goalX = FIELD.GOAL_L - 30;
+            const start = this._placeKickSpot(3, -1);
+            this._runPlaceKick(false, 3, { x: goalX, y: FIELD.MID_Y }, () => {
                 this.tweens.add({
                     targets: start, x: goalX, y: FIELD.MID_Y, duration: 700, ease: 'Quad.easeOut',
                     onUpdate: (tw) => {
@@ -3488,7 +3559,7 @@ class GameScene extends Phaser.Scene {
             }
             // Growing kick beam from ball toward the goal posts.
             {
-                const kx = ydToX(this.gs.ballPosition), ky = FIELD.MID_Y;
+                const kx = this._placeKickSpot(this.gs.ballPosition, 1).x, ky = FIELD.MID_Y;
                 const goalX = FIELD.GOAL_R + 22;
                 const spread = 150;
                 const targetY = ky + (this.aimLocked || 0) * spread;
@@ -3521,9 +3592,10 @@ class GameScene extends Phaser.Scene {
             this.ballGfx.fillStyle(0x000000, 0.25);
             this.ballGfx.fillEllipse(this.ball.x + 2, this.ball.y + 6, 16, 7);
             this.ballGfx.fillStyle(0x8d4a2b, 1);
-            this.ballGfx.fillEllipse(this.ball.x, this.ball.y, 16, 10);
+            this.ballGfx.fillEllipse(this.ball.x, this.ball.y, this.ball.placed ? 8 : 16, this.ball.placed ? 15 : 10);
             this.ballGfx.lineStyle(1.5, 0xffffff, 0.95);
-            this.ballGfx.lineBetween(this.ball.x - 5, this.ball.y, this.ball.x + 5, this.ball.y);
+            if (this.ball.placed) this.ballGfx.lineBetween(this.ball.x, this.ball.y - 5, this.ball.x, this.ball.y + 5);
+            else this.ballGfx.lineBetween(this.ball.x - 5, this.ball.y, this.ball.x + 5, this.ball.y);
         }
     }
 

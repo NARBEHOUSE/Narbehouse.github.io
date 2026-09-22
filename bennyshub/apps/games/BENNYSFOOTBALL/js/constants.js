@@ -155,7 +155,10 @@ const PLAYER_SPRITE = {
         block:     { row: 8, frames: 6, fps: 7.5, loop: true, sheet: 'actions', ballFrames: [] },
         celebrate: { row: 14, frames: 8, fps: 8, sheet: 'actions', ballFrames: [] },
         stance_ol: { row: 22, frames: 1, fps: 1, loop: true, sheet: 'actions', ballFrames: [] },
-        stance_dl: { row: 23, frames: 1, fps: 1, loop: true, sheet: 'actions', ballFrames: [] }
+        stance_dl: { row: 23, frames: 1, fps: 1, loop: true, sheet: 'actions', ballFrames: [] },
+        placekick: { row: 24, frames: 10, fps: 12, strikeFrame: 4, sheet: 'actions', ballFrames: [],
+            contactOffsets: { 2: { x: -8.5, y: -4 }, 6: { x: 9, y: 0 } } },
+        holder: { row: 34, frames: 1, fps: 1, loop: true, hold: true, sheet: 'actions', ballFrames: [] }
     },
     // The disc is 26px across and spans y -13..+13 about the container origin,
     // and every tackle/catch/distance calculation in the game treats that

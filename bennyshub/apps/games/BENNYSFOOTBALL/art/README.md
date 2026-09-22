@@ -45,9 +45,14 @@ and `PLAYER_SPRITE` timings; it can also be opened directly as a local file.
   per player, rather than freezing every player mid-stride.
 - `run_carry` has its own animation: the free arm swings while the ball arm
   stays steady. Both idle and running retain the baked ball's occlusion.
-- `kick` has an approach, plant and follow-through. `_kickFrom()` waits for
-  the approach tween to complete, then launches the ball and sound at frame 4.
-  Kickoffs, punts, field goals and extra points use it for both teams.
+- `_kickFrom()` waits for the approach and foot-contact frame before launching
+  the ball and sound. Kickoffs and punts use `kick`; field goals and extra
+  points use `placekick`, with low contact followed by the leg swinging up.
+- Both teams use a special-teams formation with a long snapper (LS), kneeling
+  holder (H) and separate kicker (K). Aiming waits for the formation. The snap
+  travels seven yards back to the upright ball before the kicker approaches.
+  `gameplaycheck.js` checks both teams, extra points, misses, held poses,
+  follow-through, sound timing and classic-player fallback.
 - Movement and facing have small hysteresis bands to avoid flicker when a
   tween slows down or a route crosses a direction boundary.
 
@@ -67,10 +72,11 @@ controller, including kick timing and classic-player fallback.
 | idle_carry | 50 | 6 |
 | kick | 56 | 8 |
 
-A second 512 x 1536 atlas, `gridiron_actions_*`, shares the main atlas's camera
+A second 512 x 2240 atlas, `gridiron_actions_*`, shares the main atlas's camera
 and adds `recover` (row 0, 8 frames), `block` (row 8, 6 frames) and `celebrate`
 (row 14, 8 frames). The set stances use row 22 (`stance_ol`) and row 23
-(`stance_dl`), one held frame each. All three layers switch together in the game. The preview
+(`stance_dl`), one held frame each. `placekick` uses rows 24–33 and the kneeling
+`holder` uses row 34. All three layers switch together in the game. The preview
 includes these actions too; missing assets fall back to classic players.
 
 The compiler's planted-foot warnings on idle and kick are expected: those
@@ -96,7 +102,7 @@ What lives here:
 
 | File | What it is |
 |---|---|
-| `gridiron.wam` | the player: skeleton, geometry, thirteen animations, and its own checks |
+| `gridiron.wam` | the player: skeleton, geometry, fifteen animations, and its own checks |
 | `football.wam` | the ball, as its own model so it can be grafted into a hand |
 | `gridiron.wamset` | composes the two — the player holding the ball |
 | `bake.py` | renders the models to the sprite sheets the game loads |

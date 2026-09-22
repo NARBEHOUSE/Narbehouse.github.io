@@ -23,6 +23,7 @@ class FootballMotion {
     reset() {
         this.epoch++;
         this.scene._lineFormationReady = false;
+        if (this.scene.ball) this.scene.ball.placed = false;
         this.routes.clear(); this.live = null; this.pocket = null;
         this.players().forEach(p => {
             p._vx = 0; p._vy = 0; p._facePoint = null; p._blocking = false;
