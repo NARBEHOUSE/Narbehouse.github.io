@@ -1,5 +1,83 @@
 # Player art pipeline
 
+## Player motion update
+
+Gameplay movement is now coordinated by `js/motion.js`. Players accelerate,
+cut, block assigned opponents and pursue the moving carrier. A tackle requires
+contact within 23 field pixels; the actual contact location determines yardage.
+The existing play odds influence blocking duration, defensive reaction and the
+runner's pace. They no longer force a finish at an artificial endpoint.
+
+Routes use stems and cuts. Receivers work laterally while the accessible target
+selection waits, coverage follows them, and the quarterback stays in the pocket.
+Throw and catch frames synchronize ball possession. Kick and interception returns
+start at the actual catch point. Formations wait for every player to arrive,
+including recovery from a tackle. Pause freezes gameplay movement and callbacks
+while the pause menu remains usable.
+
+Passing routes run at 65% speed. Selection and charging use 40% motion timing,
+small continuous working routes and damped tracking instead of repeatedly
+stopping at a moving target. Ready poses stay consistent during those small
+shuffles, and facing changes have a margin to prevent direction flicker.
+`PASS_MOTION` controls both speeds; input, charge and ball-flight timing remain
+independent. `gameplaycheck.js` checks focus speed, acceleration, pose stability
+and selection-to-charge continuity at 30, 60 and 120 FPS.
+
+From the game directory, run `node art/gameplaycheck.js` for deterministic
+offense, defense, return, contact, scoring-boundary and pause checks. It includes
+120 CPU play calls and 200 seeded runs. `--record` also writes an outside-run
+replay; `python art/playback.py` renders its actual positions and sprite frames
+to `gameplay-motion-review.png` and `out/gameplay-replay.gif`. These are simulation
+renders, not browser screenshots.
+
+Once the formation is set, OL and TE players hold a bent-knee line stance,
+while DL players use a lower forward-loaded stance. Other positions retain
+their ready pose. Position labels also update the current role when possession
+changes. Stances release for formation adjustments and at the snap; they do
+not appear on scattered players in post-touchdown menus.
+
+Open `animation-preview.html` to inspect all eight directions, team colors,
+coverage glows, slow motion and individual frames. It uses the shipped PNGs
+and `PLAYER_SPRITE` timings; it can also be opened directly as a local file.
+
+- Running now has 12 frames per stride instead of 8.
+- `idle` and `idle_carry` provide planted ready poses with independent timing
+  per player, rather than freezing every player mid-stride.
+- `run_carry` has its own animation: the free arm swings while the ball arm
+  stays steady. Both idle and running retain the baked ball's occlusion.
+- `kick` has an approach, plant and follow-through. `_kickFrom()` waits for
+  the approach tween to complete, then launches the ball and sound at frame 4.
+  Kickoffs, punts, field goals and extra points use it for both teams.
+- Movement and facing have small hysteresis bands to avoid flicker when a
+  tween slows down or a route crosses a direction boundary.
+
+The atlas is 512 x 4096 pixels: eight directions and 64 rows. Keep both atlas
+dimensions at or below 4096 when adding clips. `node dircheck.js` checks this
+limit and the manifest; `node animationcheck.js` exercises the actual game
+controller, including kick timing and classic-player fallback.
+
+| Clip | First row | Frames |
+|---|---:|---:|
+| run | 0 | 12 |
+| run_carry | 12 | 12 |
+| throw | 24 | 8 |
+| catch | 32 | 6 |
+| tackle | 38 | 6 |
+| idle | 44 | 6 |
+| idle_carry | 50 | 6 |
+| kick | 56 | 8 |
+
+A second 512 x 1536 atlas, `gridiron_actions_*`, shares the main atlas's camera
+and adds `recover` (row 0, 8 frames), `block` (row 8, 6 frames) and `celebrate`
+(row 14, 8 frames). The set stances use row 22 (`stance_ol`) and row 23
+(`stance_dl`), one held frame each. All three layers switch together in the game. The preview
+includes these actions too; missing assets fall back to classic players.
+
+The compiler's planted-foot warnings on idle and kick are expected: those
+clips deliberately keep the supporting foot still. Ground checks and the
+collision sweep pass. Browser gameplay still needs a visual smoke test when
+a browser connection is available; the automated checks do not replace it.
+
 The on-field players can render as the original flat colour discs or as baked
 sprites of a low-poly 3D model. This directory holds the **source** for those
 sprites; the game only ever loads the baked PNGs in `../images/players/`.
@@ -18,7 +96,7 @@ What lives here:
 
 | File | What it is |
 |---|---|
-| `gridiron.wam` | the player: skeleton, geometry, four animations, and its own checks |
+| `gridiron.wam` | the player: skeleton, geometry, thirteen animations, and its own checks |
 | `football.wam` | the ball, as its own model so it can be grafted into a hand |
 | `gridiron.wamset` | composes the two — the player holding the ball |
 | `bake.py` | renders the models to the sprite sheets the game loads |
@@ -57,7 +135,9 @@ The `checks` block is the model's regression suite; it runs on every compile.
 
 ## Animations
 
-Four clips: `run` (looping) plus `throw`, `catch` and `tackle` (one-shots).
+Thirteen clips: `idle`, `idle_carry`, `run`, `run_carry`, `block`, `stance_ol`,
+`stance_dl` (looping or held), plus
+`throw`, `catch`, `tackle`, `kick`, `recover` and `celebrate` (one-shots).
 
 Two constraints shaped all of them, both learned the hard way:
 
@@ -225,6 +305,7 @@ $PY groundcheck.py gridiron.wam
 #    the legs, shallower ones stop reading as a top-down field.
 #    Writes _base.png, _jersey.png, _glow.png and gridiron.json.
 $PY bake.py gridiron.wam --pitch 30 -o ../images/players
+$PY bake.py gridiron.wam --pitch 30 --actions -o ../images/players
 ```
 
 **Now do the one manual step.** The bake prints a row table and writes it to
@@ -238,6 +319,7 @@ across — `row`, `frames`, `loop`, `ballFrames`, plus `footFrac` — then:
 #    PLAYER_SPRITE.anims matches the rows the bake actually wrote. This is the
 #    check that catches a forgotten hand-copy. Exits non-zero on any mismatch.
 node dircheck.js
+$PY atlascheck.py
 
 # 7. Look at it the way the game will: tinted, on turf, at game size.
 $PY preview.py ../images/players/gridiron --teams Red,Blue
@@ -287,7 +369,7 @@ sheets exactly.
 
 ## Atlas layout
 
-`gridiron_base.png`, `_jersey.png` and `_glow.png` are 8 columns (directions) x 36 rows
+`gridiron_base.png`, `_jersey.png` and `_glow.png` are 8 columns (directions) x 64 rows
 (every frame of every clip, stacked) of 64px cells, so Phaser's frame index is
 `(clip.row + frame) * 8 + direction`. `gridiron.json` carries the row table and
 `footFrac`, both measured at bake time — `makePlayer()` uses `footFrac` to seat
@@ -300,10 +382,10 @@ standing player the shadow has to line up with.
 animation rather than fail.
 
 Each clip also carries `ballFrames`: the frames whose art already contains the
-football. Only `run` needs both an empty-handed and a carrying row set — every
+football. Both `run` and `idle` have empty-handed and carrying row sets; every
 `tackleShake` call site passes the ball carrier, only the quarterback throws,
-and only a receiver catches, so those three clips are carrier-only. That audit
-is what keeps the atlas at 36 rows instead of 56.
+and only a receiver catches, so those three clips are carrier-only. Kicking
+uses empty hands and the separate ball at the kick spot.
 
 The handover is baked into the frames rather than toggled by the game: the
 throw holds the ball to frame 5 and the catch receives it at frame 4. The game
@@ -323,15 +405,11 @@ fail loudly rather than silently render players running sideways.
 
 ## Known gaps
 
-- **Kicking and celebrating** have no clip yet and fall back to the run; the
-  rig supports both.
-- The **tackle holds its last frame** until the next snap clears it
-  (`_clearPlayerActions()`), which is intended — a tackled player should stay
-  down — but any new code path that resets players without going through
-  `repositionFormation`/`tweenFormation` has to clear it too.
+- The **tackle holds its last frame** until formation recovery starts. New
+  transitions should use `_resetFormation()` so the get-up finishes before jogging.
 - The compiler still warns that the throw, catch and tackle rotate a forearm
   ~120° and are "very likely folding through" the body. They are not:
-  `noclip in=*` sweeps all four clips and reports 51 pairs clear.
+  `noclip in=*` sweeps all clips and reports 51 pairs clear.
 - `gridiron.wam` compiles with one warning — the pads are hosted on `chest`
   while their loft origin sits nearer `upperarm.r`. That is deliberate: pads
   are a rigid shell on the torso, and taking the warning's advice would skin

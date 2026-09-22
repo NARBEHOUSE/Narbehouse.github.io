@@ -13,19 +13,19 @@
     270.0,
     315.0
   ],
-  "rows": 36,
+  "rows": 64,
   "footFrac": 0.9219,
   "anims": {
     "run": {
       "row": 0,
-      "frames": 8,
+      "frames": 12,
       "loop": true,
       "ground": false,
       "ballFrames": []
     },
     "run_carry": {
-      "row": 8,
-      "frames": 8,
+      "row": 12,
+      "frames": 12,
       "loop": true,
       "ground": false,
       "ballFrames": [
@@ -36,11 +36,15 @@
         4,
         5,
         6,
-        7
+        7,
+        8,
+        9,
+        10,
+        11
       ]
     },
     "throw": {
-      "row": 16,
+      "row": 24,
       "frames": 8,
       "loop": false,
       "ground": false,
@@ -53,7 +57,7 @@
       ]
     },
     "catch": {
-      "row": 24,
+      "row": 32,
       "frames": 6,
       "loop": false,
       "ground": false,
@@ -63,7 +67,7 @@
       ]
     },
     "tackle": {
-      "row": 30,
+      "row": 38,
       "frames": 6,
       "loop": false,
       "ground": true,
@@ -75,6 +79,42 @@
         4,
         5
       ]
+    },
+    "idle": {
+      "row": 44,
+      "frames": 6,
+      "loop": true,
+      "ground": false,
+      "ballFrames": []
+    },
+    "idle_carry": {
+      "row": 50,
+      "frames": 6,
+      "loop": true,
+      "ground": false,
+      "ballFrames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "kick": {
+      "row": 56,
+      "frames": 8,
+      "loop": false,
+      "ground": true,
+      "ballFrames": []
     }
+  },
+  "camera": {
+    "center": [
+      -0.015224069946706192,
+      0.4982440850835041,
+      -0.009102690320807794
+    ],
+    "distance": 2.550715407366935
   }
 }

@@ -12,6 +12,7 @@ class GameScene extends Phaser.Scene {
     preload() { loadHelmets(this); loadPlayerSprites(this); }
 
     init(data) {
+        this.playerMotion = null;
         this.isSeason = !!data.isSeason;
         this.playerColor = getColorByName(data.playerColorName);
         this.oppColor = getColorByName(data.opponentColorName);
@@ -20,6 +21,7 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this._trackGameplayTimers();
         this.fieldGfx = this.add.graphics().setDepth(0);
         this.markerGfx = this.add.graphics().setDepth(1);
         this.meterGfx = this.add.graphics().setDepth(15).setScrollFactor(0);
@@ -67,9 +69,8 @@ class GameScene extends Phaser.Scene {
                     this.audio.speak(`Resuming. ${this.playerColor.name} ${this.gs.score.us}, ${this.oppColor.name} ${this.gs.score.them}. ${q}, ${min}:${sec.toString().padStart(2,'0')}.`, true);
                     this.time.delayedCall(2200, () => {
                         if (this.onDefense && this.opp) {
-                            this.repositionDefense(this.opp.yard);
                             this.showPlayers(true);
-                            this.time.delayedCall(1000, () => this.showDefPlayCall());
+                            this.repositionDefense(this.opp.yard, () => this.showDefPlayCall());
                         } else {
                             this.repositionFormation(this.gs.ballPosition);
                             this.showPlayers(true);
@@ -173,6 +174,9 @@ class GameScene extends Phaser.Scene {
     // sets up a return wall with a deep returner. The ball is kicked in a high
     // arc; the returner fields it and runs it out before the drive begins.
     kickoff(receiving) {
+        this._motion().reset();
+        this._clearPlayerActions();
+        this.offense.concat(this.defense).forEach(p => this._motion().own(p));
         this.phase = 'anim';
         // Always reset the camera before the kickoff animation so no prior zoom leaks in.
         this._zoomOut(350);
@@ -225,13 +229,12 @@ class GameScene extends Phaser.Scene {
         this.ball.x = fromX; this.ball.y = FIELD.MID_Y;
 
         // The kicker jogs up to the ball, boots it, then the ball arcs downfield.
-        this.jog(kicker, fromX, FIELD.MID_Y, 700, 'Sine.easeIn');
-        this.time.delayedCall(700, () => {
-            this.audio.play('kick');
+        this._kickFrom(kicker, { x: fromX, y: FIELD.MID_Y }, { x: toX, y: FIELD.MID_Y }, () => {
             this.audio.speak('Kickoff!');
             // Brief pause lets 'Kickoff!' finish before the return commentary.
             // A little follow-through past the ball.
-            this.jog(kicker, ydToX(kickFromYard + dir * 4), FIELD.MID_Y - 6, 400, 'Sine.easeOut');
+            this.time.delayedCall(360, () =>
+                this.jog(kicker, ydToX(kickFromYard + dir * 4), FIELD.MID_Y - 6, 400, 'Sine.easeOut'));
             // The whole coverage unit sprints downfield while the ball is in the air.
             coverTeam.slice(1).forEach((p, i) => {
                 this.jog(p, ydToX(coverLineYard + dir * 14) + (i % 2 ? 14 : -14),
@@ -246,15 +249,19 @@ class GameScene extends Phaser.Scene {
                     1100 + Math.random() * 220, 'Sine.easeInOut');
             });
             // The returner shuffles under the ball instead of freezing in place.
-            this.jog(returner, toX + (Math.random() * 20 - 10), FIELD.MID_Y, 1150, 'Sine.easeInOut');
+            this.jog(returner, toX, FIELD.MID_Y, 600, 'Sine.easeInOut');
+            this._motion().after(1000, () => this.playPlayerAction(returner, 'catch', kicker));
             const flight = { x: fromX };
             this.tweens.add({
                 targets: flight, x: toX, duration: 1300, ease: 'Quad.easeOut',
-                onUpdate: (tw) => { this.ball.x = flight.x; this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * 150; },
+                onUpdate: (tw) => {
+                    this.ball.x = flight.x;
+                    this.ball.y = FIELD.MID_Y - (returner._spr ? 20 * tw.progress : 0) - Math.sin(tw.progress * Math.PI) * 150;
+                },
                 onComplete: () => {
                     this.audio.play('catch');
                     this.ball.carrier = returner;
-                    this.kickReturn(receiving, returner, coverTeam, catchYard, returnToYard);
+                    this._motion().after(160, () => this.kickReturn(receiving, returner, coverTeam, catchYard, returnToYard));
                 }
             });
         });
@@ -263,55 +270,21 @@ class GameScene extends Phaser.Scene {
     // The returner weaves upfield to the drive's starting spot while the
     // coverage team converges for the tackle.
     kickReturn(receiving, returner, coverTeam, fromYard, toYard) {
-        const us = receiving === 'us';
-        // ── Kickoff return miracle: 1 % base (2.2 % if returner's team is trailing 14+).
-        if (Math.random() < this._miracleChance(us)) {
-            this.ball.carrier = returner; this.ball.visible = true;
-            const tdEndX = us ? FIELD.GOAL_R + 52 : FIELD.GOAL_L - 52;
-            this._miracleRun(
-                returner, coverTeam,
-                returner.x, returner.y, tdEndX, us,
-                () => {
-                    if (us) {
-                        this.gs.score.us += 6; this.updateHUD();
-                        this._doTDCelebration(returner);
-                        this.bigMessage('MIRACLE RETURN! TOUCHDOWN!', 2000,
-                            () => this.showAfterTouchdownMenu());
-                    } else {
-                        this.gs.score.them += 6; this.updateHUD();
-                        this.bigMessage(`MIRACLE RETURN! ${this.oppColor.name} TOUCHDOWN!`, 2000,
-                            () => this.oppAfterTouchdown());
-                    }
-                }
-            );
-            return;
-        }
-        const returnTeam = us ? this.offense : this.defense;
-        const lane = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50);
-        const midX = ydToX((fromYard + toYard) / 2), endX = ydToX(toYard), midY = FIELD.MID_Y;
-        const dur = 950;
-        // Return blockers lead the way the whole return — they escort to midfield,
-        // then peel toward the convergence point, so they never stop moving.
-        returnTeam.forEach((p, i) => {
-            if (p === returner) return;
-            const off = (i % 2 ? 1 : -1) * (24 + Math.random() * 36);
-            this.jog(p, midX + (Math.random() * 30 - 15), midY + lane * 0.6 + off, dur * 0.5, 'Sine.easeOut');
-            this.time.delayedCall(dur * 0.5, () => {
-                this.jog(p, endX + (Math.random() * 50 - 25), midY + lane * 0.3 + off * 0.7, dur * 0.5, 'Sine.easeIn');
-            });
-        });
+        const us = receiving === 'us', attack = us ? this.offense : this.defense;
+        const breakaway = Math.random() < this._miracleChance(us);
         this.audio.speak('Return!', true);
-        this.jog(returner, midX, midY + lane, dur * 0.5, 'Sine.easeOut');
-        this.time.delayedCall(dur * 0.5, () => this.jog(returner, endX, midY + lane * 0.3, dur * 0.5, 'Sine.easeIn'));
-        coverTeam.forEach(p => this.jog(p, endX + (Math.random() * 26 - 13), midY + lane * 0.4 + (Math.random() - 0.5) * 44, dur * 0.95 + Math.random() * 160));
-        this.time.delayedCall(dur + 200, () => {
-            this.stopBob(returner);
-            this.audio.play('tackle');
-            this.tackleShake(returner);
-            this.ball.carrier = null;
-            if (us) this.startUsDrive(toYard, true);
-            else this.defenseDrive(toYard, true);
-        });
+        this._runWithBall(returner, attack, coverTeam, breakaway ? (us ? 100 : 0) : toYard,
+            FIELD.MID_Y + (Math.random() < .5 ? -48 : 48), us ? 1 : -1,
+            (spot, result) => {
+                if (result.touchdown) {
+                    this.gs.score[us ? 'us' : 'them'] += 6; this.updateHUD();
+                    this._doTDCelebration(returner);
+                    this.audio.play('touchdown');
+                    this.bigMessage('KICK RETURN TOUCHDOWN!', 1800, () =>
+                        us ? this.showAfterTouchdownMenu() : this.oppAfterTouchdown());
+                } else if (us) this.startUsDrive(spot, true);
+                else this.defenseDrive(spot, true);
+            }, { breakaway });
     }
 
 
@@ -462,6 +435,195 @@ class GameScene extends Phaser.Scene {
         this.add.text(F.GOAL_R + F.END_ZONE / 2, F.MID_Y, this.oppColor.name, { fontSize: '15px', fontFamily: 'Arial Black', color: '#ffffff' }).setOrigin(0.5).setAngle(90).setDepth(0.5).setAlpha(0.85);
     }
 
+
+
+    _trackGameplayTimers() {
+        this._gameTimers = new Set();
+        const clock = this.time, original = clock.addEvent;
+        clock.addEvent = config => {
+            const event = original.call(clock, config);
+            if (!this.paused) this._gameTimers.add(event);
+            return event;
+        };
+        this.events.once('shutdown', () => {
+            clock.addEvent = original;
+            this._gameTimers.clear();
+            if (this.playerMotion) this.playerMotion.reset();
+            this.playerMotion = null;
+        });
+    }
+
+    _motion() {
+        if (!this.playerMotion) this.playerMotion = new FootballMotion(this);
+        return this.playerMotion;
+    }
+
+    _spotYard(x) { return Phaser.Math.Clamp(Math.round((x - FIELD.GOAL_L) / FIELD.PLAY_W * 100), 0, 100); }
+
+    _handoff(attack, dir, then) {
+        const motion = this._motion(), qb = attack[0], rb = attack[1];
+        const defend = attack === this.offense ? this.defense : this.offense;
+        const available = new Set(defend);
+        // Blocking starts at the snap, while the back takes the handoff.
+        attack.slice(2).sort((a, b) => Math.abs(a.y - rb.y) - Math.abs(b.y - rb.y)).forEach(p => {
+            const d = [...available].sort((a, b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0];
+            if (!d) return;
+            available.delete(d);
+            motion.route(p, [{ x: d.x - dir * 19, y: d.y }], 108);
+        });
+        this.ball.carrier = qb; this.ball.visible = true;
+        this.facePlayer(qb, rb);
+        // The back comes to the quarterback before possession changes.
+        motion.route(rb, [{ x: qb.x - dir * 8, y: qb.y + 9 }], 92, () => {
+            this.facePlayer(qb, { x: qb.x + dir * 100, y: qb.y });
+            this.ball.carrier = rb;
+            this.audio.speak('Handoff!', true);
+            motion.after(100, then);
+        });
+    }
+
+    _runWithBall(runner, attack, defend, endYard, laneY, dir, then, options = {}) {
+        this._zoomOnPoint(runner.x + dir * 45, runner.y, 1.45, 300);
+        this._motion().run({ runner, attack, defend, dir, endX: ydToX(endYard), laneY,
+            ...options, onFinish: result => {
+                this._zoomOut(400);
+                const ownGoal = dir > 0 ? result.x <= FIELD.GOAL_L : result.x >= FIELD.GOAL_R;
+                const spot = result.touchdown ? (dir > 0 ? 100 : 0)
+                    : ownGoal ? (dir > 0 ? 0 : 100) : Phaser.Math.Clamp(this._spotYard(result.x), 1, 99);
+                then(spot, result);
+            } });
+    }
+
+    _routePoints(p, x, y, dir, kind) {
+        const stem = p.x + dir * Math.min(42, Math.abs(x - p.x) * .5);
+        if (kind === 'flat') return [{ x: p.x + dir * 12, y }, { x, y }];
+        if (kind === 'slant') return [{ x: stem, y: p.y }, { x, y }];
+        if (kind === 'curl') return [{ x: x + dir * 12, y }, { x, y }];
+        return [{ x: stem, y: p.y }, { x, y }];
+    }
+
+    _passRoutes(receivers, attack, defend, dir, done) {
+        const motion = this._motion();
+        motion.reset();
+        const qb = attack[0], los = ydToX(dir > 0 ? this.gs.ballPosition : this.opp.yard);
+        this.ball.carrier = qb; this.ball.visible = true;
+        const assigned = new Set();
+        let pending = 0, scheduling = true;
+        const route = (p, points, speed, face) => {
+            assigned.add(p); pending++;
+            motion.route(p, points, speed * PASS_MOTION.routeScale, () => {
+                if (face) this.facePlayer(p, face);
+                if (--pending === 0 && !scheduling) done();
+            });
+        };
+        receivers.forEach((r, i) => {
+            const points = this._routePoints(r.player, r.x, r.y, dir, r.routeKind || ['slant','out','seam','flat'][i]);
+            route(r.player, points, 108, qb);
+            (r.defenders || []).forEach((d, k) => {
+                // Trail the same route with inside/outside leverage, not a straight diagonal teleport.
+                route(d, points.map(pt => ({ x: pt.x + dir * (17 + k * 8), y: pt.y + (k ? -16 : 16) })), 110, r.player);
+            });
+        });
+        route(qb, [{ x: los - dir * 52, y: FIELD.MID_Y }], 68, { x: los + dir * 100, y: FIELD.MID_Y });
+        attack.filter(p => !assigned.has(p)).forEach((p, i) => {
+            route(p, [{ x: los - dir * (18 + i * 10), y: FIELD.MID_Y + (i ? 30 : -8) }], 76,
+                { x: los + dir * 30, y: FIELD.MID_Y });
+        });
+        defend.filter(p => !assigned.has(p)).forEach((p, i) => {
+            // Two rush lanes stop against the protection. Unassigned DBs keep zone depth.
+            const isFront = defend.indexOf(p) < 2;
+            route(p, [{ x: isFront ? los - dir * 4 : los + dir * 65,
+                y: isFront ? FIELD.MID_Y + (i % 2 ? 23 : -23) : p.y }], 96, qb);
+        });
+        scheduling = false;
+        if (pending === 0) done();
+    }
+
+    _passFlight(qb, catcher, point, duration, then) {
+        const motion = this._motion();
+        motion.reset();
+        this.offense.concat(this.defense).forEach(p => motion.own(p));
+        const release = this._throwReleaseDelay(qb);
+        // The catcher must be able to arrive before the ball does.
+        const travel = catcher ? Math.hypot(catcher.x - point.x, catcher.y - point.y) / 115 * 1000 + 180 : 0;
+        duration = Math.max(duration, travel - release);
+        if (catcher) motion.route(catcher, [point], 115, () => this.facePlayer(catcher, qb));
+        // Routes and coverage continue through the flight. Only the passer plants.
+        const attack = this.offense.includes(qb) ? this.offense : this.defense;
+        const defend = attack === this.offense ? this.defense : this.offense;
+        const dir = attack === this.offense ? 1 : -1;
+        attack.forEach(p => {
+            if (p === qb || p === catcher) return;
+            motion.route(p, [{ x: p.x + dir * 20, y: p.y }], 48);
+        });
+        defend.forEach((p, i) => {
+            if (p === catcher) return;
+            const dx = point.x - p.x, dy = point.y - p.y, dist = Math.hypot(dx, dy) || 1;
+            const close = Math.min(24, Math.max(0, dist - 27));
+            motion.route(p, [{ x: p.x + dx / dist * close, y: p.y + dy / dist * close }], 48,
+                () => this.facePlayer(p, catcher || point));
+        });
+        const catchClip = PLAYER_SPRITE.anims.catch;
+        const receiveFrame = catchClip.ballFrames[0];
+        const anticipation = catcher && catcher._spr ? receiveFrame / catchClip.fps * 1000 : 0;
+        this.ball.carrier = null; this.ball.visible = true; this.ball.flying = true;
+        const from = this._carryPoint(qb);
+        this.ball.x = from.x; this.ball.y = from.y;
+        this.playPlayerAction(qb, 'throw', point);
+        if (catcher) motion.after(release + duration - anticipation, () => this.playPlayerAction(catcher, 'catch', qb));
+        const end = catcher ? { x: point.x, y: point.y + (catcher._spr ? -20 : -2) } : point;
+        const flight = { t: 0 };
+        this.tweens.add({ targets: flight, t: 1, delay: release, duration, ease: 'Linear',
+            onStart: () => this.audio.play('throw'),
+            onUpdate: () => {
+                const t = flight.t;
+                this.ball.x = from.x + (end.x - from.x) * t;
+                this.ball.y = from.y + (end.y - from.y) * t - Math.sin(t * Math.PI) * 28;
+            },
+            onComplete: () => {
+                this.ball.flying = false;
+                if (catcher) {
+                    this.ball.carrier = catcher;
+                    this.audio.play('catch');
+                    const settle = catcher._spr ? (catchClip.frames - receiveFrame) / catchClip.fps * 1000 : 100;
+                    motion.after(settle, then);
+                } else {
+                    this.ball.visible = false;
+                    then();
+                }
+            }
+        });
+    }
+
+    _resetFormation(off, def, duration, then) {
+        const motion = this._motion();
+        motion.reset();
+        let remaining = this.offense.length + this.defense.length;
+        const arrive = () => {
+            if (--remaining > 0) return;
+            this._faceAcrossFormation(this.offense, this.defense);
+            this._lineFormationReady = true;
+            then();
+        };
+        const send = (p, point) => {
+            motion.own(p);
+            const wasDown = this._isDown(p);
+            const go = () => {
+                if (p._spr) { p._spr.action = null; p._spr.showsBall = false; }
+                p.setAngle(0);
+                this.jog(p, point.x, point.y, duration, 'Sine.easeInOut', arrive);
+            };
+            // Allow the fall to finish, then get up before jogging back.
+            if (wasDown && p._spr) {
+                this.playPlayerAction(p, 'recover');
+                const clip = PLAYER_SPRITE.anims.recover;
+                motion.after(clip.frames / clip.fps * 1000, go);
+            } else go();
+        };
+        this.offense.forEach((p, i) => { p.homeX = off[i].x; p.homeY = off[i].y; send(p, off[i]); });
+        this.defense.forEach((p, i) => send(p, def[i]));
+    }
+
     makePlayer(colorObj, label) {
         const c = this.add.container(0, 0).setDepth(3);
         // Larger, darker shadow so every team color pops off the green field.
@@ -489,7 +651,9 @@ class GameScene extends Phaser.Scene {
                 { fontSize: '9px', fontFamily: 'Arial Black', color: '#ffffff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
             c.add([shadow, glow, jersey, base, num]);
             c._label = num;
-            c._spr = { base, jersey, glow, dir: 0, phase: 0, lastX: null, lastY: null };
+            c._spr = { base, jersey, glow, dir: 0, phase: 0,
+                idlePhase: Math.random() * P.anims.idle.frames,
+                moving: false, lastX: null, lastY: null };
             return c;
         }
 
@@ -510,6 +674,8 @@ class GameScene extends Phaser.Scene {
         if (!this.offense || !this.defense) return;
         const P = PLAYER_SPRITE, RUN = P.anims.run;
         const dt = Math.max(delta, 1) / 1000;
+        const inPocket = !!(this.playerMotion && this.playerMotion.pocket);
+        const idleDt = dt * (inPocket ? PASS_MOTION.focusScale : 1);
         [...this.offense, ...this.defense].forEach(p => {
             const s = p && p._spr;
             if (!s) return;
@@ -528,7 +694,7 @@ class GameScene extends Phaser.Scene {
                 if (a.t >= a.clip.frames) {
                     // A held clip (the tackle) stays on its last frame until
                     // the next play sets up. Both formation paths release it
-                    // through _standDownedPlayers; releasing it here on
+                    // through _resetFormation; releasing it here on
                     // movement instead would stand players up early, which is
                     // the opposite of staying down.
                     if (a.clip.hold) a.t = last;
@@ -547,17 +713,33 @@ class GameScene extends Phaser.Scene {
                 // Otherwise the drop-back tween, which can still be running,
                 // turns them back downfield the moment they drift a pixel.
                 const aiming = this.phase === 'charge' && p === this.offense[0];
-                if (speed > P.runSpeed && !aiming) {
-                    s.dir = spriteDirIndex(Math.atan2(dy, dx));
+                // The tiny focus-mode shuffles retain a ready stance rather
+                // than alternating between full running and idle every few frames.
+                s.moving = !inPocket && !aiming && speed > (s.moving ? P.stopSpeed : P.runSpeed);
+                if (s.moving) {
+                    const heading = Math.atan2(dy, dx);
+                    const facing = Math.PI / 2 + s.dir * Math.PI / 4;
+                    const turn = Math.atan2(Math.sin(heading - facing), Math.cos(heading - facing));
+                    // Hysteresis prevents chatter between adjacent views on curved routes.
+                    if (!p._facePoint && Math.abs(turn) > Math.PI / 8 + P.turnMargin) s.dir = spriteDirIndex(heading);
                     // Advance the cycle by distance travelled, not wall time.
                     s.phase += (speed * dt) / P.stridePx * RUN.frames;
                 } else {
-                    s.phase = 0;   // planted: hold the contact frame
+                    s.phase = 0;
+                    s.idlePhase = (s.idlePhase + idleDt * P.anims.idle.fps) % P.anims.idle.frames;
                 }
                 // The carrier runs from the row set that has the ball modelled
                 // into their hand; everyone else from the empty-handed one.
-                clip = (this.ball && this.ball.carrier === p) ? P.anims.run_carry : RUN;
-                frame = ((Math.floor(s.phase) % clip.frames) + clip.frames) % clip.frames;
+                const carrying = this.ball && this.ball.carrier === p;
+                const preSnap = this._lineFormationReady && !s.moving && !carrying
+                    && ['playcall', 'defcall', 'transition', 'message'].includes(this.phase);
+                const stance = preSnap && (p.role === 'DL' ? P.anims.stance_dl
+                    : p.role === 'OL' || p.role === 'TE' ? P.anims.stance_ol : null);
+                clip = p._blocking && !carrying ? P.anims.block : s.moving ? (carrying ? P.anims.run_carry : RUN)
+                    : stance || (carrying ? P.anims.idle_carry : P.anims.idle);
+                const phase = p._blocking ? (s.blockPhase = (s.blockPhase || 0) + dt * P.anims.block.fps)
+                    : s.moving ? s.phase : s.idlePhase;
+                frame = ((Math.floor(phase) % clip.frames) + clip.frames) % clip.frames;
                 row = clip.row + frame;
             }
 
@@ -566,9 +748,19 @@ class GameScene extends Phaser.Scene {
             s.showsBall = !!(clip && clip.ballFrames && clip.ballFrames.indexOf(frame) !== -1);
 
             const idx = row * P.dirs + s.dir;
-            s.base.setFrame(idx);
-            s.jersey.setFrame(idx);
-            if (s.glow) s.glow.setFrame(idx);   // the aura follows the pose
+            const sheet = clip.sheet === 'actions' ? P.actions : P;
+            if (s.sheet !== sheet.baseKey) {
+                s.base.setTexture(sheet.baseKey, idx);
+                s.jersey.setTexture(sheet.jerseyKey, idx);
+                if (s.glow) s.glow.setTexture(sheet.glowKey, idx);
+                s.sheet = sheet.baseKey;
+            }
+            if (s.frame !== idx) {
+                s.base.setFrame(idx);
+                s.jersey.setFrame(idx);
+                if (s.glow) s.glow.setFrame(idx);
+                s.frame = idx;
+            }
         });
     }
 
@@ -597,7 +789,11 @@ class GameScene extends Phaser.Scene {
     // Update the position label shown on a player sprite. Addressed by a stored
     // reference rather than by child index, which silently pointed at the wrong
     // child the moment the glow layer was inserted into the container.
-    _setPlayerLabel(p, label) { if (p && p._label) p._label.setText(label); }
+    _setPlayerLabel(p, label) {
+        if (!p) return;
+        p.role = label;
+        if (p._label) p._label.setText(label);
+    }
 
     createTeams() {
         this.offense = OFFENSE_SETUP.map(s => {
@@ -629,13 +825,15 @@ class GameScene extends Phaser.Scene {
             { x: losX + 26, y: midY + 120 },
             { x: losX + 95, y: midY }
         ];
-        return { off, def };
+        const fit = p => this._motion().point(p.x, p.y);
+        return { off: off.map(fit), def: def.map(fit) };
     }
 
     // Where the ball sits when this player has it, and where a throw leaves
     // from. Discs keep the original offset; sprites need chest height.
     _carryPoint(p) {
-        const off = (p && p._spr) ? PLAYER_SPRITE.ballOffset : { x: 12, y: -2 };
+        const off = (p && p._spr) ? { ...PLAYER_SPRITE.ballOffset } : { x: 12, y: -2 };
+        if (p && p._spr && p._spr.dir >= 1 && p._spr.dir <= 3) off.x = -off.x;
         return { x: p.x + off.x, y: p.y + off.y };
     }
 
@@ -718,6 +916,8 @@ class GameScene extends Phaser.Scene {
         const dx = target.x - p.x, dy = target.y - p.y;
         if (dx === 0 && dy === 0) return;
         s.dir = spriteDirIndex(Math.atan2(dy, dx));
+        // Explicit placement/facing is not a stride on the following tick.
+        s.lastX = p.x; s.lastY = p.y;
     }
 
     // Square both formations up across the line of scrimmage. Facing otherwise
@@ -751,13 +951,41 @@ class GameScene extends Phaser.Scene {
         return clip.ballFrames.length / clip.fps * 1000;
     }
 
+    // Approach the ball, plant, and launch only when the boot reaches contact.
+    // Shared by both teams, field goals, extra points, punts and kickoffs.
+    _kickFrom(p, spot, target, onStrike) {
+        this.ball.carrier = null;
+        this.ball.visible = true;
+        this.ball.x = spot.x; this.ball.y = spot.y;
+        const direction = target.x >= spot.x ? 1 : -1;
+        this.tweens.killTweensOf(p);
+        this.stopBob(p);
+        const approachX = spot.x - direction * 12;
+        const duration = this._capJogDur(p, approachX, spot.y, 200);
+        this.jog(p, approachX, spot.y, duration, 'Sine.easeOut', () => {
+            this.playPlayerAction(p, 'kick', target);
+            const clip = PLAYER_SPRITE.anims.kick;
+            const delay = p._spr ? clip.strikeFrame / clip.fps * 1000 : 0;
+            this.time.delayedCall(delay, () => {
+                this.audio.play('kick');
+                onStrike();
+            });
+        });
+    }
+
     // Hard reset of every action clip, for an instant snap into formation at a
-    // drive start. The gradual path is _standDownedPlayers(); this one exists
+    // drive start. The gradual path is _resetFormation(); this one exists
     // because a player teleported to a new line of scrimmage must not still be
     // lying in the pose they fell in somewhere else.
     _clearPlayerActions() {
         [...(this.offense || []), ...(this.defense || [])].forEach(p => {
-            if (p && p._spr) p._spr.action = null;
+            if (p && p._spr) {
+                p._spr.action = null;
+                p._spr.showsBall = false;
+                p._spr.moving = false;
+                p._spr.phase = 0;
+                p._spr.lastX = null; p._spr.lastY = null;
+            }
         });
     }
 
@@ -770,26 +998,9 @@ class GameScene extends Phaser.Scene {
         return !!(a && a.clip.hold);
     }
 
-    // Stand up anyone still on the ground and send them to their spot. Called
-    // as a formation tween lands, which is the moment the next play sets up.
-    // Returns true if anyone had to get up, so the caller can hold the play
-    // menu back until they are actually in place.
-    _standDownedPlayers(offPos, defPos, duration) {
-        let any = false;
-        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
-        const send = (list, pos) => list.forEach((p, i) => {
-            if (!this._isDown(p)) return;
-            any = true;
-            p._spr.action = null;
-            this.jog(p, pos[i].x, pos[i].y, duration, undefined, faceUp);
-        });
-        send(this.offense, offPos);
-        send(this.defense, defPos);
-        return any;
-    }
-
     // Snap players to formation instantly (drive start / kickoff).
     repositionFormation(losYard) {
+        this._motion().reset();
         const { off, def } = this.formationPositions(losYard);
         this._clearPlayerActions();
         // Kill any leftover animation tweens so kickoff/play tweens can't override us.
@@ -802,34 +1013,18 @@ class GameScene extends Phaser.Scene {
         // Ball rests in the QB's hands at the line of scrimmage.
         this.ball.carrier = this.offense[0];
         this._faceAcrossFormation(this.offense, this.defense);
+        this._lineFormationReady = true;
     }
 
     // Smoothly jog all players back into formation, then run the callback.
     tweenFormation(losYard, duration, cb) {
         const { off, def } = this.formationPositions(losYard);
-        // Deliberately no _clearPlayerActions() here: downed players are held
-        // in place and released by _standDownedPlayers as this tween lands.
-        // Kill any leftover animation tweens so kickoff/play tweens can't override the formation.
-        [...this.offense, ...this.defense].forEach(p => { this.tweens.killTweensOf(p); this.stopBob(p); });
-        // Facing otherwise only comes from the direction of this jog, which is
-        // wherever the previous play happened to leave a player relative to
-        // their spot — not at the defense. Hooking the jog's own onComplete
-        // (rather than timing a delayedCall off `duration`, which isn't what
-        // the tween actually runs at — see jog()) fires this exactly when each
-        // player really lands.
-        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
-        // Anyone knocked down stays down where they fell while the rest jog
-        // back; they get up as this tween lands.
-        this.offense.forEach((p, i) => { p.homeX = off[i].x; p.homeY = off[i].y; if (!this._isDown(p)) this.jog(p, off[i].x, off[i].y, duration, 'Sine.easeInOut', faceUp); });
-        this.defense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, def[i].x, def[i].y, duration, 'Sine.easeInOut', faceUp); });
-        // Restore correct position labels for offensive phase.
         ['QB','RB','WR','WR','TE','OL'].forEach((l, i) => this._setPlayerLabel(this.offense[i], l));
         ['DL','DL','LB','CB','CB','S'].forEach((l, i) => this._setPlayerLabel(this.defense[i], l));
-        // Ball follows the QB as the offense jogs back into formation.
-        this.ball.carrier = this.offense[0]; this.ball.visible = true;
-        this.time.delayedCall(duration + 120, () => {
-            const gotUp = this._standDownedPlayers(off, def, 420);
-            this.time.delayedCall(gotUp ? 470 : 0, cb);
+        this.ball.carrier = null; this.ball.visible = false;
+        this._resetFormation(off, def, duration, () => {
+            this.ball.carrier = this.offense[0]; this.ball.visible = true;
+            cb();
         });
     }
 
@@ -854,19 +1049,24 @@ class GameScene extends Phaser.Scene {
     // Tween a player while bobbing; stops bobbing on arrival.
     // All player movement is slowed ~50% so the game reads better visually.
     jog(p, x, y, duration, ease, onComplete) {
-        // Hard-clamp every destination so no animation can place a player outside
-        // the visible field boundary, regardless of where it was called from.
-        const cx = Phaser.Math.Clamp(x, FIELD.LEFT + 8, FIELD.RIGHT  - 8);
-        const cy = Phaser.Math.Clamp(y, FIELD.TOP  + 10, FIELD.BOTTOM - 10);
+        if (p._moveTween) { p._moveTween.stop(); p._moveTween = null; }
+        if (this.playerMotion) this.playerMotion.routes.delete(p);
+        p._facePoint = null;
+        const target = this._motion().point(x, y);
         this.startBob(p);
-        return this.tweens.add({
-            targets: p, x: cx, y: cy, duration: duration * 1.5, ease: ease || 'Sine.easeInOut',
-            // The actual tween runs at duration * 1.5 above, so a caller timing
-            // its own delayedCall off the `duration` it passed in fires before
-            // this really lands — hooking the real completion here instead
-            // means callers never have to know about that multiplier.
-            onComplete: () => { this.stopBob(p); if (onComplete) onComplete(); }
+        const distance = Math.hypot(target.x - p.x, target.y - p.y);
+        const actualDuration = Math.max(duration * 1.5, distance / .16);
+        const tween = this.tweens.add({ targets: p, x: target.x, y: target.y,
+            duration: actualDuration, ease: ease || 'Sine.easeInOut',
+            onComplete: () => {
+                if (p._moveTween !== tween) return;
+                p._moveTween = null;
+                this.stopBob(p);
+                if (onComplete) onComplete();
+            }
         });
+        p._moveTween = tween;
+        return tween;
     }
 
     // Returns the larger of nominalDur and the time needed so the player never
@@ -875,89 +1075,6 @@ class GameScene extends Phaser.Scene {
     _capJogDur(p, tx, ty, nominalDur, maxSpeed = 0.22) {
         const dist = Phaser.Math.Distance.Between(p.x, p.y, tx, ty);
         return Math.max(nominalDur, dist / (maxSpeed * 1.5));
-    }
-
-    // Send a group of players toward a tackle/pile spot realistically.
-    // The closest `minClose` players (default 2) ALWAYS sprint to the tackle spot
-    // so there is never a ghost tackle — at least one player is visibly there.
-    // Called just before the tackle fires: forces the 2 nearest defenders in
-    // `tacklers` to be actively running into the carrier (cx, cy) so the
-    // tackle never looks like a stationary player absorbing a hit.
-    _rushIntoTackle(tacklers, cx, cy) {
-        // Sort defenders by proximity and drive the nearest two INTO the carrier.
-        // No setPosition is ever used — everything is a tween so there's no snap.
-        // Returns the longest rush duration so callers can defer the tackle
-        // sound/shake until a defender has visibly arrived at the carrier.
-        const sorted = [...tacklers]
-            .filter(p => !!p)
-            .sort((a, b) =>
-                Phaser.Math.Distance.Between(a.x, a.y, cx, cy) -
-                Phaser.Math.Distance.Between(b.x, b.y, cx, cy));
-        let maxDur = 0;
-        // Constant running speed (px/ms). Slightly slower than jog cap so it
-        // reads as a smooth, deliberate pursuit rather than a teleport/zoom.
-        const RUN_SPEED = 0.18;
-        sorted.slice(0, 2).forEach((p, i) => {
-            this.tweens.killTweensOf(p);
-            const dist = Phaser.Math.Distance.Between(p.x, p.y, cx, cy);
-            // Duration = distance / speed → constant-velocity run.
-            // Floor keeps very close defenders from snapping; no hard ceiling
-            // so far defenders take the realistic time to actually get there.
-            const rushDur = Math.max(180, dist / RUN_SPEED);
-            if (rushDur > maxDur) maxDur = rushDur;
-            const offset = i === 0 ? { x: cx - 6, y: cy - 5 } : { x: cx + 5, y: cy + 6 };
-            this.startBob(p);
-            this.tweens.add({
-                targets: p,
-                x: Phaser.Math.Clamp(offset.x, FIELD.LEFT + 8, FIELD.RIGHT - 8),
-                y: Phaser.Math.Clamp(offset.y, FIELD.TOP + 10, FIELD.BOTTOM - 10),
-                duration: rushDur, ease: 'Sine.easeOut',
-                onComplete: () => this.stopBob(p)
-            });
-        });
-        return maxDur;
-    }
-
-    // Remaining players beyond closeRadius only drift partway.
-    // All destinations are clamped inside the visible field boundary.
-    _convergePlayers(players, tackleX, tackleY, baseDur, opts) {
-        const o         = opts || {};
-        const closeR    = o.closeRadius !== undefined ? o.closeRadius : 140;
-        const minClose  = o.minClose    !== undefined ? o.minClose    : 2;
-        const scatterX  = o.scatterX   !== undefined ? o.scatterX    : 14;
-        const scatterY  = o.scatterY   !== undefined ? o.scatterY    : 16;
-        const driftFrac = o.driftFrac  !== undefined ? o.driftFrac   : 0.38;
-        const minY = FIELD.TOP    + 14;
-        const maxY = FIELD.BOTTOM - 14;
-        const minX = FIELD.LEFT   + 10;
-        const maxX = FIELD.RIGHT  - 10;
-
-        // Sort a filtered copy by distance so we can guarantee the closest ones
-        // always make it to the tackle spot regardless of how far away they are.
-        const sorted = players
-            .filter(p => !!p)
-            .map(p => ({ p, dist: Phaser.Math.Distance.Between(p.x, p.y, tackleX, tackleY) }))
-            .sort((a, b) => a.dist - b.dist);
-
-        sorted.forEach(({ p, dist }, i) => {
-            const isClose = dist <= closeR || i < minClose;
-            let tx, ty, dur;
-            if (isClose) {
-                // Sprint into the pile with a tight scatter so they don't pile on
-                // the exact same pixel. Duration is capped so they arrive in time.
-                tx  = Phaser.Math.Clamp(tackleX + (Math.random() * scatterX * 2 - scatterX), minX, maxX);
-                ty  = Phaser.Math.Clamp(tackleY + (Math.random() * scatterY * 2 - scatterY), minY, maxY);
-                dur = baseDur + Math.random() * 160;
-            } else {
-                // React and drift partway — visibly chasing but can't close the gap.
-                const frac = driftFrac + Math.random() * 0.15;
-                tx  = Phaser.Math.Clamp(p.x + (tackleX - p.x) * frac + (Math.random() * 14 - 7), minX, maxX);
-                ty  = Phaser.Math.Clamp(p.y + (tackleY - p.y) * frac + (Math.random() * 14 - 7), minY, maxY);
-                // Slow drift — cap at 0.10 px/ms so they visibly lag behind.
-                dur = this._capJogDur(p, tx, ty, baseDur * 1.6 + Math.random() * 400, 0.10);
-            }
-            this.jog(p, tx, ty, dur);
-        });
     }
 
     // Smoothly shift our defenders (this.offense in defense mode) into the
@@ -1160,8 +1277,8 @@ class GameScene extends Phaser.Scene {
             // Always reset the camera — previous play may have left it zoomed in
             // (e.g. incomplete pass, interception, turnover on downs).
             this._zoomOut(380);
-            this.repositionFormation(this.gs.ballPosition);
-            this.showPlayCall();
+            this.phase = 'transition';
+            this.tweenFormation(this.gs.ballPosition, 700, () => this.showPlayCall());
         }
     }
 
@@ -1423,23 +1540,7 @@ class GameScene extends Phaser.Scene {
     // ─── Running plays ─────────────────────────────────────────────────────────
     execRun(play) {
         this.phase = 'anim';
-        // ── Miracle run: rare breakaway TD on any run play ─────────────────────
-        // ~1 % base chance (higher if player is trailing by 14+).
-        if (Math.random() < this._miracleChance(true)) {
-            const rb = this.offense[1];
-            this.ball.carrier = rb; this.ball.visible = true;
-            const endX = FIELD.GOAL_R + 52; // deep into the scoring endzone
-            this._miracleRun(
-                rb, this.defense,
-                rb.x, rb.y, endX, true,
-                () => {
-                    const yards = 100 - this.gs.ballPosition;
-                    this._doTDCelebration(rb);
-                    this.bigMessage('MIRACLE RUN! TOUCHDOWN!', 2000, () => this.endPlay(yards, 'run'));
-                }
-            );
-            return;
-        }
+        this._motion().reset();
         // Yardage model: base +/- variance, with a chance at a big gain.
         let yards = play.base + Math.round((Math.random() - 0.45) * play.variance);
         // Big plays are rarer and a touch shorter; stuffs more common.
@@ -1465,85 +1566,18 @@ class GameScene extends Phaser.Scene {
         const cpuB = this._cpuBoost();
         if (cpuB > 0 && Math.random() < cpuB * 0.75) yards = Math.max(yards - (1 + Math.floor(Math.random() * 3)), -2);
 
+
+        const breakaway = Math.random() < this._miracleChance(true);
+        if (breakaway) yards = 100 - this.gs.ballPosition;
         const startYard = this.gs.ballPosition;
-        const endYard = Phaser.Math.Clamp(startYard + yards, 0, 100);
-        const qb = this.offense[0], rb = this.offense[1];
-        const losX = ydToX(startYard), midY = FIELD.MID_Y;
-        const endX = endYard >= 100 ? FIELD.GOAL_R + 38 : ydToX(endYard);
-
-        // Outside runs always sweep wide to one edge; inside runs use a tighter
-        // lane through the A/B gaps.
-        const isOutside = play.id === 'OUTSIDE_RUN';
-        // Outside: large fixed lane (80–110px) that stays wide the whole play.
-        // Inside:  smaller lane (12–36px) with slight drift.
-        const laneDir = Math.random() < 0.5 ? -1 : 1;
-        const lane = isOutside
-            ? laneDir * (80 + Math.random() * 30)
-            : laneDir * (12 + Math.random() * 24);
-        // How much the lane returns toward center on the second leg:
-        //   outside → barely narrows (stays on the edge)
-        //   inside  → slight drift back (natural cut upfield)
-        const leg2LaneFrac = isOutside ? 0.88 : 0.55;
-        // Clamp the final Y so the carrier never runs out of bounds.
-        const tackleLaneY = Phaser.Math.Clamp(
-            midY + lane * leg2LaneFrac, FIELD.TOP + 20, FIELD.BOTTOM - 20);
-        const midLaneY = Phaser.Math.Clamp(
-            midY + lane, FIELD.TOP + 20, FIELD.BOTTOM - 20);
-
-        // Ball sticks to the running back.
-        this.ball.carrier = rb; this.ball.visible = true;
-        this.audio.speak(isOutside ? 'Sweep!' : 'Handoff!', true);
-
-        // Zoom in on the line of scrimmage so the run is visible up close.
-        this._zoomOnPoint(losX, midY, 1.6, 260);
-
-        // Linemen drive forward to block. On outside runs the WR/TE also
-        // release to the perimeter to simulate edge blocking.
-        this.offense.forEach((p, i) => {
-            if (i === 0 || i === 1) return;
-            const xPush = isOutside ? (48 + Math.random() * 30) : (28 + Math.random() * 22);
-            const yPush = isOutside ? laneDir * (20 + Math.random() * 28) : (Math.random() - 0.5) * 24;
-            this.jog(p, p.x + xPush, p.y + yPush, 900);
-        });
-
-        // At snap, defenders react to the OPPOSITE side of the run lane so they
-        // must pursue diagonally — never standing directly in the carrier's path.
-        const laneSign = lane >= 0 ? 1 : -1;
-        const opp = -laneSign;
-        const _cy = (y) => Phaser.Math.Clamp(y, FIELD.TOP + 14, FIELD.BOTTOM - 14);
-        this.tweens.add({ targets: this.defense[0], x: this.defense[0].x + 20, y: _cy(this.defense[0].y + opp * 54), duration: 300, ease: 'Sine.easeOut' });
-        this.tweens.add({ targets: this.defense[1], x: this.defense[1].x + 20, y: _cy(this.defense[1].y - opp * 54), duration: 300, ease: 'Sine.easeOut' });
-        this.tweens.add({ targets: this.defense[2], x: this.defense[2].x + 8,  y: _cy(this.defense[2].y + opp * 62), duration: 360, ease: 'Sine.easeOut' });
-        [this.defense[3], this.defense[4]].forEach(p => {
-            this.tweens.add({ targets: p, x: p.x + 18, y: _cy(p.y + opp * (28 + Math.random() * 18)), duration: 420, ease: 'Sine.easeOut' });
-        });
-
-        // Outside run: RB sweeps wide first (lateral arc then turns upfield).
-        // Inside run:  RB takes the handoff and hits the gap directly.
-        const rbStartY = isOutside ? midLaneY : midY;
-        this.jog(rb, losX - 4, rbStartY, isOutside ? 480 : 340, 'Quad.easeOut');
-        this.time.delayedCall(isOutside ? 500 : 360, () => {
-            const dur = Math.max(1300, Math.abs(endYard - startYard) * 75 + 1000);
-            const midX = (losX + endX) / 2;
-
-            // Leg 1: carrier reaches peak of their lane.
-            // Leg 2: carrier drives toward the tackle spot — outside runs stay
-            //        on the edge, inside runs have a slight upfield cut.
-            this.startBob(rb);
-            this.tweens.add({
-                targets: rb, x: midX, y: midLaneY, duration: dur * 0.5, ease: 'Sine.easeOut',
-                onComplete: () => {
-                    this.tweens.add({
-                        targets: rb, x: endX, y: tackleLaneY, duration: dur * 0.5, ease: 'Sine.easeIn',
-                        onComplete: () => this._finishRun(rb, yards)
-                    });
-                }
-            });
-
-            // Defenders converge diagonally from their displaced positions.
-            this.time.delayedCall(dur * 0.32, () => {
-                this._convergePlayers(this.defense, endX, tackleLaneY, dur * 0.52);
-            });
+        const outside = play.id === 'OUTSIDE_RUN';
+        const side = Math.random() < .5 ? -1 : 1;
+        const lane = FIELD.MID_Y + side * (outside ? 85 : 24);
+        const rb = this.offense[1];
+        this._handoff(this.offense, 1, () => {
+            this._runWithBall(rb, this.offense, this.defense,
+                Phaser.Math.Clamp(startYard + yards, 0, 100), lane, 1,
+                spot => this._finishRun(rb, spot - startYard), { breakaway });
         });
     }
 
@@ -1559,143 +1593,16 @@ class GameScene extends Phaser.Scene {
     // onDone    – callback fired after celebration, scored 6pts, then caller
     //             should call the appropriate endPlay / endOppPlay equivalent
     _miracleRun(runner, chasers, startX, startY, tdEndX, isUs, onDone) {
-        this.phase = 'anim';
-        // Kill any existing tweens on everyone involved.
-        this.tweens.killTweensOf(runner);
-        chasers.forEach(p => { if (p) this.tweens.killTweensOf(p); });
-
-        const midY   = FIELD.MID_Y;
-        const totalDist = Math.abs(tdEndX - startX);
-        // Total animation time scales with distance; minimum 2.1s so it feels epic.
-        const totalDur  = Math.max(2100, totalDist * 8.5);
-
-        // Pick a weave lane — the runner cuts to one side of the field.
-        const laneDir = startY <= midY ? 1 : -1; // cut toward open space
-        const peakY   = Phaser.Math.Clamp(
-            startY + laneDir * (55 + Math.random() * 35),
-            FIELD.TOP + 18, FIELD.BOTTOM - 18);
-
-        // Mid-field x is used as the apex of the cut.
-        const midRunX = startX + (tdEndX - startX) * 0.38;
-
-        // 1. Brief dramatic freeze — the "what just happened" moment.
-        this.audio.play('whistle');
-        this.cameras.main.shake(60, 0.005);
-        this.bigMessage(isUs ? 'HE\'S IN THE OPEN!' : `${this.oppColor.name} BREAKS FREE!`, 900, () => {
-            this.audio.speak(isUs ? 'He\'s gone! Nobody can catch him!' : 'Breaks free! Nobody can stop him!', true);
-            this.audio.play('crowd_big');
-
-            // Zoom onto the runner.
-            this._zoomOnPoint(startX, startY, 1.8, 220);
-
-            // Ball sticks to runner.
-            this.ball.carrier = runner; this.ball.visible = true;
-            this.startBob(runner);
-
-            // Runner weaves: cut to edge, then straighten into the endzone.
-            this.tweens.add({
-                targets: runner, x: midRunX, y: peakY,
-                duration: totalDur * 0.45, ease: 'Sine.easeOut',
-                onComplete: () => {
-                    // Zoom widens to show the whole chase.
-                    this._zoomOnPoint(runner.x + (tdEndX - runner.x) * 0.4, midY, 1.4, 300);
-                    this.tweens.add({
-                        targets: runner, x: tdEndX, y: Phaser.Math.Clamp(midY + laneDir * 18, FIELD.TOP + 16, FIELD.BOTTOM - 16),
-                        duration: totalDur * 0.55, ease: 'Quad.easeIn',
-                        onUpdate: (tw) => {
-                            // Pulse the zoom forward as runner approaches endzone.
-                            if (tw.progress > 0.6) {
-                                const progExcess = (tw.progress - 0.6) / 0.4;
-                                this.cameras.main.shake(16, 0.003 * progExcess);
-                            }
-                        },
-                        onComplete: () => {
-                            this.stopBob(runner);
-                            this.ball.carrier = null;
-                            this.audio.play('touchdown');
-                            this.audio.play('crowd_big');
-                            // Massive zoom onto the scorer in the endzone.
-                            this._zoomOnPoint(runner.x, runner.y, 2.4, 250);
-                            this.cameras.main.shake(240, 0.012);
-                            onDone();
-                        }
-                    });
-                }
-            });
-
-            // Defenders chase at full sprint — they close the gap but can never
-            // quite get there. The closest two almost make it; the rest trail off.
-            chasers.forEach((p, i) => {
-                if (!p) return;
-                this.tweens.killTweensOf(p);
-                const dist = Phaser.Math.Distance.Between(p.x, p.y, tdEndX, midY);
-                // Lean ahead of the runner slightly so they're visibly straining.
-                const chaseTargetX = Phaser.Math.Clamp(
-                    tdEndX + (i < 2 ? 20 + i * 12 : 50 + i * 20), FIELD.LEFT + 8, FIELD.RIGHT - 8);
-                const chaseTargetY = Phaser.Math.Clamp(
-                    peakY + (i % 2 ? 1 : -1) * (12 + i * 8), FIELD.TOP + 12, FIELD.BOTTOM - 12);
-                const chaseDur = totalDur * (i < 2 ? 0.90 : 1.05); // two closest nearly get there
-                this.startBob(p);
-                this.tweens.add({
-                    targets: p, x: chaseTargetX, y: chaseTargetY,
-                    duration: chaseDur, ease: 'Sine.easeIn',
-                    onComplete: () => this.stopBob(p)
-                });
-            });
-
-            // The runner's teammates don't stand and watch — the whole convoy
-            // takes off downfield. Three of them peel toward the trailing
-            // pursuers and throw blocks (which is WHY those chasers never get
-            // there); anyone left just sprints after the play.
-            const runDir = Math.sign(tdEndX - startX) || 1;
-            const mates = (chasers === this.defense ? this.offense : this.defense)
-                .filter(p => p && p !== runner);
-            mates.forEach((m, j) => {
-                this.tweens.killTweensOf(m);
-                this.stopBob(m);
-                this.startBob(m);
-                const mark = j < 3 ? chasers[2 + j] : null; // trailing pursuers get blocked
-                if (mark) {
-                    // Intercept the pursuer partway along their chase path.
-                    const meetX = Phaser.Math.Clamp(
-                        mark.x + (tdEndX - mark.x) * (0.40 + j * 0.08),
-                        FIELD.LEFT + 10, FIELD.RIGHT - 10);
-                    const meetY = Phaser.Math.Clamp(
-                        mark.y + (peakY - mark.y) * 0.5 + (j % 2 ? 10 : -10),
-                        FIELD.TOP + 12, FIELD.BOTTOM - 12);
-                    this.tweens.add({
-                        targets: m, x: meetX, y: meetY,
-                        duration: totalDur * (0.42 + j * 0.09), ease: 'Sine.easeInOut',
-                        onComplete: () => {
-                            // Contact: the pursuer is shoved off their line and
-                            // out of the play; the blocker stalls with them.
-                            this.tweens.killTweensOf(mark);
-                            this.stopBob(mark);
-                            this.stopBob(m);
-                            this.tweens.add({
-                                targets: mark,
-                                x: Phaser.Math.Clamp(mark.x - runDir * (14 + Math.random() * 12), FIELD.LEFT + 10, FIELD.RIGHT - 10),
-                                y: Phaser.Math.Clamp(mark.y + (j % 2 ? 1 : -1) * (14 + Math.random() * 10), FIELD.TOP + 12, FIELD.BOTTOM - 12),
-                                duration: 220, ease: 'Quad.easeOut'
-                            });
-                            this.tweens.add({ targets: mark, angle: (j % 2 ? -24 : 24), duration: 130, yoyo: true });
-                            this.tweens.add({ targets: m, x: m.x + runDir * 8, duration: 200, ease: 'Quad.easeOut' });
-                        }
-                    });
-                } else {
-                    // Nobody left to block — sprint downfield behind the play.
-                    const trailX = Phaser.Math.Clamp(
-                        tdEndX - runDir * (60 + j * 26), FIELD.LEFT + 10, FIELD.RIGHT - 10);
-                    const trailY = Phaser.Math.Clamp(
-                        peakY + (j % 2 ? -1 : 1) * (18 + j * 6), FIELD.TOP + 12, FIELD.BOTTOM - 12);
-                    this.tweens.add({
-                        targets: m, x: trailX, y: trailY,
-                        duration: totalDur * 1.08, ease: 'Sine.easeIn',
-                        onComplete: () => this.stopBob(m)
-                    });
-                }
-            });
-        });
+        const attack = isUs ? this.offense : this.defense;
+        const dir = isUs ? 1 : -1;
+        this._runWithBall(runner, attack, chasers, isUs ? 100 : 0,
+            FIELD.MID_Y + (startY < FIELD.MID_Y ? -55 : 55), dir,
+            (spot, result) => {
+                // Even a breakaway ends on contact; never award a touchdown before the line.
+                if (result.touchdown) onDone();
+                else if (isUs) this.endPlay(spot - this.gs.ballPosition, 'run');
+                else this.endOppPlay(this.opp.yard - spot, 'run');
+            }, { breakaway: true });
     }
 
     // Returns the miracle-run chance for the current context.
@@ -1707,41 +1614,19 @@ class GameScene extends Phaser.Scene {
     }
 
     _finishRun(rb, yards) {
-        this.stopBob(rb);
-        this._zoomOut(340);
-        // No tackle on a touchdown — zoom in on the scorer and celebrate.
-        if (this.gs.ballPosition + yards >= 100) {
-            this._zoomOnPoint(rb.x, rb.y, 2.2, 280);
-            this.time.delayedCall(320, () => this.endPlay(yards, 'run'));
-            return;
-        }
-        // Guarantee defenders are visibly running in at the moment of contact.
-        const rushDur = this._rushIntoTackle(this.defense, rb.x, rb.y);
-        this.time.delayedCall(rushDur, () => {
-            this.audio.play('tackle');
-            this.tackleShake(rb);
-        });
-        this.ball.carrier = null;
-
-        // ~10% fumble chance on any tackle. The 50/50 coin flip decides possession.
-        if (Math.random() < 0.10) {
-            const weLose = Math.random() < 0.5;
-            this.audio.play('incomplete'); // thud sound stands in for a fumble
-            this.time.delayedCall(350, () => {
-                this.audio.speak(weLose ? 'Fumble! Defense recovers!' : 'Fumble! We recover!', true);
-                this.bigMessage(weLose ? 'FUMBLE — TURNOVER!' : 'FUMBLE — RECOVERED!', 2000, () => {
-                    if (weLose) {
-                        this.turnover('fumble');
-                    } else {
-                        // We keep the ball but it's spotted at the fumble point.
-                        this.endPlay(yards, 'run');
-                    }
-                });
+        // Contact has already happened; no delayed tackle can outlive this play.
+        if (this.gs.ballPosition + yards >= 100) { this.endPlay(yards, 'run'); return; }
+        if (Math.random() < .10) {
+            const lose = Math.random() < .5;
+            const spot = this._spotYard(rb.x);
+            this.audio.speak(lose ? 'Fumble! Defense recovers!' : 'Fumble! We recover!', true);
+            this.ball.carrier = null;
+            this.ball.x = rb.x + 8; this.ball.y = rb.y + 5;
+            this.bigMessage(lose ? 'FUMBLE — TURNOVER!' : 'FUMBLE — RECOVERED!', 1800, () => {
+                if (lose) { this.gs.ballPosition = spot; this.turnover('fumble'); }
+                else this.endPlay(yards, 'run');
             });
-            return;
-        }
-
-        this.time.delayedCall(400, () => this.endPlay(yards, 'run'));
+        } else this.endPlay(yards, 'run');
     }
 
     // ─── Passing plays (basketball-style hold-to-charge throw) ─────────────────
@@ -1786,7 +1671,7 @@ class GameScene extends Phaser.Scene {
         this.receivers = idxs.map((oi, k) => {
             const depthYards = isLong ? (12 + Math.floor(Math.random() * 18)) : (3 + Math.floor(Math.random() * 8));
             const targetYard = Phaser.Math.Clamp(this.gs.ballPosition + depthYards, 0, 100);
-            const lateral = [-130, 130, -55, 60][k] * (0.6 + Math.random() * 0.5);
+            const lateral = (isLong ? [-115, 145, -40, 65] : [-65, 150, 10, 95])[k];
             const cov = coverage[k];
             // Fewer defenders = more open. 0 → wide open, 1 → contested, 2 → blanketed.
             // Base for cov=2 is intentionally very low (0.08) so doubles are genuinely
@@ -1812,33 +1697,17 @@ class GameScene extends Phaser.Scene {
             const displayCov = Math.min(2, cov + (distRisk ? 1 : 0));
             return {
                 player: this.offense[oi], depthYards, targetYard,
+                routeKind: (isLong ? ['seam','out','slant','flat'] : ['slant','curl','seam','flat'])[k],
                 x: rx, y: ry, openness, coverage: cov, displayCov,
-                defender: defenders[0] || this.defense[3 + (k % 3)],
+                defender: defenders[0] || null,
                 defenders
             };
         });
 
-        // QB drops back a touch; line blocks. The drop-back travels backward
-        // away from the defense, so left uncorrected the QB ends up facing
-        // upfield — away from the receivers he's about to choose from.
-        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
-        this.jog(this.offense[0], losX - 50, midY, 800, undefined, faceUp);
-        this.offense[5] && this.jog(this.offense[5], this.offense[5].x + 12, this.offense[5].y, 800, undefined, faceUp);
-
-        // Receivers run their routes; each covering defender sticks to his man.
-        this.receivers.forEach(r => {
-            this.jog(r.player, r.x, r.y, 1600, 'Sine.easeOut');
-            r.defenders.forEach((d, i) => {
-                if (!d) return;
-                const side = i === 0 ? 1 : -1;
-                this.jog(d, r.x + side * 20, r.y + 14 + i * 10, 1650, 'Sine.easeOut');
-            });
+        this._passRoutes(this.receivers, this.offense, this.defense, 1, () => {
+            this._motion().holdPass(this.receivers, this.offense[0], this.offense, this.defense, 1);
+            this.beginReceiverSelect();
         });
-        // Pass rush.
-        this.jog(this.defense[0], losX - 24, midY - 14, 1650);
-        this.jog(this.defense[1], losX - 24, midY + 14, 1650);
-
-        this.time.delayedCall(1700, () => this.beginReceiverSelect());
     }
 
     beginReceiverSelect() {
@@ -2037,36 +1906,15 @@ class GameScene extends Phaser.Scene {
     // motion: receivers drift along their routes and the coverage gradually closes
     // in — so defenders never "teleport" onto the catch at the last second.
     _startCoverageCreep() {
-        if (!this.receivers) return;
-        this.receivers.forEach(r => {
-            // Kill any still-running route tweens on these players before adding
-            // new ones.  Without this, two simultaneous tweens fight over x/y
-            // every frame — the shorter route tween's final-frame position update
-            // snaps the player to its 100% destination, then the longer creep tween
-            // immediately overrides it with a different interpolated value, producing
-            // a visible 1-frame teleport/warp.
-            this.tweens.killTweensOf(r.player);
-            if (r.defender) this.tweens.killTweensOf(r.defender);
-            // Receivers keep working downfield a little.
-            this.jog(r.player, r.x + (Math.random() * 22 - 11), r.y + (Math.random() * 26 - 13), 4200, 'Sine.easeInOut');
-            if (r.defender) {
-                // The man you targeted gets shadowed tighter; everyone else closes too.
-                const isTarget = r === this.target;
-                const gap = isTarget ? 16 : 30;
-                const ang = Math.random() * Math.PI * 2;
-                this.jog(r.defender, r.x + Math.cos(ang) * gap, r.y + Math.sin(ang) * gap,
-                    isTarget ? 3800 : 4400, 'Sine.easeInOut');
-            }
-        });
-        // The pass rush keeps pressing toward the quarterback.
-        const qb = this.offense[0];
-        if (this.defense[0]) this.jog(this.defense[0], qb.x + 26, qb.y - 16, 4000, 'Sine.easeInOut');
-        if (this.defense[1]) this.jog(this.defense[1], qb.x + 26, qb.y + 16, 4000, 'Sine.easeInOut');
+        // Keep working the same routes while the accessible charge control waits.
+        if (this.receivers && !this._motion().pocket)
+            this._motion().holdPass(this.receivers, this.offense[0], this.offense, this.defense, 1);
     }
 
     // Halt the slow-motion drift so the throw animation starts from a clean slate.
     _stopCoverageCreep() {
-        [...this.offense, ...this.defense].forEach(p => { this.tweens.killTweensOf(p); this.stopBob(p); });
+        this._motion().reset();
+        this.offense.concat(this.defense).forEach(p => this._motion().own(p));
     }
 
     // Pressing (and holding) begins building throw power.
@@ -2085,13 +1933,13 @@ class GameScene extends Phaser.Scene {
         this.charging = false;
         this.phase = 'anim';
         this._stopCoverageCreep();
-        this.audio.play('throw');
         this.throwPass(this.power);
     }
 
     throwPass(power) {
         const r = this.target;
         const qb = this.offense[0];
+        r.x = r.player.x; r.y = r.player.y;
         const idealPower = this.idealPowerFor(r);
         // A pass can ONLY be caught when you charge into the green window shown on
         // the meter (the same band drawPowerMeter draws: ideal ± 14). A quick tap
@@ -2139,192 +1987,49 @@ class GameScene extends Phaser.Scene {
         const landX = qb.x + (r.x - qb.x) * reach;
         const landY = qb.y + (r.y - qb.y) * reach;
 
-        // Ball flight; faster ball when thrown harder.
-        this.ball.visible = true; this.ball.carrier = null;
-        const _qbPt = this._carryPoint(qb);
-        this.ball.x = _qbPt.x; this.ball.y = _qbPt.y; this.ball.flying = true;
-        this.playPlayerAction(qb, 'throw', r);
-        const flightDur = Phaser.Math.Linear(820, 480, Phaser.Math.Clamp(power / 100, 0, 1));
-        const tx = complete ? r.x : landX, ty = complete ? r.y : landY;
-        // The art holds the ball until frame 5, so the flight waits for the
-        // release rather than setting off during the wind-up.
-        const _release = this._throwReleaseDelay(qb);
-        const flight = { x: _qbPt.x, y: _qbPt.y };
-        this.tweens.add({
-            targets: flight, x: tx, y: ty, duration: flightDur, delay: _release, ease: 'Sine.easeInOut',
-            onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
-            onComplete: () => {
-                this.ball.flying = false;
-                if (complete) this._completePass(r);
-                else if (intercepted) this._interceptPass(r);
-                else {
-                    this.audio.play('incomplete');
-                    this.audio.speak(undercharged ? 'Short. Incomplete.' : 'Overthrown.', true);
-                    this.ball.visible = false;
-                    this.endPlay(0, 'incomplete');
-                }
+        if (complete) {
+            this._passFlight(qb, r.player, { x: r.player.x, y: r.player.y }, 620, () => this._completePass(r));
+        } else if (intercepted) {
+            // A pick needs a defender who can actually contest this throw.
+            const db = [...this.defense].sort((a,b) => Math.hypot(a.x-r.x,a.y-r.y)-Math.hypot(b.x-r.x,b.y-r.y))[0];
+            if (db && Math.hypot(db.x-r.x, db.y-r.y) < 100) {
+                const spot = { x: (db.x + r.x) / 2, y: (db.y + r.y) / 2 };
+                this._passFlight(qb, db, spot, 670, () => this._interceptPass(r, db));
+                return;
             }
-        });
+            this._passFlight(qb, null, { x: landX, y: landY }, 650, () => {
+                this.audio.speak('Incomplete.', true); this.endPlay(0, 'incomplete');
+            });
+        } else {
+            this._passFlight(qb, null, { x: landX, y: landY }, 650, () => {
+                this.audio.play('incomplete');
+                this.audio.speak(undercharged ? 'Short. Incomplete.' : 'Incomplete pass.', true);
+                this.endPlay(0, 'incomplete');
+            });
+        }
     }
 
     _completePass(r) {
-        this.audio.play('catch');
-        this.audio.play('crowd');
-        this.audio.speak('Caught!', true);
-        this.playPlayerAction(r.player, 'catch', this.offense[0]);
-        // Zoom in on the receiver so the player can see the run-after-catch.
-        this._zoomOnPoint(r.player.x, r.player.y, 1.55, 260);
-        const rec = r.player;
-        this.ball.carrier = rec;
-        // If the route target was at or past the goal line the catch is an
-        // immediate touchdown — receiver takes a few steps into the end zone.
-        if (r.x >= FIELD.GOAL_R - 5) {
-            this.audio.speak('Touchdown!', true);
-            this._zoomOnPoint(rec.x, rec.y, 2.2, 280);
-            const tdYards = r.targetYard - this.gs.ballPosition;
-            // Step the scorer a few yards deeper into the end zone.
-            const ezX = rec.x + 22 + Math.random() * 16;
-            const ezY = rec.y + (Math.random() - 0.5) * 16;
-            // Other players do small natural in-place drifts — no convergence.
-            this.offense.forEach(p => {
-                if (p === rec) return;
-                this.jog(p, p.x + (Math.random() - 0.5) * 20, p.y + (Math.random() - 0.5) * 20, 460, 'Sine.easeOut');
-            });
-            this.defense.forEach(p => {
-                this.jog(p, p.x + (Math.random() - 0.5) * 16, p.y + (Math.random() - 0.5) * 16, 460, 'Sine.easeOut');
-            });
-            this.tweens.add({
-                targets: rec, x: ezX, y: ezY, duration: 460, ease: 'Sine.easeOut',
-                onComplete: () => this.endPlay(tdYards, 'pass')
-            });
-            return;
-        }
-        // The receiver always gets to run after the catch — more room when open.
-        const rawYac = (r.openness > 0.6 ? 4 + Math.floor(Math.random() * 9) : 1 + Math.floor(Math.random() * 4));
-        const yac = Math.max(0, Math.round(rawYac * (1 - this._scorePressure()) * (1 - this._cpuBoost() * 0.45)));
-        const gained = (r.targetYard - this.gs.ballPosition) + yac;
-        const endYard = Phaser.Math.Clamp(this.gs.ballPosition + gained, 0, 100);
-        // Carry the receiver slightly past the goal line for TDs so they don't
-        // hover right at the boundary.
-        const endX = endYard >= 100 ? FIELD.GOAL_R + 38 : ydToX(endYard);
-        const midX = (rec.x + endX) / 2;
-        // Capture catch position before any tweens move rec.
-        const catchY = rec.y;
-        // Run toward open space: lean away from field center (outward), not randomly.
-        const sideDir = catchY <= FIELD.MID_Y ? -1 : 1;
-        const lane = sideDir * (10 + Math.random() * 22);
-        const runDur = 900 + yac * 80;
-
-        // The receiver weaves upfield; the defense pursues and gradually runs him
-        // down rather than snapping onto him instantly.
-        this.jog(rec, midX, catchY + lane, runDur * 0.5, 'Sine.easeOut').on('complete', () => {
-            this.jog(rec, endX, catchY + lane * 0.35, runDur * 0.5, 'Sine.easeIn').on('complete', () => {
-                const isTD = this.gs.ballPosition + gained >= 100;
-                if (isTD) {
-                    // Zoom in on the receiver before the celebration fires.
-                    this._zoomOnPoint(rec.x, rec.y, 2.2, 280);
-                    this.time.delayedCall(320, () => this.endPlay(gained, 'pass'));
-                    return;
-                }
-                // Guarantee defenders are visibly running in at the moment of contact.
-                const rushDur = this._rushIntoTackle(this.defense, rec.x, rec.y);
-                this.time.delayedCall(rushDur, () => {
-                    this.audio.play('tackle');
-                    this.tackleShake(rec);
-                });
-                this.ball.carrier = null;
-                this.time.delayedCall(rushDur + 400, () => this.endPlay(gained, 'pass'));
-            });
-        });
-        // Defense closes in after the receiver starts running — chasing from their
-        // coverage spots rather than materialising head-on in front of the ball.
-        this.time.delayedCall(runDur * 0.20, () => {
-            this._convergePlayers(this.defense, endX, catchY + lane * 0.4, runDur * 0.72);
-        });
-        // Blockers push downfield to seal the edge after the catch.
-        this.time.delayedCall(runDur * 0.12, () => {
-            this._convergePlayers(this.offense.filter(p => p !== rec), endX, catchY + lane * 0.35, runDur * 0.80);
-        });
+        this.audio.play('crowd'); this.audio.speak('Caught!', true);
+        const rec = r.player, startYard = this.gs.ballPosition;
+        const catchYard = this._spotYard(rec.x);
+        const yac = r.openness > .6 ? 5 + Math.floor(Math.random() * 8) : 2;
+        this._runWithBall(rec, this.offense, this.defense, Math.min(100, catchYard + yac),
+            rec.y + (rec.y < FIELD.MID_Y ? 15 : -15), 1,
+            spot => this.endPlay(spot - startYard, 'pass'));
     }
 
-    _interceptPass(r) {
-        this.audio.play('interception');
-        this.audio.play('crowd_big');
-        // Use whichever defender is physically closest to where the ball is going.
-        const db = this.defense.reduce((best, p) => {
-            const d = Phaser.Math.Distance.Between(p.x, p.y, r.x, r.y);
-            const bd = Phaser.Math.Distance.Between(best.x, best.y, r.x, r.y);
-            return d < bd ? p : best;
-        }, this.defense[0]);
-        this.ball.carrier = db;
-        this.playPlayerAction(db, 'catch', this.offense[0]);
-        this.audio.speak('Intercepted!', true);
-
-        // Defender returns the ball toward their own end zone (left).
-        // The return covers 5–22 yards; the offense must chase and tackle.
-        const startYard   = this.gs.ballPosition;
-        const returnYards = 5 + Math.floor(Math.random() * 18);
-        const returnToYard = Phaser.Math.Clamp(startYard - returnYards, 1, 99);
-        const endX    = ydToX(returnToYard);
-        const midY    = FIELD.MID_Y;
-        const totalDur = 1300 + returnYards * 45;
-        const laneDir  = db.y <= midY ? 1 : -1;
-        const lane     = laneDir * (12 + Math.random() * 22);
-        const midRunX  = (db.x + endX) * 0.5;
-
-        const isPickSixCPU = returnToYard <= 0;
-        const actualEndX   = isPickSixCPU ? FIELD.GOAL_L - 52 : endX;
-
-        this._zoomOnPoint(db.x, db.y, 1.7, 280);
-        this.startBob(db);
-        this.tweens.add({
-            targets: db, x: (db.x + actualEndX) * 0.5,
-            y: Phaser.Math.Clamp(db.y + lane, FIELD.TOP + 14, FIELD.BOTTOM - 14),
-            duration: totalDur * 0.5, ease: 'Sine.easeOut',
-            onComplete: () => {
-                this._zoomOnPoint(db.x + (actualEndX - db.x) * 0.35, midY, 1.4, 260);
-                this.tweens.add({
-                    targets: db, x: actualEndX,
-                    y: Phaser.Math.Clamp(db.y + lane * 0.3, FIELD.TOP + 14, FIELD.BOTTOM - 14),
-                    duration: totalDur * 0.5, ease: 'Sine.easeIn',
-                    onComplete: () => {
-                        this.stopBob(db);
-                        this.ball.carrier = null;
-                        if (isPickSixCPU) {
-                            this.gs.score.them += 6; this.updateHUD();
-                            this.audio.play('touchdown'); this.audio.play('crowd_big');
-                            this._zoomOnPoint(db.x, db.y, 2.2, 280);
-                            this.cameras.main.shake(220, 0.009);
-                            this.bigMessage(`${this.oppColor.name} PICK SIX! TOUCHDOWN!`, 2000,
-                                () => this.oppAfterTouchdown());
-                        } else {
-                            const rushDur = this._rushIntoTackle(this.offense, db.x, db.y);
-                            this.time.delayedCall(rushDur, () => {
-                                this.audio.play('tackle');
-                                this.tackleShake(db);
-                                this.bigMessage('INTERCEPTED!', 1600, () => {
-                                    this.time.delayedCall(300, () =>
-                                        this.defenseDrive(Phaser.Math.Clamp(returnToYard, 1, 99)));
-                                });
-                            });
-                        }
-                    }
-                });
-            }
-        });
-        // Offense chases the interceptor from their coverage positions.
-        this.time.delayedCall(totalDur * 0.15, () => {
-            this._convergePlayers(this.offense, actualEndX,
-                db.y + lane * 0.35, totalDur * 0.78);
-        });
-        // Other defenders escort the returner downfield.
-        this.defense.forEach(p => {
-            if (p === db) return;
-            this.jog(p,
-                (db.x + actualEndX) * 0.5 - 20 - Math.random() * 30,
-                p.y + (Math.random() - 0.5) * 40,
-                totalDur * 0.75 + Math.random() * 200);
-        });
+    _interceptPass(r, db) {
+        this.audio.play('interception'); this.audio.speak('Intercepted!', true);
+        const catchYard = this._spotYard(db.x);
+        this._runWithBall(db, this.defense, this.offense, Math.max(0, catchYard - 15),
+            db.y + (db.y < FIELD.MID_Y ? 22 : -22), -1, (spot, result) => {
+                if (result.touchdown) {
+                    this.gs.score.them += 6; this.updateHUD();
+                    this._doTDCelebration(db); this.audio.play('touchdown');
+                    this.bigMessage('PICK SIX! TOUCHDOWN!', 1800, () => this.oppAfterTouchdown());
+                } else this.bigMessage('INTERCEPTED!', 1400, () => this.defenseDrive(spot, true));
+            });
     }
 
     // ─── Kicks ─────────────────────────────────────────────────────────────────
@@ -2521,7 +2226,6 @@ class GameScene extends Phaser.Scene {
         const enough = power >= ideal * 0.9;
         const onTarget = Math.abs(aim) <= this.aimWindow;
         const made = enough && onTarget;
-        this.audio.play('kick');
 
         const start = { x: ydToX(this.gs.ballPosition), y: FIELD.MID_Y };
         this.ball.visible = true; this.ball.carrier = null; this.ball.x = start.x; this.ball.y = start.y;
@@ -2532,38 +2236,40 @@ class GameScene extends Phaser.Scene {
         const endY = FIELD.MID_Y + aim * 60 + (onTarget ? 0 : (aim >= 0 ? 55 : -55));
         const peak = 70 + this.fgDist * 1.4;
 
-        this.tweens.add({
-            targets: start, x: endX, y: endY, duration: 880, ease: 'Quad.easeOut',
-            onUpdate: (tw) => {
-                const t = tw.progress;
-                this.ball.x = start.x;
-                this.ball.y = start.y - Math.sin(t * Math.PI) * peak; // simple arc
-            },
-            onComplete: () => {
-                this.ball.visible = false;
-                this._zoomOut(500);
-                if (made) {
-                    this.audio.play('fieldgoal'); this.audio.play('crowd_big');
-                    if (this.isPAT) {
-                        this.gs.score.us += 1; this.updateHUD();
-                        this.bigMessage('EXTRA POINT GOOD!  +1', 1500, () => { this.isPAT = false; this.kickToOpponent(); });
+        this._kickFrom(this.offense[0], start, { x: goalX, y: endY }, () => {
+            this.tweens.add({
+                targets: start, x: endX, y: endY, duration: 880, ease: 'Quad.easeOut',
+                onUpdate: (tw) => {
+                    const t = tw.progress;
+                    this.ball.x = start.x;
+                    this.ball.y = start.y - Math.sin(t * Math.PI) * peak; // simple arc
+                },
+                onComplete: () => {
+                    this.ball.visible = false;
+                    this._zoomOut(500);
+                    if (made) {
+                        this.audio.play('fieldgoal'); this.audio.play('crowd_big');
+                        if (this.isPAT) {
+                            this.gs.score.us += 1; this.updateHUD();
+                            this.bigMessage('EXTRA POINT GOOD!  +1', 1500, () => { this.isPAT = false; this.kickToOpponent(); });
+                        } else {
+                            this.gs.score.us += 3; this.updateHUD();
+                            this.bigMessage('FIELD GOAL!  +3', 1700, () => this.kickToOpponent());
+                        }
                     } else {
-                        this.gs.score.us += 3; this.updateHUD();
-                        this.bigMessage('FIELD GOAL!  +3', 1700, () => this.kickToOpponent());
-                    }
-                } else {
-                    this.audio.play('fail');
-                    const why = !enough ? 'SHORT' : (aim < 0 ? 'WIDE LEFT' : 'WIDE RIGHT');
-                    if (this.isPAT) {
-                        this.bigMessage('EXTRA POINT NO GOOD', 1500, () => { this.isPAT = false; this.kickToOpponent(); });
-                    } else {
-                        this.bigMessage('NO GOOD — ' + why, 1600, () => {
-                        // NFL rule: opponent gets ball at spot of kick; minimum their own 20.
-                        this.defenseDrive(Math.min(this.gs.ballPosition, 80));
-                    });
+                        this.audio.play('fail');
+                        const why = !enough ? 'SHORT' : (aim < 0 ? 'WIDE LEFT' : 'WIDE RIGHT');
+                        if (this.isPAT) {
+                            this.bigMessage('EXTRA POINT NO GOOD', 1500, () => { this.isPAT = false; this.kickToOpponent(); });
+                        } else {
+                            this.bigMessage('NO GOOD — ' + why, 1600, () => {
+                            // NFL rule: opponent gets ball at spot of kick; minimum their own 20.
+                            this.defenseDrive(Math.min(this.gs.ballPosition, 80));
+                        });
+                        }
                     }
                 }
-            }
+            });
         });
     }
 
@@ -2616,54 +2322,55 @@ class GameScene extends Phaser.Scene {
         g.lineStyle(2, 0xffffff, 0.9); g.strokeRoundedRect(x, y, w, h, 6);
     }
 
-    execPunt() {
-        this.phase = 'anim';
-        const net = 35 + Math.floor(Math.random() * 12);
-        const oppStartFromUs = Phaser.Math.Clamp(this.gs.ballPosition + net, 0, 99);
-        const startX = ydToX(this.gs.ballPosition);
-        const landX  = ydToX(oppStartFromUs);
-        const midY   = FIELD.MID_Y;
 
-        // Punter (QB slot) takes a short drop-step before the kick.
-        const punter = this.offense[0];
-        this.jog(punter, startX - 18, midY, 320, 'Quad.easeOut');
-
-        // Gunners sprint downfield toward the landing spot.
-        this.offense.forEach((p, i) => {
-            if (i === 0) return;
-            this.jog(p, landX - 30 + Math.random() * 60, midY + (Math.random() - 0.5) * 80, 1200, 'Sine.easeIn');
-        });
-
-        // Returner (deepest safety) runs toward the landing spot.
-        const returner = this.defense[5] || this.defense[4];
-        if (returner) this.jog(returner, landX + 12, midY, 1100, 'Sine.easeIn');
-
-        this.time.delayedCall(350, () => {
-            this.audio.play('kick');
-            const ball = this.ball;
-            ball.visible = true; ball.carrier = null;
-            ball.x = startX; ball.y = midY;
-            const flight = { x: startX, y: midY };
-            this.tweens.add({
-                targets: flight, x: landX, y: midY, duration: 900, ease: 'Quad.easeOut',
-                onUpdate: (tw) => {
-                    ball.x = flight.x;
-                    ball.y = midY - Math.sin(tw.progress * Math.PI) * 120;
+    _puntSequence(us) {
+        const attack = us ? this.offense : this.defense, defend = us ? this.defense : this.offense;
+        const dir = us ? 1 : -1, startYard = us ? this.gs.ballPosition : this.opp.yard;
+        const landYard = Phaser.Math.Clamp(startYard + dir * (35 + Math.floor(Math.random() * 12)), 0, 100);
+        const spot = { x: ydToX(startYard) - dir * 18, y: FIELD.MID_Y };
+        const land = { x: ydToX(landYard), y: FIELD.MID_Y + 36 };
+        const returner = defend[5];
+        this._zoomOut(350);
+        this._motion().reset();
+        this._motion().route(returner, [land], 135);
+        this._kickFrom(attack[0], spot, land, () => {
+            attack.slice(1).forEach((p, i) => this._motion().route(p,
+                [{ x: land.x - dir * (36 + i * 14), y: land.y + (i % 2 ? 44 : -44) }], 118));
+            defend.filter(p => p !== returner).forEach((p, i) => this._motion().route(p,
+                [{ x: land.x - dir * 65, y: land.y + (i % 2 ? -1 : 1) * (35 + i * 8) }], 112));
+            const duration = Math.max(1300, Math.hypot(returner.x-land.x, returner.y-land.y) / 135 * 1000 + 300);
+            this._motion().after(Math.max(0, duration - 308), () => this.playPlayerAction(returner, 'catch', attack[0]));
+            const flight = { t: 0 };
+            this.tweens.add({ targets: flight, t: 1, duration, ease: 'Linear',
+                onUpdate: () => {
+                    this.ball.x = spot.x + (land.x - spot.x) * flight.t;
+                    this.ball.y = spot.y + (land.y - (returner._spr ? 20 : 0) - spot.y) * flight.t - Math.sin(flight.t * Math.PI) * 130;
                 },
                 onComplete: () => {
-                    ball.visible = false;
-                    this.bigMessage('PUNT', 1200, () =>
-                        this.defenseDrive(Phaser.Math.Clamp(oppStartFromUs, 1, 99)));
+                    if (landYard === 0 || landYard === 100) {
+                        this.ball.visible = false;
+                        this.bigMessage('TOUCHBACK', 1200, () => us ? this.defenseDrive(80, true) : this.startUsDrive(20, true));
+                    } else {
+                        this.audio.play('catch'); this.ball.carrier = returner;
+                        this._motion().after(160, () => this.kickReturn(us ? 'them' : 'us', returner, attack,
+                            landYard, Phaser.Math.Clamp(landYard - dir * 7, 0, 100)));
+                    }
                 }
             });
         });
     }
 
+    execPunt() {
+        this.phase = 'anim';
+        this._puntSequence(true);
+    }
+
     // ─── Resolve a completed play ──────────────────────────────────────────────
     endPlay(yards, type) {
+        this._motion().reset();
         // Clean up any receiver tap zones left over (e.g. sack before selection).
         if (this._recPointerZones) {
-            this._recPointerZones.forEach(z => { z.player.off('pointerdown', z.fn); z.player.disableInteractive(); });
+            this._recPointerZones.forEach(z => { z.player.off('pointerup', z.fn); z.player.disableInteractive(); });
             this._recPointerZones = null;
         }
         const gs = this.gs;
@@ -2696,10 +2403,15 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
+        if (gs.ballPosition <= 0 && type !== 'incomplete') {
+            this.gs.score.them += 2; this.updateHUD();
+            this.bigMessage('SAFETY! +2', 1700, () => this.kickoff('them'));
+            return;
+        }
         // Touchdown?
         if (gs.ballPosition >= 100) {
             gs.score.us += 6; this.updateHUD();
-            // Run celebration before the message so the player sees the spike + wiggle.
+            // Run celebration before the message so the player sees the spike and celebration.
             const scorer = this.ball.carrier;
             this.ball.carrier = null;
             this._doTDCelebration(scorer);
@@ -2793,9 +2505,10 @@ class GameScene extends Phaser.Scene {
         } else {
             // Always reset the camera — previous play may have left it zoomed in.
             this._zoomOut(380);
-            this.repositionDefense(this.opp.yard);
             // Pause after the message so any preceding TTS (punt, FG, turnover, etc.) can finish.
-            this.bigMessage(`${this.oppColor.name} BALL`, 1400, () => this.time.delayedCall(2000, () => this.showDefPlayCall()));
+            this.phase = 'transition';
+            this.repositionDefense(this.opp.yard, () =>
+                this.bigMessage(`${this.oppColor.name} BALL`, 1400, () => this.showDefPlayCall()));
         }
     }
 
@@ -2820,43 +2533,24 @@ class GameScene extends Phaser.Scene {
             { x: losX - 26, y: midY + 120 },
             { x: losX - 95, y: midY }
         ];
-        return { oppOff, ourDef };
+        const fit = p => this._motion().point(p.x, p.y);
+        return { oppOff: oppOff.map(fit), ourDef: ourDef.map(fit) };
     }
 
-    repositionDefense(losYard) {
+    repositionDefense(losYard, then = () => {}) {
         // Use a smooth tween instead of an instant setPosition so there's no
         // visible warp when switching from offensive to defensive formation.
-        this.tweenDefense(losYard, 700, () => {});
-        this.ball.carrier = this.defense[0];
-        this.ball.x = ydToX(losYard) + 24; this.ball.y = FIELD.MID_Y; this.ball.visible = true;
+        this.tweenDefense(losYard, 700, then);
     }
 
     tweenDefense(losYard, duration, cb) {
         const { oppOff, ourDef } = this.defenseFormationPositions(losYard);
-        // Defensive series run through here rather than tweenFormation, so
-        // this is the path that stands a tackled CPU ball carrier back up.
-        // As above, the release happens when the tween lands, not up front.
-        // Kill any leftover animation tweens so kickoff/play tweens can't override the formation.
-        [...this.offense, ...this.defense].forEach(p => { this.tweens.killTweensOf(p); this.stopBob(p); });
-        // Facing otherwise only comes from the direction of this jog. Hooking
-        // the jog's own onComplete (rather than timing a delayedCall off
-        // `duration`, which isn't what the tween actually runs at — see
-        // jog()) fires this exactly when each player really lands.
-        const faceUp = () => this._faceAcrossFormation(this.offense, this.defense);
-        // Anyone knocked down stays down where they fell while the rest jog
-        // back; they get up as this tween lands.
-        this.defense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, oppOff[i].x, oppOff[i].y, duration, undefined, faceUp); });
-        this.offense.forEach((p, i) => { if (!this._isDown(p)) this.jog(p, ourDef[i].x, ourDef[i].y, duration, undefined, faceUp); });
-        // Flip labels: this.defense sprites are now the opp offense; this.offense are our defense.
         ['QB','RB','WR','WR','TE','OL'].forEach((l, i) => this._setPlayerLabel(this.defense[i], l));
         ['DL','DL','LB','CB','CB','S'].forEach((l, i) => this._setPlayerLabel(this.offense[i], l));
-        this.ball.carrier = null;
-        this.ball.x = ydToX(losYard) + 24; this.ball.y = FIELD.MID_Y; this.ball.visible = true;
-        this.time.delayedCall(duration + 120, () => {
-            // Note the swap: on defence `this.defense` holds the opposing
-            // offence and `this.offense` holds our defenders.
-            const gotUp = this._standDownedPlayers(ourDef, oppOff, 420);
-            this.time.delayedCall(gotUp ? 470 : 0, cb);
+        this.ball.carrier = null; this.ball.visible = false;
+        this._resetFormation(ourDef, oppOff, duration, () => {
+            this.ball.carrier = this.defense[0]; this.ball.visible = true;
+            cb();
         });
     }
 
@@ -2925,40 +2619,25 @@ class GameScene extends Phaser.Scene {
 
     _doTDCelebration(scorer) {
         if (!scorer) return;
-
-        // Zoom tightly onto the scorer so they fill the view and aren't buried.
-        this._zoomOnPoint(scorer.x, scorer.y, 2.2, 300);
-
-        // Scatter all other players away from the scorer so nothing blocks the view.
-        const allPlayers = [...this.offense, ...this.defense];
-        allPlayers.forEach(p => {
+        const motion = this._motion();
+        motion.reset();
+        motion.own(scorer);
+        this.ball.carrier = null;
+        this._zoomOnPoint(scorer.x, scorer.y, 1.8, 320);
+        this.facePlayer(scorer, { x: scorer.x, y: FIELD.BOTTOM + 60 });
+        this.playPlayerAction(scorer, 'celebrate');
+        const spike = this._carryPoint(scorer);
+        this.ball.x = spike.x; this.ball.y = spike.y; this.ball.visible = true;
+        this.tweens.add({ targets: this.ball, y: scorer.y + 6, duration: 230, ease: 'Bounce.easeOut',
+            onComplete: () => { this.ball.visible = false; } });
+        const mates = this.offense.includes(scorer) ? this.offense : this.defense;
+        this.offense.concat(this.defense).forEach((p, i) => {
             if (p === scorer) return;
-            // Push outward: players to the left go further left, right go right.
-            const dx = p.x < scorer.x ? -(40 + Math.random() * 50) : (40 + Math.random() * 50);
-            const dy = (Math.random() - 0.5) * 60;
-            this.tweens.add({ targets: p, x: p.x + dx, y: p.y + dy, duration: 280, ease: 'Quad.easeOut' });
+            const same = mates.includes(p), side = p.x < scorer.x ? -1 : 1;
+            const pt = motion.point(same ? scorer.x + side * (42 + i % 3 * 16) : p.x + side * 24,
+                same ? scorer.y + (i % 2 ? -40 : 40) : p.y);
+            this.jog(p, pt.x, pt.y, 600, 'Sine.easeOut');
         });
-
-        // Spike the ball: it drops fast and bounces on the turf. It has to
-        // leave the scorer's hands, which are chest height on a sprite.
-        const _spikePt = this._carryPoint(scorer);
-        this.ball.x = _spikePt.x; this.ball.y = _spikePt.y; this.ball.visible = true;
-        this.tweens.add({
-            targets: this.ball, y: scorer.y + 20, duration: 150, ease: 'Quad.easeIn',
-            onComplete: () => this.tweens.add({
-                targets: this.ball, y: scorer.y - 4, duration: 80, ease: 'Quad.easeOut',
-                onComplete: () => this.tweens.add({
-                    targets: this.ball, y: scorer.y + 8, duration: 60, ease: 'Quad.easeIn',
-                    onComplete: () => { this.ball.visible = false; }
-                })
-            })
-        });
-        // Celebration wiggle: player pumps their arms side to side.
-        this.tweens.add({
-            targets: scorer, angle: 22, duration: 75, yoyo: true, repeat: 5,
-            ease: 'Sine.easeInOut', onComplete: () => scorer.setAngle(0)
-        });
-        this.cameras.main.shake(220, 0.009);
     }
 
     _ordinal(n) { return ['first', 'second', 'third', 'fourth'][Math.min(n, 4) - 1]; }
@@ -2997,7 +2676,7 @@ class GameScene extends Phaser.Scene {
         if (Math.random() < defPlay.sack) {
             const loss = isPass ? -(5 + Math.floor(Math.random() * 5)) : -(1 + Math.floor(Math.random() * 3));
             // Sacks and TFLs are always a perfect defensive outcome visually.
-            this.animateOppPlay(loss, isPass ? 'sack' : 'tfl', () => this.endOppPlay(loss, isPass ? 'sack' : 'tfl'), null, null, 'perfect');
+            this.animateOppPlay(loss, isPass ? 'sack' : 'tfl', actual => this.endOppPlay(actual, isPass ? 'sack' : 'tfl'), null, null, 'perfect');
             return;
         }
 
@@ -3011,9 +2690,8 @@ class GameScene extends Phaser.Scene {
         // ── CPU miracle run: rare breakaway TD on any CPU run play ─────────────
         if (!isPass && Math.random() < this._miracleChance(false)) {
             const rb = this.defense[1]; // CPU's RB
-            this.ball.carrier = rb; this.ball.visible = true;
             const endX = FIELD.GOAL_L - 52; // deep into the CPU scoring endzone
-            this._miracleRun(
+            this._handoff(this.defense, -1, () => this._miracleRun(
                 rb, this.offense,
                 rb.x, rb.y, endX, false,
                 () => {
@@ -3021,7 +2699,7 @@ class GameScene extends Phaser.Scene {
                     this.bigMessage(`MIRACLE RUN! ${this.oppColor.name} TOUCHDOWN!`, 2000,
                         () => this.oppAfterTouchdown());
                 }
-            );
+            ));
             return;
         }
         // Visual matchup quality for run plays: right call = defenders converge
@@ -3048,7 +2726,7 @@ class GameScene extends Phaser.Scene {
         if (this.gs.score.them > 35 && yards > 2) yards = Math.max(2, yards - (2 + Math.floor(Math.random() * 3)));
         yards = Phaser.Math.Clamp(yards, -6, this.opp.yard);
 
-        this.animateOppPlay(yards, 'run', () => this.endOppPlay(yards, 'run'), null, null, runMatchup);
+        this.animateOppPlay(yards, 'run', actual => this.endOppPlay(actual, 'run'), null, null, runMatchup);
     }
 
     // Opponent dropback pass: their receivers run routes, the defense YOU called
@@ -3118,152 +2796,52 @@ class GameScene extends Phaser.Scene {
         // ── Route receivers. For a completion the target goes to their catch ──
         // point: roughly 50–80 % of the gain as route depth, rest is YAC.
         // This guarantees that carrier.x is never already past endX when
-        // _startRun fires, so the run-after-catch animation covers the correct
+        // _runWithBall starts, so the run-after-catch animation covers the correct
         // remaining distance and the total visual movement matches the game result.
-        recInfo.forEach((ri, k) => {
-            let tx;
-            if (passOutcome === 'complete' && ri === target && passYards >= 1) {
-                // Route the TARGET to the catch point so the run-after-catch
-                // covers exactly the remaining yards to the tackle spot.
-                // routeYards is 50–80 % of the gain, clamped to [0, passYards-1]
-                // so there is always at least 1 yard of visible run after the catch.
-                // For a 1-yard gain this means catch at the LOS then run 1 yard.
-                const raw = Math.round(passYards * (0.5 + Math.random() * 0.3));
-                const routeYards = Phaser.Math.Clamp(raw, 0, passYards - 1);
-                tx = ydToX(Phaser.Math.Clamp(startYard - routeYards, 1, 99));
-            } else {
-                // Non-target, incomplete, INT, or negative gain: random route depth.
-                tx = ri.player.x - 46 - Math.random() * 40;
-            }
-            // Give each receiver a distinct route shape (same as before).
-            const rawAngle  = k === 0 ? (Math.random() - 0.5) * 60
-                            : k === 1 ? (Math.random() < 0.5 ? 1 : -1) * (18 + Math.random() * 26)
-                            :           (Math.random() - 0.5) * 38;
-            const routeAngle = Phaser.Math.Clamp(
-                ri.player.y + rawAngle, FIELD.TOP + 22, FIELD.BOTTOM - 22) - ri.player.y;
-            const ty = ri.player.y + routeAngle;
-            this.jog(ri.player, tx, ty, 1100, 'Sine.easeOut');
-            ri.defenders.forEach((d, i) => { if (d) this.jog(d, tx + (i ? -18 : 18), ty + 12, 1150, 'Sine.easeOut'); });
+        const routes = recInfo.map((ri, k) => {
+            const depth = ri === target && passOutcome === 'complete'
+                ? Math.max(1, Math.round(passYards * .65)) : 6 + k * 3;
+            const x = ydToX(Math.max(0, startYard - depth));
+            const y = Phaser.Math.Clamp(ri.player.y + [40,-20,45][k], FIELD.TOP + 22, FIELD.BOTTOM - 20);
+            return { ...ri, x, y, routeKind: ['slant','curl','seam'][k] };
         });
         const qb = this.defense[0];
-        this.jog(qb, qb.x + 26, midY, 700);
-        if (this.offense[0]) this.jog(this.offense[0], qb.x + 40, midY - 14, 1150);
-        if (this.offense[1]) this.jog(this.offense[1], qb.x + 40, midY + 14, 1150);
-
-        const side = target.player.y < midY - 40 ? 'left'
-            : (target.player.y > midY + 40 ? 'right' : 'the middle');
-        // Zoom onto the QB/receiver side so the routes are readable.
-        this._zoomOnPoint(qb.x - 60, target.player.y, 1.45, 380);
-        this.audio.speak(`Quarterback drops back, looking ${side}.`, true);
-
-        this.time.delayedCall(1220, () => {
-            this.audio.speak(target.cov === 0 ? 'Open!' : 'Into coverage.', true);
-            if (passOutcome === 'int') {
-                this.animateOppInterception(target.player, myDef);
-            } else if (passOutcome === 'incomplete') {
-                this.animateOppPlay(0, 'incomplete', () => this.endOppPlay(0, 'incomplete'), target.player, myDef);
-            } else {
-                this.animateOppPlay(passYards, 'pass', () => this.endOppPlay(passYards, 'pass'), target.player, null, passMatchup);
-            }
+        this._zoomOnPoint(qb.x - 55, FIELD.MID_Y, 1.35, 350);
+        this.audio.speak('Quarterback drops back.', true);
+        this._passRoutes(routes, this.defense, this.offense, -1, () => {
+            if (passOutcome === 'int') this.animateOppInterception(target.player, myDef);
+            else if (passOutcome === 'incomplete') this.animateOppPlay(0, 'incomplete',
+                () => this.endOppPlay(0, 'incomplete'), target.player, myDef);
+            else this.animateOppPlay(passYards, 'pass',
+                actual => this.endOppPlay(actual, 'pass'), target.player, null, passMatchup);
         });
     }
 
     // One of OUR defenders steps in front of the throw and takes it the other way.
     animateOppInterception(wrOverride, defOverride) {
-        this.phase = 'oppanim';
-        this.oppTarget = null;
-        const qb = this.defense[0];                   // CPU QB
-        const wr = wrOverride || this.defense[2];     // CPU's intended receiver
-        const myDef = defOverride || this.offense[3]; // our cornerback who breaks on the ball
-        this.ball.visible = true; this.ball.carrier = null;
-        const _qbPt = this._carryPoint(qb);
-        this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
-        this.playPlayerAction(qb, 'throw', wr);
-        // Zoom onto the route endpoint so the pick is clearly visible.
-        this._zoomOnPoint(wr.x, wr.y, 1.6, 320);
-        this.audio.speak('Up for grabs!', true);
-        // Our defender breaks toward the catch point.
-        this.jog(myDef, wr.x - 6, wr.y - 10, 640, 'Sine.easeOut');
-        // The art holds the ball until frame 5, so the flight waits for the
-        // release rather than setting off during the wind-up.
-        const _release = this._throwReleaseDelay(qb);
-        const flight = { x: _qbPt.x, y: _qbPt.y };
-        this.tweens.add({
-            targets: flight, x: wr.x - 6, y: wr.y - 10, duration: 660, delay: _release, ease: 'Sine.easeInOut',
-            onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
-            onComplete: () => {
-                this.ball.carrier = myDef;
-                this.playPlayerAction(myDef, 'catch', qb);
-                this.audio.play('interception'); this.audio.play('crowd_big');
-                this.audio.speak('Intercepted!', true);
-                this.tweens.killTweensOf(myDef); this.stopBob(myDef);
-
-                // ── Full return run toward our scoring end zone (right / high yards) ──
-                // opp.yard is in OUR yard numbers (they drive high→0).
-                // After a pick our player runs right → returnToYard = opp.yard + return.
-                const catchYard   = Phaser.Math.Clamp(this.opp.yard, 1, 99);
-                const returnYards = 5 + Math.floor(Math.random() * 20);
-                const returnToYard = catchYard + returnYards;             // may exceed 100 (pick-six)
-                const isPickSix   = returnToYard >= 100;
-                const endX = isPickSix ? FIELD.GOAL_R + 52 : ydToX(Phaser.Math.Clamp(returnToYard, 1, 99));
-                const midY    = FIELD.MID_Y;
-                const totalDur = 1300 + Math.min(returnYards, 28) * 50;
-                const laneDir  = myDef.y <= midY ? 1 : -1;
-                const lane     = laneDir * (12 + Math.random() * 24);
-                const midRunX  = (myDef.x + endX) * 0.5;
-
-                this._zoomOnPoint(myDef.x, myDef.y, 1.7, 260);
-                this.startBob(myDef);
-                this.tweens.add({
-                    targets: myDef, x: midRunX,
-                    y: Phaser.Math.Clamp(myDef.y + lane, FIELD.TOP + 14, FIELD.BOTTOM - 14),
-                    duration: totalDur * 0.5, ease: 'Sine.easeOut',
-                    onComplete: () => {
-                        this._zoomOnPoint(myDef.x + (endX - myDef.x) * 0.35, midY, 1.4, 260);
-                        this.tweens.add({
-                            targets: myDef, x: endX,
-                            y: Phaser.Math.Clamp(myDef.y + lane * 0.3, FIELD.TOP + 14, FIELD.BOTTOM - 14),
-                            duration: totalDur * 0.5, ease: 'Sine.easeIn',
-                            onComplete: () => {
-                                this.stopBob(myDef);
-                                this.ball.carrier = null;
-                                this.onDefense = false;
-                                if (isPickSix) {
-                                    this.gs.score.us += 6; this.updateHUD();
-                                    this.audio.play('touchdown'); this.audio.play('crowd_big');
-                                    this._zoomOnPoint(myDef.x, myDef.y, 2.2, 280);
-                                    this.cameras.main.shake(220, 0.009);
-                                    this._doTDCelebration(myDef);
-                                    this.bigMessage('PICK SIX! TOUCHDOWN!', 2000, () =>
-                                        this.checkClockThen(() => this.showAfterTouchdownMenu()));
-                                } else {
-                                    const rushDur = this._rushIntoTackle(this.defense, myDef.x, myDef.y);
-                                    this.time.delayedCall(rushDur, () => {
-                                        this.audio.play('tackle');
-                                        this.tackleShake(myDef);
-                                        this.bigMessage('INTERCEPTED!', 1700, () =>
-                                            this.checkClockThen(() =>
-                                                this.startUsDrive(Phaser.Math.Clamp(returnToYard, 1, 99))));
-                                    });
-                                }
-                            }
-                        });
-                    }
+        this.phase = 'oppanim'; this.oppTarget = null;
+        const qb = this.defense[0], wr = wrOverride || this.defense[2];
+        // Use the defender who is really in position, even when the open receiver
+        // had no assigned marker in the coverage calculation.
+        const db = [...this.offense].sort((a,b) => Math.hypot(a.x-wr.x,a.y-wr.y)-Math.hypot(b.x-wr.x,b.y-wr.y))[0];
+        if (!db || Math.hypot(db.x-wr.x, db.y-wr.y) > 105) {
+            this.animateOppPlay(0, 'incomplete', () => this.endOppPlay(0, 'incomplete'), wr, null);
+            return;
+        }
+        const point = { x: (db.x + wr.x) / 2, y: (db.y + wr.y) / 2 };
+        this._passFlight(qb, db, point, 670, () => {
+            this.audio.play('interception'); this.audio.speak('Intercepted!', true);
+            const catchYard = this._spotYard(db.x);
+            this._runWithBall(db, this.offense, this.defense, Math.min(100, catchYard + 17),
+                db.y + (db.y < FIELD.MID_Y ? 20 : -20), 1, (spot, result) => {
+                    this.onDefense = false;
+                    if (result.touchdown) {
+                        this.gs.score.us += 6; this.updateHUD();
+                        this.audio.play('touchdown'); this._doTDCelebration(db);
+                        this.bigMessage('PICK SIX! TOUCHDOWN!', 1800, () => this.showAfterTouchdownMenu());
+                    } else this.bigMessage('INTERCEPTED!', 1400, () =>
+                        this.checkClockThen(() => this.startUsDrive(spot, true)));
                 });
-                // CPU offense chases our returner.
-                this.time.delayedCall(totalDur * 0.15, () => {
-                    this._convergePlayers(this.defense, endX,
-                        myDef.y + lane * 0.35, totalDur * 0.78);
-                });
-                // Our other players escort/block downfield.
-                this.offense.forEach(p => {
-                    if (p === myDef) return;
-                    this.jog(p,
-                        (myDef.x + endX) * 0.5 + 18 + Math.random() * 28,
-                        p.y + (Math.random() - 0.5) * 40,
-                        totalDur * 0.75 + Math.random() * 200);
-                });
-            }
         });
     }
 
@@ -3272,197 +2850,32 @@ class GameScene extends Phaser.Scene {
     // quickly defenders converge, making the right/wrong play call visually obvious.
     animateOppPlay(yards, type, done, wrOverride, defOverride, matchup) {
         this.oppTarget = null;
-        const mq = matchup || 'neutral';
-        // Incomplete pass: the throw sails to the receiver and falls to the turf.
+        const startYard = this.opp.yard, qb = this.defense[0];
         if (type === 'incomplete') {
-            const qb = this.defense[0], wr = wrOverride || this.defense[2], myDef = defOverride || this.offense[3];
-            this.ball.visible = true; this.ball.carrier = null;
-            const _qbPt = this._carryPoint(qb);
-            this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
-            this.playPlayerAction(qb, 'throw', wr);
-            this.audio.speak('Knocked away.', true);
-            this.jog(myDef, wr.x + 4, wr.y - 6, 560, 'Sine.easeOut'); // defender contests
-            // Everyone else is in motion too: receivers run routes, our defenders
-            // drop into coverage, the opposing line blocks. Nobody stands still.
-            this.defense.forEach((p, i) => {
-                if (i === 0 || i === 2) return; // QB stays, target WR handled above
-                this.jog(p, p.x - 26 - Math.random() * 30, p.y + (Math.random() - 0.5) * 50, 620 + Math.random() * 200);
-            });
-            this.offense.forEach((p, i) => {
-                if (i === 3) return; // contesting defender handled above
-                this.jog(p, p.x - 14 + Math.random() * 24, p.y + (Math.random() - 0.5) * 40, 600 + Math.random() * 220);
-            });
-            // The art holds the ball until frame 5, so the flight waits for the
-        // release rather than setting off during the wind-up.
-        const _release = this._throwReleaseDelay(qb);
-        const flight = { x: _qbPt.x, y: _qbPt.y };
-            this.tweens.add({
-                targets: flight, x: wr.x, y: wr.y + 16, duration: 620, delay: _release, ease: 'Sine.easeIn',
-                onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
-                onComplete: () => { this.audio.play('fail'); this.ball.visible = false; done(); }
+            const wr = wrOverride || this.defense[2];
+            this._passFlight(qb, null, this._motion().point(wr.x - 18, wr.y + 22), 640, () => {
+                this.audio.play('incomplete'); this.audio.speak('Incomplete.', true); done(0);
             });
             return;
         }
-
-        const startYard = this.opp.yard;
-        const endYard = Phaser.Math.Clamp(startYard - yards, 0, 100);
-        const startX = ydToX(startYard);
-        // On a TD the carrier runs well into the endzone so it's visually clear
-        // they crossed — not just stopped at the goal line.
-        const endX = endYard <= 0 ? FIELD.GOAL_L - 58 : ydToX(endYard);
-        const midY = FIELD.MID_Y;
-        const carrier = type === 'pass' ? (wrOverride || this.defense[2]) : this.defense[1]; // WR on pass, RB on run
-        // Capture the carrier's position BEFORE any tweens so run paths are relative
-        // to where they actually caught the ball, not the absolute field center.
-        const carrierStartY = carrier.y;
-        // Lean away from field center so the carrier seeks open space, not traffic.
-        const sideDir = carrierStartY <= FIELD.MID_Y ? -1 : 1;
-        // Matchup quality widens or narrows the running lane:
-        //   perfect → defense fills the gap, lane is tight
-        //   blown   → defense misread it, carrier finds open space
-        const laneMult = mq === 'perfect' ? 0.45 : mq === 'blown' ? 1.55 : 1.0;
-        const lane = sideDir * (type === 'pass' ? 28 + Math.random() * 44 : 12 + Math.random() * 30) * laneMult;
-
-        const _startRun = () => {
-            // Kill any route-jog tween still running on the carrier (e.g. the last
-            // fraction of a 1650ms jog) so it can't fight the run-after-catch tween.
-            this.tweens.killTweensOf(carrier);
-            this.stopBob(carrier);
-            // If the CPU receiver catches the ball already at or past the goal line
-            // it's an immediate TD. Use this.opp.yard (full remaining distance) when
-            // calling endOppPlay to guarantee the TD registers — the `yards` variable
-            // from resolveOppPass is clamped to opp.yard and may fall 1-2 yards short
-            // if base rounded down, which would cause the receiver to visually enter
-            // the endzone yet get spotted at the 1-yard line.
-            if (type === 'pass' && carrier.x <= FIELD.GOAL_L + 8) {
-                this.audio.play('catch');
-                this.audio.speak('Touchdown!', true);
-                this.ball.carrier = carrier; this.ball.visible = true;
-                const tdYards = this.opp.yard; // guarantees o.yard - tdYards = 0 in endOppPlay
-                // Carry the receiver clearly into the endzone — if they caught near
-                // the goal line, animate a quick burst deeper so it never looks like
-                // they stopped right on the line.
-                const tdTargetX = Math.min(carrier.x, FIELD.GOAL_L - 42);
-                if (carrier.x > tdTargetX + 8) {
-                    this.startBob(carrier);
-                    this.tweens.add({
-                        targets: carrier, x: tdTargetX, duration: 270, ease: 'Sine.easeOut',
-                        onComplete: () => {
-                            this.stopBob(carrier);
-                            this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
-                            this.time.delayedCall(300, () => { this.ball.carrier = null; this.endOppPlay(tdYards, 'pass'); });
-                        }
-                    });
-                } else {
-                    this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
-                    this.time.delayedCall(320, () => { this.ball.carrier = null; this.endOppPlay(tdYards, 'pass'); });
-                }
-                return;
-            }
-            // Zoom onto the carrier so the defense pursuit reads clearly.
-            this._zoomOnPoint(carrier.x, carrier.y, 1.5, 280);
-            this.ball.carrier = carrier; this.ball.visible = true;
-
-            const dur = Math.max(1200, Math.abs(endYard - startYard) * 70 + 980);
-            // For pass plays, the receiver ran their route leftward during coverage.
-            // If they already passed endX (overshot), carry them a little further
-            // for natural momentum rather than running them backward or barely moving.
-            const passOvershot = type === 'pass' && carrier.x < endX;
-            const fwdEndX = passOvershot
-                ? carrier.x - (10 + Math.random() * 20)   // small momentum carry
-                : endX;
-            const runFromX = (type === 'pass') ? carrier.x : startX;
-            const midX = (runFromX + fwdEndX) / 2;
-
-            // Clamp carrier Y so raw tweens never carry them outside the field.
-            const clampFY = (y) => Phaser.Math.Clamp(y, FIELD.TOP + 14, FIELD.BOTTOM - 14);
-            const midLaneY = clampFY(carrierStartY + lane);
-            const endLaneY = clampFY(carrierStartY + lane * 0.35);
-
-            // Raw tweens (not jog) so the tackle fires in onComplete — exactly when
-            // the carrier reaches their tackle spot, never before.
-            this.startBob(carrier);
-            this.tweens.add({
-                targets: carrier, x: midX, y: midLaneY, duration: dur * 0.5, ease: 'Sine.easeOut',
-                onComplete: () => {
-                    this.tweens.add({
-                        targets: carrier, x: fwdEndX, y: endLaneY, duration: dur * 0.5, ease: 'Sine.easeIn',
-                        onComplete: () => {
-                            this.stopBob(carrier);
-                            // Touchdown — no tackle. Carrier is already past the
-                            // goal line, so zoom in and celebrate like player-offense TDs.
-                            if (endYard <= 0) {
-                                this._zoomOnPoint(carrier.x, carrier.y, 2.2, 280);
-                                this.ball.carrier = null;
-                                done();
-                                return;
-                            }
-                            // Guarantee our defenders are visibly running in at contact.
-                            const rushDur = this._rushIntoTackle(this.offense, carrier.x, carrier.y);
-                            this.time.delayedCall(rushDur, () => {
-                                this.audio.play('tackle');
-                                this.tackleShake(carrier);
-                                this._zoomOut(380);
-                                this.ball.carrier = null;
-                                done();
-                            });
-                        }
-                    });
-                }
-            });
-            // The rest of the opposing team blocks/escorts toward the play.
-            this.defense.forEach((p) => {
-                if (p === carrier) return;
-                this.jog(p,
-                    (startX + endX) / 2 - 20 - Math.random() * 30,
-                    p.y + (Math.random() - 0.5) * 40,
-                    dur * 0.85 + Math.random() * 200);
-            });
-            // Our defenders react first — step to the opposite side of the CPU
-            // carrier's lane so they must converge diagonally (pursuit angle).
-            // All Y values clamped so no defender can step outside the field.
-            const defOpp = -(lane >= 0 ? 1 : -1);
-            const _dcy = (y) => Phaser.Math.Clamp(y, FIELD.TOP + 14, FIELD.BOTTOM - 14);
-            this.tweens.add({ targets: this.offense[0], x: this.offense[0].x - 20, y: _dcy(this.offense[0].y + defOpp * 54), duration: 300, ease: 'Sine.easeOut' });
-            this.tweens.add({ targets: this.offense[1], x: this.offense[1].x - 20, y: _dcy(this.offense[1].y - defOpp * 54), duration: 300, ease: 'Sine.easeOut' });
-            this.tweens.add({ targets: this.offense[2], x: this.offense[2].x - 8,  y: _dcy(this.offense[2].y + defOpp * 62), duration: 360, ease: 'Sine.easeOut' });
-            // After the read step, converge from the displaced positions.
-            const convR    = mq === 'perfect' ? 240 : mq === 'blown' ? 75  : 140;
-            const convDur  = dur * (mq === 'perfect' ? 0.42 : mq === 'blown' ? 0.82 : 0.60);
-            this.time.delayedCall(dur * 0.32, () => {
-                this._convergePlayers(this.offense, fwdEndX, carrierStartY + lane * 0.4, convDur, { closeRadius: convR });
-            });
+        // A sack belongs to the quarterback, a handoff to the running back.
+        const carrier = type === 'sack' ? qb : type === 'pass' ? (wrOverride || this.defense[2]) : this.defense[1];
+        const run = () => {
+            if (type === 'pass') this.audio.speak('Caught!', true);
+            const end = Phaser.Math.Clamp(startYard - yards, 0, 100);
+            const lane = type === 'sack' ? carrier.y
+                : type === 'pass' ? carrier.y + (carrier.y < FIELD.MID_Y ? 14 : -14)
+                : FIELD.MID_Y + (Math.random() < .5 ? -1 : 1) * (matchup === 'blown' ? 72 : 26);
+            this._runWithBall(carrier, this.defense, this.offense, end, lane, -1,
+                spot => done(startYard - spot), { sack: type === 'sack' });
         };
-
-        if (type === 'pass') {
-            // Show the ball flying from QB to receiver before the run-after-catch.
-            const qb = this.defense[0];
-            this.ball.visible = true; this.ball.carrier = null;
-            const _qbPt = this._carryPoint(qb);
-            this.ball.x = _qbPt.x; this.ball.y = _qbPt.y;
-            this.playPlayerAction(qb, 'throw', carrier);
-            this.audio.speak('Complete!', true);
-            this.audio.play('throw');
-            const flightDur = 380 + Math.abs(carrier.x - qb.x) * 0.55;
-            // The art holds the ball until frame 5, so the flight waits for the
-        // release rather than setting off during the wind-up.
-        const _release = this._throwReleaseDelay(qb);
-        const flight = { x: _qbPt.x, y: _qbPt.y };
-            this.tweens.add({
-                targets: flight, x: carrier.x, y: carrier.y, duration: flightDur, delay: _release, ease: 'Sine.easeInOut',
-                onUpdate: () => { this.ball.x = flight.x; this.ball.y = flight.y; },
-                onComplete: () => {
-                    this.audio.play('catch');
-                    _startRun();
-                }
-            });
-        } else {
-            this.audio.speak(type === 'sack' ? 'Sacked!' : (type === 'tfl' ? 'Stuffed!' : 'Handoff!'), true);
-            _startRun();
-        }
+        if (type === 'pass') this._passFlight(qb, carrier, { x: carrier.x, y: carrier.y }, 620, run);
+        else if (type === 'sack') run();
+        else this._handoff(this.defense, -1, run);
     }
 
     endOppPlay(yards, type) {
+        this._motion().reset();
         const o = this.opp;
         o.yard = Phaser.Math.Clamp(o.yard - yards, 0, 100);
 
@@ -3475,8 +2888,14 @@ class GameScene extends Phaser.Scene {
         else sub = `${this.oppColor.name} gains ${yards}`;
 
         // Opponent touchdown?
+        if (o.yard >= 100 && type !== 'incomplete') {
+            this.gs.score.us += 2; this.updateHUD();
+            this.bigMessage('SAFETY! +2', 1700, () => this.kickoff('us'));
+            return;
+        }
         if (o.yard <= 0) {
             this.gs.score.them += 6; this.updateHUD();
+            this._doTDCelebration(this.ball.carrier);
             this.audio.play('touchdown');
             this.bigMessage(`${this.oppColor.name} TOUCHDOWN`, 1800, () => this.oppAfterTouchdown());
             return;
@@ -3519,78 +2938,36 @@ class GameScene extends Phaser.Scene {
 
     oppKickFG() {
         this.phase = 'oppanim';
-        this.audio.play('kick');
         const start = { x: ydToX(this.opp.yard), y: FIELD.MID_Y };
         const fgDist = this.opp.yard + 17;
         const made = Math.random() < Phaser.Math.Clamp(1.05 - fgDist / 60, 0.35, 0.95);
         this.ball.visible = true; this.ball.carrier = null;
         const goalX = FIELD.GOAL_L - 30;
-        this.tweens.add({
-            targets: start, x: goalX, y: FIELD.MID_Y + (made ? 0 : 70), duration: 900, ease: 'Quad.easeOut',
-            onUpdate: (tw) => { this.ball.x = start.x; this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * (70 + fgDist); },
-            onComplete: () => {
-                this.ball.visible = false;
-                if (made) {
-                    this.gs.score.them += 3; this.updateHUD();
-                    this.audio.play('fieldgoal');
-                    this.bigMessage(`${this.oppColor.name} FIELD GOAL`, 1600, () => this.kickoffToUs());
-                } else {
-                    this.audio.play('fail');
-                    this.bigMessage('NO GOOD!', 1500, () => {
-                        this.audio.speak('Missed! Your ball.');
-                        this.checkClockThen(() => this.startUsDrive(Phaser.Math.Clamp(this.opp.yard, 20, 80)));
-                    });
+        this._kickFrom(this.defense[0], start, { x: goalX, y: FIELD.MID_Y }, () => {
+            this.tweens.add({
+                targets: start, x: goalX, y: FIELD.MID_Y + (made ? 0 : 70), duration: 900, ease: 'Quad.easeOut',
+                onUpdate: (tw) => { this.ball.x = start.x; this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * (70 + fgDist); },
+                onComplete: () => {
+                    this.ball.visible = false;
+                    if (made) {
+                        this.gs.score.them += 3; this.updateHUD();
+                        this.audio.play('fieldgoal');
+                        this.bigMessage(`${this.oppColor.name} FIELD GOAL`, 1600, () => this.kickoffToUs());
+                    } else {
+                        this.audio.play('fail');
+                        this.bigMessage('NO GOOD!', 1500, () => {
+                            this.audio.speak('Missed! Your ball.');
+                            this.checkClockThen(() => this.startUsDrive(Phaser.Math.Clamp(this.opp.yard, 20, 80)));
+                        });
+                    }
                 }
-            }
+            });
         });
     }
 
     oppPunt() {
         this.phase = 'oppanim';
-        this._zoomOut(350);
-        const net = 35 + Math.floor(Math.random() * 12);
-        const usStart = Phaser.Math.Clamp(this.opp.yard - net, 5, 95); // our new yard line
-        const startX = ydToX(this.opp.yard);
-        const landX  = ydToX(usStart);
-        const midY   = FIELD.MID_Y;
-
-        // CPU punter (QB slot) takes a short drop-step before the kick.
-        const punter = this.defense[0];
-        this.jog(punter, startX + 18, midY, 320, 'Quad.easeOut');
-
-        // CPU gunners sprint downfield toward the landing spot.
-        this.defense.forEach((p, i) => {
-            if (i === 0) return;
-            this.jog(p, landX + 30 - Math.random() * 60, midY + (Math.random() - 0.5) * 80, 1200, 'Sine.easeIn');
-        });
-
-        // Our returner (deep safety) runs toward the landing spot.
-        const returner = this.offense[5] || this.offense[4];
-        if (returner) this.jog(returner, landX - 12, midY, 1100, 'Sine.easeIn');
-
-        this.time.delayedCall(350, () => {
-            this.audio.play('kick');
-            const ball = this.ball;
-            ball.visible = true; ball.carrier = null;
-            ball.x = startX; ball.y = midY;
-            const flight = { x: startX, y: midY };
-            this.tweens.add({
-                targets: flight, x: landX, y: midY, duration: 900, ease: 'Quad.easeOut',
-                onUpdate: (tw) => {
-                    ball.x = flight.x;
-                    ball.y = midY - Math.sin(tw.progress * Math.PI) * 120;
-                },
-                onComplete: () => {
-                    ball.visible = false;
-                    this.bigMessage(`${this.oppColor.name} PUNT`, 1300, () => {
-                        this.audio.speak('Your ball.');
-                        // Pass isKickoff=true so startUsDrive tweens the formation
-                        // smoothly rather than snapping players into position.
-                        this.checkClockThen(() => this.startUsDrive(usStart, true));
-                    });
-                }
-            });
-        });
+        this._puntSequence(false);
     }
 
     // After the opponent scores, they kick off to us.
@@ -3626,28 +3003,29 @@ class GameScene extends Phaser.Scene {
         this.phase = 'oppanim';
         this.audio.speak(`${this.oppColor.name} kicking the extra point.`, true);
         this.time.delayedCall(900, () => {
-            this.audio.play('kick');
             const made = Math.random() < 0.94;
             const startX = ydToX(3), goalX = FIELD.GOAL_L - 30;
             const start = { x: startX, y: FIELD.MID_Y };
             this.ball.x = start.x; this.ball.y = start.y; this.ball.visible = true;
-            this.tweens.add({
-                targets: start, x: goalX, y: FIELD.MID_Y, duration: 700, ease: 'Quad.easeOut',
-                onUpdate: (tw) => {
-                    this.ball.x = start.x;
-                    this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * 90;
-                },
-                onComplete: () => {
-                    this.ball.visible = false;
-                    if (made) {
-                        this.gs.score.them += 1; this.updateHUD();
-                        this.audio.play('fieldgoal');
-                        this.bigMessage(`${this.oppColor.name} EXTRA POINT  +1`, 1400, () => this.kickoffToUs());
-                    } else {
-                        this.audio.play('fail');
-                        this.bigMessage('EXTRA POINT NO GOOD', 1200, () => this.kickoffToUs());
+            this._kickFrom(this.defense[0], start, { x: goalX, y: FIELD.MID_Y }, () => {
+                this.tweens.add({
+                    targets: start, x: goalX, y: FIELD.MID_Y, duration: 700, ease: 'Quad.easeOut',
+                    onUpdate: (tw) => {
+                        this.ball.x = start.x;
+                        this.ball.y = FIELD.MID_Y - Math.sin(tw.progress * Math.PI) * 90;
+                    },
+                    onComplete: () => {
+                        this.ball.visible = false;
+                        if (made) {
+                            this.gs.score.them += 1; this.updateHUD();
+                            this.audio.play('fieldgoal');
+                            this.bigMessage(`${this.oppColor.name} EXTRA POINT  +1`, 1400, () => this.kickoffToUs());
+                        } else {
+                            this.audio.play('fail');
+                            this.bigMessage('EXTRA POINT NO GOOD', 1200, () => this.kickoffToUs());
+                        }
                     }
-                }
+                });
             });
         });
     }
@@ -3657,24 +3035,19 @@ class GameScene extends Phaser.Scene {
     oppTwoPointConversion() {
         this.phase = 'oppanim';
         this.audio.speak(`${this.oppColor.name} going for two.`, true);
-        const carrier = this.defense[1] || this.defense[0]; // RB already in formation
-        this.ball.carrier = carrier; this.ball.visible = true;
-        this.time.delayedCall(800, () => {
-            this.audio.play('snap');
-            const made = Math.random() < 0.50;
-            const endX = made ? ydToX(0) - 18 : ydToX(2) - 12;
-            this.jog(carrier, endX, carrier.y + (Math.random() - 0.5) * 20, 680, 'Sine.easeIn');
-            this.time.delayedCall(720, () => {
-                this.ball.carrier = null; this.ball.visible = false;
-                if (made) {
-                    this.gs.score.them += 2; this.updateHUD();
-                    this.audio.play('touchdown');
-                    this.bigMessage(`${this.oppColor.name} 2-PT CONVERSION  +2`, 1500, () => this.kickoffToUs());
-                } else {
-                    this.audio.play('fail');
-                    this.bigMessage('2-PT CONVERSION STOPS', 1300, () => this.kickoffToUs());
-                }
-            });
+        this._handoff(this.defense, -1, () => {
+            this._runWithBall(this.defense[1], this.defense, this.offense, 0,
+                FIELD.MID_Y + (Math.random() < .5 ? -24 : 24), -1, (spot, result) => {
+                    if (result.touchdown) {
+                        this.gs.score.them += 2; this.updateHUD();
+                        this.audio.play('touchdown');
+                        this._doTDCelebration(this.defense[1]);
+                        this.bigMessage(`${this.oppColor.name} 2-PT CONVERSION +2`, 1500, () => this.kickoffToUs());
+                    } else {
+                        this.audio.play('fail');
+                        this.bigMessage('2-PT CONVERSION STOPPED', 1400, () => this.kickoffToUs());
+                    }
+                });
         });
     }
 
@@ -3767,6 +3140,9 @@ class GameScene extends Phaser.Scene {
         if (this.phase === 'gameover') return;
         if (this.paused) { this.closePause(); return; }
         this.paused = true;
+        this.tweens.pauseAll();
+        this._pausedGameTimers = [...(this._gameTimers || [])].filter(event => event.callback && !event.paused);
+        this._pausedGameTimers.forEach(event => { event.paused = true; });
         this.pauseView = 'main';
         this.audio.play('whistle');
         this.audio.speak('Paused.');
@@ -3877,6 +3253,9 @@ class GameScene extends Phaser.Scene {
 
     closePause() {
         this.paused = false;
+        this.tweens.resumeAll();
+        (this._pausedGameTimers || []).forEach(event => { if (event.callback) event.paused = false; });
+        this._pausedGameTimers = [];
         if (this.pauseMenu) { this.pauseMenu.destroy(); this.pauseMenu = null; }
         if (this.pauseOverlay) { this.pauseOverlay.destroy(); this.pauseOverlay = null; }
         // Re-sync the live game menu's auto-scan timer with the current setting so
@@ -3886,8 +3265,13 @@ class GameScene extends Phaser.Scene {
 
     // ─── Per-frame rendering ───────────────────────────────────────────────────
     update(time, delta) {
+        if (this.paused) return;
+        if (this._gameTimers) for (const event of this._gameTimers) {
+            if (!event.callback) this._gameTimers.delete(event);
+        }
         // Dynamic depth sort: players closer to the bottom of the screen (higher Y)
         // are drawn on top; ball carrier always on top; tackled player under everyone.
+        this._motion().update(delta);
         this._sortPlayerDepths();
         this._updatePlayerSprites(delta);
         this._updateCarrierShadow();

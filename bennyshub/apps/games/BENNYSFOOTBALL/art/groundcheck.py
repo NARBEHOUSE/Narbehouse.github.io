@@ -34,7 +34,7 @@ def main():
     # has a flight phase where neither foot is down -- so `run` carries a looser
     # limit than a fall, which must never levitate at all.
     ap.add_argument("--anims",
-                    default="run:8:0.09,throw:8,catch:6,tackle:6:ground")
+                    default="run:12:0.09,run_carry:12:0.09,idle:6,idle_carry:6,throw:8,catch:6,tackle:6:ground,kick:8:ground,recover:8:ground,block:6,celebrate:8,stance_ol:1:ground,stance_dl:1:ground")
     ap.add_argument("--float-limit", type=float, default=0.045,
                     help="default limit on how far the lowest point may rise "
                          "before it reads as levitating (model-height fraction)")

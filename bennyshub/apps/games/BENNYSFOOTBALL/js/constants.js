@@ -20,6 +20,9 @@ FIELD.GOAL_L = FIELD.LEFT + FIELD.END_ZONE;      // own goal line (0 yd, player 
 FIELD.GOAL_R = FIELD.RIGHT - FIELD.END_ZONE;     // opponent goal line (100 yd)
 FIELD.MID_Y = (FIELD.TOP + FIELD.BOTTOM) / 2;
 
+// Passing focus slows the players without changing input or throw-charge timing.
+const PASS_MOTION = { routeScale: 0.65, focusScale: 0.40 };
+
 // Convert a yard line (0-100, 0 = own goal) to an x pixel.
 function ydToX(yd) {
     return FIELD.GOAL_L + (yd / 100) * FIELD.PLAY_W;
@@ -117,6 +120,12 @@ const PLAYER_SPRITE = {
     basePath:   'images/players/gridiron_base.png',
     jerseyPath: 'images/players/gridiron_jersey.png',
     glowPath:   'images/players/gridiron_glow.png',
+    actions: {
+        baseKey: 'player_actions_base', jerseyKey: 'player_actions_jersey', glowKey: 'player_actions_glow',
+        basePath: 'images/players/gridiron_actions_base.png',
+        jerseyPath: 'images/players/gridiron_actions_jersey.png',
+        glowPath: 'images/players/gridiron_actions_glow.png'
+    },
     frameW: 64, frameH: 64,
     dirs: 8,            // yaw steps, 45° apart
     // Clip table, copied from the bake manifest (images/players/gridiron.json).
@@ -128,17 +137,25 @@ const PLAYER_SPRITE = {
     // modelled into the player's hand. While one of those is on screen the
     // separately drawn ball is hidden, or there would be two of them.
     anims: {
-        run:       { row: 0,  frames: 8, loop: true, ballFrames: [] },
+        run:       { row: 0,  frames: 12, loop: true, ballFrames: [] },
         // Same run cycle, rendered from the composition that grafts the ball
         // into the hand. The carrier uses this; everyone else uses `run`.
-        run_carry: { row: 8,  frames: 8, loop: true, ballFrames: [0,1,2,3,4,5,6,7] },
+        run_carry: { row: 12, frames: 12, loop: true, ballFrames: [0,1,2,3,4,5,6,7,8,9,10,11] },
         // The ball leaves the hand at frame 5 — the release is baked into the
         // art, so the flight is delayed to match rather than starting on the
         // wind-up.
-        throw:     { row: 16, frames: 8, fps: 15, ballFrames: [0,1,2,3,4] },
+        throw:     { row: 24, frames: 8, fps: 15, ballFrames: [0,1,2,3,4] },
         // Mirror image: the ball arrives at frame 4 and is secured.
-        catch:     { row: 24, frames: 6, fps: 13, ballFrames: [4,5] },
-        tackle:    { row: 30, frames: 6, fps: 12, hold: true, ballFrames: [0,1,2,3,4,5] }
+        catch:     { row: 32, frames: 6, fps: 13, ballFrames: [4,5] },
+        tackle:    { row: 38, frames: 6, fps: 12, hold: true, ballFrames: [0,1,2,3,4,5] },
+        idle:      { row: 44, frames: 6, fps: 6 / 2.4, loop: true, ballFrames: [] },
+        idle_carry:{ row: 50, frames: 6, fps: 6 / 2.4, loop: true, ballFrames: [0,1,2,3,4,5] },
+        kick:      { row: 56, frames: 8, fps: 14, strikeFrame: 4, ballFrames: [] },
+        recover:   { row: 0, frames: 8, fps: 13, sheet: 'actions', ballFrames: [] },
+        block:     { row: 8, frames: 6, fps: 7.5, loop: true, sheet: 'actions', ballFrames: [] },
+        celebrate: { row: 14, frames: 8, fps: 8, sheet: 'actions', ballFrames: [] },
+        stance_ol: { row: 22, frames: 1, fps: 1, loop: true, sheet: 'actions', ballFrames: [] },
+        stance_dl: { row: 23, frames: 1, fps: 1, loop: true, sheet: 'actions', ballFrames: [] }
     },
     // The disc is 26px across and spans y -13..+13 about the container origin,
     // and every tackle/catch/distance calculation in the game treats that
@@ -174,6 +191,8 @@ const PLAYER_SPRITE = {
     footFrac: 0.9219,   // where the feet sit in a frame — measured by the bake
     // Below this speed (world px/sec) a player is standing, not running.
     runSpeed: 10,
+    stopSpeed: 6,
+    turnMargin: 0.10,   // radians past a direction boundary before changing facing
     // World px of travel per full stride. Drives the cycle off actual speed so
     // the legs never skate.
     stridePx: 58
@@ -189,6 +208,11 @@ function setSprite3d(on) {
 // Queue the player sprite sheets. Call from a scene's preload().
 function loadPlayerSprites(scene) {
     const cfg = { frameWidth: PLAYER_SPRITE.frameW, frameHeight: PLAYER_SPRITE.frameH };
+    for (const layer of ['base', 'jersey', 'glow']) {
+        const action = PLAYER_SPRITE.actions;
+        if (!scene.textures.exists(action[layer + 'Key']))
+            scene.load.spritesheet(action[layer + 'Key'], action[layer + 'Path'], cfg);
+    }
     if (!scene.textures.exists(PLAYER_SPRITE.baseKey)) {
         scene.load.spritesheet(PLAYER_SPRITE.baseKey, PLAYER_SPRITE.basePath, cfg);
     }
@@ -200,12 +224,12 @@ function loadPlayerSprites(scene) {
     }
 }
 
-// True only when the toggle is on AND both sheets actually loaded, so a missing
+// True only when the toggle is on AND every player sheet actually loaded, so a missing
 // or corrupt PNG falls back to discs rather than rendering nothing.
 function playerSpritesReady(scene) {
     if (!sprite3dOn()) return false;
-    const ok = scene.textures.exists(PLAYER_SPRITE.baseKey)
-            && scene.textures.exists(PLAYER_SPRITE.jerseyKey);
+    const ok = [PLAYER_SPRITE, PLAYER_SPRITE.actions].every(sheet =>
+        ['base', 'jersey', 'glow'].every(layer => scene.textures.exists(sheet[layer + 'Key'])));
     if (!ok && !playerSpritesReady._warned) {
         playerSpritesReady._warned = true;
         // Silence here is the trap: the setting reads 3D (localStorage works

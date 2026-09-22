@@ -1,0 +1,63 @@
+{
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "directions": 8,
+  "pitch": 30.0,
+  "yaws": [
+    0.0,
+    45.0,
+    90.0,
+    135.0,
+    180.0,
+    225.0,
+    270.0,
+    315.0
+  ],
+  "rows": 24,
+  "footFrac": 0.9688,
+  "anims": {
+    "recover": {
+      "row": 0,
+      "frames": 8,
+      "loop": false,
+      "ground": true,
+      "ballFrames": []
+    },
+    "block": {
+      "row": 8,
+      "frames": 6,
+      "loop": true,
+      "ground": false,
+      "ballFrames": []
+    },
+    "celebrate": {
+      "row": 14,
+      "frames": 8,
+      "loop": false,
+      "ground": false,
+      "ballFrames": []
+    },
+    "stance_ol": {
+      "row": 22,
+      "frames": 1,
+      "loop": true,
+      "ground": true,
+      "ballFrames": []
+    },
+    "stance_dl": {
+      "row": 23,
+      "frames": 1,
+      "loop": true,
+      "ground": true,
+      "ballFrames": []
+    }
+  },
+  "camera": {
+    "center": [
+      -0.015224069946706192,
+      0.4982440850835041,
+      -0.009102690320807794
+    ],
+    "distance": 2.550715407366935
+  }
+}

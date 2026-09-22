@@ -48,17 +48,29 @@ LIGHT = (0.55, 0.46, 0.14)
 # way round. Baking the handover into the frames is more accurate than anything
 # the game could do by toggling a separate sprite.
 #
-# Only `run` needs both an empty-handed and a carrying row set. Every call site
-# of tackleShake passes the ball carrier, only the quarterback throws, and only
-# a receiver catches — so those three clips are carrier-only, which is what
-# keeps this to 36 rows instead of 56.
+# Idle and run have empty-handed and carrying row sets. Every call site of
+# tackleShake passes the ball carrier, only the quarterback throws, and only
+# a receiver catches. Kick uses the separate ball at the kick spot. The atlas
+# stays at 64 rows so its longest dimension fits a 4096px texture.
 DEFAULT_CLIPS = [
-    {"name": "run",       "anim": "run",    "frames": 8},
-    {"name": "run_carry", "anim": "run",    "frames": 8, "ball": "all"},
+    {"name": "run",       "anim": "run",    "frames": 12},
+    {"name": "run_carry", "anim": "run_carry", "frames": 12, "ball": "all"},
     {"name": "throw",     "anim": "throw",  "frames": 8, "ball": "0-4"},
     {"name": "catch",     "anim": "catch",  "frames": 6, "ball": "4-5"},
     {"name": "tackle",    "anim": "tackle", "frames": 6, "ball": "all",
      "ground": True},
+    {"name": "idle", "anim": "idle", "frames": 6},
+    {"name": "idle_carry", "anim": "idle_carry", "frames": 6, "ball": "all"},
+    {"name": "kick", "anim": "kick", "frames": 8, "ground": True},
+]
+
+# A separate atlas preserves the main player's camera and the 4096px limit.
+ACTION_CLIPS = [
+    {"name": "recover", "anim": "recover", "frames": 8, "ground": True},
+    {"name": "block", "anim": "block", "frames": 6},
+    {"name": "celebrate", "anim": "celebrate", "frames": 8},
+    {"name": "stance_ol", "anim": "stance_ol", "frames": 1, "ground": True},
+    {"name": "stance_dl", "anim": "stance_dl", "frames": 1, "ground": True},
 ]
 
 
@@ -277,7 +289,7 @@ def ground_frames(frames, rest_y):
             for V in frames]
 
 
-def build(path, wamset, pitch, dirs, size, ss, outline, outdir, clip_defs):
+def build(path, wamset, pitch, dirs, size, ss, outline, outdir, clip_defs, suffix="", framing=None):
     plain = load(path)
     held = load_composition(wamset, "carry") if wamset else None
     rest_y = float(plain.V[:, 1].min())
@@ -319,6 +331,8 @@ def build(path, wamset, pitch, dirs, size, ss, outline, outdir, clip_defs):
                                     wrender.orbit_basis(y, pitch),
                                     28.0, 1.0, 1.14)
                for y in yaws)
+    if framing:
+        center, dist = np.asarray(framing["center"]), framing["distance"]
 
     base = np.zeros((total_rows * size, dirs * size, 4), dtype=np.uint8)
     jers = np.zeros_like(base)
@@ -359,13 +373,14 @@ def build(path, wamset, pitch, dirs, size, ss, outline, outdir, clip_defs):
     foot_frac = float((max(lows) + 1) / size) if lows else 1.0
 
     os.makedirs(outdir, exist_ok=True)
-    stem = os.path.join(outdir, plain.model.name)
+    stem = os.path.join(outdir, plain.model.name + suffix)
     Image.fromarray(base, "RGBA").save(stem + "_base.png")
     Image.fromarray(jers, "RGBA").save(stem + "_jersey.png")
     Image.fromarray(glow, "RGBA").save(stem + "_glow.png")
     meta = {"frameWidth": size, "frameHeight": size, "directions": dirs,
             "pitch": pitch, "yaws": yaws, "rows": total_rows,
-            "footFrac": round(foot_frac, 4), "anims": anims}
+            "footFrac": round(foot_frac, 4), "anims": anims,
+            "camera": {"center": center.tolist(), "distance": float(dist)}}
     with open(stem + ".json", "w") as fh:
         json.dump(meta, fh, indent=2)
     print("wrote %s_base.png / _jersey.png / _glow.png  (%d dirs x %d rows @ %dpx)"
@@ -404,7 +419,7 @@ def contact(path, pitches, dirs, size, outdir):
             sheet.paste(im, (pad + di * (size * scale + pad),
                              pad + pi * (size * scale + pad)), im)
     os.makedirs(outdir, exist_ok=True)
-    out = os.path.join(outdir, "%s_contact.png" % model.name)
+    out = os.path.join(outdir, "%s_contact.png" % src.model.name)
     sheet.save(out)
     print("wrote %s   rows top-to-bottom: pitch %s"
           % (out, ", ".join(str(p) for p in pitches)))
@@ -425,9 +440,15 @@ def main():
     ap.add_argument("-o", "--outdir", default="sprites")
     ap.add_argument("--contact", action="store_true",
                     help="compare camera pitches instead of baking")
+    ap.add_argument("--actions", action="store_true", help="bake supplemental action atlas using the main atlas camera")
     ap.add_argument("--pitches", default="20,32,42,55,68")
     a = ap.parse_args()
-    if a.contact:
+    if a.actions:
+        with open(os.path.join(a.outdir, "gridiron.json")) as fh:
+            framing = json.load(fh)["camera"]
+        build(a.model, None, a.pitch, a.dirs, a.size, a.ss,
+              a.outline, a.outdir, ACTION_CLIPS, "_actions", framing)
+    elif a.contact:
         contact(a.model, [float(p) for p in a.pitches.split(",")],
                 a.dirs, a.size, a.outdir)
     else:

@@ -139,8 +139,8 @@ def panel(mode, base, jers, meta, font, title_font):
 
 
 def main():
-    stem = ("/Users/egd/projects/volunteer-work/Benny-s-Accessibility-Hub-2.0/"
-            "bennyshub/apps/games/BENNYSFOOTBALL/images/players/gridiron")
+    from pathlib import Path
+    stem = str(Path(__file__).resolve().parent / '../images/players/gridiron')
     meta = json.load(open(stem + ".json"))
     base = np.asarray(Image.open(stem + "_base.png").convert("RGBA"))
     jers = np.asarray(Image.open(stem + "_jersey.png").convert("RGBA"))

@@ -15,7 +15,9 @@ const api = eval('(function () {' + src +
   '\nreturn { spriteDirIndex, PLAYER_SPRITE };\n})')();
 const spriteDirIndex = api.spriteDirIndex;
 const P = api.PLAYER_SPRITE;
-const meta = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+const manifests = { main: JSON.parse(fs.readFileSync(MANIFEST, 'utf8')),
+  actions: JSON.parse(fs.readFileSync(path.join(HERE, '../images/players/gridiron_actions.json'), 'utf8')) };
+const meta = manifests.main;
 
 let bad = 0;
 const check = (ok, msg) => { if (!ok) bad++; console.log(`${ok ? 'ok  ' : 'FAIL'}  ${msg}`); };
@@ -41,8 +43,9 @@ check(P.frameW === meta.frameWidth && P.frameH === meta.frameHeight,
 check(Math.abs(P.footFrac - meta.footFrac) < 1e-6,
   `footFrac ${P.footFrac} == ${meta.footFrac}`);
 
-for (const name of Object.keys(meta.anims)) {
-  const m = meta.anims[name], c = P.anims[name];
+for (const name of Object.keys(P.anims)) {
+  const c = P.anims[name], m = manifests[c.sheet || 'main'].anims[name];
+  if (!m) { check(false, name + ': missing from bake'); continue; }
   if (!c) { check(false, `${name}: missing from PLAYER_SPRITE.anims`); continue; }
   check(c.row === m.row && c.frames === m.frames,
     `${name.padEnd(7)} row ${c.row} x${c.frames} == baked row ${m.row} x${m.frames}`);
@@ -56,7 +59,7 @@ for (const name of Object.keys(meta.anims)) {
   check(cb === mb, `${name.padEnd(9)} ballFrames [${cb}] == baked [${mb}]`);
 }
 for (const name of Object.keys(P.anims)) {
-  check(!!meta.anims[name], `${name.padEnd(7)} declared in JS is present in the bake`);
+  check(!!manifests[P.anims[name].sheet || 'main'].anims[name], `${name.padEnd(7)} declared in JS is present in the bake`);
 }
 
 // ── the three layers must line up ─────────────────────────────────────────
@@ -68,6 +71,9 @@ const png = (f) => {
   return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
 };
 const want = { w: meta.directions * meta.frameWidth, h: meta.rows * meta.frameHeight };
+check(want.w <= 4096 && want.h <= 4096, 'atlas stays within a 4096px texture');
+check(P.anims.kick.strikeFrame >= 0 && P.anims.kick.strikeFrame < P.anims.kick.frames,
+  'kick contact frame is inside the clip');
 for (const f of ['gridiron_base.png', 'gridiron_jersey.png', 'gridiron_glow.png']) {
   let got;
   try { got = png(f); } catch (e) { check(false, `${f} is missing`); continue; }
@@ -77,14 +83,24 @@ for (const f of ['gridiron_base.png', 'gridiron_jersey.png', 'gridiron_glow.png'
 
 // ── atlas indexing ────────────────────────────────────────────────────────
 console.log('\natlas indexing');
-const maxIdx = meta.rows * meta.directions - 1;
+for (const [sheet, data] of Object.entries(manifests)) {
+const maxIdx = data.rows * data.directions - 1;
 let worst = -1;
 for (const name of Object.keys(P.anims)) {
   const c = P.anims[name];
+  if ((c.sheet || 'main') !== sheet) continue;
   for (let f = 0; f < c.frames; f++)
     for (let d = 0; d < P.dirs; d++) worst = Math.max(worst, (c.row + f) * P.dirs + d);
 }
-check(worst === maxIdx, `highest frame index ${worst} == atlas max ${maxIdx}`);
+check(worst === maxIdx, `${sheet} highest frame index ${worst} == atlas max ${maxIdx}`);
+for (const layer of ['base','jersey','glow']) {
+  const filename = 'gridiron' + (sheet === 'actions' ? '_actions' : '') + '_' + layer + '.png';
+  const got = png(filename);
+  check(got.w === data.directions * data.frameWidth && got.h === data.rows * data.frameHeight, filename + ' geometry matches manifest');
+  check(got.w <= 4096 && got.h <= 4096, filename + ' fits texture limit');
+}
+}
+check(JSON.stringify(manifests.main.camera) === JSON.stringify(manifests.actions.camera), 'both atlases use identical camera framing');
 
 // ── seating ───────────────────────────────────────────────────────────────
 // Mirrors makePlayer() in game.js exactly; a formula that only agrees with

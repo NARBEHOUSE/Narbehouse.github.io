@@ -124,6 +124,25 @@ parts
   end
 
 animations
+  # Feet planted, with staggered upper-body movement between snaps.
+  anim idle loop dur=2.4
+    ch spine pitch 0%=-3 50%=4 100%=-3
+    ch chest yaw 0%=-5 50%=5 100%=-5
+    ch head yaw 0%=6 40%=-7 100%=6
+    ch upperarm.l pitch 0%=-10 60%=-18 100%=-10
+    ch upperarm.r pitch 0%=-18 40%=-10 100%=-18
+    ch forearm.l pitch 0%=-12 50%=-20 100%=-12
+    ch forearm.r pitch 0%=-20 50%=-12 100%=-20
+
+  anim idle_carry loop dur=2.4
+    ch spine pitch 0%=-3 50%=4 100%=-3
+    ch chest yaw 0%=-5 50%=5 100%=-5
+    ch head yaw 0%=6 40%=-7 100%=6
+    ch upperarm.l pitch 0%=-10 60%=-18 100%=-10
+    ch forearm.l pitch 0%=-12 50%=-20 100%=-12
+    ch upperarm.r pitch 0%=-22 50%=-25 100%=-22
+    ch forearm.r pitch 0%=-32 50%=-35 100%=-32
+
   # Amplitudes are deliberately large. Mistakes #9: motion authored at the
   # size it feels right reads as a still frame.
   anim run loop dur=0.62
@@ -138,6 +157,33 @@ animations
     ch spine roll 0%=5 50%=-5 100%=5
     ch chest yaw  0%=-7 50%=7 100%=-7
     mirrorphase 50%
+
+  # The free arm drives the stride; the ball arm stays close and steady.
+  anim run_carry loop dur=0.62
+    ch thigh.l pitch 0%=-34 25%=6 50%=32 75%=6 100%=-34
+    ch shin.l  pitch 0%=10 25%=6 50%=22 75%=58 100%=10
+    ch foot.l  pitch 0%=-10 50%=20 75%=-6 100%=-10
+    ch thigh.r pitch 0%=32 25%=6 50%=-34 75%=6 100%=32
+    ch shin.r  pitch 0%=22 25%=58 50%=10 75%=6 100%=22
+    ch foot.r  pitch 0%=20 25%=-6 50%=-10 100%=20
+    ch upperarm.l pitch 0%=34 50%=-30 100%=34
+    ch forearm.l pitch 0%=-18 50%=14 100%=-18
+    ch upperarm.r pitch 0%=-18 50%=-28 100%=-18
+    ch forearm.r pitch 0%=-32 50%=-38 100%=-32
+    ch spine roll 0%=4 50%=-4 100%=4
+    ch chest yaw 0%=-5 50%=5 100%=-5
+
+  # Plant left, load right, strike at the middle sample, then follow through.
+  # Grounding in the bake keeps the supporting foot on the turf.
+  anim kick dur=0.64
+    ch thigh.r pitch 0%=0 29%=30 57%=-62 86%=-42 100%=0
+    ch shin.r pitch 0%=4 29%=45 57%=6 86%=14 100%=4
+    ch foot.r pitch 0%=0 29%=12 57%=-18 86%=-8 100%=0
+    ch chest pitch 0%=0 29%=8 57%=-9 100%=0
+    ch upperarm.l pitch 0%=0 29%=-24 57%=-36 100%=0
+    ch upperarm.r pitch 0%=0 29%=20 57%=28 100%=0
+    ch upperarm.l tilt 0%=0 29%=18 57%=24 100%=0
+    ch upperarm.r tilt 0%=0 29%=-18 57%=-24 100%=0
 
   # ── throw ────────────────────────────────────────────────────────────────
   # A right-handed pass, so this is the one genuinely asymmetric clip: the .r
@@ -236,6 +282,59 @@ animations
     key 20%  pose=hit
     key 100% pose=down
 
+  # Pre-snap line stances. Feet are grounded by the bake after the knees bend.
+  # The lineman sits back on bent knees; the defensive front loads forward.
+  pose line_set
+    pelvis pitch=30
+    chest pitch=20
+    head pitch=-35
+    thigh.* pitch=-65
+    shin.* pitch=80
+    upperarm.l pitch=-40 tilt=12
+    upperarm.r pitch=-40 tilt=-12
+    forearm.* pitch=-10
+
+  pose front_set
+    pelvis pitch=40
+    chest pitch=20
+    head pitch=-40
+    thigh.* pitch=-75
+    shin.* pitch=100
+    upperarm.l pitch=-42 tilt=5
+    upperarm.r pitch=-65 tilt=-15
+    forearm.l pitch=40
+    forearm.r pitch=-20
+
+  anim stance_ol loop dur=2.8
+    key 0% pose=line_set
+    key 100% pose=line_set
+
+  anim stance_dl loop dur=2.8
+    key 0% pose=front_set
+    key 100% pose=front_set
+
+  # Hands out in front, weight over the pads; not an idle pose at contact.
+  anim block loop dur=0.8
+    ch chest pitch 0%=-8 50%=-14 100%=-8
+    ch upperarm.l pitch 0%=-55 50%=-64 100%=-55
+    ch upperarm.r pitch 0%=-55 50%=-64 100%=-55
+    ch forearm.l pitch 0%=-12 50%=-6 100%=-12
+    ch forearm.r pitch 0%=-12 50%=-6 100%=-12
+    ch head pitch 0%=5 50%=9 100%=5
+
+  anim recover dur=0.65
+    key 0% pose=down
+    key 57% pose=hit
+    key 100% pose=rest
+
+  anim celebrate dur=1.1
+    ch upperarm.l pitch 0%=0 29%=-75 57%=-85 86%=-70 100%=0
+    ch upperarm.r pitch 0%=0 29%=-75 57%=-85 86%=-70 100%=0
+    ch upperarm.l tilt 0%=0 29%=36 86%=36 100%=0
+    ch upperarm.r tilt 0%=0 29%=-36 86%=-36 100%=0
+    ch forearm.l pitch 0%=0 29%=-18 57%=-30 86%=-18 100%=0
+    ch forearm.r pitch 0%=0 29%=-18 57%=-30 86%=-18 100%=0
+
 checks
   assert bottom(shoe.l) < 0.02
   # The signature, as a number: the helmet bottom sits below the pad top.
@@ -253,6 +352,10 @@ checks
   assert moves(hand.r, throw) > 0.30
   assert moves(hand.l, catch) > 0.20
   assert moves(helmet, tackle) > 0.25
+  assert moves(shoe.r, kick) > 0.25
+  assert lowest(idle) > -0.03
+  assert lowest(idle_carry) > -0.03
+  assert lowest(run_carry) > -0.03
   # The throwing arm must clear the head, or the release reads as a shot put.
   assert moves(helmet, throw) < moves(hand.r, throw)
   assert tris < 3500

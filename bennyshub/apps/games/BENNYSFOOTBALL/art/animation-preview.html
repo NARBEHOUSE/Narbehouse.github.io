@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benny's Football — Player motion studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1512;color:#f0f5f1;font:16px system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:40px 24px}small{color:#a9d9b9;letter-spacing:.16em}h1{font-size:clamp(28px,5vw,46px);margin:12px 0}p{color:#b8c8be;line-height:1.6}.controls{display:flex;flex-wrap:wrap;align-items:end;gap:16px;margin:28px 0}label{display:grid;gap:8px;font-size:13px;color:#c4d6ca}select,button,input{font:inherit}select,button{padding:12px;border:1px solid #52675b;border-radius:8px;background:#182b21;color:white}button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #fbd365;outline-offset:3px}canvas{width:100%;display:block;border-radius:12px;border:1px solid #405f4a;background:#276b2c}.note{font-size:13px}a{color:#fbd365}
+</style>
+<main>
+<small>BENNY'S FOOTBALL / ART PREVIEW</small>
+<h1>Player motion studio</h1>
+<p>Inspect every direction at game size and in close-up. The preview uses the game's actual sprite layers, team colors and animation timings.</p>
+<div class="controls">
+<label>Animation<select id="clip"><option value="idle">Ready stance</option><option value="idle_carry">Ready with ball</option><option value="stance_ol">Offensive line stance</option><option value="stance_dl">Defensive line stance</option><option value="run">Run</option><option value="run_carry">Run with ball</option><option value="throw">Throw</option><option value="catch">Catch</option><option value="tackle">Tackle</option><option value="kick">Kick</option><option value="block">Block</option><option value="recover">Get up</option><option value="celebrate">Celebrate</option></select></label>
+<label>Team<select id="team"><option value="#d32f2f">Red</option><option value="#1565c0">Blue</option><option value="#2e7d32">Green</option><option value="#f9a825">Gold</option><option value="#6a1b9a">Purple</option><option value="#ef6c00">Orange</option><option value="#00838f">Teal</option><option value="#c2185b">Pink</option><option value="#283593">Navy</option><option value="#37474f">Black</option></select></label>
+<label>Coverage cue<select id="glow"><option value="">Off</option><option value="#69f0ae">Open</option><option value="#ffd740">Covered</option><option value="#ff5252">Doubled</option><option value="#ffffff">White accessibility cue</option></select></label>
+<label>Playback speed<select id="speed"><option value="1">Normal</option><option value="0.5">Half speed</option><option value="0.25">Quarter speed</option></select></label>
+<button id="pause" aria-pressed="false">Pause</button><button id="restart">Restart</button>
+<label>Frame<input id="frame" type="range" min="0" max="5" value="0"></label>
+</div>
+<canvas id="stage" width="1050" height="420" aria-label="Eight player directions at game size, with enlarged animations below"></canvas>
+<p id="status">Loading player artwork…</p>
+<p class="note">Action clips repeat here for inspection; tackles remain down during a game. <a href="../index.html">Open the game</a></p>
+</main>
+<script src="../js/constants.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const ctx = $('stage').getContext('2d');
+const P = PLAYER_SPRITE;
+const sheets = { main: {}, actions: {} }, tints = { main: {}, actions: {} };
+let elapsed = 0, last = 0, paused = false, loaded = false;
+const directions = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE'];
+function tint(source, color) {
+    const c = document.createElement('canvas'); c.width = source.width; c.height = source.height;
+    const g = c.getContext('2d');
+    g.drawImage(source, 0, 0); g.globalCompositeOperation = 'multiply';
+    g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = 'destination-in'; g.drawImage(source, 0, 0);
+    return c;
+}
+function colors() {
+    for (const key of ['main','actions']) {
+        tints[key].jersey = tint(sheets[key].jersey, $('team').value);
+        tints[key].glow = $('glow').value ? tint(sheets[key].glow, $('glow').value) : null;
+    }
+}
+function pause(value) { paused = value; $('pause').textContent = paused ? 'Play' : 'Pause'; $('pause').setAttribute('aria-pressed', paused); }
+$('pause').onclick = () => pause(!paused);
+$('restart').onclick = () => { elapsed = 0; pause(false); };
+$('clip').onchange = () => { elapsed = 0; $('frame').max = P.anims[$('clip').value].frames - 1; };
+$('frame').oninput = () => {
+    const clip = P.anims[$('clip').value]; pause(true);
+    elapsed = Number($('frame').value) / (clip.fps || clip.frames / .62);
+};
+$('team').onchange = $('glow').onchange = () => { if (loaded) colors(); };
+function draw(now) {
+    const dt = last ? Math.min((now - last) / 1000, .1) : 0; last = now;
+    if (loaded) {
+        if (!paused) elapsed += dt * Number($('speed').value);
+        const clip = P.anims[$('clip').value], fps = clip.fps || clip.frames / .62;
+        const layers = sheets[clip.sheet || 'main'], tinted = tints[clip.sheet || 'main'];
+        const duration = clip.frames / fps, cycle = duration + (clip.loop ? 0 : .8);
+        const frame = Math.min(clip.frames - 1, Math.floor((elapsed % cycle) * fps));
+        $('frame').value = frame;
+        ctx.clearRect(0, 0, 1050, 420);
+        for (let d = 0; d < 8; d++) {
+            const x = d * 131.25;
+            ctx.fillStyle = d % 2 ? '#276b2c' : '#2e7d32'; ctx.fillRect(x, 0, 131.25, 420);
+            ctx.fillStyle = '#ffffff33'; ctx.fillRect(x, 0, 1, 420);
+            ctx.fillStyle = '#d8e9db'; ctx.font = '13px system-ui'; ctx.textAlign = 'center'; ctx.fillText(directions[d], x + 65.6, 27);
+            for (const [size, footY] of [[P.displayH, 113], [124, 321]]) {
+                const cx = x + 65.6, top = footY - P.footFrac * size;
+                ctx.fillStyle = '#0007'; ctx.beginPath(); ctx.ellipse(cx + 2, footY - 1, size * .27, size * .085, 0, 0, Math.PI * 2); ctx.fill();
+                const sx = d * P.frameW, sy = (clip.row + frame) * P.frameH;
+                for (const layer of [tinted.glow, tinted.jersey, layers.base]) {
+                    if (layer) ctx.drawImage(layer, sx, sy, P.frameW, P.frameH, cx - size / 2, top, size, size);
+                }
+            }
+        }
+        ctx.fillStyle = '#d8e9db'; ctx.font = '12px system-ui'; ctx.textAlign = 'left';
+        ctx.fillText('GAME SIZE', 18, 155); ctx.fillText('CLOSE-UP', 18, 379);
+        const ball = clip.ballFrames.includes(frame) ? 'Ball in hand' : 'Empty hands';
+        $('status').textContent = `${$('clip').selectedOptions[0].text} · Frame ${frame + 1} / ${clip.frames} · ${ball}`;
+    }
+    requestAnimationFrame(draw);
+}
+Promise.all(['main','actions'].flatMap(sheet => ['base','jersey','glow'].map(key => new Promise((resolve, reject) => {
+    const img = new Image(); img.onload = () => { sheets[sheet][key] = img; resolve(); };
+    img.onerror = reject; img.src = '../' + (sheet === 'main' ? P : P.actions)[key + 'Path'];
+})))).then(() => { loaded = true; colors(); }).catch(() => { $('status').textContent = 'Could not load the sprite sheets. Keep this page inside the game’s art folder.'; });
+requestAnimationFrame(draw);
+</script>
+</html>
