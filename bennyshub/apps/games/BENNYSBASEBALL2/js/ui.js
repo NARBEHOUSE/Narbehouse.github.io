@@ -677,7 +677,7 @@ class ScanInput {
                 }, this._interval());
                 this.s.spaceTimer = null;
             }, this.longPress);
-        } else if (e.code === 'Enter') {
+        } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
             e.preventDefault();
             if (this.s.enterDown) return;
             this.s.enterDown = true;
@@ -702,7 +702,7 @@ class ScanInput {
             if (wasShortNav && this.h.forward) this.h.forward();
             return;
         }
-        if (e.code === 'Enter' && this.s.enterDown) {
+        if ((e.code === 'Enter' || e.code === 'NumpadEnter') && this.s.enterDown) {
             e.preventDefault();
             this.s.enterDown = false;
             if (this._isCharge()) this._chargeRelease();
@@ -763,11 +763,13 @@ class BaseTargetSelector {
             const z = scene.add.zone(o.fielder.x, o.fielder.y, 72, 72)
                 .setOrigin(0.5).setDepth(47).setInteractive({ useHandCursor: true });
             z.on('pointerover', () => {
-                if (!this.active || this.index === i) return;
-                this.index = i;
-                if (this.audio) this.audio.play('scan');
-                this._announceCurrent();
-                this._scanZoom();
+                if (!this.active) return;
+                if (this.index !== i) {
+                    this.index = i;
+                    if (this.audio) this.audio.play('scan');
+                    this._announceCurrent();
+                }
+                this._scanZoom(true);
             });
             z.on('pointerdown', () => {
                 if (!this.active) return;
@@ -792,7 +794,7 @@ class BaseTargetSelector {
         const cam = this.scene.cameras.main;
         const wv = cam.worldView;
         if (wv.width > 0) {
-            this.titleTxt.setPosition(wv.centerX, wv.y + 86 / cam.zoom).setScale(1 / cam.zoom);
+            this.titleTxt.setPosition(wv.centerX, wv.y + 86 / (cam.zoom / (this.scene._renderScale || 1))).setScale((this.scene._renderScale || 1) / cam.zoom);
         }
         this.options.forEach((o, i) => {
             const f = o.fielder;
@@ -884,10 +886,12 @@ class BaseTargetSelector {
 
     // Ride the camera onto whoever is being scanned (throw menus): zoom in on
     // each base player, and back out wide when the pitcher (end play) is up.
-    _scanZoom() {
+    _scanZoom(fromPointer = false) {
         if (!this.zoomOnScan || this.index < 0 || !this.scene._zoomOnPoint) return;
         const o = this.options[this.index];
-        if (o.value === 'hold') this.scene._zoomOut(340);
+        // Pointer targets must stay put while hovering/tapping. Switch scanning
+        // may focus bases, but Ready and Pause always restore the whole field.
+        if (fromPointer || ['hold', 'bat', 'pause'].includes(o.value)) this.scene._zoomOut(340);
         else this.scene._zoomOnPoint(o.fielder.x, o.fielder.y, 1.55, 340);
     }
 

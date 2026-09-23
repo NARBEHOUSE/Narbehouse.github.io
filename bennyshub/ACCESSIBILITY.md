@@ -914,33 +914,28 @@ does not sit between the player and the thing they came to do. Or make it a
 setting, so a player who needs the scannable route can turn it on and a player
 who does not is not slowed down by it.
 
-**Hold‑to‑charge and timing mechanics will get a select‑based alternative.**
-Two games need one today.
+**Hold-to-charge and timing mechanics need a select-based alternative.**
 
-**Benny's Baseball** charges the swing by holding, and the release has to land
-against the pitch. The plan is the same two‑option toggle Football already
-ships as **Easy Throw** — charge, or do not. Baseball differs from Football in
-one way that matters: Football's throw already carries a selection (which
-receiver), so switching the charge off leaves a complete action behind, whereas
-the baseball swing has no selection under it — take the hold away and nothing
-is left to decide. So the toggle supplies one: the player **selects the type of
-swing**, Bunt, Normal or Power, and the game resolves contact. Bunting instead
-of swinging for the fence is a real decision about the at‑bat, which is why a
-menu belongs here and not on the throw. Same game, no sustained press, no
-release window.
+**Benny's Baseball now implements the alternative.** Its persisted setting is
+**Batting: Pick a Swing / Hold to Charge**, reachable from main and pause
+settings. Pick a Swing is the default when no preference is stored. The player
+first selects Ready to Swing (or a stealable base or Pause) on the field.
+The pitch is called aloud, the camera zooms in, and the ball freezes at the sweet
+spot. Only then does the player select Normal, Power, Bunt, Take Pitch, or Pause.
+The ball remains frozen through scanning and pause/resume; selecting a swing
+resumes the same pitch. There is no sustained press, release window, or deadline. The game
+resolves contact using the swing choice, pitch location and execution quality;
+it does not guarantee a hit. Scoring and season eligibility are unchanged.
+The original timed charge mode remains available for players who prefer it.
 
 **Benny's Fish Mystery** asks for a press to set the hook inside the take
 window, and then a sustained hold to reel. The plan is a setting that holds the
 hook window open until the player scans and selects it, and that resolves the
 reel in steps rather than one long press.
 
-**Neither is open work, and the timed versions are not bugs.** Both games play
-correctly as they stand, and the timed form stays — it is the challenge, for
-the players who want it. What is missing is the other route through it. The
-rule both settings will satisfy is written up in §9, "Timing may be a challenge,
-never a requirement"; read that before building the next mechanic of this kind,
-so it arrives with its alternative already designed instead of needing one
-bolted on.
+**Fish Mystery remains planned work; its timed version is not a bug.** The
+timed form stays for players who enjoy it. The rule for providing an alternative
+is in section 9, "Timing may be a challenge, never a requirement."
 
 **Remappable keys: understood, deliberately not built.** Space and Enter are
 hard{NB}coded everywhere — all 23 games compare `e.code` directly, across roughly

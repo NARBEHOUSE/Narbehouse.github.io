@@ -33,39 +33,39 @@ canvas { display: block; }
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 
 <!-- Game modules -->
-<script src="js/constants.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/audio.js"></script>
+<script src="js/constants.js?v=20260923-pitch-choice"></script>
+<script src="js/player-art.js?v=d03b024119f5"></script>
+<script src="js/sprites.js?v=fdedafee9b8b"></script>
+<script src="js/audio.js?v=20f22971029c"></script>
 <script src="js/season.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/fielding.js"></script>
-<script src="js/scenes.js"></script>
-<script src="js/game.js"></script>
+<script src="js/ui.js?v=36dcbe5feaad"></script>
+<script src="js/fielding.js?v=86c3857ad21e"></script>
+<script src="js/rendering.js"></script>
+<script src="js/scenes.js?v=abe38038c4e5"></script>
+<script src="js/movement.js?v=8998219ddbe7"></script>
+<script src="js/ballpark.js?v=87e536bf85cf"></script>
+<script src="js/game.js?v=ed3784d3afee"></script>
 
 <script>
 window.addEventListener('load', () => {
-    // Render the 1000x600 world at a much higher backing resolution so the
-    // upscale to the screen stays crisp instead of looking blurry. We size the
-    // canvas to the actual device pixels (zoom), then FIT scales it to fit.
-    // (Same technique as BENNYSFOOTBALL/index.html.)
-    const dpr = window.devicePixelRatio || 1;
-    const need = Math.max(window.innerWidth / W, window.innerHeight / H);
-    const zoom = Math.min(Math.max(1, Math.ceil(need * dpr)), 4);
-    window.__GAME_ZOOM = zoom;
+    // Scale the real canvas backing store, then map logical world coordinates
+    // through each scene's camera. Scale Manager zoom changes CSS size only.
+    const renderScale = bb2RenderScale();
+    window.__BASEBALL_RENDER_SCALE = renderScale;
 
     // Match text render resolution to the supersampled canvas so labels and
     // numbers are sharp too (Phaser text otherwise renders at 1x and scales up).
     const _factoryText = Phaser.GameObjects.GameObjectFactory.prototype.text;
     Phaser.GameObjects.GameObjectFactory.prototype.text = function (x, y, text, style) {
         const obj = _factoryText.call(this, x, y, text, style);
-        if (obj && obj.setResolution) obj.setResolution(zoom);
+        if (obj && obj.setResolution) obj.setResolution(window.__BASEBALL_RENDER_SCALE);
         return obj;
     };
 
     const config = {
         type: Phaser.AUTO,
-        width: W,
-        height: H,
+        width: W * renderScale,
+        height: H * renderScale,
         parent: 'game',
         backgroundColor: '#0a1408',
         render: {
@@ -77,11 +77,16 @@ window.addEventListener('load', () => {
         scale: {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
-            zoom: zoom
+            zoom: 1
         },
         scene: [TitleScene, SettingsScene, InstructionsScene, ColorSelectScene, SeasonScene, GameScene, ResultScene]
     };
-    window.__baseball2Game = new Phaser.Game(config);
+    const game = window.__baseball2Game = new Phaser.Game(config);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => bb2ResizeRender(game), 120);
+    });
 });
 </script>
 </body>

@@ -136,16 +136,27 @@ class AudioSystem {
     }
 
     // ─── Sound effects: v1 samples first, procedural fallback ───
-    play(type) {
+    play(type, fallback = false) {
         if (!this.settings.soundEnabled) return;
+        // A recorded home-run celebration owns the cheer until it finishes,
+        // including a walk-off win or championship screen arriving meanwhile.
+        if (this._homerActive && ['homer','crowd','crowd_big'].includes(type)) return;
         const sampleKey = { hit: 'hit', swing: 'swing', homer: 'homer' }[type];
-        if (sampleKey && this.samples[sampleKey] && !this.samples[sampleKey].error) {
+        if (!fallback && sampleKey && this.samples[sampleKey] && !this.samples[sampleKey].error) {
             try {
                 const s = this.samples[sampleKey];
                 s.currentTime = 0;
-                s.play().catch(() => {});
+                if (type === 'homer') {
+                    this._homerActive = true;
+                    s.onended = () => { this._homerActive = false; };
+                    s.onerror = () => { this._homerActive = false; };
+                }
+                s.play().catch(() => {
+                    if (type === 'homer') this._homerActive = false;
+                    this.play(type,true);
+                });
                 return;
-            } catch (e) { /* fall through to procedural */ }
+            } catch (e) { if (type === 'homer') this._homerActive = false; }
         }
         const ctx = this.ensureCtx();
         if (!ctx) return;
@@ -266,14 +277,16 @@ class AudioSystem {
                 break;
             }
             case 'homer': {
-                // Celebration fanfare — 4-note ascending, then crowd roar
+                // One fallback fanfare only when the recording is unavailable.
+                this._homerActive = true;
+                setTimeout(() => { this._homerActive = false; }, 850);
                 [{ f: 523, t: 0 }, { f: 659, t: 0.14 }, { f: 784, t: 0.28 }, { f: 1047, t: 0.42 }].forEach(({ f, t }) => {
                     const o = ctx.createOscillator(), g = ctx.createGain();
                     o.type = 'square'; o.frequency.setValueAtTime(f, now + t);
                     g.gain.setValueAtTime(0.18, now + t); g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.28);
                     connect(o, g); o.start(now + t); o.stop(now + t + 0.30);
                 });
-                setTimeout(() => this.play('crowd_big'), 540);
+
                 break;
             }
             case 'fail': {
@@ -400,12 +413,12 @@ class AudioSystem {
     //    is not a queue: at most one retry is ever pending per call, and if
     //    a newer line has already been requested by the time the retry
     //    fires, the stale one is abandoned rather than talking over it.
-    speak(text, interrupt = false) {
-        if (!text) return;
-        if (!('speechSynthesis' in window)) return;
+    speak(text, interrupt = false, onDone = null) {
+        if (!text || !('speechSynthesis' in window)) { if (onDone) onDone(); return; }
         this._speakReqId = (this._speakReqId || 0) + 1;
         const reqId = this._speakReqId;
         if (interrupt) {
+            this._speakGen = (this._speakGen || 0) + 1;
             this._speaking = false;
             clearTimeout(this._speakTimer);
             clearTimeout(this._retryTimer);
@@ -414,34 +427,35 @@ class AudioSystem {
             // Defer so the browser fully processes the cancel first
             this._speakTimer = setTimeout(() => {
                 if (this._speakReqId !== reqId) return; // superseded already
-                this._sayNow(String(text));
+                this._sayNow(String(text), onDone);
             }, 50);
             return;
         }
-        this._trySpeak(String(text), reqId, false);
+        this._trySpeak(String(text), reqId, false, onDone);
     }
 
-    _trySpeak(text, reqId, isRetry) {
+    _trySpeak(text, reqId, isRetry, onDone) {
         if (this._speaking) {
             if (!isRetry) {
                 clearTimeout(this._retryTimer);
                 this._retryTimer = setTimeout(() => {
                     if (this._speakReqId !== reqId) return; // a newer line replaced this one
-                    this._trySpeak(text, reqId, true);
+                    this._trySpeak(text, reqId, true, onDone);
                 }, 400);
             }
+            if (isRetry && onDone) onDone();
             return; // busy on the retry attempt too → give up, never queue
         }
-        this._sayNow(text);
+        this._sayNow(text, onDone);
     }
 
-    _sayNow(text) {
+    _sayNow(text, onDone) {
         // Borrow voice + rate/pitch/volume from the shared manager when present.
         let voice = null, rate = 1.0, pitch = 1.0, volume = 1.0;
         const vm = window.NarbeVoiceManager;
         if (vm && typeof vm.getSettings === 'function') {
             const s = vm.getSettings() || {};
-            if (s.ttsEnabled === false) return;
+            if (s.ttsEnabled === false) { if (onDone) onDone(); return; }
             rate = s.rate || 1.0;
             pitch = s.pitch || 1.0;
             volume = (s.volume != null) ? s.volume : 1.0;
@@ -454,10 +468,13 @@ class AudioSystem {
         this._speaking = true;
         this._speakGen = (this._speakGen || 0) + 1;
         const gen = this._speakGen;
+        let finished = false;
         const done = () => {
-            if (this._speakGen !== gen) return;
+            if (this._speakGen !== gen || finished) return;
+            finished = true;
             this._speaking = false;
             clearTimeout(this._speakSafetyTimer);
+            if (onDone) onDone();
         };
         u.onend = done;
         u.onerror = done;
@@ -466,8 +483,8 @@ class AudioSystem {
         // otherwise wedge _speaking = true forever and silently kill every
         // future narration line. Force-clear after a generous ceiling.
         clearTimeout(this._speakSafetyTimer);
-        const estMs = Math.min(7000, Math.max(1200, ttsText.length * 90));
+        const estMs = Math.min(20000, Math.max(1800, ttsText.length * 120 / rate));
         this._speakSafetyTimer = setTimeout(done, estMs);
-        try { speechSynthesis.speak(u); } catch (e) { this._speaking = false; }
+        try { speechSynthesis.speak(u); } catch (e) { done(); }
     }
 }

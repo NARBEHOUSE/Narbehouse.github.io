@@ -77,7 +77,7 @@ function addCapSprite(scene, colorName, x, y, h, opts) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TITLE SCENE  —  Quick Game / Season Mode / Instructions / Settings / Exit
 // ═══════════════════════════════════════════════════════════════════════════════
-class TitleScene extends Phaser.Scene {
+class TitleScene extends BaseballScene {
     constructor() { super({ key: 'TitleScene' }); }
 
     create() {
@@ -114,7 +114,7 @@ class TitleScene extends Phaser.Scene {
             onSelect: (opt) => this.handle(opt.value)
         });
 
-        this.add.text(W / 2, H - 22, 'SPACE or click/tap = scan  ·  ENTER = select  ·  hold ENTER = charge your swing', {
+        this.add.text(W / 2, H - 22, 'Tap SPACE = next · hold SPACE = back · ENTER = choose · click/tap = choose', {
             fontSize: '15px', fontFamily: 'Arial', color: '#dff5df',
             stroke: '#000', strokeThickness: 2
         }).setOrigin(0.5).setDepth(5);
@@ -200,7 +200,7 @@ class TitleScene extends Phaser.Scene {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SETTINGS SCENE — same options as football minus its game-specific toggles
 // ═══════════════════════════════════════════════════════════════════════════════
-class SettingsScene extends Phaser.Scene {
+class SettingsScene extends BaseballScene {
     constructor() { super({ key: 'SettingsScene' }); }
 
     create() {
@@ -260,6 +260,7 @@ class SettingsScene extends Phaser.Scene {
         const voiceName = (vm && vm.getCurrentVoice && vm.getVoiceDisplayName)
             ? vm.getVoiceDisplayName(vm.getCurrentVoice()) : 'Default';
         const opts = [
+            { label: bb2BattingLabel(), value: 'batting', hint: 'Choose a swing without holding, or charge and time your release' },
             { label: `Sound Effects: ${sfxOn  ? 'ON' : 'OFF'}`, value: 'sfx' },
             { label: `Music: ${musicOn ? 'ON' : 'OFF'}`,        value: 'music' },
             { label: 'Next Track',                                value: 'nexttrack' },
@@ -278,7 +279,7 @@ class SettingsScene extends Phaser.Scene {
 
         this.menu = new ScanList(this, {
             x: W / 2, y: H / 2 + 20, options: opts, audio: a,
-            itemW: 400,
+            itemW: 400, itemH: 52, gap: 14, columns: 2,
             onSelect: (opt) => this._handle(opt.value)
         });
 
@@ -294,7 +295,10 @@ class SettingsScene extends Phaser.Scene {
         const vm = window.NarbeVoiceManager;
         const idx = this.menu ? this.menu.index : -1;
 
-        if (value === 'sfx') {
+        if (value === 'batting') {
+            a.speak(bb2ToggleBatting(), true);
+            this._buildMenu(idx);
+        } else if (value === 'sfx') {
             a.toggleSound();
             a.speak(a.settings.soundEnabled ? 'Sound on.' : 'Sound off.', true);
             this._buildMenu(idx);
@@ -369,9 +373,14 @@ class SettingsScene extends Phaser.Scene {
 // COLOR SELECT SCENE — one big swatch card you cycle with the arrows / SPACE,
 // then START GAME. Identical layout to football's; the card shows a baseball cap.
 // ═══════════════════════════════════════════════════════════════════════════════
-class ColorSelectScene extends Phaser.Scene {
+class ColorSelectScene extends BaseballScene {
     constructor() { super({ key: 'ColorSelectScene' }); }
-    init(data) { this.mode = data.mode || 'exhibition'; this.colorIndex = 0; }
+    init(data = {}) {
+        super.init(data);
+        this.mode = data.mode || 'exhibition';
+        this.colorIndex = 0;
+        this._starting = false;
+    }
     preload() { loadCap(this); }
 
     create() {
@@ -415,6 +424,8 @@ class ColorSelectScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         this.drawColor();
+        // Fetch the next screen's art while the player chooses a team.
+        bb2PrefetchSprites();
 
         this.input.keyboard.on('keydown-LEFT', () => this.cycle(-1));
         this.input.keyboard.on('keydown-RIGHT', () => this.cycle(1));
@@ -422,7 +433,7 @@ class ColorSelectScene extends Phaser.Scene {
             forward: () => this.cycle(1),
             backward: () => this.cycle(-1),
             select: () => this.start(),
-            escape: () => this.scene.start('TitleScene')
+            escape: () => { if (!this._starting) this.scene.start('TitleScene'); }
         });
         audioSys().speak('Choose your team. Space to change color, enter to start.', true);
     }
@@ -440,6 +451,7 @@ class ColorSelectScene extends Phaser.Scene {
     }
 
     cycle(dir) {
+        if (this._starting) return;
         this.colorIndex = (this.colorIndex + dir + COLOR_OPTIONS.length) % COLOR_OPTIONS.length;
         this.drawColor();
         audioSys().play('scan');
@@ -458,6 +470,11 @@ class ColorSelectScene extends Phaser.Scene {
     }
 
     start() {
+        if (this._starting) return;
+        this._starting = true;
+        this.startMenu.active = false;
+        this.startMenu.labels[0].setText('STARTING GAME...');
+        audioSys().speak('Starting game.', true);
         const colorName = COLOR_OPTIONS[this.colorIndex].name;
         const season = seasonMgr();
         let opponentColorName;
@@ -468,11 +485,16 @@ class ColorSelectScene extends Phaser.Scene {
             const others = COLOR_OPTIONS.filter(c => c.name !== colorName);
             opponentColorName = others[Math.floor(Math.random() * others.length)].name;
         }
-        this.startMenu.destroy();
-        this.scene.start('GameScene', {
+        const gameData = {
             isSeason: this.mode === 'season',
             playerColorName: colorName,
             opponentColorName
+        };
+        // Paint acknowledgement before starting asset decoding and scene setup.
+        this.game.events.once('postrender', () => {
+            if (!this.sys.isActive()) return;
+            this.startMenu.destroy();
+            this.scene.start('GameScene', gameData);
         });
     }
 }
@@ -481,7 +503,7 @@ class ColorSelectScene extends Phaser.Scene {
 // SEASON SCENE — full 16-game schedule view + playoff-series rows
 // (direct port of football's SeasonScene layout with cap swatches)
 // ═══════════════════════════════════════════════════════════════════════════════
-class SeasonScene extends Phaser.Scene {
+class SeasonScene extends BaseballScene {
     constructor() { super({ key: 'SeasonScene' }); }
 
     preload() { loadCap(this); }
@@ -797,7 +819,7 @@ class SeasonScene extends Phaser.Scene {
 // ═══════════════════════════════════════════════════════════════════════════════
 // INSTRUCTIONS SCENE — how to play, read aloud
 // ═══════════════════════════════════════════════════════════════════════════════
-class InstructionsScene extends Phaser.Scene {
+class InstructionsScene extends BaseballScene {
     constructor() { super({ key: 'InstructionsScene' }); }
 
     create() {
@@ -815,13 +837,13 @@ class InstructionsScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         const lines = [
-            'BATTING — Pick READY TO BAT, then PRESS AND HOLD to charge your swing:',
-            'a quick tap bunts, 2 to 4 seconds is a normal swing, 4 to 6 is a power swing.',
-            'LET GO while the ball is in the GREEN part of the timing bar to smash it!',
+            'BATTING — Pick a Swing: choose Normal, Power, Bunt, or Take Pitch.',
+            'The pitch waits for your choice. No holding or timed release is needed.',
+            'Prefer charging? Select Hold to Charge in Settings, then release in GREEN.',
             '',
             'FIELDING — Pick where your pitch goes. Green is your best pitch.',
             'When you field a ground ball, choose which base to throw to:',
-            'first base is the safe out — or gun down the lead runner for a double play!',
+            'try for an out at first, or a force at another base. No out is guaranteed.',
             '',
             'SEASON — Play 16 games. Win 10 or more to make the playoffs:',
             'best-of-3 quarterfinal and semifinal series, then a best-of-5 championship.'
@@ -843,8 +865,8 @@ class InstructionsScene extends Phaser.Scene {
             escape:   () => this.scene.start('TitleScene')
         });
 
-        audio.speak('How to play. Batting: hold to charge your swing, and let go in the green. ' +
-            'Fielding: choose your pitch, and when you field a ground ball, pick which base to throw to. ' +
+        audio.speak('How to play. Pick a Swing: select Ready to Swing on the field, or scan to steal a base. Hear the pitch call and watch the pitch freeze. Then choose normal, power, bunt, or take pitch. No holding or timing is needed. For timed batting, choose Hold to Charge in settings. ' +
+            'Fielding: choose your pitch, and when you field a ground ball, pick which base to throw to. Try to beat the runner. Throws can result in an out or a safe call. ' +
             'Season: sixteen games, then playoff series, then a best of five championship.', true);
     }
 }

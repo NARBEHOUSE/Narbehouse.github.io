@@ -15,16 +15,26 @@
 
 
 // ─── Game ────────────────────────────────────────────────────────────────────
-class GameScene extends Phaser.Scene {
+class GameScene extends BaseballScene {
     constructor() { super('GameScene'); }
 
     preload() {
+        // The field needs no image assets: show it as soon as Start is accepted.
+        this.drawFieldBackground();
+        this._loadingLabel = this.add.text(W / 2, H / 2, 'Loading game...', {
+            fontFamily: 'Arial', fontSize: '28px', color: '#ffffff', align: 'center'
+        }).setOrigin(.5).setDepth(100);
+        const progress = value => this._loadingLabel.setText('Loading game... ' + Math.round(value * 100) + '%');
+        this.load.on('progress', progress);
+        this.load.once('complete', () => this.load.off('progress', progress));
         if (typeof bb2LoadSprites === 'function') bb2LoadSprites(this);
     }
 
     create(data) {
+        if (this._loadingLabel) { this._loadingLabel.destroy();this._loadingLabel = null; }
         this.audio = audioSys();
         this.season = seasonMgr();
+        this._playerMotion = new BaseballPlayerMotion(this);
         this.cameras.main.setBounds(0, 0, W, H);
         this.isSeason = !!(data && data.isSeason);
 
@@ -87,8 +97,25 @@ class GameScene extends Phaser.Scene {
         this.menu = null;
         this.chargeMonitor = null;
         this.pitchTween = null;
+        this._receivingPitch = false;
 
-        this.drawFieldBackground();
+        this._preparingLabel = this.add.text(W / 2, H / 2, 'Preparing players...', {
+            fontFamily: 'Arial', fontSize: '28px', color: '#ffffff',
+            backgroundColor: '#102a16', padding: {x:24,y:16}, align: 'center'
+        }).setOrigin(.5).setDepth(100);
+        const roster = Object.keys(FIELD.FIELDER_HOMES).map(position => ({position,color:this.fieldingColor()}));
+        roster.push({position:'B',color:this.battingColor()});
+        if (Object.values(this.gs.bases).some(Boolean)) roster.push({position:'R',color:this.battingColor()});
+        if (!bb2SpritesReady(this)) {
+            this._finishSetup(resumeData);return;
+        }
+        bb2PreparePlayers(this, roster, progress => {
+            this._preparingLabel.setText('Preparing players... ' + Math.round(progress*100) + '%');
+        }, () => this._finishSetup(resumeData));
+    }
+
+    _finishSetup(resumeData) {
+        if (this._preparingLabel) {this._preparingLabel.destroy();this._preparingLabel = null;}
         this.ball = this.makeBall();
         this.createTeams(true); // both teams run onto the field
         this.runnerDots = { first: null, second: null, third: null };
@@ -105,16 +132,18 @@ class GameScene extends Phaser.Scene {
             delay: 2400, loop: true,
             callback: () => {
                 if (this.gs.gameOver || !this.fielders) return;
+                // Ambient shifts belong only to pre-pitch menu time. Never
+                // move a planted receiver while a live ball approaches.
+                if (!this.menu || (this.ball && this.ball.visible) || (this.ib && this.ib.active)) return;
                 const keys = Object.keys(this.fielders);
                 const f = this.fielders[keys[Math.floor(Math.random() * keys.length)]];
                 if (!f || !f.active || this.tweens.isTweening(f)) return;
                 if (f._bb2 && f._busy) return;   // never interrupt a delivery
-                this.tweens.add({
-                    targets: f,
-                    x: f.x + Phaser.Math.Between(-6, 6),
-                    y: f.y + Phaser.Math.Between(-4, 4),
-                    duration: 420, yoyo: true, ease: 'Sine.easeInOut'
-                });
+                if (this.playerMotion().moves.has(f)) return;
+                // A shuffle uses the same footprint checks as a running play.
+                const home = {x:f.x,y:f.y};
+                this.movePlayer({targets:f,x:f.x+Phaser.Math.Between(-4,4),y:f.y+Phaser.Math.Between(-3,3),duration:420,
+                    onComplete:()=>this.movePlayer({targets:f,x:home.x,y:home.y,duration:420})});
             }
         });
 
@@ -139,6 +168,22 @@ class GameScene extends Phaser.Scene {
         this.time.delayedCall(3000, () => this.nextPlay());
     }
 
+    playerMotion() {
+        if (!this._playerMotion) this._playerMotion = new BaseballPlayerMotion(this);
+        return this._playerMotion;
+    }
+
+    update(time, delta) { if (this._playerMotion) this._playerMotion.update(delta); }
+
+    stopPlayerMovement(p) {
+        if (this._playerMotion) this._playerMotion.stop(p);
+        this.tweens.killTweensOf(p);
+    }
+
+    movePlayer(config) {
+        return this.playerMotion().move(config.targets,config.x,config.y,config.duration,config.onComplete,config.onUpdate,config.gait);
+    }
+
     resetInteractiveBatting() {
         this.ib = {
             active: false,
@@ -159,173 +204,78 @@ class GameScene extends Phaser.Scene {
     }
 
     // ─── Field & sprites ─────────────────────────────────────────────────────
-    // Clean, flat-color ballpark: solid grass inside one smooth wall arc,
-    // subtle mow wedges, a crisp dirt diamond band, and stands beyond the wall.
-    // No alpha-stacked gradients (they looked muddy).
     drawFieldBackground() {
-        const g = this.add.graphics().setDepth(-1);
-        const A = FIELD.WALL_ARC;
-        const a1 = Phaser.Math.DegToRad(A.startDeg), a2 = Phaser.Math.DegToRad(A.endDeg);
-        const corner1 = { x: A.cx + A.r * Math.cos(a1), y: A.cy + A.r * Math.sin(a1) };
-        const corner2 = { x: A.cx + A.r * Math.cos(a2), y: A.cy + A.r * Math.sin(a2) };
-
-        // Stands / out-of-play backdrop
-        this.add.rectangle(W / 2, H / 2, W, H, 0x101d28).setDepth(-2);
-        g.lineStyle(26, 0x1a3040, 1);
-        g.beginPath(); g.arc(A.cx, A.cy, A.r + 24, a1, a2); g.strokePath();
-        g.lineStyle(20, 0x24404f, 1);
-        g.beginPath(); g.arc(A.cx, A.cy, A.r + 47, a1, a2); g.strokePath();
-
-        // Grass: everything inside the wall arc down to the bottom of the screen
-        g.fillStyle(0x2e7d3a, 1);
-        g.beginPath();
-        g.arc(A.cx, A.cy, A.r, a1, a2, false);
-        g.lineTo(corner2.x, H + 40);
-        g.lineTo(corner1.x, H + 40);
-        g.closePath();
-        g.fillPath();
-
-        // Subtle mow wedges radiating from home plate (kept inside the wall).
-        // The fan spans exactly foul line to foul line, and the wedge count
-        // is ODD — an even count of alternating stripes can't mirror, which
-        // is what made the old pattern read lopsided (a light slice hugged
-        // one foul line with dark grass hugging the other). Nine wedges give
-        // dark-light-…-dark: symmetric about center field, evenly spread.
-        const HOME = FIELD.HOME;
-        const fanStart = Math.atan2(FIELD.THIRD.y - HOME.y, FIELD.THIRD.x - HOME.x);
-        const fanEnd = Math.atan2(FIELD.FIRST.y - HOME.y, FIELD.FIRST.x - HOME.x);
-        const wedges = 9;
-        for (let i = 0; i < wedges; i++) {
-            if (i % 2 === 0) continue;
-            const s = fanStart + (fanEnd - fanStart) * (i / wedges);
-            const e = fanStart + (fanEnd - fanStart) * ((i + 1) / wedges);
-            g.fillStyle(0xffffff, 0.05);
-            g.beginPath();
-            g.moveTo(HOME.x, HOME.y);
-            g.arc(HOME.x, HOME.y, 460, s, e, false);
-            g.closePath();
-            g.fillPath();
-        }
-
-        // Warning track + wall (one smooth arc)
-        g.lineStyle(16, 0xa8763e, 1);
-        g.beginPath(); g.arc(A.cx, A.cy, A.r - 10, a1, a2); g.strokePath();
-        g.lineStyle(9, 0x1b3a63, 1);
-        g.beginPath(); g.arc(A.cx, A.cy, A.r, a1, a2); g.strokePath();
-
-        // Infield dirt: a clean band around the basepaths (outer diamond dirt,
-        // inner diamond grass — no gradients)
-        const C = { x: 500, y: 398 };
-        const inflate = (p, d) => {
-            const dx = p.x - C.x, dy = p.y - C.y;
-            const len = Math.hypot(dx, dy) || 1;
-            return { x: p.x + (dx / len) * d, y: p.y + (dy / len) * d };
-        };
-        const diamond = [FIELD.HOME, FIELD.FIRST, FIELD.SECOND, FIELD.THIRD];
-        g.fillStyle(0xb98a4a, 1);
-        g.fillPoints(diamond.map(p => inflate(p, 44)), true);
-        g.fillStyle(0x33863f, 1);
-        g.fillPoints(diamond.map(p => inflate(p, -34)), true);
-
-        // Home plate circle + pitcher's mound
-        g.fillStyle(0xb98a4a, 1);
-        g.fillCircle(FIELD.HOME.x, FIELD.HOME.y, 44);
-        g.fillEllipse(FIELD.MOUND.x, FIELD.MOUND.y, 58, 40);
-        g.fillStyle(0xd8d2c3, 1);
-        g.fillRect(FIELD.MOUND.x - 8, FIELD.MOUND.y - 2, 16, 5);
-
-        // Foul lines: through 1st/3rd, ending exactly at the wall corners
-        g.lineStyle(3, 0xffffff, 0.9);
-        const foulTo = (base) => ({
-            x: FIELD.HOME.x + (base.x - FIELD.HOME.x) * 2.49,
-            y: FIELD.HOME.y + (base.y - FIELD.HOME.y) * 2.49
-        });
-        const rfCorner = foulTo(FIELD.FIRST);
-        const lfCorner = foulTo(FIELD.THIRD);
-        g.lineBetween(FIELD.HOME.x, FIELD.HOME.y, rfCorner.x, rfCorner.y);
-        g.lineBetween(FIELD.HOME.x, FIELD.HOME.y, lfCorner.x, lfCorner.y);
-
-        // Baselines
-        g.lineStyle(2.5, 0xffffff, 0.85);
-        g.strokePoints(diamond.map(p => ({ x: p.x, y: p.y })), true);
-
-        // Bases
-        const drawBase = (b) => {
-            g.save();
-            g.translateCanvas(b.x, b.y);
-            g.rotateCanvas(Math.PI / 4);
-            g.fillStyle(0xffffff, 1);
-            g.fillRect(-9, -9, 18, 18);
-            g.lineStyle(2, 0x555555, 1);
-            g.strokeRect(-9, -9, 18, 18);
-            g.restore();
-        };
-        drawBase(FIELD.FIRST); drawBase(FIELD.SECOND); drawBase(FIELD.THIRD);
-
-        // Home plate
-        g.fillStyle(0xffffff, 1);
-        g.beginPath();
-        g.moveTo(FIELD.HOME.x - 11, FIELD.HOME.y - 8);
-        g.lineTo(FIELD.HOME.x + 11, FIELD.HOME.y - 8);
-        g.lineTo(FIELD.HOME.x + 11, FIELD.HOME.y + 2);
-        g.lineTo(FIELD.HOME.x, FIELD.HOME.y + 11);
-        g.lineTo(FIELD.HOME.x - 11, FIELD.HOME.y + 2);
-        g.closePath();
-        g.fillPath();
-
-        // Batter's boxes (small, tucked below the baselines) + on-deck circles
-        g.lineStyle(2, 0xffffff, 0.65);
-        g.strokeRect(FIELD.HOME.x - 31, FIELD.HOME.y - 8, 16, 22);
-        g.strokeRect(FIELD.HOME.x + 15, FIELD.HOME.y - 8, 16, 22);
-        g.lineStyle(2, 0xffffff, 0.35);
-        g.strokeCircle(FIELD.HOME.x - 155, FIELD.HOME.y + 28, 16);
-        g.strokeCircle(FIELD.HOME.x + 155, FIELD.HOME.y + 28, 16);
+        bb2DrawBallpark(this);
     }
-
-    // Procedurally draw a proper baseball once and cache it as a texture:
-    // white leather with the two classic horseshoe seams bowing inward,
-    // each lined with small red stitch ticks. Drawn at 64px and displayed
-    // small so the supersampled canvas keeps it crisp.
+    // Separate leather lighting from the moving stitches. The highlight stays
+    // toward the stadium lights instead of orbiting with a flat spinning disc.
     ensureBallTexture() {
         if (this.textures.exists('ball-tex')) return;
-        const g = this.make.graphics({ add: false });
-        const S = 64, c = S / 2, R = 28;
-        // Leather
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(c, c, R);
-        g.lineStyle(3, 0xcfcfcf, 1);
-        g.strokeCircle(c, c, R - 1.5);
-        // Seams: arcs whose centers sit outside the ball, so each seam bows
-        // toward the middle like a real baseball
-        const seamR = 30, off = 42, span = 0.62;
-        g.lineStyle(4, 0xc0392b, 1);
-        g.beginPath(); g.arc(c - off, c, seamR, -span, span); g.strokePath();
-        g.beginPath(); g.arc(c + off, c, seamR, Math.PI - span, Math.PI + span); g.strokePath();
-        // Stitch ticks perpendicular to each seam
-        g.lineStyle(2.5, 0xc0392b, 1);
-        [-0.45, -0.15, 0.15, 0.45].forEach(a => {
-            let px = c - off + Math.cos(a) * seamR, py = c + Math.sin(a) * seamR;
-            let nx = Math.cos(a), ny = Math.sin(a);
-            g.lineBetween(px - nx * 4.5, py - ny * 4.5, px + nx * 4.5, py + ny * 4.5);
-            px = c + off + Math.cos(Math.PI + a) * seamR; py = c + Math.sin(Math.PI + a) * seamR;
-            nx = Math.cos(Math.PI + a); ny = Math.sin(Math.PI + a);
-            g.lineBetween(px - nx * 4.5, py - ny * 4.5, px + nx * 4.5, py + ny * 4.5);
-        });
-        g.generateTexture('ball-tex', S, S);
-        g.destroy();
+        const size = 128, center = 64, radius = 57;
+        const leather = this.textures.createCanvas('ball-tex', size, size);
+        const ctx = leather.getContext();
+        const light = ctx.createRadialGradient(44, 39, 4, 59, 60, 64);
+        light.addColorStop(0, '#fffef8');
+        light.addColorStop(.43, '#f5f1e5');
+        light.addColorStop(.76, '#ddd9cc');
+        light.addColorStop(1, '#8c969b');
+        ctx.fillStyle = light;
+        ctx.beginPath();ctx.arc(center, center, radius, 0, Math.PI * 2);ctx.fill();
+        ctx.strokeStyle = 'rgba(66,77,81,.32)';ctx.lineWidth = 1;
+        ctx.stroke();
+        leather.refresh();
+
+        const seams = this.textures.createCanvas('ball-seams', size, size);
+        const stitch = seams.getContext();
+        stitch.save();stitch.beginPath();stitch.arc(center, center, radius - .5, 0, Math.PI * 2);stitch.clip();
+        stitch.lineCap = 'round';stitch.lineJoin = 'round';
+        // Two curved panel joins, with paired diagonal stitches sunk into the leather.
+        for (const side of [-1, 1]) {
+            const point = t => ({x: center + side * (9 + 25 * Math.pow(2*t-1, 2)), y: 11 + 106*t});
+            stitch.beginPath();
+            for (let i = 0; i <= 64; i++) {
+                const p = point(i / 64);
+                if (i === 0) stitch.moveTo(p.x, p.y);else stitch.lineTo(p.x, p.y);
+            }
+            stitch.strokeStyle = 'rgba(103,55,41,.25)';stitch.lineWidth = 3;stitch.stroke();
+            stitch.strokeStyle = '#a64435';stitch.lineWidth = 1.15;stitch.stroke();
+            for (let i = 1; i < 17; i++) {
+                const t = i / 17, p = point(t), dx = side * 100 * (2*t-1), dy = 106;
+                const length = Math.hypot(dx, dy), nx = dy / length, ny = -dx / length;
+                const tx = dx / length, ty = dy / length;
+                stitch.beginPath();
+                stitch.moveTo(p.x - nx*3.2 - tx*1.4, p.y - ny*3.2 - ty*1.4);
+                stitch.lineTo(p.x + tx*.7, p.y + ty*.7);
+                stitch.lineTo(p.x + nx*3.2 - tx*1.4, p.y + ny*3.2 - ty*1.4);
+                stitch.strokeStyle = '#b43c32';stitch.lineWidth = 1.8;stitch.stroke();
+            }
+        }
+        stitch.restore();seams.refresh();
+
+        const shadow = this.textures.createCanvas('ball-shadow', 64, 32), shade = shadow.getContext();
+        shade.scale(1, .5);
+        const fade = shade.createRadialGradient(32, 32, 2, 32, 32, 30);
+        fade.addColorStop(0, 'rgba(0,0,0,.4)');fade.addColorStop(1, 'rgba(0,0,0,0)');
+        shade.fillStyle = fade;shade.fillRect(0, 0, 64, 64);shadow.refresh();
     }
 
     makeBall() {
         this.ensureBallTexture();
         const c = this.add.container(FIELD.MOUND.x, FIELD.MOUND.y).setDepth(8);
-        const shadow = this.add.ellipse(2, 5, 12, 5, 0x000000, 0.4);
-        const body = this.add.image(0, 0, 'ball-tex').setDisplaySize(15, 15);
+        // The rig's hands are roughly 2-3 world pixels wide at BB2_DISPLAY.
+        // Include the texture's transparent margin when matching that scale.
+        const diameter = 3;
+        const shadow = this.add.image(.5, 1.5, 'ball-shadow').setDisplaySize(3.5, 1.75);
+        const body = this.add.image(0, 0, 'ball-tex').setDisplaySize(diameter, diameter);
+        const seams = this.add.image(0, 0, 'ball-seams').setDisplaySize(diameter, diameter);
         // Spin only while in motion — resumed by ballArc/the pitch, paused
         // the moment the ball settles in a glove
-        c.spin = this.tweens.add({ targets: body, angle: 360, duration: 800, repeat: -1, ease: 'Linear', paused: true });
+        c.spin = this.tweens.add({ targets: seams, angle: 360, duration: 800, repeat: -1, ease: 'Linear', paused: true });
         // Glow ring shown while the pitch is live (red → green sweet spot)
         const glow = this.add.circle(0, 0, 12).setStrokeStyle(3.5, 0xffe14d, 1).setVisible(false);
-        c.add([shadow, body, glow]);
+        c.add([shadow, body, seams, glow]);
+        c.body = body;
+        c.seams = seams;
         c.glow = glow;
         c.setVisible(false);
         return c;
@@ -378,7 +328,7 @@ class GameScene extends Phaser.Scene {
     // camera zoom in Phaser, so while zoomed the meter + instruction line are
     // remapped into the visible world rect, and the HUD takes a breather.
     setBattingCamera(on) {
-        if (this._battingCam === !!on) return;
+        if (on && this._battingCam) return;
         this._battingCam = !!on;
         const z = 1.9, cx = 492, cy = 462;
         const hud = this.hudAll || [];
@@ -392,13 +342,7 @@ class GameScene extends Phaser.Scene {
             });
             hud.forEach(o => o.setVisible(false));
         } else {
-            this._zoomOut(380);
-            [this.meter, this.powerMeter].forEach(c => {
-                c.setScrollFactor(0);
-                c.setScale(1);
-                c.setPosition(0, 0);
-            });
-            hud.forEach(o => o.setVisible(true));
+            this.resetFieldCamera();
         }
     }
 
@@ -494,7 +438,7 @@ class GameScene extends Phaser.Scene {
     makePlayer(colorObj, label, posKey) {
         if (typeof bb2MakePlayer === 'function') {
             const sprite = bb2MakePlayer(this, colorObj, label, posKey || label);
-            if (sprite) return sprite;
+            if (sprite) return this.playerMotion().register(sprite);
         }
         const c = this.add.container(0, 0).setDepth(3);
         const shadow = this.add.ellipse(3, 7, 34, 11, 0x000000, 0.52);
@@ -513,7 +457,7 @@ class GameScene extends Phaser.Scene {
             delay: Phaser.Math.Between(0, 600),
             yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
         });
-        return c;
+        return this.playerMotion().register(c);
     }
 
     isPlayerBatting() {
@@ -528,9 +472,19 @@ class GameScene extends Phaser.Scene {
 
     // Build the defense + batter. With fromDugout=true, everyone spawns at
     // their team's dugout and jogs out to their spot (game start / half swap).
-    createTeams(fromDugout) {
-        if (this.fielders) Object.values(this.fielders).forEach(p => { this.tweens.killTweensOf(p); p.destroy(); });
-        if (this.batter) { this.tweens.killTweensOf(this.batter); this.batter.destroy(); }
+    createTeams(fromDugout, onReady) {
+        const entry = fromDugout ? {remaining: Object.keys(FIELD.FIELDER_HOMES).length + 1} : null;
+        this._teamEntry = entry;
+        const arrived = () => {
+            if (this._teamEntry !== entry || !entry || --entry.remaining > 0) return;
+            this._teamEntry = null;
+            if (onReady) onReady();
+        };
+        this._lineupBusy = false;
+        if (this._departingPlayers) for (const p of this._departingPlayers) { this.stopPlayerMovement(p);p.destroy(); }
+        this._departingPlayers = new Set();
+        if (this.fielders) Object.values(this.fielders).forEach(p => { this.stopPlayerMovement(p); p.destroy(); });
+        if (this.batter) { this.stopPlayerMovement(this.batter); this.batter.destroy(); }
 
         const fieldingIsPlayer = !this.isPlayerBatting();
         const fieldDug = fieldingIsPlayer ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
@@ -538,27 +492,40 @@ class GameScene extends Phaser.Scene {
 
         this.fielders = {};
         const fc = this.fieldingColor();
-        Object.keys(FIELD.FIELDER_HOMES).forEach((pos, i) => {
+        const positions = Object.keys(FIELD.FIELDER_HOMES).sort((a,b) => {
+            const pa=FIELD.FIELDER_HOMES[a],pb=FIELD.FIELDER_HOMES[b];
+            return Math.hypot(pb.x-fieldDug.x,pb.y-fieldDug.y)-Math.hypot(pa.x-fieldDug.x,pa.y-fieldDug.y);
+        });
+        positions.forEach((pos, i) => {
             const home = FIELD.FIELDER_HOMES[pos];
             const p = this.makePlayer(fc, pos);
+            p._fieldPosition = pos;
             if (fromDugout) {
-                p.setPosition(fieldDug.x, fieldDug.y);
-                this.time.delayedCall(i * 70, () => this.jog(p, home.x, home.y, 950, 'Sine.easeOut'));
+                // One spaced queue; distant positions depart first so close
+                // fielders do not park across their teammates' running lanes.
+                p.setPosition(fieldDug.x+(fieldDug.x<0?-1:1)*i*28,fieldDug.y+(pos==='C'?84:0));
+                this.time.delayedCall(i*180,() => {
+                    if (p.active && this._teamEntry === entry) this.travelDugout(p,fieldDug,home,pos,true,125,arrived);
+                });
             } else {
                 p.setPosition(home.x, home.y);
             }
             this.fielders[pos] = p;
         });
 
-        this.createBatter(fromDugout ? batDug : null);
+        this.createBatter(fromDugout ? batDug : null, fromDugout ? arrived : null);
+        if (!fromDugout && onReady) onReady();
     }
 
     // Build (or rebuild) the batter with a fresh bat. Pass a dugout point to
     // have him jog in from there — used at half-inning swaps AND whenever the
     // previous batter took off running (the next batter steps in).
-    createBatter(fromPoint) {
-        if (this.bat && this.bat.active) { this.tweens.killTweensOf(this.bat); this.bat.destroy(); }
-        if (this.batter && this.batter.active) { this.tweens.killTweensOf(this.batter); this.batter.destroy(); }
+    createBatter(fromPoint, onReady) {
+        // Both hitters enter from the dugout; finish setup only after each arrives.
+        let remaining = 2;
+        const arrived = () => { if (--remaining === 0 && onReady) onReady(); };
+        if (this.bat && this.bat.active) { this.stopPlayerMovement(this.bat); this.bat.destroy(); }
+        if (this.batter && this.batter.active) { this.stopPlayerMovement(this.batter); this.batter.destroy(); }
         this._batterRunning = false;
 
         const bc = this.battingColor();
@@ -576,37 +543,41 @@ class GameScene extends Phaser.Scene {
         }
         if (fromPoint) {
             this.batter.setPosition(fromPoint.x, fromPoint.y);
-            this.time.delayedCall(200, () => this.jog(this.batter, FIELD.BATTER_BOX.x, FIELD.BATTER_BOX.y, 950, 'Sine.easeOut'));
+            const batter = this.batter;
+            this.time.delayedCall(200, () => {
+                if (batter.active) this.travelDugout(batter,fromPoint,FIELD.BATTER_BOX,'B',true,85,arrived,'walk');
+            });
         } else {
             this.batter.setPosition(FIELD.BATTER_BOX.x, FIELD.BATTER_BOX.y);
         }
-        this.updateOnDeckBatter();
+        this.updateOnDeckBatter(!!fromPoint, fromPoint ? arrived : null);
     }
 
-    // Fills the on-deck circle nearest the batting team's dugout with a
-    // stance-looping sprite. Pure atmosphere — this game has no roster, so
-    // it is not literally "the next hitter", just a body standing there.
-    // Only ever built from the sprite path: two overlapping v1-style number
-    // circles at this small a scale would read as a duplication bug, not a
-    // background detail, so the circle fallback simply shows nothing here.
-    updateOnDeckBatter() {
+    // The waiting hitter is promoted into the box after a plate appearance.
+    updateOnDeckBatter(walkIn = false, onReady) {
         this.clearOnDeckBatter();
         const sprite = this.makePlayer(this.battingColor(), '', 'B');
         if (!sprite._bb2) {
             // Circle fallback has an infinite breathing tween on its
             // children (see makePlayer()) — kill it before destroying, the
             // same as every other teardown site in this file does.
-            this.tweens.killTweensOf(sprite.list);
+            this.stopPlayerMovement(sprite.list);
             sprite.destroy();
+            if (onReady) onReady();
             return;
         }
         const x = this.isPlayerBatting() ? FIELD.HOME.x - 155 : FIELD.HOME.x + 155;
-        sprite.setPosition(x, FIELD.HOME.y + 28).setScale(0.75);
+        sprite._onDeck = true;
+        const dug = this.isPlayerBatting() ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
+        sprite.setPosition(walkIn ? dug.x : x, walkIn ? dug.y+32 : FIELD.HOME.y+28);
+        sprite.idleAnim();
         this.onDeckBatter = sprite;
+        if (walkIn) this.travelDugout(sprite,dug,{x,y:FIELD.HOME.y+28},'on_deck',true,80,onReady,'walk');
+        else if (onReady) onReady();
     }
 
     clearOnDeckBatter() {
-        if (this.onDeckBatter && this.onDeckBatter.active) this.onDeckBatter.destroy();
+        if (this.onDeckBatter && this.onDeckBatter.active) { this.stopPlayerMovement(this.onDeckBatter);this.onDeckBatter.destroy(); }
         this.onDeckBatter = null;
     }
 
@@ -615,9 +586,10 @@ class GameScene extends Phaser.Scene {
     batterTakesOff() {
         if (this._batterRunning) return this.batter;
         this._batterRunning = true;
+        if (this.batter) this.batter._baseRunner = true;
         this.bb2Anim(this.batter, 'take_off');
         if (this.bat && this.bat.active) {
-            this.tweens.killTweensOf(this.bat);
+            this.stopPlayerMovement(this.bat);
             // Re-anchor the bat to the world at its current spot, then let it
             // drop to the ground and fade
             const wx = this.batter.x + this.bat.x, wy = this.batter.y + this.bat.y;
@@ -634,66 +606,187 @@ class GameScene extends Phaser.Scene {
 
     // The next batter steps in from the dugout side — unless that was the
     // third out, in which case nobody steps in (the sides are swapping)
-    resetBatter() {
-        if (!this._batterRunning) return;
+    resetBatter(outcome) {
+        if (['Ball','Strike','Foul','Steal','Caught Stealing'].includes(outcome)) return;
+        if (this._swingRevertCall) { this._swingRevertCall.remove(false);this._swingRevertCall = null; }
         if (this.gs.outs >= GAME_CONSTANTS.GAME_RULES.MAX_OUTS || this.gs.gameOver) {
+            this.departPlayer(this.batter);
+            this.departPlayer(this.onDeckBatter);
             this._batterRunning = false;
-            if (this.bat && this.bat.active) { this.tweens.killTweensOf(this.bat); this.bat.destroy(); this.bat = null; }
-            if (this.batter && this.batter.active) { this.tweens.killTweensOf(this.batter); this.batter.destroy(); }
-            this.batter = null;
-            this.clearOnDeckBatter();
+            this.batter = null;this.onDeckBatter = null;this.bat = null;
             return;
         }
         const dug = this.isPlayerBatting() ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
-        const stepIn = {
-            x: Phaser.Math.Linear(FIELD.BATTER_BOX.x, dug.x, 0.35),
-            y: Phaser.Math.Linear(FIELD.BATTER_BOX.y, dug.y, 0.35)
-        };
-        this.createBatter(stepIn);
-    }
-
-    // Between half-innings the sides trade places: the old defense walks off
-    // to its dugout while the new defense runs out from theirs.
-    swapSides(cb) {
-        // gs.half has already flipped, so the OLD defense is the NEW batting team
-        const newBattingIsPlayer = this.isPlayerBatting();
-        const outFieldersDug = newBattingIsPlayer ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
-        const outBatterDug = newBattingIsPlayer ? FIELD.DUGOUT.cpu : FIELD.DUGOUT.player;
-
-        Object.values(this.fielders).forEach((f, i) => {
-            this.tweens.killTweensOf(f);
-            this.time.delayedCall(i * 70, () => this.jog(f, outFieldersDug.x, outFieldersDug.y, 950, 'Sine.easeIn'));
-        });
-        if (this.batter && this.batter.active) {
-            this.tweens.killTweensOf(this.batter);
-            this.jog(this.batter, outBatterDug.x, outBatterDug.y, 950, 'Sine.easeIn');
+        const previous = this.batter, next = this.onDeckBatter;
+        if (!next || !next.active) {
+            if (!Object.values(this.runnerDots || {}).includes(previous)) this.departPlayer(previous);
+            this.batter = null;this.createBatter(dug);return;
         }
+        // A safe batter becomes the persistent runner at the bag. An out or
+        // scoring batter leaves from his current position, without replacement.
+        if (previous && previous.active && !Object.values(this.runnerDots || {}).includes(previous)) {
+            this.departPlayer(previous);
+        }
+        this.batter = next;this.onDeckBatter = null;this.bat = null;
+        next._onDeck = false;next._baseRunner = false;this._batterRunning = false;
+        if (next._label) next._label.setText('B');
+        this._lineupBusy = true;
+        this.jog(next,FIELD.BATTER_BOX.x,FIELD.BATTER_BOX.y,
+            Math.hypot(next.x-FIELD.BATTER_BOX.x,next.y-FIELD.BATTER_BOX.y)/65*1000/1.5,'Linear',()=>{
+                next.setAnim('stance',true);this._lineupBusy = false;
+            },'walk');
+        this.updateOnDeckBatter(true);
+    }
 
-        // Once the field is clear, the new defense takes it
-        this.time.delayedCall(2200, () => {
-            this.createTeams(true);
-            this.time.delayedCall(1450, cb);
+    departPlayer(p) {
+        if (!p || !p.active || p._leavingField) return;
+        p._leavingField = true;
+        p._exitDug = p._exitDug || (this.isPlayerBatting() ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu);
+        this._departingPlayers = this._departingPlayers || new Set();
+        this._departingPlayers.add(p);
+        this.stopPlayerMovement(p);
+        if (!p._baseRunner) p._onDeck = true;
+        if (p._label) p._label.setText('');
+        const slot = (this._exitSlot = (this._exitSlot || 0) + 1) % 9;
+        const dug = p._exitDug;
+        const exit={x:dug.x+(dug.x<0?-1:1)*(slot%3)*24,y:dug.y+(p._baseRunner?140:0)+Math.floor(slot/3)*24};
+        this.travelDugout(p,exit,{x:p.x,y:p.y},p._baseRunner?'runner':'B',false,p._baseRunner?110:85,() => {
+            this._departingPlayers.delete(p);p.destroy();
+        },p._baseRunner?'run':'walk');
+    }
+
+    // Travel time follows distance: outfielders need longer than infielders.
+    // Arrival callbacks, rather than a timer, decide when the next team enters.
+    swapSides(cb) {
+        if (this._sidesChanging) return;
+        this._sidesChanging = true;
+        this.setMenu(null);
+        const newBattingIsPlayer = this.isPlayerBatting();
+        const fieldDug = newBattingIsPlayer ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
+        const batDug = newBattingIsPlayer ? FIELD.DUGOUT.cpu : FIELD.DUGOUT.player;
+        const outgoing = Object.values(this.fielders).sort((a,b)=>Math.hypot(a.x-fieldDug.x,a.y-fieldDug.y)-Math.hypot(b.x-fieldDug.x,b.y-fieldDug.y)).map((p,i) => ({p,dug:fieldDug,slot:i,speed:125,gait:'run',role:p._fieldPosition}));
+        const hitters = new Set([this.batter,this.onDeckBatter,...(this._departingPlayers || [])]);
+        let slot = 0;
+        for (const p of hitters) if (p && p.active) outgoing.push({p,dug:p._exitDug || batDug,slot:slot++,speed:p._baseRunner?110:85,gait:p._baseRunner?'run':'walk',role:p._baseRunner?'runner':p._onDeck?'on_deck':'B'});
+        const active = outgoing.filter(({p}) => p && p.active);
+        let remaining = active.length;
+        const enter = () => this.createTeams(true, () => {
+            this._sidesChanging = false;
+            if (cb) cb();
+        });
+        if (!remaining) { enter();return; }
+        active.forEach(({p,dug,slot,speed,gait,role},i) => {
+            this.stopPlayerMovement(p);
+            this.time.delayedCall(i * 180, () => {
+                const arrived = () => {
+                    if (this._departingPlayers) this._departingPlayers.delete(p);
+                    p.destroy();
+                    if (--remaining === 0) enter();
+                };
+                if (!p.active) { arrived();return; }
+                const exit={x:dug.x+(dug.x<0?-1:1)*(slot%3)*24,y:dug.y+(p._baseRunner?140:0)+Math.floor(slot/3)*24};
+                this.travelDugout(p,exit,{x:p.x,y:p.y},role,false,speed,arrived,gait);
+            });
         });
     }
 
-    // Runner dots shown on occupied bases (batting team color)
-    syncRunners() {
-        ['first', 'second', 'third'].forEach(key => {
-            if (this.runnerDots[key]) { this.runnerDots[key].destroy(); this.runnerDots[key] = null; }
-            const occupant = this.gs.bases[key];
-            if (occupant) {
-                const col = occupant === 'user' ? TEAM_COLORS.player : TEAM_COLORS.cpu;
-                const dot = this.makePlayer(col, 'R');
-                const b = BASE_COORDS[key];
-                dot.setPosition(b.x + 16, b.y - 14);
-                dot.setScale(0.8);
-                this.runnerDots[key] = dot;
+    travelDugout(p,dug,home,role,entering,speed,cb,gait='run') {
+        const left=dug.x<0,side=left?180:820;
+        let guides=[];
+        if (role==='C') {
+            // Catcher goes behind home plate, clear of the batter and mound.
+            guides=[{x:side,y:590},{x:500,y:590}];
+        } else if (['LF','CF','RF'].includes(role)) {
+            const across=left?(home.x-260)/480:(740-home.x)/480;
+            guides=[{x:left?140:860,y:310-60*Phaser.Math.Clamp(across,0,1)}];
+        } else if (role==='on_deck') guides=[{x:side,y:565}];
+        else if (role==='B') guides=[{x:side,y:510}];
+        else if (role==='runner' && !entering) {
+            // Retired runners peel into foul territory, rather than cut
+            // through the mound and players waiting on the infield.
+            guides=[{x:side,y:600},{x:home.x>520?720:home.x<480?280:left?280:720,y:600}];
+        }
+        const points=entering?[...guides,home]:[...guides.reverse(),dug];
+        this.followTransitionPath(p,points,speed,cb,gait);
+    }
+
+    followTransitionPath(p,points,speed,cb,gait) {
+        // Round guide corners while retaining collision checks on every leg.
+        const path=[{x:p.x,y:p.y},...points],smooth=[];
+        for(let i=1;i<path.length-1;i++) {
+            const a=path[i-1],b=path[i],c=path[i+1];
+            const ab=Math.hypot(b.x-a.x,b.y-a.y),bc=Math.hypot(c.x-b.x,c.y-b.y);
+            const cut=Math.min(30,ab*.25,bc*.25);
+            if(cut<1){smooth.push(b);continue;}
+            const before={x:b.x+(a.x-b.x)*cut/ab,y:b.y+(a.y-b.y)*cut/ab};
+            const after={x:b.x+(c.x-b.x)*cut/bc,y:b.y+(c.y-b.y)*cut/bc};
+            smooth.push(before);
+            for(let j=1;j<=5;j++) {
+                const t=j/5,u=1-t;
+                smooth.push({x:u*u*before.x+2*u*t*b.x+t*t*after.x,y:u*u*before.y+2*u*t*b.y+t*t*after.y});
             }
-        });
+        }
+        smooth.push(path[path.length-1]);
+        p._transitionPath=smooth;
+        let i=0;
+        const next=()=>{
+            if(!p.active)return;
+            if(i===smooth.length){p._transitionPath=null;if(cb)cb();return;}
+            const point=smooth[i++];this.jogToPosition(p,point.x,point.y,speed,next,gait);
+        };
+        next();
+    }
+
+    jogToPosition(p, x, y, speed, cb, gait = 'run') {
+        const duration = Math.hypot(x-p.x,y-p.y) / speed * 1000;
+        return this.jog(p,x,y,duration/1.5,'Linear',cb,gait);
+    }
+
+    // Reconcile game-state bases with the actors that actually ran there.
+    // Retain identity and position; nobody is deleted/recreated at a base.
+    syncRunners() {
+        const old = this.runnerDots || {};
+        const candidates = new Set(this._settledRunners || []);
+        for (const [key,p] of Object.entries(old)) if (p && p.active) {
+            if (!p._runnerBase) p._runnerBase = key;
+            candidates.add(p);
+        }
+        if (this._batterRunning && this.batter) candidates.add(this.batter);
+        this.runnerDots = {first:null,second:null,third:null};
+        const inningOver = this.gs.outs >= GAME_CONSTANTS.GAME_RULES.MAX_OUTS || this.gs.gameOver;
+        for (const key of ['first','second','third']) {
+            const occupant = !inningOver && this.gs.bases[key];
+            if (!occupant) continue;
+            let runner = [...candidates].find(p => p && p.active && !p._leavingField && !p._runnerOut && p._runnerBase === key);
+            const base = BASE_COORDS[key];
+            if (!runner) {
+                // Saved games may start with occupied bases but no live actor.
+                const col = occupant === 'user' ? TEAM_COLORS.player : TEAM_COLORS.cpu;
+                runner = this.makePlayer(col,'R');
+                const dug = occupant === 'user' ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
+                runner.setPosition(dug.x,dug.y+72+['first','second','third'].indexOf(key)*24);
+            }
+            candidates.delete(runner);
+            runner._baseRunner = true;runner._onDeck = false;runner._runnerBase = key;
+            if (runner._label) runner._label.setText('R');
+            this.runnerDots[key] = runner;
+            if (Math.hypot(runner.x-base.x-16,runner.y-base.y+14)>.5) {
+                this.jogToPosition(runner,base.x+16,base.y-14,95,null,'run');
+            } else this.stopBob(runner);
+        }
+        for (const runner of candidates) {
+            if (runner && runner.active && !runner._leavingField && !runner._runnerOut && !inningOver && runner._runnerBase === 'home') {
+                // A scoring runner still finishes crossing home before exiting.
+                this._departingPlayers = this._departingPlayers || new Set();
+                this._departingPlayers.add(runner);
+                runner._exitDug = this.isPlayerBatting() ? FIELD.DUGOUT.player : FIELD.DUGOUT.cpu;
+                this.jogToPosition(runner,FIELD.HOME.x+16,FIELD.HOME.y-14,95,()=>this.departPlayer(runner));
+            } else this.departPlayer(runner);
+        }
+        this._settledRunners = null;
         this.updateHUD();
     }
 
-    // ─── Animation helpers (ported patterns from football) ──────────────────
     startBob(p) {
         if (p && p._bb2) { p.runAnim(); return; }
         if (p._bob) return;
@@ -721,24 +814,15 @@ class GameScene extends Phaser.Scene {
 
     // All player movement is slowed ~50% so the game reads better visually
     // (same rule as the football game)
-    jog(p, x, y, duration, ease, cb) {
+    jog(p, x, y, duration, ease, cb, gait = 'run') {
         if (p && p._bb2) p.faceFrom(x - p.x, y - p.y);
-        this.startBob(p);
-        // A second jog can begin while an earlier one is still running (a
-        // fielder redirected mid-play, or a dugout entry overtaken by the
-        // first play). The OLD tween's onComplete would then fire and stop the
-        // bob / reset the animation on a player who is still moving, leaving a
-        // sprite sliding across the field frozen in its idle pose. Only the
-        // newest jog is allowed to end the movement state.
-        const seq = (p._jogSeq = (p._jogSeq || 0) + 1);
-        return this.tweens.add({
-            targets: p, x, y, duration: duration * 1.5, ease: ease || 'Sine.easeInOut',
-            onUpdate: () => { if (p && p._bb2) p.syncDepth(); },
+        if (gait === 'walk' && p.walkAnim) p.walkAnim(); else this.startBob(p);
+        // A redirected player owns just one route. Only an actual arrival
+        // completes this leg and starts any chained fielding action.
+        return this.movePlayer({
+            targets: p, x, y, duration: duration * 1.5, gait,
             onComplete: () => {
-                // Only the newest jog resets the animation, but the callback
-                // ALWAYS fires: animatePlayerContact() chains the rest of the
-                // play off it, so swallowing it would hang the game.
-                if (p._jogSeq === seq) this.stopBob(p);
+                this.stopBob(p);
                 if (cb) cb();
             }
         });
@@ -756,8 +840,75 @@ class GameScene extends Phaser.Scene {
     // nextPlay()/returnBallToPitcher() "is this play still resolving" gate.
     // Alpha snaps back to 1 the next time ballArc()/cpuPitchFlight() sends it
     // anywhere, so callers never need to pair this with an un-hide.
-    hideHeldBall() {
+    hideHeldBall(holder = null) {
         this.ball.setAlpha(0);
+        if (holder) this._ballHolder = holder;
+    }
+
+    defensiveAction(p, name, contact, done, hold = false) {
+        if (p._spr && p.playFieldAction && p.playFieldAction(name, contact, done, hold)) return;
+        // Circle fallback and non-rendering simulations use the same clip timing.
+        const {clip} = this.fieldingClip(p, name);
+        p._busy = true;this.bb2Anim(p, name);
+        this.time.delayedCall((clip.contactFrame || 0) / clip.rate * 1000, () => {
+            const finish = () => this.time.delayedCall(Math.max(80, ((clip.count || 8) - (clip.contactFrame || 0)) / clip.rate * 1000), () => {
+                p._busy = false;if (p.active && p.idleAnim) p.idleAnim();if (done) done();
+            });
+            if (!hold) finish();
+            if (contact) contact(hold ? finish : () => {});
+        });
+    }
+
+    throwAction(p) {
+        return p === this.fielders.C ? 'rise_throw'
+            : ['LF','CF','RF'].some(pos => this.fielders[pos] === p) ? 'throw_relay' : 'throw';
+    }
+
+    receiveAction(p) {
+        return p === this.fielders.C ? 'receive'
+            : p === this.fielders['1B'] ? 'stretch_catch' : 'receive_at_bag';
+    }
+
+    // Secure -> transfer -> step/throw -> release -> receive -> recover.
+    // Own the ball during the windup too, so a reset cannot steal it early.
+    throwToPlayer(thrower, receiver, options = {}, cb) {
+        const action = this.throwAction(thrower);
+        const receive = this.receiveAction(receiver);
+        this.stopPlayerMovement(thrower);this.stopBob(thrower);
+        if (thrower._spr) thrower._spr.setFlipX(receiver.x < thrower.x - 12);
+        this.hideHeldBall(thrower);this.ball.setVisible(true);
+        this._ballBusy = (this._ballBusy || 0) + 1;
+        this.defensiveAction(thrower, action, () => {
+            const from = thrower.ballPoint ? thrower.ballPoint('hand') : {x:thrower.x,y:thrower.y-14};
+            const target = () => receiver.actionPoint ? receiver.actionPoint(receive,'glove') : {x:receiver.x,y:receiver.y-12};
+            const to = target();
+            const requested = typeof options.duration === 'function' ? options.duration(from,to)
+                : options.duration || Math.max(360, Math.hypot(to.x-from.x,to.y-from.y)/.5);
+            const {clip} = this.fieldingClip(receiver, receive);
+            // Short relays are soft tosses: allow the glove to open before arrival.
+            const duration = Math.max(requested, (clip.contactFrame || 0)/clip.rate*1000 + 120);
+            let landed = false, gloveReady = false, resumeReceive = null, caught = false;
+            const settle = () => {
+                if (!landed || !gloveReady || caught) return;
+                caught = true;
+                const glove = receiver.ballPoint ? receiver.ballPoint('glove') : target();
+                this.ball.setPosition(glove.x,glove.y);this.hideHeldBall(receiver);
+                this.audio.play('catch');this.releaseBall();resumeReceive();
+                if (cb) cb();
+            };
+            this.time.delayedCall(Math.max(0, duration - (clip.contactFrame || 0)/clip.rate*1000 - 100), () => {
+                this.stopPlayerMovement(receiver);this.stopBob(receiver);
+                if (receiver._spr) receiver._spr.setFlipX(thrower.x < receiver.x - 12);
+                this.defensiveAction(receiver, receive, resume => {
+                    resumeReceive = resume;gloveReady = true;settle();
+                }, options.onReceiveDone, true);
+            });
+            this.audio.play('throw');
+            this.ballArc(from, target, duration, options.arc == null ? 28 : options.arc, () => {
+                landed = true;settle();
+            });
+            if (options.onRelease) options.onRelease(duration);
+        });
     }
 
     // Spin control that can never crash even if the tween was killed
@@ -789,10 +940,11 @@ class GameScene extends Phaser.Scene {
     // CPU pitch flight with v1's per-type speed and movement. Returns the
     // flight duration so the batter's swing can be timed to it.
     cpuPitchFlight(pitchType, cb) {
-        const from = FIELD.MOUND, to = { x: FIELD.HOME.x, y: FIELD.HOME.y - 6 };
+        const from = this.pitchReleasePoint(), to = this.swingContactPoint('normal');
         const durations = { Fastball: 600, Changeup: 900, Curveball: 800, Slider: 700, Knuckleball: 1000 };
         const duration = durations[pitchType] || 700;
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
+        this._ballHolder = null;
         this.ball.setVisible(true).setAlpha(1);
         this.ball.setPosition(from.x, from.y);
         this.setBallSpin(true);
@@ -809,8 +961,9 @@ class GameScene extends Phaser.Scene {
             targets: proxy, t: 1, duration, ease: 'Linear',
             onUpdate: () => {
                 const off = this.pitchOffset(pitchType, proxy.t);
-                this.ball.x = Phaser.Math.Linear(from.x, to.x, proxy.t) + off.dx;
-                this.ball.y = Phaser.Math.Linear(from.y, to.y, proxy.t) - Math.sin(Math.PI * proxy.t) * 10 + off.dy;
+                const bend = Math.sin(Math.PI * proxy.t);
+                this.ball.x = Phaser.Math.Linear(from.x, to.x, proxy.t) + off.dx*bend;
+                this.ball.y = Phaser.Math.Linear(from.y, to.y, proxy.t) - bend*10 + off.dy*bend;
             },
             onStop: settle,
             onComplete: () => { settle(); if (cb) cb(); }
@@ -824,6 +977,7 @@ class GameScene extends Phaser.Scene {
     // end-of-play toss to the pitcher) can grab it mid-flight.
     ballArc(from, to, duration, arcHeight, cb) {
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
+        this._ballHolder = null;
         this.ball.setVisible(true).setAlpha(1);
         this.ball.setPosition(from.x, from.y);
         this.setBallSpin(true);
@@ -840,8 +994,9 @@ class GameScene extends Phaser.Scene {
             targets: proxy, t: 1, duration, ease: 'Linear',
             onUpdate: () => {
                 const t = proxy.t;
-                this.ball.x = Phaser.Math.Linear(from.x, to.x, t);
-                this.ball.y = Phaser.Math.Linear(from.y, to.y, t) - Math.sin(Math.PI * t) * arcHeight;
+                const end = typeof to === 'function' ? to() : to;
+                this.ball.x = Phaser.Math.Linear(from.x, end.x, t);
+                this.ball.y = Phaser.Math.Linear(from.y, end.y, t) - Math.sin(Math.PI * t) * arcHeight;
             },
             onStop: settle,
             onComplete: () => { settle(); if (cb) cb(); }
@@ -851,15 +1006,37 @@ class GameScene extends Phaser.Scene {
 
     // Camera helpers — ported verbatim in behavior from football's game.js
     _zoomOnPoint(wx, wy, zoom, duration) {
-        const cam = this.cameras.main;
-        cam.pan(wx, wy, duration, 'Sine.easeOut', true);
-        cam.zoomTo(zoom, duration, 'Sine.easeOut');
+        this._viewRequest = {x:wx,y:wy,zoom};
+        // Match the batting close-up: give fielding action the full view,
+        // instead of magnifying screen-pinned scores over the receiver.
+        (this.hudAll || []).forEach(o => o.setVisible(zoom === 1 && !this._battingCam));
+        const cam = this.cameras.main, scale = this._renderScale || 1;
+        if (this._cameraMove) this._cameraMove.stop();
+        this._cameraMove = null;
+        const targetX = Math.max(0, Math.min(W-W/zoom, wx-W/(2*zoom)));
+        const targetY = Math.max(0, Math.min(H-H/zoom, wy-H/(2*zoom)));
+        if (duration === 0) {
+            cam.setScroll(targetX, targetY).setZoom(zoom * scale);
+            return;
+        }
+        this._cameraMove = this.tweens.add({targets:cam,scrollX:targetX,scrollY:targetY,zoom:zoom*scale,
+            duration, ease:'Sine.easeOut'});
     }
 
-    _zoomOut(duration) {
-        const cam = this.cameras.main;
-        cam.pan(W / 2, H / 2, duration || 340, 'Sine.easeOut', true);
-        cam.zoomTo(1, duration || 340, 'Sine.easeOut', true);
+    _zoomOut(duration = 340) {
+        this._zoomOnPoint(W/2,H/2,1,duration);
+    }
+
+    resetFieldCamera(duration = 380) {
+        // Fielding and base-selection close-ups can be active even when the
+        // batting camera flag is off. Reset the actual view and all pinned UI.
+        this._battingCam = false;
+        this._zoomOut(duration);
+        [this.meter, this.powerMeter].filter(Boolean).forEach(c => {
+            c.setScrollFactor(0);
+            c.setScale(1);
+            c.setPosition(0, 0);
+        });
     }
 
     // ─── HUD — replicated 1:1 from the ORIGINAL game's scoreboard ──────────
@@ -879,11 +1056,15 @@ class GameScene extends Phaser.Scene {
 
         this.scoreBg = add(this.add.graphics().setDepth(50).setScrollFactor(0));
         const scoreStyle = {
-            fontSize: '88px', fontFamily: 'Courier New', fontStyle: 'bold',
-            stroke: '#000000', strokeThickness: 5
+            fontSize: '42px', fontFamily: 'Arial', fontStyle: 'bold', color: '#ffffff',
+            stroke: '#10252b', strokeThickness: 2
         };
-        this.scoreAwayTxt = add(this.add.text(W * 0.2, 106, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
-        this.scoreHomeTxt = add(this.add.text(W * 0.8, 106, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
+        this.scoreAwayTxt = add(this.add.text(172, 54, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
+        this.scoreHomeTxt = add(this.add.text(W-54, 54, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
+
+        const teamStyle = {fontSize:'17px',fontFamily:'Arial',fontStyle:'bold',color:'#f3f5e9'};
+        this.awayLabel = add(this.add.text(38,34,'',teamStyle).setDepth(51).setScrollFactor(0));
+        this.homeLabel = add(this.add.text(W-188,34,'',teamStyle).setDepth(51).setScrollFactor(0));
 
         // Count panel (bottom-right, v1 dimensions 120x80)
         this.hudGfx = add(this.add.graphics().setDepth(50).setScrollFactor(0));
@@ -895,11 +1076,22 @@ class GameScene extends Phaser.Scene {
             fontSize: '12px', fontFamily: 'Courier New', fontStyle: 'bold', color: '#ffffff'
         }).setOrigin(0.5).setDepth(51).setScrollFactor(0));
 
-        // Big-message text for play results
-        this.msgText = this.add.text(W / 2, H * 0.36, '', {
+        // Keep result messages centered at a fixed screen size. Scroll factor
+        // alone does not cancel camera zoom; compensate on the parent so the
+        // text's pop-in animation can keep using its own scale.
+        this.messageOverlay = this.add.container(0, 0).setDepth(60).setScrollFactor(0);
+        this.msgText = this.add.text(W / 2, H / 2, '', {
             fontSize: '52px', fontFamily: 'Arial Black', color: '#ffe14d',
             stroke: '#000', strokeThickness: 8
         }).setOrigin(0.5).setDepth(60).setScrollFactor(0).setVisible(false);
+        this.messageOverlay.add(this.msgText);
+        this.events.on('prerender', this.layoutMessageOverlay, this);
+        this.events.once('shutdown', () => {
+            this.events.off('prerender', this.layoutMessageOverlay, this);
+            if(this._menuLayout)this.events.off('prerender',this._menuLayout);
+            this.resetInteractiveBatting();
+        });
+        this.layoutMessageOverlay();
 
         this.updateHUD();
     }
@@ -917,14 +1109,16 @@ class GameScene extends Phaser.Scene {
         const barW = this.topText.width + 40;
         tb.fillRect(W / 2 - barW / 2, 14, barW, 36);
 
-        // Gray score blocks + team-colored numbers (v1 style, no labels)
+        // Compact score cards leave the corner outfielders unobstructed.
         const bg = this.scoreBg;
-        bg.clear();
-        bg.fillStyle(0x808080, 0.7);
-        bg.fillRect(W * 0.2 - 78, 52, 156, 108);
-        bg.fillRect(W * 0.8 - 78, 52, 156, 108);
-        this.scoreAwayTxt.setText(String(gs.score.Red)).setColor(getColorByName(awayName).textCss);
-        this.scoreHomeTxt.setText(String(gs.score.Blue)).setColor(getColorByName(homeName).textCss);
+        bg.clear();bg.fillStyle(0x10252b, 0.94);
+        bg.fillRoundedRect(24,24,184,62,8);bg.fillRoundedRect(W-208,24,184,62,8);
+        bg.fillStyle(getColorByName(awayName).hex,1);bg.fillRect(24,34,4,42);
+        bg.fillStyle(getColorByName(homeName).hex,1);bg.fillRect(W-208,34,4,42);
+        this.awayLabel.setText('AWAY\n'+awayName.toUpperCase());
+        this.homeLabel.setText('HOME\n'+homeName.toUpperCase());
+        this.scoreAwayTxt.setText(String(gs.score.Red));
+        this.scoreHomeTxt.setText(String(gs.score.Blue));
 
         // Count panel — v1's exact drawing and offsets
         const g = this.hudGfx;
@@ -958,12 +1152,26 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    layoutMessageOverlay() {
+        this.messageOverlay.setScale((this._renderScale || 1) / this.cameras.main.zoom);
+    }
+
+    showPitchCall(outcome) {
+        const labels = {Ball:'BALL',Strike:'STRIKE',Foul:'FOUL BALL',
+            Walk:'BALL FOUR - WALK','Strike Out':'STRIKE OUT','Hit By Pitch':'HIT BY PITCH'};
+        const label=labels[outcome];
+        if (!label) return;
+        this.bigMessage(label,2200);
+    }
+
     bigMessage(text, ms, cb) {
-        this.msgText.setText(text).setVisible(true).setScale(0.4).setAlpha(1);
+        if (this._messageHideCall) this._messageHideCall.remove(false);
+        this.tweens.killTweensOf(this.msgText);
+        this.msgText.setAlign('center').setText(text).setVisible(true).setScale(0.4).setAlpha(1);
         this.tweens.add({
             targets: this.msgText, scale: 1, duration: 240, ease: 'Back.easeOut'
         });
-        this.time.delayedCall(ms || 1400, () => {
+        this._messageHideCall = this.time.delayedCall(ms || 1400, () => {
             this.tweens.add({
                 targets: this.msgText, alpha: 0, duration: 260,
                 onComplete: () => { this.msgText.setVisible(false); if (cb) cb(); }
@@ -998,11 +1206,25 @@ class GameScene extends Phaser.Scene {
         if (this.menu) { this.menu.destroy(); }
         this.menu = menu;
         if (menu) menu.setScrollFactor(0);
+        if (this._menuLayout) this.events.off('prerender', this._menuLayout);
+        this._menuLayout = null;
+        if (menu && menu.container) {
+            const zones = (menu.zones || []).map(z => ({z,x:z.x,y:z.y}));
+            this._menuLayout = () => {
+                const factor = (this._renderScale || 1) / this.cameras.main.zoom;
+                menu.container.setScale(factor);
+                for (const {z,x,y} of zones) z.setPosition(x*factor,y*factor).setScale(factor);
+            };
+            this.events.on('prerender', this._menuLayout);
+            this._menuLayout();
+        }
     }
 
     // ─── Game flow ───────────────────────────────────────────────────────────
     nextPlay() {
         if (this.gs.gameOver) return;
+        if (this._lineupBusy || this._teamEntry || this._sidesChanging || Object.values(this.runnerDots || {}).some(p => p && this.playerMotion().moves.has(p))) { this.time.delayedCall(200,()=>this.nextPlay());return; }
+        this.setDefenseReady(false);
         // The ball must be back with the pitcher before the next play can
         // start — no pitching while an outfielder is still holding it or the
         // throw-in is mid-flight.
@@ -1010,6 +1232,9 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(200, () => this.nextPlay());
             return;
         }
+        // Controls must start at full-field scale, even if a previous close-up
+        // or resize interrupted the end-of-play transition.
+        this.resetFieldCamera(0);
         if (this.gs.firstPitch) { this.announceHalfInning(); return; }
         if (this.gs.outs >= GAME_CONSTANTS.GAME_RULES.MAX_OUTS) {
             this.endHalfInning();
@@ -1042,13 +1267,15 @@ class GameScene extends Phaser.Scene {
     }
 
     showBattingMenu() {
+        if (this.ib.awaitingChoice) { this.showSwingChoices(); return; }
+        this.setBattingCamera(false);
         const bases = this.gs.bases;
         // On-field selection, like the throw menu: the BATTER is highlighted
         // for "Ready to Bat" and each stealable BASE gets a big circled
         // highlight (same guards as v1 showStealMenu).
         const targets = [
-            { value: 'bat', label: 'Ready to Bat', chip: 'READY TO BAT',
-              hint: 'Hold the button to charge your swing, let go to swing',
+            { value: 'bat', label: 'Ready to Swing', chip: 'READY TO SWING',
+              hint: bb2BattingMode() === 'pick' ? 'Hear the pitch, then choose your swing when the ball stops' : 'Hold the button to charge your swing, let go to swing',
               fielder: this.batter }
         ];
         if (bases.first && !bases.second) {
@@ -1063,7 +1290,7 @@ class GameScene extends Phaser.Scene {
             hint: 'Game options', fielder: { x: 74, y: H - 46 } });
 
         this.setMenu(new BaseTargetSelector(this, {
-            targets, audio: this.audio, title: 'Batter Up!',
+            targets, audio: this.audio, title: 'Batter Up!', zoomOnScan: true,
             onSelect: (opt) => this.onBattingMenuSelect(opt)
         }));
     }
@@ -1071,9 +1298,137 @@ class GameScene extends Phaser.Scene {
     onBattingMenuSelect(opt) {
         if (opt.value === 'pause') { this.showPauseMenu(() => this.showBattingMenu()); return; }
         this.setMenu(null);
-        if (opt.value === 'bat') { this.beginInteractivePitch(); return; }
+        if (opt.value === 'bat') {
+            if (bb2BattingMode() === 'pick') this.beginChoicePitch();
+            else this.beginInteractivePitch();
+            return;
+        }
         if (opt.value === 'steal2') this.processStealAttempt('second');
         if (opt.value === 'steal3') this.processStealAttempt('third');
+    }
+
+    showSwingChoices() {
+        if (!this.ib.awaitingChoice) return;
+        this.setBattingCamera(true);
+        const choices = [
+            { value: 'normal', label: 'Normal', hint: 'Balanced contact and distance' },
+            { value: 'power', label: 'Power', hint: 'Swing for extra bases, with more risk of a miss' },
+            { value: 'bunt', label: 'Bunt', hint: 'Try a short bunt to advance runners' },
+            { value: 'take', label: 'Take Pitch', hint: 'Let the pitch pass for a ball or called strike' }
+        ];
+        choices.push({ value: 'pause', label: 'Pause', hint: 'Game options and batting style' });
+        // The delivered pitch is frozen at the sweet spot, with no choice deadline.
+        // Compact panel beside home plate, clear of the batter and basepaths.
+        // Keep the shared scanning, speech and pointer behavior unchanged.
+        const menu = new ScanList(this, { x: 700, y: 480,
+            columns: 2, itemW: 112, itemH: 44, gap: 8, fontSize: '16px', audio: this.audio,
+            title: this.gs.selectedPitch + ' · ' + this.gs.selectedPitchLocation,
+            options: choices, onSelect: opt => {
+                if (opt.value === 'pause') { this.showPauseMenu(() => this.showSwingChoices()); return; }
+                this.setMenu(null);
+                this.beginSelectedPitch(opt.value);
+            }
+        });
+        // Pitch information belongs below this small panel, away from the
+        // first baseman above it. The shared widget keeps its default styling.
+        menu.titleTxt.setFontSize('14px').setStroke('#000000', 3)
+            .setWordWrapWidth(232).setAlign('center').setPosition(menu.x, 579);
+        this.setMenu(menu);
+        this.audio.speak('Ball at the sweet spot. Choose your swing, or take the pitch.', true);
+    }
+
+    beginChoicePitch() {
+        if (this.ib.active || this.ib.awaitingChoice) return;
+        this.setMenu(null);
+        this.resetInteractiveBatting();
+        const atBat = this.ib;
+        atBat.active = true;
+        this.hideSwingMeter();
+        this.bb2Anim(this.batter, 'stance');
+        const call = `${this.gs.selectedPitch}, ${this.gs.selectedPitchLocation}.`;
+        this.meterTitle.setText(call).setColor('#ffffff');
+        this.meter.setVisible(true);
+        // The audible call finishes before delivery. TTS-off/error uses the
+        // same completion callback, so speech availability never blocks play.
+        this.audio.speak(call, true, () => {
+            if (this.ib !== atBat || !atBat.active || (this.sys && !this.sys.isActive())) return;
+            this.time.delayedCall(0, () => {
+                if (this.ib !== atBat || !atBat.active) return;
+                this.setBattingCamera(true);
+                this.deliverPitch(650, () => {
+                    if (this.ib !== atBat || !atBat.active) return;
+                    this.audio.play('throw');
+                    this.ballArc(this.pitchReleasePoint(), this.swingContactPoint('normal'), 1300, 12, () => {
+                        if (this.ib !== atBat || !atBat.active) return;
+                        atBat.active = false;
+                        atBat.awaitingChoice = true;
+                        atBat.pitchProgress = .9;
+                        this.setBallSpin(false);
+                        this.hideSwingMeter();
+                        this.ball.glow.setVisible(true).setStrokeStyle(2,0x8be5a2,1).setAlpha(.7);
+                        this.audio.play('swingZone');
+                        this.showSwingChoices();
+                    });
+                });
+            });
+        });
+    }
+
+    beginSelectedPitch(choice) {
+        if (this.ib.active || !this.ib.awaitingChoice || !['bunt','normal','power','take'].includes(choice)) return;
+        this.ib.awaitingChoice = false;
+        this.ib.active = true;
+        this.ib.selectedSwing = choice;
+        this.ib.waitingForSwing = false;
+        this.ib.swingType = choice;
+        this.ib.swingPowerLevel = choice === 'power' ? 0.9 : choice === 'bunt' ? 0.1 : 0.5;
+        this.ib.timingScore = bb2SwingQuality(choice, this.gs.selectedPitch, this.gs.selectedPitchLocation);
+        this.setBattingCamera(true);
+        this.hideSwingMeter();
+        this.bb2Anim(this.batter, choice === 'take' ? 'stance' : 'load_' + choice);
+        this.audio.speak(choice === 'take' ? 'Taking the pitch.' : choice + ' swing.', true);
+        const atBat = this.ib;
+        // Resume this ball; selecting a swing must never deliver a second pitch.
+        this.time.delayedCall(220, () => {
+            if (this.ib !== atBat || !atBat.active) return;
+            const lead = this.swingContactDelay(choice), flight = Math.max(180, lead);
+            const from = {x:this.ball.x,y:this.ball.y}, to = this.swingContactPoint(choice);
+            this.setBallSpin(true);
+            if (choice !== 'take') this.time.delayedCall(flight - lead, () => {
+                if (this.ib !== atBat || !atBat.active) return;
+                atBat.isSwinging = true;
+                this.audio.play('swing');
+                this.animateBatterSwing(choice);
+            });
+            this.ballArc(from, to, flight, 0, () => {
+                if (this.ib !== atBat || !atBat.active) return;
+                atBat.pitchProgress = 0.9;
+                if (choice === 'take') {
+                    this.catchAtPlate(() => {
+                        if (this.ib !== atBat || !atBat.active) return;
+                        this.setBattingCamera(false);this.processNoSwing();
+                    });
+                } else { this.setBattingCamera(false);atBat.swingReleased = true;this.processInteractiveSwingOutcome(); }
+            });
+        });
+    }
+
+    swingContactDelay(type) {
+        const name = type === 'bunt' ? 'bunt' : type === 'power' ? 'swing_power' : 'swing_normal';
+        const clip = BB2_SHEETS['batter-actions'].anims[name];
+        return (clip.contactFrame == null ? 2 : clip.contactFrame) / clip.rate * 1000;
+    }
+
+    swingContactPoint(type) {
+        if (type === 'take') return { x: FIELD.HOME.x, y: FIELD.HOME.y - 9 };
+        const name = type === 'bunt' ? 'bunt' : type === 'power' ? 'swing_power' : 'swing_normal';
+        return this.batter && this.batter.actionPoint ? this.batter.actionPoint(name, 'bat')
+            : { x: FIELD.HOME.x, y: FIELD.HOME.y - 6 };
+    }
+
+    pitchReleasePoint() {
+        const p = this.fielders.P;
+        return p && p.ballPoint ? p.ballPoint('hand') : FIELD.MOUND;
     }
 
     processStealAttempt(targetBase) {
@@ -1081,6 +1436,7 @@ class GameScene extends Phaser.Scene {
         const fromBase = targetBase === 'second' ? 'first' : 'second';
         const success = Math.random() < (targetBase === 'second' ? 0.7 : 0.5);
         const runner = this.runnerDots[fromBase];
+        if (runner) { runner._runnerBase=targetBase;runner._runnerOut=!success;runner._baseRunner=true; }
         const target = BASE_COORDS[targetBase];
 
         this.audio.speak(`He's stealing ${targetBase === 'second' ? 'second' : 'third'}!`);
@@ -1093,7 +1449,8 @@ class GameScene extends Phaser.Scene {
         const coverPos = this.coveringFielder(targetBase, 'C');
         this.jog(this.fielders[coverPos], target.x + 9, target.y + 9, 520);
         const throwPreDelay = 250, throwFlightMs = 620;
-        const ballArriveMs = throwPreDelay + throwFlightMs;
+        const clip = BB2_SHEETS.catcher.anims.rise_throw;
+        const ballArriveMs = throwPreDelay + clip.contactFrame/clip.rate*1000 + throwFlightMs;
         const runnerArriveMs = success ? Math.max(500, ballArriveMs - 200) : ballArriveMs + 260;
         if (runner) {
             // Not routed through jog() — its own onComplete always calls
@@ -1103,13 +1460,13 @@ class GameScene extends Phaser.Scene {
             // to a plain idle. Driving the tween directly here, the same way
             // sendRunner() does for a contested base, keeps this sprite's
             // final pose under this function's control.
-            this.tweens.killTweensOf(runner);
+            this.stopPlayerMovement(runner);
             if (runner._bb2) runner.faceFrom(target.x - runner.x, target.y - runner.y);
             this.startBob(runner);
             if (runner._bb2) {
                 this.time.delayedCall(Math.max(0, runnerArriveMs - 260), () => this.bb2Anim(runner, 'slide'));
             }
-            this.tweens.add({
+            this.movePlayer({
                 targets: runner, x: target.x + 16, y: target.y - 14,
                 duration: runnerArriveMs, ease: 'Quad.easeIn',
                 onUpdate: () => { if (runner._bb2) runner.syncDepth(); },
@@ -1120,10 +1477,8 @@ class GameScene extends Phaser.Scene {
             });
         }
         this.time.delayedCall(throwPreDelay, () => {
-            this.audio.play('throw');
-            this.ballArc(FIELD.FIELDER_HOMES.C, target, throwFlightMs, 46, () => {
-                this.audio.play('tag');
-                this.hideHeldBall();
+            this.throwToPlayer(this.fielders.C, this.fielders[coverPos], {duration:throwFlightMs,arc:46}, () => {
+                if (!success) this.audio.play('tag');
                 this.cameras.main.shake(120, 0.005);
                 if (success) {
                     this.gs.bases[targetBase] = this.gs.bases[fromBase];
@@ -1146,10 +1501,20 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // Pitcher delivery. With an animated pitcher the ball is spawned by the
-    // release FRAME, so the arm and the ball can never drift apart; the plain
-    // circle keeps the old squash tween and a fixed delay.
+    // Outfielders soften their knees for the pitch, then stand tall between
+    // plays. Let active catches, throws and travel finish before changing pose.
+    setDefenseReady(on) {
+        for (const pos of ['LF','CF','RF']) {
+            const f = this.fielders && this.fielders[pos];
+            if (!f || !f.active || !f._bb2) continue;
+            f._fieldReady = on;
+            if (!f._busy && !this.playerMotion().moves.has(f) && ['ready','pitch_ready'].includes(f._anim)) f.idleAnim();
+        }
+    }
+
+    // Spawn the ball at the pitcher's release frame, aligned with the hand.
     deliverPitch(fallbackDelay, cb) {
+        this.setDefenseReady(true);
         const pitcher = this.fielders.P;
         if (pitcher && pitcher._bb2 && pitcher.playPitch) {
             pitcher.playPitch(cb);
@@ -1176,9 +1541,9 @@ class GameScene extends Phaser.Scene {
         // Pitcher windup, then the deliberately slow pitch (7.5s — v1 accessibility pacing)
         this.deliverPitch(650, () => {
             if (!this.ib.active) return;
-            const from = FIELD.MOUND;
-            const to = { x: FIELD.HOME.x, y: FIELD.HOME.y - 6 };
-            this.ball.setVisible(true).setPosition(from.x, from.y);
+            const from = this.pitchReleasePoint();
+            const to = this.swingContactPoint('normal');
+            this.ball.setVisible(true).setAlpha(1).setPosition(from.x, from.y);
             this.setBallSpin(true);
             this.meterTitle.setText('PRESS & HOLD to charge — RELEASE in the GREEN!').setColor('#ffffff');
             this.meter.setVisible(true);
@@ -1192,8 +1557,9 @@ class GameScene extends Phaser.Scene {
                     this.ib.pitchProgress = proxy.t;
                     // v1's per-pitch movement: curve, late break, wobble, drop
                     const off = this.pitchOffset(gs.selectedPitch, proxy.t);
-                    this.ball.x = Phaser.Math.Linear(from.x, to.x, proxy.t) + off.dx;
-                    this.ball.y = Phaser.Math.Linear(from.y, to.y, proxy.t) - Math.sin(Math.PI * proxy.t) * 14 + off.dy;
+                    const bend = Math.sin(Math.PI * proxy.t);
+                    this.ball.x = Phaser.Math.Linear(from.x, to.x, proxy.t) + off.dx*bend;
+                    this.ball.y = Phaser.Math.Linear(from.y, to.y, proxy.t) - bend*14 + off.dy*bend;
                     this.updateSwingMeter(proxy.t);
                     this.ib.ballInStrikeZone = proxy.t >= GAME_CONSTANTS.TIMING.GREEN_ZONE_LO
                                             && proxy.t <= GAME_CONSTANTS.TIMING.GREEN_ZONE_HI;
@@ -1223,6 +1589,7 @@ class GameScene extends Phaser.Scene {
         this.powerMeter.setVisible(true);
         this.updatePowerMeter(0);
         this.bb2Anim(this.batter, 'load_bunt');
+        if (this.batter.setChargePose) this.batter.setChargePose(0);
 
         this.chargeMonitor = this.time.addEvent({
             delay: 50, loop: true,
@@ -1232,17 +1599,16 @@ class GameScene extends Phaser.Scene {
                 const pct = Math.min(hold / GAME_CONSTANTS.TIMING.SWING_POWER_MAX, 1.0);
                 this.audio.updateChargeSound(pct);
                 this.updatePowerMeter(hold);
+                if (this.batter.setChargePose) this.batter.setChargePose(pct);
                 // The coil deepens bunt -> normal -> power so the charge
                 // tier reads on the batter's body, not just the meter.
                 if (hold >= GAME_CONSTANTS.TIMING.SWING_BUNT_MAX && this.ib.announcedSwingType === 'bunt') {
                     this.audio.speak('Normal swing', true);
                     this.ib.announcedSwingType = 'normal';
-                    this.bb2Anim(this.batter, 'load_normal');
                 }
                 if (hold >= GAME_CONSTANTS.TIMING.SWING_POWER_MIN && this.ib.announcedSwingType === 'normal') {
                     this.audio.speak('Power swing', true);
                     this.ib.announcedSwingType = 'power';
-                    this.bb2Anim(this.batter, 'load_power');
                 }
             }
         });
@@ -1294,14 +1660,18 @@ class GameScene extends Phaser.Scene {
     executeSwing() {
         this.ib.isSwinging = true;
         if (this.pitchTween) { this.pitchTween.stop(); this.pitchTween = null; }
-        this.setBattingCamera(false); // pull back out to watch the outcome
         if (this.meter) this.meter.setVisible(false);
         this.audio.play('swing');
         this.animateBatterSwing(this.ib.swingType);
-        // The ball is AT the plate the instant the bat whips — contact and
-        // launch happen in the same beat as the swing
-        if (this.ball.visible) this.ball.setPosition(FIELD.HOME.x, FIELD.HOME.y - 6);
-        this.time.delayedCall(60, () => this.processInteractiveSwingOutcome());
+        // Finish the incoming flight at the bat's contact frame; never jump
+        // the ball from mid-pitch straight to the plate on button release.
+        const atBat = this.ib;
+        this.ballArc({ x: this.ball.x, y: this.ball.y }, this.swingContactPoint(this.ib.swingType),
+            this.swingContactDelay(this.ib.swingType), 0, () => {
+                if (this.ib !== atBat || !atBat.active) return;
+                this.setBattingCamera(false);
+                this.processInteractiveSwingOutcome();
+            });
     }
 
     // Draw a proper wooden bat once and cache it as a texture: round knob,
@@ -1335,7 +1705,7 @@ class GameScene extends Phaser.Scene {
     // Slow waggle around the v1 rest pose — a batter is never statue-still
     startBatWaggle() {
         if (!this.bat || !this.bat.active) return;
-        this.tweens.killTweensOf(this.bat);
+        this.stopPlayerMovement(this.bat);
         this.bat.setAngle(-135);
         this.tweens.add({
             targets: this.bat, angle: -128, duration: 620,
@@ -1355,7 +1725,8 @@ class GameScene extends Phaser.Scene {
             const batterRef = this.batter;
             const animName = isBunt ? 'bunt' : (swingType === 'power' ? 'swing_power' : 'swing_normal');
             batterRef.setAnim(animName, true);
-            const durMs = isBunt ? 420 : (swingType === 'power' ? 600 : 400);
+            const clip = BB2_SHEETS['batter-actions'].anims[animName];
+            const durMs = clip.count / clip.rate * 1000 + 16;
             // Cancel-and-reschedule, same pattern as sendRunner()'s
             // _slideCall — a second swing on the same batter before the
             // first's revert fires would otherwise leave a stale timer that
@@ -1376,7 +1747,7 @@ class GameScene extends Phaser.Scene {
         // the stance. Bunt: -135° → 0° (bat squared at the pitcher).
         // Circle fallback only.
         if (!this.bat || !this.bat.active) return;
-        this.tweens.killTweensOf(this.bat);
+        this.stopPlayerMovement(this.bat);
         if (isBunt) {
             this.bat.setRotation(-Math.PI * 0.75);
             this.tweens.add({
@@ -1400,7 +1771,7 @@ class GameScene extends Phaser.Scene {
 
     // Quick white burst right where bat meets ball
     contactFlash() {
-        const f = this.add.circle(FIELD.HOME.x, FIELD.HOME.y - 6, 10, 0xffffff, 0.9).setDepth(9);
+        const f = this.add.circle(this.ball.x, this.ball.y, 6, 0xffffff, 0.65).setDepth(9);
         this.tweens.add({ targets: f, scale: 2.4, alpha: 0, duration: 160, onComplete: () => f.destroy() });
     }
 
@@ -1413,22 +1784,35 @@ class GameScene extends Phaser.Scene {
         if (c && c._bb2) c.setAnim(name);
     }
 
-    catchAtPlate() {
-        const glove = { x: FIELD.FIELDER_HOMES.C.x, y: FIELD.FIELDER_HOMES.C.y - 6 };
+    catchAtPlate(onCaught) {
+        if (this._receivingPitch) return;
+        this._receivingPitch = true;
+        if (this.pitchTween) { this.pitchTween.stop(); this.pitchTween = null; }
+        const catcher = this.fielders.C;
+        const glove = catcher.actionPoint ? catcher.actionPoint('receive','glove')
+            : { x: FIELD.FIELDER_HOMES.C.x, y: FIELD.FIELDER_HOMES.C.y - 6 };
+        const clips = BB2_SHEETS.catcher.anims;
+        this.catcherAnim('receive');
+        // Hold the receive frame until the ball reaches it, even on slow frames.
+        const hold = (anim,frame) => {
+            if (catcher._anim === 'receive' && frame.index === clips.receive.contactFrame+1) {
+                catcher._spr.anims.pause();catcher._spr.off('animationupdate',hold);
+            }
+        };
+        if (catcher._spr) catcher._spr.on('animationupdate',hold);
         this._ballBusy = (this._ballBusy || 0) + 1;
-        this.ballArc({ x: this.ball.x, y: this.ball.y }, glove, 200, 4, () => {
+        this.ballArc({ x: this.ball.x, y: this.ball.y }, glove, clips.receive.contactFrame / clips.receive.rate * 1000 + 80, 2, () => {
+            if (catcher._spr) catcher._spr.off('animationupdate',hold);
+            this.ball.setPosition(glove.x,glove.y);
+            this.setBallSpin(false);
             this.audio.play('catch');
-            this.catcherAnim('receive');
-            this.hideHeldBall();
+            this.hideHeldBall(catcher);
+            if (onCaught) onCaught();
             this.time.delayedCall(320, () => {
-                this.audio.play('throw');
-                this.catcherAnim('rise_throw');
-                this.ballArc(glove, FIELD.MOUND, 480, 30, () => {
-                    this.audio.play('catch');
+                if (catcher._spr) catcher._spr.anims.resume();
+                this.throwToPlayer(catcher, this.fielders.P, {duration:480,arc:30}, () => {
                     this.ball.setVisible(false);
-                    this.releaseBall();
-                    // Back down into the crouch, ready for the next pitch
-                    this.time.delayedCall(260, () => this.catcherAnim('crouch_idle'));
+                    this._receivingPitch = false;this.releaseBall();
                 });
             });
         });
@@ -1467,6 +1851,7 @@ class GameScene extends Phaser.Scene {
             gs.pendingBaseUpdate = () => this.updateBases('Walk', 'user');
             gs.balls = 0; gs.strikes = 0;
             this.audio.speak('Hit by pitch!');
+            this.showPitchCall('Hit By Pitch');
             this.bb2Anim(this.batter, 'hit_by_pitch');
             // animateAdvances() calls batterTakesOff() synchronously, which
             // would force 'take_off' over 'hit_by_pitch' in the same tick —
@@ -1486,9 +1871,11 @@ class GameScene extends Phaser.Scene {
                 gs.pendingBaseUpdate = () => this.updateBases('Walk', 'user');
                 gs.balls = 0; gs.strikes = 0;
                 this.audio.speak('Ball four. Walk.');
+                this.showPitchCall('Walk');
                 this.animateAdvances('Walk', () => this.finishPlay('Walk'));
             } else {
                 this.audio.speak(`Ball. ${gs.balls} and ${gs.strikes}.`);
+                this.showPitchCall('Ball');
                 this.finishPlay('Ball');
             }
         } else {
@@ -1497,10 +1884,11 @@ class GameScene extends Phaser.Scene {
                 gs.outs++;
                 gs.balls = 0; gs.strikes = 0;
                 this.audio.speak('Strike three!');
-                this.bigMessage('STRIKE OUT', 1400);
+                this.showPitchCall('Strike Out');
                 this.finishPlay('Strike Out');
             } else {
                 this.audio.speak(`Strike. ${gs.balls} and ${gs.strikes}.`);
+                this.showPitchCall('Strike');
                 this.finishPlay('Strike');
             }
         }
@@ -1645,6 +2033,11 @@ class GameScene extends Phaser.Scene {
     // including the double play / triple play rolls on ground outs.
     processBattingOutcome(outcome) {
         const gs = this.gs;
+        if (!gs.bases.first && !gs.bases.second && !gs.bases.third &&
+            (outcome === 'Ground Out' || (outcome === 'Single' && this.ib.swingType !== 'power'))) {
+            this.playGrounderToFirst();
+            return;
+        }
         const R = GAME_CONSTANTS.GAME_RULES;
         let terminal = ['Single', 'Double', 'Triple', 'Home Run'].includes(outcome);
 
@@ -1706,39 +2099,206 @@ class GameScene extends Phaser.Scene {
             gs.strikes = 0;
         }
 
-        // Announce (grand slam check ported from v1)
-        this.time.delayedCall(300, () => {
-            if (outcome === 'Home Run' && gs.bases.first && gs.bases.second && gs.bases.third) {
-                this.audio.speak('Grand Slam!');
-            } else {
-                this.audio.speak(outcome);
-            }
+        // Result narration follows the visible catch/throw/advance, so an out
+        // is not called while the ball is still in the air.
+        const grandSlam = outcome === 'Home Run' && gs.bases.first && gs.bases.second && gs.bases.third;
+        this.animatePlayerContact(outcome, () => {
+            if (['Strike','Strike Out'].includes(outcome)) this.showPitchCall(outcome);
+            else if (['Single','Double','Triple'].includes(outcome)) this.bigMessage(outcome.toUpperCase(),1800);
+            this.audio.speak(grandSlam ? 'Grand Slam!' : outcome);
+            this.finishPlay(outcome);
         });
+    }
 
-        this.animatePlayerContact(outcome, () => this.finishPlay(outcome));
+    // Bases-empty grounders are a physical race, not a preselected out with
+    // runner speed changed to fit it. Other occupied-base plays retain their
+    // existing force/relay rules while this sequence establishes the model.
+    playGrounderToFirst() {
+        const gs = this.gs, runner = this.batter;
+        const pos = Phaser.Utils.Array.GetRandom(['SS','2B','3B','P']);
+        const fielder = this.fielders[pos], first = this.fielders['1B'];
+        const start = { x: this.ball.x, y: this.ball.y };
+        const home = FIELD.FIELDER_HOMES[pos];
+        const spot = { x: home.x + (Math.random()-.5)*62, y: home.y + 28 + Math.random()*38 };
+        const reaction = 140 + Math.random()*220;
+        const ballMs = Math.hypot(spot.x-start.x,spot.y-start.y)/(115+Math.random()*75)*1000;
+        const runnerSpeed = 88 + Math.random()*12;
+        const armSpeed = 220 + (FIELDER_RATINGS[pos].arm * 20);
+        let runnerAtBag=false, coverAtBag=false, ballAtSpot=false, fielderAtSpot=false, ballAtBag=false, finished=false, gathered=false;
+        const move = (p,to,speed,done) => {
+            this.stopPlayerMovement(p);
+            const ms = Math.max(80,Math.hypot(to.x-p.x,to.y-p.y)/speed*1000);
+            return this.jog(p,to.x,to.y,ms/1.5,'Linear',done);
+        };
+        const finishRace = () => {
+            if (finished || !ballAtBag || !coverAtBag) return;
+            finished=true;
+            const out=!runnerAtBag;
+            runner._runnerBase='first';runner._runnerOut=out;
+            gs.balls=0;gs.strikes=0;
+            if (out) gs.outs++;
+            else gs.pendingBaseUpdate=()=>this.updateBases('Single','user');
+            this._lastGrounderRace={out,runnerAtBag,coverAtBag,ballAtBag};
+            this.bb2Anim(first,'stretch_catch');
+            this.bigMessage(out?'OUT AT FIRST':'SAFE AT FIRST',1100);
+            this.audio.speak(out?'Out at first.':'Safe at first. Single.',true);
+            // Let the runner touch and run through first before resetting.
+            const waitForRunner=()=>{
+                if (!runnerAtBag) { this.time.delayedCall(80,waitForRunner); return; }
+                this.time.delayedCall(650,()=>this.finishPlay(out?'Ground Out':'Single'));
+            };
+            waitForRunner();
+        };
+        const gather = () => {
+            if (gathered || !ballAtSpot || !fielderAtSpot) return;
+            gathered=true;
+            this.audio.play('catch');this.hideHeldBall(fielder);
+            this.bb2Anim(fielder,'field_grounder');
+            this.time.delayedCall(340,()=>{
+                this.throwToPlayer(fielder, first, {
+                    duration:(from,to)=>Math.hypot(to.x-from.x,to.y-from.y)/armSpeed*1000,arc:20
+                },()=>{ballAtBag=true;finishRace();});
+            });
+        };
+        this._zoomOnPoint(555,410,1.25,420);
+        this.time.delayedCall(280,()=>{
+            this.batterTakesOff();
+            this.time.delayedCall(150,()=>move(runner,FIELD.FIRST,runnerSpeed,()=>{
+                runnerAtBag=true;
+                // First base is run through; no needless slide on a force.
+                move(runner,{x:FIELD.FIRST.x+27,y:FIELD.FIRST.y-20},runnerSpeed);
+                finishRace();
+            }));
+        });
+        move(first,{x:FIELD.FIRST.x-12,y:FIELD.FIRST.y-13},94,()=>{coverAtBag=true;this.bb2Anim(first,'ready_at_bag');finishRace();});
+        // Second baseman backs up the throw, right fielder backs up first.
+        if (pos!=='2B') move(this.fielders['2B'],{x:FIELD.SECOND.x+65,y:FIELD.SECOND.y+30},72);
+        move(this.fielders.RF,{x:FIELD.FIRST.x+54,y:FIELD.FIRST.y-38},86);
+        this.time.delayedCall(reaction,()=>move(fielder,spot,86,()=>{
+            fielderAtSpot=true;this.bb2Anim(fielder,'ready');gather();
+        }));
+        this.ballArc(start,spot,ballMs,6,()=>{ballAtSpot=true;gather();});
+    }
+
+    fieldingClip(fielder, preferred) {
+        const sheets = fielder._sheets || [];
+        const name = sheets.some(key => BB2_SHEETS[key].anims[preferred]) ? preferred
+            : preferred === 'catch_fly' ? 'receive_at_bag' : 'fielding_stance';
+        const sheet = sheets.find(key => BB2_SHEETS[key].anims[name]);
+        return {name, clip: sheet ? BB2_SHEETS[sheet].anims[name] : {contactFrame: 2, rate: 12}};
+    }
+
+    // Pursuit and ball travel start together. A pickup requires both arrivals,
+    // then the gather frame; collision avoidance may lengthen the player's route.
+    chaseGroundBall(fielder, from, spot, flightMs, arcHeight, cb, bounce = null) {
+        let arrived = false, landed = false, gathered = false;
+        const action = this.fieldingClip(fielder, ['LF','CF','RF'].some(p => this.fielders[p] === fielder) ? 'field_bounce' : 'field_grounder');
+        const gather = () => {
+            if (!arrived || !landed || gathered || !fielder.active) return;
+            gathered = true;
+            this.bb2Anim(fielder, action.name);
+            this.time.delayedCall(action.clip.contactFrame / action.clip.rate * 1000, () => {
+                if (fielder.active) { this._ballHolder = fielder;cb(); }
+            });
+        };
+        // Align the gather frame's glove with the resting ball.
+        if (fielder._spr) fielder._spr.setFlipX(false);
+        const glove = fielder.actionPoint ? fielder.actionPoint(action.name, 'glove') : {x:fielder.x-4,y:fielder.y+4};
+        const target = {x:spot.x-(glove.x-fielder.x),y:spot.y-(glove.y-fielder.y)};
+        const distance = Math.hypot(target.x-fielder.x,target.y-fielder.y);
+        this.time.delayedCall(100, () => this.jog(fielder,target.x,target.y,Math.max(160,distance/90*1000)/1.5,'Linear',() => {
+            if (fielder._spr) fielder._spr.setFlipX(false);
+            arrived = true;gather();
+        }));
+        const land = () => {landed = true;gather();};
+        if (bounce) this.ballArc(from,bounce,flightMs-300,arcHeight,()=>this.ballArc(bounce,spot,300,4,land));
+        else this.ballArc(from,spot,flightMs,arcHeight,land);
+    }
+
+    chaseFlyBall(from, fielderPos, cb) {
+        const fielder = this.fielders[fielderPos], motion = this.playerMotion();
+        const action = this.fieldingClip(fielder, 'catch_fly');
+        const angle = Math.random()*Math.PI*2, distance = Phaser.Math.Between(32,58);
+        let spot = {x:fielder.x,y:fielder.y}, route = [];
+        for (let i=0;i<8;i++) {
+            const a=angle+i*Math.PI/4;
+            const candidate={x:Phaser.Math.Clamp(fielder.x+Math.cos(a)*distance,55,945),
+                y:Phaser.Math.Clamp(fielder.y+Math.sin(a)*distance,110,435)};
+            const path=motion.route(fielder,candidate,motion.obstacles(fielder,motion.players()));
+            const end=path[path.length-1];
+            if (end && Math.hypot(end.x-candidate.x,end.y-candidate.y)<.1) {spot=candidate;route=path;break;}
+        }
+        let previous=fielder, travel=0;
+        for(const point of route){travel+=Math.hypot(point.x-previous.x,point.y-previous.y);previous=point;}
+        const flight=Math.max(1700,travel/85*1000+850);
+        const contactMs=action.clip.contactFrame/action.clip.rate*1000;
+        if(fielder._spr)fielder._spr.setFlipX(false);
+        const glove=fielder.actionPoint ? fielder.actionPoint(action.name,'glove') : {x:fielder.x,y:fielder.y-24};
+        const target={x:spot.x+glove.x-fielder.x,y:spot.y+glove.y-fielder.y};
+        let arrived=false, catchDue=false, landed=false, catching=false, completed=false;
+        let holdingGlove=false;
+        const holdContact=(anim,frame)=>{
+            if(anim.key===fielder._animKey && frame.index===action.clip.contactFrame+1) {
+                holdingGlove=true;fielder._spr.anims.pause();
+                fielder._spr.off('animationupdate',holdContact);
+                settle();
+            }
+        };
+        const settle=()=>{
+            if(!arrived || !landed || completed || (fielder._spr && !holdingGlove))return;
+            if(fielder._spr) {
+                fielder._spr.off('animationupdate',holdContact);
+                if(holdingGlove)fielder._spr.anims.resume();
+            }
+            completed=true;this.audio.play('catch');this.hideHeldBall(fielder);cb(spot,fielderPos);
+        };
+        const raiseGlove=()=>{
+            if(!arrived || !catchDue || catching)return;
+            catching=true;if(fielder._spr)fielder._spr.setFlipX(false);
+            if(fielder._spr)fielder._spr.on('animationupdate',holdContact);
+            this.bb2Anim(fielder,action.name);
+        };
+        this.time.delayedCall(100,()=>this.jog(fielder,spot.x,spot.y,
+            Math.max(100,Math.hypot(spot.x-fielder.x,spot.y-fielder.y)/85*1000)/1.5,'Linear',()=>{
+                arrived=true;raiseGlove();settle();
+            }));
+        // Set the glove early and hold the actual contact frame until arrival;
+        // timer/animation updates can otherwise drift apart on slower frames.
+        this.time.delayedCall(flight-contactMs-150,()=>{catchDue=true;raiseGlove();});
+        this.ballArc(from,target,flight,165,()=>{landed=true;settle();});
+        return {fielder,spot,flight};
+    }
+
+    animateFoulBall(cb) {
+        const home = {x:this.ball.x,y:this.ball.y};
+        const direction = Math.random() < .5 ? -1 : 1;
+        // A distinct path into foul territory; never a tiny dribble hidden
+        // behind the catcher or an endpoint below the canvas.
+        const foul = {x:Phaser.Math.Clamp(home.x+direction*Phaser.Math.Between(180,250),45,W-45),
+            y:Math.min(H-30,home.y+45)};
+        this._zoomOnPoint((home.x+foul.x)/2,home.y-30,1.35,250);
+        this.ballArc(home,foul,1150,80,() => {
+            this.showPitchCall('Foul');
+            this.time.delayedCall(250,() => {
+                this.ball.setVisible(false);
+                this.time.delayedCall(350,cb);
+            });
+        });
     }
 
     // Visuals for the player's contact — the CPU defense fields automatically
     // (the result is already decided by the ported tables; this is choreography).
     animatePlayerContact(outcome, cb) {
-        const home = FIELD.HOME;
+        const home = { x: this.ball.x, y: this.ball.y };
 
         if (outcome === 'Strike' || outcome === 'Strike Out') {
             // Swing and a miss — the ball carries on into the catcher's glove
             if (this.ball.visible) this.catchAtPlate();
-            if (outcome === 'Strike Out') this.bigMessage('STRIKE OUT', 1300);
             this.time.delayedCall(1100, cb);
             return;
         }
 
-        if (outcome === 'Foul') {
-            const foulSpot = { x: home.x + Phaser.Math.Between(-260, 260), y: home.y + Phaser.Math.Between(30, 70) };
-            this.ballArc(home, foulSpot, 700, 90, () => {
-                this.ball.setVisible(false);
-                this.time.delayedCall(500, cb);
-            });
-            return;
-        }
+        if (outcome === 'Foul') { this.animateFoulBall(cb);return; }
 
         if (outcome === 'Home Run') {
             const over = { x: FIELD.WALL.CF.x + Phaser.Math.Between(-160, 160), y: FIELD.WALL.CF.y - 30 };
@@ -1755,7 +2315,6 @@ class GameScene extends Phaser.Scene {
                     this._zoomOut(400);
                     this.time.delayedCall(420, () => {
                         this.animateAdvances('Home Run', () => {
-                            this.audio.play('crowd_big');
                             this.time.delayedCall(400, cb);
                         });
                     });
@@ -1766,11 +2325,7 @@ class GameScene extends Phaser.Scene {
 
         if (outcome === 'Pop Fly Out') {
             const catcherPos = Phaser.Utils.Array.GetRandom(['CF', 'LF', 'RF', 'SS', '2B']);
-            const spot = FIELD.FIELDER_HOMES[catcherPos];
-            this.ballArc(home, spot, 1400, 170, () => {
-                this.audio.play('catch');
-                this.bb2Anim(this.fielders[catcherPos], 'catch_fly');
-                this.hideHeldBall();
+            this.chaseFlyBall(home, catcherPos, spot => {
                 this._zoomOnPoint(spot.x, spot.y, 1.7, 300);
                 this.bigMessage('CAUGHT!', 1200);
                 this.time.delayedCall(1300, () => { this._zoomOut(350); this.time.delayedCall(400, cb); });
@@ -1789,52 +2344,49 @@ class GameScene extends Phaser.Scene {
             // cover men take the bags and the throws beat the runners there.
             this.startContactRunners();
             this._ballBusy = (this._ballBusy || 0) + 1;
-            this.ballArc(home, spot, 520, 22, () => {
-                this.jog(fielder, spot.x + 4, spot.y - 4, 260, 'Quad.easeOut', () => {
-                    this.audio.play('catch');
-                    this.bb2Anim(fielder, 'field_grounder');
-                    this.releaseBall();
-                    this.hideHeldBall();
-                    const seq = outcome === 'Triple Play' ? ['third', 'second', 'first']
-                              : outcome === 'Double Play' ? ['second', 'first']
-                              : ['first'];
-                    const runnerForBase = { first: 'batter', second: 'first', third: 'second', home: 'third' };
-                    const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
-                    const throwNext = (fromXY, throwerPos, chain) => {
-                        if (!chain.length) {
-                            // Runners not involved in the outs finish their advance
-                            Object.keys(runnerForBase).forEach(b => {
-                                if (!seq.includes(b)) this.sendRunner(runnerForBase[b], 1000);
-                            });
-                            const label = outcome === 'Triple Play' ? 'TRIPLE PLAY!'
-                                        : outcome === 'Double Play' ? 'DOUBLE PLAY!'
-                                        : 'OUT!';
-                            this.bigMessage(label, 1400);
-                            if (outcome !== 'Ground Out') this.cameras.main.shake(200, 0.008);
-                            this.time.delayedCall(1400, () => { this._zoomOut(380); this.time.delayedCall(420, cb); });
-                            return;
-                        }
-                        const base = chain[0];
-                        const t = this.throwFlightMs(fromXY, base, arm);
-                        this._zoomOnPoint(BASE_COORDS[base].x, BASE_COORDS[base].y, 1.5, Math.max(260, t));
-                        this.animateThrowRace({
-                            fromXY, throwerPos, targetBase: base,
-                            out: true, throwTimeMs: t, runnerKey: runnerForBase[base]
-                        }, () => {
-                            // Same beat: on a double/triple play the cover man
-                            // pivots to throw the next leg — give his catch a
-                            // moment to read before he winds up again.
-                            const nextThrower = this.coveringFielder(base, throwerPos);
-                            const nextBase = BASE_COORDS[base];
-                            this.time.delayedCall(180, () => throwNext(nextBase, nextThrower, chain.slice(1)));
+            this.chaseGroundBall(fielder, home, spot, 520, 22, () => {
+                this.audio.play('catch');
+                this.releaseBall();
+                this.hideHeldBall();
+                const seq = outcome === 'Triple Play' ? ['third', 'second', 'first']
+                          : outcome === 'Double Play' ? ['second', 'first']
+                          : ['first'];
+                const runnerForBase = { first: 'batter', second: 'first', third: 'second', home: 'third' };
+                const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
+                const throwNext = (fromXY, throwerPos, chain) => {
+                    if (!chain.length) {
+                        // Runners not involved in the outs finish their advance
+                        Object.keys(runnerForBase).forEach(b => {
+                            if (!seq.includes(b)) this.sendRunner(runnerForBase[b], 1000);
                         });
-                    };
-                    // A beat so field_grounder is actually visible before the
-                    // throw animation takes the sprite over — otherwise the
-                    // two setAnim calls land in the same tick and the fielding
-                    // pose never renders a frame.
-                    this.time.delayedCall(220, () => throwNext(spot, fielderPos, seq));
-                });
+                        const label = outcome === 'Triple Play' ? 'TRIPLE PLAY!'
+                                    : outcome === 'Double Play' ? 'DOUBLE PLAY!'
+                                    : 'OUT!';
+                        this.bigMessage(label, 1400);
+                        if (outcome !== 'Ground Out') this.cameras.main.shake(200, 0.008);
+                        this.time.delayedCall(1400, () => { this._zoomOut(380); this.time.delayedCall(420, cb); });
+                        return;
+                    }
+                    const base = chain[0];
+                    const t = this.throwFlightMs(fromXY, base, arm);
+                    this._zoomOnPoint(BASE_COORDS[base].x, BASE_COORDS[base].y, 1.5, Math.max(260, t));
+                    this.animateThrowRace({
+                        fromXY, throwerPos, targetBase: base,
+                        out: true, throwTimeMs: t, runnerKey: runnerForBase[base]
+                    }, () => {
+                        // Same beat: on a double/triple play the cover man
+                        // pivots to throw the next leg — give his catch a
+                        // moment to read before he winds up again.
+                        const nextThrower = this.coveringFielder(base, throwerPos);
+                        const nextBase = BASE_COORDS[base];
+                        this.time.delayedCall(180, () => throwNext(nextBase, nextThrower, chain.slice(1)));
+                    });
+                };
+                // A beat so field_grounder is actually visible before the
+                // throw animation takes the sprite over — otherwise the
+                // two setAnim calls land in the same tick and the fielding
+                // pose never renders a frame.
+                this.time.delayedCall(220, () => throwNext(spot, fielderPos, seq));
             });
             return;
         }
@@ -1853,35 +2405,32 @@ class GameScene extends Phaser.Scene {
             };
             this.startContactRunners();
             this._ballBusy = (this._ballBusy || 0) + 1;
-            this.ballArc(home, spot, 620, 16, () => {
-                this.jog(fielder, spot.x + 4, spot.y - 4, 340, 'Quad.easeOut', () => {
-                    this.audio.play('catch');
-                    this.bb2Anim(fielder, 'field_grounder');
-                    this.releaseBall();
-                    this.hideHeldBall();
-                    const target = this.gs.bases.first ? 'second' : 'first';
-                    const runnerKey = target === 'second' ? 'first' : 'batter';
-                    const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
-                    const t = this.throwFlightMs(spot, target, arm);
-                    this._zoomOnPoint(BASE_COORDS[target].x, BASE_COORDS[target].y, 1.5, Math.max(260, t));
-                    // Same beat as the Ground Out path — let field_grounder
-                    // actually render before the throw takes the sprite over.
-                    this.time.delayedCall(220, () => this.animateThrowRace({
-                        fromXY: spot, throwerPos: fielderPos, targetBase: target,
-                        out: false, throwTimeMs: t, runnerKey
-                    }, () => {
-                        this.bigMessage('SAFE!', 1100);
-                        this.audio.play('crowd');
-                        // Everyone else completes their advance
-                        ['batter', 'first', 'second', 'third'].forEach(k => {
-                            if (k !== runnerKey) this.sendRunner(k, 550);
-                        });
-                        this.time.delayedCall(1200, () => {
-                            this._zoomOut(360);
-                            this.time.delayedCall(380, cb);
-                        });
-                    }));
-                });
+            this.chaseGroundBall(fielder, home, spot, 620, 16, () => {
+                this.audio.play('catch');
+                this.releaseBall();
+                this.hideHeldBall();
+                const target = this.gs.bases.first ? 'second' : 'first';
+                const runnerKey = target === 'second' ? 'first' : 'batter';
+                const arm = (FIELDER_RATINGS[fielderPos] || { arm: 3 }).arm;
+                const t = this.throwFlightMs(spot, target, arm);
+                this._zoomOnPoint(BASE_COORDS[target].x, BASE_COORDS[target].y, 1.5, Math.max(260, t));
+                // Same beat as the Ground Out path — let field_grounder
+                // actually render before the throw takes the sprite over.
+                this.time.delayedCall(220, () => this.animateThrowRace({
+                    fromXY: spot, throwerPos: fielderPos, targetBase: target,
+                    out: false, throwTimeMs: t, runnerKey
+                }, () => {
+                    this.bigMessage('SAFE!', 1100);
+                    this.audio.play('crowd');
+                    // Everyone else completes their advance
+                    ['batter', 'first', 'second', 'third'].forEach(k => {
+                        if (k !== runnerKey) this.sendRunner(k, 550);
+                    });
+                    this.time.delayedCall(1200, () => {
+                        this._zoomOut(360);
+                        this.time.delayedCall(380, cb);
+                    });
+                }));
             });
             return;
         }
@@ -1941,44 +2490,31 @@ class GameScene extends Phaser.Scene {
             { x: FIELD.BATTER_BOX.x, y: FIELD.BATTER_BOX.y },
             BASE_COORDS.first, BASE_COORDS.second, BASE_COORDS.third, BASE_COORDS.home
         ];
-        // Swap static dots for moving runners
-        ['first', 'second', 'third'].forEach(k => {
-            if (this.runnerDots[k]) this.runnerDots[k].setVisible(false);
-        });
-
         const LEG_MS = 1000;
         let pending = moves.length;
         this._advanceSprites = this._advanceSprites || [];
         moves.forEach(m => {
-            // The batter drops the bat and runs himself; base runners are
-            // fresh sprites standing in for the static dots
             const isBatter = m.fromIdx === 0;
-            const sprite = isBatter ? this.batterTakesOff() : this.makePlayer(col, 'R');
-            if (!isBatter) {
-                sprite.setScale(0.8);
-                const start = PATH[m.fromIdx];
-                sprite.setPosition(start.x + 16, start.y - 14);
+            const fromKey = ['batter','first','second','third'][m.fromIdx];
+            const existing = this.runnerDots && this.runnerDots[fromKey];
+            const sprite = isBatter ? this.batterTakesOff() : existing || this.makePlayer(col,'R');
+            if (!isBatter && !existing) {
+                const start = PATH[m.fromIdx];sprite.setPosition(start.x+16,start.y-14);
             }
+            if (existing) this.runnerDots[fromKey] = null;
+            sprite._baseRunner = true;sprite._runnerOut = false;
+            sprite._runnerBase = ['home','first','second','third','home'][m.toIdx];
+            this._advanceSprites.push(sprite);
             this.startBob(sprite);
             const runLeg = (idx) => {
                 if (idx > m.toIdx) {
                     this.stopBob(sprite);
-                    if (m.toIdx === 4) {
-                        // Score! Fade out crossing the plate
-                        this.tweens.add({ targets: sprite, alpha: 0, duration: 300, onComplete: () => { if (!isBatter) sprite.destroy(); } });
-                    } else if (!isBatter) {
-                        // STAY on the bag — destroying him here made runners
-                        // blink out and pop back seconds later when the static
-                        // dot finally appeared. finishPlay's clearContactRunners
-                        // swaps him for the dot in the same frame syncRunners
-                        // paints it.
-                        this._advanceSprites.push(sprite);
-                    }
-                    if (--pending === 0) cb(); // batter stays on his bag too — resetBatter comes with the dot swap
+                    if (m.toIdx === 4) this.departPlayer(sprite);
+                    if (--pending === 0) cb();
                     return;
                 }
                 const p = PATH[idx];
-                this.tweens.add({
+                this.movePlayer({
                     targets: sprite, x: p.x + 16, y: p.y - 14, duration: LEG_MS, ease: 'Linear',
                     onComplete: () => runLeg(idx + 1)
                 });
@@ -2010,8 +2546,8 @@ class GameScene extends Phaser.Scene {
 
     // On contact, the batter takes off for first and every runner breaks for
     // the next base — they run partway and hold while the ball is fielded
-    // (the decision freeze-frame). Static base dots are swapped for these
-    // moving sprites until the play resolves.
+    // (the decision freeze-frame). The same actors remain on their bases
+    // when safe and visibly leave when retired.
     startContactRunners() {
         this.clearContactRunners();
         const col = this.battingColor();
@@ -2028,13 +2564,14 @@ class GameScene extends Phaser.Scene {
         legs.forEach(leg => {
             if (!leg.when) return;
             // The batter-runner IS the batter — he drops the bat and takes
-            // off. Base runners are fresh sprites replacing static dots.
+            // off. Existing base runners keep their identity as they move.
             const isBatter = leg.key === 'batter';
-            const sprite = isBatter ? this.batterTakesOff() : this.makePlayer(col, 'R');
-            if (!isBatter) {
-                sprite.setScale(0.8);
-                sprite.setPosition(leg.from.x + 16, leg.from.y - 14);
-            }
+            const existing = this.runnerDots && this.runnerDots[leg.key];
+            const sprite = isBatter ? this.batterTakesOff() : existing || this.makePlayer(col,'R');
+            if (!isBatter && !existing) sprite.setPosition(leg.from.x+16,leg.from.y-14);
+            if (existing) this.runnerDots[leg.key] = null;
+            sprite._baseRunner = true;sprite._runnerOut = false;
+            sprite._runnerBase = {batter:'first',first:'second',second:'third',third:'home'}[leg.key];
             const hold = {
                 x: Phaser.Math.Linear(leg.from.x, leg.to.x, 0.42) + 16,
                 y: Phaser.Math.Linear(leg.from.y, leg.to.y, 0.42) - 14
@@ -2044,7 +2581,7 @@ class GameScene extends Phaser.Scene {
                 if (!sprite.active) return;
                 if (sprite._bb2) sprite.faceFrom(hold.x - sprite.x, hold.y - sprite.y);
                 this.startBob(sprite);
-                this.tweens.add({
+                this.movePlayer({
                     targets: sprite, x: hold.x, y: hold.y, duration: 950, ease: 'Quad.easeOut',
                     onComplete: () => this.stopBob(sprite)
                 });
@@ -2063,34 +2600,17 @@ class GameScene extends Phaser.Scene {
                 begin();
             }
         });
-        // Hide static dots only for the runners that actually took off
-        ['first', 'second', 'third'].forEach(k => {
-            if (this.playRunners[k] && this.runnerDots[k]) this.runnerDots[k].setVisible(false);
-        });
     }
 
     clearContactRunners() {
-        if (this.playRunners) {
-            Object.values(this.playRunners).forEach(r => {
-                // Neither timer is tied to the tween lifecycle killTweensOf
-                // manages, so an interrupted/short-circuited play could
-                // otherwise leave one pending and firing bb2Anim on a
-                // sprite this loop is about to destroy.
-                if (r._beginCall) { r._beginCall.remove(false); r._beginCall = null; }
-                if (r._slideCall) { r._slideCall.remove(false); r._slideCall = null; }
-                this.tweens.killTweensOf(r.sprite);
-                if (!r.isBatter) r.sprite.destroy();
-            });
+        this._settledRunners = this._settledRunners || new Set();
+        for (const r of Object.values(this.playRunners || {})) {
+            if (r._beginCall) r._beginCall.remove(false);
+            if (r._slideCall) r._slideCall.remove(false);
+            this._settledRunners.add(r.sprite);
         }
-        this.playRunners = null;
-        // Runners animateAdvances parked on their bags — swapped for static
-        // dots in this same frame (finishPlay calls syncRunners right after)
-        if (this._advanceSprites) {
-            this._advanceSprites.forEach(s => { this.tweens.killTweensOf(s); s.destroy(); });
-            this._advanceSprites = null;
-        }
-        // If the batter ran, the next batter steps in (destroys the old sprite)
-        this.resetBatter();
+        for (const p of this._advanceSprites || []) this._settledRunners.add(p);
+        this.playRunners = null;this._advanceSprites = null;
     }
 
     // Send a play-runner the rest of the way to a base over `ms`. Pass
@@ -2102,7 +2622,9 @@ class GameScene extends Phaser.Scene {
         const r = this.playRunners && this.playRunners[key];
         if (!r) return;
         const to = targetBase ? BASE_COORDS[targetBase] : r.to;
-        this.tweens.killTweensOf(r.sprite);
+        r.sprite._runnerBase = targetBase || Object.keys(BASE_COORDS).find(k => BASE_COORDS[k] === to);
+        r.sprite._runnerOut = !!(opts && opts.out);
+        this.stopPlayerMovement(r.sprite);
         // Cancel the batter's still-pending take_off->run handoff (see
         // startContactRunners()) if this runner is being sent on before it
         // fired — otherwise it would start a second tween on top of this
@@ -2116,7 +2638,7 @@ class GameScene extends Phaser.Scene {
             const slideAt = Math.max(0, ms - 260);
             r._slideCall = this.time.delayedCall(slideAt, () => this.bb2Anim(r.sprite, 'slide'));
         }
-        this.tweens.add({
+        this.movePlayer({
             targets: r.sprite, x: to.x + 16, y: to.y - 14, duration: ms, ease: 'Linear',
             onComplete: () => {
                 if (contested) this.bb2Anim(r.sprite, opts.out ? 'out_walkoff' : 'safe_stand');
@@ -2134,30 +2656,22 @@ class GameScene extends Phaser.Scene {
         const cover = this.fielders[coverPos];
 
         // Cover man sprints to receive at the bag
-        this.tweens.killTweensOf(cover);
+        this.stopPlayerMovement(cover);
         this.jog(cover, bag.x + 9, bag.y + 9, Math.max(200, throwTimeMs * 0.8));
 
-        // Runner races the ball: loses by a step on an out, beats it when safe
+        const thrower = this.fielders[throwerPos];
+        const {clip} = this.fieldingClip(thrower, this.throwAction(thrower));
         if (runnerKey) {
-            const arriveMs = out ? throwTimeMs + 420 : Math.max(320, throwTimeMs - 120);
+            const transfer = (clip.contactFrame || 0)/clip.rate*1000;
+            const receiveClip = this.fieldingClip(cover, this.receiveAction(cover)).clip;
+            const flight = Math.max(throwTimeMs, (receiveClip.contactFrame || 0)/receiveClip.rate*1000 + 120);
+            const arriveMs = transfer + (out ? flight + 420 : Math.max(320, flight - 120));
             this.sendRunner(runnerKey, arriveMs, targetBase, { slide: true, out });
         }
-
-        this.audio.play('throw');
-        this.bb2Anim(this.fielders[throwerPos], ['LF', 'CF', 'RF'].includes(throwerPos) ? 'throw_relay' : 'throw');
-        this.ballArc(fromXY, bag, throwTimeMs, Math.min(60, throwTimeMs * 0.09), () => {
-            this.audio.play(out ? 'tag' : 'catch');
-            // The 1B stretch is the one iconic pose that overrides the plain
-            // receive — every other bag just gets a routine catch or tag.
-            this.bb2Anim(cover, (coverPos === '1B' && targetBase === 'first') ? 'stretch_catch'
-                                : out ? 'tag' : 'receive_at_bag');
-            this.hideHeldBall();
-            // Ball stays live at the bag — finishPlay tosses it to the mound
-            const r = runnerKey && this.playRunners && this.playRunners[runnerKey];
-            if (out && r) {
-                // Tag flash on the beaten runner
-                this.tweens.add({ targets: r.sprite, alpha: 0.2, duration: 110, yoyo: true, repeat: 2 });
-            }
+        this.throwToPlayer(thrower, cover, {duration:throwTimeMs,arc:Math.min(60,throwTimeMs*.09),
+            onReceiveDone:()=>{if (out && targetBase !== 'first') this.bb2Anim(cover,coverPos==='C'?'tag_home':'tag');}
+        }, () => {
+            if (out && coverPos !== '1B') this.audio.play('tag');
             if (cb) cb();
         });
     }
@@ -2195,16 +2709,11 @@ class GameScene extends Phaser.Scene {
             // animation takes the sprite over.
             const hold = Math.max(220, (runnerEtaMs + 280) - (this.time.now - t0) - t);
             this.time.delayedCall(hold, () => {
-                this.audio.play('throw');
-                this.bb2Anim(this.fielders[throwerPos], ['LF', 'CF', 'RF'].includes(throwerPos) ? 'throw_relay' : 'throw');
                 const cover = this.fielders[this.coveringFielder(targetBase, throwerPos)];
-                this.tweens.killTweensOf(cover);
+                this.stopPlayerMovement(cover);
                 this.jog(cover, BASE_COORDS[targetBase].x + 9, BASE_COORDS[targetBase].y + 9, Math.max(200, t * 0.8));
                 this._zoomOnPoint(BASE_COORDS[targetBase].x, BASE_COORDS[targetBase].y, 1.5, Math.max(260, t));
-                this.ballArc(fromXY, BASE_COORDS[targetBase], t, Math.min(50, t * 0.09), () => {
-                    this.audio.play('catch');
-                    this.bb2Anim(cover, 'receive_at_bag');
-                    this.hideHeldBall();
+                this.throwToPlayer(this.fielders[throwerPos], cover, {duration:t,arc:Math.min(50,t*.09)}, () => {
                     this.bigMessage('SAFE!', 1200);
                     this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}.`);
                     this.audio.play('crowd');
@@ -2216,53 +2725,40 @@ class GameScene extends Phaser.Scene {
             });
         };
 
+        const rollSpot = {
+            x: Phaser.Math.Clamp(landSpot.x + Phaser.Math.Between(-30, 30), 40, 960),
+            y: landSpot.y + Phaser.Math.Between(25, 50)
+        };
+        const relaySpot = {
+            x: Phaser.Math.Linear(rollSpot.x, BASE_COORDS[targetBase].x, 0.5),
+            y: Phaser.Math.Linear(rollSpot.y, BASE_COORDS[targetBase].y, 0.5)
+        };
+        // Both outfielder and cutoff man break at contact, while the ball
+        // travels to the gap and skips toward the eventual pickup point.
+        const cutoff=this.fielders[cutoffPos];
+        this.jog(cutoff,relaySpot.x,relaySpot.y,Math.hypot(relaySpot.x-cutoff.x,relaySpot.y-cutoff.y)/85*1000/1.5,'Linear');
         this._ballBusy = (this._ballBusy || 0) + 1;
-        this.ballArc(home, landSpot, 900, 90, () => {
-            // Skips/rolls a few more feet before anyone corrals it
-            const rollSpot = {
-                x: Phaser.Math.Clamp(landSpot.x + Phaser.Math.Between(-30, 30), 40, 960),
-                y: landSpot.y + Phaser.Math.Between(25, 50)
-            };
-            this.tweens.add({ targets: this.ball, x: rollSpot.x, y: rollSpot.y, duration: 300, ease: 'Quad.easeOut' });
-
-            // The cutoff man breaks for his relay spot right away — a real
-            // defense doesn't wait for the ball to be fielded to start moving.
-            const relaySpot = {
-                x: Phaser.Math.Linear(rollSpot.x, BASE_COORDS[targetBase].x, 0.5),
-                y: Phaser.Math.Linear(rollSpot.y, BASE_COORDS[targetBase].y, 0.5)
-            };
-            this.jog(this.fielders[cutoffPos], relaySpot.x, relaySpot.y, 480, 'Quad.easeOut');
-
-            this.time.delayedCall(300, () => {
-                this.jog(this.fielders[chaserPos], rollSpot.x + 4, rollSpot.y - 4, 420, 'Quad.easeOut', () => {
-                    this.audio.play('catch');
-                    this.bb2Anim(this.fielders[chaserPos], 'field_bounce');
-                    this.releaseBall();
-                    this.hideHeldBall();
-                    if (isTriple) {
-                        // Classic outfield-to-third relay through the cutoff man
-                        this._ballBusy = (this._ballBusy || 0) + 1;
-                        const armChaser = (FIELDER_RATINGS[chaserPos] || { arm: 3 }).arm;
-                        const t1 = Math.max(240, this.throwFlightMs(rollSpot, targetBase, armChaser) * 0.5);
-                        // Let field_bounce render before throw_relay takes over.
-                        this.time.delayedCall(220, () => {
-                            this.audio.play('throw');
-                            this.bb2Anim(this.fielders[chaserPos], 'throw_relay');
-                            this.ballArc(rollSpot, relaySpot, t1, 24, () => {
-                                this.audio.play('catch');
-                                this.bb2Anim(this.fielders[cutoffPos], 'receive_at_bag');
-                                this.releaseBall();
-                                this.hideHeldBall();
-                                this.time.delayedCall(180, () => finalThrow(relaySpot, cutoffPos));
-                            });
-                        });
-                    } else {
-                        // A plain double is a direct throw from the gap to 2nd
-                        finalThrow(rollSpot, chaserPos);
-                    }
+        this.chaseGroundBall(this.fielders[chaserPos], home, rollSpot, 1200, 90, () => {
+            this.audio.play('catch');
+            this.releaseBall();
+            this.hideHeldBall();
+            if (isTriple) {
+                // Classic outfield-to-third relay through the cutoff man
+                this._ballBusy = (this._ballBusy || 0) + 1;
+                const armChaser = (FIELDER_RATINGS[chaserPos] || { arm: 3 }).arm;
+                const t1 = Math.max(240, this.throwFlightMs(rollSpot, targetBase, armChaser) * 0.5);
+                // Let field_bounce render before throw_relay takes over.
+                this.time.delayedCall(220, () => {
+                    this.throwToPlayer(this.fielders[chaserPos], cutoff, {duration:t1,arc:24}, () => {
+                        this.releaseBall();
+                        this.time.delayedCall(320, () => finalThrow(relaySpot, cutoffPos));
+                    });
                 });
-            });
-        });
+            } else {
+                // A plain double is a direct throw from the gap to 2nd
+                finalThrow(rollSpot, chaserPos);
+            }
+        }, landSpot);
     }
 
     // Everyone jogs back to their positions once the play is dead
@@ -2270,9 +2766,25 @@ class GameScene extends Phaser.Scene {
         Object.keys(this.fielders).forEach(pos => {
             const home = FIELD.FIELDER_HOMES[pos];
             const f = this.fielders[pos];
+            if (f._fieldAction) {
+                if (!f._returnAfterAction) {
+                    f._returnAfterAction = true;
+                    const wait = () => {
+                        if (!f.active) return;
+                        if (f._fieldAction) { this.time.delayedCall(80, wait);return; }
+                        f._returnAfterAction = false;this.returnFielders();
+                    };
+                    this.time.delayedCall(80, wait);
+                }
+                return;
+            }
             if (Math.abs(f.x - home.x) > 2 || Math.abs(f.y - home.y) > 2) {
-                this.tweens.killTweensOf(f);
-                this.jog(f, home.x, home.y, 700, 'Sine.easeInOut');
+                this.stopPlayerMovement(f);
+                const distance = Math.hypot(f.x - home.x, f.y - home.y);
+                this.jog(f, home.x, home.y, Math.max(180, distance / 55 * 1000) / 1.5, 'Linear', null, 'walk');
+            } else {
+                this.stopPlayerMovement(f);
+                this.stopBob(f);
             }
         });
     }
@@ -2377,7 +2889,7 @@ class GameScene extends Phaser.Scene {
                     this.ball.setVisible(false);
                     this.bb2Anim(this.batter, 'hit_by_pitch');
                     if (this.batter && this.batter.active) {
-                        this.tweens.add({ targets: this.batter, x: this.batter.x - 10, duration: 90, yoyo: true, repeat: 1 });
+                        this.tweens.add({ targets: this.batter._spr || this.batter, x: (this.batter._spr ? this.batter._spr.x : this.batter.x) - 5, duration: 90, yoyo: true, repeat: 1 });
                     }
                     this.time.delayedCall(700, () => this.processCpuOutcome(outcome));
                 } else if (outcome === 'Ball' || outcome === 'Strike') {
@@ -2472,6 +2984,7 @@ class GameScene extends Phaser.Scene {
             gs.balls = 0; gs.strikes = 0;
             gs.pendingBaseUpdate = () => this.updateBases('Walk', 'comp');
             this.audio.speak('Hit by pitch! He takes his base.');
+            this.showPitchCall('Hit By Pitch');
             this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
             return;
         }
@@ -2481,10 +2994,11 @@ class GameScene extends Phaser.Scene {
             if (gs.strikes >= R.MAX_STRIKES) {
                 gs.outs++; gs.balls = 0; gs.strikes = 0;
                 this.audio.speak('Strike out!');
-                this.bigMessage('STRIKE OUT', 1300);
+                this.showPitchCall('Strike Out');
                 this.finishPlay('Strike Out');
             } else {
                 this.audio.speak(`Strike. ${gs.balls} and ${gs.strikes}.`);
+                this.showPitchCall('Strike');
                 this.finishPlay('Strike');
             }
             return;
@@ -2496,9 +3010,11 @@ class GameScene extends Phaser.Scene {
                 gs.pendingBaseUpdate = () => this.updateBases('Walk', 'comp');
                 gs.balls = 0; gs.strikes = 0;
                 this.audio.speak('Ball four. Walk.');
+                this.showPitchCall('Walk');
                 this.animateAdvances('Walk', () => this.finishPlay('Walk'));
             } else {
                 this.audio.speak(`Ball. ${gs.balls} and ${gs.strikes}.`);
+                this.showPitchCall('Ball');
                 this.finishPlay('Ball');
             }
             return;
@@ -2507,10 +3023,7 @@ class GameScene extends Phaser.Scene {
         if (outcome === 'Foul') {
             this.audio.play('hit');
             if (gs.strikes < 2) gs.strikes++;
-            const foulSpot = { x: FIELD.HOME.x + Phaser.Math.Between(-240, 240), y: FIELD.HOME.y + Phaser.Math.Between(30, 70) };
-            this.ballArc(FIELD.HOME, foulSpot, 650, 80, () => this.ball.setVisible(false));
-            this.audio.speak('Foul ball.');
-            this.time.delayedCall(1300, () => this.finishPlay('Foul'));
+            this.animateFoulBall(() => { this.audio.speak('Foul ball.');this.finishPlay('Foul'); });
             return;
         }
 
@@ -2518,11 +3031,7 @@ class GameScene extends Phaser.Scene {
             this.audio.play('hit');
             gs.outs++; gs.balls = 0; gs.strikes = 0;
             const catcherPos = Phaser.Utils.Array.GetRandom(['CF', 'LF', 'RF', 'SS', '2B']);
-            const spot = FIELD.FIELDER_HOMES[catcherPos];
-            this.ballArc(FIELD.HOME, spot, 1300, 160, () => {
-                this.audio.play('catch');
-                this.bb2Anim(this.fielders[catcherPos], 'catch_fly');
-                this.hideHeldBall();
+            this.chaseFlyBall(FIELD.HOME, catcherPos, spot => {
                 this._zoomOnPoint(spot.x, spot.y, 1.7, 300);
                 this.bigMessage('CAUGHT!', 1200);
                 this.audio.speak('Pop fly. Out!');
@@ -2594,18 +3103,15 @@ class GameScene extends Phaser.Scene {
         // only ever appear at zoom 1.
         this.startContactRunners();
         this._ballBusy = (this._ballBusy || 0) + 1;
-        this.ballArc(FIELD.HOME, spot, 540, 20, () => {
-            this.jog(fielder, spot.x + 4, spot.y - 4, 280, 'Quad.easeOut', () => {
-                this.audio.play('catch');
-                this.bb2Anim(fielder, 'field_grounder');
-                this.releaseBall();
-                this.hideHeldBall();
-                this._zoomOnPoint(spot.x, spot.y, 1.4, 280);
-                this.audio.speak(`Ground ball to ${FIELDER_NAMES[fielderPos]}!`);
-                this.time.delayedCall(700, () => {
-                    this._zoomOut(300);
-                    this.time.delayedCall(320, () => this.showThrowMenu(fielderPos, spot));
-                });
+        this.chaseGroundBall(fielder, FIELD.HOME, spot, 540, 20, () => {
+            this.audio.play('catch');
+            this.releaseBall();
+            this.hideHeldBall();
+            this._zoomOnPoint(spot.x, spot.y, 1.4, 280);
+            this.audio.speak(`Ground ball to ${FIELDER_NAMES[fielderPos]}!`);
+            this.time.delayedCall(700, () => {
+                this._zoomOut(300);
+                this.time.delayedCall(320, () => this.showThrowMenu(fielderPos, spot));
             });
         });
     }
@@ -2678,19 +3184,20 @@ class GameScene extends Phaser.Scene {
 
             this.audio.speak(`Taking it to ${BASE_NAMES[targetBase]}!`);
             this._zoomOnPoint(bag.x, bag.y, 1.6, Math.max(300, runMs));
-            this.tweens.killTweensOf(fielder);
-            this.jog(fielder, bag.x + 7, bag.y + 7, runMs / 1.5);
+            this.stopPlayerMovement(fielder);
             // The ball rides in his glove — visible again for the carry, since
             // startGroundballPlay's fielding hid it a moment ago.
             this.ball.setAlpha(1);
             this._ballBusy = (this._ballBusy || 0) + 1;
-            this.tweens.add({
-                targets: this.ball, x: bag.x + 7, y: bag.y - 1, duration: runMs, ease: 'Linear',
-                onComplete: () => { this.releaseBall(); }
-            });
             if (runnerKey) this.sendRunner(runnerKey, out ? runMs + 280 : Math.max(180, runMs - 220), targetBase, { slide: true, out });
 
-            this.time.delayedCall(runMs, () => {
+            this.startBob(fielder);
+            this.movePlayer({targets:fielder,x:bag.x+7,y:bag.y+7,duration:runMs,
+                onUpdate:()=>{
+                    const hand=fielder.ballPoint ? fielder.ballPoint('glove') : {x:fielder.x,y:fielder.y-8};
+                    this.ball.setPosition(hand.x,hand.y);
+                },onComplete:()=>{
+                this.stopBob(fielder);this.releaseBall();
                 this.audio.play(out ? 'tag' : 'catch');
                 // He carried the ball in himself rather than receiving a
                 // throw, so 'stretch_catch' (which reads as catching
@@ -2713,7 +3220,7 @@ class GameScene extends Phaser.Scene {
                         this.finishPlay('Single');
                     });
                 }
-            });
+            }});
             return;
         }
 
@@ -2806,7 +3313,7 @@ class GameScene extends Phaser.Scene {
                             this.time.delayedCall(1600, () => { this._zoomOut(380); this.finishPlay('Double Play'); });
                         } else {
                             this.bigMessage('OUT AT 2ND', 1300);
-                            this.audio.speak('Safe at first. One out.');
+                            this.audio.speak(`Safe at first. ${gs.outs} ${gs.outs === 1 ? 'out' : 'outs'}.`);
                             ['second', 'third'].forEach(k => this.sendRunner(k, 1000));
                             gs.pendingBaseUpdate = () => {
                                 if (gs.bases.second) {
@@ -2875,39 +3382,36 @@ class GameScene extends Phaser.Scene {
 
         this.startContactRunners();
         this._ballBusy = (this._ballBusy || 0) + 1;
-        this.ballArc(FIELD.HOME, spot, 700, 14, () => {
-            this.jog(fielder, spot.x + 4, spot.y - 4, 300, 'Quad.easeOut', () => {
-                this.audio.play('catch');
-                this.bb2Anim(fielder, 'field_bounce');
-                this.releaseBall();
-                this.hideHeldBall();
-                if (!contested) {
-                    this.audio.speak('Single.');
-                    ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
-                    gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
-                    this.time.delayedCall(1200, () => this.finishPlay('Single'));
-                    return;
-                }
-                this._zoomOnPoint(spot.x, spot.y, 1.35, 280);
-                this.audio.speak(`Base hit! Runner going for ${BASE_NAMES[contested]}!`);
-                this.time.delayedCall(700, () => {
-                    this._zoomOut(300);
-                    this.time.delayedCall(320, () => {
-                        const options = getCutdownThrowOptions(contested);
-                        const chips = { second: '2ND', third: '3RD', home: 'HOME', hold: 'PITCHER' };
-                        const targets = options.map(o => ({
-                            ...o,
-                            chip: chips[o.value],
-                            fielder: this.fielders[o.value === 'hold' ? 'P' : this.coveringFielder(o.value, outfielderPos)]
-                        }));
-                        this.setMenu(new BaseTargetSelector(this, {
-                            targets, audio: this.audio, title: 'Cut Him Down?', zoomOnScan: true,
-                            onSelect: (opt) => {
-                                this.setMenu(null);
-                                this.resolveCutdownThrow(outfielderPos, spot, contested, opt);
-                            }
-                        }));
-                    });
+        this.chaseGroundBall(fielder, FIELD.HOME, spot, 700, 14, () => {
+            this.audio.play('catch');
+            this.releaseBall();
+            this.hideHeldBall();
+            if (!contested) {
+                this.audio.speak('Single.');
+                ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
+                gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
+                this.time.delayedCall(1200, () => this.finishPlay('Single'));
+                return;
+            }
+            this._zoomOnPoint(spot.x, spot.y, 1.35, 280);
+            this.audio.speak(`Base hit! Runner going for ${BASE_NAMES[contested]}!`);
+            this.time.delayedCall(700, () => {
+                this._zoomOut(300);
+                this.time.delayedCall(320, () => {
+                    const options = getCutdownThrowOptions(contested);
+                    const chips = { second: '2ND', third: '3RD', home: 'HOME', hold: 'PITCHER' };
+                    const targets = options.map(o => ({
+                        ...o,
+                        chip: chips[o.value],
+                        fielder: this.fielders[o.value === 'hold' ? 'P' : this.coveringFielder(o.value, outfielderPos)]
+                    }));
+                    this.setMenu(new BaseTargetSelector(this, {
+                        targets, audio: this.audio, title: 'Cut Him Down?', zoomOnScan: true,
+                        onSelect: (opt) => {
+                            this.setMenu(null);
+                            this.resolveCutdownThrow(outfielderPos, spot, contested, opt);
+                        }
+                    }));
                 });
             });
         });
@@ -3024,49 +3528,27 @@ class GameScene extends Phaser.Scene {
     // the play being called dead, and guarantees the ball is never stranded
     // somewhere on the field. Dead-ball outcomes just put the ball away.
     returnBallToPitcher(outcome) {
-        const deadBall = ['Home Run', 'Foul', 'Strike', 'Ball', 'Strike Out', 'Walk', 'Hit By Pitch'];
-        if (!this.ball.visible) {
-            this.returnFielders();
-            return;
-        }
+        const deadBall = ['Home Run','Foul','Strike','Ball','Strike Out','Walk','Hit By Pitch'];
         if (this._returnPending) return;
         this._returnPending = true;
-        this._returnDead = deadBall.includes(outcome);
-        // Wait until the ball has actually been GATHERED by a fielder (not
-        // still flying / being chased). The fielders hold their spots until
-        // the gatherer has released the throw — then everyone jogs home.
-        let tries = 0;
         const attempt = () => {
-            if (!this.ball.visible || this.gs.gameOver) {
-                this._returnPending = false;
-                this.returnFielders();
-                return;
+            if ((this._ballBusy || 0) > 0 || this._receivingPitch) {
+                this.time.delayedCall(120, attempt);return;
             }
-            if ((this._ballBusy || 0) > 0 && ++tries < 40) {
-                this.time.delayedCall(120, attempt);
-                return;
+            if (!this.ball.visible || this.gs.gameOver || deadBall.includes(outcome)) {
+                this._returnPending = false;this.ball.setVisible(false);this.returnFielders();return;
             }
-            this._returnPending = false;
-            if (this._returnDead) {
-                // Dead ball (caught pitch, etc.) — put it away once it has
-                // settled in the glove
-                this.ball.setVisible(false);
-                this.returnFielders();
-                return;
+            const pitcher = this.fielders.P;
+            const holder = this._ballHolder && this._ballHolder.active ? this._ballHolder
+                : Object.values(this.fielders).filter(p=>p.active).sort((a,b)=>
+                    Math.hypot(a.x-this.ball.x,a.y-this.ball.y)-Math.hypot(b.x-this.ball.x,b.y-this.ball.y))[0];
+            if (!holder || holder === pitcher) {
+                this._returnPending = false;this.ball.setVisible(false);this.returnFielders();return;
             }
-            const from = { x: this.ball.x, y: this.ball.y };
-            const dist = Phaser.Math.Distance.Between(from.x, from.y, FIELD.MOUND.x, FIELD.MOUND.y);
-            if (dist < 30) {
-                this.ball.setVisible(false);
-                this.returnFielders();
-                return;
-            }
-            this.audio.play('throw');
-            // The throw is away — NOW the defense can jog back to position
-            this.time.delayedCall(120, () => this.returnFielders());
-            this.ballArc(from, FIELD.MOUND, Math.max(280, dist / 0.55), Math.min(60, dist * 0.12), () => {
-                this.audio.play('catch');
-                this.ball.setVisible(false);
+            if (holder._fieldAction || pitcher._busy) { this.time.delayedCall(80,attempt);return; }
+            this.stopPlayerMovement(pitcher);
+            this.throwToPlayer(holder, pitcher, {arc:30,onReceiveDone:()=>this.returnFielders()}, () => {
+                this.ball.setVisible(false);this._returnPending = false;this.returnFielders();
             });
         };
         attempt();
@@ -3075,6 +3557,9 @@ class GameScene extends Phaser.Scene {
     // ─── End-of-play / inning / game (ported from v1 finishPlay etc.) ───────
     finishPlay(outcome) {
         const gs = this.gs;
+        this.setDefenseReady(false);
+        this.setMenu(null);
+        this.resetFieldCamera();
         if (gs.pendingBaseUpdate) {
             gs.pendingBaseUpdate();
             gs.pendingBaseUpdate = null;
@@ -3102,6 +3587,7 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
+        this.resetBatter(outcome);
         this.time.delayedCall(2200, () => {
             if (gs.outs >= GAME_CONSTANTS.GAME_RULES.MAX_OUTS) {
                 this.endHalfInning();
@@ -3113,6 +3599,7 @@ class GameScene extends Phaser.Scene {
 
     endHalfInning() {
         const gs = this.gs;
+        this.resetFieldCamera();
         this.audio.speak('That retires the side.');
         gs.outs = 0;
         gs.bases = { first: null, second: null, third: null };
@@ -3148,6 +3635,7 @@ class GameScene extends Phaser.Scene {
 
     endGame() {
         const gs = this.gs;
+        this.resetFieldCamera();
         gs.gameOver = true;
         const youKey = gs.playerIsAway ? 'Red' : 'Blue';
         const cpuKey = gs.playerIsAway ? 'Blue' : 'Red';
@@ -3177,6 +3665,7 @@ class GameScene extends Phaser.Scene {
 
     // ─── Pause ───────────────────────────────────────────────────────────────
     showPauseMenu(resumeCb) {
+        this.resetFieldCamera(0);
         const vm = window.NarbeVoiceManager;
         const soundOn = this.audio.settings.soundEnabled;
         const musicOn = this.audio.settings.musicEnabled;
@@ -3188,6 +3677,7 @@ class GameScene extends Phaser.Scene {
             audio: this.audio, title: 'Paused',
             options: [
                 { value: 'resume', label: 'Resume Game' },
+                { value: 'batting', label: bb2BattingLabel(), hint: 'Change how you swing' },
                 { value: 'music', label: `Music: ${musicOn ? 'ON' : 'OFF'}` },
                 { value: 'sound', label: `Sound Effects: ${soundOn ? 'ON' : 'OFF'}` },
                 { value: 'tts', label: `Text-to-Speech: ${ttsOn ? 'ON' : 'OFF'}` },
@@ -3198,6 +3688,7 @@ class GameScene extends Phaser.Scene {
             ],
             onSelect: (opt) => {
                 if (opt.value === 'resume') { this.setMenu(null); resumeCb(); }
+                else if (opt.value === 'batting') { this.audio.speak(bb2ToggleBatting(), true); this.showPauseMenu(resumeCb); }
                 else if (opt.value === 'sound') { this.audio.toggleSound(); this.showPauseMenu(resumeCb); }
                 else if (opt.value === 'music') { this.audio.toggleMusic(); this.showPauseMenu(resumeCb); }
                 else if (opt.value === 'tts') {
@@ -3225,12 +3716,13 @@ class GameScene extends Phaser.Scene {
 // Post-game screen. In season mode the message reflects the football-style
 // stage transition (series progress, made playoffs, champions, ...) and
 // CONTINUE returns to the SeasonScene standings table.
-class ResultScene extends Phaser.Scene {
+class ResultScene extends BaseballScene {
     constructor() { super('ResultScene'); }
 
     create(data) {
         this.audio = audioSys();
         this.season = seasonMgr();
+        this._playerMotion = new BaseballPlayerMotion(this);
         const o = data.seasonOutcome;
         const isChamp = o === 'champions';
 

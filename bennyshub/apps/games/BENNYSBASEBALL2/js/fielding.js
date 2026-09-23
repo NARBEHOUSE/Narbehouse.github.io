@@ -78,14 +78,14 @@ function getGroundballThrowOptions(bases, outs) {
 
     opts.push({
         value: 'first', label: 'Throw to 1st', context: 'force',
-        hint: 'Get the batter for the sure out'
+        hint: 'Try to beat the batter to first base'
     });
 
     if (bases.first) {
         opts.push({
             value: 'second', label: 'Throw to 2nd',
             context: 'force', dpChance: outs < 2,
-            hint: outs < 2 ? 'Force out, and a chance to turn two' : 'Force out the lead runner'
+            hint: outs < 2 ? 'Try for a force out at second, then a double play' : 'Try for a force out'
         });
     }
 
@@ -95,7 +95,7 @@ function getGroundballThrowOptions(bases, outs) {
         opts.push({
             value: 'third', label: 'Throw to 3rd',
             context: 'force',
-            hint: 'Force out the lead runner'
+            hint: 'Try for a force out'
         });
     }
 
@@ -103,13 +103,13 @@ function getGroundballThrowOptions(bases, outs) {
         opts.push({
             value: 'home', label: 'Throw Home',
             context: 'force',
-            hint: 'Force at the plate, save the run'
+            hint: 'Try for a force out at home to prevent the run'
         });
     }
 
     opts.push({
         value: 'hold', label: 'Throw to the Pitcher',
-        hint: 'End the play. Everyone is safe'
+        hint: 'End the play without attempting an out'
     });
 
     return opts;
@@ -122,7 +122,7 @@ function getCutdownThrowOptions(leadBase) {
         {
             value: leadBase, label: leadBase === 'home' ? 'Throw Home' : `Throw to ${leadBase === 'third' ? '3rd' : '2nd'}`,
             context: 'cutdown',
-            hint: 'Long throw to cut down the runner'
+            hint: 'Try to tag the runner out with a long throw'
         },
         {
             value: 'hold', label: 'Throw to the Pitcher',

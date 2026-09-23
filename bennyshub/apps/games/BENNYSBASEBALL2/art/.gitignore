@@ -1,0 +1,4 @@
+# Optional generated reviews and Python caches are not source assets.
+out/
+__pycache__/
+*.py[cod]

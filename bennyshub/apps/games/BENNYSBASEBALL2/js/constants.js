@@ -50,6 +50,37 @@ const GAME_CONSTANTS = {
 const LS_SEASON = GAME_CONSTANTS.STORAGE_KEYS.SEASON;
 const LS_GAME_STATE = 'bennyBaseball2_gameState';
 
+// Access changes execution, not scoring or season eligibility. Read on each
+// menu so a player can change batting style midway through an inning.
+let bb2BattingFallback = 'pick';
+function bb2BattingMode() {
+    try {
+        const p = JSON.parse(localStorage.getItem(GAME_CONSTANTS.STORAGE_KEYS.PREFERENCES) || '{}');
+        return p.battingMode === 'charge' ? 'charge' : p.battingMode === 'pick' ? 'pick' : bb2BattingFallback;
+    } catch (_) { return bb2BattingFallback; }
+}
+function bb2ToggleBatting() {
+    bb2BattingFallback = bb2BattingMode() === 'pick' ? 'charge' : 'pick';
+    try {
+        const key = GAME_CONSTANTS.STORAGE_KEYS.PREFERENCES;
+        let p;
+        try { p = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { p = {}; }
+        if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
+        p.battingMode = bb2BattingFallback;
+        localStorage.setItem(key, JSON.stringify(p));
+    } catch (_) { /* The selection still works when storage is unavailable. */ }
+    return bb2BattingLabel();
+}
+function bb2BattingLabel() {
+    return 'Batting: ' + (bb2BattingMode() === 'pick' ? 'Pick a Swing' : 'Hold to Charge');
+}
+function bb2SwingQuality(swing, pitch, location, random = Math.random) {
+    // Replace motor timing with baseball execution, including genuine misses.
+    const miss = ({ bunt: 0.03, normal: 0.06, power: 0.16 }[swing] || 0.06)
+        + (location === 'Outside' ? 0.12 : 0) + (pitch === 'Knuckleball' ? 0.03 : 0);
+    return random() < miss ? 1.6 : random() * 0.75;
+}
+
 // ─── Season structure (football-style shell, baseball series rules) ─────────
 // 16 regular games. 10+ wins → playoffs. Perfect 16-0 skips straight to the
 // championship series. Playoff rounds are SERIES: best-of-3 quarterfinal,
@@ -112,13 +143,13 @@ const FIELD = {
     FIELDER_HOMES: {
         P:    { x: 500, y: 424 },
         C:    { x: 500, y: 556 },
-        '1B': { x: 692, y: 380 },
+        '1B': { x: 650, y: 370 },
         '2B': { x: 582, y: 300 },
         SS:   { x: 418, y: 300 },
-        '3B': { x: 308, y: 380 },
-        LF:   { x: 290, y: 178 },
-        CF:   { x: 500, y: 118 },
-        RF:   { x: 710, y: 178 }
+        '3B': { x: 320, y: 370 },
+        LF:   { x: 260, y: 200 },
+        CF:   { x: 500, y: 145 },
+        RF:   { x: 740, y: 200 }
     },
     // Outfield wall: one smooth arc. Corners sit exactly on the extended
     // foul lines (home→3rd and home→1st directions, scale 2.49).
