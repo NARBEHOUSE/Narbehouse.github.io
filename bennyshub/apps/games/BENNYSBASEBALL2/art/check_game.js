@@ -14,7 +14,7 @@ const context={console,Math:math,Date:{now:()=>now},setTimeout,clearTimeout,setI
         Input:{Keyboard:{KeyCodes:{SPACE:32}}},Utils:{Array:{GetRandom:a=>a[Math.floor(random()*a.length)]}}}};
 vm.createContext(context);
 for(const f of ['constants','player-art','sprites','ui','fielding','rendering','scenes','movement','game']) vm.runInContext(fs.readFileSync(path.join(root,'js',f+'.js'),'utf8'),context);
-const api=vm.runInContext('({GameScene,SettingsScene,ScanInput,ScanList,FIELD,BB2_SHEETS,BB2_FOOT_OFFSET,BB2_DISPLAY,BB2_CELL,BASEBALL_ART,bb2BattingMode,bb2ToggleBatting,GAME_CONSTANTS})',context);
+const api=vm.runInContext('({GameScene,SettingsScene,ScanInput,ScanList,FIELD,BB2_SHEETS,BB2_FOOT_OFFSET,BB2_DISPLAY,BB2_CELL,BASEBALL_ART,bb2BattingMode,bb2ToggleBatting,bb2PitchProfile,bb2SwingQuality,bb2SwingFit,bb2PitchChoices,bb2HitBatterChance,GAME_CONSTANTS})',context);
 const {GameScene,SettingsScene,ScanInput,FIELD,BB2_SHEETS,BASEBALL_ART}=api;
 function shape(x=0,y=0){const o={x,y,scaleX:1,scaleY:1,active:true,visible:true,alpha:1,handlers:{},
     setPosition(x,y){this.x=x;this.y=y;return this;},setScale(x,y=x){this.scaleX=x;this.scaleY=y;return this;},
@@ -179,7 +179,7 @@ for(let i=0;i<160;i++){
 }
 assert(out>0&&safe>0,'runner/ball races produce both outcomes');
 
-// Opening lineup: the on-deck hitter starts offscreen and walks to the circle.
+// Opening lineup: the on-deck hitter starts offscreen and jogs to the circle.
 for(const half of ['top','bottom']) {
     const s=fixture();s.gs.playerIsAway=true;s.gs.half=half;let ready=0;
     s.createTeams(true,()=>ready++);const deck=s.onDeckBatter,start={x:deck.x,y:deck.y};
@@ -187,7 +187,7 @@ for(const half of ['top','bottom']) {
     assert(s.playerMotion().moves.has(deck));assert(deck._anim.startsWith('walk_'));
     s.until(()=>s.now>=1000);assert.equal(ready,0);
     const travelled=Math.hypot(deck.x-start.x,deck.y-start.y);
-    assert(travelled>20&&travelled<85,'On-deck hitter must visibly walk, not teleport');
+    assert(travelled>20&&travelled<110,'On-deck hitter must visibly jog, not teleport');
     const end=s.now+18000;
     while(!ready&&s.now<end) {
         s.tick();
@@ -244,7 +244,7 @@ for(const outcome of ['Strike','Foul','Single','Double','Triple','Home Run','Pop
         s.tick(1000/60);
         if(s.ball.visible && s.ball.alpha>0 && Math.hypot(s.ball.x-origin.x,s.ball.y-origin.y)>20)movingFrames++;
     }
-    assert(s.result,outcome+' did not finish');
+    assert(s.result,outcome+' did not finish '+JSON.stringify({busy:s._ballBusy,holder:s._ballHolder?.pos,race:s._extraBaseRun?.arrivedAt,moves:[...s.playerMotion().moves.values()].map(m=>({pos:m.p.pos,x:m.p.x,y:m.p.y,goal:m.goal})),players:s.playerMotion().players().map(p=>({pos:p.pos,x:p.x,y:p.y}))}));
     const impact=s.log.filter(e=>e.audio==='hit'||e.audio==='bigHit');
     assert.equal(impact.length,outcome==='Strike'?0:1,outcome+' contact sound count');
     if(outcome!=='Strike')assert(movingFrames>=10,outcome+' needs visible ball flight');
@@ -336,3 +336,247 @@ if(process.argv.includes('--record')){
     fs.mkdirSync(path.join(__dirname,'out'),{recursive:true});fs.writeFileSync(path.join(__dirname,'out/replay.json'),JSON.stringify({frames,result:s.result}));
 }
 console.log('Passed: accessible batting/menus, 60 fly chases, 20 ground pickups, 20 gap-hit relays, and 160 grounder races.',{out,safe});
+
+// The visible read and swing quality share one pitch model, in both controls.
+assert.equal(api.bb2PitchProfile('Fastball','Middle').tier,'green');
+assert.equal(api.bb2PitchProfile('Fastball','High Middle').tier,'yellow');
+assert.equal(api.bb2PitchProfile('Slider','Low Outside').tier,'red');
+assert(api.bb2PitchProfile('Slider','High Inside').strike,'A difficult pitch can still be a strike');
+assert(api.bb2SwingFit('normal',api.bb2PitchProfile('Fastball','High Middle'))>api.bb2SwingFit('power',api.bb2PitchProfile('Fastball','High Middle')));
+assert(api.bb2SwingFit('power',api.bb2PitchProfile('Fastball','Low Inside'))>api.bb2SwingFit('normal',api.bb2PitchProfile('Fastball','Low Inside')));
+function averageQuality(swing,pitch,location){let sum=0;for(let i=0;i<5000;i++)sum+=api.bb2SwingQuality(swing,pitch,location,random);return sum/5000;}
+assert(averageQuality('power','Fastball','Middle')<averageQuality('power','Slider','Low Outside'));
+assert(averageQuality('normal','Fastball','High Middle')<averageQuality('power','Fastball','High Middle'));
+const hands=new Set();
+for(let i=0;i<100;i++){
+    const choices=api.bb2PitchChoices(random);assert.equal(choices.length,5);assert.equal(new Set(choices.map(c=>c.pitch)).size,5);
+    assert.equal(choices.filter(c=>c.risk).length,2);const edge=choices.filter(c=>c.edge).length;assert(edge>=1&&edge<=3);
+    hands.add(JSON.stringify(choices));
+}
+assert(hands.size>90);
+for(const location of ['Middle','High Middle','Low Inside','High Inside','Low Outside'])for(const hold of [false,true]){
+    const s=fixture();s.gs.selectedPitchLocation=location;s.beginInteractivePitch();
+    if(hold){s.until(()=>s.ib.pitchProgress>.1);s.onSwingStart();}
+    s.until(()=>s.result);assert.equal(s.result,api.bb2PitchProfile('Fastball',location).strike?'Strike':'Ball');
+    assert(!s.log.some(e=>e.audio==='swing'),'Unreleased charge must take the pitch');
+    const count=s.gs.balls+s.gs.strikes;s.onSwingRelease();assert.equal(s.gs.balls+s.gs.strikes,count);
+}
+{
+    const s=fixture();s.startPitchingPhase();const grid=s.pitchGrid;s.setMenu(null);s.showPitchMenu();assert.equal(s.pitchGrid,grid,'Pause must not reroll choices');
+    s.setMenu(null);s.startPitchingPhase();assert.notEqual(s.pitchGrid,grid);
+}
+function cpuRates(risk,miss){const s=fixture();s.gs.selectedPitchEffectiveness=.58;s.gs.pitchRisk=risk;s.gs.pitchMissedSpot=miss;s.gs.samePitchCount=1;let k=0,hard=0;
+    for(let i=0;i<10000;i++){const o=s.computeCpuPitchOutcome('Fastball');if(o==='Strike')k++;if(['Double','Triple','Home Run'].includes(o))hard++;}return{k,hard};}
+const neutral=cpuRates(false,false),located=cpuRates(true,false),hanger=cpuRates(true,true);
+assert(located.k>neutral.k);assert(hanger.hard>neutral.hard*1.5);assert(hanger.k<neutral.k);
+{
+    const s=liveRoster(),r=addRunner(s,'second');s.departPlayer(r);s.until(()=>s.now>=1500);
+    const route=r._transitionPath,movement=s.playerMotion().moves.get(r);
+    s.gs.half='bottom';s.gs.bases={first:null,second:null,third:null};s.gs.outs=0;
+    let done=0;s.swapSides(()=>done++);assert.equal(r._transitionPath,route);assert.equal(s.playerMotion().moves.get(r),movement);
+    s.until(()=>done,35000);assert(!r.active);
+}
+{
+    const s=liveRoster(),home=[...Object.values(s.fielders),s.batter,s.onDeckBatter].map(p=>({p,x:p.x,y:p.y}));
+    let done=0;s.benchesConfrontation(()=>done++);s.until(()=>done,45000);
+    assert.equal(done,1);assert(!s._confrontation);assert(home.every(({p,x,y})=>p.active&&Math.hypot(p.x-x,p.y-y)<1));
+}
+for(const team of ['user','comp']){
+    const s=liveRoster();s.gs.hitBatters=2;s.gs.hbpEscalation=2;let confront=0,advance=0;
+    s.benchesConfrontation=cb=>{confront++;cb();};s.animateAdvances=(o,cb)=>{assert.equal(o,'Walk');advance++;cb();};
+    s.awardHitByPitch(team);assert.equal(confront,1);assert.equal(advance,1);assert.equal(s.result,'Hit By Pitch');
+    s.awardHitByPitch(team);assert.equal(confront,2,'Every subsequent HBP escalates until a non-risky selection');
+}
+console.log('Pitch reads, swing matchups, take controls, risk/payoff, pause persistence, exit continuity and HBP recovery passed.');
+
+{
+    const s=fixture();s.ib.awaitingChoice=true;s.showSwingChoices();s.menu.index=1;
+    s.menu._announceCurrent();s.menu._announceCurrent();
+    const voice=s.log.filter(e=>e.speech).map(e=>e.speech);
+    assert(voice.some(t=>t.includes('extra bases')));assert.equal(voice.at(-1),'Power');
+    s.setMenu(null);s.startPitchingPhase();const i=s.pitchGrid.findIndex(c=>c.risk);s.menu.index=i;
+    s.menu._announceCurrent();s.menu._announceCurrent();
+    const calls=s.log.filter(e=>e.speech).map(e=>e.speech);assert(calls.at(-2).includes('harder hits'));assert(!calls.at(-1).includes('harder hits'));
+    s.setMenu(null);s.showPitchMenu();s.menu.index=i;s.menu._announceCurrent();
+    assert(!s.log.at(-1).speech.includes('harder hits'),'Explanation remains learned across menus');
+}
+console.log('Choice narration: one explanation per swing/risk category per game, then short labels.');
+
+assert(api.bb2HitBatterChance(true,4,false)>api.bb2HitBatterChance(true,1,false));
+assert.equal(api.bb2HitBatterChance(true,100,true),.80);assert.equal(api.bb2HitBatterChance(false,0,false),0);
+for(const [throwerPos,targetBase] of [['1B','first'],['3B','third'],['C','home'],['2B','second'],['SS','first']]){
+    const s=fixture(),cover=s.fielders[s.coveringFielder(targetBase,throwerPos)],bag=vm.runInContext('BASE_COORDS',context)[targetBase];
+    const distance=Math.hypot(cover.x-bag.x-9,cover.y-bag.y-9),start={x:cover.x,y:cover.y};
+    let caught=0;s.animateThrowRace({throwerPos,targetBase,throwTimeMs:220,out:true},()=>caught++);
+    s.until(()=>s.now>=100);assert(Math.hypot(cover.x-start.x,cover.y-start.y)<=13.01,'Cover fielder exceeded a run pace');
+    assert(!s.log.some(e=>e.audio==='throw')||distance<20,'Throw starts before coverage is ready');
+    while(!caught&&s.now<12000){
+        const before={x:cover.x,y:cover.y};s.tick(1000/60);
+        assert(Math.hypot(cover.x-before.x,cover.y-before.y)<=130/60+.01,'Position jumped between frames');
+    }
+    assert.equal(caught,1);assert(s.now>=distance/130*1000);assert(Math.hypot(cover.x-bag.x-9,cover.y-bag.y-9)<.1,'Catch must take place at the bag');
+}
+{
+    const s=fixture();s.startGroundCoverage('1B');const move=s.playerMotion().moves.get(s.fielders.P);
+    assert(move&&move.speed<=115.01,'Pitcher begins backing up first at contact');
+    assert(!s.playerMotion().moves.has(s.fielders['1B']),'Ball chaser must not be pulled to a covering route');
+}
+console.log('Coverage: speed limits, actual arrivals, pitcher backing up first, and risky-pitch HBP probability passed.');
+
+for(const hold of [false,true]){
+    const s=fixture();s.gs.selectedPitchLocation='Wide Inside';s.beginInteractivePitch();
+    s.until(()=>s.ib.pitchProgress>.1);s.ib.hitByPitch=true;if(hold)s.onSwingStart();
+    s.until(()=>s.result);assert.equal(s.result,'Hit By Pitch');assert.equal(s.gs.hitBatters,1);
+    assert.equal(s.gs.outs,0);assert(s.gs.bases.first);assert(s.log.some(e=>e.pos==='B'&&e.animation==='hit_by_pitch'));
+    assert(!s.log.some(e=>e.pos==='C'&&e.animation==='receive'),'Pitch that hits the batter must not pass through to the catcher');
+}
+{
+    const s=fixture();s.gs.selectedPitchLocation='Wide Inside';
+    vm.runInContext('window.savedHbpRandom=Math.random;Math.random=()=>.01',context);s.pitchProfile();
+    vm.runInContext('Math.random=window.savedHbpRandom',context);assert(s.ib.hitByPitch,'CPU inside miss can hit the player batter');
+}
+console.log('Player HBP: charge held or untouched, inside miss generation, visible flinch and free base passed.');
+
+function trackTransfers(s){
+    const pickup=s.chaseGroundBall,throwBall=s.throwToPlayer;s._transfers=[];const held=new Map();
+    s.chaseGroundBall=function(p,from,to,ms,arc,cb,bounce){
+        if(bounce){
+            const dx=bounce.x-from.x,dy=bounce.y-from.y,rx=to.x-bounce.x,ry=to.y-bounce.y;
+            assert(dx*rx+dy*ry>=0&&Math.abs(dx*ry-dy*rx)<.001,'Roll continues in the direction of the drive');
+            assert(Math.hypot(to.x-FIELD.WALL_ARC.cx,to.y-FIELD.WALL_ARC.cy)<=FIELD.WALL_ARC.r-17.99,'Roll stays inside fence');
+        }
+        return pickup.call(this,p,from,to,ms,arc,()=>{held.set(p,this.now);cb();},bounce);};
+    s.throwToPlayer=function(p,r,o,cb){return throwBall.call(this,p,r,{...o,onRelease:duration=>{
+        if(held.has(p))this._transfers.push(this.now-held.get(p));if(o.onRelease)o.onRelease(duration);
+    }},()=>{held.set(r,this.now);if(cb)cb();});};
+}
+
+for(const outcome of ['Double','Triple'])for(let i=0;i<20;i++){
+    seed=i*197+91;const s=liveRoster();
+    if(i%2){addRunner(s,'first');addRunner(s,'second');addRunner(s,'third');}
+    trackTransfers(s);
+    let done=0;
+    s.animateAdvances(outcome,()=>done++,true);s.chaseDownExtraBaseHit(outcome,()=>done++);
+    s.until(()=>done===2,30000);const race=s._lastExtraBaseRace;
+    assert(race&&race.runnerAt!=null,'Runner must actually touch the bag before safe');
+    assert(race.calledAt>=race.runnerAt&&race.calledAt>=race.ballAt,'Safe call waits for both actual arrivals');
+    assert(s._transfers.length&&s._transfers.every(t=>t<=1500),'Automatic transfer exceeded 1.5 seconds: '+JSON.stringify({outcome,i,t:s._transfers}));
+}
+console.log('Extra-base timing: 40 doubles/triples, automatic releases within 1.5 seconds and calls after actual arrivals.');
+
+for(const [base,key] of [['first','batter'],['second','first'],['third','second'],['home','third']]){
+    const s=liveRoster();addRunner(s,'first');addRunner(s,'second');addRunner(s,'third');s.startContactRunners();s.until(()=>s.now>=1500);
+    let done=0;s.animateThrowRace({throwerPos:'RF',targetBase:base,out:false,throwTimeMs:780,runnerKey:key},()=>done++);s.until(()=>done);
+    const r=s._lastThrowRace;assert(r.runnerAt!=null&&r.ballAt-r.runnerAt>0&&r.ballAt-r.runnerAt<500,'Safe call must be a close visible race: '+JSON.stringify(r));
+}
+console.log('Safe throws: close visible finishes at first, second, third and home.');
+
+// Compounding applies to actual consecutive selections, across pitch types.
+for(const [i,expected] of [.035,.07,.14,.28,.56,.8,.8].entries())
+    assert(Math.abs(api.bb2HitBatterChance(true,i+1,false)-expected)<1e-10);
+for(const edge of [true,false]){
+    const s=fixture();s.isPlayerBatting=()=>false;s.deliverPitch=()=>{};
+    s.getPitchOutcome=()=>({location:'Center',drifted:false});let ordinary=0;
+    s.computeCpuPitchOutcome=()=>{ordinary++;return 'Ball';};
+    const pick=(risk,pitch='Fastball')=>s.processPitchSelection({risk,edge,pitch,effectiveness:.58});
+    vm.runInContext('window.savedRiskRandom=Math.random;Math.random=()=>.5',context);
+    try{
+        for(let i=0;i<5;i++)pick(true,i%2?'Slider':'Fastball');
+        assert.equal(s.gs.riskyPitchStreaks.player,5);assert.equal(ordinary,4,'Fifth risky pitch crosses the fixed 50% roll');
+        s.gs.hbpEscalation=4;pick(false);assert.equal(s.gs.hbpEscalation,0,'Non-risky choice resets fight escalation');assert.equal(s.gs.riskyPitchStreaks.player,0,'Favorable and Neutral both reset');
+        pick(true);assert.equal(s.gs.riskyPitchStreaks.player,1);assert.equal(ordinary,6,'Next risky pitch returns to the initial chance');
+    }finally{vm.runInContext('Math.random=window.savedRiskRandom',context);}
+}
+console.log('Risk streak: chance doubles from 3.5% to an 80% cap; Favorable/Neutral reset actual selections.');
+
+// Rumble varies by seed and roster, moves the crowd, and restores every actor.
+for(let i=0;i<4;i++){
+    seed=1201+i*773;const s=liveRoster();
+    if(i%2){addRunner(s,'first');addRunner(s,'second');addRunner(s,'third');}
+    const dustAlpha=[];s.add=new Proxy(s.add,{get:(target,key)=>key==='graphics'?()=>{const g=shape();g.fillStyle=(color,alpha)=>{dustAlpha.push({at:s.now,alpha});return g;};return g;}:target[key]});
+    const original=s.playerMotion().players().map(p=>({p,x:p.x,y:p.y}));let done=0;
+    s.benchesConfrontation(()=>done++);
+    assert.equal(s._scufflePhase,'fighting','Fight starts immediately, before the benches arrive');
+    assert(!s.log.some(e=>e.animation==='scuffle'),'Players first approach an opponent instead of punching the air');
+    const normalTick=s.tick;let punches=0;
+    s.tick=dt=>{normalTick(dt);if(s._scufflePhase!=='fighting')return;
+        for(const p of s.playerMotion().players())if(p._anim==='scuffle'){
+            const r=p._scuffleOpponent;assert(r&&r.active,'Every punch has an opponent');
+            assert(Object.values(s.fielders).includes(p)!==Object.values(s.fielders).includes(r),'No punching teammates');
+            assert(Math.hypot(p.x-r.x,p.y-r.y)<=30.01&&Math.abs(p.y-r.y)<=10.01,'Punches must be in reach and aligned');
+            assert.equal(p._flip,r.x<p.x,'Face the opponent');punches++;
+        }
+    };
+    const start=s.now,actors=s.playerMotion().players().map(p=>({p,x:p.x,y:p.y}));
+    s.until(()=>s.now>=start+4500,6000);
+    assert.equal(s._scufflePhase,'fighting');
+    assert(dustAlpha[0].at-start>=350&&dustAlpha[0].alpha<.06,'Dust eases in after fighting starts');
+    assert(dustAlpha.some(d=>d.alpha===.22),'Dust reaches full strength gradually');
+    assert(punches>20,'The crowd must actually engage nearby opponents');
+    assert(s.log.find(e=>e.animation==='scuffle').time-start<2200,'First opponents engage promptly');
+    assert(actors.filter(a=>Math.hypot(a.p.x-a.x,a.p.y-a.y)>15).length>=8,'Rumble must move instead of lining up in place');
+    s.until(()=>s._scufflePhase==='dusting',7000);assert(s.now-start>=10000);
+    assert(s.log.some(e=>e.pos==='R'&&e.animation==='scuffle'&&e.time>start&&e.time<start+10000),'Players from the bench join before the fight ends');
+    assert(!actors.some(({p})=>s.playerMotion().moves.has(p)),'Stop all shuffling before dusting');
+    s.until(()=>done,22000);assert.equal(done,1);
+    assert(original.every(({p,x,y})=>p.active&&Math.hypot(p.x-x,p.y-y)<1));
+    assert.equal(s.playerMotion().players().length,original.length,'Bench extras leave the field');
+}
+console.log('Rumble: four randomized rosters, moving crowd, collision separation, ten-second duration and complete return passed.');
+
+// Outfield choices include only live advances and remain available indefinitely.
+for(const mask of [0,1,3,7])for(const choice of ['first','hold']){
+    const s=liveRoster();s.gs.half='bottom';
+    ['first','second','third'].forEach((b,i)=>{if(mask&(1<<i))addRunner(s,b);});
+    s.startCpuSingle();s.until(()=>s.menu,10000);
+    const values=s.menu.options.map(o=>o.value);
+    assert.equal(JSON.stringify(values),JSON.stringify(['first',...(mask&1?['second']:[]),...(mask===3||mask===7?['third']:[]),...(mask===7?['home']:[]),'hold']));
+    const at=s.now;s.until(()=>s.now>=at+6000,7000);assert(s.menu&&s.menu.active,'Choice cannot time out');
+    assert(!s.log.some(e=>e.audio==='throw'),'No throw before a selection');
+    s.menu.index=values.indexOf(choice);s.menu.select();s.until(()=>s.result,16000);
+    assert(s.log.some(e=>e.audio==='throw'),'Every selected target, including pitcher, gets a visible throw');
+}
+console.log('Outfield singles: live base choices, unlimited decision time and real pitcher return throws passed.');
+
+for(const outcome of ['Single','Ground Out','Double Play','Triple Play'])for(let i=0;i<8;i++){
+    seed=6001+i*193;const s=liveRoster();
+    ['first','second','third'].forEach(b=>addRunner(s,b));trackTransfers(s);
+    let done=false;s.animatePlayerContact(outcome,()=>done=true);try{s.until(()=>done,25000);}catch(e){throw new Error(JSON.stringify({outcome,i,players:s.playerMotion().players().map(p=>({pos:p.pos,x:p.x,y:p.y}))})+e.message);}
+    assert(s._transfers.length&&s._transfers.every(t=>t<=1500),'Slow automatic infield throw: '+JSON.stringify({outcome,i,t:s._transfers}));
+}
+console.log('Automatic infield pickups/relays: 32 plays release within 1.5 seconds.');
+
+// The pitch location judged by the player survives every swing selection.
+for(const pitch of ['Fastball','Curveball','Slider','Changeup','Knuckleball'])
+for(const location of ['Middle','High Middle','Low Outside'])
+for(const choice of ['normal','power','bunt'])for(const mode of ['pick','charge']){
+    const s=fixture();s.gs.selectedPitch=pitch;s.gs.selectedPitchLocation=location;let contact;
+    s.processInteractiveSwingOutcome=()=>{contact={x:s.ball.x,y:s.ball.y};s.ib.active=false;};
+    if(mode==='pick'){
+        s.beginChoicePitch();s.until(()=>s.ib.awaitingChoice);const judged={x:s.ball.x,y:s.ball.y};
+        s.setMenu(null);s.beginSelectedPitch(choice);
+        while(!contact&&s.now<15000){s.tick();assert(Math.hypot(s.ball.x-judged.x,s.ball.y-judged.y)<.001,'Frozen pitch moved after selecting '+choice);}
+        assert(contact);
+    }else{
+        s.beginInteractivePitch();s.until(()=>s.ib.pitchProgress>=.86);s.onSwingStart();
+        s.ib.swingPressStart=s.now-({bunt:500,normal:3000,power:5000}[choice]);
+        const before={x:s.ball.x,y:s.ball.y};s.onSwingRelease();
+        assert(Math.hypot(s.ball.x-before.x,s.ball.y-before.y)<.001,'Release must not jump the ball');
+        s.until(()=>contact);assert.equal(s.ib.swingType,choice);
+    }
+    const judged=s.pitchReadPoint();
+    assert(Math.hypot(contact.x-judged.x,contact.y-judged.y)<.001,'Swing changed the pitch location: '+JSON.stringify({pitch,location,choice,mode,contact,judged}));
+}
+// Releasing during the windup waits for the ball to leave the pitcher.
+{
+    const s=fixture();let resolved=0;s.processInteractiveSwingOutcome=()=>{resolved++;s.ib.active=false;};
+    s.beginInteractivePitch();s.onSwingStart();s.onSwingRelease();
+    assert(s.ib.pendingSwing&&!s.ib.pitchFlight);assert.equal(resolved,0);
+    s.until(()=>resolved);assert.equal(resolved,1);
+}
+for(const outcome of ['Double','Triple']){
+    const s=fixture(),origin={x:476,y:486};s.ball.setPosition(origin.x,origin.y);let from;
+    s.chaseGroundBall=(fielder,start)=>{from=start;};s.chaseDownExtraBaseHit(outcome,()=>{});
+    assert.equal(from.x,origin.x);assert.equal(from.y,origin.y);
+}
+console.log('Pitch continuity: 90 swing/location/mode combinations, early release and extra-base launch origin passed.');

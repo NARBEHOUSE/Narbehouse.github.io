@@ -74,11 +74,40 @@ function bb2ToggleBatting() {
 function bb2BattingLabel() {
     return 'Batting: ' + (bb2BattingMode() === 'pick' ? 'Pick a Swing' : 'Hold to Charge');
 }
+// One readable pitch identity is shared by both batting controls. Colors describe
+// hittability, not a guaranteed result or a recommendation for a particular swing.
+const BATTING_PITCH_LOCATIONS = ['Middle','High Middle','Low Middle','Inside','Low Inside',
+    'High Inside','High Outside','Low Outside','Outside','Wide Inside'];
+function bb2PitchProfile(pitch, location) {
+    const locations = {
+        Middle:[0,0,.85], 'High Middle':[0,-.8,.54], 'Low Middle':[0,.65,.70],
+        Inside:[-.75,0,.66], 'Low Inside':[-.65,.65,.80], 'High Inside':[-.75,-.8,.36],
+        'High Outside':[.75,-.8,.33], 'Low Outside':[1.25,.9,.12],
+        Outside:[1.25,0,.18], 'Wide Inside':[-1.25,.2,.15]
+    };
+    const [x,y,base] = locations[location] || locations.Middle;
+    const ease = Math.max(.05,Math.min(.98,base+({Fastball:.10,Changeup:-.08,Curveball:-.15,Slider:-.16,Knuckleball:-.22}[pitch] || 0)));
+    const tier = ease >= .74 ? 'green' : ease >= .43 ? 'yellow' : 'red';
+    const cues = {green:{color:0x59e391,spoken:'Favorable pitch'},
+        yellow:{color:0xffd45a,spoken:'Neutral pitch'},red:{color:0xff6565,spoken:'Difficult pitch'}};
+    const display = location.replace('Middle','Center').replace('Outside','Away');
+    return {pitch,location,x,y,ease,tier,...cues[tier],display,strike:Math.abs(x)<=1&&Math.abs(y)<=1};
+}
+function bb2SwingFit(swing, profile) {
+    const {pitch,location,strike} = profile;
+    let fit;
+    if (swing === 'power') fit = .46 + (pitch==='Fastball'?.18:0)
+        + (location==='Middle'?.18:location==='Low Inside'?.26:location==='Inside'?.14:0)
+        - (['Curveball','Slider','Knuckleball'].includes(pitch)?.12:0);
+    else if (swing === 'bunt') fit = .72 - (location.startsWith('High')?.24:0)
+        + (location==='Low Middle'?.08:0) - (pitch==='Fastball'?.03:0);
+    else fit = .78 + (location==='High Middle'?.12:location==='Middle'?.05:0);
+    return Math.max(.05,Math.min(.98,fit*(strike?1:.35)));
+}
 function bb2SwingQuality(swing, pitch, location, random = Math.random) {
-    // Replace motor timing with baseball execution, including genuine misses.
-    const miss = ({ bunt: 0.03, normal: 0.06, power: 0.16 }[swing] || 0.06)
-        + (location === 'Outside' ? 0.12 : 0) + (pitch === 'Knuckleball' ? 0.03 : 0);
-    return random() < miss ? 1.6 : random() * 0.75;
+    const profile=bb2PitchProfile(pitch,location),fit=bb2SwingFit(swing,profile);
+    const miss=({bunt:.03,normal:.04,power:.10}[swing]||.04)+(1-profile.ease)*.22+(1-fit)*.22;
+    return random()<miss ? 1.6 : Math.max(0,(1-profile.ease)*.70+(1-fit)*.60-.12)+random()*.50;
 }
 
 // ─── Season structure (football-style shell, baseball series rules) ─────────
@@ -196,3 +225,23 @@ const PITCH_PROBABILITIES = {
         outcomes: { Single: 12, Double: 9, Triple: 4, 'Home Run': 1, 'Pop Fly Out': 14, 'Ground Out': 13 }
     }
 };
+
+// New hand per pitch: every type appears once; two are aggressive gambles.
+function bb2PitchChoices(random=Math.random) {
+    const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+    const pitches=shuffle([...PITCH_TYPES]), order=shuffle([0,1,2,3,4]);
+    const favored=1+Math.floor(random()*3);
+    return ['High Inside','High Outside','Low Outside','Low Inside','Center'].map((zone,i)=>{
+        const rank=order.indexOf(i),risk=rank<2,edge=!risk&&rank<2+favored;
+        return {pitch:pitches[i],zone,zoneIndex:i,risk,edge,
+            effectiveness:edge?.80:risk?.58:.52,
+            badge:risk?'RISKY':edge?'FAVORABLE':'NEUTRAL',
+            description:risk?'More strikeout chance if located; harder hits if missed.':edge?'Favorable matchup; solid control.':'Balanced matchup; solid control.'};
+    });
+}
+
+// Each consecutive Risky pitch doubles the hit-batter chance, up to 80%.
+// A non-risky choice resets the streak in processPitchSelection.
+function bb2HitBatterChance(risky, streak, inside) {
+    return risky ? Math.min(.80,.035*Math.pow(2,Math.max(0,streak-1))) : inside?.008:0;
+}

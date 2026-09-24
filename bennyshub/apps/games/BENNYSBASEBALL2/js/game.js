@@ -80,7 +80,8 @@ class GameScene extends BaseballScene {
             selectedPitch: null,
             selectedPitchLocation: null,
             selectedPitchEffectiveness: 0.5,
-            bestPitchBonus: false,
+            pitchRisk: false,
+            pitchMissedSpot: false,
             pendingBaseUpdate: null
         };
         if (resumeData) {
@@ -173,7 +174,10 @@ class GameScene extends BaseballScene {
         return this._playerMotion;
     }
 
-    update(time, delta) { if (this._playerMotion) this._playerMotion.update(delta); }
+    update(time, delta) {
+        if(this._playerMotion)this._playerMotion.update(delta);
+        if(this._updateScuffle)this._updateScuffle();
+    }
 
     stopPlayerMovement(p) {
         if (this._playerMotion) this._playerMotion.stop(p);
@@ -181,7 +185,11 @@ class GameScene extends BaseballScene {
     }
 
     movePlayer(config) {
-        return this.playerMotion().move(config.targets,config.x,config.y,config.duration,config.onComplete,config.onUpdate,config.gait);
+        // A short ball-flight or animation timer must never accelerate a defender.
+        const defender=Object.values(this.fielders || {}).includes(config.targets);
+        const travel=Math.hypot(config.x-config.targets.x,config.y-config.targets.y);
+        const duration=defender?Math.max(config.duration || 0,travel/130*1000):config.duration;
+        return this.playerMotion().move(config.targets,config.x,config.y,duration,config.onComplete,config.onUpdate,config.gait);
     }
 
     resetInteractiveBatting() {
@@ -271,7 +279,7 @@ class GameScene extends BaseballScene {
         // Spin only while in motion — resumed by ballArc/the pitch, paused
         // the moment the ball settles in a glove
         c.spin = this.tweens.add({ targets: seams, angle: 360, duration: 800, repeat: -1, ease: 'Linear', paused: true });
-        // Glow ring shown while the pitch is live (red → green sweet spot)
+        // Location/type cue shown near contact, with matching plain-language text.
         const glow = this.add.circle(0, 0, 12).setStrokeStyle(3.5, 0xffe14d, 1).setVisible(false);
         c.add([shadow, body, seams, glow]);
         c.body = body;
@@ -282,10 +290,7 @@ class GameScene extends BaseballScene {
     }
 
     // ─── Swing timing indicator ──────────────────────────────────────────────
-    // Like the original game: the BALL is the indicator. It glows RED while
-    // the pitch is on its way (don't let go yet) and turns GREEN in the sweet
-    // spot (let go now!). Bands come from the same ported constants the
-    // outcome tables use (perfect = 90% of flight).
+    // The ball carries a location/type highlight during the contact window.
     createSwingMeter() {
         const T = GAME_CONSTANTS.TIMING;
         const win = T.SWING_TIMING_WINDOW / T.INTERACTIVE_PITCH_DURATION; // ~0.21 (widened for slower reflexes)
@@ -298,24 +303,46 @@ class GameScene extends BaseballScene {
         // Only the instruction line remains on screen (v1-style); the meter
         // bar/marker are gone — watch the ball instead.
         this.meter = this.add.container(0, 0).setDepth(55).setScrollFactor(0).setVisible(false);
-        this.meterTitle = this.add.text(W / 2, H - 30, 'PRESS & HOLD to charge — let go when the ball glows GREEN!', {
+        this.meterTitle = this.add.text(W / 2, H - 30, 'Hold to charge; release at the cue, or keep holding to take.', {
             fontSize: '15px', fontFamily: 'Arial Black', color: '#ffffff',
             stroke: '#000', strokeThickness: 4
         }).setOrigin(0.5);
         this.meter.add(this.meterTitle);
     }
 
+    pitchProfile() {
+        if (!this.ib.profile) {
+            this.ib.profile=bb2PitchProfile(this.gs.selectedPitch,this.gs.selectedPitchLocation);
+            this.ib.hitByPitch=this.ib.profile.x < -1 && Math.random()<.08;
+        }
+        return this.ib.profile;
+    }
+
+    pitchReadPoint() {
+        if(!this.ib.readPoint){
+            const point=this.swingContactPoint('normal'),profile=this.pitchProfile();
+            this.ib.readPoint={x:point.x+profile.x*18,y:point.y+profile.y*15};
+        }
+        return this.ib.readPoint;
+    }
+
+    interactivePitchPoint(progress) {
+        const {from,to,pitch}=this.ib.pitchFlight;
+        const off=this.pitchOffset(pitch,progress),bend=Math.sin(Math.PI*progress);
+        return {x:Phaser.Math.Linear(from.x,to.x,progress)+off.dx*bend,
+            y:Phaser.Math.Linear(from.y,to.y,progress)-bend*14+off.dy*bend};
+    }
+
+    paintPitchCue(inWindow) {
+        const profile=this.pitchProfile();
+        this.ball.glow.setVisible(true).setStrokeStyle(inWindow?4:2,inWindow?profile.color:0xd1dee4,1).setAlpha(inWindow?.9:.35);
+        if (inWindow) this.meterTitle.setText(`${profile.spoken} | ${profile.pitch} | ${profile.display}`);
+    }
+
     updateSwingMeter(p) {
         if (!this.ib.active) return;
-        // v1's exact green zone: the swingable window, 0.80-0.98 of the flight
-        const T = GAME_CONSTANTS.TIMING;
-        const inGreen = p >= T.GREEN_ZONE_LO && p <= T.GREEN_ZONE_HI;
-        const glow = this.ball.glow;
-        glow.setVisible(true);
-        glow.setStrokeStyle(4, inGreen ? 0x2ecc40 : 0xe03030, 1);
-        const pulse = inGreen ? 0.55 + 0.45 * Math.sin(Date.now() / 55)
-                              : 0.45 + 0.25 * Math.sin(Date.now() / 140);
-        glow.setAlpha(pulse);
+        const T=GAME_CONSTANTS.TIMING;
+        this.paintPitchCue(p>=T.GREEN_ZONE_LO && p<=T.GREEN_ZONE_HI);
     }
 
     hideSwingMeter() {
@@ -413,8 +440,10 @@ class GameScene extends BaseballScene {
         this.powerTimeTxt.setText(`${(holdDuration / 1000).toFixed(1)}s`);
         // v1-style live instruction: show the swing you'd get if you let go now
         const label = type === 'BUNT' ? 'BUNT' : type === 'NORMAL' ? 'NORMAL SWING' : 'POWER SWING';
-        this.meterTitle.setText(`Current: ${label} — RELEASE in the GREEN!`)
-            .setColor(type === 'BUNT' ? '#ffaa00' : type === 'NORMAL' ? '#00ff00' : '#ff4444');
+        const read=this.pitchProfile();
+        this.meterTitle.setText(this.ib.ballInStrikeZone
+            ? `${read.spoken} | ${read.pitch} | ${read.display}`
+            : `Current: ${label}. Release at the cue, or keep holding to take.`).setColor('#ffffff');
 
         const filled = progress * p.mh;
         const g = this.powerFill;
@@ -545,7 +574,7 @@ class GameScene extends BaseballScene {
             this.batter.setPosition(fromPoint.x, fromPoint.y);
             const batter = this.batter;
             this.time.delayedCall(200, () => {
-                if (batter.active) this.travelDugout(batter,fromPoint,FIELD.BATTER_BOX,'B',true,85,arrived,'walk');
+                if (batter.active) this.travelDugout(batter,fromPoint,FIELD.BATTER_BOX,'B',true,110,arrived,'walk');
             });
         } else {
             this.batter.setPosition(FIELD.BATTER_BOX.x, FIELD.BATTER_BOX.y);
@@ -572,7 +601,7 @@ class GameScene extends BaseballScene {
         sprite.setPosition(walkIn ? dug.x : x, walkIn ? dug.y+32 : FIELD.HOME.y+28);
         sprite.idleAnim();
         this.onDeckBatter = sprite;
-        if (walkIn) this.travelDugout(sprite,dug,{x,y:FIELD.HOME.y+28},'on_deck',true,80,onReady,'walk');
+        if (walkIn) this.travelDugout(sprite,dug,{x,y:FIELD.HOME.y+28},'on_deck',true,105,onReady,'walk');
         else if (onReady) onReady();
     }
 
@@ -632,7 +661,7 @@ class GameScene extends BaseballScene {
         if (next._label) next._label.setText('B');
         this._lineupBusy = true;
         this.jog(next,FIELD.BATTER_BOX.x,FIELD.BATTER_BOX.y,
-            Math.hypot(next.x-FIELD.BATTER_BOX.x,next.y-FIELD.BATTER_BOX.y)/65*1000/1.5,'Linear',()=>{
+            Math.hypot(next.x-FIELD.BATTER_BOX.x,next.y-FIELD.BATTER_BOX.y)/105*1000/1.5,'Linear',()=>{
                 next.setAnim('stance',true);this._lineupBusy = false;
             },'walk');
         this.updateOnDeckBatter(true);
@@ -650,8 +679,9 @@ class GameScene extends BaseballScene {
         const slot = (this._exitSlot = (this._exitSlot || 0) + 1) % 9;
         const dug = p._exitDug;
         const exit={x:dug.x+(dug.x<0?-1:1)*(slot%3)*24,y:dug.y+(p._baseRunner?140:0)+Math.floor(slot/3)*24};
-        this.travelDugout(p,exit,{x:p.x,y:p.y},p._baseRunner?'runner':'B',false,p._baseRunner?110:85,() => {
+        this.travelDugout(p,exit,{x:p.x,y:p.y},p._baseRunner?'runner':'B',false,110,() => {
             this._departingPlayers.delete(p);p.destroy();
+            if (p._afterFieldExit) { const done=p._afterFieldExit;p._afterFieldExit=null;done(); }
         },p._baseRunner?'run':'walk');
     }
 
@@ -667,7 +697,7 @@ class GameScene extends BaseballScene {
         const outgoing = Object.values(this.fielders).sort((a,b)=>Math.hypot(a.x-fieldDug.x,a.y-fieldDug.y)-Math.hypot(b.x-fieldDug.x,b.y-fieldDug.y)).map((p,i) => ({p,dug:fieldDug,slot:i,speed:125,gait:'run',role:p._fieldPosition}));
         const hitters = new Set([this.batter,this.onDeckBatter,...(this._departingPlayers || [])]);
         let slot = 0;
-        for (const p of hitters) if (p && p.active) outgoing.push({p,dug:p._exitDug || batDug,slot:slot++,speed:p._baseRunner?110:85,gait:p._baseRunner?'run':'walk',role:p._baseRunner?'runner':p._onDeck?'on_deck':'B'});
+        for (const p of hitters) if (p && p.active) outgoing.push({p,dug:p._exitDug || batDug,slot:slot++,speed:110,gait:p._baseRunner?'run':'walk',role:p._baseRunner?'runner':p._onDeck?'on_deck':'B'});
         const active = outgoing.filter(({p}) => p && p.active);
         let remaining = active.length;
         const enter = () => this.createTeams(true, () => {
@@ -676,6 +706,12 @@ class GameScene extends BaseballScene {
         });
         if (!remaining) { enter();return; }
         active.forEach(({p,dug,slot,speed,gait,role},i) => {
+            if (p._leavingField) {
+                // A retired runner is already on a smooth exit route. Subscribe
+                // to that arrival instead of stopping and sending him backwards.
+                p._afterFieldExit=()=>{if (--remaining===0) enter();};
+                return;
+            }
             this.stopPlayerMovement(p);
             this.time.delayedCall(i * 180, () => {
                 const arrived = () => {
@@ -731,7 +767,7 @@ class GameScene extends BaseballScene {
         let i=0;
         const next=()=>{
             if(!p.active)return;
-            if(i===smooth.length){p._transitionPath=null;if(cb)cb();return;}
+            if(i===smooth.length){p._transitionPath=null;this.stopBob(p);if(cb)cb();return;}
             const point=smooth[i++];this.jogToPosition(p,point.x,point.y,speed,next,gait);
         };
         next();
@@ -822,7 +858,7 @@ class GameScene extends BaseballScene {
         return this.movePlayer({
             targets: p, x, y, duration: duration * 1.5, gait,
             onComplete: () => {
-                this.stopBob(p);
+                if (!p._transitionPath) this.stopBob(p);
                 if (cb) cb();
             }
         });
@@ -872,43 +908,58 @@ class GameScene extends BaseballScene {
     // Secure -> transfer -> step/throw -> release -> receive -> recover.
     // Own the ball during the windup too, so a reset cannot steal it early.
     throwToPlayer(thrower, receiver, options = {}, cb) {
-        const action = this.throwAction(thrower);
-        const receive = this.receiveAction(receiver);
-        this.stopPlayerMovement(thrower);this.stopBob(thrower);
-        if (thrower._spr) thrower._spr.setFlipX(receiver.x < thrower.x - 12);
-        this.hideHeldBall(thrower);this.ball.setVisible(true);
-        this._ballBusy = (this._ballBusy || 0) + 1;
-        this.defensiveAction(thrower, action, () => {
-            const from = thrower.ballPoint ? thrower.ballPoint('hand') : {x:thrower.x,y:thrower.y-14};
-            const target = () => receiver.actionPoint ? receiver.actionPoint(receive,'glove') : {x:receiver.x,y:receiver.y-12};
-            const to = target();
-            const requested = typeof options.duration === 'function' ? options.duration(from,to)
-                : options.duration || Math.max(360, Math.hypot(to.x-from.x,to.y-from.y)/.5);
-            const {clip} = this.fieldingClip(receiver, receive);
-            // Short relays are soft tosses: allow the glove to open before arrival.
-            const duration = Math.max(requested, (clip.contactFrame || 0)/clip.rate*1000 + 120);
-            let landed = false, gloveReady = false, resumeReceive = null, caught = false;
-            const settle = () => {
-                if (!landed || !gloveReady || caught) return;
-                caught = true;
-                const glove = receiver.ballPoint ? receiver.ballPoint('glove') : target();
-                this.ball.setPosition(glove.x,glove.y);this.hideHeldBall(receiver);
-                this.audio.play('catch');this.releaseBall();resumeReceive();
-                if (cb) cb();
+        const begin=()=>{
+            const action = this.throwAction(thrower);
+            const receive = this.receiveAction(receiver);
+            this.stopPlayerMovement(thrower);this.stopBob(thrower);
+            if (thrower._spr) thrower._spr.setFlipX(receiver.x < thrower.x - 12);
+            this.hideHeldBall(thrower);this.ball.setVisible(true);
+            this._ballBusy = (this._ballBusy || 0) + 1;
+            if(options.onWindup)options.onWindup();
+            this.defensiveAction(thrower, action, () => {
+                const from = thrower.ballPoint ? thrower.ballPoint('hand') : {x:thrower.x,y:thrower.y-14};
+                const target = () => receiver.actionPoint ? receiver.actionPoint(receive,'glove') : {x:receiver.x,y:receiver.y-12};
+                const to = target();
+                const requested = typeof options.duration === 'function' ? options.duration(from,to)
+                    : options.duration || Math.max(360, Math.hypot(to.x-from.x,to.y-from.y)/.5);
+                const {clip} = this.fieldingClip(receiver, receive);
+                // Short relays are soft tosses: allow the glove to open before arrival.
+                const duration = Math.max(requested, (clip.contactFrame || 0)/clip.rate*1000 + 120);
+                let landed = false, gloveReady = false, resumeReceive = null, caught = false;
+                const settle = () => {
+                    if (!landed || !gloveReady || caught) return;
+                    caught = true;
+                    const glove = receiver.ballPoint ? receiver.ballPoint('glove') : target();
+                    this.ball.setPosition(glove.x,glove.y);this.hideHeldBall(receiver);
+                    this.audio.play('catch');this.releaseBall();resumeReceive();
+                    if (cb) cb();
+                };
+                this.time.delayedCall(Math.max(0, duration - (clip.contactFrame || 0)/clip.rate*1000 - 100), () => {
+                    this.stopPlayerMovement(receiver);this.stopBob(receiver);
+                    if (receiver._spr) receiver._spr.setFlipX(thrower.x < receiver.x - 12);
+                    this.defensiveAction(receiver, receive, resume => {
+                        resumeReceive = resume;gloveReady = true;settle();
+                    }, options.onReceiveDone, true);
+                });
+                this.audio.play('throw');
+                this.ballArc(from, target, duration, options.arc == null ? 28 : options.arc, () => {
+                    landed = true;settle();
+                });
+                if (options.onRelease) options.onRelease(duration);
+            });
+        };
+        // Let a covering/cutoff fielder finish his real route before asking
+        // him to plant and receive. The catch pose must not cancel coverage.
+        if(this.playerMotion().moves.has(receiver)) {
+            this.stopPlayerMovement(thrower);this.stopBob(thrower);this.hideHeldBall(thrower);
+            this._ballBusy=(this._ballBusy || 0)+1;
+            const wait=()=>{
+                if(!thrower.active || !receiver.active){this.releaseBall();return;}
+                if(this.playerMotion().moves.has(receiver)){this.time.delayedCall(60,wait);return;}
+                this.releaseBall();begin();
             };
-            this.time.delayedCall(Math.max(0, duration - (clip.contactFrame || 0)/clip.rate*1000 - 100), () => {
-                this.stopPlayerMovement(receiver);this.stopBob(receiver);
-                if (receiver._spr) receiver._spr.setFlipX(thrower.x < receiver.x - 12);
-                this.defensiveAction(receiver, receive, resume => {
-                    resumeReceive = resume;gloveReady = true;settle();
-                }, options.onReceiveDone, true);
-            });
-            this.audio.play('throw');
-            this.ballArc(from, target, duration, options.arc == null ? 28 : options.arc, () => {
-                landed = true;settle();
-            });
-            if (options.onRelease) options.onRelease(duration);
-        });
+            wait();
+        } else begin();
     }
 
     // Spin control that can never crash even if the tween was killed
@@ -939,8 +990,8 @@ class GameScene extends BaseballScene {
 
     // CPU pitch flight with v1's per-type speed and movement. Returns the
     // flight duration so the batter's swing can be timed to it.
-    cpuPitchFlight(pitchType, cb) {
-        const from = this.pitchReleasePoint(), to = this.swingContactPoint('normal');
+    cpuPitchFlight(pitchType, cb, hitBatter=false) {
+        const from = this.pitchReleasePoint(), to = hitBatter?this.batterHitPoint():this.swingContactPoint('normal');
         const durations = { Fastball: 600, Changeup: 900, Curveball: 800, Slider: 700, Knuckleball: 1000 };
         const duration = durations[pitchType] || 700;
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
@@ -975,7 +1026,7 @@ class GameScene extends BaseballScene {
     // time (a new arc cancels the previous), and _ballBusy tracks whether the
     // ball is still in the air / being chased so nothing else (like the
     // end-of-play toss to the pitcher) can grab it mid-flight.
-    ballArc(from, to, duration, arcHeight, cb) {
+    ballArc(from, to, duration, arcHeight, cb, sample = null) {
         if (this._ballFlight && this._ballFlight.isPlaying()) this._ballFlight.stop();
         this._ballHolder = null;
         this.ball.setVisible(true).setAlpha(1);
@@ -995,8 +1046,9 @@ class GameScene extends BaseballScene {
             onUpdate: () => {
                 const t = proxy.t;
                 const end = typeof to === 'function' ? to() : to;
-                this.ball.x = Phaser.Math.Linear(from.x, end.x, t);
-                this.ball.y = Phaser.Math.Linear(from.y, end.y, t) - Math.sin(Math.PI * t) * arcHeight;
+                const point=sample?sample(t):{x:Phaser.Math.Linear(from.x,end.x,t),
+                    y:Phaser.Math.Linear(from.y,end.y,t)-Math.sin(Math.PI*t)*arcHeight};
+                this.ball.x=point.x;this.ball.y=point.y;
             },
             onStop: settle,
             onComplete: () => { settle(); if (cb) cb(); }
@@ -1056,15 +1108,15 @@ class GameScene extends BaseballScene {
 
         this.scoreBg = add(this.add.graphics().setDepth(50).setScrollFactor(0));
         const scoreStyle = {
-            fontSize: '42px', fontFamily: 'Arial', fontStyle: 'bold', color: '#ffffff',
+            fontSize: '60px', fontFamily: 'Arial', fontStyle: 'bold', color: '#ffffff',
             stroke: '#10252b', strokeThickness: 2
         };
-        this.scoreAwayTxt = add(this.add.text(172, 54, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
-        this.scoreHomeTxt = add(this.add.text(W-54, 54, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
+        this.scoreAwayTxt = add(this.add.text(196, 62, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
+        this.scoreHomeTxt = add(this.add.text(W-54, 62, '0', scoreStyle).setOrigin(0.5).setDepth(51).setScrollFactor(0));
 
         const teamStyle = {fontSize:'17px',fontFamily:'Arial',fontStyle:'bold',color:'#f3f5e9'};
-        this.awayLabel = add(this.add.text(38,34,'',teamStyle).setDepth(51).setScrollFactor(0));
-        this.homeLabel = add(this.add.text(W-188,34,'',teamStyle).setDepth(51).setScrollFactor(0));
+        this.awayLabel = add(this.add.text(38,36,'',teamStyle).setDepth(51).setScrollFactor(0));
+        this.homeLabel = add(this.add.text(W-232,36,'',teamStyle).setDepth(51).setScrollFactor(0));
 
         // Count panel (bottom-right, v1 dimensions 120x80)
         this.hudGfx = add(this.add.graphics().setDepth(50).setScrollFactor(0));
@@ -1109,16 +1161,18 @@ class GameScene extends BaseballScene {
         const barW = this.topText.width + 40;
         tb.fillRect(W / 2 - barW / 2, 14, barW, 36);
 
-        // Compact score cards leave the corner outfielders unobstructed.
-        const bg = this.scoreBg;
-        bg.clear();bg.fillStyle(0x10252b, 0.94);
-        bg.fillRoundedRect(24,24,184,62,8);bg.fillRoundedRect(W-208,24,184,62,8);
-        bg.fillStyle(getColorByName(awayName).hex,1);bg.fillRect(24,34,4,42);
-        bg.fillStyle(getColorByName(homeName).hex,1);bg.fillRect(W-208,34,4,42);
-        this.awayLabel.setText('AWAY\n'+awayName.toUpperCase());
-        this.homeLabel.setText('HOME\n'+homeName.toUpperCase());
-        this.scoreAwayTxt.setText(String(gs.score.Red));
-        this.scoreHomeTxt.setText(String(gs.score.Blue));
+        const bg = this.scoreBg;bg.clear();
+        for (const [x,name,score,label,number] of [[20,awayName,gs.score.Red,this.awayLabel,this.scoreAwayTxt],
+            [W-250,homeName,gs.score.Blue,this.homeLabel,this.scoreHomeTxt]]) {
+            const color=getColorByName(name),black=name==='Black';
+            bg.fillStyle(0x10252b,1);bg.fillRoundedRect(x,20,230,86,10);
+            if(black){bg.lineStyle(7,0xaaaaaa,1);bg.strokeRoundedRect(x,20,230,86,10);}
+            bg.lineStyle(4,color.hex,1);bg.strokeRoundedRect(x,20,230,86,10);
+            bg.fillStyle(color.hex,1);bg.fillRect(x+4,90,222,12);
+            label.setText((x===20?'AWAY':'HOME')+'\n'+name.toUpperCase()).setColor('#ffffff');
+            number.setText(String(score)).setColor('#ffffff').setStroke('#07151a',2)
+                .setFontSize(String(score).length>2?'48px':'60px');
+        }
 
         // Count panel — v1's exact drawing and offsets
         const g = this.hudGfx;
@@ -1262,7 +1316,7 @@ class GameScene extends BaseballScene {
         this.resetInteractiveBatting();
         // CPU picks its pitch secretly (v1 simulateComputerPitch)
         this.gs.selectedPitch = PITCH_TYPES[Math.floor(Math.random() * PITCH_TYPES.length)];
-        this.gs.selectedPitchLocation = PITCH_LOCATIONS[Math.floor(Math.random() * PITCH_LOCATIONS.length)];
+        this.gs.selectedPitchLocation = BATTING_PITCH_LOCATIONS[Math.floor(Math.random() * BATTING_PITCH_LOCATIONS.length)];
         this.showBattingMenu();
     }
 
@@ -1289,6 +1343,7 @@ class GameScene extends BaseballScene {
         targets.push({ value: 'pause', label: 'Pause', chip: 'PAUSE',
             hint: 'Game options', fielder: { x: 74, y: H - 46 } });
 
+        targets.forEach(opt=>{opt.speakText=()=>this.briefChoiceSpeech('setup:'+opt.value,opt.label,opt.hint);});
         this.setMenu(new BaseTargetSelector(this, {
             targets, audio: this.audio, title: 'Batter Up!', zoomOnScan: true,
             onSelect: (opt) => this.onBattingMenuSelect(opt)
@@ -1307,6 +1362,13 @@ class GameScene extends BaseballScene {
         if (opt.value === 'steal3') this.processStealAttempt('third');
     }
 
+    briefChoiceSpeech(key,label,explanation) {
+        const heard=this.gs.heardChoiceHelp || (this.gs.heardChoiceHelp={});
+        if(heard[key] || !explanation)return label;
+        heard[key]=true;
+        return label+'. '+explanation;
+    }
+
     showSwingChoices() {
         if (!this.ib.awaitingChoice) return;
         this.setBattingCamera(true);
@@ -1316,13 +1378,14 @@ class GameScene extends BaseballScene {
             { value: 'bunt', label: 'Bunt', hint: 'Try a short bunt to advance runners' },
             { value: 'take', label: 'Take Pitch', hint: 'Let the pitch pass for a ball or called strike' }
         ];
-        choices.push({ value: 'pause', label: 'Pause', hint: 'Game options and batting style' });
+        choices.push({ value: 'pause', label: 'Pause' });
+        choices.forEach(opt=>{opt.speakText=()=>this.briefChoiceSpeech('swing:'+opt.value,opt.label,opt.hint);});
         // The delivered pitch is frozen at the sweet spot, with no choice deadline.
         // Compact panel beside home plate, clear of the batter and basepaths.
         // Keep the shared scanning, speech and pointer behavior unchanged.
         const menu = new ScanList(this, { x: 700, y: 480,
             columns: 2, itemW: 112, itemH: 44, gap: 8, fontSize: '16px', audio: this.audio,
-            title: this.gs.selectedPitch + ' · ' + this.gs.selectedPitchLocation,
+            title: this.pitchProfile().spoken+'\n'+this.gs.selectedPitch+' | '+this.pitchProfile().display,
             options: choices, onSelect: opt => {
                 if (opt.value === 'pause') { this.showPauseMenu(() => this.showSwingChoices()); return; }
                 this.setMenu(null);
@@ -1334,7 +1397,10 @@ class GameScene extends BaseballScene {
         menu.titleTxt.setFontSize('14px').setStroke('#000000', 3)
             .setWordWrapWidth(232).setAlign('center').setPosition(menu.x, 579);
         this.setMenu(menu);
-        this.audio.speak('Ball at the sweet spot. Choose your swing, or take the pitch.', true);
+        if(!this.ib.choiceAnnounced){
+            this.ib.choiceAnnounced=true;
+            this.audio.speak(this.briefChoiceSpeech('swingPrompt',this.pitchProfile().spoken,'Choose your swing, or take the pitch.'),true);
+        }
     }
 
     beginChoicePitch() {
@@ -1345,7 +1411,7 @@ class GameScene extends BaseballScene {
         atBat.active = true;
         this.hideSwingMeter();
         this.bb2Anim(this.batter, 'stance');
-        const call = `${this.gs.selectedPitch}, ${this.gs.selectedPitchLocation}.`;
+        const call = `${this.gs.selectedPitch}, ${this.pitchProfile().display}.`;
         this.meterTitle.setText(call).setColor('#ffffff');
         this.meter.setVisible(true);
         // The audible call finishes before delivery. TTS-off/error uses the
@@ -1358,15 +1424,15 @@ class GameScene extends BaseballScene {
                 this.deliverPitch(650, () => {
                     if (this.ib !== atBat || !atBat.active) return;
                     this.audio.play('throw');
-                    this.ballArc(this.pitchReleasePoint(), this.swingContactPoint('normal'), 1300, 12, () => {
+                    this.ballArc(this.pitchReleasePoint(), this.pitchReadPoint(), 1300, 12, () => {
                         if (this.ib !== atBat || !atBat.active) return;
                         atBat.active = false;
                         atBat.awaitingChoice = true;
                         atBat.pitchProgress = .9;
                         this.setBallSpin(false);
                         this.hideSwingMeter();
-                        this.ball.glow.setVisible(true).setStrokeStyle(2,0x8be5a2,1).setAlpha(.7);
-                        this.audio.play('swingZone');
+                        this.paintPitchCue(true);
+                        this.audio.play('swingZone'+this.pitchProfile().tier);
                         this.showSwingChoices();
                     });
                 });
@@ -1392,7 +1458,8 @@ class GameScene extends BaseballScene {
         this.time.delayedCall(220, () => {
             if (this.ib !== atBat || !atBat.active) return;
             const lead = this.swingContactDelay(choice), flight = Math.max(180, lead);
-            const from = {x:this.ball.x,y:this.ball.y}, to = this.swingContactPoint(choice);
+            // The swing is judged against this frozen pitch, never a new bat-specific target.
+            const from = {x:this.ball.x,y:this.ball.y}, to = {...from};
             this.setBallSpin(true);
             if (choice !== 'take') this.time.delayedCall(flight - lead, () => {
                 if (this.ib !== atBat || !atBat.active) return;
@@ -1403,7 +1470,9 @@ class GameScene extends BaseballScene {
             this.ballArc(from, to, flight, 0, () => {
                 if (this.ib !== atBat || !atBat.active) return;
                 atBat.pitchProgress = 0.9;
-                if (choice === 'take') {
+                if (choice === 'take' && this.ib.hitByPitch) {
+                    this.processNoSwing();
+                } else if (choice === 'take') {
                     this.catchAtPlate(() => {
                         if (this.ib !== atBat || !atBat.active) return;
                         this.setBattingCamera(false);this.processNoSwing();
@@ -1434,7 +1503,7 @@ class GameScene extends BaseballScene {
     processStealAttempt(targetBase) {
         // v1 odds: 70% to steal 2nd, 50% to steal 3rd
         const fromBase = targetBase === 'second' ? 'first' : 'second';
-        const success = Math.random() < (targetBase === 'second' ? 0.7 : 0.5);
+        let success = Math.random() < (targetBase === 'second' ? 0.7 : 0.5),runnerAtBag=false;
         const runner = this.runnerDots[fromBase];
         if (runner) { runner._runnerBase=targetBase;runner._runnerOut=!success;runner._baseRunner=true; }
         const target = BASE_COORDS[targetBase];
@@ -1447,10 +1516,12 @@ class GameScene extends BaseballScene {
         // to the bag, caught means the ball gets there first.
         this._zoomOnPoint(target.x, target.y, 1.7, 420);
         const coverPos = this.coveringFielder(targetBase, 'C');
-        this.jog(this.fielders[coverPos], target.x + 9, target.y + 9, 520);
+        this.jogToPosition(this.fielders[coverPos],target.x+9,target.y+9,115);
         const throwPreDelay = 250, throwFlightMs = 620;
         const clip = BB2_SHEETS.catcher.anims.rise_throw;
-        const ballArriveMs = throwPreDelay + clip.contactFrame/clip.rate*1000 + throwFlightMs;
+        const cover=this.fielders[coverPos];
+        const coverMs=Math.hypot(target.x+9-cover.x,target.y+9-cover.y)/115*1000;
+        const ballArriveMs = Math.max(throwPreDelay,coverMs) + clip.contactFrame/clip.rate*1000 + throwFlightMs;
         const runnerArriveMs = success ? Math.max(500, ballArriveMs - 200) : ballArriveMs + 260;
         if (runner) {
             // Not routed through jog() — its own onComplete always calls
@@ -1471,6 +1542,7 @@ class GameScene extends BaseballScene {
                 duration: runnerArriveMs, ease: 'Quad.easeIn',
                 onUpdate: () => { if (runner._bb2) runner.syncDepth(); },
                 onComplete: () => {
+                    runnerAtBag=true;
                     if (runner._bb2) this.bb2Anim(runner, success ? 'safe_stand' : 'out_walkoff');
                     else this.stopBob(runner);
                 }
@@ -1478,6 +1550,7 @@ class GameScene extends BaseballScene {
         }
         this.time.delayedCall(throwPreDelay, () => {
             this.throwToPlayer(this.fielders.C, this.fielders[coverPos], {duration:throwFlightMs,arc:46}, () => {
+                if(runnerAtBag){success=true;if(runner){runner._runnerOut=false;this.bb2Anim(runner,'safe_stand');}}
                 if (!success) this.audio.play('tag');
                 this.cameras.main.shake(120, 0.005);
                 if (success) {
@@ -1533,42 +1606,40 @@ class GameScene extends BaseballScene {
         // Close-up on the duel: batter, pitcher, and the incoming pitch
         this.setBattingCamera(true);
 
-        // Call the incoming pitch — this is STRATEGY, not flavor (inside =
-        // power-swing it, center = normal swing, outside = let it go for a
-        // ball), so it interrupts anything still talking and always plays.
-        this.audio.speak(`${gs.selectedPitch}, ${gs.selectedPitchLocation}!`, true);
+        // Announce type/location before the player judges the delivery.
+        this.audio.speak(`${gs.selectedPitch}, ${this.pitchProfile().display}!`, true);
 
         // Pitcher windup, then the deliberately slow pitch (7.5s — v1 accessibility pacing)
         this.deliverPitch(650, () => {
             if (!this.ib.active) return;
             const from = this.pitchReleasePoint();
-            const to = this.swingContactPoint('normal');
+            const to = this.pitchReadPoint();
+            this.ib.pitchFlight={from,to,pitch:gs.selectedPitch};
             this.ball.setVisible(true).setAlpha(1).setPosition(from.x, from.y);
             this.setBallSpin(true);
-            this.meterTitle.setText('PRESS & HOLD to charge — RELEASE in the GREEN!').setColor('#ffffff');
+            this.meterTitle.setText('Hold to charge; release at the cue to swing, or keep holding to take.').setColor('#ffffff');
             this.meter.setVisible(true);
             this.updateSwingMeter(0);
+            if(this.ib.pendingSwing){this.ib.pendingSwing=false;this.executeSwing();return;}
             const proxy = { t: 0 };
             this.pitchTween = this.tweens.add({
                 targets: proxy, t: 1,
                 duration: GAME_CONSTANTS.TIMING.INTERACTIVE_PITCH_DURATION,
-                ease: 'Linear',
+                ease: t=>t<.65?t/.65*.78:.78+(t-.65)/.35*.22,
                 onUpdate: () => {
                     this.ib.pitchProgress = proxy.t;
                     // v1's per-pitch movement: curve, late break, wobble, drop
-                    const off = this.pitchOffset(gs.selectedPitch, proxy.t);
-                    const bend = Math.sin(Math.PI * proxy.t);
-                    this.ball.x = Phaser.Math.Linear(from.x, to.x, proxy.t) + off.dx*bend;
-                    this.ball.y = Phaser.Math.Linear(from.y, to.y, proxy.t) - bend*14 + off.dy*bend;
+                    const point=this.interactivePitchPoint(proxy.t);
+                    this.ball.setPosition(point.x,point.y);
                     this.updateSwingMeter(proxy.t);
                     this.ib.ballInStrikeZone = proxy.t >= GAME_CONSTANTS.TIMING.GREEN_ZONE_LO
                                             && proxy.t <= GAME_CONSTANTS.TIMING.GREEN_ZONE_HI;
-                    // v1 exact: the friendly two-note chirp repeats every 150ms
-                    // for as long as the ball is green
+                    // Distinct chirps repeat in the slowed contact window.
                     if (this.ib.ballInStrikeZone) {
+                        if (!this.ib.cueSpoken) { this.ib.cueSpoken=true;this.audio.speak(this.pitchProfile().spoken,false); }
                         const now = Date.now();
                         if (!this.ib.lastSwingTone || now - this.ib.lastSwingTone > 150) {
-                            this.audio.play('swingZone');
+                            this.audio.play('swingZone'+this.pitchProfile().tier);
                             this.ib.lastSwingTone = now;
                         }
                     }
@@ -1652,26 +1723,29 @@ class GameScene extends BaseballScene {
 
         const perfectTiming = 0.90;
         const timingWindow = T.SWING_TIMING_WINDOW / T.INTERACTIVE_PITCH_DURATION;
-        this.ib.timingScore = (this.ib.pitchProgress - perfectTiming) / timingWindow;
+        this.ib.timingScore = Math.max(Math.abs((this.ib.pitchProgress-perfectTiming)/timingWindow),
+            bb2SwingQuality(this.ib.swingType,this.gs.selectedPitch,this.gs.selectedPitchLocation));
 
         this.executeSwing();
     }
 
     executeSwing() {
+        // An early release during the windup still waits for the actual delivery.
+        if(!this.ib.pitchFlight){this.ib.pendingSwing=true;return;}
         this.ib.isSwinging = true;
         if (this.pitchTween) { this.pitchTween.stop(); this.pitchTween = null; }
         if (this.meter) this.meter.setVisible(false);
         this.audio.play('swing');
         this.animateBatterSwing(this.ib.swingType);
-        // Finish the incoming flight at the bat's contact frame; never jump
-        // the ball from mid-pitch straight to the plate on button release.
-        const atBat = this.ib;
-        this.ballArc({ x: this.ball.x, y: this.ball.y }, this.swingContactPoint(this.ib.swingType),
+        // Continue along the delivered pitch's curve to its original location.
+        // Swing type changes timing/power, never the ball's destination.
+        const atBat = this.ib,progress=atBat.pitchProgress;
+        this.ballArc({ x: this.ball.x, y: this.ball.y }, atBat.pitchFlight.to,
             this.swingContactDelay(this.ib.swingType), 0, () => {
                 if (this.ib !== atBat || !atBat.active) return;
                 this.setBattingCamera(false);
                 this.processInteractiveSwingOutcome();
-            });
+            }, t=>this.interactivePitchPoint(Phaser.Math.Linear(progress,1,t)));
     }
 
     // Draw a proper wooden bat once and cache it as a texture: round knob,
@@ -1821,8 +1895,8 @@ class GameScene extends BaseballScene {
     // Pitch arrived without a swing — port of v1 onPitchComplete/processNoSwing
     onPitchComplete() {
         this.pitchTween = null;
-        this.catchAtPlate();
-        this.setBattingCamera(false);
+        if (!this.ib.hitByPitch) this.catchAtPlate();
+        if (!this.ib.hitByPitch) this.setBattingCamera(false);
         this.hideSwingMeter();
         if (this.ib.isSwinging) return;
         if (this.ib.swingPressed && !this.ib.swingReleased) {
@@ -1839,32 +1913,198 @@ class GameScene extends BaseballScene {
         }
     }
 
+    batterHitPoint() { return {x:this.batter.x,y:this.batter.y-29}; }
+
+    animateHitBatter(done) {
+        const hit=()=>{
+            this.ball.setVisible(false);this.setBallSpin(false);this.hideSwingMeter();
+            this.audio.play('tag');this.bb2Anim(this.batter,'hit_by_pitch');
+            this.time.delayedCall(700,done);
+        };
+        const target=this.batterHitPoint();
+        if(Math.hypot(this.ball.x-target.x,this.ball.y-target.y)>2)
+            this.ballArc({x:this.ball.x,y:this.ball.y},target,140,0,hit);
+        else hit();
+    }
+
+    awardHitByPitch(team) {
+        const gs=this.gs;gs.balls=0;gs.strikes=0;
+        gs.pendingBaseUpdate=()=>this.updateBases('Walk',team);
+        gs.hitBatters=(gs.hitBatters||0)+1;
+        gs.hbpEscalation=(gs.hbpEscalation||0)+1;
+        this.audio.speak('Hit by pitch. Take first base.',true);this.showPitchCall('Hit By Pitch');
+        const advance=()=>this.animateAdvances('Walk',()=>this.finishPlay('Hit By Pitch'));
+        if(gs.hbpEscalation>=3)this.benchesConfrontation(advance);
+        else {
+            if(gs.hbpEscalation===2)this.time.delayedCall(500,()=>this.audio.speak('The umpire warns both teams.',false));
+            advance();
+        }
+    }
+
+    benchesConfrontation(done) {
+        this.setBattingCamera(false);this.setMenu(null);this._confrontation=true;
+        this.audio.speak('Benches clear!',true);this.bigMessage('BENCHES CLEAR!',2200);
+        const defenders=Object.values(this.fielders);
+        const offense=[this.batter,this.onDeckBatter,...Object.values(this.runnerDots||{})]
+            .filter(p=>p&&p.active&&!p._leavingField);
+        const dug=this.isPlayerBatting()?FIELD.DUGOUT.player:FIELD.DUGOUT.cpu;
+        const extras=[];
+        for(let i=0;i<5;i++) {
+            const p=this.makePlayer(this.battingColor(),'','R');
+            const origin={x:dug.x+(dug.x<0?-1:1)*(i+1)*28,y:dug.y+95+i*23};
+            p.setPosition(origin.x,origin.y);extras.push({p,...origin,extra:true});offense.push(p);
+        }
+        // Mix both rosters; no assigned opponents, rows or mirrored poses.
+        const actors=[];for(let i=0;i<Math.max(defenders.length,offense.length);i++){
+            if(defenders[i])actors.push(defenders[i]);if(offense[i])actors.push(offense[i]);
+        }
+        const home=[...new Set(actors)].map(p=>extras.find(e=>e.p===p)||{p,x:p.x,y:p.y});
+        const center={x:FIELD.MOUND.x,y:(FIELD.MOUND.y+FIELD.SECOND.y)/2+10};
+        const arrival=[];
+        // Irregular entry spots leave enough room to reach the scrum without
+        // trapping late arrivals behind a row of stationary players.
+        for(let i=0;i<home.length;i++){
+            let point;
+            for(let attempt=0;attempt<2000;attempt++){
+                const angle=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*(105+Math.floor(attempt/500)*12);
+                point={x:center.x+Math.cos(angle)*r,y:center.y+Math.sin(angle)*r*.9};
+                if(arrival.every(q=>Math.hypot(q.x-point.x,q.y-point.y)>=38))break;
+            }
+            arrival.push(point);
+        }
+        const joined=new Set();let mix;
+        const join=actor=>{
+            if(this._scufflePhase!=='fighting'||joined.has(actor)||!actor.p.active)return;
+            joined.add(actor);mix(actor);
+        };
+        const returnHome=()=>{
+            this._zoomOut(400);this.audio.speak('Dust off. Back to baseball.',true);
+            let returning=home.length;
+            for(const {p,x,y,extra} of home)this.jogToPosition(p,x,y,110,()=>{
+                this.stopBob(p);if(extra)p.destroy();
+                if(--returning===0){this._confrontation=false;this._scufflePhase=null;done();}
+            });
+        };
+        const scuffle=()=>{
+            this._scuffleStartedAt=this.time.now;this._scufflePhase='fighting';
+            this._zoomOnPoint(center.x,center.y,1.35,450);
+            const defense=new Set(defenders);
+            const inReach=(p,r)=>r&&r.active&&defense.has(p)!==defense.has(r)&&
+                Math.hypot(r.x-p.x,r.y-p.y)<=30&&Math.abs(r.y-p.y)<=10&&Math.abs(r.x-p.x)>=17;
+            const face=(p,r)=>{
+                if(p.faceFrom)p.faceFrom(r.x-p.x,0);
+                if(p._spr)p._spr.setFlipX(r.x<p.x);
+            };
+            const stopSwing=p=>{
+                p._scuffleOpponent=null;
+                if(p._spr)p._spr.anims.timeScale=1;
+                if(p._anim==='scuffle')this.bb2Anim(p,'idle_side');
+            };
+            mix=actor=>{
+                const {p}=actor;if(this._scufflePhase!=='fighting'||!p.active)return;
+                actor.nextDecision=this.time.now+100;
+                const rivals=[...joined].map(q=>q.p).filter(q=>q!==p&&q.active&&defense.has(q)!==defense.has(p))
+                    .sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));
+                if(actor.boutEnd&&this.time.now>=actor.boutEnd){
+                    actor.boutEnd=0;actor.restUntil=this.time.now+450+Math.random()*450;
+                    actor.retargetAt=0;stopSwing(p);
+                }
+                const close=rivals.find(r=>inReach(p,r));
+                if(close&&this.time.now>=(actor.restUntil||0)){
+                    this.stopPlayerMovement(p);p._scuffleOpponent=close;
+                    if(!actor.boutEnd)actor.boutEnd=this.time.now+600+Math.random()*650;
+                    if(p._anim!=='scuffle'){
+                        this.bb2Anim(p,'scuffle');if(p._spr)p._spr.anims.timeScale=.8+Math.random()*.45;
+                    }
+                    face(p,close);return;
+                }
+                stopSwing(p);
+                if(!actor.target?.active||this.time.now>=(actor.retargetAt||0)){
+                    // Prefer nearby opponents, with occasional changes to keep
+                    // the crowd mixing instead of becoming fixed pairs.
+                    actor.target=rivals[Math.floor(Math.random()*Math.min(2,rivals.length))];
+                    actor.retargetAt=this.time.now+650+Math.random()*450;
+                }
+                const rival=actor.target;
+                if(!rival)return;
+                const side=p.x<=rival.x?-1:1;
+                const x=Phaser.Math.Clamp(rival.x+side*24,center.x-100,center.x+100);
+                const y=Phaser.Math.Clamp(rival.y+Phaser.Math.Clamp(center.y-rival.y,-18,18),center.y-80,center.y+80);
+                const move=this.playerMotion().moves.get(p);
+                if(!move||Math.hypot(move.goal.x-x,move.goal.y-y)>10){
+                    this.jogToPosition(p,x,y,110);
+                }else this.startBob(p);
+            };
+            // Check range and facing after movement on EVERY frame. A departing
+            // opponent must stop a punch immediately, not at the next AI timer.
+            this._updateScuffle=()=>{
+                if(this._scufflePhase!=='fighting')return;
+                for(const actor of joined){
+                    const {p}=actor,rival=p._scuffleOpponent;
+                    if(rival&&!inReach(p,rival)){stopSwing(p);actor.nextDecision=0;}
+                    if(this.time.now>=(actor.nextDecision||0))mix(actor);
+                }
+                // Later actors may have changed pose/route; face the actual
+                // opponent after all decisions, with no movement overriding it.
+                for(const {p} of joined)if(p._scuffleOpponent)face(p,p._scuffleOpponent);
+            };
+            // The batter and catcher react immediately at the plate. Everyone
+            // else keeps running in and joins the moving scrum on contact.
+            for(const p of [this.batter,this.fielders.C]){
+                const actor=home.find(a=>a.p===p);if(actor)join(actor);
+            }
+            const dust=this.add.graphics().setDepth(35);let beat=0;
+            const comic=this.add.text(center.x,center.y-80,'?!',{fontFamily:'Arial Black',fontSize:'24px',color:'#ffe066',stroke:'#10252b',strokeThickness:4}).setOrigin(.5).setDepth(36);
+            const commotion=this.time.addEvent({delay:180,loop:true,callback:()=>{
+                dust.clear();
+                for(const actor of home){
+                    if(joined.has(actor))continue;
+                    const nearFight=[...joined].some(({p})=>defense.has(p)!==defense.has(actor.p)&&Math.hypot(p.x-actor.p.x,p.y-actor.p.y)<65);
+                    if(nearFight)join(actor);
+                }
+                const crowd=[...joined];
+                const cx=crowd.reduce((n,{p})=>n+p.x,0)/crowd.length;
+                const cy=crowd.reduce((n,{p})=>n+p.y,0)/crowd.length;
+                const build=Phaser.Math.Clamp((this.time.now-this._scuffleStartedAt-350)/1800,0,1);
+                for(let i=0;i<Math.ceil(13*build);i++){
+                    const a=i*2.39996+beat*.12,r=(15+(i%4)*13)*(.4+.6*build);
+                    dust.fillStyle(i%2?0xc4ad86:0xe4d2ae,.22*build);
+                    dust.fillEllipse(cx+Math.cos(a)*r,cy-14+Math.sin(a)*r*.7,(40+(i%3)*9)*(.4+.6*build),(24+(i%2)*8)*(.4+.6*build));
+                }
+                if(beat++%4===0){
+                    this.audio.play('scuffle');comic.setText(['?!','HEY!','POOF!','?!'][Math.floor(beat/4)%4]);
+                    comic.setPosition(cx+(Math.random()-.5)*110,cy-65-Math.random()*25);
+                }
+            }});
+            this.time.delayedCall(10000,()=>{
+                commotion.remove();dust.destroy();comic.destroy();this._scufflePhase='dusting';this._updateScuffle=null;
+                home.forEach(({p})=>{p._scuffleOpponent=null;this.stopPlayerMovement(p);if(p._spr)p._spr.anims.timeScale=1;this.bb2Anim(p,'dust_off');});
+                this.time.delayedCall(1200,()=>{this._scufflePhase='returning';returnHome();});
+            });
+        };
+        home.forEach(({p},i)=>{
+            this.stopPlayerMovement(p);
+            const target=arrival[i];
+            this.jogToPosition(p,target.x,target.y,110,()=>{
+                this.stopBob(p);join(home[i]);
+            });
+        });
+        scuffle();
+    }
+
     processNoSwing() {
         const gs = this.gs;
         if (this.ib.outcomeProcessed) return;
         this.ib.outcomeProcessed = true;
         this.ib.active = false;
-        const location = gs.selectedPitchLocation;
         const R = GAME_CONSTANTS.GAME_RULES;
 
-        if (Math.random() < GAME_CONSTANTS.TIMING.HIT_BY_PITCH_CHANCE) {
-            gs.pendingBaseUpdate = () => this.updateBases('Walk', 'user');
-            gs.balls = 0; gs.strikes = 0;
-            this.audio.speak('Hit by pitch!');
-            this.showPitchCall('Hit By Pitch');
-            this.bb2Anim(this.batter, 'hit_by_pitch');
-            // animateAdvances() calls batterTakesOff() synchronously, which
-            // would force 'take_off' over 'hit_by_pitch' in the same tick —
-            // give the flinch a beat first, matching the CPU-pitching HBP
-            // path's identical 700ms pause.
-            this.time.delayedCall(700, () => {
-                this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
-            });
+        if (this.ib.hitByPitch) {
+            this.animateHitBatter(()=>this.awardHitByPitch('user'));
             return;
         }
 
-        const isBall = (location === 'Outside' && Math.random() < 0.75) ||
-                       (location === 'Inside' && Math.random() < 0.5);
+        const isBall = !this.pitchProfile().strike;
         if (isBall) {
             gs.balls++;
             if (gs.balls >= R.MAX_BALLS) {
@@ -1904,7 +2144,7 @@ class GameScene extends BaseballScene {
         const swingType = this.ib.swingType;
         const timingScore = Math.abs(this.ib.timingScore);
         const wasInStrikeZone = this.ib.pitchProgress >= 0.75 && this.ib.pitchProgress <= 1.0;
-        const location = gs.selectedPitchLocation;
+        const location = gs.selectedPitchLocation.includes('Inside')?'Inside':gs.selectedPitchLocation==='Middle'?'Middle':'Outside';
 
         let outcome;
         if (timingScore > 1.5) {
@@ -1926,7 +2166,7 @@ class GameScene extends BaseballScene {
             outcome = this.calculateGoodTimingOutcome(swingType === 'power' ? 0.9 : 0.5, wasInStrikeZone, location, swingType);
         }
 
-        if (this.ball.glow) this.ball.glow.setVisible(false);
+        this.hideSwingMeter();
         if (outcome !== 'Strike') {
             this.audio.play(outcome === 'Home Run' ? 'bigHit' : 'hit');
             this.contactFlash();
@@ -2336,6 +2576,7 @@ class GameScene extends BaseballScene {
         if (['Ground Out', 'Double Play', 'Triple Play'].includes(outcome)) {
             const fielderPos = Phaser.Utils.Array.GetRandom(['SS', '2B', '3B', '1B']);
             const fielder = this.fielders[fielderPos];
+            this.startGroundCoverage(fielderPos);
             const spot = {
                 x: Phaser.Math.Linear(home.x, FIELD.FIELDER_HOMES[fielderPos].x, 0.72),
                 y: Phaser.Math.Linear(home.y, FIELD.FIELDER_HOMES[fielderPos].y, 0.72)
@@ -2404,6 +2645,7 @@ class GameScene extends BaseballScene {
                 y: Phaser.Math.Linear(home.y, fhome.y, 0.9) + Phaser.Math.Between(-6, 6)
             };
             this.startContactRunners();
+            this.startGroundCoverage(fielderPos);
             this._ballBusy = (this._ballBusy || 0) + 1;
             this.chaseGroundBall(fielder, home, spot, 620, 16, () => {
                 this.audio.play('catch');
@@ -2442,7 +2684,7 @@ class GameScene extends BaseballScene {
         // cb() fires once both are done.
         let pending = 2;
         const done = () => { if (--pending === 0) cb(); };
-        this.animateAdvances(outcome, done);
+        this.animateAdvances(outcome, done, true);
         this.chaseDownExtraBaseHit(outcome, done);
     }
 
@@ -2450,7 +2692,7 @@ class GameScene extends BaseballScene {
     // scoring runners cross home plate (and the batter tours all four bags on
     // a home run). Purely visual — state changes stay in updateBases so the
     // ported v1 rules remain the single source of truth.
-    animateAdvances(outcome, cb) {
+    animateAdvances(outcome, cb, raceThrow=false) {
         const b = this.gs.bases;
         const col = this.battingColor();
 
@@ -2490,7 +2732,9 @@ class GameScene extends BaseballScene {
             { x: FIELD.BATTER_BOX.x, y: FIELD.BATTER_BOX.y },
             BASE_COORDS.first, BASE_COORDS.second, BASE_COORDS.third, BASE_COORDS.home
         ];
-        const LEG_MS = 1000;
+        const runSpeed=110;
+        const closePlay=raceThrow&&(outcome==='Double'||outcome==='Triple');
+        this._extraBaseRun=closePlay?{ready:false,arrivedAt:null}:null;
         let pending = moves.length;
         this._advanceSprites = this._advanceSprites || [];
         moves.forEach(m => {
@@ -2513,11 +2757,28 @@ class GameScene extends BaseballScene {
                     if (--pending === 0) cb();
                     return;
                 }
-                const p = PATH[idx];
-                this.movePlayer({
-                    targets: sprite, x: p.x + 16, y: p.y - 14, duration: LEG_MS, ease: 'Linear',
-                    onComplete: () => runLeg(idx + 1)
-                });
+                const p = PATH[idx],finalLeg=isBatter&&closePlay&&idx===m.toIdx;
+                const run=()=>{
+                    this.startBob(sprite);let sliding=false;
+                    const move=this.movePlayer({
+                        targets:sprite,x:p.x+16,y:p.y-14,
+                        duration:Math.hypot(p.x+16-sprite.x,p.y-14-sprite.y)/runSpeed*1000,
+                        onUpdate:()=>{
+                            if(finalLeg&&!sliding&&Math.hypot(p.x+16-sprite.x,p.y-14-sprite.y)<24){
+                                sliding=true;this.bb2Anim(sprite,'slide');
+                            }
+                        },
+                        onComplete:()=>{
+                            if(finalLeg)this._extraBaseRun.arrivedAt=this.time.now;
+                            runLeg(idx+1);if(finalLeg)this.bb2Anim(sprite,'safe_stand');
+                        }
+                    });
+                    if(finalLeg)this._extraBaseRun.move=move;
+                };
+                if(finalLeg){
+                    Object.assign(this._extraBaseRun,{ready:true,sprite,go:run});
+                    run();
+                } else run();
             };
             runLeg(m.fromIdx + 1);
         });
@@ -2527,7 +2788,27 @@ class GameScene extends BaseballScene {
     // Who covers a bag when a throw goes there. Middle infield trades coverage
     // of second; if the primary cover man made the play himself, his backup
     // takes the bag.
+    startGroundCoverage(throwerPos) {
+        const bases=this.gs.bases;
+        const targets=['first'];
+        if(bases.first)targets.push('second');
+        if(bases.first&&bases.second)targets.push('third');
+        if(bases.first&&bases.second&&bases.third)targets.push('home');
+        const assigned=new Set([this.fielders[throwerPos]]);
+        for(const base of targets){
+            const cover=this.fielders[this.coveringFielder(base,throwerPos)],bag=BASE_COORDS[base];
+            if(!cover || assigned.has(cover))continue;
+            assigned.add(cover);this.jogToPosition(cover,bag.x+9,bag.y+9,115);
+        }
+    }
+
     coveringFielder(base, throwerPos) {
+        // Keep a backup who already owns the bag through the relay. Otherwise
+        // the returning starter can get blocked forever by his own teammate.
+        const bag=BASE_COORDS[base];
+        const ready=Object.entries(this.fielders).find(([pos,p])=>pos!==throwerPos&&
+            Math.hypot(p.x-bag.x-9,p.y-bag.y-9)<2);
+        if(ready)return ready[0];
         if (base === 'second') return throwerPos === '2B' ? 'SS' : '2B';
         const primary = { first: '1B', third: '3B', home: 'C' };
         const backup  = { first: 'P',  third: 'SS', home: 'P' };
@@ -2623,7 +2904,7 @@ class GameScene extends BaseballScene {
         if (!r) return;
         const to = targetBase ? BASE_COORDS[targetBase] : r.to;
         r.sprite._runnerBase = targetBase || Object.keys(BASE_COORDS).find(k => BASE_COORDS[k] === to);
-        r.sprite._runnerOut = !!(opts && opts.out);
+        r.sprite._runnerOut = !!(opts && opts.out);r.arrivedAt=null;
         this.stopPlayerMovement(r.sprite);
         // Cancel the batter's still-pending take_off->run handoff (see
         // startContactRunners()) if this runner is being sent on before it
@@ -2641,6 +2922,7 @@ class GameScene extends BaseballScene {
         this.movePlayer({
             targets: r.sprite, x: to.x + 16, y: to.y - 14, duration: ms, ease: 'Linear',
             onComplete: () => {
+                r.arrivedAt=this.time.now;
                 if (contested) this.bb2Anim(r.sprite, opts.out ? 'out_walkoff' : 'safe_stand');
                 else this.stopBob(r.sprite);
             }
@@ -2657,20 +2939,23 @@ class GameScene extends BaseballScene {
 
         // Cover man sprints to receive at the bag
         this.stopPlayerMovement(cover);
-        this.jog(cover, bag.x + 9, bag.y + 9, Math.max(200, throwTimeMs * 0.8));
+        this.jogToPosition(cover,bag.x+9,bag.y+9,115);
 
         const thrower = this.fielders[throwerPos];
         const {clip} = this.fieldingClip(thrower, this.throwAction(thrower));
-        if (runnerKey) {
-            const transfer = (clip.contactFrame || 0)/clip.rate*1000;
-            const receiveClip = this.fieldingClip(cover, this.receiveAction(cover)).clip;
-            const flight = Math.max(throwTimeMs, (receiveClip.contactFrame || 0)/receiveClip.rate*1000 + 120);
-            const arriveMs = transfer + (out ? flight + 420 : Math.max(320, flight - 120));
-            this.sendRunner(runnerKey, arriveMs, targetBase, { slide: true, out });
-        }
-        this.throwToPlayer(thrower, cover, {duration:throwTimeMs,arc:Math.min(60,throwTimeMs*.09),
+        const sendContestedRunner=()=>{
+            if (runnerKey) {
+                const transfer = (clip.contactFrame || 0)/clip.rate*1000;
+                const receiveClip = this.fieldingClip(cover, this.receiveAction(cover)).clip;
+                const flight = Math.max(throwTimeMs, (receiveClip.contactFrame || 0)/receiveClip.rate*1000 + 120);
+                const arriveMs = transfer + (out ? flight + 420 : Math.max(320, flight - 120));
+                this.sendRunner(runnerKey, arriveMs, targetBase, { slide: true, out });
+            }
+        };
+        this.throwToPlayer(thrower, cover, {duration:throwTimeMs,arc:Math.min(60,throwTimeMs*.09),onWindup:sendContestedRunner,
             onReceiveDone:()=>{if (out && targetBase !== 'first') this.bb2Anim(cover,coverPos==='C'?'tag_home':'tag');}
         }, () => {
+            this._lastThrowRace={base:targetBase,out,runnerAt:this.playRunners?.[runnerKey]?.arrivedAt,ballAt:this.time.now};
             if (out && coverPos !== '1B') this.audio.play('tag');
             if (cb) cb();
         });
@@ -2686,7 +2971,7 @@ class GameScene extends BaseballScene {
     // animateAdvances(); this only choreographs the ball/fielders and calls
     // cb() once the throw-in and "Safe!" call finish.
     chaseDownExtraBaseHit(outcome, cb) {
-        const home = FIELD.HOME;
+        const home = {x:this.ball.x,y:this.ball.y};
         const isTriple = outcome === 'Triple';
         const targetBase = isTriple ? 'third' : 'second';
         const gapX = isTriple ? Phaser.Math.Between(620, 780) : Phaser.Math.Between(220, 380);
@@ -2694,51 +2979,82 @@ class GameScene extends BaseballScene {
         const chaserPos = gapX < 380 ? 'LF' : gapX > 620 ? 'RF' : 'CF';
         const cutoffPos = chaserPos === 'LF' ? 'SS' : chaserPos === 'RF' ? '2B' : (isTriple ? '3B' : 'SS');
 
-        // The batter-runner's arrival at his bag (animateAdvances runs in
-        // parallel from the same instant: 1000ms per leg). The play is SAFE
-        // by rule, so the throw is HELD as needed to reach the bag a beat
-        // after the runner — the ball must never visibly beat a safe runner.
-        const runnerEtaMs = (isTriple ? 3 : 2) * 1000;
-        const t0 = this.time.now;
-
+        // Cover the destination at contact, not after the pickup. The thrower
+        // must not wait while a teammate makes an entire run to the bag.
+        const coverPos=this.coveringFielder(targetBase,isTriple?cutoffPos:chaserPos);
+        const cover=this.fielders[coverPos],bag=BASE_COORDS[targetBase];
+        this.jogToPosition(cover,bag.x+9,bag.y+9,115);
         const finalThrow = (fromXY, throwerPos) => {
-            const arm = (FIELDER_RATINGS[throwerPos] || { arm: 3 }).arm;
-            const t = this.throwFlightMs(fromXY, targetBase, arm);
-            // Floor of 220ms so a fielding pose set immediately before this
-            // call (field_bounce) gets a beat on screen before the throw
-            // animation takes the sprite over.
-            const hold = Math.max(220, (runnerEtaMs + 280) - (this.time.now - t0) - t);
-            this.time.delayedCall(hold, () => {
-                const cover = this.fielders[this.coveringFielder(targetBase, throwerPos)];
-                this.stopPlayerMovement(cover);
-                this.jog(cover, BASE_COORDS[targetBase].x + 9, BASE_COORDS[targetBase].y + 9, Math.max(200, t * 0.8));
-                this._zoomOnPoint(BASE_COORDS[targetBase].x, BASE_COORDS[targetBase].y, 1.5, Math.max(260, t));
-                this.throwToPlayer(this.fielders[throwerPos], cover, {duration:t,arc:Math.min(50,t*.09)}, () => {
-                    this.bigMessage('SAFE!', 1200);
-                    this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}.`);
-                    this.audio.play('crowd');
-                    this.time.delayedCall(1000, () => {
-                        this._zoomOut(360);
-                        this.time.delayedCall(380, cb);
-                    });
+            const thrower=this.fielders[throwerPos];
+            const arm=(FIELDER_RATINGS[throwerPos]||{arm:3}).arm;
+            const t=this.throwFlightMs(fromXY,targetBase,arm);
+            const throwClip=this.fieldingClip(thrower,this.throwAction(thrower)).clip;
+            const receiveClip=this.fieldingClip(cover,this.receiveAction(cover)).clip;
+            const flight=Math.max(t,(receiveClip.contactFrame||0)/receiveClip.rate*1000+120);
+            const transfer=(throwClip.contactFrame||0)/throwClip.rate*1000;
+            const race=this._extraBaseRun,deadline=this.time.now+650;
+            const send=()=>{
+                this._zoomOnPoint(bag.x,bag.y,1.5,350);
+                this.throwToPlayer(thrower,cover,{duration:t,arc:Math.min(50,t*.09)},()=>{
+                    const ballAt=this.time.now;
+                    // These are awarded extra-base hits. An early throw still
+                    // requires a tag; show the swipe as the runner slides past.
+                    let tagged=false;
+                    const finish=()=>{
+                        if(race&&race.arrivedAt==null){
+                            if(!tagged&&race.sprite&&Math.hypot(race.sprite.x-cover.x,race.sprite.y-cover.y)<55){
+                                // A tag takes ownership from the catch and completes it cleanly.
+                                tagged=true;this.defensiveAction(cover,'tag');
+                            }
+                            this.time.delayedCall(30,finish);return;
+                        }
+                        this._lastExtraBaseRace={base:targetBase,runnerAt:race?.arrivedAt,ballAt,calledAt:this.time.now};
+                        this.bigMessage('SAFE!',1200);this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}.`);this.audio.play('crowd');
+                        this.time.delayedCall(1000,()=>{this._zoomOut(360);this.time.delayedCall(380,cb);});
+                    };
+                    finish();
                 });
-            });
+            };
+            const ready=()=>{
+                // A short gather can sharpen a close play, but never hold the
+                // ball for seconds just to manufacture a close finish.
+                const m=race?.move;
+                if(m&&m.active&&this.time.now<deadline){
+                    let distance=0,last=race.sprite;
+                    for(const point of m.path.length?m.path:[m.goal]){distance+=Math.hypot(point.x-last.x,point.y-last.y);last=point;}
+                    if(distance/m.speed*1000>transfer+flight-200){this.time.delayedCall(20,ready);return;}
+                }
+                send();
+            };
+            this.time.delayedCall(180,ready);
         };
 
-        const rollSpot = {
-            x: Phaser.Math.Clamp(landSpot.x + Phaser.Math.Between(-30, 30), 40, 960),
-            y: landSpot.y + Phaser.Math.Between(25, 50)
-        };
+        // Continue the drive away from the plate after its first bounce.
+        // Shorten the roll at the fence rather than reversing toward home or
+        // sending the ball through the wall.
+        const dx=landSpot.x-home.x,dy=landSpot.y-home.y,length=Math.hypot(dx,dy);
+        const ux=dx/length,uy=dy/length,wall=FIELD.WALL_ARC;
+        const wx=landSpot.x-wall.cx,wy=landSpot.y-wall.cy,dot=wx*ux+wy*uy;
+        const toWall=-dot+Math.sqrt(Math.max(0,dot*dot-(wx*wx+wy*wy-(wall.r-18)**2)));
+        const roll=Math.min(Phaser.Math.Between(35,65),Math.max(0,toWall));
+        const rollSpot = {x:landSpot.x+ux*roll,y:landSpot.y+uy*roll};
         const relaySpot = {
             x: Phaser.Math.Linear(rollSpot.x, BASE_COORDS[targetBase].x, 0.5),
             y: Phaser.Math.Linear(rollSpot.y, BASE_COORDS[targetBase].y, 0.5)
         };
+        // A cutoff must not park on a runner's base-touch point. Keep the
+        // relay on the outfield side so runners can continue around the bags.
+        for(const base of Object.values(BASE_COORDS)){
+            if(Math.hypot(relaySpot.x-base.x-16,relaySpot.y-base.y+14)<45)relaySpot.y-=60;
+        }
         // Both outfielder and cutoff man break at contact, while the ball
         // travels to the gap and skips toward the eventual pickup point.
         const cutoff=this.fielders[cutoffPos];
         this.jog(cutoff,relaySpot.x,relaySpot.y,Math.hypot(relaySpot.x-cutoff.x,relaySpot.y-cutoff.y)/85*1000/1.5,'Linear');
         this._ballBusy = (this._ballBusy || 0) + 1;
-        this.chaseGroundBall(this.fielders[chaserPos], home, rollSpot, 1200, 90, () => {
+        // Give the deep drive and its skip time to travel while runners round
+        // the bases; the delay belongs to the live ball, never the thrower's glove.
+        this.chaseGroundBall(this.fielders[chaserPos], home, rollSpot, isTriple?3000:2200, 90, () => {
             this.audio.play('catch');
             this.releaseBall();
             this.hideHeldBall();
@@ -2781,7 +3097,7 @@ class GameScene extends BaseballScene {
             if (Math.abs(f.x - home.x) > 2 || Math.abs(f.y - home.y) > 2) {
                 this.stopPlayerMovement(f);
                 const distance = Math.hypot(f.x - home.x, f.y - home.y);
-                this.jog(f, home.x, home.y, Math.max(180, distance / 55 * 1000) / 1.5, 'Linear', null, 'walk');
+                this.jog(f, home.x, home.y, Math.max(180, distance / 100 * 1000) / 1.5, 'Linear', null, 'walk');
             } else {
                 this.stopPlayerMovement(f);
                 this.stopBob(f);
@@ -2793,41 +3109,17 @@ class GameScene extends BaseballScene {
     // PLAYER PITCHING / FIELDING (CPU bats) — with the NEW throw-to-base menu
     // ══════════════════════════════════════════════════════════════════════
     startPitchingPhase() {
+        this.pitchGrid = null;
         this.showPitchMenu();
     }
 
-    // 5-zone pitch selector ported from v1 generatePitchGrid (shuffled pitches,
-    // one hidden "hot zone"; the green highlight mirrors v1's heatmap)
+    // Five changing matchups, with exactly two high-variance pitch choices.
     showPitchMenu() {
-        const zones = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside', 'Center'];
-        const shuffled = [...PITCH_TYPES];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        const hotZone = Math.floor(Math.random() * 5);
+        // Preserve the same five choices through pause/resume.
+        if (!this.pitchGrid) this.pitchGrid=bb2PitchChoices();
 
-        // Same tiering as before (hot zone best, adjacent/center decent,
-        // opposite corner worst) but jittered into a continuous value each
-        // time instead of 3 fixed numbers, so the heatmap's colors form a
-        // real gradient across the grid rather than repeating the same
-        // three flat shades every pitch.
-        this.pitchGrid = zones.map((zone, i) => {
-            let effectiveness;
-            if (i === hotZone) effectiveness = 0.97 + Math.random() * 0.03;
-            else if (i === 4 || hotZone === 4) effectiveness = 0.50 + Math.random() * 0.18;
-            else {
-                const diff = Math.abs(i - hotZone);
-                effectiveness = (diff === 1 || diff === 3)
-                    ? 0.52 + Math.random() * 0.18
-                    : 0.14 + Math.random() * 0.18;
-            }
-            return { pitch: shuffled[i], zone, zoneIndex: i, effectiveness };
-        });
-
-        // The v1-style strike-zone heatmap: green cell = your best pitch
         const menu = new PitchZoneGrid(this, {
-            x: 138, y: 310, size: 200,
+            x: 146, y: 304, size: 250,
             audio: this.audio, grid: this.pitchGrid,
             onSelect: (opt) => {
                 if (opt.value === 'pause') { this.showPauseMenu(() => this.showPitchMenu()); return; }
@@ -2841,17 +3133,8 @@ class GameScene extends BaseballScene {
 
     // Where the pitch actually goes — ported from v1 getPitchOutcome
     getPitchOutcome(cell) {
-        const roll = Math.random() * 100;
-        if (cell.zoneIndex === 4) {
-            if (roll < 70) return { location: 'Center', drifted: false };
-            if (roll < 77.5) return { location: 'High Center', drifted: true };
-            if (roll < 85) return { location: 'Low Center', drifted: true };
-            if (roll < 92.5) return { location: 'Inside', drifted: true };
-            return { location: 'Outside', drifted: true };
-        }
-        const zoneNames = ['High Inside', 'High Outside', 'Low Outside', 'Low Inside'];
-        if (roll < 85) return { location: zoneNames[cell.zoneIndex], drifted: false };
-        return { location: 'Center', drifted: true };
+        const controlled = Math.random() < (cell.risk ? .60 : .86);
+        return {location:controlled?cell.zone:'Center',drifted:!controlled};
     }
 
     processPitchSelection(cell) {
@@ -2862,7 +3145,8 @@ class GameScene extends BaseballScene {
         gs.selectedPitchLocation = actual.includes('Inside') ? 'Inside'
                                  : actual.includes('Outside') ? 'Outside' : 'Middle';
         gs.selectedPitchEffectiveness = cell.effectiveness;
-        gs.bestPitchBonus = cell.effectiveness >= 0.95;
+        gs.pitchRisk = !!cell.risk;
+        gs.pitchMissedSpot = pitchOutcome.drifted;
 
         if (gs.lastPitchType === cell.pitch) gs.samePitchCount++;
         else gs.samePitchCount = 1;
@@ -2870,9 +3154,12 @@ class GameScene extends BaseballScene {
 
         // Decide the outcome NOW so the choreography can match it: the CPU
         // batter visibly swings as the ball arrives (except on called balls).
-        // Coming inside has a cost: 1% of non-best inside pitches plunk the
-        // batter — a free base, the risk you take pitching in.
-        const hbp = gs.selectedPitchLocation === 'Inside' && !gs.bestPitchBonus && Math.random() < 0.01;
+        // Inside pitches can hit the batter; aggressive pitches carry more risk.
+        const streaks=gs.riskyPitchStreaks || (gs.riskyPitchStreaks={});
+        const team=this.isPlayerBatting()?'cpu':'player';
+        streaks[team]=cell.risk?(streaks[team]||0)+1:0;
+        if(!cell.risk)gs.hbpEscalation=0;
+        const hbp=Math.random()<bb2HitBatterChance(cell.risk,streaks[team],gs.selectedPitchLocation==='Inside');
         const outcome = hbp ? 'Hit By Pitch' : this.computeCpuPitchOutcome(cell.pitch);
         const cpuSwings = outcome !== 'Ball' && outcome !== 'Hit By Pitch';
 
@@ -2883,15 +3170,7 @@ class GameScene extends BaseballScene {
         this.deliverPitch(800, () => {
             const dur = this.cpuPitchFlight(cell.pitch, () => {
                 if (outcome === 'Hit By Pitch') {
-                    // The ball rides in and clips the batter
-                    this.audio.play('tag');
-                    this.cameras.main.shake(140, 0.006);
-                    this.ball.setVisible(false);
-                    this.bb2Anim(this.batter, 'hit_by_pitch');
-                    if (this.batter && this.batter.active) {
-                        this.tweens.add({ targets: this.batter._spr || this.batter, x: (this.batter._spr ? this.batter._spr.x : this.batter.x) - 5, duration: 90, yoyo: true, repeat: 1 });
-                    }
-                    this.time.delayedCall(700, () => this.processCpuOutcome(outcome));
+                    this.animateHitBatter(()=>this.processCpuOutcome(outcome));
                 } else if (outcome === 'Ball' || outcome === 'Strike') {
                     // Into the catcher's glove, small breather for the call
                     this.catchAtPlate();
@@ -2901,7 +3180,7 @@ class GameScene extends BaseballScene {
                     this.contactFlash();
                     this.processCpuOutcome(outcome);
                 }
-            });
+            }, hbp);
             if (cpuSwings) {
                 // Swing timed so the whip crosses the zone as the ball arrives
                 this.time.delayedCall(Math.max(0, dur - 190), () => {
@@ -2912,7 +3191,7 @@ class GameScene extends BaseballScene {
         });
     }
 
-    // CPU batter outcome roll — ported verbatim from v1 processPitch
+    // CPU outcome weights include location, command risk and repetition.
     computeCpuPitchOutcome(pitchType) {
         const gs = this.gs;
         const probs = PITCH_PROBABILITIES[pitchType] || PITCH_PROBABILITIES.Fastball;
@@ -2926,27 +3205,21 @@ class GameScene extends BaseballScene {
         const effectivenessModifier = (effectiveness - 0.5) * 0.3;
         strikeRate = strikeRate * (1 + effectivenessModifier);
 
-        if (gs.bestPitchBonus) {
-            strikeRate = strikeRate * 1.30;
-            foulRate = foulRate * 1.25;
-        }
-
         const hitModifier = 1 - effectivenessModifier;
-        Object.keys(hitOutcomes).forEach(key => { hitOutcomes[key] = hitOutcomes[key] * hitModifier; });
-
-        if (gs.bestPitchBonus) {
-            if (hitOutcomes['Double']) hitOutcomes['Double'] *= 0.25;
-            if (hitOutcomes['Triple']) hitOutcomes['Triple'] *= 0.15;
-            if (hitOutcomes['Home Run']) hitOutcomes['Home Run'] *= 0.10;
-            if (hitOutcomes['Single']) hitOutcomes['Single'] *= 0.70;
-            if (hitOutcomes['Ground Out']) hitOutcomes['Ground Out'] *= 1.60;
-            if (hitOutcomes['Pop Fly Out']) hitOutcomes['Pop Fly Out'] *= 1.50;
+        Object.keys(hitOutcomes).forEach(key => { hitOutcomes[key] *= hitModifier; });
+        if (gs.pitchRisk) {
+            // Hit the spot: extra swing-and-miss. Miss it: a hittable hanger.
+            strikeRate *= gs.pitchMissedSpot ? .55 : 1.55;
+            ballRate *= gs.pitchMissedSpot ? 1.2 : 1;
+            for (const key of ['Single','Double','Triple','Home Run']) {
+                hitOutcomes[key] *= gs.pitchMissedSpot ? (key==='Single'?1.6:2.8) : .60;
+            }
         }
 
         if (gs.samePitchCount > 2) {
             const penalty = (gs.samePitchCount - 2) * 5;
             strikeRate = Math.max(20, strikeRate - penalty);
-            const penaltyReduction = gs.bestPitchBonus ? 0.3 : 1.0;
+            const penaltyReduction = 1;
             const hitBoost = (penalty * penaltyReduction) / Object.keys(hitOutcomes).length;
             Object.keys(hitOutcomes).forEach(key => {
                 if (key !== 'Home Run') hitOutcomes[key] += hitBoost;
@@ -2981,11 +3254,7 @@ class GameScene extends BaseballScene {
         const R = GAME_CONSTANTS.GAME_RULES;
 
         if (outcome === 'Hit By Pitch') {
-            gs.balls = 0; gs.strikes = 0;
-            gs.pendingBaseUpdate = () => this.updateBases('Walk', 'comp');
-            this.audio.speak('Hit by pitch! He takes his base.');
-            this.showPitchCall('Hit By Pitch');
-            this.animateAdvances('Walk', () => this.finishPlay('Hit By Pitch'));
+            this.awardHitByPitch('comp');
             return;
         }
 
@@ -3080,7 +3349,7 @@ class GameScene extends BaseballScene {
             // relay choreography as when the player hits an extra-base hit
             let pending = 2;
             const done = () => { if (--pending === 0) this.finishPlay(outcome); };
-            this.animateAdvances(outcome, done);
+            this.animateAdvances(outcome, done, true);
             this.chaseDownExtraBaseHit(outcome, done);
         }
     }
@@ -3102,6 +3371,7 @@ class GameScene extends BaseballScene {
         // out before the menu — UI scales with camera zoom, so menus must
         // only ever appear at zoom 1.
         this.startContactRunners();
+        this.startGroundCoverage(fielderPos);
         this._ballBusy = (this._ballBusy || 0) + 1;
         this.chaseGroundBall(fielder, FIELD.HOME, spot, 540, 20, () => {
             this.audio.play('catch');
@@ -3116,8 +3386,9 @@ class GameScene extends BaseballScene {
         });
     }
 
-    showThrowMenu(fielderPos, spot) {
-        const options = getGroundballThrowOptions(this.gs.bases, this.gs.outs);
+    showThrowMenu(fielderPos, spot, outfield = false) {
+        const options = getGroundballThrowOptions(this.gs.bases, this.gs.outs).map(o=>
+            outfield&&o.value!=='hold'?{...o,context:'cutdown',dpChance:false,hint:'Try to beat the runner with a long throw'}:o);
         // Highlight the base PLAYER covering each legal target (pitcher = end
         // the play) instead of a text list — you throw to a person, not a menu.
         // If the fielder who has the ball covers that bag HIMSELF (1B on a
@@ -3155,14 +3426,15 @@ class GameScene extends BaseballScene {
         const gs = this.gs;
 
         if (opt.value === 'hold') {
-            this.audio.speak('Infield single.');
-            // Runners trot the rest of the way to their bases
+            this.audio.speak('Single.');
             ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
             gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
-            this.time.delayedCall(1200, () => {
-                this._zoomOut(360);
-                this.finishPlay('Single');
-            });
+            let pending=2;
+            const done=()=>{if(--pending===0){this._zoomOut(360);this.finishPlay('Single');}};
+            this.time.delayedCall(1200,done);
+            const holder=this.fielders[fielderPos],pitcher=this.fielders.P;
+            if(holder===pitcher)done();
+            else this.throwToPlayer(holder,pitcher,{arc:30},done);
             return;
         }
 
@@ -3207,7 +3479,7 @@ class GameScene extends BaseballScene {
                 this.hideHeldBall();
                 if (out) {
                     this.cameras.main.shake(140, 0.006);
-                    this.applyThrowOut(targetBase, fielderPos);
+                    this.applyThrowOut(targetBase, fielderPos, opt.dpChance !== false);
                 } else {
                     this.bigMessage('SAFE!', 1300);
                     this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}!`);
@@ -3237,7 +3509,7 @@ class GameScene extends BaseballScene {
         }, () => {
             if (result.out) {
                 this.cameras.main.shake(140, 0.006);
-                this.applyThrowOut(targetBase, fielderPos);
+                this.applyThrowOut(targetBase, fielderPos, opt.dpChance !== false);
             } else {
                 this.bigMessage('SAFE!', 1300);
                 this.audio.speak(`Safe at ${BASE_NAMES[targetBase]}!`);
@@ -3255,7 +3527,7 @@ class GameScene extends BaseballScene {
     }
 
     // Successful throw: record the out, then handle the double-play relay
-    applyThrowOut(targetBase, fielderPos) {
+    applyThrowOut(targetBase, fielderPos, allowRelay = true) {
         const gs = this.gs;
         // A play at the plate is the catcher's tag
         if (targetBase === 'home') this.catcherAnim('tag_home');
@@ -3284,6 +3556,19 @@ class GameScene extends BaseballScene {
         if (targetBase === 'second') {
             // Force at second succeeded. Try to turn two?
             gs.bases.first = null; // that runner is out at 2nd
+            if(!allowRelay){
+                this.bigMessage('OUT AT 2ND',1300);this.audio.speak('Out at second!');
+                ['batter','second','third'].forEach(k=>this.sendRunner(k,1000));
+                gs.pendingBaseUpdate=()=>{
+                    if(gs.bases.second){
+                        if(gs.bases.third&&gs.outs<GAME_CONSTANTS.GAME_RULES.MAX_OUTS)gs.score[this.battingScoreKey()]++;
+                        gs.bases.third=gs.bases.second;
+                    }
+                    gs.bases.second=null;gs.bases.first='comp';
+                };
+                this.time.delayedCall(1300,()=>{this._zoomOut(380);this.finishPlay('Ground Out');});
+                return;
+            }
             if (gs.outs < GAME_CONSTANTS.GAME_RULES.MAX_OUTS) {
                 this.audio.speak('Out at second!');
                 // The cover man who took the throw at 2nd turns the pivot
@@ -3375,45 +3660,14 @@ class GameScene extends BaseballScene {
         const fhome = FIELD.FIELDER_HOMES[outfielderPos];
         const spot = { x: fhome.x + Phaser.Math.Between(-30, 30), y: fhome.y + Phaser.Math.Between(20, 60) };
 
-        // Is a lead runner trying to take an extra base / score?
-        let contested = null;
-        if (gs.bases.third && gs.bases.second) contested = 'home';   // run trying to score
-        else if (gs.bases.second && gs.bases.first) contested = 'third';
-
         this.startContactRunners();
+        this.startGroundCoverage(outfielderPos);
         this._ballBusy = (this._ballBusy || 0) + 1;
         this.chaseGroundBall(fielder, FIELD.HOME, spot, 700, 14, () => {
-            this.audio.play('catch');
-            this.releaseBall();
-            this.hideHeldBall();
-            if (!contested) {
-                this.audio.speak('Single.');
-                ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
-                gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
-                this.time.delayedCall(1200, () => this.finishPlay('Single'));
-                return;
-            }
-            this._zoomOnPoint(spot.x, spot.y, 1.35, 280);
-            this.audio.speak(`Base hit! Runner going for ${BASE_NAMES[contested]}!`);
-            this.time.delayedCall(700, () => {
-                this._zoomOut(300);
-                this.time.delayedCall(320, () => {
-                    const options = getCutdownThrowOptions(contested);
-                    const chips = { second: '2ND', third: '3RD', home: 'HOME', hold: 'PITCHER' };
-                    const targets = options.map(o => ({
-                        ...o,
-                        chip: chips[o.value],
-                        fielder: this.fielders[o.value === 'hold' ? 'P' : this.coveringFielder(o.value, outfielderPos)]
-                    }));
-                    this.setMenu(new BaseTargetSelector(this, {
-                        targets, audio: this.audio, title: 'Cut Him Down?', zoomOnScan: true,
-                        onSelect: (opt) => {
-                            this.setMenu(null);
-                            this.resolveCutdownThrow(outfielderPos, spot, contested, opt);
-                        }
-                    }));
-                });
-            });
+            this.audio.play('catch');this.releaseBall();this.hideHeldBall(fielder);
+            this.audio.speak('Base hit. Choose your throw.');
+            // Choice time is unlimited; only automatic fielding has a deadline.
+            this.time.delayedCall(220,()=>this.showThrowMenu(outfielderPos,spot,true));
         });
     }
 

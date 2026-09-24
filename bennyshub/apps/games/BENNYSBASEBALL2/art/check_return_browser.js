@@ -23,7 +23,7 @@ module.exports=async function({evaluate,wait,until,capture}) {
     // A late ready pose must not leave a moving fielder crouch-sliding.
     await evaluate(`reviewScene.bb2Anim(reviewScene.fielders.CF,'ready');void 0;`);
     await until('!reviewScene.fielders.P._busy',5000);
-    assert((await evaluate('reviewScene.fielders.P._anim')).startsWith('walk_'),'Pitch follow-through returns to walking');
+    assert((await evaluate('reviewScene.fielders.P._anim')).startsWith('walk_'),'Pitch follow-through returns to recovery jogging');
     await until('reviewScene.playerMotion().moves.size===0',20000);
     const walking=await evaluate('reviewScene._walkReview');
     assert(walking.samples>100);assert.equal(walking.bad.length,0,JSON.stringify(walking.bad.slice(0,5)));

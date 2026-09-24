@@ -166,6 +166,16 @@ let mainNavigations=0;
         console.log('Startup:',startup);return;
     }
     await wait(8500); // Opening announcements finish before driving an at-bat.
+    if(process.argv.includes('--pitch-choices')) {
+        await require('./check_pitch_choices_browser.js')({evaluate,wait,until,capture,call});
+        assert.equal(errors.length,0,JSON.stringify(errors));
+        console.log('Pitch cues, charge take, pitch cards, team scores and third-HBP recovery passed.');return;
+    }
+    if(process.argv.includes('--races')) {
+        const races=await require('./check_extra_base_browser.js')({evaluate,wait,until,capture});
+        assert.equal(errors.length,0,JSON.stringify(errors));
+        console.log('Extra-base races:',JSON.stringify(races));return;
+    }
     if(process.argv.includes('--routes')) {
         const routes=await require('./check_routes_browser.js')({evaluate,wait,until,capture});
         assert.equal(errors.length,0,JSON.stringify(errors));
@@ -197,7 +207,7 @@ let mainNavigations=0;
         console.log('Flow: on-field choices, spoken-call order, frozen pitch, pause, catcher reception and lineup walk-up passed.');return;
     }
     if(process.argv.includes('--throws')) {
-        const throws=await require('./check_throw_browser.js')({evaluate,wait,until,capture});
+        const throws=await require('./check_throw_browser.js')({evaluate,wait,until,capture,call});
         assert.equal(errors.length,0,JSON.stringify(errors));
         fs.writeFileSync(path.join(out,'browser-throws.json'),JSON.stringify(throws,null,2));
         console.log('Throws: real release frames, hand/glove alignment, cutoff relay, pitcher returns and recovery passed.');return;

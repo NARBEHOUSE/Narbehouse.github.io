@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-module.exports=async function({evaluate,wait,until,capture}) {
+module.exports=async function({evaluate,wait,until,capture,call}) {
     await evaluate(`window.reviewScene=__baseball2Game.scene.getScene('GameScene');
         (()=>{const s=reviewScene;s.time.removeAllEvents();s.setMenu(null);s.resetInteractiveBatting();
         s.gs.bases={first:null,second:null,third:null};s.gs.outs=0;s.createTeams(false);
@@ -24,7 +24,9 @@ module.exports=async function({evaluate,wait,until,capture}) {
                 if(cb)cb();});
         };
         s.finishPlay=outcome=>{s._outcome=outcome;s.returnBallToPitcher(outcome);};
-        s._prep=()=>{for(const p of Object.values(s.fielders))s.stopPlayerMovement(p);
+        s._prep=()=>{s.time.removeAllEvents();for(const p of Object.values(s.fielders)){
+            if(p._fieldAction)p._fieldAction.cancel();p._returnAfterAction=false;s.stopPlayerMovement(p);
+        }
             s._outcome=null;s._done=false;s._throwReviewActor=null;s._ballBusy=0;s._ballHolder=null;
             for(const [pos,p] of Object.entries(s.fielders)){p.setPosition(FIELD.FIELDER_HOMES[pos].x,FIELD.FIELDER_HOMES[pos].y);p.idleAnim();}
         };
@@ -55,6 +57,24 @@ module.exports=async function({evaluate,wait,until,capture}) {
     await evaluate(`(()=>{const s=reviewScene;s._prep();s.processStealAttempt('second');})();`);
     await until('reviewScene._outcome && !reviewScene._returnPending && !reviewScene.ball.visible',7000);
     await until('!Object.values(reviewScene.fielders).some(p=>p._busy)',5000);
+    // Regression: first baseman fields it and flips to a pitcher covering
+    // first. A 220ms toss must never turn the pitcher's run into a teleport.
+    await evaluate(`(()=>{const s=reviewScene;s._prep();window.coverPitcher=s.fielders.P;
+        window.coverStart={x:coverPitcher.x,y:coverPitcher.y};s._coverageSteps=[];
+        let previous={...coverStart};s._coverageWatch=(time,delta)=>{
+            s._coverageSteps.push({step:Math.hypot(coverPitcher.x-previous.x,coverPitcher.y-previous.y),delta});
+            previous={x:coverPitcher.x,y:coverPitcher.y};};s.events.on('postupdate',s._coverageWatch);
+        s.animateThrowRace({throwerPos:'1B',targetBase:'first',out:true,throwTimeMs:220},()=>s._done=true);
+    })();`);
+    await wait(450);assert(!await evaluate('reviewScene._done'),'Out called before pitcher ran to first');
+    assert(await evaluate('Math.hypot(coverPitcher.x-coverStart.x,coverPitcher.y-coverStart.y)<70'));
+    await capture('browser-pitcher-covering-first.png');
+    await until('reviewScene._done',9000);
+    assert(await evaluate('Math.hypot(coverPitcher.x-FIELD.FIRST.x-9,coverPitcher.y-FIELD.FIRST.y-9)<.1'));
+    const steps=await evaluate('reviewScene._coverageSteps');
+    assert(steps.every(s=>s.step<=130*Math.min(s.delta,100)/1000+.02),JSON.stringify(steps.filter(s=>s.step>13.02)));
+    await evaluate("reviewScene.events.off('postupdate',reviewScene._coverageWatch);reviewScene.returnBallToPitcher('Ground Out');");
+    await until('!reviewScene._returnPending && !reviewScene.ball.visible',7000);
     // Called pitches include the catcher's full rise/throw and a pitcher catch.
     await evaluate(`(()=>{const s=reviewScene;s._prep();s.ball.setPosition(FIELD.HOME.x,FIELD.HOME.y-10).setVisible(true);s.catchAtPlate();})();`);
     await until('!reviewScene._receivingPitch && !reviewScene.ball.visible',5000);
@@ -69,5 +89,23 @@ module.exports=async function({evaluate,wait,until,capture}) {
     assert(result.landings.every(c=>c.error<.1),JSON.stringify(result.landings));
     assert.equal(result.busy,0);assert.equal(result.releases.length,result.catches.length);
     await capture('browser-throw-recovered.png');
+    // Loaded-base outfield pickup offers all live targets through switch input.
+    await evaluate(`(()=>{const s=reviewScene;s.time.removeAllEvents();s.setMenu(null);s._prep();
+        s._throwReviewReceiver=null;s.gs.half='bottom';s.gs.playerIsAway=true;
+        s.gs.bases={first:'comp',second:'comp',third:'comp'};s.createTeams(false);s.syncRunners();
+        s.resetFieldCamera(0);s.startCpuSingle();})();`);
+    await until('!!reviewScene.menu',10000);
+    assert.deepEqual(await evaluate('reviewScene.menu.options.map(o=>o.value)'),['first','second','third','home','hold']);
+    await capture('browser-outfield-throw-choices.png');await wait(2000);
+    for(let i=0;i<5;i++){
+        await call('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32});
+        await call('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32});
+        await wait(250);
+    }
+    assert.equal(await evaluate('reviewScene.menu.options[reviewScene.menu.index].value'),'hold');
+    await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    await until('reviewScene._outcome==="Single" && !reviewScene._returnPending',10000);
+    assert.equal(await evaluate('reviewScene._throws.at(-1)[1]'),'P');
     return result;
 };

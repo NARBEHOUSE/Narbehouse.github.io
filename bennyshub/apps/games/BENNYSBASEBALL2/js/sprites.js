@@ -14,6 +14,8 @@ const BB2_SHEETS = {
     'player-base': {
         file: 'images/sprites/player-base.png',
         anims: {
+            scuffle: { start: 0, count: 8, rate: 8, repeat: -1 },
+            dust_off: { start: 0, count: 8, rate: 8, repeat: 0 },
             idle_front: { start: 0,  count: 2, rate: 2,  repeat: -1 },
             idle_back:  { start: 2,  count: 2, rate: 2,  repeat: -1 },
             run_front:  { start: 4,  count: 6, rate: 12, repeat: -1 },
@@ -29,6 +31,8 @@ const BB2_SHEETS = {
     'batter-walk': {
         file: 'images/sprites/batter-walk.png',
         anims: {
+            scuffle: { start: 0, count: 8, rate: 8, repeat: -1 },
+            dust_off: { start: 0, count: 8, rate: 8, repeat: 0 },
             walk_front: { start: 0, count: 12, rate: 12, repeat: -1 },
             walk_back:  { start: 0, count: 12, rate: 12, repeat: -1 },
             walk_side:  { start: 0, count: 12, rate: 12, repeat: -1 }
@@ -45,6 +49,8 @@ const BB2_SHEETS = {
                    run_front: 'run_back', celebrate: 'rise_throw',
                    dejected: 'crouch_idle' },
         anims: {
+            scuffle: { start: 0, count: 8, rate: 8, repeat: -1 },
+            dust_off: { start: 0, count: 8, rate: 8, repeat: 0 },
             crouch_idle: { start: 0,  count: 2, rate: 2,  repeat: -1 },
             receive:     { start: 2,  count: 3, rate: 14, repeat: 0 },
             rise_throw:  { start: 5,  count: 4, rate: 10, repeat: 0 },
@@ -132,6 +138,8 @@ const BB2_SHEETS = {
     'runner-actions': {
         file: 'images/sprites/runner-actions.png',
         anims: {
+            scuffle: { start: 0, count: 8, rate: 8, repeat: -1 },
+            dust_off: { start: 0, count: 8, rate: 8, repeat: 0 },
             lead_off:    { start: 0, count: 2, rate: 3,  repeat: -1 },
             slide:       { start: 2, count: 4, rate: 14, repeat: 0 },
             safe_stand:  { start: 6, count: 3, rate: 6,  repeat: 0 },
@@ -539,7 +547,7 @@ function bb2MakePlayer(scene, colorObj, label, posKey) {
         };
         const cancel = () => {
             if (finished) return;
-            finished = true;cleanup();spr.anims.resume();
+            finished = true;cleanup();spr.anims?.resume();
             c._fieldAction = null;c._busy = false;
         };
         const resume = () => { if (!finished) spr.anims.resume(); };

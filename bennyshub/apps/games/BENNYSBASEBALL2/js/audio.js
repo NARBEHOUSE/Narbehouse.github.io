@@ -276,6 +276,18 @@ class AudioSystem {
                 connect(o3, g3); o3.start(now); o3.stop(now + 0.14);
                 break;
             }
+            case 'scuffle': {
+                // Soft cartoon thumps and a descending whistle, not hit/crack
+                // samples or the home-run recording. Each beat ends on its own.
+                for(let i=0;i<3;i++){
+                    const o=ctx.createOscillator(),g=ctx.createGain(),at=now+i*.11;
+                    o.type=i===2?'sine':'triangle';o.frequency.setValueAtTime(i===2?760:150+i*35,at);
+                    o.frequency.exponentialRampToValueAtTime(i===2?340:65,at+.14);
+                    g.gain.setValueAtTime(.055,at);g.gain.exponentialRampToValueAtTime(.001,at+.17);
+                    connect(o,g);o.start(at);o.stop(at+.18);
+                }
+                break;
+            }
             case 'homer': {
                 // One fallback fanfare only when the recording is unavailable.
                 this._homerActive = true;
@@ -332,15 +344,17 @@ class AudioSystem {
                 src.start(now);
                 break;
             }
+            case 'swingZonered':
+            case 'swingZoneyellow':
+            case 'swingZonegreen':
             case 'swingZone': {
-                // v1's friendly two-note ascending chirp while the ball is in
-                // the strike zone (E5 → A5)
+                // Ascending, level, and descending cues accompany pitch quality.
                 const o = ctx.createOscillator(), g = ctx.createGain();
-                o.type = 'sine'; o.frequency.setValueAtTime(660, now);
+                o.type = 'sine'; o.frequency.setValueAtTime(type==='swingZonered'?440:660, now);
                 g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 connect(o, g); o.start(now); o.stop(now + 0.12);
                 const o2 = ctx.createOscillator(), g2 = ctx.createGain();
-                o2.type = 'sine'; o2.frequency.setValueAtTime(880, now + 0.08);
+                o2.type = 'sine'; o2.frequency.setValueAtTime(type==='swingZonered'?330:type==='swingZoneyellow'?660:880, now + 0.08);
                 g2.gain.setValueAtTime(0.15, now + 0.08); g2.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
                 connect(o2, g2); o2.start(now + 0.08); o2.stop(now + 0.23);
                 break;

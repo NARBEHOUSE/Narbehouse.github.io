@@ -15,9 +15,10 @@ for sheet,data in meta.items():
             p=art.pose(name,t,actual_role);height=p['chest'][1]-p['hip'][1];frames+=1
             assert all(np.isfinite(p[k]).all() for k in ['hip','chest','le','re','lh','rh','lk','rk','lf','rf']), (sheet,name,i,'non-finite joint')
             for side,sign in [('l',1),('r',-1)]:
+                upper,fore=(.235,.25) if actual_role in ['pitcher','batter'] and name!='on_deck' and not name.startswith('walk') else (.205,.22)
                 shoulder=p['hip']+p['rot']@np.array([sign*.168,height-.047,0])+(p['chest']-p['hip']-[0,height,0])*((height-.047)/height)
-                assert abs(np.linalg.norm(shoulder-p[side+'e'])-.235)<1e-6,(sheet,name,i,side,'short upper arm')
-                assert abs(np.linalg.norm(p[side+'e']-p[side+'h'])-.25)<1e-6,(sheet,name,i,side,'short forearm')
+                assert abs(np.linalg.norm(shoulder-p[side+'e'])-upper)<1e-6,(sheet,name,i,side,'short upper arm')
+                assert abs(np.linalg.norm(p[side+'e']-p[side+'h'])-fore)<1e-6,(sheet,name,i,side,'short forearm')
                 for a,b,start in [(shoulder,p[side+'e'],.62),(p[side+'e'],p[side+'h'],0)]:
                     points=np.array([a+(b-a)*u for u in np.linspace(start,1,31)]);ys=points[:,1]-p['hip'][1]
                     local=(points-p['hip']-(p['chest']-p['hip']-[0,height,0])*ys[:,None]/height)@p['rot']

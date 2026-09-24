@@ -162,7 +162,7 @@ class ScanList {
         if (this.index < 0) return;
         const opt = this.options[this.index];
         if (!opt) return;
-        const text = opt.speakText != null ? opt.speakText
+        const text = typeof opt.speakText==='function' ? opt.speakText() : opt.speakText != null ? opt.speakText
                    : opt.hint ? opt.label + '. ' + opt.hint
                    : opt.label;
         if (this.audio) this.audio.speak(text, true);
@@ -245,13 +245,9 @@ class ScanList {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PitchZoneGrid — the v1-style strike-zone pitch selector, drawn as SEAMLESS
-// jigsaw pieces exactly like the original: the four corner zones curve inward
-// around a pinched center diamond (quadratic edges with the control point at
-// the center), so nothing overlaps — every edge is shared.
-// Heat colors: green = your best pitch, yellow = okay, red = risky.
-// Same input contract as ScanList so GameScene treats it like any other menu.
-// ═══════════════════════════════════════════════════════════════════════════════
+// PitchZoneGrid: stable cards retain the spatial strike-zone layout.
+// Every risk cue has a text label and spoken explanation; no color-only ranking.
+// Same scan/select/pointer contract as ScanList.
 
 class PitchZoneGrid {
     /**
@@ -268,9 +264,6 @@ class PitchZoneGrid {
         this.y = cfg.y != null ? cfg.y : 320;
         this.size = cfg.size || 250;
         this.index = -1;
-        this.popScale = 1;
-        this.popTween = null;
-        this.glowPulse = { t: 0 };
         this.active = true;
         this.autoScan = (window.NarbeScanManager && window.NarbeScanManager.getSettings)
             ? !!window.NarbeScanManager.getSettings().autoScan
@@ -279,9 +272,7 @@ class PitchZoneGrid {
         this.options = this.grid.map(cell => ({
             value: cell.zoneIndex,
             label: cell.pitch,
-            speakText: cell.effectiveness >= 0.95
-                ? `Best pitch: ${cell.pitch}, ${cell.zone}`
-                : `${cell.pitch}, ${cell.zone}`
+            speakText: ()=>scene.briefChoiceSpeech('pitch:'+cell.badge,`${cell.pitch}, ${cell.zone}. ${cell.badge}`,cell.description)
         }));
         this.options.push({ value: 'pause', label: 'Pause', speakText: 'Pause' });
 
@@ -296,12 +287,7 @@ class PitchZoneGrid {
         this._draw();
         this._startTimer();
 
-        // Gentle continuous breathing glow on the scanned piece — runs the
-        // whole time the grid is up, independent of the pop-in bounce.
-        this.glowTween = scene.tweens.add({
-            targets: this.glowPulse, t: 1, duration: 700, yoyo: true, repeat: -1,
-            ease: 'Sine.easeInOut', onUpdate: () => this._draw()
-        });
+
     }
 
     // Sample a quadratic bezier into a point list (for seamless curved edges)
@@ -356,152 +342,51 @@ class PitchZoneGrid {
         ];
     }
 
-    // A little bounce whenever the scan cursor lands on a new piece — it
-    // pops up and settles slightly larger than its neighbors so it reads at
-    // a glance, instead of only a thin outline you have to hunt for.
-    _pop() {
-        if (this.popTween) this.popTween.stop();
-        this.popScale = 1;
-        this.popTween = this.scene.tweens.add({
-            targets: this, popScale: 1.16, duration: 220, ease: 'Back.easeOut',
-            onUpdate: () => this._draw()
-        });
-    }
-
-    // Scale a polygon's points outward from its own centroid (not the grid
-    // center) so the popped piece visually lifts over its neighbors.
-    _scalePoly(poly, factor) {
-        if (factor === 1) return poly;
-        let cx = 0, cy = 0;
-        poly.forEach(p => { cx += p.x; cy += p.y; });
-        cx /= poly.length; cy /= poly.length;
-        return poly.map(p => ({ x: cx + (p.x - cx) * factor, y: cy + (p.y - cy) * factor }));
-    }
-
-    // Continuous red → yellow → green ramp instead of 3 flat buckets — every
-    // zone's shade reflects its own precise effectiveness value, so the grid
-    // reads like a real heat-map gradient rather than three solid colors.
-    _effColor(e) {
-        const stops = [
-            { at: 0.00, r: 0xc0, g: 0x45, b: 0x3e }, // red — risky
-            { at: 0.55, r: 0xd9, g: 0xb8, b: 0x21 }, // yellow — decent
-            { at: 0.95, r: 0x2e, g: 0xcc, b: 0x40 }, // green — hot zone
-            { at: 1.00, r: 0x2e, g: 0xcc, b: 0x40 }
-        ];
-        e = Phaser.Math.Clamp(e, 0, 1);
-        let a = stops[0], b = stops[1];
-        for (let i = 0; i < stops.length - 1; i++) {
-            if (e >= stops[i].at) { a = stops[i]; b = stops[i + 1]; }
-        }
-        const t = Phaser.Math.Clamp((e - a.at) / Math.max(0.0001, b.at - a.at), 0, 1);
-        const r = Math.round(Phaser.Math.Linear(a.r, b.r, t));
-        const gg = Math.round(Phaser.Math.Linear(a.g, b.g, t));
-        const bl = Math.round(Phaser.Math.Linear(a.b, b.b, t));
-        return (r << 16) | (gg << 8) | bl;
-    }
-
+    _pop() { /* Stable targets stay under the pointer during selection. */ }
     _build() {
-        this.titleTxt = this.scene.add.text(this.x, this.y - this.size / 2 - 34, 'Choose Your Pitch', {
-            fontSize: '24px', fontFamily: 'Arial Black', color: '#FFD700',
-            stroke: '#000', strokeThickness: 4
-        }).setOrigin(0.5).setDepth(41);
-        this.container.add(this.titleTxt);
-
-        this.options.forEach((opt, i) => {
-            const c = this.cells[i];
-            const isPause = opt.value === 'pause';
-            const isCenter = i === 4;
-            // Text scales with the grid so pitch names never spill off the panel
-            const fMain = Math.max(10, Math.round(this.size * 0.058));
-            const label = this.scene.add.text(c.x, isPause || isCenter ? c.y : c.y - 5, opt.label, {
-                fontSize: (isCenter ? fMain - 1 : fMain) + 'px', fontFamily: 'Arial', fontStyle: 'bold',
-                color: '#ffffff', stroke: '#000', strokeThickness: 2.5,
-                wordWrap: { width: c.w + 6 }, align: 'center'
-            }).setOrigin(0.5).setDepth(43);
-            this.labels.push(label);
-            this.container.add(label);
-            if (!isPause && !isCenter) {
-                const zoneTxt = this.scene.add.text(c.x, c.y + Math.round(this.size * 0.052), this.grid[i].zone, {
-                    fontSize: Math.max(7, Math.round(this.size * 0.04)) + 'px', fontFamily: 'Arial', color: '#e8e8e8',
-                    stroke: '#000', strokeThickness: 2, align: 'center'
-                }).setOrigin(0.5).setDepth(43);
-                label._zoneTxt = zoneTxt;
-                this.container.add(zoneTxt);
+        this.titleTxt=this.scene.add.text(this.x,this.y-146,'CHOOSE A PITCH',{
+            fontSize:'19px',fontFamily:'Arial',fontStyle:'bold',color:'#ffffff'
+        }).setOrigin(.5).setDepth(41);this.container.add(this.titleTxt);
+        this.options.forEach((opt,i)=>{
+            const c=this.cells[i],pause=i===5,cell=this.grid[i];
+            const label=this.scene.add.text(c.x,c.y-(pause?0:17),opt.label,{
+                fontSize:pause?'16px':'14px',fontFamily:'Arial',fontStyle:'bold',color:'#ffffff'
+            }).setOrigin(.5).setDepth(43);
+            this.labels.push(label);this.container.add(label);
+            if(!pause){
+                const detail=this.scene.add.text(c.x,c.y+1,cell.zone,{
+                    fontSize:'11px',fontFamily:'Arial',color:'#d8e1ea'
+                }).setOrigin(.5).setDepth(43);
+                const badge=this.scene.add.text(c.x,c.y+20,cell.badge,{
+                    fontSize:'11px',fontFamily:'Arial',fontStyle:'bold',color:cell.risk?'#ffcc80':cell.edge?'#84edbd':'#bad5ff'
+                }).setOrigin(.5).setDepth(43);
+                this.container.add([detail,badge]);
             }
-
-            const z = this.scene.add.zone(c.x, c.y, c.w, c.h)
-                .setOrigin(0.5).setDepth(44).setInteractive({ useHandCursor: true });
-            z.on('pointerover', () => {
-                if (!this.active || this.index === i) return;
-                this.index = i; this._pop(); this._draw();
-                if (this.audio) this.audio.play('scan');
-                this._announceCurrent();
-            });
-            z.on('pointerdown', () => {
-                if (!this.active) return;
-                this.index = i; this._draw(); this.select();
-            });
-            this.zones.push(z);
+            const zone=this.scene.add.zone(c.x,c.y,c.w,c.h).setOrigin(.5).setDepth(44).setInteractive({useHandCursor:true});
+            zone.on('pointerover',()=>{if(!this.active||this.index===i)return;this.index=i;this._draw();if(this.audio)this.audio.play('scan');this._announceCurrent();});
+            zone.on('pointerdown',()=>{if(!this.active)return;this.index=i;this._draw();this.select();});
+            this.zones.push(zone);
         });
     }
-
     _draw() {
-        const g = this.gfx;
-        g.clear();
-
-        // Backboard behind the strike zone
-        const S = this.size;
-        g.fillStyle(0x0a1f10, 0.82);
-        g.fillRoundedRect(this.x - S / 2 - 12, this.y - S / 2 - 12, S + 24, S + 24, 14);
-        g.lineStyle(2, 0x57a86a, 0.6);
-        g.strokeRoundedRect(this.x - S / 2 - 12, this.y - S / 2 - 12, S + 24, S + 24, 14);
-
-        // Pieces: fill each on the continuous effectiveness ramp — the
-        // gradient is across the grid (zone to zone), not a shaded blob
-        // inside any one piece — then hairline shared borders on top.
-        this.options.forEach((opt, i) => {
-            if (opt.value === 'pause') return;
-            g.fillStyle(this._effColor(this.grid[i].effectiveness), 0.94);
-            g.fillPoints(this.polys[i], true);
+        const g=this.gfx;g.clear();const S=this.size;
+        g.fillStyle(0x0c1725,.96);g.fillRoundedRect(this.x-S/2-8,this.y-S/2-8,S+16,S+16,12);
+        this.cells.forEach((c,i)=>{
+            const selected=this.index===i,cell=this.grid[i],color=cell?.risk?0xffcc80:cell?.edge?0x84edbd:0xbad5ff;
+            g.fillStyle(selected?0x29435b:0x17283a,1);
+            if(cell)g.fillPoints(this.polys[i],true);
+            else g.fillRoundedRect(c.x-c.w/2,c.y-c.h/2,c.w,c.h,9);
+            g.lineStyle(1.5,0x71839a,1);
+            if(cell)g.strokePoints(this.polys[i],true);
+            else g.strokeRoundedRect(c.x-c.w/2,c.y-c.h/2,c.w,c.h,9);
+            if(cell){g.fillStyle(color,1);g.fillRoundedRect(c.x-29,c.y+28,58,3,1);}
         });
-        this.options.forEach((opt, i) => {
-            if (opt.value === 'pause') return;
-            g.lineStyle(2, 0x0a1f10, 0.9);
-            g.strokePoints(this.polys[i], true);
-        });
-        // Scanned piece: no ring, no glow, no tint — the tile itself simply
-        // grows (pop-in bounce) and then keeps gently oscillating in size,
-        // lifting over its neighbors. Its own effectiveness color is all
-        // you see, just bigger and breathing.
-        if (this.index >= 0 && this.index <= 4) {
-            const base = this._effColor(this.grid[this.index].effectiveness);
-            const sc = this.popScale + this.glowPulse.t * 0.07;
-            const poly = this._scalePoly(this.polys[this.index], sc);
-            g.fillStyle(base, 1);
-            g.fillPoints(poly, true);
-            g.lineStyle(2, 0x0a1f10, 0.9);
-            g.strokePoints(poly, true);
+        // Draw focus last so shared borders never cover its white outline.
+        if(this.index>=0){
+            g.lineStyle(4,0xffffff,1);
+            if(this.index<5)g.strokePoints(this.polys[this.index],true);
+            else {const c=this.cells[5];g.strokeRoundedRect(c.x-c.w/2,c.y-c.h/2,c.w,c.h,9);}
         }
-
-        // Pause pill with the classic two-bar emblem
-        const p = this.cells[5];
-        const sel = this.index === 5;
-        g.fillStyle(0x12241a, 0.92);
-        g.fillRoundedRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h, 12);
-        g.lineStyle(sel ? 4 : 1.5, sel ? 0x38E5FF : 0x57a86a, sel ? 1 : 0.5);
-        g.strokeRoundedRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h, 12);
-        g.fillStyle(sel ? 0x38E5FF : 0xffffff, 0.9);
-        g.fillRect(p.x - p.w / 2 + 14, p.y - 8, 5, 16);
-        g.fillRect(p.x - p.w / 2 + 23, p.y - 8, 5, 16);
-
-        this.labels.forEach((label, i) => {
-            const isSel = this.index === i;
-            // Text grows and breathes in step with its tile
-            const s = isSel ? (this.popScale + this.glowPulse.t * 0.07) * 1.15 : 1;
-            label.setScale(isSel ? s : 1);
-            label.setColor('#ffffff');
-            if (label._zoneTxt) label._zoneTxt.setScale(isSel ? s : 1);
-        });
     }
 
     getScanInterval() {
@@ -514,7 +399,7 @@ class PitchZoneGrid {
     _announceCurrent() {
         if (this.index < 0) return;
         const opt = this.options[this.index];
-        if (opt && this.audio) this.audio.speak(opt.speakText, true);
+        if (opt && this.audio) this.audio.speak(typeof opt.speakText==='function'?opt.speakText():opt.speakText, true);
     }
 
     _startTimer() {
@@ -837,7 +722,7 @@ class BaseTargetSelector {
     _announceCurrent() {
         if (this.index < 0) return;
         const o = this.options[this.index];
-        if (o && this.audio) this.audio.speak(o.hint ? `${o.label}. ${o.hint}` : o.label, true);
+        if (o && this.audio) this.audio.speak(typeof o.speakText==='function'?o.speakText():o.hint ? `${o.label}. ${o.hint}` : o.label, true);
     }
 
     _startTimer() {

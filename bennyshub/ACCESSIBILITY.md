@@ -920,13 +920,22 @@ who does not is not slowed down by it.
 **Batting: Pick a Swing / Hold to Charge**, reachable from main and pause
 settings. Pick a Swing is the default when no preference is stored. The player
 first selects Ready to Swing (or a stealable base or Pause) on the field.
-The pitch is called aloud, the camera zooms in, and the ball freezes at the sweet
-spot. Only then does the player select Normal, Power, Bunt, Take Pitch, or Pause.
+The pitch is called aloud, the camera zooms in, and the ball freezes near its
+contact location. Only then does the player select Normal, Power, Bunt, Take
+Pitch, or Pause.
 The ball remains frozen through scanning and pause/resume; selecting a swing
 resumes the same pitch. There is no sustained press, release window, or deadline. The game
 resolves contact using the swing choice, pitch location and execution quality;
 it does not guarantee a hit. Scoring and season eligibility are unchanged.
-The original timed charge mode remains available for players who prefer it.
+The original timed charge mode remains available for players who prefer it. Both modes pair the
+circular pitch highlight with plain-language text and speech: Favorable pitch,
+Neutral pitch, or Difficult pitch. No symbol names or color recognition are
+required. Pitch type and location affect swing matchups. The pitching selector
+uses stable curved Favorable/Neutral/Risky sections, spoken risk descriptions, and preserves
+choices through pause. Explanations play once per game for each swing/risk
+category; later scans use short labels. Scores use large white numbers on dark cards with
+team-colored borders and stripes. The occasional repeated-hit-batter warning
+sequence returns everyone automatically and requires no timed response.
 
 **Benny's Fish Mystery** asks for a press to set the hook inside the take
 window, and then a sustained hold to reel. The plan is a setting that holds the

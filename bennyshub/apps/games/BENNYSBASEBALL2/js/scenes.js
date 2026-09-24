@@ -838,10 +838,11 @@ class InstructionsScene extends BaseballScene {
 
         const lines = [
             'BATTING — Pick a Swing: choose Normal, Power, Bunt, or Take Pitch.',
-            'The pitch waits for your choice. No holding or timed release is needed.',
-            'Prefer charging? Select Hold to Charge in Settings, then release in GREEN.',
+            'Pitch type, location and your swing choice affect contact; no hit is guaranteed.',
+            'Pick a Swing waits. Hold to Charge: release at the cue, or keep holding to take.',
+            'Pitch highlight: green is favorable, yellow neutral, red difficult.',
             '',
-            'FIELDING — Pick where your pitch goes. Green is your best pitch.',
+            'FIELDING — Five pitches: Favorable, Neutral, or Risky. Mix your pitches.',
             'When you field a ground ball, choose which base to throw to:',
             'try for an out at first, or a force at another base. No out is guaranteed.',
             '',

@@ -4,12 +4,12 @@ The default batting control is **Pick a Swing**. First, scan the field for
 **Ready to Swing**, a stealable base, or Pause. Switch scanning focuses stealable
 bases; Ready/Pause and pointer highlights keep the field wide.
 Ready to Swing calls the pitch aloud, waits for the call to finish, then zooms
-in for delivery. The ball freezes at the sweet spot. A compact menu beside the
+in for delivery. The ball freezes near contact at its actual pitch location. A compact menu beside the
 batter offers Normal, Power, Bunt, Take Pitch, and Pause with no deadline.
 Choosing resumes that ball, without another delivery. Pausing preserves it.
 **Hold to Charge** remains available in main and pause settings. There is no
 sustained press or release window in Pick a Swing.
-Taking a pitch uses the existing ball/strike resolution. Selected swings feed
+Taking a pitch uses the displayed location for its ball/strike call. Selected swings feed
 baseball execution quality into the existing contact tables, including misses,
 fouls, and outs. Storage failures retain the selection for the session.
 
@@ -43,9 +43,9 @@ Outfielders stand upright between pitches, with a waist-high glove and a modest
 knee bend during delivery. Left and right field face inward toward home plate;
 their home positions form a wider, balanced arc around center field. Fly catches
 recover to the taller stance, and ground pickups lower only for the gather.
-Returning players keep the upright walking gait until they arrive.
+Returning players use a compact recovery jog until they arrive.
 `check_outfield_pose.py` checks posture, facing and catch/gather contact timing.
-`node art/check_browser.js --returns` checks walking, live-pitch readiness,
+`node art/check_browser.js --returns` checks recovery jogging, live-pitch readiness,
 catch/throw recovery, arrival poses and equal player scale in Chrome.
 
 Pitching now joins a balanced knee lift, planted stride, hand release and
@@ -54,14 +54,14 @@ ends at the catcher's glove, holds the receive frame, then transfers to the
 throw-back. Pitch movement offsets taper to zero at the endpoint.
 The batter's left hand stays by the knob, with the right hand above it; the
 bunt uses a split grip. On-deck hitters wait upright with the bat lowered.
-Separate walking clips retain their helmet and carried bat. After a completed
-plate appearance, the waiting hitter walks into the box and a new hitter walks
+Separate jogging clips retain their helmet and carried bat. After a completed
+plate appearance, the waiting hitter jogs into the box and a new hitter jogs
 from the dugout to the on-deck circle. Balls, ordinary strikes and fouls retain
 the same batter; the third out and a walk-off do not bring in another hitter.
 
 `js/ballpark.js` paints the grass, curved infield apron, warning track, padded
 wall, seating, mound and chalk once into a cached texture. The same geometry
-still drives gameplay. Compact labeled scores leave the corner fielders clear.
+still drives gameplay. Large white scores sit on dark cards with team-colored borders and stripes.
 `node art/check_browser.js --flow` checks the spoken-call ordering, base-focused
 setup, frozen-ball menu, zoom/pause, catcher alignment and visible lineup handoff.
 `node art/check_audio.js` checks narration completion and error/disabled fallbacks.
@@ -225,7 +225,7 @@ Recent gameplay checks:
 - Ready/Pause highlights restore the full field. Pointer highlights never
   zoom; switch scanning still focuses steal/throw bases. Confirming Ready
   begins the delivery close-up.
-- Side changes use 125 field units/second jogging and 85 walking, with
+- Side changes use 100-125 field units/second jogging, with
   arrival callbacks gating the next team and next pitch.
 - Throw hints describe attempts, and relay narration reports actual outs.
 - Ball, Strike and Foul show only the centered outcome; counts stay in the HUD. Walk, strikeout and
@@ -271,13 +271,101 @@ finish. Ball ownership follows the actual fielder, including a pitcher away
 from the mound. `node art/check_browser.js --throws` checks release frames,
 hand/glove alignment, every defensive position's return, and complete relays.
 
-Player anatomy uses the same upper-arm and forearm lengths for waiting,
-walking, running, fielding, throwing and batting. The on-deck hitter has relaxed
+Player anatomy uses fixed role-specific upper-arm and forearm lengths, with
+compact fielding and travel poses and a preserved pitching/swinging reach. The on-deck hitter has relaxed
 hands below the waist and a lowered bat angled clear of the ground. Elbow
 placement keeps bare arms outside the jersey, with an outward hand-separation
-path for throws and the pitcher's windup. Walking and running use distinct arm
-swings instead of shortening the limbs to reach the old hand positions.
+path for throws and the pitcher's windup. Recovery jogging and running use compact arm swings with complete forearms.
 `python -B art/check_player_anatomy.py` checks every shipped frame for arm
 lengths and torso clearance, samples animation continuity, and measures both
 on-deck forearms through the renderer's depth buffer. Use the WAM Python
 environment, as with the other art checks.
+
+## Pitch decisions and athletic movement
+
+Both batting modes share pitch type/location profiles. A circular green, yellow,
+or red highlight is accompanied by **Favorable pitch**, **Neutral pitch**, or
+**Difficult pitch** in text and speech. No shape symbols or swing recommendations
+are shown. The ball waits indefinitely in Pick a Swing; charge mode slows near
+contact. Continuing to hold or never charging takes the pitch. Normal, power,
+and bunt have different contact probabilities for the same delivery. A hard
+pitch may still be a strike; a favorable pitch never guarantees a hit.
+
+The pitching selector keeps five spatial strike-box choices with flat colors and the original curved sections/center diamond:
+one to three Favorable matchups, exactly two Risky pitches, and Neutral choices for
+the rest. Risky pitches reward hitting the spot with more misses and punish missed
+spots with harder contact. Repeating a pitch becomes less effective. Pause
+preserves the current choices. Text and speech explain the labels.
+
+Inside misses can visibly hit a batter and award first with forced advancement.
+The second hit batter in an escalation streak prompts a warning; the third
+and every subsequent hit batter trigger a cartoon brawl. Selecting a Neutral
+or Favorable pitch resets the escalation count (the game total is retained). Bench players jog in from offscreen. A ten-second
+rumble starts with the batter and catcher approaching each other, then moves
+into the infield. Other players join as they reach the action, while bench players
+continue running in from the side. Participants continually shuffle, change
+opponents and turn at independent intervals.
+Collision avoidance stays active. Dust builds gradually after contact rather
+than appearing fully formed. A moving dust cloud, comic bursts and soft
+commotion sounds follow the crowd; players
+then brush themselves off and return to their saved positions. Bench extras
+exit offscreen. The free base is awarded afterward. No new input is required.
+The player can also be hit in either batting mode. Repeated Risky pitching
+choices compound the hit-batter chance: 3.5%, 7%, 14%, 28%, 56%, then an 80%
+cap. Each consecutive Risky choice doubles it regardless of pitch type; a
+Neutral or Favorable choice resets that team's streak. There is no deliberate hit-batter option.
+
+Fielders and runners have shorter arms. The on-deck bat arm is relaxed and nearly
+straight. The legacy `walk_*` clip names now contain a light recovery jog, with
+bent elbows and a compact arm pump; hitters retain their carried bat. Entrances,
+exits and returns use measured jogging speeds. An already exiting runner keeps
+his route through a side change, and rounded route corners retain the gait.
+
+`node art/check_game.js` exercises pitch quality, swing matchups, taking pitches,
+risk/payoff statistics, pause persistence, runner exit continuity and HBP recovery.
+`node art/check_browser.js --pitch-choices` checks the actual renderer, frozen
+reads, charge cues, the five cards, score colors and the third-HBP sequence.
+
+Choice speech explains each swing and pitch risk category once per game, then
+uses short labels on repeated scans. The frozen-pitch read says only its quality;
+pitch type/location were already announced during delivery and remain visible.
+
+Defensive coverage uses distance-based running at 115 field units/second, with
+an overall 130-unit defensive speed ceiling. Pitchers start covering first at
+ground-ball contact when the first baseman is fielding it. A throw waits for
+its receiver to reach the bag or cutoff position; receiving no longer cancels
+a coverage route early. The actual pitcher-to-first regression is included in
+`node art/check_browser.js --throws`.
+
+Doubles/triples use continuous 110-unit running strides. Coverage begins at
+contact and automatic pickup/relay transfers release within 1.5 seconds in
+simulation. A short gather can align a close play, but the fielder never waits
+for an entire running leg to manufacture one. Earlier throws show a tag attempt;
+safe calls wait for the actual runner and ball arrivals. `node art/check_browser.js
+--races` verifies both teams' doubles/triples. Simulation also checks close safe
+throws to all four bases.
+
+Outfield singles now offer the same accessible on-field target selector as
+infield grounders: first, each additional live forced base, and the pitcher.
+There is no decision timeout. Choosing the pitcher immediately animates a throw
+back while runners finish advancing. Outfield throws do not invent a second
+out through an automatic double-play relay.
+
+Extra-base regression checks include the full return-to-pitcher and next-menu
+sequence for both teams, with empty and loaded bases. A tag after a catch uses
+the defensive-action lifecycle so it cannot leave the receiver permanently busy.
+Gap-hit bounces roll along the drive's direction, stop inside the fence, and keep
+cutoff positions clear of the runners' base-touch points.
+
+Batting keeps one pitch-read location for the entire delivery. Pick a Swing holds
+that exact ball position until the swing's contact frame; Charge continues the
+original pitch curve to the original endpoint. Neither mode redirects the ball
+to a swing-specific sprite anchor. Doubles/triples launch from actual contact,
+without resetting the ball to home plate. Continuity checks cover all five pitch
+types, three locations, three swings and both batting modes (90 combinations).
+
+Scuffle punches require a live opponent from the other team within 30 field
+units, horizontally aligned with the side-facing sprite. Players jog into reach,
+face their opponent every frame, and stop punching immediately if that opponent
+moves away. Short bouts and repositioning keep the crowd moving. Simulation and
+browser checks inspect range, alignment and sprite facing throughout the fight.

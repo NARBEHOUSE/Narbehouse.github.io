@@ -129,8 +129,8 @@ def pose(name,t,role=None):
        'le':np.array([.23,.75,.01]),'re':np.array([-.23,.75,.01]),'twist':0.,'bat':None}
     if name=='on_deck':
         # Relaxed hands below the waist, with space between forearms and jersey.
-        p['lh']=np.array([.25,.425,.12]);p['rh']=np.array([-.26,.465,.14])
-        p['le']=np.array([.30,.66,.09]);p['re']=np.array([-.31,.68,.10])
+        p['lh']=np.array([.235,.43,.10]);p['rh']=np.array([-.225,.425,.085])
+        p['le']=np.array([.26,.655,.065]);p['re']=np.array([-.235,.645,.065])
     if name.startswith('run') or name=='take_off':
         s=math.sin(t*2*math.pi); c=math.cos(t*2*math.pi)
         p['chest']+= [0,-.025,.10]
@@ -138,22 +138,23 @@ def pose(name,t,role=None):
             p[side+'f']+= [0,max(0,sign*c)*.10,sign*s*.23]
             p[side+'k']+= [0,.045,sign*s*.13+.09]
             swing=-sign*s
-            p[side+'h']=np.array([sign*.20,.64+.07*swing,.24+.20*swing])
-            p[side+'e']=np.array([sign*.23,.65,.06+.16*swing])
+            p[side+'h']=np.array([sign*.20,.68+.055*swing,.19+.13*swing])
+            p[side+'e']=np.array([sign*.235,.66,.045+.09*swing])
+    # Legacy walk clip names now carry a compact, athletic recovery jog.
     if name.startswith('walk'):
         s=math.sin(t*2*math.pi);c=math.cos(t*2*math.pi)
-        bob=.008*(1-math.cos(t*4*math.pi))
-        p['hip'] += [0,bob,0];p['chest'] += [0,bob,.025]
+        bob=.009*(1-math.cos(t*4*math.pi))
+        p['hip'] += [0,bob,0];p['chest'] += [0,bob,.055]
         for side,sign in [('l',1),('r',-1)]:
-            lift=max(0,sign*c)*.04
-            p[side+'f'] += [0,lift,sign*s*.17]
-            p[side+'k'] += [0,lift*.35,sign*s*.075+.025]
+            lift=max(0,sign*c)*.075
+            p[side+'f'] += [0,lift,sign*s*.20]
+            p[side+'k'] += [0,lift*.5,sign*s*.11+.055]
             swing=-sign*s
-            p[side+'h']=np.array([sign*.23,.44+bob,.11+.14*swing])
-            p[side+'e']=np.array([sign*.27,.67+bob,.05+.09*swing])
+            p[side+'h']=np.array([sign*.21,.62+bob+.04*swing,.22+.11*swing])
+            p[side+'e']=np.array([sign*.24,.65+bob,.035+.07*swing])
             if role=='batter' and side=='r':
-                p[side+'h']=np.array([-.23,.59+bob,.24+.05*swing])
-                p[side+'e']=np.array([-.27,.70+bob,.08+.03*swing])
+                p[side+'h']=np.array([-.22,.63+bob,.22+.025*swing])
+                p[side+'e']=np.array([-.24,.68+bob,.065+.02*swing])
     if name in ['ready','fielding_stance','ready_at_bag','field_grounder','field_bounce']:
         low = .07 if name in ['ready','fielding_stance','ready_at_bag'] else .07+.15*math.sin(math.pi*t)
         p['hip'] += [0,-low,0]; p['chest'] += [0,-low,.10+low]
@@ -236,6 +237,23 @@ def pose(name,t,role=None):
         p['hip']=np.array([0,.18,0]);p['chest']=np.array([0,.40,-.16]);p['lf']=np.array([.12,.05,.49]);p['rf']=np.array([-.16,.05,.21])
         p['lk']=np.array([.12,.10,.27]);p['rk']=np.array([-.23,.11,.02]);p['lh']=np.array([.28,.28,-.15]);p['rh']=np.array([-.28,.28,-.15])
         p['le']=np.array([.22,.35,-.2]);p['re']=np.array([-.22,.35,-.2])
+    if name in ['scuffle','dust_off']:
+        wave=math.sin(t*math.pi*2);other=math.sin(t*math.pi*2+math.pi)
+        p['lf'] += [.04,0,.025];p['rf'] += [-.04,0,-.025]
+        p['chest'] += [0,-.015,.045]
+        if name=='scuffle':
+            # Exaggerated alternating jabs and a duck: cartoon roughhousing.
+            p['twist']=.20*wave
+            p['chest'][1] -= .025*(1-math.cos(t*math.pi*4))
+            for side,sign,beat in [('l',1,wave),('r',-1,other)]:
+                reach=max(0,beat)
+                p[side+'h']=np.array([sign*.18,.86+.035*beat,.17+.17*reach])
+                p[side+'e']=np.array([sign*.26,.76,.055+.08*reach])
+        else:
+            # Brush down the jersey sleeves and trousers before returning.
+            p['lh']=np.array([.19,.62+.12*wave,.19])
+            p['rh']=np.array([-.19,.62+.12*other,.19])
+            p['le']=np.array([.29,.73,.09]);p['re']=np.array([-.29,.73,.09])
     if name in ['celebrate','wall_watch']:
         p['lh']=np.array([.25,1.25,.05]);p['rh']=np.array([-.25,1.22,.05]);p['le']=np.array([.31,1.01,0]);p['re']=np.array([-.31,1.01,0])
     if name in ['dejected','out_walkoff','hit_by_pitch']:p['chest'] += [0,-.04,.08]
@@ -324,9 +342,8 @@ def pose(name,t,role=None):
             score=np.minimum(clearance-1.05,0)*100+np.cos(angles)-100*np.maximum(0,elbows[:,1]-p['chest'][1])
             p[side+'e']=elbows[np.argmax(score)]
     if name not in ['stance','load_normal','load_power','load_bunt','load_charge','swing_normal','swing_power','bunt']:
-        # Every role shares the batting rig's upper arm and forearm lengths,
-        # including waiting, walking and running. Authored hands alone must not
-        # shrink the bones; bend the elbow to reach them instead.
+        # Field players use a more compact reach; preserve the delivery and
+        # two-handed swing rig. Solve complete bones, never clip a forearm.
         def joint(root,target,hint,upper,lower):
             delta=target-root;distance=np.linalg.norm(delta);axis=delta/max(distance,1e-8)
             distance=np.clip(distance,abs(upper-lower)+.002,upper+lower-.002)
@@ -349,7 +366,8 @@ def pose(name,t,role=None):
                     if radial<1e-6:local[2]=.15
                     else:local[[0,2]]/=radial
                     wrist=p['hip']+lean*y/height+p['rot']@local
-            elbow,wrist=joint(shoulder,wrist,p[side+'e'],.235,.25)
+            upper,fore=(.235,.25) if role in ['pitcher','batter'] and name!='on_deck' and not name.startswith('walk') else (.205,.22)
+            elbow,wrist=joint(shoulder,wrist,p[side+'e'],upper,fore)
             # Rotate about the shoulder-to-wrist axis to clear both arm
             # segments while preserving bone lengths and the authored bend.
             axis=wrist-shoulder;axis/=np.linalg.norm(axis)
@@ -370,7 +388,7 @@ def pose(name,t,role=None):
                 thigh=p['hip']+[sign*.074*math.cos(a),-.023,-sign*.074*math.sin(a)]
                 p[side+'k'],p[side+'f']=joint(thigh,p[side+'f'],p[side+'k'],.26,.26)
     if name=='on_deck':
-        direction=np.array([-.55,-.78,.30]);direction/=np.linalg.norm(direction)
+        direction=np.array([-.60,-.70,.30]);direction/=np.linalg.norm(direction)
         p['bat']=(p['rh']-direction*.04,p['rh']+direction*.53)
     if role=='batter' and name.startswith('walk'):
         direction=np.array([-.18,-.98,0]);direction/=np.linalg.norm(direction)
@@ -572,10 +590,13 @@ def main():
             if name in ['load_bunt','load_normal','load_power']:count=1;contact=0
             if name=='load_charge':count=33;rate=6;contact=0
             if name=='on_deck':count=2;rate=1;contact=0
-            if name.startswith('walk'):count=12;rate=12
+            if name in ['scuffle','dust_off']:count=8;rate=8;contact=0
+            if name.startswith('walk'):count=12;rate=14
             # Batter is side-on to the pitch, catcher faces the mound.
             yaw=270 if role=='batter' else 180 if role=='catcher' else 0
             if name=='on_deck':yaw=25
+            if name=='scuffle':yaw=270
+            if name=='dust_off' and role=='batter':yaw=0
             if role=='outfielder' and name.endswith('_left'):yaw=25
             if role=='outfielder' and name.endswith('_right'):yaw=-25
             if name.endswith('_back'):yaw=180
