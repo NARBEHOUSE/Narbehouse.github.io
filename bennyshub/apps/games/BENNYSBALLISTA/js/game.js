@@ -140,6 +140,7 @@ RT.game = (function () {
         save.level=k.levels[save.kingdoms[k.id]?.next??orders[save.level%7]];
       }
     }
+    if(raw?.version===SAVE_VERSION&&raw.levelId){const ix=LV.LEVELS.findIndex(l=>l.id===raw.levelId);save.level=ix<0?0:ix;}
     save.level=Number.isInteger(save.level)?U.clamp(save.level,0,LV.LEVELS.length-1):0;
   }
   /** Set while runBootAudits() is settling every level (auditLevels(), below)
@@ -151,7 +152,7 @@ RT.game = (function () {
    *  the only guard — see that function's own comment for why both halves
    *  are independently required. */
   let suppressSaveWrites = false;
-  function persistSave() { if (!suppressSaveWrites) U.save(SAVE_KEY, save); }
+  function persistSave() { if (!suppressSaveWrites) {save.levelId=LV.LEVELS[save.level]?.id;U.save(SAVE_KEY, save);} }
 
   /** Auto-enabled under prefers-reduced-motion, same as FishMaster's
    *  reducedMotion() — unless the player explicitly overrode it from the
@@ -1786,10 +1787,10 @@ RT.game = (function () {
    */
   function kingdomProgress(id){
     const k=RT.campaigns.find(id);if(!k)return{next:0,cleared:0};
-    const p=save.kingdoms[id]||{},valid=n=>Number.isInteger(n)?U.clamp(n,0,k.levels.length):0;
+    const stored=save.kingdoms[id]||{},p=k.custom&&stored.revision!==k.revision?{}:stored,valid=n=>Number.isInteger(n)?U.clamp(n,0,k.levels.length):0;
     const next=valid(p.next),ammo=Array.isArray(p.ammo)?p.ammo.filter(id=>D.AMMO.some(a=>a.id===id)):[];
     const results={};for(const ix of k.levels){const l=LV.LEVELS[ix],r=p.results?.[l.id];if(r&&Number.isFinite(r.earned)&&r.earned>=0&&Number.isInteger(r.shots)&&r.shots>=0)results[l.id]={earned:r.earned,shots:r.shots,stars:U.clamp(r.stars||1,1,3)};}
-    return{next,cleared:Math.max(next,valid(p.cleared)),ammo:[...new Set(['boulder',...ammo])],results};
+    return{...(k.custom?{revision:k.revision}:{}),next,cleared:Math.max(next,valid(p.cleared)),ammo:[...new Set(['boulder',...ammo])],results};
   }
   function kingdomScore(id){const results=Object.values(kingdomProgress(id).results||{});return{points:results.reduce((n,r)=>n+r.earned,0),shots:results.reduce((n,r)=>n+r.shots,0),levels:results.length};}
   function collectAmmo(b){

@@ -1739,6 +1739,7 @@ RT.editor = (function () {
   els.bolts.addEventListener('input', () => { const v = parseInt(els.bolts.value, 10); if (Number.isFinite(v)) doc.bolts = v; });
 
   function loadIntoForm(level, ix) {
+    RT.editorCampaigns?.beforeLevelLoad();
     savedId=null;
     loadLevelIntoDoc(level);
     syncFormFromDoc();
@@ -1750,6 +1751,7 @@ RT.editor = (function () {
     if (ix !== undefined) els.picker.value = ix;
     rebuild();
     library();
+    document.dispatchEvent(new Event('ballista-editor-level-loaded'));
   }
 
   const workshopLevels=[...LV.LEVELS,...(LV.CLASSICS||[])];
@@ -1798,6 +1800,7 @@ RT.editor = (function () {
       try { RT.courses.validate({...draft.doc,layers:draft.doc.grid.map(l=>l.map(r=>r.join('')))}); restoreSnapshot(draft.doc); savedId=draft.savedId||null; library(); frameDoc(); status('Your previous draft has been restored.'); } catch {}
     }
     requestAnimationFrame(loop);
+    document.dispatchEvent(new Event('ballista-editor-ready'));
   }).catch((err) => fatal(err, 'starting up'));
 
   let last = 0;
@@ -1829,13 +1832,13 @@ RT.editor = (function () {
   document.getElementById('btnStarter').onclick=()=>{pushUndo();const i=Number(document.getElementById('starterCastle').value);loadIntoForm(LV.LEVELS[i]);doc.name='My '+LV.LEVELS[i].name;syncFormFromDoc();savedId=null;status('Starter loaded. Undo returns to your previous build.');};
   document.getElementById('btnPrefab').onclick=()=>{const id=document.getElementById('prefab').value;const shapes={tower:[['SS','SS','SS','SS'],['SS','SS','SS','SS']],gate:[['WWWWW','W...W','W...W']],bridge:[['BBBBBBB','W..W..W','W..W..W']],kegs:[['TKT']]};const layers=shapes[id];const w=layers[0][0].length,h=layers[0].length;setClipboard({w,h,d:layers.length,cells:layers.map(l=>l.map(r=>r.split('')))});setTool('paste');status('Click in the world to place your '+id+'. R rotates; T tips.');};
   function imported(saved){library();if(saved[0]){pushUndo();loadIntoForm(saved[0].level);savedId=saved[0].id;library();}status('Imported '+saved.length+' castles. Ready to edit or play.');}
-  function importDialog(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());RT.castleFiles.open({onImport:imported});}
+  function importDialog(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());RT.castleFiles.open({onImport:imported,onCampaign:c=>RT.editorCampaigns.openCampaign(c)});}
   document.getElementById('btnImportCastles').onclick=importDialog;
   document.getElementById('btnImportLink').onclick=importDialog;
   document.getElementById('btnRemoveCastle').onclick=()=>{const item=RT.courses.list().find(it=>it.id===savedId);if(!item||!confirm('Remove '+item.level.name+' from this browser’s saved castles? Download a JSON copy first if you want to keep it. Your open build stays in the editor.'))return;try{RT.courses.remove(savedId);savedId=null;library();status('Removed the saved copy. The open build is still available to save again.');}catch(error){status(error.message);}};
   document.getElementById('btnDownloadCastle').onclick=()=>{try{RT.courses.download([publicLevel()],'ballista-castle.json');status('Castle JSON exported. Keep the file locally or upload it to your own storage.');}catch(e){status(e.message);}};
   document.getElementById('btnDownloadCourse').onclick=()=>{try{RT.courses.download(RT.courses.list().map(it=>it.level),'ballista-castles.json');status('Saved castle library exported.');}catch(e){status(e.message);}};
-  document.getElementById('importCastle').onchange=async e=>{try{const file=e.target.files[0];if(file)imported(RT.courses.importData(await RT.courses.readFile(file)));}catch(err){status('Import failed: '+err.message);}e.target.value='';};
+  document.getElementById('importCastle').onchange=async e=>{try{const file=e.target.files[0];if(file){const raw=await RT.courses.readFile(file);if(raw.type==='ballista-campaign')RT.editorCampaigns.openCampaign(RT.customCampaigns.importData(raw));else imported(RT.courses.importData(raw));}}catch(err){status('Import failed: '+err.message);}e.target.value='';};
   window.addEventListener('storage',e=>{if(e.key==='rt-ballista-castles')library();});
   library();
   let lastDraft='';setInterval(()=>{if(!live.recs.length)return;const draft=JSON.stringify({doc:snapshotDoc(),savedId});if(draft!==lastDraft){U.save('ballista-draft',JSON.parse(draft));lastDraft=draft;}},1500);
@@ -1858,6 +1861,9 @@ RT.editor = (function () {
   document.getElementById('patrolDialog').addEventListener('close',clearPatrolLine);
   /* ── Test hook — same idiom as js/game.js:1314's RT.game.__test ─────────── */
   return {
+    ready:()=>live.recs.length>0,
+    exportLevel:publicLevel,
+    openLevel(raw){pushUndo();loadIntoForm(RT.courses.validate(raw));},
     getEnvironment:()=>RT.scenery.validate(doc.environment),
     getLevel:docAsLevel,
     getGoals:()=>RT.levelBrief.goals(doc),

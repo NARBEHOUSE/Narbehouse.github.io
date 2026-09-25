@@ -40,3 +40,15 @@ Optional `goals` uses `{ "enemies": "guards", "destroy": ["T"], "collect": ["sto
 Optional `narrator` uses `{ "name": "Mira", "style": "woman" }`. Styles are `rowan`, `elder`, and `woman`; the default is Rowan. Both fields travel with JSON files, browser saves and editor drafts.
 
 Use Playtest → Explore to watch authored patrols. Easy Aim keeps guards still while a target is selected. The Workshop identifies blocked or unsupported paths before saving or playtesting.
+
+## Full campaigns
+
+Open **Workshop → Campaigns**. A draft starts from the open castle, with immediately editable campaign name, description, opening narration and ending. Under **Levels**, add the open castle, a fresh starter or a saved castle; duplicate, remove, reorder and edit individual stages. While editing a campaign stage, the main Save and Play buttons save/play the complete campaign. Each stage keeps its own scenery, narrator, mission rules, patrols and ammo crates.
+
+Use **Library & files** to open saved campaigns, export a portable JSON file, or import a file/public JSON link. The game also imports campaigns under **Play Game → My Campaigns**. Data stays in the browser; exported files are the portable backup for another device, browser or hosting origin. No server is required for GitHub Pages.
+
+Campaigns use a separate `rt-ballista-campaigns` library (up to 12 campaigns; 1–40 stages each; 1 MB per file). A campaign file has `type: "ballista-campaign"`, `version: 1`, a stable `custom-…` ID, `name`, `description`, `story`, `ending`, and ordered `levels` entries of `{id: "stage-…", level: {...castle data...}}`. These are full snapshots, not links to the separate castle shelf. Identical imports reuse the saved copy; a changed file with the same ID imports as a separate campaign. Invalid stages reject the whole import. Existing castle/collection JSON remains supported.
+
+Play advances in authored order, starting with Boulder and carrying crate unlocks across stages. Progress and scores are independent for each campaign. Changing campaign levels restarts that campaign's play checkpoint and ammo on its next load; other campaigns and their scores stay intact. Editing the campaign name, description, opening narration or ending preserves play progress. The editor restores the active campaign draft, and ordinary single-castle editing remains available through **Leave campaign editing**.
+
+Validation: `tests/verify-custom-campaigns.cjs` covers native mouse typing, stage editing/reordering, three viewport sizes without scrolling, editor draft restoration, JSON/file/link imports, malformed data, real projectile wins and pickups, sequential play, cumulative scores, reloads, stable resume IDs and content revisions.

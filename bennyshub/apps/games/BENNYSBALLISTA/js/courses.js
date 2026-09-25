@@ -12,6 +12,7 @@ function write(items){
   window.dispatchEvent(new Event('ballista-library-change'));
 }
 function decode(raw){
+  if(raw?.type==='ballista-campaign')throw Error('This is a campaign. Use Import JSON or link to keep its level order.');
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Choose a castle or castle collection JSON file.');
   if(raw.version!==undefined&&raw.version!==1)throw Error('This file uses an unsupported castle format version.');
   const levels=raw.levels!==undefined?raw.levels:[raw.level||raw];
@@ -31,11 +32,11 @@ function importData(raw){
 function parse(text){
   if(new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Choose a JSON file smaller than 1 MB.');
   let raw;try{raw=JSON.parse(text);}catch{throw Error('This is not valid JSON. Use a downloaded castle file or a direct JSON link.');}
-  return decode(raw);
+  return raw?.type==='ballista-campaign'?RT.customCampaigns.validate(raw):{version:1,levels:decode(raw)};
 }
 async function readFile(file){
   if(!file||file.size>MAX_BYTES)throw Error('Choose a JSON file smaller than 1 MB.');
-  return {version:1,levels:parse(await file.text())};
+  return parse(await file.text());
 }
 async function readURL(value,{signal}={}){
   let url;try{url=new URL(value);}catch{throw Error('Enter a full HTTPS link to the JSON file.');}
@@ -50,7 +51,7 @@ async function readURL(value,{signal}={}){
     const reader=response.body?.getReader();let text='';
     if(reader){const decoder=new TextDecoder();let bytes=0;while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>MAX_BYTES){await reader.cancel();throw Error('Choose a JSON file smaller than 1 MB.');}text+=decoder.decode(part.value,{stream:true});}text+=decoder.decode();}
     else text=await response.text();
-    return {version:1,levels:parse(text)};
+    return parse(text);
   }catch(error){
     if(controller.signal.aborted)throw Error(signal?.aborted?'Import cancelled.':'The link took too long. Try again or import the downloaded JSON file.');
     if(error instanceof TypeError)throw Error('Cannot read this link. Use a direct public JSON link that allows browser access, or download the file and import it.');

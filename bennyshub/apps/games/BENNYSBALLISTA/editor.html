@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ballista · Castle Workshop</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="editor-style.css"><link rel="stylesheet" href="castle-files.css">
 </head><body data-theme="storybook">
-<div id="app"><header class="builderHeader"><a href="index.html" class="backGame">← Game</a><div><b>♜ CASTLE WORKSHOP</b><small>Your kingdom. Your rules.</small></div><div class="builderActions"><button id="btnLibrary">Castles</button><button id="btnRules">Rules & world</button><button id="btnShare">Share</button><button id="btnSaveCastle">Save</button><button id="btnPlayCastle" class="playtest">▶ Playtest</button></div></header>
+<div id="app"><header class="builderHeader"><a href="index.html" class="backGame">← Game</a><div><b>♜ CASTLE WORKSHOP</b><small>Your kingdom. Your rules.</small></div><div class="builderActions"><button id="btnCampaigns">Campaigns</button><button id="btnLibrary">Castles</button><button id="btnRules">Rules & world</button><button id="btnShare">Share</button><button id="btnSaveCastle">Save</button><button id="btnPlayCastle" class="playtest">▶ Playtest</button></div></header>
 <div id="stage"><div id="fatal"><div id="fatalMsg"></div></div></div>
 <nav class="toolDock" id="toolButtons" aria-label="Builder tools"><button id="btnPalette">▦ Blocks & pieces</button><button data-tool="place">＋ Build</button><button data-tool="erase">⌫ Erase</button><button data-tool="patrol">♟ Character paths</button><button data-tool="select">▧ Select structure</button><button data-tool="paste" id="btnPasteTool">Paste</button><button id="btnTemplate">☆ Save template</button><button id="btnUndo">↶ Undo</button><button id="btnRedo">↷ Redo</button></nav>
 <div class="buildReadout"><span id="currentBlock">Wood beam</span><span id="selectionInfo">No selection</span><span>Wheel: change block · Ctrl+wheel: zoom · Drag: orbit · Shift+drag: pan</span></div>
@@ -27,6 +27,7 @@
 <script src="js/courses.js"></script>
 <script src="js/castle-files.js"></script>
 <script src="js/campaigns.js"></script>
+<script src="js/custom-campaigns.js"></script>
 <script src="js/art.js"></script>
 <script src="js/castle-art.js"></script>
 <script src="js/effects.js"></script>
@@ -39,5 +40,6 @@
 <script src="js/editor-scene.js"></script>
 <script src="js/editor-narrator.js"></script>
 <script src="js/editor-goals.js"></script>
+<script src="js/editor-campaigns.js"></script>
 </body>
 </html>

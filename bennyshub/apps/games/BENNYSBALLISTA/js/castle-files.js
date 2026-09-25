@@ -9,15 +9,15 @@ RT.castleFiles=(function(){
   function step(){const buttons=controls();scan=(scan+1)%buttons.length;highlight();const b=buttons[scan];RT.util.speak(b.getAttribute('aria-label')||b.textContent);}
   function busy(value){$('castleFilePick').disabled=value;$('castleFileURL').disabled=value;$('castleFileLoad').disabled=value;scan=-1;highlight();}
   async function run(read){
-    if(request)return;const token=++generation;request=new AbortController();busy(true);announce('Opening castles…');
-    try{const raw=await read(request.signal);if(token!==generation||!dialog.open)return;const saved=RT.courses.importData(raw);callbacks.onImport?.(saved);dialog.close();RT.util.speak(saved.length+' castle'+(saved.length===1?'':'s')+' saved in My Castles.');}
+    if(request)return;const token=++generation;request=new AbortController();busy(true);announce('Opening adventure…');
+    try{const raw=await read(request.signal);if(token!==generation||!dialog.open)return;if(raw.type==='ballista-campaign'){const saved=RT.customCampaigns.importData(raw);callbacks.onCampaign?.(saved);dialog.close();RT.util.speak(saved.name+' saved in My Campaigns.');return;}const saved=RT.courses.importData(raw);callbacks.onImport?.(saved);dialog.close();RT.util.speak(saved.length+' castle'+(saved.length===1?'':'s')+' saved in My Castles.');}
     catch(error){if(token===generation&&dialog.open)announce(error.message);}
     finally{if(token===generation){request=null;busy(false);}}
   }
   function init(){
     if(dialog)return;
     dialog=document.createElement('dialog');dialog.id='castleFiles';dialog.tabIndex=-1;dialog.setAttribute('aria-labelledby','castleFileTitle');
-    dialog.innerHTML='<h2 id="castleFileTitle">Bring your castles</h2><p>Open a JSON file, or paste a direct JSON link from your own storage.</p><button id="castleFilePick" data-file-choice>Choose JSON file</button><input id="castleFileInput" type="file" accept=".json,application/json" hidden><label for="castleFileURL">JSON link</label><input id="castleFileURL" data-file-choice type="url" inputmode="url" placeholder="https://your-site/castle.json" aria-label="JSON link. Select to type or paste a link."><button id="castleFileLoad" data-file-choice>Import from link</button><p id="castleFileStatus" role="status" aria-live="polite">Imported castles stay in this browser’s My Castles library.</p><button id="castleFileClose" data-file-choice>Back</button>';
+    dialog.innerHTML='<h2 id="castleFileTitle">Bring your adventure</h2><p>Open a castle or full campaign JSON file, or paste a direct JSON link from your own storage.</p><button id="castleFilePick" data-file-choice>Choose JSON file</button><input id="castleFileInput" type="file" accept=".json,application/json" hidden><label for="castleFileURL">JSON link</label><input id="castleFileURL" data-file-choice type="url" inputmode="url" placeholder="https://your-site/castle.json" aria-label="JSON link. Select to type or paste a link."><button id="castleFileLoad" data-file-choice>Import from link</button><p id="castleFileStatus" role="status" aria-live="polite">Imported adventures stay in this browser’s library.</p><button id="castleFileClose" data-file-choice>Back</button>';
     document.body.append(dialog);
     dialog.addEventListener('pointerdown',()=>{scan=-1;highlight();});
     $('castleFilePick').onclick=()=>$('castleFileInput').click();
@@ -37,7 +37,7 @@ RT.castleFiles=(function(){
     },true);
   }
   function open(options={}){
-    init();callbacks=options;scan=-1;busy(false);$('castleFileURL').value='';$('castleFileStatus').textContent='Imported castles stay in this browser’s My Castles library.';
+    init();callbacks=options;scan=-1;busy(false);$('castleFileURL').value='';$('castleFileStatus').textContent='Imported adventures stay in this browser’s library.';
     dialog.showModal();dialog.focus();highlight();clearInterval(timer);
     if(RT.util.sm()?.getSettings().autoScan)timer=setInterval(()=>{if(document.activeElement!==$('castleFileURL'))step();},RT.util.sm().getScanInterval()||2000);
   }
