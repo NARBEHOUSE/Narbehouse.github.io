@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Benny's Ballista · The Mischief Kingdom</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="castle-files.css">
+</head>
+<body data-theme="storybook"><div id="app">
+<button id="btnPause" class="pauseFloating" hidden>Ⅱ Pause</button>
+<button id="btnZoom" class="cornerAction" hidden>Zoom</button>
+<div id="zoomControls" hidden aria-label="Camera controls"><strong id="zoomReadout" role="status">View 100%</strong><div><button id="zoomIn">Zoom in</button><button id="zoomOut">Zoom out</button><button id="zoomBallista">Ballista view</button><button id="zoomAim">Aim view</button><button id="zoomBack">Back</button></div></div>
+<button id="btnChangeAmmo" class="cornerAction" hidden>↻ Change ammo</button>
+<main id="stage"><div id="cvWrap"><div id="loading">Preparing your castle…</div><div id="hud"><div><small id="chapter">YOUR NEXT ADVENTURE</small><h1 id="castleName">The Mischief Kingdom</h1><p id="castleBrief">A little mischief. A magnificent tumble.</p></div><div class="stats"><span id="pCrowns">Crowns <b>0</b></span><span id="pBolts">Shots <b>0</b></span><span id="pScore">Score <b>0</b></span></div></div><canvas id="minimap" width="300" height="300" aria-label="Castle map and shot preview"></canvas><div id="caption" role="status" aria-live="polite"></div><div id="holdProgress" hidden><span>Opening pause…</span><progress max="1" value="0"></progress></div></div>
+<section id="ammoPicker" hidden aria-label="Choose ammunition"><span class="eyebrow">CHOOSE YOUR SHOT</span><button id="ammoSelect" type="button"><span id="ammoIcon" aria-hidden="true"></span><strong id="ammoName"></strong><span id="ammoDescription"></span><small>Enter or tap to choose</small></button><div class="ammoCycle"><button id="ammoPrev" aria-label="Previous ammunition">←</button><span id="ammoCount"></span><button id="ammoNext" aria-label="Next ammunition">→</button></div><p>Space to change ammo</p></section>
+<div id="exploreControls" hidden><button id="exploreBack" class="cornerAction">Back</button><button id="exploreNext" class="cornerAction">Next view</button><button id="explorePlay" class="cornerAction">Play</button><span id="exploreView"></span></div>
+<div id="targetLayer" hidden aria-label="Choose where to fire"><svg id="targetLines" aria-hidden="true"></svg><div class="targetSceneControls"><button id="targetPrevious" aria-label="Previous target">←</button><div id="targetPins"></div><button id="targetNext" aria-label="Next target">→</button></div></div>
+<div id="manualControls" hidden aria-label="Shot charge"><svg viewBox="0 0 88 88" aria-hidden="true"><circle class="chargeBack" cx="44" cy="44" r="36"/><circle id="chargeFill" cx="44" cy="44" r="36" pathLength="100"/></svg><span id="chargeTrack" role="meter" aria-label="Shot range charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><strong id="chargeLabel">50%</strong></span><button id="btnPointerFire" aria-label="Fire this shot" title="Fire this shot">Fire</button></div>
+<div id="targetStatus" hidden><strong id="targetName"></strong><span>Space: next view · Enter: fire</span></div>
+<section id="shotbar" aria-label="Your shot"><div id="shotIllustration" hidden aria-hidden="true"></div><div class="shotHeading"><div><span class="eyebrow" id="stepLabel">YOUR ADVENTURE</span><h2 id="shotTitle">Welcome to the kingdom</h2><p id="shotHint"></p></div><span id="ammoBadge"></span></div><div id="shotChoices"></div><div id="meterArea" hidden><div id="meterTrack"><div id="meterFill"></div><strong id="meterValue"></strong></div></div></section>
+<aside id="pickupNotice" hidden role="status" aria-live="polite"><div id="pickupNoticeIcon" aria-hidden="true"></div><div><strong id="pickupNoticeName"></strong><span>Ammo unlocked · ready for your next shot</span></div></aside>
+<button id="skipStory" hidden>Skip intro</button><div id="overlay" hidden><section id="panel" aria-labelledby="panelTitle"><div class="royalCrest" aria-hidden="true">♜</div><span class="eyebrow" id="panelEyebrow">BENNY’S BALLISTA</span><h2 id="panelTitle"></h2><p id="panelSub"></p><div id="panelList"></div><p id="panelNote"></p></section></div></main>
+<footer><span id="modeLabel"></span><span id="controlHint">Tap Space = next · hold Space = back · Enter = choose</span></footer></div>
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="js/three.min.js"></script>
+<script src="js/ammo.js"></script>
+<script src="js/util.js"></script>
+<script src="js/models.js"></script>
+<script src="js/audio-safe.js"></script>
+<script src="js/data.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/character-paths.js"></script>
+<script src="js/scenery.js"></script>
+<script src="js/level-brief.js"></script>
+<script src="js/courses.js"></script>
+<script src="js/castle-files.js"></script>
+<script src="js/campaigns.js"></script>
+<script src="js/art.js"></script>
+<script src="js/castle-art.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/world.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/settle.js"></script>
+<script src="js/castle-life.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

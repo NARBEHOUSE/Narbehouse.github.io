@@ -1,6 +1,17 @@
 {
   "games": [
     {
+      "id": "bennysballista",
+      "title": "Benny's Ballista",
+      "description": "Topple castles in three story campaigns, or create your own castles and adventures with custom stories and goals in the Castle Workshop. Play with one or two switches using Auto Scan target aiming or manual aim and charge controls. The Workshop uses a mouse and keyboard.",
+      "path": "apps/games/BENNYSBALLISTA/index.html",
+      "image": "images/games/bennysballista.png",
+      "genres": [
+        "Strategy",
+        "Action"
+      ]
+    },
+    {
       "id": "bennysays",
       "title": "Benny Says",
       "description": "A simon says style game where you need to match the growing sequence every round",
@@ -249,7 +260,7 @@
     {
       "id": "bennysfishmystery",
       "title": "Benny's Fish Mystery",
-      "description": "Thirty-eight jobs down one lake for Walt's research station: tag them, log them, put every one back. Something out in the middle takes propellers off boats, and nobody has been out there and come back with anything but a story. Work up from a hand net to a motorboat and find out what it is.",
+      "description": "A pilot game exploring fishing adventures with one- and two-switch access. Tag fish for Walt's research station, work up from a hand net to a motorboat, and uncover the mystery at the middle of the lake.",
       "path": "apps/games/BENNYSFISHMYSTERY/index.html",
       "image": "images/games/bennysfishmystery.png",
       "genres": [

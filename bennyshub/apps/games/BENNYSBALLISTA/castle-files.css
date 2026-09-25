@@ -1,0 +1,12 @@
+/* A compact, shared import form for game and Workshop. */
+#castleFiles{box-sizing:border-box;width:min(540px,calc(100vw - 24px));max-height:calc(100dvh - 24px);margin:auto;padding:clamp(12px,3vh,24px);border:3px solid #536349;border-radius:22px;background:#fff8dc;color:#203d37;box-shadow:0 16px 70px #132e3680;overflow:hidden;font:600 16px/1.3 system-ui;}
+#castleFiles::backdrop{background:#173a3bbd;}
+#castleFiles h2{margin:0 0 8px;text-align:center;font-size:clamp(22px,4vh,30px);}
+#castleFiles p{margin:8px 0;}
+#castleFiles label{display:block;margin-top:10px;}
+#castleFiles button,#castleFiles input:not([type=file]){display:block;box-sizing:border-box;width:100%;min-height:44px;margin:6px 0;padding:9px 12px;border:2px solid #536349;border-radius:12px;font:inherit;color:#203d37;background:#fffdf2;}
+#castleFiles button{cursor:pointer;background:#e4ecd3;}
+#castleFiles button:disabled{opacity:.55;cursor:wait;}
+#castleFiles .fileScan,#castleFiles :focus-visible{outline:4px solid #bd631f;outline-offset:1px;box-shadow:inset 0 0 0 2px #fff;}
+#castleFileStatus{min-height:2.6em;overflow-wrap:anywhere;}
+@media(max-height:540px){#castleFiles{padding:10px 14px;font-size:14px;}#castleFiles h2{font-size:22px;margin:0;}#castleFiles p{margin:4px 0;}#castleFiles button,#castleFiles input:not([type=file]){min-height:36px;padding:5px 10px;margin:4px 0;}#castleFiles label{margin-top:4px;}}
