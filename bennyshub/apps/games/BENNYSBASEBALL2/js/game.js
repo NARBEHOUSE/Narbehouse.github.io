@@ -2901,7 +2901,7 @@ class GameScene extends BaseballScene {
     // idle every other, uncontested advance uses.
     sendRunner(key, ms, targetBase, opts) {
         const r = this.playRunners && this.playRunners[key];
-        if (!r) return;
+        if (!r) { if (opts && opts.onComplete) opts.onComplete(); return; }
         const to = targetBase ? BASE_COORDS[targetBase] : r.to;
         r.sprite._runnerBase = targetBase || Object.keys(BASE_COORDS).find(k => BASE_COORDS[k] === to);
         r.sprite._runnerOut = !!(opts && opts.out);r.arrivedAt=null;
@@ -2925,6 +2925,7 @@ class GameScene extends BaseballScene {
                 r.arrivedAt=this.time.now;
                 if (contested) this.bb2Anim(r.sprite, opts.out ? 'out_walkoff' : 'safe_stand');
                 else this.stopBob(r.sprite);
+                if (opts && opts.onComplete) opts.onComplete();
             }
         });
     }
@@ -3344,11 +3345,14 @@ class GameScene extends BaseballScene {
                 this.animateAdvances('Home Run', () => this.finishPlay(outcome));
             });
         } else {
-            this.audio.speak(`${outcome}.`);
-            // Runners move while the throw-in plays out for real, same
-            // relay choreography as when the player hits an extra-base hit
+            // Announce only after both the runners and the relay have finished,
+            // matching the player's extra-base hits.
             let pending = 2;
-            const done = () => { if (--pending === 0) this.finishPlay(outcome); };
+            const done = () => {
+                if (--pending !== 0) return;
+                this.audio.speak(`${outcome}.`);
+                this.finishPlay(outcome);
+            };
             this.animateAdvances(outcome, done, true);
             this.chaseDownExtraBaseHit(outcome, done);
         }
@@ -3426,12 +3430,18 @@ class GameScene extends BaseballScene {
         const gs = this.gs;
 
         if (opt.value === 'hold') {
-            this.audio.speak('Single.');
-            ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
             gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
-            let pending=2;
-            const done=()=>{if(--pending===0){this._zoomOut(360);this.finishPlay('Single');}};
-            this.time.delayedCall(1200,done);
+            // Movement can take longer than its requested duration when a
+            // runner goes around another player. Wait for actual arrivals.
+            let pending = 5; // Four runner slots and the return throw.
+            const done = () => {
+                if (--pending !== 0) return;
+                this.audio.speak('Single.');
+                this._zoomOut(360);
+                this.finishPlay('Single');
+            };
+            ['batter', 'first', 'second', 'third'].forEach(k =>
+                this.sendRunner(k, 1100, null, { onComplete: done }));
             const holder=this.fielders[fielderPos],pitcher=this.fielders.P;
             if(holder===pitcher)done();
             else this.throwToPlayer(holder,pitcher,{arc:30},done);
@@ -3665,7 +3675,7 @@ class GameScene extends BaseballScene {
         this._ballBusy = (this._ballBusy || 0) + 1;
         this.chaseGroundBall(fielder, FIELD.HOME, spot, 700, 14, () => {
             this.audio.play('catch');this.releaseBall();this.hideHeldBall(fielder);
-            this.audio.speak('Base hit. Choose your throw.');
+            this.audio.speak('Ball fielded. Choose your throw.');
             // Choice time is unlimited; only automatic fielding has a deadline.
             this.time.delayedCall(220,()=>this.showThrowMenu(outfielderPos,spot,true));
         });
@@ -3676,10 +3686,16 @@ class GameScene extends BaseballScene {
         const runnerKey = contested === 'home' ? 'third' : 'second';
 
         if (opt.value === 'hold') {
-            this.audio.speak('The play stands.');
-            ['batter', 'first', 'second', 'third'].forEach(k => this.sendRunner(k, 1100));
             gs.pendingBaseUpdate = () => this.updateBases('Single', 'comp');
-            this.time.delayedCall(1100, () => { this._zoomOut(360); this.finishPlay('Single'); });
+            let pending = 4;
+            const done = () => {
+                if (--pending !== 0) return;
+                this.audio.speak('The play stands.');
+                this._zoomOut(360);
+                this.finishPlay('Single');
+            };
+            ['batter', 'first', 'second', 'third'].forEach(k =>
+                this.sendRunner(k, 1100, null, { onComplete: done }));
             return;
         }
 
