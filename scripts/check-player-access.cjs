@@ -17,12 +17,20 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
 </script></body></html>`;
 (async()=>{
  const dir=path.join(root,'artifacts','access-extension-'+Date.now());await fs.cp(path.join(root,'extension'),dir,{recursive:true});
- const m=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));m.host_permissions=['https://www.netflix.com/*','https://www.primevideo.com/*'];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(m));
+ const m=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));m.host_permissions=['https://www.netflix.com/*','https://www.primevideo.com/*','https://www.disneyplus.com/*'];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(m));
  // Expose only the isolated fixture build's shadow DOM for accessible button assertions.
- const content=path.join(dir,'player-content.js');await fs.writeFile(content,(await fs.readFile(content,'utf8')).replace("mode:'closed'","mode:'open'"));
+ const content=path.join(dir,'player-content.js');await fs.writeFile(content,(await fs.readFile(content,'utf8')).replace("mode:'closed'","mode:'open'").replace("const r=await chrome.runtime.sendMessage({protocol:1,action,payload});", "if(action==='PLAYER_ACCESS'&&location.hostname==='www.disneyplus.com')return new Promise(()=>{});const r=await chrome.runtime.sendMessage({protocol:1,action,payload});"));
+ // Force recurring provider mutations to catch observer microtask starvation.
+ const adapters=path.join(dir,'player-adapters.js');await fs.writeFile(adapters,(await fs.readFile(adapters,'utf8')).replace('      syncView(){',`      syncView(){
+        if(service==='netflix'&&location.search.includes('stress=1')){
+          const probe=document.getElementById('page-button');window.layoutPasses=(window.layoutPasses||0)+1;
+          if(probe){probe.dataset.layoutPasses=String(window.layoutPasses);probe.style.borderWidth=(window.layoutPasses%2+1)+'px';}
+        }
+ `));
  context=await chromium.launchPersistentContext(path.join(root,'artifacts','access-profile-'+Date.now()),{channel:'chromium',headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
  await context.route('https://www.netflix.com/**',r=>r.fulfill({contentType:'text/html',body:fixture('netflix')}));
  await context.route('https://www.primevideo.com/**',r=>r.fulfill({contentType:'text/html',body:fixture('prime')}));
+ await context.route('https://www.disneyplus.com/**',r=>r.fulfill({contentType:'text/html',body:fixture('disney')}));
  const errors=[];context.on('page',p=>p.on('pageerror',e=>errors.push(e.message)));
  const hub=await context.newPage();await hub.goto(base+'/bennyshub/');await hub.locator('#modal-cancel').click();await hub.waitForFunction(()=>BennyExtension.supports('streaming'));
  await hub.evaluate(()=>{NarbeVoiceManager.updateSettings({ttsEnabled:false});NarbeScanManager.updateSettings({inputSensitivityIndex:0,scanSpeedIndex:0,autoScan:false});});
@@ -48,5 +56,19 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
  await expect(bar.getByRole('button',{name:'Play / Pause',exact:true})).toBeVisible();await expect(bar.locator('[data-profile]')).toHaveCount(0);await expect.poll(()=>player.evaluate(()=>document.activeElement.id)).toBe('benny-player-controls');console.log('Netflix: two-switch profile choice and automatic playback controls restored.');await player.close();
  player=await launch('https://www.netflix.com/watch/456');bar=player.locator('#benny-player-controls');await expect(bar.getByRole('button',{name:'Profile A',exact:true})).toBeVisible();await player.locator('.profile-link').first().click();await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');await expect(bar.getByRole('button',{name:'Play / Pause',exact:true})).toBeVisible();console.log('Netflix: native profile tile remains mouse-clickable while switch controls stay locked.');
  await player.close();player=await launch('https://www.netflix.com/watch/789',true);bar=player.locator('#benny-player-controls');await expect(bar).toHaveAttribute('data-selected','parked');await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','profile:0');await player.waitForTimeout(100);await player.keyboard.press('Enter');await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');await expect(bar).toHaveAttribute('data-selected','parked');console.log('Netflix: one-switch profile choice returns to the parked playback bar.');
+ await player.close();
+ player=await launch('https://www.netflix.com/watch/999?stress=1');bar=player.locator('#benny-player-controls');
+ await player.evaluate(()=>{document.addEventListener('focusin',()=>{const tile=document.querySelector('.profile-link');if(tile&&document.activeElement!==tile)tile.focus();});document.querySelector('#typing').focus();});
+ await player.waitForTimeout(1200);assert.ok(await player.evaluate(()=>Number(document.querySelector('#page-button').dataset.layoutPasses)>0&&Number(document.querySelector('#page-button').dataset.layoutPasses)<40),'DOM updates must yield to user input');
+ await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-access','browser');await player.locator('.profile-link').first().click();await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');
+ await bar.getByRole('button',{name:'Lock controls',exact:true}).click();await expect(bar).toHaveAttribute('data-access','controls');await expect(player.locator('[data-benny-player-view]')).toHaveCount(0);await expect(player.locator('[data-benny-fit-video]')).toHaveCount(0);
+ console.log('Netflix stress: competing focus and continuous provider mutations stay responsive; no forced video layout.');await player.close();
+ player=await launch('https://www.disneyplus.com/play/fixture');bar=player.locator('#benny-player-controls');
+ await bar.getByRole('button',{name:'Unlock browser',exact:true}).click();await expect(bar).toHaveAttribute('data-access','browser',{timeout:1000});
+ await player.getByLabel('Password',{exact:true}).fill('synthetic');await player.getByRole('button',{name:'Sign in',exact:true}).click();await expect.poll(()=>player.evaluate(()=>document.querySelector('video').paused)).toBe(false);
+ await bar.getByRole('button',{name:'Lock controls',exact:true}).click();await expect(bar).toHaveAttribute('data-access','controls');
+ await player.waitForTimeout(400);await expect(player.locator('[data-benny-player-view]')).toHaveCount(0);await expect(player.locator('[data-benny-fit-video]')).toHaveCount(0);assert.equal(await player.locator('video').evaluate(v=>getComputedStyle(v).position),'static');
+ await bar.getByRole('button',{name:'Unlock browser',exact:true}).click();await expect(bar).toHaveAttribute('data-access','browser',{timeout:1000});await player.locator('#page-button').click();assert.equal(await player.evaluate(()=>pageClicks),1);
+ console.log('Disney: native video layout retained; Unlock responds even with a stalled background access request.');
  assert.deepEqual(errors,[]);
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>context?.close());

@@ -1,8 +1,8 @@
-# Validation record — release candidate 1.0.1
+# Validation record — release candidate 1.0.2
 
 Checked September 27, 2026. These are local checks, not store approval or a guarantee of live provider compatibility.
 
-- Unit regressions: 25 passed, including Hub URL policy, calendar recurrence, playback ownership, TMDB credential handling, blank public catalogs, and month-end/leap-year journal navigation.
+- Unit regressions: 26 passed, including Hub URL policy, calendar recurrence, playback ownership, TMDB credential handling, blank public catalogs, and month-end/leap-year journal navigation.
 - Quick add: six optional collections, 223 public links (81 Disney/Pixar); all have live Worker-sourced TMDB posters/descriptions, 189 have available trailers. Collapsed Add New Video placement, search/type selection and the full-library backup reminder/download passed browser checks; preview, repeat imports, URL normalization, manual/inline duplicate prevention and preservation of existing notes passed. JSON episode merge tests preserve existing episode numbers. No catalog was automatically seeded.
 - YouTube privacy choice: no external SDK requests before agreement; Space/Enter selection, persistence and startup passed with mocked external SDK responses. Live Turnstile/search service verification remains required.
 - Built Pages smoke test: all 33 pages loaded at production paths, including restored Baseball 2. Animal Friends has 21 optional recorded sound probes with verified generated WAV fallbacks; these are recorded as warnings.
@@ -11,6 +11,7 @@ Checked September 27, 2026. These are local checks, not store approval or a guar
 - Companion integration: missing-extension gating, six connected Tools cards, actual player injection and Return to Hub passed.
 - PWA: journal reload and saved entries passed offline with the website's service worker.
 - Player checks: one-/two-switch scanning, live timing sync, anti-tremor handling, return without broad Hub tab permissions and scan-order updates passed.
+- Player stability: Netflix stress fixture stays responsive during recurring DOM mutations and competing provider focus. Unlock releases input without waiting for background storage; a deliberately stalled access request cannot block it. Disney and Netflix retain native video layout; actual signed-in DRM playback still requires user verification.
 - Browser access: Prime sign-in fixture passed mouse clicks, keyboard input, embedded form access, unlock persistence across reload, visible reminder and restored switch focus. Netflix fixtures passed mouse profile selection and one-/two-switch choices; no profile was selected automatically. These are controlled fixtures, not live signed-in accounts.
 - Keyboard: hybrid ranking retains the original predictor's strongest candidates. TODAY, HELP and ME regressions passed against real KenLM, including PWA offline reload, learned vocabulary and model-unavailable fallback; no typed-text network requests.
 - Disney: all 81 starter movie URLs use /play/; legacy imported movie links convert on load/launch without changing notes or IDs. Browse/play URL variants deduplicate; series URLs remain unchanged. Live regional availability still varies.

@@ -82,6 +82,7 @@ const cases=[
     await expect.poll(()=>player.evaluate(()=>document.activeElement?.id)).toBe('benny-player-controls');
     const scan=async count=>{for(let i=0;i<count;i++){await player.waitForTimeout(70);await player.keyboard.press('Space');}};
     const select=async()=>{await player.waitForTimeout(70);await player.keyboard.press('Enter');};
+    await scan(1);await expect(bar).toHaveAttribute('data-selected','suspend');
     await scan(1);await expect(bar).toHaveAttribute('data-selected','return'); // Last control.
     await scan(1);await expect(bar).toHaveAttribute('data-selected','play');
     await expect.poll(()=>player.locator('video').evaluate(v=>v.paused)).toBe(false);

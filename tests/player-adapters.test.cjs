@@ -2,9 +2,9 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),vm=requir
 function element(text,options={}){
   return {hasAttribute:()=>false,textContent:text,disabled:false,tagName:'BUTTON',getClientRects:()=>[1],getAttribute(k){return k==='aria-label'?this.textContent:null;},closest(selector){return selector.includes('dialog')&&options.dialog?{}:null;},matches:()=>false,click(){},...options};
 }
-function setup(service,{video,buttons=[],login=false}={}){
+function setup(service,{video,buttons=[],login=false,view}={}){
   let clock=0;
-  const env={Date:{now:()=>clock},Promise,getComputedStyle:()=>({visibility:'visible'}),location:{pathname:login?'/login':'/desktop/'},document:{querySelectorAll(s){if(s==='video,audio')return video?[video]:[];if(s==='input[type="password"]')return [];if(s.startsWith('button,'))return buttons;return [];}}};
+  const env={BennyPlayerView:{create:()=>view},Date:{now:()=>clock},Promise,getComputedStyle:()=>({visibility:'visible'}),location:{pathname:login?'/login':'/desktop/'},document:{querySelectorAll(s){if(s==='video,audio')return video?[video]:[];if(s==='input[type="password"]')return [];if(s.startsWith('button,'))return buttons;return [];}}};
   env.globalThis=env;vm.runInNewContext(fs.readFileSync('extension/player-adapters.js','utf8'),env);
   return {adapter:env.BennyPlayerAdapters.create(service),advance:ms=>clock+=ms};
 }
@@ -36,4 +36,13 @@ test('Plex handles a reused Play node becoming Resume immediately, and excludes 
 test('a pending media play request does not block a Resume dialog arriving later',async()=>{
   let plays=0,clicks=0;const buttons=[],video=element('',{tagName:'VIDEO',paused:true,currentSrc:'test.mp4',play(){plays++;return new Promise(()=>{});}}),run=setup('plex',{video,buttons});
   assert.equal(await run.adapter.startup(),'starting');buttons.push(element('Resume',{dialog:true,click(){clicks++;}}));assert.equal(await run.adapter.startup(),'starting');assert.equal(clicks,1);assert.equal(plays,1);
+});
+
+test('Disney and Netflix retain native video layout; Plex still automatically fits its player',()=>{
+  for(const service of ['disney','netflix','plex']){
+    let syncs=0,clears=0;const view={sync(){syncs++;},clear(){clears++;}};
+    const video=element('',{tagName:'VIDEO',paused:false,currentSrc:'fixture.mp4'});
+    setup(service,{video,view}).adapter.syncView();
+    assert.equal(syncs,service==='plex'?1:0);assert.equal(clears,service==='plex'?0:1);
+  }
 });

@@ -1,7 +1,8 @@
 (() => {
   if(window.__bennyPlayer)return;window.__bennyPlayer=true;
   let session,host,root,status,notice,nav,adapter,selected,paused=false,press=null,lastRelease=0,singleRunning=false;
-  let holdTimer,reverseTimer,autoTimer,aliveTimer,startupTimer,focusTimer,observer;
+  let holdTimer,reverseTimer,autoTimer,aliveTimer,startupTimer,focusTimer,observer,domTimer,focusRequest;
+  let focusing=false,accessSave=Promise.resolve();
   let profileState=[];
   const buttons=[],blocked=new Map(),lastKeyUp=new Map();let removed=false,autoAt=Date.now();
   const send=async (action,payload)=>{const r=await chrome.runtime.sendMessage({protocol:1,action,payload});if(!r?.ok)throw Error(r?.error||'Companion unavailable');return r.data;};
@@ -9,9 +10,12 @@
   function announce(text){status.textContent=text+(session.settings.autoScan&&!singleRunning&&!paused?' · Press Enter to scan':'');speak(text);}
   const controls=()=>[...root.querySelectorAll('nav button')].filter(b=>!b.closest('[hidden]'));
   function focusBar(){
-    if(paused||removed||document.hidden)return;
+    if(paused||removed||document.hidden||focusing)return;
     if(selected&&!controls().includes(selected))selected=null;
-    (selected||host).focus({preventScroll:true});
+    const target=selected||host;
+    if((target===host?document.activeElement:root.activeElement)===target)return;
+    focusing=true;
+    try{target.focus({preventScroll:true});}finally{focusing=false;}
   }
   function highlight(button,voice=true){
     selected=button;root.querySelectorAll('nav button').forEach(b=>b.classList.toggle('selected',b===selected));
@@ -26,7 +30,7 @@
     if(paused)return;
     // A focused cross-origin iframe cannot bubble switch keys to the top document.
     // Inert prevents keyboard focus while media continues playing inside it.
-    for(const frame of document.querySelectorAll('iframe')){if(!blocked.has(frame))blocked.set(frame,frame.inert);frame.inert=true;}
+    for(const frame of document.querySelectorAll('iframe')){if(!blocked.has(frame))blocked.set(frame,frame.inert);if(!frame.inert)frame.inert=true;}
   }
   function releaseFrames(){for(const [frame,inert]of blocked)frame.inert=inert;blocked.clear();}
   function restartStartup(){
@@ -59,12 +63,16 @@
     try{
       if(command==='return'){await send('RETURN_TO_HUB');return;}
       if(command==='suspend'){
-        await send('PLAYER_ACCESS',{unlocked:!paused});
+        // Release input locally first. A stalled/restarting worker must never
+        // prevent the user from escaping the locked playback controls.
         paused=!paused;clearPress();
+        const unlocked=paused;
+        accessSave=accessSave.catch(()=>{}).then(()=>send('PLAYER_ACCESS',{unlocked}));
+        accessSave.catch(()=>{if(paused)status.textContent='Browser unlocked for this page. Lock controls when finished.';});
         const access=buttons.find(b=>b.dataset.command==='suspend');
         access.textContent=paused?'Lock controls':'Unlock browser';access.setAttribute('aria-pressed',String(paused));
         host.dataset.access=paused?'browser':'controls';notice.hidden=!paused;
-        if(paused){singleRunning=false;releaseFrames();adapter.clearView();if(document.fullscreenElement)await document.exitFullscreen();}
+        if(paused){singleRunning=false;releaseFrames();adapter.clearView();if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}
         syncProfiles();
         if(!paused){lockFrames();adapter.syncView();if(session.settings.autoScan)park();else highlight(controls()[0],false);restartStartup();}
         announce(paused?'Browser unlocked. Sign in or choose your profile, then select Lock controls.':'Switch controls locked.');return;
@@ -125,7 +133,22 @@
       else {const target=selected;target?.click();if(!paused)park();}
     }else selected?.click();
   }
-  function keepFocus(e){if(!paused&&e.target!==host)focusBar();}
+  function keepFocus(e){
+    if(paused||removed||focusing||e.target===host||focusRequest)return;
+    // Provider dialogs can focus their own controls from focusin. Do not enter
+    // a synchronous focus loop with them; switch keys remain captured above.
+    focusRequest=setTimeout(()=>{focusRequest=null;focusBar();},50);
+  }
+  function schedulePageSync(){
+    if(removed||domTimer)return;
+    // Never rewrite layout from a MutationObserver microtask: our own changes
+    // or a provider's rerenders can otherwise starve clicks and keyboard input.
+    domTimer=setTimeout(()=>{
+      domTimer=null;if(removed)return;
+      syncProfiles();lockFrames();if(!host.isConnected)mount();
+      if(!paused)adapter.syncView();runStartup();
+    },100);
+  }
   function protectBar(e){
     if(!host||paused||removed||!e.isTrusted||e.composedPath().includes(host))return;
     // A profile tile is an explicit user choice; permit it without releasing switch keys.
@@ -153,7 +176,7 @@
     try{await send('ENSURE_PLAYER_FULLSCREEN');}catch(e){announce(e.message||'Could not make the playback window fullscreen.');}
   }
   function cleanup(){
-    removed=true;clearInterval(aliveTimer);clearInterval(autoTimer);clearInterval(startupTimer);clearInterval(focusTimer);clearPress();observer?.disconnect();adapter?.clearView();releaseFrames();host?.remove();
+    removed=true;clearTimeout(domTimer);clearTimeout(focusRequest);clearInterval(aliveTimer);clearInterval(autoTimer);clearInterval(startupTimer);clearInterval(focusTimer);clearPress();observer?.disconnect();adapter?.clearView();releaseFrames();host?.remove();
     window.removeEventListener('keydown',keydown,true);window.removeEventListener('keyup',keyup,true);window.removeEventListener('blur',clearPress);window.removeEventListener('focus',focusBar);
     document.removeEventListener('focusin',keepFocus,true);document.removeEventListener('visibilitychange',visibility);document.removeEventListener('fullscreenchange',mount);window.__bennyPlayer=false;
     window.removeEventListener('load',playerReady);
@@ -193,7 +216,7 @@
     selected=buttons[0];mount();if(session.settings.autoScan)park();else highlight(selected,false);host.dataset.access=paused?'browser':'controls';syncProfiles();lockFrames();if(paused)announce('Browser unlocked. Sign in, then select Lock controls.');
     if(document.readyState==='complete')playerReady();else window.addEventListener('load',playerReady,{once:true});
     document.addEventListener('fullscreenchange',mount);window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);window.addEventListener('blur',clearPress);window.addEventListener('focus',focusBar);document.addEventListener('focusin',keepFocus,true);document.addEventListener('visibilitychange',visibility);
-    observer=new MutationObserver(records=>{syncProfiles();lockFrames();if(!host.isConnected)mount();if(!paused)adapter.syncView();if(records.some(record=>record.target!==host))runStartup();});observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
+    observer=new MutationObserver(schedulePageSync);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
     // Reclaim programmatic page focus, never another browser window or native application.
     focusTimer=setInterval(()=>{syncProfiles();if(!paused)adapter.syncView();if(document.hasFocus()&&document.activeElement!==host)focusBar();},300);
     autoTimer=setInterval(()=>{
@@ -206,7 +229,7 @@
       if(wasSingle!==session.settings.autoScan){clearPress();singleRunning=false;if(session.settings.autoScan)park();else highlight(controls()[0],false);}
       if(!host.isConnected)mount();
     }catch{cleanup();}},1000);
-    adapter.syncView();if(session.startup){startupTimer=setInterval(runStartup,250);runStartup();}
+    if(!paused)adapter.syncView();if(session.startup){startupTimer=setInterval(runStartup,250);runStartup();}
 
   })();
 })();

@@ -1,10 +1,10 @@
 # Benny's Hub — local release preparation
 
-Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.1/`. Start with [the submission guide](submission/START-HERE.md). Nothing is published automatically. The public streaming library and episodes start empty.
+Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.2/`. Start with [the submission guide](submission/START-HERE.md). Nothing is published automatically. The public streaming library and episodes start empty.
 
 For a clean repository replacement, run `npm run build`, `npm run audit:release`,
 `npm run check:pages`, then `npm run prepare:github`. The result is
-`releases/1.0.1/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
+`releases/1.0.2/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
 to preserve your old checkout and publish only the `dist/` website when ready.
 
 The three companion apps are implemented under Benny’s Hub → Tools. See [setup, validation and current limitations](WEB-EXTENSION-MIGRATION.md).

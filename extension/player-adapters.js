@@ -63,7 +63,9 @@
   }
   function create(service){
     const profile=profiles[service]||{},clicked=new WeakMap();let attempts=0,started=Date.now(),stopped=false,mediaAttempt;
-    const view=globalThis.BennyPlayerView?.create();let automaticView=!!service;
+    // Disney and Netflix own their video/DRM layout. Their native player must
+    // not be resized or covered by our automatic CSS fullscreen layer.
+    const view=globalThis.BennyPlayerView?.create();let automaticView=!!service&&!['disney','netflix'].includes(service);
     function profileChoices(){
       if(service!=='netflix')return [];
       // Only existing profile tiles in the chooser, never Add/Manage Profile.
