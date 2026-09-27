@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NARBE Phrase & Media Board</title>
-  <script src="../../../shared/electron-bridge.js"></script>
   <style>
     :root {
       --brand: #5bb0ff;
@@ -24,7 +23,7 @@
       --muted-green: #86b39a;
       --muted-yellow: #d4c896;
     }
-    
+
     /* Dark theme */
     [data-theme="dark"] {
       --brand: #2d3748;
@@ -37,62 +36,62 @@
       --muted-green: #4a7c5f;
       --muted-yellow: #a89d5a;
     }
-    
+
     /* Ensure colored buttons have white text in dark mode */
     [data-theme="dark"] .grid-button {
       color: #ffffff;
     }
-    
+
     [data-theme="dark"] .grid-button:hover {
       background: #3d4a5c;
     }
-    
+
     [data-theme="dark"] .sentence-display {
       color: #ffffff;
     }
-    
+
     /* Blue theme */
     [data-theme="blue"] {
       --brand: #2b6cb0;
       --bg: #ebf8ff;
     }
-    
+
     /* Green theme */
     [data-theme="green"] {
       --brand: #38a169;
       --bg: #f0fff4;
     }
-    
+
     /* Purple theme */
     [data-theme="purple"] {
       --brand: #805ad5;
       --bg: #faf5ff;
     }
     * { box-sizing: border-box; }
-    body { 
-      margin: 0; 
-      background: var(--bg); 
-      color: var(--text); 
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       overflow: hidden;
     }
-    
+
     .app-container {
       height: 100vh;
       display: grid;
       grid-template-rows: auto 1fr auto;
     }
-    
-    header { 
-  background: var(--brand); 
-  color: #fff; 
-  padding: 12px 20px; 
+
+    header {
+  background: var(--brand);
+  color: #fff;
+  padding: 12px 20px;
 }
 .header-inner{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .brand{ font-size:20px; font-weight:800; white-space:nowrap; }
 .header-title{ font-size:18px; font-weight:700; margin:0 auto; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70vw; }
 .header-right{ width:24px; }
-    
+
     .main-grid {
       padding: 20px;
       display: grid;
@@ -101,12 +100,12 @@
       grid-template-rows: repeat(var(--grid-rows, 4), 1fr); /* Default uniform spacing */
       align-items: stretch;
     }
-    
+
     /* Only use auto row sizing when sentence mode is active */
     .main-grid.sentence-active {
       grid-template-rows: auto repeat(var(--grid-rows, 4), 1fr); /* auto for sentence bar, rest for buttons */
     }
-    
+
     .sentence-row {
       grid-column: 1 / -1;
       display: none;
@@ -114,14 +113,14 @@
       gap: 15px;
       align-items: center;
     }
-    
+
     .sentence-row.active {
       display: grid;
       height: 80px; /* Fixed height to prevent button shrinking */
       padding: 0; /* Remove padding */
       align-items: center;
     }
-    
+
     .sentence-display {
       background: var(--card);
       border: 2px solid #000000;
@@ -137,7 +136,7 @@
       font-weight: 500;
       cursor: pointer;
     }
-    
+
     /* Sentence row buttons should also have fixed height to match */
     .sentence-row .grid-button {
       height: 60px; /* Match sentence display height */
@@ -145,7 +144,7 @@
       padding: 8px 12px;
       font-size: 14px;
     }
-    
+
     .grid-button {
       background: var(--card);
       border: 2px solid #000000;
@@ -163,59 +162,59 @@
       transition: all 0.2s;
       position: relative;
     }
-    
+
     .grid-button:hover {
       background: #f8fafc;
       border-color: #000000;
     }
-    
+
     .grid-button.scan-highlight {
       border: 2px solid #000000 !important;
       background: var(--columnHighlight) !important;
       color: #000 !important;
       font-weight: 800 !important;
     }
-    
+
     .grid-button.back-btn {
       background: var(--muted);
       color: white;
     }
-    
+
     .grid-button.next-btn {
       background: var(--brand);
       color: white;
     }
-    
+
     .grid-button.settings-btn {
       background: var(--ok);
       color: white;
     }
-    
+
     .grid-button.danger-btn {
       background: var(--danger);
       color: white;
     }
-    
+
     .grid-button.muted-red-btn {
       background: var(--muted-red);
       color: white;
     }
-    
+
     .grid-button.muted-blue-btn {
       background: var(--muted-blue);
       color: white;
     }
-    
+
     .grid-button.muted-green-btn {
       background: var(--muted-green);
       color: white;
     }
-    
+
     .grid-button.muted-yellow-btn {
       background: var(--muted-yellow);
       color: white;
     }
-    
+
     .grid-button.voice-toggle {
       background: var(--brand);
       color: white;
@@ -224,91 +223,91 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .grid-button.voice-toggle:hover {
       background: var(--brand);
       opacity: 0.8;
     }
-    
+
     /* Mobile Responsive Styles */
     @media (max-width: 768px) {
       .main-grid {
         padding: 10px;
         gap: 8px;
       }
-      
+
       .grid-button {
         min-height: 60px;
         padding: 8px;
         font-size: 14px;
       }
-      
+
       .sentence-display {
         padding: 10px;
         font-size: 18px;
         min-height: 60px;
       }
-      
+
       header {
         padding: 8px 15px;
       }
-      
+
       .brand {
         font-size: 16px;
       }
-      
+
       .header-title {
         font-size: 14px;
       }
     }
-    
+
     @media (max-width: 480px) {
       .main-grid {
         padding: 8px;
         gap: 6px;
       }
-      
+
       .grid-button {
         min-height: 50px;
         padding: 6px;
         font-size: 12px;
       }
-      
+
       .sentence-display {
         padding: 8px;
         font-size: 16px;
         min-height: 50px;
       }
-      
+
       header {
         padding: 6px 10px;
       }
-      
+
       .brand {
         font-size: 14px;
       }
-      
+
       .header-title {
         font-size: 12px;
       }
-      
+
       .grid-button .icon {
         font-size: 16px;
       }
     }
-    
+
     .grid-button img {
       max-width: 60%;
       max-height: 50px;
       object-fit: contain;
       margin-bottom: 8px;
     }
-    
+
     .grid-button .icon {
       font-size: 24px;
       margin-bottom: 8px;
     }
-    
+
     .page-indicator {
       position: absolute;
       top: 5px;
@@ -319,18 +318,18 @@
       border-radius: 4px;
       font-size: 12px;
     }
-    
+
     footer {
       text-align: center;
       color: var(--muted);
       padding: 10px;
       font-size: 14px;
     }
-    
+
     .hidden {
       display: none !important;
     }
-    
+
     #iframeModal {
       position: fixed;
       inset: 0;
@@ -341,7 +340,7 @@
       padding: 20px;
       z-index: 1000;
     }
-    
+
     /* Bigger card and player area */
     #iframeCard {
       background: #000;
@@ -352,45 +351,45 @@
       display: grid;
       grid-template-rows: 1fr auto;
     }
-    
+
     #mediaFrame {
       width: 100%;
       height: 100%;
       border: 0;
       background: #000;
     }
-    
+
     #iframeControls {
       display: flex;
       gap: 10px;
       padding: 10px;
       background: #111827;
     }
-    
+
     #iframeControls .grid-button {
       background: #374151;
       color: white;
       min-height: 50px;
       flex: 1;
     }
-    
+
     .grid-button.active-green {
       background: var(--ok) !important;
       color: white !important;
     }
-    
+
     /* Ensure scan highlights override all button colors */
     .grid-button.row-highlight,
     .grid-button.scan-highlight {
       border: 2px solid #000000 !important;
       font-weight: 800 !important;
     }
-    
+
     .grid-button.row-highlight {
       background: var(--rowHighlight) !important;
       color: #000 !important;
     }
-    
+
     .grid-button.scan-highlight {
       background: var(--columnHighlight) !important;
       color: #000 !important;
@@ -406,11 +405,11 @@
       justify-content: center;
       z-index: 2000;
     }
-    
+
     .warning-modal.active {
       display: flex;
     }
-    
+
     .warning-content {
       background: var(--card);
       border-radius: var(--tileRadius);
@@ -418,26 +417,26 @@
       max-width: 500px;
       text-align: center;
     }
-    
+
     .warning-title {
       font-size: 24px;
       font-weight: bold;
       margin-bottom: 20px;
       color: var(--danger);
     }
-    
+
     .warning-message {
       font-size: 18px;
       margin-bottom: 30px;
       line-height: 1.5;
     }
-    
+
     .warning-buttons {
       display: flex;
       gap: 20px;
       justify-content: center;
     }
-    
+
     .warning-button {
       padding: 15px 30px;
       font-size: 18px;
@@ -448,17 +447,17 @@
       background: var(--card);
       transition: all 0.2s;
     }
-    
+
     .warning-button.back {
       background: var(--muted-blue);
       color: white;
     }
-    
+
     .warning-button.proceed {
       background: var(--muted-green);
       color: white;
     }
-    
+
     .warning-button.modal-highlight {
       border: 4px solid var(--scanHighlight) !important;
       background: var(--rowHighlight) !important;
@@ -545,7 +544,7 @@
   <script src="../../../shared/voice-manager.js"></script>
   <script src="../../../shared/scan-manager.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-  
+
   <script>
     const state = {
       raw: [],
@@ -603,7 +602,7 @@
 
     // ---- Settings Persistence ----
     const STORAGE_KEY = 'phraseboard_settings';
-    
+
     function saveSettings() {
       try {
         const settings = {
@@ -619,7 +618,7 @@
         console.error('Failed to save phraseboard settings:', e);
       }
     }
-    
+
     function loadSettings() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -647,7 +646,7 @@
         console.error('Failed to load phraseboard settings:', e);
       }
     }
-    
+
     // Load settings immediately
     loadSettings();
 
@@ -686,7 +685,7 @@
       loadBoardProceed: document.getElementById('loadBoardProceed')
     };
 
-    
+
 // ---- Dynamic header title ----
 function updateHeaderForCurrentView(){
   const t = document.getElementById('viewTitle');
@@ -790,7 +789,7 @@ function updateHeaderForCurrentView(){
 
     // TTS using unified voice manager
     function isIOS() {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
@@ -809,7 +808,7 @@ function updateHeaderForCurrentView(){
     function speak(text, isChild = false, gender = null, specificVoiceIndex = null, blockInput = false) {
       const voiceSettings = window.NarbeVoiceManager.getSettings();
       if (!voiceSettings.ttsEnabled || !text) return;
-      
+
       // Helper to set up input blocking with onend callback
       function setupInputBlocking(utterance) {
         if (blockInput) {
@@ -835,7 +834,7 @@ function updateHeaderForCurrentView(){
           };
         }
       }
-      
+
       if (specificVoiceIndex !== null) {
         const voices = window.NarbeVoiceManager.getEnglishVoices();
         if (voices[specificVoiceIndex]) {
@@ -847,7 +846,7 @@ function updateHeaderForCurrentView(){
           return;
         }
       }
-      
+
       if (isChild && gender && state.childVoices[gender]) {
         window.NarbeVoiceManager.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
@@ -932,14 +931,14 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'main';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const coreItems = [
         { text: 'Settings', icon: '⚙️', action: () => navigateTo('settings'), className: 'muted-blue-btn' },
         { text: 'Exit', icon: '🚪', action: () => exitToHub(), className: 'muted-red-btn' },
         { text: 'Create Board', icon: '✏️', action: () => showWarningModal('create'), className: 'muted-green-btn' },
         { text: 'Load Board', icon: '📁', action: () => showWarningModal('load'), className: 'muted-yellow-btn' }
       ];
-      
+
       // Add local board if exists
       const localBoard = getLocalSavedBoard();
       let allMainItems = [...coreItems];
@@ -947,9 +946,9 @@ function updateHeaderForCurrentView(){
         // Parse the local board CSV to check for board image
         const localBoardData = parseCSV(localBoard.csv);
         const boardHasImage = localBoardData.length > 0 && localBoardData[0].boardImage;
-        
+
         allMainItems.push({
-          text: localBoard.name, 
+          text: localBoard.name,
           icon: boardHasImage ? '' : '📋', // Only use clipboard icon if no image is available
           boardData: localBoardData.length > 0 ? {
             image: localBoardData[0].boardImage,
@@ -958,14 +957,14 @@ function updateHeaderForCurrentView(){
           action: () => {
             const cleanBoardName = cleanTextForTTS(localBoard.name);
             if (cleanBoardName) speak(cleanBoardName);
-            
+
             state.currentBoardTitle = localBoard.name;
             buildIndex(parseCSV(localBoard.csv));
             el.statusFooter.textContent = `Loaded board: ${localBoard.name}`;
           }
         });
       }
-      
+
       // Add available boards to main items list
       state.availableBoards.forEach(board => {
         allMainItems.push({
@@ -975,31 +974,31 @@ function updateHeaderForCurrentView(){
           action: async () => {
             const cleanBoardName = cleanTextForTTS(board.name);
             if (cleanBoardName) speak(cleanBoardName);
-            
+
             const success = await loadBoard(board.path);
             el.statusFooter.textContent = success ? `Loaded board: ${board.name}` : `Failed to load board: ${board.name}`;
           }
         });
       });
-      
+
       // Calculate pagination - reserve 1 slot for Next button if needed
       let itemsPerPage = totalSlots;
       const totalPages = Math.ceil(allMainItems.length / itemsPerPage);
-      
+
       // If we need multiple pages, reserve 1 slot for Next button
       if (totalPages > 1) {
         itemsPerPage = totalSlots - 1;
         // Recalculate total pages with the reserved slot
         const recalcTotalPages = Math.ceil(allMainItems.length / itemsPerPage);
-        
+
         const startIdx = state.page * itemsPerPage;
         const endIdx = Math.min(startIdx + itemsPerPage, allMainItems.length);
-        
+
         // Add items for current page
         for (let i = startIdx; i < endIdx; i++) {
           const item = allMainItems[i];
           const btn = createButton(item.text, item.icon, item.action, item.className || '');
-          
+
           // Apply board color and image if available
           if (item.boardData) {
             if (item.boardData.color) {
@@ -1013,22 +1012,22 @@ function updateHeaderForCurrentView(){
               btn.insertBefore(img, btn.firstChild);
             }
           }
-          
+
           el.mainGrid.appendChild(btn);
         }
-        
+
         // Always add Next button if multiple pages
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % recalcTotalPages; 
-          renderMainMenu(); 
-          updateHeaderForCurrentView(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % recalcTotalPages;
+          renderMainMenu();
+          updateHeaderForCurrentView();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       } else {
         // Single page - add all items
         allMainItems.forEach(item => {
           const btn = createButton(item.text, item.icon, item.action, item.className || '');
-          
+
           // Apply board color and image if available
           if (item.boardData) {
             if (item.boardData.color) {
@@ -1042,11 +1041,11 @@ function updateHeaderForCurrentView(){
               btn.insertBefore(img, btn.firstChild);
             }
           }
-          
+
           el.mainGrid.appendChild(btn);
         });
       }
-      
+
       updateScannable();
     }
 
@@ -1069,7 +1068,7 @@ function updateHeaderForCurrentView(){
       for (let i = startIdx; i < endIdx; i++) {
         const cat = state.categories[i];
         const btn = createButton(cat.name, '', () => openCategory(cat.name));
-        
+
         // Add category image if available
         if (cat.image) {
           const img = document.createElement('img');
@@ -1077,7 +1076,7 @@ function updateHeaderForCurrentView(){
           img.alt = '';
           btn.insertBefore(img, btn.firstChild);
         }
-        
+
         btn.style.background = rgbaFromHex(cat.color, 0.2);
         btn.style.borderColor = cat.color;
         const itemsPerPage = state.gridSize.rows * state.gridSize.cols - 1;
@@ -1104,7 +1103,7 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'settings';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const buttons = [
         { text: 'Grid Size', icon: '⊞', action: () => navigateTo('gridsize') },
         { text: 'Voice & TTS', icon: '🔊', action: () => navigateTo('tts') },
@@ -1112,7 +1111,7 @@ function updateHeaderForCurrentView(){
         { text: 'Highlight Colors', icon: '🎨', action: () => navigateTo('highlight') },
         { text: 'Theme', icon: '🌈', action: () => navigateTo('theme') },
         { text: 'Toggle Sentence', icon: '💬', action: () => { toggleSentenceMode(); renderSettingsMenu(true); }, className: state.sentenceMode ? 'active-green' : '' },
-        { text: 'Volume Up', icon: '🔈', action: async () => { 
+        { text: 'Volume Up', icon: '🔈', action: async () => {
           const isElectron = typeof window !== 'undefined' && window.electronAPI;
           if (isElectron && window.electronAPI.system) {
             try {
@@ -1126,7 +1125,7 @@ function updateHeaderForCurrentView(){
             speak('Volume control not available');
           }
         }},
-        { text: 'Volume Down', icon: '🔉', action: async () => { 
+        { text: 'Volume Down', icon: '🔉', action: async () => {
           const isElectron = typeof window !== 'undefined' && window.electronAPI;
           if (isElectron && window.electronAPI.system) {
             try {
@@ -1141,11 +1140,11 @@ function updateHeaderForCurrentView(){
           }
         }}
       ];
-      
+
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Main Menu', '🏠', () => navigateBack(), 'back-btn');
@@ -1157,25 +1156,25 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderSettingsMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderSettingsMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1184,14 +1183,14 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'gridsize';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const gridSizes = [];
       for (let size = 2; size <= 10; size++) gridSizes.push(size);
-      
+
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(gridSizes.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
@@ -1203,30 +1202,30 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, gridSizes.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const size = gridSizes[i];
-        const btn = createButton(`${size}×${size}`, '⊞', () => { 
-          setGridSize(size, size); 
+        const btn = createButton(`${size}×${size}`, '⊞', () => {
+          setGridSize(size, size);
           speak(`Grid size ${size} by ${size} selected`);
-          renderGridSizeMenu(true); 
+          renderGridSizeMenu(true);
         });
         if (state.gridSize.rows === size && state.gridSize.cols === size) btn.classList.add('active-green');
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderGridSizeMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderGridSizeMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1235,27 +1234,27 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'tts';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const buttons = [
-        { text: 'TTS', icon: '🔊', action: () => { 
-          const newState = window.NarbeVoiceManager.toggleTTS(); 
+        { text: 'TTS', icon: '🔊', action: () => {
+          const newState = window.NarbeVoiceManager.toggleTTS();
           speak(newState ? 'TTS enabled' : 'TTS disabled');
-          renderTTSMenu(true); 
+          renderTTSMenu(true);
         }, className: window.NarbeVoiceManager.getSettings().ttsEnabled ? 'active-green' : '' },
-        { text: 'TTS on Scan', icon: '👆', action: () => { 
-          state.ttsOnScan = !state.ttsOnScan; 
+        { text: 'TTS on Scan', icon: '👆', action: () => {
+          state.ttsOnScan = !state.ttsOnScan;
           saveSettings();
           speak(state.ttsOnScan ? 'TTS on Scan enabled' : 'TTS on Scan disabled');
-          renderTTSMenu(true); 
+          renderTTSMenu(true);
         }, className: state.ttsOnScan ? 'active-green' : '' }
       ];
-      
+
       // Add voice toggle button if multiple voices available
       const voices = window.NarbeVoiceManager.getEnglishVoices();
       if (voices && voices.length > 1) {
         const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
         let displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
-        
+
         buttons.push({
           text: `🎤 ${displayName}`,
           icon: '',
@@ -1269,11 +1268,11 @@ function updateHeaderForCurrentView(){
           className: 'voice-toggle'
         });
       }
-      
-      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button  
+
+      const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
@@ -1285,25 +1284,25 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderTTSMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderTTSMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1312,7 +1311,7 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'scan';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       let currentSpeedIndex = 1;
       let autoScan = state.autoScan;
 
@@ -1327,9 +1326,9 @@ function updateHeaderForCurrentView(){
         else if (state.scanSpeed === 3000) currentSpeedIndex = 2;
         else if (state.scanSpeed === 4000) currentSpeedIndex = 3;
       }
-      
+
       const buttons = [
-        { text: 'Auto Scan', icon: '🔄', action: () => { 
+        { text: 'Auto Scan', icon: '🔄', action: () => {
           const newVal = !autoScan;
           if (window.NarbeScanManager) {
              window.NarbeScanManager.setAutoScan(newVal);
@@ -1339,10 +1338,10 @@ function updateHeaderForCurrentView(){
           speak(newVal ? 'Auto Scan enabled' : 'Auto Scan disabled');
           // Update local state immediately for responsiveness
           state.autoScan = newVal;
-          if (state.autoScan) startAutoScan(); else stopScanning(); 
-          renderScanMenu(true); 
+          if (state.autoScan) startAutoScan(); else stopScanning();
+          renderScanMenu(true);
         }, className: autoScan ? 'active-green' : '' },
-        
+
         { text: 'Scan Mode: ' + (state.userScanPreference === 'cell' ? 'Cell' : 'Row'), icon: '📐', action: () => {
           state.userScanPreference = state.userScanPreference === 'cell' ? 'row' : 'cell';
           stopScanning();
@@ -1353,7 +1352,7 @@ function updateHeaderForCurrentView(){
           speak(`Scan mode set to ${state.userScanPreference}`);
           renderScanMenu(true);
         }, className: 'muted-blue-btn' },
-        
+
         { text: `Speed: ${(currentSpeedIndex + 1)}s`, icon: '⏱️', action: () => {
              let nextIndex = (currentSpeedIndex + 1) % 4;
              if (window.NarbeScanManager) {
@@ -1364,17 +1363,17 @@ function updateHeaderForCurrentView(){
                  const speeds = [1000, 2000, 3000, 4000];
                  state.scanSpeed = speeds[nextIndex];
              }
-             
+
              speak(`${nextIndex + 1} second speed`);
              if (state.scanning || state.autoScan) { stopScanning(); if (state.autoScan) startAutoScan(); }
              renderScanMenu(true);
         }}
       ];
-      
+
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
@@ -1386,25 +1385,25 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderScanMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderScanMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1413,7 +1412,7 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'highlight';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const buttons = Object.entries(HIGHLIGHT_COLORS).map(([name, color]) => ({
         text: name.charAt(0).toUpperCase() + name.slice(1),
         icon: '●',
@@ -1429,11 +1428,11 @@ function updateHeaderForCurrentView(){
         className: state.highlightColor === color ? 'active-green' : '',
         iconColor: color
       }));
-      
+
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
@@ -1445,10 +1444,10 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
@@ -1457,16 +1456,16 @@ function updateHeaderForCurrentView(){
         }
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderHighlightMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderHighlightMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1475,22 +1474,22 @@ function updateHeaderForCurrentView(){
       state.currentMenu = 'theme';
       // Don't subtract sentence row space - it's now in its own dedicated row
       const totalSlots = state.gridSize.rows * state.gridSize.cols;
-      
+
       const buttons = Object.entries(THEMES).map(([themeKey, themeName]) => ({
         text: themeName,
         icon: '🎨',
-        action: () => { 
-          setTheme(themeKey); 
+        action: () => {
+          setTheme(themeKey);
           speak(`${themeName} theme selected`);
-          renderThemeMenu(true); 
+          renderThemeMenu(true);
         },
         className: state.theme === themeKey ? 'active-green' : ''
       }));
-      
+
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
       const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
-      
+
       // Back button logic
       if (state.page === 0) {
         const backBtn = createButton('Settings', '←', () => navigateBack(), 'back-btn');
@@ -1502,25 +1501,25 @@ function updateHeaderForCurrentView(){
         }, 'back-btn');
         el.mainGrid.appendChild(backBtn);
       }
-      
+
       const startIdx = state.page * itemsPerPage;
       const endIdx = Math.min(startIdx + itemsPerPage, buttons.length);
-      
+
       for (let i = startIdx; i < endIdx; i++) {
         const btnData = buttons[i];
         const btn = createButton(btnData.text, btnData.icon, btnData.action, btnData.className || '');
         el.mainGrid.appendChild(btn);
       }
-      
+
       // Always add Next button if there are multiple pages (loops back to first page)
       if (totalPages > 1) {
-        const nextBtn = createButton('Next', '▶', () => { 
-          state.page = (state.page + 1) % totalPages; 
-          renderThemeMenu(); 
+        const nextBtn = createButton('Next', '▶', () => {
+          state.page = (state.page + 1) % totalPages;
+          renderThemeMenu();
         }, 'next-btn');
         el.mainGrid.appendChild(nextBtn);
       }
-      
+
       updateScannable(preservePosition);
     }
 
@@ -1577,7 +1576,7 @@ function updateHeaderForCurrentView(){
       const savedRow = state.currentRow;
       const savedIndex = state.scanIndex;
       const isCellMode = state.userScanPreference === 'cell';
-      
+
       // If video modal is open, only scan its visible control buttons
       if (state.videoModalActive) {
         const controls = Array.from(document.querySelectorAll('#iframeControls .grid-button')).filter(isVisible);
@@ -1600,7 +1599,7 @@ function updateHeaderForCurrentView(){
         if (row.length > 0) rows.push(row);
       }
       state.scannableRows = rows;
-      
+
       // In cell mode with preservePosition, keep the scan position if valid
       if (preservePosition && isCellMode && savedRow >= 0 && savedIndex >= 0) {
         // Make sure the saved position is still valid in the new grid
@@ -1612,7 +1611,7 @@ function updateHeaderForCurrentView(){
           return;
         }
       }
-      
+
       // Start at -1 for no highlighting until spacebar is pressed
       state.currentRow = -1;
       state.scanIndex = -1;
@@ -1637,8 +1636,8 @@ function updateHeaderForCurrentView(){
     function highlightScanIndex() {
       clearScanHighlight();
       // Only highlight if both currentRow and scanIndex are valid (not -1)
-      if (state.currentRow >= 0 && state.scanIndex >= 0 && 
-          state.scannableRows[state.currentRow] && 
+      if (state.currentRow >= 0 && state.scanIndex >= 0 &&
+          state.scannableRows[state.currentRow] &&
           state.scannableRows[state.currentRow][state.scanIndex]) {
         const element = state.scannableRows[state.currentRow][state.scanIndex];
         element.classList.add('scan-highlight');
@@ -1686,25 +1685,25 @@ function updateHeaderForCurrentView(){
         return;
       }
 
-      if (state.scanMode === 'row') { 
+      if (state.scanMode === 'row') {
         // If currentRow is -1, start at 0, otherwise cycle normally
         if (state.currentRow === -1) {
           state.currentRow = 0;
         } else {
           state.currentRow = (state.currentRow + 1) % state.scannableRows.length;
         }
-        highlightCurrentRow(); 
+        highlightCurrentRow();
       }
       else if (state.scanMode === 'column') {
         const currentRow = state.scannableRows[state.currentRow];
-        if (currentRow) { 
+        if (currentRow) {
           // If scanIndex is -1, start at 0, otherwise cycle normally
           if (state.scanIndex === -1) {
             state.scanIndex = 0;
           } else {
             state.scanIndex = (state.scanIndex + 1) % currentRow.length;
           }
-          highlightScanIndex(); 
+          highlightScanIndex();
         }
       }
     }
@@ -1728,25 +1727,25 @@ function updateHeaderForCurrentView(){
         return;
       }
 
-      if (state.scanMode === 'row') { 
+      if (state.scanMode === 'row') {
         // If currentRow is -1, start at last row, otherwise cycle normally
         if (state.currentRow === -1) {
           state.currentRow = state.scannableRows.length - 1;
         } else {
           state.currentRow = state.currentRow <= 0 ? state.scannableRows.length - 1 : state.currentRow - 1;
         }
-        highlightCurrentRow(); 
+        highlightCurrentRow();
       }
       else if (state.scanMode === 'column') {
         const currentRow = state.scannableRows[state.currentRow];
-        if (currentRow) { 
+        if (currentRow) {
           // If scanIndex is -1, start at last item, otherwise cycle normally
           if (state.scanIndex === -1) {
             state.scanIndex = currentRow.length - 1;
           } else {
             state.scanIndex = state.scanIndex <= 0 ? currentRow.length - 1 : state.scanIndex - 1;
           }
-          highlightScanIndex(); 
+          highlightScanIndex();
         }
       }
     }
@@ -1757,7 +1756,7 @@ function updateHeaderForCurrentView(){
       const settings = window.NarbeScanManager.getSettings();
       state.autoScan = settings.autoScan;
       state.scanSpeed = settings.scanInterval;
-      
+
       // Update timer if running
       if (state.scanning) {
         if (state.scanTimer) clearInterval(state.scanTimer);
@@ -1785,13 +1784,13 @@ function updateHeaderForCurrentView(){
       }
 
       if (state.userScanPreference === 'cell') {
-        if (state.currentRow >= 0 && state.scanIndex >= 0 && 
-            state.scannableRows[state.currentRow] && 
+        if (state.currentRow >= 0 && state.scanIndex >= 0 &&
+            state.scannableRows[state.currentRow] &&
             state.scannableRows[state.currentRow][state.scanIndex]) {
-              
+
             const element = state.scannableRows[state.currentRow][state.scanIndex];
             let selectionText = '';
-            
+
              if (!state.videoModalActive) {
                 if (element === el.sentenceDisplay && state.sentenceMode) {
                   const displayText = el.sentenceDisplay.textContent.trim();
@@ -1815,9 +1814,9 @@ function updateHeaderForCurrentView(){
                 selectionText = cleanTextForTTS(element.textContent);
                 element.click();
              }
-             
+
              if (selectionText && window.NarbeVoiceManager.getSettings().ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
-             
+
              // Keep highlight on the current selection in cell mode
              // state.currentRow = -1;
              // state.scanIndex = -1;
@@ -1825,14 +1824,14 @@ function updateHeaderForCurrentView(){
              return;
         }
       }
-      
+
       if (state.scanMode === 'row') {
         state.scanMode = 'column';
         state.scanIndex = -1; // Start column scanning at -1
         scanForward(); // This will set scanIndex to 0 and highlight
       } else if (state.scanMode === 'column') {
-        if (state.currentRow >= 0 && state.scanIndex >= 0 && 
-            state.scannableRows[state.currentRow] && 
+        if (state.currentRow >= 0 && state.scanIndex >= 0 &&
+            state.scannableRows[state.currentRow] &&
             state.scannableRows[state.currentRow][state.scanIndex]) {
           const element = state.scannableRows[state.currentRow][state.scanIndex];
           const selectedRow = state.currentRow; // Remember which row we were in
@@ -1861,7 +1860,7 @@ function updateHeaderForCurrentView(){
             element.click();
           }
           if (selectionText && window.NarbeVoiceManager.getSettings().ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
-          
+
           // Return to row mode, highlighting the same row we were in
           state.scanMode = 'row';
           state.currentRow = selectedRow; // Stay on the same row
@@ -1881,7 +1880,7 @@ function updateHeaderForCurrentView(){
         state.scanSpeed = speeds[settings.scanSpeedIndex] !== undefined ? speeds[settings.scanSpeedIndex] : 2000;
         // Sync input sensitivity - scan-manager handles the actual blocking, but we use this for our debounce
         state.debounceDelay = settings.inputSensitivity || 200;
-        
+
         // Update scanning state if needed
         if (state.autoScan) {
            if (!state.scanning && !state.modalActive && !state.videoModalActive) {
@@ -1901,7 +1900,7 @@ function updateHeaderForCurrentView(){
     let returnActionTimer = null;
     let modalBackwardScanTimer = null;
     let modalBackwardScanInterval = null;
-    
+
     window.addEventListener('keydown', (e) => {
       // Allow F12/DevTools
       if (e.key === 'F12') return;
@@ -2094,10 +2093,10 @@ function updateHeaderForCurrentView(){
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => { 
+      reader.onload = () => {
         const csvText = reader.result;
         const parsedRows = parseCSV(csvText);
-        
+
         // Extract board name from CSV data or use filename
         let boardName = 'My Custom Board';
         if (parsedRows.length > 0 && parsedRows[0].boardName) {
@@ -2106,7 +2105,7 @@ function updateHeaderForCurrentView(){
           // Use filename without extension as board name
           boardName = file.name.replace(/\.csv$/i, '');
         }
-        
+
         // Save to localStorage
         try {
           const boardData = {
@@ -2114,11 +2113,11 @@ function updateHeaderForCurrentView(){
             csv: csvText
           };
           localStorage.setItem('narbe_phrase_builder', JSON.stringify(boardData));
-          
+
           // Show success message and re-render main menu
           el.statusFooter.textContent = `Board "${boardName}" saved! Navigate to it from the main menu.`;
           speak(`Board ${cleanTextForTTS(boardName)} saved`);
-          
+
           // Re-render main menu to show the new board
           if (state.currentMenu === 'main') {
             renderMainMenu();
@@ -2174,7 +2173,7 @@ function updateHeaderForCurrentView(){
       // Voice manager handles voices changed event
       window.addEventListener('load', () => { setTimeout(initVoices, 500); });
     }
-    
+
     // Listen for voice settings changes from other apps
     if (window.NarbeVoiceManager) {
       window.NarbeVoiceManager.onSettingsChange(() => {
@@ -2188,7 +2187,7 @@ function updateHeaderForCurrentView(){
         window.NarbeScanManager.subscribe(syncScanSettings);
         syncScanSettings();
     }
-    
+
     // Apply loaded settings to CSS/DOM
     document.documentElement.style.setProperty('--rowHighlight', state.highlightColor);
     document.documentElement.style.setProperty('--columnHighlight', state.highlightColor);
@@ -2220,11 +2219,11 @@ function updateHeaderForCurrentView(){
 
       if (boardParam) {
         // Find the board in availableBoards (check filename or name)
-        const targetBoard = state.availableBoards.find(b => 
-          b.filename.toLowerCase() === boardParam.toLowerCase() || 
+        const targetBoard = state.availableBoards.find(b =>
+          b.filename.toLowerCase() === boardParam.toLowerCase() ||
           b.name.toLowerCase() === boardParam.toLowerCase()
         );
-        
+
         if (targetBoard) {
            const success = await loadBoard(targetBoard.path);
            if (success) {
@@ -2239,11 +2238,11 @@ function updateHeaderForCurrentView(){
 
       // Always start at main menu instead of auto-loading saved board
       renderMainMenu();
-      
+
       if (saved && saved.csv) {
         el.statusFooter.textContent = `You have a saved board: ${saved.name}`;
       }
-      
+
       updateScannable();
       state.currentRow = 0; state.scanIndex = 0;
       setTimeout(() => { updateScannable(); }, 100);
@@ -2262,9 +2261,9 @@ function updateHeaderForCurrentView(){
       const speakText = (item.speak || '').trim();
       const display = (item.display || '').trim();
       const text = speakText || display;
-      
+
       // Check if this is a URL link
-      if (isLikelyUrl(text)) { 
+      if (isLikelyUrl(text)) {
         // For HTML links, speak the display text (what user sees on button) instead of the URL
         const ttsText = display || speakText;
         if (ttsText && !isLikelyUrl(ttsText)) {
@@ -2275,17 +2274,17 @@ function updateHeaderForCurrentView(){
           // If display text is also a URL or empty, speak generic message
           speak("Opening link");
         }
-        openIframe(text); 
-        return; 
+        openIframe(text);
+        return;
       }
-      
+
       // Handle regular phrases (non-URLs) - keep same TTS function
       // Pass blockInput=true to prevent accidental scan interruption
-      if (state.sentenceMode) { 
-        state.sentence.push(text); 
-        updateSentenceDisplay(); 
-      } else { 
-        const cleanText = cleanTextForTTS(text); 
+      if (state.sentenceMode) {
+        state.sentence.push(text);
+        updateSentenceDisplay();
+      } else {
+        const cleanText = cleanTextForTTS(text);
         if (cleanText) speak(cleanText, false, null, null, true); // blockInput=true for phrases
       }
     }
@@ -2308,7 +2307,7 @@ function updateHeaderForCurrentView(){
       let backMessage = '';
       if (state.navigationHistory.length > 0) {
         const prevState = state.navigationHistory.pop();
-        
+
         // Determine what we're going back to for TTS
         switch (prevState.menu) {
           case 'main': backMessage = 'Main Menu'; break;
@@ -2316,14 +2315,14 @@ function updateHeaderForCurrentView(){
           case 'categories': backMessage = state.currentBoardTitle || 'Categories'; break;
           case 'category': backMessage = prevState.category || 'Category'; break;
         }
-        
+
         state.currentMenu = prevState.menu;
         state.currentCategory = prevState.category;
         state.page = prevState.page;
         state.scanMode = 'row';
         state.currentRow = 0;
         state.scanIndex = 0;
-        
+
         switch (prevState.menu) {
           case 'main': renderMainMenu(); break;
           case 'categories': renderCategoryMenu(); break;
@@ -2335,14 +2334,14 @@ function updateHeaderForCurrentView(){
           case 'theme': renderThemeMenu(); break;
           case 'category': renderCategory(); break;
         }
-        
+
         updateHeaderForCurrentView();
         setTimeout(() => { updateScannable(); }, 50);
       } else {
         backMessage = 'Main Menu';
         openMenu('main');
       }
-      
+
       // Speak the back navigation message
       if (backMessage) {
         const cleanMessage = cleanTextForTTS(backMessage);
@@ -2352,50 +2351,50 @@ function updateHeaderForCurrentView(){
 
     function openMenu(menuName) {
       state.page = 0; state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
-      
+
       // Speak the menu name when entering
       let menuTitle = '';
       switch (menuName) {
-        case 'main': 
-          renderMainMenu(); 
+        case 'main':
+          renderMainMenu();
           menuTitle = 'Main Menu';
           break;
-        case 'categories': 
-          renderCategoryMenu(); 
+        case 'categories':
+          renderCategoryMenu();
           menuTitle = state.currentBoardTitle || 'Categories';
           break;
-        case 'settings': 
-          renderSettingsMenu(); 
+        case 'settings':
+          renderSettingsMenu();
           menuTitle = 'Settings Menu';
           break;
-        case 'gridsize': 
-          renderGridSizeMenu(); 
+        case 'gridsize':
+          renderGridSizeMenu();
           menuTitle = 'Grid Size';
           break;
-        case 'tts': 
-          renderTTSMenu(); 
+        case 'tts':
+          renderTTSMenu();
           menuTitle = 'Voice & TTS';
           break;
-        case 'scan': 
-          renderScanMenu(); 
+        case 'scan':
+          renderScanMenu();
           menuTitle = 'Scan Settings';
           break;
-        case 'highlight': 
-          renderHighlightMenu(); 
+        case 'highlight':
+          renderHighlightMenu();
           menuTitle = 'Highlight Colors';
           break;
-        case 'theme': 
-          renderThemeMenu(); 
+        case 'theme':
+          renderThemeMenu();
           menuTitle = 'Theme';
           break;
       }
-      
+
       // Speak the menu title
       if (menuTitle) {
         const cleanTitle = cleanTextForTTS(menuTitle);
         if (cleanTitle) speak(cleanTitle);
       }
-      
+
       updateHeaderForCurrentView();
       setTimeout(() => { updateScannable(); }, 50);
     }
@@ -2404,10 +2403,10 @@ function updateHeaderForCurrentView(){
       // Speak the category name when selected
       const cleanCategoryName = cleanTextForTTS(categoryName);
       if (cleanCategoryName) speak(cleanCategoryName);
-      
+
       saveNavigationState();
       state.currentCategory = categoryName;
-      state.page = 0; state.scanMode = 'row'; 
+      state.page = 0; state.scanMode = 'row';
       state.currentRow = -1; // Start at -1 for no highlighting
       state.scanIndex = -1;
       renderCategory();
@@ -2421,10 +2420,10 @@ function updateHeaderForCurrentView(){
         el.sentenceRow.classList.add('active');
         el.mainGrid.classList.add('sentence-active'); // Add class for grid sizing
         speak('Sentence bar on');
-      } else { 
-        el.sentenceRow.classList.remove('active'); 
+      } else {
+        el.sentenceRow.classList.remove('active');
         el.mainGrid.classList.remove('sentence-active'); // Remove class for uniform grid
-        state.sentence = []; 
+        state.sentence = [];
         updateSentenceDisplay();
         speak('Sentence bar off');
       }
@@ -2528,22 +2527,22 @@ function updateHeaderForCurrentView(){
       const map = new Map();
       rows.forEach(r => {
         if (!map.has(r.category)) {
-          map.set(r.category, { 
-            color: r.categoryColor, 
-            order: r.categoryOrder, 
+          map.set(r.category, {
+            color: r.categoryColor,
+            order: r.categoryOrder,
             image: r.categoryImage || '', // Store category image
-            items: [] 
+            items: []
           });
         }
         map.get(r.category).items.push(r);
       });
       const cats = Array.from(map.entries())
-        .map(([name, data]) => ({ 
-          name, 
-          color: data.color, 
-          order: data.order, 
+        .map(([name, data]) => ({
+          name,
+          color: data.color,
+          order: data.order,
           image: data.image, // Include in category object
-          items: data.items.sort((a, b) => a.tileOrder - b.tileOrder) 
+          items: data.items.sort((a, b) => a.tileOrder - b.tileOrder)
         }))
         .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
       state.categories = cats;
@@ -2711,14 +2710,14 @@ function updateHeaderForCurrentView(){
           const boardPromises = data.files.map(async filename => {
             const name = filename.replace('.csv', '').replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
             const path = `./boards/${filename}`;
-            
+
             try {
               // Fetch the CSV to extract board-level data
               const csvResponse = await fetch(path);
               if (csvResponse.ok) {
                 const csvText = await csvResponse.text();
                 const parsedRows = parseCSV(csvText);
-                
+
                 // Extract board data from the first row
                 let boardColor = null;
                 let boardImage = null;
@@ -2726,10 +2725,10 @@ function updateHeaderForCurrentView(){
                   boardColor = parsedRows[0].boardColor;
                   boardImage = parsedRows[0].boardImage;
                 }
-                
-                return { 
-                  name, 
-                  filename, 
+
+                return {
+                  name,
+                  filename,
                   path,
                   color: boardColor,
                   image: boardImage
@@ -2738,17 +2737,17 @@ function updateHeaderForCurrentView(){
             } catch (error) {
               console.warn(`Failed to load board data for ${filename}:`, error);
             }
-            
+
             // Fallback if CSV loading fails
             return { name, filename, path, color: null, image: null };
           });
-          
+
           state.availableBoards = await Promise.all(boardPromises);
-        } else { 
-          state.availableBoards = []; 
+        } else {
+          state.availableBoards = [];
         }
-      } catch { 
-        state.availableBoards = []; 
+      } catch {
+        state.availableBoards = [];
       }
     }
 
@@ -2764,7 +2763,7 @@ function updateHeaderForCurrentView(){
             .replace(/_/g, ' ')
             .replace(/\b\w/g, c => c.toUpperCase());
           state.currentBoardTitle = nice;
-          
+
           buildIndex(parseCSV(csvText));
           return true;
         }
@@ -2875,20 +2874,20 @@ function updateHeaderForCurrentView(){
       color: #000 !important;
       font-weight: 800 !important;
     }
-    
+
     .sentence-display.row-highlight {
       border: 2px solid #000000 !important;
       background: var(--rowHighlight) !important;
       color: #000 !important;
     }
-    
+
     .sentence-display.scan-highlight {
       border: 2px solid #000000 !important;
       background: var(--columnHighlight) !important;
       color: #000 !important;
       font-weight: 800 !important;
     }
-    
+
     .grid-button.scan-highlight {
       border: 2px solid #000000 !important;
       background: var(--columnHighlight) !important;

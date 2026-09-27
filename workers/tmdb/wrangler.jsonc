@@ -1,0 +1,14 @@
+{
+  "name": "bennys-hub-tmdb",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-27",
+  "workers_dev": true,
+  "observability": {"enabled": false},
+  "vars": {
+    "ALLOWED_ORIGINS": "https://narbehouse.github.io,https://narbehouse.com,https://www.narbehouse.com,https://bennyshub.com,https://www.bennyshub.com,http://127.0.0.1:3000,http://127.0.0.1:4173,http://localhost:3000,http://localhost:4173"
+  },
+  "ratelimits": [
+    {"name":"CLIENT_LIMIT","namespace_id":"76101","simple":{"limit":180,"period":60}},
+    {"name":"UPSTREAM_LIMIT","namespace_id":"76102","simple":{"limit":600,"period":60}}
+  ]
+}

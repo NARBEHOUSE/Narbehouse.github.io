@@ -1,0 +1,168 @@
+/* Notebook styling; original controls, scan classes and theme choices remain. */
+:root {
+  --bg: #e8e2d7;
+  --text: #293c34;
+  --btn: #fffdf7;
+  --btn-text: #293c34;
+  --primary: #315b49;
+  --danger: #a12f36;
+  --page: #fffaf0;
+  --binding: #315b49;
+  --edge: color-mix(in srgb, var(--text) 24%, transparent);
+  --rule: color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+body[class*="theme-"] { --page: var(--bg); --binding: var(--btn); }
+
+#app { padding: clamp(10px, 2.5vw, 28px); }
+.screen {
+  width: 100%; height: 100%; min-height: 0;
+  padding: clamp(18px, 3vh, 32px) clamp(18px, 4vw, 52px);
+}
+.screen:not(#keyboardScreen) {
+  position: relative;
+  max-width: 1120px; margin: 0 auto;
+  overflow-y: auto;
+  border: 1px solid var(--edge);
+  border-left: 12px solid var(--binding);
+  border-radius: 5px 18px 18px 5px;
+  background-color: var(--page);
+  background-image: linear-gradient(90deg, transparent 30px, #b7666130 30px, #b7666130 31px, transparent 31px), repeating-linear-gradient(transparent 0, transparent 35px, var(--rule) 35px, var(--rule) 36px);
+  box-shadow: 3px 3px 0 var(--page), 5px 5px 0 var(--edge), 0 12px 34px #20251d16;
+}
+.title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(36px, 7vh, 72px);
+  font-weight: 700; letter-spacing: -.025em;
+  margin: 0 0 16px;
+}
+.journal-mark { width: 48px; height: 48px; flex-shrink: 0; margin: 0 auto 10px; }
+#mainMenu { max-width: 860px; }
+#mainMenu .title { font-size: clamp(48px, 9vh, 88px); }
+.menu-buttons { max-width: 520px; gap: 16px; padding: 18px 8px; }
+.menu-btn {
+  max-width: none; min-height: 64px;
+  padding: clamp(16px, 2.6vh, 25px) 24px;
+  font-size: clamp(24px, 4vh, 36px); font-weight: 700;
+  border: 1px solid var(--edge); border-radius: 10px;
+  box-shadow: 0 3px 0 var(--edge);
+}
+#mainMenu [data-action="entries"] { background: var(--primary); color: #fff; }
+.menu-btn.danger { background: var(--btn); color: var(--danger); border-color: var(--danger); }
+body[class*="theme-"] .menu-btn.danger { background: var(--danger); color: #fff; }
+
+.view-label-container { margin: 0 0 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; }
+.journal-day-context { width: 100%; font-size: 15px; font-weight: 700; }
+[data-action="return-today"]:disabled { opacity: .4; cursor: default; }
+.period-label { font-size: clamp(18px, 2.8vh, 25px); font-weight: 500; }
+.entries-actions { gap: 12px; padding: 4px; margin: 0 0 16px; align-items: stretch; }
+.action-btn { padding: 14px; font-size: clamp(18px, 2.6vh, 24px); min-height: 52px; }
+.action-btn, .option-btn, .modal-btn, .entry-item {
+  border: 1px solid var(--edge); border-radius: 9px;
+  box-shadow: 0 2px 0 var(--edge);
+}
+.entries-list { min-height: 120px; max-height: none; padding: 8px; gap: 14px; }
+.entry-item { flex-shrink: 0; padding: 20px 24px; gap: 8px; border-left: 4px solid var(--binding); }
+.entry-date-label { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(21px, 3vh, 28px); }
+.entry-preview { font-size: clamp(17px, 2.3vh, 22px); line-height: 1.5; opacity: 1; }
+.no-entries { margin: auto 0; opacity: 1; font-size: clamp(20px, 3vh, 28px); font-family: Georgia, 'Times New Roman', serif; }
+
+.options-grid { gap: 14px; padding: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.option-btn { min-height: 88px; padding: 16px; }
+.option-label { font-size: clamp(18px, 2.8vh, 28px); }
+.option-value { font-size: clamp(16px, 2.3vh, 22px); opacity: 1; }
+.menu-buttons.bottom-buttons { padding: 18px 8px 4px; }
+
+.modal { background: #15251ed9; padding: 12px; }
+.modal-card {
+  background: var(--page); color: var(--text);
+  border: 1px solid var(--edge); border-top: 6px solid var(--binding);
+  border-radius: 8px; padding: clamp(18px, 3vw, 32px);
+  width: min(100%, 760px); max-height: 94vh; overflow-y: auto;
+  box-shadow: 0 20px 60px #0005;
+}
+.modal-title, .question-text, .entry-date { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; }
+.entry-date { color: var(--text); }
+.modal-card.entry-view {
+  width: min(100%, 960px); padding: 0;
+  border-top: 1px solid var(--edge); border-left: 12px solid var(--binding);
+  border-radius: 5px 18px 18px 5px;
+  box-shadow: 3px 3px 0 var(--page), 5px 5px 0 var(--edge), 0 20px 60px #0005;
+}
+.entry-paper {
+  min-height: 320px; padding: 28px clamp(28px, 5vw, 64px);
+  text-align: left;
+  background-image: linear-gradient(90deg, transparent 22px, #b7666150 22px, #b7666150 23px, transparent 23px), repeating-linear-gradient(transparent 0, transparent 35px, var(--rule) 35px, var(--rule) 36px);
+}
+.journal-page-label { font: 700 15px system-ui, sans-serif; margin: 0 0 22px; letter-spacing: .06em; }
+.entry-paper .entry-date { font-size: clamp(24px, 3.5vw, 36px); line-height: 1.3; }
+.entry-paper .entry-answer { background: none; white-space: pre-wrap; font-family: Georgia, 'Times New Roman', serif; line-height: 36px; }
+.entry-view .modal-buttons { border-top: 1px solid var(--edge); padding: 20px; background: var(--page); }
+.entry-question { opacity: 1; line-height: 1.5; }
+.entry-answer {
+  font-size: clamp(22px, 3.5vh, 32px); font-weight: 400; line-height: 1.8;
+  overflow-wrap: anywhere; padding: 0 0 12px; margin-bottom: 16px;
+  background: repeating-linear-gradient(transparent 0, transparent calc(1.8em - 1px), var(--rule) calc(1.8em - 1px), var(--rule) 1.8em);
+}
+.modal-buttons { gap: 10px; }
+.modal-btn { min-height: 48px; padding: 12px 16px; font-size: clamp(18px, 2.6vh, 26px); }
+.modal-btn.danger { background: var(--danger); color: #fff; }
+.date-preview { border: 1px solid var(--edge); background: var(--btn); color: var(--btn-text); }
+
+#keyboardScreen { padding: 0; }
+.keyboard-container { min-height: 0; }
+.keyboard { min-height: 0; }
+.textbar { border: 1px solid var(--edge); border-bottom: 3px solid var(--binding); border-radius: 8px; }
+.predictbar .chip { background: var(--btn); color: var(--btn-text); border-color: var(--edge); }
+.key { border: 1px solid var(--edge); border-radius: 8px; }
+.key.exit-kb { background: var(--danger); }
+
+/* Stable targets and an additional outline preserve the chosen scan color. */
+:is(.menu-btn, .nav-btn, .action-btn, .option-btn, .modal-btn, .entry-item):is(:hover, .highlighted) { transform: none; }
+button:focus-visible, .highlighted { outline: 3px solid currentColor; outline-offset: 3px; }
+button { transition: background-color .15s, box-shadow .15s; }
+@media (max-width: 700px) {
+  .screen:not(#keyboardScreen) { padding: 20px 14px; border-left-width: 7px; background-image: repeating-linear-gradient(transparent 0, transparent 35px, var(--rule) 35px, var(--rule) 36px); }
+  .entries-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .action-btn { max-width: none; }
+  .entry-item { padding: 16px; }
+}
+@media (max-height: 540px) {
+  #app { padding: 8px; }
+  .journal-mark { display: none; }
+  #mainMenu .title { font-size: 40px; margin-bottom: 8px; }
+  .menu-buttons { gap: 10px; padding: 6px; }
+  .menu-btn { min-height: 48px; padding: 10px 16px; font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
+
+/* Daily navigation and row/cell calendar scanning. */
+.journal-date-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 12px 4px 4px; flex-shrink: 0; margin-top: auto; }
+.journal-date-nav .action-btn { max-width: none; font-size: clamp(17px, 2.6vh, 24px); }
+.journal-date-nav .action-btn:disabled { opacity: .4; cursor: default; }
+.calendar-card { width: min(100%, 730px); }
+.calendar-card .modal-title { font-size: 30px; margin-bottom: 10px; }
+.calendar-card .date-preview { font-size: clamp(17px, 2.6vh, 23px); padding: 8px; margin-bottom: 14px; }
+.calendar-month-controls { display: grid; grid-template-columns: 1fr 1.2fr 1fr; align-items: center; gap: 12px; margin-bottom: 18px; }
+.calendar-month-controls h3 { margin: 0; font: 700 24px Georgia,serif; }
+.calendar-month-controls .modal-btn { font-size: 17px; padding: 10px 8px; }
+.calendar-weekdays, .calendar-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.calendar-weekdays { text-align: center; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.calendar-days { display: grid; gap: 6px; }
+.calendar-day { position: relative; min-width: 0; min-height: 52px; padding: 7px 2px 12px; border: 1px solid var(--edge); border-radius: 7px; background: var(--btn); color: var(--btn-text); font: 600 21px system-ui,sans-serif; cursor: pointer; }
+.calendar-day[aria-current="date"] { border: 3px solid currentColor; }
+.calendar-day[aria-pressed="true"] { background: var(--primary); color: white; box-shadow: inset 0 0 0 2px white; }
+.calendar-day:disabled, .calendar-month-controls button:disabled { opacity: .4; cursor: default; }
+.calendar-entry-count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; line-height: 15px; min-width: 15px; text-align: center; border-radius: 8px; background: var(--text); color: var(--page); }
+.calendar-key { font-size: 14px; line-height: 1.4; margin: 10px 0 0; }
+.calendar-overview { font-size: 17px; line-height: 1.4; margin: -6px 0 16px; }
+.calendar-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+@media (max-width: 700px) {
+  .journal-date-nav { gap: 6px; }
+  .journal-date-nav .action-btn { padding: 12px 4px; font-size: 16px; }
+  .calendar-card { padding: 16px 12px; }
+  .calendar-day { min-height: 44px; font-size: 18px; }
+  .calendar-month-controls { gap: 7px; }
+  .calendar-month-controls h3 { font-size: 20px; }
+  .calendar-month-controls .modal-btn { font-size: 14px; }
+}

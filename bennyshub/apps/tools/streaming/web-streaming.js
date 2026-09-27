@@ -1,0 +1,109 @@
+(() => {
+  const base = new URL('.', document.currentScript.src);
+  const key = title => String(title).toLowerCase().trim();
+  const plain = v => v && typeof v === 'object' && !Array.isArray(v);
+  function library(value) {
+    if (!Array.isArray(value) || value.length > 5000) throw Error('Choose a streaming library array with at most 5,000 titles.');
+    const ids = new Set();
+    return value.map(item => {
+      if (!plain(item) || typeof item.title !== 'string' || !item.title.trim() || typeof item.url !== 'string') throw Error('Each title needs a title and URL field.');
+      const result = {...item};
+      // Retain catalog values, including unfinished links, for correction in the editor.
+      // Playback is independently restricted by the extension's provider policy.
+      if (typeof result.id !== 'string' || !/^[\w-]{1,100}$/.test(result.id) || ids.has(result.id)) result.id = crypto.randomUUID();
+      ids.add(result.id);
+      for (const field of ['title','url','type','genre','director','actors','year','image','description','service','service_icon','trailer']) {
+        result[field] = String(result[field] ?? '');
+        if (result[field].length > 100000) throw Error('Catalog field is too large.');
+      }
+      return result;
+    });
+  }
+  function episodes(value) {
+    if (!plain(value) || Object.keys(value).length > 5000) throw Error('Choose an episodes.json object grouped by show and season.');
+    const result = Object.create(null);let count = 0;
+    for (const [show,seasons] of Object.entries(value)) {
+      if (!plain(seasons)) throw Error('Episodes must be grouped by season.');
+      const clean = Object.create(null);
+      for (const [season,items] of Object.entries(seasons)) {
+        if (!/^\d{1,4}$/.test(season) || !Array.isArray(items)) throw Error('Invalid season.');
+        clean[season] = items.map(ep => {
+          if (++count > 50000 || !plain(ep) || !Number.isInteger(Number(ep.episode)) || typeof ep.title !== 'string' || typeof ep.url !== 'string') throw Error('Invalid episode.');
+          return {...ep,episode:Number(ep.episode)};
+        });
+      }
+      result[key(show)] = clean;
+    }
+    return result;
+  }
+  let seedPromise;
+  const seeds = () => seedPromise ||= Promise.all(['data.json','episodes.json'].map(async file => {
+    const response = await fetch(new URL(file,base));
+    if (!response.ok) throw Error('Could not load the original streaming catalog. Reload while connected.');
+    return response.json();
+  })).then(([data,eps])=>({data:library(data),episodes:episodes(eps)})).catch(e=>{seedPromise=null;throw e;});
+  const get = (name,fallback) => BennyData.get('streaming.'+name,fallback);
+  const set = (name,value) => BennyData.set('streaming.'+name,value);
+  function status(message) { const el=document.getElementById('streaming-status');if(el){el.textContent=message;el.hidden=!message;} }
+  function imageURL(value) { try { const u=new URL(value);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:''; } catch {return '';} }
+  function playbackURL(value) {
+    let u;try{u=new URL(value);}catch{throw Error('This title needs a complete video URL in the editor.');}
+    if (u.protocol==='https:' && u.hostname==='youtu.be') {
+      const video=u.pathname.slice(1);if(!/^[\w-]+$/.test(video))throw Error('Invalid YouTube link.');
+      u=new URL('https://www.youtube.com/watch?v='+encodeURIComponent(video));
+    }
+    return u.href;
+  }
+  window.WebStreaming = {
+    library,episodes,status,imageURL,
+    escapeHTML: value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+    async getData() { const saved=get('catalog',null);return library(saved ?? (await seeds()).data); },
+    saveData(value) { const data=library(value);set('catalog',data);return data; },
+    async addData(value) {
+      const incoming=library(value),fallback=await this.getData();
+      // Read again immediately before the synchronous write, including other-tab changes.
+      const result=StreamingLibraryMerge.mergeLibrary(library(get('catalog',fallback)),incoming);
+      if(result.added)result.items=this.saveData(result.items);
+      return result;
+    },
+    async addEpisodes(value) {
+      const incoming=episodes(value),fallback=await this.allEpisodes();
+      const result=StreamingLibraryMerge.mergeEpisodes(episodes(get('episodes',fallback)),incoming);
+      if(result.added)this.saveEpisodes(result.items);
+      return result;
+    },
+    getGenres:()=>get('genres',{}),
+    saveGenres(value) { const clean=Object.create(null);for(const [name,url]of Object.entries(value))clean[name]=imageURL(url);set('genres',clean); },
+    async getEpisodes(title) {const data=get('episodes',null) ?? (await seeds()).episodes;return episodes(data)[key(title)] || {};},
+    async allEpisodes() {return episodes(get('episodes',null) ?? (await seeds()).episodes);},
+    saveEpisodes(value) {const clean=episodes(value);set('episodes',clean);return clean;},
+    getLastWatched(title) {const data=get('lastWatched',{});return title ? data[key(title)] || null : data;},
+    saveProgress({show,url,season,episode}) {const data=get('lastWatched',{});Object.defineProperty(data,key(show),{value:{url,season:season??-1,episode:episode??-1,timestamp:Date.now()},enumerable:true,writable:true,configurable:true});set('lastWatched',data);},
+    resetProgress(title) {const data=get('lastWatched',{}),entry=data[key(title)];if(entry){delete entry.url;entry.season=-1;entry.episode=-1;set('lastWatched',data);}if(key(get('activePlayback',{}).show)===key(title))BennyData.remove('streaming.activePlayback');},
+    clearAllProgress() {const data=get('lastWatched',{});for(const entry of Object.values(data)){delete entry.url;entry.season=-1;entry.episode=-1;}set('lastWatched',data);BennyData.remove('streaming.activePlayback');return Object.keys(data).length;},
+    getSearchHistory:()=>get('searchHistory',[]),
+    saveSearch(term) {set('searchHistory',[term,...get('searchHistory',[]).filter(x=>x!==term)].slice(0,100));},
+    clearSearchHistory:()=>set('searchHistory',[]),
+    async launch({url,show,season,episode,saveUrl,type}) {
+      status('');
+      const prefs=window.NarbeScanManager?.getSettings()||{};
+      const voice=window.NarbeVoiceManager?.getSettings()||{};
+      Object.assign(prefs,{voice:voice.voiceName||'',rate:voice.rate||1,tts:voice.ttsEnabled!==false});
+      const playbackId=crypto.randomUUID(),trackProgress=type==='shows'&&!/plex\.tv/.test(new URL(playbackURL(url)).hostname);
+      await BennyExtension.request('OPEN_STREAM',{url:playbackURL(url),settings:prefs,playbackId,trackProgress});
+      if(trackProgress)set('activePlayback',{playbackId,show,season,episode});
+      if(type!=='trailer') this.saveProgress({show,url:saveUrl||url,season,episode});
+    },
+    async syncProgress() {
+      if(!BennyExtension.supports('streaming'))return;
+      try {
+        const active=get('activePlayback',null);if(!active)return;
+        const progress=await BennyExtension.request('STREAM_PROGRESS',{},2000);
+        if(progress?.playbackId===active.playbackId){
+          const previous=this.getLastWatched(active.show);
+          if(previous?.url!==progress.url)this.saveProgress({...active,url:progress.url});
+        }
+      }catch(error){status(error.message);}
+    }
+  };
+})();

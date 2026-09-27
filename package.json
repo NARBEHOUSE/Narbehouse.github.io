@@ -1,0 +1,27 @@
+{
+  "name": "bennys-hub-web-experiment",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "build": "node scripts/build.cjs",
+    "audit:release": "node scripts/audit-release.cjs",
+    "check:pages": "node scripts/check-pages.cjs",
+    "prepare:github": "node scripts/prepare-github.cjs",
+    "package:release": "python scripts/package-release.py",
+    "test:browser": "node scripts/browser-check.cjs",
+    "test:streaming": "node scripts/check-streaming.cjs",
+    "test:connection": "node scripts/check-connection.cjs",
+    "test:player": "node scripts/check-player.cjs",
+    "test:fullscreen": "node scripts/check-player-fullscreen.cjs",
+    "test:options": "node scripts/check-options.cjs",
+    "test:exits": "node scripts/check-tool-exits.cjs",
+    "test:keyboard": "node scripts/check-keyboard.cjs",
+    "test:journal": "node scripts/check-journal-calendar.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "ical.js": "2.2.1"
+  }
+}

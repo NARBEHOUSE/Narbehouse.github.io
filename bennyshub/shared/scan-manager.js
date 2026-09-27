@@ -286,6 +286,8 @@ window.NarbeScanManager = (function() {
   }
 
   function handleGlobalInput(e) {
+    // Settings controls use ordinary keyboard behavior, never switch filtering.
+    if (e.target?.closest?.('[data-scan-exclude], [data-settings-dialog]')) return;
     // Don't interfere with iframe content: when a game is open it loads its own
     // copy of this file and guards its own input. Two guards in series would
     // double-filter every press.
@@ -305,7 +307,7 @@ window.NarbeScanManager = (function() {
         isTargetEvent = true;
       }
     } else {
-      // Mouse and touch are direct navigation for caregivers, not switch input,
+      // Mouse and touch provide direct navigation, not switch input,
       // so they are not filtered. Bounce only happens on physical switches.
       return;
     }

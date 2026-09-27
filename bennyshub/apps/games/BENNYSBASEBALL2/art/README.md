@@ -133,11 +133,11 @@ extend travel time; the older scripted play outcome rules remain unchanged.
 From the game directory:
 
 ```powershell
-& 'F:/PROJECT FILES/TOOLS/wam-main/.venv/Scripts/python.exe' art/build_players.py
-& 'F:/PROJECT FILES/TOOLS/wam-main/.venv/Scripts/python.exe' art/check_art.py
+python art/build_players.py
+python art/check_art.py
 node art/check_game.js --record
-& 'F:/PROJECT FILES/TOOLS/wam-main/.venv/Scripts/python.exe' art/render_replay.py
-& 'F:/PROJECT FILES/TOOLS/wam-main/.venv/Scripts/python.exe' art/review_players.py
+python art/render_replay.py
+python art/review_players.py
 node art/check_browser.js
 node art/check_movement.js
 ```

@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "Benny's Hub Companion",
+  "version": "1.0.0",
+  "minimum_chrome_version": "120",
+  "description": "Control supported streaming players and connect Day Hub sources using one or two switches with Benny's Hub.",
+  "homepage_url": "https://narbehouse.github.io/bennyshub/",
+  "icons": {"16":"icons/icon16.png","32":"icons/icon32.png","48":"icons/icon48.png","128":"icons/icon128.png"},
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.mjs",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Benny's Hub settings"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/bennyshub/*",
+        "http://127.0.0.1/bennyshub/*",
+        "https://narbehouse.github.io/bennyshub/*",
+        "https://bennyshub.com/bennyshub/*",
+        "https://www.bennyshub.com/bennyshub/*",
+        "https://narbehouse.com/bennyshub/*",
+        "https://www.narbehouse.com/bennyshub/*"
+      ],
+      "js": [
+        "hub-content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "exclude_matches": [
+        "http://localhost/bennyshub/test-player.html",
+        "http://127.0.0.1/bennyshub/test-player.html"
+      ]
+    }
+  ],
+  "optional_host_permissions": [
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://www.netflix.com/*",
+    "https://netflix.com/*",
+    "https://www.disneyplus.com/*",
+    "https://disneyplus.com/*",
+    "https://www.hulu.com/*",
+    "https://hulu.com/*",
+    "https://www.primevideo.com/*",
+    "https://primevideo.com/*",
+    "https://www.amazon.com/*",
+    "https://play.hbomax.com/*",
+    "https://www.hbomax.com/*",
+    "https://play.max.com/*",
+    "https://www.max.com/*",
+    "https://www.paramountplus.com/*",
+    "https://app.plex.tv/*",
+    "https://watch.plex.tv/*",
+    "https://pluto.tv/*",
+    "https://www.pluto.tv/*",
+    "https://tubitv.com/*",
+    "https://www.tubitv.com/*",
+    "https://calendar.google.com/*",
+    "https://feeds.npr.org/*",
+    "https://feeds.bbci.co.uk/*",
+    "https://news.google.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ]
+}

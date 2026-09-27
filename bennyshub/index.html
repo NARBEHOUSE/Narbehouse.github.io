@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N0MEEN7YP4"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-N0MEEN7YP4');
-  </script>
+  <!-- Personal tool surfaces do not load analytics. -->
 
   <meta charset="utf-8" />
+  <script src="shared/extension-client.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NARBE Benny's Access Hub</title>
-  <meta name="description" content="NARBE House Hub for 2-button switch access." />
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="manifest" href="manifest.webmanifest">
+  <script src="pwa.js" defer></script>
+  <title>Benny's Hub</title>
+  <meta name="description" content="A library of tools and games accessible with one or two buttons (mapped to spacebar and return)." />
   <style>
     :root{
       --narbe-orange:#ff5c00;
@@ -255,6 +251,8 @@
     html, body { height: 100%; }
     body{
       margin:0;
+      height: auto;
+      min-height: 100vh;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
       color: var(--text);
       background: var(--bg);
@@ -265,8 +263,14 @@
 
     .container{
       width: min(1100px, 100%);
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
       padding: 24px clamp(16px, 3vw, 32px) 40px;
     }
+
+    #main { flex: 1; }
 
     header{
       display:grid;
@@ -275,10 +279,10 @@
     }
 
     .brand{
-      display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content: space-between;
+      display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
     }
-    .brand-left{
-      display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex: 1;
+    .brand-heading{
+      display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;
     }
     .logo{
       width:56px; height:56px; object-fit: contain;
@@ -291,9 +295,12 @@
       flex-shrink: 0;
     }
     .title {
+      margin: 0;
       font-weight:800; letter-spacing:.3px; line-height:1.1; font-size: clamp(26px, 4vw, 40px);
     }
     .subtitle{ color:var(--muted); font-size: clamp(14px, 2.4vw, 16px); }
+
+    .developer-credit { margin-top: 6px; color: var(--muted); font-size: 13px; }
 
     .notice{
       padding: 16px 20px; border-radius: var(--radius);
@@ -302,13 +309,13 @@
       font-size: 14px; line-height: 1.5;
     }
 
-    .screen{ 
-      display:none; 
+    .screen{
+      display:none;
       outline: none;
       padding-bottom: 60px; /* Space for fixed footer */
     }
-    .screen.active{ 
-      display:block; 
+    .screen.active{
+      display:block;
     }
 
     .grid{
@@ -381,12 +388,12 @@
       width: 100%;
       height: 220px; /* Increased height to fill space */
       position: relative;
-      margin-top: auto; 
+      margin-top: auto;
     }
-    
+
     .card-image-section img {
-      width: 100%; 
-      height: 100%; 
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       display: block;
       /* Dynamic slash cut: leaves space bottom-right for the button */
@@ -398,7 +405,7 @@
 
     .card-action-overlay {
       position: absolute;
-      bottom: 12px; 
+      bottom: 12px;
       right: 12px;
       z-index: 5;
     }
@@ -413,18 +420,18 @@
       color: #082032;
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    
+
     .card-btn:hover .play-icon {
       transform: scale(1.1) rotate(5deg);
     }
-    
+
     .play-icon svg {
       width: 36px; height: 36px;
       fill: currentColor;
       display: block;
       margin-left: 4px; /* Optical center adjustment */
     }
-    
+
     .card-btn.has-img .desc {
       /* Reset constraints */
       max-width: 100%;
@@ -432,7 +439,7 @@
       display: block;
       color: var(--muted);
     }
-    
+
     .card-btn.has-img .btn-title {
       text-shadow: none;
     }
@@ -486,7 +493,7 @@
       opacity: .5; cursor: not-allowed;
     }
 
-    .backbtn{ 
+    .backbtn{
       appearance:none; border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.03); color:var(--text);
       padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer;
@@ -583,7 +590,7 @@
     body.size-large { font-size: 18px; }
     body.size-larger { font-size: 22px; }
     body.size-largest { font-size: 26px; }
-    
+
     /* Title Scaling */
     body.size-large .title { font-size: clamp(32px, 5vw, 48px); }
     body.size-larger .title { font-size: clamp(38px, 6vw, 58px); }
@@ -595,7 +602,7 @@
     body.size-largest .btn-title { font-size: clamp(32px, 6vw, 48px); }
 
     /* Description and Text Scaling - Default is 14px */
-    body.size-large .desc, 
+    body.size-large .desc,
     body.size-large .notice,
     body.size-large .subtitle,
     body.size-large .page-info,
@@ -603,7 +610,7 @@
     body.size-large .footer-note,
     body.size-large .setting-value { font-size: 18px; }
 
-    body.size-larger .desc, 
+    body.size-larger .desc,
     body.size-larger .notice,
     body.size-larger .subtitle,
     body.size-larger .page-info,
@@ -611,7 +618,7 @@
     body.size-larger .footer-note,
     body.size-larger .setting-value { font-size: 22px; }
 
-    body.size-largest .desc, 
+    body.size-largest .desc,
     body.size-largest .notice,
     body.size-largest .subtitle,
     body.size-largest .page-info,
@@ -628,7 +635,7 @@
     body.size-large .card-btn { min-height: 160px; }
     body.size-larger .card-btn { min-height: 200px; }
     body.size-largest .card-btn { min-height: 240px; }
-    
+
     /* Navigation Button Scaling */
     body.size-large .nav-btn, body.size-large .backbtn { font-size: 18px; padding: 14px 20px; }
     body.size-larger .nav-btn, body.size-larger .backbtn { font-size: 22px; padding: 16px 24px; }
@@ -744,6 +751,16 @@
     .mini-footer-links a:hover {
       color: var(--narbe-orange);
     }
+    .hub-settings { margin: 0 0 14px; text-align: right; font-size: 13px; color: var(--muted); }
+    .hub-settings summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
+    .settings-panel { text-align: left; padding: 16px; margin-top: 8px; background: #121b28; border: 1px solid #3a4e63; border-radius: 12px; }
+    .companion-apps { margin: 12px 0; padding-left: 22px; line-height: 1.6; }
+    .companion-apps li + li { margin-top: 8px; }
+    .settings-panel button { font: inherit; padding: 10px 14px; margin: 4px; color: var(--text); background: #21384e; border: 1px solid #7095b8; border-radius: 8px; cursor: pointer; }
+    .hub-settings :focus-visible { outline: 3px solid #ffdf65; outline-offset: 3px; }
+    .connection-status { display: inline-block; border: 1px solid currentColor; border-radius: 20px; padding: 6px 12px; font-weight: 700; color: #ffdf83; background: #302816; }
+    .connection-status[data-connection="connected"] { color: #9aefb4; background: #123421; }
+    .connection-status[data-connection="disconnected"] { color: #ffb4b4; background: #421f25; }
   </style>
 </head>
 <body>
@@ -766,49 +783,51 @@
       <div class="iframe-title" id="iframe-title">Tool</div>
     </div>
     <div class="iframe-wrapper">
-      <iframe id="app-iframe" title="Embedded tool" allow="fullscreen"></iframe>
+      <iframe id="app-iframe" title="Embedded tool" allow="fullscreen; microphone"></iframe>
     </div>
   </div>
 
   <a class="sr-only" href="#main">Skip to main content</a>
   <div class="container">
-    <div class="foundation-banner" style="display: flex; flex-direction: row; align-items: center; gap: 16px; margin-bottom: 24px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-      <a href="https://narbefoundation.org" target="_blank" rel="noopener" style="flex-shrink: 0; display: block;" aria-label="NARBE Foundation Website">
-        <img src="images/narbefoundation.png" alt="NARBE Foundation Logo" style="width: 80px; height: auto; display: block;">
-      </a>
-      <div style="flex: 1;">
-        <p style="margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5;">
-          Created with Ben by <a href="https://narbehouse.com" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">NARBE House</a> and shared freely through the <a href="https://narbefoundation.org" target="_blank" rel="noopener" style="color: var(--narbe-blue); text-decoration: none; font-weight: 700;">NARBE Foundation</a>. This web app is free to use. If you would like to show your support, you may contribute any amount <a href="https://shop.beacons.ai/narbehouse/e6137d30-c44e-4185-98ea-570312516462?pageViewSource=lib_view&referrer=https%3A%2F%2Fbeacons.ai%2Fnarbehouse&show_back_button=true" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">here</a>. Thank you for being part of this community.
-        </p>
+    <details id="hub-settings" class="hub-settings" data-scan-exclude>
+      <summary>Companion settings</summary>
+      <div class="settings-panel">
+        <p>Benny's Hub Companion is an optional Chrome or Edge extension. Installing and connecting it adds three apps to your Tools menu:</p>
+        <ul class="companion-apps">
+          <li><strong>Day Hub:</strong> hear the time and date, check the weather, listen to news, and review your weekly schedule when you connect a calendar.</li>
+          <li><strong>Journal:</strong> write personal entries with a switch-accessible keyboard or guided questions, hear prompts aloud, and revisit entries using a calendar that shows which days have entries. Entries stay in this browser unless you export them.</li>
+          <li><strong>Streaming:</strong> build a library of movie, show and video links, then use one- or two-switch playback controls on supported services. Your usual service account or subscription may still be needed.</li>
+        </ul>
+        <p>Use this panel to check the connection, find installation instructions, and open Companion settings to choose which services it can access. Games, Keyboard, Phraseboard and YouTube Search work without the Companion.</p>
+        <p><strong>My data</strong> lets you manage your saved Hub data, whether or not you use the extension.</p>
+        <p><span id="extension-status" class="connection-status" role="status" aria-live="polite" data-connection="checking">Checking…</span></p>
+        <button type="button" id="extension-recheck">Check connection</button>
+        <button type="button" id="extension-setup">Companion setup</button>
+        <button type="button" id="personal-data">My data</button>
       </div>
-    </div>
-
+    </details>
     <header>
-      <div class="brand" aria-label="NARBE brand header">
-        <div class="brand-left">
-          <div>
-            <div class="title">NARBE House | Benny's Accessibility Hub (Beta)</div>
-            <div class="subtitle">This is a hub for 1 and 2-button switch access mapped to spacebar and return and/or your mouse/headtracking/eyetracking.</div>
-          </div>
-        </div>
-        <img src="images/BeaminBenny.png" 
+      <div class="brand" aria-label="Benny's Hub">
+        <div class="brand-heading">
+            <h1 class="title">Benny's Hub</h1>
+        <img src="images/BeaminBenny.png"
              srcset="images/BeaminBenny.png 1x, ./images/BeaminBenny.png 2x"
-             onerror="console.error('Failed to load Benny logo. Trying alternative paths...'); 
-                      if(this.src.indexOf('./') !== 0) { 
-                        this.src = './images/BeaminBenny.png'; 
-                      } else if(window.location.hostname.includes('github')) { 
-                        this.src = '/bennyshub/images/BeaminBenny.png'; 
-                      } else { 
-                        this.style.border='2px dashed var(--narbe-orange)'; 
-                        this.alt='[Benny Logo Missing - Check images/BeaminBenny.png]'; 
+             onerror="console.error('Failed to load Benny logo. Trying alternative paths...');
+                      if(this.src.indexOf('./') !== 0) {
+                        this.src = './images/BeaminBenny.png';
+                      } else if(window.location.hostname.includes('github')) {
+                        this.src = '/bennyshub/images/BeaminBenny.png';
+                      } else {
+                        this.style.border='2px dashed var(--narbe-orange)';
+                        this.alt='[Benny Logo Missing - Check images/BeaminBenny.png]';
                         this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22 viewBox=%220 0 80 80%22%3E%3Crect width=%2280%22 height=%2280%22 fill=%22%23ff5c00%22 opacity=%220.2%22 rx=%228%22/%3E%3Ctext x=%2240%22 y=%2245%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23ff5c00%22%3EBenny%3C/text%3E%3C/svg%3E';
-                      }" 
+                      }"
              onload="console.log('Benny logo loaded successfully from:', this.src);"
-             alt="Beamin Benny" 
+             alt="Beamin Benny"
              class="benny-logo" />
-      </div>
-      <div class="notice" role="note">
-        Below are tools and games that will be populated over time that are free to access and use. Use <span class="kbd">spacebar</span> to scan and <span class="kbd">return</span> to select. Hold <span class="kbd">spacebar</span> to scan backwards. Mouse clicks work too. Holding down <span class="kbd">return</span> will open the pause menu on games.
+        </div>
+        <div class="subtitle">A library of tools and games accessible with one or two buttons (mapped to spacebar and return).</div>
+        <div class="developer-credit">Developed by NARBE LLC</div>
       </div>
     </header>
 
@@ -1010,13 +1029,24 @@
       <!-- Live polite announcements for screen-reader users -->
       <div aria-live="polite" aria-atomic="true" class="sr-only" id="live"></div>
     </main>
+
+    <div class="foundation-banner" style="display: flex; flex-direction: row; align-items: center; gap: 16px; margin-top: 24px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+      <a href="https://narbefoundation.org" target="_blank" rel="noopener" style="flex-shrink: 0; display: block;" aria-label="NARBE Foundation Website">
+        <img src="images/narbefoundation.png" alt="NARBE Foundation Logo" style="width: 80px; height: auto; display: block;">
+      </a>
+      <div style="flex: 1;">
+        <p style="margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5;">
+          Created with Ben by <a href="https://narbehouse.com" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">NARBE House</a> and shared freely through the <a href="https://narbefoundation.org" target="_blank" rel="noopener" style="color: var(--narbe-blue); text-decoration: none; font-weight: 700;">NARBE Foundation</a>. This web app is free to use. If you would like to show your support, you may contribute any amount <a href="https://shop.beacons.ai/narbehouse/e6137d30-c44e-4185-98ea-570312516462?pageViewSource=lib_view&referrer=https%3A%2F%2Fbeacons.ai%2Fnarbehouse&show_back_button=true" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">here</a>. Thank you for being part of this community.
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Include shared voice manager -->
   <script src="shared/voice-manager.js"></script>
   <!-- Shared Scan Manager -->
   <script src="shared/scan-manager.js"></script>
-  
+
   <script>
     /**
      * NARBE Accessibility Hub
@@ -1042,6 +1072,7 @@
 
     // App data and state
     let appsData = { tools: [], games: [] };
+    let allTools = [];
     let currentScreen = 'home';
     let filterState = {
       tools: { genre: 'all', page: 0 },
@@ -1064,10 +1095,10 @@
     let spaceHoldTimeout = null;
     let backwardsScanInterval = null;
     let spaceHoldStartTime = 0;
-    
+
     // BACKWARDS_SCAN_THRESHOLD stays constant as requested (3 seconds)
-    const BACKWARDS_SCAN_THRESHOLD = 3000; 
-    
+    const BACKWARDS_SCAN_THRESHOLD = 3000;
+
     // Helper to get current delay
     function getScanDelay() {
       // Use shared manager if available, else fallback default
@@ -1084,13 +1115,14 @@
           fetch('apps/tools/tools.json'),
           fetch('apps/games/games.json')
         ]);
-        
+
         const toolsData = await toolsResponse.json();
         const gamesData = await gamesResponse.json();
-        
-        appsData.tools = toolsData.tools.sort((a, b) => a.title.localeCompare(b.title));
+
+        allTools = toolsData.tools.sort((a, b) => a.title.localeCompare(b.title));
+        appsData.tools = allTools.filter(tool => !tool.requiresExtension || BennyExtension.supports(tool.requiresExtension));
         appsData.games = gamesData.games.sort((a, b) => a.title.localeCompare(b.title));
-        
+
         console.log('Apps data loaded:', appsData);
       } catch (error) {
         console.error('Failed to load apps data:', error);
@@ -1099,6 +1131,33 @@
       }
     }
 
+    function refreshExtensionTools() {
+      appsData.tools = allTools.filter(t => !t.requiresExtension || BennyExtension.supports(t.requiresExtension));
+      showConnectionStatus();
+      filterState.tools.page = 0;
+      if (currentScreen === 'tools') renderAppsGrid('tools');
+    }
+    window.addEventListener('benny-extension-change', refreshExtensionTools);
+    function showConnectionStatus(checking = false) {
+      const connected = BennyExtension.state.connected;
+      const status = document.getElementById('extension-status');
+      status.textContent = checking ? 'Checking…' : connected ? 'Connected' : 'Not connected';
+      status.dataset.connection = checking ? 'checking' : connected ? 'connected' : 'disconnected';
+    }
+    async function checkCompanionConnection() {
+      const button = document.getElementById('extension-recheck');
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Checking…';
+      showConnectionStatus(true);
+      try { await BennyExtension.check(); }
+      finally { showConnectionStatus(); button.disabled = false; button.textContent = 'Check connection'; }
+    }
+    for (const type of ['keydown', 'keyup']) document.getElementById('hub-settings').addEventListener(type, event => event.stopPropagation());
+    document.getElementById('extension-recheck').onclick = checkCompanionConnection;
+    document.getElementById('hub-settings').addEventListener('toggle', event => { if (event.target.open) checkCompanionConnection(); });
+    document.getElementById('extension-setup').onclick = () => window.open('extension-setup.html', '_blank', 'noopener');
+    document.getElementById('personal-data').onclick = () => window.open('data-settings.html', '_blank', 'noopener');
     // Get unique genres for a category
     function getGenres(category) {
       const items = appsData[category] || [];
@@ -1114,7 +1173,7 @@
     // Filter items by genre
     function filterItemsByGenre(category, genre) {
       const items = appsData[category] || [];
-      
+
       if (genre === 'all' || !genre) {
         return items.sort((a, b) => a.title.localeCompare(b.title));
       }
@@ -1139,10 +1198,10 @@
     function createAppCard(app, category) {
       const categoryLabel = category === 'tools' ? 'Tool' : 'Game';
       const actionLabel = category === 'tools' ? 'Launch' : 'Play';
-      
+
       const hasImage = !!app.image;
       const hasImgClass = hasImage ? 'has-img' : '';
-      
+
       if (hasImage) {
         return `
           <button class="card-btn app-btn ${hasImgClass}" data-path="${app.path}" data-title="${app.title}">
@@ -1195,26 +1254,26 @@
       const pageInfo = document.getElementById(`${category}-page-info`);
       const prevBtn = document.getElementById(`${category}-prev`);
       const nextBtn = document.getElementById(`${category}-next`);
-      
+
       const state = filterState[category];
       const filteredItems = filterItemsByGenre(category, state.genre);
       const paginatedData = paginateItems(filteredItems, state.page);
-      
+
       // Update grid
       const gridHTML = paginatedData.items.map(app => createAppCard(app, category)).join('');
       grid.innerHTML = gridHTML;
-      
+
       // Update page info
       if (paginatedData.totalPages > 0) {
         pageInfo.textContent = `Page ${paginatedData.currentPage} of ${paginatedData.totalPages}`;
       } else {
         pageInfo.textContent = 'No items found';
       }
-      
+
       // Update navigation buttons
       prevBtn.disabled = !paginatedData.hasPrevious;
       nextBtn.disabled = !paginatedData.hasNext;
-      
+
       // Add event listeners to app buttons
       grid.querySelectorAll('.app-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1224,7 +1283,7 @@
           showIframe(path, title);
         });
       });
-      
+
       // Removed focusIndex reset to preserve focus e.g. on genre toggle button
       // focusIndex = -1;
     }
@@ -1234,10 +1293,10 @@
       const grid = document.getElementById('genre-grid');
       const currentFilter = document.getElementById('current-filter');
       const backBtn = document.getElementById('genre-back-btn');
-      
+
       const genres = getGenres(category);
       const allGenres = ['All Items', ...genres];
-      
+
       grid.innerHTML = allGenres.map((genre, index) => {
         const genreValue = index === 0 ? 'all' : genre;
         return `
@@ -1251,28 +1310,28 @@
           </button>
         `;
       }).join('');
-      
+
       currentFilter.textContent = filterState[category].genre === 'all' ? 'All Items' : filterState[category].genre;
-      
+
       // Update back button target
       backBtn.setAttribute('data-target', returnScreen);
       backBtn.setAttribute('data-category', category);
-      
+
       // Add event listeners to genre buttons
       grid.querySelectorAll('.genre-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const genre = btn.getAttribute('data-genre');
           const genreName = genre === 'all' ? 'All Items' : genre;
-          
+
           filterState[category].genre = genre;
           filterState[category].page = 0; // Reset to first page
-          
+
           speak(`Filter set to ${genreName}`);
           renderAppsGrid(category);
           showScreen(returnScreen);
         });
       });
-      
+
       // Reset focus when screen changes
       focusIndex = -1;
     }
@@ -1330,12 +1389,12 @@
       if (settings.bgTheme !== 'default') {
         document.body.classList.add(`bg-${settings.bgTheme}`);
       }
-      const bgThemeNames = { 
-        default: 'Default', 
-        ocean: 'Ocean', 
-        forest: 'Forest', 
-        sunset: 'Sunset', 
-        midnight: 'Midnight', 
+      const bgThemeNames = {
+        default: 'Default',
+        ocean: 'Ocean',
+        forest: 'Forest',
+        sunset: 'Sunset',
+        midnight: 'Midnight',
         rose: 'Rose',
         sky: 'Sky',
         cream: 'Cream',
@@ -1349,28 +1408,28 @@
       let autoScan = false;
       let scanSpeedName = 'Medium';
       let sensitivityName = '50ms';
-      
+
       if (window.NarbeScanManager) {
           const scanSettings = window.NarbeScanManager.getSettings();
           autoScan = scanSettings.autoScan;
-          
+
           // Map index to name
           const speedNames = ['Fast (1s)', 'Medium (2s)', 'Slow (3s)', 'Super Slow (4s)'];
           scanSpeedName = speedNames[scanSettings.scanSpeedIndex] || 'Medium (2s)';
-          
+
           // Map sensitivity index to name
           const sensitivityNames = ['50ms', '100ms', '200ms', '300ms'];
           sensitivityName = sensitivityNames[scanSettings.inputSensitivityIndex] || '50ms';
       }
 
       document.getElementById('scanspeed-status').textContent = scanSpeedName;
-      
+
       const sensitivityStatus = document.getElementById('sensitivity-status');
       if (sensitivityStatus) sensitivityStatus.textContent = sensitivityName;
 
       // Apply auto scan setting
       document.getElementById('autoscan-status').textContent = autoScan ? 'On' : 'Off';
-      
+
       // Auto Scan runs at whatever Scan Speed is set to, so the description
       // points at that setting rather than naming a duration that then has to
       // be kept in sync with it.
@@ -1396,7 +1455,7 @@
     // Auto scan functions
     function startAutoScan() {
       stopAutoScan(); // Restart if running to catch speed changes
-      
+
       autoScanInterval = setInterval(() => {
         if (!isTransitioning && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
           focusNext();
@@ -1414,21 +1473,21 @@
     function focusPrevious() {
       const list = getFocusables();
       if(list.length === 0) return;
-      
+
       if (focusIndex === -1) {
         focusIndex = list.length - 1;
         list[focusIndex].focus();
         speakFocusedElement(list[focusIndex]);
         return;
       }
-      
+
       const currentFocused = document.activeElement;
       const currentIndex = list.indexOf(currentFocused);
-      
+
       if (currentIndex >= 0) {
         focusIndex = currentIndex;
       }
-      
+
       focusAt(focusIndex - 1);
     }
 
@@ -1565,17 +1624,25 @@
     });
 
     // Show iframe with tool/game
+    let iframeFocusTimer;
     function showIframe(src, title) {
+      const tool = allTools.find(t => t.path === src);
+      if (tool?.requiresExtension && !BennyExtension.supports(tool.requiresExtension)) {
+        speak('Enable Benny’s Hub Companion first.');
+        return;
+      }
       iframeTitle.textContent = title;
       appIframe.src = src;
       iframeContainer.classList.add('active');
       iframeBack.focus();
       announce(`${title} loaded`);
-      
-      setTimeout(() => {
+
+      clearTimeout(iframeFocusTimer);
+      iframeFocusTimer = setTimeout(() => {
+        if (!iframeContainer.classList.contains('active')) return;
         try {
           appIframe.contentWindow.focus();
-          
+
           if (window.NarbeVoiceManager) {
             const currentSettings = window.NarbeVoiceManager.getSettings();
             appIframe.contentWindow.postMessage({
@@ -1590,10 +1657,11 @@
     }
 
     function closeIframe() {
+      clearTimeout(iframeFocusTimer);
       iframeContainer.classList.remove('active');
-      appIframe.src = '';
+      appIframe.src = 'about:blank';
       focusIndex = -1;
-      
+
       // Sync scan settings in case they changed in the app
       if (window.NarbeScanManager) {
           window.NarbeScanManager.reload();
@@ -1612,7 +1680,7 @@
           document.getElementById('main').focus();
         }
       }
-      
+
       announce('Returned to menu');
       speak('Returned to menu. Press spacebar to start scanning');
     }
@@ -1626,31 +1694,31 @@
     function showScreen(name) {
       isTransitioning = true;
       currentScreen = name;
-      
+
       for(const id in SCREENS){
         SCREENS[id].classList.toggle('active', id === name);
       }
-      
+
       // Render content for dynamic screens
       if (name === 'tools') {
         renderAppsGrid('tools');
       } else if (name === 'games') {
         renderAppsGrid('games');
       }
-      
+
       focusIndex = -1;
       spacePressed = false;
       enterPressed = false;
-      
+
       setTimeout(() => {
         const activeScreen = document.querySelector('.screen.active');
-        if (activeScreen) {
+        if (activeScreen && !document.activeElement?.closest('[data-scan-exclude]')) {
           activeScreen.focus();
           if (document.activeElement !== activeScreen) {
             document.getElementById('main').focus();
           }
         }
-        
+
         announce(`${name} menu`);
         speak(`${name} menu. Press spacebar to start scanning`);
         isTransitioning = false;
@@ -1663,6 +1731,7 @@
     }
 
     function getFocusables() {
+      if (document.getElementById('hub-settings').open) return [];
       if (iframeContainer.classList.contains('active')) {
         return [iframeBack];
       }
@@ -1677,7 +1746,7 @@
       const titleEl = el.querySelector('.btn-title');
       const descEl = el.querySelector('.desc');
       let text = '';
-      
+
       // Check aria-label first for overrides
       const ariaLabel = el.getAttribute('aria-label');
       if (ariaLabel) {
@@ -1695,7 +1764,7 @@
       } else {
         text = el.textContent.trim();
       }
-      
+
       if (text) {
         speak(text);
       }
@@ -1709,7 +1778,7 @@
         if (titleEl) {
           speak(`Opening ${titleEl.textContent}`);
         }
-        
+
         // Reset filter state when entering games or tools from home
         if (target === 'games' || target === 'tools') {
           if(filterState[target]) {
@@ -1720,12 +1789,12 @@
               // Reset button text
               const filterBtn = document.getElementById(`${target}-filter-btn`);
               if(filterBtn) filterBtn.textContent = 'Genre: All';
-              
+
               // Re-render to reflect reset state
               renderAppsGrid(target);
           }
         }
-        
+
         showScreen(target);
       });
     });
@@ -1764,21 +1833,21 @@
       const genres = getGenres(category);
       const allOptions = ['all', ...genres];
       const currentGenre = filterState[category].genre;
-      
+
       let currentIndex = allOptions.indexOf(currentGenre);
       if (currentIndex === -1) currentIndex = 0;
-      
+
       const nextIndex = (currentIndex + 1) % allOptions.length;
       const nextGenre = allOptions[nextIndex];
-      
+
       filterState[category].genre = nextGenre;
       filterState[category].page = 0; // Reset to first page
-      
+
       // Update button text
       const btn = document.getElementById(`${category}-filter-btn`);
       const displayGenre = nextGenre === 'all' ? 'All' : nextGenre;
       if(btn) btn.textContent = `Genre: ${displayGenre}`;
-      
+
       speak(`Genre ${displayGenre}`);
       renderAppsGrid(category);
     }
@@ -1786,10 +1855,10 @@
     function resetGenre(category) {
       filterState[category].genre = 'all';
       filterState[category].page = 0;
-      
+
       const btn = document.getElementById(`${category}-filter-btn`);
       if(btn) btn.textContent = 'Genre: All';
-      
+
       speak('Filter reset to All');
       renderAppsGrid(category);
     }
@@ -1831,48 +1900,48 @@
     function focusNext() {
       const list = getFocusables();
       if(list.length === 0) return;
-      
+
       if (focusIndex === -1) {
         focusIndex = 0;
         list[focusIndex].focus();
         speakFocusedElement(list[focusIndex]);
         return;
       }
-      
+
       const currentFocused = document.activeElement;
       const currentIndex = list.indexOf(currentFocused);
-      
+
       if (currentIndex >= 0) {
         focusIndex = currentIndex;
       }
-      
+
       focusAt(focusIndex + 1);
     }
 
     function activateFocused() {
       if (isTransitioning) return;
-      
+
       const currentTime = Date.now();
       if (currentTime - lastActivationTime < DEBOUNCE_DELAY) {
         return;
       }
       lastActivationTime = currentTime;
-      
+
       const list = getFocusables();
       if(list.length === 0) return;
-      
+
       if (focusIndex === -1) {
         speak('Press spacebar first to select an item');
         return;
       }
-      
+
       const currentFocused = document.activeElement;
       const currentIndex = list.indexOf(currentFocused);
-      
+
       if (currentIndex >= 0) {
         focusIndex = currentIndex;
       }
-      
+
       const el = list[focusIndex];
       el.click();
     }
@@ -1907,13 +1976,13 @@
         e.preventDefault();
         spacePressed = true;
         spaceHoldStartTime = Date.now();
-        
+
         // Set timeout for backwards scanning
         spaceHoldTimeout = setTimeout(() => {
           if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
             speak('Backwards scanning');
             focusPrevious();
-            
+
             // Start backwards auto-scan
             backwardsScanInterval = setInterval(() => {
               if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
@@ -1925,7 +1994,7 @@
             }, getScanDelay());
           }
         }, BACKWARDS_SCAN_THRESHOLD);
-        
+
       } else if((e.key === 'Enter' || e.keyCode === 13) && !enterPressed){
         e.preventDefault();
         enterPressed = true;
@@ -1999,7 +2068,7 @@
       if(e.key === ' ' && spacePressed){
         e.preventDefault();
         spacePressed = false;
-        
+
         // Clear backwards scanning timers
         if (spaceHoldTimeout) {
           clearTimeout(spaceHoldTimeout);
@@ -2009,13 +2078,13 @@
           clearInterval(backwardsScanInterval);
           backwardsScanInterval = null;
         }
-        
+
         // Check if this was a short press (normal forward scanning)
         const holdDuration = Date.now() - spaceHoldStartTime;
         if (holdDuration < BACKWARDS_SCAN_THRESHOLD) {
           focusNext();
         }
-        
+
       } else if((e.key === 'Enter' || e.keyCode === 13) && enterPressed){
         e.preventDefault();
         enterPressed = false;
@@ -2027,9 +2096,10 @@
     // Initialize application
     window.addEventListener('load', async () => {
       loadSettings();
-      
+
       await loadAppsData();
-      
+      refreshExtensionTools();
+
       window.NarbeVoiceManager.waitForVoices().then(() => {
         updateVoiceDisplay();
         applySettings();
@@ -2046,20 +2116,20 @@
           // Update UI to reflect external changes
           applySettings();
         });
-        
+
         // Initial check
         if (window.NarbeScanManager.getSettings().autoScan) {
            startAutoScan();
         }
       }
-      
+
       focusIndex = -1;
-      
+
       document.body.focus();
       if (document.activeElement !== document.body) {
         document.getElementById('main').focus();
       }
-      
+
       speak('Use Fullscreen for the Best Experience. Press spacebar to start');
     });
 
@@ -2075,7 +2145,7 @@
     /**
      * PUBLIC API: External Switch Control / Game Hub Integration
      * Allows wrapper apps to trigger inputs directly, bypassing keyboard simulation.
-     * Usage: 
+     * Usage:
      * - Atomic: window.GameHub.triggerAction('select')
      * - Holdable: window.GameHub.press('select') then window.GameHub.release('select')
      */
@@ -2099,7 +2169,7 @@
       press: function(actionName) {
         const map = this._mapActionToKey(actionName);
         if(!map) return;
-        
+
         // 1. Handle Fullscreen Modal interactions
         if (!fullscreenModal.classList.contains('hidden')) {
            if (map.key === ' ') spacePressed = true;
@@ -2112,39 +2182,39 @@
            if (appIframe && appIframe.contentWindow) {
              // Forward status via postMessage
              appIframe.contentWindow.postMessage({ type: 'gamehub-input-down', action: actionName }, '*');
-             
+
              try {
                // Dispatch keydown
                const kDown = new KeyboardEvent('keydown', {
                  key: map.key, code: map.code, keyCode: map.keyCode, which: map.keyCode,
                  bubbles: true, cancelable: true, view: appIframe.contentWindow
                });
-               
+
                // Safari/WebKit fix: keyCode property is often read-only/0 in synthetic events
                Object.defineProperty(kDown, 'keyCode', {get : () => map.keyCode});
                Object.defineProperty(kDown, 'which', {get : () => map.keyCode});
-               
+
                appIframe.contentWindow.document.dispatchEvent(kDown);
              } catch(e) { /* Expected for cross-origin iframes */ }
            }
-           return; 
+           return;
         }
 
         // 3. Handle standard Hub Navigation
         if (isTransitioning) return;
-        
+
         // Simulate keydown logic for hub
         if (map.key === ' ') {
            if(!spacePressed) {
              spacePressed = true;
              spaceHoldStartTime = Date.now();
-             
+
              // Backwards scan logic
              spaceHoldTimeout = setTimeout(() => {
                if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
                  speak('Backwards scanning');
                  focusPrevious();
-                 
+
                  backwardsScanInterval = setInterval(() => {
                    if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
                      focusPrevious();
@@ -2194,7 +2264,7 @@
            if (appIframe && appIframe.contentWindow) {
              // Forward status via postMessage
              appIframe.contentWindow.postMessage({ type: 'gamehub-input-up', action: actionName }, '*');
-             
+
              try {
                // Dispatch keyup
                const kUp = new KeyboardEvent('keyup', {
@@ -2209,12 +2279,12 @@
                appIframe.contentWindow.document.dispatchEvent(kUp);
              } catch(e) { /* Expected for cross-origin iframes */ }
            }
-           return; 
+           return;
         }
 
         // 3. Handle standard Hub Navigation
         if (isTransitioning) {
-            spacePressed = false; 
+            spacePressed = false;
             enterPressed = false;
             if (spaceHoldTimeout) { clearTimeout(spaceHoldTimeout); spaceHoldTimeout = null; }
             if (backwardsScanInterval) { clearInterval(backwardsScanInterval); backwardsScanInterval = null; }
@@ -2226,7 +2296,7 @@
              spacePressed = false;
              if (spaceHoldTimeout) { clearTimeout(spaceHoldTimeout); spaceHoldTimeout = null; }
              if (backwardsScanInterval) { clearInterval(backwardsScanInterval); backwardsScanInterval = null; }
-             
+
              const holdDuration = Date.now() - (spaceHoldStartTime || 0);
              if (holdDuration < BACKWARDS_SCAN_THRESHOLD) {
                focusNext();
@@ -2246,10 +2316,10 @@
        */
       triggerAction: function(actionName) {
         if (!actionName) return;
-        
+
         // Use press/release cycle
         this.press(actionName);
-        
+
         // Also send legacy postMessage for iframes that might rely on 'gamehub-input' event only
         if (iframeContainer.classList.contains('active') && appIframe && appIframe.contentWindow) {
              appIframe.contentWindow.postMessage({ type: 'gamehub-input', action: actionName }, '*');
@@ -2265,37 +2335,64 @@
   <!-- Minimal Legal Footer (not scannable) -->
   <div class="mini-footer" id="mini-footer" tabindex="-1">
     <div class="mini-footer-bar" onclick="document.getElementById('mini-footer').classList.toggle('open')">
-      <span>© 2026 NARBE LLC · Terms & Legal ▾</span>
+      <span>© 2026 NARBE LLC · Terms, Legal &amp; Privacy ▾</span>
+
     </div>
     <div class="mini-footer-expand">
       <div class="mini-footer-content">
-        
+
+        <!-- Privacy text mirrors bennyshub/companion-privacy.html; keep both versions aligned. -->
+<h4>Privacy</h4><p class="date">Updated September 27, 2026 · NARBE LLC</p>
+<p>This policy covers the Benny's Hub website and Benny's Hub Companion for Google Chrome and Microsoft Edge. The Companion provides switch-accessible playback controls and optional calendar and news connections. The Companion has no advertising, analytics SDK, or developer-operated user account system. External services used by the website have their own data practices, described below.</p>
+<h4>Information used on your device</h4>
+
+<p><strong>Playback:</strong> the Companion uses URLs and tab/window identifiers for streams launched from the Hub, media elements, player controls, playback state and switch input. This lets it operate the player, return to your Hub and update supported episode links. It does not collect a general browser history.</p>
+<p><strong>Preferences:</strong> scan timing, input sensitivity, scan mode, voice preferences and source permissions are used to personalize controls. Temporary playback and scan state is stored in browser session storage. News preferences and an optional calendar address use extension local storage; they are not synchronized through Chrome or Edge account sync by this extension.</p>
+<p><strong>Calendar:</strong> if you connect a private Google Calendar iCal address, the extension stores that address locally and retrieves the calendar from Google. The address is an access credential. Calendar data can contain names, event descriptions, locations and other personal information. The extension processes it to display your week in Day Hub. It does not send your calendar to NARBE LLC.</p>
+<p><strong>News:</strong> when enabled, the extension retrieves public feeds. An optional place name supplied for local news is sent to Google News as a search term.</p>
+
+<h4>Website storage and external services</h4>
+<p>The Hub website stores journal entries, streaming titles, episode links, recent playback, search history, personal vocabulary and settings in that browser's website storage. These are separate from extension storage. The public installation starts with an empty streaming library and journal. Exported backups go to the location you choose.</p>
+<p>Keyboard predictions use a bundled on-device model with a local fallback. Typed prediction text is not sent to an AI service. Speech output uses your browser or operating system's selected voice; those voice services may have their own network and privacy behavior.</p>
+<p>Optional weather searches send a place name to Open-Meteo's geocoding service, and weather requests send the selected coordinates to Open-Meteo. Optional movie metadata searches send titles and metadata identifiers through NARBE LLC's Cloudflare Worker to TMDB. No shared TMDB credential is delivered to the browser. Image requests go to the relevant image host.</p>
+<p><strong>YouTube Search uses YouTube API Services.</strong> When you search, your search terms and a verification token are sent to NARBE LLC's YouTube search service hosted on Cloudflare; that service retrieves results from YouTube. Google receives requests for player software, thumbnails and videos. YouTube may serve advertisements and use cookies or similar technology on your device. These are external services, even though the keyboard's predictions run locally. See the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. By using YouTube Search, you agree to the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>.</p>
+<p>YouTube Search uses Cloudflare Turnstile to help prevent automated abuse. Cloudflare processes browser, device and connection information, including IP address, to issue a verification token. See the <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile Privacy Policy</a>. The first-use privacy choice is stored locally. You can stop using the feature and clear site data to remove that choice and local search history.</p>
+<p>Streaming services receive the video links you open and handle their own sign-ins, cookies, playback and subscriptions. The Companion does not read account passwords or authentication cookies. GitHub Pages, Cloudflare, feed providers, media services and hosts of fonts, images and software libraries receive normal connection information such as your IP address and requested resource. Their policies apply to their services.</p>
+<p>The supplied TMDB Worker configuration disables application request logging and observability, and uses request information for rate limiting and public metadata caching. This statement applies to the TMDB Worker, not the separate YouTube search service or infrastructure providers. Service providers may retain operational or security records under their own policies. Do not include private information in public search requests. Contact us with questions about a request sent to our services.</p>
+<h4>Use and sharing</h4>
+<p>Information is used only to provide the features you choose. NARBE LLC does not sell personal data, use it for advertising, use it for credit decisions, or transfer it for unrelated purposes. The extension has no endpoint that uploads your journals, calendar contents, switch history or personal library to NARBE LLC. Data may be sent directly to the services described above when you use those features.</p>
+<p>The use of information received through browser APIs is limited to the Companion's stated functionality and follows the Chrome Web Store User Data Policy, including its Limited Use requirements, and Microsoft Edge Add-ons data-use requirements.</p>
+<h4>Your choices and deletion</h4>
+<p>Enable or revoke individual sources in Companion settings. Remove a calendar there to delete its stored address and revoke the extension's calendar access; invalidate a shared private calendar link in Google Calendar if you need to revoke the link itself. Uninstalling the extension removes its local storage; temporary session state is cleared when the browser session ends. Local website data remains until you clear it or the browser removes it. To remove the website's saved data, use Hub Settings → My data, or clear site data in your browser. Clearing all site data also resets the YouTube privacy choice. Removing the extension does not remove website storage or exported backup files. Export important entries before clearing storage. The website's offline cache contains public application assets, not authenticated feeds or streaming video. Clearing local data does not delete records held by third-party services; use their privacy controls for that.</p>
+<h4>Contact and changes</h4>
+<p>For support, privacy questions or deletion assistance, contact <a href="mailto:narbehousellc@gmail.com">narbehousellc@gmail.com</a>. Information you choose to email is used to respond to your request. Changes to data handling will be reflected on this page before release.</p>
+
         <h4>⚠️ Disclaimer & Warranty</h4>
-        <p><strong>THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
+        <p><strong>THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software supports access to tools and games through one or two switches. It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
         <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, NARBE LLC, OR THE NARBE FOUNDATION BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
         <p>USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK. The authors and NARBE LLC make no representations or warranties regarding the accuracy, reliability, completeness, or timeliness of the software or its suitability for any particular purpose.</p>
-        
+
         <h4>™ Trademark & Intellectual Property</h4>
         <p>"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong>NARBE LLC</strong>. All rights reserved.</p>
         <p>The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> applies to the <strong>source code only</strong> and does not grant any rights to use NARBE LLC's trademarks, trade names, logos, or branding.</p>
         <p>Unauthorized use of NARBE LLC's trademarks is strictly prohibited and may violate trademark laws.</p>
-        
+
         <h4>📜 License & Derivative Works</h4>
         <p>This project's source code is licensed under the <strong>MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:</p>
         <p>The above copyright notice and permission notice shall be included in all copies or substantial portions of the Software.</p>
         <p><strong>DERIVATIVE WORKS:</strong> If you fork, modify, or redistribute this software, you <strong>MUST</strong>: (1) Clearly indicate that your version is a modified/derivative work and NOT the original project; (2) NOT use the names "Benny's Accessibility Hub," "NARBE," or any NARBE trademarks to imply endorsement, sponsorship, or official affiliation without express written permission from NARBE LLC; (3) Include original copyright notices and license.</p>
-        
+
         <h4>🔒 Limitation of Liability</h4>
         <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL NARBE LLC, ITS OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, AFFILIATES, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING BUT NOT LIMITED TO DAMAGES FOR LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, REGARDLESS OF WHETHER SUCH DAMAGES WERE FORESEEABLE OR WHETHER NARBE LLC WAS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
         <p>SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF CERTAIN DAMAGES, SO SOME OF THE ABOVE LIMITATIONS MAY NOT APPLY TO YOU.</p>
-        
+
         <h4>⚖️ Indemnification</h4>
         <p>You agree to indemnify, defend, and hold harmless NARBE LLC, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable attorneys' fees) arising out of or in connection with your use of the Software, your violation of these terms, or your violation of any rights of another.</p>
-        
-        
+
+
         <h4>📧 Contact</h4>
         <p>For partnership, branding, or legal inquiries: <a href="https://narbehouse.com" target="_blank" rel="noopener">narbehouse.com</a></p>
-        
+
         <div class="mini-footer-links">
           <span style="color:var(--muted);font-size:10px;">© 2026 NARBE LLC. All rights reserved.</span>
           <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>

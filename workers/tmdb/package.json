@@ -1,0 +1,14 @@
+{
+  "name": "bennys-hub-tmdb-worker",
+  "private": true,
+  "scripts": {
+    "check": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.142.0"
+  },
+  "dependencies": {
+    "bennys-hub-web-experiment": "file:../.."
+  }
+}

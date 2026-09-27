@@ -1,5 +1,14 @@
 # Building for Benny's Hub
 
+For the web companion experiment, installation, connection diagnostics, provider
+permissions and data management belong in the collapsed **Settings** area
+at the top of the Hub. These controls use ordinary mouse/keyboard interaction
+and stay outside switch scanning (`data-scan-exclude`). The original Streaming
+editor stays behind its existing mouse/keyboard warning. Keep the player's main flow focused on opening and
+using tools; companion troubleshooting must not become a required scan stop.
+When a companion tool becomes unavailable, preserve work and offer a switch-
+accessible **Back to Hub**, with technical detail inside the settings disclosure.
+
 **Read this before you write a line of code for this hub.**
 
 Everything here exists so that one person can play a game by himself. Not "with
@@ -11,8 +20,7 @@ this hub is built for.
 
 ## 1. Who this is for
 
-Benny's Hub was built by caregivers for Ben, who has TUBB4A‑related
-Leukodystrophy (H‑ABC). It is now built for everyone in the same situation.
+Benny's Hub supports people who use one or two switches to access tools and games.
 
 Assume your player:
 

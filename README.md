@@ -1,3 +1,30 @@
+# Benny's Hub — local release preparation
+
+Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.0/`. Start with [the submission guide](submission/START-HERE.md). Nothing is published automatically. The public streaming library and episodes start empty.
+
+For a clean repository replacement, run `npm run build`, `npm run audit:release`,
+`npm run check:pages`, then `npm run prepare:github`. The result is
+`releases/1.0.0/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
+to preserve your old checkout and publish only the `dist/` website when ready.
+
+The three companion apps are implemented under Benny’s Hub → Tools. See [setup, validation and current limitations](WEB-EXTENSION-MIGRATION.md).
+
+For a local preview: `npm install`, then `npm start`, and open http://127.0.0.1:4173/bennyshub/index.html. Load the `extension` folder as an unpacked extension in desktop Chrome/Edge and reload the Hub.
+
+Builds require Node.js and Python 3. `npm run build` generates the production-origin
+Companion preview ZIP inside `dist/bennyshub/downloads/`; this is a developer/tester
+download, not a store install. See [preview distribution guidance](submission/PREVIEW-DISTRIBUTION.md).
+
+The Streaming editor offers six optional Quick add collections (223 public title links).
+JSON imports merge into the existing library and skip matching URLs. See
+[collection maintenance and sources](submission/STARTER-COLLECTIONS.md).
+
+Companion setup and data controls are in the collapsed **Settings** area at the top, outside switch scanning.
+
+The Keyboard now uses on-device KenLM with a local fallback; see [model details](bennyshub/apps/tools/keyboard/kenlm/README.txt). The optional [TMDB Worker](workers/tmdb/README.md) keeps a shared metadata credential off GitHub Pages.
+
+---
+
 # Narbehouse.github.io
 
 © 2026 NARBE LLC
@@ -29,6 +56,6 @@ For partnership or branding inquiries, please visit:
 
 ## Disclaimer
 
-This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not medical software and is provided “AS IS,” without warranty of any kind, express or implied.
+This accessibility software is not medical software and is provided “AS IS,” without warranty of any kind, express or implied.
 
 ---

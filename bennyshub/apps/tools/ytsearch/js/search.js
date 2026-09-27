@@ -3,15 +3,13 @@ const TurnstileTokenManager = (() => {
     async function getFresh() {
         // Wait for Turnstile script to be ready
         await new Promise((resolve, reject) => {
-            const ready = () => window.turnstile && typeof window.turnstile.ready === 'function';
-            if (ready()) return window.turnstile.ready(resolve);
-            const t = setTimeout(() => reject(new Error('Turnstile script not loaded')), 8000);
-            window.addEventListener('load', () => {
-                if (ready()) {
-                    clearTimeout(t);
-                    window.turnstile.ready(resolve);
-                }
-            }, { once: true });
+            if (window.__ts?.ready && window.turnstile) return resolve();
+            const ready = () => { clearTimeout(t); resolve(); };
+            const t = setTimeout(() => {
+                window.removeEventListener('benny-turnstile-ready', ready);
+                reject(new Error('Turnstile script not loaded'));
+            }, 8000);
+            window.addEventListener('benny-turnstile-ready', ready, { once: true });
         });
 
         // Ensure widget is rendered
@@ -21,7 +19,9 @@ const TurnstileTokenManager = (() => {
             window.__ts = window.__ts || { waiters: [] };
             window.__ts.widgetId = window.turnstile.render(el, {
                 sitekey: el.dataset.sitekey,
-                size: 'invisible',
+                size: 'normal',
+                appearance: 'interaction-only',
+                execution: 'execute',
                 callback: window.onTurnstileToken,
                 'expired-callback': window.onTurnstileExpired,
                 'error-callback': window.onTurnstileError,
@@ -51,8 +51,8 @@ const TurnstileTokenManager = (() => {
     }
 
     async function retryToken() {
-        try { 
-            if (window.__ts?.widgetId) window.turnstile.reset(window.__ts.widgetId); 
+        try {
+            if (window.__ts?.widgetId) window.turnstile.reset(window.__ts.widgetId);
         } catch (e) {
             console.log('Reset error during retry (non-fatal):', e);
         }
@@ -80,14 +80,14 @@ class SearchManager {
         this.searchTimeout = 15000;
         this.shortsResults = [];
         this.currentShortsIndex = 0;
-        
+
         // Updated Cloudflare Worker endpoint for shorts
         this.shortsEndpoint = 'https://dawn-star-cad3.narbehousellc.workers.dev/';
-        
+
         // Turnstile security with serialization
         this.turnstileReady = false;
         this.htmlTurnstileToken = null;
-        
+
         // Autoplay state
         this.autoplayEnabled = true;
         this.currentPlayer = null;
@@ -96,14 +96,14 @@ class SearchManager {
             isMuted: false,
             currentVideoId: null
         };
-        
+
         // Initialize Turnstile when ready
         this.initTurnstile();
     }
-    
+
     initTurnstile() {
         console.log('🔒 Initializing Turnstile (using HTML widget)...');
-        
+
         // Check if the HTML widget container exists
         const widgetContainer = document.getElementById('turnstile-widget');
         if (!widgetContainer) {
@@ -111,7 +111,7 @@ class SearchManager {
             this.turnstileReady = false;
             return;
         }
-        
+
         console.log('✅ Found HTML Turnstile widget container');
         this.turnstileReady = true;
     }
@@ -192,17 +192,17 @@ class SearchManager {
         try {
             console.log(`🔍 Starting YouTube search for: "${query}"`);
             this.showLoading('Searching videos');
-            
+
             // Use new token flow
             const results = await this.searchCloudflareShorts(query);
-            
+
             if (results.length > 0) {
                 console.log(`✅ Found ${results.length} videos`);
                 this.shortsResults = results;
                 this.currentShortsIndex = 0;
                 this.hideLoading();
                 window.speechManager.speak(`Found ${results.length} videos`);
-                
+
                 return results;
             } else {
                 console.log('❌ No videos found');
@@ -210,7 +210,7 @@ class SearchManager {
                 window.speechManager.speak('No videos found');
                 return [];
             }
-            
+
         } catch (error) {
             console.error('❌ Video search failed:', error);
             this.hideLoading();
@@ -229,7 +229,7 @@ class SearchManager {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), this.searchTimeout);
 
-            const headers = { 
+            const headers = {
                 'Accept': 'application/json',
                 'X-App-Key': 'banana-dragon-sky-88',
                 // Always send desktop-like headers to avoid mobile API restrictions
@@ -243,7 +243,7 @@ class SearchManager {
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'cross-site'
             };
-            
+
             if (token) {
                 headers['cf-turnstile-response'] = token;
                 console.log('🔒 Sending request with Turnstile token');
@@ -252,9 +252,9 @@ class SearchManager {
             }
 
             const t0 = Date.now();
-            const res = await fetch(url, { 
-                method: 'GET', 
-                headers, 
+            const res = await fetch(url, {
+                method: 'GET',
+                headers,
                 signal: controller.signal,
                 credentials: 'omit',
                 mode: 'cors'
@@ -267,14 +267,14 @@ class SearchManager {
 
         // 1) Try to get a token using multiple methods
         let token = null;
-        
+
         // Method 1: Check if we have a stored token
         if (this.htmlTurnstileToken) {
             token = this.htmlTurnstileToken;
             console.log('🔒 Using stored token from callback');
             this.htmlTurnstileToken = null; // Use once
         }
-        
+
         // Method 2: Try to get existing response from widget
         if (!token && window.turnstile && window.__ts?.widgetId) {
             try {
@@ -286,14 +286,14 @@ class SearchManager {
                 console.log('Could not get existing token:', e);
             }
         }
-        
+
         // Method 3: Execute widget and wait for new token
         if (!token && window.turnstile && window.__ts?.widgetId) {
             try {
                 console.log('🔒 Executing widget for fresh token...');
                 await new Promise((resolve, reject) => {
                     const timeout = setTimeout(() => reject(new Error('Token timeout')), 10000);
-                    
+
                     // Add ourselves to the waiters list
                     if (!window.__ts.waiters) window.__ts.waiters = [];
                     window.__ts.waiters.push((newToken) => {
@@ -302,7 +302,7 @@ class SearchManager {
                         console.log('🔒 Got fresh token from execute');
                         resolve();
                     });
-                    
+
                     // Execute the widget
                     window.turnstile.execute(window.__ts.widgetId);
                 });
@@ -321,15 +321,15 @@ class SearchManager {
                 if (window.turnstile && window.__ts?.widgetId) {
                     window.turnstile.reset(window.__ts.widgetId);
                 }
-                
+
                 // Wait a moment then try to get a new token
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 token = null;
                 if (window.turnstile && window.__ts?.widgetId) {
                     await new Promise((resolve, reject) => {
                         const timeout = setTimeout(() => reject(new Error('Retry token timeout')), 10000);
-                        
+
                         if (!window.__ts.waiters) window.__ts.waiters = [];
                         window.__ts.waiters.push((newToken) => {
                             clearTimeout(timeout);
@@ -337,11 +337,11 @@ class SearchManager {
                             console.log('🔒 Got retry token');
                             resolve();
                         });
-                        
+
                         window.turnstile.execute(window.__ts.widgetId);
                     });
                 }
-                
+
                 res = await doRequest(token);
             } catch (error) {
                 console.warn('⚠️ Could not get retry token:', error);
@@ -366,7 +366,7 @@ class SearchManager {
             console.warn('⚠️ Unexpected response format:', payload);
             return [];
         }
-        
+
         console.log('📊 Raw items count from worker:', payload.items.length);
         return payload.items.map((it, i) => ({
             videoId: it.videoId,
@@ -386,13 +386,13 @@ class SearchManager {
                 resolve();
                 return;
             }
-            
+
             // Set up the callback before loading the script
             window.onYouTubeIframeAPIReady = () => {
                 console.log('YouTube API ready callback fired');
                 resolve();
             };
-            
+
             // Load the API script if not already present
             if (!document.querySelector('script[src*="iframe_api"]')) {
                 const script = document.createElement('script');
@@ -409,11 +409,11 @@ class SearchManager {
     // Play a video by videoId - let YouTube API manage everything
     async playVideoId(videoId) {
         console.log('🎥 Playing video ID:', videoId);
-        
+
         try {
             // Ensure API is loaded
             await this.loadYouTubeAPI();
-            
+
             // Destroy previous player instance (important!)
             if (this.ytPlayer && this.ytPlayer.destroy) {
                 try {
@@ -424,7 +424,7 @@ class SearchManager {
                 }
                 this.ytPlayer = null;
             }
-            
+
             // Create new player - let YouTube API create the iframe
             console.log('Creating new YouTube player for host element');
             this.ytPlayer = new YT.Player('youtube-player-host', {
@@ -460,30 +460,30 @@ class SearchManager {
                     }
                 }
             });
-            
+
             // Update our state - videos will start unmuted
             this.playerState = {
                 isPlaying: true,    // Will start playing when ready
                 isMuted: false,     // Will be unmuted automatically after ready
                 currentVideoId: videoId
             };
-            
+
         } catch (error) {
             console.error('❌ Error playing video:', error);
             window.speechManager.speak('player error');
             this.handleVideoError();
         }
     }
-    
+
     onPlayerReady(event) {
         try {
             console.log('Player ready - starting playback and auto-unmuting');
             const player = event.target;
-            
+
             // Start muted for autoplay compliance, then unmute after a brief delay
             player.mute();
             player.playVideo();
-            
+
             // Auto-unmute after player starts (gives time for autoplay to work)
             setTimeout(() => {
                 try {
@@ -491,7 +491,7 @@ class SearchManager {
                     player.setVolume(50); // Set reasonable volume
                     console.log('🔊 Auto-unmuted video and set volume to 50%');
                     this.playerState.isMuted = false;
-                    
+
                     // Update button labels
                     this.updatePlayerButtons();
                 } catch (error) {
@@ -499,17 +499,17 @@ class SearchManager {
                     this.playerState.isMuted = true;
                 }
             }, 1000); // Wait 1 second for autoplay to establish
-            
+
             console.log('✅ Player initialized successfully');
-            
+
         } catch (error) {
             console.error('Error in onPlayerReady:', error);
         }
     }
-    
+
     onPlayerStateChange(event) {
         const state = event.data;
-        
+
         switch (state) {
             case YT.PlayerState.UNSTARTED:
                 this.playerState.isPlaying = false;
@@ -536,17 +536,17 @@ class SearchManager {
                 this.playerState.isPlaying = false;
                 break;
         }
-        
+
         // Update button labels after state change
         this.updatePlayerButtons();
     }
-    
+
     onPlayerError(event) {
         const errorCode = event.data;
         console.error('❌ YouTube player error code:', errorCode);
-        
+
         let shouldSkip = true;
-        
+
         switch (errorCode) {
             case 2:
                 console.log('Invalid video ID, silently skipping to next video');
@@ -565,54 +565,54 @@ class SearchManager {
                 console.log('Unknown video error, silently skipping to next video');
                 break;
         }
-        
+
         // No TTS announcement - just silently skip
-        
+
         if (shouldSkip) {
             // Mark current video as unplayable
             this.markVideoAsUnplayable(this.currentShortsIndex);
-            
+
             // Try to skip to next playable video immediately (no delay)
             this.skipToNextPlayableVideo();
         }
     }
-    
+
     markVideoAsUnplayable(index) {
         if (this.shortsResults[index]) {
             this.shortsResults[index].unplayable = true;
             console.log(`❌ Marked video ${index + 1} as unplayable: ${this.shortsResults[index].title}`);
         }
     }
-    
+
     findNextPlayableVideo(startIndex, direction = 1) {
         const totalVideos = this.shortsResults.length;
         if (totalVideos === 0) return -1;
-        
+
         let attempts = 0;
         let currentIndex = startIndex;
-        
+
         // Try to find a playable video within reasonable attempts
         while (attempts < totalVideos) {
-            currentIndex = direction > 0 
+            currentIndex = direction > 0
                 ? (currentIndex + 1) % totalVideos
                 : (currentIndex - 1 + totalVideos) % totalVideos;
-            
+
             const video = this.shortsResults[currentIndex];
             if (video && !video.unplayable) {
                 console.log(`✅ Found playable video at index ${currentIndex}: ${video.title}`);
                 return currentIndex;
             }
-            
+
             attempts++;
         }
-        
+
         console.log('❌ No playable videos found in results');
         return -1;
     }
-    
+
     skipToNextPlayableVideo() {
         const nextIndex = this.findNextPlayableVideo(this.currentShortsIndex, 1);
-        
+
         if (nextIndex !== -1) {
             this.currentShortsIndex = nextIndex;
             const nextVideo = this.shortsResults[nextIndex];
@@ -622,7 +622,7 @@ class SearchManager {
             // All videos are unplayable - only speak if absolutely no videos work
             console.log('❌ All videos in search results are unplayable');
             window.speechManager.speak('No playable videos found');
-            
+
             // Close the video player
             setTimeout(() => {
                 if (window.narbe && window.narbe.closeShortsFeed) {
@@ -631,10 +631,10 @@ class SearchManager {
             }, 2000);
         }
     }
-    
+
     skipToPreviousPlayableVideo() {
         const prevIndex = this.findNextPlayableVideo(this.currentShortsIndex, -1);
-        
+
         if (prevIndex !== -1) {
             this.currentShortsIndex = prevIndex;
             const prevVideo = this.shortsResults[prevIndex];
@@ -645,7 +645,7 @@ class SearchManager {
             console.log('No previous playable videos available');
         }
     }
-    
+
     handleVideoError() {
         // Mark current video as unplayable and try next one silently
         this.markVideoAsUnplayable(this.currentShortsIndex);
@@ -656,11 +656,11 @@ class SearchManager {
     updatePlayerButtons() {
         const playPauseBtn = document.querySelector('[data-action="shorts_play_pause"]');
         const muteBtn = document.querySelector('[data-action="shorts_mute_toggle"]');
-        
+
         if (playPauseBtn) {
             playPauseBtn.textContent = this.playerState.isPlaying ? 'PAUSE' : 'PLAY';
         }
-        
+
         if (muteBtn && this.ytPlayer && this.ytPlayer.isMuted) {
             const actuallyMuted = this.ytPlayer.isMuted();
             muteBtn.textContent = actuallyMuted ? 'UNMUTE' : 'MUTE';
@@ -668,7 +668,7 @@ class SearchManager {
             muteBtn.textContent = this.playerState.isMuted ? 'UNMUTE' : 'MUTE';
         }
     }
-    
+
     // Control methods using YouTube API
     togglePlayPause() {
         if (!this.ytPlayer || !this.ytPlayer.getPlayerState) {
@@ -676,11 +676,11 @@ class SearchManager {
             window.speechManager.speak('player not ready');
             return;
         }
-        
+
         try {
             const state = this.ytPlayer.getPlayerState();
             console.log('Current player state:', state);
-            
+
             if (state === YT.PlayerState.PLAYING) {
                 console.log('▶️ Pausing video');
                 this.ytPlayer.pauseVideo();
@@ -697,27 +697,27 @@ class SearchManager {
                 this.playerState.isPlaying = true;
                 window.speechManager.speak('playing');
             }
-            
+
             // Update button labels immediately
             this.updatePlayerButtons();
-            
+
         } catch (error) {
             console.error('❌ Error in togglePlayPause:', error);
             window.speechManager.speak('play pause failed');
         }
     }
-    
+
     toggleMute() {
         if (!this.ytPlayer || !this.ytPlayer.isMuted) {
             console.log('❌ No YouTube player available');
             window.speechManager.speak('player not ready');
             return;
         }
-        
+
         try {
             const isMuted = this.ytPlayer.isMuted();
             console.log('Current mute state:', isMuted);
-            
+
             if (isMuted) {
                 console.log('🔊 Unmuting video');
                 this.ytPlayer.unMute();
@@ -733,53 +733,53 @@ class SearchManager {
                 this.playerState.isMuted = true;
                 window.speechManager.speak('muted');
             }
-            
+
             // Update button labels immediately
             this.updatePlayerButtons();
-            
+
         } catch (error) {
             console.error('❌ Error in toggleMute:', error);
             window.speechManager.speak('mute toggle failed');
         }
     }
-    
+
     rewindVideo() {
         if (!this.ytPlayer || !this.ytPlayer.getCurrentTime || !this.ytPlayer.seekTo) {
             console.log('❌ No YouTube player available for rewind');
             window.speechManager.speak('player not ready');
             return;
         }
-        
+
         try {
             const currentTime = this.ytPlayer.getCurrentTime();
             const newTime = Math.max(0, currentTime - 10); // Go back 10 seconds, but not below 0
-            
+
             console.log(`⏪ Rewinding from ${currentTime}s to ${newTime}s`);
             this.ytPlayer.seekTo(newTime, true);
             window.speechManager.speak('rewind');
-            
+
         } catch (error) {
             console.error('❌ Error in rewindVideo:', error);
             window.speechManager.speak('rewind failed');
         }
     }
-    
+
     fastForwardVideo() {
         if (!this.ytPlayer || !this.ytPlayer.getCurrentTime || !this.ytPlayer.seekTo || !this.ytPlayer.getDuration) {
             console.log('❌ No YouTube player available for fast forward');
             window.speechManager.speak('player not ready');
             return;
         }
-        
+
         try {
             const currentTime = this.ytPlayer.getCurrentTime();
             const duration = this.ytPlayer.getDuration();
             const newTime = Math.min(duration, currentTime + 10); // Go forward 10 seconds, but not beyond video end
-            
+
             console.log(`⏩ Fast forwarding from ${currentTime}s to ${newTime}s (duration: ${duration}s)`);
             this.ytPlayer.seekTo(newTime, true);
             window.speechManager.speak('fast forward');
-            
+
         } catch (error) {
             console.error('❌ Error in fastForwardVideo:', error);
             window.speechManager.speak('fast forward failed');
@@ -793,7 +793,7 @@ class SearchManager {
         }
         return null;
     }
-    
+
     nextShorts() {
         if (this.shortsResults.length > 0) {
             this.currentShortsIndex = (this.currentShortsIndex + 1) % this.shortsResults.length;
@@ -803,7 +803,7 @@ class SearchManager {
         }
         return 0;
     }
-    
+
     prevShorts() {
         if (this.shortsResults.length > 0) {
             this.currentShortsIndex = (this.currentShortsIndex - 1 + this.shortsResults.length) % this.shortsResults.length;
@@ -819,7 +819,7 @@ class SearchManager {
         const shortsFeed = document.getElementById('shorts-feed');
         if (shortsFeed && !shortsFeed.classList.contains('hidden')) {
             console.log(`Auto-advancing to next video...`);
-            
+
             const nextIndex = this.findNextPlayableVideo(this.currentShortsIndex, 1);
             if (nextIndex !== -1) {
                 this.currentShortsIndex = nextIndex;
@@ -833,7 +833,7 @@ class SearchManager {
             }
         }
     }
-    
+
     loadNewVideo() {
         const videoId = this.getCurrentVideoId();
         if (videoId) {
@@ -847,7 +847,7 @@ class SearchManager {
             }
         }
     }
-    
+
     // Simplified setup method
     setupPlayer() {
         console.log('🎬 Setting up initial player...');
@@ -858,10 +858,10 @@ class SearchManager {
             console.error('❌ No video ID available for setup');
         }
     }
-    
+
     cleanup() {
         console.log('🧹 Cleaning up player...');
-        
+
         // Destroy YouTube player properly
         if (this.ytPlayer) {
             try {
@@ -872,20 +872,20 @@ class SearchManager {
             }
             this.ytPlayer = null;
         }
-        
+
         // Reset state
         this.playerState = {
             isPlaying: false,
             isMuted: true,
             currentVideoId: null
         };
-        
+
         console.log('✅ Cleanup complete');
     }
 
     handleSearchError(type, error) {
         console.error(`${type} search error:`, error);
-        
+
         if (error.message.includes('403') || error.message.includes('quotaExceeded')) {
             window.speechManager.speak(`${type} search quota exceeded. Try again later.`);
         } else if (error.message.includes('400') || error.message.includes('invalid')) {
@@ -901,13 +901,13 @@ class SearchManager {
     showLoading(message) {
         const overlay = document.getElementById('loading-overlay');
         const label = document.getElementById('loading-label');
-        
+
         if (overlay && label) {
             label.textContent = message || 'Loading...';
             overlay.classList.remove('hidden');
         }
     }
-    
+
     hideLoading() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) {

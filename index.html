@@ -7,18 +7,18 @@
     <link rel="icon" type="image/png" href="logos/NARBE.png">
     <meta name="description" content="Switch-accessible games and tools built for Ben and families like ours. Free and open source.">
     <meta name="color-scheme" content="dark">
-    
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -37,14 +37,14 @@
             }
         }
     </script>
-    
+
     <style>
         html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: #0a0a0a;
         }
-        
+
         /* Glassmorphism */
         .glass-card {
             background: rgba(20, 20, 20, 0.6);
@@ -52,34 +52,34 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 92, 0, 0.15);
         }
-        
+
         .glass-nav {
             background: rgba(10, 10, 10, 0.8);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
-        
+
         /* Glow Effects */
         .glow-orange {
             box-shadow: 0 0 40px rgba(255, 92, 0, 0.3);
         }
-        
+
         .glow-cyan {
             box-shadow: 0 0 40px rgba(34, 211, 238, 0.3);
         }
-        
+
         .text-glow-orange {
             text-shadow: 0 0 30px rgba(255, 92, 0, 0.5);
         }
-        
+
         /* Grid Pattern */
         .grid-pattern {
-            background-image: 
+            background-image:
                 linear-gradient(rgba(255, 92, 0, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 92, 0, 0.03) 1px, transparent 1px);
             background-size: 50px 50px;
         }
-        
+
         /* Reveal Animations */
         .reveal {
             opacity: 0;
@@ -90,19 +90,19 @@
             opacity: 1;
             transform: translateY(0);
         }
-        
+
         /* Game Card Hover */
         .game-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .game-card:hover {
             transform: translateY(-8px) scale(1.02);
-            box-shadow: 
+            box-shadow:
                 0 0 30px rgba(255, 92, 0, 0.3),
                 0 0 60px rgba(255, 92, 0, 0.15);
             border-color: rgba(255, 92, 0, 0.5);
         }
-        
+
         /* Gradient Border */
         .gradient-border {
             position: relative;
@@ -120,7 +120,7 @@
             mask-composite: exclude;
             pointer-events: none;
         }
-        
+
         /* Iframe Modal */
         .iframe-container {
             position: fixed;
@@ -131,7 +131,7 @@
             flex-direction: column;
         }
         .iframe-container.active { display: flex; }
-        
+
         /* Mini Footer */
         .mini-footer-expand {
             max-height: 0;
@@ -158,7 +158,7 @@
                         <div class="text-xs text-gray-500">Accessible Apps & Tools</div>
                     </div>
                 </a>
-                
+
                 <!-- Nav Links -->
                 <div class="flex items-center gap-2 sm:gap-4">
                     <a href="ai-workflow.html" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-narbe-cyan font-medium hover:bg-narbe-cyan/10 transition-colors">
@@ -183,7 +183,7 @@
         <div class="absolute inset-0 grid-pattern opacity-40"></div>
         <div class="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-narbe-orange/10 rounded-full blur-[120px]"></div>
         <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-narbe-cyan/10 rounded-full blur-[100px]"></div>
-        
+
         <!-- Content -->
         <div class="relative z-10 text-center px-6 max-w-5xl mx-auto py-20">
             <div class="reveal">
@@ -192,17 +192,17 @@
                     FREE & OPEN SOURCE
                 </span>
             </div>
-            
+
             <h1 class="reveal text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 text-glow-orange leading-tight">
                 Accessible Games &<br>
                 <span class="bg-gradient-to-r from-narbe-orange to-narbe-cyan bg-clip-text text-transparent">Tools for Everyone</span>
             </h1>
-            
+
             <p class="reveal text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                Switch-accessible apps built for <span class="text-narbe-orange font-semibold">Ben</span> and families like ours. 
+                Switch-accessible apps built for <span class="text-narbe-orange font-semibold">Ben</span> and families like ours.
                 Works with <span class="text-white">1 or 2 switches</span>, head tracking, and eye tracking.
             </p>
-            
+
             <div class="reveal flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="https://switchedgames.org" target="_blank" rel="noopener" class="group inline-flex items-center justify-center gap-2 px-8 py-4 glass-card rounded-xl font-semibold hover:border-narbe-orange/50 transition-all duration-300">
                     <img src="logos/switchedgames_emblem_v5.svg" alt="" class="w-5 h-5">
@@ -215,7 +215,7 @@
                 </a>
             </div>
         </div>
-        
+
         <!-- Scroll Indicator -->
         <div class="absolute bottom-8 left-1/2 -translate-x-1/2 reveal">
             <div class="w-6 h-10 rounded-full border-2 border-gray-600 flex items-start justify-center p-2">
@@ -227,7 +227,7 @@
     <!-- ==================== FEATURED VIDEO SECTION ==================== -->
     <section class="py-20 lg:py-28 relative">
         <div class="absolute inset-0 grid-pattern opacity-20"></div>
-        
+
         <div class="relative max-w-6xl mx-auto px-6">
             <div class="reveal glass-card rounded-3xl overflow-hidden">
                 <div class="p-6 sm:p-8 flex flex-col sm:flex-row items-start gap-6 border-b border-white/5">
@@ -237,24 +237,24 @@
                     <div>
                         <h2 class="text-2xl sm:text-3xl font-bold mb-2">Benny's Accessibility Hub</h2>
                         <p class="text-gray-400">
-                            Predictive keyboard, customizable phrase boards, and games designed for switch access. 
+                            Predictive keyboard, customizable phrase boards, and games designed for switch access.
                             Full support for Space/Enter input, mouse, head tracking, and eye tracking.
                         </p>
                     </div>
                 </div>
-                
+
                 <!-- Video -->
                 <div class="aspect-video bg-black">
-                    <iframe 
+                    <iframe
                         class="w-full h-full"
-                        src="https://www.youtube.com/embed/oW3p4fnNMtA" 
-                        title="NARBE House: Benny's Accessibility Hub Tutorial" 
+                        src="https://www.youtube.com/embed/oW3p4fnNMtA"
+                        title="NARBE House: Benny's Accessibility Hub Tutorial"
                         frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowfullscreen>
                     </iframe>
                 </div>
-                
+
                 <!-- Actions -->
                 <div class="p-6 sm:p-8 flex flex-wrap gap-3">
                     <a href="https://switchedgames.org" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-6 py-3 glass-card hover:border-narbe-orange/50 rounded-xl font-semibold transition-all duration-300">
@@ -292,7 +292,7 @@
                         <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                     </span>
                 </a>
-                
+
                 <!-- NARBE Foundation -->
                 <a href="https://narbefoundation.org" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 game-card group cursor-pointer" style="border-color: rgba(139, 92, 246, 0.15);">
                     <div class="w-14 h-14 rounded-2xl bg-access-violet/20 flex items-center justify-center mb-6">
@@ -307,7 +307,7 @@
                         <i data-lucide="external-link" class="w-4 h-4"></i>
                     </span>
                 </a>
-                
+
                 <!-- Open Source -->
                 <a href="https://github.com/narbehouse" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 game-card group cursor-pointer" style="border-color: rgba(34, 211, 238, 0.15);">
                     <div class="w-14 h-14 rounded-2xl bg-narbe-cyan/20 flex items-center justify-center text-3xl mb-6">
@@ -329,7 +329,7 @@
     <!-- ==================== GAMES & TOOLS GRID ==================== -->
     <section id="games" class="py-16 lg:py-24 relative">
         <div class="absolute inset-0 grid-pattern opacity-20"></div>
-        
+
         <div class="relative max-w-7xl mx-auto px-6">
             <!-- Section Header -->
             <div class="text-center mb-16 reveal">
@@ -342,7 +342,7 @@
                     All apps support switch access and include customizable options.
                 </p>
             </div>
-            
+
             <!-- Grid -->
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 <!-- Tools -->
@@ -360,7 +360,7 @@
                         </button>
                     </div>
                 </article>
-                
+
                 <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
                     <img src="bennyshub/images/tools/phraseboard.png" alt="Phrase Board" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
                     <div class="p-5">
@@ -375,7 +375,7 @@
                         </button>
                     </div>
                 </article>
-                
+
                 <article class="reveal glass-card rounded-2xl overflow-hidden game-card">
                     <img src="bennyshub/images/tools/ytsearch.png" alt="YouTube Search" class="w-full h-40 object-cover bg-charcoal" loading="lazy">
                     <div class="p-5">
@@ -703,7 +703,7 @@
                     Connect with families, caregivers, and developers building accessible tools together.
                 </p>
             </div>
-            
+
             <div class="grid md:grid-cols-3 gap-6">
                 <a href="https://narbehouse.com" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group">
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-narbe-orange/20 flex items-center justify-center text-3xl mb-6">
@@ -715,7 +715,7 @@
                         Visit Website
                     </span>
                 </a>
-                
+
                 <a href="https://discord.gg/b82emKJhTC" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group" style="border-color: rgba(88, 101, 242, 0.15);">
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-[#5865F2]/20 flex items-center justify-center mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" class="w-9 h-9 fill-[#5865F2]"><path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.89 105.89 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.1 105.25 105.25 0 0 0 32.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15ZM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.1 12.69-11.44 12.69Zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.12 12.69-11.43 12.69Z"/></svg>
@@ -727,7 +727,7 @@
                         Join Discord
                     </span>
                 </a>
-                
+
                 <a href="https://github.com/narbehouse" target="_blank" rel="noopener" class="reveal glass-card rounded-2xl p-8 text-center game-card group" style="border-color: rgba(34, 211, 238, 0.15);">
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-narbe-cyan/20 flex items-center justify-center text-3xl mb-6">
                         ⭐
@@ -748,7 +748,7 @@
             <div class="reveal gradient-border rounded-3xl bg-charcoal p-8 sm:p-12 text-center">
                 <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Share Your Accessibility Tools</h2>
                 <p class="text-gray-400 max-w-xl mx-auto mb-8">
-                    We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page. 
+                    We'd love to feature your accessibility apps and tools on the NARBE Foundation community apps page.
                     Let's build an ecosystem that helps more families.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
@@ -781,25 +781,52 @@
     <!-- ==================== MINI LEGAL FOOTER ==================== -->
     <footer class="mini-footer fixed bottom-0 left-0 right-0 bg-deep-black/95 backdrop-blur-lg border-t border-white/5 z-50" id="mini-footer">
         <div class="mini-footer-bar flex justify-center items-center py-2 cursor-pointer" onclick="document.getElementById('mini-footer').classList.toggle('open')">
-            <span class="text-gray-500 text-xs">© <span id="year">2026</span> NARBE LLC · Terms & Legal ▾</span>
+            <span class="text-gray-500 text-xs">© <span id="year">2026</span> NARBE LLC · Terms, Legal &amp; Privacy ▾</span>
+
         </div>
         <div class="mini-footer-expand bg-deep-black">
             <div class="max-w-3xl mx-auto p-6 text-xs text-gray-500 leading-relaxed">
-                
-                <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-0">⚠️ Disclaimer & Warranty</h4>
-                <p class="mb-4"><strong class="text-white">THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software was created by caregivers for a specific individual with TUBB4A-related Leukodystrophy (H-ABC). It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
+
+                <!-- Privacy text mirrors bennyshub/companion-privacy.html; keep both versions aligned. -->
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Privacy</h4><p class="date">Updated September 27, 2026 · NARBE LLC</p>
+<p class="mb-4">This policy covers the Benny's Hub website and Benny's Hub Companion for Google Chrome and Microsoft Edge. The Companion provides switch-accessible playback controls and optional calendar and news connections. The Companion has no advertising, analytics SDK, or developer-operated user account system. External services used by the website have their own data practices, described below.</p>
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Information used on your device</h4>
+
+<p class="mb-4"><strong>Playback:</strong> the Companion uses URLs and tab/window identifiers for streams launched from the Hub, media elements, player controls, playback state and switch input. This lets it operate the player, return to your Hub and update supported episode links. It does not collect a general browser history.</p>
+<p class="mb-4"><strong>Preferences:</strong> scan timing, input sensitivity, scan mode, voice preferences and source permissions are used to personalize controls. Temporary playback and scan state is stored in browser session storage. News preferences and an optional calendar address use extension local storage; they are not synchronized through Chrome or Edge account sync by this extension.</p>
+<p class="mb-4"><strong>Calendar:</strong> if you connect a private Google Calendar iCal address, the extension stores that address locally and retrieves the calendar from Google. The address is an access credential. Calendar data can contain names, event descriptions, locations and other personal information. The extension processes it to display your week in Day Hub. It does not send your calendar to NARBE LLC.</p>
+<p class="mb-4"><strong>News:</strong> when enabled, the extension retrieves public feeds. An optional place name supplied for local news is sent to Google News as a search term.</p>
+
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Website storage and external services</h4>
+<p class="mb-4">The Hub website stores journal entries, streaming titles, episode links, recent playback, search history, personal vocabulary and settings in that browser's website storage. These are separate from extension storage. The public installation starts with an empty streaming library and journal. Exported backups go to the location you choose.</p>
+<p class="mb-4">Keyboard predictions use a bundled on-device model with a local fallback. Typed prediction text is not sent to an AI service. Speech output uses your browser or operating system's selected voice; those voice services may have their own network and privacy behavior.</p>
+<p class="mb-4">Optional weather searches send a place name to Open-Meteo's geocoding service, and weather requests send the selected coordinates to Open-Meteo. Optional movie metadata searches send titles and metadata identifiers through NARBE LLC's Cloudflare Worker to TMDB. No shared TMDB credential is delivered to the browser. Image requests go to the relevant image host.</p>
+<p class="mb-4"><strong>YouTube Search uses YouTube API Services.</strong> When you search, your search terms and a verification token are sent to NARBE LLC's YouTube search service hosted on Cloudflare; that service retrieves results from YouTube. Google receives requests for player software, thumbnails and videos. YouTube may serve advertisements and use cookies or similar technology on your device. These are external services, even though the keyboard's predictions run locally. See the <a class="text-narbe-cyan hover:text-narbe-orange transition-colors" href="https://policies.google.com/privacy">Google Privacy Policy</a>. By using YouTube Search, you agree to the <a class="text-narbe-cyan hover:text-narbe-orange transition-colors" href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>.</p>
+<p class="mb-4">YouTube Search uses Cloudflare Turnstile to help prevent automated abuse. Cloudflare processes browser, device and connection information, including IP address, to issue a verification token. See the <a class="text-narbe-cyan hover:text-narbe-orange transition-colors" href="https://www.cloudflare.com/turnstile-privacy-policy/">Cloudflare Turnstile Privacy Policy</a>. The first-use privacy choice is stored locally. You can stop using the feature and clear site data to remove that choice and local search history.</p>
+<p class="mb-4">Streaming services receive the video links you open and handle their own sign-ins, cookies, playback and subscriptions. The Companion does not read account passwords or authentication cookies. GitHub Pages, Cloudflare, feed providers, media services and hosts of fonts, images and software libraries receive normal connection information such as your IP address and requested resource. Their policies apply to their services.</p>
+<p class="mb-4">The supplied TMDB Worker configuration disables application request logging and observability, and uses request information for rate limiting and public metadata caching. This statement applies to the TMDB Worker, not the separate YouTube search service or infrastructure providers. Service providers may retain operational or security records under their own policies. Do not include private information in public search requests. Contact us with questions about a request sent to our services.</p>
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Use and sharing</h4>
+<p class="mb-4">Information is used only to provide the features you choose. NARBE LLC does not sell personal data, use it for advertising, use it for credit decisions, or transfer it for unrelated purposes. The extension has no endpoint that uploads your journals, calendar contents, switch history or personal library to NARBE LLC. Data may be sent directly to the services described above when you use those features.</p>
+<p class="mb-4">The use of information received through browser APIs is limited to the Companion's stated functionality and follows the Chrome Web Store User Data Policy, including its Limited Use requirements, and Microsoft Edge Add-ons data-use requirements.</p>
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Your choices and deletion</h4>
+<p class="mb-4">Enable or revoke individual sources in Companion settings. Remove a calendar there to delete its stored address and revoke the extension's calendar access; invalidate a shared private calendar link in Google Calendar if you need to revoke the link itself. Uninstalling the extension removes its local storage; temporary session state is cleared when the browser session ends. Local website data remains until you clear it or the browser removes it. To remove the website's saved data, use Hub Settings → My data, or clear site data in your browser. Clearing all site data also resets the YouTube privacy choice. Removing the extension does not remove website storage or exported backup files. Export important entries before clearing storage. The website's offline cache contains public application assets, not authenticated feeds or streaming video. Clearing local data does not delete records held by third-party services; use their privacy controls for that.</p>
+<h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-4">Contact and changes</h4>
+<p class="mb-4">For support, privacy questions or deletion assistance, contact <a class="text-narbe-cyan hover:text-narbe-orange transition-colors" href="mailto:narbehousellc@gmail.com">narbehousellc@gmail.com</a>. Information you choose to email is used to respond to your request. Changes to data handling will be reflected on this page before release.</p>
+
+        <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2 mt-0">⚠️ Disclaimer & Warranty</h4>
+                <p class="mb-4"><strong class="text-white">THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software supports access to tools and games through one or two switches. It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
                 <p class="mb-4">THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK.</p>
-                
+
                 <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">™ Trademark & Intellectual Property</h4>
                 <p class="mb-4">"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong class="text-white">NARBE LLC</strong>. All rights reserved.</p>
                 <p class="mb-4">The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener" class="text-narbe-cyan hover:text-narbe-orange transition-colors">MIT License</a> applies to the <strong class="text-white">source code only</strong> and does not grant any rights to use NARBE LLC's trademarks.</p>
-                
+
                 <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">📜 License & Derivative Works</h4>
                 <p class="mb-4">This project's source code is licensed under the <strong class="text-white">MIT License</strong>. If you fork, modify, or redistribute this software, you <strong class="text-white">MUST</strong> clearly indicate that your version is a modified/derivative work and NOT the original project.</p>
-                
+
                 <h4 class="text-narbe-orange uppercase tracking-wider font-semibold mb-2">📧 Contact</h4>
                 <p class="mb-4">For partnership, branding, or legal inquiries: <a href="https://narbehouse.com" target="_blank" rel="noopener" class="text-narbe-cyan hover:text-narbe-orange transition-colors">narbehouse.com</a></p>
-                
+
                 <div class="flex flex-wrap gap-4 justify-center pt-4 border-t border-white/10 mt-4">
                     <span>© <span id="footer-year">2026</span> NARBE LLC</span>
                     <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
@@ -823,7 +850,7 @@
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
-        
+
         // Update year
         const year = new Date().getFullYear();
         document.getElementById('year').textContent = year;
@@ -838,7 +865,7 @@
                 }
             });
         }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-        
+
         revealElements.forEach(el => revealObserver.observe(el));
 
         // App Launcher
@@ -846,9 +873,9 @@
             const container = document.getElementById('iframe-app-container');
             const iframe = document.getElementById('app-iframe');
             const titleEl = document.getElementById('iframe-title');
-            
+
             if (!container || !iframe) return;
-            
+
             iframe.src = path;
             titleEl.textContent = title;
             container.classList.add('active');
@@ -858,18 +885,18 @@
         function closeApp(redirectToHub = false) {
             const container = document.getElementById('iframe-app-container');
             const iframe = document.getElementById('app-iframe');
-            
+
             if (!container) return;
-            
+
             container.classList.remove('active');
-            
+
             setTimeout(() => {
                 if (iframe) iframe.src = 'about:blank';
                 if (redirectToHub) {
                     window.location.href = 'bennyshub/index.html';
                 }
             }, 300);
-            
+
             document.body.style.overflow = '';
         }
 

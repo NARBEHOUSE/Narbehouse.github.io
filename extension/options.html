@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Companion settings · Benny's Hub</title><link rel="stylesheet" href="options.css"></head>
+<body><main>
+  <header>
+    <div class="topline"><span class="wordmark">Benny's Hub <span>/ Companion</span></span><span class="version" id="version"></span></div>
+    <p class="eyebrow">YOUR BROWSER, YOUR SETTINGS</p>
+    <h1>Companion settings</h1>
+    <p class="intro">Choose the sources that work with your Hub.</p>
+  </header>
+  <section class="quick-start" aria-labelledby="quick-heading">
+    <div><h2 id="quick-heading">Get everything ready</h2><p>Turn on all streaming services and news with one browser permission request. You can turn off any source below.</p></div>
+    <button id="enable-all" class="primary" disabled>Enable all sources <span aria-hidden="true">↗</span></button>
+  </section>
+  <p id="status" role="status" aria-live="polite"></p>
+  <section class="sources" aria-labelledby="streaming-heading">
+    <div class="section-heading"><div><p class="eyebrow">WATCH</p><h2 id="streaming-heading">Streaming services</h2></div><span class="count" id="source-count">Checking access…</span></div>
+    <p class="section-description">Add the player control bar to streams opened from the Hub. Sign in on each service as usual.</p>
+    <div id="services" class="grid"></div>
+    <p class="hint">Green is on. Gray is off. Changes are saved automatically.</p>
+  </section>
+  <section class="day-section" aria-labelledby="day-heading">
+    <div class="section-heading"><div><p class="eyebrow">YOUR DAY</p><h2 id="day-heading">Day Hub</h2></div></div>
+    <div class="source-card news-card">
+      <span class="source-icon news-icon" aria-hidden="true">N</span>
+      <div class="source-copy"><h3 id="news-label">News</h3><p>NPR, BBC &amp; Google News</p></div>
+      <button id="news" class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="news-label" disabled><span class="toggle-state">Off</span><span class="toggle-track" aria-hidden="true"></span></button>
+    </div>
+    <details class="calendar-panel">
+      <summary><span>Calendar <small>Your private Google Calendar</small></span><span class="count" id="calendar-status">Not connected</span></summary>
+      <form id="calendar-form">
+        <label for="calendar">Private iCal address</label><input id="calendar" type="password" autocomplete="off" placeholder="Paste your .ics address" aria-describedby="calendar-note">
+        <p class="hint" id="calendar-note">Stored only in this browser profile. Your address is never shown here after saving.</p>
+        <div class="actions"><button class="primary" type="submit">Connect calendar</button><button id="clear-calendar" class="secondary" type="button">Remove calendar</button></div>
+      </form>
+    </details>
+  </section>
+  <details class="advanced" data-development-only><summary>Advanced · Local testing</summary><p>Use the development video page on this computer. Not needed for streaming services.</p><button id="fixture" class="secondary">Enable local video test</button></details>
+  <footer><p><a href="https://narbehouse.github.io/bennyshub/" target="_blank" rel="noopener">Open Benny's Hub</a> · <a href="https://narbehouse.github.io/bennyshub/companion-privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="mailto:narbehousellc@gmail.com">Support</a></p><p>Space: next · Hold Space: previous · Enter: choose</p><span>Developed by NARBE LLC</span></footer>
+</main><script type="module" src="options.mjs"></script></body></html>

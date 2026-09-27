@@ -1,0 +1,37 @@
+# Private runtime data must never be committed or deployed.
+**/chrome_profile/
+**/__pycache__/
+*.pyc
+*.log
+.env
+.env.*
+!.env.example
+TO BE ADDED/streaming/data/
+TO BE ADDED/streaming/timd-api.json
+TO BE ADDED/rt-convo/api.txt
+TO BE ADDED/rt-convo/test-pc-*.json
+**/*.pem
+**/*.key
+# These files currently contain empty templates; never overwrite them with personal data.
+# Export backups outside the website tree. Gitignore alone is not a deployment filter.
+
+node_modules/
+dist/
+.test-profile/
+artifacts/
+releases/
+output/
+backups/
+*.zip
+TO BE ADDED/
+playwright-report/
+test-results/
+
+.dev.vars
+.dev.vars.*
+workers/**/.wrangler/
+
+# Generated art reports and recording notes are not website runtime assets.
+bennyshub/apps/games/BENNYSFOOTBALL/art/out/
+bennyshub/apps/games/BENNYSBASEBALL2/art/out/
+**/DESKTOP_PROMPT.txt

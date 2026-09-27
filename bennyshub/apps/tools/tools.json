@@ -6,7 +6,10 @@
       "description": "Predictive, simple input mapped for two-button access.",
       "path": "apps/tools/keyboard/index.html",
       "image": "images/tools/keyboard.png",
-      "genres": ["Communication", "Accessibility"]
+      "genres": [
+        "Communication",
+        "Accessibility"
+      ]
     },
     {
       "id": "phraseboard",
@@ -14,7 +17,10 @@
       "description": "Editable phrase & media tiles with scanning and speak-out.",
       "path": "apps/tools/phraseboard/index.html",
       "image": "images/tools/phraseboard.png",
-      "genres": ["Communication", "Accessibility"]
+      "genres": [
+        "Communication",
+        "Accessibility"
+      ]
     },
     {
       "id": "ytsearch",
@@ -22,7 +28,45 @@
       "description": "Search and watch YouTube videos with accessible scanning controls.",
       "path": "apps/tools/ytsearch/index.html",
       "image": "images/tools/ytsearch.png",
-      "genres": ["Entertainment", "Accessibility", "Media"]
+      "genres": [
+        "Entertainment",
+        "Accessibility",
+        "Media"
+      ]
+    },
+    {
+      "id": "dayhub",
+      "title": "Day Hub",
+      "description": "Time, optional weather, news and your calendar.",
+      "path": "apps/tools/dayhub/index.html",
+      "image": "images/tools/dayhub.png",
+      "genres": [
+        "Daily living"
+      ],
+      "requiresExtension": "dayhub"
+    },
+    {
+      "id": "journal",
+      "title": "Journal",
+      "description": "Private entries, spoken prompts and a switch-accessible keyboard.",
+      "path": "apps/tools/journal/index.html",
+      "image": "images/tools/journal.png",
+      "genres": [
+        "Communication"
+      ],
+      "requiresExtension": "journal"
+    },
+    {
+      "id": "streaming",
+      "title": "Streaming",
+      "description": "Your streaming links with companion player controls.",
+      "path": "apps/tools/streaming/index.html",
+      "image": "images/tools/streaming.png",
+      "genres": [
+        "Entertainment",
+        "Media"
+      ],
+      "requiresExtension": "streaming"
     }
   ]
 }

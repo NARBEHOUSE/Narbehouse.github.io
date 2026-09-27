@@ -246,7 +246,7 @@ package, and proves the result runs. It finishes by printing the interpreter
 path:
 
 ```
-WAM is ready: /Users/you/wam/.venv/bin/python
+WAM is ready: ~/wam/.venv/bin/python
 ```
 
 If it stops with *"WAM requires Python 3.9 or newer"*, install Python first —

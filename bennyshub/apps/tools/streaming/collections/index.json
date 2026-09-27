@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "region": "US",
+  "checkedDate": "2026-09-27",
+  "collections": [
+    {
+      "id": "netflix",
+      "service": "Netflix",
+      "file": "netflix-starter.json",
+      "label": "Family mix",
+      "count": 50,
+      "access": "Subscription required. Availability depends on your country and plan.",
+      "hosts": [
+        "www.netflix.com"
+      ]
+    },
+    {
+      "id": "disney",
+      "service": "Disney+",
+      "file": "disney-starter.json",
+      "label": "Disney classics & Pixar",
+      "count": 81,
+      "access": "Subscription required. Availability depends on your country and plan.",
+      "hosts": [
+        "www.disneyplus.com"
+      ]
+    },
+    {
+      "id": "hulu",
+      "service": "Hulu",
+      "file": "hulu-starter.json",
+      "label": "Family mix",
+      "count": 37,
+      "access": "U.S. subscription required. Catalog and plan restrictions apply.",
+      "hosts": [
+        "www.hulu.com"
+      ]
+    },
+    {
+      "id": "prime",
+      "service": "Prime Video",
+      "file": "prime-starter.json",
+      "label": "Family mix",
+      "count": 12,
+      "access": "Check the offer on Amazon: a subscription, rental or purchase may be required.",
+      "hosts": [
+        "www.primevideo.com"
+      ]
+    },
+    {
+      "id": "tubi",
+      "service": "Tubi",
+      "file": "tubi-starter.json",
+      "label": "Family mix",
+      "count": 37,
+      "access": "Free with ads where available. Companion controls for Tubi are in preview.",
+      "hosts": [
+        "tubitv.com"
+      ]
+    },
+    {
+      "id": "youtube",
+      "service": "YouTube",
+      "file": "youtube-starter.json",
+      "label": "Free short films",
+      "count": 6,
+      "access": "Free short films on official creator channels. Ads or regional restrictions may apply.",
+      "hosts": [
+        "www.youtube.com"
+      ]
+    }
+  ]
+}

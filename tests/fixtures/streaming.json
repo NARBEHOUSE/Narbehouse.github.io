@@ -1,0 +1,32 @@
+[
+  {
+    "id": "demo-show",
+    "title": "Sample show",
+    "url": "https://www.youtube.com/watch?v=fixture-show",
+    "type": "shows",
+    "genre": "Test",
+    "description": "Synthetic test entry; not included in the public library.",
+    "director": "",
+    "actors": "",
+    "year": "",
+    "image": "",
+    "service": "",
+    "service_icon": "",
+    "trailer": ""
+  },
+  {
+    "id": "demo-movie",
+    "title": "Sample movie",
+    "url": "https://www.youtube.com/watch?v=fixture-movie",
+    "type": "movies",
+    "genre": "Test",
+    "description": "Synthetic test entry; not included in the public library.",
+    "director": "",
+    "actors": "",
+    "year": "",
+    "image": "",
+    "service": "",
+    "service_icon": "",
+    "trailer": ""
+  }
+]

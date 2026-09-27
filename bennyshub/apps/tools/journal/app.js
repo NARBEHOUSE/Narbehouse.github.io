@@ -1,0 +1,1457 @@
+(() => {
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  // DOM Elements
+  const mainMenu = $("#mainMenu");
+  const entriesScreen = $("#entriesScreen");
+  const optionsScreen = $("#optionsScreen");
+  const keyboardScreen = $("#keyboardScreen");
+  const questionModal = $("#questionModal");
+  const entryViewModal = $("#entryViewModal");
+  const changeViewModal = $("#changeViewModal");
+  const deleteConfirmModal = $("#deleteConfirmModal");
+  const textBar = $("#textBar");
+  const predictBar = $("#predictBar");
+  const kb = $("#keyboard");
+  const entriesList = $("#entriesList");
+  const currentPeriodLabel = $("#currentPeriod");
+  const datePreview = $("#datePreview");
+
+  // Settings
+  const defaultSettings = {
+    theme: "default",
+    highlightColor: "yellow"
+  };
+
+  let settings = loadSettings();
+  function loadSettings() {
+    try {
+      const v = JSON.parse(localStorage.getItem("benny-web:v1:journal.settings"));
+      // Filter out old settings keys if they exist
+      const { scanSpeed, autoScan, ...valid } = v || {};
+      return { ...defaultSettings, ...valid };
+    } catch {
+      return { ...defaultSettings };
+    }
+  }
+  function saveSettings() {
+    localStorage.setItem("benny-web:v1:journal.settings", JSON.stringify(settings));
+  }
+
+  // Theme management
+  const themes = ["default", "light", "dark", "blue", "green", "purple", "orange", "red"];
+  const highlightColors = ["yellow", "pink", "green", "orange", "black", "white", "purple", "red"];
+  let currentThemeIndex = themes.indexOf(settings.theme) || 0;
+  let currentHighlightIndex = highlightColors.indexOf(settings.highlightColor) || 0;
+
+  function applyTheme(theme) {
+    themes.forEach(t => document.body.classList.remove(`theme-${t}`));
+    if (theme !== "default") {
+      document.body.classList.add(`theme-${theme}`);
+    }
+    settings.theme = theme;
+    saveSettings();
+    updateDisplays();
+  }
+
+  function applyHighlightColor(color) {
+    highlightColors.forEach(c => document.body.classList.remove(`highlight-${c}`));
+    document.body.classList.add(`highlight-${color}`);
+    settings.highlightColor = color;
+    saveSettings();
+    updateDisplays();
+  }
+
+  // Scan timing & Manager Integration
+  let currentScanInterval = 1000;
+  let isAutoScanning = false;
+
+  if (window.NarbeScanManager) {
+    const s = window.NarbeScanManager.getSettings();
+    currentScanInterval = s.scanInterval;
+    isAutoScanning = s.autoScan;
+
+    window.NarbeScanManager.subscribe((s) => {
+      currentScanInterval = s.scanInterval;
+      isAutoScanning = s.autoScan;
+
+      if (isAutoScanning) {
+        stopAutoScan();
+        startAutoScan();
+      } else {
+        stopAutoScan();
+      }
+      updateDisplays();
+    });
+  }
+
+  // Helper to get derived timing
+  function getScanTimings() {
+    return {
+      forward: currentScanInterval,
+      backward: currentScanInterval,
+      longPress: 3000
+    };
+  }
+
+  let autoScanInterval = null;
+
+  // TTS
+  function stripEmojis(text) {
+    // Remove emojis, symbols, and special characters that TTS shouldn't read
+    return text
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Emojis
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Misc symbols
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Dingbats
+      .replace(/[◀▶🔊🗑️⚙⏻✓✕⌫⌦—]/g, '')      // Specific icons used in the app
+      .replace(/\s+/g, ' ')                    // Clean up extra spaces
+      .trim();
+  }
+
+  function speak(text) {
+    if (window.NarbeVoiceManager) {
+      window.NarbeVoiceManager.cancel();
+      let cleanText = stripEmojis(text);
+
+      // Fix for short uppercase words (like "IT", "IS") being read as letters
+      // If text is short (<= 4 chars) and fully uppercase, convert to lowercase
+      // Exception for "I" which should be read as "I" (though lowercase "i" usually works too)
+      if (cleanText && cleanText.length > 1 && cleanText.length <= 4 && cleanText === cleanText.toUpperCase()) {
+        cleanText = cleanText.toLowerCase();
+      }
+
+      if (cleanText) {
+        setTimeout(() => window.NarbeVoiceManager.speak(cleanText), 50);
+      }
+    }
+  }
+
+  // Journal Questions based on time of day
+  let questions = {
+    morning: [],
+    afternoon: [],
+    evening: []
+  };
+
+  async function loadQuestions() {
+    try {
+      const response = await fetch('questions.json');
+      if (response.ok) {
+        const data = await response.json();
+        questions = data;
+        console.log('Questions loaded successfully');
+      } else {
+        console.error('Failed to load questions');
+      }
+    } catch (e) {
+      console.error('Error loading questions:', e);
+    }
+  }
+
+  // Track used questions for today
+  let usedQuestionsToday = [];
+  let lastQuestionDate = null;
+
+  function getTodayDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  }
+
+  function loadUsedQuestions() {
+    try {
+      const stored = localStorage.getItem("benny-web:v1:journal.usedQuestions");
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.date === getTodayDateString()) {
+          usedQuestionsToday = data.questions || [];
+          lastQuestionDate = data.date;
+          return;
+        }
+      }
+    } catch (e) {}
+    // Reset for new day
+    usedQuestionsToday = [];
+    lastQuestionDate = getTodayDateString();
+    saveUsedQuestions();
+  }
+
+  function saveUsedQuestions() {
+    localStorage.setItem("benny-web:v1:journal.usedQuestions", JSON.stringify({
+      date: getTodayDateString(),
+      questions: usedQuestionsToday
+    }));
+  }
+
+  function getTimeBasedQuestions() {
+    const hour = new Date().getHours();
+    // Morning: 3am (3) to 11:59am (before 12)
+    if (hour >= 3 && hour < 12) return questions.morning;
+    // Afternoon: 12pm (12) to 4:59pm (before 17)
+    if (hour >= 12 && hour < 17) return questions.afternoon;
+    // Evening: 5pm (17) to 2:59am (before 3) - includes hours 17-23 and 0-2
+    return questions.evening;
+  }
+
+  function getAvailableQuestions() {
+    const timeQuestions = getTimeBasedQuestions();
+    // Also check entries for today to see which questions were answered
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const answeredToday = entries
+      .filter(e => {
+        const d = new Date(e.date);
+        return d >= todayStart && d <= todayEnd;
+      })
+      .map(e => e.question);
+
+    // Combine used questions from this session and answered questions
+    const allUsed = new Set([...usedQuestionsToday, ...answeredToday]);
+
+    return timeQuestions.filter(q => !allUsed.has(q));
+  }
+
+  function getRandomQuestion() {
+    // Check if it's a new day
+    if (lastQuestionDate !== getTodayDateString()) {
+      usedQuestionsToday = [];
+      lastQuestionDate = getTodayDateString();
+      saveUsedQuestions();
+    }
+
+    const available = getAvailableQuestions();
+
+    if (available.length === 0) {
+      // All questions used, reset and pick from all
+      usedQuestionsToday = [];
+      saveUsedQuestions();
+      const allQuestions = getTimeBasedQuestions();
+      return allQuestions[Math.floor(Math.random() * allQuestions.length)];
+    }
+
+    const question = available[Math.floor(Math.random() * available.length)];
+    usedQuestionsToday.push(question);
+    saveUsedQuestions();
+    return question;
+  }
+
+  // Entry management
+  let entries = [];
+  let currentViewDate = new Date();
+  let currentQuestion = "";
+  let entryToDelete = null;
+  let editingEntryId = null;
+
+  async function loadEntries() {
+    try {
+      const stored = BennyData.get('journal.entries', []);
+      if (!Array.isArray(stored)) throw new Error('Invalid journal data.');
+      entries = stored;
+    } catch (error) { entries = []; alert(error.message + ' Use My data in the Hub to export your saved data before making changes.'); }
+  }
+  function saveEntries() {
+    try { BennyData.set('journal.entries', entries); }
+    catch (error) { alert(error.message); throw error; }
+  }
+
+
+  function addEntry(question, answer) {
+    const entry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      question: question,
+      answer: answer
+    };
+    entries.unshift(entry);
+    saveEntries();
+    return entry;
+  }
+
+  function updateEntry(id, answer) {
+    const entryIndex = entries.findIndex(e => e.id === id);
+    if (entryIndex !== -1) {
+      entries[entryIndex].answer = answer;
+      saveEntries();
+      return entries[entryIndex];
+    }
+    return null;
+  }
+
+  function deleteEntry(entryId) {
+    entries = entries.filter(e => e.id !== entryId);
+    saveEntries();
+  }
+
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  function formatShortDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  function formatCurrentViewDate() {
+    return currentViewDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+
+  // Navigation state
+  let currentScreen = "mainMenu";
+  let scanIndex = -1;  // Start at -1 so nothing is highlighted until first scan
+  let scanItems = [];
+  let inButtonMode = false;
+  let hasStartedScanning = false;  // Track if user has started scanning
+
+  // Scanning controls
+  let spacebarPressed = false;
+  let returnPressed = false;
+  let spacebarPressTime = null;
+  let returnPressTime = null;
+  let longPressTriggered = false;
+  let backwardScanInterval = null;
+  let backwardScanningOccurred = false;
+
+  // Screen management
+  function showScreen(screenId) {
+    $$(".screen").forEach(s => s.classList.remove("active"));
+    $(`#${screenId}`).classList.add("active");
+    currentScreen = screenId;
+    scanIndex = -1;  // Start at -1 for new screens
+    hasStartedScanning = false;
+    inButtonMode = false;
+    updateScanItems();
+    clearAllHighlights();  // Don't highlight anything initially
+  }
+
+  function updateScanItems() {
+    scanItems = [];
+
+    // Check for open modals first (highest priority)
+    if (!deleteConfirmModal.classList.contains("hidden")) {
+      scanItems = Array.from($$("#deleteConfirmModal .modal-btn"));
+      return;
+    }
+    if (!changeViewModal.classList.contains("hidden")) {
+      scanItems = Array.from($$("#changeViewModal .modal-btn"));
+      return;
+    }
+    if (!questionModal.classList.contains("hidden")) {
+      scanItems = Array.from($$("#questionModal .modal-btn"));
+      return;
+    }
+    if (!entryViewModal.classList.contains("hidden")) {
+      scanItems = Array.from($$("#entryViewModal .modal-btn:not(:disabled)"));
+      return;
+    }
+
+    if (currentScreen === "mainMenu") {
+      scanItems = Array.from($$("#mainMenu .menu-btn"));
+    } else if (currentScreen === "entriesScreen") {
+      // Keep the date shortcut reachable before the entry list.
+      scanItems = [
+        ...Array.from($$("#entriesScreen .view-label-container .action-btn:not(:disabled)")),
+        ...Array.from($$("#entriesScreen .entries-actions .action-btn")),
+        ...Array.from($$("#entriesScreen .entry-item")),
+        ...Array.from($$("#entriesScreen .journal-date-nav .action-btn:not(:disabled)"))
+      ];
+    } else if (currentScreen === "optionsScreen") {
+      scanItems = [
+        ...Array.from($$("#optionsScreen .option-btn")),
+        ...Array.from($$("#optionsScreen .menu-btn"))
+      ];
+    } else if (currentScreen === "keyboardScreen") {
+      updateKeyboardScanItems();
+      return;
+    }
+  }
+
+  function clearAllHighlights() {
+    $$(".highlighted").forEach(el => el.classList.remove("highlighted"));
+  }
+
+  function highlightCurrentItem() {
+    clearAllHighlights();
+    if (scanIndex >= 0 && scanItems[scanIndex]) {
+      scanItems[scanIndex].classList.add("highlighted");
+      scanItems[scanIndex].scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }
+
+  // Scanning controls managed by ScanManager
+  function handleScan() {
+    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.scan(1); return; }
+    if (currentScreen === "keyboardScreen") {
+      keyboardScanForward();
+      return;
+    }
+    // First scan starts at 0, subsequent scans increment
+    if (scanIndex < 0) {
+      scanIndex = 0;
+    } else {
+      scanIndex = (scanIndex + 1) % scanItems.length;
+    }
+    highlightCurrentItem();
+    speakCurrentItem();
+  }
+
+  function handleScanBack() {
+    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.scan(-1); return; }
+    if (currentScreen === "keyboardScreen") {
+      keyboardScanBackward();
+      return;
+    }
+    // If we haven't started scanning, start at last item
+    if (scanIndex < 0) {
+      scanIndex = scanItems.length - 1;
+    } else {
+      scanIndex = (scanIndex - 1 + scanItems.length) % scanItems.length;
+    }
+    highlightCurrentItem();
+    speakCurrentItem();
+  }
+
+  function handleSelect() {
+    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.select(); return; }
+    if (currentScreen === "keyboardScreen") {
+      keyboardSelect();
+      return;
+    }
+    // Only select if we have a valid index
+    if (scanIndex >= 0 && scanItems[scanIndex]) {
+      scanItems[scanIndex].click();
+    }
+  }
+
+  function speakCurrentItem() {
+    if (scanItems[scanIndex]) {
+      const text = scanItems[scanIndex].textContent || scanItems[scanIndex].innerText;
+      speak(stripEmojis(text.trim()));
+    }
+  }
+
+  // Input Handling using ScanManager patterns
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      startScanning();
+    } else if (e.code === "Enter") {
+      e.preventDefault();
+      startSelecting();
+    }
+  });
+
+  document.addEventListener("keyup", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      stopScanning();
+    } else if (e.code === "Enter") {
+      e.preventDefault();
+      stopSelecting();
+    }
+  });
+
+  // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+  document.addEventListener('narbe-input-cancelled', (e) => {
+    if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+      // If cancelled due to 'too-short', still perform forward scan - user intended to press
+      const wasBackwardScanning = backwardScanningOccurred;
+      spacebarPressed = false;
+      spacebarPressTime = null;
+      backwardScanningOccurred = false;
+      if (backwardScanInterval) {
+        clearInterval(backwardScanInterval);
+        backwardScanInterval = null;
+      }
+      // Perform forward scan for short presses (not backward scanning)
+      if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
+        handleScan();
+      }
+    }
+    if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+      const wasLongPress = longPressTriggered;
+      returnPressed = false;
+      returnPressTime = null;
+      longPressTriggered = false;
+      // Perform select for short presses
+      if (e.detail.reason === 'too-short' && !wasLongPress) {
+        handleSelect();
+      }
+    }
+  });
+
+  function startScanning() {
+    if (!spacebarPressed) {
+      spacebarPressed = true;
+      spacebarPressTime = Date.now();
+      backwardScanningOccurred = false;
+
+      const timings = getScanTimings();
+
+      setTimeout(() => {
+        if (spacebarPressed && (Date.now() - spacebarPressTime) >= timings.longPress) {
+          backwardScanningOccurred = true;
+          handleScanBack(); // Scan once immediately
+          backwardScanInterval = setInterval(() => {
+            if (spacebarPressed) {
+               handleScanBack();
+            }
+          }, timings.backward);
+        }
+      }, timings.longPress);
+    }
+  }
+
+  function stopScanning() {
+    if (spacebarPressed) {
+      spacebarPressed = false;
+      const pressDuration = Date.now() - spacebarPressTime;
+
+      if (backwardScanInterval) {
+        clearInterval(backwardScanInterval);
+        backwardScanInterval = null;
+      }
+
+      // Only scan forward if it wasn't a long press (backward scan)
+      if (!backwardScanningOccurred) {
+         handleScan();
+      }
+
+      spacebarPressTime = null;
+      backwardScanningOccurred = false;
+    }
+  }
+
+  function startSelecting() {
+    if (!returnPressed) {
+      returnPressed = true;
+      returnPressTime = Date.now();
+      longPressTriggered = false;
+
+      const timings = getScanTimings();
+      if (!changeViewModal.classList.contains("hidden")) {
+        setTimeout(() => {
+          if (returnPressed && !changeViewModal.classList.contains("hidden") && Date.now() - returnPressTime >= timings.longPress) {
+            longPressTriggered = true;
+            BennyJournalCalendar.resetScan();
+            speak("Calendar rows");
+          }
+        }, timings.longPress);
+      }
+      // Check for long press (only for keyboard screen mostly)
+      if (currentScreen === "keyboardScreen") {
+        setTimeout(() => {
+          if (returnPressed && (Date.now() - returnPressTime) >= timings.longPress) {
+            handleKeyboardLongPress();
+          }
+        }, timings.longPress);
+      }
+    }
+  }
+
+  function stopSelecting() {
+    if (returnPressed) {
+      returnPressed = false;
+      const pressDuration = Date.now() - returnPressTime;
+
+      if (!longPressTriggered && pressDuration >= 100) {
+        handleSelect();
+      }
+
+      returnPressTime = null;
+      longPressTriggered = false;
+    }
+  }
+
+  // Auto scan - Delegated to ScanManager integration
+  function startAutoScan() {
+    if (!autoScanInterval) {
+      const interval = window.NarbeScanManager
+        ? window.NarbeScanManager.getScanInterval()
+        : 2000;
+
+      autoScanInterval = setInterval(() => handleScan(), interval);
+    }
+  }
+
+  function stopAutoScan() {
+    if (autoScanInterval) {
+      clearInterval(autoScanInterval);
+      autoScanInterval = null;
+    }
+  }
+
+  // ========== KEYBOARD FUNCTIONALITY ==========
+  let keyboardBuffer = "";
+  let keyboardRowIndex = 0;
+  let keyboardButtonIndex = 0;
+  let keyboardInRowMode = true;
+
+  const keyboardRows = [
+    ["Space", "Del Letter", "Del Word", "Clear", "Send", "Exit"],
+    ["A", "B", "C", "D", "E", "F"],
+    ["G", "H", "I", "J", "K", "L"],
+    ["M", "N", "O", "P", "Q", "R"],
+    ["S", "T", "U", "V", "W", "X"],
+    ["Y", "Z", "0", "1", "2", "3"],
+    ["4", "5", "6", "7", "8", "9"]
+  ];
+
+  const controlSymbols = {
+    "Space": "—",
+    "Del Letter": "⌫",
+    "Del Word": "⌦",
+    "Clear": "✕",
+    "Send": "✓",
+    "Exit": "⏻"
+  };
+
+  function renderKeyboard() {
+    kb.innerHTML = "";
+    keyboardRows.forEach((row, rIdx) => {
+      row.forEach((key) => {
+        const btn = document.createElement("button");
+        btn.className = "key" + (rIdx === 0 ? " ctrl" : "");
+
+        if (key === "Send") {
+          btn.classList.add("send");
+        } else if (key === "Exit") {
+          btn.classList.add("exit-kb");
+        }
+
+        if (rIdx === 0 && controlSymbols[key]) {
+          btn.innerHTML = `
+            <span class="ctrl-symbol">${controlSymbols[key]}</span>
+            <span class="ctrl-text">${key}</span>
+          `;
+        } else {
+          btn.textContent = key;
+        }
+
+        btn.addEventListener("click", () => {
+          if (rIdx === 0) {
+            handleKeyboardControl(key);
+          } else {
+            insertKey(key);
+          }
+        });
+        kb.appendChild(btn);
+      });
+    });
+  }
+
+  async function setKeyboardBuffer(txt) {
+    keyboardBuffer = txt;
+    textBar.textContent = keyboardBuffer + "|";
+    adjustTextSize(keyboardBuffer + "|");
+    await renderPredictions();
+  }
+
+  function adjustTextSize(text) {
+    textBar.classList.remove('text-medium', 'text-small', 'text-tiny');
+    const length = text.replace('|', '').length;
+    if (length > 100) textBar.classList.add('text-tiny');
+    else if (length > 50) textBar.classList.add('text-small');
+    else if (length > 25) textBar.classList.add('text-medium');
+  }
+
+  function handleAutoPunctuation(text) {
+    // Check for double space at the end
+    if (!text.endsWith("  ")) return text;
+
+    // Trim the trailing spaces for analysis
+    let content = text.trim();
+
+    // Case 3: Exclamation
+    // If the text before the double space ends with ".", replace it with "!"
+    if (content.endsWith(".")) {
+         return content.slice(0, -1) + "! ";
+    }
+
+    // Case 1 & 2: Adding punctuation
+    // Find the start of the current sentence.
+    const sentenceEndRegex = /([.!?])\s+/g;
+    let match;
+    let lastEndIndex = 0;
+
+    while ((match = sentenceEndRegex.exec(content)) !== null) {
+        lastEndIndex = match.index + match[0].length;
+    }
+
+    const currentSentence = content.substring(lastEndIndex);
+    const words = currentSentence.trim().split(/\s+/);
+
+    if (words.length >= 3) {
+        const firstWord = words[0].toLowerCase();
+        const questionStarters = ["who", "what", "where", "when", "why", "how"];
+
+        const lastChar = content.slice(-1);
+        if (!/[.!?]/.test(lastChar)) {
+             if (questionStarters.includes(firstWord)) {
+                 return content + "? ";
+             } else {
+                 return content + ". ";
+             }
+        }
+    }
+
+    return text;
+  }
+
+  function insertKey(k) {
+    if (k === " ") {
+      recordTypedWord();
+      let textWithSpace = keyboardBuffer + " ";
+      let processedText = handleAutoPunctuation(textWithSpace);
+      setKeyboardBuffer(processedText);
+    } else {
+      setKeyboardBuffer(keyboardBuffer + k);
+    }
+  }
+
+  function handleKeyboardControl(key) {
+    if (key === "Space") {
+      insertKey(" ");
+    } else if (key === "Del Letter") {
+      setKeyboardBuffer(keyboardBuffer.slice(0, -1));
+    } else if (key === "Del Word") {
+      setKeyboardBuffer(keyboardBuffer.trimEnd().replace(/\S+\s*$/, ""));
+    } else if (key === "Clear") {
+      setKeyboardBuffer("");
+    } else if (key === "Send") {
+      submitEntry();
+    } else if (key === "Exit") {
+      closeKeyboard();
+    }
+  }
+
+  function submitEntry() {
+    const answer = keyboardBuffer.trim();
+    if (answer) {
+      if (editingEntryId) {
+        updateEntry(editingEntryId, answer);
+        speak("Entry updated!");
+      } else {
+        addEntry(currentQuestion, answer);
+        speak("Entry saved!");
+      }
+      setTimeout(() => {
+        closeKeyboard();
+        renderEntries();
+      }, 1000);
+    } else {
+      speak("Please type an answer first");
+    }
+  }
+
+  function closeKeyboard() {
+    setKeyboardBuffer("");
+    editingEntryId = null;
+    showScreen("entriesScreen");
+    questionModal.classList.add("hidden");
+    renderEntries();
+  }
+
+  function openKeyboard() {
+    showScreen("keyboardScreen");
+    setKeyboardBuffer("");
+    renderKeyboard();
+    keyboardRowIndex = 0;
+    keyboardButtonIndex = 0;
+    keyboardInRowMode = true;
+    clearAllHighlights();
+    textBar.classList.add("highlighted");
+    speak("Text Message");
+  }
+
+  function handleKeyboardLongPress() {
+    longPressTriggered = true;
+    clearAllHighlights();
+
+    if (keyboardInRowMode) {
+      // Jump to predictive text row (last row)
+      keyboardRowIndex = keyboardRows.length + 1;
+      highlightPredictiveRow();
+      speakPredictions();
+    } else {
+      // Revert to row selection mode
+      keyboardInRowMode = true;
+      if (keyboardRowIndex === 0) {
+        textBar.classList.add("highlighted");
+        const text = keyboardBuffer.trim();
+        if (text) speak(text);
+      } else if (keyboardRowIndex === keyboardRows.length + 1) {
+        highlightPredictiveRow();
+        speakPredictions();
+      } else {
+        highlightKeyboardRow(keyboardRowIndex - 1);
+        speakRowTitle(keyboardRowIndex - 1);
+      }
+    }
+  }
+
+  function updateKeyboardScanItems() {
+    // Keyboard has special scanning logic
+  }
+
+  function keyboardScanForward() {
+    if (keyboardInRowMode) {
+      keyboardRowIndex = (keyboardRowIndex + 1) % (keyboardRows.length + 2);
+      clearAllHighlights();
+      if (keyboardRowIndex === 0) {
+        textBar.classList.add("highlighted");
+        // Only speak if there's content in the buffer
+        const text = keyboardBuffer.trim();
+        if (text) speak(text);
+      } else if (keyboardRowIndex === keyboardRows.length + 1) {
+        highlightPredictiveRow();
+        speakPredictions();
+      } else {
+        highlightKeyboardRow(keyboardRowIndex - 1);
+        speakRowTitle(keyboardRowIndex - 1);
+      }
+    } else {
+      if (keyboardRowIndex === keyboardRows.length + 1) {
+        const chips = predictBar.querySelectorAll(".chip");
+        keyboardButtonIndex = (keyboardButtonIndex + 1) % chips.length;
+        highlightPredictiveButton(keyboardButtonIndex);
+        speakPredictiveButton(keyboardButtonIndex);
+      } else if (keyboardRowIndex > 0) {
+        keyboardButtonIndex = (keyboardButtonIndex + 1) % keyboardRows[keyboardRowIndex - 1].length;
+        highlightKeyboardButton(keyboardRowIndex - 1, keyboardButtonIndex);
+        speak(keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex]);
+      }
+    }
+  }
+
+  function keyboardScanBackward() {
+    if (keyboardInRowMode) {
+      keyboardRowIndex = (keyboardRowIndex - 1 + (keyboardRows.length + 2)) % (keyboardRows.length + 2);
+      clearAllHighlights();
+      if (keyboardRowIndex === 0) {
+        textBar.classList.add("highlighted");
+        // Only speak if there's content in the buffer
+        const text = keyboardBuffer.trim();
+        if (text) speak(text);
+      } else if (keyboardRowIndex === keyboardRows.length + 1) {
+        highlightPredictiveRow();
+        speakPredictions();
+      } else {
+        highlightKeyboardRow(keyboardRowIndex - 1);
+        speakRowTitle(keyboardRowIndex - 1);
+      }
+    } else {
+      if (keyboardRowIndex === keyboardRows.length + 1) {
+        const chips = predictBar.querySelectorAll(".chip");
+        keyboardButtonIndex = (keyboardButtonIndex - 1 + chips.length) % chips.length;
+        highlightPredictiveButton(keyboardButtonIndex);
+        speakPredictiveButton(keyboardButtonIndex);
+      } else if (keyboardRowIndex > 0) {
+        const rowLen = keyboardRows[keyboardRowIndex - 1].length;
+        keyboardButtonIndex = (keyboardButtonIndex - 1 + rowLen) % rowLen;
+        highlightKeyboardButton(keyboardRowIndex - 1, keyboardButtonIndex);
+        speak(keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex]);
+      }
+    }
+  }
+
+  async function keyboardSelect() {
+    if (keyboardInRowMode) {
+      if (keyboardRowIndex === 0) {
+        const text = keyboardBuffer.trim();
+        if (text) speak(text);
+      } else {
+        keyboardInRowMode = false;
+        keyboardButtonIndex = 0;
+        clearAllHighlights();
+        if (keyboardRowIndex === keyboardRows.length + 1) {
+          highlightPredictiveButton(0);
+          speakPredictiveButton(0);
+        } else {
+          highlightKeyboardButton(keyboardRowIndex - 1, 0);
+          speak(keyboardRows[keyboardRowIndex - 1][0]);
+        }
+      }
+    } else {
+      if (keyboardRowIndex === keyboardRows.length + 1) {
+        const chips = predictBar.querySelectorAll(".chip");
+        if (chips[keyboardButtonIndex] && chips[keyboardButtonIndex].textContent.trim()) {
+          const word = chips[keyboardButtonIndex].textContent.trim();
+          const currentPartial = getCurrentWord();
+          let newBuffer = keyboardBuffer;
+          let context = keyboardBuffer;
+          if (currentPartial && !keyboardBuffer.endsWith(" ")) {
+            context = keyboardBuffer.slice(0, -currentPartial.length);
+            newBuffer = context + word + " ";
+          } else {
+            if (!keyboardBuffer.endsWith(" ") && keyboardBuffer.length) newBuffer += " ";
+            newBuffer += word + " ";
+          }
+          await setKeyboardBuffer(newBuffer);
+          recordSelectedWord(word, context);
+        }
+      } else {
+        const key = keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex];
+        if (keyboardRowIndex - 1 === 0) {
+          handleKeyboardControl(key);
+        } else {
+          insertKey(key);
+        }
+      }
+      keyboardInRowMode = true;
+      clearAllHighlights();
+      if (keyboardRowIndex === keyboardRows.length + 1) {
+        highlightPredictiveRow();
+        speakPredictions();
+      } else {
+        highlightKeyboardRow(keyboardRowIndex - 1);
+        speakRowTitle(keyboardRowIndex - 1);
+      }
+    }
+  }
+
+  function highlightKeyboardRow(rowIndex) {
+    clearAllHighlights();
+    const allKeys = kb.querySelectorAll(".key");
+    const start = rowIndex * 6;
+    for (let i = 0; i < 6; i++) {
+      if (allKeys[start + i]) {
+        allKeys[start + i].classList.add("highlighted");
+      }
+    }
+  }
+
+  function highlightKeyboardButton(rowIndex, buttonIndex) {
+    clearAllHighlights();
+    const allKeys = kb.querySelectorAll(".key");
+    const idx = rowIndex * 6 + buttonIndex;
+    if (allKeys[idx]) {
+      allKeys[idx].classList.add("highlighted");
+    }
+  }
+
+  function highlightPredictiveRow() {
+    clearAllHighlights();
+    predictBar.querySelectorAll(".chip").forEach(chip => chip.classList.add("highlighted"));
+  }
+
+  function highlightPredictiveButton(index) {
+    clearAllHighlights();
+    const chips = predictBar.querySelectorAll(".chip");
+    if (chips[index]) chips[index].classList.add("highlighted");
+  }
+
+  function speakRowTitle(rowIndex) {
+    const titles = ["controls", "a b c d e f", "g h i j k l", "m n o p q r", "s t u v w x", "y z 0 1 2 3", "4 5 6 7 8 9"];
+    if (titles[rowIndex]) speak(titles[rowIndex]);
+  }
+
+  function speakPredictions() {
+    const chips = predictBar.querySelectorAll(".chip");
+    const words = Array.from(chips).map(c => {
+      let text = c.textContent.trim();
+      // Fix for short uppercase words (like "IT", "IS") being read as letters
+      if (text && text.length > 1 && text.length <= 4 && text === text.toUpperCase()) {
+        return text.toLowerCase();
+      }
+      return text;
+    }).filter(t => t);
+
+    if (words.length) speak(words.join(", "));
+    else speak("no predictions");
+  }
+
+  function speakPredictiveButton(index) {
+    const chips = predictBar.querySelectorAll(".chip");
+    if (chips[index] && chips[index].textContent.trim()) {
+      speak(chips[index].textContent.trim());
+    }
+  }
+
+  function getCurrentWord() {
+    const trimmed = keyboardBuffer.replace(/\|/g, "").trimEnd();
+    const parts = trimmed.split(/\s+/);
+    if (keyboardBuffer.endsWith(" ")) return "";
+    return parts[parts.length - 1] || "";
+  }
+
+  // Feeds the shared prediction data (bennyshub/shared/predictive_ngrams.json)
+  // so words typed in the journal improve predictions everywhere, same as the keyboard app.
+  function recordTypedWord() {
+    if (!window.predictionSystem) return;
+    const words = keyboardBuffer.trim().split(/\s+/);
+    const lastWord = words[words.length - 1];
+    if (!lastWord) return;
+    try {
+      window.predictionSystem.recordLocalWord(lastWord);
+      if (words.length > 1) {
+        window.predictionSystem.recordNgram(words.slice(0, -1).join(' '), lastWord);
+      }
+    } catch (e) {
+      console.error('Error recording word:', e);
+    }
+  }
+
+  function recordSelectedWord(word, context) {
+    if (!window.predictionSystem) return;
+    try {
+      window.predictionSystem.recordLocalWord(word);
+      const trimmedContext = context.trim();
+      if (trimmedContext) {
+        window.predictionSystem.recordNgram(trimmedContext, word);
+      }
+    } catch (e) {
+      console.error('Error recording prediction:', e);
+    }
+  }
+
+  async function renderPredictions() {
+    let predictions = ["YES", "NO", "GOOD", "BAD", "FUN", "HAPPY"];
+
+    if (window.predictionSystem && window.predictionSystem.getHybridPredictions) {
+      try {
+        predictions = await window.predictionSystem.getHybridPredictions(keyboardBuffer);
+      } catch (e) {
+        console.error('Error getting predictions:', e);
+      }
+    }
+
+    predictBar.innerHTML = "";
+    predictions.slice(0, 6).forEach(w => {
+      const chip = document.createElement("button");
+      chip.className = "chip";
+      chip.textContent = w;
+      chip.addEventListener("click", () => {
+        const partial = getCurrentWord();
+        let newBuf = keyboardBuffer;
+        let context = keyboardBuffer;
+        if (partial && !keyboardBuffer.endsWith(" ")) {
+          context = keyboardBuffer.slice(0, -partial.length);
+          newBuf = context + w + " ";
+        } else {
+          if (!keyboardBuffer.endsWith(" ") && keyboardBuffer.length) newBuf += " ";
+          newBuf += w + " ";
+        }
+        setKeyboardBuffer(newBuf);
+        recordSelectedWord(w, context);
+      });
+      predictBar.appendChild(chip);
+    });
+
+    while (predictBar.children.length < 6) {
+      const chip = document.createElement("button");
+      chip.className = "chip";
+      chip.textContent = "";
+      chip.disabled = true;
+      predictBar.appendChild(chip);
+    }
+  }
+
+  // ========== ENTRIES DISPLAY ==========
+  function renderEntries() {
+    currentPeriodLabel.textContent = formatCurrentViewDate();
+    $('#journalDayContext').textContent = isOnTodayOrFuture() ? 'Today' : 'Viewing a past day';
+    $$('[data-action="return-today"]').forEach(button => { button.disabled = isOnTodayOrFuture(); });
+    $('[data-action="next-day"]').disabled = isOnTodayOrFuture();
+
+    // Filter entries for current day (compare dates in local timezone)
+    const viewYear = currentViewDate.getFullYear();
+    const viewMonth = currentViewDate.getMonth();
+    const viewDay = currentViewDate.getDate();
+
+    const dayEntries = entries.filter(e => {
+      const d = new Date(e.date);
+      // Compare year, month, day in local timezone
+      return d.getFullYear() === viewYear &&
+             d.getMonth() === viewMonth &&
+             d.getDate() === viewDay;
+    });
+
+    entriesList.innerHTML = "";
+
+    if (dayEntries.length === 0) {
+      entriesList.innerHTML = '<div class="no-entries">No entries for this day</div>';
+    } else {
+      dayEntries.forEach(entry => {
+        const item = document.createElement("button");
+        item.className = "entry-item";
+        const dateLabel = document.createElement('span');
+        dateLabel.className = 'entry-date-label'; dateLabel.textContent = formatShortDate(entry.date);
+        const preview = document.createElement('span'); preview.className = 'entry-preview';
+        preview.textContent = entry.question + ': ' + entry.answer; item.append(dateLabel, preview);
+        item.addEventListener("click", () => viewEntry(entry));
+        entriesList.appendChild(item);
+      });
+    }
+
+    updateScanItems();
+    highlightCurrentItem();
+  }
+
+  function viewEntry(entry) {
+    $("#entryViewDate").textContent = formatDate(entry.date);
+    $("#entryViewQuestion").textContent = entry.question;
+    $("#entryViewAnswer").textContent = entry.answer;
+    entryViewModal.classList.remove("hidden");
+    entryViewModal.dataset.entryId = entry.id;
+    updateScanItems();
+    scanIndex = -1;  // Start at -1, no highlight until first scan
+    clearAllHighlights();
+  }
+
+  function returnToToday() {
+    entryViewModal.classList.add("hidden");
+    scanIndex = -1;
+    navigateEntries("today");
+    clearAllHighlights();
+    speak("Today. " + formatCurrentViewDate());
+  }
+
+  function navigateEntries(direction) {
+    let d = new Date(currentViewDate);
+    switch (direction) {
+      case "prev-month":
+        d = BennyJournalCalendar.shiftMonth(d, -1);
+        break;
+      case "next-month":
+        d = BennyJournalCalendar.shiftMonth(d, 1);
+        break;
+      case "prev-week":
+        d.setDate(d.getDate() - 7);
+        break;
+      case "next-week":
+        d.setDate(d.getDate() + 7);
+        break;
+      case "prev-day":
+        d.setDate(d.getDate() - 1);
+        break;
+      case "next-day":
+        d.setDate(d.getDate() + 1);
+        break;
+      case "today":
+        currentViewDate = new Date();
+        renderEntries();
+        return;
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0); d.setHours(0, 0, 0, 0);
+    currentViewDate = d > today ? today : d;
+    renderEntries();
+  }
+
+  // Helper function to update the date preview in Change Date modal
+  function updateDatePreview() {
+    if (datePreview) {
+      datePreview.textContent = formatCurrentViewDate();
+      BennyJournalCalendar.render(currentViewDate, entries, date => {
+        currentViewDate = date;
+        changeViewModal.classList.add("hidden");
+        scanIndex = -1;
+        renderEntries();
+        speak(formatCurrentViewDate());
+      }, speak);
+    }
+  }
+
+  // ========== OPTIONS ==========
+  function updateDisplays() {
+    $("#themeValue").textContent = themes[currentThemeIndex].charAt(0).toUpperCase() + themes[currentThemeIndex].slice(1);
+    $("#highlightValue").textContent = highlightColors[currentHighlightIndex].charAt(0).toUpperCase() + highlightColors[currentHighlightIndex].slice(1);
+    $("#scanSpeedValue").textContent = (currentScanInterval / 1000) + "s";
+    $("#autoScanValue").textContent = isAutoScanning ? "On" : "Off";
+
+    if (window.NarbeVoiceManager) {
+      const voice = window.NarbeVoiceManager.getCurrentVoice();
+      $("#voiceValue").textContent = window.NarbeVoiceManager.getVoiceDisplayName(voice);
+      const ttsEnabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
+      $("#ttsToggleValue").textContent = ttsEnabled ? "On" : "Off";
+    }
+  }
+
+  function handleOptionClick(setting) {
+    switch (setting) {
+      case "theme":
+        currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+        applyTheme(themes[currentThemeIndex]);
+        speak(themes[currentThemeIndex]);
+        break;
+      case "highlight":
+        currentHighlightIndex = (currentHighlightIndex + 1) % highlightColors.length;
+        applyHighlightColor(highlightColors[currentHighlightIndex]);
+        speak(highlightColors[currentHighlightIndex]);
+        break;
+      case "scan-speed":
+        if (window.NarbeScanManager) {
+          window.NarbeScanManager.cycleScanSpeed();
+          const newInterval = window.NarbeScanManager.getScanInterval();
+          speak((newInterval / 1000) + " seconds");
+        }
+        break;
+      case "auto-scan":
+        if (window.NarbeScanManager) {
+          window.NarbeScanManager.toggleAutoScan();
+          const isOn = window.NarbeScanManager.getSettings().autoScan;
+          speak(isOn ? "Auto scan on" : "Auto scan off");
+        }
+        break;
+      case "voice":
+        if (window.NarbeVoiceManager) {
+          window.NarbeVoiceManager.cycleVoice();
+          updateDisplays();
+          const voice = window.NarbeVoiceManager.getCurrentVoice();
+          speak(window.NarbeVoiceManager.getVoiceDisplayName(voice));
+        }
+        break;
+      case "tts-toggle":
+        if (window.NarbeVoiceManager) {
+          const enabled = window.NarbeVoiceManager.toggleTTS();
+          updateDisplays();
+          if (enabled) speak("TTS enabled");
+        }
+        break;
+    }
+  }
+
+  // ========== EVENT HANDLERS ==========
+  // Main menu buttons
+  $$("#mainMenu .menu-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "entries") {
+        showScreen("entriesScreen");
+        renderEntries();
+        speak("Entries");
+      } else if (action === "options") {
+        showScreen("optionsScreen");
+        speak("Options");
+      } else if (action === "exit") {
+        speak("Goodbye!");
+        closeApp();
+      }
+    });
+  });
+
+  // Entries screen buttons
+  $$("#entriesScreen .action-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "question-entry") {
+        currentQuestion = getRandomQuestion();
+        $("#questionText").textContent = currentQuestion;
+        questionModal.classList.remove("hidden");
+        speak(currentQuestion);
+        updateScanItems();
+        scanIndex = -1;
+        clearAllHighlights();
+      } else if (action === "add-entry") {
+        currentQuestion = "Journal Entry";
+        editingEntryId = null;
+        openKeyboard();
+        speak("Type your entry");
+      } else if (action === "return-today") {
+        returnToToday();
+      } else if (action === "previous-day" || action === "next-day") {
+        if (action === "previous-day" || !isOnTodayOrFuture()) {
+          navigateEntries(action === "previous-day" ? "prev-day" : "next-day");
+          scanIndex = -1;
+          clearAllHighlights();
+          speak(formatCurrentViewDate());
+        }
+      } else if (action === "change-view") {
+        changeViewModal.classList.remove("hidden");
+        updateDatePreview();
+        updateScanItems();
+        scanIndex = -1;
+        clearAllHighlights();
+      } else if (action === "back-to-menu") {
+        showScreen("mainMenu");
+        speak("Journal");
+      }
+    });
+  });
+
+  // Helper function to check if current view date is today or in the future
+  function isOnTodayOrFuture() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const viewDate = new Date(currentViewDate);
+    viewDate.setHours(0, 0, 0, 0);
+    return viewDate >= today;
+  }
+
+  // Calendar Back keeps the currently displayed entries date.
+  $('[data-action="close-view-modal"]').addEventListener('click', () => {
+    BennyJournalCalendar.resetScan();
+    changeViewModal.classList.add('hidden');
+    scanIndex = -1;
+    renderEntries();
+  });
+
+  // Question modal buttons
+  $$("#questionModal .modal-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "new-question") {
+        currentQuestion = getRandomQuestion();
+        $("#questionText").textContent = currentQuestion;
+        speak(currentQuestion);
+      } else if (action === "add-answer") {
+        questionModal.classList.add("hidden");
+        openKeyboard();
+        speak("Type your answer");
+      } else if (action === "close-modal") {
+        questionModal.classList.add("hidden");
+        updateScanItems();
+        highlightCurrentItem();
+      }
+    });
+  });
+
+  // Options buttons
+  $$("#optionsScreen .option-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      handleOptionClick(btn.dataset.setting);
+    });
+  });
+
+  $$("#optionsScreen .menu-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showScreen("mainMenu");
+      speak("Journal");
+    });
+  });
+
+  // Entry view modal buttons
+  $$("#entryViewModal .modal-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "read-entry") {
+        const question = $("#entryViewQuestion").textContent;
+        const answer = $("#entryViewAnswer").textContent;
+        speak(`${question} ${answer}`);
+      } else if (action === "edit-entry") {
+        const entryId = parseInt(entryViewModal.dataset.entryId);
+        const entry = entries.find(e => e.id === entryId);
+        if (entry) {
+          editingEntryId = entryId;
+          currentQuestion = entry.question;
+          entryViewModal.classList.add("hidden");
+          openKeyboard();
+          setKeyboardBuffer(entry.answer);
+          speak("Edit your entry");
+        }
+      } else if (action === "delete-entry") {
+        entryToDelete = parseInt(entryViewModal.dataset.entryId);
+        deleteConfirmModal.classList.remove("hidden");
+        speak("Are you sure you want to delete this entry?");
+        updateScanItems();
+        scanIndex = -1;  // Start at -1, no highlight until first scan
+        clearAllHighlights();
+      } else if (action === "return-today") {
+        returnToToday();
+      } else if (action === "close-entry-view") {
+        entryViewModal.classList.add("hidden");
+        updateScanItems();
+        scanIndex = -1;
+        clearAllHighlights();
+      }
+    });
+  });
+
+  // Delete confirmation modal buttons
+  $$("#deleteConfirmModal .modal-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.action;
+      if (action === "cancel-delete") {
+        deleteConfirmModal.classList.add("hidden");
+        entryToDelete = null;
+        updateScanItems();
+        highlightCurrentItem();
+      } else if (action === "confirm-delete") {
+        if (entryToDelete) {
+          deleteEntry(entryToDelete);
+          speak("Entry deleted");
+        }
+        deleteConfirmModal.classList.add("hidden");
+        entryViewModal.classList.add("hidden");
+        entryToDelete = null;
+        renderEntries();
+      }
+    });
+  });
+
+  // Close app (Return to Hub)
+  function closeApp() {
+    // Send message to parent window (Hub) to close the iframe
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ action: 'focusBackButton' }, '*');
+    } else {
+      // Fallback if not in iframe (e.g. testing directly)
+      window.location.href = "../../../index.html";
+    }
+  }
+
+  // ========== INITIALIZATION ==========
+  async function init() {
+    console.log("Initializing Ben's Journal App...");
+
+    // Load entries from server/localStorage FIRST
+    await loadEntries();
+    await loadQuestions();
+    loadUsedQuestions();
+
+    // Apply settings
+    applyTheme(settings.theme);
+    applyHighlightColor(settings.highlightColor);
+    isAutoScanning = window.NarbeScanManager?.getSettings().autoScan || false;
+
+    // Set view to today
+    currentViewDate = new Date();
+
+    // Wait for voice manager
+    if (window.NarbeVoiceManager && window.NarbeVoiceManager.waitForVoices) {
+      window.NarbeVoiceManager.waitForVoices().then(() => {
+        updateDisplays();
+      });
+    } else {
+      setTimeout(updateDisplays, 500);
+    }
+
+    // Show main menu
+    showScreen("mainMenu");
+    speak("Journal");
+
+    // Initialize Scan Manager subscription
+    if (window.NarbeScanManager) {
+      // Subscribe to changes
+      // Subscription is registered once near the top of this module.
+      // specific initial sync
+      const mgrSettings = window.NarbeScanManager.getSettings();
+      isAutoScanning = mgrSettings.autoScan;
+    }
+
+    // Start auto scan if enabled
+    if (isAutoScanning) {
+      startAutoScan();
+    }
+
+    console.log("Journal app initialized!");
+  }
+
+  init();
+})();

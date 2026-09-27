@@ -1,0 +1,13 @@
+const CACHE='benny-web-experiment-v4';
+const SHELL=['./','./index.html','./apps/tools/tools.json','./apps/games/games.json','./shared/extension-client.js','./shared/tool-gate.js','./shared/web-data.js','./shared/web-tool.css','./shared/web-tool-ui.js','./shared/scan-manager.js','./shared/voice-manager.js','./shared/ios-audio-fix.js','./extension-setup.html','./setup.js','./data-settings.html','./data-settings.js','./pwa.js','./manifest.webmanifest','./images/BeaminBenny.png','./images/narbefoundation.png','./images/pwa-192.png','./images/pwa-512.png',...['dayhub','journal','streaming'].map(x=>'./images/tools/'+x+'.png'),...['dayhub/index.html','dayhub/app.js','dayhub/style.css','dayhub/day-services.js','journal/index.html','journal/app.js','journal/style.css','journal/predictions.js','journal/questions.json','streaming/index.html','streaming/app.js','streaming/style.css','streaming/web-streaming.js','streaming/keyboard_integration.js','streaming/predictions.js','streaming/editor.html','streaming/editor.js','streaming/editor-files.js','streaming/metadata-config.js','streaming/tmdb-logo.svg','streaming/data.json','streaming/episodes.json'].map(x=>'./apps/tools/'+x)];
+SHELL.push('./companion-setup.css','./companion-privacy.html','./apps/tools/journal/journal-look.css','./apps/tools/journal/calendar-view.js',...['index.html','style.css','app.js','predictions.js','web_keyboard_predictions.json','kenlm-client.js','kenlm-worker.js'].map(x=>'./apps/tools/keyboard/'+x));
+SHELL.push(...['library-merge.js','quick-add.js','quick-add.css','collections/index.json',...['netflix','disney','hulu','prime','tubi','youtube'].map(s=>'collections/'+s+'-starter.json')].map(x=>'./apps/tools/streaming/'+x));
+const MODEL=['kenlm.js','kenlm.wasm','english.arpa.gz','candidates.json.gz'].map(x=>'./apps/tools/keyboard/kenlm/'+x);
+const allowed=new Set([...SHELL,...MODEL].map(p=>new URL(p,self.registration.scope).href));
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('benny-web-experiment-')&&key!==CACHE)await caches.delete(key);await self.clients.claim();})()));
+self.addEventListener('fetch',e=>{
+  // Cache only named, public, same-origin static assets. Never cache API/feed/media responses.
+  if(e.request.method!=='GET'||!allowed.has(e.request.url))return;
+  e.respondWith((async()=>{try{const r=await fetch(e.request);if(r.ok){const c=await caches.open(CACHE);await c.put(e.request,r.clone()).catch(()=>{});}return r;}catch{const cached=await caches.match(e.request);return cached||new Response('Offline. Open this tool once while connected.',{status:503});}})());
+});

@@ -5,22 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NARBE YouTube Search</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <!-- Turnstile protection script -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <link rel="stylesheet" href="privacy-choice.css">
 </head>
 <body>
+    <dialog id="privacy-choice" aria-labelledby="privacy-title" aria-describedby="privacy-description">
+        <h1 id="privacy-title">Before using YouTube Search</h1>
+        <p id="privacy-description">Your searches go through NARBE LLC's search service to YouTube. Google supplies videos and may use cookies and show ads. Cloudflare checks browser and connection information to help prevent abuse.</p>
+        <p>By choosing Agree and continue, you agree to the Hub privacy policy and YouTube Terms of Service.</p>
+        <nav aria-label="Privacy information"><a href="../../../companion-privacy.html" target="_blank" rel="noopener">Hub privacy policy</a> · <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy</a></nav>
+        <div class="privacy-actions"><button id="privacy-accept" autofocus>Agree and continue</button><button id="privacy-back">Back to Hub</button></div>
+        <p>Space moves between choices. Enter selects. Your scan timing settings also apply here.</p>
+        <p id="privacy-error" role="alert"></p>
+    </dialog>
     <div id="app">
-        <!-- Invisible Turnstile widget for security -->
+        <!-- Widget mode is configured in Cloudflare; interaction stays visible if required. -->
         <div id="turnstile-widget"
-             class="cf-turnstile"
              data-sitekey="0x4AAAAAAB7n5nabkWl0WOPa"
              data-callback="onTurnstileToken"
              data-expired-callback="onTurnstileExpired"
              data-error-callback="onTurnstileError"
              data-refresh-expired="auto"
-             data-size="invisible"
-             style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></div>
+             style="position:fixed;right:12px;bottom:12px;z-index:10000;"></div>
 
         <script>
         // These are global so the widget can call them.
@@ -64,29 +69,24 @@
                 if (!window.__ts.widgetId) {
                     window.__ts.widgetId = window.turnstile.render(mount, {
                         sitekey: mount.dataset.sitekey,
-                        size: 'invisible',
+                        size: 'normal',
+                        appearance: 'interaction-only',
+                        execution: 'execute',
                         callback: window.onTurnstileToken,
                         'expired-callback': window.onTurnstileExpired,
                         'error-callback': window.onTurnstileError,
                     });
                 }
                 window.__ts.ready = true;
+                window.dispatchEvent(new Event('benny-turnstile-ready'));
                 // Kick off first token fetch
                 if (window.turnstile.execute) {
                     window.turnstile.execute(window.__ts.widgetId);
                 }
             }
 
-            // Wait until Turnstile JS is ready
-            if (window.turnstile?.ready) {
-                window.turnstile.ready(renderAndExecute);
-            } else {
-                window.addEventListener('load', () => {
-                    if (window.turnstile?.ready) {
-                        window.turnstile.ready(renderAndExecute);
-                    }
-                });
-            }
+            // Explicit async loading invokes this once the API is usable.
+            window.bennyTurnstileReady = renderAndExecute;
         })();
         </script>
 
@@ -100,11 +100,11 @@
             <div class="pill-container">
                 <!-- Text Input Row -->
                 <div class="row-wrap" data-row-id="row_text" data-label="text">
-                    <input 
-                        type="text" 
-                        id="text-input" 
-                        class="text-input" 
-                        placeholder="Type…" 
+                    <input
+                        type="text"
+                        id="text-input"
+                        class="text-input"
+                        placeholder="Type…"
                         readonly
                         autocomplete="off"
                     >
@@ -318,11 +318,7 @@
     <!-- Load shared voice manager first -->
     <script src="../../../shared/voice-manager.js"></script>
     <script src="../../../shared/scan-manager.js"></script>
-    <script src="js/speech.js"></script>
-    <script src="js/predictions.js"></script>
-    <script src="js/search.js"></script>
-    <script src="js/history.js"></script>
-    <script src="js/scanning.js"></script>
-    <script src="js/app.js"></script>
+    <a class="privacy-link" href="../../../companion-privacy.html" target="_blank" rel="noopener">Privacy &amp; YouTube terms</a>
+    <script src="js/privacy-choice.js"></script>
 </body>
 </html>
