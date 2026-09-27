@@ -1,6 +1,6 @@
 # Release preparation — Benny's Hub Companion 1.0.3
 
-Everything in this kit is prepared locally. These tools do not push, deploy or submit. Confirm any submission you made manually in the store dashboard; this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
+The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm any submission you made manually in the store dashboard; this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
 
 ## Files to use
 
@@ -36,7 +36,7 @@ The site uses static HTML/CSS/JS, browser storage and an optional companion. TMD
 
 Publish the **contents of dist/** at the root of the `narbehouse.github.io` repository's Pages artifact, preserving the `bennyshub/` subdirectory. Do not put the artifact inside another `dist/` directory and do not deploy this whole workspace. The PWA scope is `/bennyshub/`. Website storage is origin-specific: localhost data is not automatically copied to GitHub Pages.
 
-The manual deployment workflow is included at `.github/workflows/pages.yml`; `pages.yml.example` is a reference copy. Set Settings > Pages > Source to GitHub Actions before pushing, then run **Publish reviewed website** manually when ready to deploy. The workflow has no push trigger and publishes only the built, audited `dist/` artifact.
+The deployment workflow is included at `.github/workflows/pages.yml`; `pages.yml.example` is a reference copy. With Settings > Pages > Source set to GitHub Actions, each push to `main` automatically runs **Publish reviewed website**. It publishes only the built `dist/` artifact after tests, the public-file audit and link checks pass. Failed build checks leave the live site unchanged. The commit receives GitHub Actions checks; open the check indicator or Actions tab for results. A manual Run workflow option remains available for retries. This does not submit or update an extension store listing.
 
 `.nojekyll` is included in the website artifact so static filenames are served without Jekyll processing. The automated public-file audit also checks the Pages size target and large individual files. It is not a full accessibility or security certification.
 

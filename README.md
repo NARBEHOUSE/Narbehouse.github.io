@@ -1,6 +1,8 @@
 # Benny's Hub — local release preparation
 
-Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.3/`. Start with [the submission guide](submission/START-HERE.md). Nothing is published automatically. The public streaming library and episodes start empty.
+Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.3/`. Start with [the submission guide](submission/START-HERE.md). Pushing to `main` automatically runs the tests, build, public-file audit and link checks, then publishes the website if all checks pass. Local edits and commits alone do not publish. Extension store submissions remain separate. The public streaming library and episodes start empty.
+
+On GitHub, a yellow indicator means checks are running, a green check means the workflow succeeded, and a red X means it failed. If a required build check fails, the current live website stays in place. Click the indicator or open **Actions > Publish reviewed website** for details.
 
 For a clean repository replacement, run `npm run build`, `npm run audit:release`,
 `npm run check:pages`, then `npm run prepare:github`. The result is

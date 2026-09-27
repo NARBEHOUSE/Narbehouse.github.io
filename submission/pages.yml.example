@@ -1,7 +1,9 @@
 # Prepared only. Copy to .github/workflows/pages.yml when ready.
-# Manual dispatch only: no deployment on push.
+# Check and publish pushes to main; allow a manual retry too.
 name: Publish reviewed website
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

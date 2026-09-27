@@ -21,8 +21,9 @@ When ready to replace the existing checkout:
 4. Run `npm ci`, `npm test`, `npm run build`, `npm run audit:release`, and
    `npm run check:pages`. For browser tests, run `npm start` first.
 5. Use GitHub Pages with GitHub Actions to publish only the contents of `dist/`.
-   The example in `submission/pages.yml.example` is manual-only; it has no push
-   trigger. Enable it and configure Pages only when ready to publish. Publishing
+   The workflow and `submission/pages.yml.example` check and deploy each push
+   to `main`; tests, the public-file audit and link checks must pass first.
+   Configure Pages for GitHub Actions before publishing. Publishing
    the whole source checkout would also expose development files unnecessarily.
 6. After deployment, verify `/bennyshub/`, the Companion connection, privacy page,
    PWA/offline behavior, and signed-in streaming behavior in Chrome and Edge.
