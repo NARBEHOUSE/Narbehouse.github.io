@@ -19,3 +19,5 @@ No Hub account, Python helper or Electron app is needed. Streaming provider acco
 Screenshots use the real Companion UI with clearly labeled demonstration playback and no personal movie catalog, sign-in information, calendar or journal entries. Provider-specific previous/next actions are available only where the provider exposes suitable controls.
 
 Publisher note: make sure the prepared website/privacy page is deployed before submitting these instructions. Do not send reviewers to an older version of the public site.
+
+Open **Help & shortcuts** during playback: the video should pause. **Say I need help** uses browser speech even with spoken scan labels disabled. **Back to video** leaves playback paused. **Open keyboard**, **Open phrase board**, and **Hub main menu** close the managed streaming window and navigate the original Hub tab directly without adding another Hub. No Messenger or personal care phrases are included.

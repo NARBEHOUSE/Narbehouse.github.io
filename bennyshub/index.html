@@ -2093,6 +2093,23 @@
       }
     });
 
+    // Fixed destinations from the Companion; no paths or executable data accepted.
+    let companionNavigationReady=false;
+    function companionNavigation(){
+      if(!companionNavigationReady)return false;
+      const match=location.hash.match(/^#companion=(keyboard|phraseboard|home)$/);
+      if(!match)return false;
+      history.replaceState(null,'',location.pathname+location.search);
+      closeModal();
+      if(iframeContainer.classList.contains('active'))closeIframe();
+      showScreen(match[1]==='home'?'home':'tools');
+      if(match[1]==='keyboard')showIframe('apps/tools/keyboard/index.html','Keyboard');
+      else if(match[1]==='phraseboard')showIframe('apps/tools/phraseboard/index.html','Phrase & Media Board');
+      else speak('Main menu. Press spacebar to start scanning');
+      return true;
+    }
+    window.addEventListener('hashchange',companionNavigation);
+
     // Initialize application
     window.addEventListener('load', async () => {
       loadSettings();
@@ -2130,7 +2147,8 @@
         document.getElementById('main').focus();
       }
 
-      speak('Use Fullscreen for the Best Experience. Press spacebar to start');
+      companionNavigationReady=true;
+      if(!companionNavigation())speak('Use Fullscreen for the Best Experience. Press spacebar to start');
     });
 
     // Listen for messages from iframe content

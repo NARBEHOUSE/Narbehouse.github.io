@@ -1,12 +1,12 @@
 # Benny's Hub — local release preparation
 
-Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.3/`. Start with [the submission guide](submission/START-HERE.md). Pushing to `main` automatically runs the tests, build, public-file audit and link checks, then publishes the website if all checks pass. Local edits and commits alone do not publish. Extension store submissions remain separate. The public streaming library and episodes start empty.
+Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.4/`. Start with [the submission guide](submission/START-HERE.md). Pushing to `main` automatically runs the tests, build, public-file audit and link checks, then publishes the website if all checks pass. Local edits and commits alone do not publish. Extension store submissions remain separate. The public streaming library and episodes start empty.
 
 On GitHub, a yellow indicator means checks are running, a green check means the workflow succeeded, and a red X means it failed. If a required build check fails, the current live website stays in place. Click the indicator or open **Actions > Publish reviewed website** for details.
 
 For a clean repository replacement, run `npm run build`, `npm run audit:release`,
 `npm run check:pages`, then `npm run prepare:github`. The result is
-`releases/1.0.3/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
+`releases/1.0.4/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
 to preserve your old checkout and publish only the `dist/` website when ready.
 
 The three companion apps are implemented under Benny’s Hub → Tools. See [setup, validation and current limitations](WEB-EXTENSION-MIGRATION.md).
@@ -20,6 +20,8 @@ download, not a store install. See [preview distribution guidance](submission/PR
 The Streaming editor offers six optional Quick add collections (223 public title links).
 JSON imports merge into the existing library and skip matching URLs. See
 [collection maintenance and sources](submission/STARTER-COLLECTIONS.md).
+
+Streaming keeps the original catalog link and saves the latest episode/playlist URL separately on this device. Continue uses that saved link; Start Over clears it. Plex retains its own progress handling. Help & shortcuts pauses video and offers spoken help, keyboard, phrase board and Hub main-menu access.
 
 Companion setup and data controls are in the collapsed **Settings** area at the top, outside switch scanning.
 

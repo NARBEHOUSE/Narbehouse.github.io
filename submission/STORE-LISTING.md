@@ -6,7 +6,7 @@ Prepared locally for Chrome Web Store and Microsoft Edge Add-ons. Not submitted 
 
 - Name: Benny's Hub Companion
 - Publisher: NARBE LLC (must match the verified developer account)
-- Version: 1.0.3
+- Version: 1.0.4
 - Language: English (United States)
 - Website: https://narbehouse.github.io/bennyshub/
 - Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html
@@ -23,6 +23,9 @@ Benny's Hub Companion connects the Benny's Hub website to supported streaming pl
 STREAMING CONTROLS
 Launch a video from the Hub to open a dedicated playback window with a large, color-coded control bar. Controls include Play / Pause, Rewind 10 seconds, Fast forward 10 seconds, volume, mute, previous item, next item, fullscreen and Return to Hub. Return to Hub is always last in the scan order.
 
+CONTINUE WATCHING
+For shows and YouTube playlists, the Hub saves the latest playback URL on your device and uses it when you choose Continue. The original library link stays intact. Episode tracking depends on the service updating its playback URL; the service controls resume time within a video. Plex uses its own watch progress.
+
 YOUR SCAN SETTINGS
 The bar follows the Hub's scan mode, scan speed, input sensitivity and voice settings. In two-switch mode, Space moves forward, holding Space for three seconds scans backward, and Enter selects. In one-switch mode, Enter starts a scan loop; selection or the end of the loop returns the bar to its resting state.
 
@@ -34,6 +37,8 @@ GET STARTED
 2. Visit https://narbehouse.github.io/bennyshub/ and refresh the page if it was already open.
 3. Open Settings → Companion setup → Open Companion settings, then enable the sources you need.
 4. Open Tools → Streaming. Add your own links or choose an optional starter collection through Streaming Settings → Open Editor. The public library starts empty; Quick add keeps existing entries and skips matching links.
+
+Help & shortcuts pauses playback and offers a spoken "I need help" message, direct access to the Hub keyboard or phrase board, and a shortcut to the Hub main menu. Returning to the video leaves it paused until you choose Play.
 
 Use Alt+Shift+B to temporarily release the player controls for signing in or ordinary mouse/keyboard use. Press it again to return to the switch bar.
 

@@ -81,7 +81,7 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
   await expect(bar).toHaveAttribute('data-selected',autoScan?'parked':'profile:0');
   await player.waitForTimeout(600);assert.equal(await player.evaluate(()=>barFocusEvents),0,'Netflix must never fight the provider for DOM focus');
   const bounds=await bar.boundingBox();
-  await player.mouse.click(bounds.x+bounds.width*.625,bounds.y+43);
+  await player.mouse.click(bounds.x+bounds.width*.7,bounds.y+43);
   await expect(bar).toHaveAttribute('data-access','browser',{timeout:1000});
   await player.locator('#typing').fill('Profile setup');await player.keyboard.press('Space');assert.equal(await player.locator('#typing').inputValue(),'Profile setup ');
   await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-access','controls');

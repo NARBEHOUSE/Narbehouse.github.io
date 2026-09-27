@@ -1,4 +1,4 @@
-# Release preparation — Benny's Hub Companion 1.0.3
+# Release preparation — Benny's Hub Companion 1.0.4
 
 The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm any submission you made manually in the store dashboard; this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
 
@@ -6,7 +6,7 @@ The packaging tools prepare this kit locally and do not push or submit to stores
 
 | File | Destination |
 | --- | --- |
-| bennys-hub-companion-1.0.3.zip | Upload this same ZIP to Chrome Web Store and Microsoft Edge Add-ons. Its root contains manifest.json. |
+| bennys-hub-companion-1.0.4.zip | Upload this same ZIP to Chrome Web Store and Microsoft Edge Add-ons. Its root contains manifest.json. |
 | assets/icon128.png | Chrome store icon. |
 | assets/logo300.png | Edge listing logo. |
 | assets/promo440x280.png | Small promotional tile. |

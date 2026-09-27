@@ -3,10 +3,10 @@
   let session,host,root,status,notice,nav,adapter,selected,paused=false,press=null,lastRelease=0,singleRunning=false;
   let holdTimer,reverseTimer,autoTimer,aliveTimer,startupTimer,focusTimer,observer,domTimer,focusRequest;
   let focusing=false,accessSave=Promise.resolve();
-  let profileState=[];
+  let profileState=[],helpOpen=false,helpNav;
   const buttons=[],blocked=new Map(),lastKeyUp=new Map();let removed=false,autoAt=Date.now();
-  const send=async (action,payload)=>{const r=await chrome.runtime.sendMessage({protocol:1,action,payload});if(!r?.ok)throw Error(r?.error||'Companion unavailable');return r.data;};
-  function speak(text){if(!session?.settings.tts)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=session.settings.rate;const voice=speechSynthesis.getVoices().find(v=>v.name===session.settings.voice);if(voice)u.voice=voice;speechSynthesis.speak(u);}
+  const send=async (action,payload)=>{if(['PLAYER_HELLO','RETURN_TO_HUB'].includes(action))payload={...payload,url:location.href};const r=await chrome.runtime.sendMessage({protocol:1,action,payload});if(!r?.ok)throw Error(r?.error||'Companion unavailable');return r.data;};
+  function speak(text,force=false){if(!force&&!session?.settings.tts)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=session.settings.rate;const voice=speechSynthesis.getVoices().find(v=>v.name===session.settings.voice);if(voice)u.voice=voice;speechSynthesis.speak(u);}
   function announce(text){status.textContent=text+(session.settings.autoScan&&!singleRunning&&!paused?' · Press Enter to scan':'');speak(text);}
   const controls=()=>[...root.querySelectorAll('nav button')].filter(b=>!b.closest('[hidden]'));
   // Netflix's modal focus management must own DOM focus. Switch selection is
@@ -49,7 +49,7 @@
     if(changed){
       const hadProfiles=profileState.length>0;profileState=choices;
       nav.querySelectorAll('[data-profile]').forEach(b=>b.remove());
-      const access=buttons.find(b=>b.dataset.command==='suspend');
+      const access=buttons.find(b=>b.dataset.command==='help');
       choices.forEach((choice,i)=>{
         const b=document.createElement('button');b.textContent=choice.label;b.dataset.profile='';b.dataset.command='profile:'+i;b.dataset.group='playback';
         b.onclick=()=>{highlight(b,false);clearPress();choice.element.click();syncProfiles();restartStartup();};
@@ -59,17 +59,31 @@
       if(choices.length)announce('Choose a Netflix profile using the bar or click a profile on the page.');
       else if(hadProfiles&&!paused){announce('Profile selected. Playback controls ready.');restartStartup();}
     }
-    for(const b of buttons)b.hidden=(paused||choices.length>0)&&!['suspend','return'].includes(b.dataset.command);
+    for(const b of buttons)b.hidden=paused?!['suspend','return'].includes(b.dataset.command):choices.length>0&&!['help','suspend','return'].includes(b.dataset.command);
     if(!paused&&changed){if(session.settings.autoScan)park();else highlight(controls()[0],false);}
+  }
+  function helpMenu(open){
+    helpOpen=open;clearPress();singleRunning=false;
+    nav.hidden=open;helpNav.hidden=!open;host.dataset.menu=open?'help':'player';
+    if(session.settings.autoScan)park();else highlight(controls()[0],false);
   }
   async function act(command){
     adapter.cancelStartup();
     try{
+      if(command==='help'){
+        const didPause=adapter.pause();helpMenu(true);
+        announce(didPause?'Video paused. Help and shortcuts.':'Help and shortcuts. No active video found.');return;
+      }
+      if(command==='say-help'){adapter.pause();status.textContent='I need help';speak('I need help',true);return;}
+      if(command==='back-player'){helpMenu(false);announce('Playback controls. Choose Play when ready.');return;}
+      if(command==='keyboard'||command==='phraseboard'||command==='home'){
+        adapter.pause();await send('RETURN_TO_HUB',{destination:command});return;
+      }
       if(command==='return'){await send('RETURN_TO_HUB');return;}
       if(command==='suspend'){
         // Release input locally first. A stalled/restarting worker must never
         // prevent the user from escaping the locked playback controls.
-        paused=!paused;clearPress();
+        paused=!paused;clearPress();if(helpOpen)helpMenu(false);
         const unlocked=paused;
         accessSave=accessSave.catch(()=>{}).then(()=>send('PLAYER_ACCESS',{unlocked}));
         accessSave.catch(()=>{if(paused)status.textContent='Browser unlocked for this page. Lock controls when finished.';});
@@ -98,7 +112,7 @@
   }
   let startupRunning=false,startupFinished=false;
   async function runStartup(){
-    if(!session?.startup||startupRunning||startupFinished||paused||removed||profileState.length)return;
+    if(!session?.startup||startupRunning||startupFinished||paused||removed||helpOpen||profileState.length)return;
     startupRunning=true;
     try{
       const result=await adapter.startup();
@@ -179,7 +193,8 @@
     if(host.parentElement!==parent)parent.append(host);
     if(host.matches(':popover-open'))host.hidePopover();host.showPopover();focusBar();
   }
-  function visibility(){clearPress();if(!document.hidden)focusBar();}
+  function capturePosition(){send('PLAYER_HELLO').catch(()=>{});}
+  function visibility(){clearPress();if(document.hidden)capturePosition();else focusBar();}
   async function playerReady(){
     // Navigation may reset the window state after windows.create/update.
     // Reapply once when this document is ready, never on a repeating focus loop.
@@ -190,7 +205,7 @@
     removed=true;clearTimeout(domTimer);clearTimeout(focusRequest);clearInterval(aliveTimer);clearInterval(autoTimer);clearInterval(startupTimer);clearInterval(focusTimer);clearPress();observer?.disconnect();adapter?.clearView();releaseFrames();host?.remove();
     window.removeEventListener('keydown',keydown,true);window.removeEventListener('keyup',keyup,true);window.removeEventListener('blur',clearPress);window.removeEventListener('focus',focusBar);
     document.removeEventListener('focusin',keepFocus,true);document.removeEventListener('visibilitychange',visibility);document.removeEventListener('fullscreenchange',mount);window.__bennyPlayer=false;
-    window.removeEventListener('load',playerReady);
+    window.removeEventListener('load',playerReady);window.removeEventListener('pagehide',capturePosition);
     for(const type of ['pointerdown','mousedown','click','dblclick'])window.removeEventListener(type,protectBar,true);
   }
   window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);
@@ -204,11 +219,13 @@
     const style=document.createElement('style');style.textContent=`
       :host{all:initial}
       section{box-sizing:border-box;width:100%;font:18px system-ui,sans-serif;background:#07121f;color:white;border:2px solid #8bccff;border-radius:16px;padding:14px 18px;box-shadow:0 0 30px #0009}
+      [hidden]{display:none!important}
       nav{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center}
       button{flex:1 1 125px;font:700 17px system-ui;padding:12px 15px;min-height:52px;border:2px solid var(--edge);border-radius:8px;background:var(--fill);color:white;cursor:pointer}
       button[data-group="playback"]{--fill:#145343;--edge:#69d9b1}
       button[data-group="sound"]{--fill:#174c79;--edge:#7dc7ff}
       button[data-group="display"]{--fill:#583c81;--edge:#c9a6ff}
+      button[data-group="help"]{--fill:#704326;--edge:#ffc48f}
       button[data-group="access"]{--fill:#654817;--edge:#ffda80}
       button[data-group="exit"]{--fill:#812d3a;--edge:#ffa1b0}
       button.selected,button:focus-visible{outline:4px solid #ffe474;outline-offset:2px;box-shadow:inset 0 0 0 1px white}
@@ -218,8 +235,12 @@
     const bar=document.createElement('section');bar.setAttribute('aria-label',"Benny's Hub player controls");nav=document.createElement('nav');nav.setAttribute('aria-label','Playback controls');
     status=document.createElement('p');status.setAttribute('role','status');status.textContent='Space: next | Hold Space: back | Enter: select';notice=document.createElement('p');notice.hidden=true;notice.id='browser-access-help';
     notice.textContent='Browser unlocked: use your mouse and keyboard to sign in, choose a profile, or complete verification. Space and Enter now go to the website. Select Lock controls (or press Alt+Shift+B) to resume switch scanning.';
-    bar.append(nav,status,notice);root.append(bar);
-    for(const [command,label,group]of [['play','Play / Pause','playback'],['back','Rewind 10 seconds','playback'],['forward','Fast forward 10 seconds','playback'],['down','Volume -','sound'],['up','Volume +','sound'],['mute','Mute','sound'],['previous','Previous item','playback'],['next','Next item','playback'],['fullscreen','Fullscreen','display'],['suspend','Unlock browser','access'],['return','Return to Hub','exit']]){
+    helpNav=document.createElement('nav');helpNav.hidden=true;helpNav.setAttribute('aria-label','Help and shortcuts');
+    for(const [command,label,group]of [['say-help','Say I need help','help'],['keyboard','Open keyboard','sound'],['phraseboard','Open phrase board','display'],['back-player','Back to video','playback'],['home','Hub main menu','exit']]){
+      const b=document.createElement('button');b.textContent=label;b.dataset.command=command;b.dataset.group=group;b.onclick=()=>{highlight(b,false);act(command);};helpNav.append(b);
+    }
+    bar.append(nav,helpNav,status,notice);root.append(bar);
+    for(const [command,label,group]of [['play','Play / Pause','playback'],['back','Rewind 10 seconds','playback'],['forward','Fast forward 10 seconds','playback'],['down','Volume -','sound'],['up','Volume +','sound'],['mute','Mute','sound'],['previous','Previous item','playback'],['next','Next item','playback'],['fullscreen','Fullscreen','display'],['help','Help & shortcuts','help'],['suspend','Unlock browser','access'],['return','Return to Hub','exit']]){
       const b=document.createElement('button');b.textContent=label;b.dataset.command=command;b.dataset.group=group;b.onclick=()=>{highlight(b,false);act(command);};if(command==='suspend'){b.setAttribute('aria-pressed','false');b.setAttribute('aria-describedby','browser-access-help');}buttons.push(b);nav.append(b);
     }
     paused=session.browserUnlocked===true;
@@ -227,6 +248,7 @@
     selected=buttons[0];mount();if(session.settings.autoScan)park();else highlight(selected,false);host.dataset.access=paused?'browser':'controls';syncProfiles();lockFrames();if(paused)announce('Browser unlocked. Sign in, then select Lock controls.');
     if(document.readyState==='complete')playerReady();else window.addEventListener('load',playerReady,{once:true});
     document.addEventListener('fullscreenchange',mount);window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);window.addEventListener('blur',clearPress);window.addEventListener('focus',focusBar);document.addEventListener('focusin',keepFocus,true);document.addEventListener('visibilitychange',visibility);
+    window.addEventListener('pagehide',capturePosition);
     observer=new MutationObserver(schedulePageSync);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
     // Reclaim programmatic page focus, never another browser window or native application.
     focusTimer=setInterval(()=>{syncProfiles();if(!paused)adapter.syncView();if(document.hasFocus()&&document.activeElement!==host)focusBar();},300);

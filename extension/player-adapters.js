@@ -118,6 +118,12 @@
     }
     return {
       media,profileChoices,
+      pause(){
+        stopped=true;const v=media();
+        if(!v)return false;
+        // Pause is deliberately idempotent: opening Help must never resume.
+        if(!v.paused)v.pause();return true;
+      },
       restartStartup(){stopped=false;started=Date.now();attempts=0;mediaAttempt=null;},
       syncView(){
         if(automaticView&&!login()&&!profileChoices().length){

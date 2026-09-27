@@ -24,13 +24,27 @@ async function managed(sender){
   // Redirects within an enabled service are allowed; arbitrary sites still fail playerURL.
   return session;
 }
-async function rememberPosition(sender,session) {
+async function rememberPosition(sender,session,currentURL=sender.url) {
   if (!session.playbackId) return;
-  const url=playerURL(sender.url),original=playerURL(session.startURL);
+  let url,original;
+  try{url=playerURL(currentURL);original=playerURL(session.startURL);}catch{return;}
   const service=Object.values(SERVICES).find(s=>s.hosts.includes(original.hostname));
   if(!service?.hosts.includes(url.hostname)||/login|signin|sign-in|oauth|authorize/i.test(url.pathname))return;
   if([...url.searchParams.keys()].some(k=>/token|password|secret|code/i.test(k)))return;
-  await chrome.storage.session.set({['resume:'+session.hubTab]:{playbackId:session.playbackId,url:url.href}});
+  if(service===SERVICES.youtube){
+    if(url.pathname!=='/watch'||!url.searchParams.get('v'))return;
+    if(!url.searchParams.has('list')&&original.searchParams.has('list'))url.searchParams.set('list',original.searchParams.get('list'));
+  }
+  if(service===SERVICES.netflix&&!/^\/watch\/\d+/.test(url.pathname))return;
+  if(service===SERVICES.disney&&!/\/play\/[^/]+/.test(url.pathname))return;
+  if(service===SERVICES.hulu&&!/^\/watch\/[^/]+/.test(url.pathname))return;
+  if(service===SERVICES.prime&&!/\/(detail|player|video)\/[^/]+/.test(url.pathname))return;
+  if(service===SERVICES.tubi&&!/^\/(tv-shows|movies)\/\d+/.test(url.pathname))return;
+  const progress={playbackId:session.playbackId,url:url.href};
+  await chrome.storage.session.set({['resume:'+session.hubTab]:progress});
+  // Persist to the owning website before navigation destroys its Streaming iframe.
+  // Session storage remains a fallback while a Hub tab is reloading/unavailable.
+  await chrome.tabs.sendMessage(session.hubTab,{protocol:PROTOCOL,action:'STREAM_POSITION',progress},{frameId:0}).catch(()=>{});
 }
 function sameHub(url,session){
   if(!isHub(url)||!isHub(session.hubURL))return false;
@@ -62,7 +76,8 @@ async function findReturnHub(session){
   if(!window.tabs?.[0])throw Error('Could not reopen the Hub.');
   return window.tabs[0];
 }
-function returnToHub(sender){
+function returnToHub(sender,destination,currentURL){
+  if(destination!==undefined&&!['keyboard','phraseboard','home'].includes(destination))throw Error('Unknown Hub destination.');
   if(!sender.tab||sender.frameId!==0)throw Error('Player unavailable.');
   const id=sender.tab?.id;
   if(returning.has(id))return returning.get(id);
@@ -77,8 +92,13 @@ function returnToHub(sender){
       }
       await chrome.storage.session.set(updates);session.hubTab=hub.id;
     }
-    await rememberPosition(sender,session);
-    await chrome.tabs.update(hub.id,{active:true});await chrome.windows.update(hub.windowId,{focused:true});
+    await rememberPosition(sender,session,currentURL);
+    const update={active:true};
+    if(destination){
+      const url=new URL('/bennyshub/index.html',session.hubURL);
+      url.hash='companion='+destination;update.url=url.href;
+    }
+    await chrome.tabs.update(hub.id,update);await chrome.windows.update(hub.windowId,{focused:true});
     await chrome.tabs.remove(id);return {};
   });
   returning.set(id,task);returnQueue=task;
@@ -89,7 +109,7 @@ async function handle(m,sender){
   await trustedStorage;
   if(sender.id!==chrome.runtime.id||m?.protocol!==PROTOCOL)throw Error('Unsupported request.');
   if(m.action==='PLAYER_HELLO'){
-    const session=await managed(sender);await rememberPosition(sender,session);
+    const session=await managed(sender);await rememberPosition(sender,session,m.payload?.url);
     const synced=(await chrome.storage.session.get('scan:'+session.hubOrigin))['scan:'+session.hubOrigin];
     return {session:{settings:synced||session.settings,service:session.service||'',startup:session.startup!==false,browserUnlocked:session.browserUnlocked===true}};
   }
@@ -105,7 +125,7 @@ async function handle(m,sender){
     return {};
   }
   if(m.action==='RETURN_TO_HUB'){
-    return returnToHub(sender);
+    return returnToHub(sender,m.payload?.destination,m.payload?.url);
   }
   if(!sender.tab||!isHub(sender.url))throw Error('Only Benny’s Hub can use this action.');
   const topURL=isHub(sender.tab.url)?sender.tab.url:await hubLocation(sender.tab.id);

@@ -51,3 +51,26 @@ test('Netflix movies and known starter series launch playback without guessing u
   onRequest(async(action,p)=>assert.equal(p.url,url.replace('/title/','/watch/')));
   await api.launch({url,show:'Over the Moon',type:'movies'});
 });
+
+
+test('all show providers track episode redirects and YouTube video playlists retain their list',async()=>{
+  const {api,onRequest}=adapter();let opened;
+  onRequest(async(action,p)=>{if(action==='OPEN_STREAM')opened=p;});
+  for(const url of ['https://www.netflix.com/watch/1001','https://www.disneyplus.com/play/episode1','https://www.hulu.com/watch/episode1','https://www.primevideo.com/detail/episode1?autoplay=1','https://tubitv.com/tv-shows/1001/episode1']){
+    await api.launch({url,show:'Series',type:'shows'});assert.equal(opened.trackProgress,true);
+  }
+  await api.launch({url:'https://youtu.be/first?list=playlist&index=1',show:'Playlist',type:'videos'});
+  assert.equal(opened.trackProgress,true);assert.equal(opened.url,'https://www.youtube.com/watch?v=first&list=playlist&index=1');
+  await api.launch({url:'https://www.youtube.com/watch?v=trailer&list=playlist',show:'Trailer',type:'trailer'});assert.equal(opened.trackProgress,false);
+  await api.launch({url:'https://app.plex.tv/desktop/',show:'Plex',type:'shows'});assert.equal(opened.trackProgress,false);
+});
+
+
+test('reset cannot be undone by an in-flight progress request',async()=>{
+  const {api,onRequest}=adapter();let token,resolveProgress;
+  onRequest(async(action,p)=>{if(action==='OPEN_STREAM'){token=p.playbackId;return {};}return new Promise(resolve=>{resolveProgress=resolve;});});
+  await api.launch({url:'https://www.netflix.com/watch/1001',show:'Series',type:'shows'});
+  const pending=api.syncProgress();api.resetProgress('Series');
+  resolveProgress({playbackId:token,url:'https://www.netflix.com/watch/1007'});await pending;
+  assert.equal(api.getLastWatched('Series').url,undefined);
+});

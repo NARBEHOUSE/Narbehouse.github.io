@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Benny's Hub Companion",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "minimum_chrome_version": "120",
   "description": "Control supported streaming players and connect Day Hub sources using one or two switches with Benny's Hub.",
   "homepage_url": "https://narbehouse.github.io/bennyshub/",

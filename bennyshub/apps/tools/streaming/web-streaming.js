@@ -62,7 +62,9 @@
     let u;try{u=new URL(starterPlaybackURL(value));}catch{throw Error('This title needs a complete video URL in the editor.');}
     if (u.protocol==='https:' && u.hostname==='youtu.be') {
       const video=u.pathname.slice(1);if(!/^[\w-]+$/.test(video))throw Error('Invalid YouTube link.');
+      const params=u.searchParams;
       u=new URL('https://www.youtube.com/watch?v='+encodeURIComponent(video));
+      for(const name of ['list','index','t'])if(params.has(name))u.searchParams.set(name,params.get(name));
     }
     return u.href;
   }
@@ -102,7 +104,9 @@
       const prefs=window.NarbeScanManager?.getSettings()||{};
       const voice=window.NarbeVoiceManager?.getSettings()||{};
       Object.assign(prefs,{voice:voice.voiceName||'',rate:voice.rate||1,tts:voice.ttsEnabled!==false});
-      const playbackId=crypto.randomUUID(),trackProgress=type==='shows'&&!/plex\.tv/.test(new URL(playbackURL(url)).hostname);
+      const target=new URL(playbackURL(url));
+      const playlist=['www.youtube.com','youtube.com','m.youtube.com'].includes(target.hostname)&&target.searchParams.has('list');
+      const playbackId=crypto.randomUUID(),trackProgress=type!=='trailer'&&(type==='shows'||playlist)&&!/(^|\.)plex\.tv$/.test(target.hostname);
       await BennyExtension.request('OPEN_STREAM',{url:playbackURL(url),settings:prefs,playbackId,trackProgress});
       if(trackProgress)set('activePlayback',{playbackId,show,season,episode});
       if(type!=='trailer') this.saveProgress({show,url:saveUrl||url,season,episode});
@@ -112,7 +116,7 @@
       try {
         const active=get('activePlayback',null);if(!active)return;
         const progress=await BennyExtension.request('STREAM_PROGRESS',{},2000);
-        if(progress?.playbackId===active.playbackId){
+        if(progress?.playbackId===active.playbackId&&get('activePlayback',null)?.playbackId===active.playbackId){
           const previous=this.getLastWatched(active.show);
           if(previous?.url!==progress.url)this.saveProgress({...active,url:progress.url});
         }

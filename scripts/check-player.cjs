@@ -43,7 +43,7 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   const bar=player.locator('#benny-player-controls');await expect(bar).toHaveAttribute('data-selected','play');
   console.log('Scan settings',await worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base));
   await player.keyboard.down('Space');await expect(bar).toHaveAttribute('data-selected','return',{timeout:4000});
-  await expect(bar).toHaveAttribute('data-selected','suspend',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','fullscreen',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','next',{timeout:2600});await player.keyboard.up('Space');
+  await expect(bar).toHaveAttribute('data-selected','suspend',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','help',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','fullscreen',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','next',{timeout:2600});await player.keyboard.up('Space');
   await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-selected','next');assert.equal(await player.evaluate(()=>pageKeys),0);assert.equal(await player.locator('#typing').inputValue(),'');
   // Mouse focus attempts, page autofocus and an iframe cannot divert switch keys.
   await player.mouse.click(80,80);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','fullscreen');assert.equal(await player.locator('#typing').inputValue(),'');
@@ -62,7 +62,7 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   await hub.evaluate(()=>NarbeScanManager.updateSettings({scanSpeedIndex:0,inputSensitivityIndex:3,autoScan:true}));
   await expect.poll(()=>worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base)).toMatchObject({scanInterval:1000,inputSensitivity:300,autoScan:true});
   await expect(bar).toHaveAttribute('data-selected','parked');await player.waitForTimeout(1300);await expect(bar).toHaveAttribute('data-selected','parked');
-  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await expect(bar).toHaveAttribute('data-selected','back',{timeout:2000});await expect(bar).toHaveAttribute('data-selected','parked',{timeout:12500});
+  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await expect(bar).toHaveAttribute('data-selected','back',{timeout:2000});await expect(bar).toHaveAttribute('data-selected','parked',{timeout:14000});
   await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await player.waitForTimeout(320);await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','parked');
   assert.equal(await player.locator('video').evaluate(v=>v.paused),true);
   await player.screenshot({path:path.join(root,'artifacts','player-centered-parked.png')});
@@ -71,7 +71,7 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   await player.keyboard.down('Space');await expect(bar).toHaveAttribute('data-selected','return',{timeout:4000});await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-selected','return');await player.keyboard.up('Space');
   await player.waitForTimeout(320);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','play');
   // Return must work even though tabs.get cannot expose the Hub URL.
-  for(let i=0;i<10;i++){await player.waitForTimeout(320);await player.keyboard.press('Space');}
+  for(let i=0;i<11;i++){await player.waitForTimeout(320);await player.keyboard.press('Space');}
   await expect(bar).toHaveAttribute('data-selected','return');await player.waitForTimeout(320);await player.keyboard.press('Enter');await expect.poll(()=>player.isClosed()).toBe(true);
   assert.equal(hub.isClosed(),false);await expect(hub.locator('#iframe-container')).toHaveClass(/active/);
   assert.deepEqual(errors,[]);
