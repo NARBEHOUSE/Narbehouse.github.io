@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
 function adapter() {
   const stored=new Map();let request;
-  const env={URL,crypto:webcrypto,document:{currentScript:{src:'http://localhost:3000/bennyshub/apps/tools/streaming/web-streaming.js'},getElementById:()=>null},BennyData:{get:(k,f)=>stored.has(k)?JSON.parse(stored.get(k)):f,set:(k,v)=>stored.set(k,JSON.stringify(v)),remove:k=>stored.delete(k)},BennyExtension:{supports:()=>true,request:async(a,p)=>request?.(a,p)},fetch:async url=>({ok:true,json:async()=>String(url).endsWith('data.json')?[{id:'original',title:'Title',url:'unfinished link',description:'<literal>'}]:{}})};
+  const env={StreamingPlaybackLinks:require('../bennyshub/apps/tools/streaming/playback-links.js'),URL,crypto:webcrypto,document:{currentScript:{src:'http://localhost:3000/bennyshub/apps/tools/streaming/web-streaming.js'},getElementById:()=>null},BennyData:{get:(k,f)=>stored.has(k)?JSON.parse(stored.get(k)):f,set:(k,v)=>stored.set(k,JSON.stringify(v)),remove:k=>stored.delete(k)},BennyExtension:{supports:()=>true,request:async(a,p)=>request?.(a,p)},fetch:async url=>({ok:true,json:async()=>String(url).endsWith('data.json')?[{id:'original',title:'Title',url:'unfinished link',description:'<literal>'}]:{}})};
   env.window=env;vm.runInNewContext(fs.readFileSync('bennyshub/apps/tools/streaming/web-streaming.js','utf8'),env);
   return {api:env.WebStreaming,env,stored,onRequest:fn=>request=fn};
 }
@@ -24,8 +24,30 @@ test('Disney movie imports and launches use playback links while preserving note
   const item={id:'mine',title:'Big Hero 6',type:'movies',url,description:'Personal notes'};
   stored.set('streaming.catalog',JSON.stringify([item]));
   const [movie]=await api.getData();assert.equal(movie.url,url.replace('/browse/entity-','/play/'));assert.equal(movie.description,item.description);assert.equal(movie.id,item.id);
-  assert.equal(api.library([{...item,type:'shows'}])[0].url,url);
+  const seriesURL=url.replace('c29f81d8-8c51-4fe7-bb0c-13f099ad3e90','11111111-1111-1111-1111-111111111111');
+  assert.equal(api.library([{...item,type:'shows',url:seriesURL}])[0].url,seriesURL);
   assert.equal(api.library([{...item,url:url.replace('disneyplus.com','disneyplus.com.example')}])[0].url,url.replace('disneyplus.com','disneyplus.com.example'));
   onRequest(async(action,payload)=>{assert.equal(action,'OPEN_STREAM');assert.equal(payload.url,movie.url);});
   await api.launch({url,type:'movies',show:item.title});
+});
+
+
+test('Prime starter routes repair existing libraries and launches without overriding other regions or custom links',async()=>{
+  const {api,stored,onRequest}=adapter(),id='0ILGJ4D4ZYPGJCCG2VNGX3LCR3';
+  const original='https://www.primevideo.com/detail/'+id, corrected='https://www.primevideo.com/region/na/detail/'+id;
+  stored.set('streaming.catalog',JSON.stringify([{id:'keep-id',title:'My title',type:'movies',url:original,description:'My notes'}]));
+  const [item]=await api.getData();assert.equal(item.url,corrected+'?autoplay=1');assert.equal(item.id,'keep-id');assert.equal(item.description,'My notes');
+  const untouched=[original.replace('/detail/','/region/eu/detail/'),original.replace(id,'0CUSTOMLINKUNCHANGED'),original.replace('primevideo.com','primevideo.com.example'),original.replace('https:','http:')];
+  for(const url of untouched)assert.equal(api.library([{title:'Custom',url,type:'movies'}])[0].url,url);
+  onRequest(async(action,p)=>{assert.equal(action,'OPEN_STREAM');assert.equal(p.url,corrected+'?autoplay=1');});
+  await api.launch({url:original+'?autoplay=1',show:'My title',type:'shows'});
+});
+
+test('Netflix movies and known starter series launch playback without guessing unknown episode IDs',async()=>{
+  const {api,onRequest}=adapter(),url='https://www.netflix.com/title/80214236';
+  assert.equal(api.library([{title:'Over the Moon',type:'movies',url}])[0].url,url.replace('/title/','/watch/'));
+  const unknown='https://www.netflix.com/title/99999999';assert.equal(api.library([{title:'Series',type:'shows',url:unknown}])[0].url,unknown);
+  assert.equal(api.library([{title:'Hilda',type:'shows',url:'https://www.netflix.com/title/80115346'}])[0].url,'https://www.netflix.com/watch/80117561');
+  onRequest(async(action,p)=>assert.equal(p.url,url.replace('/title/','/watch/')));
+  await api.launch({url,show:'Over the Moon',type:'movies'});
 });

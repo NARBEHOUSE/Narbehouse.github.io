@@ -17,6 +17,7 @@
         if (result[field].length > 100000) throw Error('Catalog field is too large.');
       }
       // Repair existing movie imports too, while keeping notes, IDs and series links.
+      result.url=starterPlaybackURL(result.url);
       if(result.type==='movies')result.url=moviePlaybackURL(result.url);
       return result;
     });
@@ -48,15 +49,17 @@
   const set = (name,value) => BennyData.set('streaming.'+name,value);
   function status(message) { const el=document.getElementById('streaming-status');if(el){el.textContent=message;el.hidden=!message;} }
   function imageURL(value) { try { const u=new URL(value);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:''; } catch {return '';} }
+  const starterPlaybackURL=value=>StreamingPlaybackLinks.resolve(value);
   function moviePlaybackURL(value) {
     try {
       const u=new URL(value),match=u.pathname.match(/^\/(?:[a-z]{2}-[a-z]{2}\/)?browse\/entity-([a-f0-9-]{36})\/?$/i);
+      if(u.protocol==='https:'&&['netflix.com','www.netflix.com'].includes(u.hostname)&&!u.username&&!u.password&&/^\/title\/\d+\/?$/.test(u.pathname)){u.pathname=u.pathname.replace('/title/','/watch/');return u.href;}
       if(u.protocol==='https:'&&['disneyplus.com','www.disneyplus.com'].includes(u.hostname)&&!u.username&&!u.password&&match){u.pathname='/play/'+match[1];return u.href;}
     } catch {}
     return value;
   }
   function playbackURL(value) {
-    let u;try{u=new URL(value);}catch{throw Error('This title needs a complete video URL in the editor.');}
+    let u;try{u=new URL(starterPlaybackURL(value));}catch{throw Error('This title needs a complete video URL in the editor.');}
     if (u.protocol==='https:' && u.hostname==='youtu.be') {
       const video=u.pathname.slice(1);if(!/^[\w-]+$/.test(video))throw Error('Invalid YouTube link.');
       u=new URL('https://www.youtube.com/watch?v='+encodeURIComponent(video));

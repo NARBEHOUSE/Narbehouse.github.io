@@ -1,6 +1,8 @@
 // Shared by manual edits, JSON imports and curated Quick add collections.
 ((root,factory)=>{const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.StreamingLibraryMerge=api;})(globalThis,()=>{
+  const playback=typeof module==='object'&&module.exports?require('./playback-links.js'):globalThis.StreamingPlaybackLinks;
   function urlKey(value){
+    value=playback.resolve(value);
     const text=String(value||'').trim();let u;try{u=new URL(text);}catch{return text;}
     const host=u.hostname.toLowerCase().replace(/^www\./,'');let match;
     if(['youtube.com','m.youtube.com','youtu.be'].includes(host)){

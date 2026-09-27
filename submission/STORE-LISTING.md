@@ -6,7 +6,7 @@ Prepared locally for Chrome Web Store and Microsoft Edge Add-ons. Not submitted 
 
 - Name: Benny's Hub Companion
 - Publisher: NARBE LLC (must match the verified developer account)
-- Version: 1.0.2
+- Version: 1.0.3
 - Language: English (United States)
 - Website: https://narbehouse.github.io/bennyshub/
 - Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html

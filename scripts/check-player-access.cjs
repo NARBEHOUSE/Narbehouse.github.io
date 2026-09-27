@@ -9,6 +9,17 @@ ${service==='netflix'?'<div class="profiles-gate-container"><div class="choose-p
 <canvas width="320" height="180"></canvas><video muted></video>
 <script>
 window.chosenProfile=null;window.pageClicks=0;window.pageKeys=0;
+window.barFocusEvents=0;
+if(location.search.includes('focus-trap=1')){
+  addEventListener('focusin',e=>{
+    if(e.target.id==='benny-player-controls'){
+      barFocusEvents++;
+      const tile=document.querySelector('.profile-link');
+      if(tile)queueMicrotask(()=>tile.focus());
+    }
+  },true);
+  document.querySelector('.profile-link').focus();
+}
 document.querySelector('#page-button').onclick=()=>pageClicks++;
 addEventListener('keydown',e=>{if(e.isTrusted&&['Space','Enter'].includes(e.code))pageKeys++;});
 function play(){const canvas=document.querySelector('canvas');canvas.getContext('2d').fillRect(0,0,320,180);const v=document.querySelector('video');v.srcObject=canvas.captureStream(10);v.play();}
@@ -19,7 +30,7 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
  const dir=path.join(root,'artifacts','access-extension-'+Date.now());await fs.cp(path.join(root,'extension'),dir,{recursive:true});
  const m=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));m.host_permissions=['https://www.netflix.com/*','https://www.primevideo.com/*','https://www.disneyplus.com/*'];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(m));
  // Expose only the isolated fixture build's shadow DOM for accessible button assertions.
- const content=path.join(dir,'player-content.js');await fs.writeFile(content,(await fs.readFile(content,'utf8')).replace("mode:'closed'","mode:'open'").replace("const r=await chrome.runtime.sendMessage({protocol:1,action,payload});", "if(action==='PLAYER_ACCESS'&&location.hostname==='www.disneyplus.com')return new Promise(()=>{});const r=await chrome.runtime.sendMessage({protocol:1,action,payload});"));
+ const content=path.join(dir,'player-content.js');await fs.writeFile(content,(await fs.readFile(content,'utf8')).replace("mode:'closed'","mode:location.search.includes('focus-trap=1')?'closed':'open'").replace("const r=await chrome.runtime.sendMessage({protocol:1,action,payload});", "if(action==='PLAYER_ACCESS'&&location.hostname==='www.disneyplus.com')return new Promise(()=>{});const r=await chrome.runtime.sendMessage({protocol:1,action,payload});"));
  // Force recurring provider mutations to catch observer microtask starvation.
  const adapters=path.join(dir,'player-adapters.js');await fs.writeFile(adapters,(await fs.readFile(adapters,'utf8')).replace('      syncView(){',`      syncView(){
         if(service==='netflix'&&location.search.includes('stress=1')){
@@ -53,7 +64,7 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
  await player.close();
  player=await launch('https://www.netflix.com/watch/123');bar=player.locator('#benny-player-controls');await expect(bar.getByRole('button',{name:'Profile A',exact:true})).toBeVisible();assert.equal(await player.evaluate(()=>chosenProfile),null);
  await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','profile:1');await player.waitForTimeout(100);await player.keyboard.press('Enter');await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('b');
- await expect(bar.getByRole('button',{name:'Play / Pause',exact:true})).toBeVisible();await expect(bar.locator('[data-profile]')).toHaveCount(0);await expect.poll(()=>player.evaluate(()=>document.activeElement.id)).toBe('benny-player-controls');console.log('Netflix: two-switch profile choice and automatic playback controls restored.');await player.close();
+ await expect(bar.getByRole('button',{name:'Play / Pause',exact:true})).toBeVisible();await expect(bar.locator('[data-profile]')).toHaveCount(0);assert.equal(await player.evaluate(()=>document.activeElement.id==='benny-player-controls'),false);console.log('Netflix: two-switch profile choice and automatic playback controls restored.');await player.close();
  player=await launch('https://www.netflix.com/watch/456');bar=player.locator('#benny-player-controls');await expect(bar.getByRole('button',{name:'Profile A',exact:true})).toBeVisible();await player.locator('.profile-link').first().click();await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');await expect(bar.getByRole('button',{name:'Play / Pause',exact:true})).toBeVisible();console.log('Netflix: native profile tile remains mouse-clickable while switch controls stay locked.');
  await player.close();player=await launch('https://www.netflix.com/watch/789',true);bar=player.locator('#benny-player-controls');await expect(bar).toHaveAttribute('data-selected','parked');await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','profile:0');await player.waitForTimeout(100);await player.keyboard.press('Enter');await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');await expect(bar).toHaveAttribute('data-selected','parked');console.log('Netflix: one-switch profile choice returns to the parked playback bar.');
  await player.close();
@@ -63,6 +74,27 @@ const form=document.querySelector('form');if(form)form.onsubmit=e=>{e.preventDef
  await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-access','browser');await player.locator('.profile-link').first().click();await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe('a');
  await bar.getByRole('button',{name:'Lock controls',exact:true}).click();await expect(bar).toHaveAttribute('data-access','controls');await expect(player.locator('[data-benny-player-view]')).toHaveCount(0);await expect(player.locator('[data-benny-fit-video]')).toHaveCount(0);
  console.log('Netflix stress: competing focus and continuous provider mutations stay responsive; no forced video layout.');await player.close();
+ // Production closed shadow root: profiles retain native focus even when the
+ // provider redirects focus in a microtask. Click Unlock by its rendered slot.
+ for(const autoScan of [false,true]){
+  player=await launch('https://www.netflix.com/watch/101?focus-trap=1',autoScan);bar=player.locator('#benny-player-controls');
+  await expect(bar).toHaveAttribute('data-selected',autoScan?'parked':'profile:0');
+  await player.waitForTimeout(600);assert.equal(await player.evaluate(()=>barFocusEvents),0,'Netflix must never fight the provider for DOM focus');
+  const bounds=await bar.boundingBox();
+  await player.mouse.click(bounds.x+bounds.width*.625,bounds.y+43);
+  await expect(bar).toHaveAttribute('data-access','browser',{timeout:1000});
+  await player.locator('#typing').fill('Profile setup');await player.keyboard.press('Space');assert.equal(await player.locator('#typing').inputValue(),'Profile setup ');
+  await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-access','controls');
+  await player.locator('.profile-link').first().focus();
+  const keys=await player.evaluate(()=>pageKeys);
+  if(autoScan){await player.keyboard.press('Enter');await player.waitForTimeout(100);await player.keyboard.press('Enter');}
+  else{await player.keyboard.press('Space');await player.waitForTimeout(100);await player.keyboard.press('Enter');}
+  await expect.poll(()=>player.evaluate(()=>chosenProfile)).toBe(autoScan?'a':'b');
+  assert.equal(await player.evaluate(()=>pageKeys),keys,'Switch keys must not leak to the focused provider');
+  assert.equal(await player.evaluate(()=>barFocusEvents),0);
+  await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-access','browser');
+  console.log('Netflix closed shadow focus trap: mouse Unlock, typing, relock and '+(autoScan?'one':'two')+'-switch selection passed without stealing native focus.');await player.close();
+ }
  player=await launch('https://www.disneyplus.com/play/fixture');bar=player.locator('#benny-player-controls');
  await bar.getByRole('button',{name:'Unlock browser',exact:true}).click();await expect(bar).toHaveAttribute('data-access','browser',{timeout:1000});
  await player.getByLabel('Password',{exact:true}).fill('synthetic');await player.getByRole('button',{name:'Sign in',exact:true}).click();await expect.poll(()=>player.evaluate(()=>document.querySelector('video').paused)).toBe(false);

@@ -33,7 +33,7 @@
     "Think of a happy memory. What part of it stands out today?",
     "What silly or random thought has popped into your head this morning?",
     "What movie or show moment has been stuck in your mind lately?",
-    "What is something you would like to ask us today?",
+    "What is a question you would like to ask today?",
     "What is one thing you want to practice or work on today?",
     "What could happen today that would make the day feel really good?",
     "What is something you’d like to tell someone as you start the day?",
@@ -47,7 +47,7 @@
     "What is something you’re looking forward to understanding better?",
     "What movie scene keeps coming back to you these days?",
     "What is something you hope today teaches you?",
-    "What do you enjoy about using your keyboard this morning?",
+    "What is helping you express yourself this morning?",
     "Who do you feel like talking to today and what would you say?",
     "What is one thing you feel excited to do at some point today?",
     "Which superhero would you want to learn from today and why?",
@@ -55,11 +55,11 @@
     "If you felt strong like a hero this morning, what would you want to help with?",
     "How does your body and mood feel in this exact moment?",
     "How is your belly feeling right now? Describe it if you want.",
-    "If you want time in the wheelchair today, what activity sounds good to you?",
+    "What activity would you enjoy today?",
     "If you could give a friend a new name just for today, what would you choose?",
     "Do you feel more awake or more tired this morning?",
     "Which part of your body feels like it needs extra care right now?",
-    "What is something you want us to know as we start the day with you?",
+    "What would you like someone to understand about your day?",
     "What movie scene feels fun to think about today?",
     "Is there a line from a tv show that you are thinking about that you want to share?",
     "What is something you’d like a little help with this morning?"
@@ -118,7 +118,7 @@
     "What is something you want to do before the day ends?",
     "Do you feel any parts of your body that could use stretching or need adjusting?",
     "What is one word that describes how you feel right now and why?",
-    "What made you laugh so far today? Can you tell me what it was?",
+    "What made you laugh today?",
     "What is a sound, smell, or sight from today that you liked?",
     "What is something in your room that you appreciate having?",
     "What did you think about a lot today?",
@@ -153,7 +153,7 @@
     "What moment from today made you feel strong inside?",
     "What thought pops up first when you look around your room today?",
     "What is something that made your day feel different from yesterday?",
-    "What is something you want to talk about with us soon?",
+    "What would you like to talk about soon?",
     "What is something you noticed around you that you liked?",
     "What is something your eyes noticed today that made you think?",
     "What is something you want to give yourself credit for today?",
@@ -230,6 +230,6 @@
     "What is something that made you feel comfort today?",
     "What is something you want to celebrate from earlier today?",
     "What is something your body is telling you this afternoon?",
-    "Is there a new feature you want on your software? Is there something a developer can make for you to make your computer even better?"
+    "What could make something you use every day easier or more enjoyable?"
   ]
 }

@@ -9,7 +9,11 @@
   function speak(text){if(!session?.settings.tts)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=session.settings.rate;const voice=speechSynthesis.getVoices().find(v=>v.name===session.settings.voice);if(voice)u.voice=voice;speechSynthesis.speak(u);}
   function announce(text){status.textContent=text+(session.settings.autoScan&&!singleRunning&&!paused?' · Press Enter to scan':'');speak(text);}
   const controls=()=>[...root.querySelectorAll('nav button')].filter(b=>!b.closest('[hidden]'));
+  // Netflix's modal focus management must own DOM focus. Switch selection is
+  // independent: our document-start capture listeners still consume Space/Enter.
+  const virtualFocus=()=>session?.service==='netflix';
   function focusBar(){
+    if(virtualFocus())return;
     if(paused||removed||document.hidden||focusing)return;
     if(selected&&!controls().includes(selected))selected=null;
     const target=selected||host;
@@ -108,7 +112,7 @@
   }
   function keydown(e){
     if(!session||!host)return;
-    if(e.altKey&&e.shiftKey&&e.code==='KeyB'){e.preventDefault();act('suspend');return;}
+    if(e.altKey&&e.shiftKey&&e.code==='KeyB'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)act('suspend');return;}
     if(paused||!['Space','Enter','NumpadEnter'].includes(e.code))return;
     e.preventDefault();e.stopImmediatePropagation();focusBar();
     if(e.repeat||press)return;
@@ -134,7 +138,7 @@
     }else selected?.click();
   }
   function keepFocus(e){
-    if(paused||removed||focusing||e.target===host||focusRequest)return;
+    if(virtualFocus()||paused||removed||focusing||e.target===host||focusRequest)return;
     // Provider dialogs can focus their own controls from focusin. Do not enter
     // a synchronous focus loop with them; switch keys remain captured above.
     focusRequest=setTimeout(()=>{focusRequest=null;focusBar();},50);
@@ -150,7 +154,14 @@
     },100);
   }
   function protectBar(e){
-    if(!host||paused||removed||!e.isTrusted||e.composedPath().includes(host))return;
+    if(!host||removed||!e.isTrusted)return;
+    if(e.composedPath().includes(host)){
+      // Keep mouse/touch bar actions from entering Netflix's modal focus trap.
+      // Cancel only native focus, not the click that activates the control.
+      if(virtualFocus()&&['pointerdown','mousedown'].includes(e.type))e.preventDefault();
+      return;
+    }
+    if(paused)return;
     // A profile tile is an explicit user choice; permit it without releasing switch keys.
     if(profileState.some(choice=>e.composedPath().includes(choice.element))){
       if(e.type==='click')queueMicrotask(()=>{syncProfiles();focusBar();});
@@ -189,7 +200,7 @@
     if(!globalThis.BennyPlayerAdapters){cleanup();return;}
     if(!document.documentElement)await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
     adapter=globalThis.BennyPlayerAdapters.create(session.service);
-    host=document.createElement('div');host.id='benny-player-controls';host.tabIndex=-1;host.setAttribute('popover','manual');host.setAttribute('aria-label','Player controls');host.style.cssText='position:fixed;inset:auto 12px 12px;width:calc(100% - 24px);max-width:none;margin:0 auto;padding:0;border:0;overflow:visible;background:transparent;z-index:2147483647;outline:none';root=host.attachShadow({mode:'closed'});
+    host=document.createElement('div');host.id='benny-player-controls';host.dataset.version=chrome.runtime.getManifest().version;host.tabIndex=-1;host.setAttribute('popover','manual');host.setAttribute('aria-label','Player controls');host.style.cssText='position:fixed;inset:auto 12px 12px;width:calc(100% - 24px);max-width:none;margin:0 auto;padding:0;border:0;overflow:visible;background:transparent;z-index:2147483647;outline:none';root=host.attachShadow({mode:'closed'});
     const style=document.createElement('style');style.textContent=`
       :host{all:initial}
       section{box-sizing:border-box;width:100%;font:18px system-ui,sans-serif;background:#07121f;color:white;border:2px solid #8bccff;border-radius:16px;padding:14px 18px;box-shadow:0 0 30px #0009}

@@ -73,7 +73,7 @@
       "title": "Animaniacs",
       "type": "shows",
       "year": "1993",
-      "url": "https://tubitv.com/series/300019067/animaniacs",
+      "url": "https://tubitv.com/tv-shows/200303488/s01-e01-de-zanitized-the-monkey-song-nighty-night-toons",
       "service": "Tubi",
       "genre": "Animation, Kids, Comedy, Family",
       "image": "https://image.tmdb.org/t/p/w780/c1b2UtrhbMOdHKISB2ZvINo9eyc.jpg",
@@ -87,14 +87,15 @@
       "trailer": "https://www.youtube.com/watch?v=BgiZuRUTIlA",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - De-Zanitized/The Monkey Song/Nighty Night Toons"
     },
     {
       "id": "starter-tubi-90515f1de2f4",
       "title": "Barney & Friends",
       "type": "shows",
       "year": "1992",
-      "url": "https://tubitv.com/series/300006778/barney-friends",
+      "url": "https://tubitv.com/tv-shows/587555/s07-e701-all-aboard",
       "service": "Tubi",
       "genre": "Comedy, Family, Kids",
       "image": "https://image.tmdb.org/t/p/w780/ijt54PA1pZ2ae68ODBk3vfWSK0e.jpg",
@@ -108,14 +109,15 @@
       "tmdb_id": 4887,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S07:E701 - All Aboard"
     },
     {
       "id": "starter-tubi-5c27735440f6",
       "title": "Clifford",
       "type": "shows",
       "year": "2000",
-      "url": "https://tubitv.com/series/300013071/clifford",
+      "url": "https://tubitv.com/tv-shows/200133788/s01-e01-my-best-friend-cleo-s-fair-share",
       "service": "Tubi",
       "genre": "Animation, Kids",
       "image": "https://image.tmdb.org/t/p/w780/tZLS8aT8Iqnbw8oMKIi1WHidCA1.jpg",
@@ -129,14 +131,15 @@
       "trailer": "https://www.youtube.com/watch?v=OcU1JGC5ugE",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - My Best Friend / Cleo's Fair Share"
     },
     {
       "id": "starter-tubi-b26bca693aa9",
       "title": "Clifford's Puppy Days",
       "type": "shows",
       "year": "2003",
-      "url": "https://tubitv.com/series/300013166/clifford-s-puppy-days",
+      "url": "https://tubitv.com/tv-shows/200136501/s01-e01-socks-and-snooze-keeping-cool",
       "service": "Tubi",
       "genre": "Animation, Kids",
       "image": "https://image.tmdb.org/t/p/w780/wiqqlakq2STHVTy6k1F5QSECsMo.jpg",
@@ -150,14 +153,15 @@
       "tmdb_id": 3209,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Socks and Snooze / Keeping Cool"
     },
     {
       "id": "starter-tubi-02de21436987",
       "title": "Courage the Cowardly Dog",
       "type": "shows",
       "year": "1999",
-      "url": "https://tubitv.com/series/300019075/courage-the-cowardly-dog",
+      "url": "https://tubitv.com/tv-shows/200303849/s01-e01-a-night-at-the-katz-motel-cajun-granny-stew",
       "service": "Tubi",
       "genre": "Animation, Family, Sci-Fi & Fantasy, Comedy, Kids",
       "image": "https://image.tmdb.org/t/p/w780/uJQsBgzlrgZpjeB5fHBtJQA04nS.jpg",
@@ -171,14 +175,15 @@
       "tmdb_id": 2085,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - A Night at the Katz Motel/Cajun Granny Stew"
     },
     {
       "id": "starter-tubi-63bfdff4e45e",
       "title": "Dennis the Menace",
       "type": "shows",
       "year": "1959",
-      "url": "https://tubitv.com/series/303/dennis-the-menace",
+      "url": "https://tubitv.com/tv-shows/235461/s01-e01-dennis-goes-to-the-movies",
       "service": "Tubi",
       "genre": "Comedy, Family",
       "image": "https://image.tmdb.org/t/p/w780/1zpYhxqz9SUGMB3Q9HnyKTh31E4.jpg",
@@ -192,14 +197,15 @@
       "trailer": "",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Dennis Goes to the Movies"
     },
     {
       "id": "starter-tubi-379cbf7d57a5",
       "title": "Dexter's Laboratory",
       "type": "shows",
       "year": "1996",
-      "url": "https://tubitv.com/series/300019090/dexter-s-laboratory",
+      "url": "https://tubitv.com/tv-shows/200304727/s01-e01-dee-deemensional-magmanamus-maternal-combat",
       "service": "Tubi",
       "genre": "Animation, Comedy, Sci-Fi & Fantasy",
       "image": "https://image.tmdb.org/t/p/w780/inJJn8lUPWdvdy2h259UnoHWVqC.jpg",
@@ -213,14 +219,15 @@
       "tmdb_id": 4229,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Dee Deemensional / Magmanamus / Maternal Combat"
     },
     {
       "id": "starter-tubi-4706f9e89717",
       "title": "Dragon Tales",
       "type": "shows",
       "year": "1999",
-      "url": "https://tubitv.com/series/300021614/dragon-tales",
+      "url": "https://tubitv.com/tv-shows/200367468/s01-e01-to-fly-with-dragons-the-forest-of-darkness",
       "service": "Tubi",
       "genre": "Kids, Animation, Sci-Fi & Fantasy, Comedy, Family, Drama",
       "image": "https://image.tmdb.org/t/p/w780/pwAe79bXMfzjD4l4s2k1ZFXq8T2.jpg",
@@ -234,14 +241,15 @@
       "tmdb_id": 1585,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - To Fly With Dragons & The Forest of Darkness"
     },
     {
       "id": "starter-tubi-35302f28b088",
       "title": "Ed, Edd n Eddy",
       "type": "shows",
       "year": "1999",
-      "url": "https://tubitv.com/series/300019095/ed-edd-n-eddy",
+      "url": "https://tubitv.com/tv-shows/200304938/s01-e01-the-ed-touchables-nagged-to-ed",
       "service": "Tubi",
       "genre": "Animation, Comedy, Kids",
       "image": "https://image.tmdb.org/t/p/w780/nfKenwmfmdtoXGhaYiDIftrBchw.jpg",
@@ -255,7 +263,8 @@
       "tmdb_id": 606,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - The Ed-Touchables / Nagged to Ed"
     },
     {
       "id": "starter-tubi-6",
@@ -387,7 +396,7 @@
       "title": "Looney Tunes",
       "type": "shows",
       "year": "1929",
-      "url": "https://tubitv.com/series/300016553/looney-tunes",
+      "url": "https://tubitv.com/tv-shows/200230879/s01-e01-whizzard-of-ow-my-generation-g-g-gap-cock-a-doodle-duel-museum-scream-duck-dodgers-in-attack-of-the-drones",
       "service": "Tubi",
       "genre": "Animation, Comedy, Family",
       "image": "https://image.tmdb.org/t/p/w780/yZhS6X56532pMlgFJVYWGonJe0o.jpg",
@@ -401,14 +410,15 @@
       "tmdb_id": 333432,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Whizzard of Ow / My Generation G…G…Gap / Cock-a-Doodle-Duel / Museum Scream / Duck Dodgers in Attack of the Drones"
     },
     {
       "id": "starter-tubi-45d2f36cbf44",
       "title": "Mighty Morphin Power Rangers",
       "type": "shows",
       "year": "1993",
-      "url": "https://tubitv.com/series/300014189/mighty-morphin-power-rangers",
+      "url": "https://tubitv.com/tv-shows/200165482/s01-e01-day-of-the-dumpster",
       "service": "Tubi",
       "genre": "Action & Adventure, Sci-Fi & Fantasy, Kids",
       "image": "https://image.tmdb.org/t/p/w780/qx3SJlAp2RK656TusqKx1qEqVMW.jpg",
@@ -422,7 +432,8 @@
       "trailer": "https://www.youtube.com/watch?v=igDQns34c3s",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Day of the Dumpster"
     },
     {
       "id": "starter-tubi-92c915a3f50e",
@@ -534,7 +545,7 @@
       "title": "The Cat in the Hat Knows a Lot About That!",
       "type": "shows",
       "year": "2010",
-      "url": "https://tubitv.com/series/300007148/the-cat-in-the-hat-knows-a-lot-about-that",
+      "url": "https://tubitv.com/tv-shows/642071/s03-e01-building-bridges-float-your-boat",
       "service": "Tubi",
       "genre": "Animation, Family, Kids",
       "image": "https://image.tmdb.org/t/p/w780/97qKiavvmvpYNBR8mhH5e5YVOTw.jpg",
@@ -548,7 +559,8 @@
       "tmdb_id": 32896,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S03:E01 - Building Bridges / Float Your Boat"
     },
     {
       "id": "starter-tubi-c4e4693f02f9",
@@ -576,7 +588,7 @@
       "title": "The Flintstones",
       "type": "shows",
       "year": "1960",
-      "url": "https://tubitv.com/series/300006856/the-flintstones",
+      "url": "https://tubitv.com/tv-shows/596023/s01-e01-the-flinstone-flyer",
       "service": "Tubi",
       "genre": "Family, Animation, Comedy",
       "image": "https://image.tmdb.org/t/p/w780/30P6ifagQ3fguTsI33KMmDLTAx6.jpg",
@@ -590,7 +602,8 @@
       "tmdb_id": 1996,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - The Flinstone Flyer"
     },
     {
       "id": "starter-tubi-2",
@@ -617,7 +630,7 @@
       "title": "The Looney Tunes Show",
       "type": "shows",
       "year": "2011",
-      "url": "https://tubitv.com/series/300015103/the-looney-tunes-show",
+      "url": "https://tubitv.com/tv-shows/200189372/s01-e01-best-friends",
       "service": "Tubi",
       "genre": "Animation, Comedy, Family, Kids",
       "image": "https://image.tmdb.org/t/p/w780/bZWdejWhkgJmXjdQ70DjiJS7v7O.jpg",
@@ -631,14 +644,15 @@
       "tmdb_id": 32605,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Best Friends"
     },
     {
       "id": "starter-tubi-5",
       "title": "The Magic School Bus",
       "type": "shows",
       "year": "1994",
-      "url": "https://tubitv.com/series/300008495/the-magic-school-bus",
+      "url": "https://tubitv.com/tv-shows/652421/s01-e01-gets-lost-in-space",
       "service": "Tubi",
       "genre": "Animation, Sci-Fi & Fantasy, Family, Action & Adventure, Kids",
       "image": "https://image.tmdb.org/t/p/w780/3A70wxUpplD4V3IcL8WmNFBgAbV.jpg",
@@ -651,7 +665,8 @@
       "tmdb_id": 7248,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Gets Lost in Space"
     },
     {
       "id": "starter-tubi-a2d19327d922",
@@ -679,7 +694,7 @@
       "title": "The Powerpuff Girls",
       "type": "shows",
       "year": "1998",
-      "url": "https://tubitv.com/series/300019078/the-powerpuff-girls",
+      "url": "https://tubitv.com/tv-shows/200304808/s01-e01-monkey-see-doggie-do-mommy-fearest",
       "service": "Tubi",
       "genre": "Action & Adventure, Animation, Comedy, Kids, Family",
       "image": "https://image.tmdb.org/t/p/w780/468mmhMd21pY4Yx0S0woqeEcxtL.jpg",
@@ -693,7 +708,8 @@
       "trailer": "",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Monkey See, Doggie Do / Mommy Fearest"
     },
     {
       "id": "starter-tubi-1",
@@ -720,7 +736,7 @@
       "title": "Timmy Time",
       "type": "shows",
       "year": "2009",
-      "url": "https://tubitv.com/series/300010497/timmy-time",
+      "url": "https://tubitv.com/tv-shows/200087105/s01-e01-episode-1",
       "service": "Tubi",
       "genre": "Animation, Comedy, Kids",
       "image": "https://image.tmdb.org/t/p/w780/n4n6ROx77ex5zmOZVA4sjtoLJp8.jpg",
@@ -733,14 +749,15 @@
       "tmdb_id": 19889,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - Episode 1"
     },
     {
       "id": "starter-tubi-7c890ac312ca",
       "title": "Transformers: Generation 1",
       "type": "shows",
       "year": "1984",
-      "url": "https://tubitv.com/series/11/transformers-generation-1",
+      "url": "https://tubitv.com/tv-shows/111770/s01-e01-more-than-meets-the-eye-pt-1",
       "service": "Tubi",
       "genre": "Animation, Kids, Action & Adventure, Sci-Fi & Fantasy",
       "image": "https://image.tmdb.org/t/p/w780/h0BLnOet7BtgrDpkU5KSSmiqQTg.jpg",
@@ -754,7 +771,8 @@
       "trailer": "",
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "S01:E01 - More Than Meets The Eye (Pt. 1)"
     },
     {
       "id": "starter-tubi-23217cf9d9a5",

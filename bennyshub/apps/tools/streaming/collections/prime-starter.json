@@ -11,7 +11,7 @@
       "title": "All Creatures Big and Small",
       "type": "movies",
       "year": "2015",
-      "url": "https://www.primevideo.com/detail/0HZHB5XJOJ4QS49GS1JQT07H6A",
+      "url": "https://www.primevideo.com/region/na/detail/0HZHB5XJOJ4QS49GS1JQT07H6A?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Adventure, Comedy, Family",
       "image": "https://image.tmdb.org/t/p/w780/gEJXHgpiKh89Vwjc4XUY5CIgUdB.jpg",
@@ -32,7 +32,7 @@
       "title": "Hotel Transylvania: Transformania",
       "type": "movies",
       "year": "2022",
-      "url": "https://www.primevideo.com/detail/0ILGJ4D4ZYPGJCCG2VNGX3LCR3",
+      "url": "https://www.primevideo.com/region/na/detail/0ILGJ4D4ZYPGJCCG2VNGX3LCR3?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Comedy, Family, Adventure, Fantasy",
       "image": "https://image.tmdb.org/t/p/w780/teCy1egGQa0y8ULJvlrDHQKnxBL.jpg",
@@ -53,7 +53,7 @@
       "title": "Just Add Magic",
       "type": "shows",
       "year": "2016",
-      "url": "https://www.primevideo.com/detail/0JT9QJ3BTFIO33XC836JB6XJIV",
+      "url": "https://www.primevideo.com/region/na/detail/0SGFS803Y5N6USNC5ZEP7RERMK?autoplay=1",
       "service": "Prime Video",
       "genre": "Family, Kids, Sci-Fi & Fantasy, Comedy, Mystery",
       "image": "https://image.tmdb.org/t/p/w780/v7olj5StoSFVsgkBhOihDaR56eJ.jpg",
@@ -66,14 +66,15 @@
       "tmdb_id": 62904,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "1. Just Add Magic"
     },
     {
       "id": "starter-prime-5",
       "title": "Lost in Oz",
       "type": "shows",
       "year": "2015",
-      "url": "https://www.primevideo.com/detail/0L7FAB2L81E4FVEIZOQ2BX54S4",
+      "url": "https://www.primevideo.com/region/na/detail/0KRETSN38NDWSGBRWON79MZKF7?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Family, Sci-Fi & Fantasy, Kids, Comedy",
       "image": "https://image.tmdb.org/t/p/w780/bYPm31BjQed8fqbly7BFPjsOjLH.jpg",
@@ -86,14 +87,15 @@
       "tmdb_id": 63054,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "Season 1 Behind the Scenes"
     },
     {
       "id": "starter-prime-7c2902402d92",
       "title": "Maya The Bee",
       "type": "movies",
       "year": "2014",
-      "url": "https://www.primevideo.com/detail/0PLOVHXBJJ2U3EEF2BW02YGYGJ",
+      "url": "https://www.primevideo.com/region/na/detail/0PLOVHXBJJ2U3EEF2BW02YGYGJ?autoplay=1",
       "service": "Prime Video",
       "genre": "Family, Animation",
       "image": "https://image.tmdb.org/t/p/w780/pMQ88CvnQroSjxk4IhM7YNbcjTx.jpg",
@@ -114,7 +116,7 @@
       "title": "Pete the Cat",
       "type": "shows",
       "year": "2017",
-      "url": "https://www.primevideo.com/detail/0U9RX7MIAHZEG129T84ZWLN4VL",
+      "url": "https://www.primevideo.com/region/na/detail/0H76F0NN2X42VRVBXC8CGIOX14?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Kids",
       "image": "https://image.tmdb.org/t/p/w780/eTug1KuDsrQ4jMIN6zaEnERfSnd.jpg",
@@ -127,14 +129,15 @@
       "tmdb_id": 82235,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "1. Too Cool for School & Pete at the Beach"
     },
     {
       "id": "starter-prime-8b86068cab55",
       "title": "Red Shoes and the Seven Dwarfs",
       "type": "movies",
       "year": "2019",
-      "url": "https://www.primevideo.com/detail/0JF5T4HL3QRL0KZG2KSH2GJDAP",
+      "url": "https://www.primevideo.com/region/na/detail/0JF5T4HL3QRL0KZG2KSH2GJDAP?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Fantasy, Family, Comedy, Romance, Adventure",
       "image": "https://image.tmdb.org/t/p/w780/MBiKqTsouYqAACLYNDadsjhhC0.jpg",
@@ -155,7 +158,7 @@
       "title": "Rock Dog",
       "type": "movies",
       "year": "2016",
-      "url": "https://www.primevideo.com/detail/0SH3T8TL5Y6BRPVKSO2XW5IID6",
+      "url": "https://www.primevideo.com/region/na/detail/0SH3T8TL5Y6BRPVKSO2XW5IID6?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Adventure, Comedy, Family, Music",
       "image": "https://image.tmdb.org/t/p/w780/7RXi2afiNJGU8EB79SD8HYoSz4O.jpg",
@@ -176,7 +179,7 @@
       "title": "Sing 2",
       "type": "movies",
       "year": "2021",
-      "url": "https://www.primevideo.com/detail/0K04DMLEJSTE354379LLPZ9ZAN",
+      "url": "https://www.primevideo.com/region/na/detail/0K04DMLEJSTE354379LLPZ9ZAN?autoplay=1",
       "service": "Prime Video",
       "genre": "Animation, Comedy, Family, Music",
       "image": "https://image.tmdb.org/t/p/w780/aWeKITRFbbwY8txG5uCj4rMCfSP.jpg",
@@ -197,7 +200,7 @@
       "title": "The Stinky & Dirty Show",
       "type": "shows",
       "year": "2016",
-      "url": "https://www.primevideo.com/detail/0U44E08N4F3GMFVIDRHREE3UU7",
+      "url": "https://www.primevideo.com/region/na/detail/0RMLVSAA62L6TFTYWGJBOD8FW0?autoplay=1",
       "service": "Prime Video",
       "genre": "Kids, Animation, Comedy",
       "image": "https://image.tmdb.org/t/p/w780/nepw7xPqA6oiwhyh5YfhU5byLzL.jpg",
@@ -210,14 +213,15 @@
       "tmdb_id": 67459,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "1. Jump at the Dump / Road Block"
     },
     {
       "id": "starter-prime-1",
       "title": "Troop Zero",
       "type": "movies",
       "year": "2019",
-      "url": "https://www.primevideo.com/detail/0SGK6OBXIGXMLRK2OP7QXOAVZ2",
+      "url": "https://www.primevideo.com/region/na/detail/0SGK6OBXIGXMLRK2OP7QXOAVZ2?autoplay=1",
       "service": "Prime Video",
       "genre": "Comedy, Drama, Family",
       "image": "https://image.tmdb.org/t/p/w780/yr1RzTrVIfS5n9zvClUfAtZDyUn.jpg",
@@ -237,7 +241,7 @@
       "title": "Tumble Leaf",
       "type": "shows",
       "year": "2013",
-      "url": "https://www.primevideo.com/detail/0JSOQNXC38YDDVGBXDDTIMFZS7",
+      "url": "https://www.primevideo.com/region/na/detail/0SAPL02FCQSNUOZ7R57982Y9LH?autoplay=1",
       "service": "Prime Video",
       "genre": "Kids, Animation",
       "image": "https://image.tmdb.org/t/p/w780/8MbsSjulW9HZHfLecV2S2dyzk77.jpg",
@@ -250,7 +254,8 @@
       "tmdb_id": 65047,
       "tmdb_type": "tv",
       "metadataSource": "TMDB",
-      "metadataChecked": "2026-09-27"
+      "metadataChecked": "2026-09-27",
+      "entryEpisodeTitle": "10. Fig's Speedy Sled; Parachute Play"
     }
   ]
 }

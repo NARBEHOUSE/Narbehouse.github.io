@@ -30,9 +30,9 @@
       selectedPack={...pack,items};opener=button;
       const existing=await WebStreaming.getData();
       document.getElementById('collection-title').textContent=pack.service+' starter collection';
-      document.getElementById('collection-description').textContent=data.description+' Links checked '+data.checkedDate+'. Availability varies by country and plan. '+pack.access;
+      document.getElementById('collection-description').textContent=data.description+' Public title links reviewed '+data.checkedDate+'. Sign-in and availability depend on your country and plan; playback is not guaranteed. '+pack.access;
       list.replaceChildren();
-      items.forEach((item,index)=>{const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span'),detail=document.createElement('small');input.type='checkbox';input.value=index;input.disabled=!!StreamingLibraryMerge.duplicate(existing,item.url);input.checked=!input.disabled;text.textContent=item.title;detail.textContent=(item.type==='shows'?'Series':item.type==='video'?'Short film':'Movie')+(item.year?' · '+item.year:'')+(input.disabled?' · Already in your library':'');text.append(detail);label.append(input,text);list.append(label);});
+      items.forEach((item,index)=>{const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span'),detail=document.createElement('small');input.type='checkbox';input.value=index;input.disabled=!!StreamingLibraryMerge.duplicate(existing,item.url);input.checked=!input.disabled;text.textContent=item.title;detail.textContent=(item.type==='shows'?'Series':item.type==='video'?'Short film':'Movie')+(item.year?' · '+item.year:'')+(item.entryEpisodeTitle?' ? Starts with '+item.entryEpisodeTitle:'')+(input.disabled?' · Already in your library':'');text.append(detail);label.append(input,text);list.append(label);});
       status.textContent='';busy=false;search.value='';type.value='';filter();dialog.showModal();
     }catch(error){status.textContent=error.message;}finally{busy=false;button.disabled=false;}
   }
