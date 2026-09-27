@@ -37,13 +37,13 @@ The local preview server is for development only. A deployed static HTTPS websit
 
 The companion requests streaming access per service, and calendar/news access only when enabled in its own settings. It does not request browsing history, cookies, debugger, native messaging or all-sites permissions. The bridge does not accept arbitrary scripts, arbitrary fetch URLs or arbitrary tab IDs.
 
-Keyboard predictions run entirely on-device using a compiled KenLM WebAssembly engine and a public-domain English model. A Web Worker keeps scoring off the switch-input thread. The existing local predictions are used during loading, on a model failure or slow response, and remain available offline. No Google API, microphone, server or credential is used for keyboard predictions. See the model README for source, licensing, model size and limitations.
+Keyboard predictions use the original local dictionary, contextual word pairs/triples and learned vocabulary. No model worker, API, microphone, server or credential is used. Learned data stays in the existing browser storage; the keyboard works offline after the PWA assets are cached.
 
 The release preparation clears the website and staging streaming libraries and episode catalogs, keeps the public journal empty, and excludes development artifacts and RT-Convo from deployment. Private catalog backups remain only under ignored artifacts/. This does not revoke old credentials, clear users' browser storage, or erase older OneDrive copies or remote history. Public company branding and the approved support contact remain.
 
 Do not deploy the entire working directory. Run npm run build and publish the reviewed dist folder. Never save personal exports inside the website tree. The browser test profiles in artifacts contain synthetic test data only and are excluded from deployment and Git.
 
-Run npm run test:keyboard to exercise the actual KenLM model, contextual suggestions, learned words, offline PWA reload, failed model loading and local fallback. The model and candidate index download about 17 MB on the first Keyboard visit; cached models also work offline.
+Run npm run test:keyboard to check typing, suggestion selection, repeated-word prevention, learned vocabulary and offline PWA reload. The retired KenLM experiment is excluded from public builds.
 
 The TMDB Worker is ready to deploy but needs Cloudflare login, a secret and its deployed URL. See workers/tmdb/README.md.
 
@@ -62,7 +62,7 @@ Browser checks cover absent/present companion gating, direct tool entry, setting
 - Chromium fixture behavior is tested. Actual Netflix, Disney+, Hulu, Prime, HBO Max, Paramount+, Plex, Pluto and YouTube subscriptions/player versions need user acceptance testing. The allowlist is not a compatibility certification.
 - Generic controls operate on accessible top-document HTML media. Players inside inaccessible cross-origin frames, closed shadow roots or proprietary controls may require provider adapters. Unsupported actions show a message.
 - Previous/Next item use provider-specific and accessible-label controls. Skip Intro has been removed. The extension tracks updated show URLs within the launched provider for Continue Watching, while Plex keeps its own resume behavior. This does not infer watch completion or exact playback time. The original TMDB editor is retained; the deployed Worker metadata path has been tested; provider playback still needs signed-in acceptance checks.
-- Real news availability and a private calendar still need checks using the user's own configuration. KenLM suggestions use a general English books corpus and should be reviewed for the user's vocabulary; learned words stay local.
+- Real news availability and a private calendar still need checks using the user's own configuration. Keyboard suggestions use the local dictionary and learned words stay local.
 - Normal-profile Chrome/Edge extension enable/disable/reload, an installed PWA window, real head switches, voice choice and focus recovery across provider sign-in screens still need hands-on acceptance testing. Command-line-loaded Chromium extensions have a different reload lifecycle than a normal Load unpacked installation.
 - An extension cannot control unrelated Windows applications or capture switches while the address bar, browser UI or an unrelated native app has focus. DRM/subscriptions and provider restrictions remain in effect.
 - Browser storage can be cleared or quota-limited. Export important journals/profiles. The new keys are namespaced to avoid automatically importing old personal state.

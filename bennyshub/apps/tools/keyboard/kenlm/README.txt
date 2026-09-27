@@ -1,3 +1,5 @@
+RETIRED EXPERIMENT: This model is no longer loaded by the Keyboard, cached by the PWA, or included in public builds. The following notes document the previous implementation.
+
 Benny's Hub on-device English predictions
 ========================================
 

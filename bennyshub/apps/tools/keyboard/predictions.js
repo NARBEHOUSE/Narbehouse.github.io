@@ -1,5 +1,5 @@
 // Prediction system for GitHub Pages using localStorage-first approach
-class HybridPredictionSystem {
+class LocalPredictionSystem {
   constructor() {
     this.baseData = { frequent_words: {}, bigrams: {}, trigrams: {} };
     this.userData = { frequent_words: {}, bigrams: {}, trigrams: {} };
@@ -141,44 +141,9 @@ class HybridPredictionSystem {
     return count * recencyMultiplier * userMultiplier;
   }
 
+  // Keep older cached callers working during a PWA update.
   async getHybridPredictions(buffer) {
-    const local = await this.getLocalPredictions(buffer);
-    const tail = buffer.replace(/\|/g, '').toUpperCase().split(/[.!?\n]/).pop();
-    if (!tail.trim()) return local;
-    let enhanced;
-    try { enhanced = await window.kenLMPredictor?.predict(buffer, local) || []; } catch { return local; }
-    if (!enhanced.length) return local;
-    const tokens = tail.match(/[A-Z]+(?:'[A-Z]+)*/g) || [];
-    const prefix = /[A-Z']$/.test(tail) ? tokens.pop() || '' : '';
-    const contexts = [tokens.slice(-2).join(' '), tokens.slice(-1).join(' ')].filter(Boolean);
-    const learned = new Map();
-    for (const [key, value] of Object.entries(this.userData.trigrams || {}).concat(Object.entries(this.userData.bigrams || {}))) {
-      const parts = key.split(' '), word = parts.pop();
-      if (contexts.includes(parts.join(' ')) && word.startsWith(prefix)) learned.set(word, (value.count || 0) * parts.length * 10);
-    }
-    if (prefix) for (const [word, value] of Object.entries(this.userData.frequent_words || {})) {
-      if (word.startsWith(prefix)) learned.set(word, (learned.get(word) || 0) + (value.count || 0));
-    }
-    const personal = [...learned].sort((a,b)=>b[1]-a[1]).map(([word])=>word).slice(0,2);
-    // Preserve the original predictor's strongest choices. KenLM's general corpus
-    // must not crowd conversational completions out of all six visible slots.
-    const valid = word => typeof word==='string' && /^[A-Z]+(?:'[A-Z]+)*$/.test(word) && word.startsWith(prefix);
-    const original = [...new Set(local.filter(valid))], model = [...new Set(enhanced.filter(valid))];
-    const result = [...new Set(personal.filter(valid))];
-    const add = word => { if(result.length<6&&!result.includes(word))result.push(word); };
-    original.slice(0,prefix?4:3).forEach(add);
-    model.forEach(add);original.forEach(add);
-    const rankScore = word => {
-      const a=original.indexOf(word),b=model.indexOf(word);
-      return (a<0?0:1.5/(a+1))+(b<0?0:1/(b+1));
-    };
-    result.sort((a,b)=>{
-      const pa=personal.indexOf(a),pb=personal.indexOf(b);
-      if(pa>=0||pb>=0)return (pa<0?Infinity:pa)-(pb<0?Infinity:pb);
-      return rankScore(b)-rankScore(a)||original.indexOf(a)-original.indexOf(b);
-    });
-    while(result.length<6) result.push('');
-    return result;
+    return this.getLocalPredictions(buffer);
   }
 
   async getLocalPredictions(buffer) {
@@ -336,6 +301,10 @@ class HybridPredictionSystem {
       }
     }
 
+    // A completed word is not useful as its own completion or next suggestion.
+    const lastWord = words[words.length - 1];
+    finalPredictions = finalPredictions.filter(word => word !== lastWord);
+
     // Ensure we always return 6 predictions (empty strings if needed)
     while (finalPredictions.length < 6) {
       finalPredictions.push('');
@@ -458,4 +427,4 @@ class HybridPredictionSystem {
 
 }
 
-window.predictionSystem = new HybridPredictionSystem();
+window.predictionSystem = new LocalPredictionSystem();

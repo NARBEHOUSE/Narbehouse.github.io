@@ -529,7 +529,7 @@
   async function renderPredictions() {
     const requestVersion = ++predictionRenderVersion;
     const requestedBuffer = buffer;
-    const predictions = await window.predictionSystem.getHybridPredictions(buffer);
+    const predictions = await window.predictionSystem.getLocalPredictions(buffer);
 
     if (requestVersion !== predictionRenderVersion || requestedBuffer !== buffer) return;
     const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);

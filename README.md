@@ -25,7 +25,7 @@ Streaming keeps the original catalog link and saves the latest episode/playlist 
 
 Companion setup and data controls are in the collapsed **Settings** area at the top, outside switch scanning.
 
-The Keyboard now uses on-device KenLM with a local fallback; see [model details](bennyshub/apps/tools/keyboard/kenlm/README.txt). The optional [TMDB Worker](workers/tmdb/README.md) keeps a shared metadata credential off GitHub Pages.
+The Keyboard uses the original local dictionary and learned words/phrases, including offline. KenLM is no longer loaded or included in the public build. The optional [TMDB Worker](workers/tmdb/README.md) keeps a shared metadata credential off GitHub Pages.
 
 ---
 
