@@ -1,24 +1,25 @@
 (() => {
   if(window.__bennyPlayer)return;window.__bennyPlayer=true;
-  let session,host,root,status,adapter,selected,paused=false,press=null,lastRelease=0,singleRunning=false;
+  let session,host,root,status,notice,nav,adapter,selected,paused=false,press=null,lastRelease=0,singleRunning=false;
   let holdTimer,reverseTimer,autoTimer,aliveTimer,startupTimer,focusTimer,observer;
+  let profileState=[];
   const buttons=[],blocked=new Map(),lastKeyUp=new Map();let removed=false,autoAt=Date.now();
-  const send=async action=>{const r=await chrome.runtime.sendMessage({protocol:1,action});if(!r?.ok)throw Error(r?.error||'Companion unavailable');return r.data;};
+  const send=async (action,payload)=>{const r=await chrome.runtime.sendMessage({protocol:1,action,payload});if(!r?.ok)throw Error(r?.error||'Companion unavailable');return r.data;};
   function speak(text){if(!session?.settings.tts)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=session.settings.rate;const voice=speechSynthesis.getVoices().find(v=>v.name===session.settings.voice);if(voice)u.voice=voice;speechSynthesis.speak(u);}
   function announce(text){status.textContent=text+(session.settings.autoScan&&!singleRunning&&!paused?' · Press Enter to scan':'');speak(text);}
-  const controls=()=>buttons.filter(b=>!b.closest('[hidden]'));
+  const controls=()=>[...root.querySelectorAll('nav button')].filter(b=>!b.closest('[hidden]'));
   function focusBar(){
     if(paused||removed||document.hidden)return;
     if(selected&&!controls().includes(selected))selected=null;
     (selected||host).focus({preventScroll:true});
   }
   function highlight(button,voice=true){
-    selected=button;buttons.forEach(b=>b.classList.toggle('selected',b===selected));
+    selected=button;root.querySelectorAll('nav button').forEach(b=>b.classList.toggle('selected',b===selected));
     // Exposes the visible selection for accessibility/debugging without exposing page data.
     host.dataset.selected=selected.dataset.command;focusBar();if(voice)speak(selected.textContent);
   }
   function scan(delta){if(paused)return;const list=controls();highlight(list[(list.indexOf(selected)+delta+list.length)%list.length]);}
-  function park(){singleRunning=false;selected=null;buttons.forEach(b=>b.classList.remove('selected'));host.dataset.selected='parked';status.textContent='Press Enter to scan';focusBar();}
+  function park(){singleRunning=false;selected=null;root.querySelectorAll('nav button').forEach(b=>b.classList.remove('selected'));host.dataset.selected='parked';status.textContent='Press Enter to scan';focusBar();}
   function startLoop(){singleRunning=true;autoAt=Date.now();highlight(controls()[0]);status.textContent='Enter: select';}
   function clearPress(){clearTimeout(holdTimer);clearInterval(reverseTimer);press=null;}
   function lockFrames(){
@@ -28,14 +29,45 @@
     for(const frame of document.querySelectorAll('iframe')){if(!blocked.has(frame))blocked.set(frame,frame.inert);frame.inert=true;}
   }
   function releaseFrames(){for(const [frame,inert]of blocked)frame.inert=inert;blocked.clear();}
+  function restartStartup(){
+    if(!session.startup)return;
+    adapter.restartStartup();startupFinished=false;clearInterval(startupTimer);
+    startupTimer=setInterval(runStartup,250);runStartup();
+  }
+  function syncProfiles(){
+    if(!nav||removed)return;
+    const choices=paused?[]:adapter.profileChoices();
+    const changed=choices.length!==profileState.length||choices.some((c,i)=>c.element!==profileState[i]?.element||c.label!==profileState[i]?.label);
+    if(changed){
+      const hadProfiles=profileState.length>0;profileState=choices;
+      nav.querySelectorAll('[data-profile]').forEach(b=>b.remove());
+      const access=buttons.find(b=>b.dataset.command==='suspend');
+      choices.forEach((choice,i)=>{
+        const b=document.createElement('button');b.textContent=choice.label;b.dataset.profile='';b.dataset.command='profile:'+i;b.dataset.group='playback';
+        b.onclick=()=>{highlight(b,false);clearPress();choice.element.click();syncProfiles();restartStartup();};
+        nav.insertBefore(b,access);
+      });
+      clearPress();singleRunning=false;selected=null;
+      if(choices.length)announce('Choose a Netflix profile using the bar or click a profile on the page.');
+      else if(hadProfiles&&!paused){announce('Profile selected. Playback controls ready.');restartStartup();}
+    }
+    for(const b of buttons)b.hidden=(paused||choices.length>0)&&!['suspend','return'].includes(b.dataset.command);
+    if(!paused&&changed){if(session.settings.autoScan)park();else highlight(controls()[0],false);}
+  }
   async function act(command){
     adapter.cancelStartup();
     try{
       if(command==='return'){await send('RETURN_TO_HUB');return;}
       if(command==='suspend'){
+        await send('PLAYER_ACCESS',{unlocked:!paused});
         paused=!paused;clearPress();
-        if(paused){singleRunning=false;releaseFrames();adapter.clearView();}else{lockFrames();adapter.syncView();if(session.settings.autoScan)park();else highlight(buttons[0],false);}
-        announce(paused?'Keyboard access. Press Alt+Shift+B to return to the bar.':'Switch controls resumed.');return;
+        const access=buttons.find(b=>b.dataset.command==='suspend');
+        access.textContent=paused?'Lock controls':'Unlock browser';access.setAttribute('aria-pressed',String(paused));
+        host.dataset.access=paused?'browser':'controls';notice.hidden=!paused;
+        if(paused){singleRunning=false;releaseFrames();adapter.clearView();if(document.fullscreenElement)await document.exitFullscreen();}
+        syncProfiles();
+        if(!paused){lockFrames();adapter.syncView();if(session.settings.autoScan)park();else highlight(controls()[0],false);restartStartup();}
+        announce(paused?'Browser unlocked. Sign in or choose your profile, then select Lock controls.':'Switch controls locked.');return;
       }
       if(command==='fullscreen'){announce(await adapter.fullscreen());return;}
       if(command==='play'){
@@ -54,7 +86,7 @@
   }
   let startupRunning=false,startupFinished=false;
   async function runStartup(){
-    if(!session?.startup||startupRunning||startupFinished||paused||removed)return;
+    if(!session?.startup||startupRunning||startupFinished||paused||removed||profileState.length)return;
     startupRunning=true;
     try{
       const result=await adapter.startup();
@@ -96,6 +128,11 @@
   function keepFocus(e){if(!paused&&e.target!==host)focusBar();}
   function protectBar(e){
     if(!host||paused||removed||!e.isTrusted||e.composedPath().includes(host))return;
+    // A profile tile is an explicit user choice; permit it without releasing switch keys.
+    if(profileState.some(choice=>e.composedPath().includes(choice.element))){
+      if(e.type==='click')queueMicrotask(()=>{syncProfiles();focusBar();});
+      return;
+    }
     // Clicking the movie must not activate the provider, focus its video, or
     // strand switch input behind the overlay. Adapter clicks remain allowed.
     e.preventDefault();e.stopImmediatePropagation();clearPress();focusBar();
@@ -138,22 +175,27 @@
       button[data-group="playback"]{--fill:#145343;--edge:#69d9b1}
       button[data-group="sound"]{--fill:#174c79;--edge:#7dc7ff}
       button[data-group="display"]{--fill:#583c81;--edge:#c9a6ff}
+      button[data-group="access"]{--fill:#654817;--edge:#ffda80}
       button[data-group="exit"]{--fill:#812d3a;--edge:#ffa1b0}
       button.selected,button:focus-visible{outline:4px solid #ffe474;outline-offset:2px;box-shadow:inset 0 0 0 1px white}
       p{margin:12px 0 0;font-size:14px;text-align:center}
       @media(max-height:450px){section{padding:9px 12px}button{padding:7px 10px;min-height:42px}nav{gap:9px}p{margin-top:8px}}
     `;root.append(style);
-    const bar=document.createElement('section');bar.setAttribute('aria-label',"Benny's Hub player controls");const nav=document.createElement('nav');nav.setAttribute('aria-label','Playback controls');
-    status=document.createElement('p');status.setAttribute('role','status');status.textContent='Space: next | Hold Space: back | Enter: select';bar.append(nav,status);root.append(bar);
-    for(const [command,label,group]of [['play','Play / Pause','playback'],['back','Rewind 10 seconds','playback'],['forward','Fast forward 10 seconds','playback'],['down','Volume -','sound'],['up','Volume +','sound'],['mute','Mute','sound'],['previous','Previous item','playback'],['next','Next item','playback'],['fullscreen','Fullscreen','display'],['return','Return to Hub','exit']]){
-      const b=document.createElement('button');b.textContent=label;b.dataset.command=command;b.dataset.group=group;b.onclick=()=>{highlight(b,false);act(command);};buttons.push(b);nav.append(b);
+    const bar=document.createElement('section');bar.setAttribute('aria-label',"Benny's Hub player controls");nav=document.createElement('nav');nav.setAttribute('aria-label','Playback controls');
+    status=document.createElement('p');status.setAttribute('role','status');status.textContent='Space: next | Hold Space: back | Enter: select';notice=document.createElement('p');notice.hidden=true;notice.id='browser-access-help';
+    notice.textContent='Browser unlocked: use your mouse and keyboard to sign in, choose a profile, or complete verification. Space and Enter now go to the website. Select Lock controls (or press Alt+Shift+B) to resume switch scanning.';
+    bar.append(nav,status,notice);root.append(bar);
+    for(const [command,label,group]of [['play','Play / Pause','playback'],['back','Rewind 10 seconds','playback'],['forward','Fast forward 10 seconds','playback'],['down','Volume -','sound'],['up','Volume +','sound'],['mute','Mute','sound'],['previous','Previous item','playback'],['next','Next item','playback'],['fullscreen','Fullscreen','display'],['suspend','Unlock browser','access'],['return','Return to Hub','exit']]){
+      const b=document.createElement('button');b.textContent=label;b.dataset.command=command;b.dataset.group=group;b.onclick=()=>{highlight(b,false);act(command);};if(command==='suspend'){b.setAttribute('aria-pressed','false');b.setAttribute('aria-describedby','browser-access-help');}buttons.push(b);nav.append(b);
     }
-    selected=buttons[0];mount();if(session.settings.autoScan)park();else highlight(selected,false);lockFrames();
+    paused=session.browserUnlocked===true;
+    if(paused){const access=buttons.find(b=>b.dataset.command==='suspend');access.textContent='Lock controls';access.setAttribute('aria-pressed','true');notice.hidden=false;}
+    selected=buttons[0];mount();if(session.settings.autoScan)park();else highlight(selected,false);host.dataset.access=paused?'browser':'controls';syncProfiles();lockFrames();if(paused)announce('Browser unlocked. Sign in, then select Lock controls.');
     if(document.readyState==='complete')playerReady();else window.addEventListener('load',playerReady,{once:true});
     document.addEventListener('fullscreenchange',mount);window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);window.addEventListener('blur',clearPress);window.addEventListener('focus',focusBar);document.addEventListener('focusin',keepFocus,true);document.addEventListener('visibilitychange',visibility);
-    observer=new MutationObserver(records=>{lockFrames();if(!host.isConnected)mount();if(!paused)adapter.syncView();if(records.some(record=>record.target!==host))runStartup();});observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
+    observer=new MutationObserver(records=>{syncProfiles();lockFrames();if(!host.isConnected)mount();if(!paused)adapter.syncView();if(records.some(record=>record.target!==host))runStartup();});observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
     // Reclaim programmatic page focus, never another browser window or native application.
-    focusTimer=setInterval(()=>{if(!paused)adapter.syncView();if(document.hasFocus()&&document.activeElement!==host)focusBar();},300);
+    focusTimer=setInterval(()=>{syncProfiles();if(!paused)adapter.syncView();if(document.hasFocus()&&document.activeElement!==host)focusBar();},300);
     autoTimer=setInterval(()=>{
       if(session.settings.autoScan&&singleRunning&&!paused&&!document.hidden&&document.hasFocus()&&!press&&Date.now()-autoAt>=session.settings.scanInterval){
         autoAt=Date.now();const list=controls();if(list.indexOf(selected)>=list.length-1)park();else scan(1);
@@ -161,7 +203,7 @@
     },100);
     aliveTimer=setInterval(async()=>{try{
       const wasSingle=session.settings.autoScan;session=(await send('PLAYER_HELLO')).session;
-      if(wasSingle!==session.settings.autoScan){clearPress();singleRunning=false;if(session.settings.autoScan)park();else highlight(buttons[0],false);}
+      if(wasSingle!==session.settings.autoScan){clearPress();singleRunning=false;if(session.settings.autoScan)park();else highlight(controls()[0],false);}
       if(!host.isConnected)mount();
     }catch{cleanup();}},1000);
     adapter.syncView();if(session.startup){startupTimer=setInterval(runStartup,250);runStartup();}

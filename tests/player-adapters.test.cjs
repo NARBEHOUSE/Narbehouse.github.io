@@ -30,7 +30,7 @@ test('Plex follows Play into a Resume dialog and prioritizes Resume over restart
 test('Plex handles a reused Play node becoming Resume immediately, and excludes login/purchase',async()=>{
   let clicks=0;const button=element('Play',{click(){clicks++;this.textContent='Resume';}}),run=setup('plex',{buttons:[button]});
   await run.adapter.startup();await run.adapter.startup();assert.equal(clicks,2);
-  const signedOut=setup('plex',{buttons:[button],login:true});assert.match(await signedOut.adapter.startup(),/Sign in/);assert.equal(clicks,2);
+  const signedOut=setup('plex',{buttons:[button],login:true});assert.match(await signedOut.adapter.startup(),/sign in/i);assert.equal(clicks,2);
   for(const label of ['Buy','Rent','Play trailer','Play from beginning']){const unsafe=element(label,{matches:()=>true,click(){throw Error('Unsafe action');}});assert.equal(await setup('plex',{buttons:[unsafe]}).adapter.startup(),'waiting');}
 });
 test('a pending media play request does not block a Resume dialog arriving later',async()=>{

@@ -91,7 +91,13 @@ async function handle(m,sender){
   if(m.action==='PLAYER_HELLO'){
     const session=await managed(sender);await rememberPosition(sender,session);
     const synced=(await chrome.storage.session.get('scan:'+session.hubOrigin))['scan:'+session.hubOrigin];
-    return {session:{settings:synced||session.settings,service:session.service||'',startup:session.startup!==false}};
+    return {session:{settings:synced||session.settings,service:session.service||'',startup:session.startup!==false,browserUnlocked:session.browserUnlocked===true}};
+  }
+  if(m.action==='PLAYER_ACCESS'){
+    const session=await managed(sender);
+    if(typeof m.payload?.unlocked!=='boolean')throw Error('Invalid browser access state.');
+    session.browserUnlocked=m.payload.unlocked;
+    await chrome.storage.session.set({['player:'+sender.tab.id]:session});return {};
   }
   if(m.action==='ENSURE_PLAYER_FULLSCREEN'){
     await managed(sender);const playerWindow=await chrome.windows.get(sender.tab.windowId);

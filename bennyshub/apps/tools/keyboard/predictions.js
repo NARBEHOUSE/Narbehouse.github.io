@@ -143,10 +143,11 @@ class HybridPredictionSystem {
 
   async getHybridPredictions(buffer) {
     const local = await this.getLocalPredictions(buffer);
-    if (!buffer.replace(/\|/g, '').trim()) return local;
-    const enhanced = await window.kenLMPredictor?.predict(buffer, local) || [];
-    if (!enhanced.length) return local;
     const tail = buffer.replace(/\|/g, '').toUpperCase().split(/[.!?\n]/).pop();
+    if (!tail.trim()) return local;
+    let enhanced;
+    try { enhanced = await window.kenLMPredictor?.predict(buffer, local) || []; } catch { return local; }
+    if (!enhanced.length) return local;
     const tokens = tail.match(/[A-Z]+(?:'[A-Z]+)*/g) || [];
     const prefix = /[A-Z']$/.test(tail) ? tokens.pop() || '' : '';
     const contexts = [tokens.slice(-2).join(' '), tokens.slice(-1).join(' ')].filter(Boolean);
@@ -159,16 +160,33 @@ class HybridPredictionSystem {
       if (word.startsWith(prefix)) learned.set(word, (learned.get(word) || 0) + (value.count || 0));
     }
     const personal = [...learned].sort((a,b)=>b[1]-a[1]).map(([word])=>word).slice(0,2);
-    const result = [...new Set([...personal, ...enhanced, ...local].filter(Boolean))].slice(0,6);
+    // Preserve the original predictor's strongest choices. KenLM's general corpus
+    // must not crowd conversational completions out of all six visible slots.
+    const valid = word => typeof word==='string' && /^[A-Z]+(?:'[A-Z]+)*$/.test(word) && word.startsWith(prefix);
+    const original = [...new Set(local.filter(valid))], model = [...new Set(enhanced.filter(valid))];
+    const result = [...new Set(personal.filter(valid))];
+    const add = word => { if(result.length<6&&!result.includes(word))result.push(word); };
+    original.slice(0,prefix?4:3).forEach(add);
+    model.forEach(add);original.forEach(add);
+    const rankScore = word => {
+      const a=original.indexOf(word),b=model.indexOf(word);
+      return (a<0?0:1.5/(a+1))+(b<0?0:1/(b+1));
+    };
+    result.sort((a,b)=>{
+      const pa=personal.indexOf(a),pb=personal.indexOf(b);
+      if(pa>=0||pb>=0)return (pa<0?Infinity:pa)-(pb<0?Infinity:pb);
+      return rankScore(b)-rankScore(a)||original.indexOf(a)-original.indexOf(b);
+    });
     while(result.length<6) result.push('');
     return result;
   }
 
   async getLocalPredictions(buffer) {
     // Use mergedData instead of webData
-    const hasTrailingSpace = buffer.replace('|', '').endsWith(' ');
-    const cleaned = buffer.toUpperCase().replace('|', '').trim();
-    const words = cleaned ? cleaned.split(' ') : [];
+    const tail = buffer.toUpperCase().replace(/\|/g, '').split(/[.!?\n]/).pop();
+    const hasTrailingSpace = /\s$/.test(tail);
+    const words = tail.match(/[A-Z]+(?:'[A-Z]+)*/g) || [];
+    const cleaned = words.join(' ');
 
 
     const DEFAULT_WORDS = ["YES", "NO", "HELP", "THE", "I", "YOU"];

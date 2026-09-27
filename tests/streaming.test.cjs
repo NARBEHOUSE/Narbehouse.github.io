@@ -18,3 +18,14 @@ test('streaming only saves successful launches and respects reset after redirect
   await api.launch({url:'https://youtu.be/short',show:'Show',type:'shows',season:1,episode:1});await api.syncProgress();assert.equal(api.getLastWatched('SHOW').url,'https://www.youtube.com/watch?v=next');
   api.resetProgress('show');await api.syncProgress();assert.equal(api.getLastWatched('show').url,undefined);assert.ok(api.getLastWatched('show').timestamp);
 });
+
+test('Disney movie imports and launches use playback links while preserving notes and series URLs',async()=>{
+  const {api,stored,onRequest}=adapter(),url='https://www.disneyplus.com/browse/entity-c29f81d8-8c51-4fe7-bb0c-13f099ad3e90';
+  const item={id:'mine',title:'Big Hero 6',type:'movies',url,description:'Personal notes'};
+  stored.set('streaming.catalog',JSON.stringify([item]));
+  const [movie]=await api.getData();assert.equal(movie.url,url.replace('/browse/entity-','/play/'));assert.equal(movie.description,item.description);assert.equal(movie.id,item.id);
+  assert.equal(api.library([{...item,type:'shows'}])[0].url,url);
+  assert.equal(api.library([{...item,url:url.replace('disneyplus.com','disneyplus.com.example')}])[0].url,url.replace('disneyplus.com','disneyplus.com.example'));
+  onRequest(async(action,payload)=>{assert.equal(action,'OPEN_STREAM');assert.equal(payload.url,movie.url);});
+  await api.launch({url,type:'movies',show:item.title});
+});

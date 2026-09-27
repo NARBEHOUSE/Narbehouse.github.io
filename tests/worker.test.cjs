@@ -14,6 +14,13 @@ test('worker authorizes senders, owns only its tabs and never returns credential
   assert.equal((await call('OPEN_STREAM',{url:'https://www.youtube.com/watch?v=test'})).ok,true);
   const player={id:'test-extension',url:'https://www.youtube.com/watch?v=test',tab:tabs.get(20),frameId:0};
   assert.equal((await call('PLAYER_HELLO',{},player)).ok,true);
+  assert.equal((await call('PLAYER_ACCESS',{unlocked:true},player)).ok,true);
+  assert.equal((await call('PLAYER_HELLO',{},player)).data.session.browserUnlocked,true);
+  assert.equal((await call('PLAYER_ACCESS',{unlocked:'yes'},player)).ok,false);
+  assert.equal((await call('PLAYER_ACCESS',{unlocked:false},{...player,frameId:1})).ok,false);
+  assert.equal((await call('PLAYER_ACCESS',{unlocked:false},{...player,tab:{id:99}})).ok,false);
+  assert.equal((await call('PLAYER_ACCESS',{unlocked:false},player)).ok,true);
+  assert.equal((await call('PLAYER_HELLO',{},player)).data.session.browserUnlocked,false);
   windowState='normal';const beforeReady=windowUpdates;
   assert.equal((await call('ENSURE_PLAYER_FULLSCREEN',{},player)).ok,true);
   assert.equal(windowState,'fullscreen');assert.equal(windowUpdates,beforeReady+1);

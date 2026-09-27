@@ -4,6 +4,7 @@ test('matching provider links normalize while distinct videos, episodes and play
   for(const pair of [
     ['https://youtu.be/abc?t=20','https://m.youtube.com/watch?v=abc&list=PLAYLIST'],
     ['https://www.netflix.com/title/123?trackId=1','https://netflix.com/watch/123'],
+    ['https://www.disneyplus.com/browse/entity-c29f81d8-8c51-4fe7-bb0c-13f099ad3e90','https://www.disneyplus.com/play/c29f81d8-8c51-4fe7-bb0c-13f099ad3e90'],
     ['https://tubitv.com/movies/123/old-title?start=true','https://www.tubitv.com/movies/123/new-title'],
     ['https://www.primevideo.com/detail/0JSOQNXC38YDDVGBXDDTIMFZS7?tr=gb','https://primevideo.com/-/en/detail/0JSOQNXC38YDDVGBXDDTIMFZS7'],
     ['https://example.org/video/?b=2&utm_source=test&a=1','https://example.org/video?a=1&b=2']
@@ -29,7 +30,7 @@ test('episode imports keep existing episode numbers and skip reused links across
 test('starter collections contain only supported public HTTPS links and never seed the private library',async()=>{
   const root=path.resolve(__dirname,'../bennyshub/apps/tools/streaming'),index=JSON.parse(fs.readFileSync(path.join(root,'collections/index.json'))),{streamURL}=await import('../extension/policy.mjs');
   const all=[];
-  for(const pack of index.collections){const data=JSON.parse(fs.readFileSync(path.join(root,'collections',pack.file)));assert.equal(data.library.length,pack.count);for(const item of data.library){const url=streamURL(item.url);assert.ok(pack.hosts.includes(url.hostname));assert.ok(!url.hostname.includes('plex'));assert.ok(item.source_url);assert.equal(item.metadataSource,'TMDB',item.title);assert.match(item.image,/^https:\/\/image\.tmdb\.org\/t\/p\//,item.title);assert.ok(item.description,item.title);all.push(item);}}
+  for(const pack of index.collections){const data=JSON.parse(fs.readFileSync(path.join(root,'collections',pack.file)));assert.equal(data.library.length,pack.count);for(const item of data.library){const url=streamURL(item.url);assert.ok(pack.hosts.includes(url.hostname));assert.ok(!url.hostname.includes('plex'));assert.ok(item.source_url);if(pack.id==='disney'||item.service==='Disney+')assert.match(url.pathname,/^\/play\/[a-f0-9-]{36}$/i);assert.equal(item.metadataSource,'TMDB',item.title);assert.match(item.image,/^https:\/\/image\.tmdb\.org\/t\/p\//,item.title);assert.ok(item.description,item.title);all.push(item);}}
   assert.ok(all.length>=150);
   assert.equal(mergeLibrary([],all).skipped,0);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root,'data.json'))),[]);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root,'episodes.json'))),{});
 });

@@ -18,7 +18,8 @@
     "test:options": "node scripts/check-options.cjs",
     "test:exits": "node scripts/check-tool-exits.cjs",
     "test:keyboard": "node scripts/check-keyboard.cjs",
-    "test:journal": "node scripts/check-journal-calendar.cjs"
+    "test:journal": "node scripts/check-journal-calendar.cjs",
+    "test:player-access": "node scripts/check-player-access.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

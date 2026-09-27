@@ -64,6 +64,15 @@
   function create(service){
     const profile=profiles[service]||{},clicked=new WeakMap();let attempts=0,started=Date.now(),stopped=false,mediaAttempt;
     const view=globalThis.BennyPlayerView?.create();let automaticView=!!service;
+    function profileChoices(){
+      if(service!=='netflix')return [];
+      // Only existing profile tiles in the chooser, never Add/Manage Profile.
+      const selectors=['.profiles-gate-container .profile-link','.choose-profile .profile-link','[data-uia="choose-profile"] [data-uia="profile-link"]'];
+      return [...new Set(selectors.flatMap(selector=>[...document.querySelectorAll(selector)]))]
+        .filter(visible).filter(el=>!el.closest('.addProfileIcon,.profile-add,[data-uia="add-profile"]')&&!el.querySelector('.addProfileIcon'))
+        .map(element=>({element,label:(element.querySelector('.profile-name')?.textContent||label(element)).trim()}))
+        .filter(choice=>choice.label&&!/^(?:add|manage|edit) profiles?$/i.test(choice.label));
+    }
     const fullscreenButton=()=>find(fullscreenControls[service])||find(commonFullscreen);
     function playerControl(selectors){
       const v=media(),full=document.fullscreenElement;
@@ -75,7 +84,8 @@
       return candidates.find(visible);
     }
     async function play(userGesture=false){
-      if(login())return 'Sign in, then press Play.';
+      if(login())return 'Unlock browser to sign in, then lock controls again.';
+      if(profileChoices().length)return 'waiting';
       const v=media();
       if(v&&!v.paused){if(profile.unmute)v.muted=false;return 'playing';}
       // Activate the provider first: an empty/blocked media element must not
@@ -105,9 +115,10 @@
       return 'waiting';
     }
     return {
-      media,
+      media,profileChoices,
+      restartStartup(){stopped=false;started=Date.now();attempts=0;mediaAttempt=null;},
       syncView(){
-        if(automaticView&&!login()){
+        if(automaticView&&!login()&&!profileChoices().length){
           const v=media();
           // Identify YouTube's player even when its fullscreen control is hidden.
           const player=service==='youtube'?v?.closest('#movie_player,.html5-video-player'):null;
@@ -152,8 +163,9 @@
         return 'Player fullscreen on';
       },
       async startup(){
+        if(profileChoices().length){started=Date.now();return 'waiting';}
         if(stopped)return 'done';
-        if(login()){stopped=true;return 'Sign in using Alt+Shift+B, then press it again to use the bar.';}
+        if(login()){stopped=true;return 'Unlock browser to sign in, then choose Lock controls.';}
         const v=media();if(v&&!v.paused){if(profile.unmute)v.muted=false;stopped=true;return 'playing';}
         const result=await play();
         if(result==='playing'){stopped=true;return result;}

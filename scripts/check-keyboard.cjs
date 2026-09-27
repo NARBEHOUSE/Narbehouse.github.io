@@ -16,6 +16,10 @@ let browser;
   assert.equal(suggestions.next.filter(Boolean).length,6);
   assert.ok(suggestions.prefix.filter(Boolean).every(w=>w.startsWith('DR')));
   console.log('On-device KenLM suggestions:',suggestions);
+  const regressions=await page.evaluate(async()=>({today:await predictionSystem.getHybridPredictions('how are you doing t'),help:await predictionSystem.getHybridPredictions('thank you for your h'),me:await predictionSystem.getHybridPredictions('can you help m')}));
+  assert.ok(regressions.today.includes('TODAY'));assert.ok(regressions.help.includes('HELP'));assert.ok(regressions.me.includes('ME'));
+  console.log('Hybrid conversational regressions:',regressions);
+
   await page.evaluate(()=>NarbeVoiceManager.updateSettings({ttsEnabled:false}));
   for(const char of 'I WANT TO DR')await page.locator('#keyboard').getByRole('button',{name:char===' '?/Space/:char,exact:char!==' '}).click();
   await expect(page.locator('#predictBar').getByRole('button',{name:'DRINK',exact:true})).toBeVisible();
@@ -28,6 +32,7 @@ let browser;
   await context.setOffline(true);await page.reload();
   await page.waitForFunction(()=>window.predictionSystem?.dataLoaded&&window.kenLMPredictor?.available,{},{timeout:45000});
   assert.ok((await page.evaluate(()=>predictionSystem.getHybridPredictions('I WANT '))).includes('ZORBELL'));
+  assert.ok((await page.evaluate(()=>predictionSystem.getHybridPredictions('how are you doing t'))).includes('TODAY'));
   // Model/worker unavailable: the old local predictor still supplies suggestions.
   await page.evaluate(()=>kenLMPredictor.stop());
   const fallback=await page.evaluate(async()=>({local:await predictionSystem.getLocalPredictions('I WANT '),hybrid:await predictionSystem.getHybridPredictions('I WANT ')}));

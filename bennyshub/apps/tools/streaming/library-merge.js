@@ -9,7 +9,7 @@
       if(u.pathname==='/playlist'&&u.searchParams.get('list'))return 'youtube:playlist:'+u.searchParams.get('list');
     }
     if(host==='netflix.com'&&(match=u.pathname.match(/\/(?:title|watch)\/(\d+)/i)))return 'netflix:'+match[1];
-    if(host==='disneyplus.com'&&(match=u.pathname.match(/(?:entity-|\/video\/)([a-f0-9-]{36})(?:\/|$)/i)))return 'disney:'+match[1].toLowerCase();
+    if(host==='disneyplus.com'&&(match=u.pathname.match(/(?:entity-|\/(?:video|play)\/)([a-f0-9-]{36})(?:\/|$)/i)))return 'disney:'+match[1].toLowerCase();
     if(host==='hulu.com'){
       const episode=u.searchParams.get('entity_id');if(episode)return 'hulu:watch:'+episode.toLowerCase();
       if((match=u.pathname.match(/\/(series|movie|watch)\/.*?([a-f0-9-]{36})(?:\/|$)/i)))return 'hulu:'+match[1].toLowerCase()+':'+match[2].toLowerCase();
