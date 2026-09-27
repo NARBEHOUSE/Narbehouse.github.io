@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NARBE YouTube Search</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="privacy-choice.css">
+    <link rel="stylesheet" href="startup.css">
 </head>
 <body>
-    <dialog id="privacy-choice" aria-labelledby="privacy-title" aria-describedby="privacy-description">
-        <h1 id="privacy-title">Before using YouTube Search</h1>
-        <p id="privacy-description">Your searches go through NARBE LLC's search service to YouTube. Google supplies videos and may use cookies and show ads. Cloudflare checks browser and connection information to help prevent abuse.</p>
-        <p>By choosing Agree and continue, you agree to the Hub privacy policy and YouTube Terms of Service.</p>
-        <nav aria-label="Privacy information"><a href="../../../companion-privacy.html" target="_blank" rel="noopener">Hub privacy policy</a> · <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy</a></nav>
-        <div class="privacy-actions"><button id="privacy-accept" autofocus>Agree and continue</button><button id="privacy-back">Back to Hub</button></div>
-        <p>Space moves between choices. Enter selects. Your scan timing settings also apply here.</p>
-        <p id="privacy-error" role="alert"></p>
+    <dialog id="startup-error" aria-labelledby="startup-error-title">
+        <h1 id="startup-error-title">YouTube Search could not open</h1>
+        <p id="startup-error-message" role="alert"></p>
+        <button id="startup-back" autofocus>Back to Hub</button>
     </dialog>
     <div id="app">
         <!-- Widget mode is configured in Cloudflare; interaction stays visible if required. -->
@@ -318,7 +314,6 @@
     <!-- Load shared voice manager first -->
     <script src="../../../shared/voice-manager.js"></script>
     <script src="../../../shared/scan-manager.js"></script>
-    <a class="privacy-link" href="../../../companion-privacy.html" target="_blank" rel="noopener">Privacy &amp; YouTube terms</a>
-    <script src="js/privacy-choice.js"></script>
+    <script src="js/startup.js"></script>
 </body>
 </html>

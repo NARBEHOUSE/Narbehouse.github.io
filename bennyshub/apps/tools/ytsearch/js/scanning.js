@@ -8,7 +8,7 @@ class ScanningManager {
         this.overlayIndex = 0;
         
         // Timing configuration
-        this.SHORT_MIN = 30; // Reduced for responsiveness (was 250)
+        this.SHORT_MIN = 0; // Accept quick taps; the shared scan manager filters switch bounce.
         this.SHORT_MAX = 3000;
         this.SCAN_BACK_MS = 2500;
         this.ENTER_HOLD_MS = 3000;
