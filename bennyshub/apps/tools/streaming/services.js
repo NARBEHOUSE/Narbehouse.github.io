@@ -53,6 +53,9 @@
         if (icon) {
             const image = document.createElement('img');
             image.className = 'service-icon';
+            // Keep intrinsic favicon sizes from expanding rows before/without current CSS.
+            image.width = 24;
+            image.height = 24;
             image.src = icon;
             image.alt = '';
             image.onerror = () => { image.hidden = true; };
