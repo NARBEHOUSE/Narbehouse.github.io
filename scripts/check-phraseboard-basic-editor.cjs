@@ -1,0 +1,36 @@
+// Basic editor shares save/history/layout data with the Advanced editor and live board.
+const {chromium,expect}=require('@playwright/test');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const PB=require('../bennyshub/apps/tools/phraseboard/board-core.js');
+const root=path.resolve(__dirname,'..'),url='http://127.0.0.1:4173/bennyshub/apps/tools/phraseboard/';
+const executablePath=process.env.PHRASEBOARD_BROWSER||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{})});
+ try{
+  const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><circle cx="32" cy="32" r="30" fill="orange"/></svg>');
+  await context.route('https://**',r=>r.abort());await context.route('https://www.opensymbols.org/**',r=>r.fulfill({contentType:'application/json',body:JSON.stringify([{name:'happy',image_url:image}])}));
+  const fixture=PB.normalize([{category:'Words',display:'I',speak:'I',x:70,y:80,width:260,height:160,group:'Starters',groupOrder:4,scanOrder:5,categoryLayout:'free'}, {category:'Words',display:'want',speak:'want',x:420,y:140,group:'Actions',groupOrder:2,scanOrder:1,categoryLayout:'free'}, {category:'Words',display:'music',speak:'music',categoryLayout:'free'}, {category:'Food',display:'pizza',speak:'pizza',categoryLayout:'grid'}, {category:'Media',display:'Watch',speak:'https://www.youtube.com/watch?v=test',categoryLayout:'grid'}].map((r,i)=>({...r,boardName:'Basic editor practice',tileOrder:i+1,categoryOrder:r.category==='Words'?1:r.category==='Food'?2:3,predictionPhrases:'["I want music"]'})));
+  await page.goto(url+'phrase-editor.html');await page.evaluate(csv=>{PhraseBoard.save(localStorage,PhraseBoard.parse(csv));localStorage.setItem('phraseboard_settings',JSON.stringify({sentenceMode:true,predictionsEnabled:true,messageDisplay:'tiles'}));},PB.csv(fixture));await page.reload();
+  const original=await page.evaluate(()=>PB.csv(rows)),settings=await page.evaluate(()=>localStorage.getItem('phraseboard_settings'));
+  const choose=async id=>{await page.locator('#viewMenuButton').click();await page.locator('#'+id).click();};
+  const headerBefore=await page.locator('header').boundingBox();await page.locator('#viewMenuButton').click();assert.deepEqual(await page.locator('header').boundingBox(),headerBefore);
+  await page.keyboard.press('ArrowDown');await expect(page.locator('#advancedEditor')).toBeFocused();await page.keyboard.press('Escape');await expect(page.locator('#viewMenuButton')).toBeFocused();
+  await choose('simpleEditor');await expect(page.locator('.legacy-category')).toHaveCount(3);await expect(page.locator('.legacy-row')).toHaveCount(3);await expect(page.locator('#inspector')).toBeHidden();await expect(page.locator('.view-switch')).toBeHidden();assert.equal(await page.evaluate(()=>PB.csv(rows)),original);
+  await choose('advancedEditor');await page.locator('#mapView').click();await choose('simpleEditor');await choose('advancedEditor');await expect(page.locator('body')).toHaveClass('graphic-editor');assert.equal(await page.evaluate(()=>PB.csv(rows)),original);
+  await choose('simpleEditor');await page.locator('#deselectTiles').click();await page.locator('.legacy-select').nth(0).check();await page.locator('.legacy-select').nth(1).check();
+  await page.locator('#bulkColor').fill('#ab3456');await page.locator('#applyBulkColor').click();assert.deepEqual(await page.evaluate(()=>rows.slice(0,2).map(r=>r.tileColor)),['#ab3456','#ab3456']);
+  await page.locator('#moveTiles').click();await page.locator('#moveCategory').selectOption('Food');await page.locator('#confirmMoveTiles').click();assert.deepEqual(await page.evaluate(()=>rows.slice(0,2).map(r=>r.category)),['Food','Food']);await page.locator('#undo').click();await page.locator('#undo').click();assert.equal(await page.evaluate(()=>PB.csv(rows)),original);
+  const row=page.locator('.legacy-row[data-index="2"]');await row.locator('[data-field=speak]').fill('happy');await row.locator('[data-field=speak]').blur();await row.locator('[data-field=display]').fill('happy');await row.locator('[data-field=display]').blur();await expect(row.locator('.legacy-image img')).toBeVisible();
+  await row.locator('.legacy-image').click();await expect(page.locator('#symbolDialog')).toBeVisible();await page.locator('#symbolUrl').fill(image);await page.locator('#applyImageUrl').click();assert.equal(await page.evaluate(()=>rows[2].image),image);
+  await row.getByRole('button',{name:'Move tile up',exact:true}).click();assert.deepEqual(await page.locator('.legacy-row').evaluateAll(nodes=>nodes.map(n=>n.dataset.index)),['0','2','1']);await page.locator('#undo').click();
+  await page.locator('#boardSearch').fill('pizza');await page.locator('.word-search-result').first().click();await expect(page.locator('.legacy-category[open] > summary')).toContainText('Food');await expect(page.locator('.legacy-row[data-index="3"]')).toBeFocused();
+  await page.locator('#legacyAddCategory').click();await expect(page.locator('.legacy-category[open] > summary')).toContainText('New category');await page.locator('#undo').click();
+  await page.locator('#boardMenuButton').click();await page.locator('#openSuggestions').click();await page.locator('#predictionContext').fill('I want');assert.deepEqual(await page.locator('.preview-suggestion').allTextContents(),await page.evaluate(()=>suggestionPreview.suggest('I want').map(x=>x.text)));await page.locator('#closeBoardOptions').click();
+  await page.locator('#save').click();const saved=await page.evaluate(()=>PB.csv(rows));await page.reload();await expect(page.locator('body')).toHaveClass('legacy-editor');assert.equal(await page.evaluate(()=>PB.csv(rows)),saved);assert.equal(await page.evaluate(()=>localStorage.getItem('phraseboard_settings')),settings);
+  for(const key of ['x','y','width','height','group','groupOrder','scanOrder','categoryLayout','predictionPhrases'])assert.deepEqual(await page.evaluate(key=>rows.map(r=>r[key]),key),fixture.map(r=>r[key]),key);
+  await page.screenshot({path:path.join(root,'artifacts','phraseboard-basic-editor.png')});
+  await page.locator('#boardSearch').fill('I');await page.locator('.word-search-result').filter({has:page.locator('strong',{hasText:/^I$/})}).click();await page.locator('#return').click();await expect(page.locator('.free-stage')).toBeVisible();assert.equal(await page.evaluate(()=>state.sentenceMode),true);assert.equal(await page.evaluate(()=>state.predictionsEnabled),true);
+  assert.deepEqual(errors,[]);await context.close();console.log('Basic editor checks passed: View dropdown/keyboard, original category rows, advanced-view switching, preserved layouts/settings, bulk colors/moves, undo, images, ordering, search, suggestions, save/reload and live return.');
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

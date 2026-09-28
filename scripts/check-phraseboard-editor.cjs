@@ -97,6 +97,42 @@ const executablePath=process.env.PHRASEBOARD_BROWSER||['C:/Program Files/Google/
   await wordsEditor.locator('#boardSearch').fill('go');await expect(wordsEditor.locator('#boardSearchStatus')).toContainText('1 exact match');await wordsEditor.locator('.word-search-result').filter({has:wordsEditor.locator('strong',{hasText:/^go$/})}).click();await expect(wordsEditor.locator('#categoryName')).toHaveValue('Core');assert.ok(await wordsEditor.evaluate(()=>mapZoom>=.85));
   const found=await wordsEditor.locator('.canvas-tile.selected').boundingBox(),visible=await wordsEditor.locator('.canvas-scroll').boundingBox();assert.ok(found.x>=visible.x&&found.y>=visible.y&&found.x+found.width<=visible.x+visible.width&&found.y+found.height<=visible.y+visible.height);
   await wordsEditor.close();
-  assert.deepEqual(errors,[]);console.log('Editor checks passed: overlay menu/keyboard, zoom/pan/fit, symbols, automatic images, inspector reset, box selection while zoomed, bulk colors, tile/category drag, undo, preview isolation, spoken suggestions.');await context.close();
+
+  // Default boards open as personal copies, preserving the saved board until Save.
+  const defaultsContext=await browser.newContext({viewport:{width:1200,height:900}}),defaults=await defaultsContext.newPage();
+  defaults.on('pageerror',e=>errors.push(e.message));
+  await defaultsContext.route('https://**',r=>r.abort());
+  await defaults.goto(url+'phrase-editor.html');await defaults.evaluate(csv=>PhraseBoard.save(localStorage,PhraseBoard.parse(csv)),PB.csv(fixture));await defaults.reload();
+  const originalCsv=await defaults.evaluate(()=>PB.csv(rows));
+  const openDefaults=async()=>{await defaults.locator('#boardMenuButton').click();await defaults.locator('#openDefaultBoards').click();await expect(defaults.locator('#defaultBoardsDialog')).toBeVisible();};
+  const files=JSON.parse(fs.readFileSync(path.join(root,'bennyshub/apps/tools/phraseboard/boards/index.json'),'utf8')).files;
+  await openDefaults();await expect(defaults.locator('#createDefaultCopy')).toBeEnabled();
+  assert.deepEqual(await defaults.locator('#defaultBoardChoice option').evaluateAll(nodes=>nodes.map(n=>n.value)),files);
+  await defaults.keyboard.press('Escape');await expect(defaults.locator('#boardMenuButton')).toBeFocused();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),originalCsv);
+  for(const file of files){
+    await openDefaults();await expect(defaults.locator('#createDefaultCopy')).toBeEnabled();await defaults.locator('#defaultBoardChoice').selectOption(file);await expect(defaults.locator('#createDefaultCopy')).toBeEnabled();
+    const source=PB.parse(fs.readFileSync(path.join(root,'bennyshub/apps/tools/phraseboard/boards',file),'utf8'));
+    await expect(defaults.locator('#defaultBoardStatus')).toContainText(source.length.toLocaleString()+' tiles');
+    const savedBefore=await defaults.evaluate(()=>localStorage.getItem(PB.KEY));
+    await defaults.locator('#defaultBoardName').fill('My test copy');await defaults.locator('#createDefaultCopy').click();
+    assert.deepEqual(await defaults.evaluate(()=>rows),PB.normalize(source.map(r=>({...r,boardName:'My test copy'}))));
+    assert.equal(await defaults.evaluate(()=>localStorage.getItem(PB.KEY)),savedBefore);assert.equal(await defaults.evaluate(()=>dirty),true);
+    await defaults.locator('#undo').click();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),originalCsv);await defaults.locator('#save').click();
+  }
+  // Network failure and declined replacement leave the current edits intact.
+  await defaults.locator('#boardName').fill('Work to keep');await defaults.locator('#boardName').blur();
+  const editedCsv=await defaults.evaluate(()=>PB.csv(rows));
+  const brokenUrl=url+'boards/NARBE_Default.csv';await defaults.route(brokenUrl,r=>r.fulfill({status:503,body:'Unavailable'}));
+  await openDefaults();await expect(defaults.locator('#retryDefaultBoards')).toBeVisible();await expect(defaults.locator('#createDefaultCopy')).toBeDisabled();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),editedCsv);
+  await defaults.unroute(brokenUrl);await defaults.locator('#retryDefaultBoards').click();await expect(defaults.locator('#createDefaultCopy')).toBeEnabled();
+  defaults.once('dialog',d=>d.dismiss());await defaults.locator('#createDefaultCopy').click();await expect(defaults.locator('#defaultBoardsDialog')).toBeVisible();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),editedCsv);
+  defaults.once('dialog',d=>d.accept());await defaults.locator('#createDefaultCopy').click();await expect(defaults.locator('#defaultBoardsDialog')).toBeHidden();
+  await defaults.locator('#save').click();const personalCsv=await defaults.evaluate(()=>PB.csv(rows));await defaults.reload();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),personalCsv);
+  // A late response after closing the picker cannot replace the board.
+  let releaseDownload,downloadStarted;const downloading=new Promise(resolve=>downloadStarted=resolve);
+  await defaults.route(brokenUrl,async r=>{downloadStarted();await new Promise(resolve=>releaseDownload=resolve);await r.fulfill({contentType:'text/csv',body:PB.csv(fixture)}).catch(()=>{});});
+  await openDefaults();await downloading;await defaults.locator('#cancelDefaultBoards').click();releaseDownload();await expect(defaults.locator('#defaultBoardsDialog')).toBeHidden();assert.equal(await defaults.evaluate(()=>PB.csv(rows)),personalCsv);
+  await defaultsContext.close();
+  assert.deepEqual(errors,[]);console.log('Editor checks passed: default-board copies, failure/cancel recovery, overlay menu/keyboard, zoom/pan/fit, symbols, automatic images, inspector reset, box selection while zoomed, bulk colors, tile/category drag, undo, preview isolation, spoken suggestions.');await context.close();
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

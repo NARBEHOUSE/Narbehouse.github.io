@@ -4,12 +4,13 @@ let analysisWorker=null,analysisTimer=null,analysisSource='',analysisResult=[];
 const analysisVocabulary=()=>JSON.stringify(rows.map(r=>[r.category,r.display,r.speak]));
 const suggestionPreview=new PhrasePredictions.Predictor(window.PhrasePredictionData);
 function showPredictionPreview(){
-  suggestionPreview.setBoard(rows);
+  suggestionPreview.setBoard(rows).setHistory(PhrasePredictions.readHistory(localStorage));
   const results=suggestionPreview.suggest($('predictionContext').value,{category});
   $('predictionExamples').replaceChildren();
   results.forEach(item=>{const span=document.createElement('span');span.className='preview-suggestion';span.textContent=item.text;$('predictionExamples').append(span);});
+  if(!results.length)$('predictionExamples').textContent='No matching continuation on this board yet.';
   const prepared=suggestionPreview.aiPhrases.length;
-  $('predictionSummary').textContent='Automatic suggestions are ready: '+suggestionPreview.tokens.size+' board words, '+Object.keys(window.PhrasePredictionData?.vocabulary||{}).length.toLocaleString()+' built-in words, '+suggestionPreview.automaticPhrases.length.toLocaleString()+' common phrases across all '+new Set(rows.map(r=>r.category)).size+' categories'+(prepared?', '+prepared+' prepared phrases':'')+'. Spoken-message history is added privately by the live board.';
+  $('predictionSummary').textContent='Matches '+suggestionPreview.dictionaryPatternCount.toLocaleString()+' keyboard dictionary patterns against '+suggestionPreview.tokens.size.toLocaleString()+' words across all '+new Set(rows.map(r=>r.category)).size+' categories'+(prepared?', plus '+prepared+' prepared phrases':'')+'. Uses the last two words first, then one-word matches when needed. This preview also includes your saved spoken messages.';
 }
 function endAnalysis(){if(analysisWorker)analysisWorker.terminate();analysisWorker=null;clearTimeout(analysisTimer);$('analyzeBoard').disabled=false;$('cancelAnalysis').hidden=true;}
 $('predictionContext').addEventListener('input',showPredictionPreview);
@@ -28,7 +29,7 @@ $('analyzeBoard').onclick=()=>{
       if(result.type==='error'){$('analysisStatus').textContent=result.text;return;}
       if(analysisVocabulary()!==analysisSource){$('analysisStatus').textContent='The board changed during analysis. Run analysis again for the updated vocabulary.';return;}
       analysisResult=PhrasePredictions.validatePhrases(result.phrases,rows);
-      $('analysisStatus').textContent=analysisResult.length?'Review '+analysisResult.length+' additional AI phrases. '+suggestionPreview.automaticPhrases.length+' common board phrases already work automatically.':'The model did not produce usable additional phrases. Automatic suggestions are already ready.';
+      $('analysisStatus').textContent=analysisResult.length?'Review '+analysisResult.length+' additional AI phrases. '+suggestionPreview.dictionaryPatternCount.toLocaleString()+' matching dictionary patterns already work automatically.':'The model did not produce usable additional phrases. Automatic suggestions are already ready.';
       $('analysisChoices').replaceChildren();
       analysisResult.forEach((phrase,index)=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=true;input.value=index;label.append(input,document.createTextNode(phrase));$('analysisChoices').append(label);});
       $('analysisReview').hidden=!analysisResult.length;
@@ -48,3 +49,4 @@ const renderBeforePredictions=render;
 render=function(){renderBeforePredictions();showPredictionPreview();};
 showPredictionPreview();
 window.addEventListener('pagehide',endAnalysis);
+window.addEventListener('storage',event=>{if(event.key===PhrasePredictions.HISTORY_KEY||event.key===null)showPredictionPreview();});

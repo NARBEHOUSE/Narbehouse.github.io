@@ -16,6 +16,9 @@ function render() {
   selectedTiles=new Set([...selectedTiles].filter(i=>rows[i]&&(editorView==='map'||rows[i].category===category)));
   document.querySelector('.workspace').classList.toggle('map-workspace',editorView==='map');
   syncMapWorkspace();
+  document.body.classList.toggle('legacy-editor',editorView==='legacy');
+  document.querySelector('.view-switch').hidden=editorView==='legacy';$('legacyToolbar').hidden=editorView!=='legacy';
+  $('simpleEditor').setAttribute('aria-checked',String(editorView==='legacy'));$('advancedEditor').setAttribute('aria-checked',String(editorView!=='legacy'));
   document.querySelector('.workspace').classList.toggle('editing-category',selectedCategories.size>0);$('addMapCategory').hidden=editorView!=='map';
   $('basicView').setAttribute('aria-pressed',String(editorView==='canvas'));$('mapView').setAttribute('aria-pressed',String(editorView==='map'));
   if(!selectedTiles.size&&selected>=0&&rows[selected]?.category===category) selectedTiles.add(selected);
@@ -27,7 +30,13 @@ function render() {
   for (const key of ['categoryName','categoryLayout','categoryColor','categoryImage']) $(key).value=(key==='categoryName'?category:c[key]) || (key==='categoryColor'?'#5bb0ff':'');
   renderGroups(); renderCanvas(); renderInspector(); renderBulk(); $('undo').disabled=!undo.length;
 }
+let pendingCanvasRender=false;
+// Keep the transformed Graphic canvas stable while a modal is being edited.
+document.addEventListener('close',()=>{if(pendingCanvasRender&&!document.querySelector('dialog[open]'))renderCanvas();},true);
 function renderCanvas() {
+  if(editorView==='map'&&document.querySelector('dialog[open]')){pendingCanvasRender=true;return;}
+  pendingCanvasRender=false;
+  if(editorView==='legacy'){renderLegacyCanvas();return;}
   if(editorView==='map'){renderMap();return;}
   const canvas=$('canvas'), width=Number($('device').value), free=PB.layout(catRows())==='free', compact=width<760;
   canvas.replaceChildren();canvas.style.width=(width===1000?Math.min(width,Math.max(300,canvas.parentElement.clientWidth-24)):width)+'px';canvas.className=(free?'free ':'')+(compact?'compact':'');
@@ -101,7 +110,7 @@ function startDrag(event,node,index,resizing) {
       else if(destination)moveSelectedTo(destination,false);
       else if(!free&&dropIndex>=0){
         const current=rows.map((r,i)=>({r,i})).filter(x=>x.r.category===category).sort((a,b)=>a.r.tileOrder-b.r.tileOrder),moving=current.filter(x=>selectedTiles.has(x.i)),rest=current.filter(x=>!selectedTiles.has(x.i));
-        if(editorView==='map'&&PB.layout(catRows())==='free'){status('Tile order updated. Use Basic view to change free-placement positions.');}
+        if(editorView==='map'&&PB.layout(catRows())==='free'){status('Tile order updated. Use Layout view to change free-placement positions.');}
         const target=rest.findIndex(x=>x.i===dropIndex)+(dropAfter?1:0);rest.splice(Math.max(0,target),0,...moving);rest.forEach((x,i)=>x.r.tileOrder=i+1);status('Tiles reordered. Save when ready.');
       }
     }

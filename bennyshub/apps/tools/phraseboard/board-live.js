@@ -3,17 +3,17 @@
 const PB = window.PhraseBoard;
 const predictionEngine = new PhrasePredictions.Predictor(window.PhrasePredictionData);
 try { predictionEngine.setHistory(PhrasePredictions.readHistory(localStorage)); } catch {}
-let groupScanner = null, groupElements = [], currentRevision = null, tour = null;
+let groupScanner = null, groupElements = [], currentRevision = null;
 const original = {clearGrid, renderCategory, updateScannable, scanForward, scanBackward, selectCurrent, highlightCurrentRow, renderSettingsMenu, stopScanning, buildIndex};
 buildIndex = function(rows) { predictionEngine.setBoard(rows); original.buildIndex(rows); };
 function rememberMessage(text) {
-  if (!state.rememberMessages || tour || new URLSearchParams(location.search).has('preview')) return;
+  if (!state.rememberMessages ||  new URLSearchParams(location.search).has('preview')) return;
   try { predictionEngine.setHistory(PhrasePredictions.remember(localStorage, text)); } catch { notifyBoard('Message spoken. Personal suggestions could not be saved in this browser.'); }
 }
 function speakMessage(blockInput = false) { const text = messageText(); if (!text) return; rememberMessage(text); speak(text, false, null, null, blockInput); }
 function button(text, action, extra = '') { return createButton(text, '', action, extra); }
 function notifyBoard(text) { el.statusFooter.textContent = text; }
-function messageActive() { return state.sentenceMode && (!!tour || state.currentMenu === 'category' || state.currentMenu === 'categories'); }
+function messageActive() { return state.sentenceMode && (state.currentMenu === 'category' || state.currentMenu === 'categories'); }
 function syncSentence() {
   el.sentenceRow.classList.toggle('active', messageActive());
   el.mainGrid.classList.toggle('sentence-active', messageActive());
@@ -29,12 +29,12 @@ function renderMessage() {
   else el.sentenceDisplay.textContent = messageText();
   el.sentenceDisplay.setAttribute('aria-label', messageText() ? 'Speak message: ' + messageText() : 'Speak message. Message is empty');
   syncSentence();
-  if (state.predictionsEnabled && !tour) { renderPredictions(); updateScannable(); }
+  if (state.predictionsEnabled) { renderPredictions(); updateScannable(); }
 }
 clearGrid = function () {
   el.mainGrid.querySelectorAll('.group-active,.group-dim').forEach(n => n.classList.remove('group-active','group-dim'));
   original.clearGrid();
-  el.mainGrid.querySelectorAll('.free-nav,.free-stage,.group-legend,.prediction-panel,.tour-panel').forEach(node => node.remove());
+  el.mainGrid.querySelectorAll('.free-nav,.free-stage,.group-legend,.prediction-panel').forEach(node => node.remove());
   el.mainGrid.classList.remove('free-active'); groupScanner = null; groupElements = [];
   syncSentence();
 };
@@ -88,13 +88,12 @@ function renderPredictions() {
     const btn = button(text, () => { state.sentence.push({text,display:text}); renderMessage(); });
     btn.dataset.prediction = 'true'; btn.dataset.source = source; btn.dataset.speakText = text; content.append(btn);
   });
-  if (!choices.length) content.textContent = 'Suggestions are ready as you build a message.';
+  if (!choices.length) content.textContent = 'No matching continuation on this board yet.';
   panel.append(content); el.mainGrid.append(panel);
 }
 updateScannable = function (preserve) {
   syncSentence();
   if (state.videoModalActive) { original.updateScannable(preserve); return; }
-  if (tour) return setupTourScan();
   renderPredictions();
   if (el.mainGrid.classList.contains('free-active')) {
     const groups = [];
@@ -115,7 +114,7 @@ updateScannable = function (preserve) {
   if (predictions.length) rows.push(predictions);
   state.scannableRows = rows;
 };
-function useGroups() { return !state.videoModalActive && (tour || el.mainGrid.classList.contains('free-active')) && groupScanner; }
+function useGroups() { return !state.videoModalActive && el.mainGrid.classList.contains('free-active') && groupScanner; }
 function paintGroups() {
   clearScanHighlight();
   const back = document.getElementById('backToGroups');
@@ -144,15 +143,14 @@ highlightCurrentRow = function () { if (useGroups()) { groupScanner.back(); pain
 renderSettingsMenu = function (preserve) {
   original.renderSettingsMenu(preserve);
   const extras = [
-    ['Message display: ' + state.messageDisplay, () => { state.messageDisplay = state.messageDisplay === 'text' ? 'tiles' : 'text'; renderMessage(); }],
-    ['Predictions: ' + (state.predictionsEnabled ? 'on' : 'off'), () => { state.predictionsEnabled = !state.predictionsEnabled; }],
-    ['Learn from spoken messages: ' + (state.rememberMessages ? 'on' : 'off'), () => { state.rememberMessages = !state.rememberMessages; }],
-    ['Clear learned sentences', () => { try { localStorage.removeItem(PhrasePredictions.HISTORY_KEY); predictionEngine.setHistory([]); notifyBoard('Learned sentences cleared. Built-in and board suggestions are still available.'); } catch { notifyBoard('Could not clear history in this browser.'); } }],
-    ['Spoken group names: ' + (state.speakGroups ? 'on' : 'off'), () => { state.speakGroups = !state.speakGroups; }],
-    ['Dim other groups: ' + (state.dimGroups ? 'on' : 'off'), () => { state.dimGroups = !state.dimGroups; }],
-    ['Help / Replay tour', () => startTour()]
+    ['Message display: ' + state.messageDisplay, '💬', () => { state.messageDisplay = state.messageDisplay === 'text' ? 'tiles' : 'text'; renderMessage(); }],
+    ['Predictions: ' + (state.predictionsEnabled ? 'on' : 'off'), '🔮', () => { state.predictionsEnabled = !state.predictionsEnabled; }],
+    ['Learn from spoken messages: ' + (state.rememberMessages ? 'on' : 'off'), '🧠', () => { state.rememberMessages = !state.rememberMessages; }],
+    ['Clear learned sentences', '🗑️', () => { try { localStorage.removeItem(PhrasePredictions.HISTORY_KEY); predictionEngine.setHistory([]); notifyBoard('Learned sentences cleared. Built-in and board suggestions are still available.'); } catch { notifyBoard('Could not clear history in this browser.'); } }],
+    ['Spoken group names: ' + (state.speakGroups ? 'on' : 'off'), '🗣️', () => { state.speakGroups = !state.speakGroups; }],
+    ['Dim other groups: ' + (state.dimGroups ? 'on' : 'off'), '🌗', () => { state.dimGroups = !state.dimGroups; }]
   ];
-  extras.forEach(([text,action]) => el.mainGrid.append(button(text,()=>{ action(); saveSettings(); if (!tour) renderSettingsMenu(); })));
+  extras.forEach(([text,icon,action]) => el.mainGrid.append(createButton(text,icon,()=>{ action(); saveSettings(); renderSettingsMenu(); })));
   updateScannable(preserve);
 };
 function applySaved(data, category) {
@@ -185,60 +183,15 @@ function editBoard() {
 }
 const header = document.querySelector('.header-right');
 const edit = document.createElement('button'); edit.textContent = 'Edit this board'; edit.id = 'editBoard'; edit.onclick = editBoard; edit.hidden = new URLSearchParams(location.search).has('preview'); header.append(edit);
-const help = document.createElement('button'); help.textContent = 'Help'; help.onclick = () => startTour(); header.append(help);
 window.addEventListener('storage', event => {
   if (event.key === PhrasePredictions.HISTORY_KEY) { predictionEngine.setHistory(PhrasePredictions.readHistory(localStorage)); return; }
-  if (event.key !== PB.KEY || tour || state.videoModalActive || new URLSearchParams(location.search).has('preview')) return;
+  if (event.key !== PB.KEY ||  state.videoModalActive || new URLSearchParams(location.search).has('preview')) return;
   try { const data = PB.read(localStorage); if (data && data.revision !== currentRevision) applySaved(data,state.currentCategory); }
   catch (error) { notifyBoard(error.message); }
 });
 window.addEventListener('resize',()=>{ if (!state.videoModalActive) updateScannable(); });
-// Tour actions use the same scanner and sentence functions without replacing personal data.
-const tourSteps = [
-  ['Welcome to your board', 'Practice with a sample board. This tour starts automatic scanning: press either switch to select. Choose Two switches for Space to move and Enter to select. Touch works too.'],
-  ['Select a tile', 'Select “I” to start your message.'],
-  ['Build a message', 'Select “want music”. Your words stay in the message until you speak or clear them.'],
-  ['Speak your message', 'Select “Speak message”. The Text and Tiles displays speak the same message.'],
-  ['Try a quick phrase', 'Select “Hello!” to speak immediately. Media tiles open a player with switch-accessible Close controls.'],
-  ['Find Settings', 'Select Settings to practice changing scanning. Help always offers Replay tour.'],
-  ['Adjust scanning', 'Choose one switch (automatic) or two switches (Space moves, Enter selects). These practice choices do not change your saved settings.']
-];
-function startTour() {
-  if (tour) return;
-  document.activeElement?.blur();
-  if (state.videoModalActive) closeIframe();
-  tour = {step:0, sentence:state.sentence, sentenceMode:state.sentenceMode, autoScan:state.autoScan, menu:state.currentMenu, category:state.currentCategory, page:state.page};
-  state.sentence = []; state.sentenceMode = true; state.autoScan = true; drawTour(); startAutoScan();
-}
-function finishTour() {
-  if (!tour) return;
-  const saved = tour; tour = null; stopScanning();
-  state.sentence = saved.sentence; state.sentenceMode = saved.sentenceMode; state.autoScan = saved.autoScan; state.currentMenu = saved.menu; state.currentCategory = saved.category; state.page = saved.page;
-  try { localStorage.setItem('phraseboard_tour_seen','1'); } catch {}
-  renderMessage(); renderCurrentMenu(); if (state.autoScan) startAutoScan(); updateHeaderForCurrentView();
-}
-function nextTour() { tour.step++; if (tour.step >= tourSteps.length) finishTour(); else drawTour(); }
-function drawTour() {
-  clearGrid(); el.mainGrid.classList.add('free-active');
-  const panel = document.createElement('section'); panel.className = 'tour-panel';
-  const heading = document.createElement('h2'); heading.textContent = (tour.step + 1) + ' / ' + tourSteps.length + ' · ' + tourSteps[tour.step][0];
-  const description = document.createElement('p'); description.textContent = tourSteps[tour.step][1];
-  panel.append(heading,description); const actions = document.createElement('div'); actions.className = 'tour-actions';
-  const tasks = [ ['Start practice',nextTour], ['I',()=>{state.sentence.push({text:'I'});renderMessage();nextTour();}], ['want music',()=>{state.sentence.push({text:'want music'});renderMessage();nextTour();}], ['Speak message',()=>{speak(messageText());nextTour();}], ['Hello!',()=>{speak('Hello!');nextTour();}], ['Settings',nextTour], ['Finish tour',finishTour] ];
-  actions.append(button(...tasks[tour.step]));
-  if (tour.step === 0 || tour.step === 6) {
-    actions.append(button('One switch: automatic',()=>{state.autoScan=true;startAutoScan();notifyBoard('Automatic scanning for practice. Press either switch to select.');}));
-    actions.append(button('Two switches',()=>{state.autoScan=false;stopScanning();notifyBoard('Space moves. Enter selects.');}));
-  }
-  actions.append(button('Skip tour / Return to board',finishTour)); panel.append(actions); el.mainGrid.append(panel); renderMessage(); setupTourScan();
-  notifyBoard(tourSteps[tour.step][1]);
-}
-function setupTourScan() {
-  groupScanner = new PB.GroupScan([{name:'Practice',items:[...el.mainGrid.querySelectorAll('.tour-actions button')]}]);
-  state.currentRow = -1; state.scanIndex = -1; state.scanMode = 'row'; clearScanHighlight();
-}
 renderMessage();
-// Wait for the existing async board discovery to finish before offering first-use guidance.
+// Keep editor previews isolated from board-loading and editor navigation.
 const initialRender = renderMainMenu;
 renderMainMenu = function () {
   initialRender();
@@ -246,8 +199,6 @@ renderMainMenu = function () {
     [...el.mainGrid.querySelectorAll('button')].filter(btn => ['Create Board','Load Board','Exit'].includes(cleanTextForTTS(btn.textContent))).forEach(btn => btn.remove());
     updateScannable(); return;
   }
-  try { if (!localStorage.getItem('phraseboard_tour_seen') && state.firstUse && !new URLSearchParams(location.search).has('preview')) startTour(); }
-  catch { /* Storage unavailable: the board remains usable. */ }
 };
 
 // Persist defaults once so new users retain sentence mode after their first board save.

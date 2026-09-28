@@ -1121,35 +1121,7 @@ function updateHeaderForCurrentView(){
         { text: 'Scan Settings', icon: '🎯', action: () => navigateTo('scan') },
         { text: 'Highlight Colors', icon: '🎨', action: () => navigateTo('highlight') },
         { text: 'Theme', icon: '🌈', action: () => navigateTo('theme') },
-        { text: 'Toggle Sentence', icon: '💬', action: () => { toggleSentenceMode(); renderSettingsMenu(true); }, className: state.sentenceMode ? 'active-green' : '' },
-        { text: 'Volume Up', icon: '🔈', action: async () => {
-          const isElectron = typeof window !== 'undefined' && window.electronAPI;
-          if (isElectron && window.electronAPI.system) {
-            try {
-              await window.electronAPI.system.volumeUp();
-              speak('Volume increased');
-            } catch (err) {
-              console.error('Volume up error:', err);
-              speak('Error changing volume');
-            }
-          } else {
-            speak('Volume control not available');
-          }
-        }},
-        { text: 'Volume Down', icon: '🔉', action: async () => {
-          const isElectron = typeof window !== 'undefined' && window.electronAPI;
-          if (isElectron && window.electronAPI.system) {
-            try {
-              await window.electronAPI.system.volumeDown();
-              speak('Volume decreased');
-            } catch (err) {
-              console.error('Volume down error:', err);
-              speak('Error changing volume');
-            }
-          } else {
-            speak('Volume control not available');
-          }
-        }}
+        { text: 'Toggle Sentence', icon: '💬', action: () => { toggleSentenceMode(); renderSettingsMenu(true); }, className: state.sentenceMode ? 'active-green' : '' }
       ];
 
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button

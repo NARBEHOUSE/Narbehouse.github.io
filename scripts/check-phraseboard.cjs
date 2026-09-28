@@ -10,11 +10,14 @@ const executablePath=process.env.PHRASEBOARD_BROWSER || ['C:/Program Files/Googl
     const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     await page.route('https://www.opensymbols.org/**',route=>route.fulfill({contentType:'application/json',body:'[]'}));
-    await page.goto(url+'index.html');await expect(page.locator('.tour-panel')).toBeVisible();
-    assert.equal(await page.evaluate(()=>state.sentenceMode),true);
-    // Complete the skippable practice flow through actual touch/click targets.
-    for(const label of ['Start practice','I','want music','Speak message','Hello!','Settings','Finish tour']) await page.locator('.tour-actions').getByRole('button',{name:label,exact:true}).click();
-    await expect(page.locator('.tour-panel')).toHaveCount(0);
+    await page.goto(url+'index.html');await expect(page.locator('#mainGrid > button').filter({hasText:'Settings'})).toBeVisible();
+    assert.equal(await page.evaluate(()=>state.sentenceMode),true);assert.equal(await page.evaluate(()=>state.currentMenu),'main');
+    await expect(page.locator('.tour-panel')).toHaveCount(0);await expect(page.locator('.header-right').getByRole('button',{name:'Help',exact:true})).toHaveCount(0);
+    await page.locator('#mainGrid > button').filter({hasText:'Settings'}).click();
+    await expect(page.getByRole('button',{name:/Help|Replay tour|Volume Up|Volume Down/i})).toHaveCount(0);
+    for(const label of ['Message display:','Predictions:','Learn from spoken messages:','Clear learned sentences','Spoken group names:','Dim other groups:'])await expect(page.locator('#mainGrid > button').filter({hasText:label}).locator('.icon')).toHaveCount(1);
+    await page.locator('#mainGrid > button').filter({hasText:'Predictions:'}).click();assert.equal(await page.evaluate(()=>state.predictionsEnabled),false);
+    await page.locator('#mainGrid > button').filter({hasText:'Predictions:'}).click();assert.equal(await page.evaluate(()=>state.predictionsEnabled),true);
     await page.reload();assert.equal(await page.evaluate(()=>state.sentenceMode),true);
     // Legacy settings remain unchanged and legacy saves remain usable.
     await page.evaluate(()=>{localStorage.setItem('phraseboard_settings',JSON.stringify({gridSize:{rows:3,cols:3},theme:'dark',userScanPreference:'cell',sentenceMode:false}));});
@@ -46,8 +49,8 @@ const executablePath=process.env.PHRASEBOARD_BROWSER || ['C:/Program Files/Googl
     await page.locator('#backToGroups').click();assert.equal(await page.evaluate(()=>groupScanner.tile),-1);
     await page.locator('.free-stage button').filter({hasText:/^IStart$/}).click();
     await page.evaluate(()=>{state.predictionsEnabled=true;state.messageDisplay='tiles';renderMessage();});
-    await expect(page.locator('#sentenceDisplay')).toHaveText('I');await expect(page.locator('[data-prediction]').first()).toHaveText('want');
-    const before=await page.evaluate(()=>spoken.length);await page.locator('[data-prediction]').first().click();
+    await expect(page.locator('#sentenceDisplay')).toHaveText('I');const wantSuggestion=page.locator('[data-prediction]').filter({hasText:/^want$/});await expect(wantSuggestion).toBeVisible();
+    const before=await page.evaluate(()=>spoken.length);await wantSuggestion.click();
     assert.equal(await page.evaluate(()=>spoken.length),before);assert.equal(await page.evaluate(()=>messageText()),'I want');
     await page.locator('#sentenceDisplay').click();assert.equal(await page.evaluate(()=>spoken.at(-1)),'I want');
     await page.locator('#deleteWordBtn').click();assert.equal(await page.evaluate(()=>messageText()),'I');
@@ -107,11 +110,11 @@ const executablePath=process.env.PHRASEBOARD_BROWSER || ['C:/Program Files/Googl
     // Real touch events on a narrow viewport reach vocabulary and sentence controls.
     const touchContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
     const touch=await touchContext.newPage();await touch.goto(url+'index.html');
-    await touch.evaluate(csv=>{finishTour();PhraseBoard.save(localStorage,PhraseBoard.parse(csv));},PB.csv(fixture));
+    await touch.evaluate(csv=>{PhraseBoard.save(localStorage,PhraseBoard.parse(csv));},PB.csv(fixture));
     await touch.goto(url+'index.html?saved=1&category=Words');
     await touch.locator('.free-stage button').filter({hasText:/^IStart$/}).tap();assert.equal(await touch.evaluate(()=>messageText()),'I');
     await touch.locator('#clearSentenceBtn').tap();assert.equal(await touch.evaluate(()=>messageText()),'');await touchContext.close();
-    assert.deepEqual(errors,[]);console.log('Phrase board browser checks passed: migration, tour, switches, mixed layouts, predictions, responsive views, media exit, drag/resize, save/restore, live preview.');
+    assert.deepEqual(errors,[]);console.log('Phrase board browser checks passed: migration, direct startup, settings icons, switches, mixed layouts, predictions, responsive views, media exit, drag/resize, save/restore, live preview.');
     await context.close();
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -27,10 +27,6 @@ body { overflow: auto; }
 .prediction-panel strong { display: block; font-size: 14px; margin-bottom: 6px; }
 .prediction-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .prediction-buttons .grid-button { min-height: 44px; padding: 8px 14px; }
-.tour-panel { grid-column: 1/-1; background: var(--card); border: 2px solid #3676ad; border-radius: 14px; padding: 16px; line-height: 1.5; }
-.tour-panel h2 { margin: 0 0 8px; }
-.tour-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.tour-actions .grid-button { min-height: 60px; }
 #iframeCard { max-height: 96dvh; width: min(1100px,96vw); }
 #iframeControls { max-height: 40dvh; overflow: auto; flex-wrap: wrap; }
 #iframeControls .grid-button { min-width: 90px; min-height: 52px; }

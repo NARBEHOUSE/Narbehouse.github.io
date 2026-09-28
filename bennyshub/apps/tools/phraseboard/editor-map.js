@@ -86,8 +86,8 @@ function showMapMenu(event,scope){
 }
 window.addEventListener('DOMContentLoaded',()=>{
   $('addMapCategory').onclick=()=>$('addCategory').click();
-  $('basicView').onclick=()=>{editorView='canvas';selectedCategories.clear();selectedTiles=new Set([...selectedTiles].filter(i=>rows[i].category===category));$('viewDescription').textContent='Arrange the current category.';closeMapMenu();render();};
-  $('mapView').onclick=()=>{editorView='map';$('viewDescription').textContent='See and organize the whole board.';closeMapMenu();render();};
+  $('basicView').onclick=()=>setEditorView('canvas');
+  $('mapView').onclick=()=>setEditorView('map');
   $('selectionMenu').onclick=e=>showMapMenu(e,selectedTiles.size?'tiles':selectedCategories.size?'categories':'board');
   document.querySelector('.canvas-scroll').addEventListener('pointerdown',startBoxSelection);
   document.addEventListener('pointerdown',e=>{if(mapMenu&&!mapMenu.contains(e.target)&&e.target!==$('selectionMenu'))closeMapMenu();});
