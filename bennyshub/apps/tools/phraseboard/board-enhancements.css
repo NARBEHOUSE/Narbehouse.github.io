@@ -1,0 +1,59 @@
+:focus-visible { outline: 4px solid #c45300; outline-offset: 3px; }
+body { overflow: auto; }
+.app-container { height: 100dvh; min-height: 360px; }
+.main-grid { min-height: 0; overflow: auto; align-content: start; grid-auto-rows: minmax(100px,auto); }
+.main-grid > .grid-button { min-height: 100px; height: auto; overflow-wrap: anywhere; }
+.header-inner { flex-wrap: wrap; }
+.brand { white-space: normal; }
+.header-right { width: auto; display: flex; gap: 8px; }
+.header-right button, .header-right a { padding: 8px 12px; min-height: 44px; border-radius: 8px; border: 1px solid #173857; background: #fff; color: #173857; font: inherit; cursor: pointer; }
+.sentence-row.active { height: auto; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 6px; gap: 8px; }
+.sentence-display { min-width: 0; height: auto; min-height: 60px; max-height: 144px; overflow: auto; justify-content: flex-start; flex-wrap: wrap; gap: 6px; font: inherit; color: var(--text); }
+.sentence-display:empty::before { content: 'Build a message · Select here to speak'; color: #687080; }
+.message-tile { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid #a3afbd; border-radius: 8px; max-width: 100%; overflow-wrap: anywhere; }
+.message-tile img { width: 38px; height: 38px; object-fit: contain; }
+.main-grid.free-active { display: flex; flex-direction: column; gap: 12px; }
+.free-nav, .group-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.free-nav .grid-button { min-height: 48px; padding: 8px 18px; }
+.group-label { border: 3px solid var(--group-color); border-radius: 8px; padding: 8px 12px; background: var(--card,#fff); color: var(--text,#172b40); }
+.free-stage { position: relative; width: 100%; flex: none; min-height: 140px; }
+.free-stage .grid-button { position: absolute; left: var(--x); top: var(--y); width: var(--w); min-height: var(--h); height: auto; margin: 0; padding: 10px; gap: 5px; font-size: 18px; overflow-wrap: anywhere; border: 3px solid var(--group-color); }
+.free-stage .grid-button img { max-height: 70px; max-width: 90%; object-fit: contain; }
+.tile-group { font-size: 12px; font-weight: 500; }
+.group-dim { opacity: .45; }
+.group-active, .group-label.row-highlight { outline: 4px dashed var(--scanHighlight,#c45300); outline-offset: 2px; }
+.scan-highlight, .row-highlight { outline: 4px solid var(--scanHighlight,#c45300); outline-offset: -1px; }
+.prediction-panel { grid-column: 1/-1; border: 2px solid #7a8ba0; padding: 8px; border-radius: 12px; min-height: 76px; }
+.prediction-panel strong { display: block; font-size: 14px; margin-bottom: 6px; }
+.prediction-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.prediction-buttons .grid-button { min-height: 44px; padding: 8px 14px; }
+.tour-panel { grid-column: 1/-1; background: var(--card); border: 2px solid #3676ad; border-radius: 14px; padding: 16px; line-height: 1.5; }
+.tour-panel h2 { margin: 0 0 8px; }
+.tour-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.tour-actions .grid-button { min-height: 60px; }
+#iframeCard { max-height: 96dvh; width: min(1100px,96vw); }
+#iframeControls { max-height: 40dvh; overflow: auto; flex-wrap: wrap; }
+#iframeControls .grid-button { min-width: 90px; min-height: 52px; }
+@media (max-width: 759px) {
+  .main-grid { padding: 10px; gap: 10px; grid-template-columns: repeat(2,minmax(0,1fr)) !important; grid-template-rows: none !important; grid-auto-rows: minmax(100px,auto); }
+  .header-inner { gap: 6px; }
+  header { padding: 8px 10px; }
+  .brand { font-size: 16px; }
+  .header-title { font-size: 15px; max-width: 100%; }
+  .sentence-row.active { grid-template-columns: minmax(0,1fr) auto auto; gap: 4px; }
+  .sentence-row .grid-button { font-size: 12px; padding: 6px; min-width: 48px; }
+  .sentence-display { font-size: 16px; max-height: 112px; }
+  .free-stage { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; height: auto !important; }
+  .free-stage .grid-button { position: relative; inset: auto; width: auto; min-height: 112px; font-size: 17px; }
+  .group-legend { gap: 6px; }
+  .group-label { font-size: 13px; padding: 5px 8px; }
+  #iframeControls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+  #iframeControls .grid-button { width: auto; font-size: 14px; }
+}
+
+.main-grid.sentence-active { scroll-padding-top: 150px; }
+[hidden] { display: none !important; }
+
+#mediaStatus { color: #fff; background: #17354b; padding: 8px 12px; font-size: 14px; flex: none; }
+
+#iframeCard { grid-template-rows: minmax(0,1fr) auto auto; }

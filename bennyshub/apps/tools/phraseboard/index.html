@@ -478,7 +478,7 @@
 
     <main class="main-grid" id="mainGrid">
       <div class="sentence-row" id="sentenceRow">
-        <div class="sentence-display" id="sentenceDisplay"></div>
+        <button type="button" class="sentence-display" id="sentenceDisplay" aria-label="Speak message"></button>
         <button class="grid-button" id="deleteWordBtn">
           <span class="icon">⌫</span>
           Delete
@@ -490,13 +490,14 @@
       </div>
     </main>
 
-    <footer id="statusFooter">Ready - Load CSV to begin</footer>
+    <footer id="statusFooter" role="status">Ready - Load CSV to begin</footer>
   </div>
 
   <div id="iframeModal" role="dialog" aria-modal="true">
     <div id="iframeCard">
       <!-- The iframe is created fresh in JS so reopens never break -->
       <iframe id="mediaFrame" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+      <div id="mediaStatus" role="status"></div>
       <div id="iframeControls">
         <button class="grid-button" id="playPauseBtn">Play/Pause</button>
         <button class="grid-button" id="prevBtn">⏮ Previous</button>
@@ -543,7 +544,9 @@
   <!-- Include shared voice manager -->
   <script src="../../../shared/voice-manager.js"></script>
   <script src="../../../shared/scan-manager.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="board-core.js"></script>
+  <script src="prediction-data.js"></script>
+  <script src="prediction-engine.js"></script>
 
   <script>
     const state = {
@@ -566,6 +569,7 @@
       // TTS settings now handled by unified voice manager
       ttsOnScan: true,
       sentenceMode: false,
+      messageDisplay: 'text', predictionsEnabled: false, rememberMessages: true, speakGroups: true, dimGroups: true,
       sentence: [],
       // Voice settings now handled by unified voice manager
       childVoices: { boy: null, girl: null },
@@ -610,7 +614,8 @@
           userScanPreference: state.userScanPreference,
           highlightColor: state.highlightColor,
           theme: state.theme,
-          ttsOnScan: state.ttsOnScan
+          ttsOnScan: state.ttsOnScan,
+          rememberMessages: state.rememberMessages, sentenceMode: state.sentenceMode, messageDisplay: state.messageDisplay, predictionsEnabled: state.predictionsEnabled, speakGroups: state.speakGroups, dimGroups: state.dimGroups
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
         console.log('Phraseboard settings saved:', settings);
@@ -622,8 +627,13 @@
     function loadSettings() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
+        state.firstUse = !saved && !localStorage.getItem(PhraseBoard.KEY);
+        state.sentenceMode = state.firstUse;
+        state.predictionsEnabled = state.firstUse;
         if (saved) {
           const settings = JSON.parse(saved);
+          for (const key of ['sentenceMode','predictionsEnabled','speakGroups','dimGroups','rememberMessages']) if (typeof settings[key] === 'boolean') state[key] = settings[key];
+          if (settings.messageDisplay === 'tiles') state.messageDisplay = 'tiles';
           console.log('Phraseboard settings loaded:', settings);
           if (settings.gridSize) {
             state.gridSize = settings.gridSize;
@@ -721,14 +731,14 @@ function updateHeaderForCurrentView(){
                 console.log('[Editor] Opened phrase builder in Chrome:', result.url);
               } else {
                 console.error('[Editor] Failed to open editor:', result.error);
-                window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+                window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
               }
             }).catch(err => {
               console.error('[Editor] Error:', err);
-              window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+              window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
             });
           } else {
-            window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+            window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
           }
           setTimeout(() => window.focus(), 0);
         };
@@ -920,7 +930,8 @@ function updateHeaderForCurrentView(){
     function createButton(text, icon = '', clickHandler = null, className = '') {
       const btn = document.createElement('button');
       btn.className = `grid-button ${className}`;
-      btn.innerHTML = `${icon ? `<span class="icon">${icon}</span>` : ''}${text}`;
+      if (icon) { const span = document.createElement('span'); span.className = 'icon'; span.textContent = icon; btn.append(span); }
+      btn.append(document.createTextNode(text));
       if (clickHandler) btn.addEventListener('click', clickHandler);
       return btn;
     }
@@ -1630,6 +1641,7 @@ function updateHeaderForCurrentView(){
       // Only highlight if currentRow is valid (not -1)
       if (state.currentRow >= 0 && state.scannableRows[state.currentRow]) {
         state.scannableRows[state.currentRow].forEach(element => element.classList.add('row-highlight'));
+        state.scannableRows[state.currentRow][0]?.scrollIntoView({block:'nearest',inline:'nearest'});
       }
     }
 
@@ -1641,6 +1653,7 @@ function updateHeaderForCurrentView(){
           state.scannableRows[state.currentRow][state.scanIndex]) {
         const element = state.scannableRows[state.currentRow][state.scanIndex];
         element.classList.add('scan-highlight');
+        element.scrollIntoView({block:'nearest',inline:'nearest'});
         if (state.ttsOnScan) {
           if (state.currentMenu === 'tts' && element.classList.contains('voice-btn')) {
             const idx = parseInt(element.dataset.voiceIndex, 10);
@@ -1648,7 +1661,8 @@ function updateHeaderForCurrentView(){
             if (voice) { speakWithVoice(`Voice ${idx + 1}`, voice); return; }
           }
           let textToSpeak = '';
-          if (element === el.deleteWordBtn && state.sentenceMode) textToSpeak = 'Delete';
+          if (element === el.sentenceDisplay && state.sentenceMode) textToSpeak = 'Speak message';
+          else if (element === el.deleteWordBtn && state.sentenceMode) textToSpeak = 'Delete';
           else if (element === el.clearSentenceBtn && state.sentenceMode) textToSpeak = 'Clear all';
           else if (element !== el.sentenceDisplay && element !== el.deleteWordBtn && element !== el.clearSentenceBtn) {
             const pageIndicator = element.querySelector('.page-indicator');
@@ -1793,8 +1807,8 @@ function updateHeaderForCurrentView(){
 
              if (!state.videoModalActive) {
                 if (element === el.sentenceDisplay && state.sentenceMode) {
-                  const displayText = el.sentenceDisplay.textContent.trim();
-                  if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak(displayText, false, null, null, true); } // blockInput=true
+                  const displayText = messageText();
+                  if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
                   else { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty'); }
                 } else if (element === el.deleteWordBtn && state.sentenceMode) {
                   selectionText = 'Deleting';
@@ -1838,8 +1852,8 @@ function updateHeaderForCurrentView(){
           let selectionText = '';
           if (!state.videoModalActive) {
             if (element === el.sentenceDisplay && state.sentenceMode) {
-              const displayText = el.sentenceDisplay.textContent.trim();
-              if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak(displayText, false, null, null, true); } // blockInput=true
+              const displayText = messageText();
+              if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
               else { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty'); }
             } else if (element === el.deleteWordBtn && state.sentenceMode) {
               selectionText = 'Deleting';
@@ -1902,6 +1916,8 @@ function updateHeaderForCurrentView(){
     let modalBackwardScanInterval = null;
 
     window.addEventListener('keydown', (e) => {
+      if (e.target.closest?.('.header-right')) return;
+      if (e.repeat) return;
       // Allow F12/DevTools
       if (e.key === 'F12') return;
 
@@ -1998,6 +2014,7 @@ function updateHeaderForCurrentView(){
     });
 
     window.addEventListener('keyup', (e) => {
+      if (e.target.closest?.('.header-right')) return;
       // Handle modal spacebar release - scan forward on keyup (same pattern as main scan)
       if (state.modalActive) {
         if (e.code === 'Space' && state.modalSpacePressed) {
@@ -2095,7 +2112,9 @@ function updateHeaderForCurrentView(){
       const reader = new FileReader();
       reader.onload = () => {
         const csvText = reader.result;
-        const parsedRows = parseCSV(csvText);
+        let parsedRows;
+        try { parsedRows = parseCSV(csvText); if (!parsedRows.length) throw new Error('This CSV contains no tiles.'); }
+        catch (error) { el.statusFooter.textContent = error.message; return; }
 
         // Extract board name from CSV data or use filename
         let boardName = 'My Custom Board';
@@ -2108,11 +2127,8 @@ function updateHeaderForCurrentView(){
 
         // Save to localStorage
         try {
-          const boardData = {
-            boardName: boardName,
-            csv: csvText
-          };
-          localStorage.setItem('narbe_phrase_builder', JSON.stringify(boardData));
+          parsedRows.forEach(row => { if (!row.boardName) row.boardName = boardName; });
+          PhraseBoard.save(localStorage, parsedRows);
 
           // Show success message and re-render main menu
           el.statusFooter.textContent = `Board "${boardName}" saved! Navigate to it from the main menu.`;
@@ -2133,8 +2149,8 @@ function updateHeaderForCurrentView(){
     });
 
     el.sentenceDisplay.addEventListener('click', () => {
-      const text = el.sentenceDisplay.textContent.trim();
-      if (text && window.NarbeVoiceManager.getSettings().ttsEnabled) speak(text);
+      const text = messageText();
+      if (text && window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage();
       else if (!text && window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty');
     });
 
@@ -2153,14 +2169,14 @@ function updateHeaderForCurrentView(){
             console.log('[Editor] Opened phrase builder in Chrome:', result.url);
           } else {
             console.error('[Editor] Failed to open editor:', result.error);
-            window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+            window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
           }
         }).catch(err => {
           console.error('[Editor] Error:', err);
-          window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+          window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
         });
       } else {
-        window.open('phrase-builder.html', '_blank', 'noopener,noreferrer');
+        window.open('phrase-editor.html', '_blank', 'noopener,noreferrer');
       }
       setTimeout(() => window.focus(), 0);
     });
@@ -2216,6 +2232,8 @@ function updateHeaderForCurrentView(){
       // Check for board URL parameter
       const urlParams = new URLSearchParams(window.location.search);
       const boardParam = urlParams.get('board');
+
+      if (window.openRequestedBoard && window.openRequestedBoard()) return;
 
       if (boardParam) {
         // Find the board in availableBoards (check filename or name)
@@ -2280,16 +2298,17 @@ function updateHeaderForCurrentView(){
 
       // Handle regular phrases (non-URLs) - keep same TTS function
       // Pass blockInput=true to prevent accidental scan interruption
-      if (state.sentenceMode) {
-        state.sentence.push(text);
+      if (state.sentenceMode && !item.immediate) {
+        state.sentence.push({ text, display: item.display || text, image: item.image || '' });
         updateSentenceDisplay();
       } else {
         const cleanText = cleanTextForTTS(text);
-        if (cleanText) speak(cleanText, false, null, null, true); // blockInput=true for phrases
+        if (cleanText) { rememberMessage(text); speak(cleanText, false, null, null, true); } // blockInput=true for phrases
       }
     }
 
-    function updateSentenceDisplay() { el.sentenceDisplay.textContent = state.sentence.join(' '); }
+    function messageText() { return state.sentence.map(item => typeof item === 'string' ? item : item.text).join(' '); }
+    function updateSentenceDisplay() { renderMessage(); }
     function deleteLastWord() { if (state.sentence.length > 0) { state.sentence.pop(); updateSentenceDisplay(); } }
     function clearSentence() { state.sentence = []; updateSentenceDisplay(); }
 
@@ -2427,6 +2446,7 @@ function updateHeaderForCurrentView(){
         updateSentenceDisplay();
         speak('Sentence bar off');
       }
+      saveSettings();
       renderCurrentMenu();
     }
 
@@ -2446,60 +2466,7 @@ function updateHeaderForCurrentView(){
 
     // CSV
     function parseCSV(text) {
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      if (lines.length < 2) return [];
-      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const idx = {
-        category: header.indexOf('category'),
-        order: header.indexOf('categoryorder'),
-        display: header.indexOf('display'),
-        speak: header.indexOf('speak'),
-        image: header.indexOf('image'),
-        catColor: header.indexOf('categorycolor'),
-        tileColor: header.indexOf('tilecolor'),
-        tileOrder: header.indexOf('tileorder'),
-        catImage: header.indexOf('categoryimage'), // New field for category images
-        boardName: header.indexOf('boardname'), // New field for board name
-        boardColor: header.indexOf('boardcolor'), // New field for board color
-        boardImage: header.indexOf('boardimage'), // New field for board image
-      };
-
-      // Extract board-level data from first row (if available)
-      let boardData = { name: null, color: null, image: null };
-      if (lines.length > 1) {
-        const firstRow = parseCSVLine(lines[1]);
-        if (idx.boardName >= 0 && firstRow[idx.boardName]) {
-          boardData.name = firstRow[idx.boardName];
-        }
-        if (idx.boardColor >= 0 && firstRow[idx.boardColor]) {
-          boardData.color = firstRow[idx.boardColor];
-        }
-        if (idx.boardImage >= 0 && firstRow[idx.boardImage]) {
-          boardData.image = firstRow[idx.boardImage];
-        }
-      }
-
-      const rows = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        if (!cols.length) continue;
-        rows.push({
-          category: cols[idx.category] || '',
-          categoryOrder: parseInt(cols[idx.order] || '9999', 10) || 9999,
-          display: cols[idx.display] || '',
-          speak: cols[idx.speak] || '',
-          image: cols[idx.image] || '',
-          categoryColor: cols[idx.catColor] || '#5bb0ff',
-          tileColor: cols[idx.tileColor] || '',
-          tileOrder: parseInt(cols[idx.tileOrder] || '9999', 10) || 9999,
-          categoryImage: idx.catImage >= 0 ? (cols[idx.catImage] || '') : '', // Handle backwards compatibility
-          // Include board data in each row for access
-          boardName: boardData.name,
-          boardColor: boardData.color,
-          boardImage: boardData.image,
-        });
-      }
-      return rows;
+      return PhraseBoard.parse(text);
     }
 
     function parseCSVLine(line) {
@@ -2619,13 +2586,15 @@ function updateHeaderForCurrentView(){
       if (old) old.remove();
       const iframe = document.createElement('iframe');
       iframe.id = 'mediaFrame';
+      iframe.title = 'Media player';
+      iframe.tabIndex = -1;
       iframe.allow = 'autoplay; fullscreen';
       iframe.setAttribute('allowfullscreen', '');
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.border = '0';
       iframe.style.background = '#000';
-      card.insertBefore(iframe, document.getElementById('iframeControls'));
+      card.prepend(iframe);
       el.mediaFrame = iframe;
     }
 
@@ -2652,7 +2621,6 @@ function updateHeaderForCurrentView(){
       const embedUrl = normalizeYouTube(url);
       const isYt = /youtube\.com\/embed\//i.test(embedUrl);
       const playlist = isYt && isYouTubePlaylist(embedUrl);
-      if (isYt) { try { await loadYtApi(); } catch {} }
 
       state.videoModalActive = true;
       state.scanMode = 'row';
@@ -2667,12 +2635,20 @@ function updateHeaderForCurrentView(){
 
       el.mediaFrame.src = embedUrl;
       el.iframeModal.style.display = 'flex';
+      document.getElementById('mediaStatus').textContent = 'Select Close to return to your board.';
 
       setControlsForContext(state.playerKind, state.isPlaylist);
 
       updateScannable();
       highlightCurrentRow();
 
+      el.closeIframeBtn.focus({preventScroll:true});
+      const openedFrame = el.mediaFrame;
+      if (isYt) {
+        try { await Promise.race([loadYtApi(), new Promise((_,reject)=>setTimeout(()=>reject(new Error('Player controls are unavailable. Close or Refresh to retry.')),5000))]); }
+        catch (error) { el.statusFooter.textContent = error.message; document.getElementById('mediaStatus').textContent = error.message; }
+        if (!state.videoModalActive || el.mediaFrame !== openedFrame) return;
+      }
       if (isYt && window.YT && YT.Player) {
         if (state.ytPlayer && state.ytPlayer.destroy) { try { state.ytPlayer.destroy(); } catch {} }
         state.ytPlayer = new YT.Player('mediaFrame', {
@@ -2692,7 +2668,7 @@ function updateHeaderForCurrentView(){
     function closeIframe() {
       if (state.ytPlayer && state.ytPlayer.destroy) { try { state.ytPlayer.destroy(); } catch {} }
       state.ytPlayer = null;
-      if (el.mediaFrame) el.mediaFrame.src = '';
+      if (el.mediaFrame) el.mediaFrame.src = 'about:blank';
       el.iframeModal.style.display = 'none';
       state.videoModalActive = false;
       state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
@@ -2895,5 +2871,7 @@ function updateHeaderForCurrentView(){
       font-weight: 800 !important;
     }
   </style>
+  <link rel="stylesheet" href="board-enhancements.css" />
+  <script src="board-live.js"></script>
 </body>
 </html>
