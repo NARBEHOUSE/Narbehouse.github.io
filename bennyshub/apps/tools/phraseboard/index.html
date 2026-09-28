@@ -913,6 +913,12 @@ function updateHeaderForCurrentView(){
       return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[←→↑↓▶◀⚙️📁🔊🎯🎨💬⌫🗑️🏠⊞🔄🐌🚶🏃🎤👦👧●]/gu, '').trim();
     }
 
+    function buttonTextForTTS(element) {
+      const label = element.cloneNode(true);
+      label.querySelectorAll('.icon').forEach(icon => icon.remove());
+      return cleanTextForTTS(label.textContent);
+    }
+
     // Grid
     function setGridSize(rows, cols) {
       state.gridSize = { rows, cols };
@@ -930,7 +936,7 @@ function updateHeaderForCurrentView(){
     function createButton(text, icon = '', clickHandler = null, className = '') {
       const btn = document.createElement('button');
       btn.className = `grid-button ${className}`;
-      if (icon) { const span = document.createElement('span'); span.className = 'icon'; span.textContent = icon; btn.append(span); }
+      if (icon) { const span = document.createElement('span'); span.className = 'icon'; span.setAttribute('aria-hidden', 'true'); span.textContent = icon; btn.append(span); }
       btn.append(document.createTextNode(text));
       if (clickHandler) btn.addEventListener('click', clickHandler);
       return btn;
@@ -1109,11 +1115,12 @@ function updateHeaderForCurrentView(){
       updateScannable();
     }
 
-    function renderSettingsMenu(preservePosition = false) {
+    function renderSettingsMenu(preservePosition = false, extraButtons = []) {
       clearGrid();
+      el.mainGrid.classList.add('settings-active');
       state.currentMenu = 'settings';
       // Don't subtract sentence row space - it's now in its own dedicated row
-      const totalSlots = state.gridSize.rows * state.gridSize.cols;
+      const totalSlots = state.gridSize.rows * (innerWidth < 760 ? 2 : state.gridSize.cols);
 
       const buttons = [
         { text: 'Grid Size', icon: '⊞', action: () => navigateTo('gridsize') },
@@ -1121,12 +1128,14 @@ function updateHeaderForCurrentView(){
         { text: 'Scan Settings', icon: '🎯', action: () => navigateTo('scan') },
         { text: 'Highlight Colors', icon: '🎨', action: () => navigateTo('highlight') },
         { text: 'Theme', icon: '🌈', action: () => navigateTo('theme') },
-        { text: 'Toggle Sentence', icon: '💬', action: () => { toggleSentenceMode(); renderSettingsMenu(true); }, className: state.sentenceMode ? 'active-green' : '' }
+        { text: 'Toggle Sentence', icon: '💬', action: () => { toggleSentenceMode(); renderSettingsMenu(true); }, className: state.sentenceMode ? 'active-green' : '' },
+        ...extraButtons
       ];
 
       const availableSlots = totalSlots - 1; // Reserve one slot for back/next button
-      const itemsPerPage = availableSlots - 1; // Reserve another slot for next button if needed
+      const itemsPerPage = Math.max(1, availableSlots - 1); // Reserve another slot for next button if needed
       const totalPages = Math.ceil(buttons.length / itemsPerPage);
+      state.page = Math.max(0, Math.min(state.page, totalPages - 1));
 
       // Back button logic
       if (state.page === 0) {
@@ -1573,7 +1582,7 @@ function updateHeaderForCurrentView(){
 
       const buttons = Array.from(el.mainGrid.querySelectorAll('.grid-button:not(#deleteWordBtn):not(#clearSentenceBtn)'));
       const rows = [];
-      const cols = state.gridSize.cols;
+      const cols = innerWidth < 760 ? 2 : state.gridSize.cols;
       if (state.sentenceMode && el.sentenceRow.classList.contains('active')) {
         rows.push([el.sentenceDisplay, el.deleteWordBtn, el.clearSentenceBtn]);
       }
@@ -1638,7 +1647,7 @@ function updateHeaderForCurrentView(){
           else if (element === el.clearSentenceBtn && state.sentenceMode) textToSpeak = 'Clear all';
           else if (element !== el.sentenceDisplay && element !== el.deleteWordBtn && element !== el.clearSentenceBtn) {
             const pageIndicator = element.querySelector('.page-indicator');
-            const cleanText = cleanTextForTTS(element.textContent);
+            const cleanText = buttonTextForTTS(element);
             if (pageIndicator) {
               const pageText = pageIndicator.textContent;
               const categoryName = cleanText.replace(pageText, '').trim();
@@ -1792,12 +1801,12 @@ function updateHeaderForCurrentView(){
                   // For phrase buttons (with data-speak-text attribute), onTileClick handles TTS, so don't double-speak
                   // For other buttons (settings, back, next, etc.), we need to speak
                   if (!element.hasAttribute('data-speak-text')) {
-                    selectionText = cleanTextForTTS(element.textContent);
+                    selectionText = buttonTextForTTS(element);
                   }
                   element.click();
                 }
              } else {
-                selectionText = cleanTextForTTS(element.textContent);
+                selectionText = buttonTextForTTS(element);
                 element.click();
              }
 
@@ -1837,12 +1846,12 @@ function updateHeaderForCurrentView(){
               // For phrase buttons (with data-speak-text attribute), onTileClick handles TTS, so don't double-speak
               // For other buttons (settings, back, next, etc.), we need to speak
               if (!element.hasAttribute('data-speak-text')) {
-                selectionText = cleanTextForTTS(element.textContent);
+                selectionText = buttonTextForTTS(element);
               }
               element.click();
             }
           } else {
-            selectionText = cleanTextForTTS(element.textContent);
+            selectionText = buttonTextForTTS(element);
             element.click();
           }
           if (selectionText && window.NarbeVoiceManager.getSettings().ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }

@@ -22,7 +22,7 @@
     "test:player-access": "node scripts/check-player-access.cjs",
     "test:player-help": "node scripts/check-player-help.cjs",
     "test:player-progress": "node scripts/check-player-progress.cjs",
-    "test:phraseboard": "node scripts/check-phraseboard.cjs && node scripts/check-phraseboard-editor.cjs && node scripts/check-phraseboard-predictions.cjs && node scripts/check-phraseboard-basic-editor.cjs"
+    "test:phraseboard": "node scripts/check-phraseboard.cjs && node scripts/check-phraseboard-editor.cjs && node scripts/check-phraseboard-predictions.cjs && node scripts/check-phraseboard-basic-editor.cjs && node scripts/check-phraseboard-settings.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

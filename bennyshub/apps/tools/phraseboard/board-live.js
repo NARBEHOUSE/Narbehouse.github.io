@@ -34,6 +34,7 @@ function renderMessage() {
 clearGrid = function () {
   el.mainGrid.querySelectorAll('.group-active,.group-dim').forEach(n => n.classList.remove('group-active','group-dim'));
   original.clearGrid();
+  el.mainGrid.classList.remove('settings-active');
   el.mainGrid.querySelectorAll('.free-nav,.free-stage,.group-legend,.prediction-panel').forEach(node => node.remove());
   el.mainGrid.classList.remove('free-active'); groupScanner = null; groupElements = [];
   syncSentence();
@@ -129,7 +130,7 @@ function paintGroups() {
   if (groupScanner.tile >= 0 && state.dimGroups) groupScanner.groups.filter(g=>g!==active).forEach(g=>g.items.filter(n=>n!==back).forEach(n=>n.classList.add('group-dim')));
   selected[0]?.scrollIntoView({block:'nearest',inline:'nearest'});
   if (groupScanner.tile < 0 && state.speakGroups) speak(active.name);
-  else if (groupScanner.tile >= 0 && state.ttsOnScan) speak(selected[0] === el.sentenceDisplay ? 'Speak message' : selected[0].textContent);
+  else if (groupScanner.tile >= 0 && state.ttsOnScan) speak(selected[0] === el.sentenceDisplay ? 'Speak message' : buttonTextForTTS(selected[0]));
 }
 scanForward = function () { if (useGroups()) { groupScanner.move(); paintGroups(); } else original.scanForward(); };
 scanBackward = function () { if (useGroups()) { groupScanner.move(-1); paintGroups(); } else original.scanBackward(); };
@@ -141,7 +142,6 @@ selectCurrent = function () {
 };
 highlightCurrentRow = function () { if (useGroups()) { groupScanner.back(); paintGroups(); } else original.highlightCurrentRow(); };
 renderSettingsMenu = function (preserve) {
-  original.renderSettingsMenu(preserve);
   const extras = [
     ['Message display: ' + state.messageDisplay, '💬', () => { state.messageDisplay = state.messageDisplay === 'text' ? 'tiles' : 'text'; renderMessage(); }],
     ['Predictions: ' + (state.predictionsEnabled ? 'on' : 'off'), '🔮', () => { state.predictionsEnabled = !state.predictionsEnabled; }],
@@ -150,8 +150,8 @@ renderSettingsMenu = function (preserve) {
     ['Spoken group names: ' + (state.speakGroups ? 'on' : 'off'), '🗣️', () => { state.speakGroups = !state.speakGroups; }],
     ['Dim other groups: ' + (state.dimGroups ? 'on' : 'off'), '🌗', () => { state.dimGroups = !state.dimGroups; }]
   ];
-  extras.forEach(([text,icon,action]) => el.mainGrid.append(createButton(text,icon,()=>{ action(); saveSettings(); renderSettingsMenu(); })));
-  updateScannable(preserve);
+  const buttons = extras.map(([text,icon,action]) => ({text,icon,action:()=>{ action(); saveSettings(); renderSettingsMenu(true); }}));
+  original.renderSettingsMenu(preserve, buttons);
 };
 function applySaved(data, category) {
   state.currentBoardTitle = data.boardName; buildIndex(PB.parse(data.csv)); currentRevision = data.revision || null;
@@ -189,7 +189,7 @@ window.addEventListener('storage', event => {
   try { const data = PB.read(localStorage); if (data && data.revision !== currentRevision) applySaved(data,state.currentCategory); }
   catch (error) { notifyBoard(error.message); }
 });
-window.addEventListener('resize',()=>{ if (!state.videoModalActive) updateScannable(); });
+window.addEventListener('resize',()=>{ if (state.videoModalActive) return; if (state.currentMenu === 'settings') renderSettingsMenu(); else updateScannable(); });
 renderMessage();
 // Keep editor previews isolated from board-loading and editor navigation.
 const initialRender = renderMainMenu;
