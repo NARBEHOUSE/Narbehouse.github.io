@@ -150,6 +150,11 @@ function setupForm() {
         acc.addEventListener('click', function() {
            this.classList.toggle("active");
            const panel = this.nextElementSibling;
+           if (this.id === 'video-list-toggle') {
+               const expanded = this.classList.contains('active');
+               this.setAttribute('aria-expanded', String(expanded));
+               panel.hidden = !expanded;
+           }
            if (panel.style.maxHeight && panel.style.maxHeight !== '0px') {
                panel.style.maxHeight = null;
                panel.style.overflow = null;
