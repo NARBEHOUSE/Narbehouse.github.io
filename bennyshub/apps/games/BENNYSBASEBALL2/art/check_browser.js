@@ -166,6 +166,11 @@ let mainNavigations=0;
         console.log('Startup:',startup);return;
     }
     await wait(8500); // Opening announcements finish before driving an at-bat.
+    if(process.argv.includes('--catching')) {
+        await require('./check_catching_browser.js')({evaluate,wait,until,capture});
+        assert.equal(errors.length,0,JSON.stringify(errors));
+        console.log('Catching: overhead flies, reaching line catches, crouched pickups, glove contact and recovery passed.');return;
+    }
     if(process.argv.includes('--pitch-choices')) {
         await require('./check_pitch_choices_browser.js')({evaluate,wait,until,capture,call});
         assert.equal(errors.length,0,JSON.stringify(errors));

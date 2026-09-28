@@ -24,6 +24,16 @@ for action in ['catch_fly', 'field_bounce']:
             assert np.allclose(p[key], ready[key]), (action, endpoint, key)
 assert pose('catch_fly', 4/7, 'outfielder')['lh'][1] > 1.1
 assert pose('field_bounce', 4/7, 'outfielder')['lh'][1] < .25
+for role in ['fielder','outfielder']:
+    fly=pose('catch_fly',4/7,role)
+    line=pose('catch_line',4/7,role)
+    ground=pose('field_bounce' if role=='outfielder' else 'field_grounder',4/7,role)
+    # The glove is visibly above the cap, not merely higher than a ready hand.
+    assert fly['lh'][1]>fly['chest'][1]+.30
+    assert project(fly['lh'],0)[1]<project(fly['chest']+[0,.27,0],0)[1]
+    assert .80<line['lh'][1]<1.0 and line['lh'][2]>.25
+    assert ground['hip'][1]<.35 and ground['chest'][1]<.60
+    assert ground['lh'][1]<.17
 # From LF, the front of the body points screen-right toward home; RF mirrors it.
 assert project([0,.9,.2], -25)[0] > project([0,.9,0], -25)[0]
 assert project([0,.9,.2], 25)[0] < project([0,.9,0], 25)[0]

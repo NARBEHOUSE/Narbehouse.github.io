@@ -902,7 +902,7 @@ class GameScene extends BaseballScene {
 
     receiveAction(p) {
         return p === this.fielders.C ? 'receive'
-            : p === this.fielders['1B'] ? 'stretch_catch' : 'receive_at_bag';
+            : p === this.fielders['1B'] ? 'stretch_catch' : 'catch_line';
     }
 
     // Secure -> transfer -> step/throw -> release -> receive -> recover.
@@ -2350,6 +2350,16 @@ class GameScene extends BaseballScene {
         });
     }
 
+    // Keep fair grounders inside the same home-to-base rays used to paint
+    // the chalk. Random corner-infield pickups can otherwise land foul.
+    fairGroundSpot(spot) {
+        const home=FIELD.HOME,y=Math.min(spot.y,home.y),depth=home.y-y;
+        const left=home.x+depth*(FIELD.THIRD.x-home.x)/(home.y-FIELD.THIRD.y);
+        const right=home.x+depth*(FIELD.FIRST.x-home.x)/(home.y-FIELD.FIRST.y);
+        const inset=Math.min(18,(right-left)/2);
+        return {x:Phaser.Math.Clamp(spot.x,left+inset,right-inset),y};
+    }
+
     // Bases-empty grounders are a physical race, not a preselected out with
     // runner speed changed to fit it. Other occupied-base plays retain their
     // existing force/relay rules while this sequence establishes the model.
@@ -2359,7 +2369,7 @@ class GameScene extends BaseballScene {
         const fielder = this.fielders[pos], first = this.fielders['1B'];
         const start = { x: this.ball.x, y: this.ball.y };
         const home = FIELD.FIELDER_HOMES[pos];
-        const spot = { x: home.x + (Math.random()-.5)*62, y: home.y + 28 + Math.random()*38 };
+        const spot = this.fairGroundSpot({ x: home.x + (Math.random()-.5)*62, y: home.y + 28 + Math.random()*38 });
         const reaction = 140 + Math.random()*220;
         const ballMs = Math.hypot(spot.x-start.x,spot.y-start.y)/(115+Math.random()*75)*1000;
         const runnerSpeed = 88 + Math.random()*12;
@@ -2392,9 +2402,11 @@ class GameScene extends BaseballScene {
         const gather = () => {
             if (gathered || !ballAtSpot || !fielderAtSpot) return;
             gathered=true;
-            this.audio.play('catch');this.hideHeldBall(fielder);
-            this.bb2Anim(fielder,'field_grounder');
-            this.time.delayedCall(340,()=>{
+            this.defensiveAction(fielder,'field_grounder',()=>{
+                const glove=fielder.ballPoint ? fielder.ballPoint('glove') : spot;
+                this.ball.setPosition(glove.x,glove.y);
+                this.audio.play('catch');this.hideHeldBall(fielder);
+            },()=>{
                 this.throwToPlayer(fielder, first, {
                     duration:(from,to)=>Math.hypot(to.x-from.x,to.y-from.y)/armSpeed*1000,arc:20
                 },()=>{ballAtBag=true;finishRace();});
@@ -2414,7 +2426,11 @@ class GameScene extends BaseballScene {
         // Second baseman backs up the throw, right fielder backs up first.
         if (pos!=='2B') move(this.fielders['2B'],{x:FIELD.SECOND.x+65,y:FIELD.SECOND.y+30},72);
         move(this.fielders.RF,{x:FIELD.FIRST.x+54,y:FIELD.FIRST.y-38},86);
-        this.time.delayedCall(reaction,()=>move(fielder,spot,86,()=>{
+        if(fielder._spr)fielder._spr.setFlipX(false);
+        const glove=fielder.actionPoint ? fielder.actionPoint('field_grounder','glove') : {x:fielder.x,y:fielder.y};
+        const pickup={x:spot.x-(glove.x-fielder.x),y:spot.y-(glove.y-fielder.y)};
+        this.time.delayedCall(reaction,()=>move(fielder,pickup,86,()=>{
+            if(fielder._spr)fielder._spr.setFlipX(false);
             fielderAtSpot=true;this.bb2Anim(fielder,'ready');gather();
         }));
         this.ballArc(start,spot,ballMs,6,()=>{ballAtSpot=true;gather();});
@@ -2436,9 +2452,11 @@ class GameScene extends BaseballScene {
         const gather = () => {
             if (!arrived || !landed || gathered || !fielder.active) return;
             gathered = true;
-            this.bb2Anim(fielder, action.name);
-            this.time.delayedCall(action.clip.contactFrame / action.clip.rate * 1000, () => {
-                if (fielder.active) { this._ballHolder = fielder;cb(); }
+            this.defensiveAction(fielder, action.name, () => {
+                if (!fielder.active) return;
+                const glove=fielder.ballPoint ? fielder.ballPoint('glove') : spot;
+                this.ball.setPosition(glove.x,glove.y);
+                this.hideHeldBall(fielder);cb();
             });
         };
         // Align the gather frame's glove with the resting ball.
@@ -2455,10 +2473,11 @@ class GameScene extends BaseballScene {
         else this.ballArc(from,spot,flightMs,arcHeight,land);
     }
 
-    chaseFlyBall(from, fielderPos, cb) {
+    chaseFlyBall(from, fielderPos, cb, trajectory = 'fly') {
         const fielder = this.fielders[fielderPos], motion = this.playerMotion();
-        const action = this.fieldingClip(fielder, 'catch_fly');
-        const angle = Math.random()*Math.PI*2, distance = Phaser.Math.Between(32,58);
+        const lineDrive = trajectory === 'line';
+        const action = this.fieldingClip(fielder, lineDrive ? 'catch_line' : 'catch_fly');
+        const angle = Math.random()*Math.PI*2, distance = lineDrive ? Phaser.Math.Between(8,18) : Phaser.Math.Between(32,58);
         let spot = {x:fielder.x,y:fielder.y}, route = [];
         for (let i=0;i<8;i++) {
             const a=angle+i*Math.PI/4;
@@ -2470,7 +2489,7 @@ class GameScene extends BaseballScene {
         }
         let previous=fielder, travel=0;
         for(const point of route){travel+=Math.hypot(point.x-previous.x,point.y-previous.y);previous=point;}
-        const flight=Math.max(1700,travel/85*1000+850);
+        const flight=Math.max(lineDrive ? 750 : 1700,travel/85*1000+(lineDrive ? 500 : 850));
         const contactMs=action.clip.contactFrame/action.clip.rate*1000;
         if(fielder._spr)fielder._spr.setFlipX(false);
         const glove=fielder.actionPoint ? fielder.actionPoint(action.name,'glove') : {x:fielder.x,y:fielder.y-24};
@@ -2478,7 +2497,7 @@ class GameScene extends BaseballScene {
         let arrived=false, catchDue=false, landed=false, catching=false, completed=false;
         let holdingGlove=false;
         const holdContact=(anim,frame)=>{
-            if(anim.key===fielder._animKey && frame.index===action.clip.contactFrame+1) {
+            if(anim.key===fielder._animKey && frame.index>=action.clip.contactFrame+1) {
                 holdingGlove=true;fielder._spr.anims.pause();
                 fielder._spr.off('animationupdate',holdContact);
                 settle();
@@ -2490,6 +2509,8 @@ class GameScene extends BaseballScene {
                 fielder._spr.off('animationupdate',holdContact);
                 if(holdingGlove)fielder._spr.anims.resume();
             }
+            const caught=fielder.ballPoint ? fielder.ballPoint('glove') : target;
+            this.ball.setPosition(caught.x,caught.y);
             completed=true;this.audio.play('catch');this.hideHeldBall(fielder);cb(spot,fielderPos);
         };
         const raiseGlove=()=>{
@@ -2505,7 +2526,7 @@ class GameScene extends BaseballScene {
         // Set the glove early and hold the actual contact frame until arrival;
         // timer/animation updates can otherwise drift apart on slower frames.
         this.time.delayedCall(flight-contactMs-150,()=>{catchDue=true;raiseGlove();});
-        this.ballArc(from,target,flight,165,()=>{landed=true;settle();});
+        this.ballArc(from,target,flight,lineDrive ? 12 : 165,()=>{landed=true;settle();});
         return {fielder,spot,flight};
     }
 
@@ -2577,10 +2598,10 @@ class GameScene extends BaseballScene {
             const fielderPos = Phaser.Utils.Array.GetRandom(['SS', '2B', '3B', '1B']);
             const fielder = this.fielders[fielderPos];
             this.startGroundCoverage(fielderPos);
-            const spot = {
+            const spot = this.fairGroundSpot({
                 x: Phaser.Math.Linear(home.x, FIELD.FIELDER_HOMES[fielderPos].x, 0.72),
                 y: Phaser.Math.Linear(home.y, FIELD.FIELDER_HOMES[fielderPos].y, 0.72)
-            };
+            });
             // Your runners take off; the CPU defense turns the play for real —
             // cover men take the bags and the throws beat the runners there.
             this.startContactRunners();
@@ -2640,10 +2661,10 @@ class GameScene extends BaseballScene {
             const fielderPos = weightedChoice({ SS: 30, '2B': 28, '3B': 22, '1B': 20 });
             const fielder = this.fielders[fielderPos];
             const fhome = FIELD.FIELDER_HOMES[fielderPos];
-            const spot = {
+            const spot = this.fairGroundSpot({
                 x: Phaser.Math.Linear(home.x, fhome.x, 0.9) + Phaser.Math.Between(-10, 10),
                 y: Phaser.Math.Linear(home.y, fhome.y, 0.9) + Phaser.Math.Between(-6, 6)
-            };
+            });
             this.startContactRunners();
             this.startGroundCoverage(fielderPos);
             this._ballBusy = (this._ballBusy || 0) + 1;
@@ -3365,10 +3386,10 @@ class GameScene extends BaseballScene {
         const fielderPos = weightedChoice({ SS: 26, '2B': 24, '3B': 20, '1B': 18, P: 12 });
         const fielder = this.fielders[fielderPos];
         const fhome = FIELD.FIELDER_HOMES[fielderPos];
-        const spot = {
+        const spot = this.fairGroundSpot({
             x: Phaser.Math.Linear(FIELD.HOME.x, fhome.x, 0.70) + Phaser.Math.Between(-14, 14),
             y: Phaser.Math.Linear(FIELD.HOME.y, fhome.y, 0.70) + Phaser.Math.Between(-8, 8)
-        };
+        });
 
         // On contact the batter and every runner take off (they hold partway
         // while you decide). Quick zoom punch on the pickup, then FULLY zoom
@@ -3668,7 +3689,7 @@ class GameScene extends BaseballScene {
         const outfielderPos = Phaser.Utils.Array.GetRandom(['LF', 'CF', 'RF']);
         const fielder = this.fielders[outfielderPos];
         const fhome = FIELD.FIELDER_HOMES[outfielderPos];
-        const spot = { x: fhome.x + Phaser.Math.Between(-30, 30), y: fhome.y + Phaser.Math.Between(20, 60) };
+        const spot = this.fairGroundSpot({ x: fhome.x + Phaser.Math.Between(-30, 30), y: fhome.y + Phaser.Math.Between(20, 60) });
 
         this.startContactRunners();
         this.startGroundCoverage(outfielderPos);

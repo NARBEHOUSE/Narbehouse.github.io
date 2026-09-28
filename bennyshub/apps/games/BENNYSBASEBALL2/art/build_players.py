@@ -172,9 +172,16 @@ def pose(name,t,role=None):
         p['lk'] += [.015,0,.035 if low else .012];p['rk'] += [-.015,0,.035 if low else .012]
         p['lh']=np.array([.10,.62-low+breath,.15]);p['rh']=np.array([-.09,.65-low+breath,.12])
         p['le']=np.array([.23,.77-low+breath,.055]);p['re']=np.array([-.22,.78-low+breath,.05])
-    if role=='outfielder' and name=='field_bounce':
+    if name in ['field_grounder','field_bounce']:
         weight=smooth(t*7/4) if t<=4/7 else 1-smooth((t-4/7)*7/3)
-        standing=pose('outfield_set',0);gather=pose('field_grounder',.5)
+        standing=pose('outfield_set' if role=='outfielder' else 'ready',0)
+        # Sit into the knees and hinge at the hips; the glove scoops just
+        # above the turf, with the bare hand covering it from above.
+        gather=dict(hip=np.array([0,.32,-.04]),chest=np.array([0,.55,.23]),
+            lf=np.array([.23,.045,.06]),rf=np.array([-.23,.045,.02]),
+            lk=np.array([.24,.22,.22]),rk=np.array([-.24,.22,.20]),
+            lh=np.array([.06,.11,.35]),rh=np.array([-.04,.20,.37]),
+            le=np.array([.24,.34,.26]),re=np.array([-.23,.37,.26]))
         for key in ['hip','chest','lf','rf','lk','rk','lh','rh','le','re']:
             p[key]=lerp(standing[key],gather[key],weight)
     if name in ['set','windup','release','follow_through'] or (role=='pitcher' and name=='fielding_stance'):
@@ -222,11 +229,18 @@ def pose(name,t,role=None):
                     p[key]=lerp(first[key],last[key],u)
                 break
         p['hip_angle']=float(p['twist'])*.45
-    if name in ['stretch_catch','receive_at_bag','catch_fly','tag','tag_home']:
-        height=1.13 if name=='catch_fly' else .68 if name in ['stretch_catch','receive_at_bag'] else .30
-        p['lh']=np.array([.06,height,.37]);p['le']=np.array([.24,(height+.9)/2,.18])
+    if name in ['stretch_catch','receive_at_bag','catch_fly','catch_line','tag','tag_home']:
+        height=1.25 if name=='catch_fly' else .90 if name in ['stretch_catch','receive_at_bag','catch_line'] else .30
+        # Overhead catches need a nearly vertical arm: reaching far forward
+        # as well makes the rig shorten the lift to stay within arm length.
+        p['lh']=np.array([.20,height,.10] if name=='catch_fly' else [.32,height,.34])
+        p['le']=np.array([.29,1.06,.04] if name=='catch_fly' else [.30,.84,.16])
+        if name=='catch_fly':
+            p['rh']=np.array([-.035,.99,.20]);p['re']=np.array([-.23,.84,.10])
+        if name in ['tag','tag_home']:
+            p['lh']=np.array([.06,.30,.37]);p['le']=np.array([.24,.60,.18])
         if name=='stretch_catch':p['lf'] += [.04,0,.25];p['chest'] += [0,-.05,.12]
-        if name in ['catch_fly','stretch_catch','receive_at_bag']:
+        if name in ['catch_fly','catch_line','stretch_catch','receive_at_bag']:
             # Raise/extend into the authored contact frame (4 of 7), secure
             # the ball, then lower the glove and recover the ready stance.
             weight=smooth(t*7/4) if t<=4/7 else 1-smooth((t-4/7)*7/3)
@@ -411,17 +425,12 @@ def build(name,t,role):
     m.loft([(-.065,.123,.09,0),(.012,.132,.086,0)],1,body)
     m.loft([(.008,.134,.088,0),(.036,.136,.089,0)],3,body)
     m.limb(body([-.018,.023,.095]),body([.018,.023,.095]),.009,.009,6,6)
-    # Placket, collar, shoulder piping and small sewn jersey marks.
+    # Placket, collar and shoulder piping; jerseys have no baked-in numbers.
     m.limb(body([0,.047,.088]),body([0,height-.028,.099]),.006,.006,1,6)
     for y in [.11,.17,.23]:m.oval(body([0,y,.107]),[.006,.006,.004],3,8)
     for side in [-1,1]:
         m.limb(body([side*.044,height+.003,.04]),body([0,height-.035,.086]),.009,.009,8,6)
         m.limb(body([side*.065,height+.004,0]),body([side*.182,height-.026,0]),.008,.008,1,6)
-    # Number 7 on front and a larger 17 on the back, drawn as stitched strokes.
-    for z,x,y,scale in [(.107,.067,.255,.065),(-.104,.02,.268,.105)]:
-        for a,b in [([x-scale*.3,y,z],[x+scale*.3,y,z]),([x+scale*.3,y,z],[x-scale*.15,y-scale,z])]:
-            m.limb(body(a),body(b),.009,.009,1,6)
-        if z<0:m.limb(body([-.064,y,z]),body([-.064,y-scale,z]),.010,.010,1,6)
     neck=chest+[0,.052,0];head=chest+[0,.15,.007]
     m.limb(chest,neck,.045,.043,2)
     head_start=len(m.v)

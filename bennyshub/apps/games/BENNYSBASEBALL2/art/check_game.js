@@ -153,7 +153,7 @@ for(const pos of ['LF','CF','RF','SS','2B'])for(let i=0;i<12;i++) {
     s.until(()=>catches);
     assert.equal(catches,1);assert(s.now<=plan.flight+20,'fielder arrives before catch');
     assert(Math.hypot(f.x-plan.spot.x,f.y-plan.spot.y)<.02);
-    assert(s.log.some(e=>e.animation==='catch_fly'||e.animation==='receive_at_bag'));
+    assert(s.log.some(e=>e.animation==='catch_fly'),'Every infielder and outfielder needs an overhead catch');
     s.returnFielders();s.until(()=>Math.hypot(f.x-start.x,f.y-start.y)<.1);
 }
 for(let i=0;i<20;i++) {
@@ -580,3 +580,37 @@ for(const outcome of ['Double','Triple']){
     assert.equal(from.x,origin.x);assert.equal(from.y,origin.y);
 }
 console.log('Pitch continuity: 90 swing/location/mode combinations, early release and extra-base launch origin passed.');
+
+// Exercise the real randomized targets and ball tween, including the corner
+// grounders that can become safe singles in the race to first. Throws after
+// the pickup are separate plays and are allowed to travel over foul ground.
+let fairFlights=0;
+const fairDistance=point=>Math.min(...[FIELD.THIRD,FIELD.FIRST].map((base,i)=>{
+    const dx=base.x-FIELD.HOME.x,dy=base.y-FIELD.HOME.y;
+    const cross=dx*(point.y-FIELD.HOME.y)-dy*(point.x-FIELD.HOME.x);
+    return cross*(i===0?1:-1)/Math.hypot(dx,dy);
+}));
+for(const mode of ['race','single','cpuSingle','cpuGrounder'])for(let i=0;i<160;i++){
+    seed=991*i+37;const s=fixture();let landed=false,target;
+    const origin=[{x:500,y:514},{x:476,y:486},{x:525,y:486}][i%3];
+    s.ball.setPosition(origin.x,origin.y);
+    s.startContactRunners=()=>{};s.startGroundCoverage=()=>{};s.jog=()=>{};
+    const arc=s.ballArc;
+    s.ballArc=(from,to,ms,height)=>{target=to;return arc.call(s,from,to,ms,height,()=>landed=true);};
+    s.chaseGroundBall=(p,from,to,ms,height)=>s.ballArc(from,to,ms,height);
+    if(mode==='race')s.playGrounderToFirst();
+    else if(mode==='single')s.animatePlayerContact('Single',()=>{});
+    else if(mode==='cpuSingle')s.startCpuSingle();
+    else s.startGroundballPlay();
+    assert(target && fairDistance(target)>10,'Pickup must be visibly inside the chalk: '+JSON.stringify({mode,i,target}));
+    while(!landed && s.now<5000){
+        s.tick(1000/60);
+        assert(fairDistance(s.ball)>=-1e-6,'Grounder crossed a foul line: '+JSON.stringify({mode,i,x:s.ball.x,y:s.ball.y}));
+    }
+    assert(landed,'Grounder never landed');fairFlights++;
+}
+// Extreme randomized third-base targets used to be far outside the line.
+for(const x of [289,320,351])for(const y of [398,417,436]){
+    assert(fairDistance(fixture().fairGroundSpot({x,y}))>10);
+}
+console.log('Fair grounders: '+fairFlights+' real flight paths stay inside the foul lines for both teams.');

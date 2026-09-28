@@ -33,7 +33,7 @@ Pitching, catching, fielding and running use the same
 body proportions, lighting and ground plane.
 
 The revised model uses an elliptical, tailored jersey, shaped jaw and helmet,
-uniform piping and numbers, tapered pants, socks, laced cleats and a cupped glove
+uniform piping, unnumbered jerseys, tapered pants, socks, laced cleats and a cupped glove
 with fingers and webbing. Catcher gear has separate mask, chest and shin pieces.
 Offensive running clips retain batting helmets and omit fielding gloves. Idle
 defenders use position-specific ready poses. Labels sit above the larger players.
@@ -44,6 +44,12 @@ knee bend during delivery. Left and right field face inward toward home plate;
 their home positions form a wider, balanced arc around center field. Fly catches
 recover to the taller stance, and ground pickups lower only for the gather.
 Returning players use a compact recovery jog until they arrive.
+Infielders and outfielders share distinct overhead fly catches, forward/side
+reaches for direct catches, and low, bent-knee ground-ball scoops. Ground pickups
+secure the ball on the rendered contact frame, including the race to first.
+`node art/check_browser.js --catching` checks all eight fielders' catch poses,
+ball/glove alignment and recovery in Chrome. All player sheets use plain jerseys
+on both the front and back, without the old baked-in 7/17 markings.
 `check_outfield_pose.py` checks posture, facing and catch/gather contact timing.
 `node art/check_browser.js --returns` checks recovery jogging, live-pitch readiness,
 catch/throw recovery, arrival poses and equal player scale in Chrome.

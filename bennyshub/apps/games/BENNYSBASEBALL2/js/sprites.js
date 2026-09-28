@@ -76,6 +76,8 @@ const BB2_SHEETS = {
     'firstbase-actions': {
         file: 'images/sprites/firstbase-actions.png',
         anims: {
+            catch_fly: { start: 0, count: 8, rate: 14, repeat: 0 },
+            catch_line: { start: 0, count: 8, rate: 14, repeat: 0 },
             stretch_catch:  { start: 0,  count: 4, rate: 12, repeat: 0 },
             ready_at_bag:   { start: 4,  count: 2, rate: 2,  repeat: -1 },
             field_grounder: { start: 6,  count: 4, rate: 10, repeat: 0 },
@@ -85,6 +87,8 @@ const BB2_SHEETS = {
     'infield-actions': {
         file: 'images/sprites/infield-actions.png',
         anims: {
+            catch_fly: { start: 0, count: 8, rate: 14, repeat: 0 },
+            catch_line: { start: 0, count: 8, rate: 14, repeat: 0 },
             ready:          { start: 0,  count: 2, rate: 2,  repeat: -1 },
             field_grounder: { start: 2,  count: 4, rate: 10, repeat: 0 },
             throw:          { start: 6,  count: 4, rate: 12, repeat: 0 },
@@ -96,6 +100,7 @@ const BB2_SHEETS = {
     'outfield-actions': {
         file: 'images/sprites/outfield-actions.png',
         anims: {
+            catch_line: { start: 0, count: 8, rate: 14, repeat: 0 },
             ready:        { start: 0,  count: 2, rate: 2,  repeat: -1 },
             ready_left:   { start: 0, count: 6, rate: 5, repeat: -1 },
             ready_right:  { start: 0, count: 6, rate: 5, repeat: -1 },
@@ -625,7 +630,7 @@ function bb2MakePlayer(scene, colorObj, label, posKey) {
 
     // Defensive one-shots release their pose when finished. An interrupted
     // action must never reset a newer run, throw or pitcher delivery.
-    const recoverActions = new Set(['catch_fly', 'field_grounder', 'field_bounce',
+    const recoverActions = new Set(['catch_fly', 'catch_line', 'field_grounder', 'field_bounce',
         'stretch_catch', 'receive_at_bag', 'throw', 'throw_relay', 'tag', 'dive',
         'receive', 'block', 'tag_home', 'rise_throw']);
     spr.on('animationcomplete', anim => {
