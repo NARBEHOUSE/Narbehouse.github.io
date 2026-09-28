@@ -25,8 +25,15 @@ document.getElementById('settings').onclick = async () => {
   catch(e) { error.textContent = e.message; error.hidden = false; }
   finally { button.disabled = false; button.textContent = 'Open Companion settings'; }
 };
-document.getElementById('back').onclick = () => {
-  if (parent !== window) parent.postMessage({action: 'focusBackButton'}, location.origin);
-  else location.href = 'index.html';
+document.getElementById('back').onclick = async () => {
+  if (parent !== window) { parent.postMessage({action: 'focusBackButton'}, location.origin); return; }
+  const button=document.getElementById('back'),error=document.getElementById('setup-error');
+  if(button.disabled)return;button.disabled=true;error.hidden=true;
+  try{
+    await BennyExtension.check();
+    if(!BennyExtension.state.connected){location.href='index.html';return;}
+    if(!BennyExtension.supports('settings-return'))throw Error('Update and reload Companion 1.0.5, then reload this page to return to your existing Hub tab.');
+    await BennyExtension.request('SETTINGS_RETURN',{},6000);
+  }catch(e){error.textContent=e.message;error.hidden=false;button.disabled=false;}
 };
 checkConnection();

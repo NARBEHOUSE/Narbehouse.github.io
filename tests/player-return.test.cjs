@@ -9,7 +9,7 @@ test('player returns reuse Hub tabs and coalesce restoration without reopening o
   const publicTab=tab=>({...tab,url:tab.exposeURL?tab.url:undefined}); // No broad tabs permission.
   global.chrome={
     storage:{local:storage(local),session:storage(session)},permissions:{async contains(){return true;}},
-    runtime:{id:'test-extension',onInstalled:{addListener(){}},onStartup:{addListener(){}},onMessage:{addListener(fn){listener=fn;}}},
+    runtime:{id:'test-extension',getURL:p=>'chrome-extension://test-extension/'+p,onInstalled:{addListener(){}},onStartup:{addListener(){}},onMessage:{addListener(fn){listener=fn;}}},
     action:{onClicked:{addListener(){}}},
     tabs:{
       async get(id){if(!tabs.has(id))throw Error('Tab closed');return publicTab(tabs.get(id));},
@@ -95,6 +95,23 @@ test('player returns reuse Hub tabs and coalesce restoration without reopening o
       assert.equal(session['resume:7'].url,expected);assert.equal(positions.at(-1).url,expected);
       assert.equal(tabs.get(7).url,hubURL+'#companion=keyboard');
     }
+
+    const settingsCall=(sender,payload={})=>new Promise(resolve=>listener({protocol:1,action:'SETTINGS_RETURN',payload},sender,resolve));
+    const setupURL='http://127.0.0.1:4173/bennyshub/extension-setup.html';
+    for(const kind of ['setup','options']){
+      reset();addTab(7,hubURL+'#tools',3);const tab=addTab(8,kind==='setup'?setupURL:chrome.runtime.getURL('options.html'));
+      const sender={id:'test-extension',url:tab.url,frameId:0,...(kind==='setup'?{tab}:{})};
+      assert.equal((await settingsCall(sender,{tabId:8})).ok,true);
+      assert.deepEqual(removed,[8]);assert.equal(tabs.get(7).url,hubURL+'#tools');assert.equal(tabs.get(7).active,true);assert.equal(created.length,0);
+    }
+    // A standalone setup page becomes the Hub; unrelated pages remain intact.
+    reset();const setupTab=addTab(8,setupURL);addTab(9,'https://unrelated.example/');
+    const setupSender={id:'test-extension',url:setupURL,frameId:0,tab:setupTab};
+    assert.equal((await settingsCall({...setupSender,frameId:1})).ok,false);
+    assert.equal((await settingsCall({...setupSender,url:hubURL})).ok,false);
+    assert.equal((await settingsCall({...setupSender,id:'other-extension'})).ok,false);
+    assert.equal((await settingsCall(setupSender,{tabId:9})).ok,true);
+    assert.equal(tabs.get(8).url,new URL('./',hubURL).href);assert.equal(tabs.get(9).url,'https://unrelated.example/');assert.deepEqual(removed,[]);assert.equal(created.length,0);
 
     // Ordinary window close only cleans session state.
     reset();addTab(7,hubURL);player(20);

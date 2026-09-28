@@ -69,3 +69,13 @@ const externalRefresh=()=>refresh().catch(()=>status('Could not check source acc
 chrome.permissions.onAdded.addListener(externalRefresh);chrome.permissions.onRemoved.addListener(externalRefresh);chrome.storage.onChanged.addListener(externalRefresh);
 addEventListener('focus',externalRefresh);
 let down=0;document.addEventListener('keydown',e=>{if(e.code!=='Space'||e.target.matches('input,textarea,select'))return;e.preventDefault();if(!e.repeat)down=Date.now();});document.addEventListener('keyup',e=>{if(e.code!=='Space'||!down)return;e.preventDefault();const items=[...document.querySelectorAll('button,input,select,summary')].filter(x=>!x.disabled&&x.getClientRects().length);const i=items.indexOf(document.activeElement),delta=Date.now()-down>=3000?-1:1;down=0;items[(i+delta+items.length)%items.length]?.focus();});addEventListener('blur',()=>{down=0;});
+
+let returningToHub=false;
+$('return-hub').onclick=async()=>{
+  if(returningToHub)return;returningToHub=true;
+  try{
+    const tab=await chrome.tabs.getCurrent();
+    const reply=await chrome.runtime.sendMessage({protocol:1,action:'SETTINGS_RETURN',payload:{tabId:tab?.id}});
+    if(!reply?.ok)throw Error(reply?.error||'Could not return to the Hub. Try again.');
+  }catch(error){status(error.message,true);returningToHub=false;}
+};

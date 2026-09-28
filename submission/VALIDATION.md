@@ -1,4 +1,4 @@
-# Validation record — release candidate 1.0.4
+# Validation record — release candidate 1.0.5
 
 Checked September 27, 2026. These are local checks, not store approval or a guarantee of live provider compatibility.
 
@@ -8,12 +8,13 @@ Checked September 27, 2026. These are local checks, not store approval or a guar
 - Built Pages smoke test: all 33 pages loaded at production paths, including restored Baseball 2. Animal Friends has 21 optional recorded sound probes with verified generated WAV fallbacks; these are recorded as warnings.
 - Static build: 980 files, about 309 MiB, 462 local references checked with exact filename case; no missing links. test-player.html/js, art reports, staging apps, browser profiles and dependencies are excluded from the public site.
 - Streaming browser workflow: empty initial catalog, synthetic library, original menus, keyboard search, safe text rendering, editor persistence, metadata form, episodes and playback progress passed.
+- Settings return: actual extension options and setup pages focus the existing Hub and close only their own tab, preserving the open keyboard. When no Hub exists, the current tab becomes the Hub. Unit checks reject unrelated/frame requests and cover a Hub in another window. No additional permissions.
 - Companion integration: missing-extension gating, six connected Tools cards, actual player injection and Return to Hub passed.
 - PWA: journal reload and saved entries passed offline with the website's service worker.
 - Help and shortcuts: opening the submenu pauses without toggling playback; explicit I need help speech works with scan TTS disabled. One-/two-switch selection, full-loop parking, returning to paused controls, direct keyboard/phrase board/main-menu navigation, Hub reuse and fresh-load routing passed controlled browser tests. Speech invocation is checked; physical speaker output requires user testing.
 - Last-watched progress: controlled YouTube playlist, Netflix, Disney+, Prime and Hulu episode-one-to-seven changes survive immediate keyboard shortcut exit and Hub reload. Real Continue buttons open the captured link, original catalog URLs stay unchanged, playlist context survives, and reset prevents later updates. Authentication/menu destinations are filtered for these services. Native close has periodic and page-exit capture; abrupt browser/process termination may lose the newest update. No signed-in accounts were used.
 - Player checks: one-/two-switch scanning, live timing sync, anti-tremor handling, return without broad Hub tab permissions and scan-order updates passed.
-- Netflix focus: closed-shadow profile fixtures retain provider focus while one-/two-switch controls and mouse Unlock remain usable. The new focus regression failed with the previously shipped content script and passes with 1.0.4. This does not establish a fix in a live signed-in Netflix account.
+- Netflix focus: closed-shadow profile fixtures retain provider focus while one-/two-switch controls and mouse Unlock remain usable. The new focus regression failed with the previously shipped content script and passes with 1.0.5. This does not establish a fix in a live signed-in Netflix account.
 - Journal prompts: reviewed all 227 questions; removed seven personal-context assumptions. No personal names/contact details found in the prompt file; bundled entries remain empty.
 - Player stability: Netflix stress fixture stays responsive during recurring DOM mutations and competing provider focus. Unlock releases input without waiting for background storage; a deliberately stalled access request cannot block it. Disney and Netflix retain native video layout; actual signed-in DRM playback still requires user verification.
 - Browser access: Prime sign-in fixture passed mouse clicks, keyboard input, embedded form access, unlock persistence across reload, visible reminder and restored switch focus. Netflix fixtures passed mouse profile selection and one-/two-switch choices; no profile was selected automatically. These are controlled fixtures, not live signed-in accounts.

@@ -105,9 +105,43 @@ function returnToHub(sender,destination,currentURL){
   task.finally(()=>returning.delete(id)).catch(()=>{});
   return task;
 }
+async function returnFromSettings(sender,p={}) {
+  const optionsURL=chrome.runtime.getURL('options.html'),options=sender.url===optionsURL;
+  let source;
+  if(options){
+    source=await chrome.tabs.get(sender.tab?.id??p.tabId);
+    // The privileged options page supplies its own tab ID. Chromium may omit
+    // even this extension URL because we do not request broad tabs permission.
+    if(source.url&&source.url!==optionsURL)throw Error('Reopen Companion settings to return to the Hub.');
+  }else{
+    if(!sender.tab||sender.frameId!==0||!isHub(sender.url)||new URL(sender.url).pathname!=='/bennyshub/extension-setup.html')throw Error('Only Companion setup can use this action.');
+    source=await chrome.tabs.get(sender.tab.id);
+    const current=source.url||await hubLocation(source.id);
+    if(current!==sender.url)throw Error('The setup tab changed. Try again.');
+  }
+  const remembered=(await chrome.storage.session.get('settingsHub')).settingsHub;
+  const preferred=options?(isHub(remembered)?remembered:'https://narbehouse.github.io/bennyshub/'):sender.url;
+  const targetURL=new URL('/bennyshub/',preferred).href,candidates=[];
+  for(const tab of await chrome.tabs.query({})){
+    if(tab.id===source.id)continue;
+    const url=tab.pendingUrl||tab.url||await hubLocation(tab.id).catch(()=>null);
+    if(!isHub(url)||!/^\/bennyshub\/(?:index\.html)?$/.test(new URL(url).pathname))continue;
+    const sameOrigin=new URL(url).origin===new URL(targetURL).origin;
+    if(!options&&!sameOrigin)continue;
+    candidates.push({tab,score:(sameOrigin?4:0)+(tab.windowId===source.windowId?2:0)+(tab.active?1:0)});
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  const existing=candidates[0]?.tab;
+  if(existing){
+    await chrome.tabs.update(existing.id,{active:true});await chrome.windows.update(existing.windowId,{focused:true});
+    await chrome.tabs.remove(source.id);
+  }else await chrome.tabs.update(source.id,{url:targetURL,active:true});
+  return {};
+}
 async function handle(m,sender){
   await trustedStorage;
   if(sender.id!==chrome.runtime.id||m?.protocol!==PROTOCOL)throw Error('Unsupported request.');
+  if(m.action==='SETTINGS_RETURN')return returnFromSettings(sender,m.payload);
   if(m.action==='PLAYER_HELLO'){
     const session=await managed(sender);await rememberPosition(sender,session,m.payload?.url);
     const synced=(await chrome.storage.session.get('scan:'+session.hubOrigin))['scan:'+session.hubOrigin];
@@ -132,8 +166,8 @@ async function handle(m,sender){
   if(new URL(topURL).origin!==new URL(sender.url).origin)throw Error('Only Benny’s Hub can use this action.');
   const p=m.payload||{};
   switch(m.action){
-    case 'HELLO':return {protocol:PROTOCOL,version:chrome.runtime.getManifest().version,capabilities:['streaming','journal','dayhub']};
-    case 'OPEN_OPTIONS':await chrome.runtime.openOptionsPage();return {};
+    case 'HELLO':return {protocol:PROTOCOL,version:chrome.runtime.getManifest().version,capabilities:['streaming','journal','dayhub','settings-return']};
+    case 'OPEN_OPTIONS':await chrome.storage.session.set({settingsHub:topURL});await chrome.runtime.openOptionsPage();return {};
     case 'SYNC_SCAN':{
       const settings=scanPrefs(p);await chrome.storage.session.set({['scan:'+new URL(sender.url).origin]:settings});return {settings};
     }

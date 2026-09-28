@@ -17,7 +17,7 @@
       }catch{reply({saved:false});}
     }
   });
-  const allowed=new Set(['HELLO','OPEN_STREAM','OPEN_OPTIONS','STREAM_PROGRESS','SYNC_SCAN','CALENDAR_WEEK','NEWS']);
+  const allowed=new Set(['HELLO','SETTINGS_RETURN','OPEN_STREAM','OPEN_OPTIONS','STREAM_PROGRESS','SYNC_SCAN','CALENDAR_WEEK','NEWS']);
   window.addEventListener('message',async event=>{
     const m=event.data;
     if(event.source!==window||event.origin!==location.origin||m?.channel!=='benny-hub-request'||m.protocol!==1||typeof m.id!=='string'||m.id.length>80||!allowed.has(m.action))return;
