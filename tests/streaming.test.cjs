@@ -74,3 +74,58 @@ test('reset cannot be undone by an in-flight progress request',async()=>{
   resolveProgress({playbackId:token,url:'https://www.netflix.com/watch/1007'});await pending;
   assert.equal(api.getLastWatched('Series').url,undefined);
 });
+
+
+test('episode saves validate one show, preserve other shows, and keep original episode metadata', async () => {
+  const {api, stored, env} = adapter();
+  const episode = {episode:1, title:' Pilot ', url:'https://www.netflix.com/watch/1001', note:'Keep imported metadata'};
+  api.saveEpisodes({'other show':{'1':[{...episode, title:'Other'}]}});
+  const snapshot = await api.allEpisodes();
+  const pending = api.saveShowEpisodes('Original title', {'1':[{...episode, episode:2}, episode], '2':[]});
+  api.saveEpisodes({...snapshot, 'another show':{'1':[{...episode}]}});
+  await pending;
+  assert.ok((await api.allEpisodes())['other show']);
+  assert.ok((await api.allEpisodes())['another show']);
+  const saved = await api.getEpisodes('ORIGINAL TITLE');
+  assert.equal(saved['1'][0].title, 'Pilot');
+  assert.equal(saved['1'][0].note, episode.note);
+  assert.equal(saved['1'][0].season, 1);
+  assert.equal(saved['2'], undefined);
+  const before = stored.get('streaming.episodes');
+  for (const bad of [{...episode,episode:null},{...episode,episode:-1},{...episode,title:' '},{...episode,url:'javascript:alert(1)'},{...episode,url:'https://secret:password@netflix.com/watch/1'}]) {
+    await assert.rejects(api.saveShowEpisodes('Original title',{'1':[bad]}));
+  }
+  await assert.rejects(api.saveShowEpisodes('Original title',{'1':[episode,episode]}));
+  await assert.rejects(api.saveShowEpisodes('Original title',{'10000':[episode]}));
+  assert.equal(stored.get('streaming.episodes'),before);
+  env.BennyData.set=()=>{throw Error('Storage full');};
+  await assert.rejects(api.saveShowEpisodes('Original title',{}),/Storage full/);
+  assert.equal(stored.get('streaming.episodes'),before);
+});
+
+test('episode lists can be removed without deleting other shows; unusual show titles are safe',async()=>{
+  const {api}=adapter(),episode={episode:1,title:'Pilot',url:'https://www.youtube.com/watch?v=pilot'};
+  await api.saveShowEpisodes('__proto__',{'1':[episode]});
+  await api.saveShowEpisodes('Show',{'1':[episode]});
+  await api.saveShowEpisodes('Show',{});
+  assert.equal(Object.keys(await api.getEpisodes('Show')).length,0);
+  assert.equal((await api.getEpisodes('__proto__'))['1'][0].title,'Pilot');
+  assert.equal({}.polluted,undefined);
+});
+
+test('missing and invalid playback links never reach the extension or saved progress',async()=>{
+  const {api,onRequest}=adapter();let calls=0;
+  onRequest(()=>{calls++;});
+  for(const url of ['',undefined,'not a link','file:///private/video','javascript:alert(1)','https://user:secret@www.netflix.com/watch/1']) {
+    await assert.rejects(api.launch({url,show:'Invalid',type:'shows'}));
+  }
+  assert.equal(calls,0);assert.equal(api.getLastWatched('Invalid'),null);
+});
+
+test('platform detection uses real hostnames and platform choices have bundled favicons',()=>{
+  const services=require('../bennyshub/apps/tools/streaming/services.js');
+  for(const [url,name] of [['https://www.netflix.com/watch/1','Netflix'],['https://www.disneyplus.com/play/1','Disney+'],['https://app.plex.tv/desktop/','Plex'],['https://youtu.be/video','YouTube'],['https://www.primevideo.com/detail/1','Prime Video'],['https://www.amazon.com/gp/video/detail/1','Prime Video'],['https://tubitv.com/tv-shows/1','Tubi']])assert.equal(services.detect(url),name);
+  for(const url of ['https://netflix.com.example.org/','https://example.org/?netflix.com','file://netflix.com/a','not a link'])assert.equal(services.detect(url),'');
+  assert.equal(services.nameFor({service:'Other',url:'https://www.hulu.com/watch/1'}),'Hulu');
+  for(const name of services.names)assert.ok(fs.existsSync('bennyshub/apps/tools/streaming/'+services.icons[name]));
+});

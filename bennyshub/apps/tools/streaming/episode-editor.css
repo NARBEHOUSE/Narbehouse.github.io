@@ -1,0 +1,55 @@
+#episode-editor {
+    margin: auto;
+    width: min(1100px, 94vw);
+    max-height: 88vh;
+    box-sizing: border-box;
+    overflow-y: auto;
+    padding: 26px;
+    border: 1px solid #666;
+    border-radius: 12px;
+    background: #1e1e1e;
+    color: #f5f5f5;
+}
+#episode-editor::backdrop { background: rgb(0 0 0 / 75%); }
+#episode-editor fieldset { border: 0; padding: 0; margin: 20px 0; min-width: 0; }
+#episode-editor label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#episode-editor input, #episode-editor select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+    padding: 9px;
+    background: #2a2a2a;
+    color: white;
+    border: 1px solid #777;
+    border-radius: 5px;
+    font: inherit;
+}
+#episode-editor :focus-visible { outline: 3px solid #80baff; outline-offset: 2px; }
+#episode-editor .episode-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+#episode-editor .episode-edit-row {
+    display: grid;
+    grid-template-columns: 100px minmax(160px, 1fr) minmax(220px, 2fr) auto;
+    gap: 12px;
+    align-items: end;
+    padding: 16px 0;
+    border-bottom: 1px solid #555;
+}
+#episode-editor .episode-rows { margin: 16px 0; }
+#episode-editor .episode-status { min-height: 24px; color: #b8d8ff; }
+#episode-editor button:disabled { opacity: .5; cursor: default; }
+#episode-editor button {
+    min-height: 42px;
+    padding: 9px 14px;
+    border: 1px solid #888;
+    border-radius: 6px;
+    background: #333;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
+#episode-editor .btn-primary { background: #215fb3; }
+#episode-editor .btn-success { background: #246b40; }
+#episode-editor .btn-danger { background: #7b3030; }
+@media (max-width: 750px) {
+    #episode-editor .episode-edit-row { grid-template-columns: 1fr; }
+}

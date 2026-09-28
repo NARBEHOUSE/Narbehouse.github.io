@@ -30,7 +30,7 @@ test('TMDB Worker restricts routes, keeps the token private, caches metadata and
   }finally{global.fetch=savedFetch;global.caches=savedCaches;}
 });
 test('editor Worker mode strips client credentials and keeps personal-key mode available',()=>{
-  const env={URL,WebStreaming:{escapeHTML:x=>x},document:{addEventListener(){},getElementById(){return {value:'personal-test-key'};}},window:{BennyMetadataConfig:{workerURL:'https://metadata.test'}}};
+  const env={StreamingServices:require('../bennyshub/apps/tools/streaming/services.js'),URL,WebStreaming:{escapeHTML:x=>x},document:{addEventListener(){},getElementById(){return {value:'personal-test-key'};}},window:{BennyMetadataConfig:{workerURL:'https://metadata.test'}}};
   vm.runInNewContext(fs.readFileSync('bennyshub/apps/tools/streaming/editor.js','utf8'),env);
   assert.equal(env.metadataCredential(),'worker');
   assert.equal(env.getApiUrl('tmdb','3/search/movie?api_key=personal-test-key&query=Example'),'https://metadata.test/3/search/movie?query=Example');

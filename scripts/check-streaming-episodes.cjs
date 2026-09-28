@@ -1,0 +1,134 @@
+const {chromium,expect}=require('@playwright/test');
+const path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173';
+let context;
+(async()=>{
+  const extension=path.join(root,'extension');
+  context=await chromium.launchPersistentContext(path.join(root,'artifacts','episodes-profile-'+Date.now()),{channel:'chromium',headless:true,viewport:{width:1440,height:1000},args:['--disable-extensions-except='+extension,'--load-extension='+extension]});
+  await context.route(/^https:\/\//,r=>r.abort());
+  const errors=[],native=[];
+  context.on('page',p=>{p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(r.url().startsWith(base)&&/\/api\//.test(r.url()))native.push(r.url());});});
+  const editor=await context.newPage();
+  await editor.goto(base+'/bennyshub/apps/tools/streaming/editor.html');
+  await editor.waitForFunction(()=>BennyExtension.supports('streaming'));
+  await editor.evaluate(async()=>{
+    WebStreaming.saveData([{id:'series',type:'shows',title:'Original series',url:'https://www.netflix.com/watch/1001'}, {id:'other',type:'shows',title:'Other series',url:'https://www.youtube.com/watch?v=other'}, {id:'film',type:'movies',title:'Film',url:'https://www.netflix.com/watch/2001'}]);
+    WebStreaming.saveEpisodes({'other series':{'1':[{episode:1,title:'Other pilot',url:'https://www.youtube.com/watch?v=other'}]}});
+    await fetchData();
+  });
+  await expect(editor.locator('.episodes-button:visible')).toHaveCount(2);
+  assert.equal(await editor.locator('#service option').count(),16);
+  const seriesRow=editor.locator('tr').filter({has:editor.locator('input[value="series"]')});
+  await expect(seriesRow.locator('.service-indicator')).toHaveText('Netflix');
+  await seriesRow.getByRole('button',{name:'Seasons & Episodes'}).click();
+  const dialog=editor.locator('#episode-editor'),status=dialog.locator('.episode-status');
+  await expect(dialog.locator('.episode-use-link')).toBeVisible();
+  await dialog.locator('.episode-use-link').click();
+  await dialog.getByRole('button',{name:'Add episode',exact:true}).click();
+  let rows=dialog.locator('.episode-edit-row');
+  await rows.nth(1).getByLabel('Episode title').fill('Second episode');
+  await rows.nth(1).getByLabel('Playback URL').fill('https://www.netflix.com/watch/1002');
+  await rows.nth(1).getByLabel('Episode number').fill('1');
+  await dialog.locator('.episode-save').click();
+  await expect(status).toContainText('unique whole number');
+  assert.equal(await editor.evaluate(()=>WebStreaming.getEpisodes('Original series').then(x=>Object.keys(x).length)),0);
+  await rows.nth(1).getByLabel('Episode number').fill('2');
+  await dialog.locator('.episode-add-season').click();
+  await dialog.locator('.episode-add').click();
+  await rows.first().getByLabel('Episode title').fill('New season');
+  await rows.first().getByLabel('Playback URL').fill('https://www.netflix.com/watch/2002');
+  // Invalid fields on a hidden season must also prevent saving.
+  await rows.first().getByLabel('Episode title').fill('');
+  await dialog.locator('.episode-season').selectOption('1');
+  await dialog.locator('.episode-save').click();
+  await expect(dialog.locator('.episode-season')).toHaveValue('2');
+  await expect(status).toContainText('Check season 2');
+  await rows.first().getByLabel('Episode title').fill('New season');
+  await editor.evaluate(()=>{window.realSet=BennyData.set;BennyData.set=()=>{throw Error('Storage full');};});
+  await dialog.locator('.episode-save').click();
+  await expect(status).toContainText('Your changes are still here');
+  await expect(rows.first().getByLabel('Episode title')).toHaveValue('New season');
+  await expect(dialog.locator('.episode-save')).toBeEnabled();
+  await editor.evaluate(()=>{BennyData.set=window.realSet;});
+  await dialog.locator('.episode-save').click();
+  await expect(status).toContainText('Episodes saved');
+  assert.equal(await editor.evaluate(()=>WebStreaming.getEpisodes('Other series').then(x=>x['1'][0].title)),'Other pilot');
+  const box=await dialog.boundingBox();assert.ok(Math.abs((box.x+box.width/2)-720)<2);
+  await editor.screenshot({path:path.join(root,'artifacts','streaming-episodes-editor.png')});
+  await dialog.locator('.episode-remove-season').click();
+  await dialog.locator('.episode-close').click();
+  assert.ok(await editor.evaluate(()=>WebStreaming.getEpisodes('Original series').then(x=>x['2'])));
+  await seriesRow.getByRole('button',{name:'Edit',exact:true}).click();
+  await editor.locator('#title-series').fill('Renamed series');
+  await editor.getByRole('button',{name:'Save Changes',exact:true}).click();
+  await expect.poll(()=>editor.evaluate(()=>WebStreaming.getData().then(x=>x.find(i=>i.id==='series').episode_key))).toBe('Original series');
+  await seriesRow.getByRole('button',{name:'Seasons & Episodes'}).click();
+  await expect(dialog.locator('.episode-season option')).toHaveCount(2);
+  await dialog.locator('.episode-close').click();
+
+  const player=await context.newPage();
+  await player.goto(base+'/bennyshub/apps/tools/streaming/index.html');
+  await player.waitForFunction(()=>BennyExtension.supports('streaming')&&allData.length===3);
+  await expect(player.locator('#btn-recent')).toHaveClass(/highlighted/);
+  await player.evaluate(()=>{window.spoken=[];speak=text=>window.spoken.push(text);openBrowse();});
+  await expect(player.locator('.service-badge')).toHaveCount(3);
+  await player.evaluate(()=>highlightItem(2));
+  assert.ok((await player.evaluate(()=>window.spoken)).some(text=>text.includes('Netflix')));
+  await player.evaluate(()=>showModal(allData.find(i=>i.id==='series')));
+  await expect(player.locator('#modal-service')).toHaveText('Plays on Netflix');
+  await player.getByRole('button',{name:'Pick Episode',exact:true}).click();
+  await player.evaluate(()=>openSeasonEpisodes(1));
+  await expect(player.locator('#episode-grid')).toContainText('Second episode');
+  // The launch uses the selected episode and keeps progress under the show name.
+  await player.evaluate(()=>{window.launched=[];BennyExtension.request=async(action,payload)=>{if(action==='OPEN_STREAM')window.launched.push(payload);return {};};});
+  await player.locator('#episode-grid .card').filter({hasText:'Second episode'}).click();
+  await expect.poll(()=>player.evaluate(()=>window.launched.length)).toBe(1);
+  assert.equal(await player.evaluate(()=>window.launched[0].url),'https://www.netflix.com/watch/1002');
+  assert.equal(await player.evaluate(()=>WebStreaming.getLastWatched('Renamed series').episode),2);
+  // Save in the separate editor tab, then reopen in the already running app.
+  await seriesRow.getByRole('button',{name:'Seasons & Episodes'}).click();
+  await dialog.locator('.episode-season').selectOption('1');
+  await dialog.locator('.episode-edit-row').nth(1).getByLabel('Episode title').fill('Updated episode');
+  await dialog.locator('.episode-save').click();await expect(status).toContainText('Episodes saved');
+  await dialog.locator('.episode-close').click();
+  await player.evaluate(()=>showModal(allData.find(i=>i.id==='series')));
+  await player.getByRole('button',{name:'Pick Episode',exact:true}).click();
+  await player.evaluate(()=>openSeasonEpisodes(1));
+  await expect(player.locator('#episode-grid')).toContainText('Updated episode');
+  await player.screenshot({path:path.join(root,'artifacts','streaming-episode-picker.png')});
+  // Remove the optional list; the show still uses its single original link.
+  await seriesRow.getByRole('button',{name:'Seasons & Episodes'}).click();
+  await dialog.locator('.episode-remove-season').click();await dialog.locator('.episode-remove-season').click();
+  await dialog.locator('.episode-save').click();await expect(status).toContainText('Episodes saved');
+  await dialog.locator('.episode-close').click();
+  await player.evaluate(()=>{WebStreaming.resetProgress('Renamed series');return showModal(allData.find(i=>i.id==='series'));});
+  await expect(player.getByRole('button',{name:'Pick Episode',exact:true})).toHaveCount(0);
+  await player.getByRole('button',{name:'Play',exact:true}).click();
+  assert.equal(await player.evaluate(()=>window.launched.at(-1).url),'https://www.netflix.com/watch/1001');
+  const before=await player.evaluate(()=>window.launched.length);
+  await player.evaluate(()=>{isLaunching=false;return launchContent('','Missing','shows');});
+  await expect(player.locator('#streaming-status')).toContainText('complete video URL');
+  assert.equal(await player.evaluate(()=>window.launched.length),before);
+  // Long descriptions remain readable with all six show controls present.
+  await player.evaluate(async()=>{
+    await WebStreaming.saveShowEpisodes('Original series',{'1':[{episode:1,title:'Pilot',url:'https://www.netflix.com/watch/1001'}]});
+    WebStreaming.saveProgress({show:'Renamed series',url:'https://www.netflix.com/watch/1002'});
+    await showModal({...allData.find(i=>i.id==='series'),description:'A long summary that should remain readable. '.repeat(80),trailer:'https://www.youtube.com/watch?v=trailer'});
+  });
+  await expect(player.locator('#item-modal .modal-action-btn')).toHaveCount(6);
+  for(const viewport of [{width:1440,height:1000},{width:390,height:700},{width:900,height:500}]) {
+    await player.setViewportSize(viewport);
+    const bounds=await player.locator('#item-modal').evaluate(el=>{
+      const body=el.querySelector('.modal-body'),desc=el.querySelector('#modal-desc'),actions=el.querySelector('.modal-actions');
+      return {body:body.getBoundingClientRect().toJSON(),description:desc.getBoundingClientRect().toJSON(),actions:actions.getBoundingClientRect().toJSON(),scrollHeight:body.scrollHeight,clientHeight:body.clientHeight};
+    });
+    assert.ok(bounds.body.height>40);assert.ok(bounds.description.width>bounds.body.width*0.8);
+    assert.ok(bounds.scrollHeight>bounds.clientHeight);assert.ok(bounds.actions.bottom<=viewport.height);
+    assert.ok(bounds.actions.top>=bounds.body.bottom-1);
+    for(const button of await player.locator('#item-modal .modal-action-btn').all())await expect(button).toBeInViewport();
+  }
+  await player.setViewportSize({width:1440,height:1000});
+  await player.screenshot({path:path.join(root,'artifacts','streaming-description-layout.png')});
+  assert.deepEqual(errors,[]);assert.deepEqual(native,[]);
+  console.log('Episode editor: conversion, add/remove, all-season validation, failed-save retention, discard, rename, fresh reads, badges/TTS, selected playback and single-link fallback passed. No server endpoints used.');
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>context?.close());

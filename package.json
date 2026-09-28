@@ -12,6 +12,7 @@
     "package:release": "python scripts/package-release.py",
     "test:browser": "node scripts/browser-check.cjs",
     "test:streaming": "node scripts/check-streaming.cjs",
+    "test:streaming-episodes": "node scripts/check-streaming-episodes.cjs",
     "test:connection": "node scripts/check-connection.cjs",
     "test:player": "node scripts/check-player.cjs",
     "test:fullscreen": "node scripts/check-player-fullscreen.cjs",

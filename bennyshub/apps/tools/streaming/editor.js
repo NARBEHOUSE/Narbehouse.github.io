@@ -61,6 +61,7 @@ function showConfirm(message) {
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
+    document.getElementById('service').innerHTML = serviceOptionsHtml('');
     setupForm();
     loadTMDBKey();
 });
@@ -563,31 +564,18 @@ async function handleBatchUpdate() {
     renderTable();
 }
 
-// LOGO MAPPING CONSTANTS - Just use text for now
-const SERVICE_LOGOS = {};
-const SERVICE_NAMES = ['Netflix','Disney+','Hulu','Prime Video','Max','Paramount+','PlutoTV','Tubi','Plex','YouTube'];
-
+// Choices stay available even if an icon fails to load.
+const SERVICE_LOGOS = StreamingServices.icons;
+const SERVICE_NAMES = StreamingServices.names;
+function serviceOptionsHtml(selected) {
+    const options = ['', ...SERVICE_NAMES, 'Other'];
+    if (selected && !options.includes(selected)) options.splice(-1, 0, selected);
+    return options.map(name => `<option value="${escapeHTML(name)}" ${name === selected ? 'selected' : ''}>${escapeHTML(name || 'Select...')}</option>`).join('');
+}
 function detectService(url) {
-    if (!url) return;
-    url = url.toLowerCase();
-
-    let detected = "";
-    if (url.includes('netflix')) detected = "Netflix";
-    else if (url.includes('disney')) detected = "Disney+";
-    else if (url.includes('hulu')) detected = "Hulu";
-    else if (url.includes('amazon') || url.includes('prime')) detected = "Prime Video";
-    else if (url.includes('youtube') || url.includes('youtu.be')) detected = "YouTube";
-    else if (url.includes('plex.tv') || url.includes('app.plex.tv')) detected = "Plex";
-    else if (url.includes('max.com') || url.includes('hbomax')) detected = "Max";
-    else if (url.includes('paramount')) detected = "Paramount+";
-    else if (url.includes('pluto')) detected = "PlutoTV";
-    else if (url.includes('tubitv.com')) detected = "Tubi";
-
+    const detected = StreamingServices.detect(url);
     if (detected) {
-        const sel = document.getElementById('service');
-        // Only override if current value is empty or not matching specific override intent
-        // But user asked for "auto detect", so we just set it.
-        sel.value = detected;
+        document.getElementById('service').value = detected;
         updateServiceIcon();
     }
 }
@@ -704,10 +692,6 @@ function renderTable() {
     filtered.forEach(item => {
         const tr = document.createElement('tr');
 
-        // Just show service name as text - no images
-        const serviceName = item.service || '-';
-        let serviceDisplay = `<span style="color:#aaa; font-size:12px;">${escapeHTML(serviceName)}</span>`;
-
         tr.innerHTML = `
             <td style="text-align:center;">
                 <input type="checkbox" class="item-checkbox" value="${item.id}">
@@ -716,7 +700,7 @@ function renderTable() {
                 <div style="font-weight:bold;">${escapeHTML(item.title)}</div>
                 <div style="font-size:0.8em; color:#888;">${escapeHTML(item.director || 'No Director')}</div>
             </td>
-            <td>${serviceDisplay}</td>
+            <td></td>
             <td>${escapeHTML(item.year || '')}</td>
             <td>${escapeHTML(item.genre || '')}</td>
             <td>
@@ -724,6 +708,13 @@ function renderTable() {
                 <button class="btn btn-danger" onclick="deleteItem('${item.id}')">Delete</button>
             </td>
         `;
+        tr.querySelector('td:nth-child(3)').replaceChildren(StreamingServices.indicator(item));
+        const episodesButton = document.createElement('button');
+        episodesButton.className = 'btn btn-primary episodes-button';
+        episodesButton.textContent = 'Seasons & Episodes';
+        episodesButton.hidden = item.type !== 'shows';
+        episodesButton.onclick = () => openEpisodeEditor(item.id);
+        tr.lastElementChild.appendChild(episodesButton);
         tbody.appendChild(tr);
     });
 }
@@ -814,9 +805,7 @@ function renderInlineEditor(item, row) {
                 <div class="form-group"><label>URL</label><input type="text" id="url-${sid}" value="${escapeHTML(item.url)}"></div>
                 <div class="form-group"><label>Service</label>
                     <select id="service-${sid}">
-                         <option value="">Select...</option>
-                         ${SERVICE_NAMES.map(k => `<option value="${k}" ${item.service === k ? 'selected' : ''}>${k}</option>`).join('')}
-                         <option value="Other" ${!SERVICE_NAMES.includes(item.service) && item.service ? 'selected' : ''}>Other</option>
+                         ${serviceOptionsHtml(item.service)}
                     </select>
                 </div>
                 <div class="form-group"><label>Service Icon URL</label><input type="text" id="service_icon-${sid}" value="${escapeHTML(item.service_icon || '')}"></div>
@@ -1084,20 +1073,7 @@ async function autoFillInline(sid) {
 
 // Replaced global detectService with pure function
 function detectServiceType(url) {
-    if (!url) return null;
-    url = url.toLowerCase();
-
-    if (url.includes('netflix')) return "Netflix";
-    if (url.includes('disney')) return "Disney+";
-    if (url.includes('hulu')) return "Hulu";
-    if (url.includes('amazon') || url.includes('prime')) return "Prime Video";
-    if (url.includes('youtube') || url.includes('youtu.be')) return "YouTube";
-    if (url.includes('plex.tv') || url.includes('app.plex.tv')) return "Plex";
-    if (url.includes('max.com') || url.includes('hbomax')) return "Max";
-    if (url.includes('paramount')) return "Paramount+";
-    if (url.includes('pluto')) return "PlutoTV";
-    if (url.includes('tubitv.com')) return "Tubi";
-    return null;
+    return StreamingServices.detect(url) || null;
 }
 
 async function saveInlineItem(id) {
@@ -1128,6 +1104,7 @@ async function saveInlineItem(id) {
     if(conflict){showToast('This link is already in your library: '+conflict.title,'error');return;}
     const latestIndex=latest.findIndex(item=>item.id===id);
     if(latestIndex<0){showToast('This title was removed in another tab. Reload the editor.','error');return;}
+    if (latest[latestIndex].type === 'shows' || latest[latestIndex].episode_key) newItem.episode_key = latest[latestIndex].episode_key || latest[latestIndex].title;
     allData=latest;allData[latestIndex] = newItem;
 
     // Use silent save - no re-render, no alert
@@ -1139,6 +1116,7 @@ async function saveInlineItem(id) {
     if (checkbox) {
         const row = checkbox.closest('tr');
         if (row) {
+            row.querySelector('.episodes-button').hidden = newItem.type !== 'shows';
             // Update the title/director cell
             const titleCell = row.querySelector('td:nth-child(2)');
             if (titleCell) {
@@ -1150,12 +1128,7 @@ async function saveInlineItem(id) {
             // Update service cell with logo
             const serviceCell = row.querySelector('td:nth-child(3)');
             if (serviceCell) {
-                const iconUrl = newItem.service_icon || SERVICE_LOGOS[newItem.service] || '';
-                if (iconUrl) {
-                    serviceCell.innerHTML = `<img src="${escapeHTML(iconUrl)}" style="height:30px; border-radius:4px;" title="${escapeHTML(newItem.service || '')}">`;
-                } else {
-                    serviceCell.textContent = newItem.service || '';
-                }
+                serviceCell.replaceChildren(StreamingServices.indicator(newItem));
             }
             // Update year cell
             const yearCell = row.querySelector('td:nth-child(4)');

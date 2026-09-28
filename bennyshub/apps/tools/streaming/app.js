@@ -726,14 +726,8 @@ function createItemCard(item, slotIdx) {
     t.textContent = item.title;
     content.appendChild(t);
 
-    const emblemUrl = getServiceEmblem(item);
-    if (emblemUrl) {
-        const emblem = document.createElement('div');
-        emblem.className = 'service-emblem';
-        emblem.style.backgroundImage = `url('${emblemUrl}')`;
-        emblem.title = item.service || 'Streaming Service';
-        card.appendChild(emblem);
-    }
+    card.dataset.announcement = `${item.title}. ${StreamingServices.nameFor(item)}`;
+    card.appendChild(StreamingServices.indicator(item, 'service-badge'));
 
     card.appendChild(img);
     card.appendChild(content);
@@ -804,7 +798,7 @@ function highlightItem(localIdx, direction = 1) {
         // Speak logic
         const titleEl = el.querySelector('.card-title');
         if (titleEl) {
-            speak(titleEl.textContent);
+            speak(el.dataset.announcement || titleEl.textContent);
         } else {
             speak(el.textContent || "");
         }
@@ -852,9 +846,11 @@ function openSearch() {
 // Modal
 let currentModalItem = null;
 async function showModal(item) {
+    WebStreaming.status('');
     currentModalItem = item;
     document.getElementById('modal-title').textContent = item.title;
     document.getElementById('modal-meta').textContent = `${item.year || ''} ${item.director ? ' • ' + item.director : ''}`;
+    document.getElementById('modal-service').replaceChildren('Plays on ', StreamingServices.indicator(item));
     document.getElementById('modal-desc').textContent = item.description || "No description available.";
     document.getElementById('modal-img').src = item.image || '';
 
@@ -868,12 +864,16 @@ async function showModal(item) {
     let epsData = {};
 
     try {
-        epsData = await WebStreaming.getEpisodes(item.title);
-        hasEpisodes = (Object.keys(epsData).length > 0);
+        epsData = item.type === 'shows' ? await WebStreaming.getEpisodes(item.episode_key || item.title) : {};
+        if (currentModalItem !== item) return;
+        hasEpisodes = Object.values(epsData).some(episodes => episodes.length > 0);
     } catch(e) {
         console.error('Error loading episodes:', e);
+        WebStreaming.status('Could not load episodes: ' + e.message);
     }
 
+    if (currentModalItem !== item) return;
+    currentEpisodesRaw = epsData;
     actionContainer.innerHTML = ''; // Clear loading
 
     // Check if we have a saved URL in last_watched for this title.
@@ -899,9 +899,10 @@ async function showModal(item) {
         // Pick Episode Button
         const btnPick = createCustomModalBtn("Pick Episode", () => {
              closeModal(true);
+             currentModalItem = item;
              openSeasonSelector(item.title, epsData);
         });
-        actionContainer.appendChild(btnPick);
+        if (Object.entries(epsData).some(([season, episodes]) => Number(season) > 0 && episodes.length)) actionContainer.appendChild(btnPick);
     } else if (lastWatched && lastWatched.url) {
         // No episodes in episodes.json, but we have a saved URL - use it!
         const btnCont = createCustomModalBtn("Continue", () => {
@@ -920,7 +921,7 @@ async function showModal(item) {
 
     // 2. Info
     const btnInfo = createCustomModalBtn("Read Info", () => {
-        const text = `${item.title}. ${item.year || ''}. ${item.description || ''}`;
+        const text = `${item.title}. Plays on ${StreamingServices.nameFor(item)}. ${item.year || ''}. ${item.description || ''}`;
         speak(text);
     });
     actionContainer.appendChild(btnInfo);
@@ -950,7 +951,7 @@ async function showModal(item) {
     currentState = STATE.MODAL;
     modalIndex = -1;
     highlightModal(-1);
-    speak(item.title);
+    speak(`${item.title}. ${StreamingServices.nameFor(item)}`);
 }
 
 function createCustomModalBtn(text, onClick, primary=false, danger=false) {
@@ -1029,6 +1030,12 @@ async function launchContent(url, title, type="movies", season=null, episode=nul
     // Prevent double launching
     if (isLaunching) return;
 
+    try { WebStreaming.playbackURL(url); } catch (error) {
+        WebStreaming.status(error.message);
+        speak('This video needs a valid playback link in the editor.');
+        return;
+    }
+
     // Set launching flag
     isLaunching = true;
     setTimeout(() => { isLaunching = false; }, 2500);
@@ -1100,11 +1107,9 @@ async function continueShow(item, epsData) {
              launchContent(last.url, item.title, "shows", last.season, last.episode);
         } else {
             // Find first episode
-            const seasons = Object.keys(epsData).map(Number).sort((a,b)=>a-b);
-            if(seasons.length > 0 && epsData[seasons[0]].length > 0) {
-                 const sNum = seasons[0];
-                 const firstEp = epsData[sNum][0];
-                 launchContent(firstEp.url, item.title, "shows", sNum, firstEp.episode);
+            const first = getFirstEpisode(epsData);
+            if (first) {
+                 launchContent(first.ep.url, item.title, "shows", first.season, first.ep.episode);
             } else {
                 speak("No episodes found.");
             }
@@ -1173,7 +1178,7 @@ async function openSeasonSelector(title, episodesData) {
     // Sort seasons, and Filter out Season 0 (Specials/Extras often used in Plex)
     currentSeasonsList = Object.keys(currentEpisodesRaw)
         .map(Number)
-        .filter(n => n > 0)
+        .filter(n => n > 0 && currentEpisodesRaw[n]?.length)
         .sort((a,b) => a-b);
 
     // Fallback: If ONLY season 0 exists (e.g. a movie categorized as show?), keep it?
@@ -2157,32 +2162,6 @@ function highlightEditorModal(idx) {
 function selectEditorModal() {
     const btns = document.querySelectorAll('#editor-modal .modal-action-btn');
     if(btns[editorModalIndex]) btns[editorModalIndex].click();
-}
-
-// --- SERVICE EMBLEM HELPER ---
-function getServiceEmblem(item) {
-    if (item.service) { // Prioritize new map always due to broken icons in JSON
-        const key = item.service.toLowerCase();
-        // Fallback map - Synced with editor.js
-        const Map = {
-            'disney': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/1024px-Disney%2B_logo.svg.png',
-            'netflix': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/1024px-Netflix_2015_logo.svg.png',
-            'hulu': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Hulu_Logo.svg/1024px-Hulu_Logo.svg.png',
-            'youtube': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
-            'prime': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/1024px-Amazon_Prime_Video_logo.svg.png',
-            'plex': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Plex_logo_2022.svg/800px-Plex_logo_2022.svg.png',
-            'max': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/1024px-Max_logo.svg.png',
-            'paramount': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/1024px-Paramount_Plus.svg.png',
-            'pluto': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Pluto_TV_logo_2024.svg/1024px-Pluto_TV_logo_2024.svg.png'
-        };
-        // Partial match
-        for (let k in Map) {
-            if (key.includes(k)) return Map[k];
-        }
-    }
-    // Only return item.service_icon if not found in map (or if map logic skipped)
-    if (item.service_icon) return item.service_icon;
-    return null;
 }
 
 function clearSearchHistory() {

@@ -9,6 +9,7 @@
     <script src="../../../shared/tool-gate.js"></script>
     <script src="../../../shared/web-data.js"></script>
     <script src="playback-links.js"></script>
+    <script src="services.js"></script>
     <script src="web-streaming.js"></script>
 </head>
 <body>
@@ -119,14 +120,15 @@
                 <div class="modal-info">
                     <h2 id="modal-title">Movie Title</h2>
                     <p id="modal-meta">2024 • Director Name</p>
-                    <p id="modal-desc">Description goes here...</p>
-                    <div class="modal-actions">
-                        <button class="modal-action-btn primary" id="btn-play" onclick="checkAndPlay(currentModalItem)">Play</button>
-                        <button class="modal-action-btn" id="btn-info" onclick="speak(`${currentModalItem.title}. Released in ${currentModalItem.year || 'unknown year'}.`)">Read Info</button>
-                        <button class="modal-action-btn" id="btn-trailer" onclick="playTrailer(currentModalItem.trailer)">View Trailer</button>
-                        <button class="modal-action-btn danger" id="btn-close-modal" onclick="closeModal()">Close</button>
-                    </div>
+                    <p id="modal-service"></p>
                 </div>
+                <p id="modal-desc">Description goes here...</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-action-btn primary" id="btn-play" onclick="checkAndPlay(currentModalItem)">Play</button>
+                <button class="modal-action-btn" id="btn-info" onclick="speak(`${currentModalItem.title}. Released in ${currentModalItem.year || 'unknown year'}.`)">Read Info</button>
+                <button class="modal-action-btn" id="btn-trailer" onclick="playTrailer(currentModalItem.trailer)">View Trailer</button>
+                <button class="modal-action-btn danger" id="btn-close-modal" onclick="closeModal()">Close</button>
             </div>
         </div>
     </div>

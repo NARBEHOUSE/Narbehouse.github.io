@@ -12,6 +12,7 @@
       // Playback is independently restricted by the extension's provider policy.
       if (typeof result.id !== 'string' || !/^[\w-]{1,100}$/.test(result.id) || ids.has(result.id)) result.id = crypto.randomUUID();
       ids.add(result.id);
+      if (result.episode_key != null && (typeof result.episode_key !== 'string' || !result.episode_key.trim() || result.episode_key.length > 100000)) throw Error('Invalid episode association.');
       for (const field of ['title','url','type','genre','director','actors','year','image','description','service','service_icon','trailer']) {
         result[field] = String(result[field] ?? '');
         if (result[field].length > 100000) throw Error('Catalog field is too large.');
@@ -60,6 +61,7 @@
   }
   function playbackURL(value) {
     let u;try{u=new URL(starterPlaybackURL(value));}catch{throw Error('This title needs a complete video URL in the editor.');}
+    if (!['https:','http:'].includes(u.protocol) || u.username || u.password) throw Error('Use a complete http/https playback URL without embedded credentials.');
     if (u.protocol==='https:' && u.hostname==='youtu.be') {
       const video=u.pathname.slice(1);if(!/^[\w-]+$/.test(video))throw Error('Invalid YouTube link.');
       const params=u.searchParams;
@@ -69,7 +71,7 @@
     return u.href;
   }
   window.WebStreaming = {
-    library,episodes,status,imageURL,
+    library,episodes,status,imageURL,playbackURL,
     escapeHTML: value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
     async getData() { const saved=get('catalog',null);return library(saved ?? (await seeds()).data); },
     saveData(value) { const data=library(value);set('catalog',data);return data; },
@@ -91,6 +93,27 @@
     async getEpisodes(title) {const data=get('episodes',null) ?? (await seeds()).episodes;return episodes(data)[key(title)] || {};},
     async allEpisodes() {return episodes(get('episodes',null) ?? (await seeds()).episodes);},
     saveEpisodes(value) {const clean=episodes(value);set('episodes',clean);return clean;},
+    async saveShowEpisodes(show, seasons) {
+      if (typeof show !== 'string' || !show.trim() || !plain(seasons)) throw Error('Choose a show and seasons.');
+      const clean = Object.create(null);
+      for (const [season, items] of Object.entries(seasons)) {
+        if (!/^(0|[1-9]\d{0,3})$/.test(season) || !Array.isArray(items)) throw Error('Use whole season numbers from 0 to 9999.');
+        const seen = new Set();
+        const rows = items.map(ep => {
+          if (!plain(ep) || !Number.isSafeInteger(ep.episode) || ep.episode < 0 || seen.has(ep.episode) || typeof ep.title !== 'string' || !ep.title.trim() || typeof ep.url !== 'string') throw Error('Each episode needs a unique whole number, title, and playback URL.');
+          playbackURL(ep.url);
+          seen.add(ep.episode);
+          return {...ep, season: Number(season), title: ep.title.trim(), url: ep.url.trim()};
+        }).sort((a,b) => a.episode - b.episode);
+        if (rows.length) clean[season] = rows;
+      }
+      const fallback = await this.allEpisodes();
+      // Re-read after loading, so saving this show retains changes to other shows.
+      const catalog = episodes(get('episodes', fallback));
+      catalog[key(show)] = clean;
+      this.saveEpisodes(catalog); // One atomic localStorage write; failed saves leave data intact.
+      return clean;
+    },
     getLastWatched(title) {const data=get('lastWatched',{});return title ? data[key(title)] || null : data;},
     saveProgress({show,url,season,episode}) {const data=get('lastWatched',{});Object.defineProperty(data,key(show),{value:{url,season:season??-1,episode:episode??-1,timestamp:Date.now()},enumerable:true,writable:true,configurable:true});set('lastWatched',data);},
     resetProgress(title) {const data=get('lastWatched',{}),entry=data[key(title)];if(entry){delete entry.url;entry.season=-1;entry.episode=-1;set('lastWatched',data);}if(key(get('activePlayback',{}).show)===key(title))BennyData.remove('streaming.activePlayback');},

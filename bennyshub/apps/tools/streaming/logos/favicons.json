@@ -1,0 +1,72 @@
+{
+  "Netflix": {
+    "path": "logos/netflix-com.ico",
+    "source": "https://www.netflix.com/favicon.ico",
+    "domain": "www.netflix.com"
+  },
+  "Disney+": {
+    "path": "logos/disneyplus-com.ico",
+    "source": "https://www.disneyplus.com/favicon.ico",
+    "domain": "www.disneyplus.com"
+  },
+  "Hulu": {
+    "path": "logos/hulu-com.png",
+    "source": "https://www.hulu.com/favicon.ico",
+    "domain": "www.hulu.com"
+  },
+  "Prime Video": {
+    "path": "logos/primevideo-com.ico",
+    "source": "https://www.primevideo.com/favicon.ico",
+    "domain": "www.primevideo.com"
+  },
+  "Max": {
+    "path": "logos/hbomax-com.ico",
+    "source": "https://www.hbomax.com/favicon.ico",
+    "domain": "www.hbomax.com"
+  },
+  "Paramount+": {
+    "path": "logos/paramountplus-com.ico",
+    "source": "https://www.paramountplus.com/favicon.ico",
+    "domain": "www.paramountplus.com"
+  },
+  "PlutoTV": {
+    "path": "logos/pluto-tv.ico",
+    "source": "https://pluto.tv/favicon.ico",
+    "domain": "pluto.tv"
+  },
+  "Plex": {
+    "path": "logos/plex-tv.png",
+    "source": "https://www.google.com/s2/favicons?sz=64&domain=www.plex.tv",
+    "domain": "www.plex.tv"
+  },
+  "YouTube": {
+    "path": "logos/youtube-com.ico",
+    "source": "https://www.youtube.com/favicon.ico",
+    "domain": "www.youtube.com"
+  },
+  "Apple TV+": {
+    "path": "logos/tv-apple-com.png",
+    "source": "https://tv.apple.com/favicon.ico",
+    "domain": "tv.apple.com"
+  },
+  "Peacock": {
+    "path": "logos/peacocktv-com.ico",
+    "source": "https://www.peacocktv.com/favicon.ico",
+    "domain": "www.peacocktv.com"
+  },
+  "Tubi": {
+    "path": "logos/tubitv-com.png",
+    "source": "https://tubitv.com/favicon.ico",
+    "domain": "tubitv.com"
+  },
+  "Crunchyroll": {
+    "path": "logos/crunchyroll-com.png",
+    "source": "https://www.google.com/s2/favicons?sz=64&domain=www.crunchyroll.com",
+    "domain": "www.crunchyroll.com"
+  },
+  "The Roku Channel": {
+    "path": "logos/therokuchannel-roku-com.ico",
+    "source": "https://therokuchannel.roku.com/favicon.ico",
+    "domain": "therokuchannel.roku.com"
+  }
+}
