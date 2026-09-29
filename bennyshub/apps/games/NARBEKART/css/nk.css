@@ -1,0 +1,864 @@
+/*
+ * NARBE Racer — every style the page needs: the shell, the loading screen,
+ * the menu card, the Pause button and the in-race HUD.
+ *
+ * The card is Race Tracks' paper card (thick ink outline, chunky chips, a focus
+ * you cannot miss: fill + outline + lift + scale) with a racing identity on
+ * top: a checkered banner, heavy italic lettering and a vivid palette.
+ *
+ * Sizes: the card works in rem, and the root font size follows the viewport,
+ * so the same card fits a 1920x1008 hub view, a 1368x840 tablet and 1024x768.
+ * The HUD works in a per-view unit, --u (set by hud.js; 1.0 on 1600x900), so a
+ * 960-wide half of a split screen gets a proportionally smaller HUD.
+ */
+
+:root {
+  --ink: #1d1b2e;
+  --ink2: #57526b;
+  --paper: #fff8ec;
+  --paper2: #ffe8c2;
+  --chip: #fffdf7;
+  --red: #e8304a;
+  --red-d: #a8172f;
+  --orange: #ff6a1f;
+  --gold: #ffc233;
+  --gold-d: #e39a00;
+  --sky: #3d9ee0;
+  --blue: #2563d9;
+  --green: #1f9d45;
+  --green-l: #5bd26b;
+  --purple: #8a4de8;
+  --p1: #ffc233;
+  --p2: #3d9ee0;
+  --head: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Trebuchet MS", "Segoe UI", Verdana, system-ui, sans-serif;
+  --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+html { font-size: clamp(14px, min(1.22vw, 2.05vh), 22px); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--ink);
+  font-family: var(--body);
+  color: var(--ink);
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app { position: fixed; inset: 0; overflow: hidden; }
+
+/* touch-action:none so a touch on the road never scrolls or zooms the page */
+#canvasWrap { position: absolute; inset: 0; z-index: 0; touch-action: none; }
+#canvasWrap canvas { display: block; width: 100%; height: 100%; }
+
+kbd {
+  display: inline-block;
+  font: 900 .82em/1.15 var(--body);
+  padding: .04em .42em .02em;
+  border: 2px solid var(--ink); border-bottom-width: 4px;
+  border-radius: 7px;
+  background: #fff; color: var(--ink);
+  vertical-align: .08em;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+#loading {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2.2rem;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(232,48,74,.35), transparent 70%),
+    linear-gradient(170deg, #2b2356 0%, #1d1b2e 70%);
+  color: #fff;
+  font: 800 1.4rem var(--body);
+}
+#loading::before, #loading::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2.4rem;
+  background: conic-gradient(var(--ink) 25%, #fff 0 50%, var(--ink) 0 75%, #fff 0) 0 0 / 2.4rem 2.4rem;
+  opacity: .9;
+}
+#loading::before { top: 0; border-bottom: 5px solid var(--red); }
+#loading::after { bottom: 0; border-top: 5px solid var(--red); }
+#loading .nkLogo { margin: 0; }
+#loading .nkLoadText { letter-spacing: .04em; opacity: .9; }
+/* A tyre, spinning. */
+#loading .nkTyre {
+  width: 5.2rem; height: 5.2rem; border-radius: 50%;
+  background:
+    radial-gradient(circle, #d9dde6 0 22%, var(--ink) 23% 30%, #8d93a3 31% 44%, transparent 45%),
+    repeating-conic-gradient(#2c2a40 0 12deg, #121120 12deg 24deg);
+  border: 5px solid #000;
+  box-shadow: 0 0 0 4px #fff, 0 8px 0 rgba(0,0,0,.4);
+  animation: nkSpin .9s linear infinite;
+}
+@keyframes nkSpin { to { transform: rotate(360deg); } }
+
+/* ── The logo ────────────────────────────────────────────────────────────── */
+.nkLogo {
+  position: relative; display: inline-flex; flex-direction: column; align-items: center;
+  margin: -.2rem auto .9rem;
+  padding: 0 3.4rem;
+  transform: skewX(-9deg);
+}
+.nkLogoTop {
+  font: italic 900 1.7rem/1 var(--head);
+  letter-spacing: .55em; text-indent: .55em;
+  color: #fff;
+  background: linear-gradient(180deg, #3b7cf0, var(--blue));
+  border: 4px solid var(--ink); border-radius: 12px;
+  padding: .28rem .6rem .24rem;
+  box-shadow: 0 5px 0 var(--ink);
+  position: relative; z-index: 1;
+}
+.nkLogoMain {
+  font: italic 900 5.4rem/.9 var(--head);
+  letter-spacing: .02em;
+  color: var(--red);
+  -webkit-text-stroke: .55rem var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 .5rem 0 var(--ink), 0 .9rem 0 rgba(29,27,46,.25);
+  margin-top: .05rem;
+}
+.nkLogoStripe {
+  width: 118%; height: .55rem; margin-top: .55rem;
+  background: linear-gradient(90deg, transparent, var(--gold) 12%, var(--gold) 88%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 .45rem 0 -.1rem var(--red);
+}
+/* Checkered flags either side of the name. */
+.nkLogoFlag {
+  position: absolute; top: 2.9rem; width: 2.5rem; height: 2rem;
+  background: conic-gradient(var(--ink) 25%, #fff 0 50%, var(--ink) 0 75%, #fff 0) 0 0 / 1rem 1rem;
+  border: 3px solid var(--ink); border-radius: 4px;
+  box-shadow: 0 4px 0 rgba(29,27,46,.35);
+}
+.nkLogoFlag.l { left: 0; transform: rotate(-14deg); }
+.nkLogoFlag.r { right: 0; transform: rotate(14deg); }
+
+/* ── Overlay and card ────────────────────────────────────────────────────── */
+.nkOverlay {
+  position: absolute; inset: 0; z-index: 40;
+  display: none; align-items: center; justify-content: center;
+  padding: 2.4vh 3vw;
+  /* A light touch: the card carries its own contrast, and a heavy scrim makes
+     the sunny world behind the menus look gloomy. */
+  background: radial-gradient(circle at 50% 46%, rgba(29,27,46,.04), rgba(29,27,46,.42));
+}
+.nkOverlay.on { display: flex; }
+/* Racer, kart and trophy: the card moves aside so the 3D turntable shows. */
+.nkOverlay.showcase { justify-content: flex-start; padding-left: 3.5vw; }
+
+.nkCard {
+  position: relative;
+  width: min(44rem, 92vw);
+  max-height: 100%;
+  padding: 2.75rem 2rem 1.15rem;
+  text-align: center;
+  background:
+    repeating-linear-gradient(102deg, rgba(180,150,110,.05) 0 2px, transparent 2px 7px),
+    linear-gradient(172deg, var(--paper) 0%, var(--paper2) 100%);
+  border: 5px solid var(--ink);
+  border-radius: 30px;
+  box-shadow: 0 10px 0 rgba(29,27,46,.4), 0 28px 56px rgba(0,0,0,.45);
+}
+/* A new card slides up into place. Only opacity and `translate` move, never
+   the size, so the fitting pass measures the real card. */
+.nkCard.enter { animation: nkCardIn .15s ease-out; }
+@keyframes nkCardIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+.nkCard.size-wide { width: min(64rem, 95vw); }
+.nkCard.size-showcase { width: min(40rem, 50vw); }
+.nkCard.title { padding-top: 2.4rem; }
+
+/* The checkered banner across the top, with a red racing stripe under it. */
+.nkCardBand {
+  position: absolute; left: 0; right: 0; top: 0; height: 1.5rem;
+  border-radius: 25px 25px 0 0;
+  background: conic-gradient(var(--ink) 25%, #fff 0 50%, var(--ink) 0 75%, #fff 0) 0 0 / 1.5rem 1.5rem;
+  border-bottom: 4px solid var(--ink);
+}
+.nkCardBand::after {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(100% + 4px); height: .42rem;
+  background: linear-gradient(90deg, var(--red) 0 70%, var(--gold) 70% 82%, var(--red) 82%);
+  border-bottom: 3px solid var(--ink);
+}
+
+/* A player's own pick screen wears that player's colour. */
+.nkCard.owned {
+  box-shadow: 0 0 0 7px var(--pc), 0 0 0 11px var(--ink), 0 16px 0 rgba(29,27,46,.4), 0 32px 60px rgba(0,0,0,.45);
+}
+.nkPlayerTag { position: absolute; top: -1.35rem; right: 1.7rem; z-index: 3; }
+.nkPlayerTag:empty { display: none; }
+.pt {
+  display: inline-block;
+  font: italic 900 1.15rem/1 var(--head);
+  padding: .35rem 1rem .3rem;
+  border: 4px solid var(--ink); border-radius: 999px;
+  box-shadow: 0 4px 0 rgba(29,27,46,.35);
+  white-space: nowrap;
+}
+.pt.p1 { background: var(--p1); color: var(--ink); }
+.pt.p2 { background: var(--p2); color: #fff; text-shadow: 0 2px 0 var(--ink); }
+
+.nkCardArt:empty { display: none; }
+.nkArt {
+  width: 4.5rem; height: 4.5rem;
+  margin: -.35rem auto .35rem;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #ffe8a3 70%, #ffd166 100%);
+  border: 4px solid var(--ink);
+  box-shadow: 0 5px 0 rgba(29,27,46,.3);
+}
+.nkArt span { font: 2.6rem/1 var(--emoji); }
+.nkArt.pod1, .nkArt.gold { background: radial-gradient(circle at 35% 30%, #fff 0%, #ffd84d 55%, #e39a00 100%); }
+.nkArt.pod2, .nkArt.silver { background: radial-gradient(circle at 35% 30%, #fff 0%, #dfe6ee 55%, #9aa7b6 100%); }
+.nkArt.pod3, .nkArt.bronze { background: radial-gradient(circle at 35% 30%, #fff 0%, #f6b67a 55%, #c46a22 100%); }
+.nkArt.trophy { width: 6.2rem; height: 6.2rem; }
+.nkArt.trophy span { font-size: 3.7rem; }
+.nkArt.trophy.gold { box-shadow: 0 5px 0 rgba(29,27,46,.3), 0 0 44px 12px rgba(255,194,51,.85); }
+.nkArt.trophy.silver { box-shadow: 0 5px 0 rgba(29,27,46,.3), 0 0 40px 10px rgba(210,225,240,.9); }
+.nkArt.trophy.bronze { box-shadow: 0 5px 0 rgba(29,27,46,.3), 0 0 40px 10px rgba(240,150,80,.75); }
+
+.nkCardTitle {
+  font: italic 900 2.55rem/1.08 var(--head);
+  color: var(--red);
+  -webkit-text-stroke: .32rem var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 .3rem 0 var(--ink);
+  letter-spacing: .01em;
+  margin-bottom: .45rem;
+  transform: skewX(-6deg);
+}
+.nkCardTitle:empty { display: none; }
+/* A small label over a title ("How to Play · 1 of 3"): plain ink, no stroke. */
+.nkCardTitle .kicker {
+  display: block; margin-bottom: .3rem;
+  font: 900 .9rem/1 var(--body); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink2); -webkit-text-stroke: 0; text-shadow: none;
+}
+.nkCardSub {
+  font: 700 1.1rem/1.45 var(--body);
+  color: var(--ink2);
+  margin: 0 auto .35rem;
+  max-width: 40rem;
+}
+.nkCardSub:empty { display: none; }
+.nkCardSub b { color: var(--ink); }
+.nkCardSub p { margin: 0 0 .55rem; }
+.nkCard.howto .nkCardSub { font-size: 1.28rem; line-height: 1.5; color: var(--ink); text-align: left; max-width: 38rem; }
+.nkCard.howto .nkCardSub b { color: var(--red-d); }
+.nkCardSub .bigTime {
+  display: inline-block; margin: .2rem 0;
+  font: italic 900 3.4rem/1 var(--head);
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.nkCardSub .duo { display: inline-flex; gap: .8rem; margin: .25rem 0; }
+.nkCardSub .duo .pt { font-size: 1.5rem; }
+.nkCardSub .new { color: var(--green); }
+.nkCardStats:empty { display: none; }
+
+/* ── Menu items ──────────────────────────────────────────────────────────── */
+.nkMenu { display: flex; flex-direction: column; gap: .72rem; margin-top: .85rem; text-align: left; }
+.nkMenu.grid2, .nkMenu.grid3, .nkMenu.cols2 { display: grid; gap: .65rem .8rem; }
+.nkMenu.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nkMenu.grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem .6rem; }
+.nkMenu.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column; gap: .55rem 1.1rem; }
+/* A row of actions under a results board: as many equal columns as fit. */
+.nkMenu.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.6rem, 1fr)); gap: .6rem; }
+.nkMenu.grid2 .wide, .nkMenu.grid3 .wide { grid-column: 1 / -1; }
+
+.nkItem {
+  position: relative;
+  display: flex; align-items: center; gap: .65rem;
+  min-height: max(64px, 3.35rem);
+  padding: .5rem 1rem .5rem .8rem;
+  background: var(--chip);
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  font: 800 1.3rem/1.12 var(--body);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(29,27,46,.28);
+  transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+}
+.nkItem .ic { flex: none; width: 2.4rem; text-align: center; font: 1.95rem/1 var(--emoji); }
+.nkItem .lb { display: flex; flex-direction: column; min-width: 0; }
+.nkItem .nm { overflow: hidden; text-overflow: ellipsis; }
+.nkItem .nm .cc { font: italic 900 .8em var(--head); color: var(--red-d); margin-left: .2em; }
+.nkItem .lb small { font: 700 .8rem/1.25 var(--body); color: var(--ink2); margin-top: .14rem; }
+.nkItem .val {
+  margin-left: auto; flex: none;
+  padding: .22rem .75rem;
+  border: 3px solid var(--ink); border-radius: 999px;
+  background: #fff;
+  font: 800 1rem/1.1 var(--body);
+  white-space: nowrap;
+}
+.nkItem .badge { margin-left: auto; flex: none; font: 1.7rem/1 var(--emoji); }
+.nkItem .lock { margin-left: auto; flex: none; font: 1.15rem/1 var(--emoji); }
+.nkItem:hover { background: #fff1d2; }
+
+/* Racers: the face sits on a disc of the racer's own colour. */
+.nkItem[style*="--accent"] .ic {
+  width: 2.5rem; height: 2.5rem; line-height: 2.1rem; font-size: 1.55rem;
+  background: var(--accent);
+  border: 3px solid var(--ink); border-radius: 50%;
+}
+.nkMenu.grid3 .nkItem { min-height: max(64px, 3.05rem); padding: .35rem .6rem; font-size: 1.12rem; gap: .5rem; }
+.nkMenu.row .nkItem { justify-content: center; padding-left: .55rem; padding-right: .65rem; font-size: 1.15rem; gap: .4rem; }
+.nkMenu.row .nkItem .ic { width: auto; font-size: 1.5rem; }
+.nkMenu.row .nkItem .nm { white-space: nowrap; }
+/* Vehicles: the emoji are wide and flat, so they get more room. */
+.nkItem.bigic .ic { width: 3rem; font-size: 2.45rem; }
+.nkItem.back { justify-content: center; }
+.nkItem.back .ic { width: auto; }
+/* The suggested next step: a warm chip with a red corner fold. */
+.nkItem.primary:not(.focused):not(.locked) { background: linear-gradient(180deg, #fff9e3, #ffefbf); }
+.nkItem.primary::after {
+  content: ''; position: absolute; top: -1px; right: -1px; width: 1.35rem; height: 1.35rem;
+  background: var(--red);
+  border-top-right-radius: 14px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+/* Focus has to be unmistakable at a glance: fill, a white-and-ink double
+   outline, a lift and a grow, plus a checkered flag at the leading edge. */
+.nkItem.focused {
+  z-index: 2;
+  background: linear-gradient(180deg, #ffe46b 0%, #ffbf1f 100%);
+  transform: translateY(-3px) scale(1.045);
+  box-shadow: 0 0 0 4px #fff, 0 0 0 9px var(--ink), 0 13px 0 rgba(29,27,46,.4), 0 0 38px 12px rgba(255,194,51,.75);
+}
+.nkItem.focused::before {
+  content: ''; position: absolute; left: -4px; top: -4px; bottom: -4px; width: .8rem;
+  border-radius: 18px 0 0 18px;
+  background: conic-gradient(var(--ink) 25%, #fff 0 50%, var(--ink) 0 75%, #fff 0) 0 0 / .8rem .8rem;
+  border: 4px solid var(--ink); border-right-width: 3px;
+}
+.nkItem.focused .lb small { color: var(--ink); }
+.nkItem.focused .val { background: var(--ink); color: var(--gold); }
+.nkItem.armed .val { background: var(--red); color: #fff; }
+
+.nkItem.locked {
+  cursor: not-allowed;
+  opacity: .55;
+  background: #ece3d1;
+  border-style: dashed;
+  box-shadow: none;
+}
+.nkItem.locked:hover { background: #ece3d1; }
+.nkItem.header {
+  min-height: 0; padding: .4rem .3rem .05rem;
+  background: none; border: none; box-shadow: none; cursor: default;
+  font: italic 900 1.12rem/1.1 var(--head);
+  color: var(--ink);
+  border-bottom: 3px dashed rgba(29,27,46,.25); border-radius: 0;
+}
+.nkItem.header .ic { font-size: 1.35rem; width: auto; }
+.nkItem.header .lk { font: 700 .85rem var(--body); margin-left: .4rem; }
+
+.nkHint {
+  margin-top: 1.05rem;
+  font: 700 .98rem/1.3 var(--body);
+  color: var(--ink2);
+}
+
+/* Tight: the second step of fitting a tall card, before scaling it. */
+.nkCard.tight { padding-top: 2.3rem; padding-bottom: .7rem; }
+.nkCard.tight .nkArt { width: 3.4rem; height: 3.4rem; }
+.nkCard.tight .nkArt span { font-size: 2rem; }
+.nkCard.tight .nkCardTitle { font-size: 2.1rem; }
+.nkCard.tight .nkMenu { gap: .45rem .6rem; margin-top: .55rem; }
+.nkCard.tight .nkItem { min-height: 64px; padding-top: .3rem; padding-bottom: .3rem; }
+.nkCard.tight .nkHint { margin-top: .6rem; }
+.nkCard.tight .nkLogoMain { font-size: 4.2rem; }
+
+/* ── Stat bars (racer and kart screens) ──────────────────────────────────── */
+.nkStats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .38rem 1.3rem;
+  margin: .45rem 0 .15rem;
+  padding: .6rem .95rem;
+  background: rgba(255,255,255,.65);
+  border: 3px solid var(--ink); border-radius: 14px;
+}
+.nkStats .blurb { grid-column: 1 / -1; margin: 0 0 .15rem; font: 700 .95rem/1.3 var(--body); color: var(--ink); text-align: left; }
+.nkStats .sr { display: flex; align-items: center; gap: .55rem; font: 800 .86rem/1 var(--body); }
+.nkStats .sl { width: 6.9rem; text-align: left; }
+.nkStats .sb { flex: 1; height: .85rem; border: 2px solid var(--ink); border-radius: 999px; background: #fff; overflow: hidden; }
+.nkStats .sb i { display: block; height: 100%; background: linear-gradient(90deg, var(--green) 0%, #9ad94a 100%); transition: width .2s ease; }
+
+/* ── Results / standings board ───────────────────────────────────────────── */
+.nkBoard { display: grid; gap: .35rem 1.1rem; margin: .7rem 0 .1rem; }
+.nkBoard.two { grid-template-columns: 1fr 1fr; }
+.nkBoard .col { display: flex; flex-direction: column; gap: .3rem; }
+.nkBoard .row {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .2rem .7rem .2rem .3rem;
+  background: #fff;
+  border: 3px solid var(--ink); border-radius: 12px;
+  font: 800 1.02rem/1.2 var(--body);
+  text-align: left;
+}
+.nkBoard .pl {
+  flex: none; width: 1.9rem; height: 1.9rem; line-height: 1.6rem;
+  border-radius: 50%; border: 3px solid var(--ink);
+  text-align: center; font: italic 900 1rem/1.6rem var(--head);
+  background: #eee7da;
+}
+.nkBoard .pod1 .pl { background: var(--gold); }
+.nkBoard .pod2 .pl { background: #dfe6ee; }
+.nkBoard .pod3 .pl { background: #f2a45f; }
+.nkBoard .em { flex: none; font: 1.25rem/1 var(--emoji); }
+.nkBoard .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nkBoard .tm { font-variant-numeric: tabular-nums; }
+.nkBoard .pts { color: var(--green); margin-right: .5rem; font-variant-numeric: tabular-nums; }
+.nkBoard .tot { min-width: 2.2rem; text-align: right; font: italic 900 1.12rem var(--head); }
+.nkBoard .you {
+  font: italic 900 .72rem/1 var(--head);
+  padding: .14rem .42rem;
+  border-radius: 999px;
+  background: var(--ink); color: #fff;
+  vertical-align: .12em;
+}
+.nkBoard .row.me { box-shadow: inset 0 0 0 3px #fff; }
+.nkBoard .row.me.p1 { background: var(--p1); }
+.nkBoard .row.me.p2 { background: #a9d6f5; }
+
+/* ── Pause button (mouse and touch) ──────────────────────────────────────── */
+/* Bottom-left: clear of every HUD corner, the lane pips and the side panels. */
+.nkPauseBtn {
+  position: absolute; left: 18px; bottom: 18px; z-index: 30;
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: max(76px, 4.9rem); height: max(76px, 4.9rem);
+  border: 5px solid var(--ink); border-radius: 22px;
+  background: var(--paper);
+  box-shadow: 0 6px 0 rgba(29,27,46,.45);
+  font: 800 1rem/1 var(--body); color: var(--ink);
+  cursor: pointer;
+}
+.nkPauseBtn.on { display: flex; }
+.nkPauseBtn .ic { font: 1.9rem/1 var(--emoji); }
+.nkPauseBtn:hover { background: var(--gold); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HUD
+   ══════════════════════════════════════════════════════════════════════════ */
+.nkHud { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: none; }
+.nkHud.on { display: block; }
+.nkHud.hidden { display: none; }
+.nkView { position: absolute; overflow: hidden; --u: 1; --pc: var(--p1); }
+
+/* Shared: the chunky arrow. A clipped block inside a filtered box, so the
+   ink outline follows the arrow's own shape. */
+.nkArrow {
+  display: block; position: relative;
+  filter: drop-shadow(0 calc(var(--u)*5px) 0 var(--ink)) drop-shadow(calc(var(--u)*4px) 0 0 var(--ink))
+          drop-shadow(calc(var(--u)*-4px) 0 0 var(--ink)) drop-shadow(0 calc(var(--u)*-4px) 0 var(--ink));
+}
+.nkArrow i {
+  position: absolute; inset: 0; display: block;
+  background: var(--arrow, #fff);
+  clip-path: polygon(0 50%, 44% 0, 44% 27%, 100% 27%, 100% 73%, 44% 73%, 44% 100%);
+}
+.right .nkArrow i, .nkSide.r .nkArrow i { clip-path: polygon(100% 50%, 56% 0, 56% 27%, 0 27%, 0 73%, 56% 73%, 56% 100%); }
+
+/* 2P: a thick frame in the player's colour and a name tab. */
+.nkFrame {
+  position: absolute; inset: 0; z-index: 5;
+  border: calc(var(--u)*11px) solid var(--pc);
+  box-shadow: inset 0 0 0 calc(var(--u)*4px) var(--ink);
+}
+.nkTag {
+  position: absolute; left: 50%; top: 0; z-index: 6; transform: translateX(-50%);
+  font: italic 900 calc(var(--u)*28px)/1 var(--head);
+  color: var(--ink); background: var(--pc);
+  padding: calc(var(--u)*4px) calc(var(--u)*24px) calc(var(--u)*10px);
+  border: calc(var(--u)*4px) solid var(--ink); border-top: none;
+  border-radius: 0 0 calc(var(--u)*18px) calc(var(--u)*18px);
+  white-space: nowrap;
+}
+.p2 .nkTag { color: #fff; text-shadow: 0 calc(var(--u)*3px) 0 var(--ink); }
+.nkTag b { font-size: 1.15em; }
+
+/* Direction cue: edge glow + danger rim. */
+.nkEdge { position: absolute; top: 0; bottom: 0; width: 22%; opacity: 0; transition: opacity .16s ease; }
+.nkEdge.l { left: 0; background: linear-gradient(90deg, rgba(255,194,51,.72), rgba(255,194,51,0)); }
+.nkEdge.r { right: 0; background: linear-gradient(270deg, rgba(61,158,224,.72), rgba(61,158,224,0)); }
+.nkEdge.on { opacity: 1; }
+/* A red rim rather than a wash, so it never hides the road. */
+.nkDanger {
+  position: absolute; inset: 0; opacity: 0; transition: opacity .16s ease;
+  box-shadow: inset 0 0 calc(var(--u)*110px) calc(var(--u)*34px) rgba(214,32,32,.92);
+}
+.nkDanger.on { opacity: 1; animation: nkDangerPulse .46s ease-in-out infinite alternate; }
+@keyframes nkDangerPulse { from { opacity: .5; } to { opacity: 1; } }
+
+/* Top-left: item slot, its name, automatic-use countdown and coins. */
+.nkTL {
+  position: absolute; left: calc(var(--u)*24px); top: calc(var(--u)*22px); z-index: 7;
+  display: flex; flex-direction: column; align-items: center; gap: calc(var(--u)*9px);
+}
+.duo .nkTL { left: calc(var(--u)*30px); top: calc(var(--u)*28px); }
+.nkSlot {
+  position: relative; overflow: hidden;
+  width: calc(var(--u)*140px); height: calc(var(--u)*140px);
+  display: grid; place-items: center;
+  border: calc(var(--u)*7px) solid var(--ink);
+  border-radius: calc(var(--u)*32px);
+  background: radial-gradient(circle at 50% 38%, #ffffff 0%, #fff3d4 58%, #ffd27a 100%);
+  box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.5), inset 0 0 0 calc(var(--u)*5px) rgba(255,255,255,.9);
+}
+/* Empty: a dark window with a dashed ring, so "no item" reads at a glance. */
+.nkSlot.empty {
+  background: radial-gradient(circle, rgba(29,27,46,.5), rgba(29,27,46,.72));
+  box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.35);
+}
+.nkSlot.empty::after {
+  content: ''; position: absolute; inset: calc(var(--u)*14px);
+  border: calc(var(--u)*4px) dashed rgba(255,248,236,.45); border-radius: calc(var(--u)*20px);
+}
+.nkSlotIcon { font: calc(var(--u)*90px)/1 var(--emoji); filter: drop-shadow(0 calc(var(--u)*4px) 0 rgba(29,27,46,.35)); }
+.nkSlotIcon.twin { font-size: calc(var(--u)*56px); letter-spacing: calc(var(--u)*-8px); }
+.nkSlotCount {
+  position: absolute; right: calc(var(--u)*8px); bottom: calc(var(--u)*2px);
+  font: italic 900 calc(var(--u)*25px)/1 var(--head);
+  color: #fff; -webkit-text-stroke: calc(var(--u)*7px) var(--ink); paint-order: stroke fill;
+}
+.nkReel { position: absolute; inset: 0; display: none; }
+.nkSlot.spin .nkReel { display: block; }
+.nkReelStrip { display: flex; flex-direction: column; align-items: center; animation: nkReel .9s linear infinite; }
+.nkReelStrip span { flex: none; height: calc(var(--u)*126px); font: calc(var(--u)*76px)/calc(var(--u)*126px) var(--emoji); }
+@keyframes nkReel { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+.nkSlot.spin { animation: nkRoulette .5s linear infinite; }
+@keyframes nkRoulette {
+  0%   { box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.5), 0 0 0 calc(var(--u)*6px) #ff3b6b, 0 0 calc(var(--u)*30px) calc(var(--u)*8px) #ff3b6b; }
+  33%  { box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.5), 0 0 0 calc(var(--u)*6px) #ffc233, 0 0 calc(var(--u)*30px) calc(var(--u)*8px) #ffc233; }
+  66%  { box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.5), 0 0 0 calc(var(--u)*6px) #3dc8ff, 0 0 calc(var(--u)*30px) calc(var(--u)*8px) #3dc8ff; }
+  100% { box-shadow: 0 calc(var(--u)*7px) 0 rgba(29,27,46,.5), 0 0 0 calc(var(--u)*6px) #ff3b6b, 0 0 calc(var(--u)*30px) calc(var(--u)*8px) #ff3b6b; }
+}
+.nkSlot.reveal { animation: nkReveal .45s cubic-bezier(.2,1.8,.4,1); }
+@keyframes nkReveal { from { transform: scale(.55) rotate(-14deg); } to { transform: scale(1) rotate(0); } }
+.nkSlotName {
+  display: none;
+  font: italic 900 calc(var(--u)*23px)/1 var(--head);
+  color: #fff; background: var(--ink);
+  padding: calc(var(--u)*7px) calc(var(--u)*15px);
+  border: calc(var(--u)*3px) solid #fff; border-radius: 999px;
+  box-shadow: 0 calc(var(--u)*4px) 0 rgba(29,27,46,.4);
+  white-space: nowrap;
+}
+.nkSlotName.on { display: block; }
+.nkCoins {
+  display: flex; align-items: center; gap: calc(var(--u)*9px);
+  padding: calc(var(--u)*4px) calc(var(--u)*18px) calc(var(--u)*4px) calc(var(--u)*5px);
+  background: var(--paper);
+  border: calc(var(--u)*5px) solid var(--ink); border-radius: 999px;
+  font: italic 900 calc(var(--u)*32px)/1 var(--head);
+  box-shadow: 0 calc(var(--u)*5px) 0 rgba(29,27,46,.45);
+}
+.nkCoins b { min-width: calc(var(--u)*30px); text-align: center; }
+.nkCoin {
+  position: relative; flex: none;
+  width: calc(var(--u)*38px); height: calc(var(--u)*38px); border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fff8bf 0 16%, #ffd23a 17% 60%, #e39a00 61%);
+  border: calc(var(--u)*4px) solid var(--ink);
+}
+.nkCoin::after { content: ''; position: absolute; inset: 20%; border-radius: 50%; border: calc(var(--u)*3px) solid rgba(150,80,0,.65); }
+.nkCoins.max { background: var(--gold); }
+.nkCoins.bump { animation: nkBump .3s ease; }
+@keyframes nkBump { 50% { transform: scale(1.18); } }
+.nkItemUse {
+  display: none;
+  font: 900 max(14px, calc(var(--u)*21px))/1 var(--body);
+  color: var(--ink); background: var(--gold);
+  padding: calc(var(--u)*7px) calc(var(--u)*13px);
+  border: max(2px, calc(var(--u)*3px)) solid var(--ink); border-radius: 999px;
+  box-shadow: 0 calc(var(--u)*3px) 0 rgba(29,27,46,.35);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.nkItemUse.on { display: block; }
+@keyframes nkBlink { from { opacity: .72; transform: scale(.97); } to { opacity: 1; transform: scale(1.03); } }
+
+/* Top-right: place, lap, time. */
+.nkTR {
+  position: absolute; right: calc(var(--u)*26px); top: calc(var(--u)*6px); z-index: 7;
+  display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--u)*7px);
+}
+.duo .nkTR { right: calc(var(--u)*30px); top: calc(var(--u)*16px); }
+.nkPlace {
+  display: flex; align-items: flex-start;
+  font-family: var(--head); font-style: italic; font-weight: 900; line-height: .92;
+  color: #fff;
+  -webkit-text-stroke: calc(var(--u)*10px) var(--ink); paint-order: stroke fill;
+  text-shadow: 0 calc(var(--u)*9px) 0 var(--ink);
+  transform: skewX(-7deg);
+  transform-origin: right top;
+}
+.nkPlace b { font-size: calc(var(--u)*118px); }
+.nkPlace i { font-style: italic; font-size: calc(var(--u)*48px); margin: calc(var(--u)*12px) 0 0 calc(var(--u)*4px); }
+.nkPlace.p1 { color: var(--gold); }
+.nkPlace.p1 b { font-size: calc(var(--u)*156px); }
+.nkPlace.p1 i { font-size: calc(var(--u)*58px); }
+.nkPlace.p2 { color: #e3eaf2; }
+.nkPlace.p3 { color: #f39b50; }
+.nkPlace.p2 b, .nkPlace.p3 b { font-size: calc(var(--u)*138px); }
+.nkPlace.p2 i, .nkPlace.p3 i { font-size: calc(var(--u)*52px); }
+.nkPlace.bump { animation: nkPlaceBump .38s cubic-bezier(.2,1.6,.4,1); }
+@keyframes nkPlaceBump { from { transform: skewX(-7deg) scale(1.35); } to { transform: skewX(-7deg) scale(1); } }
+.nkLap {
+  display: flex; align-items: center; gap: calc(var(--u)*9px);
+  font: italic 900 calc(var(--u)*28px)/1 var(--head);
+  background: var(--paper);
+  border: calc(var(--u)*5px) solid var(--ink); border-radius: 999px;
+  padding: calc(var(--u)*6px) calc(var(--u)*18px) calc(var(--u)*6px) calc(var(--u)*10px);
+  box-shadow: 0 calc(var(--u)*5px) 0 rgba(29,27,46,.45);
+}
+.nkLap b { font-size: calc(var(--u)*38px); }
+.nkLap .of { opacity: .6; margin-left: calc(var(--u)*-4px); }
+.nkLap.final { background: var(--red); color: #fff; animation: nkBlink .55s ease-in-out infinite alternate; }
+.nkFlag {
+  flex: none; width: calc(var(--u)*32px); height: calc(var(--u)*26px);
+  background: conic-gradient(var(--ink) 25%, #fff 0 50%, var(--ink) 0 75%, #fff 0) 0 0 / calc(var(--u)*13px) calc(var(--u)*11px);
+  border: calc(var(--u)*3px) solid var(--ink); border-radius: calc(var(--u)*4px);
+}
+.nkTime, .nkBest, .nkLabel {
+  font: 900 calc(var(--u)*25px)/1 var(--body);
+  font-variant-numeric: tabular-nums;
+  color: #fff; background: rgba(29,27,46,.8);
+  padding: calc(var(--u)*6px) calc(var(--u)*15px);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.nkBest, .nkLabel { display: none; font-size: calc(var(--u)*20px); }
+.nkBest { background: var(--purple); }
+.nkBest.on, .nkLabel.on { display: block; }
+
+/* Cue arrow, top centre. */
+.nkCue {
+  position: absolute; left: 50%; top: 12%; z-index: 6; transform: translateX(-50%);
+  display: none; flex-direction: column; align-items: center; gap: calc(var(--u)*10px);
+}
+.duo .nkCue { top: 14%; }
+.layout-stack .nkCue { top: 8%; }
+.nkCue.on { display: flex; }
+.nkCue .nkArrow { width: calc(var(--u)*86px); height: calc(var(--u)*60px); }
+.nkCue.left { --arrow: var(--gold); --nudge: calc(var(--u)*-16px); }
+.nkCue.right { --arrow: var(--sky); --nudge: calc(var(--u)*16px); }
+@keyframes nkCuePulse { from { transform: scale(1) translateX(0); } to { transform: scale(1.14) translateX(var(--nudge, 0)); } }
+.nkCueText {
+  font: italic 900 calc(var(--u)*34px)/1 var(--head);
+  letter-spacing: .06em;
+  padding: calc(var(--u)*7px) calc(var(--u)*28px);
+  border: calc(var(--u)*5px) solid var(--ink); border-radius: 999px;
+  background: var(--arrow);
+  box-shadow: 0 calc(var(--u)*5px) 0 rgba(29,27,46,.45);
+}
+.nkCue.right .nkCueText { color: #fff; text-shadow: 0 calc(var(--u)*3px) 0 var(--ink); }
+
+/* One switch: LEFT / RIGHT panels on the view's edges. */
+.nkSide {
+  position: absolute; top: 50%; z-index: 6;
+  display: none; flex-direction: column; align-items: center; gap: calc(var(--u)*10px);
+  width: calc(var(--u)*88px);
+  padding: calc(var(--u)*10px) calc(var(--u)*8px);
+  font: italic 900 calc(var(--u)*18px)/1 var(--head);
+  letter-spacing: .04em;
+  color: var(--ink2);
+  background: rgba(255,248,236,.78);
+  border: calc(var(--u)*6px) solid var(--ink);
+  box-shadow: 0 calc(var(--u)*6px) 0 rgba(29,27,46,.35);
+  opacity: .5;
+  transform: translateY(-50%);
+  transition: transform .12s ease, opacity .12s ease, background .12s ease;
+  --arrow: #c9c1b0;
+}
+.sch-one .nkSide.on { display: flex; }
+.nkSide.on::before { content: "STEER"; font: 800 calc(var(--u)*13px)/1 var(--body); letter-spacing: .08em; }
+.nkSide .nkArrow { width: calc(var(--u)*48px); height: calc(var(--u)*34px); }
+.nkSide.l { left: 0; border-left: none; border-radius: 0 calc(var(--u)*28px) calc(var(--u)*28px) 0; transform-origin: left center; }
+.nkSide.r { right: 0; border-right: none; border-radius: calc(var(--u)*28px) 0 0 calc(var(--u)*28px); transform-origin: right center; }
+.duo .nkSide.l { left: calc(var(--u)*11px); }
+.duo .nkSide.r { right: calc(var(--u)*11px); }
+/* The armed side: hold now and this is the way you go. */
+.nkSide.on {
+  opacity: 1; color: var(--ink); background: var(--gold); --arrow: #fff;
+  transform: translateY(-50%);
+  box-shadow: 0 calc(var(--u)*4px) 0 rgba(29,27,46,.35);
+}
+/* …and it matches the way the guidance wants to go. */
+.nkSide.on.match {
+  background: var(--green); color: #fff; text-shadow: 0 calc(var(--u)*3px) 0 var(--ink);
+  box-shadow: 0 calc(var(--u)*4px) 0 rgba(29,27,46,.35);
+}
+.nkSide.on.match::after {
+  content: 'CLEAR'; font: italic 900 calc(var(--u)*14px)/1 var(--head);
+  background: #fff; color: var(--green); text-shadow: none;
+  padding: calc(var(--u)*3px) calc(var(--u)*10px); border: calc(var(--u)*3px) solid var(--ink); border-radius: 999px;
+}
+/* A top-and-bottom view is too short for panels at mid-height: they sit
+   either side of the lane pips instead, as chunky pills. */
+.layout-stack .nkSide {
+  top: auto; bottom: calc(var(--u)*20px);
+  flex-direction: row; gap: calc(var(--u)*10px);
+  width: auto; padding: calc(var(--u)*10px) calc(var(--u)*20px);
+  border: calc(var(--u)*6px) solid var(--ink);
+  border-radius: 999px;
+  transform: none;
+}
+.layout-stack .nkSide.l { left: auto; right: calc(50% + var(--u)*222px); transform-origin: right center; }
+.layout-stack .nkSide.r { right: auto; left: calc(50% + var(--u)*222px); transform-origin: left center; }
+.layout-stack .nkSide.on { transform: none; }
+.layout-stack .nkSide .nkArrow { width: calc(var(--u)*60px); height: calc(var(--u)*44px); }
+
+/* Bottom centre: drift meter over the lane pips. */
+.nkBottom {
+  position: absolute; left: 50%; bottom: calc(var(--u)*24px); z-index: 6; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: calc(var(--u)*10px);
+}
+.duo .nkBottom { bottom: calc(var(--u)*36px); }
+/* The scanner's pointer sits above the pips: give it room under the drift bar. */
+.sch-step-scan .nkBottom { gap: calc(var(--u)*30px); }
+.nkDrift { display: flex; align-items: center; gap: calc(var(--u)*10px); opacity: 0; transition: opacity .15s ease; }
+.nkDrift.on { opacity: 1; }
+.nkDriftTag {
+  font: italic 900 calc(var(--u)*24px)/1 var(--head);
+  color: #fff; -webkit-text-stroke: calc(var(--u)*6px) var(--ink); paint-order: stroke fill;
+}
+.nkDrift.lv1 .nkDriftTag { color: #7cc8ff; }
+.nkDrift.lv2 .nkDriftTag { color: #ffa24a; }
+.nkDrift.lv3 .nkDriftTag { color: #d79bff; }
+.nkDriftBar {
+  position: relative; overflow: hidden;
+  width: calc(var(--u)*300px); height: calc(var(--u)*26px);
+  border: calc(var(--u)*5px) solid var(--ink); border-radius: 999px;
+  background: rgba(255,248,236,.85);
+  box-shadow: 0 calc(var(--u)*4px) 0 rgba(29,27,46,.45);
+}
+.nkDriftBar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #b7bfcc; transition: width .1s linear; }
+.nkDrift.lv1 .nkDriftBar i { background: linear-gradient(90deg, #1f6fe0, #72c7ff); }
+.nkDrift.lv2 .nkDriftBar i { background: linear-gradient(90deg, #ff5d12, #ffc05a); }
+.nkDrift.lv3 .nkDriftBar i { background: linear-gradient(90deg, #7a33e6, #e08cff); animation: nkBlink .25s linear infinite alternate; }
+.nkDriftBar em { position: absolute; top: 0; bottom: 0; width: calc(var(--u)*4px); margin-left: calc(var(--u)*-2px); background: var(--ink); }
+
+.nkLanes {
+  display: flex; gap: calc(var(--u)*10px);
+  padding: calc(var(--u)*9px) calc(var(--u)*14px);
+  background: rgba(29,27,46,.58);
+  border-radius: 999px;
+}
+.pip {
+  position: relative;
+  width: calc(var(--u)*56px); height: calc(var(--u)*18px);
+  border: calc(var(--u)*4px) solid var(--ink); border-radius: 999px;
+  background: rgba(255,248,236,.72);
+  transition: transform .12s ease, background .12s ease;
+}
+.pip.guide { background: var(--green-l); box-shadow: 0 0 0 calc(var(--u)*3px) #fff; }
+.pip.kart { background: var(--orange); transform: scaleY(1.5); box-shadow: 0 0 calc(var(--u)*14px) rgba(255,106,31,.85); }
+.pip.kart.guide { background: var(--green-l); box-shadow: 0 0 0 calc(var(--u)*3px) var(--orange), 0 0 calc(var(--u)*16px) rgba(91,210,107,.9); }
+/* The kart marker: a little orange wedge under its lane, so the lane you are
+   in is shown by shape as well as colour. */
+.pip .mark { display: none; }
+.pip.kart .mark {
+  display: block; position: absolute; left: 50%; top: 100%;
+  width: calc(var(--u)*22px); height: calc(var(--u)*14px); margin: calc(var(--u)*5px) 0 0 calc(var(--u)*-11px);
+  background: var(--orange);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.nkLanes.scan { gap: calc(var(--u)*12px); padding: calc(var(--u)*12px) calc(var(--u)*16px) calc(var(--u)*18px); }
+.nkLanes.scan .pip { width: calc(var(--u)*74px); height: calc(var(--u)*36px); border-radius: calc(var(--u)*14px); }
+.nkLanes.scan .pip.kart { transform: none; }
+/* The scanner's highlight: where a press goes right now. */
+.pip.hot {
+  background: #fff;
+  transform: scale(1.18) !important;
+  box-shadow: 0 0 0 calc(var(--u)*4px) var(--gold), 0 0 calc(var(--u)*26px) calc(var(--u)*8px) rgba(255,255,255,.85);
+}
+.pip.hot::before {
+  content: ''; position: absolute; left: 50%; bottom: 100%;
+  width: calc(var(--u)*26px); height: calc(var(--u)*18px); margin: 0 0 calc(var(--u)*6px) calc(var(--u)*-13px);
+  background: var(--gold);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.pip.hot.guide {
+  background: var(--green-l);
+  box-shadow: 0 0 0 calc(var(--u)*4px) #fff, 0 0 calc(var(--u)*34px) calc(var(--u)*12px) rgba(91,210,107,.95);
+}
+.pip.hot.guide::before { background: #fff; }
+.nkLaneHint:empty { display: none; }
+.nkLaneHint {
+  font: italic 900 calc(var(--u)*19px)/1 var(--head);
+  color: #fff; letter-spacing: .06em;
+  -webkit-text-stroke: calc(var(--u)*5px) var(--ink); paint-order: stroke fill;
+}
+.nkLanes.match + .nkLaneHint { color: var(--green-l); }
+
+/* Minimap and pause ring, bottom-right. */
+.nkMapWrap {
+  position: absolute; right: calc(var(--u)*20px); bottom: calc(var(--u)*20px); z-index: 6;
+  width: calc(var(--u)*220px); height: calc(var(--u)*220px);
+  border-radius: calc(var(--u)*30px);
+  background: radial-gradient(circle, rgba(29,27,46,.36), rgba(29,27,46,.58));
+  border: calc(var(--u)*4px) solid rgba(255,248,236,.6);
+}
+.duo .nkMapWrap { right: calc(var(--u)*26px); bottom: calc(var(--u)*26px); }
+.nkMap { display: block; width: 100%; height: 100%; }
+.nkRing {
+  position: absolute; right: calc(var(--u)*46px); bottom: calc(var(--u)*258px); z-index: 8;
+  width: calc(var(--u)*136px); height: calc(var(--u)*136px);
+  display: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(29,27,46,.78) 0 56%, transparent 57%);
+}
+.layout-stack .nkRing { bottom: calc(var(--u)*46px); right: calc(var(--u)*264px); }
+.nkRing.on { display: block; }
+.nkRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.nkRing circle { fill: none; stroke-width: 15; }
+.nkRing .track { stroke: rgba(255,248,236,.35); }
+.nkRing .fill { stroke: var(--orange); stroke-linecap: round; transition: stroke-dashoffset .08s linear; }
+.nkRing .lbl {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font: italic 900 calc(var(--u)*18px)/1.1 var(--head);
+  color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,.9);
+}
+
+/* Big centre messages. */
+/* Big centre messages sit below the cue arrow, so the two never collide. */
+.nkPop {
+  position: absolute; left: 50%; top: 47%; z-index: 9;
+  display: none;
+  transform: translate(-50%, -50%);
+  font: italic 900 calc(var(--u)*150px)/1 var(--head);
+  letter-spacing: .02em;
+  color: #fff;
+  -webkit-text-stroke: calc(var(--u)*13px) var(--ink); paint-order: stroke fill;
+  text-shadow: 0 calc(var(--u)*12px) 0 var(--ink), 0 calc(var(--u)*20px) calc(var(--u)*18px) rgba(0,0,0,.35);
+  white-space: nowrap;
+}
+.nkPop.on { display: block; animation: nkPopIn .5s cubic-bezier(.2,1.7,.4,1); }
+@keyframes nkPopIn {
+  from { transform: translate(-50%, -50%) scale(.3) rotate(-10deg); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; }
+}
+.nkPop.k-count { font-size: calc(var(--u)*190px); }
+.nkPop.k-go { color: var(--green-l); font-size: calc(var(--u)*210px); }
+.nkPop.k-lap { color: var(--gold); font-size: calc(var(--u)*120px); }
+.nkPop.k-final { color: #ff5a6e; font-size: calc(var(--u)*120px); }
+.nkPop.k-finish { color: var(--gold); font-size: calc(var(--u)*130px); }
+.nkPop.k-item { color: #a8dcff; font-size: calc(var(--u)*80px); top: 52%; }
+.nkPop.k-good { color: #ffb347; font-size: calc(var(--u)*88px); top: 52%; }
+.nkPop.k-bad { color: #dcc0ff; font-size: calc(var(--u)*88px); top: 52%; }
+.nkPop.k-info { font-size: calc(var(--u)*76px); top: 52%; }
+.layout-stack .nkPop { top: 54%; }
+.layout-stack .nkPop.k-item, .layout-stack .nkPop.k-good, .layout-stack .nkPop.k-bad, .layout-stack .nkPop.k-info { top: 58%; }
+
+/* A finished player's view: the race is over for them, so the steering aids go. */
+.nkView.finished .nkCue, .nkView.finished .nkBottom, .nkView.finished .nkSide,
+.nkView.finished .nkEdge, .nkView.finished .nkDanger, .nkView.finished .nkItemUse { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nkCard.enter, .nkCue .nkArrow, .nkLap.final, .nkDanger.on, .nkSlot.spin { animation: none; }
+}

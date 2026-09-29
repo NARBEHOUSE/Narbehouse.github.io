@@ -1,6 +1,17 @@
 {
   "games": [
     {
+      "id": "narbekart",
+      "title": "NARBE Racer",
+      "description": "Pick your racer and vehicle, then race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
+      "path": "apps/games/NARBEKART/index.html",
+      "image": "images/games/narbekart.png",
+      "genres": [
+        "Racing",
+        "Arcade"
+      ]
+    },
+    {
       "id": "bennysballista",
       "title": "Benny's Ballista",
       "description": "Topple castles in three story campaigns, or create your own castles and full campaigns in the Castle Workshop. Build ordered levels with custom stories and goals, then save, play and share your adventures. Play with one or two switches; the Workshop uses a mouse and keyboard.",
