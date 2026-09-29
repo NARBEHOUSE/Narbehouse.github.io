@@ -169,8 +169,12 @@ NK.propsMoonlight = (function () {
   });
   function house(k, haunted) {
     const body = haunted ? 0x685087 : 0xb77757, trim = haunted ? 0xd59151 : 0x553f48;
-    box(k, 10, haunted ? 10 : 6, 8, body, 0, haunted ? 5 : 3, 0);
-    k.add(new THREE.CylinderGeometry(6.7, 6.7, 10, 3), haunted ? 0x392953 : WHITE, [0, haunted ? 11 : 7, 0], null, [0, 0, HALF]);
+    const wall = haunted ? 10 : 6, pitch = haunted ? 0.9 : 0.8;
+    box(k, 10, wall, 8, body, 0, wall / 2, 0);
+    // Gable roof: a three-sided prism laid along x, started at HALF so its ridge points up,
+    // squashed by pitch and seated on the wall tops with a short overhang.
+    k.add(new THREE.CylinderGeometry(5.5, 5.5, 10.8, 3, 1, false, HALF), haunted ? 0x392953 : WHITE,
+      [0, wall - 0.15 + pitch * 2.75, 0], [pitch, 1, 1], [0, 0, HALF]);
     const yh = haunted ? 6 : 3.2;
     [-3.1, 3.1].forEach((x) => {
       box(k, 2, 2.5, 0.15, trim, x, yh, -4.1);
@@ -180,12 +184,14 @@ NK.propsMoonlight = (function () {
     });
     box(k, 2, 3.5, 0.3, 0x423343, 0, 1.75, -4.18);
     ball(k, 0.12, 0xfac45b, 0.62, 1.65, -4.4);
-    box(k, 2.3, 3.5, 2, haunted ? 0x796589 : 0x9c786c, 2.6, haunted ? 12 : 8.7, 1);
+    // Chimney on the back slope, clear of the tower and topping the ridge.
+    box(k, 2.3, 6.2, 2, haunted ? 0x796589 : 0x9c786c, haunted ? -2.6 : 2.6, haunted ? 15.1 : 10.4, 2.2);
     for (let i = 0; i < 4; i++) box(k, 11.2 - i * 0.55, 0.4, 1.2, 0xa2a7be, 0, 0.2 + i * 0.4, -6 + i * 0.65);
     if (haunted) {
-      cylinder(k, 2.4, 2.8, 16, 0x776191, 4.5, 8, 1, 6);
-      cone(k, 3.4, 7, 0x423053, 4.5, 18, 1, null, 6);
-      k.add(starGeometry(1.2, 0.2), 0xffd685, [4.5, 12, -1.65]);
+      // The tower rises out of the roof, so the star sits above the front slope.
+      cylinder(k, 2.4, 2.8, 20, 0x776191, 4.5, 10, 1, 6);
+      cone(k, 3.4, 7, 0x423053, 4.5, 22, 1, null, 6);
+      k.add(starGeometry(1.2, 0.2), 0xffd685, [4.5, 17.4, -1.6]);
       box(k, 2.8, 0.3, 0.2, trim, -3.1, 6, -4.45, [0, 0, 0.35]);
     }
     k.root.userData.faceRoad = true;

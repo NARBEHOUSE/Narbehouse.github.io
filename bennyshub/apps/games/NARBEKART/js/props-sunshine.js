@@ -1262,7 +1262,8 @@ NK.propsSunshine = (function () {
   prop('beach_hut', (r) => {
     const k = new Kit(r), c = r.pick([0x74c6c2, 0xf39e88, 0x95b8ed]);
     sb(k, 8, 5, 6, c, 0, 3, 0);
-    k.add(new THREE.CylinderGeometry(5.7, 5.7, 7, 3), 0xe6bb75, { r: [0, 0, HALF_PI], p: [0, 6.9, 0] });
+    // Gable roof: a three-sided prism laid along x, started at HALF_PI so its ridge points up.
+    k.add(new THREE.CylinderGeometry(4.3, 4.3, 8.8, 3, 1, false, HALF_PI), 0xe6bb75, { s: [0.75, 1, 1], r: [0, 0, HALF_PI], p: [0, 6.95, 0] });
     sb(k, 1.8, 3.7, 0.15, 0xf7e5c7, 0, 2.4, -3.08);
     [-2.4, 2.4].forEach((x) => { sb(k, 1.8, 1.8, 0.2, WHITE, x, 3.6, -3.1); sb(k, 1.35, 1.3, 0.24, 0x5893b1, x, 3.6, -3.14); });
     sb(k, 9, 0.3, 2.2, 0xcaa16d, 0, 0.6, -3.5); k.root.userData.faceRoad = true; return finish(k);
@@ -1367,7 +1368,7 @@ NK.propsSunshine = (function () {
   prop('giant_cake', (r) => { const k = new Kit(r); cake(k, 3.8, 3); return finish(k); });
   prop('cookie_house', (r) => {
     const k = new Kit(r); sb(k, 9, 7, 7, 0xca8e58, 0, 3.5, 0);
-    k.add(new THREE.CylinderGeometry(6, 6, 9, 3), 0x8d5b42, { r: [0, 0, HALF_PI], p: [0, 8, 0] });
+    k.add(new THREE.CylinderGeometry(4.9, 4.9, 9.8, 3, 1, false, HALF_PI), 0x8d5b42, { s: [0.8, 1, 1], r: [0, 0, HALF_PI], p: [0, 8.8, 0] });
     sb(k, 2.2, 4, 0.2, 0x6d4c40, 0, 2, -3.6);
     [-2.6, 2.6].forEach((x) => { sto(k, 1, 0.18, WHITE, x, 4.2, -3.6); scy(k, 0.09, 0.09, 7, 0xf4d4b5, x * 1.5, 3.5, -3.55, 6); });
     for (let i = 0; i < 10; i++) so(k, 0.3, 0x704a37, r.range(-4, 4), r.range(0.5, 6.5), -3.55, [1, 1, 0.3]);
