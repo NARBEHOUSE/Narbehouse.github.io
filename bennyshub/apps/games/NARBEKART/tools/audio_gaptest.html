@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer - loop gap experiment</title>
+<style>body{background:#101820;color:#eee;font:16px sans-serif;padding:20px}</style>
+</head>
+<body>
+<pre id="out">running...</pre>
+<script>
+function wav(seconds, freq, sr) {
+  const n = Math.round(seconds * sr);
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, n * 2, true);
+  const pcm = new Int16Array(buf, 44, n);
+  for (let i = 0; i < n; i++) pcm[i] = Math.round(Math.sin(2 * Math.PI * freq * i / sr) * 12000);
+  return buf;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Prototype aligned-swap looper: file = loop + tail (tail = copy of head). */
+function Looper(url, loopLen, tail) {
+  const els = [new Audio(), new Audio()];
+  els.forEach((e) => { e.preload = 'auto'; e.preservesPitch = false; e.loop = true; e.src = url; });
+  let cur = 0, state = 'idle', rate = 1, vol = 1, okTicks = 0, fadeT = 0, lagEst = [0.03, 0.03], startedAt = 0, seekTarget = 0, hist = [], learned = false;
+  const log = { swaps: 0, alignMs: [], offAtFadeMs: [], missed: 0, firstOffMs: [], lagEstMs: [] };
+  function a() { return els[cur]; } function b() { return els[1 - cur]; }
+  function med(h) { const c = h.slice(-5).sort((x, y) => x - y); return c[c.length >> 1]; }
+  return {
+    log,
+    play() { a().currentTime = 0; a().volume = vol; a().playbackRate = rate; a().play(); state = 'run'; },
+    setRate(r) { rate = r; a().playbackRate = r; },
+    tick(dt) {
+      const A = a(), B = b();
+      if (state === 'run') {
+        if (A.currentTime >= loopLen + 0.03) {
+          B.volume = 0; B.playbackRate = rate;
+          seekTarget = A.currentTime - loopLen + lagEst[1 - cur] * rate;
+          B.currentTime = seekTarget;
+          B.play(); state = 'start'; startedAt = performance.now(); okTicks = 0; hist = []; learned = false;
+        }
+      } else if (state === 'start') {
+        if (!B.paused && B.currentTime > seekTarget + 0.002) state = 'align';
+      } else if (state === 'align' || state === 'fade') {
+        hist.push((A.currentTime - loopLen) - B.currentTime);   // + = B behind
+        if (hist.length < 3) return;
+        const off = med(hist);
+        if (!learned) { learned = true; log.firstOffMs.push(+(off * 1000).toFixed(1)); lagEst[1 - cur] += off / rate; log.lagEstMs.push(+(lagEst[1 - cur] * 1000).toFixed(1)); }
+        if (state === 'align') {
+          B.playbackRate = rate * (1 + Math.max(-0.08, Math.min(0.08, off * 6 / rate)));
+          if (Math.abs(off) < 0.0025) okTicks++; else okTicks = 0;
+          const late = A.currentTime > loopLen + tail - 0.4 * rate;
+          if (okTicks >= 3 || late) {
+            if (late && okTicks < 3) log.missed++;
+            log.alignMs.push(+(performance.now() - startedAt).toFixed(0));
+            log.offAtFadeMs.push(+(off * 1000).toFixed(2));
+            state = 'fade'; fadeT = 0;
+          }
+        } else {
+          B.playbackRate = rate * (1 + Math.max(-0.03, Math.min(0.03, off * 5)));
+          fadeT = Math.min(1, fadeT + dt / 0.2);
+          A.volume = vol * (1 - fadeT); B.volume = vol * fadeT;
+          if (fadeT >= 1) { A.pause(); A.currentTime = 0; B.playbackRate = rate; cur = 1 - cur; state = 'run'; log.swaps++; }
+        }
+      }
+    }
+  };
+}
+
+(async function () {
+  const sr = 22050, res = {};
+  // Capacity: 480 blob-backed elements, like SafeAudio pools for ~160 names.
+  const urls = [];
+  for (let k = 0; k < 160; k++) urls.push(URL.createObjectURL(new Blob([wav(0.3 + (k % 5) * 0.1, 300 + k * 7, sr)], { type: 'audio/wav' })));
+  const els = []; let errs = 0, ready = 0;
+  const t0 = performance.now();
+  for (let k = 0; k < 480; k++) {
+    const e = new Audio(); e.preload = 'auto';
+    e.onerror = () => errs++;
+    e.addEventListener('canplaythrough', () => ready++, { once: true });
+    e.src = urls[k % 160]; els.push(e);
+  }
+  const tEnd = performance.now() + 15000;
+  while (ready + errs < 480 && performance.now() < tEnd) await sleep(50);
+  res.capacity = { made: 480, ready, errs, ms: +(performance.now() - t0).toFixed(0) };
+  // play a spread of them, then again after 20 s idle (suspension latency)
+  async function lat(e) { const a = performance.now(); e.currentTime = 0; await e.play(); while (e.currentTime <= 0.001 && performance.now() - a < 2000) await sleep(1); const d = performance.now() - a; e.pause(); return +d.toFixed(1); }
+  const l1 = []; for (let k = 0; k < 480; k += 60) l1.push(await lat(els[k]));
+  res.latencyFresh = l1;
+  await sleep(20000);
+  const l2 = []; for (let k = 5; k < 480; k += 60) l2.push(await lat(els[k]));
+  res.latencyAfterIdle20s = l2;
+  res.jsHeapMB = performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null;
+  window.__gap = res;
+  document.getElementById('out').textContent = JSON.stringify(res, null, 1);
+})();
+</script>
+</body>
+</html>

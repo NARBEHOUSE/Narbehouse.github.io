@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer — world view</title>
+<!--
+  Dev-only viewer for js/world.js: builds one circuit the way the game will
+  and flies a kart-height chase camera round it (or looks straight down).
+
+    world_view.html?track=meadow                   Open mode, chase camera flying
+    world_view.html?track=lava&mode=nofail&mirror=1
+    world_view.html?track=candy&view=overhead
+    world_view.html?track=frost&s=320&x=-3.6&fly=0 parked at s = 320 m, lane 1
+    &shadows=0  &detail=low  &hud=0  &kart=0
+
+  The harness drives it through window.__wv (see the bottom of this file) and
+  passes &have=a,b,c so only scripts that exist are requested — a missing one
+  would otherwise log a 404 as a console error.
+-->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #101820; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 10px; top: 8px; color: #fff; font: 600 15px/1.35 "Segoe UI", system-ui, sans-serif;
+         text-shadow: 0 1px 3px #000, 0 0 2px #000; white-space: pre; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<script src="../js/three.min.js"></script>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/art.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const q = new URLSearchParams(location.search);
+  const have = q.get('have') ? q.get('have').split(',') : null;
+  const OPTIONAL = ['art-items', 'props-sunshine', 'props-moonlight', 'roster', 'themes', 'tracks', 'world'];
+  const missing = [];
+
+  /* Load the optional modules in order; a module that is absent is noted and
+     skipped, so a half-built game still shows what exists. */
+  function loadNext(k) {
+    if (k >= OPTIONAL.length) { boot(); return; }
+    const name = OPTIONAL[k];
+    if (have && have.indexOf(name) < 0) { missing.push(name); loadNext(k + 1); return; }
+    const el = document.createElement('script');
+    el.src = '../js/' + name + '.js';
+    el.onload = () => loadNext(k + 1);
+    el.onerror = () => { missing.push(name); loadNext(k + 1); };
+    document.body.appendChild(el);
+  }
+  loadNext(0);
+
+  function boot() {
+    const hud = document.getElementById('hud');
+    if (!NK.world || !NK.tracks) { hud.textContent = 'world.js or tracks.js missing: ' + missing.join(', '); return; }
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(1);
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.useLegacyLights = false;
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.shadowMap.enabled = q.get('shadows') !== '0';
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.3, 1400);
+    addEventListener('resize', () => {
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    const st = {
+      track: q.get('track') || 'meadow',
+      mode: q.get('mode') || 'open',
+      mirror: q.get('mirror') === '1',
+      view: q.get('view') || 'chase',
+      s: parseFloat(q.get('s') || '-30'),
+      x: parseFloat(q.get('x') || '0'),
+      fly: q.get('fly') !== '0',
+      speed: 26,
+      showHud: q.get('hud') !== '0'
+    };
+    let W = null, kart = null, t = 0, buildMs = 0;
+
+    /* A real racer for scale if roster.js exists, else a kart-sized block. */
+    function makeKart() {
+      if (q.get('kart') === '0') return null;
+      if (NK.roster && typeof NK.roster.build === 'function') {
+        try { return NK.roster.build('pip', 'kart'); } catch (e) { console.warn('roster.build failed: ' + e.message); }
+      }
+      const g = new THREE.Group();
+      g.add(NK.art.part(new THREE.BoxGeometry(1.9, 0.8, 2.8), NK.art.mat.toon(0xe63946), { pos: [0, 0.6, 0], outline: 0.05 }));
+      g.add(NK.art.part(new THREE.SphereGeometry(0.42, 12, 9), NK.art.mat.toon(0xffd166), { pos: [0, 1.35, 0.3], outline: 0.05 }));
+      return g;
+    }
+
+    function rebuild(o) {
+      Object.assign(st, o || {});
+      if (W) { W.dispose(); W = null; }
+      if (kart) { scene.remove(kart); kart = null; }
+      const t0 = performance.now();
+      W = NK.world.build(scene, st.track, {
+        mode: st.mode, mirror: st.mirror,
+        quality: { shadows: renderer.shadowMap.enabled, detail: q.get('detail') || 'high' }
+      });
+      buildMs = performance.now() - t0;
+      kart = makeKart();
+      if (kart) scene.add(kart);
+      place(0);
+      return info();
+    }
+
+    const _cam = new THREE.Vector3(), _look = new THREE.Vector3(), _k = new THREE.Vector3(), _focus = new THREE.Vector3();
+
+    /* Kart-height chase: 9 m behind, 3.6 m up, looking 16 m ahead. frameAt
+       reuses its result, so every value is copied out before the next call. */
+    function place(dt) {
+      if (!W) return;
+      if (st.fly) st.s += st.speed * dt;
+      const L = W.L;
+      W.pointAt(st.s, st.x, _k);
+      if (kart) {
+        const f = W.frameAt(st.s);
+        kart.position.copy(_k);
+        kart.rotation.set(f.pitch, f.yaw, -f.bank, 'YXZ');
+      }
+      if (st.view === 'overhead') {
+        const b = W.minimap.bounds;
+        const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+        const span = Math.max((b.maxX - b.minX) / camera.aspect, b.maxZ - b.minZ);
+        const h = (span / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.08;
+        camera.position.set(cx, h, cz + 0.001);
+        camera.up.set(0, 0, -1);
+        camera.lookAt(cx, 0, cz);
+        _focus.set(cx, 0, cz);
+      } else {
+        camera.up.set(0, 1, 0);
+        W.pointAt(st.s - 9, st.x * 0.88, _cam);
+        _cam.y += 3.6;
+        W.pointAt(st.s + 16, st.x * 0.8, _look);
+        _look.y += 1.2;
+        camera.position.copy(_cam);
+        camera.lookAt(_look);
+        camera.rotateZ(-W.frameAt(st.s).bank * 0.45);
+        W.pointAt(st.s + 22, 0, _focus);
+      }
+      W.setShadowFocus(_focus);
+      W.update(dt, t, camera.position);
+      if (st.showHud) {
+        hud.textContent = W.track.name + ' · ' + W.theme.name + ' · ' + (st.mode === 'nofail' ? 'No-Fail' : 'Open') +
+          (st.mirror ? ' · Mirror' : '') + '\ns ' + (((st.s % L) + L) % L).toFixed(0) + ' / ' + L.toFixed(0) + ' m' +
+          '   edges ' + JSON.stringify(W.edgeAt(st.s)) +
+          '\nbuild ' + buildMs.toFixed(0) + ' ms · ' + renderer.info.render.calls + ' calls · ' +
+          (renderer.info.render.triangles / 1000).toFixed(0) + 'k tris' + (missing.length ? '\nmissing: ' + missing.join(', ') : '');
+      }
+    }
+
+    let last = performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      t += dt;
+      place(dt);
+      renderer.render(scene, camera);
+    }
+
+    function info() {
+      renderer.render(scene, camera);
+      const r = renderer.info;
+      return {
+        track: st.track, mode: st.mode, mirror: st.mirror, view: st.view, s: st.s,
+        buildMs: +buildMs.toFixed(1), L: +W.L.toFixed(1),
+        calls: r.render.calls, tris: r.render.triangles,
+        geometries: r.memory.geometries, textures: r.memory.textures,
+        stats: W.stats, missing: missing.slice(),
+        features: Object.keys(W.features).reduce((o, k) => { o[k] = W.features[k].length; return o; }, {})
+      };
+    }
+
+    rebuild();
+    requestAnimationFrame(frame);
+
+    window.__wv = {
+      get W() { return W; },
+      scene, camera, renderer,
+      rebuild,
+      /** Park the camera at (s, x) in the chase view. */
+      chase(s, x) { st.view = 'chase'; st.fly = false; st.s = s; st.x = x || 0; place(0); return info(); },
+      overhead() { st.view = 'overhead'; st.fly = false; place(0); return info(); },
+      fly(on) { st.fly = !!on; },
+      info,
+      ready: true
+    };
+  }
+})();
+</script>
+</body>
+</html>

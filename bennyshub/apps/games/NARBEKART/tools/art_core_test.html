@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer — art core test</title>
+<style>html,body{margin:0;height:100%;background:#8fd2f0;overflow:hidden}</style>
+</head>
+<body>
+<script src="../js/three.min.js"></script>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/art.js"></script>
+<script>
+  const A = NK.art;
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.useLegacyLights = false;
+  renderer.toneMapping = THREE.NoToneMapping;
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x8fd2f0);
+  scene.add(new THREE.HemisphereLight(0xd6efff, 0x74a352, 2.1));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const sun = new THREE.DirectionalLight(0xfff4dc, 3.1); sun.position.set(-4, 8, 5); scene.add(sun);
+  const cam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+  cam.position.set(0, 4, 9); cam.lookAt(0, 1, 0);
+
+  const ground = A.part(new THREE.PlaneGeometry(40, 40), A.mat.lambert(0x7cc45c), { rot: [-Math.PI / 2, 0, 0] });
+  scene.add(ground);
+
+  // A toy "kart" from parts, outlined, then merged; wheels kept separate.
+  const g = new THREE.Group();
+  g.add(A.part(new THREE.BoxGeometry(1.6, 0.5, 2.6), A.mat.toon(0xe63946), { pos: [0, 0.55, 0], outline: 0.05 }));
+  g.add(A.part(new THREE.SphereGeometry(0.45, 12, 9), A.mat.toon(0xffd166), { pos: [0, 1.25, 0.3], outline: 0.05 }));
+  const wheels = [];
+  [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].forEach(([x, z]) => {
+    const w = A.part(new THREE.CylinderGeometry(0.35, 0.35, 0.3, 12), A.mat.toon(A.INK), { pos: [x, 0.35, z], rot: [0, 0, Math.PI / 2] });
+    w.userData.keep = true; wheels.push(w); g.add(w);
+  });
+  g.add(A.blobShadow(3.2));
+  const merged = A.mergeByMaterial(g);
+  merged.position.set(-2, 0, 0);
+  scene.add(merged);
+
+  const ball = A.part(new THREE.IcosahedronGeometry(0.8, 1), A.mat.toon(0x4ba83c), { pos: [2, 0.8, 0], outline: 0.07 });
+  scene.add(ball);
+  const glowBox = A.part(new THREE.BoxGeometry(1, 0.1, 1.6), A.mat.glow(0x1a4fd6, 1.2), { pos: [0, 0.06, 2.2] });
+  scene.add(glowBox);
+
+  function frame() {
+    merged.rotation.y += 0.01;
+    renderer.render(scene, cam);
+    requestAnimationFrame(frame);
+  }
+  frame();
+  window.__artCore = {
+    mergedChildren: merged.children.length,
+    keptWheels: merged.children.filter((c) => c.userData.keep).length,
+    calls: () => renderer.info.render.calls
+  };
+</script>
+</body>
+</html>

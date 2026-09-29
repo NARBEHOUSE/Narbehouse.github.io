@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer — item gallery</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #8fd2f0; overflow: hidden; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .lbl {
+    position: absolute; transform: translate(-50%, -100%); white-space: nowrap;
+    background: rgba(255, 255, 255, 0.93); color: #1d1b2e; border: 2px solid #1d1b2e; border-radius: 8px;
+    font: 700 13px/1.2 "Segoe UI", Arial, sans-serif; padding: 3px 8px;
+  }
+  #hud {
+    position: fixed; left: 12px; top: 10px; white-space: pre; border-radius: 8px; padding: 8px 12px;
+    background: rgba(29, 27, 46, 0.82); color: #fff; font: 600 14px/1.35 Consolas, monospace;
+  }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<div id="hud"></div>
+<script src="../js/three.min.js"></script>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/art.js"></script>
+<script src="../js/art-items.js"></script>
+<script>
+/*
+ * Dev-only gallery for js/art-items.js: every item, set piece and effect on a
+ * turntable grid, a race-view road for each road style, and an FX area.
+ * The harness drives it through window.__gallery (tools/harness/art-items-gallery.cjs).
+ */
+(function () {
+  'use strict';
+  const A = NK.art, C = NK.C, I = NK.art.items;
+
+  /* ── Renderer: the Race Tracks / art_core_test settings ───────────────── */
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.useLegacyLights = false;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 2000);
+
+  const LOOKS = {
+    day:   { sky: ['#3d9ee0', '#8fd2f0', '#dff2f7'], fog: 0xdaf0f7, hemi: [0xd6efff, 0x74a352, 2.1], amb: 0.6, sun: [0xfff4dc, 3.1] },
+    dusk:  { sky: ['#2b1b3d', '#7a3b4a', '#e0764a'], fog: 0x6a3a40, hemi: [0xffb08a, 0x3a2a30, 1.6], amb: 0.7, sun: [0xffc08a, 2.4] },
+    night: { sky: ['#07041a', '#1f0e45', '#4b2370'], fog: 0x1f0e45, hemi: [0xa98ce8, 0x33265c, 1.5], amb: 1.0, sun: [0xe4eeff, 1.9] }
+  };
+  const skyMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, depthWrite: false });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 16), skyMat);
+  sky.renderOrder = -10;
+  scene.add(sky);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 1);
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  const sun = new THREE.DirectionalLight(0xffffff, 3);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -110, right: 110, top: 110, bottom: -110, near: 1, far: 500 });
+  sun.shadow.bias = -0.0015;
+  sun.shadow.normalBias = 0.04;
+  scene.add(hemi, amb, sun, sun.target);
+
+  function look(name) {
+    const L = LOOKS[name];
+    skyMat.map = A.tex.sky(L.sky[0], L.sky[1], L.sky[2]);
+    skyMat.needsUpdate = true;
+    scene.fog = new THREE.Fog(L.fog, 220, 820);
+    hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
+    amb.intensity = L.amb;
+    sun.color.set(L.sun[0]); sun.intensity = L.sun[1];
+  }
+
+  function aimSun(target) {
+    sun.target.position.copy(target);
+    sun.position.copy(target).add(new THREE.Vector3(-0.55, 1.0, -0.45).multiplyScalar(160));
+  }
+
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), A.mat.lambert(0x7cc45c));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.02;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  /* ── Exhibits ─────────────────────────────────────────────────────────── */
+  const gallery = new THREE.Group();
+  scene.add(gallery);
+  const exhibits = [];
+  const labelsEl = document.getElementById('labels');
+  const pedMat = A.mat.lambert(0xeae6dc);
+
+  function add(name, obj, x, z, o) {
+    o = o || {};
+    const holder = new THREE.Group();
+    holder.position.set(x, 0, z);
+    const turn = new THREE.Group();
+    holder.add(turn);
+    if (o.ped) {
+      const ped = new THREE.Mesh(new THREE.CylinderGeometry(o.ped, o.ped + 0.15, 0.12, 40), pedMat);
+      ped.position.y = 0.06;
+      ped.receiveShadow = true;
+      holder.add(ped);
+      turn.position.y = 0.12;
+    }
+    turn.add(obj);
+    if (o.yaw) turn.rotation.y = o.yaw;
+    gallery.add(holder);
+    const el = document.createElement('div');
+    el.className = 'lbl';
+    el.textContent = name;
+    labelsEl.appendChild(el);
+    holder.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(obj);
+    const ex = { name, obj, holder, turn, el, top: (isFinite(bb.max.y) ? bb.max.y : 1) + 0.35, spin: !!o.spin };
+    exhibits.push(ex);
+    return ex;
+  }
+
+  function row(z, list, gap) {
+    const total = list.reduce((s, e) => s + e.w, 0) + gap * (list.length - 1);
+    let x = -total / 2;
+    const out = {};
+    list.forEach((e) => { out[e.name] = add(e.name, e.obj, x + e.w / 2, z, e.o); x += e.w + gap; });
+    return out;
+  }
+
+  /** Placeholder 2.8 m kart for context (the roster's karts are another module). */
+  function dummyKart(color) {
+    const g = new THREE.Group();
+    g.add(A.partV(new THREE.BoxGeometry(1.8, 0.45, 2.6), color, { pos: [0, 0.5, 0], outline: 0.05 }));
+    g.add(A.partV(new THREE.BoxGeometry(1.2, 0.3, 0.9), 0x2a2c40, { pos: [0, 0.85, 0.35] }));
+    g.add(A.partV(new THREE.SphereGeometry(0.42, 14, 10), 0xffc98a, { pos: [0, 1.38, 0.3], outline: 0.04 }));
+    g.add(A.partV(new THREE.SphereGeometry(0.47, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), color, { pos: [0, 1.43, 0.3] }));
+    [[-0.98, -0.9], [0.98, -0.9], [-0.98, 0.95], [0.98, 0.95]].forEach((w) =>
+      g.add(A.partV(new THREE.CylinderGeometry(0.36, 0.36, 0.34, 14).rotateZ(Math.PI / 2), 0x1d1b2e, { pos: [w[0], 0.36, w[1]] })));
+    g.add(A.blobShadow(3.2));
+    return A.mergeByMaterial(g);
+  }
+
+  function withKart(item, color, y) {
+    const g = new THREE.Group();
+    g.add(dummyKart(color));
+    if (y) item.position.y = y;
+    g.add(item);
+    return g;
+  }
+
+  // Row A: items (turntables)
+  const box = I.box(), coin = I.coin(), peel = I.peel(), ball = I.ball(), bee = I.bee(), zap = I.zapper(), bomb = I.bomb();
+  const puff = I.shrinkPuff(), horn = I.hornWave();
+  horn.scale.setScalar(0.34);
+  const rowA = row(0, [
+    { name: 'Power Box', obj: box, w: 4, o: { ped: 1.7, spin: true } },
+    { name: 'Coin', obj: coin, w: 2.6, o: { ped: 1.0, spin: true } },
+    { name: 'Banana Peel', obj: peel, w: 3, o: { ped: 1.2, spin: true } },
+    { name: 'Bumper Ball', obj: ball, w: 3, o: { ped: 1.2, spin: true } },
+    { name: 'Homing Bee', obj: bee, w: 3, o: { ped: 1.2, spin: true } },
+    { name: 'Leader Zapper', obj: zap, w: 4, o: { ped: 1.4, spin: true } },
+    { name: 'Boom Box', obj: bomb, w: 3, o: { ped: 1.2, spin: true } },
+    { name: 'Shrink Puff', obj: puff, w: 3.4, o: { ped: 1.4 } },
+    { name: 'Honk Horn wave (x0.34)', obj: horn, w: 6, o: { ped: 2.9 } }
+  ], 1.6);
+
+  // Row B: pads and ramps
+  const padP = I.pad('power'), padB = I.pad('boost');
+  const rampJ = I.ramp('jump', C.LANE_W * 2), rampG = I.ramp('glide', C.LANE_W * 2);
+  row(24, [
+    { name: 'Power Pad', obj: padP, w: 4.5, o: { ped: 3.5 } },
+    { name: 'Boost Pad', obj: padB, w: 4.5, o: { ped: 3.5 } },
+    { name: 'Jump Ramp (2 lanes)', obj: rampJ, w: 9, o: { yaw: Math.PI * 0.8 } },
+    { name: 'Glide Ramp (2 lanes)', obj: rampG, w: 11, o: { yaw: Math.PI * 0.8 } }
+  ], 4);
+
+  // Row C: kart effects and trophies
+  const aura = I.starAura(), jet = I.jetShell(), glider = A.glider(0xd62839);
+  row(48, [
+    { name: 'Super Star aura', obj: withKart(aura, 0x2449d6), w: 6, o: { ped: 2.8, spin: true } },
+    { name: 'Jet Mode casing', obj: withKart(jet, 0x2aa84a), w: 7, o: { ped: 3.2, spin: true } },
+    { name: 'Glider', obj: withKart(glider, 0xef6a1a, 1.35), w: 7, o: { ped: 2.8, spin: true } },
+    { name: 'Gold Trophy', obj: A.trophy('gold'), w: 2.2, o: { ped: 0.8, spin: true } },
+    { name: 'Silver Trophy', obj: A.trophy('silver'), w: 2.2, o: { ped: 0.8, spin: true } },
+    { name: 'Bronze Trophy', obj: A.trophy('bronze'), w: 2.2, o: { ped: 0.8, spin: true } }
+  ], 2.5);
+
+  // Row D: set pieces
+  const drone = A.drone(), gantry = A.startGantry(), podium = A.podium();
+  const droneRig = new THREE.Group();
+  droneRig.add(drone, dummyKart(0xef5b9c));
+  drone.userData.setClaw(0);
+  droneRig.position.y = 1.2;
+  const podiumRig = new THREE.Group();
+  podiumRig.add(podium);
+  podium.userData.spots.forEach((p, i) => { const k = dummyKart([0xe3a400, 0xb4bfd2, 0xc0702c][i]); k.position.copy(p); podiumRig.add(k); });
+  const rowD = row(78, [
+    { name: 'Rescue Drone (carrying a vehicle)', obj: droneRig, w: 8, o: {} },
+    { name: 'Podium', obj: podiumRig, w: 13, o: {} },
+    { name: 'Start Gantry', obj: gantry, w: 26, o: {} }
+  ], 5);
+
+  // Row E: shared props
+  const P = A.props, rngE = NK.util.rng(7);
+  const stand = P.grandstand(rngE), bill = P.billboard(rngE, 'SPEED ZONE'), arch = P.balloon_arch(rngE), pit = P.pit_building(rngE);
+  const cones = new THREE.Group();
+  [[0, 0], [1.2, 0.6], [-1.1, 0.8], [0.3, -1.2]].forEach((c) => { const k = P.traffic_cone(rngE); k.position.set(c[0], 0, c[1]); cones.add(k); });
+  row(118, [
+    { name: 'grandstand', obj: stand, w: 21, o: {} },
+    { name: 'billboard', obj: bill, w: 10, o: {} },
+    { name: 'balloon_arch', obj: arch, w: 23, o: {} },
+    { name: 'pit_building', obj: pit, w: 27, o: {} },
+    { name: 'traffic_cone', obj: cones, w: 4, o: {} }
+  ], 5);
+  const coneOne = P.traffic_cone(rngE);
+
+  /** Every object measured alone for the draw-call table (demo karts excluded). */
+  const trophies = exhibits.filter((e) => /Trophy/.test(e.name)).map((e) => e.obj);
+  const MEASURE = [
+    ['items.box', box], ['items.coin', coin], ['items.pad power', padP], ['items.pad boost', padB],
+    ['items.ramp jump', rampJ], ['items.ramp glide', rampG], ['items.peel', peel], ['items.ball', ball],
+    ['items.bee', bee], ['items.zapper', zap], ['items.bomb', bomb], ['items.hornWave', horn],
+    ['items.starAura', aura], ['items.jetShell', jet], ['items.shrinkPuff', puff],
+    ['drone', drone], ['startGantry', gantry], ['podium', podium],
+    ['trophy gold', trophies[0]], ['trophy silver', trophies[1]], ['trophy bronze', trophies[2]], ['glider', glider],
+    ['props.grandstand', stand], ['props.billboard', bill], ['props.balloon_arch', arch],
+    ['props.pit_building', pit], ['props.traffic_cone', coneOne]
+  ];
+
+  /* ── FX area: a strip of road beside the gallery ──────────────────────── */
+  const FXC = new THREE.Vector3(80, 0, 20);
+  const fxArea = new THREE.Group();
+  const fxRoadGeo = new THREE.PlaneGeometry(2 * C.ROAD_HALF, 48).rotateX(-Math.PI / 2);
+  const fuv = fxRoadGeo.attributes.uv;
+  for (let i = 0; i < fuv.count; i++) fuv.setY(i, fuv.getY(i) * 48 / A.ROAD_TILE);
+  const fxRoad = new THREE.Mesh(fxRoadGeo, A.mat.lambert(0xffffff, { map: A.tex.road('asphalt') }));
+  fxRoad.position.copy(FXC);
+  fxRoad.receiveShadow = true;
+  fxArea.add(fxRoad);
+  scene.add(fxArea);
+  const fx = A.fx.create(scene);
+
+  /* ── Road scenes: race view of each road style ─────────────────────────── */
+  const ROAD_LOOKS = {
+    asphalt: { look: 'day', verge: 0xc9b48d, ground: 0x7cc45c, wall: ['hedge'], rail: [0xe63946, 0xf7f5ee] },
+    rainbow: { look: 'night', verge: 0x241046, ground: 0x0b0620, wall: ['glow', 0x39e0ff], rail: [0x7b3fe4, 0x39e0ff] },
+    ice:     { look: 'day', verge: 0xe8f4fb, ground: 0xdfeef7, wall: ['ice'], rail: [0x2f6fe0, 0xf7f5ee] },
+    candy:   { look: 'day', verge: 0xfff0f6, ground: 0xf7c6dc, wall: ['candy'], rail: [0xe8174f, 0xfff7fb] },
+    stone:   { look: 'dusk', verge: 0x4a3b36, ground: 0x2b2220, wall: ['stone'], rail: [0xffb627, 0x1d1b2e] },
+    sand:    { look: 'day', verge: 0xe8c98f, ground: 0xecc384, wall: ['fence'], rail: [0xc2462b, 0xfff7e2] }
+  };
+  const roadGroup = new THREE.Group();
+  roadGroup.visible = false;
+  scene.add(roadGroup);
+  const RZ0 = 40, RLEN = 420;
+  let roadStuff = null;
+
+  function strip(x0, x1, y, color, map, uRep, vRep) {
+    const geo = new THREE.PlaneGeometry(x1 - x0, RLEN).rotateX(-Math.PI / 2);
+    if (map) {
+      const uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * uRep, uv.getY(i) * vRep);
+    }
+    const m = new THREE.Mesh(geo, map ? A.mat.lambert(0xffffff, { map: map }) : A.mat.lambert(color));
+    m.position.set((x0 + x1) / 2, y, RZ0 - RLEN / 2);
+    m.receiveShadow = true;
+    return m;
+  }
+
+  function sideFace(x, h, tex, tile, flip) {
+    const geo = new THREE.PlaneGeometry(RLEN, h);
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * RLEN / tile);
+    geo.rotateY(flip ? -Math.PI / 2 : Math.PI / 2);
+    const m = new THREE.Mesh(geo, A.mat.lambert(0xffffff, { map: tex }));
+    m.position.set(x, h / 2, RZ0 - RLEN / 2);
+    return m;
+  }
+
+  /** The world.js pattern: one InstancedMesh per part for a whole row (boxParts / coinParts). */
+  const _o = new THREE.Object3D();
+  function instancedRow(parts, points, y, spinRate) {
+    const g = new THREE.Group();
+    const meshes = ['body', 'badge', 'shell'].map((k) => {
+      const m = new THREE.InstancedMesh(parts[k].geometry, parts[k].material, points.length);
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      m.frustumCulled = false;
+      g.add(m);
+      return m;
+    });
+    g.userData.update = (t) => {
+      points.forEach((p, i) => {
+        _o.position.set(p[0], y + Math.sin(t * 2.2 + i) * 0.1, p[1]);
+        _o.rotation.set(0, t * spinRate + i, 0);
+        _o.updateMatrix();
+        meshes.forEach((m) => m.setMatrixAt(i, _o.matrix));
+      });
+      meshes.forEach((m) => { m.instanceMatrix.needsUpdate = true; });
+    };
+    g.userData.update(0);
+    return g;
+  }
+
+  function buildRoad(style) {
+    if (roadStuff) { roadGroup.remove(roadStuff); A.disposeTree(roadStuff); }
+    const L = ROAD_LOOKS[style];
+    const g = new THREE.Group();
+    const RH = C.ROAD_HALF, SH = C.SHOULDER;
+    g.add(strip(-RH, RH, 0, 0, A.tex.road(style), 1, RLEN / A.ROAD_TILE));
+    g.add(strip(-RH - SH, -RH, -0.04, L.verge));
+    g.add(strip(RH, RH + SH, -0.04, L.verge));
+    const wallTex = A.tex.wall(L.wall[0], L.wall[1]);
+    g.add(sideFace(-RH - 0.6, 1.3, wallTex, 2.6, false));
+    const railTex = A.tex.rail(L.rail[0], L.rail[1]);
+    const railFace = sideFace(RH + 0.6, 0.85, railTex, A.RAIL_TILE, true);
+    railFace.position.y = 0.95;
+    g.add(railFace);
+    for (let z = RZ0; z > RZ0 - RLEN; z -= 4) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.95, 0.16), A.mat.lambert(0x6b6f82));
+      post.position.set(RH + 0.7, 0.47, z);
+      g.add(post);
+    }
+    // lane-centre check marks: little cones at every lane centre and at each divider
+    for (let i = 0; i < C.LANE_COUNT; i++) {
+      const k = coneOne.clone();
+      k.position.set(C.laneX(i), 0, 16);
+      g.add(k);
+    }
+    const kart = dummyKart(0xd62839);
+    g.add(kart);
+    // track features at race distances (metres ahead of the kart at z = 0)
+    const put = (obj, lane, dist, y) => { obj.position.set(lane === null ? 0 : C.laneX(lane), y || 0, -dist); g.add(obj); return obj; };
+    const coinRow = instancedRow(I.coinParts(), [0, 1, 2, 3, 4].map((i) => [C.laneX(2), -(12 + i * 3)]), I.COIN_Y, 3);
+    g.add(coinRow);
+    put(I.peel(), 3, 20);
+    put(I.pad('boost'), 0, 30); put(I.pad('boost'), 4, 30);
+    [1, 2, 3].forEach((i) => put(I.pad('power'), i, 60));
+    put(I.bomb(), 4, 72);
+    const boxRow = instancedRow(I.boxParts(), [0, 1, 2, 3, 4].map((i) => [C.laneX(i), -90]), I.BOX_Y, 1.2);
+    g.add(boxRow);
+    put(I.ramp('jump', C.LANE_W * 3), 2, 115);
+    put(A.startGantry(), null, 150);
+    g.userData.rows = [boxRow, coinRow];
+    roadGroup.add(g);
+    roadStuff = g;
+    look(L.look);
+    ground.material = A.mat.lambert(L.ground);
+    aimSun(new THREE.Vector3(0, 0, -30));
+  }
+
+  /* ── Views ────────────────────────────────────────────────────────────── */
+  const at = (ex, dx, dy, dz) => new THREE.Vector3().copy(ex.holder.position).add(new THREE.Vector3(dx, dy, dz));
+  const VIEWS = {
+    overview:  () => [new THREE.Vector3(-30, 62, -46), new THREE.Vector3(10, 0, 62)],
+    items:     () => [new THREE.Vector3(0, 5.2, -19), new THREE.Vector3(0, 1.1, 0)],
+    items2:    () => [new THREE.Vector3(-26, 3.2, -8.5), new THREE.Vector3(-8, 1.1, 0)],
+    pads:      () => [new THREE.Vector3(4, 12, 6), new THREE.Vector3(2, 0, 24)],
+    karts:     () => [new THREE.Vector3(2, 6.5, 33), new THREE.Vector3(2, 1.4, 48)],
+    setpieces: () => [new THREE.Vector3(-4, 14, 44), new THREE.Vector3(2, 4, 78)],
+    drone:     () => [at(rowD['Rescue Drone (carrying a vehicle)'], 3.2, 3.4, -7.5), at(rowD['Rescue Drone (carrying a vehicle)'], 0, 3, 0)],
+    gantry:    () => [at(rowD['Start Gantry'], 0, 4.2, 15), at(rowD['Start Gantry'], 0, 5.6, 0)],
+    props:     () => [new THREE.Vector3(-8, 26, 70), new THREE.Vector3(6, 3, 118)],
+    props2:    () => [new THREE.Vector3(-34, 7, 92), new THREE.Vector3(-18, 4, 118)],
+    fx:        () => [new THREE.Vector3(FXC.x - 2, 5.5, FXC.z - 17), new THREE.Vector3(FXC.x, 1.2, FXC.z - 2)],
+    chase:     () => [new THREE.Vector3(0, 3.3, 7.6), new THREE.Vector3(0, 1.3, -14)],
+    far:       () => [new THREE.Vector3(0, 3.3, 7.6), new THREE.Vector3(0, 0.6, -60)],
+    top:       () => [new THREE.Vector3(0, 30, 24), new THREE.Vector3(0, 0, 4)]
+  };
+  let mode = 'gallery', spinning = true;
+
+  /** Close-up of one exhibit from its front-left three-quarter (turntables paused). */
+  function focus(name, dist, yaw, lift) {
+    const ex = exhibits.find((e) => e.name === name);
+    spinning = false;
+    exhibits.forEach((e) => { e.turn.rotation.y = e.spin ? 0.55 : e.turn.rotation.y; });
+    gallery.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(ex.obj), ctr = bb.getCenter(new THREE.Vector3());
+    const d = dist || Math.max(3, bb.getSize(new THREE.Vector3()).length() * 1.25);
+    const a = yaw === undefined ? -0.45 : yaw;
+    cam.fov = 40;
+    cam.updateProjectionMatrix();
+    cam.position.set(ctr.x + Math.sin(a) * d, ctr.y + d * (lift === undefined ? 0.3 : lift), ctr.z - Math.cos(a) * d);
+    cam.lookAt(ctr);
+    aimSun(ctr);
+  }
+
+  function view(name) {
+    spinning = true;
+    const v = VIEWS[name]();
+    cam.fov = name === 'far' ? 22 : 50;
+    cam.updateProjectionMatrix();
+    cam.position.copy(v[0]);
+    cam.lookAt(v[1]);
+    if (mode === 'gallery') aimSun(v[1]);
+  }
+
+  function setMode(m) {
+    mode = m;
+    gallery.visible = m === 'gallery';
+    labelsEl.style.display = m === 'gallery' ? '' : 'none';
+    roadGroup.visible = m === 'road';
+    fxArea.visible = m === 'fx';
+    if (m !== 'road') { look('day'); ground.material = A.mat.lambert(0x7cc45c); }
+    if (m === 'fx') { view('fx'); aimSun(FXC); }
+  }
+
+  /* ── Animation ────────────────────────────────────────────────────────── */
+  let T = 0, stressTarget = 0, fxClock = 0, roadFx = 0;
+  const DRIFT = [0, 0x3aa0ff, 0xff8a1a, 0xb45cff];      // drift charge level 1..3
+  const _p = new THREE.Vector3(), _d = new THREE.Vector3(0, 0.15, 1).normalize();
+
+  function animate(dt) {
+    T += dt;
+    if (spinning) exhibits.forEach((ex) => { if (ex.spin) ex.turn.rotation.y += dt * 0.45; });
+    box.userData.spin.rotation.y += dt * 1.2;
+    box.userData.spin.position.y = box.userData.baseY + Math.sin(T * 2.2) * 0.12;
+    coin.userData.spin.rotation.y += dt * 3;
+    ball.userData.roll.rotation.x -= dt * 2.5;
+    bee.userData.wings.forEach((w, i) => { w.rotation.z = (i ? 1 : -1) * Math.sin(T * 40) * 0.6; });
+    bee.userData.body.position.y = 1.25 + Math.sin(T * 3) * 0.08;
+    zap.userData.spin.rotation.z += dt * 4;
+    bomb.userData.fuse.scale.setScalar(0.8 + 0.45 * Math.abs(Math.sin(T * 23)));
+    I.updateHornWave(horn, (T % 1.6) / 1.6);
+    puff.userData.update((T % 1.4) / 1.4);
+    aura.userData.update(T);
+    jet.userData.flames.scale.set(1, 1, 0.8 + 0.3 * Math.abs(Math.sin(T * 30)));
+    drone.userData.props.forEach((p) => { p.rotation.y += dt * 28; });
+    stand.userData.anim(T);
+    if (roadStuff && mode === 'road') roadStuff.userData.rows.forEach((row) => row.userData.update(T));
+
+    if (mode === 'fx') {
+      fxClock += dt;
+      // continuous emitters: drift sparks in the three charge colours, a boost flame, smoke, dust
+      [[-6, 0x3aa0ff], [-2, 0xff8a1a], [2, 0xb45cff]].forEach((s) => fx.sparks(_p.set(FXC.x + s[0], 0.05, FXC.z + 6), s[1], 2));
+      fx.flame(_p.set(FXC.x + 6, 0.55, FXC.z + 6), _d, 3);
+      fx.smoke(_p.set(FXC.x - 6, 0.3, FXC.z - 2), 1);
+      fx.dust(_p.set(FXC.x + 6, 0.05, FXC.z - 2), 1);
+      if (fxClock > 0.9) {
+        fxClock = 0;
+        fx.burst(_p.set(FXC.x - 3, 1.3, FXC.z - 6), 0xffd21a, 28);
+        fx.confetti(_p.set(FXC.x + 3, 0.02, FXC.z - 6), 70);
+        fx.splash(_p.set(FXC.x - 7, 0.05, FXC.z - 9), 30);
+        fx.stars(_p.set(FXC.x + 7, 1.2, FXC.z - 9), 12);
+      }
+    }
+    if (mode === 'road' && roadFx) {
+      // drift sparks off both rear wheels, boost flame from the exhaust, a little dust
+      [-0.98, 0.98].forEach((x) => fx.sparks(_p.set(x, 0.05, 1.0), DRIFT[roadFx], 2));
+      fx.flame(_p.set(0, 0.6, 1.45), _d, 2);
+      if (Math.random() < 0.3) fx.dust(_p.set(0.98, 0.02, 1.1), 1);
+    }
+    fx.update(dt);
+    // stress: top the pools up after the update, so the frame drawn holds the full target
+    if (mode === 'fx') {
+      for (let guard = 0; fx.stats().live < stressTarget && guard < 400; guard++) {
+        const x = FXC.x + (Math.random() - 0.5) * 22, z = FXC.z + (Math.random() - 0.5) * 30;
+        const k = guard % 4;
+        if (k === 0) fx.confetti(_p.set(x, 0.02, z), 30);
+        else if (k === 1) fx.smoke(_p.set(x, 0.3, z), 8);
+        else if (k === 2) fx.sparks(_p.set(x, 0.05, z), 0xffa21a, 20);
+        else fx.stars(_p.set(x, 1, z), 12);
+      }
+    }
+  }
+
+  /* ── Labels & HUD ─────────────────────────────────────────────────────── */
+  const _v = new THREE.Vector3();
+  const hud = document.getElementById('hud');
+  function placeLabels() {
+    if (mode !== 'gallery') return;
+    exhibits.forEach((ex) => {
+      _v.copy(ex.holder.position); _v.y += ex.top;
+      _v.project(cam);
+      const on = _v.z < 1 && Math.abs(_v.x) < 1.05 && Math.abs(_v.y) < 1.05;
+      ex.el.style.display = on ? '' : 'none';
+      if (on) { ex.el.style.left = ((_v.x + 1) / 2 * innerWidth) + 'px'; ex.el.style.top = ((1 - _v.y) / 2 * innerHeight) + 'px'; }
+    });
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    animate(dt);
+    renderer.render(scene, cam);
+    placeLabels();
+    const s = fx.stats();
+    hud.textContent = 'mode ' + mode + '   calls ' + renderer.info.render.calls + '   tris ' + renderer.info.render.triangles +
+      (mode === 'fx' ? '\nparticles live ' + s.live + ' / ' + s.capacity + '  (glow ' + s.glow + ', soft ' + s.soft + ', flat ' + s.flat + ')' : '');
+  }
+
+  /* ── Measurement helpers for the harness ──────────────────────────────── */
+  /** Render `objects` alone (lights only) and return renderer.info for that frame. */
+  function isolate(objects, place) {
+    const s = new THREE.Scene();
+    s.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2), new THREE.DirectionalLight(0xffffff, 2));
+    const parents = objects.map((o) => o.parent);
+    objects.forEach((o) => s.add(o));
+    s.updateMatrixWorld(true);
+    const c = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 3000);
+    place(c);
+    renderer.render(s, c);
+    const out = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+    objects.forEach((o, i) => { if (parents[i]) parents[i].add(o); else s.remove(o); });
+    return out;
+  }
+
+  function calls() {
+    return MEASURE.map((m) => {
+      const obj = m[1], pos = obj.position.clone(), quat = obj.quaternion.clone();
+      obj.position.set(0, 0, 0);
+      obj.quaternion.identity();
+      const res = isolate([obj], (c) => {
+        const bb = new THREE.Box3().setFromObject(obj), ctr = bb.getCenter(new THREE.Vector3());
+        const size = Math.max(1, bb.getSize(new THREE.Vector3()).length());
+        c.position.copy(ctr).add(new THREE.Vector3(size * 0.35, size * 0.3, -size * 0.9));
+        c.lookAt(ctr);
+      });
+      obj.position.copy(pos);
+      obj.quaternion.copy(quat);
+      return { name: m[0], calls: res.calls, tris: res.tris };
+    });
+  }
+
+  function fxReport() {
+    const s = fx.stats();
+    const r = isolate(fx.objects, (c) => { c.position.copy(cam.position); c.quaternion.copy(cam.quaternion); });
+    // cost of one update at this load, with a tiny dt so nothing dies while timing
+    const t0 = performance.now();
+    for (let i = 0; i < 100; i++) fx.update(1e-5);
+    const ms = (performance.now() - t0) / 100;
+    return { live: s.live, glow: s.glow, soft: s.soft, flat: s.flat, capacity: s.capacity, calls: r.calls, updateMs: +ms.toFixed(3) };
+  }
+
+  look('day');
+  view('overview');
+  requestAnimationFrame(frame);
+
+  window.__gallery = {
+    ready: true,
+    view(name) { if (mode !== 'gallery') setMode('gallery'); view(name); },
+    mode(m) { setMode(m); },
+    road(style) { setMode('road'); buildRoad(style); view('chase'); },
+    roadView(name) { view(name); },
+    setLights(n) { gantry.userData.setLights(n); },
+    focus(name, dist, yaw, lift) { if (mode !== 'gallery') setMode('gallery'); focus(name, dist, yaw, lift); },
+    padGlow(on) { I.padGlow(on); },
+    roadFx(level) { roadFx = level || 0; if (!roadFx) fx.clear(); },
+    fxStress(n) { if (mode !== 'fx') setMode('fx'); stressTarget = n; },
+    fxReport,
+    /** Draw calls of the instanced box row (5 boxes) and coin row (5 coins), each rendered alone. */
+    instancedCalls() {
+      if (!roadStuff) buildRoad('asphalt');
+      return roadStuff.userData.rows.map((row) => isolate([row], (c) => { c.position.set(0, 6, 25); c.lookAt(0, 1, -50); }));
+    },
+    calls,
+    info() { return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }; }
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer — track preview</title>
+<!--
+  Dev-only top-down plan of a circuit, drawn to scale from the real game data
+  (js/tracks.js + js/themes.js through js/spline.js), with the verdict of
+  tools/tracks_analysis.js — the same rules tools/validate_tracks.js applies.
+
+    track_preview.html?track=meadow          one circuit
+    track_preview.html?track=meadow&mirror=1 its Mirror-mode layout
+    track_preview.html?track=meadow&dev=1    plus corner circles and section labels
+    track_preview.html?overview=1            all eight side by side
+
+  Sets window.__preview = { ok, issues, warnings, stats } once drawn (for the harness).
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #141824; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/themes.js"></script>
+<script src="../js/tracks.js"></script>
+<script src="tracks_analysis.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const S = NKSpline, C = NK.C, AN = NKTrackAnalysis;
+  const env = { NKSpline: S, C: C, themes: NK.themes };
+  const q = new URLSearchParams(location.search);
+  const W = innerWidth, H = innerHeight;
+  const cv = document.getElementById('cv');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+
+  const FONT = '"Segoe UI", system-ui, sans-serif';
+  const INK = '#10101c';
+  const EDGE = { wall: '#b9c0cc', verge: '#3fbf5a', drop: '#ff3b30' };
+  const FEAT = {
+    box: '#9b6bff', pad: '#ffd000', boost: '#ff7b00', coin: '#ffd23f',
+    jump: '#2fd0ff', glide: '#d77bff', hazard: '#ff2d55', puddle: '#8a5a2b', landmark: '#ffffff'
+  };
+
+  /* ── Frame helpers ─────────────────────────────────────────────────────
+   * A view maps world metres (x east, z south) to canvas pixels. Icons are
+   * drawn in a local frame at (s, x): +x = right of the kart, -y = forward,
+   * in metres, so a lane-wide box really is a lane wide.
+   */
+  function makeView(loop, extra, box, padM) {
+    const b = S.bounds(loop);
+    extra.forEach((p) => { b.minX = Math.min(b.minX, p[0]); b.maxX = Math.max(b.maxX, p[0]); b.minZ = Math.min(b.minZ, p[1]); b.maxZ = Math.max(b.maxZ, p[1]); });
+    const w = b.maxX - b.minX + padM * 2, h = b.maxZ - b.minZ + padM * 2;
+    const scale = Math.min(box.w / w, box.h / h);
+    const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+    return {
+      loop: loop, scale: scale,
+      X: (x) => box.x + box.w / 2 + (x - cx) * scale,
+      Y: (z) => box.y + box.h / 2 + (z - cz) * scale
+    };
+  }
+
+  const _o = {};
+  function at(v, s, x) { S.toWorld(v.loop, s, x, _o); return [v.X(_o.wx), v.Y(_o.wz), _o.h, _o.k]; }
+
+  function strokeOffset(v, off, from, to, style, widthPx, dash) {
+    const loop = v.loop, seg = loop.seg;
+    g.beginPath();
+    const n = Math.max(1, Math.round((to - from) / seg));
+    for (let i = 0; i <= n; i++) {
+      const p = at(v, from + (to - from) * i / n, off);
+      if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]);
+    }
+    g.strokeStyle = style; g.lineWidth = widthPx; g.setLineDash(dash || []);
+    g.stroke(); g.setLineDash([]);
+  }
+
+  function local(v, s, x, draw, sizeMul) {
+    const p = at(v, s, x);
+    g.save();
+    g.translate(p[0], p[1]);
+    g.rotate(p[2]);
+    const k = v.scale * (sizeMul || 1);
+    g.scale(k, k);
+    draw(1 / k);
+    g.restore();
+  }
+
+  /* ── Road ───────────────────────────────────────────────────────────── */
+
+  function drawRoad(v, T, th, R, opts) {
+    const L = R.L, loop = v.loop, sc = v.scale;
+    const half = C.ROAD_HALF;
+    // A soft halo of the theme's ground (or liquid) so each plan carries its world's colour.
+    strokeOffset(v, 0, 0, L, hexA(th.ground.type === 'none' ? th.sky[2] : th.ground.colors[0], 0.22), (half + C.SHOULDER + 34) * 2 * sc);
+    // Edge bands, per side and per edge kind, in the verge zone.
+    [-1, 1].forEach((side) => {
+      const key = side < 0 ? 'left' : 'right';
+      let runFrom = 0, runKind = R.edgeAt(0, key);
+      const flush = (to) => strokeOffset(v, side * (half + C.SHOULDER / 2), runFrom, to, EDGE[runKind], Math.max(3, C.SHOULDER * sc));
+      for (let s = loop.seg; s <= L + 0.001; s += loop.seg) {
+        const kind = s >= L ? null : R.edgeAt(s, key);
+        if (kind !== runKind) { flush(s); runFrom = s; runKind = kind; }
+      }
+    });
+    strokeOffset(v, 0, 0, L, INK, (half + 0.6) * 2 * sc);
+    strokeOffset(v, 0, 0, L, th.road.base, half * 2 * sc);
+    // Lane dividers (dashed) and edge lines, so every icon reads as "in lane n".
+    const dash = [Math.max(3, 5 * sc), Math.max(3, 5 * sc)];
+    [-1.5, -0.5, 0.5, 1.5].forEach((m) => strokeOffset(v, m * C.LANE_W, 0, L, hexA(th.road.lane, 0.9), Math.max(1, 0.35 * sc), dash));
+    [-1, 1].forEach((side) => strokeOffset(v, side * (half - 0.5), 0, L, th.road.edge, Math.max(1, 0.45 * sc)));
+
+    // Grid zone behind the line, then the chequered start line.
+    const gridFrom = L - AN.RULES.gridZone;
+    for (let s = gridFrom; s < L; s += 8) {
+      [-1, 1].forEach((side, j) => {
+        const lane = side < 0 ? 1 : 3;
+        local(v, s + (j ? 4 : 0), C.laneX(lane), (px) => {
+          g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1.2 * px;
+          g.strokeRect(-1.4, -1.6, 2.8, 3.2);
+        });
+      });
+    }
+    local(v, 0, 0, (px) => {
+      const cells = 10, cw = (half * 2) / cells;
+      for (let i = 0; i < cells; i++) for (let j = 0; j < 2; j++) {
+        g.fillStyle = (i + j) % 2 ? INK : '#ffffff';
+        g.fillRect(-half + i * cw, -2 + j * 2, cw, 2);
+      }
+    });
+    // Direction chevrons down the centre.
+    for (let s = 60; s < L - 40; s += 110) {
+      local(v, s, 0, (px) => {
+        g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 1.6 * px; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(-2.6, 1.8); g.lineTo(0, -1.2); g.lineTo(2.6, 1.8); g.stroke();
+      }, Math.max(1, 4 / sc));
+    }
+  }
+
+  /* ── Features ───────────────────────────────────────────────────────── */
+
+  function drawFeatures(v, T, R) {
+    const L = R.L, F = T.features, sc = v.scale;
+    const lx = C.laneX;
+    const minM = 7 / sc;                          // icons never smaller than ~7 px
+    const big = Math.max(1, minM / 3.2);
+
+    // Landing zones first, as translucent bands under everything else.
+    F.ramps.forEach((r) => {
+      const s = r.at * L, land = r.kind === 'jump' ? AN.RULES.jumpLanding : AN.RULES.glideLanding;
+      strokeOffset(v, 0, s, s + land, hexA(r.kind === 'jump' ? FEAT.jump : FEAT.glide, 0.18), C.ROAD_HALF * 2 * sc);
+    });
+    F.coins.forEach((c) => {
+      const s0 = c.from * L, len = S.mod(c.to * L - s0, L);
+      for (let d = 0; d <= len; d += 6) {
+        local(v, s0 + d, lx(c.lane), (px) => {
+          g.fillStyle = FEAT.coin; g.strokeStyle = INK; g.lineWidth = 1 * px;
+          g.beginPath(); g.arc(0, 0, 0.9, 0, Math.PI * 2); g.fill(); g.stroke();
+        }, Math.max(1, 3.5 / sc / 1.8));
+      }
+    });
+    F.boostPads.forEach((r) => r.lanes.forEach((l) => local(v, r.at * L, lx(l), (px) => {
+      g.fillStyle = FEAT.boost; g.strokeStyle = INK; g.lineWidth = 1.2 * px; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(-1.6, 2.2); g.lineTo(0, -0.2); g.lineTo(1.6, 2.2); g.lineTo(1.6, 0.4); g.lineTo(0, -2.2); g.lineTo(-1.6, 0.4); g.closePath();
+      g.fill(); g.stroke();
+    }, big)));
+    F.padRows.forEach((r) => r.lanes.forEach((l) => local(v, r.at * L, lx(l), (px) => {
+      g.fillStyle = FEAT.pad; g.strokeStyle = INK; g.lineWidth = 1.2 * px;
+      g.fillRect(-1.5, -2, 3, 4); g.strokeRect(-1.5, -2, 3, 4);
+      g.fillStyle = INK;
+      g.beginPath(); g.moveTo(0.4, -1.6); g.lineTo(-0.8, 0.2); g.lineTo(0.1, 0.2); g.lineTo(-0.4, 1.6); g.lineTo(0.8, -0.2); g.lineTo(-0.1, -0.2); g.closePath(); g.fill();
+    }, big)));
+    F.itemRows.forEach((r) => r.lanes.forEach((l) => local(v, r.at * L, lx(l), (px) => {
+      const gr = g.createLinearGradient(-1.5, -1.5, 1.5, 1.5);
+      ['#ff4d6d', '#ffb703', '#52d273', '#3fa7ff', '#9b6bff'].forEach((c, i) => gr.addColorStop(i / 4, c));
+      g.fillStyle = gr; g.strokeStyle = INK; g.lineWidth = 1.2 * px;
+      g.fillRect(-1.5, -1.5, 3, 3); g.strokeRect(-1.5, -1.5, 3, 3);
+      g.fillStyle = '#ffffff'; g.font = 'bold 2.4px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('?', 0, 0.15);
+    }, big)));
+    F.ramps.forEach((r) => {
+      const a = lx(r.lanes[0]) - C.LANE_W / 2 + 0.3, b = lx(r.lanes[r.lanes.length - 1]) + C.LANE_W / 2 - 0.3;
+      local(v, r.at * L, 0, (px) => {
+        g.fillStyle = r.kind === 'jump' ? FEAT.jump : FEAT.glide; g.strokeStyle = INK; g.lineWidth = 1.4 * px;
+        g.beginPath(); g.moveTo(a, 2.5); g.lineTo(b, 2.5); g.lineTo(b - 0.8, -2.5); g.lineTo(a + 0.8, -2.5); g.closePath(); g.fill(); g.stroke();
+        g.strokeStyle = INK; g.lineWidth = 1 * px;
+        for (let x = a + 1.2; x < b - 0.6; x += 1.4) { g.beginPath(); g.moveTo(x, 1.6); g.lineTo(x + 0.5, -1.6); g.stroke(); }
+      }, Math.max(1, minM / 5));
+    });
+    F.hazards.forEach((h) => {
+      const s = h.at * L;
+      if (h.kind === 'roller') {
+        const a = lx(h.lanes[0]), b = lx(h.lanes[h.lanes.length - 1]);
+        local(v, s, 0, (px) => {
+          g.strokeStyle = FEAT.hazard; g.lineWidth = 1.2 * px; g.setLineDash([1.2, 0.8]);
+          g.beginPath(); g.moveTo(a, 0); g.lineTo(b, 0); g.stroke(); g.setLineDash([]);
+          g.fillStyle = FEAT.hazard; g.strokeStyle = INK; g.lineWidth = 1 * px;
+          [a, b].forEach((x, i) => { g.beginPath(); g.moveTo(x + (i ? 0.9 : -0.9), 0); g.lineTo(x + (i ? -0.5 : 0.5), -0.9); g.lineTo(x + (i ? -0.5 : 0.5), 0.9); g.closePath(); g.fill(); });
+          g.beginPath(); g.arc((a + b) / 2, 0, 1.2, 0, Math.PI * 2); g.fill(); g.stroke();
+        }, big);
+        return;
+      }
+      h.lanes.forEach((l) => local(v, s, lx(l), (px) => {
+        g.strokeStyle = INK; g.lineWidth = 1.2 * px;
+        if (h.kind === 'block') {
+          g.fillStyle = FEAT.hazard; g.fillRect(-1.4, -1.4, 2.8, 2.8); g.strokeRect(-1.4, -1.4, 2.8, 2.8);
+          g.strokeStyle = '#ffffff'; g.lineWidth = 0.8 * px;
+          g.beginPath(); g.moveTo(-0.9, -0.9); g.lineTo(0.9, 0.9); g.moveTo(0.9, -0.9); g.lineTo(-0.9, 0.9); g.stroke();
+        } else if (h.kind === 'geyser') {
+          g.fillStyle = FEAT.hazard; g.beginPath(); g.moveTo(0, -1.8); g.lineTo(1.5, 1.3); g.lineTo(-1.5, 1.3); g.closePath(); g.fill(); g.stroke();
+          g.fillStyle = '#ffd000'; g.beginPath(); g.arc(0, 0.4, 0.5, 0, Math.PI * 2); g.fill();
+        } else {
+          g.fillStyle = FEAT.puddle; g.beginPath(); g.ellipse(0, 0, 1.5, 3, 0, 0, Math.PI * 2); g.fill();
+          g.strokeStyle = FEAT.hazard; g.stroke();
+        }
+      }, big));
+    });
+  }
+
+  function drawLandmarks(v, T, R, withLabels) {
+    T.landmarks.forEach((m) => {
+      const p = at(v, m.at * R.L, m.side * m.off);
+      g.fillStyle = FEAT.landmark; g.strokeStyle = INK; g.lineWidth = 2;
+      star(p[0], p[1], 9, 4);
+      if (withLabels) {
+        g.font = '600 13px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'top';
+        outlinedText(m.prop.replace(/_/g, ' '), p[0], p[1] + 11, '#ffffff');
+      }
+    });
+  }
+
+  /* ── Dev overlay: the corner circles the layout is authored from ─────── */
+  function drawDev(v, T, R) {
+    const lay = NK.tracks.buildLayout(NK.tracks.TRACKS[T.id].layout);
+    const flip = T.mirror ? -1 : 1;
+    NK.tracks.TRACKS[T.id].layout.corners.forEach((c, i) => {
+      const x = v.X(c[0] * flip), y = v.Y(c[1]);
+      g.strokeStyle = 'rgba(255,255,255,0.28)'; g.lineWidth = 1; g.setLineDash([4, 4]);
+      g.beginPath(); g.arc(x, y, c[2] * v.scale, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+      g.font = '600 11px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+      outlinedText(String(i + 1), x, y, 'rgba(255,255,255,0.7)');
+    });
+    // Bend labels on the outside of each bend, from the driven curvature.
+    lay.sections.forEach((sct) => {
+      if (sct.kind !== 'bend' || sct.deg < 8) return;
+      const s = (sct.from + sct.to) / 2 * R.L;
+      const k = S.sample(v.loop, s).k;
+      const out = k > 0 ? -1 : 1;
+      const p = at(v, s, out * (C.ROAD_HALF + 30));
+      g.font = 'bold 13px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+      outlinedText('T' + sct.corner + ' ' + (k > 0 ? 'R' : 'L') + sct.r, p[0], p[1], sct.r <= 110 ? '#ffd166' : '#cfe8ff');
+    });
+  }
+
+  /* Lap-fraction ticks on the outside of the road — the ruler features are placed with. */
+  function drawTicks(v, R) {
+    for (let i = 1; i < 20; i++) {
+      const s = i / 20 * R.L;
+      const k = S.sample(v.loop, s).k;
+      const out = k > 0 ? -1 : 1;
+      const a = at(v, s, out * (C.ROAD_HALF + C.SHOULDER + 1)), b = at(v, s, out * (C.ROAD_HALF + C.SHOULDER + 7));
+      g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      if (i % 2 === 0) {
+        const p = at(v, s, out * (C.ROAD_HALF + C.SHOULDER + 16));
+        g.font = '12px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+        outlinedText((i / 20).toFixed(1), p[0], p[1], 'rgba(255,255,255,0.85)');
+      }
+    }
+  }
+
+  /* ── Side panel ─────────────────────────────────────────────────────── */
+
+  function drawPanel(T, th, R, box) {
+    let y = box.y;
+    const x = box.x, w = box.w;
+    g.fillStyle = '#1c2233'; roundRect(x - 14, box.y - 14, w + 28, box.h + 28, 14); g.fill();
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillStyle = '#ffffff'; g.font = 'bold 30px ' + FONT;
+    g.fillText(T.name + (T.mirror ? ' (mirror)' : ''), x, y); y += 40;
+    const cup = NK.tracks.CUPS.find((c) => c.id === T.cup);
+    g.fillStyle = '#aab4cc'; g.font = '15px ' + FONT;
+    g.fillText((cup ? cup.name : T.cup) + '  ·  ' + th.name + '  ·  ' + T.laps + ' laps', x, y); y += 22;
+    y = wrapText(T.blurb, x, y, w, 15, '#d6dcec') + 10;
+
+    // Palette strip: sky gradient, ground, road, rails, wall, liquid.
+    const sw = [['sky', null], ['ground', th.ground.colors[0]], ['road', th.road.base], ['rail', th.rail.a],
+                ['', th.rail.b], ['wall', th.wall.color], ['liquid', th.liquid ? th.liquid.color : null]];
+    const sky = g.createLinearGradient(0, y, 0, y + 34);
+    sky.addColorStop(0, th.sky[0]); sky.addColorStop(0.55, th.sky[1]); sky.addColorStop(1, th.sky[2]);
+    let sx = x;
+    sw.forEach(([label, col], i) => {
+      const ww = i === 0 ? 70 : 52;
+      g.fillStyle = i === 0 ? sky : (col || '#2a3044');
+      g.fillRect(sx, y, ww, 34); g.strokeStyle = INK; g.lineWidth = 2; g.strokeRect(sx, y, ww, 34);
+      if (!col && i) { g.strokeStyle = '#5a6380'; g.beginPath(); g.moveTo(sx + 4, y + 30); g.lineTo(sx + ww - 4, y + 4); g.stroke(); }
+      g.fillStyle = '#aab4cc'; g.font = '11px ' + FONT; g.fillText(label, sx + 2, y + 37);
+      sx += ww + 4;
+    });
+    y += 58;
+
+    const c = R.counts;
+    const drift = R.drifts.map((d) => (d.sign > 0 ? 'R' : 'L') + d.minR.toFixed(0)).join(' ');
+    const lines = [
+      ['Lap', R.L.toFixed(0) + ' m   (tightest bend ' + R.minRadius.toFixed(0) + ' m)'],
+      ['Hills', 'max slope ' + (R.maxSlope * 100).toFixed(1) + '%   y ' + R.yMin.toFixed(1) + ' … ' + R.yMax.toFixed(1) + ' m'],
+      ['Drift bends', R.drifts.length + ':  ' + drift],
+      ['Longest straight', R.longestStraight.toFixed(0) + ' m'],
+      ['Edges', 'drop ' + R.dropMetres.toFixed(0) + ' m  ·  wall ' + R.wallMetres.toFixed(0) + ' m  (both sides)'],
+      ['Features', c.itemRows + ' box rows · ' + c.padRows + ' pad rows · ' + c.boostPads + ' boost'],
+      ['', c.coins + ' coin lines · ' + c.ramps + ' ramps · ' + c.hazards + ' hazard rows'],
+      ['Hazards', Object.keys(th.hazards).filter((k) => th.hazards[k]).map((k) => th.hazards[k].replace(/_/g, ' ')).join(', ')]
+    ];
+    g.font = '15px ' + FONT;
+    lines.forEach(([k, val]) => {
+      g.fillStyle = '#8f9bb8'; g.fillText(k, x, y);
+      g.fillStyle = '#ffffff'; g.fillText(val, x + 128, y);
+      y += 21;
+    });
+    y += 6;
+
+    // Verdict.
+    g.font = 'bold 16px ' + FONT;
+    if (!R.issues.length) { g.fillStyle = '#52d273'; g.fillText('✓ passes every rule' + (R.warnings.length ? ' (' + R.warnings.length + ' note' + (R.warnings.length > 1 ? 's' : '') + ')' : ''), x, y); y += 22; }
+    else { g.fillStyle = '#ff5a6e'; g.fillText('✗ ' + R.issues.length + ' rule break' + (R.issues.length > 1 ? 's' : ''), x, y); y += 22; }
+    g.font = '13px ' + FONT;
+    R.issues.slice(0, 6).forEach((m) => { y = wrapText('• ' + m, x, y, w, 13, '#ff8a98'); });
+    R.warnings.slice(0, 3).forEach((m) => { y = wrapText('• ' + m, x, y, w, 13, '#ffcf70'); });
+
+    // Legend.
+    y += 6;
+    const legend = [['box', 'Power Box'], ['pad', 'Power Pad'], ['boost', 'Boost'], ['coin', 'Coins'], ['jump', 'Jump'], ['glide', 'Glide'], ['hazard', 'Hazard']];
+    let lx = x;
+    g.font = '12px ' + FONT;
+    legend.forEach(([k, label]) => {
+      g.fillStyle = FEAT[k]; g.fillRect(lx, y + 2, 10, 10); g.strokeStyle = INK; g.strokeRect(lx, y + 2, 10, 10);
+      g.fillStyle = '#cfd6e6'; g.fillText(label, lx + 13, y); lx += g.measureText(label).width + 24;
+    });
+    y += 20;
+    lx = x;
+    [['verge', 'verge'], ['wall', 'wall'], ['drop', 'drop']].forEach(([k, label]) => {
+      g.fillStyle = EDGE[k]; g.fillRect(lx, y + 3, 22, 8);
+      g.fillStyle = '#cfd6e6'; g.fillText(label, lx + 26, y); lx += 80;
+    });
+
+    drawProfile(T, th, R, { x: x, y: box.y + box.h - 190, w: w, h: 190 });
+  }
+
+  function drawProfile(T, th, R, box) {
+    const loop = R.loop, L = R.L, nodes = loop.nodes;
+    let lo = Math.min(-2, R.yMin), hi = Math.max(lo + 12, R.yMax + 2);
+    const px = (s) => box.x + (s / L) * box.w;
+    const top = box.y + 22, bot = box.y + box.h - 34;
+    const py = (y) => bot - (y - lo) / (hi - lo) * (bot - top);
+    g.fillStyle = '#aab4cc'; g.font = '13px ' + FONT; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('Elevation (m) along the lap', box.x, box.y);
+    g.strokeStyle = '#2c3550'; g.lineWidth = 1;
+    for (let yy = Math.ceil(lo / 5) * 5; yy <= hi; yy += 5) {
+      g.beginPath(); g.moveTo(box.x, py(yy)); g.lineTo(box.x + box.w, py(yy)); g.stroke();
+      g.fillStyle = '#6f7a96'; g.font = '10px ' + FONT; g.fillText(String(yy), box.x + box.w + 3, py(yy) - 6);
+    }
+    g.beginPath(); g.moveTo(px(0), bot);
+    nodes.forEach((n) => g.lineTo(px(n.s), py(n.y)));
+    g.lineTo(px(L), py(nodes[0].y)); g.lineTo(px(L), bot); g.closePath();
+    g.fillStyle = hexA(th.road.base, 0.75); g.fill();
+    // Profile line, orange where it is steep.
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i], b = nodes[(i + 1) % nodes.length];
+      const slope = Math.abs(b.y - a.y) / loop.seg;
+      g.strokeStyle = slope > 0.1 ? '#ff9f1c' : '#ffffff'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(px(a.s), py(a.y)); g.lineTo(px(i + 1 < nodes.length ? b.s : L), py(b.y)); g.stroke();
+    }
+    // Edge strips under the profile: left above, right below.
+    ['left', 'right'].forEach((side, j) => {
+      for (let s = 0; s < L; s += loop.seg) {
+        g.fillStyle = EDGE[R.edgeAt(s, side)];
+        g.fillRect(px(s), bot + 6 + j * 7, Math.ceil(box.w * loop.seg / L) + 0.5, 5);
+      }
+    });
+    g.fillStyle = '#6f7a96'; g.font = '10px ' + FONT;
+    g.fillText('L', box.x - 10, bot + 5); g.fillText('R', box.x - 10, bot + 12);
+    T.features.ramps.forEach((r) => {
+      const s = r.at * L, y = S.sample(loop, s).y;
+      g.fillStyle = r.kind === 'jump' ? FEAT.jump : FEAT.glide; g.strokeStyle = INK; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(px(s) - 6, py(y) - 2); g.lineTo(px(s) + 6, py(y) - 2); g.lineTo(px(s), py(y) - 13); g.closePath(); g.fill(); g.stroke();
+    });
+    for (let i = 0; i <= 10; i++) {
+      g.fillStyle = '#6f7a96'; g.fillText((i / 10).toFixed(1), px(i / 10 * L) - 7, bot + 22);
+    }
+  }
+
+  /* ── Small drawing utilities ────────────────────────────────────────── */
+
+  function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function roundRect(x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function outlinedText(text, x, y, col) {
+    g.lineWidth = 3; g.strokeStyle = 'rgba(10,12,20,0.9)'; g.lineJoin = 'round';
+    g.strokeText(text, x, y); g.fillStyle = col; g.fillText(text, x, y);
+  }
+  function star(x, y, r1, r2) {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? r2 : r1;
+      g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    g.closePath(); g.stroke(); g.fill();
+  }
+  function wrapText(text, x, y, w, size, col) {
+    g.font = size + 'px ' + FONT; g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = 'top';
+    let line = '';
+    String(text).split(' ').forEach((word) => {
+      const t = line ? line + ' ' + word : word;
+      if (g.measureText(t).width > w && line) { g.fillText(line, x, y); y += size + 4; line = word; } else line = t;
+    });
+    if (line) { g.fillText(line, x, y); y += size + 4; }
+    return y;
+  }
+  function landmarkPoints(loop, T, L) {
+    return T.landmarks.map((m) => { const o = S.toWorld(loop, m.at * L, m.side * m.off); return [o.wx, o.wz]; });
+  }
+  function grid(v, box) {
+    g.save(); g.beginPath(); g.rect(box.x, box.y, box.w, box.h); g.clip();
+    g.strokeStyle = '#1b2031'; g.lineWidth = 1;
+    const step = 50 * v.scale;
+    const x0 = v.X(0) % step, y0 = v.Y(0) % step;
+    for (let x = box.x + x0; x < box.x + box.w; x += step) { g.beginPath(); g.moveTo(x, box.y); g.lineTo(x, box.y + box.h); g.stroke(); }
+    for (let y = box.y + y0; y < box.y + box.h; y += step) { g.beginPath(); g.moveTo(box.x, y); g.lineTo(box.x + box.w, y); g.stroke(); }
+    g.restore();
+    // 100 m scale bar.
+    const bx = box.x + 16, by = box.y + box.h - 18;
+    g.fillStyle = '#ffffff'; g.fillRect(bx, by, 100 * v.scale, 4);
+    g.font = '12px ' + FONT; g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText('100 m', bx, by - 3);
+  }
+
+  /* ── Pages ──────────────────────────────────────────────────────────── */
+
+  function drawTrack(id, mirror, dev) {
+    const T = NK.tracks.get(id, { mirror: mirror });
+    const th = NK.themes[T.theme];
+    const R = AN.analyse(env, T);
+    const panelW = 440;
+    const box = { x: 18, y: 18, w: W - panelW - 70, h: H - 36 };
+    const v = makeView(R.loop, landmarkPoints(R.loop, T, R.L), box, 32);
+    g.fillStyle = '#141824'; g.fillRect(0, 0, W, H);
+    grid(v, box);
+    drawRoad(v, T, th, R);
+    if (dev) drawDev(v, T, R);
+    drawFeatures(v, T, R);
+    drawTicks(v, R);
+    drawLandmarks(v, T, R, true);
+    const st = at(v, 0, C.ROAD_HALF + 20);
+    g.font = 'bold 14px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+    outlinedText('START', st[0], st[1], '#ffffff');
+    drawPanel(T, th, R, { x: W - panelW - 22, y: 32, w: panelW, h: H - 64 });
+    return R;
+  }
+
+  function drawOverview() {
+    g.fillStyle = '#141824'; g.fillRect(0, 0, W, H);
+    const order = NK.tracks.CUPS.reduce((a, c) => a.concat(c.tracks), []);
+    const cols = 4, rows = Math.ceil(order.length / cols);
+    const cw = W / cols, ch = H / rows;
+    const verdict = [];
+    order.forEach((id, i) => {
+      const T = NK.tracks.get(id), th = NK.themes[T.theme], R = AN.analyse(env, T);
+      const box = { x: (i % cols) * cw + 10, y: Math.floor(i / cols) * ch + 46, w: cw - 20, h: ch - 60 };
+      const v = makeView(R.loop, [], box, 30);
+      drawRoad(v, T, th, R);
+      drawFeatures(v, T, R);
+      g.textAlign = 'left'; g.textBaseline = 'top';
+      g.fillStyle = '#ffffff'; g.font = 'bold 19px ' + FONT;
+      g.fillText((i + 1) + '. ' + T.name, box.x + 4, box.y - 38);
+      g.fillStyle = R.issues.length ? '#ff5a6e' : '#8fd6a0'; g.font = '13px ' + FONT;
+      g.fillText(R.L.toFixed(0) + ' m · ' + R.drifts.length + ' drift bends · drop ' + R.dropMetres.toFixed(0) + ' m · ' + (R.issues.length ? R.issues.length + ' issues' : 'ok'), box.x + 4, box.y - 16);
+      verdict.push({ id: id, ok: !R.issues.length, issues: R.issues });
+    });
+    return verdict;
+  }
+
+  try {
+    if (q.get('overview')) {
+      const verdict = drawOverview();
+      window.__preview = { ok: verdict.every((x) => x.ok), overview: verdict };
+    } else {
+      const R = drawTrack(q.get('track') || 'meadow', q.get('mirror') === '1', q.get('dev') === '1');
+      window.__preview = {
+        ok: !R.issues.length, issues: R.issues, warnings: R.warnings,
+        stats: { L: R.L, minRadius: R.minRadius, maxSlope: R.maxSlope, yMin: R.yMin, yMax: R.yMax,
+                 drifts: R.drifts.map((d) => ({ from: d.from / R.L, r: d.minR, dir: d.sign > 0 ? 'R' : 'L' })),
+                 longestStraight: R.longestStraight, dropMetres: R.dropMetres, wallMetres: R.wallMetres, counts: R.counts }
+      };
+    }
+  } catch (e) {
+    window.__preview = { ok: false, error: String(e && e.stack || e) };
+    g.fillStyle = '#ff5a6e'; g.font = '16px ' + FONT; g.fillText(String(e), 20, 40);
+    throw e;
+  }
+})();
+</script>
+</body>
+</html>

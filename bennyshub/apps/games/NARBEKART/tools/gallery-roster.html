@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roster Gallery</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1d1b2e; }
+  canvas { display: block; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .lab {
+    position: absolute; color: #fff; font: 700 15px/1.25 system-ui, 'Segoe UI', sans-serif;
+    text-shadow: 0 1px 3px #000, 0 0 2px #000; padding: 6px 9px; white-space: nowrap;
+  }
+  .lab small { font-weight: 600; opacity: 0.85; }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<script src="../js/three.min.js"></script>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/art.js"></script>
+<script src="../js/roster.js"></script>
+<script>
+/**
+ * Dev-only gallery for NK.roster (driven by tools/harness/roster-gallery.cjs).
+ *
+ * window.G:
+ *   G.sheet(list, angle, opts)   list = [{ c, v }] → one viewport per racer, alone on a road tile
+ *   G.race(vehicleId, opts)      twelve racers on a start grid, seen from the chase camera
+ *   G.pose(c, v, pose, angle)    one racer full screen with { steer, spin, lean, bob, squash, glider }
+ *   G.measure(c, v)              { calls, tris, gliderCalls } with only that racer in view
+ *   G.light('day' | 'night')     lighting preset (values copied from themes.js meadow / spooky)
+ *
+ * ?items=1 also loads ../js/art-items.js first, so builds use the real
+ * NK.art.glider instead of the roster's placeholder wing.
+ */
+function boot() {
+  'use strict';
+
+  const A = NK.art, RO = NK.roster, C = NK.C;
+
+  // Copied from themes.js so this page never depends on another module loading.
+  const LIGHTS = {
+    day: {
+      sky: ['#2a86dd', '#79c3f1', '#e0f4fb'], hemiSky: '#d8efff', hemiGround: '#6aa84a', hemiInt: 2.1,
+      sunColor: '#fff2d6', sunInt: 3.2, ambInt: 0.6, sunDir: [-0.55, 1.0, 0.45],
+      road: { base: '#7a7686', edge: '#fffaf0', lane: '#aaa6b6', center: '#ffc233' }, ground: '#79c258'
+    },
+    night: {
+      sky: ['#100828', '#361f64', '#6c4388'], hemiSky: '#a597ff', hemiGround: '#3b2a52', hemiInt: 1.85,
+      sunColor: '#d2dcff', sunInt: 2.4, ambInt: 1.0, sunDir: [0.4, 0.9, -0.5],
+      road: { base: '#5c536f', edge: '#ffae42', lane: '#8e84a6', center: '#ffd23f' }, ground: '#3b2f52'
+    }
+  };
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.useLegacyLights = false;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.setScissorTest(true);
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  const sun = new THREE.DirectionalLight(0xffffff, 3);
+  scene.add(hemi, amb, sun, sun.target);
+
+  const world = new THREE.Group();          // road + grass, hidden while measuring
+  scene.add(world);
+  let skyTex = null, bg = new THREE.Color();
+
+  function roadTexture(spec) {
+    return A.tex.canvas(256, 512, (g, w, h) => {
+      g.fillStyle = spec.base; g.fillRect(0, 0, w, h);
+      g.fillStyle = spec.edge;
+      g.fillRect(w * 0.02, 0, w * 0.035, h); g.fillRect(w * 0.945, 0, w * 0.035, h);
+      g.fillStyle = spec.lane;
+      for (let i = 1; i < 5; i++) for (let y = 0; y < h; y += 128) g.fillRect(w * (i / 5) - 3, y, 6, 64);
+      g.fillStyle = spec.center;
+      for (let y = 32; y < h; y += 128) g.fillRect(w * 0.5 - 7, y, 14, 64);
+    }, { wrapT: THREE.RepeatWrapping });
+  }
+
+  let road = null, grass = null;
+  function light(id) {
+    const L = LIGHTS[id] || LIGHTS.day;
+    hemi.color.set(L.hemiSky); hemi.groundColor.set(L.hemiGround); hemi.intensity = L.hemiInt;
+    amb.intensity = L.ambInt;
+    sun.color.set(L.sunColor); sun.intensity = L.sunInt;
+    sun.position.set(L.sunDir[0], L.sunDir[1], L.sunDir[2]).normalize().multiplyScalar(60);
+    skyTex = A.tex.sky(L.sky[0], L.sky[1], L.sky[2]);
+    bg.set(L.sky[1]);
+    if (road) { world.remove(road); road.geometry.dispose(); }
+    if (grass) { world.remove(grass); grass.geometry.dispose(); }
+    const tex = roadTexture(L.road);
+    tex.repeat.set(1, 240 / 36);          // one texture tile per 36 m of road
+    road = new THREE.Mesh(new THREE.PlaneGeometry(C.ROAD_HALF * 2, 240), new THREE.MeshLambertMaterial({ map: tex }));
+    road.rotation.x = -Math.PI / 2; road.position.set(0, 0.005, -60);
+    grass = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), A.mat.lambert(L.ground));
+    grass.rotation.x = -Math.PI / 2; grass.position.y = -0.01;
+    world.add(grass, road);
+  }
+  light('day');
+
+  /* Racers are built once per pairing and reused across views. */
+  const cache = new Map();
+  function racer(c, v) {
+    const k = c + '|' + v;
+    let r = cache.get(k);
+    if (!r) {
+      const t0 = performance.now();
+      r = RO.build(c, v);
+      r.userData.buildMs = performance.now() - t0;
+      const shadow = A.blobShadow(3.4);
+      shadow.name = 'gallery-shadow';
+      r.add(shadow);
+      r.visible = false;
+      scene.add(r);
+      cache.set(k, r);
+    }
+    return r;
+  }
+  function hideAll() { cache.forEach((r) => { r.visible = false; }); }
+
+  /** Put a cached racer back at rest (poses from one view must not leak into the next). */
+  function rest(r) {
+    const ud = r.userData;
+    ud.steerWheels.forEach((w) => { w.rotation.y = 0; });
+    ud.wheels.forEach((w) => { w.rotation.x = 0; });
+    if (ud.driver.userData.baseY === undefined) ud.driver.userData.baseY = ud.driver.position.y;
+    ud.driver.position.y = ud.driver.userData.baseY;
+    ud.driver.rotation.set(0, 0, 0);
+    ud.body.position.set(0, 0, 0);
+    ud.body.scale.set(1, 1, 1);
+    ud.glider.visible = false;
+    r.position.set(0, 0, 0);
+    r.rotation.set(0, 0, 0);
+  }
+
+  /* Camera angles, relative to a racer at the origin facing -Z. */
+  const ANGLES = {
+    chase:  { pos: [0, 2.9, 6.8], look: [0, 0.95, -0.4], fov: 30 },    // behind + above, framed tight
+    chaseFar: { pos: [0, 3.6, 7.3], look: [0, 1.5, -9], fov: 56 },    // the in-race distance (Race Tracks scaled to a 2.8 m kart)
+    front:  { pos: [3.7, 2.2, -4.7], look: [0, 1.0, 0], fov: 32 },     // 3/4 front
+    side:   { pos: [6.6, 1.5, 0], look: [0, 1.0, 0], fov: 30 },
+    portrait: { pos: [1.5, 1.9, -2.6], look: [0, 1.3, 0], fov: 30 },  // menu / podium close-up of the face
+    back3q: { pos: [3.4, 2.6, 5.0], look: [0, 1.1, 0], fov: 32 }
+  };
+  const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 800);
+  function aim(angle, aspect, offset) {
+    const a = ANGLES[angle] || ANGLES.chase;
+    const o = offset || [0, 0, 0];
+    cam.fov = a.fov; cam.aspect = aspect;
+    cam.position.set(a.pos[0] + o[0], a.pos[1] + o[1], a.pos[2] + o[2]);
+    cam.lookAt(a.look[0] + o[0], a.look[1] + o[1], a.look[2] + o[2]);
+    cam.updateProjectionMatrix();
+  }
+
+  const labels = document.getElementById('labels');
+  function label(x, y, html) {
+    const d = document.createElement('div');
+    d.className = 'lab'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.innerHTML = html;
+    labels.appendChild(d);
+  }
+
+  let draw = null;
+  function frame() {
+    requestAnimationFrame(frame);
+    if (draw) draw();
+  }
+
+  function viewport(x, y, w, h) {
+    const H = innerHeight;
+    renderer.setViewport(x, H - y - h, w, h);
+    renderer.setScissor(x, H - y - h, w, h);
+  }
+
+  function sheet(list, angle, opts) {
+    const o = opts || {};
+    labels.innerHTML = '';
+    const cols = o.cols || 4, rows = Math.ceil(list.length / cols);
+    const W = innerWidth, H = innerHeight, cw = Math.floor(W / cols), ch = Math.floor(H / rows);
+    const items = list.map((it) => ({ it, r: racer(it.c, it.v) }));
+    items.forEach((e) => rest(e.r));
+    items.forEach((e, i) => {
+      const ch0 = RO.character(e.it.c), v = RO.vehicle(e.it.v);
+      label((i % cols) * cw, Math.floor(i / cols) * ch, ch0.emoji + ' ' + ch0.name + ' <small>· ' + v.name + '</small>');
+    });
+    draw = () => {
+      scene.background = skyTex;
+      items.forEach((e, i) => {
+        hideAll();
+        e.r.visible = true;
+        const cx = (i % cols) * cw, cy = Math.floor(i / cols) * ch;
+        viewport(cx, cy, cw, ch);
+        aim(e.it.angle || angle, cw / ch);
+        renderer.render(scene, cam);
+      });
+    };
+    draw();
+    return items.map((e) => ({ c: e.it.c, v: e.it.v, buildMs: +e.r.userData.buildMs.toFixed(1) }));
+  }
+
+  /** Twelve racers on a staggered two-wide grid, the player at the back. */
+  function race(vehicleId, opts) {
+    const o = opts || {};
+    labels.innerHTML = '';
+    const ids = RO.CHARACTERS.map((c) => c.id);
+    const player = o.player || 'pip';
+    const order = ids.filter((id) => id !== player).concat([player]);
+    const placed = order.map((id, i) => {
+      const r = racer(id, vehicleId);
+      rest(r);
+      const row = Math.floor(i / 2), side = i % 2 ? 1 : -1;
+      return { r, x: C.laneX(side > 0 ? 3 : 1) + (row % 2 ? 0.8 : -0.8) * side, z: -(order.length / 2 - row) * 7.5 - (i % 2) * 3.2 };
+    });
+    const me = placed[placed.length - 1];
+    draw = () => {
+      scene.background = skyTex;
+      hideAll();
+      placed.forEach((p) => { p.r.visible = true; p.r.position.set(p.x, 0, p.z); });
+      viewport(0, 0, innerWidth, innerHeight);
+      aim(o.angle || 'chaseFar', innerWidth / innerHeight, [me.x * 0.88, 0, me.z]);
+      renderer.render(scene, cam);
+    };
+    draw();
+    return true;
+  }
+
+  function pose(c, v, p, angle) {
+    labels.innerHTML = '';
+    const r = racer(c, v), ud = r.userData;
+    const q = p || {};
+    rest(r);
+    ud.steerWheels.forEach((w) => { w.rotation.y = q.steer || 0; });
+    ud.wheels.forEach((w) => { w.rotation.x = q.spin || 0; });
+    ud.driver.rotation.z = q.lean || 0;
+    ud.driver.position.y += q.bounce || 0;
+    ud.body.position.y = q.bob || 0;
+    const sq = q.squash || 1;
+    ud.body.scale.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq));
+    ud.glider.visible = !!q.glider;
+    const ch0 = RO.character(c);
+    label(0, 0, ch0.emoji + ' ' + ch0.name + ' <small>· ' + JSON.stringify(q) + '</small>');
+    draw = () => {
+      scene.background = skyTex;
+      hideAll();
+      r.visible = true;
+      viewport(0, 0, innerWidth, innerHeight);
+      // Angles are framed for the Classic Race Car's seat (hip at 0.4 m); follow taller seats up.
+      const lift = ud.driver.userData.baseY - 0.4;
+      aim(angle || 'back3q', innerWidth / innerHeight, [0, lift + (q.glider ? 0.9 : 0), q.glider ? 1.5 : 0]);
+      renderer.render(scene, cam);
+    };
+    draw();
+    return true;
+  }
+
+  /** Draw calls and triangles with ONLY this racer in view (no road, sky, shadow). */
+  function measure(c, v) {
+    const r = RO.build(c, v);
+    const probe = new THREE.Scene();
+    probe.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2), r);
+    const pc = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+    pc.position.set(5, 3.5, 6); pc.lookAt(0, 1, 0);
+    renderer.setViewport(0, 0, 64, 64); renderer.setScissor(0, 0, 64, 64);
+    renderer.info.autoReset = true;
+    renderer.render(probe, pc);
+    const calls = renderer.info.render.calls, tris = renderer.info.render.triangles;
+    r.userData.glider.visible = true;
+    renderer.render(probe, pc);
+    const gliderCalls = renderer.info.render.calls;
+    const ud = r.userData;
+    ud.glider.visible = false;
+    const box = new THREE.Box3().setFromObject(ud.body.children[0]);
+    // Box3 ignores visibility, so take the hidden glider off while measuring the racer itself.
+    const gp = ud.glider.parent;
+    gp.remove(ud.glider);
+    const full = new THREE.Box3().setFromObject(r);
+    gp.add(ud.glider);
+    const triOf = (m) => (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3;
+    const parts = {
+      chassis: triOf(ud.body.children[0]),
+      driver: triOf(ud.driver.children[0]),
+      wheels: ud.wheels.reduce((a, w) => a + triOf(w), 0)
+    };
+    const out = {
+      c, v, calls, tris, gliderCalls, parts, mastScale: +ud.glider.children[0].scale.y.toFixed(2),
+      wheels: ud.wheels.length, steer: ud.steerWheels.length, exhaust: ud.exhaust.length,
+      rear: ud.rearContacts.length, pads: ud.hoverPads.length, height: ud.height,
+      len: +(full.max.z - full.min.z).toFixed(2), width: +(full.max.x - full.min.x).toFixed(2),
+      minY: +full.min.y.toFixed(2), noseZ: +full.min.z.toFixed(2), chassisMinY: +box.min.y.toFixed(2),
+      spinOk: ud.wheels.every((w) => typeof w.userData.radius === 'number'),
+      ids: ud.charId === c && ud.vehicleId === v
+    };
+    A.disposeTree(r);
+    return out;
+  }
+
+  window.G = {
+    ready: true, sheet, race, pose, measure, light,
+    angles: Object.keys(ANGLES),
+    realGlider: typeof A.glider === 'function',
+    stats: () => RO.CHARACTERS.map((c) => ({ c: c.id, byKart: RO.VEHICLES.map((v) => Object.assign({ v: v.id }, RO.statsFor(c.id, v.id))) }))
+  };
+  requestAnimationFrame(frame);
+}
+
+if (/[?&]items=1/.test(location.search)) {
+  const s = document.createElement('script');
+  s.src = '../js/art-items.js';
+  s.onload = boot;
+  document.head.appendChild(s);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>

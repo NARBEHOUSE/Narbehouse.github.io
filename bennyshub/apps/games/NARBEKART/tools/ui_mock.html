@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NARBE Racer — UI test page</title>
+<!--
+  Dev-only page for the menus, HUD and controls with no 3D scene: the real
+  ui.js / hud.js / controls.js / input.js on top of tools/mock_game.js.
+  ?with=roster,tracks also loads the real content files (and what they need).
+-->
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#1d1b2e}</style>
+<link rel="stylesheet" href="../css/nk.css">
+<style>
+  /* A painted stand-in for the 3D world: sky, sun, hills and a road. */
+  #canvasWrap {
+    background:
+      radial-gradient(circle at 16% 18%, #fff3a1 0 3.2%, rgba(255,255,255,.3) 3.3% 5.6%, transparent 5.7%),
+      radial-gradient(ellipse 60% 18% at 22% 64%, #5fbf4a 0 98%, transparent 100%),
+      radial-gradient(ellipse 55% 20% at 80% 66%, #4fae45 0 98%, transparent 100%),
+      linear-gradient(180deg, #5bb8f5 0%, #9ad7ff 46%, #d9f3ff 58%, #7ccf5a 58.2%, #4fa83f 100%);
+  }
+  /* The road: kerbs (red/white), then asphalt, then a dashed centre line. */
+  #canvasWrap::before {
+    content: ''; position: absolute; left: -6%; right: -6%; bottom: 0; height: 42%;
+    background:
+      linear-gradient(180deg, #8d8f9c, #5f6170) 50% 0 / 88% 100% no-repeat,
+      repeating-linear-gradient(180deg, #e8304a 0 8%, #fff 8% 16%);
+    clip-path: polygon(43.5% 0, 56.5% 0, 100% 100%, 0 100%);
+  }
+  #canvasWrap::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,.9) 0 7%, transparent 7% 15%);
+    clip-path: polygon(49.8% 0, 50.2% 0, 51.2% 100%, 48.8% 100%);
+  }
+  /* The turntable the real game draws beside the racer/kart card. */
+  #mockPreview {
+    position: absolute; right: 7%; top: 50%; transform: translateY(-50%); z-index: 1;
+    display: none; flex-direction: column; align-items: center; gap: 1rem;
+  }
+  #mockPreview.on { display: flex; }
+  #mockPreview .stage {
+    position: relative; width: 22rem; height: 22rem; border-radius: 50%;
+    background: radial-gradient(circle at 50% 38%, #ffffff 0%, #ffe9a8 45%, #f4b73c 72%, #1d1b2e 73% 76%, transparent 77%);
+    display: grid; place-items: center;
+  }
+  #mockPreview .who { font: 9rem/1 "Segoe UI Emoji", sans-serif; transform: translateY(-1.5rem); }
+  #mockPreview .ride { position: absolute; bottom: 3.4rem; font: 5rem/1 "Segoe UI Emoji", sans-serif; }
+  #mockPreview .name {
+    font: italic 900 1.6rem/1 "Segoe UI Black", "Arial Black", sans-serif; color: #fff;
+    background: #1d1b2e; padding: .5rem 1.4rem; border-radius: 999px; border: 4px solid #fff;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="canvasWrap"></div>
+  <div id="mockPreview"><div class="stage"><span class="who"></span><span class="ride"></span></div><div class="name"></div></div>
+</div>
+
+<script>
+  /* Load everything in DESIGN §10 order. document.write keeps the scripts
+     parser-blocking and in order, so the boot script below runs after all of
+     them — the same as the static list in index.html. */
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var extra = (q.get('with') || '').split(',').filter(Boolean);
+    var real = { roster: extra.indexOf('roster') >= 0, tracks: extra.indexOf('tracks') >= 0 };
+    var shared = '../../../../shared/';
+    var list = [
+      [shared + 'safe-audio.js', 1], [shared + 'voice-manager.js', 1], [shared + 'ios-audio-fix.js', 1],
+      ['../js/input.js'], [shared + 'scan-manager.js', 1]
+    ];
+    if (real.roster || real.tracks) list.push(['../js/three.min.js'], ['../js/spline.js']);
+    list.push(['../js/util.js'], ['../js/constants.js']);
+    if (real.roster || real.tracks) list.push(['../js/art.js']);
+    if (real.roster) list.push(['../js/roster.js']);
+    if (real.tracks) list.push(['../js/themes.js'], ['../js/tracks.js']);
+    list.push(['mock_game.js'], ['../js/hud.js'], ['../js/controls.js'], ['../js/ui.js']);
+    for (var i = 0; i < list.length; i++) {
+      var src = list[i][0];
+      var warn = list[i][1] ? ' onerror="console.warn(\'' + src.split('/').pop() + ' not loaded\')"' : '';
+      document.write('<script src="' + src + '"' + warn + '><\/script>');
+    }
+  })();
+</script>
+<script>
+  /* A tiny stand-in for main.js: init, then tick the game, UI and controls. */
+  NK.game.init({});
+  NK.ui.init();
+  (function () {
+    var last = performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      var dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+      last = now;
+      try {
+        NK.ui.tick(dt);
+        NK.controls.tick(dt);
+        NK.game.update(dt);
+      } catch (e) { console.error('ui_mock frame error:', e); }
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NARBE Racer — Sunshine props gallery</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd2f0; font-family: "Segoe UI", system-ui, sans-serif; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .lbl { position: absolute; transform: translate(-50%, -100%); background: rgba(29, 27, 46, 0.84); color: #fff;
+         padding: 2px 8px; border-radius: 7px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .lbl.hz { background: #b3261e; }
+  .lbl.ref { background: #ff2d95; }
+  .lbl.miss { background: #666; }
+  #hud { position: fixed; left: 14px; top: 10px; color: #1d1b2e; font: 700 22px "Segoe UI", system-ui, sans-serif;
+         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+  #hud small { display: block; font-size: 14px; font-weight: 600; opacity: 0.8; }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<div id="hud"></div>
+<script src="../js/three.min.js"></script>
+<script src="../js/spline.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/constants.js"></script>
+<script src="../js/art.js"></script>
+<script src="../js/props-sunshine.js"></script>
+<script src="../js/props-moonlight.js"></script>
+<script src="../js/themes.js" onerror="console.warn('gallery: themes.js not loaded, using stand-in colours')"></script>
+<script>
+/*
+ * Dev gallery for js/props-sunshine.js: every Sunshine Cup prop and hazard,
+ * one band per theme, lit like a sunny track. Each band has
+ *   - the near props in a row (front faces toward -Z, i.e. toward the camera),
+ *   - a five-lane road stretch with the hazards on it, and
+ *   - the far props and landmarks further back.
+ * A magenta kart-sized box (2.8 m long) stands in every row for scale.
+ * window.gallery drives it from tools/harness/props-sunshine-gallery.cjs.
+ */
+(function () {
+  'use strict';
+  const A = NK.art, U = NK.util, C = NK.C;
+  const moonlight = new URLSearchParams(location.search).get('cup') === 'moonlight';
+  const CAT = moonlight ? NK.propsMoonlight.THEMES : NK.propsSunshine.THEMES;
+  const IDS = Object.keys(CAT);
+  const BAND = 320;                 // metres between theme bands along +Z
+  const FAR_Z = 95;                 // far row distance behind the near row
+  const ROAD_X = -60;               // hazard road centre, left of the near row
+  const WORLD_ROLLS = { hay_roll: 1, gumball: 1, tumbleweed: 1, snowball: 1, rolling_boulder: 1, meteor: 1 };
+  // Road, ground, sky and light colours come from themes.js when it is there,
+  // so hazards are judged against the road they will really sit on.
+  const TH = window.NK.themes || {};
+  const hex = (css, fb) => (css ? new THREE.Color(css).getHex() : fb);
+  const GROUND = {}, ROAD = {}, LIGHT = {};
+  const STAND_IN = { meadow: [0x79c258, 0x7a7686], shores: [0xf4dda2, 0x5f7d8c], candy: [0x8fe3b8, 0xd9589b], dunes: [0xf0c47f, 0xb0683e] };
+  IDS.forEach((id) => {
+    const t = TH[id];
+    const fallback = STAND_IN[id] || [0x757394, 0x655b85];
+    GROUND[id] = hex(t && t.ground && t.ground.colors[0], fallback[0]);
+    ROAD[id] = hex(t && t.road && t.road.base, fallback[1]);
+    LIGHT[id] = t ? { sky: t.sky, light: t.light } : null;
+  });
+  const params = new URLSearchParams(location.search);
+
+  /* ── Renderer: the Race Tracks setup the game uses ──────────────────── */
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.useLegacyLights = false;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.shadowMap.enabled = params.get('shadows') !== '0';
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = A.tex.sky('#3d9ee0', '#8fd2f0', '#dff2f7');
+  scene.fog = new THREE.Fog(0xdaf0f7, 420, 1600);
+  const hemi = new THREE.HemisphereLight(0xd6efff, 0x74a352, 2.1);
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(hemi, amb);
+  const sun = new THREE.DirectionalLight(0xfff4dc, 3.1);
+
+  /** Light a theme's band with that theme's rig (the sun keeps a front-left
+   *  direction so every prop's front, which faces -Z, is lit for judging). */
+  function applyTheme(id) {
+    const t = LIGHT[id];
+    if (!t) return;
+    scene.background = A.tex.sky(t.sky[0], t.sky[1], t.sky[2]);
+    hemi.color.set(t.light.hemiSky); hemi.groundColor.set(t.light.hemiGround); hemi.intensity = t.light.hemiInt;
+    amb.intensity = t.light.ambInt;
+    sun.color.set(t.light.sunColor); sun.intensity = t.light.sunInt;
+  }
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.bias = -0.0012;
+  sun.shadow.normalBias = 0.04;
+  scene.add(sun, sun.target);
+  const SUN_DIR = new THREE.Vector3(-0.5, 1.0, -0.55).normalize();
+
+  const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.3, 4000);
+
+  /* ── Scene contents ─────────────────────────────────────────────────── */
+  const items = [];          // { name, theme, part, obj, box, label, kind }
+  const movers = [];         // hazards that slide across lanes like world.js moves them
+  const animated = [];       // roots with userData.anim or idle
+  const labels = document.getElementById('labels');
+
+  function label(text, cls) {
+    const d = document.createElement('div');
+    d.className = 'lbl' + (cls ? ' ' + cls : '');
+    d.textContent = text;
+    d.style.display = 'none';
+    labels.appendChild(d);
+    return d;
+  }
+
+  function castAll(obj) {
+    obj.traverse((m) => {
+      if (!m.isMesh || m.userData.shadow || m.material.side === THREE.BackSide || m.material.transparent) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+    });
+  }
+
+  function measure(obj) {
+    obj.updateMatrixWorld(true);
+    const b = new THREE.Box3();
+    obj.traverse((m) => {
+      if (!m.isMesh || m.userData.shadow || m.material.side === THREE.BackSide) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      b.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrixWorld));
+    });
+    return b;
+  }
+
+  /** The kart-sized scale reference: 1.7 wide, 1.2 tall, 2.8 long. */
+  function kartBox() {
+    const g = new THREE.Group();
+    g.add(A.part(new THREE.BoxGeometry(1.7, 1.2, 2.8), A.mat.toon(0xff2d95), { pos: [0, 0.6, 0], outline: 0.05 }));
+    return g;
+  }
+
+  function add(theme, part, name, obj, kind, x, z) {
+    obj.position.set(x, 0, z);
+    scene.add(obj);
+    castAll(obj);
+    const it = { name, theme, part, obj, kind: kind || 'prop' };
+    it.label = label(name, kind === 'hazard' ? 'hz' : kind === 'ref' ? 'ref' : kind === 'miss' ? 'miss' : '');
+    items.push(it);
+    if (obj.userData.anim || obj.userData.idle) animated.push(obj);
+    return it;
+  }
+
+  /** Missing builders show as grey blocks, exactly like world.js's fallback. */
+  function build(name, table, seed) {
+    const fn = table[name];
+    if (!fn) {
+      const g = new THREE.Group();
+      g.add(A.part(new THREE.BoxGeometry(2, 2, 2), A.mat.lambert(0x888888), { pos: [0, 1, 0] }));
+      g.userData.missing = true;
+      return g;
+    }
+    return fn(U.rng(seed));
+  }
+
+  /** A row of props along +X from x0, spaced by their measured footprints. */
+  function row(theme, part, names, x0, z, table, kind) {
+    let x = x0;
+    const ref = kartBox();
+    add(theme, part, 'vehicle 2.8 m', ref, 'ref', x, z);
+    x += 4;
+    names.forEach((name, i) => {
+      const obj = build(name, table, U.hash(theme + name) + 7);
+      const b = measure(obj);
+      const w = Math.max(b.max.x - b.min.x, 1);
+      x += w / 2 + 2;
+      add(theme, part, name, obj, obj.userData.missing ? 'miss' : kind, x - (b.max.x + b.min.x) / 2, z);
+      x += w / 2 + 2;
+    });
+    return x;
+  }
+
+  /** Five-lane road with dashed lane lines, running along Z. */
+  function road(theme, zc) {
+    const g = new THREE.Group();
+    g.add(A.part(new THREE.PlaneGeometry(C.ROAD_HALF * 2, 70), A.mat.lambert(ROAD[theme]), { rot: [-Math.PI / 2, 0, 0], pos: [0, 0.004, 0], receive: true }));
+    const line = A.mat.basic(0xfdfbf5);
+    for (let i = 0; i <= C.LANE_COUNT; i++) {
+      const x = (i - C.LANE_COUNT / 2) * C.LANE_W;
+      const edge = i === 0 || i === C.LANE_COUNT;
+      for (let zz = -34; zz < 34; zz += edge ? 70 : 6) {
+        g.add(A.part(new THREE.PlaneGeometry(0.18, edge ? 70 : 3), line, { rot: [-Math.PI / 2, 0, 0], pos: [x, 0.008, edge ? 0 : zz + 1.5] }));
+      }
+    }
+    g.position.set(ROAD_X, 0, zc);
+    scene.add(g);
+  }
+
+  IDS.forEach((theme, ti) => {
+    const zT = ti * BAND;
+    const cat = CAT[theme];
+    const ground = A.part(new THREE.PlaneGeometry(1600, BAND), A.mat.lambert(GROUND[theme]), { rot: [-Math.PI / 2, 0, 0], pos: [150, 0, zT + BAND * 0.3], receive: true });
+    scene.add(ground);
+    // Near props in two halves, each with its own kart box, so close-ups stay close.
+    const half = Math.ceil(cat.near.length / 2);
+    const xEnd = row(theme, 'near1', cat.near.slice(0, half), 0, zT, A.props, 'prop');
+    row(theme, 'near2', cat.near.slice(half), xEnd + 6, zT, A.props, 'prop');
+    const farNames = cat.far.concat(cat.landmarks.filter((n) => cat.far.indexOf(n) < 0));
+    row(theme, 'far', farNames, -20, zT + FAR_Z, A.props, 'prop');
+    // Hazards on the road: block in lane 0, roller sweeping lanes 1-3, puddle in lane 4.
+    road(theme, zT);
+    const hz = cat.hazards;
+    const lane = (i) => ROAD_X + C.laneX(i);
+    if (hz.block) add(theme, 'hazards', hz.block, build(hz.block, A.hazard, U.hash(hz.block)), 'hazard', lane(0), zT - 6);
+    if (hz.puddle) add(theme, 'hazards', hz.puddle, build(hz.puddle, A.hazard, U.hash(hz.puddle)), 'hazard', lane(4), zT - 6);
+    if (hz.geyser) {
+      const geyser = build(hz.geyser, A.hazard, U.hash(hz.geyser));
+      geyser.userData.setState(true, false, 0.2);
+      add(theme, 'hazards', hz.geyser, geyser, 'hazard', lane(1), zT + 2);
+    }
+    if (hz.roller) {
+      // Exactly how world.js rolls a roller: wrap it in a spinner at half its
+      // bounding height and turn that by -x / radius as it sweeps.
+      const obj = build(hz.roller, A.hazard, U.hash(hz.roller));
+      const bb = new THREE.Box3().setFromObject(obj);
+      const radius = Math.max(0.3, (bb.max.y - bb.min.y) / 2);
+      const holder = new THREE.Group(), spinner = new THREE.Group();
+      spinner.position.y = radius;
+      obj.position.y -= radius;
+      spinner.add(obj);
+      holder.add(spinner);
+      holder.userData = obj.userData;
+      const it = add(theme, 'hazards', hz.roller, holder, 'hazard', lane(2), zT - 6);
+      movers.push({ obj: it.obj, x0: lane(2), phase: ti, spinner: WORLD_ROLLS[hz.roller] ? spinner : null, radius });
+    }
+    add(theme, 'hazards', 'vehicle 2.8 m', kartBox(), 'ref', lane(2), zT + 9);
+  });
+
+  /* ── Animation: props through anim.update, hazards through idle ───────── */
+  function animate(t, dt) {
+    for (let i = 0; i < animated.length; i++) {
+      const ud = animated[i].userData;
+      if (ud.idle) ud.idle(t, dt);
+      else if (ud.anim) ud.anim.update(t, dt);
+    }
+    for (let i = 0; i < movers.length; i++) {
+      const m = movers[i];
+      const dx = Math.sin(t * 0.9 + m.phase) * C.LANE_W * 0.95;
+      m.obj.position.x = m.x0 + dx;
+      if (m.spinner) m.spinner.rotation.z = -dx / m.radius;
+    }
+  }
+
+  /* ── Camera framing ─────────────────────────────────────────────────── */
+  let focusSet = null;
+  const hud = document.getElementById('hud');
+
+  function frame(box, dir, pad) {
+    const c = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const vfov = THREE.MathUtils.degToRad(camera.fov);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+    const w = Math.max(size.x, size.z * 0.6), h = size.y;
+    const d = Math.max((w / 2) / Math.tan(hfov / 2), (h / 2) / Math.tan(vfov / 2)) * (pad || 1.15) + Math.max(size.z, 4) / 2;
+    camera.position.copy(c).addScaledVector(dir.clone().normalize(), d);
+    camera.lookAt(c);
+    sun.target.position.copy(c);
+    sun.position.copy(c).addScaledVector(SUN_DIR, 300);
+    const s = Math.max(size.x, size.z) * 0.6 + 10;
+    Object.assign(sun.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 1, far: 800 });
+    sun.shadow.camera.updateProjectionMatrix();
+  }
+
+  function focusItems(list, dir, title, pad) {
+    focusSet = new Set(list);
+    const b = new THREE.Box3();
+    list.forEach((it) => b.union(measure(it.obj)));
+    frame(b, dir || new THREE.Vector3(0, 0.42, -1), pad);
+    hud.innerHTML = title || '';
+  }
+
+  const gallery = {
+    ready: false,
+    names: () => items.map((it) => ({ name: it.name, theme: it.theme, part: it.part, kind: it.kind })),
+    /** part: 'near' | 'near1' | 'near2' | 'far' | 'hazards' | 'chase' */
+    focus(theme, part) {
+      applyTheme(theme);
+      const want = part === 'chase' ? 'hazards' : part;
+      const list = items.filter((it) => it.theme === theme && (it.part === want || (want === 'near' && /^near/.test(it.part))));
+      const dir = part === 'far' ? new THREE.Vector3(0.1, 0.16, -1) : part === 'hazards' ? new THREE.Vector3(0.2, 0.5, -1) : new THREE.Vector3(0.14, 0.3, -1);
+      if (part === 'chase') {
+        // The player's view: from behind the kart box, low, looking down the road.
+        const zT = IDS.indexOf(theme) * BAND;
+        camera.position.set(ROAD_X + C.laneX(2), 3.6, zT + 16);
+        camera.lookAt(ROAD_X + C.laneX(2), 1.0, zT - 8);
+        focusSet = new Set(list);
+        frameShadow(new THREE.Vector3(ROAD_X, 0, zT), 40);
+        hud.innerHTML = theme + ' · hazards <small>chase-camera view: block · roller · puddle, vehicle box for scale</small>';
+        return true;
+      }
+      focusItems(list, dir, theme + ' · ' + part + ' <small>' + list.filter((i) => i.kind !== 'ref').map((i) => i.name).join(' · ') + '</small>', part === 'far' ? 1.05 : 1.1);
+      return true;
+    },
+    /** Close-up of a single item by name. */
+    detail(theme, name, dir) {
+      const it = items.find((i) => i.theme === theme && i.name === name);
+      if (!it) return false;
+      applyTheme(theme);
+      focusItems([it], dir ? new THREE.Vector3(dir[0], dir[1], dir[2]) : new THREE.Vector3(0.35, 0.35, -1), theme + ' · ' + name, 1.35);
+      return true;
+    },
+    overview() {
+      applyTheme(IDS[0]);
+      focusSet = null;
+      camera.position.set(-260, 330, -260);
+      camera.lookAt(40, 0, BAND * 1.6);
+      frameShadow(new THREE.Vector3(40, 0, BAND * 1.5), 700);
+      hud.innerHTML = (moonlight ? 'Moonlight' : 'Sunshine') + ' Cup props <small>' + IDS.join(' · ') + ' (near to far)</small>';
+      return true;
+    },
+    /** Per-name budget numbers, measured on fresh builds after NK.art.mergeByMaterial. */
+    stats(seeds) {
+      const out = {};
+      const n = seeds || 4;
+      const all = [];
+      IDS.forEach((theme) => {
+        const cat = CAT[theme];
+        const seen = new Set();
+        cat.near.forEach((nm) => all.push([theme, 'near', nm, A.props]));
+        cat.far.concat(cat.landmarks).forEach((nm) => { if (!seen.has(nm)) { seen.add(nm); all.push([theme, cat.far.indexOf(nm) >= 0 ? 'far' : 'landmark', nm, A.props]); } });
+        ['block', 'roller', 'geyser', 'puddle'].forEach((k) => { if (cat.hazards[k]) all.push([theme, 'hazard:' + k, cat.hazards[k], A.hazard]); });
+      });
+      all.forEach(([theme, part, name, table]) => {
+        const fn = table[name];
+        const rec = { theme, part, exists: !!fn };
+        if (fn) {
+          const tris = [], calls = [], ms = [], dims = [], minY = [], anim = [];
+          for (let s = 0; s < n; s++) {
+            const t0 = performance.now();
+            const obj = fn(U.rng(1000 + s * 77));
+            const merged = A.mergeByMaterial(obj);
+            ms.push(performance.now() - t0);
+            let tc = 0, cc = 0;
+            merged.traverse((m) => {
+              if (!m.isMesh) return;
+              cc++;
+              const g = m.geometry;
+              tc += (g.index ? g.index.count : g.attributes.position.count) / 3;
+            });
+            tris.push(Math.round(tc)); calls.push(cc);
+            const b = measure(merged);
+            dims.push([+(b.max.x - b.min.x).toFixed(2), +(b.max.y - b.min.y).toFixed(2), +(b.max.z - b.min.z).toFixed(2)]);
+            minY.push(+b.min.y.toFixed(3));
+            anim.push(((obj.userData.anim || []).length) + (obj.userData.idle ? 'i' : '') + (obj.userData.rollNode ? 'r' : ''));
+            A.disposeTree(merged);
+          }
+          Object.assign(rec, {
+            tris: Math.max.apply(null, tris), trisMin: Math.min.apply(null, tris), calls: Math.max.apply(null, calls),
+            ms: +(ms.reduce((a, b) => a + b, 0) / n).toFixed(2), dims, minY, anim: anim[0]
+          });
+        }
+        out[name] = rec;
+      });
+      return out;
+    },
+    calls: () => renderer.info.render.calls,
+    tris: () => renderer.info.render.triangles,
+    get camera() { return camera; }
+  };
+
+  function frameShadow(c, s) {
+    sun.target.position.copy(c);
+    sun.position.copy(c).addScaledVector(SUN_DIR, Math.max(300, s));
+    Object.assign(sun.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 1, far: Math.max(800, s * 3) });
+    sun.shadow.camera.updateProjectionMatrix();
+  }
+
+  /* ── Loop ───────────────────────────────────────────────────────────── */
+  const _v = new THREE.Vector3();
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    animate(now / 1000, dt);
+    renderer.render(scene, camera);
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const show = focusSet ? focusSet.has(it) : false;
+      if (!show) { it.label.style.display = 'none'; continue; }
+      const b = measure(it.obj);
+      _v.set((b.min.x + b.max.x) / 2, b.max.y + 0.4, (b.min.z + b.max.z) / 2).project(camera);
+      if (_v.z > 1) { it.label.style.display = 'none'; continue; }
+      it.label.style.display = 'block';
+      it.label.style.left = ((_v.x + 1) / 2 * innerWidth) + 'px';
+      it.label.style.top = ((1 - _v.y) / 2 * innerHeight) + 'px';
+    }
+    requestAnimationFrame(tick);
+  }
+  gallery.focus(IDS[0], 'near');
+  requestAnimationFrame(tick);
+  addEventListener('resize', () => {
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+  });
+  gallery.ready = true;
+  window.gallery = gallery;
+})();
+</script>
+</body>
+</html>
