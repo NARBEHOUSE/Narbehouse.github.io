@@ -63,6 +63,7 @@ NK.ui = (function () {
   let inRace = false;             // a race is running under the cards
   let ready = false;
   let autoScanTimer = null;
+  let menuTouching = false;
   let cardOpenedAt = 0;
   let resetArmed = 0;
   let settingsReturn = { screen: 'title', index: 3 };
@@ -183,6 +184,7 @@ NK.ui = (function () {
     ov.id = 'nkOverlay';
     ov.className = 'nkOverlay';
     ov.innerHTML =
+      '<div id="nkMobilePreview" aria-hidden="true"></div>' +
       '<div id="nkCard" class="nkCard" role="dialog" aria-live="polite">' +
         '<div class="nkCardBand" aria-hidden="true"></div>' +
         '<div id="nkPlayerTag" class="nkPlayerTag"></div>' +
@@ -194,6 +196,13 @@ NK.ui = (function () {
         '<p id="nkHint" class="nkHint"></p>' +
       '</div>';
     host.appendChild(ov);
+    ov.addEventListener('touchstart', () => { menuTouching = true; stopAutoScan(); }, { passive: true });
+    const touchDone = e => {
+      menuTouching = e.touches.length > 0;
+      if (!menuTouching) restartAutoScan();
+    };
+    ov.addEventListener('touchend', touchDone, { passive: true });
+    ov.addEventListener('touchcancel', touchDone, { passive: true });
 
     const btn = document.createElement('button');
     btn.id = 'nkPauseBtn';
@@ -206,6 +215,7 @@ NK.ui = (function () {
 
     window.addEventListener('resize', refitSoon);
     window.addEventListener('orientationchange', refitSoon);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', refitSoon);
   }
 
   function selectable(it) { return !!it && it.enabled !== false && !it.header; }
@@ -250,9 +260,10 @@ NK.ui = (function () {
         // Hovering moves focus like scanning does (no speech: a mouse sweeping
         // the list would machine-gun the voice).
         el.addEventListener('mouseenter', () => {
+          if (!window.matchMedia('(hover: hover)').matches) return;
           if (!selectable(it) || index === i) return;
           index = i;
-          updateFocus();
+          updateFocus(false);
           restartAutoScan();
         });
       }
@@ -260,7 +271,7 @@ NK.ui = (function () {
     });
   }
 
-  function updateFocus() {
+  function updateFocus(reveal = true) {
     const els = $('nkMenu').children;
     for (let i = 0; i < els.length; i++) els[i].classList.toggle('focused', i === index);
     // Nothing selected yet: the card is waiting for a step, which reads a row out.
@@ -268,6 +279,18 @@ NK.ui = (function () {
     const it = items[index];
     showStats(it && it.stats !== undefined ? it.stats : (meta.stats || ''));
     if (it && typeof it.onFocus === 'function') it.onFocus();
+    if (reveal) revealFocus();
+  }
+
+  // Scanning moves the viewport with the highlight. No extra switch or swipe
+  // is needed to reach a choice on a short screen.
+  function revealFocus() {
+    const card = $('nkCard'), el = $('nkMenu').children[index];
+    if (!el || !card.classList.contains('scrollable')) return;
+    const cr = card.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const top = cr.top + card.clientTop + 14, bottom = cr.bottom - card.clientTop - 14;
+    if (r.top < top) card.scrollTop -= top - r.top;
+    else if (r.bottom > bottom) card.scrollTop += r.bottom - bottom;
   }
 
   function showStats(html) {
@@ -320,34 +343,28 @@ NK.ui = (function () {
     if (typeof it.action === 'function') it.action();
   }
 
-  /* ── Fitting: no card may ever need a scrollbar ──────────────────────────
-   * A player with two switches cannot scroll, so everything a card offers has
-   * to BE on the card. After every render: try the tight layout, then scale
-   * the whole card (never below a size that still reads across a room).
+  /* Fit without shrinking touch targets. Long cards scroll on small screens;
+   * switch focus reveals each choice automatically, including Back.
    */
   function fitCard() {
     const card = $('nkCard'), ov = $('nkOverlay');
     if (!card || !ov) return;
-    card.classList.remove('tight');
+    card.classList.remove('tight', 'scrollable');
     card.style.transform = '';
     card.style.marginBottom = '';
-    const cs = getComputedStyle(ov);
-    const room = ov.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - 8;
-    let h = card.getBoundingClientRect().height;
-    if (h <= room) return;
-    card.classList.add('tight');
-    h = card.getBoundingClientRect().height;
-    if (h <= room) return;
-    const k = Math.max(0.6, room / h);
-    card.style.transformOrigin = 'center center';
-    card.style.transform = 'scale(' + k.toFixed(3) + ')';
-    card.style.marginBottom = Math.round(-h * (1 - k)) + 'px';
+    if (card.scrollHeight > card.clientHeight + 1) card.classList.add('tight');
+    card.classList.toggle('scrollable', card.scrollHeight > card.clientHeight + 1);
+    revealFocus();
   }
 
   let refitTimer = null;
   function refitSoon() {
     clearTimeout(refitTimer);
-    refitTimer = setTimeout(() => { if (overlayOn) fitCard(); }, 140);
+    refitTimer = setTimeout(() => {
+      if (!overlayOn) return;
+      if (screen === 'settings' && meta.phoneSplit !== !!call('usesPhoneLayout')) refresh();
+      else fitCard();
+    }, 140);
   }
 
   /* ── Overlay plumbing ────────────────────────────────────────────────── */
@@ -397,6 +414,7 @@ NK.ui = (function () {
     }
 
     const card = $('nkCard');
+    card.scrollTop = 0;
     const owned = meta.owner === 0 || meta.owner === 1;
     card.className = 'nkCard size-' + (meta.size || 'normal') + (meta.cardClass ? ' ' + meta.cardClass : '') +
                      (owned ? ' owned p' + (meta.owner + 1) : '');
@@ -470,7 +488,7 @@ NK.ui = (function () {
 
   function restartAutoScan() {
     stopAutoScan();
-    if (!overlayOn || !scanning()) return;
+    if (!overlayOn || !scanning() || menuTouching || document.hidden) return;
     // Paused while a switch that counts is held.
     if ((keyDown.Space && live('Space')) || (keyDown.Enter && live('Enter'))) return;
     autoScanTimer = setInterval(() => step(1), scanInterval());
@@ -672,7 +690,12 @@ NK.ui = (function () {
   }
 
   function onVisibility() {
-    if (document.visibilityState === 'hidden' && inRace && !overlayOn) openPause(-1);
+    if (document.hidden) {
+      menuTouching = false;
+      clearKeys();
+      stopAutoScan();
+      if (inRace && !overlayOn) openPause(-1);
+    } else if (overlayOn) restartAutoScan();
   }
 
   /* ── Exit ────────────────────────────────────────────────────────────── */
@@ -1139,6 +1162,7 @@ NK.ui = (function () {
       const music = setting('music', true) !== false;
       const sfxOn = setting('sfx', true) !== false;
       const split = setting('split', 'side');
+      const phoneSplit = !!call('usesPhoneLayout');
       const shake = setting('shake', true) !== false;
       const speedName = (C.STEER_SPEEDS[steerSpeed] || C.STEER_SPEEDS.normal).name;
       const nextSpeed = C.STEER_ORDER[(C.STEER_ORDER.indexOf(steerSpeed) + 1) % C.STEER_ORDER.length];
@@ -1171,9 +1195,15 @@ NK.ui = (function () {
           } },
         { icon: '🎵', label: 'Music', value: music ? 'On' : 'Off', speech: 'Music, ' + (music ? 'On' : 'Off'),
           action: () => { setSetting('music', !music); refresh(); U.speak('Music: ' + (music ? 'off' : 'on')); } },
-        { icon: '🖥️', label: 'Split Screen', value: split === 'stack' ? 'Top and Bottom' : 'Side by Side',
-          speech: 'Split Screen, ' + (split === 'stack' ? 'top and bottom' : 'side by side'),
+        { icon: '🖥️', label: 'Split Screen', value: phoneSplit ? 'Automatic' : split === 'stack' ? 'Top and Bottom' : 'Side by Side',
+          note: phoneSplit ? 'Follows your phone’s orientation' : '',
+          speech: phoneSplit ? 'Split Screen, automatic. Turn your phone to change the layout.'
+                            : 'Split Screen, ' + (split === 'stack' ? 'top and bottom' : 'side by side'),
           action: () => {
+            if (phoneSplit) {
+              U.speak('Turn your phone for side by side views, or hold it upright for top and bottom views.');
+              return;
+            }
             const next = split === 'stack' ? 'side' : 'stack';
             setSetting('split', next);
             refresh();
@@ -1215,6 +1245,7 @@ NK.ui = (function () {
       return {
         art: '',
         title: 'Settings',
+        phoneSplit,
         items: list,
         layout: 'cols2',
         size: 'wide',
@@ -1440,7 +1471,7 @@ NK.ui = (function () {
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('narbe-input-cancelled', onInputCancelled);
     document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('blur', () => { clearKeys(); if (overlayOn) restartAutoScan(); });
+    window.addEventListener('blur', () => { menuTouching = false; clearKeys(); if (overlayOn) restartAutoScan(); });
 
     if (NK.controls) NK.controls.onPause = openPause;
     const g = G();

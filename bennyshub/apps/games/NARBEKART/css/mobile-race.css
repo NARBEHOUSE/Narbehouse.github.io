@@ -1,0 +1,130 @@
+/* NARBE Racer: a compact race HUD sized from each view, including split views.
+   Desktop HUD rules stay in nk.css. The road remains the whole touch target. */
+.nkView.hud-compact .nkTL {
+  left: calc(8px + var(--view-safe-left)); top: calc(8px + var(--view-safe-top));
+  width: min(108px, calc((100% - 88px) / 2)); gap: 4px;
+}
+.nkView.hud-compact .nkSlot {
+  width: 54px; height: 54px; flex: none; border-width: 3px; border-radius: 14px;
+  box-shadow: 0 3px 0 rgba(29,27,46,.4), inset 0 0 0 2px #fff;
+}
+.nkView.hud-compact .nkSlotIcon { font-size: 36px; }
+.nkView.hud-compact .nkSlotIcon.twin { font-size: 23px; letter-spacing: -3px; }
+.nkView.hud-compact .nkSlotCount { font-size: 14px; right: 3px; bottom: 1px; -webkit-text-stroke-width: 3px; }
+.nkView.hud-compact .nkSlot::after { inset: 7px; border-width: 2px; border-radius: 9px; }
+.nkView.hud-compact .nkReelStrip span { height: 48px; font-size: 34px; line-height: 48px; }
+.nkView.hud-compact .nkSlotName {
+  max-width: 100%; font-size: 12px; line-height: 1.15; white-space: normal; text-align: center;
+  padding: 3px 6px; border-width: 2px;
+}
+.nkView.hud-compact .nkItemUse { font-size: 13px; padding: 4px 6px; border-width: 2px; white-space: nowrap; }
+.nkView.hud-compact .nkCoins { font-size: 16px; gap: 4px; padding: 2px 8px 2px 3px; border-width: 2px; }
+.nkView.hud-compact .nkCoin { width: 19px; height: 19px; border-width: 2px; }
+.nkView.hud-compact .nkCoins b { min-width: 18px; }
+
+.nkView.hud-compact .nkTR {
+  right: calc(8px + var(--view-safe-right)); top: calc(7px + var(--view-safe-top));
+  gap: 4px; max-width: 112px;
+}
+.nkView.hud-compact .nkPlace { -webkit-text-stroke-width: 4px; text-shadow: 0 4px 0 var(--ink); }
+.nkView.hud-compact .nkPlace b { font-size: 44px; }
+.nkView.hud-compact .nkPlace.p1 b { font-size: 56px; }
+.nkView.hud-compact .nkPlace.p2 b, .nkView.hud-compact .nkPlace.p3 b { font-size: 50px; }
+.nkView.hud-compact .nkPlace i { font-size: 22px; margin: 5px 0 0 2px; }
+.nkView.hud-compact .nkLap { gap: 4px; font-size: 13px; padding: 4px 6px; border-width: 2px; }
+.nkView.hud-compact .nkLap b { font-size: 18px; }
+.nkView.hud-compact .nkFlag { width: 15px; height: 13px; border-width: 1px; }
+.nkView.hud-compact .nkTime, .nkView.hud-compact .nkBest, .nkView.hud-compact .nkLabel {
+  font-size: 12px; line-height: 1.1; padding: 3px 6px; max-width: 100%;
+}
+.nkView.hud-compact .nkLabel { white-space: normal; text-align: right; }
+/* The HUD name already identifies P1/P2. The extra keyboard tab takes space
+   from the Pause button and adds no information on a small touch screen. */
+.nkView.hud-compact .nkTag { display: none; }
+.nkView.hud-compact .nkFrame { border-width: 4px; box-shadow: inset 0 0 0 2px var(--ink); }
+
+.nkView.hud-compact .nkCue {
+  top: clamp(150px, 26%, 220px); gap: 8px; flex-direction: row;
+  max-width: calc(100% - 24px); white-space: nowrap;
+}
+.nkView.hud-compact .nkCue .nkArrow { width: 34px; height: 24px; flex: none; }
+.nkView.hud-compact .nkCueText { font-size: 14px; padding: 5px 9px; border-width: 2px; letter-spacing: 0; }
+.nkView.hud-compact .nkSide {
+  top: auto; bottom: calc(88px + var(--view-safe-bottom)); width: auto;
+  flex-direction: row; gap: 5px; padding: 6px; font-size: 12px;
+  border: 2px solid var(--ink); border-radius: 12px; transform: none;
+  max-width: calc(100% - 16px - var(--view-safe-left) - var(--view-safe-right));
+}
+.nkView.hud-compact .nkSide.l { left: calc(8px + var(--view-safe-left)); right: auto; }
+.nkView.hud-compact .nkSide.r { right: calc(8px + var(--view-safe-right)); left: auto; }
+.nkView.hud-compact .nkSide.on { transform: none; }
+.nkView.hud-compact .nkSide.on::before { font-size: 10px; letter-spacing: 0; }
+.nkView.hud-compact .nkSide .nkArrow { width: 24px; height: 18px; flex: none; }
+.nkView.hud-compact .nkSide.on.match::after { font-size: 10px; padding: 2px 4px; border-width: 1px; }
+
+.nkView.hud-compact .nkBottom {
+  bottom: calc(14px + var(--view-safe-bottom)); gap: 7px;
+  width: min(184px, calc(100% - 156px));
+}
+.nkView.hud-compact.hud-tiny .nkBottom,
+.nkView.hud-compact.duo .nkBottom { width: min(184px, calc(100% - 96px)); }
+.nkView.hud-compact .nkLanes { width: 100%; gap: 5px; padding: 6px; }
+.nkView.hud-compact .nkLanes .pip { width: auto; min-width: 0; flex: 1; height: 10px; border-width: 2px; }
+.nkView.hud-compact .nkLanes.scan { gap: 6px; padding: 8px 6px; }
+.nkView.hud-compact .nkLanes.scan .pip { width: auto; height: 18px; border-radius: 6px; }
+.nkView.hud-compact .nkLaneHint { font-size: 12px; letter-spacing: 0; white-space: nowrap; }
+.nkView.hud-compact .nkDrift { width: 100%; gap: 5px; }
+.nkView.hud-compact .nkDriftTag { font-size: 12px; }
+.nkView.hud-compact .nkDriftBar { width: auto; flex: 1; height: 11px; border-width: 2px; }
+.nkView.hud-compact .nkMapWrap {
+  right: calc(8px + var(--view-safe-right)); bottom: calc(8px + var(--view-safe-bottom));
+  width: 68px; height: 68px; border-width: 2px; border-radius: 13px;
+}
+.nkView.hud-compact.hud-tiny .nkMapWrap,
+.nkView.hud-compact.duo .nkMapWrap { display: none; }
+.nkView.hud-compact .nkRing {
+  width: 80px; height: 80px; right: calc(50% - 40px); bottom: calc(88px + var(--view-safe-bottom));
+}
+.nkView.hud-compact .nkRing .lbl { font-size: 12px; }
+.nkView.hud-compact .nkPop { max-width: calc(100% - 28px); white-space: normal; text-align: center; font-size: 32px; }
+.nkView.hud-compact .nkPop.k-count, .nkView.hud-compact .nkPop.k-go { font-size: 72px; }
+.nkView.hud-compact .nkPop.k-lap, .nkView.hud-compact .nkPop.k-final,
+.nkView.hud-compact .nkPop.k-finish { font-size: 42px; }
+.nkView.hud-compact .nkPop.k-item, .nkView.hud-compact .nkPop.k-good,
+.nkView.hud-compact .nkPop.k-bad, .nkView.hud-compact .nkPop.k-info { font-size: 28px; }
+
+/* The shortest phone splits use three short item rows: icon + coins, name,
+   then countdown. That leaves separate rows for guidance and steering. */
+.nkView.hud-tiny .nkTL {
+  display: grid; grid-template-columns: 40px 1fr; justify-items: center;
+  width: min(108px, calc(100% - 160px));
+}
+.nkView.hud-tiny .nkSlot { grid-column: 1; grid-row: 1; width: 40px; height: 40px; border-radius: 11px; }
+.nkView.hud-tiny .nkSlotIcon { font-size: 27px; }
+.nkView.hud-tiny .nkSlotIcon.twin { font-size: 18px; letter-spacing: -3px; }
+.nkView.hud-tiny .nkCoins { grid-column: 2; grid-row: 1; padding-right: 4px; gap: 2px; }
+.nkView.hud-tiny .nkCoin { width: 16px; height: 16px; }
+.nkView.hud-tiny .nkSlotName { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
+.nkView.hud-tiny .nkItemUse { grid-column: 1 / -1; grid-row: 3; }
+.nkView.hud-tiny .nkPlace b, .nkView.hud-tiny .nkPlace.p1 b,
+.nkView.hud-tiny .nkPlace.p2 b, .nkView.hud-tiny .nkPlace.p3 b { font-size: 40px; }
+.nkView.hud-tiny .nkPlace i { font-size: 18px; }
+.nkView.hud-tiny .nkCue { top: calc(116px + var(--view-safe-top)); }
+.nkView.hud-tiny .nkCue .nkArrow { width: 30px; height: 21px; }
+.nkView.hud-tiny .nkCueText { font-size: 13px; padding: 4px 8px; }
+.nkView.hud-tiny .nkSide { bottom: calc(62px + var(--view-safe-bottom)); }
+.layout-side .nkView.hud-tiny .nkSide { bottom: calc(88px + var(--view-safe-bottom)); }
+
+/* Phone Pause stays a 64px touch target. Side-by-side races put it across the
+   bottom divider; single/stack views reserve the gap between the HUD corners. */
+@media (max-width: 1100px) and (max-height: 600px), (max-width: 600px) and (max-height: 1100px) {
+  .nkPauseBtn {
+    left: 50%; top: calc(8px + var(--safe-top, 0px)); bottom: auto;
+    transform: translateX(-50%); width: 64px; height: 64px; min-width: 64px; min-height: 64px;
+    border-width: 3px; border-radius: 16px; font-size: 12px;
+  }
+  .nkPauseBtn .ic { font-size: 23px; }
+  :root[data-nk-layout="side"] .nkPauseBtn {
+    top: auto; bottom: calc(8px + var(--safe-bottom, 0px));
+  }
+}

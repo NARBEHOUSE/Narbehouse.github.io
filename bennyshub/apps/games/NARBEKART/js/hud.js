@@ -106,11 +106,14 @@ NK.hud = (function () {
     root.className = 'nkHud';
     root.setAttribute('aria-hidden', 'true');
     (document.getElementById('app') || document.body).appendChild(root);
-    window.addEventListener('resize', () => {
+    const queueResize = () => {
       if (resizeQueued) return;
       resizeQueued = true;
       requestAnimationFrame(() => { resizeQueued = false; applyUnits(); });
-    });
+    };
+    window.addEventListener('resize', queueResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', queueResize);
+    if (window.ResizeObserver) new ResizeObserver(queueResize).observe(root);
   }
 
   function viewHTML(i, n) {
@@ -211,12 +214,20 @@ NK.hud = (function () {
   }
 
   function applyUnits() {
+    const bounds = root.getBoundingClientRect();
     for (let i = 0; i < views.length; i++) {
       const V = views[i];
       const r = V.el.getBoundingClientRect();
       const w = Math.max(1, r.width), h = Math.max(1, r.height);
       const u = U.clamp(Math.min(Math.sqrt(w * h) / 1200, w / 1100, h / 560), 0.5, 1.6);
       V.el.style.setProperty('--u', u.toFixed(3));
+      set(V.el, 'hud-compact', w < 600 || h < 400);
+      set(V.el, 'hud-tiny', w < 360 || h < 350);
+      // Only the outside edge of a split view inherits the device notch.
+      V.el.style.setProperty('--view-safe-top', r.top <= bounds.top + 1 ? 'var(--safe-top, 0px)' : '0px');
+      V.el.style.setProperty('--view-safe-bottom', r.bottom >= bounds.bottom - 1 ? 'var(--safe-bottom, 0px)' : '0px');
+      V.el.style.setProperty('--view-safe-left', r.left <= bounds.left + 1 ? 'var(--safe-left, 0px)' : '0px');
+      V.el.style.setProperty('--view-safe-right', r.right >= bounds.right - 1 ? 'var(--safe-right, 0px)' : '0px');
       V.u = u;
       V.mapPx = 0;                   // canvas backing size is re-derived on the next draw
     }
@@ -572,6 +583,7 @@ NK.hud = (function () {
   function minimap(v, W, racers, focusIdx) {
     const V = views[v];
     if (!V || !W || !racers) return;
+    if (!V.map.clientWidth) return;
     if (!prepareMap(V, W)) return;
     const g = V.mapCtx, pr = V.mapProj, px = pr.px;
     g.clearRect(0, 0, px, px);
@@ -609,9 +621,10 @@ NK.hud = (function () {
   /* ── Public: pointer mapping for NK.controls ─────────────────────────── */
 
   /** Which view a screen point is over, and how far across it (0..1). */
-  function viewAt(x, y) {
+  function viewAt(x, y, lockedView) {
     let best = null, bestD = Infinity;
     for (let i = 0; i < views.length; i++) {
+      if (lockedView !== undefined && i !== lockedView) continue;
       const r = views[i].el.getBoundingClientRect();
       const dx = x < r.left ? r.left - x : (x > r.right ? x - r.right : 0);
       const dy = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);

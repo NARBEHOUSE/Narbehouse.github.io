@@ -308,26 +308,42 @@ NK.controls = (function () {
    * a single tap is a whole steering action. A held switch outranks the
    * pointer for that player.
    */
-  let pointerDown = false;
+  const pointers = new Map();
 
-  function pointerLane(e) {
+  function pointerLane(e, owner) {
     const hud = window.NK && NK.hud;
-    const hit = hud && typeof hud.viewAt === 'function' ? hud.viewAt(e.clientX, e.clientY) : null;
+    const hit = hud && typeof hud.viewAt === 'function' ? hud.viewAt(e.clientX, e.clientY, owner) : null;
     if (hit && hit.v >= 0 && hit.v < players) return { p: P[hit.v], fx: hit.fx };
     const w = window.innerWidth || 1;
-    return { p: P[0], fx: U.clamp(e.clientX / w, 0, 0.999) };
+    return { p: P[owner === 1 ? 1 : 0], fx: U.clamp(e.clientX / w, 0, 0.999) };
   }
 
   function onPointer(e) {
-    if (e.type === 'pointerdown') pointerDown = true;
-    if (!running || suspended || !pointerDown) return;
-    const hit = pointerLane(e);
+    if (!running || suspended) return;
+    if (e.type === 'pointerdown') {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const first = pointerLane(e);
+      if (!first.p) return;
+      pointers.set(e.pointerId, first.p.idx);
+      // Each finger keeps its player even if a drag crosses the divider.
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { /* synthetic/test pointer */ }
+    }
+    if (!pointers.has(e.pointerId)) return;
+    const hit = pointerLane(e, pointers.get(e.pointerId));
     if (!hit.p || holding(hit.p)) return;
     if (e.cancelable) e.preventDefault();
     game('targetLane', hit.p.idx, U.clamp(Math.floor(hit.fx * LANES), 0, LANES - 1));
   }
 
-  function onPointerEnd() { pointerDown = false; }
+  function onPointerEnd(e) { pointers.delete(e.pointerId); }
+
+  function clearPointers() {
+    const surface = document.getElementById('canvasWrap');
+    for (const id of pointers.keys()) {
+      try { if (surface && surface.hasPointerCapture(id)) surface.releasePointerCapture(id); } catch (_) { /* pointer already ended */ }
+    }
+    pointers.clear();
+  }
 
   function wire() {
     if (wired) return;
@@ -336,6 +352,7 @@ NK.controls = (function () {
     if (surface) {
       surface.addEventListener('pointerdown', onPointer, { passive: false });
       surface.addEventListener('pointermove', onPointer, { passive: false });
+      surface.addEventListener('lostpointercapture', onPointerEnd);
     }
     window.addEventListener('pointerup', onPointerEnd);
     window.addEventListener('pointercancel', onPointerEnd);
@@ -351,6 +368,7 @@ NK.controls = (function () {
   /* ── Lifecycle ───────────────────────────────────────────────────────── */
 
   function releaseAll() {
+    clearPointers();
     for (let i = 0; i < players; i++) {
       P[i].held.Space = P[i].held.Enter = false;
       clearPauseHold(P[i]);
@@ -410,6 +428,7 @@ NK.controls = (function () {
    *  scheme is rebuilt; the armed side and scanner position carry over. */
   function resume(opts) {
     if (!running) return;
+    clearPointers();
     if (opts) applyOpts(opts);
     NK.input.reset();
     for (let i = 0; i < 2; i++) {

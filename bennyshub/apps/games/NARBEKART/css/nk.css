@@ -13,6 +13,10 @@
  */
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   --ink: #1d1b2e;
   --ink2: #57526b;
   --paper: #fff8ec;
@@ -168,6 +172,15 @@ kbd {
 @keyframes nkCardIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
 .nkCard.size-wide { width: min(64rem, 95vw); }
 .nkCard.size-showcase { width: min(40rem, 50vw); }
+#nkMobilePreview { display: none; pointer-events: none; }
+.nkCard.scrollable {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink2) var(--paper2);
+  scroll-padding: 14px;
+}
 .nkCard.title { padding-top: 2.4rem; }
 
 /* The checkered banner across the top, with a red racing stripe under it. */
@@ -364,7 +377,7 @@ kbd {
   color: var(--ink2);
 }
 
-/* Tight: the second step of fitting a tall card, before scaling it. */
+/* Tight: trim decoration on a tall card, keeping every target at least 64px. */
 .nkCard.tight { padding-top: 2.3rem; padding-bottom: .7rem; }
 .nkCard.tight .nkArt { width: 3.4rem; height: 3.4rem; }
 .nkCard.tight .nkArt span { font-size: 2rem; }
@@ -858,6 +871,91 @@ kbd {
 /* A finished player's view: the race is over for them, so the steering aids go. */
 .nkView.finished .nkCue, .nkView.finished .nkBottom, .nkView.finished .nkSide,
 .nkView.finished .nkEdge, .nkView.finished .nkDanger, .nkView.finished .nkItemUse { display: none !important; }
+
+/* Phones and short landscape windows: keep readable, full-size controls.
+   The card scrolls with a swipe or automatically with switch focus. */
+@media (max-width: 900px), (max-height: 500px) {
+  html { font-size: 16px; }
+  .nkOverlay, .nkOverlay.showcase {
+    padding: max(12px, var(--safe-top)) max(12px, var(--safe-right))
+             max(16px, var(--safe-bottom)) max(12px, var(--safe-left));
+    justify-content: center;
+    --preview-height: clamp(110px, 22vh, 180px);
+  }
+  .nkCard, .nkCard.size-wide, .nkCard.size-showcase {
+    width: 100%; max-width: 700px; min-width: 0; max-height: 100%;
+    padding: 2rem 14px 16px;
+    border-width: 4px; border-radius: 22px;
+    overflow-x: hidden; overflow-y: auto;
+    overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .nkCard.tight, .nkCard.title { padding: 2rem 14px 16px; }
+  .nkCard.owned { box-shadow: 0 0 0 4px var(--pc), 0 0 0 7px var(--ink), 0 10px 24px #0006; }
+  .nkPlayerTag { position: static; margin: 0 0 8px; }
+  .nkCardBand { height: 1rem; border-radius: 18px 18px 0 0; }
+  .nkCardTitle, .nkCard.tight .nkCardTitle { font-size: 1.8rem; -webkit-text-stroke-width: .22rem; }
+  .nkCardSub { font-size: 1rem; line-height: 1.35; }
+  .nkCard.howto .nkCardSub { font-size: 1.05rem; line-height: 1.45; }
+  .nkCardSub .duo { flex-wrap: wrap; justify-content: center; gap: .5rem; }
+  .nkCardSub .duo .pt { font-size: 1.1rem; }
+  .nkArt, .nkCard.tight .nkArt { width: 3rem; height: 3rem; }
+  .nkArt span, .nkCard.tight .nkArt span { font-size: 1.8rem; }
+  .nkLogo { padding: 0 1.4rem; max-width: 100%; }
+  .nkLogoMain, .nkCard.tight .nkLogoMain { font-size: clamp(2.5rem, 11vw, 3.8rem); -webkit-text-stroke-width: .3rem; }
+  .nkLogoTop { font-size: 1rem; }
+  .nkLogoFlag { width: 1.25rem; height: 1.2rem; top: 2rem; }
+  .nkLogoStripe { width: 105%; }
+  .nkMenu, .nkCard.tight .nkMenu { gap: 12px; margin-top: 16px; margin-bottom: 10px; }
+  .nkMenu.grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nkMenu.cols2 { grid-template-rows: none !important; grid-auto-flow: row; }
+  .nkItem, .nkMenu.grid3 .nkItem, .nkMenu.row .nkItem, .nkCard.tight .nkItem {
+    min-height: 64px; min-width: 0; padding: 8px; gap: 6px;
+    font-size: 1.05rem; border-width: 3px; border-radius: 14px;
+  }
+  .nkItem .ic, .nkItem[style*="--accent"] .ic { width: 32px; font-size: 1.5rem; }
+  .nkItem[style*="--accent"] .ic { height: 32px; line-height: 26px; font-size: 1.25rem; }
+  .nkItem .lb { flex: 1; }
+  .nkItem .nm, .nkMenu.row .nkItem .nm { white-space: normal; overflow-wrap: anywhere; }
+  .nkItem .lb small { font-size: .8rem; overflow-wrap: anywhere; }
+  .nkItem.header, .nkCard.tight .nkItem.header { min-height: 0; }
+  .nkItem .val { max-width: 48%; white-space: normal; overflow-wrap: anywhere; font-size: .85rem; padding: 5px 7px; }
+  .nkItem.bigic { flex-direction: column; text-align: center; }
+  .nkItem.bigic .lb { flex: initial; }
+  .nkItem.bigic .ic { width: auto; font-size: 2rem; }
+  .nkItem.focused {
+    transform: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--ink), 0 5px 0 #1d1b2e55;
+  }
+  .nkItem.focused::before { left: -3px; top: -3px; bottom: -3px; width: 7px; border-width: 2px; border-radius: 14px 0 0 14px; }
+  .nkStats { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 8px; }
+  .nkStats .sl { width: 7rem; flex: none; }
+  .nkStats .blurb { font-size: .9rem; }
+  .nkHint { font-size: .85rem; line-height: 1.4; }
+  .nkBoard.two { grid-template-columns: minmax(0, 1fr); }
+  .nkBoard .row { gap: 5px; padding-right: 5px; }
+  .nkBoard .you { padding: 2px 4px; }
+  .nkOverlay.showcase { align-items: flex-end; }
+  .nkOverlay.showcase .nkCard { max-height: calc(100% - var(--preview-height) - 10px); }
+  .nkOverlay.showcase #nkMobilePreview {
+    display: block; position: absolute;
+    left: max(12px, var(--safe-left)); right: max(12px, var(--safe-right));
+    top: max(12px, var(--safe-top)); height: var(--preview-height);
+  }
+  #loading { padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left)); gap: 1.5rem; text-align: center; }
+}
+@media (max-width: 520px) {
+  .nkMenu.cols2, .nkMenu.row { grid-template-columns: minmax(0, 1fr); }
+  .nkCard:not(.size-showcase) .nkMenu.grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .nkOverlay.showcase { justify-content: flex-start; align-items: center; }
+  .nkOverlay.showcase .nkCard { width: 62%; max-height: 100%; }
+  .nkOverlay.showcase #nkMobilePreview {
+    left: 65%; right: max(12px, var(--safe-right));
+    top: max(12px, var(--safe-top)); bottom: max(16px, var(--safe-bottom)); height: auto;
+  }
+  #loading .nkTyre { width: 3.5rem; height: 3.5rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .nkCard.enter, .nkCue .nkArrow, .nkLap.final, .nkDanger.on, .nkSlot.spin { animation: none; }

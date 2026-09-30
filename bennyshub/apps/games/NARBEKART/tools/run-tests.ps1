@@ -15,7 +15,7 @@ try {
       if ($LASTEXITCODE -ne 0) { throw ($check + ' failed.') }
     }
     $scenarios = @('game-smoke')
-    if ($Suite -eq 'all') { $scenarios += @('game-progression','game-features','game-lifecycle','game-tracks','game-presentation','props-catalog','ui-menu-input','ui-race-input','ui-screens') }
+    if ($Suite -eq 'all') { $scenarios += @('game-progression','game-features','game-lifecycle','game-tracks','game-presentation','props-catalog','ui-menu-input','ui-race-input','ui-screens','mobile-ui','mobile-race','mobile-interruptions') }
     foreach ($scenario in $scenarios) {
       Write-Host ('Running ' + $scenario)
       $stdoutPath = Join-Path $testRoot ($scenario + '.stdout.log')

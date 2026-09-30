@@ -30,7 +30,19 @@ NK.game = (function () {
       mode: session.mode, type: session.type, classId: session.classId, cupId: session.cupId, trackId: session.trackId };
     U.save('picks', picks);
   }
-  function layout() { return session.players === 2 && !demo ? data.split : 'single'; }
+  function layout() {
+    if (session.players !== 2 || demo) return 'single';
+    if (NK.main.isPhoneViewport()) {
+      const s = NK.main.viewportSize();
+      return s.width < s.height ? 'stack' : 'side';
+    }
+    return data.split;
+  }
+  function refreshLayout() {
+    if (!R || demo || NK.hud.layout === layout()) return;
+    NK.hud.setup(layout()); applyViews(); pushHud();
+    if (paused) NK.hud.visible(false);
+  }
   function applyViews() { NK.main.setViews(preview ? [preview.view] : podium ? [podium.view] : views, preview || podium ? 'single' : layout()); }
   function setupViews() {
     views = (demo ? [R.racers[0]] : R.humans).map((r,i) => ({ camera: new THREE.PerspectiveCamera(55, 1, 0.35, 1600), playerIdx: i, world: W, racer: r }));
@@ -210,7 +222,7 @@ NK.game = (function () {
     const plinth=NK.art.part(new THREE.CylinderGeometry(3.5,3.8,0.35,48),NK.art.mat.toon(0x6c4aa4),{pos:[0,-0.2,0]});
     group.add(plinth,model); s.add(group);
     const camera=new THREE.PerspectiveCamera(43,1,0.1,100); camera.position.set(0,4.8,-11);
-    preview={key:pk.charId+':'+pk.vehicleId,group,model,view:{camera,scene:s}};
+    preview={key:pk.charId+':'+pk.vehicleId,group,model,view:{camera,scene:s,showcase:true}};
     applyViews();
   }
   function showPodium() {
@@ -219,7 +231,7 @@ NK.game = (function () {
     const positions=stage.userData.spots;
     session.gp.standings.slice(0,3).forEach((row,i)=>{ const mesh=NK.roster.build(row.charId,row.vehicleId); mesh.position.copy(positions[i]); group.add(mesh); });
     const cup=NK.art.trophy(session.gp.trophies[0]&&session.gp.trophies[0].trophy||'gold'); cup.position.set(0,0.2,-4.5); cup.scale.setScalar(2.2); group.add(cup); s.add(group);
-    podium={group,view:{camera:new THREE.PerspectiveCamera(48,1,0.1,100),scene:s},time:0};
+    podium={group,view:{camera:new THREE.PerspectiveCamera(48,1,0.1,100),scene:s,showcase:true},time:0};
     AU.music('podium'); setPhase('podium'); applyViews();
   }
   function pause() {
@@ -248,14 +260,23 @@ NK.game = (function () {
   }
   function update(dt) {
     AU.tick(); clock+=dt;
+    refreshLayout();
     if(preview) {
       preview.model.rotation.y=0.35+Math.sin(clock*0.7)*0.42;
       const cam=preview.view.camera;
-      // Offset the target to frame the model beside the pick card.
-      cam.lookAt(4.2,1.3,0);
+      const slot=NK.main.showcaseRect();
+      if(slot) {
+        const distance=Math.max(1,0.92/(slot.width/slot.height));
+        preview.group.children[0].scale.set(0.65,1,0.65);
+        cam.position.set(0,1.3+2.3*distance,-7*distance); cam.lookAt(0,1.3,0);
+      } else {
+        // Desktop keeps its full-canvas model beside the pick card.
+        preview.group.children[0].scale.set(1,1,1);
+        cam.position.set(0,4.8,-11); cam.lookAt(4.2,1.3,0);
+      }
     }
     if(podium) {
-      podium.time+=dt; NK.camera.podium(podium.view,new THREE.Vector3(5,0,0),podium.time); return;
+      podium.time+=dt; NK.camera.podium(podium.view,new THREE.Vector3(NK.main.showcaseRect()?0:5,0,0),podium.time); return;
     }
     if(!R||paused) return;
     R.update(dt);
@@ -301,7 +322,7 @@ NK.game = (function () {
   }
   const api={ settings,
     init(o) { renderer=o.renderer; scene=o.scene; AU.init(); AU.setSfx(data.sfx); AU.setMusic(data.music); loadAttract(); },
-    update,beforeView, get session(){return snapshot(session);},
+    update,beforeView,effectiveLayout:layout,usesPhoneLayout:()=>NK.main.isPhoneViewport(), get session(){return snapshot(session);},
     setPlayers(n){session.players=n===2?2:1;}, setMode(id){if(C.MODES[id]) session.mode=id;savePicks();},
     setType(id){if(['gp','single','tt'].includes(id)) session.type=id;savePicks();},
     setClass(id){if(C.CLASSES[id]) session.classId=id;savePicks();},

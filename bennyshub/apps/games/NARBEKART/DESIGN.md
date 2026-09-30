@@ -741,6 +741,41 @@ right; 12 racers in a 3-column grid; first item "Same as last time") · `kart` �
 `cup` · `track` · `howto` · `settings` · `pause` · `results` · `standings` ·
 `trophy` · `confirmExit`.
 
+**Phone race layout:** when the shorter viewport edge is at most 600px and
+the longer edge is at most 1100px, two-player views use top/bottom in portrait
+and side-by-side in landscape. Rotation updates the effective layout without
+changing the saved desktop split preference. Portrait chase framing adjusts
+to keep the player's vehicle and upcoming road visible.
+
+Each view has a compact HUD with item countdown, lap, place and player label.
+Very small split views hide the duplicate keyboard tag and minimap while
+retaining P1/P2 identification and the one-switch lane scanner. Pause remains
+at least 64px and clear of safe-area insets. A tap chooses one of the five
+lanes across that player's view; dragging is optional. Each touch keeps its
+original player until it ends or is cancelled, so fingers may cross the
+divider without steering the other player. Held switches retain priority.
+
+
+**Phone and short-window menus:** at widths up to 900px or heights up to
+500px, cards use the available safe area and scroll vertically with full-size
+controls (at least 64px). Portrait phones show two racer columns, one settings
+column and one standings column. Text wraps within each option. The racer or
+vehicle preview sits above the card in portrait and beside it in landscape,
+and follows orientation changes. Wider desktop screens keep their existing
+showcase layout.
+
+Switch focus automatically reveals the selected option inside a scrolling
+card, including Back; the hint remains reachable at the bottom. A swipe scrolls
+without selecting the touched option, and a tap activates once despite the
+following synthetic click. Auto Scan waits while a finger is down and resumes
+after the gesture ends or is cancelled. Safe-area insets keep cards clear of
+screen cutouts and home indicators.
+
+The `mobile-ui.cjs` harness covers 320x568, 360x640, 390x844, 768x1024,
+667x375 and 844x390, with 1024x768 and 1600x900 desktop comparisons. It checks
+target sizes, wrapping, horizontal fit, focus scrolling, footer access, native
+touch gestures and simulated safe areas. These are Chromium viewport and touch-event simulations; physical iOS and Android devices still need a hands-on check.
+
 **Settings, in the rulebook's order**, reachable from the title and the pause
 menu (Back returns to where it came from):
 Text to Speech · Voice · Steering (Hold to Slide / Press to Step) · Steering

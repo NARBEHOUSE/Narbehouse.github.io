@@ -5,11 +5,35 @@ NK.main = (function () {
   const frames = [], before = [], steps = [0.66, 0.8, 1, 1.25, 1.5, 2];
   let ratio = 3, sampleTime = 0, sampleFrames = 0, fps = 60, errors = 0, errorAt = 0;
   let calls = 0, tris = 0;
+  function viewportSize() {
+    const host = document.getElementById('canvasWrap');
+    return { width: Math.max(1, host ? host.clientWidth : window.innerWidth),
+      height: Math.max(1, host ? host.clientHeight : window.innerHeight) };
+  }
+  function isPhoneViewport() {
+    const s = viewportSize();
+    return Math.min(s.width, s.height) <= 600 && Math.max(s.width, s.height) <= 1100;
+  }
+  function showcaseRect() {
+    const slot = document.getElementById('nkMobilePreview'), host = document.getElementById('canvasWrap');
+    if (!slot || !host) return null;
+    const r = slot.getBoundingClientRect(), canvas = host.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return null;
+    const left = Math.max(0, r.left - canvas.left), top = Math.max(0, r.top - canvas.top);
+    const width = Math.min(canvas.width, r.right - canvas.left) - left;
+    const height = Math.min(canvas.height, r.bottom - canvas.top) - top;
+    return width > 0 && height > 0 ? { left, top, width, height } : null;
+  }
   function resize() {
     if (!renderer) return;
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const s = viewportSize();
+    renderer.setSize(s.width, s.height, false);
   }
-  function setViews(next, mode) { views = next || []; layout = mode || 'single'; resize(); }
+  function setViews(next, mode) {
+    views = next || []; layout = mode || 'single';
+    document.documentElement.dataset.nkLayout = layout;
+    resize();
+  }
   function quality(dt) {
     sampleTime += dt; sampleFrames++;
     if (sampleTime < 3) return;
@@ -23,15 +47,18 @@ NK.main = (function () {
     }
   }
   function render() {
-    const w = window.innerWidth, h = window.innerHeight, two = views.length > 1;
+    const size = viewportSize(), w = size.width, h = size.height, two = views.length > 1;
     renderer.setScissorTest(false); renderer.setViewport(0, 0, w, h); renderer.setClearColor(0x1d1b2e, 1); renderer.clear();
     renderer.setScissorTest(true); calls = tris = 0;
     views.forEach((view, i) => {
       let x = 0, y = 0, vw = w, vh = h;
       if (two && layout === 'stack') { vh = Math.floor((h - 6) / 2); y = i ? 0 : h - vh; }
       else if (two) { vw = Math.floor((w - 6) / 2); x = i ? w - vw : 0; }
+      const slot = view.showcase && showcaseRect();
+      if (slot) { x = slot.left; y = h - slot.top - slot.height; vw = slot.width; vh = slot.height; }
       const cam = view.camera;
       if (cam.aspect !== vw / vh) { cam.aspect = vw / vh; cam.updateProjectionMatrix(); }
+      if (view.racer && NK.camera.fit) NK.camera.fit(view);
       renderer.setViewport(x, y, vw, vh); renderer.setScissor(x, y, vw, vh);
       before.forEach(fn => fn(i, view));
       renderer.info.reset(); renderer.render(view.scene || scene, cam);
@@ -78,6 +105,9 @@ NK.main = (function () {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, steps[ratio]));
     (document.getElementById('canvasWrap') || document.body).appendChild(renderer.domElement);
     resize(); window.addEventListener('resize', resize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+    const host = document.getElementById('canvasWrap');
+    if (window.ResizeObserver && host) new ResizeObserver(resize).observe(host);
     document.addEventListener('visibilitychange', () => { last = performance.now(); if (document.hidden && NK.game) NK.game.pause(); });
     renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); fail(new Error('Graphics context lost')); });
     running = true; last = performance.now(); requestAnimationFrame(loop);
@@ -87,7 +117,8 @@ NK.main = (function () {
     return { calls, tris, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures,
       pixelRatio: renderer.getPixelRatio(), size: renderer.getSize(new THREE.Vector2()).toArray(), fps: +fps.toFixed(1) };
   }
-  const api = { init, setViews, onFrame: fn => frames.push(fn), onBeforeView: fn => before.push(fn), perf,
+  const api = { init, setViews, viewportSize, isPhoneViewport, showcaseRect,
+    onFrame: fn => frames.push(fn), onBeforeView: fn => before.push(fn), perf,
     get renderer() { return renderer; }, get scene() { return scene; } };
   NK.perf = perf;
   function boot() {

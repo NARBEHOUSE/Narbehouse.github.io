@@ -93,14 +93,32 @@ NK.util = (function () {
    */
   function addTap(el, fn) {
     if (!el) return;
-    let touchFired = false;
+    let touch = null, suppressClickUntil = 0;
+    el.addEventListener('touchstart', (e) => {
+      const t = e.changedTouches[0];
+      if (!t) return;
+      touch = { id: t.identifier, x: t.clientX, y: t.clientY, moved: e.touches.length > 1 };
+    }, { passive: true });
+    el.addEventListener('touchmove', (e) => {
+      if (!touch) return;
+      const t = Array.from(e.touches).find(t => t.identifier === touch.id);
+      if (!t || e.touches.length > 1 || Math.hypot(t.clientX - touch.x, t.clientY - touch.y) > 10) touch.moved = true;
+    }, { passive: true });
+    el.addEventListener('touchcancel', () => {
+      touch = null;
+      suppressClickUntil = performance.now() + 700;
+    }, { passive: true });
     el.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      touchFired = true;
-      fn(e);
+      if (!touch) return;
+      const t = Array.from(e.changedTouches).find(t => t.identifier === touch.id);
+      if (!t) return;
+      const tapped = !touch.moved && Math.hypot(t.clientX - touch.x, t.clientY - touch.y) <= 10;
+      touch = null;
+      suppressClickUntil = performance.now() + 700;
+      if (tapped) { e.preventDefault(); fn(e); }
     }, { passive: false });
     el.addEventListener('click', (e) => {
-      if (touchFired) { touchFired = false; return; }
+      if (performance.now() < suppressClickUntil) return;
       fn(e);
     });
   }
