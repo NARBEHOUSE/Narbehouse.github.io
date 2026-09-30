@@ -35,7 +35,7 @@ Use Companion settings to grant access to the services you use. Player adapters 
 GET STARTED
 1. Install the Companion in desktop Chrome or Microsoft Edge.
 2. Visit https://narbehouse.github.io/bennyshub/ and refresh the page if it was already open.
-3. Open Settings → Companion setup → Open Companion settings, then enable the sources you need.
+3. Open Companion & data → Companion settings, then enable the sources you need. Companion setup has installation and connection help.
 4. Open Tools → Streaming. Add your own links or choose an optional starter collection through Streaming Settings → Open Editor. The public library starts empty; Quick add keeps existing entries and skips matching links.
 
 Help & shortcuts pauses playback and offers a spoken "I need help" message, direct access to the Hub keyboard or phrase board, and a shortcut to the Hub main menu. Returning to the video leaves it paused until you choose Play.

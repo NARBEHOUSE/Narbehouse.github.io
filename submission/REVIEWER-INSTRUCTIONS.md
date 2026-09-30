@@ -7,7 +7,7 @@ Support: narbehousellc@gmail.com
 No Hub account, Python helper or Electron app is needed. Streaming provider accounts remain separate; use a public YouTube video to review core behavior without a paid account. No private credentials are supplied or required in these notes.
 
 1. Install the ZIP through the store's review process. Open the website and refresh if it was already open. Dismiss the initial settings prompt if shown.
-2. Open the small Settings section at the top, then Companion setup → Open Companion settings. Enable YouTube and accept its optional host permission. Other sources can remain off.
+2. Open Companion & data at the top, then Companion settings. Enable YouTube and accept its optional host permission. Other sources can remain off. Companion setup has installation and connection help.
 3. Return to Tools → Streaming → Settings → Open Editor. Expand the add-title form. Enter a test title and any public YouTube watch URL of your choice, choose Movies and a genre, then save. The public catalog deliberately starts empty; no media is bundled.
 4. Return to Streaming, refresh it to load the saved title if needed, browse the title and choose Play. A dedicated fullscreen browser window opens with the Companion bar.
 5. Space advances the highlighted control. Enter activates it. Hold Space for three seconds to scan backward. Check Play / Pause, volume, mute, seek on a seekable video, and Return to Hub. The last button should close the managed player and focus the original Hub without adding duplicates.

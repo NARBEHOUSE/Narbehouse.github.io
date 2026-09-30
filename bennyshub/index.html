@@ -760,9 +760,14 @@
     .hub-settings summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
     .settings-panel { text-align: left; padding: 16px; margin-top: 8px; background: #121b28; border: 1px solid #3a4e63; border-radius: 12px; }
     .settings-panel a { color: #9ed7ff; text-underline-offset: 3px; }
-    .companion-apps { margin: 12px 0; padding-left: 22px; line-height: 1.6; }
-    .companion-apps li + li { margin-top: 8px; }
-    .settings-panel button { font: inherit; padding: 10px 14px; margin: 4px; color: var(--text); background: #21384e; border: 1px solid #7095b8; border-radius: 8px; cursor: pointer; }
+    .settings-panel p { line-height: 1.6; }
+    .settings-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+    .settings-actions p { margin: 6px 0 0; }
+    .settings-panel button { width: 100%; min-height: 44px; font: inherit; font-weight: 700; padding: 10px 14px; color: var(--text); background: #21384e; border: 1px solid #7095b8; border-radius: 8px; cursor: pointer; }
+    .settings-panel button:hover { background: #2c4863; }
+    .settings-panel button:disabled { cursor: wait; opacity: .7; }
+    .settings-error { color: #ffb4b4; }
+    @media (max-width: 600px) { .settings-actions { grid-template-columns: 1fr; } }
     .hub-settings :focus-visible { outline: 3px solid #ffdf65; outline-offset: 3px; }
     .connection-status { display: inline-block; border: 1px solid currentColor; border-radius: 20px; padding: 6px 12px; font-weight: 700; color: #ffdf83; background: #302816; }
     .connection-status[data-connection="connected"] { color: #9aefb4; background: #123421; }
@@ -796,20 +801,30 @@
   <a class="sr-only" href="#main">Skip to main content</a>
   <div class="container">
     <details id="hub-settings" class="hub-settings" data-scan-exclude>
-      <summary>Companion settings</summary>
+      <summary>Companion &amp; data</summary>
       <div class="settings-panel">
-        <p>Benny's Hub Companion is an optional Chrome or Edge extension. Installing and connecting it adds three apps to your Tools menu:</p>
-        <ul class="companion-apps">
-          <li><strong>Day Hub:</strong> hear the time and date, check the weather, listen to news, and review your weekly schedule when you connect a calendar.</li>
-          <li><strong>Journal:</strong> write personal entries with a switch-accessible keyboard or guided questions, hear prompts aloud, and revisit entries using a calendar that shows which days have entries. Entries stay in this browser unless you export them.</li>
-          <li><strong>Streaming:</strong> build a library of movie, show and video links, then use one- or two-switch playback controls on supported services. Your usual service account or subscription may still be needed.</li>
-        </ul>
-        <p>Get the Companion from the <a id="extension-store" href="https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc" target="_blank" rel="noopener noreferrer">Chrome Web Store</a>, then refresh the Hub. Use this panel to check the connection and open Companion setup to choose which services it can access. Games, Keyboard, Phraseboard and YouTube Search work without the Companion.</p>
-        <p><strong>My data</strong> lets you manage your saved Hub data, whether or not you use the extension.</p>
-        <p><span id="extension-status" class="connection-status" role="status" aria-live="polite" data-connection="checking">Checking…</span></p>
-        <button type="button" id="extension-recheck">Check connection</button>
-        <button type="button" id="extension-setup">Companion setup</button>
-        <button type="button" id="personal-data">My data</button>
+        <p>Companion connection: <span id="extension-status" class="connection-status" role="status" aria-live="polite" data-connection="checking">Checking…</span></p>
+        <div class="settings-actions">
+          <div>
+            <button type="button" id="extension-recheck" aria-describedby="extension-recheck-help">Check connection</button>
+            <p id="extension-recheck-help">Check whether the Hub can connect to your Companion extension.</p>
+          </div>
+          <div>
+            <button type="button" id="extension-settings" aria-describedby="extension-settings-help">Companion settings</button>
+            <p id="extension-settings-help">Open the installed extension's settings for streaming services, news and calendar.</p>
+            <p id="extension-settings-error" class="settings-error" role="alert" hidden></p>
+          </div>
+          <div>
+            <button type="button" id="extension-setup" aria-describedby="extension-setup-help">Companion setup</button>
+            <p id="extension-setup-help">Install the extension or get help connecting it to the Hub.</p>
+          </div>
+          <div>
+            <button type="button" id="personal-data" aria-describedby="personal-data-help">My data</button>
+            <p id="personal-data-help">Export or clear saved Hub data. Available with or without the extension.</p>
+          </div>
+        </div>
+        <p>The optional Companion adds Day Hub, Journal and Streaming to your Tools menu. Games, Keyboard, Phraseboard and YouTube Search work without it.</p>
+        <p>Need the extension? Get it from the <a id="extension-store" href="https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc" target="_blank" rel="noopener noreferrer">Chrome Web Store</a>, then refresh the Hub.</p>
       </div>
     </details>
     <header>
@@ -1159,8 +1174,33 @@
       try { await BennyExtension.check(); }
       finally { showConnectionStatus(); button.disabled = false; button.textContent = 'Check connection'; }
     }
+    async function openCompanionSettings() {
+      const button = document.getElementById('extension-settings');
+      const error = document.getElementById('extension-settings-error');
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Opening settings…';
+      error.hidden = true;
+      try {
+        if (!BennyExtension.state.connected) await BennyExtension.check();
+        if (!BennyExtension.state.connected) {
+          error.textContent = 'The Companion is not connected. Use Companion setup to install or connect it, then try again.';
+          error.hidden = false;
+          return;
+        }
+        await BennyExtension.request('OPEN_OPTIONS', {}, 4000);
+      } catch {
+        error.textContent = 'Could not open Companion settings. Check connection, or use Companion setup for help.';
+        error.hidden = false;
+      } finally {
+        showConnectionStatus();
+        button.disabled = false;
+        button.textContent = 'Companion settings';
+      }
+    }
     for (const type of ['keydown', 'keyup']) document.getElementById('hub-settings').addEventListener(type, event => event.stopPropagation());
     document.getElementById('extension-recheck').onclick = checkCompanionConnection;
+    document.getElementById('extension-settings').onclick = openCompanionSettings;
     document.getElementById('hub-settings').addEventListener('toggle', event => { if (event.target.open) checkCompanionConnection(); });
     document.getElementById('extension-setup').onclick = () => window.open('extension-setup.html', '_blank', 'noopener');
     document.getElementById('personal-data').onclick = () => window.open('data-settings.html', '_blank', 'noopener');
