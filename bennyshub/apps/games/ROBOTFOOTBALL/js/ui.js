@@ -185,7 +185,7 @@
     list.push({ name: 'How to play', action: () => help('main') });
     list.push({ name: 'Settings', value: auto() ? 'One switch' : 'Two switches', action: () => settings('main') });
     list.push({ name: 'Exit game', action: exitGame });
-    overlay('main', 'ROBOTFOOTBALL', 'Boot up your robot squad. Call the play, make the catch, and power through the defense.', list, { style: '', eyebrow: 'RF-OS 2 / MECH LEAGUE ONLINE', note: 'Robot teams · One or two switches · Your pace' });
+    overlay('main', 'Robot Football', 'Boot up your robot squad. Call the play, make the catch, and power through the defense.', list, { style: '', eyebrow: 'RF-OS 2 / MECH LEAGUE ONLINE', note: 'Robot teams · One or two switches · Your pace' });
     $('menu-title').innerHTML = 'ROBOT<br><em>FOOTBALL</em>';
     unitStatus();
   }
