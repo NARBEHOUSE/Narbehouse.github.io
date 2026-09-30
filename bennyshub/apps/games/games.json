@@ -71,7 +71,7 @@
       "title": "Robot Football",
       "description": "Lead your robot team in 3D football with one or two switches. Call plays, pass, run, and defend in practice, exhibition games, or a 16-game season. Spoken guidance, adjustable pace, and optional scan-and-select movement let you play your way.",
       "path": "apps/games/ROBOTFOOTBALL/index.html",
-      "image": "images/games/robotfootball.svg",
+      "image": "images/games/robotfootball.png",
       "genres": [
         "Sports",
         "Strategy"
