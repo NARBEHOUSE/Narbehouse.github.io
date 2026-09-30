@@ -1,15 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N0MEEN7YP4"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-N0MEEN7YP4');
-  </script>
+  <!-- Google Analytics: shared visitor, launch and foreground-time tracking. -->
+  <script src="shared/usage-analytics.js"></script>
 
   <meta charset="utf-8" />
   <script src="shared/extension-client.js"></script>
@@ -1643,6 +1636,7 @@
         speak('Enable Benny’s Hub Companion first.');
         return;
       }
+      window.BennyUsage?.open(src);
       iframeTitle.textContent = title;
       appIframe.src = src;
       iframeContainer.classList.add('active');
@@ -1669,6 +1663,7 @@
     }
 
     function closeIframe() {
+      window.BennyUsage?.home();
       clearTimeout(iframeFocusTimer);
       iframeContainer.classList.remove('active');
       appIframe.src = 'about:blank';
@@ -2372,7 +2367,7 @@
       <div class="mini-footer-content">
 
         <!-- Privacy text mirrors bennyshub/companion-privacy.html; keep both versions aligned. -->
-<h4>Privacy</h4><p class="date">Updated September 27, 2026 · NARBE LLC</p>
+<h4>Privacy</h4><p class="date">Updated September 30, 2026 · NARBE LLC</p>
 <p>This policy covers the Benny's Hub website and Benny's Hub Companion for Google Chrome and Microsoft Edge. The Companion provides switch-accessible playback controls and optional calendar and news connections. The Companion has no advertising, analytics SDK, or developer-operated user account system. External services used by the website have their own data practices, described below.</p>
 <h4>Information used on your device</h4>
 
@@ -2383,6 +2378,7 @@
 
 <h4>Website storage and external services</h4>
 <p>The Hub website stores journal entries, streaming titles, episode links, recent playback, search history, personal vocabulary and settings in that browser's website storage. These are separate from extension storage. The public installation starts with an empty streaming library and journal. Exported backups go to the location you choose.</p>
+<p>The Benny's Hub website uses Google Analytics to estimate visitor numbers and understand which games and tools are opened and how long the Hub, games and tools are used in the foreground. Google Analytics receives fixed game/tool identifiers and names, opening counts and foreground durations, and uses cookies or similar identifiers plus browser and device information for visitor estimates. Our custom analytics events do not include typed text, journal entries, calendar contents, or private streaming titles and URLs. The Companion extension itself does not include analytics. See the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</p>
 <p>Keyboard predictions use a bundled local dictionary and words and phrases learned on your device. Typed prediction text is not sent to an AI service. Speech output uses your browser or operating system's selected voice; those voice services may have their own network and privacy behavior.</p>
 <p>Optional weather searches send a place name to Open-Meteo's geocoding service, and weather requests send the selected coordinates to Open-Meteo. Optional movie metadata searches send titles and metadata identifiers through NARBE LLC's Cloudflare Worker to TMDB. No shared TMDB credential is delivered to the browser. Image requests go to the relevant image host.</p>
 <p><strong>YouTube Search uses YouTube API Services.</strong> When you search, your search terms and a verification token are sent to NARBE LLC's YouTube search service hosted on Cloudflare; that service retrieves results from YouTube. Google receives requests for player software, thumbnails and videos. YouTube may serve advertisements and use cookies or similar technology on your device. These are external services, even though the keyboard's predictions run locally. See the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. By using YouTube Search, you agree to the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>.</p>
@@ -2390,7 +2386,7 @@
 <p>Streaming services receive the video links you open and handle their own sign-ins, cookies, playback and subscriptions. The Companion does not read account passwords or authentication cookies. GitHub Pages, Cloudflare, feed providers, media services and hosts of fonts, images and software libraries receive normal connection information such as your IP address and requested resource. Their policies apply to their services.</p>
 <p>The supplied TMDB Worker configuration disables application request logging and observability, and uses request information for rate limiting and public metadata caching. This statement applies to the TMDB Worker, not the separate YouTube search service or infrastructure providers. Service providers may retain operational or security records under their own policies. Do not include private information in public search requests. Contact us with questions about a request sent to our services.</p>
 <h4>Use and sharing</h4>
-<p>Information is used only to provide the features you choose. NARBE LLC does not sell personal data, use it for advertising, use it for credit decisions, or transfer it for unrelated purposes. The extension has no endpoint that uploads your journals, calendar contents, switch history or personal library to NARBE LLC. Data may be sent directly to the services described above when you use those features.</p>
+<p>Information is used to provide the features you choose and understand overall website usage. NARBE LLC does not sell personal data, use it for advertising, use it for credit decisions, or transfer it for unrelated purposes. The extension has no endpoint that uploads your journals, calendar contents, switch history or personal library to NARBE LLC. Data may be sent directly to the services described above when you use those features.</p>
 <p>The use of information received through browser APIs is limited to the Companion's stated functionality and follows the Chrome Web Store User Data Policy, including its Limited Use requirements, and Microsoft Edge Add-ons data-use requirements.</p>
 <h4>Your choices and deletion</h4>
 <p>Enable or revoke individual sources in Companion settings. Remove a calendar there to delete its stored address and revoke the extension's calendar access; invalidate a shared private calendar link in Google Calendar if you need to revoke the link itself. Uninstalling the extension removes its local storage; temporary session state is cleared when the browser session ends. Local website data remains until you clear it or the browser removes it. To remove the website's saved data, use Hub Settings → My data, or clear site data in your browser. Removing the extension does not remove website storage or exported backup files. Export important entries before clearing storage. The website's offline cache contains public application assets, not authenticated feeds or streaming video. Clearing local data does not delete records held by third-party services; use their privacy controls for that.</p>
