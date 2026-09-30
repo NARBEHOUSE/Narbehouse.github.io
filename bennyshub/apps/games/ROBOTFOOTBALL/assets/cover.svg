@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="ROBOTFOOTBALL — robot teams, one or two switches">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#153c54"/><stop offset="1" stop-color="#070e18"/></linearGradient><linearGradient id="armor" x2="1" y2="1"><stop stop-color="#389ff6"/><stop offset=".45" stop-color="#1262b0"/><stop offset="1" stop-color="#102d51"/></linearGradient><linearGradient id="steel" x2="1" y2="1"><stop stop-color="#d9edf1"/><stop offset=".5" stop-color="#66818d"/><stop offset="1" stop-color="#273f50"/></linearGradient><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#7fdcfa" stroke-opacity=".07"/></pattern></defs>
+<rect width="960" height="540" fill="url(#sky)"/><rect width="960" height="540" fill="url(#grid)"/>
+<path d="M0 395L960 326V540H0Z" fill="#15392f"/><g stroke="#c3ddd7" opacity=".18" fill="none"><path d="M0 470L960 365M0 540L960 403M350 540L600 350M740 540L800 340" stroke-width="3"/></g>
+<g fill="none" stroke="#5ddbff" stroke-width="3" opacity=".35"><path d="M0 43H170L190 63H515M0 72H101L121 92H290M475 0V66L515 106H960M960 482H844L814 512H580"/></g>
+<g transform="translate(752 255)">
+<path d="M-82 92L-79 220H-32L-13 105M22 105L39 220H89L80 87" fill="#142c41" stroke="#91a5b1" stroke-width="5"/>
+<path d="M-114-75L-168-54L-177 2L-124 17L-100-20M98-72L150-47L170 12L123 30L91-16" fill="url(#armor)" stroke="#589cce" stroke-width="5"/>
+<circle cx="-149" cy="38" r="23" fill="url(#steel)"/><circle cx="137" cy="47" r="23" fill="url(#steel)"/>
+<path d="M-150 40L-143 110L-105 132L-80 106L-114 74L-118 35M135 44L118 106L64 100L60 63L99 70L103 39" fill="url(#armor)" stroke="#688eaa" stroke-width="5"/>
+<path d="M-111-69L-72-92H66L107-60L90 67L57 113H-53L-95 67Z" fill="url(#armor)" stroke="#759cb6" stroke-width="5"/>
+<path d="M-76-53H72L63-21H-68Z" fill="#133f63"/><path d="M-69-47H64" stroke="#66edff" stroke-width="6"/>
+<text x="-1" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="78" fill="#f1f7e9">01</text>
+<path d="M-65-102L-69-169L-37-196H37L66-167L60-101L35-78H-37Z" fill="url(#armor)" stroke="#8baec0" stroke-width="5"/>
+<path d="M-53-152H51L43-126H-46Z" fill="#051829"/><path d="M-43-142H41" stroke="#76efff" stroke-width="9"/>
+<path d="M-49-119L-36-89H36L49-119M-41-105H41M-13-119V-90M13-119V-90" fill="none" stroke="#b6cbd3" stroke-width="6"/>
+<g transform="translate(83 88) rotate(-22)"><path d="M-38 0Q0-45 41 0Q0 45-38 0" fill="#9b542c" stroke="#d39256" stroke-width="3"/><path d="M-12-8H14M-8-12V-3M0-12V-3M8-12V-3" stroke="#fff2d4" stroke-width="3"/></g>
+<path d="M112 108L85 117L61 103M-124 116L-101 127" fill="none" stroke="#bccbd0" stroke-width="11"/>
+</g>
+<rect x="52" y="61" width="56" height="7" fill="#8ef4ff"/><text x="52" y="107" fill="#8ef4ff" font-family="Arial,sans-serif" font-size="19" font-weight="700" letter-spacing="4">SWITCH LEAGUE</text>
+<g font-family="Arial Black,Arial,sans-serif" font-weight="900" font-style="italic" letter-spacing="-5"><text x="45" y="226" fill="#eef5f2" font-size="110">ROBOT</text><text x="46" y="319" fill="#baf15c" font-size="88">FOOTBALL</text></g>
+<text x="53" y="375" fill="#d6e5e8" font-family="Arial,sans-serif" font-size="20" font-weight="700" letter-spacing="2">STEEL TEAMS. REAL FOOTBALL.</text>
+<rect x="53" y="439" width="310" height="40" rx="3" fill="#baf15c"/><text x="71" y="465" fill="#102333" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="1.7">ONE OR TWO SWITCHES · YOUR PACE</text>
+</svg>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="../../../shared/usage-analytics.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#04070d">
+  <title>ROBOTFOOTBALL</title>
+  <link rel="stylesheet" href="css/stadium.css">
+</head>
+<body>
+  <main id="app">
+    <div id="stadium" aria-hidden="true"></div>
+    <div id="vignette" aria-hidden="true"></div>
+    <div id="hud-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <header id="scoreboard" hidden>
+      <div class="broadcast-mark"><span class="mark-core"></span>R<span>F</span><small>MECH LEAGUE</small></div>
+      <div class="team home"><span>BLUEBORGS</span><strong id="home-score">0</strong></div>
+      <div class="score-meta"><b id="period">DRIVE 1 / 4</b><span id="possession">BLUEBORGS BALL</span></div>
+      <div class="team away"><strong id="away-score">0</strong><span>RUSTBOTS</span></div>
+      <div class="down-meta"><b id="down">1ST &amp; 10</b><span id="spot">OWN 25</span></div>
+    </header>
+    <div id="situation" hidden><span id="camera-label">TACTICAL VIEW</span><b id="phase-label">CALL YOUR PLAY</b></div>
+    <div id="gain-readout" hidden aria-hidden="true"><span id="gain-label">GAIN</span><b id="gain-value">+0</b><small>YDS</small></div>
+    <button id="pause-button" class="utility" hidden aria-label="Pause game">Ⅱ <span>Pause</span></button>
+    <div id="target-labels" aria-label="Receivers on the field"></div>
+    <div id="kick-readout" hidden><span id="kick-arrow">←</span><b id="kick-status">AIM SET</b></div>
+    <div id="kick-controls" hidden><button id="aim-button">↔ <span>Hold to aim</span></button><button id="kick-button"><span>Kick</span> ↗</button></div>
+    <div id="ready-cue" hidden><b id="ready-label">GET SET</b><span id="ready-detail">Robots are lining up</span></div>
+    <section id="overlay" aria-labelledby="menu-title">
+      <div id="menu-shell">
+        <div class="eyebrow" id="menu-eyebrow">ROBOTFOOTBALL / MECH LEAGUE</div>
+        <h1 id="menu-title">ROBOT<br><em>FOOTBALL</em></h1>
+        <p id="menu-description"></p>
+        <div id="menu-content"></div>
+        <nav id="menu-items" aria-label="Game options"></nav>
+        <div id="menu-note"></div>
+      </div>
+      <div id="hero-copy" aria-hidden="true">
+        <div id="unit-status"></div>
+        <strong>ALL SYSTEMS<br><em>GO.</em></strong>
+        <p>CALL THE PLAY · OWN THE FIELD</p>
+      </div>
+    </section>
+    <section id="action-panel" hidden aria-label="Play controls">
+      <div class="action-heading"><span id="action-kicker">READ THE FIELD</span><h2 id="action-title">Choose your receiver</h2><p id="action-detail"></p></div>
+      <div id="action-items"></div>
+    </section>
+    <div id="steer-panel" hidden>
+      <button id="steer-left" class="steer">← <span>SPACE · LEFT</span></button>
+      <div id="run-cue"><b id="run-title">TAKE IT HOME</b><span id="run-detail">Run forward automatically. Find the open field.</span></div>
+      <button id="steer-right" class="steer"><span>ENTER · RIGHT</span> →</button>
+    </div>
+    <div id="hold-pause" hidden><div id="hold-meter"></div><b>KEEP HOLDING TO PAUSE</b></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <footer id="controls-hint"><span><kbd>SPACE</kbd> Next · hold to scan back</span><span><kbd>ENTER</kbd> Choose</span><b id="access-mode">TWO SWITCHES</b></footer>
+    <div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="loading"><div class="boot-visor" aria-hidden="true"><i></i></div><b>ROBOT<em>FOOTBALL</em></b><span>Booting stadium systems…</span><div class="boot-bar" aria-hidden="true"><i></i></div></div>
+  </main>
+  <script src="../../../shared/safe-audio.js"></script>
+  <script src="../../../shared/voice-manager.js"></script>
+  <script src="../../../shared/ios-audio-fix.js"></script>
+  <script src="../../../shared/scan-manager.js"></script>
+  <script src="js/three.min.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/season.js"></script>
+  <script src="js/robots.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

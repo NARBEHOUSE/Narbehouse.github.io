@@ -67,6 +67,17 @@
       ]
     },
     {
+      "id": "robotfootball",
+      "title": "Robot Football",
+      "description": "Lead your robot team in 3D football with one or two switches. Call plays, pass, run, and defend in practice, exhibition games, or a 16-game season. Spoken guidance, adjustable pace, and optional scan-and-select movement let you play your way.",
+      "path": "apps/games/ROBOTFOOTBALL/index.html",
+      "image": "images/games/robotfootball.svg",
+      "genres": [
+        "Sports",
+        "Strategy"
+      ]
+    },
+    {
       "id": "bennysbattleboats",
       "title": "Benny's Battle Boats",
       "description": "A classic battleship-style game where you place your fleet and try to sink the enemy's ships. Play against the computer or challenge a friend in 2-player mode!",

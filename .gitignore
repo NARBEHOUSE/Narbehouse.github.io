@@ -34,4 +34,5 @@ workers/**/.wrangler/
 # Generated art reports and recording notes are not website runtime assets.
 bennyshub/apps/games/BENNYSFOOTBALL/art/out/
 bennyshub/apps/games/BENNYSBASEBALL2/art/out/
+bennyshub/apps/games/ROBOTFOOTBALL/tools/test-output/
 **/DESKTOP_PROMPT.txt
