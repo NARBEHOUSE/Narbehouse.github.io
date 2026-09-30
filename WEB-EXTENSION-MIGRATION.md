@@ -1,4 +1,4 @@
-> Public-release preparation: see [submission/START-HERE.md](submission/START-HERE.md). Nothing has been deployed or submitted.
+> Public installation: [Chrome Web Store](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). For updates and separate Edge submissions, see [submission/START-HERE.md](submission/START-HERE.md).
 
 # Benny's Hub web experiment — implemented build
 
@@ -13,7 +13,7 @@ The three new applications now live under **Tools**. The apps retain their origi
 5. At the top of the Hub, open **Settings → Companion setup → Open Companion settings**. Enable the streaming services you use. The public Streaming catalog starts empty; users add or import their own titles. Accounts and API credentials are not bundled.
 6. Open Streaming: its original Recently Watched, Browse All, Shows, Movies, Search, Settings and Exit menu is restored. Use **Settings → Open Editor** for the original full editor, metadata lookup and genre images.
 
-The local preview server is for development only. A deployed static HTTPS website needs no Node, Python, Electron or local helper on the end user's machine. Load unpacked is for this experiment; a public release still needs extension store packaging/review.
+The local preview server and Load unpacked instructions above are for development only. Public users install through the Chrome Web Store and refresh the deployed Hub in the same browser profile. They need no Node, Python, Electron or local helper. Future extension updates still require store submission and review.
 
 ## What changed
 

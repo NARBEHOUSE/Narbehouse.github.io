@@ -1,6 +1,8 @@
 # Release preparation — Benny's Hub Companion 1.0.5
 
-The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm any submission you made manually in the store dashboard; this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
+The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). Use that existing listing for future Chrome updates. Edge Add-ons submissions remain separate; no Edge listing URL has been supplied.
+
+The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm each update's status in the store dashboard; rebuilding this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
 
 ## Files to use
 
@@ -26,9 +28,9 @@ The packaging tools prepare this kit locally and do not push or submit to stores
 4. Check real one-/two-switch input in desktop Chrome and Edge, plus your intended PWA mode. Browser-level UI such as the address bar and permission dialogs cannot be forcibly controlled by an ordinary extension. Alt+Shift+B deliberately releases the player controls for sign-in.
 5. Test an optional calendar and news feed using a test account; never put a private calendar URL or credentials in reviewer notes. No subscription account is needed for the basic YouTube review path.
 6. Review the privacy declarations and publisher account identity. The supplied privacy page describes the actual local and third-party data flows; local-only processing still needs disclosure.
-7. Create/verify your Chrome Web Store developer account, pay any dashboard registration fee shown, and enable two-step verification. Create/verify your Microsoft Edge publisher account in Partner Center. These account tasks have not been performed for you.
-8. Upload the extension ZIP, paste the supplied copy/disclosures, upload the images, and submit each listing when ready. Store acceptance and timing are controlled by Google/Microsoft.
-9. The setup page currently offers a clearly marked developer/tester preview. See `PREVIEW-DISTRIBUTION.md`; developer mode is not advertised as general public distribution. After the stores assign listing URLs, replace the local-preview installation instructions on the Hub setup page with Chrome/Edge store links. A website button takes users to the store's install flow; it cannot silently install an extension. Do not invent extension IDs or store links.
+7. Use the existing Chrome publisher account and listing for updates. Set up and verify a Microsoft Edge publisher account in Partner Center if submitting to Edge Add-ons.
+8. Upload the extension ZIP to the appropriate existing listing, update copy/disclosures or images when needed, and submit the update. Store acceptance and timing are controlled by Google/Microsoft.
+9. The public setup page links to the Chrome Web Store and explains installation and connection. Developer ZIP instructions remain collapsed. See `PREVIEW-DISTRIBUTION.md`. Add an Edge Add-ons link only after its listing is available. A website button opens the store's install flow; it cannot silently install an extension.
 
 ## GitHub Pages preparation
 

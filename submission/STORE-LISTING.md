@@ -1,6 +1,6 @@
 # Benny's Hub Companion — store copy
 
-Prepared locally for Chrome Web Store and Microsoft Edge Add-ons. Not submitted or approved.
+The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of an unsubmitted update.
 
 ## Shared fields
 
