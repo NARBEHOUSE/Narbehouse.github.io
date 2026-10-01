@@ -1014,6 +1014,38 @@ test('the coin toss and your kickoff call save and restore', () => {
   assert.equal(again.s.kickoff.team, 'home'); assert.equal(again.s.possession, 'away'); assert.equal(again.s.placeKick.tee, true, 'the kickoff lineup is rebuilt');
   const theirs = kickSim(); theirs.s.toss = null; theirs._setupKickoff('away'); assert.equal(theirs.snapshot(), null, 'the visitors kicking off is not a save point');
 });
+test('Basic tosses the coin for you: win and you receive, and the visitors choose as before', () => {
+  // The first roll is your call (under .5 is heads), the second is the coin.
+  const rolls = (...list) => () => list.length > 1 ? list.shift() : list[0];
+  const won = kickSim(); won.random = rolls(.1, .1, .5); const wonToss = won.autoToss();
+  assert.equal(wonToss.won, true); assert.match(wonToss.text, /You call heads\. It is heads\. You win the toss and receive\./);
+  assert.equal(won.s.toss, null); assert.equal(won.s.kickoff.team, 'away', 'you receive'); assert.equal(won.s.possession, 'home'); assert.equal(won.s.phase, 'presnap');
+  const lost = kickSim(); lost.random = rolls(.1, .9, .5); const lostToss = lost.autoToss();
+  assert.equal(lostToss.won, false); assert.equal(lost.s.kickoff.team, 'home', 'with no halves the visitors receive');
+  assert.equal(lost.s.phase, 'playcall'); assert.equal(lostToss.title, 'COIN TOSS · TAILS');
+  const season = kickSim({ format: 'regulation' }); season.random = rolls(.1, .9, .5); season.autoToss();
+  assert.equal(season.s.kickoff.team, 'away', 'the visitors defer, so you receive'); assert.equal(season.s.secondHalfReceiver, 'away');
+  const chose = kickSim({ format: 'regulation', random: () => .1 }); chose.callPlay('heads'); assert.equal(chose.s.toss, 'choose');
+  chose.autoToss(); assert.equal(chose.s.kickoff.team, 'away', 'a toss you already won becomes a receive'); assert.equal(chose.s.secondHalfReceiver, 'away');
+  const ot = kickSim({ format: 'regulation' }); ot.random = rolls(.1, .1, .5); ot.s.overtime = true; ot.s.overtimePeriod = 1; ot.s.quarter = 4; ot._startToss();
+  const otToss = ot.autoToss(); assert.match(otToss.text, /^Overtime coin toss\./); assert.equal(ot.s.kickoff.team, 'away'); assert.equal(ot.s.secondHalfReceiver, null, 'overtime has no halves');
+  assert.equal(make().autoToss(), null, 'no toss, nothing to do'); assert.equal(won.autoToss(), null);
+});
+test('a kickoff with no charge lands short for a return, and only now and then for a touchback', () => {
+  const lands = [];
+  for (let i = 0; i < 600; i++) {
+    const sim = kickSim({ random: Math.random }); sim.s.toss = null; sim._setupKickoff('home'); sim.callPlay('kickdeep'); untilPhase(sim, ['kickaim']);
+    sim.kick(); const z = sim._flight.to.z; lands.push(sim._direction() === 1 ? z : 100 - z);
+  }
+  const touchbacks = lands.filter(y => y < 0).length / lands.length;
+  assert.ok(touchbacks > .04 && touchbacks < .17, 'about one kick in ten carries into the end zone: ' + touchbacks);
+  assert.ok(lands.every(y => y < 0 ? y <= -4 : y >= 3 && y <= 10), 'the rest land between the 3 and the 10');
+});
+test('loading a save announces nothing from the reset behind it', () => {
+  const saved = kickSim({ format: 'regulation' }); saved.s.toss = null; saved._setupKickoff('home'); const snap = saved.snapshot();
+  const events = [], back = new Sim({ random: () => .5 }, event => events.push(event.type));
+  assert.ok(back.restore(snap)); assert.deepEqual(events, []);
+});
 test('robots are solid on every play, and a pass cannot fly through a defender', () => {
   const overlaps = sim => { let n = 0; const ps = sim.s.players; for (let a = 0; a < ps.length; a++) for (let b = a + 1; b < ps.length; b++) if (Math.hypot(ps[a].x - ps[b].x, ps[a].z - ps[b].z) < .7) n++; return n; };
   for (const play of ['slants', 'flood', 'verticals']) {

@@ -6,16 +6,17 @@ const assert = require('node:assert/strict');
 const tabletOnly=process.argv.includes('--tablet-only');
 const seasonOnly=process.argv.includes('--season-only');
 const conversionOnly=process.argv.includes('--conversion-only');
+const basicOnly=process.argv.includes('--basic-only');
 const out = path.join(__dirname, 'test-output');
 fs.mkdirSync(out, { recursive: true });
-app.setPath('userData', path.resolve(__dirname, '../../../../../tmp/bennys3dfootball-electron-profile'+(tabletOnly?'-tablet':seasonOnly?'-season':conversionOnly?'-conversion':'')));
+app.setPath('userData', path.resolve(__dirname, '../../../../../tmp/bennys3dfootball-electron-profile'+(tabletOnly?'-tablet':seasonOnly?'-season':conversionOnly?'-conversion':basicOnly?'-basic':'')));
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 let win;
 const errors = [], results = [], screenshots = [];
 const wait = ms => new Promise(r => setTimeout(r, ms));
-const report = () => fs.writeFileSync(path.join(out, tabletOnly?'ui-tablet-results.json':seasonOnly?'ui-season-results.json':conversionOnly?'ui-conversion-results.json':'ui-results.json'), JSON.stringify({ results, errors, screenshots }, null, 2));
+const report = () => fs.writeFileSync(path.join(out, tabletOnly?'ui-tablet-results.json':seasonOnly?'ui-season-results.json':conversionOnly?'ui-conversion-results.json':basicOnly?'ui-basic-results.json':'ui-results.json'), JSON.stringify({ results, errors, screenshots }, null, 2));
 app.whenReady().then(async () => {
   win = new BrowserWindow({ width: 1440, height: 900, show: false, webPreferences: {
     backgroundThrottling: false, contextIsolation: true, nodeIntegration: false, offscreen: true
@@ -122,6 +123,92 @@ app.whenReady().then(async () => {
     await click('Go for two');
     check('Going for two offers only run and pass plays', await js("BennyFootball.sim.s.conversion==='two' && document.querySelector('#menu-title').textContent==='GO FOR TWO.' && Array.from(document.querySelectorAll('#menu-items .name')).every(n=>!/Field Goal|Punt|extra point/i.test(n.textContent))"));
   };
+  // Basic: only the essentials, and the game makes the small calls (the coin toss, kicking deep, punt aim).
+  const basicChecks = async () => {
+    const names = sel => js("[...document.querySelectorAll('" + sel + " .name')].map(n=>n.textContent).join()");
+    const value = name => js("[...document.querySelectorAll('#menu-items .menu-button')].find(b=>b.querySelector('.name').textContent===" + JSON.stringify(name) + ")?.querySelector('.value').textContent");
+    await win.webContents.session.clearStorageData(); await win.reload(); await wait(1500); await quiet();
+    // A coin toss or kickoff menu must never open while Basic is on.
+    await js("window.__basicMenu='';setInterval(()=>{const t=document.querySelector('#menu-title').textContent;if(BennyFootball.prefs.mode==='basic'&&!document.querySelector('#overlay').hidden&&/^(COIN TOSS|YOU WON THE TOSS|KICKOFF|FREE KICK)\\./.test(t))window.__basicMenu=t},40);void 0");
+    check('A brand new player starts in Basic', await js("BennyFootball.prefs.mode==='basic'") && (await value('Settings')).startsWith('Basic · '));
+    await click('Settings');
+    check('Basic settings are the essentials, in the order Benny\'s Football uses', await names('#menu-items') === 'Sound effects,Text to speech,Voice,Auto scan,Scan speed,Easy throw,Large text,Game mode,Reset saved progress,Back');
+    check('Easy throw starts off, so throws and kicks are charged', await js("BennyFootball.prefs.charge===true") && await value('Easy throw') === 'Off');
+    await capture('16-basic-settings');
+    await click('Game mode');
+    check('Advanced lists every option and keeps focus on Game mode', await js("BennyFootball.prefs.mode==='advanced'") && await names('#menu-items') === 'Text to speech,Voice,Difficulty,Game speed,Run controls,Camera motion,Auto scan,Scan speed,Sound effects,Stadium crowd,Kick aim speed,Large text,Charge throws and kicks,Kick guide,Kickoffs and coin toss,Game mode,Reset saved progress,Back' && await focused() === 'Game mode');
+    await js("Object.assign(BennyFootball.prefs,{difficulty:'pro',pace:1,runControl:'scan',kickoffs:false});void 0");
+    await click('Game mode');
+    check('Switching back to Basic keeps focus on Game mode', await js("BennyFootball.prefs.mode==='basic'") && await focused() === 'Game mode' && (await names('#menu-items')).startsWith('Sound effects,'));
+    await click('Easy throw');
+    check('Easy throw is the charge setting seen from the other side', await js("BennyFootball.prefs.charge===false") && await value('Easy throw') === 'On' && await focused() === 'Easy throw');
+    await click('Back');
+    check('The main menu Settings row shows the mode', (await value('Settings')).startsWith('Basic · '));
+    await click('How to play');
+    const hidden = "/heads or tails|receive or defer|Choose direction|Settings can turn|Settings has slower|onside/i";
+    check('Basic help leaves out the coin toss calls and the hidden settings', await js("(()=>{const t=document.querySelector('#menu-content').textContent;return !" + hidden + ".test(t)&&t.includes('Advanced mode in Settings adds more options')})()"));
+    await js("NarbeVoiceManager.speak=t=>{window.__said=t};void 0"); await click('Read instructions aloud');
+    check('Basic read-aloud help matches', await js("!" + hidden + ".test(window.__said)&&window.__said.endsWith('Advanced mode in Settings adds more options.')"));
+    await quiet(); await click('Back');
+    await js("(()=>{const r=BennyFootball;r.sim.random=Math.random;r.startGame(false)})()"); await wait(200);
+    check('Basic plays at its fixed values and keeps the Advanced choices saved', await js("(()=>{const r=BennyFootball,o=r.sim.options;return o.difficulty==='rookie'&&o.pace===.45&&o.kickoffs===true&&r.prefs.difficulty==='pro'&&r.prefs.pace===1&&r.prefs.runControl==='scan'&&r.prefs.kickoffs===false})()"));
+    check('The coin toss is tossed for you and its result shown on the field', await js("BennyFootball.sim.s.toss===null && !!BennyFootball.sim.s.kickoff && document.querySelector('#overlay').hidden && document.querySelector('#ready-label').textContent.startsWith('COIN TOSS')"));
+    await capture('17-basic-toss');
+    const held = await js("JSON.stringify([BennyFootball.sim.s.phase,BennyFootball.sim.s.countdown])"); await wait(900);
+    check('The kickoff waits while the toss is shown', held === await js("JSON.stringify([BennyFootball.sim.s.phase,BennyFootball.sim.s.countdown])"));
+    await until("!document.querySelector('#ready-label').textContent.startsWith('COIN TOSS')", 12000);
+    check('After the toss has been heard, the kickoff goes on', await js("!document.querySelector('#ready-label').textContent.startsWith('COIN TOSS')"));
+    // Lose an exhibition toss: you kick off deep with no kickoff menu, and Easy throw kicks it for you.
+    await js("(()=>{const r=BennyFootball;r.prefs.kickoffs=true;r.prefs.mode='advanced';r.startGame(false);const rolls=[.1,.9];r.sim.random=()=>rolls.length?rolls.shift():.5;r.prefs.mode='basic';r.resume()})()"); await wait(100);
+    check('A game left at the coin toss is tossed for you once Basic is on', await js("BennyFootball.sim.s.toss===null && BennyFootball.sim.s.kickoff?.team==='home' && document.querySelector('#ready-label').textContent==='COIN TOSS · TAILS'"));
+    await until("BennyFootball.sim.s.phase==='kickflight'", 20000);
+    check('Your kickoff is called deep and kicked for you', await js("BennyFootball.sim.s.phase==='kickflight' && BennyFootball.sim.s.playId==='kickdeep'"));
+    check('An Easy throw kickoff lands short of the end zone for a return', await js("(()=>{const y=100-BennyFootball.sim._flight.to.z;return y>=3&&y<=10})()"));
+    // Switch modes from the pause menu at the coin toss; it takes effect on Continue.
+    await js("(()=>{const r=BennyFootball;r.sim.random=Math.random;r.prefs.mode='advanced';r.startGame(false)})()"); await wait(300);
+    check('Advanced still opens with the coin toss', await js("document.querySelector('#menu-title').textContent==='COIN TOSS.' && BennyFootball.sim.s.toss==='call'"));
+    await click('Pause / settings');
+    check('The Advanced pause menu has every option', await names('#menu-items') === 'Continue,Help,Game status,Restart game,Settings,How to play,Main menu,Exit game');
+    await click('Settings'); await click('Game mode'); await click('Back');
+    check('The Basic pause menu is the short list', await names('#menu-items') === 'Continue,Help,Game status,Settings,Main menu');
+    await click('Continue');
+    check('Continue in Basic tosses the coin for you', await js("BennyFootball.sim.s.toss===null && document.querySelector('#ready-label').textContent.startsWith('COIN TOSS')"));
+    // A save made at the coin toss.
+    await js("(()=>{const r=BennyFootball;r.prefs.mode='advanced';r.startGame(false)})()"); await wait(300);
+    await click('Pause / settings'); await click('Main menu'); await js("BennyFootball.prefs.mode='basic';void 0");
+    await click('Continue exhibition');
+    check('A save made at the coin toss resumes with the toss done for you', await js("BennyFootball.sim.s.toss===null && !!BennyFootball.sim.s.kickoff"));
+    await js("(()=>{const r=BennyFootball;r.startGame(false,{mode:'season'})})()"); await wait(200);
+    check('A Basic season game: you receive, and the visitors get the second half', await js("BennyFootball.sim.s.toss===null && BennyFootball.sim.s.kickoff?.team==='away' && BennyFootball.sim.s.secondHalfReceiver==='away'"));
+    await js("(()=>{const r=BennyFootball,s=r.sim;s.s.quarter=4;s.s.overtime=true;s.s.overtimePeriod=1;s._startToss();r.resume()})()"); await wait(200);
+    check('The overtime toss is tossed for you too', await js("BennyFootball.sim.s.toss===null && !!BennyFootball.sim.s.kickoff && document.querySelector('#ready-label').textContent.startsWith('OVERTIME TOSS')"));
+    // A Basic punt goes straight down the field.
+    await js("(()=>{const r=BennyFootball,s=r.sim;r.prefs.charge=false;r.startGame(true);s.reset({practice:true});s.s.fieldPosition=30;s.s.down=4;s.s.distance=10;s._formation();s.callPlay('punt');r.resume()})()");
+    await until("BennyFootball.sim.s.phase==='kickaim'");
+    check('A Basic punt has no aim to sweep', await js("document.querySelector('#aim-button').hidden && document.querySelector('#kick-status').textContent==='PUNT' && BennyFootball.sim.s.kickAim===0"));
+    await keyDown('Space'); await wait(400);
+    check('Holding Space does not move a Basic punt', await js("BennyFootball.sim.s.kickAim===0 && BennyFootball.sim.s.phase==='kickaim'"));
+    await keyUp('Space'); await until("BennyFootball.sim.s.phase==='kickflight'", 6000);
+    check('With Easy throw on, the punt kicks itself', await js("BennyFootball.sim.s.phase==='kickflight' && BennyFootball.sim.s.playId==='punt'"));
+    // With charging on, a mouse or finger charges the same way a held Enter does.
+    const pointer = (selector, type, id, kind) => js("document.querySelectorAll(" + JSON.stringify(selector) + ")[" + (kind === 'receiver' ? 1 : 0) + "].dispatchEvent(new PointerEvent(" + JSON.stringify(type) + ",{bubbles:true,pointerId:" + id + ",pointerType:'touch'}));void 0");
+    await js("(()=>{const r=BennyFootball,s=r.sim;r.prefs.charge=true;r.startGame(true);s.reset({practice:true});s.s.fieldPosition=75;s.s.down=4;s.s.distance=10;s._formation();s.callPlay('fieldgoal');r.resume()})()");
+    await until("BennyFootball.sim.s.phase==='kickaim'"); await wait(200);
+    await js("document.querySelector('#kick-button').click();void 0"); await wait(200);
+    check('With charging on, a click on Kick does not kick at full power', await js("BennyFootball.sim.s.phase==='kickaim' && !BennyFootball.charge"));
+    await pointer('#kick-button', 'pointerdown', 7); await wait(500);
+    check('Holding a finger on Kick grows the charge line', await js("BennyFootball.charge?.kind==='kick' && BennyFootball.renderer.chargeArc.visible"));
+    await pointer('#kick-button', 'pointerup', 7); await wait(200);
+    check('Letting go of Kick kicks with that charge', await js("BennyFootball.sim.s.phase==='kickflight' && !BennyFootball.charge"));
+    await js("(()=>{const r=BennyFootball;r.startGame(true);r.sim.reset({practice:true});r.sim.callPlay('slants');r.resume()})()"); await until("BennyFootball.sim.s.phase==='aim'"); await wait(300);
+    await js("document.querySelector('.field-choice').click();void 0"); await wait(200);
+    check('With charging on, a click on a receiver does not throw at once', await js("BennyFootball.sim.s.phase==='aim' && !BennyFootball.charge"));
+    await pointer('.field-choice', 'pointerdown', 8, 'receiver'); await wait(400);
+    check('Holding a finger on a receiver charges the throw to him', await js("BennyFootball.charge?.kind==='throw' && BennyFootball.charge.target===1"));
+    await pointer('.field-choice', 'pointerup', 8, 'receiver'); await wait(200);
+    check('Letting go of the receiver throws', await js("['flight','run','result'].includes(BennyFootball.sim.s.phase) && !BennyFootball.charge"));
+    check('No coin toss or kickoff menu ever opened in Basic', await js("window.__basicMenu===''"));
+  };
   const playToResult = async () => {
     for (let n = 0; n < 15 && await js("!['result','final'].includes(BennyFootball.sim.s.phase)"); n++) await advancePhase();
     assert.ok(await js("['result','final'].includes(BennyFootball.sim.s.phase)"), 'Active play settles');
@@ -129,7 +216,9 @@ app.whenReady().then(async () => {
   try {
     await win.webContents.session.clearStorageData();
     await win.loadFile(path.join(__dirname, '..', 'index.html')); await wait(1800); await quiet();
-    await js("BennyFootball.prefs.kickoffs=false;void 0");
+    if(basicOnly){await basicChecks();check('No Basic browser errors',errors.length===0);report();app.exit(0);return;}
+    // Every check below plays Advanced, the full game; basicChecks covers Basic.
+    await js("BennyFootball.prefs.mode='advanced';BennyFootball.prefs.kickoffs=false;void 0");
     if(conversionOnly){await conversionChecks();await speechChecks();await chargeChecks();await kickoffChecks();check('No conversion browser errors',errors.length===0);report();app.exit(0);return;}
     // The original switch checks run with the charge meter off; chargeChecks covers it on.
     await js("BennyFootball.prefs.charge=false;void 0");
@@ -311,7 +400,7 @@ app.whenReady().then(async () => {
     check('The completed season game checkpoint is cleared', await js("localStorage.getItem('bennys-stadium-season-match-v1')===null"));
     await js("BennyFootball.pause();BennyFootball.resume()");
     check('Revisiting the final screen does not duplicate its season result', await js("BennyFootball.season.data.results.length===1"));
-    await win.reload(); await wait(1500); await quiet();
+    await win.reload(); await wait(1500); await quiet(); await js("BennyFootball.prefs.mode='advanced';void 0");
     check('Season progression survives reload without duplicate recording', await js("BennyFootball.season.data.gamesPlayed===1 && BennyFootball.season.data.results.length===1 && BennyFootball.season.data.results[0].matchId===" + JSON.stringify(completedMatchId)));
     await click('Continue season'); await capture('14-season-next-game');
     check('The next season game is ready after reload', await js("BennyFootball.screen==='season' && BennyFootball.season.data.gamesPlayed===1 && document.querySelector('#menu-title').textContent==='GAME 2 OF 16'"));
@@ -320,6 +409,7 @@ app.whenReady().then(async () => {
     await speechChecks();
     await chargeChecks();
     await kickoffChecks();
+    await basicChecks();
     check('No browser errors', errors.length === 0);
     report(); app.exit(0);
   } catch (error) {

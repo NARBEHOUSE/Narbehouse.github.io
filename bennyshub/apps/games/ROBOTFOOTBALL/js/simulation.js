@@ -35,6 +35,9 @@
   // after every score, a punted free kick from the 20 after a safety, and a touchback
   // at the 25. The kickoff run-up is longer than a field goal's.
   const KICKOFF_SPOT = 35, SAFETY_KICK_SPOT = 20, KICKOFF_TOUCHBACK = 25, KICKOFF_APPROACH = 1.5;
+  // A kickoff with no charge (Easy throw) lands inside the visitors' 10 for a return,
+  // and only now and then carries into the end zone.
+  const EASY_KICKOFF_TOUCHBACK = .1;
   // Rookie stays forgiving, but every defender takes a real pursuit angle and
   // blocks do not last forever. A defender on the ball carrier tackles him;
   // only now and then does a runner shake one off. The player's own defender
@@ -277,6 +280,25 @@
       if (id === 'receive') { if (halves) s.secondHalfReceiver = 'away'; return this._setupKickoff('away'); }
       if (id === 'defer') { s.secondHalfReceiver = 'home'; return this._setupKickoff('home'); }
       return this._setupKickoff('home');
+    }
+    // Basic mode tosses the coin for you: the game makes your call, and when you win
+    // you receive. The visitors choose as they always do. Returns what to announce.
+    autoToss() {
+      const s = this.s;
+      if (s.phase !== 'playcall' || !s.toss) return null;
+      const halves = this.options.format === 'regulation' && !s.overtime, lead = s.overtime ? 'Overtime coin toss.' : 'Coin toss.';
+      let won = true, face = null, call = null;
+      if (s.toss === 'call') {
+        call = this._rand() < .5 ? 'Heads' : 'Tails'; face = this._rand() < .5 ? 'Heads' : 'Tails'; won = call === face;
+      }
+      // With a second half to come, the visitors defer when they win, so you receive either way.
+      const receive = won || halves;
+      const detail = won ? 'You win the toss. You receive.' : halves ? 'The visitors win and defer. You receive.' : 'The visitors win and receive. You kick off.';
+      const text = [lead, call && 'You call ' + call.toLowerCase() + '. It is ' + face.toLowerCase() + '.', won ? 'You win the toss and receive.' : halves ? 'The visitors win the toss and defer. You receive the opening kickoff.' : 'The visitors win the toss and will receive. You kick off.'].filter(Boolean).join(' ');
+      if (halves) s.secondHalfReceiver = 'away';
+      this._emit('toss', '');
+      this._setupKickoff(receive ? 'away' : 'home');
+      return { title: (s.overtime ? 'OVERTIME TOSS' : 'COIN TOSS') + (face ? ' · ' + face.toUpperCase() : ''), detail: detail, text: text, won: won };
     }
     // The visitors' fourth-down call, the same down-and-distance decisions as classic football.
     _cpuKickChoice() {
@@ -752,6 +774,7 @@
       // Where it comes down, in yards from the receiving goal line.
       const land = onside ? teeY - (10.5 + this._rand() * 2)
         : k.safety ? teeY - (35 + 12 * strength + this._rand() * 6)
+        : !finite(power) ? (this._rand() < EASY_KICKOFF_TOUCHBACK ? -(4 + this._rand() * 4) : 3 + this._rand() * 7)
         : clamp(teeY - (40 + 26 * strength + this._rand() * 8), -8, 60);
       const kicker = this._player(s.placeKick ? s.placeKick.kickerId : s.carrierId);
       const from = s.placeKick ? { x: s.placeKick.spot.x, y: s.ball.y, z: s.placeKick.spot.z } : { x: kicker.x, y: .9, z: kicker.z };
@@ -1695,7 +1718,9 @@
           secondHalfReceiver: secondHalfReceiver, firstPossession: firstPossession
         };
         // Rebuild safe formations; never trust serialized player/ball coordinates.
-        this.reset(Object.assign({}, optionsFor(value.options), { format: format }));
+        // The throwaway reset announces nothing: its opening toss is not the saved game.
+        const onEvent = this.onEvent; this.onEvent = function () {};
+        try { this.reset(Object.assign({}, optionsFor(value.options), { format: format })); } finally { this.onEvent = onEvent; }
         Object.assign(this.s, clean); this._formation();
         this._pending = t.phase === 'result' ? { switchPossession: value.pending.switchPossession,
           spot: value.pending.switchPossession ? value.pending.spot : undefined, conversion: value.pending.conversion === true,
