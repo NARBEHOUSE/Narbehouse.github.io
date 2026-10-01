@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
     await keyDown('Return'); await wait(300);
     check('Holding Enter on a receiver starts the charge line instead of throwing', await js("BennyFootball.sim.s.phase==='aim' && !!BennyFootball.charge && BennyFootball.renderer.chargeArc.visible"));
     await until(zone, 4000); await wait(1200);
-    check('The line reaches the receiver and slows there', await js(zone + " && document.querySelector('#hold-pause').hidden"));
+    check('The line reaches the receiver and slows there', await js(zone));
     check('While you charge, his defender holds the coverage you heard', await js("BennyFootball.sim._coverPlans[BennyFootball.charge.target].left>=1.4"));
     await keyUp('Return'); await wait(300);
     check('Letting go on the receiver throws the pass', await js("['flight','run'].includes(BennyFootball.sim.s.phase) && !BennyFootball.charge && !BennyFootball.renderer.chargeArc.visible"));
@@ -113,6 +113,18 @@ app.whenReady().then(async () => {
     await key('Space'); await key('Return'); await until("BennyFootball.sim.s.phase==='playcall'", 15000);
     check('Taking a knee starts your drive at the 25', await js("BennyFootball.sim.s.possession==='home' && BennyFootball.sim.s.fieldPosition===25 && !BennyFootball.sim.s.kickoff && !!document.querySelector('#menu-items .tag')"));
     await js("BennyFootball.sim.random=Math.random;BennyFootball.prefs.kickoffs=false;void 0");
+  };
+  // On the visitors' fourth down their punt or field goal unit is on the field: you choose a return or a block.
+  const specialTeamsChecks = async () => {
+    await js("(()=>{const r=BennyFootball,s=r.sim;r.startGame(true);Object.assign(s.s,{phase:'playcall',toss:null,kickoff:null,conversion:null,possession:'away',possessionNumber:1,fieldPosition:75,down:4,distance:8});s._formation();r.resume()})()"); await wait(500);
+    check('Their punt brings out the return and block calls', await js("document.querySelector('#menu-title').textContent==='THEY ARE PUNTING.' && [...document.querySelectorAll('#menu-items .name')].slice(0,2).map(n=>n.textContent).join()==='Return the punt,Block the punt'"));
+    await capture('16-punt-return-call');
+    await key('Return'); await until("BennyFootball.sim.s.phase==='run'", 20000);
+    check('Returning the punt hands your returner the ball', await js("BennyFootball.sim.s.possession==='home' && BennyFootball.sim.s.carrierId==='home-FS' && document.querySelector('#camera-label').textContent==='RETURN CAM'"));
+    await until("BennyFootball.sim.s.controlGrace===0", 6000); await wait(200);
+    check('The readout counts the punt return', await js("BennyFootball.sim.s.phase!=='run' || document.querySelector('#gain-label').textContent==='RETURN'"));
+    await js("(()=>{const r=BennyFootball,s=r.sim;r.startGame(true);Object.assign(s.s,{phase:'playcall',toss:null,kickoff:null,conversion:null,possession:'away',possessionNumber:1,fieldPosition:30,down:4,distance:8});s._formation();r.resume()})()"); await wait(500);
+    check('Their field goal try brings out the block and return calls, with its distance', await js("document.querySelector('#menu-title').textContent==='STOP THE KICK.' && [...document.querySelectorAll('#menu-items .name')].slice(0,2).map(n=>n.textContent).join()==='Block the kick,Return a miss' && /47-yard/.test(document.querySelector('#menu-description').textContent)"));
   };
   // A touchdown offers the extra point or a two-point try.
   const conversionChecks = async () => {
@@ -219,7 +231,7 @@ app.whenReady().then(async () => {
     if(basicOnly){await basicChecks();check('No Basic browser errors',errors.length===0);report();app.exit(0);return;}
     // Every check below plays Advanced, the full game; basicChecks covers Basic.
     await js("BennyFootball.prefs.mode='advanced';BennyFootball.prefs.kickoffs=false;void 0");
-    if(conversionOnly){await conversionChecks();await speechChecks();await chargeChecks();await kickoffChecks();check('No conversion browser errors',errors.length===0);report();app.exit(0);return;}
+    if(conversionOnly){await conversionChecks();await speechChecks();await chargeChecks();await kickoffChecks();await specialTeamsChecks();check('No conversion browser errors',errors.length===0);report();app.exit(0);return;}
     // The original switch checks run with the charge meter off; chargeChecks covers it on.
     await js("BennyFootball.prefs.charge=false;void 0");
     if(tabletOnly){
@@ -279,13 +291,11 @@ app.whenReady().then(async () => {
     check('Receivers keep moving while the pass read has no running clock or failure deadline', readBefore.players !== await js("JSON.stringify(BennyFootball.sim.s.players)") && readBefore.clock === await js("BennyFootball.sim.s.timeRemaining") && await js("BennyFootball.sim.s.phase==='aim'"));
     await key('Space');
     check('Space scans receivers on the field', await js("BennyFootball.sim.s.selectedTarget===1 && document.querySelector('.field-choice.focused').dataset.playerId===BennyFootball.sim.s.targets[1]"));
-    // The pause gesture works during an unlimited receiver read and consumes its release.
-    keyDown('Return'); await wait(1500);
-    check('Pause hold shows progress before it opens the menu', await js("!document.querySelector('#hold-pause').hidden && BennyFootball.screen==='game'"));
-    await wait(3650);
-    check('Holding Enter opens pause from receiver selection', await js("BennyFootball.screen==='pause'"));
-    keyUp('Return'); await wait(290);
-    check('Releasing the pause hold does not activate Continue', await js("BennyFootball.screen==='pause'"));
+    // Pause is a scanned choice after the receivers; holding Enter never pauses.
+    await key('Space'); await key('Space'); await key('Space');
+    check('Pause is scanned after the receivers', await js("document.querySelector('#pause-button').classList.contains('focused')"));
+    await key('Return');
+    check('Selecting Pause opens the pause menu from receiver selection', await js("BennyFootball.screen==='pause'"));
     const paused = await js("JSON.stringify(BennyFootball.sim.s)"); await wait(250);
     check('Pause freezes gameplay', paused === await js("JSON.stringify(BennyFootball.sim.s)"));
     const selected = await focused();
@@ -312,6 +322,11 @@ app.whenReady().then(async () => {
     const runnerBefore = await js("BennyFootball.sim.s.players.find(p=>p.id===BennyFootball.sim.s.carrierId).x");
     keyDown('Space'); await wait(450); keyUp('Space'); await wait(290);
     check('Space steers toward screen left in the third-person view', await js("(BennyFootball.sim.s.players.find(p=>p.id===BennyFootball.sim.s.carrierId).x-(" + runnerBefore + "))*BennyFootball.renderer.getSteerSign()<0"));
+    // A long hold on Enter keeps steering right; it never pauses or freezes the play.
+    keyDown('Return'); await wait(1600);
+    const heldRun = await js("JSON.stringify(BennyFootball.sim.s.players)"); await wait(300);
+    check('Holding Enter keeps the play running instead of pausing', await js("BennyFootball.screen==='game' && JSON.stringify(BennyFootball.sim.s.players)!==" + JSON.stringify(heldRun)));
+    keyUp('Return'); await wait(290);
     await click('Pause'); await click('Settings'); await click('Auto scan'); await click('Run controls');
     check('One-switch mode and no-hold steering use shared settings', await js("NarbeScanManager.getSettings().autoScan && BennyFootball.prefs.runControl==='scan'"));
     await click('Back'); await click('Continue');
@@ -409,6 +424,7 @@ app.whenReady().then(async () => {
     await speechChecks();
     await chargeChecks();
     await kickoffChecks();
+    await specialTeamsChecks();
     await basicChecks();
     check('No browser errors', errors.length === 0);
     report(); app.exit(0);

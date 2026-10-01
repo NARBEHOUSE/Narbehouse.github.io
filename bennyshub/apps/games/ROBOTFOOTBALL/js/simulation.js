@@ -38,6 +38,8 @@
   // A kickoff with no charge (Easy throw) lands inside the visitors' 10 for a return,
   // and only now and then carries into the end zone.
   const EASY_KICKOFF_TOUCHBACK = .1;
+  // A punt that dies in the end zone comes out to the 20.
+  const PUNT_TOUCHBACK = 20;
   // Rookie stays forgiving, but every defender takes a real pursuit angle and
   // blocks do not last forever. A defender on the ball carrier tackles him;
   // only now and then does a runner shake one off. The player's own defender
@@ -63,8 +65,19 @@
   const DEFENSE_PLAYS = [
     { id: 'contain', name: 'Edge Contain', label: 'Stop the run', type: 'defense', description: 'Your robots guard the edges. Strong against runs, weaker against passes.' },
     { id: 'blitz', name: 'Blitz', label: 'Rush the passer', type: 'defense', description: 'Extra robots go after the quarterback for a sack. Receivers may get open.' },
-    { id: 'zone', name: 'Deep Cover', label: 'Stop the pass', type: 'defense', description: 'Your robots drop back to cover receivers. Strong against passes, weaker against runs.' }
+    { id: 'zone', name: 'Deep Cover', label: 'Stop the pass', type: 'defense', description: 'Your robots drop back to cover receivers. Strong against passes, weaker against runs.' },
+    { id: 'man', name: 'Man-to-Man', label: 'Cover short passes', type: 'defense', description: 'Each robot sticks to one receiver. Strong against short passes, but a long pass can beat it.' }
   ];
+  // Fourth down: when the visitors line up to punt or kick a field goal, special teams take the field.
+  const PUNT_DEFENSE = [
+    { id: 'puntreturn', name: 'Punt Return', label: 'Return the punt', type: 'defense', kick: 'punt', description: 'Your returner catches the punt and runs it back behind a wall of blockers.' },
+    { id: 'puntblock', name: 'Punt Block', label: 'Block the punt', type: 'defense', kick: 'punt', description: 'Everyone rushes the punter. A block gives you the ball near their goal. If it gets away, nobody is back and it rolls on.' }
+  ];
+  const FIELD_GOAL_DEFENSE = [
+    { id: 'fgblock', name: 'Field Goal Block', label: 'Block the kick', type: 'defense', kick: 'fieldgoal', description: 'Rush the kicker for a chance to block it. Long kicks fly lower and are easier to block.' },
+    { id: 'fgreturn', name: 'Field Goal Return', label: 'Return a miss', type: 'defense', kick: 'fieldgoal', description: 'Your returner waits at the goal line. A long kick that falls short can be run back.' }
+  ];
+  const SPECIAL_DEFENSE = PUNT_DEFENSE.concat(FIELD_GOAL_DEFENSE);
   const CONVERSION_CHOICES = [
     { id: 'extrapoint', name: 'Kick the extra point', type: 'kick', value: '+1', description: 'A short kick from the 15. Aim for the center.' },
     { id: 'gofortwo', name: 'Go for two', type: 'choice', value: '+2', description: 'One play from the 2-yard line. Run or pass it in.' }
@@ -180,13 +193,23 @@
         p.assignment = p.team === offense ? ['C','LG','RG','LT','RT','WR1','WR2'].includes(p.role) ? 'Set on the line of scrimmage' : 'Set in the backfield' : 'Set on defense';
         p.goal = { x: p.x, z: p.z };
       });
+      s.returnerId = null; s.kickReturn = null;
       if (offense === 'away' && DEFENSE_PLAYS.some(p => p.id === s.playId)) {
         this._player('home-MLB').z = z - (s.playId === 'blitz' ? 4 : s.playId === 'zone' ? 15 : 9);
         if (s.playId === 'contain') {
           this._player('home-LB1').x = -17; this._player('home-LB2').x = 17;
         } else if (s.playId === 'blitz') {
           ['home-LB1','home-LB2'].forEach(pid => { this._player(pid).z = z - 3; });
+        } else if (s.playId === 'man') {
+          // Press coverage: each corner lines up right on his receiver.
+          [['CB1', -19], ['CB2', 18]].forEach(([role, x]) => Object.assign(this._player('home-' + role), { x: x, z: z - 2.5 }));
         }
+        s.players.forEach(p => { p.goal = { x:p.x, z:p.z }; });
+      }
+      // A block call crowds the line; a return call sends a robot back to field the kick.
+      if (offense === 'away' && SPECIAL_DEFENSE.some(p => p.id === s.playId)) {
+        if (['puntblock', 'fgblock'].includes(s.playId)) ['LB1', 'MLB', 'LB2'].forEach((role, i) => Object.assign(this._player('home-' + role), { x: (i - 1) * 3.4, z: z - 1.6 }));
+        else { Object.assign(this._player('home-FS'), { x: 0, z: s.playId === 'fgreturn' ? 1 : clamp(z - 42, 3, 97) }); s.returnerId = 'home-FS'; }
         s.players.forEach(p => { p.goal = { x:p.x, z:p.z }; });
       }
       s.lineOfScrimmage = z;
@@ -342,7 +365,10 @@
       if (s.toss === 'choose') return this.options.format === 'regulation' && !s.overtime ? [TOSS_CHOICES.receiveHalf, TOSS_CHOICES.defer] : [TOSS_CHOICES.receive, TOSS_CHOICES.kick];
       // An onside kick is there when you are behind.
       if (s.kickoff) return s.kickoff.team === 'home' ? KICKOFF_PLAYS.filter(p => p.id !== 'onside' || (!s.kickoff.safety && s.homeScore < s.awayScore)) : [];
-      if (s.possession === 'away') return DEFENSE_PLAYS.slice();
+      if (s.possession === 'away') {
+        const kick = this._cpuKickChoice();
+        return (kick === 'punt' ? PUNT_DEFENSE : kick === 'fieldgoal' ? FIELD_GOAL_DEFENSE : DEFENSE_PLAYS).slice();
+      }
       if (s.conversion === 'choose') return CONVERSION_CHOICES.slice();
       if (s.conversion === 'two') return PLAYS.filter(p => p.type !== 'kick');
       return PLAYS.filter(p => !p.conversion);
@@ -806,6 +832,53 @@
       });
       this._separate([s.returnerId]);
     }
+    // While the visitors kick: on a block call your rushers go for the kicker; on a return
+    // call your returner drifts under the ball with a wall in front of him, and their punt
+    // coverage runs down the field.
+    _stepKickDefense(dt) {
+      const s = this.s, f = this._flight;
+      if (!f || !['cpu-punt', 'cpu-fieldgoal'].includes(f.kind)) return;
+      const rush = ['puntblock', 'fgblock'].includes(s.playId), returner = this._player(s.returnerId), land = f.to;
+      const t = clamp(f.elapsed / f.duration, 0, 1), front = p => /^(D|LB|MLB)/.test(p.role);
+      s.players.forEach(p => {
+        if (p.team === 'home') {
+          if (returner && p.id === returner.id) {
+            this._moveToward(p, land.x, land.z, 7, dt); p.heading = 0; p.assignment = 'Field the kick';
+            if (f.duration - f.elapsed < .45) p.anim = 'catch';
+          } else if (rush && front(p)) {
+            this._moveToward(p, f.from.x + clamp(p.x - f.from.x, -3, 3) * .5, f.from.z - 1.2, 3.2, dt); p.assignment = 'Rush and block the kick';
+          } else if (returner && f.kind === 'cpu-punt') {
+            this._moveToward(p, p.x * .97 + land.x * .03, land.z + (front(p) ? 13 : 8), front(p) ? 6 : 7, dt); p.heading = 0; p.assignment = 'Set the return wall';
+          }
+        } else if (f.kind === 'cpu-punt' && !f.blocked && f.elapsed > 0 && p.role !== 'QB') {
+          const lane = p.goal && p.goal.lane !== undefined ? p.goal.lane : p.x;
+          this._moveToward(p, lane * (1 - t * .6) + land.x * t * .6, land.z + 3, (ROLE_SPEED[p.role] || 6.5) * 1.35, dt);
+          p.goal.lane = lane;
+        }
+      });
+      // Rushers crowd the holder and kicker but never shove them off the spot.
+      this._separate([returner && returner.id, s.placeKick && s.placeKick.holderId, s.placeKick && s.placeKick.kickerId].filter(Boolean));
+    }
+    // The ball changes hands in the middle of a play, so the new possession counts now.
+    // A four-possession game never starts a possession it does not have.
+    _canReturn() { const s = this.s; return this.options.format !== 'drives' || s.possessionNumber + 1 < s.maxDrives * 2; }
+    _takeOver() {
+      const s = this.s;
+      s.possessionNumber++; s.possession = 'home'; s.drive = Math.floor(s.possessionNumber / 2) + 1;
+      s.down = 1; s.distance = 10; s.conversion = null;
+    }
+    // Your returner fields the visitors' kick where it comes down and runs it back.
+    _startKickReturn(title) {
+      this._takeOver(); this.s.kickReturn = { title: title };
+      return this._startReturn();
+    }
+    // A blocked punt is yours where it comes down. Recovered in their end zone, it is a touchdown.
+    _blockedPunt(f) {
+      const s = this.s;
+      if (f.to.z < 100 || !this._canReturn()) return this._finishPossession(clamp(f.to.z, 1, 99), 'Punt blocked!', 'Your robots recover at their ' + Math.max(1, Math.round(100 - f.to.z)) + '. Your ball.');
+      this._takeOver(); s.kickReturn = { title: 'Punt blocked', touchdown: 'Blocked punt touchdown!' };
+      return this._finishPlay(f.to.z, 'Punt blocked');
+    }
     _kickoffLanded(f) {
       const s = this.s, k = s.kickoff, rd = this._direction(), p = this._player(s.returnerId);
       const land = rd === 1 ? f.to.z : 100 - f.to.z;
@@ -850,7 +923,7 @@
     // First and 10 for the team with the ball, `yards` from its own goal line.
     _newSeries(yards, title, detail) {
       const s = this.s, home = s.possession === 'home', z = home ? yards : 100 - yards;
-      s.kickoff = null; s.returnFrom = null; s.conversion = null;
+      s.kickoff = null; s.kickReturn = null; s.returnFrom = null; s.conversion = null;
       s.fieldPosition = clamp(z, 1, 99); s.down = 1; s.distance = Math.min(10, home ? 100 - s.fieldPosition : s.fieldPosition);
       this._pending = { switchPossession: false };
       s.phase = 'result'; s.resultRevealRemaining = 2.2; s.result = { title: title, detail: detail };
@@ -893,7 +966,7 @@
       this._emit('kick', call); return true;
     }
     _startDefense(id) {
-      const play = DEFENSE_PLAYS.find(p => p.id === id);
+      const play = DEFENSE_PLAYS.concat(SPECIAL_DEFENSE).find(p => p.id === id);
       if (!play) return false;
       const s = this.s; s.playId = id; s.result = null; this._formation(); this._runTime = 0;
       // The opposing coach uses the same down-and-distance decisions as classic football.
@@ -914,7 +987,7 @@
           // Some quarterbacks get the ball out fast; some hold it a beat too long.
           elapsed: 0, releaseAt: id === 'blitz' ? 1.1 + this._rand() * .7 : 2.05 + this._rand() * .6,
           escapeX: this._rand() < .5 ? -4 : 4,
-          coverageGap: id === 'zone' ? 1.2 : id === 'blitz' ? 6.4 : 4.5
+          coverageGap: id === 'zone' ? 1.2 : id === 'blitz' ? 6.4 : id === 'man' ? (deep ? 5.6 : 1.4) : 4.5, deep: deep
         };
         s.message = 'Pass play.';
       } else {
@@ -926,19 +999,30 @@
       this._followBall(); this._emit('snap', s.message); return true;
     }
     _startCpuKick(kind) {
-      const s = this.s, qb = this._player('away-QB'), punt = kind === 'punt';
+      const s = this.s, qb = this._player('away-QB'), punt = kind === 'punt', practice = this.options.practice, pro = this.options.difficulty === 'pro';
       const kickDistance = s.lineOfScrimmage + 17;
       const chance = clamp(1.06 - Math.max(0, kickDistance - 25) * .014, .04, .99);
-      const good = punt || (!this.options.practice && this._rand() < chance);
-      const to = {
-        x: punt || good ? 0 : this._rand() < .5 ? -7 : 7,
-        y: punt ? .3 : 5.2,
-        z: punt ? Math.max(-4, s.lineOfScrimmage - 37 - this._rand() * 12) : -12
-      };
+      // A block call gets a hand on it now and then: a punt more often than a field goal,
+      // and a long field goal, which flies lower, more often than a short one.
+      const blockChance = punt ? (s.playId === 'puntblock' ? (practice ? .5 : pro ? .14 : .22) : 0)
+        : kind === 'fieldgoal' && s.playId === 'fgblock' ? clamp((practice ? .3 : pro ? .08 : .12) + Math.max(0, kickDistance - 30) * .005, 0, .5) : 0;
+      const blocked = blockChance > 0 && this._rand() < blockChance;
+      const good = !blocked && (punt || (!practice && this._rand() < chance));
+      // A long miss can come down short of the goal line instead of wide.
+      const short = kind === 'fieldgoal' && !good && !blocked && this._rand() < clamp((kickDistance - 35) / 20, 0, .8);
       const place = !punt && !!s.placeKick, call = punt ? 'The visitors punt.' : kind === 'extrapoint' ? 'The visitors kick the extra point.' : 'The visitors attempt a field goal.';
+      const from = place ? { x: s.placeKick.spot.x, y: s.ball.y, z: s.placeKick.spot.z } : { x: qb.x, y: .9, z: s.lineOfScrimmage + 6 };
+      const to = blocked ? { x: from.x + (this._rand() - .5) * 6, y: .2, z: from.z + 2 + this._rand() * 5 }
+        : short ? { x: (this._rand() - .5) * 8, y: .3, z: 1 + this._rand() * 7 }
+        : {
+          x: punt || good ? 0 : this._rand() < .5 ? -7 : 7,
+          y: punt ? .3 : 5.2,
+          // With everyone up to block, nobody is back to field the punt and it rolls on.
+          z: punt ? Math.max(-4, s.lineOfScrimmage - 37 - this._rand() * 12 - (s.playId === 'puntblock' ? 5 + this._rand() * 5 : 0)) : -12
+        };
       this._flight = {
-        kind: 'cpu-' + kind, elapsed: place ? -KICK_APPROACH * this.options.pace : 0, duration: punt ? 2.3 : 2,
-        from: place ? { x: s.placeKick.spot.x, y: s.ball.y, z: s.placeKick.spot.z } : { x: qb.x, y: .9, z: s.lineOfScrimmage + 6 }, to: to, good: good, call: place ? call : null
+        kind: 'cpu-' + kind, elapsed: place ? -KICK_APPROACH * this.options.pace : 0, duration: blocked ? .9 : punt ? 2.3 : 2,
+        from: from, to: to, good: good, blocked: blocked, short: short, call: place ? call : null
       };
       s.opponentPlayType = kind; s.defenseStage = null; s.controlGrace = 0;
       s.kickTarget = copy(to); s.phase = 'kickflight'; s.carrierId = null; s.controlledId = null;
@@ -985,8 +1069,8 @@
         const p = this._player(route.playerId);
         const cover = this._player(['home-CB1','home-CB2','home-FS','home-SS'][i]);
         const x = p.x + (i % 2 ? -1 : 1) * plan.coverageGap;
-        const z = p.z - (s.playId === 'zone' ? .7 : 2.2);
-        this._moveToward(cover, clamp(x, -25.5, 25.5), z, s.playId === 'zone' ? 7.2 : 5.1, dt);
+        const man = s.playId === 'man', z = p.z - (s.playId === 'zone' ? .7 : man ? 1.2 : 2.2);
+        this._moveToward(cover, clamp(x, -25.5, 25.5), z, s.playId === 'zone' ? 7.2 : man ? 6.8 : 5.1, dt);
       });
       const protectors = s.players.filter(p => p.team === 'away' && ['C','LG','RG','LT','RT'].includes(p.role));
       protectors.forEach(p => {
@@ -1042,7 +1126,7 @@
         return { p: p, gap: gap };
       }).sort((a, b) => b.gap - a.gap);
       const read = this._rand() < .78 ? reads[0] : reads[Math.floor(this._rand() * reads.length)];
-      const defenseBonus = s.playId === 'zone' ? -.19 : s.playId === 'blitz' ? .06 : .03;
+      const defenseBonus = s.playId === 'zone' ? -.19 : s.playId === 'blitz' ? .06 : s.playId === 'man' ? (plan.deep ? .08 : -.14) : .03;
       const chance = clamp((this.options.difficulty === 'pro' ? .58 : .47) + read.gap * .04 + defenseBonus, .18, .94);
       this._makePass('cpu-pass', qb, read.p, chance, read.gap);
       s.defenseStage = 'flight'; s.defenseTargetId = read.p.id;
@@ -1108,7 +1192,7 @@
         const flightDt = this._passFlightDt(motionDt, realDt);
         this._stepHomePass(Math.min(motionDt, Math.max(0, this._flight.routeArrival - this._routeTime)));
         this._stepFlight(flightDt);
-      } else if (s.phase === 'kickflight') { this._stepKickoffCoverage(motionDt); this._stepFlight(motionDt); }
+      } else if (s.phase === 'kickflight') { this._stepKickoffCoverage(motionDt); this._stepKickDefense(motionDt); this._stepFlight(motionDt); }
       else if (s.phase === 'defend' && this._cpuPass) this._stepDefensePass(motionDt, steer, realDt);
       else this._stepRun(motionDt, steer);
       return s;
@@ -1176,7 +1260,7 @@
             if (this.options.practice) this._finishPlay(3, 'Goal-line stop');
             else this._finishPlay(p.z, 'Touchdown');
           }
-        } else if (gap < 3.5 && roll > (s.playId === 'zone' ? .9 : .95)) {
+        } else if (gap < 3.5 && roll > (s.playId === 'zone' ? .9 : s.playId === 'man' ? .93 : .95)) {
           nearest.anim = 'catch'; this._stat('away', 'turnovers', 1);
           if (s.conversion) this._kickAfter('Intercepted!', 'The two-point try is over.');
           else this._finishPossession(clamp(p.z, 1, 99), 'Intercepted!', 'Your defense takes the ball at the catch spot.');
@@ -1186,12 +1270,16 @@
           this._finishPlay(s.lineOfScrimmage, 'Incomplete pass');
         }
       } else if (f.kind === 'cpu-fieldgoal') {
-        if (f.good) {
+        if (f.blocked) {
+          this._finishPossession(clamp(Math.max(s.lineOfScrimmage, 20), 1, 99), 'Kick blocked!', 'Your robots get a hand on it. Your offense takes over.');
+        } else if (f.good) {
           s.awayScore += 3;
           this._kickAfter('Visitors field goal', 'Three points.');
           this._emit('score', 'Visitors field goal. Three points.');
+        } else if (f.short && s.playId === 'fgreturn' && this._canReturn()) {
+          this._startKickReturn('Missed kick return');
         } else {
-          this._finishPossession(clamp(Math.max(s.lineOfScrimmage, 20), 1, 99), 'Kick wide', 'No score. Your offense takes over.');
+          this._finishPossession(clamp(Math.max(s.lineOfScrimmage, 20), 1, 99), f.short ? 'Kick short' : 'Kick wide', 'No score. Your offense takes over.');
         }
       } else if (f.kind === 'cpu-extrapoint') {
         if (f.good) {
@@ -1200,8 +1288,10 @@
           this._emit('convert', '');
         } else this._kickAfter('Extra point missed', 'No extra point for the visitors.');
       } else if (f.kind === 'cpu-punt') {
-        const touchback = f.to.z <= 0, next = touchback ? 20 : clamp(f.to.z, 1, 99);
-        this._finishPossession(next, touchback ? 'Punt · touchback' : 'Visitors punt',
+        const touchback = f.to.z <= 0, next = touchback ? PUNT_TOUCHBACK : clamp(f.to.z, 1, 99);
+        if (f.blocked) this._blockedPunt(f);
+        else if (!touchback && s.playId === 'puntreturn' && this._canReturn()) this._startKickReturn('Punt return');
+        else this._finishPossession(next, touchback ? 'Punt · touchback' : 'Visitors punt',
           touchback ? 'Your offense begins at its 20.' : 'Your offense takes over at its ' + Math.round(next) + '.');
       } else if (f.kind === 'pass' && f.over) {
         s.ball.y = 0.2; this._finishPlay(s.lineOfScrimmage, 'Overthrown');
@@ -1385,7 +1475,7 @@
           q.assignment = 'Get back up and rejoin the pursuit';
         } else {
           let speed = (ROLE_SPEED[q.role] || 6.2) * (isDefense ? tune.teammates : tune.pursuit) * (q.burst || 1);
-          if (isDefense && s.opponentPlayType === 'run') speed *= s.playId === 'contain' ? 1.12 : s.playId === 'zone' ? .86 : 1;
+          if (isDefense && s.opponentPlayType === 'run') speed *= s.playId === 'contain' ? 1.12 : s.playId === 'zone' ? .86 : s.playId === 'man' ? .95 : 1;
           const blocker = !q.shed && offense.find(o => o.role !== 'QB' && distance(o, q) < 1.9);
           q.engaged = !!blocker;
           if (blocker) {
@@ -1487,17 +1577,18 @@
       spot = Math.round(clamp(spot, 0, 100) * 10) / 10;
       const gain = Math.round((spot - s.lineOfScrimmage) * d * 10) / 10;
       const scored = (d === 1 && rawSpot >= 100) || (d === -1 && rawSpot <= 0);
-      let returnTouchdown = false;
-      if (s.kickoff) {
-        // The end of a kickoff return: first and 10 where he went down. Downed in his
+      let returnTouchdown = '';
+      if (s.kickoff || s.kickReturn) {
+        // The end of a kickoff or punt return: first and 10 where he went down. Downed in his
         // own end zone, the kick put him there, so it is a touchback, not a safety.
-        s.kickoff = null; s.placeKick = null;
+        const kick = s.kickReturn;
+        s.kickoff = null; s.placeKick = null; s.kickReturn = null;
         if (!scored) {
           const own = (d === 1 && rawSpot <= 0) || (d === -1 && rawSpot >= 100);
-          const yards = own ? KICKOFF_TOUCHBACK : Math.max(1, Math.round(d === 1 ? spot : 100 - spot));
-          return this._newSeries(yards, own ? 'Touchback' : reason === 'Out of bounds' ? 'Return out of bounds' : 'Kick return', (home ? 'Your offense begins at its ' : 'The visitors begin at their ') + yards + '.');
+          const yards = own ? (kick ? PUNT_TOUCHBACK : KICKOFF_TOUCHBACK) : Math.max(1, Math.round(d === 1 ? spot : 100 - spot));
+          return this._newSeries(yards, own ? 'Touchback' : reason === 'Out of bounds' ? 'Return out of bounds' : kick ? kick.title : 'Kick return', (home ? 'Your offense begins at its ' : 'The visitors begin at their ') + yards + '.');
         }
-        returnTouchdown = true;
+        returnTouchdown = kick && kick.touchdown || 'Return touchdown!';
       }
       if (s.conversion) {
         // A two-point try is one play: in the end zone, or no points.
@@ -1517,7 +1608,7 @@
         if (!returnTouchdown) { this._stat(s.possession, 'yards', gain); if (gain >= 20) this._stat(s.possession, 'bigPlays', 1); }
         this._pending = { switchPossession: false, conversion: true };
         s.phase = 'result'; s.resultRevealRemaining = 2.6;
-        s.result = { title: returnTouchdown ? 'Return touchdown!' : 'Touchdown!', detail: home ? 'Six points. Now kick the extra point or go for two.' : 'The visitors score six points and line up for more.' };
+        s.result = { title: returnTouchdown || 'Touchdown!', detail: home ? 'Six points. Now kick the extra point or go for two.' : 'The visitors score six points and line up for more.' };
         s.message = s.result.detail;
         this._emit('touchdown', home ? 'Touchdown! Six points.' : 'Visitors touchdown. Six points.'); return;
       }
@@ -1712,7 +1803,7 @@
           format: format, quarter: quarter, timeRemaining: timeRemaining, overtime: overtime, overtimePeriod: overtimePeriod,
           elapsed: t.elapsed, result: t.result ? { title: String(t.result.title).slice(0, 120), detail: String(t.result.detail).slice(0, 500) } : null,
           message: typeof t.message === 'string' ? t.message.slice(0, 500) : '',
-          playId: PLAYS.concat(DEFENSE_PLAYS).some(p => p.id === t.playId) ? t.playId : null,
+          playId: PLAYS.concat(DEFENSE_PLAYS, SPECIAL_DEFENSE).some(p => p.id === t.playId) ? t.playId : null,
           conversion: conversion, stats: stats,
           toss: toss, kickoff: kickoff ? { team: 'home', from: kickoff.from, safety: kickoff.from === SAFETY_KICK_SPOT, kind: 'deep' } : null,
           secondHalfReceiver: secondHalfReceiver, firstPossession: firstPossession

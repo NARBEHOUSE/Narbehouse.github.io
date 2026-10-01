@@ -23,7 +23,7 @@
   const effective = () => basic() ? { ...prefs, ...BASIC, reducedMotion: motionQuery.matches } : prefs;
   let sim, renderer, screen = 'main', returnScreen = 'main', items = [], focusIndex = 0, phaseSeen = '', epoch = 0;
   let scanClock = 0, lastTime = performance.now(), armed = -1, pointerSteer = 0, burstSteer = 0, burstTime = 0;
-  let toastTimer, activeGame = false, pauseBeep = 0, menuHeading = '', inputLocks = new Set(), resultHeld = false;
+  let toastTimer, activeGame = false, menuHeading = '', inputLocks = new Set(), resultHeld = false;
   let aimDirection = 1, lastAimRegion = '', lastAimSpeech = 0, pointerAim = false;
   let season, seasonMatchId = null, gameMode = 'exhibition', seasonOutcome = null, homeTeam, awayTeam;
   let lastResult = null, cueKey = '', lastSwitchSpeech = 0, openSpoken = 0, charge = null, guideOn = null;
@@ -77,7 +77,7 @@
     if (/touchdown|conversion!|extra point good|field goal/i.test(title)) return ours ? 'score' : 'alert';
     // An onside kick recovered is good news for the kicking side, which is not yet the one with the ball.
     if (/onside kick recovered/i.test(title)) return ours ? 'alert' : 'good';
-    if (/intercept|turnover|safety|sack|stopped|denied|missed|wide|knocked down/i.test(title)) return ours ? 'alert' : 'good';
+    if (/intercept|turnover|safety|sack|stopped|denied|missed|wide|short|blocked|knocked down/i.test(title)) return ours ? 'alert' : 'good';
     if (/first down/i.test(title)) return ours ? 'good' : 'alert';
     return 'neutral';
   }
@@ -118,30 +118,32 @@
   function applyOptions() { const fx = effective(); sim.options.pace = fx.pace; sim.options.difficulty = fx.difficulty; sim.options.kickoffs = fx.kickoffs; }
   function saveMatch() { if (!activeGame || sim.options.practice || sim.s.phase === 'final') return; const data = sim.snapshot(); if (data) store(gameMode === 'season' ? SEASON_SAVE : SAVE, { version: 2, sim: data, mode: gameMode, seasonMatchId, homeTeamId: homeTeam.id, awayTeamId: awayTeam.id }); }
   function syncAudio() { if (!['main', 'game'].includes(screen) || document.hidden) audio?.pause(); else audio?.resume(); }
-  function clearHeld() { cancelCharge(); tossHold = null; presses.clear(); inputLocks.clear(); pointerSteer = 0; pointerAim = false; $('hold-pause').hidden = true; pauseBeep = 0; }
-  function changeContext() { cancelCharge(); autoKickAt = 0; epoch++; for (const key of presses.keys()) inputLocks.add(key); presses.clear(); scanClock = 0; pointerSteer = 0; pointerAim = false; burstTime = 0; $('hold-pause').hidden = true; $('pause-button').classList.remove('focused'); pauseBeep = 0; }
+  function clearHeld() { cancelCharge(); tossHold = null; presses.clear(); inputLocks.clear(); pointerSteer = 0; pointerAim = false; }
+  function changeContext() { cancelCharge(); autoKickAt = 0; epoch++; for (const key of presses.keys()) inputLocks.add(key); presses.clear(); scanClock = 0; pointerSteer = 0; pointerAim = false; burstTime = 0; $('pause-button').classList.remove('focused'); }
   function updateHint() {
-    if (screen === 'game' && (sim?.s.phase === 'tackle' || sim?.s.phase === 'result' && (sim.s.resultRevealRemaining > 0 || resultHeld))) { $('controls-hint').innerHTML = '<span>Watch the play finish</span><span>Hold <kbd>ENTER</kbd> to pause</span>'; return; }
-    if (screen === 'game' && tossHold) { $('controls-hint').innerHTML = '<span>Coin toss</span><span>Hold <kbd>ENTER</kbd> to pause</span>'; return; }
+    if (screen === 'game' && (sim?.s.phase === 'tackle' || sim?.s.phase === 'result' && (sim.s.resultRevealRemaining > 0 || resultHeld))) { $('controls-hint').innerHTML = '<span>Watch the play finish</span>'; return; }
+    if (screen === 'game' && tossHold) { $('controls-hint').innerHTML = '<span>Coin toss</span>'; return; }
     if (screen === 'game' && straightKick()) {
       const k = sim.s.kickoff;
-      $('controls-hint').innerHTML = (!prefs.charge ? '<span>The kick goes by itself</span><span>Hold <kbd>ENTER</kbd> to pause</span>' : k?.kind === 'onside' ? '<span><kbd>ENTER</kbd> Kick · hold to pause</span>' : '<span><kbd>ENTER</kbd> Hold · let go when ' + (k ? 'the line reaches the goal line' : 'the tone plays') + '</span>') + '<b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'; return;
+      $('controls-hint').innerHTML = (!prefs.charge ? '<span>The kick goes by itself</span>' : k?.kind === 'onside' ? '<span><kbd>ENTER</kbd> Kick</span>' : '<span><kbd>ENTER</kbd> Hold · let go when ' + (k ? 'the line reaches the goal line' : 'the tone plays') + '</span>') + '<b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'; return;
     }
     if (screen === 'game' && sim?.s.phase === 'kickaim') {
-      $('controls-hint').innerHTML = (auto() ? '<span>Aim sweeps automatically</span>' : '<span><kbd>SPACE</kbd> Hold to aim · release to stop · press again to reverse</span>') + (prefs.charge ? '<span><kbd>ENTER</kbd> Hold · let go when the line reaches the uprights</span>' : '<span><kbd>ENTER</kbd> Kick · hold to pause</span>') + '<b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'; return;
+      $('controls-hint').innerHTML = (auto() ? '<span>Aim sweeps automatically</span>' : '<span><kbd>SPACE</kbd> Hold to aim · release to stop · press again to reverse</span>') + (prefs.charge ? '<span><kbd>ENTER</kbd> Hold · let go when the line reaches the uprights</span>' : '<span><kbd>ENTER</kbd> Kick</span>') + '<b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'; return;
     }
     if (screen === 'game' && sim?.s.phase === 'aim' && prefs.charge) {
       $('controls-hint').innerHTML = '<span><kbd>SPACE</kbd> Next receiver</span><span><kbd>ENTER</kbd> Hold · let go when the line reaches him</span><b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'; return;
     }
     const running = screen === 'game' && livePhase() && effective().runControl === 'hold';
     $('controls-hint').innerHTML = running
-      ? (auto() ? '<span><kbd>ENTER</kbd> Hold to steer · release to swap direction</span>' : '<span><kbd>SPACE</kbd> Steer left</span><span><kbd>ENTER</kbd> Steer right</span>') + '<span>Keep holding Enter to pause</span><b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'
-      : '<span><kbd>SPACE</kbd> Next · hold to scan back</span><span><kbd>ENTER</kbd> Choose' + (activeGame && sim?.s.phase !== 'final' ? ' · hold to pause' : '') + '</span><b id="access-mode">' + (auto() ? 'AUTO SCAN · ONE SWITCH' : 'TWO SWITCHES') + '</b>';
+      ? (auto() ? '<span><kbd>ENTER</kbd> Hold to steer · release to swap direction</span>' : '<span><kbd>SPACE</kbd> Steer left</span><span><kbd>ENTER</kbd> Steer right</span>') + '<b id="access-mode">' + (auto() ? 'ONE SWITCH' : 'TWO SWITCHES') + '</b>'
+      : '<span><kbd>SPACE</kbd> Next · hold to scan back</span><span><kbd>ENTER</kbd> Choose</span><b id="access-mode">' + (auto() ? 'AUTO SCAN · ONE SWITCH' : 'TWO SWITCHES') + '</b>';
   }
   function routeIcon(id) {
     // Drawn as the field looks from behind your quarterback: the flood goes left, the sweep right.
     const paths = { slants: 'M8 34 V25 L42 8 M25 34 V22 L51 8', flood: 'M48 34 V17 H12 M30 34 V8 H7', verticals: 'M10 34 V5 M28 34 V5 M46 34 V5', sweep: 'M12 34 V23 Q12 14 27 14 H48', inside: 'M28 35 V6', fieldgoal: 'M28 35 V8 M10 6 V17 H46 V6', punt: 'M8 34 Q28 -12 48 12',
-      extrapoint: 'M28 35 V8 M10 6 V17 H46 V6', heads: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M23 13 V27 M33 13 V27 M23 20 H33', tails: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M22 13 H34 M28 13 V28', receive: 'M28 4 V30 M18 21 L28 31 L38 21', defer: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M28 12 V20 H35', kickfirst: 'M10 34 Q28 -6 48 28', kickdeep: 'M10 34 Q30 -8 50 26', onside: 'M8 34 Q14 25 20 34 Q26 28 32 34', gofortwo: 'M18 13 Q20 5 29 5 Q38 5 38 13 Q38 20 18 34 H40', contain: 'M6 30 L14 10 M50 30 L42 10 M14 20 H42', blitz: 'M10 34 L28 10 M46 34 L28 10 M28 34 V10', zone: 'M6 32 Q28 2 50 32 M16 32 H40' };
+      extrapoint: 'M28 35 V8 M10 6 V17 H46 V6', heads: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M23 13 V27 M33 13 V27 M23 20 H33', tails: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M22 13 H34 M28 13 V28', receive: 'M28 4 V30 M18 21 L28 31 L38 21', defer: 'M14 20 A14 14 0 1 0 42 20 A14 14 0 1 0 14 20 M28 12 V20 H35', kickfirst: 'M10 34 Q28 -6 48 28', kickdeep: 'M10 34 Q30 -8 50 26', onside: 'M8 34 Q14 25 20 34 Q26 28 32 34', gofortwo: 'M18 13 Q20 5 29 5 Q38 5 38 13 Q38 20 18 34 H40', contain: 'M6 30 L14 10 M50 30 L42 10 M14 20 H42', blitz: 'M10 34 L28 10 M46 34 L28 10 M28 34 V10', zone: 'M6 32 Q28 2 50 32 M16 32 H40', man: 'M14 34 V10 M22 34 V10 M34 34 V10 M42 34 V10',
+      puntreturn: 'M28 4 V14 M28 35 L20 26 L34 20 L28 14', puntblock: 'M8 34 L24 12 M48 34 L32 12 M20 8 H36',
+      fgblock: 'M10 6 V17 H46 V6 M28 17 V6 M16 36 L25 25 M40 36 L31 25', fgreturn: 'M10 6 V17 H46 V6 M28 17 V6 M28 36 L22 30 L32 26' };
     return '<svg class="route-icon" viewBox="0 0 56 40" aria-hidden="true"><path d="' + (paths[id] || 'M10 34 V22 L43 8 M29 34 V8') + '"/>' + (['gofortwo', 'heads', 'tails', 'defer', 'receive'].includes(id) ? '' : '<circle cx="10" cy="34" r="3"/>') + '</svg>';
   }
   function makeItems(list, container, initial = 0) {
@@ -321,14 +323,14 @@
       ['KICKOFFS', inBasic ? 'The game tosses the coin for you. Every half starts with a kickoff from the 35, and so does every drive after a score. Your kickoff goes straight down the field: hold Enter and let go when the tone plays, or with Easy throw on, it kicks by itself. Catch one in the end zone and choose: run it out, or take a knee for the 25.'
         : 'A coin toss opens the game: call heads or tails, and the winner chooses to receive or defer. Every half starts with a kickoff from the 35, and so does every drive after a score. On your kickoff, hold Enter and the line grows down the field; let go when the tone plays. Catch one in the end zone and choose: run it out, or take a knee for the 25. Behind in the score? Try an onside kick. Settings can turn kickoffs off.'],
       ['05 / BEAT THE PURSUIT', 'Defenders take angles and dive at your legs. Steer away from them. A tackle from behind is the easiest to break, and a tired robot slows down on a long run.'],
-      ['06 / MAKE THE STOP', 'On defense, steer toward the ball carrier; your robot, marked YOU, tackles automatically when he reaches him. While you steer, he stays yours. Let go for two seconds and he plays by himself (AUTO). After three seconds, control moves to the robot nearest the ball. The view returns overhead after every play.'],
+      ['06 / MAKE THE STOP', 'On defense, steer toward the ball carrier; your robot, marked YOU, tackles automatically when he reaches him. While you steer, he stays yours. Let go for two seconds and he plays by himself (AUTO). After three seconds, control moves to the robot nearest the ball. When the visitors punt or kick, choose to block it or set up a return. The view returns overhead after every play.'],
       ['YOUR SEASON', 'Choose your team and play sixteen games. Ten wins earn a playoff spot. A perfect season goes straight to the championship. Exhibition is a shorter, four-possession game. Season games use four quarters.'],
-      ['YOUR PACE', inBasic ? 'Hold Enter to pause. Practice removes dropped passes and tackles against your runner. Advanced mode in Settings adds more options.'
-        : 'Hold Enter to pause. Settings has slower speeds and “Choose direction” controls that wait between moves. Practice removes dropped passes and tackles against your runner, but a throw let go too early or too late still misses.']
+      ['YOUR PACE', inBasic ? 'To pause, choose Pause / settings in the playbook between plays. Practice removes dropped passes and tackles against your runner. Advanced mode in Settings adds more options.'
+        : 'To pause, choose Pause / settings in the playbook between plays. Settings has slower speeds and “Choose direction” controls that wait between moves. Practice removes dropped passes and tackles against your runner, but a throw let go too early or too late still misses.']
     ];
     overlay('help', 'EVERY PLAY IS YOURS', 'One or two switches. Real decisions. Your pace.', [
-      { name: 'Read instructions aloud', action: () => speaking(inBasic ? 'Choose plays from above the field. Space scans. Enter selects. Hold Space to scan backwards. Players line up before the snap. Passing zooms behind your quarterback. Scan the players on the field, then hold Enter on one. The line grows toward him. Let go when it reaches him and the tone plays. With Easy throw on, just select him. There is no time limit. For a field goal, hold Space to aim, release to stop, press again to reverse, then kick with Enter. With Auto Scan, the aim sweeps automatically. Punts and kickoffs go straight down the field. After a catch, you get a protected moment before running starts. Hold Space to steer left, or Enter to steer right. In one switch mode, hold Enter to steer in the shown direction, then release to swap direction. On defense, steer toward the runner. Tackles happen automatically when you reach him. While you steer, you keep your robot. Let go for two seconds and he plays by himself. After three seconds, control moves to the robot nearest the ball. Hold Enter to pause. A touchdown is worth six points. Then kick the extra point for one more, or go for two with one play from the 2-yard line. The game tosses the coin for you, and every half and every score starts with a kickoff. If you catch a kick in your end zone, choose to run it out or take a knee. Defenders take angles and dive at the runner, so run away from them to break tackles. Season mode has sixteen games and playoffs. Exhibition has four possessions each. Advanced mode in Settings adds more options.'
-        : 'Choose plays from above the field. Space scans. Enter selects. Hold Space to scan backwards. Players line up before the snap. Passing zooms behind your quarterback. Scan the players on the field, then select to throw. There is no time limit. For a kick, hold Space to aim, release to stop, press again to reverse. Enter kicks. With Auto Scan, the aim sweeps automatically. After a catch, you get a protected moment before running starts. Hold Space to steer left, or Enter to steer right. In one switch mode, hold Enter to steer in the shown direction, then release to swap direction. On defense, steer toward the runner. Tackles happen automatically when you reach him. While you steer, you keep your robot. Let go for two seconds and he plays by himself. After three seconds, control moves to the robot nearest the ball. Hold Enter to pause. In Settings, choose direction controls to run without holding a switch. A touchdown is worth six points. Then kick the extra point for one more, or go for two with one play from the 2-yard line. A coin toss opens the game, and every half and every score starts with a kickoff. On your kickoff, hold Enter and let go when the tone plays. If you catch a kick in your end zone, choose to run it out or take a knee. Defenders take angles and dive at the runner, so run away from them to break tackles. Season mode has sixteen games and playoffs. Exhibition has four possessions each.') },
+      { name: 'Read instructions aloud', action: () => speaking(inBasic ? 'Choose plays from above the field. Space scans. Enter selects. Hold Space to scan backwards. Players line up before the snap. Passing zooms behind your quarterback. Scan the players on the field, then hold Enter on one. The line grows toward him. Let go when it reaches him and the tone plays. With Easy throw on, just select him. There is no time limit. For a field goal, hold Space to aim, release to stop, press again to reverse, then kick with Enter. With Auto Scan, the aim sweeps automatically. Punts and kickoffs go straight down the field. After a catch, you get a protected moment before running starts. Hold Space to steer left, or Enter to steer right. In one switch mode, hold Enter to steer in the shown direction, then release to swap direction. On defense, steer toward the runner. Tackles happen automatically when you reach him. While you steer, you keep your robot. Let go for two seconds and he plays by himself. After three seconds, control moves to the robot nearest the ball. When the visitors punt or kick, choose to block it or set up a return. To pause, choose Pause / settings in the playbook between plays. A touchdown is worth six points. Then kick the extra point for one more, or go for two with one play from the 2-yard line. The game tosses the coin for you, and every half and every score starts with a kickoff. If you catch a kick in your end zone, choose to run it out or take a knee. Defenders take angles and dive at the runner, so run away from them to break tackles. Season mode has sixteen games and playoffs. Exhibition has four possessions each. Advanced mode in Settings adds more options.'
+        : 'Choose plays from above the field. Space scans. Enter selects. Hold Space to scan backwards. Players line up before the snap. Passing zooms behind your quarterback. Scan the players on the field, then select to throw. There is no time limit. For a kick, hold Space to aim, release to stop, press again to reverse. Enter kicks. With Auto Scan, the aim sweeps automatically. After a catch, you get a protected moment before running starts. Hold Space to steer left, or Enter to steer right. In one switch mode, hold Enter to steer in the shown direction, then release to swap direction. On defense, steer toward the runner. Tackles happen automatically when you reach him. While you steer, you keep your robot. Let go for two seconds and he plays by himself. After three seconds, control moves to the robot nearest the ball. When the visitors punt or kick, choose to block it or set up a return. To pause, choose Pause / settings in the playbook between plays. In Settings, choose direction controls to run without holding a switch. A touchdown is worth six points. Then kick the extra point for one more, or go for two with one play from the 2-yard line. A coin toss opens the game, and every half and every score starts with a kickoff. On your kickoff, hold Enter and let go when the tone plays. If you catch a kick in your end zone, choose to run it out or take a knee. Defenders take angles and dive at the runner, so run away from them to break tackles. Season mode has sixteen games and playoffs. Exhibition has four possessions each.') },
       { name: 'Back', action: () => from === 'pause' ? pauseMenu() : mainMenu() }
     ], { content: steps.map(([title, text]) => '<div class="help-step"><b>' + title + '</b><p>' + text + '</p></div>').join('') });
   }
@@ -343,22 +345,25 @@
   function playcall() {
     const s = sim.s, defending = s.possession === 'away', choosing = s.conversion === 'choose', two = s.conversion === 'two';
     // Each play leads with what it is for (Short pass, Inside run...); its playbook name sits above.
-    const kickYards = 100 - s.fieldPosition + 17;
+    const kickYards = 100 - s.fieldPosition + 17, theirKickYards = Math.round(s.fieldPosition + 17);
     const list = sim.playbook().map(p => {
-      const label = p.label || p.name, yards = p.id === 'fieldgoal' ? kickYards : 0, speech = sentences(label, yards ? yards + ' yards' : p.value, p.description);
+      const label = p.label || p.name, yards = p.id === 'fieldgoal' ? kickYards : p.kick === 'fieldgoal' ? theirKickYards : 0, speech = sentences(label, yards ? yards + ' yards' : p.value, p.description);
       return { name: label, tag: label !== p.name ? p.name : '', kind: p.type, value: p.value || (yards ? yards + ' YD' : ''), desc: p.description, play: p.id,
         spokenName: speech, intro: speech, confirm: () => label + '.', action: () => { saveMatch(); armed = -1; sim.callPlay(p.id); phaseSeen = ''; renderPhase(); } };
     });
     list.push({ name: 'Pause / settings', action: pause });
     const halves = sim.options.format === 'regulation' && !s.overtime, kickoff = s.kickoff?.team === 'home';
-    const title = s.toss === 'call' ? 'COIN TOSS.' : s.toss === 'choose' ? 'YOU WON THE TOSS.' : kickoff ? (s.kickoff.safety ? 'FREE KICK.' : 'KICKOFF.') : choosing ? 'AFTER THE TOUCHDOWN.' : two ? (defending ? 'STOP THE TWO.' : 'GO FOR TWO.') : defending ? 'MAKE THE STOP.' : 'CALL YOUR PLAY.';
+    // On their fourth down, the visitors' punt or field goal unit is already on the field.
+    const theirKick = defending && sim.playbook()[0]?.kick;
+    const title = s.toss === 'call' ? 'COIN TOSS.' : s.toss === 'choose' ? 'YOU WON THE TOSS.' : kickoff ? (s.kickoff.safety ? 'FREE KICK.' : 'KICKOFF.') : choosing ? 'AFTER THE TOUCHDOWN.' : two ? (defending ? 'STOP THE TWO.' : 'GO FOR TWO.') : theirKick === 'punt' ? 'THEY ARE PUNTING.' : theirKick ? 'STOP THE KICK.' : defending ? 'MAKE THE STOP.' : 'CALL YOUR PLAY.';
     const description = s.toss === 'call' ? 'Call it in the air. The winner chooses who gets the ball.' : s.toss === 'choose' ? (halves ? 'Receive the opening kickoff, or defer and receive to start the second half.' : 'Receive the kickoff, or kick off to the visitors.')
       : kickoff ? (s.kickoff.safety ? 'After the safety, punt it away from your 20.' : 'Kick it off to the visitors.' + (s.homeScore < s.awayScore ? ' You are behind, so an onside kick is an option.' : ''))
-      : choosing ? 'Kick the extra point for one, or run one play from the 2 for two.' : two ? (defending ? 'The visitors want two points from the 2-yard line. Hold the line.' : 'One play from the 2-yard line. Get into the end zone.') : defending ? 'Pick your assignment. Close the gap. Make the tackle.' : 'Read the field from above. Choose your next move.';
+      : choosing ? 'Kick the extra point for one, or run one play from the 2 for two.' : two ? (defending ? 'The visitors want two points from the 2-yard line. Hold the line.' : 'One play from the 2-yard line. Get into the end zone.') : theirKick === 'punt' ? 'The visitors are punting. Return it, or rush the punter for a block.' : theirKick ? 'The visitors line up a ' + theirKickYards + '-yard field goal. Block it, or set up to return a miss.'
+      : defending ? 'Pick your assignment. Close the gap. Make the tackle.' : 'Read the field from above. Choose your next move.';
     const last = lastResult ? '<div class="last-play tone-' + lastResult.tone + '"><span>LAST PLAY</span><b>' + escape(lastResult.title) + '</b><small>' + escape(lastResult.detail) + '</small></div>' : '';
     const eyebrow = s.toss ? 'COIN TOSS / ' + (s.overtime ? 'OVERTIME' : 'OPENING KICKOFF') : kickoff ? 'SPECIAL TEAMS / ' + homeTeam.shortName + ' KICKING'
-      : (choosing || two ? 'CONVERSION / ' : defending ? 'DEFENSE / ' : 'OFFENSE / ') + (defending ? awayTeam.shortName : homeTeam.shortName) + ' BALL';
-    overlay('game', title, description, list, { style: 'compact', polite: true, speech: s.toss ? description : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
+      : (choosing || two ? 'CONVERSION / ' : theirKick ? 'SPECIAL TEAMS / ' : defending ? 'DEFENSE / ' : 'OFFENSE / ') + (defending ? awayTeam.shortName : homeTeam.shortName) + ' BALL';
+    overlay('game', title, description, list, { style: 'compact', polite: true, speech: s.toss ? description : theirKick ? sentences(situation(s), description) : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
     $('pause-button').hidden = false;
   }
   function actionPanel(title, detail, list) {
@@ -505,14 +510,14 @@
   });
   window.addEventListener('keyup', e => {
     const key = keyName(e); if (!key) return; e.preventDefault(); if (inputLocks.delete(key)) return;
-    const press = presses.get(key); presses.delete(key); $('hold-pause').hidden = true; pauseBeep = 0;
+    const press = presses.get(key); presses.delete(key);
     if (!press || press.epoch !== epoch) return;
     if (press.charging) { releaseCharge(); return; }
     if (screen === 'game' && sim.s.phase === 'kickaim') { if (key === 'Enter') { sim.kick(); phaseSeen = ''; renderPhase(); } return; }
     if (screen === 'game' && livePhase() && effective().runControl === 'hold') { if (key === 'Enter' && auto()) { armed *= -1; speaking(armed < 0 ? 'Left armed' : 'Right armed'); } return; }
     if (key === 'Space') { if (!press.reverse) advance(1); } else activate();
   });
-  document.addEventListener('narbe-input-cancelled', e => { const key = keyName(e.detail || {}); if (key) presses.delete(key); pointerSteer = 0; $('hold-pause').hidden = true; });
+  document.addEventListener('narbe-input-cancelled', e => { const key = keyName(e.detail || {}); if (key) presses.delete(key); pointerSteer = 0; });
   $('pause-button').addEventListener('click', pause);
   $('aim-button').addEventListener('pointerdown', e => { if (screen !== 'game' || sim.s.phase !== 'kickaim') return; e.preventDefault(); audio?.unlock(); $('aim-button').setPointerCapture?.(e.pointerId); aimDirection *= -1; pointerAim = true; });
   for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) $('aim-button').addEventListener(event, () => { pointerAim = false; });
@@ -530,15 +535,9 @@
   window.addEventListener('pagehide', () => { saveMatch(); audio?.dispose(); });
   scan?.subscribe(() => { scanClock = 0; clearHeld(); updateHint(); });
   function updateInput(dt, now) {
-    const enter = presses.get('Enter'), space = presses.get('Space');
-    if (enter && !enter.charging && activeGame && screen === 'game' && sim.s.phase !== 'final') {
-      const duration = now - enter.start;
-      if (duration > 1200) { $('hold-pause').hidden = false; $('hold-meter').style.transform = 'scaleX(' + Math.min(1, (duration - 1200) / 3800) + ')'; const beat = Math.min(4, Math.floor(duration / 1000)); if (beat > pauseBeep) { pauseBeep = beat; audio?.play('pause' + beat); } }
-      if (duration >= 5000) { pause(); inputLocks.add('Enter'); return true; }
-    }
+    const space = presses.get('Space');
     if (space && items.length && now - space.start >= space.nextReverse) { space.reverse = true; space.nextReverse += interval(); advance(-1); }
     if (auto() && items.length && !presses.size && !document.hidden) { scanClock += dt * 1000; if (scanClock >= interval()) { scanClock %= interval(); advance(1); } }
-    return !!(enter && !enter.charging && activeGame && screen === 'game' && sim.s.phase !== 'final' && now - enter.start > 1200);
   }
   function updateHud() {
     const s = sim.s, fx = effective(); $('home-score').textContent = s.homeScore; $('away-score').textContent = s.awayScore;
@@ -552,6 +551,7 @@
     const pos = Math.round(s.possession === 'away' && !s.kickoff ? 100 - s.fieldPosition : s.fieldPosition); $('spot').textContent = s.toss ? 'MIDFIELD' : pos <= 50 ? 'OWN ' + pos : 'OPP ' + (100 - pos);
     const labels = { playcall: ['TACTICAL UPLINK', s.conversion ? 'CONVERSION' : s.possession === 'away' ? 'CALL YOUR DEFENSE' : 'CALL YOUR PLAY'], presnap: ['SYSTEMS CHECK', 'GET SET FOR THE SNAP'], aim: ['QB OPTICS', 'LOCK ON A RECEIVER'], flight: ['BALL TRACKING', 'MAKE THE CONNECTION'], run: ['RUNNER CAM', 'ATTACK THE OPEN FIELD'], defend: ['PURSUIT MODE', 'CLOSE IN · AUTO TACKLE'], kickaim: ['KICK CALIBRATION', s.kickoff ? (s.kickoff.kind === 'onside' ? 'ONSIDE KICK' : 'KICK IT DEEP') : s.playId === 'extrapoint' ? 'AIM THE EXTRA POINT' : 'AIM YOUR KICK'], kickflight: ['BALL TRACKING', s.kickoff ? 'KICKOFF' : 'FOLLOW THE KICK'], returnchoice: ['RETURN CAM', 'KNEE OR RETURN'], tackle: ['IMPACT CAM', 'MAKING THE STOP'], result: ['PLAY COMPLETE', s.result?.title || 'PLAY COMPLETE'], final: ['FINAL', 'FULL TIME'] };
     if (s.toss) labels.playcall = ['TACTICAL UPLINK', 'COIN TOSS']; else if (s.kickoff) { labels.playcall = ['SPECIAL TEAMS', 'KICKOFF']; labels.run = ['RETURN CAM', 'RUN IT BACK']; labels.defend = ['COVERAGE MODE', 'TACKLE THE RETURNER']; }
+    if (s.kickReturn) labels.run = ['RETURN CAM', 'RUN IT BACK'];
     const label = tossHold ? ['TACTICAL UPLINK', 'COIN TOSS'] : labels[s.phase] || labels.playcall; $('camera-label').textContent = label[0]; $('phase-label').textContent = label[1];
     if (livePhase() && fx.runControl === 'hold') {
       const one = auto(); $('steer-left').classList.toggle('armed', one && armed === -1); $('steer-right').classList.toggle('armed', one && armed === 1);
@@ -615,7 +615,7 @@
     $('gain-readout').hidden = !carrier || screen !== 'game';
     if (carrier) {
       // On a kickoff return the readout counts return yards from the catch.
-      const returning = !!s.kickoff && Number.isFinite(s.returnFrom), from = returning ? s.returnFrom : s.lineOfScrimmage;
+      const returning = (!!s.kickoff || !!s.kickReturn) && Number.isFinite(s.returnFrom), from = returning ? s.returnFrom : s.lineOfScrimmage;
       const gain = Math.round((carrier.z - from) * (s.possession === 'home' ? 1 : -1));
       $('gain-label').textContent = returning ? (s.phase === 'defend' ? 'VISITORS RETURN' : 'RETURN') : s.phase === 'defend' ? 'VISITORS GAIN' : 'GAIN'; $('gain-value').textContent = (gain > 0 ? '+' : '') + gain;
       $('gain-readout').className = returning ? '' : gain < 0 ? 'loss' : gain >= s.distance ? 'first' : '';
@@ -630,7 +630,7 @@
   }
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000)); lastTime = now;
-    const holdingPause = updateInput(dt, now), fx = effective();
+    updateInput(dt, now); const fx = effective();
     let steer = pointerSteer;
     if (screen === 'game' && livePhase() && fx.runControl === 'hold') {
       if (auto()) steer ||= presses.has('Enter') ? armed : presses.has('Space') ? -1 : 0;
@@ -639,8 +639,8 @@
     $('steer-left').classList.toggle('active', steer < 0); $('steer-right').classList.toggle('active', steer > 0);
     flushSpeech(now);
     // The coin toss has its moment: the kickoff waits until it has been heard.
-    if (tossHold && activeGame && screen === 'game' && !holdingPause && !document.hidden && now >= tossHold.until && sceneReady(now)) { tossHold = null; phaseSeen = ''; renderPhase(); }
-    if (activeGame && screen === 'game' && !holdingPause && !document.hidden && !tossHold) {
+    if (tossHold && activeGame && screen === 'game' && !document.hidden && now >= tossHold.until && sceneReady(now)) { tossHold = null; phaseSeen = ''; renderPhase(); }
+    if (activeGame && screen === 'game' && !document.hidden && !tossHold) {
       if (autoKickAt && straightKick() && !presses.size && !charge && (now >= autoKickAt && !speechBusy(now) || now >= autoKickAt + 6000)) { autoKickAt = 0; sim.kick(); phaseSeen = ''; renderPhase(); }
       if (sim.s.phase === 'kickaim' && !straightKick() && !presses.has('Enter') && !charge && (auto() || presses.has('Space') || pointerAim)) {
         const next = sim.s.kickAim + aimDirection * (renderer.getSteerSign?.() ?? -1) * fx.aimSpeed * dt;

@@ -405,13 +405,25 @@
             const p=home('QB'),from=s.placeKick&&play.id!=='punt'?s.placeKick.spot:p;routes=p?[{playerId:p.id,points:[point(from),{x:0,z:play.id==='punt'?Math.min(104,los+44):110}]}]:[];
           }
         }else if(s.possession==='away'){
-          const roles=s.previewPlayId==='blitz'?['MLB','DE1','DE2']:['MLB','LB1','LB2'];
-          routes=roles.map((role,i)=>{
-            const p=home(role);if(!p)return null;
-            const zone=s.previewPlayId==='zone',x=i===0?0:(i===1?-1:1)*(zone?14:s.previewPlayId==='contain'?18:4);
-            const z=clamp(los+(zone?-15:s.previewPlayId==='blitz'?3:-3),-5,105);
-            return{playerId:p.id,points:[point(p),{x,z}],defense:true};
-          }).filter(Boolean);
+          const id=s.previewPlayId;
+          if(id==='puntreturn'||id==='fgreturn'){
+            // The returner drops back to where the kick comes down.
+            const p=home('FS');routes=p?[{playerId:p.id,points:[point(p),{x:0,z:id==='fgreturn'?1:clamp(los-42,3,97)}],defense:true}]:[];
+          }else if(id==='puntblock'||id==='fgblock'){
+            const spot=s.placeKick?s.placeKick.spot:{x:0,z:los+6};
+            routes=['LB1','MLB','LB2'].map((role,i)=>{const p=home(role);return p?{playerId:p.id,points:[point(p),{x:spot.x+(i-1)*2.5,z:clamp(spot.z-1,-5,105)}],defense:true}:null;}).filter(Boolean);
+          }else if(id==='man'){
+            // Each defender picks up one receiver.
+            routes=[['CB1','WR1'],['CB2','WR2'],['SS','TE'],['LB2','SLOT']].map(([role,mark])=>{const p=home(role),m=players.find(q=>q.team==='away'&&q.role===mark);return p&&m?{playerId:p.id,points:[point(p),{x:m.x,z:m.z-1.5}],defense:true}:null;}).filter(Boolean);
+          }else{
+            const roles=id==='blitz'?['MLB','DE1','DE2']:['MLB','LB1','LB2'];
+            routes=roles.map((role,i)=>{
+              const p=home(role);if(!p)return null;
+              const zone=id==='zone',x=i===0?0:(i===1?-1:1)*(zone?14:id==='contain'?18:4);
+              const z=clamp(los+(zone?-15:id==='blitz'?3:-3),-5,105);
+              return{playerId:p.id,points:[point(p),{x,z}],defense:true};
+            }).filter(Boolean);
+          }
         }
       }
       const signature=JSON.stringify(routes);

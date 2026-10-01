@@ -10,7 +10,7 @@
   const volumes = Object.freeze({
     hover: .34, select: .52, snap: .58, throw: .43, catch: .62,
     tackle: .67, touchdown: .59, kick: .68, whistle: .24,
-    win: .60, lose: .44, pause1: .52, pause2: .55, pause3: .59, pause4: .64,
+    win: .60, lose: .44,
     clang: .42, break: .5, powerup: .5, powerdown: .42, charge: .4, ready: .55, target: .42, over: .45,
     'crowd-swell': .30
   });

@@ -337,7 +337,8 @@ test('a complete game includes eight possessions and ends cleanly in every mode'
       const s = sim.s;
       possessions.add(s.possessionNumber);
       if (s.phase === 'playcall') {
-        start(sim, s.possession === 'home' ? s.conversion === 'choose' ? 'extrapoint' : 'slants' : 'blitz');
+        // Blitz on every down; on fourth down the visitors' kick brings out the first special-teams call.
+        start(sim, s.possession === 'home' ? s.conversion === 'choose' ? 'extrapoint' : 'slants' : sim.playbook().some(p => p.id === 'blitz') ? 'blitz' : sim.playbook()[0].id);
         if (s.possession === 'away') defensePlays++;
       } else if (s.phase === 'aim') sim.throwPass();
       else if (s.phase === 'kickaim') sim.kick();
@@ -475,7 +476,8 @@ test('coverage calls alter CPU passing chances and blitz contact sacks the QB', 
 test('CPU chooses field goals in range and punts deep on fourth and long', () => {
   const fieldgoal = make({ random: () => 0 });
   position(fieldgoal, 30, 'away'); fieldgoal.s.down = 4;
-  start(fieldgoal, 'zone');
+  assert.deepEqual(Array.from(fieldgoal.playbook(), p => p.id), ['fgblock', 'fgreturn'], 'a field goal try brings out the field goal unit');
+  start(fieldgoal, 'fgreturn');
   assert.equal(fieldgoal.s.phase, 'kickflight');
   assert.equal(fieldgoal.s.opponentPlayType, 'fieldgoal');
   assert.equal(fieldgoal.s.kickTarget.z, -12);
@@ -483,10 +485,79 @@ test('CPU chooses field goals in range and punts deep on fourth and long', () =>
   continueReady(fieldgoal); assert.equal(fieldgoal.s.possession, 'home'); assert.equal(fieldgoal.s.fieldPosition, 25);
   const punt = make({ random: () => .5 });
   position(punt, 75, 'away'); punt.s.down = 4; punt.s.distance = 8;
-  start(punt, 'contain');
+  assert.deepEqual(Array.from(punt.playbook(), p => p.id), ['puntreturn', 'puntblock'], 'a punt brings out the return unit');
+  start(punt, 'puntblock');
   assert.equal(punt.s.opponentPlayType, 'punt');
   settle(punt); continueReady(punt);
   assert.equal(punt.s.possession, 'home'); assert.ok(punt.s.fieldPosition < 40 && punt.s.fieldPosition > 20);
+});
+test('a punt return fields the punt and runs it back as your possession', () => {
+  const events = [], sim = make({ random: () => .5 }, events);
+  position(sim, 75, 'away'); sim.s.down = 4; sim.s.distance = 8;
+  start(sim, 'puntreturn');
+  assert.equal(sim.s.phase, 'kickflight'); assert.equal(sim.s.returnerId, 'home-FS');
+  assert.ok(sim._player('home-FS').z < 40, 'the returner waits deep');
+  for (let i = 0; i < 400 && sim.s.phase === 'kickflight'; i++) sim.step(.05, 0);
+  assert.equal(sim.s.phase, 'run', 'your returner has the ball');
+  assert.equal(sim.s.possession, 'home'); assert.equal(sim.s.possessionNumber, 2, 'the new possession counts at the catch');
+  assert.equal(sim.s.carrierId, 'home-FS'); assert.equal(sim.s.controlledId, 'home-FS');
+  assert.ok(events.includes('catch'));
+  const caught = sim.s.returnFrom;
+  settle(sim);
+  assert.ok(['Punt return', 'Return out of bounds', 'Return touchdown!'].includes(sim.s.result.title), sim.s.result.title);
+  if (sim.s.result.title !== 'Return touchdown!') {
+    continueReady(sim);
+    assert.equal(sim.s.possession, 'home'); assert.equal(sim.s.possessionNumber, 2); assert.equal(sim.s.down, 1);
+    assert.ok(sim.s.fieldPosition >= Math.floor(caught), 'the drive starts where the return ended');
+  }
+  // The last possession of a four-possession game ends with the punt; there is no drive left to return it into.
+  const last = make({ random: () => .5 });
+  position(last, 75, 'away'); last.s.down = 4; last.s.distance = 8; last.s.possessionNumber = 7;
+  start(last, 'puntreturn'); settle(last);
+  assert.equal(last.s.result.title, 'Visitors punt'); continueReady(last); assert.equal(last.s.phase, 'final');
+});
+test('a punt block can win the ball, and a block in their end zone is a touchdown', () => {
+  const sim = make({ random: () => 0 });
+  position(sim, 75, 'away'); sim.s.down = 4; sim.s.distance = 8;
+  start(sim, 'puntblock'); assert.ok(sim._flight.blocked);
+  settle(sim); assert.equal(sim.s.result.title, 'Punt blocked!');
+  continueReady(sim); assert.equal(sim.s.possession, 'home'); assert.ok(sim.s.fieldPosition > 75, 'recovered behind their line');
+  const rolls = [0], deep = make({ random: () => rolls.length ? rolls.shift() : .99 });
+  position(deep, 96, 'away'); deep.s.down = 4;
+  start(deep, 'puntblock'); settle(deep);
+  assert.equal(deep.s.result.title, 'Blocked punt touchdown!'); assert.equal(deep.s.homeScore, 6);
+  assert.equal(deep.s.stats.home.yards, 0, 'a block is not offense');
+  continueReady(deep); assert.equal(deep.s.possession, 'home'); assert.equal(deep.s.conversion, 'choose');
+});
+test('a field goal block can stop the kick, and a long kick that falls short can be returned', () => {
+  const block = make({ random: () => 0 });
+  position(block, 30, 'away'); block.s.down = 4;
+  start(block, 'fgblock'); assert.ok(block._flight.blocked);
+  settle(block); assert.equal(block.s.result.title, 'Kick blocked!'); assert.equal(block.s.awayScore, 0);
+  continueReady(block); assert.equal(block.s.possession, 'home');
+  // A 52-yard try misses and comes down short; the returner waiting at the goal line runs it back.
+  const rolls = [.99, .1], miss = make({ random: () => rolls.length ? rolls.shift() : .5 });
+  position(miss, 35, 'away'); miss.s.down = 4;
+  start(miss, 'fgreturn'); assert.equal(miss.s.returnerId, 'home-FS'); assert.ok(miss._flight.short);
+  for (let i = 0; i < 400 && miss.s.phase === 'kickflight'; i++) miss.step(.05, 0);
+  assert.equal(miss.s.phase, 'run'); assert.equal(miss.s.possession, 'home'); assert.equal(miss.s.carrierId, 'home-FS');
+  settle(miss);
+  assert.ok(['Missed kick return', 'Return out of bounds', 'Return touchdown!'].includes(miss.s.result.title), miss.s.result.title);
+  // With a block called, nobody is back: a short miss is simply your ball.
+  const rolls2 = [.99, .99, .1], dead = make({ random: () => rolls2.length ? rolls2.shift() : .5 });
+  position(dead, 35, 'away'); dead.s.down = 4;
+  start(dead, 'fgblock'); settle(dead);
+  assert.equal(dead.s.result.title, 'Kick short'); continueReady(dead); assert.equal(dead.s.possession, 'home');
+});
+test('man-to-man presses the receivers and sits on short routes', () => {
+  const sim = make();
+  position(sim, 60, 'away');
+  assert.deepEqual(Array.from(sim.playbook(), p => p.id), ['contain', 'blitz', 'zone', 'man']);
+  sim.callPlay('man');
+  const corner = sim._player('home-CB1');
+  assert.ok(Math.abs(corner.z - 57.5) < .01 && corner.x === -19, 'the corner presses his receiver at the line');
+  for (let i = 0; i < 80 && sim.s.phase === 'presnap'; i++) sim.step(.05, 0);
+  assert.equal(sim.s.opponentPlayType, 'pass'); assert.equal(sim._cpuPass.coverageGap, 1.4, 'tight on a short pass');
 });
 test('a holder kneels with the ball on its point and the kicker runs up to boot it', () => {
   const events = [], sim = make({ random: () => 0 }, events);
@@ -582,7 +653,7 @@ test('a full regulation game reaches a non-tied final after four timed quarters'
   const quarters = new Set();
   while (sim.s.phase !== 'final' && steps++ < 200000) {
     quarters.add(sim.s.quarter);
-    if (sim.s.phase === 'playcall') sim.callPlay(sim.s.possession === 'home' ? sim.s.conversion === 'choose' ? 'extrapoint' : 'slants' : 'zone');
+    if (sim.s.phase === 'playcall') sim.callPlay(sim.s.possession === 'home' ? sim.s.conversion === 'choose' ? 'extrapoint' : 'slants' : sim.playbook().some(p => p.id === 'zone') ? 'zone' : sim.playbook()[0].id);
     else if (sim.s.phase === 'aim') sim.throwPass();
     else if (sim.s.phase === 'kickaim') sim.kick();
     else if (sim.s.phase === 'result') continueReady(sim);
@@ -704,7 +775,7 @@ test('the visitors go for two when the score calls for it and the player defends
   assert.equal(sim.s.awayScore, 6); continueReady(sim);
   assert.equal(sim.s.phase, 'playcall'); assert.equal(sim.s.conversion, 'two'); assert.equal(sim.s.possession, 'away');
   assert.equal(sim.s.fieldPosition, 2);
-  assert.deepEqual(Array.from(sim.playbook(), p => p.id), ['contain', 'blitz', 'zone']);
+  assert.deepEqual(Array.from(sim.playbook(), p => p.id), ['contain', 'blitz', 'zone', 'man']);
   assert.equal(start(sim, 'contain'), true); assert.equal(sim.s.phase, 'defend');
   controlReady(sim);
   const runner = sim._player(sim.s.carrierId), me = sim._player(sim.s.controlledId);
