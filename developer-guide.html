@@ -649,9 +649,14 @@
       </section>
 
       <section class="section" id="example">
-        <h2>Example: P3GL (Peggle-style Game) Input Setup</h2>
+        <h2>Example: P3GL Input Setup</h2>
         
         <p>P3GL is worth studying because the same game presents a <strong>different aiming model in each control scheme</strong> — and that is what lets one build serve both a two-switch player who wants control and a one-switch player who cannot hold a switch at all.</p>
+
+        <div class="card">
+          <h3>Before every shot: Take shot or Options</h3>
+          <p><strong>Each shot starts with a two-item choice.</strong> Spacebar moves between <strong>Take shot</strong> and <strong>Options</strong>, and releasing Return chooses. Options opens pause and settings, so every player has a way out without holding a switch. Take shot starts aiming without firing.</p>
+        </div>
 
         <div class="card">
           <h3>Two switches (Auto Scan off)</h3>
@@ -660,28 +665,28 @@
             <li><strong>Spacebar (hold):</strong> the aimer sweeps while the switch is down, and stops the instant it is released. A brief press nudges it a little; a long hold moves it far</li>
             <li><strong>Each new press reverses direction</strong>, so the player walks the aimer onto the target — over, back, in — instead of chasing a moving marker</li>
             <li>The aimer also turns around by itself at the edges of its arc, so it can never be driven off the end</li>
-            <li><strong>Return (press):</strong> fires</li>
-            <li><strong>Return (hold):</strong> opens the pause menu</li>
+            <li><strong>Return (press and release):</strong> fires</li>
+            <li><strong>Return (press during a shot):</strong> pauses</li>
           </ul>
         </div>
 
         <div class="card">
           <h3>One switch (Auto Scan on)</h3>
-          <p><strong>The aimer oscillates continuously on its own</strong> and Spacebar is not needed for aiming at all.</p>
+          <p>Auto Scan cycles <strong>Take shot</strong> and <strong>Options</strong> on its own. After Take shot, <strong>the aimer oscillates continuously</strong> and Spacebar is not needed for aiming at all.</p>
           <ul>
-            <li><strong>Return (press):</strong> fires at the current angle — the only input the game requires</li>
-            <li><strong>Return (hold):</strong> opens the pause menu</li>
+            <li><strong>Return (press):</strong> stops the aimer; releasing fires at that angle — the only input the game requires</li>
+            <li><strong>Options</strong>, scanned before every shot, opens pause and settings</li>
           </ul>
         </div>
 
         <div class="card">
-          <h3>Aimer Speed</h3>
-          <p>Four presets — <strong>Fast, Medium, Slow, Super Slow</strong> — defaulting to <em>Super Slow</em>. This is the difficulty dial for the whole game, and defaulting to the slowest setting is deliberate: it makes the game winnable first, and a player who wants more challenge can speed it up.</p>
+          <h3>Aim speed</h3>
+          <p>Four presets — <strong>Super slow, Slow, Steady, Quick</strong> — defaulting to <em>Super slow</em>. This is the difficulty dial for the whole game, and defaulting to the slowest setting is deliberate: it makes the game winnable first, and a player who wants more challenge can speed it up.</p>
         </div>
 
         <div class="highlight-box">
           <p>Two things to take from this. <strong>The same mechanic can be expressed as "hold to move" or "press to commit"</strong> depending on the player's scheme — build both rather than picking one. And <strong>the speed of anything that moves on its own should be a setting</strong>, defaulted to the accessible end.</p>
-          <p style="margin-top:.7em;">P3GL is deliberately <strong>hold-first</strong>, and that is a considered trade rather than an oversight. Keeping aim, fire and pause on holds and presses means play costs the fewest possible switch actions — nothing sits between the player and the shot. Scannable aim-to-shoot and Pause buttons are both easy to add and are wanted eventually, for players who cannot hold at all; they would also add steps to every shot. For this game, as it stands, the hold-based build is the right call and it works.</p>
+          <p style="margin-top:.7em;">P3GL used to be <strong>hold-first</strong>: holding Return opened the pause menu. That kept play to the fewest possible switch actions, but it left the way out behind a sustained hold that some players cannot manage. It now puts <strong>Take shot</strong> and <strong>Options</strong> before every shot. That costs one selection per shot, and in return every player reaches pause and settings with the same scan and select they use everywhere else. A long hold of Return still backs out of aiming, but only as a convenience; nothing depends on it.</p>
         </div>
       </section>
 

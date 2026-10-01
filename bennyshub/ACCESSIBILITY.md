@@ -523,7 +523,7 @@ switch‑operable.** Every game that has one already guards it:
 | Benny's Mini Golf | "Mouse Required" modal | the entire warning, verbatim |
 | Benny's Word Jumble | "Warning: This feature requires a mouse or touch input…" | "Warning. This feature requires mouse input. Cancel. Proceed." |
 | Benny's Show n Sound | "Continue (mouse needed)" | "The editor needs a mouse and keyboard." |
-| Benny's P3GL | "…requires a mouse." | warns that it needs a mouse and that switch scanning will not work |
+| Benny's P3GL | "Campaign builder needs a mouse" | warns that it needs a mouse and that switch scanning will not work |
 | Benny's Matchy Match | `editorWarning` menu state | warns that it needs a mouse and that switch scanning will not work |
 
 Copy this when you add anything similar:
@@ -567,7 +567,7 @@ where each game's design work went.
 | --- | --- |
 | **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
 | **Benny's Bowling** | A two‑object scan layer opens every ball — the ball itself and the Pause button — scanned with Space and selected with Enter. Selecting the ball gives the shot: Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges for power, non‑linear. Confirms on **release**, not press. Pause is a scan object rather than a hold gesture because hold‑Enter is already the charge. |
-| **Benny's P3GL** | Two‑switch: **hold** Space to sweep the aimer, release to stop — a short press only nudges it — and each new press reverses direction so the player walks it onto the target. One‑switch: the aimer oscillates on its own and Enter alone fires. Aimer Speed has four presets, defaulting to Super Slow. |
+| **Benny's P3GL** | Every shot starts with a two‑item choice, **Take shot** or **Options**: Space moves, Enter release chooses. Options opens pause and settings, so the way out never needs a hold. Take shot starts aiming without firing. Two‑switch: **hold** Space to sweep the aimer, release to stop — a short press only nudges it — and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: Auto Scan cycles the two choices, then the aimer oscillates on its own; press Enter to stop it and release to fire. Aim speed has four presets, defaulting to Super slow. |
 | **Benny's Baseball** | Turn‑based play calling — scan the options, select — with one exception: the swing is **hold Enter to charge**, 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. That is a timing mechanic; §9 governs it. |
 | **Benny's Football** | Turn‑based play calling — scan the options, select. Throws scan the receivers and select one, then **hold Enter to charge** the power; field goals aim, then charge. **Easy Throw** in settings drops the charge and keeps the selection: pick the receiver and it throws at ideal power. The hub's shipped example of the §9 rule. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
@@ -714,7 +714,7 @@ work lands. This section is the rule going forward. It applies to anything built
 from here on, and it is the direction the existing games are moving in.
 
 **Default to the reachable form in anything new.** Same reasoning as P3GL's
-Aimer Speed defaulting to Super Slow: a player who cannot meet the window may
+Aim speed defaulting to Super slow: a player who cannot meet the window may
 never get far enough into the game to find the setting that would have let them
 in, while a player who wants the timed version will find it in the first
 minute. A game that already shipped with the timed form keeps its current
@@ -750,7 +750,7 @@ hold, the mechanic is not ready to build.
   reverses — precise, but needs a hold) and **self‑driven** (sweeps on its own,
   one press commits — needs no hold). P3GL swaps between them with Auto Scan
 - Make the speed of anything that moves on its own a **setting**, defaulted to
-  the slow, accessible end — P3GL's Aimer Speed defaults to Super Slow
+  the slow, accessible end — P3GL's Aim speed defaults to Super slow
 - Two‑stage selection (row, then column) to reach a grid — Battle Boats,
   Connect Four, Chess & Checkers, Tic Tac Toe and Matchy Match all use it
 - Generous or absent time limits
@@ -880,13 +880,15 @@ right now.
 on‑screen Pause button you scan to; others use the hold‑Enter gesture; most do
 both. The inconsistency is accepted for now.
 
-**One known deviation from the ~5 s convention:** P3GL uses a **2 s** hold to open
-its menu when Auto Scan is on, and 5 s when it is off
-(`this.autoScan ? 2000 : 5000`). No comment or commit message records why, and
-it is the only game that varies the hold by control scheme. Worth a decision
-when pause gets revisited — either it is a good idea that belongs everywhere,
-or it should fall back in line with the rest of the hub. Do not assume it was
-accidental, and do not assume it was deliberate.
+**One known deviation from the ~5 s convention:** P3GL's long Enter hold takes
+**2 s** when Auto Scan is on and 5 s when it is off
+(`settings.autoScan?2000:5000`). It is no longer how the player reaches pause —
+the **Options** choice before every shot is — so the hold only backs out of
+aiming, or opens Options from the shot choices. No comment or commit message
+records why the time varies, and it is the only game that varies the hold by
+control scheme. Worth a decision when pause gets revisited — either it is a good
+idea that belongs everywhere, or it should fall back in line with the rest of
+the hub. Do not assume it was accidental, and do not assume it was deliberate.
 
 **Where it is going: pause should become a scannable item everywhere.** Holding
 a switch for five seconds is itself a physical demand, and some players cannot
@@ -908,13 +910,15 @@ can manage one, and shuts out the players who cannot; a scannable control lets
 everyone in, and puts a step between every player and the thing they came to
 do.** Neither is simply better.
 
-P3GL is the worked example of the current answer. It was deliberately built
+P3GL is the worked example, and it has now made this trade. It was built
 hold‑first — hold Space to aim, press Enter to fire, hold Enter for pause —
-which keeps play down to the fewest possible switch presses. A scannable
-aim‑to‑shoot button and a scannable Pause button are both straightforward to
-add later and are wanted eventually, but they would put more steps between the
-player and actually playing. **For now the hold‑based build is the right call
-for this game, and it works.**
+which kept play down to the fewest possible switch presses but left the way out
+behind a sustained hold. It now puts a two‑item choice before every shot: **Take
+shot** or **Options**. Options reaches pause and settings with the same
+scan‑and‑select as everything else, so no player is locked out of leaving. The
+cost is one selection per shot. Aiming and firing after **Take shot** work as
+before, and during a shot a single Enter press pauses. The long Enter hold stays
+only as a backup.
 
 If you are weighing this for something new: prefer keeping the *primary
 gameplay action* off the scan cycle, and put the scannable pause somewhere it
