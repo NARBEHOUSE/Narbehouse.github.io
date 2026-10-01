@@ -1,0 +1,4509 @@
+{
+  "meta": {
+    "format": "bennys-peggle-levels-v2",
+    "title": "The Lantern Run",
+    "scene": "garden",
+    "mode": "adventure",
+    "story": "Carry a little festival light through the wildlands to the old observatory. Follow the sun pegs, gather helpful crystals, and bring every neighbor a reason to look up.",
+    "chapters": [
+      {
+        "title": "The Lantern Run",
+        "story": "Carry a little festival light through the wildlands to the old observatory. Follow the sun pegs, gather helpful crystals, and bring every neighbor a reason to look up.",
+        "scene": "garden",
+        "start": 0,
+        "end": 19
+      }
+    ],
+    "finale": {
+      "title": "A Sky Shared by Everyone",
+      "story": "The observatory lantern shines over every path you crossed. Gardeners, ferry crews, mountain families, and lighthouse keepers gather below its warm glow. The festival begins with one small light, carried all the way by you.",
+      "scene": "night"
+    }
+  },
+  "levels": [
+    {
+      "id": 1,
+      "title": "A Spark to Carry",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 5,
+      "shots": 20,
+      "story": "The festival lantern holds only a tiny spark. Light the garden markers to lift its glass cover, then take the first step toward the distant observatory.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 152,
+          "y": 345,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 174,
+          "y": 281,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 2,
+          "x": 201,
+          "y": 252,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 3,
+          "x": 237,
+          "y": 228,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 4,
+          "x": 281,
+          "y": 208,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 330,
+          "y": 195,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 383,
+          "y": 188,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 437,
+          "y": 188,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 8,
+          "x": 490,
+          "y": 195,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 9,
+          "x": 539,
+          "y": 208,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 583,
+          "y": 228,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 619,
+          "y": 252,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 12,
+          "x": 646,
+          "y": 281,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 668,
+          "y": 345,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 14,
+          "x": 212,
+          "y": 410,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 279,
+          "y": 410,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 346,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 17,
+          "x": 414,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 18,
+          "x": 481,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 548,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 20,
+          "x": 615,
+          "y": 410,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "garden",
+      "catcher": {
+        "width": 320,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 2,
+      "title": "Dandelion Directions",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 5,
+      "shots": 16,
+      "story": "A ribbon of dandelions points across the meadow. Wake the sun markers along the path so the lantern can follow their gentle light without losing its way.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 170,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 1,
+          "x": 265,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 2,
+          "x": 360,
+          "y": 155,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 455,
+          "y": 155,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 550,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 5,
+          "x": 203,
+          "y": 232,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 298,
+          "y": 232,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 7,
+          "x": 393,
+          "y": 232,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 8,
+          "x": 488,
+          "y": 232,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 9,
+          "x": 583,
+          "y": 232,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 170,
+          "y": 309,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 265,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 360,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 13,
+          "x": 455,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 14,
+          "x": 550,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 15,
+          "x": 203,
+          "y": 386,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 298,
+          "y": 386,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 393,
+          "y": 386,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 488,
+          "y": 386,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 19,
+          "x": 583,
+          "y": 386,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        }
+      ],
+      "scene": "meadow",
+      "catcher": {
+        "width": 260,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 3,
+      "title": "Petal Bridge",
+      "chapter": 0,
+      "objective": "gems",
+      "goal": 5,
+      "shots": 16,
+      "story": "Petals hide the little bridge at the edge of the garden. Gather the bright glass pieces caught among them and fit a stronger window around your traveling flame.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 135,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 1,
+          "x": 180,
+          "y": 178,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 2,
+          "x": 226,
+          "y": 200,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 3,
+          "x": 271,
+          "y": 223,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 316,
+          "y": 246,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 361,
+          "y": 269,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 6,
+          "x": 407,
+          "y": 291,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 452,
+          "y": 314,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 8,
+          "x": 497,
+          "y": 337,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 9,
+          "x": 542,
+          "y": 360,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 588,
+          "y": 382,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 633,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 12,
+          "x": 160,
+          "y": 420,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 13,
+          "x": 213,
+          "y": 396,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 266,
+          "y": 372,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 15,
+          "x": 319,
+          "y": 348,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 16,
+          "x": 372,
+          "y": 324,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 478,
+          "y": 276,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 18,
+          "x": 531,
+          "y": 252,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 19,
+          "x": 584,
+          "y": 228,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 20,
+          "x": 637,
+          "y": 204,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 690,
+          "y": 180,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 22,
+          "x": 150,
+          "y": 285,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 680,
+          "y": 300,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "cherry-blossom",
+      "catcher": {
+        "width": 300,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 4,
+      "title": "The Singing Grove",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 5,
+      "shots": 21,
+      "story": "Wind plays a tune through the bamboo. Follow its hanging markers and the grove will answer with a rhythm that keeps you company on the road.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 471,
+          "y": 286,
+          "radius": 14,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 449,
+          "y": 324,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 2,
+          "x": 411,
+          "y": 334,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 3,
+          "x": 366,
+          "y": 332,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 326,
+          "y": 315,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 5,
+          "x": 304,
+          "y": 287,
+          "radius": 14,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 346,
+          "y": 227,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 7,
+          "x": 406,
+          "y": 212,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 8,
+          "x": 474,
+          "y": 217,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 531,
+          "y": 242,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 561,
+          "y": 282,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 11,
+          "x": 551,
+          "y": 328,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 12,
+          "x": 500,
+          "y": 366,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 13,
+          "x": 419,
+          "y": 385,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 329,
+          "y": 379,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 15,
+          "x": 253,
+          "y": 346,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 215,
+          "y": 293,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 17,
+          "x": 227,
+          "y": 235,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 18,
+          "x": 292,
+          "y": 186,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 394,
+          "y": 161,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 20,
+          "x": 507,
+          "y": 169,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 21,
+          "x": 602,
+          "y": 210,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 650,
+          "y": 274,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 23,
+          "x": 635,
+          "y": 346,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 558,
+          "y": 406,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 25,
+          "x": 436,
+          "y": 436,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 26,
+          "x": 299,
+          "y": 428,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 27,
+          "x": 185,
+          "y": 380,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "bamboo",
+      "catcher": {
+        "width": 340,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 5,
+      "title": "Moss Gate",
+      "chapter": 0,
+      "objective": "score",
+      "goal": 800,
+      "shots": 17,
+      "story": "The forest gate has slept beneath a coat of moss. Build a bright chain of bounces to wake its patient keeper and open the trail between the trees.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 410,
+          "y": 135,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 1,
+          "x": 463,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 2,
+          "x": 516,
+          "y": 195,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 569,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 4,
+          "x": 622,
+          "y": 255,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 5,
+          "x": 675,
+          "y": 285,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 622,
+          "y": 315,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 7,
+          "x": 569,
+          "y": 345,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 8,
+          "x": 516,
+          "y": 375,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 463,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 10,
+          "x": 410,
+          "y": 435,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 11,
+          "x": 357,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 12,
+          "x": 304,
+          "y": 375,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 13,
+          "x": 251,
+          "y": 345,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 14,
+          "x": 198,
+          "y": 315,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 145,
+          "y": 285,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 16,
+          "x": 198,
+          "y": 255,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 17,
+          "x": 251,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 18,
+          "x": 304,
+          "y": 195,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 19,
+          "x": 357,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 20,
+          "x": 410,
+          "y": 213,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 452,
+          "y": 237,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 22,
+          "x": 495,
+          "y": 261,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 537,
+          "y": 285,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 24,
+          "x": 495,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 25,
+          "x": 452,
+          "y": 333,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 26,
+          "x": 410,
+          "y": 357,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 368,
+          "y": 333,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 28,
+          "x": 325,
+          "y": 309,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 29,
+          "x": 283,
+          "y": 285,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 30,
+          "x": 325,
+          "y": 261,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 31,
+          "x": 368,
+          "y": 237,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        }
+      ],
+      "scene": "forest",
+      "catcher": {
+        "width": 220,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 6,
+      "title": "A Hood for the Mist",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 6,
+      "shots": 17,
+      "story": "Cool spray fills the waterfall steps. Light the sheltered markers to guide your lantern through the mist while a friendly burst clears the wet branches ahead.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 125,
+          "y": 195,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 196,
+          "y": 198,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 267,
+          "y": 185,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 3,
+          "x": 338,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 4,
+          "x": 409,
+          "y": 152,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 5,
+          "x": 480,
+          "y": 154,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 551,
+          "y": 171,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 7,
+          "x": 622,
+          "y": 190,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 693,
+          "y": 199,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 125,
+          "y": 307,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 10,
+          "x": 196,
+          "y": 292,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 11,
+          "x": 267,
+          "y": 272,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 12,
+          "x": 338,
+          "y": 261,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 13,
+          "x": 409,
+          "y": 266,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 480,
+          "y": 284,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 15,
+          "x": 551,
+          "y": 302,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 16,
+          "x": 622,
+          "y": 309,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 693,
+          "y": 299,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 18,
+          "x": 125,
+          "y": 398,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 19,
+          "x": 196,
+          "y": 379,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 267,
+          "y": 371,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 21,
+          "x": 338,
+          "y": 379,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 409,
+          "y": 398,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 23,
+          "x": 480,
+          "y": 415,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 24,
+          "x": 551,
+          "y": 418,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 622,
+          "y": 406,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 693,
+          "y": 386,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        }
+      ],
+      "scene": "waterfall",
+      "catcher": {
+        "width": 300,
+        "behavior": "alternate",
+        "interval": 5
+      }
+    },
+    {
+      "id": 7,
+      "title": "The River Ferryman",
+      "chapter": 0,
+      "objective": "gems",
+      "goal": 3,
+      "shots": 18,
+      "story": "The ferryman offers a crossing, but his guiding crystals have slipped loose. Gather enough shining pieces to mark the safe channel for your boat and everyone behind it.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 653,
+          "y": 290,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 595,
+          "y": 319,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 2,
+          "x": 524,
+          "y": 329,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 3,
+          "x": 525,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 4,
+          "x": 485,
+          "y": 433,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 422,
+          "y": 408,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 6,
+          "x": 386,
+          "y": 369,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 349,
+          "y": 371,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 8,
+          "x": 274,
+          "y": 392,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 213,
+          "y": 379,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 10,
+          "x": 232,
+          "y": 334,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 11,
+          "x": 281,
+          "y": 300,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 12,
+          "x": 211,
+          "y": 241,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 213,
+          "y": 201,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 288,
+          "y": 199,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 15,
+          "x": 355,
+          "y": 217,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 16,
+          "x": 423,
+          "y": 158,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 17,
+          "x": 485,
+          "y": 147,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 513,
+          "y": 190,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 505,
+          "y": 235,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 20,
+          "x": 617,
+          "y": 257,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 21,
+          "x": 410,
+          "y": 290,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "river",
+      "catcher": {
+        "width": 280,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 8,
+      "title": "Lantern on the Lake",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 6,
+      "shots": 18,
+      "story": "The lake is still enough to reflect a second lantern beneath your boat. Follow the sun pegs across the water and keep both lights traveling together.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 222,
+          "y": 145,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 598,
+          "y": 145,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 2,
+          "x": 310,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 3,
+          "x": 377,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 4,
+          "x": 443,
+          "y": 155,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 510,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 222,
+          "y": 198,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 7,
+          "x": 598,
+          "y": 198,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 222,
+          "y": 251,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 9,
+          "x": 598,
+          "y": 251,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 10,
+          "x": 310,
+          "y": 261,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 377,
+          "y": 261,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 443,
+          "y": 261,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 13,
+          "x": 510,
+          "y": 261,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 14,
+          "x": 222,
+          "y": 304,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 598,
+          "y": 304,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 16,
+          "x": 222,
+          "y": 357,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 17,
+          "x": 598,
+          "y": 357,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 310,
+          "y": 367,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 19,
+          "x": 377,
+          "y": 367,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 20,
+          "x": 443,
+          "y": 367,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 21,
+          "x": 510,
+          "y": 367,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 222,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 23,
+          "x": 598,
+          "y": 410,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "lake",
+      "catcher": {
+        "width": 320,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 9,
+      "title": "Copper Leaves",
+      "chapter": 0,
+      "objective": "score",
+      "goal": 900,
+      "shots": 18,
+      "story": "Autumn leaves collect in a warm copper trail. Let your bounces rustle through them until their glow reveals the old signpost toward the mountains.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 116,
+          "y": 305,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 1,
+          "x": 122,
+          "y": 265,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 2,
+          "x": 141,
+          "y": 229,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 169,
+          "y": 200,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 4,
+          "x": 205,
+          "y": 181,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 245,
+          "y": 175,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 6,
+          "x": 285,
+          "y": 181,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 7,
+          "x": 321,
+          "y": 200,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 8,
+          "x": 349,
+          "y": 229,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 9,
+          "x": 368,
+          "y": 265,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 374,
+          "y": 305,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 155,
+          "y": 377,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 12,
+          "x": 215,
+          "y": 377,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 13,
+          "x": 275,
+          "y": 377,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 14,
+          "x": 335,
+          "y": 377,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 15,
+          "x": 441,
+          "y": 330,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 16,
+          "x": 447,
+          "y": 290,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 466,
+          "y": 254,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 18,
+          "x": 494,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 19,
+          "x": 530,
+          "y": 206,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 20,
+          "x": 570,
+          "y": 200,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 21,
+          "x": 610,
+          "y": 206,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 22,
+          "x": 646,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 674,
+          "y": 254,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 24,
+          "x": 693,
+          "y": 290,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 25,
+          "x": 699,
+          "y": 330,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 26,
+          "x": 480,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 27,
+          "x": 540,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 28,
+          "x": 600,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 660,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        }
+      ],
+      "scene": "autumn",
+      "catcher": {
+        "width": 200,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 10,
+      "title": "The High Meadow",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 6,
+      "shots": 19,
+      "story": "The path climbs into a meadow above the trees. Its scattered sun markers lead toward a sheltered pass, and the broad base plate gives every careful shot another chance.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 149,
+          "y": 145,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 201,
+          "y": 164,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 2,
+          "x": 253,
+          "y": 183,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 306,
+          "y": 202,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 358,
+          "y": 221,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 410,
+          "y": 240,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 6,
+          "x": 462,
+          "y": 221,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 514,
+          "y": 202,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 8,
+          "x": 567,
+          "y": 183,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 619,
+          "y": 164,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 671,
+          "y": 145,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 149,
+          "y": 220,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 12,
+          "x": 201,
+          "y": 239,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 253,
+          "y": 258,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 14,
+          "x": 306,
+          "y": 277,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 358,
+          "y": 296,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 410,
+          "y": 315,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 17,
+          "x": 462,
+          "y": 296,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 18,
+          "x": 514,
+          "y": 277,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 19,
+          "x": 567,
+          "y": 258,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 20,
+          "x": 619,
+          "y": 239,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 21,
+          "x": 671,
+          "y": 220,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 149,
+          "y": 295,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 23,
+          "x": 201,
+          "y": 314,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 24,
+          "x": 253,
+          "y": 333,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 25,
+          "x": 306,
+          "y": 352,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 26,
+          "x": 358,
+          "y": 371,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 27,
+          "x": 410,
+          "y": 390,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 462,
+          "y": 371,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 29,
+          "x": 514,
+          "y": 352,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 30,
+          "x": 567,
+          "y": 333,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 31,
+          "x": 619,
+          "y": 314,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 32,
+          "x": 671,
+          "y": 295,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        }
+      ],
+      "scene": "alpine",
+      "catcher": {
+        "width": 280,
+        "behavior": "alternate",
+        "interval": 4
+      }
+    },
+    {
+      "id": 11,
+      "title": "Snow Shelter",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 7,
+      "shots": 19,
+      "story": "A soft snowfall dims the next stretch of trail. Light the markers one by one to find a little stone shelter and keep the festival flame warm inside.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 410,
+          "y": 149,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 1,
+          "x": 463,
+          "y": 183,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 516,
+          "y": 217,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 569,
+          "y": 251,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 4,
+          "x": 622,
+          "y": 285,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 357,
+          "y": 183,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 6,
+          "x": 410,
+          "y": 217,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 7,
+          "x": 463,
+          "y": 251,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 516,
+          "y": 285,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 569,
+          "y": 319,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 10,
+          "x": 304,
+          "y": 217,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 357,
+          "y": 251,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 12,
+          "x": 410,
+          "y": 285,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 13,
+          "x": 463,
+          "y": 319,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 516,
+          "y": 353,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 251,
+          "y": 251,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 16,
+          "x": 304,
+          "y": 285,
+          "radius": 14,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 357,
+          "y": 319,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 18,
+          "x": 410,
+          "y": 353,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 19,
+          "x": 463,
+          "y": 387,
+          "radius": 14,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 198,
+          "y": 285,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 251,
+          "y": 319,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 22,
+          "x": 304,
+          "y": 353,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 23,
+          "x": 357,
+          "y": 387,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 410,
+          "y": 421,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        }
+      ],
+      "scene": "snowy-mountains",
+      "catcher": {
+        "width": 340,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 12,
+      "title": "Northern Ribbon",
+      "chapter": 0,
+      "objective": "gems",
+      "goal": 5,
+      "shots": 19,
+      "story": "A ribbon of northern light reaches down to the pass. Collect its icy crystals to make a lens that can carry the lantern beam far beyond the mountains.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 294,
+          "y": 205,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 1,
+          "x": 272,
+          "y": 247,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 218,
+          "y": 264,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 3,
+          "x": 164,
+          "y": 247,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 4,
+          "x": 142,
+          "y": 205,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 164,
+          "y": 163,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 6,
+          "x": 218,
+          "y": 146,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 272,
+          "y": 163,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 218,
+          "y": 205,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 9,
+          "x": 676,
+          "y": 225,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 655,
+          "y": 265,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 11,
+          "x": 603,
+          "y": 282,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 12,
+          "x": 551,
+          "y": 265,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 530,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 551,
+          "y": 185,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 15,
+          "x": 603,
+          "y": 168,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 16,
+          "x": 655,
+          "y": 185,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 17,
+          "x": 603,
+          "y": 225,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 488,
+          "y": 375,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 19,
+          "x": 464,
+          "y": 421,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 405,
+          "y": 440,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 346,
+          "y": 421,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 22,
+          "x": 322,
+          "y": 375,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 23,
+          "x": 346,
+          "y": 329,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 24,
+          "x": 405,
+          "y": 310,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 25,
+          "x": 464,
+          "y": 329,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 405,
+          "y": 375,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        }
+      ],
+      "scene": "aurora",
+      "catcher": {
+        "width": 240,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 13,
+      "title": "Warm Sand Road",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 7,
+      "shots": 20,
+      "story": "Beyond the pass, morning warms a quiet road of golden sand. Follow the sun markers between the dunes; your lantern is bright enough to guide travelers even here.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 150,
+          "y": 155,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 220,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 2,
+          "x": 290,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 3,
+          "x": 360,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 4,
+          "x": 430,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 5,
+          "x": 500,
+          "y": 155,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 570,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 615,
+          "y": 195,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 660,
+          "y": 235,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 9,
+          "x": 591,
+          "y": 236,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 522,
+          "y": 236,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 11,
+          "x": 453,
+          "y": 237,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 383,
+          "y": 238,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 314,
+          "y": 238,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 14,
+          "x": 245,
+          "y": 239,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 15,
+          "x": 205,
+          "y": 282,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 16,
+          "x": 165,
+          "y": 325,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 242,
+          "y": 326,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 18,
+          "x": 318,
+          "y": 328,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 395,
+          "y": 329,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 20,
+          "x": 472,
+          "y": 330,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 548,
+          "y": 332,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 22,
+          "x": 625,
+          "y": 333,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 23,
+          "x": 583,
+          "y": 379,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 24,
+          "x": 540,
+          "y": 425,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 496,
+          "y": 424,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 26,
+          "x": 452,
+          "y": 423,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 27,
+          "x": 408,
+          "y": 422,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 363,
+          "y": 420,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 29,
+          "x": 319,
+          "y": 419,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 275,
+          "y": 418,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "desert",
+      "catcher": {
+        "width": 260,
+        "behavior": "alternate",
+        "interval": 5
+      }
+    },
+    {
+      "id": 14,
+      "title": "Echo Steps",
+      "chapter": 0,
+      "objective": "score",
+      "goal": 1000,
+      "shots": 20,
+      "story": "Your footsteps return as friendly echoes from the canyon walls. Build a ringing chain of bounces and the echoes will reveal the stairway down to the harbor.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 130,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 1,
+          "x": 226,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 2,
+          "x": 322,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 3,
+          "x": 418,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 4,
+          "x": 514,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 5,
+          "x": 610,
+          "y": 155,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 174,
+          "y": 233,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 7,
+          "x": 270,
+          "y": 233,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 8,
+          "x": 366,
+          "y": 233,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 9,
+          "x": 462,
+          "y": 233,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 10,
+          "x": 558,
+          "y": 233,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 654,
+          "y": 233,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 130,
+          "y": 311,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 13,
+          "x": 226,
+          "y": 311,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 14,
+          "x": 322,
+          "y": 311,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 15,
+          "x": 418,
+          "y": 311,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 16,
+          "x": 514,
+          "y": 311,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 17,
+          "x": 610,
+          "y": 311,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 174,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 19,
+          "x": 270,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 20,
+          "x": 366,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 21,
+          "x": 462,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 22,
+          "x": 558,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 23,
+          "x": 654,
+          "y": 389,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "canyon",
+      "catcher": {
+        "width": 180,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 15,
+      "title": "A Harbor Welcome",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 7,
+      "shots": 20,
+      "story": "The harbor families have heard that a festival light is coming. Wake their dock markers, and a small boat will carry you to the lighthouse at the headland.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 681,
+          "y": 297,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 1,
+          "x": 655,
+          "y": 351,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 596,
+          "y": 395,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 3,
+          "x": 511,
+          "y": 425,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 4,
+          "x": 413,
+          "y": 436,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 315,
+          "y": 426,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 6,
+          "x": 229,
+          "y": 398,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 168,
+          "y": 354,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 8,
+          "x": 139,
+          "y": 301,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 9,
+          "x": 147,
+          "y": 245,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 10,
+          "x": 191,
+          "y": 196,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 264,
+          "y": 158,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 357,
+          "y": 137,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 13,
+          "x": 457,
+          "y": 136,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 14,
+          "x": 550,
+          "y": 156,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 625,
+          "y": 193,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 16,
+          "x": 671,
+          "y": 242,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 531,
+          "y": 303,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 18,
+          "x": 490,
+          "y": 340,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 19,
+          "x": 418,
+          "y": 356,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 343,
+          "y": 345,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 21,
+          "x": 294,
+          "y": 311,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 289,
+          "y": 267,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 330,
+          "y": 230,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 24,
+          "x": 402,
+          "y": 214,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 477,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 26,
+          "x": 526,
+          "y": 259,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 410,
+          "y": 285,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        }
+      ],
+      "scene": "harbor",
+      "catcher": {
+        "width": 360,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 16,
+      "title": "The Lighthouse Lens",
+      "chapter": 0,
+      "objective": "gems",
+      "goal": 3,
+      "shots": 21,
+      "story": "The lighthouse keeper lends you the final parts of a great lens. Gather its clear crystals and focus the festival light toward the observatory on the hill.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 175,
+          "y": 165,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 175,
+          "y": 228,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 2,
+          "x": 175,
+          "y": 290,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 3,
+          "x": 175,
+          "y": 353,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 175,
+          "y": 415,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 260,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 6,
+          "x": 260,
+          "y": 228,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 7,
+          "x": 260,
+          "y": 290,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 8,
+          "x": 260,
+          "y": 353,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 260,
+          "y": 415,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 560,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 11,
+          "x": 560,
+          "y": 228,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 12,
+          "x": 560,
+          "y": 290,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 560,
+          "y": 353,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 14,
+          "x": 560,
+          "y": 415,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 15,
+          "x": 645,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 645,
+          "y": 228,
+          "radius": 15,
+          "type": "GEM",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 645,
+          "y": 290,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 18,
+          "x": 645,
+          "y": 353,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 19,
+          "x": 645,
+          "y": 415,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 335,
+          "y": 145,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 21,
+          "x": 410,
+          "y": 132,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 485,
+          "y": 145,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        }
+      ],
+      "scene": "lighthouse",
+      "catcher": {
+        "width": 320,
+        "behavior": "alternate",
+        "interval": 4
+      }
+    },
+    {
+      "id": 17,
+      "title": "Homeward Shore",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 21,
+      "story": "Lights now answer from cottages along the shore. Follow their sun pegs up the coastal path as neighbors begin walking toward the celebration behind you.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 274,
+          "y": 422,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 191,
+          "y": 402,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 109,
+          "y": 381,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 301,
+          "y": 367,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 4,
+          "x": 236,
+          "y": 313,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 5,
+          "x": 170,
+          "y": 259,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 350,
+          "y": 329,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 313,
+          "y": 252,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 277,
+          "y": 175,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 410,
+          "y": 315,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 10,
+          "x": 410,
+          "y": 230,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 410,
+          "y": 145,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 470,
+          "y": 329,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 507,
+          "y": 252,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 14,
+          "x": 543,
+          "y": 175,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 519,
+          "y": 367,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 16,
+          "x": 584,
+          "y": 313,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 650,
+          "y": 259,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 546,
+          "y": 422,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 19,
+          "x": 629,
+          "y": 402,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 20,
+          "x": 711,
+          "y": 381,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "coast",
+      "catcher": {
+        "width": 300,
+        "behavior": "bounce",
+        "interval": 3
+      }
+    },
+    {
+      "id": 18,
+      "title": "The Moon Dial",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 21,
+      "story": "Inside the observatory, a moonlit dial waits for its missing signals. Light every sun marker to turn the silver dial and uncover the path through the star chamber.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 165,
+          "y": 173,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 270,
+          "y": 134,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 326,
+          "y": 201,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 420,
+          "y": 150,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 4,
+          "x": 519,
+          "y": 181,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 5,
+          "x": 663,
+          "y": 144,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 6,
+          "x": 709,
+          "y": 237,
+          "radius": 14,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 621,
+          "y": 305,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 507,
+          "y": 265,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 422,
+          "y": 333,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 314,
+          "y": 289,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 11,
+          "x": 202,
+          "y": 256,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 12,
+          "x": 128,
+          "y": 335,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 13,
+          "x": 236,
+          "y": 416,
+          "radius": 14,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 334,
+          "y": 384,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 448,
+          "y": 427,
+          "radius": 14,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 529,
+          "y": 385,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 17,
+          "x": 670,
+          "y": 415,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 18,
+          "x": 716,
+          "y": 328,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 19,
+          "x": 395,
+          "y": 234,
+          "radius": 14,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "moon",
+      "catcher": {
+        "width": 240,
+        "behavior": "catch",
+        "interval": 3
+      }
+    },
+    {
+      "id": 19,
+      "title": "The Star Bell",
+      "chapter": 0,
+      "objective": "score",
+      "goal": 1100,
+      "shots": 22,
+      "story": "The star chamber hums around your little lantern. Build a final bright score to ring its great bell and tell the whole valley that the festival is ready.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 457,
+          "y": 140,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 363,
+          "y": 152,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 2,
+          "x": 556,
+          "y": 164,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 3,
+          "x": 264,
+          "y": 176,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 4,
+          "x": 599,
+          "y": 188,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 5,
+          "x": 221,
+          "y": 200,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 6,
+          "x": 568,
+          "y": 212,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 252,
+          "y": 224,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 8,
+          "x": 475,
+          "y": 236,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 9,
+          "x": 345,
+          "y": 248,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 10,
+          "x": 463,
+          "y": 272,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 11,
+          "x": 260,
+          "y": 284,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 560,
+          "y": 296,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 221,
+          "y": 308,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 14,
+          "x": 599,
+          "y": 320,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 15,
+          "x": 256,
+          "y": 332,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 16,
+          "x": 564,
+          "y": 344,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 17,
+          "x": 351,
+          "y": 356,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 18,
+          "x": 469,
+          "y": 368,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 351,
+          "y": 392,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 20,
+          "x": 564,
+          "y": 404,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 21,
+          "x": 256,
+          "y": 416,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 22,
+          "x": 599,
+          "y": 428,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 23,
+          "x": 221,
+          "y": 440,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        }
+      ],
+      "scene": "galaxy",
+      "catcher": {
+        "width": 220,
+        "behavior": "alternate",
+        "interval": 3
+      }
+    },
+    {
+      "id": 20,
+      "title": "Raise the Festival Light",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 22,
+      "story": "Friends from every part of the journey are waiting below the observatory. Light the last markers, lift the lantern into its place, and let the night belong to everyone.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 130,
+          "y": 320,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 145,
+          "y": 268,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 2,
+          "x": 160,
+          "y": 217,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 175,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 4,
+          "x": 215,
+          "y": 200,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 255,
+          "y": 235,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 295,
+          "y": 270,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 333,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 8,
+          "x": 372,
+          "y": 180,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 410,
+          "y": 135,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 10,
+          "x": 448,
+          "y": 180,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 487,
+          "y": 225,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 525,
+          "y": 270,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 565,
+          "y": 235,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 14,
+          "x": 605,
+          "y": 200,
+          "radius": 15,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 645,
+          "y": 165,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 16,
+          "x": 660,
+          "y": 217,
+          "radius": 15,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 675,
+          "y": 268,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 690,
+          "y": 320,
+          "radius": 15,
+          "type": "EXPLODE",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 169,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 20,
+          "x": 223,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 21,
+          "x": 276,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 22,
+          "x": 330,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 23,
+          "x": 383,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 437,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 25,
+          "x": 490,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 26,
+          "x": 544,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 27,
+          "x": 597,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        },
+        {
+          "id": 28,
+          "x": 651,
+          "y": 405,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "PLUS"
+        },
+        {
+          "id": 29,
+          "x": 295,
+          "y": 335,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 353,
+          "y": 335,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "HEX"
+        },
+        {
+          "id": 31,
+          "x": 410,
+          "y": 335,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "STAR"
+        },
+        {
+          "id": 32,
+          "x": 468,
+          "y": 335,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 33,
+          "x": 525,
+          "y": 335,
+          "radius": 15,
+          "type": "NORMAL",
+          "shape": "TRI"
+        }
+      ],
+      "scene": "night",
+      "catcher": {
+        "width": 340,
+        "behavior": "alternate",
+        "interval": 5
+      }
+    }
+  ]
+}

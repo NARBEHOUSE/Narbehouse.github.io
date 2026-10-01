@@ -160,7 +160,7 @@
     {
       "id": "bennyspeggle",
       "title": "Benny's P3GL Game",
-      "description": "A peggle style game with a campaign/level editor built in. Have fun making different kinds of peg blasting games!",
+      "description": "Aim, shoot, and clear colorful arcade campaigns. Build peg chains, catch balls, beat stage goals, and create your own layouts in the campaign editor.",
       "path": "apps/games/BENNYSPEGGLE/index.html",
       "image": "images/games/bennyspeggle.png",
       "genres": [

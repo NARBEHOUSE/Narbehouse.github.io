@@ -1,0 +1,3865 @@
+{
+  "meta": {
+    "format": "bennys-peggle-levels-v2",
+    "title": "The Power Playground",
+    "scene": "garden",
+    "mode": "adventure",
+    "story": "The festival crew has found a chest of extraordinary balls. Learn seven powers, combine them, and bring the grand parade to life. Hit a charge peg to power your next shot; the controls stay the same.",
+    "chapters": [
+      {
+        "title": "Discover the Powers",
+        "story": "Explore the festival grounds and learn how to aim each extraordinary ball.",
+        "scene": "garden",
+        "start": 0,
+        "end": 6
+      },
+      {
+        "title": "Make a Combination",
+        "story": "Bring your powers together for the grand parade.",
+        "scene": "night",
+        "start": 7,
+        "end": 11
+      }
+    ],
+    "finale": {
+      "title": "A Parade of Possibilities",
+      "story": "Ghost trails, bright sparks, and a chorus of bouncing balls light the festival sky. You learned every power and made the parade your own.",
+      "scene": "night"
+    }
+  },
+  "levels": [
+    {
+      "id": 1,
+      "title": "The Charge Gate",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 6,
+      "shots": 18,
+      "story": "Aim for a pale ghost charge peg first. Its power waits for your next shot. Then line up the targets behind the blue pegs: your ghost ball can collect straight through them.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 206,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 274,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 342,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 410,
+          "y": 170,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 4,
+          "x": 478,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 546,
+          "y": 170,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 6,
+          "x": 614,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 222,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 290,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 358,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 426,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 494,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 562,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 630,
+          "y": 226,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 206,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 274,
+          "y": 282,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 342,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 410,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 478,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 546,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 614,
+          "y": 282,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 222,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 290,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 358,
+          "y": 338,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 426,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 494,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 562,
+          "y": 338,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 630,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 206,
+          "y": 394,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 274,
+          "y": 394,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 342,
+          "y": 394,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 410,
+          "y": 394,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 478,
+          "y": 394,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 546,
+          "y": 394,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 614,
+          "y": 394,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "garden",
+      "catcher": {
+        "width": 230,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 2,
+      "title": "Fan Out",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 7,
+      "shots": 16,
+      "story": "Collect a Multiball charge, then choose a route between the sun pegs. Your next shot launches a spreading fan of three balls. A spare charge stays ready for another turn.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 345,
+          "y": 140,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 410,
+          "y": 140,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 2,
+          "x": 475,
+          "y": 140,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 3,
+          "x": 313,
+          "y": 196,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 378,
+          "y": 196,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 443,
+          "y": 196,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 508,
+          "y": 196,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 280,
+          "y": 252,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 345,
+          "y": 252,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 410,
+          "y": 252,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 475,
+          "y": 252,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 540,
+          "y": 252,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 248,
+          "y": 308,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 313,
+          "y": 308,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 378,
+          "y": 308,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 443,
+          "y": 308,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 508,
+          "y": 308,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 573,
+          "y": 308,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 215,
+          "y": 364,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 280,
+          "y": 364,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 345,
+          "y": 364,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 410,
+          "y": 364,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 475,
+          "y": 364,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 540,
+          "y": 364,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 605,
+          "y": 364,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 183,
+          "y": 420,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 248,
+          "y": 420,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 313,
+          "y": 420,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 378,
+          "y": 420,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 443,
+          "y": 420,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 508,
+          "y": 420,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 573,
+          "y": 420,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 638,
+          "y": 420,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "meadow",
+      "catcher": {
+        "width": 230,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 3,
+      "title": "Starburst Orchard",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 16,
+      "story": "The orchard lights grow in tight clusters. Charge a Blast ball, then aim its first hit into the busiest group. Nearby charge pegs bank their powers even when a burst collects them.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 282,
+          "y": 290,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 274,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 251,
+          "y": 344,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 220,
+          "y": 352,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 189,
+          "y": 344,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 166,
+          "y": 321,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 158,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 166,
+          "y": 259,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 189,
+          "y": 236,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 220,
+          "y": 228,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 251,
+          "y": 236,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 274,
+          "y": 259,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 472,
+          "y": 235,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 464,
+          "y": 266,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 441,
+          "y": 289,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 410,
+          "y": 297,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 379,
+          "y": 289,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 356,
+          "y": 266,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 348,
+          "y": 235,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 356,
+          "y": 204,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 379,
+          "y": 181,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 410,
+          "y": 173,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "blast"
+        },
+        {
+          "id": 22,
+          "x": 441,
+          "y": 181,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "blast"
+        },
+        {
+          "id": 23,
+          "x": 464,
+          "y": 204,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 662,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 654,
+          "y": 321,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 631,
+          "y": 344,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 600,
+          "y": 352,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 569,
+          "y": 344,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 546,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 538,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 546,
+          "y": 259,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 569,
+          "y": 236,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 600,
+          "y": 228,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 631,
+          "y": 236,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 654,
+          "y": 259,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "cherry-blossom",
+      "catcher": {
+        "width": 230,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 4,
+      "title": "Ember Lanes",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 16,
+      "story": "Follow the long lanes of ember lights. Fireball goes through pegs and warms up their neighbors. Look for a route that runs along a whole lane, rather than across one peg.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 214,
+          "y": 132,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 312,
+          "y": 132,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 410,
+          "y": 132,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 3,
+          "x": 508,
+          "y": 132,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 4,
+          "x": 606,
+          "y": 132,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 223,
+          "y": 177,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 321,
+          "y": 177,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 419,
+          "y": 177,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 517,
+          "y": 177,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 615,
+          "y": 177,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 226,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 324,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 422,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 520,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 618,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 221,
+          "y": 267,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 319,
+          "y": 267,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 417,
+          "y": 267,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 515,
+          "y": 267,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 613,
+          "y": 267,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 211,
+          "y": 312,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 309,
+          "y": 312,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 407,
+          "y": 312,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 505,
+          "y": 312,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 603,
+          "y": 312,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 203,
+          "y": 357,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 301,
+          "y": 357,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 399,
+          "y": 357,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 497,
+          "y": 357,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 595,
+          "y": 357,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 203,
+          "y": 402,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 301,
+          "y": 402,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 399,
+          "y": 402,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 497,
+          "y": 402,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 595,
+          "y": 402,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 210,
+          "y": 447,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 36,
+          "x": 308,
+          "y": 447,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 37,
+          "x": 406,
+          "y": 447,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 38,
+          "x": 504,
+          "y": 447,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 39,
+          "x": 602,
+          "y": 447,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "volcano",
+      "catcher": {
+        "width": 230,
+        "behavior": "bounce",
+        "interval": 4
+      }
+    },
+    {
+      "id": 5,
+      "title": "Second Wind",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 18,
+      "story": "The lights make a loop beneath the northern sky. An Echo ball returns from the bottom once for another pass. Try a wide shot: a ball that misses the plate can still come back.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 695,
+          "y": 295,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 691,
+          "y": 320,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 678,
+          "y": 345,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 657,
+          "y": 368,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 628,
+          "y": 388,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 593,
+          "y": 406,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 553,
+          "y": 421,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 507,
+          "y": 431,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 459,
+          "y": 438,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 410,
+          "y": 440,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 361,
+          "y": 438,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 313,
+          "y": 431,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 268,
+          "y": 421,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 227,
+          "y": 406,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 192,
+          "y": 388,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 163,
+          "y": 368,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 142,
+          "y": 345,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 129,
+          "y": 320,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 125,
+          "y": 295,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 129,
+          "y": 270,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 142,
+          "y": 245,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 163,
+          "y": 223,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 192,
+          "y": 202,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 227,
+          "y": 184,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 267,
+          "y": 169,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 313,
+          "y": 159,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 361,
+          "y": 152,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 410,
+          "y": 150,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "echo"
+        },
+        {
+          "id": 28,
+          "x": 459,
+          "y": 152,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 507,
+          "y": 159,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "echo"
+        },
+        {
+          "id": 30,
+          "x": 552,
+          "y": 169,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 593,
+          "y": 184,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 628,
+          "y": 202,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 657,
+          "y": 223,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 678,
+          "y": 245,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 691,
+          "y": 270,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "aurora",
+      "catcher": {
+        "width": 230,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 6,
+      "title": "Magnetic Harbor",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 7,
+      "shots": 18,
+      "story": "The harbor plate is narrow, but a Magnet ball pulls falling balls toward it. Collect a charge above the docks, then time a shot toward the moving plate to keep your supply going.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 190,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 278,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 366,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 454,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 542,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 630,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 206,
+          "y": 274,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 294,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 382,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 470,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 558,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 646,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 190,
+          "y": 326,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 278,
+          "y": 326,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 366,
+          "y": 326,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 454,
+          "y": 326,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 542,
+          "y": 326,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 630,
+          "y": 326,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 206,
+          "y": 378,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 294,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 382,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 470,
+          "y": 378,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 558,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 646,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 190,
+          "y": 430,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 278,
+          "y": 430,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 366,
+          "y": 430,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 454,
+          "y": 430,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 542,
+          "y": 430,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 630,
+          "y": 430,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 246,
+          "y": 145,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 328,
+          "y": 145,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 410,
+          "y": 145,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "magnet"
+        },
+        {
+          "id": 33,
+          "x": 492,
+          "y": 145,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "magnet"
+        },
+        {
+          "id": 34,
+          "x": 574,
+          "y": 145,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "harbor",
+      "catcher": {
+        "width": 150,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 7,
+      "title": "Read the Ricochet",
+      "chapter": 0,
+      "objective": "targets",
+      "goal": 8,
+      "shots": 18,
+      "story": "Stone bumpers open new bank shots. Charge Super guide to see several bounces before you launch. Stone always stays solid, even for Ghost ball and Fireball.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 160,
+          "y": 140,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "guide"
+        },
+        {
+          "id": 1,
+          "x": 177,
+          "y": 162,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 194,
+          "y": 184,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 211,
+          "y": 206,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 228,
+          "y": 228,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 245,
+          "y": 250,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 262,
+          "y": 272,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 279,
+          "y": 294,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 296,
+          "y": 316,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 313,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 330,
+          "y": 360,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 347,
+          "y": 382,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 364,
+          "y": 404,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 381,
+          "y": 426,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 660,
+          "y": 140,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "guide"
+        },
+        {
+          "id": 15,
+          "x": 643,
+          "y": 162,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 626,
+          "y": 184,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 609,
+          "y": 206,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 592,
+          "y": 228,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 575,
+          "y": 250,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 558,
+          "y": 272,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 541,
+          "y": 294,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 524,
+          "y": 316,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 507,
+          "y": 338,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 490,
+          "y": 360,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 473,
+          "y": 382,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 456,
+          "y": 404,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 439,
+          "y": 426,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 234,
+          "y": 450,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 322,
+          "y": 450,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 410,
+          "y": 450,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 498,
+          "y": 450,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 586,
+          "y": 450,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 410,
+          "y": 200,
+          "radius": 11,
+          "type": "BLOCK",
+          "shape": "SQUARE"
+        },
+        {
+          "id": 34,
+          "x": 410,
+          "y": 298,
+          "radius": 11,
+          "type": "BLOCK",
+          "shape": "SQUARE"
+        }
+      ],
+      "scene": "canyon",
+      "catcher": {
+        "width": 230,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 8,
+      "title": "Ghosts and Sparks",
+      "chapter": 1,
+      "objective": "targets",
+      "goal": 9,
+      "shots": 18,
+      "story": "Two kinds of charge pegs wait in the forest. Different powers combine on your next shot: Ghost ball can carry a Blast ball burst into a hidden cluster. Two charges of the same kind last two turns.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 170,
+          "y": 180,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 250,
+          "y": 196,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 330,
+          "y": 182,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 410,
+          "y": 164,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 4,
+          "x": 490,
+          "y": 176,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "blast"
+        },
+        {
+          "id": 5,
+          "x": 570,
+          "y": 195,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 650,
+          "y": 187,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 170,
+          "y": 243,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 250,
+          "y": 240,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 330,
+          "y": 218,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 10,
+          "x": 410,
+          "y": 219,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 490,
+          "y": 241,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 570,
+          "y": 243,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 650,
+          "y": 221,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 170,
+          "y": 295,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 250,
+          "y": 274,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 330,
+          "y": 265,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 410,
+          "y": 283,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 490,
+          "y": 296,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 570,
+          "y": 279,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 650,
+          "y": 264,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 170,
+          "y": 332,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 250,
+          "y": 314,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 330,
+          "y": 326,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 410,
+          "y": 345,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 490,
+          "y": 337,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 570,
+          "y": 316,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 650,
+          "y": 321,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 170,
+          "y": 368,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 250,
+          "y": 369,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 330,
+          "y": 391,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 410,
+          "y": 393,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 490,
+          "y": 371,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 570,
+          "y": 366,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 650,
+          "y": 387,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 170,
+          "y": 415,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 36,
+          "x": 250,
+          "y": 433,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 37,
+          "x": 330,
+          "y": 446,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 38,
+          "x": 410,
+          "y": 429,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 39,
+          "x": 490,
+          "y": 414,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 40,
+          "x": 570,
+          "y": 429,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 41,
+          "x": 650,
+          "y": 446,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "forest",
+      "catcher": {
+        "width": 230,
+        "behavior": "bounce",
+        "interval": 4
+      }
+    },
+    {
+      "id": 9,
+      "title": "Three Returns",
+      "chapter": 1,
+      "objective": "targets",
+      "goal": 9,
+      "shots": 18,
+      "story": "Bring an invitation to every island. Pair Multiball with Echo ball and each of your three balls gets another pass if it falls past the plate. Aim between islands to spread your coverage.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 205,
+          "y": 400,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 239,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 260,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 260,
+          "y": 249,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 4,
+          "x": 239,
+          "y": 192,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 205,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 171,
+          "y": 192,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 150,
+          "y": 249,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 150,
+          "y": 321,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 171,
+          "y": 378,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 410,
+          "y": 400,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 444,
+          "y": 378,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 465,
+          "y": 321,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 465,
+          "y": 249,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 444,
+          "y": 192,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 410,
+          "y": 170,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 16,
+          "x": 376,
+          "y": 192,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 355,
+          "y": 249,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 355,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 376,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 615,
+          "y": 400,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 649,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 670,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 670,
+          "y": 249,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 649,
+          "y": 192,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 615,
+          "y": 170,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "echo"
+        },
+        {
+          "id": 26,
+          "x": 581,
+          "y": 192,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 560,
+          "y": 249,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 560,
+          "y": 321,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 581,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "coast",
+      "catcher": {
+        "width": 200,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 10,
+      "title": "The Furnace",
+      "chapter": 1,
+      "objective": "targets",
+      "goal": 9,
+      "shots": 20,
+      "story": "The furnace plate alternates between catching and bouncing. Pair Fireball with Magnet ball to guide the heat through the lanes and back toward the plate. Watch its symbol before you launch.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 178,
+          "y": 145,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 270,
+          "y": 161,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 362,
+          "y": 145,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 3,
+          "x": 454,
+          "y": 161,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 546,
+          "y": 145,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "magnet"
+        },
+        {
+          "id": 5,
+          "x": 638,
+          "y": 161,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 178,
+          "y": 193,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 270,
+          "y": 209,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 8,
+          "x": 362,
+          "y": 193,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 454,
+          "y": 209,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 546,
+          "y": 193,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 638,
+          "y": 209,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 178,
+          "y": 241,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 270,
+          "y": 257,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 362,
+          "y": 241,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 454,
+          "y": 257,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 546,
+          "y": 241,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 638,
+          "y": 257,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 178,
+          "y": 289,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 270,
+          "y": 305,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 362,
+          "y": 289,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 454,
+          "y": 305,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 546,
+          "y": 289,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 638,
+          "y": 305,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 178,
+          "y": 337,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 270,
+          "y": 353,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 362,
+          "y": 337,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 27,
+          "x": 454,
+          "y": 353,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 546,
+          "y": 337,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 638,
+          "y": 353,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 178,
+          "y": 385,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 270,
+          "y": 401,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 362,
+          "y": 385,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 454,
+          "y": 401,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 34,
+          "x": 546,
+          "y": 385,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 638,
+          "y": 401,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 36,
+          "x": 178,
+          "y": 433,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 37,
+          "x": 270,
+          "y": 449,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 38,
+          "x": 362,
+          "y": 433,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 39,
+          "x": 454,
+          "y": 449,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 40,
+          "x": 546,
+          "y": 433,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 41,
+          "x": 638,
+          "y": 449,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "desert",
+      "catcher": {
+        "width": 230,
+        "behavior": "alternate",
+        "interval": 3
+      }
+    },
+    {
+      "id": 11,
+      "title": "Combo Constellation",
+      "chapter": 1,
+      "objective": "targets",
+      "goal": 9,
+      "shots": 22,
+      "story": "Build your own constellation of powers. A long shot, a bank shot, or a chain of ten pegs earns style points. A shot scoring 2,500 points gives you an extra ball; bigger shots can earn more.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 450,
+          "y": 295,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 351,
+          "y": 326,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 418,
+          "y": 239,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 477,
+          "y": 345,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 292,
+          "y": 283,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 519,
+          "y": 254,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 375,
+          "y": 372,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 342,
+          "y": 220,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "blast"
+        },
+        {
+          "id": 8,
+          "x": 554,
+          "y": 325,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 263,
+          "y": 331,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 479,
+          "y": 207,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 463,
+          "y": 390,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 254,
+          "y": 244,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 589,
+          "y": 271,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 303,
+          "y": 386,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 382,
+          "y": 183,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 565,
+          "y": 368,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 205,
+          "y": 302,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 556,
+          "y": 208,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 19,
+          "x": 404,
+          "y": 419,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 20,
+          "x": 267,
+          "y": 199,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 632,
+          "y": 310,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 226,
+          "y": 373,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 456,
+          "y": 163,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 532,
+          "y": 412,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 25,
+          "x": 180,
+          "y": 256,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 26,
+          "x": 629,
+          "y": 232,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 27,
+          "x": 320,
+          "y": 429,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 318,
+          "y": 159,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 639,
+          "y": 360,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 30,
+          "x": 161,
+          "y": 337,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 31,
+          "x": 545,
+          "y": 164,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 32,
+          "x": 463,
+          "y": 446,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 192,
+          "y": 203,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "echo"
+        },
+        {
+          "id": 34,
+          "x": 681,
+          "y": 277,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "magnet"
+        },
+        {
+          "id": 35,
+          "x": 229,
+          "y": 416,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 36,
+          "x": 402,
+          "y": 133,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "guide"
+        },
+        {
+          "id": 37,
+          "x": 608,
+          "y": 413,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "galaxy",
+      "catcher": {
+        "width": 180,
+        "behavior": "catch",
+        "interval": 4
+      }
+    },
+    {
+      "id": 12,
+      "title": "Grand Power Parade",
+      "chapter": 1,
+      "objective": "clear",
+      "goal": 47,
+      "shots": 24,
+      "story": "Clear the entire parade board. Charge a combination, open a route through the center, and sweep the last pegs. If you earn a charge with your last ball, one charged shot is returned so you can use it.",
+      "pegs": [
+        {
+          "id": 0,
+          "x": 695,
+          "y": 295,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 1,
+          "x": 690,
+          "y": 324,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 2,
+          "x": 673,
+          "y": 352,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 3,
+          "x": 647,
+          "y": 378,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 4,
+          "x": 612,
+          "y": 401,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 5,
+          "x": 568,
+          "y": 420,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 6,
+          "x": 519,
+          "y": 434,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 7,
+          "x": 466,
+          "y": 442,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 8,
+          "x": 410,
+          "y": 445,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 9,
+          "x": 354,
+          "y": 442,
+          "radius": 11,
+          "type": "EXTRA",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 10,
+          "x": 301,
+          "y": 434,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 11,
+          "x": 252,
+          "y": 420,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 12,
+          "x": 208,
+          "y": 401,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 13,
+          "x": 173,
+          "y": 378,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 14,
+          "x": 147,
+          "y": 352,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 15,
+          "x": 130,
+          "y": 324,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 16,
+          "x": 125,
+          "y": 295,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 17,
+          "x": 130,
+          "y": 266,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 18,
+          "x": 147,
+          "y": 238,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "magnet"
+        },
+        {
+          "id": 19,
+          "x": 173,
+          "y": 212,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "ghost"
+        },
+        {
+          "id": 20,
+          "x": 208,
+          "y": 189,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 21,
+          "x": 252,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 22,
+          "x": 301,
+          "y": 156,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 23,
+          "x": 354,
+          "y": 148,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 24,
+          "x": 410,
+          "y": 145,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "multiball"
+        },
+        {
+          "id": 25,
+          "x": 466,
+          "y": 148,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 26,
+          "x": 519,
+          "y": 156,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "fireball"
+        },
+        {
+          "id": 27,
+          "x": 568,
+          "y": 170,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 28,
+          "x": 612,
+          "y": 189,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 29,
+          "x": 647,
+          "y": 212,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "blast"
+        },
+        {
+          "id": 30,
+          "x": 673,
+          "y": 238,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "guide"
+        },
+        {
+          "id": 31,
+          "x": 690,
+          "y": 266,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 32,
+          "x": 260,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 33,
+          "x": 335,
+          "y": 222,
+          "radius": 11,
+          "type": "POWER",
+          "shape": "CIRCLE",
+          "power": "echo"
+        },
+        {
+          "id": 34,
+          "x": 410,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 35,
+          "x": 485,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 36,
+          "x": 560,
+          "y": 222,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 37,
+          "x": 260,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 38,
+          "x": 335,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 39,
+          "x": 410,
+          "y": 290,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 40,
+          "x": 485,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 41,
+          "x": 560,
+          "y": 290,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 42,
+          "x": 260,
+          "y": 358,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 43,
+          "x": 335,
+          "y": 358,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 44,
+          "x": 410,
+          "y": 358,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 45,
+          "x": 485,
+          "y": 358,
+          "radius": 11,
+          "type": "NORMAL",
+          "shape": "CIRCLE"
+        },
+        {
+          "id": 46,
+          "x": 560,
+          "y": 358,
+          "radius": 11,
+          "type": "TARGET",
+          "shape": "CIRCLE"
+        }
+      ],
+      "scene": "night",
+      "catcher": {
+        "width": 230,
+        "behavior": "alternate",
+        "interval": 4
+      }
+    }
+  ]
+}

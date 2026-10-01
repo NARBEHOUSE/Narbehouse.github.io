@@ -1,0 +1,112 @@
+{
+  "tool": "Built-in image_gen.imagegen",
+  "generatedDate": "2026-10-01",
+  "purpose": "Twenty-one distinct level backgrounds, joining the three existing Peggle scenes.",
+  "images": [
+    {
+      "id": "forest",
+      "file": "backgrounds/forest.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a winding mossy trail through giant emerald trees, luminous ferns and a tiny wooden bridge. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "waterfall",
+      "file": "backgrounds/waterfall.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a grand terraced waterfall and turquoise pools among lush cliffs with a gentle stone footbridge. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "autumn",
+      "file": "backgrounds/autumn.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a golden autumn woodland beside a clear pond, copper leaves and an old mill in the distance. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "meadow",
+      "file": "backgrounds/meadow.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a spacious wildflower meadow with rolling green hills, a winding path, distant windmills and golden morning clouds. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "cherry-blossom",
+      "file": "backgrounds/cherry-blossom.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a peaceful cherry blossom valley with rose-pink trees, a curved footbridge and a small reflective stream. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "bamboo",
+      "file": "backgrounds/bamboo.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a tranquil bamboo forest with a stepping-stone stream, mossy lantern stones and soft jade shafts of light. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "alpine",
+      "file": "backgrounds/alpine.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: an inviting alpine valley with dramatic blue mountains, a tiny chalet and a ribbon of mountain trail. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "snowy-mountains",
+      "file": "backgrounds/snowy-mountains.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a sparkling snow-covered mountain pass, cozy cabin lights and blue ice cliffs under a soft peach winter sky. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "desert",
+      "file": "backgrounds/desert.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a sweeping golden desert with sculpted dunes, a turquoise oasis and tiny welcoming sandstone arches. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "canyon",
+      "file": "backgrounds/canyon.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a majestic terracotta canyon with a winding turquoise river far below and a sunlit natural stone arch. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "volcano",
+      "file": "backgrounds/volcano.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a fantastical gentle volcanic island, warm glowing lava streams among dark sculpted rocks, distant sunset and no danger or destruction. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "lagoon",
+      "file": "backgrounds/lagoon.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a sheltered turquoise lagoon with limestone islands, lush palms, luminous clear water and a tiny wooden landing dock. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "tropical-beach",
+      "file": "backgrounds/tropical-beach.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a vivid tropical beach curving toward coral-pink cliffs, palms framing the sides, peaceful rolling surf and distant sailboats. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "coral-reef",
+      "file": "backgrounds/coral-reef.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: an enchanting underwater coral reef with colorful branching coral at the edges, a calm blue open water center and shafts of sunlight. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "harbor",
+      "file": "backgrounds/harbor.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a cheerful little seaside harbor with colorful cottages, wooden piers and small moored sailing boats, soft warm afternoon light. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "lighthouse",
+      "file": "backgrounds/lighthouse.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a graceful lighthouse on a grassy seaside headland, broad blue ocean, gentle surf and a warm pink sunset. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "river",
+      "file": "backgrounds/river.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a winding river through vibrant green countryside, reeds in the foreground, a charming old stone bridge and broad calm water. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "lake",
+      "file": "backgrounds/lake.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a calm mountain lake reflecting emerald pine forests and purple peaks, a canoe dock at the edge and glowing morning mist. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "aurora",
+      "file": "backgrounds/aurora.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a peaceful snowy lake under flowing emerald and violet aurora ribbons, scattered stars and a warmly lit woodland cabin. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "moon",
+      "file": "backgrounds/moon.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a friendly fantastical moon landscape with soft blue crater valleys, glittering mineral formations, a distant colorful planet and a small astronomical outpost. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    },
+    {
+      "id": "galaxy",
+      "file": "backgrounds/galaxy.png",
+      "prompt": "Use case: stylized-concept. Asset type: polished landscape background for an accessible cozy arcade game, landscape aspect ratio 3:2. Scene: a magnificent dreamy nebula of indigo, violet and teal, graceful star clouds around a calm deep-blue center, small distant planets and soft starlight. Beautiful richly painted fantasy environment with cinematic depth, vivid inviting color, softly lit atmosphere, crisp illustrative craft and delightful details concentrated around the edges. Keep the central playing area visually calm, broad natural midtones, with no extreme bright hotspots so colorful pegs can be read on top. A full scenic environment, no characters, no pegs, no balls, no UI, no text, no watermark, no border. Create one distinct full-frame image."
+    }
+  ]
+}
