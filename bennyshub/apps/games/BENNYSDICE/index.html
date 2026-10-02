@@ -42,7 +42,7 @@
         <!-- Main Menu -->
         <div id="main-menu" class="menu-panel">
            <h1 style="color:white; -webkit-text-stroke: 1px black; font-size: 3em; margin: 0 0 20px 0;">BENNY'S DICE</h1>
-           <div class="menu-item focused" data-action="toggle-mode">Mode: <span id="mode-display">Free Throw</span></div>
+           <div class="menu-item" data-action="toggle-mode">Mode: <span id="mode-display">Free Throw</span></div>
            <div class="menu-item" data-action="play">Play</div>
            <div class="menu-item" data-action="settings">Settings</div>
            <div class="menu-item" data-action="exit">Exit</div>
@@ -59,8 +59,9 @@
         <!-- Pause Menu (Hidden by default) -->
         <div id="pause-menu" class="menu-panel hidden">
             <h2>Paused</h2>
-            <div class="menu-item focused" data-action="resume-game">Continue</div>
+            <div class="menu-item" data-action="resume-game">Continue</div>
             <div class="menu-item" data-action="settings">Settings</div>
+            <div class="menu-item" data-action="request-help">Help</div>
             <div class="menu-item" data-action="confirm-quit">Main Menu</div>
         </div>
         
@@ -87,7 +88,7 @@
             </ul>
             <h3>Perfect For:</h3>
             <p>Board games, tabletop RPGs, or just for fun!</p>
-            <button class="start-btn focused" data-action="start-after-rules">Let's Roll! 🎲</button>
+            <button class="start-btn" data-action="start-after-rules">Let's Roll! 🎲</button>
         </div>
         
         <div id="rules-yarkle" class="rules-panel hidden">
@@ -112,7 +113,7 @@
                 <li><strong>BUST!</strong> = No scoring dice = Lose turn points!</li>
                 <li><strong>HOT DICE!</strong> = All 6 score = Roll all again!</li>
             </ul>
-            <button class="start-btn focused" data-action="start-after-rules">Start Game! 🎯</button>
+            <button class="start-btn" data-action="start-after-rules">Start Game! 🎯</button>
         </div>
         
         <div id="rules-fahtzee" class="rules-panel hidden">
@@ -133,7 +134,7 @@
                 <li><strong>4 of a Kind</strong> = Add up all dice</li>
                 <li><strong>3 of a Kind</strong> = Add up all dice</li>
             </ul>
-            <button class="start-btn focused" data-action="start-after-rules">Start Game!</button>
+            <button class="start-btn" data-action="start-after-rules">Start Game!</button>
         </div>
     </div>
 

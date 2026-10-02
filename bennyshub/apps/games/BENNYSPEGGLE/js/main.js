@@ -43,20 +43,20 @@
     const el = U.$('loading');
     if (!el) return;
     el.className = 'crash';
-    el.innerHTML = '<div><b>The game could not start.</b><p>Try reloading, or return to the hub.</p><div class="menu"><button class="mi focused" type="button">Reload game</button><button class="mi" type="button">Back to Hub</button></div><p>Space = next · Enter = choose</p></div>';
+    el.innerHTML = '<div><b>The game could not start.</b><p>Try reloading, or return to the hub.</p><div class="menu"><button class="mi" type="button">Reload game</button><button class="mi" type="button">Back to Hub</button></div><p>Space = next · Enter = choose</p></div>';
     const buttons = el.querySelectorAll('button');
     const actions = [() => location.reload(), () => { if (root.parent !== root) root.parent.postMessage({ action: 'focusBackButton' }, '*'); else location.href = '../../../index.html'; }];
-    let index = 0, held = null;
-    const speak = () => { const vm = U.vm(); if (vm) vm.speak(buttons[index].textContent); };
-    const focus = i => { buttons[index].classList.remove('focused'); index = i; buttons[index].classList.add('focused'); speak(); };
-    const next = () => focus(1 - index);
+    let index = -1, held = null;        // nothing highlighted until the first Space
+    const speak = (t) => { const vm = U.vm(); if (vm) vm.speak(t || buttons[index].textContent); };
+    const focus = i => { if (index >= 0) buttons[index].classList.remove('focused'); index = i; buttons[index].classList.add('focused'); speak(); };
+    const next = () => focus(index < 0 ? 0 : 1 - index);
     buttons.forEach((b, i) => { b.addEventListener('click', actions[i]); b.addEventListener('focus', () => focus(i)); });
     if (U.isOneSwitch()) setInterval(() => { if (!held && !document.hidden) next(); }, U.scanInterval());
     const switchKey = e => e.code === 'Space' ? 'Space' : /^(Enter|NumpadEnter)$/.test(e.code) ? 'Enter' : null;
     document.addEventListener('keydown', e => { const k = switchKey(e); if (!k) return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) held = k; }, true);
-    document.addEventListener('keyup', e => { const k = switchKey(e); if (!k) return; e.preventDefault(); e.stopImmediatePropagation(); if (held !== k) return; held = null; if (k === 'Space') next(); else actions[index](); }, true);
+    document.addEventListener('keyup', e => { const k = switchKey(e); if (!k) return; e.preventDefault(); e.stopImmediatePropagation(); if (held !== k) return; held = null; if (k === 'Space') next(); else if (index >= 0) actions[index](); }, true);
     root.addEventListener('blur', () => { held = null; });
-    speak();
+    speak('The game could not start. Try reloading, or return to the hub.');
   }
 
   /* ── Layout ───────────────────────────────────────────────────────────── */

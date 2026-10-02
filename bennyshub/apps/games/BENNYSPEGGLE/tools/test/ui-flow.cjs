@@ -34,7 +34,10 @@ fs.mkdirSync(out, { recursive: true });
   const check = (name, cond, info) => { results.push({ name, ok: !!cond, info }); console.log((cond ? 'PASS ' : 'FAIL ') + name + (info ? '  ' + JSON.stringify(info) : '')); };
 
   let s = await st();
-  check('title opens on Play', s.screen === 'title' && /Play/.test(s.label), s);
+  check('title opens without a selection', s.screen === 'title' && s.index === -1 && await page.locator('#menu .focused').count() === 0, s);
+  await tap('Space');
+  s = await st();
+  check('first Space selects Play', /Play/.test(s.label), s);
   await tap('Space');
   s = await st();
   check('Space moves to How to Play (on release)', /How to Play/.test(s.label), s);
@@ -46,6 +49,8 @@ fs.mkdirSync(out, { recursive: true });
   await tap('Enter');
   s = await st();
   check('Play opens the mode chooser', s.screen === 'modes', s);
+  check('mode chooser opens without a selection', s.index === -1);
+  await tap('Space');
   await page.screenshot({ path: path.join(out, 'modes.png') });
   // Cards scan individually; Enter opens the card without a row-selection step.
   check('mode chooser highlights one card', await page.locator('#menu .focused').count() === 1 && await page.locator('#menu .rowFocus').count() === 0);
@@ -56,6 +61,8 @@ fs.mkdirSync(out, { recursive: true });
   await tap('Enter');
   s = await st();
   check('one Enter on Vivid opens its campaigns', s.screen === 'campaigns', s);
+  check('campaign chooser opens without a selection', s.index === -1);
+  await tap('Space');
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(out, 'campaigns.png') });
   check('campaign chooser highlights one card', await page.locator('#menu .focused').count() === 1 && await page.locator('#menu .rowFocus').count() === 0);
@@ -63,6 +70,8 @@ fs.mkdirSync(out, { recursive: true });
   await page.waitForFunction(() => P3.ui.screen === 'levels');
   s = await st();
   check('one Enter on the campaign opens its level list', s.screen === 'levels', s);
+  check('level chooser opens without a selection', s.index === -1);
+  await tap('Space');                              // First Space selects Start: Level 1.
   await page.screenshot({ path: path.join(out, 'levels.png') });
   await tap('Space');
   check('Space selects Level 1 directly', await page.evaluate(() => /^Level 1,/.test(P3.ui.items[P3.ui.index].speech)));
@@ -134,6 +143,7 @@ fs.mkdirSync(out, { recursive: true });
   await tap('Enter');
   s = await st();
   check('choosing Pause opens the pause menu (no hold needed)', s.screen === 'pause', s);
+  await tap('Space');   // Menus start neutral; first Space selects Continue.
   await tap('Enter');   // Continue
   await page.waitForTimeout(250);
   s = await st();

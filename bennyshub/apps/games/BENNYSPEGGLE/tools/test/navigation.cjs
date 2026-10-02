@@ -124,7 +124,7 @@ const { start } = require(path.join(gameRoot, 'tools/serve.cjs'));
             await select(setting, input);
             assert.notEqual(await page.evaluate(k => P3.game.store.get(k), storeKey), oldValue);
             await back(input); await check('settings');
-            if (input === 'switch') assert.equal(await page.evaluate(() => P3.ui.items[P3.ui.index].label), label, 'Back restores switch focus');
+            if (input === 'switch') assert.equal(await page.evaluate(() => P3.ui.index), -1, 'Back returns to a neutral menu');
           }
         }
         await back(input); await check(origin);

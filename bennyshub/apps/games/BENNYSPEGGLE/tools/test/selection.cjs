@@ -44,6 +44,12 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
           await page.keyboard.up(code);
           await page.waitForTimeout(code === 'Enter' ? 340 : 170);
         };
+        const first = async () => {
+          check(await page.evaluate(() => P3.ui.index === -1), 'menu opens without a selection');
+          check(await page.locator('#menu .focused').count() === 0, 'neutral menu has no highlighted button');
+          await key('Space');
+          check(await page.evaluate(() => P3.ui.index === 0), 'first Space highlights the first menu item');
+        };
         const capture = name => page.screenshot({ path: path.join(output, prefix + '-' + name + '.png') });
         const selection = async selector => {
           await page.waitForTimeout(160); // Finish background transitions before reading pixels/styles.
@@ -87,6 +93,7 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
             document.body.dataset.mode = mode;
           }, mode);
           await page.waitForTimeout(350);
+          await first();
           await selection('#menu .focused');
           await key('Space');
           check(await page.evaluate(() => P3.ui.items[P3.ui.index].label === 'How to Play'), 'Space changes title selection');
@@ -95,6 +102,7 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
           await key('Space');
           await key('Enter');
           check(await page.evaluate(() => P3.ui.screen === 'settings'), 'Enter opens highlighted Settings');
+          await first();
           await selection('#menu .focused');
           await key('Space');
           await key('Space');
@@ -111,6 +119,9 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
               NarbeScanManager.setScanSpeedIndex(0);
               NarbeScanManager.setAutoScan(true);
             });
+            check(await page.evaluate(() => P3.ui.index === -1), 'Auto Scan menu also starts neutral');
+            await page.waitForFunction(() => P3.ui.index === 0, null, { polling: 20, timeout: 2000 });
+            check(await page.evaluate(() => P3.ui.index === 0), 'first Auto Scan tick selects Cozy');
             await page.waitForFunction(() => P3.ui.index === 1, null, { polling: 20, timeout: 2000 });
             await selection('#menu .focused');
             check(await page.evaluate(() => P3.ui.index === 1), 'Auto Scan advances directly from Cozy to Vivid');
@@ -126,6 +137,7 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
             P3.levels.saveToLibrary(Object.assign({}, camp, { id: 'selection-custom-b', title: 'Custom B' }));
             P3.ui.setScreen('modes');
           }, mode);
+          await first();
           await selection('#menu .focused');
           await capture('modes');
           await key('Space');
@@ -137,6 +149,7 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
           check(await page.evaluate(() => P3.ui.items[P3.ui.index].label === 'My Campaigns'), 'Space skips visual separators to My Campaigns');
           await key('Enter');
           check(await page.evaluate(() => P3.ui.screen === 'mine'), 'one Enter directly opens My Campaigns');
+          await first();
           check(await page.evaluate(() => P3.ui.items[P3.ui.index].label === 'Custom B'), 'first custom campaign is selected individually');
           await selection('#menu .focused');
           await key('Space');
@@ -153,9 +166,11 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
             P3.ui.setScreen('modes');
           }, mode);
           await page.waitForTimeout(350);
+          await first();
           for (let i = 0; i < ['cozy', 'vivid', 'hyper'].indexOf(mode); i++) await key('Space');
           await key('Enter');
           check(await page.evaluate(() => P3.ui.screen === 'campaigns'), 'one Enter directly opens the selected mood');
+          await first();
           await selection('#menu .focused'); // Campaign blurb and progress both stay readable.
           for (let i = 1; i < 3; i++) {
             await key('Space');
@@ -169,6 +184,7 @@ const childText = '.lab,.sub,.val,.mcName,.mcTag,.mcProg,.ccName,.ccBlurb,.ccPro
           await key('Enter');
           await page.waitForFunction(() => P3.ui.screen === 'levels');
           await page.waitForTimeout(350);
+          await first();
           for (let level = 1; level <= 6; level++) {
             await key('Space');
             const target = await page.evaluate(() => ({ speech: P3.ui.items[P3.ui.index].speech, enabled: P3.ui.items[P3.ui.index].enabled }));
