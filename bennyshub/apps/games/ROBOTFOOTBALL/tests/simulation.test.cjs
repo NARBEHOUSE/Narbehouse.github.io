@@ -287,11 +287,11 @@ test('crossing a sideline ends a competitive run', () => {
   assert.equal(sim.s.phase, 'result');
   assert.equal(sim.s.result.title, 'Out of bounds');
 });
-test('practice catches and running remain successful through contact and sidelines', () => {
-  const sim = make({ practice: true, random: () => 0.999 });
+test('practice catches never drop and the sideline holds the runner', () => {
+  const events = [], sim = make({ practice: true, random: () => 0.999 }, events);
   start(sim, 'slants'); sim.throwPass(); settle(sim, 1);
-  assert.equal(sim.s.homeScore, 6);
-  assert.equal(sim.s.result.title, 'Touchdown!');
+  assert.ok(events.includes('catch'), 'no drops in practice');
+  assert.notEqual(sim.s.result.title, 'Out of bounds');
 });
 test('settled snapshots round-trip and pending possession survives reload', () => {
   const sim = make();
@@ -351,8 +351,9 @@ test('a complete game includes eight possessions and ends cleanly in every mode'
     assert.ok(defensePlays >= 4);
     assert.equal(continueReady(sim), false);
     assert.equal(start(sim, 'slants'), false);
+    // Practice runners can be tackled, but the visitors never score.
     if (mode === 'practice') {
-      assert.equal(sim.s.homeScore, 28);
+      assert.ok(sim.s.homeScore > 0);
       assert.equal(sim.s.awayScore, 0);
     }
     const restore = make();
@@ -933,18 +934,24 @@ test('a held steer counts as control even while pointed straight', () => {
   for (let i = 0; i < 70; i++) sim.step(.05, 0, true);
   assert.equal(sim.s.autoPlay, false);
 });
-test('practice runners shake off contact instead of passing through defenders', () => {
+test('practice runners are tackled like anyone else: dodging is what practice teaches', () => {
   const events = [], sim = make({ practice: true, random: () => .9 }, events);
   start(sim, 'inside'); controlReady(sim);
   const runner = sim._player(sim.s.carrierId), defender = sim._player('away-MLB');
   sim._runTime = 1; defender.x = runner.x + .6; defender.z = runner.z + .9; defender.shed = true;
   sim.step(.05, 0);
-  assert.equal(sim.s.phase, 'run'); assert.ok(events.includes('broken'));
-  assert.equal(defender.anim, 'knocked'); assert.ok(defender.stun > 0);
-  for (let i = 0; i < 20; i++) {
-    sim.step(.05, 0);
-    assert.ok(Math.hypot(defender.x - runner.x, defender.z - runner.z) > .6, 'the knocked robot never overlaps the runner');
+  assert.equal(sim.s.phase, 'tackle'); assert.ok(!events.includes('broken'));
+  let carries = 0, touchdowns = 0, tackles = 0;
+  for (let i = 0; i < 30; i++) {
+    const seen = [], play = make({ practice: true, random: seeded(700 + i * 7919) }, seen);
+    start(play, ['slants', 'inside', 'sweep'][i % 3]);
+    for (let n = 0; n < 40 && play.s.phase === 'aim'; n++) play.step(.05, 0);
+    if (play.s.phase === 'aim') play.throwPass();
+    settle(play, s => s.phase === 'run' ? evade(s) : 0);
+    carries++; if (/touchdown/i.test(play.s.result.title)) touchdowns++; if (seen.includes('tackle')) tackles++;
   }
+  assert.ok(tackles >= carries * .6, 'practice defenders make most stops: ' + tackles + '/' + carries);
+  assert.ok(touchdowns <= carries * .2, 'practice is not a free touchdown: ' + touchdowns + '/' + carries);
 });
 test('place kicks start the aim at a far post; the kick is good inside the window between the uprights', () => {
   for (const r of [.1, .9]) {

@@ -1370,9 +1370,9 @@
       if (c < 16) t = Math.min(t, .25);
       return { x: clamp(p.x + v.x * t, -SIDE + .4, SIDE - .4), z: p.z + v.z * t };
     }
-    // Resolve contact. Returns true when the runner breaks free. Practice
-    // runners always shake loose, so contact is still visible.
-    _tryBreakTackle(p, q, isDefense, always) {
+    // Resolve contact. Returns true when the runner breaks free. Practice runners
+    // are tackled like anyone else: dodging real tackles is what practice is for.
+    _tryBreakTackle(p, q, isDefense) {
       const s = this.s, tune = this._tune(), d = this._direction();
       if (q.id === s.controlledId && !s.autoPlay) return false;
       let chance = tune.cpuBroken;
@@ -1383,7 +1383,7 @@
         if (q.diving) chance += tune.broken.dive;
         if (p.stumble > 0) chance *= .5;
       }
-      if (!always && this._rand() >= chance) return false;
+      if (this._rand() >= chance) return false;
       // Knocked back and away from the runner; he gets up and can chase again.
       q.stun = 1.1; q.anim = q.diving ? 'dive' : 'knocked';
       q.heading = Math.atan2(p.x - q.x, p.z - q.z); q.shove = { x: Math.sin(q.heading), z: Math.cos(q.heading) };
@@ -1488,7 +1488,6 @@
             q.goal = { x: q.x, z: q.z, targetId: blocker.id };
           } else {
             if (this._runTime < (q.react || .35)) speed *= .5;
-            if (practice && !isDefense) speed *= 0.55;
             const aim = this._intercept(q, p, velocity, speed);
             this._moveToward(q, aim.x, aim.z, speed, dt);
           }
@@ -1517,10 +1516,9 @@
         if (practice && !isDefense) p.x = Math.sign(p.x) * (SIDE - 1.5);
         else { this._finishPlay(p.z, 'Out of bounds'); return; }
       }
-      if (tackler && practice && !isDefense) this._tryBreakTackle(p, tackler, false, true);
-      else if (tackler) {
+      if (tackler) {
         if (!this._tryBreakTackle(p, tackler, isDefense)) this._beginTackle(p, tackler, isDefense ? 'Tackle!' : 'Tackled');
-      } else if (this._runTime > 18 && !practice) {
+      } else if (this._runTime > 18) {
         this._finishPlay(p.z, isDefense ? 'Runner stopped' : 'Forward progress');
       }
     }

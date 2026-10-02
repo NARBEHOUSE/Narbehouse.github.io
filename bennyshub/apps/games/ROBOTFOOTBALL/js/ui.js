@@ -189,7 +189,7 @@
     $('menu-content').innerHTML = options.content || ''; $('menu-note').textContent = options.note || '';
     $('hero-copy').hidden = !['main', 'teams'].includes(kind); $('action-panel').hidden = true; $('steer-panel').hidden = true; $('kick-readout').hidden = true; $('kick-controls').hidden = true; $('ready-cue').hidden = true; $('target-labels').replaceChildren();
     $('pause-button').hidden = !activeGame || kind !== 'game'; $('scoreboard').hidden = !activeGame; $('situation').hidden = !activeGame;
-    // Menus open with nothing highlighted; the playbook passes focus 0 so its first play is ready.
+    // Every menu opens with nothing highlighted, the playbook included: a stray Enter picks nothing.
     menuHeading = title; makeItems(list, $('menu-items'), options.focus ?? -1); updateHint(); syncAudio();
     speaking(sentences(title, options.speech || description, list[focusIndex]?.intro || list[focusIndex]?.name), options.polite);
   }
@@ -329,8 +329,8 @@
       ['05 / BEAT THE PURSUIT', 'Defenders take angles and dive at your legs. Steer away from them. A tackle from behind is the easiest to break, and a tired robot slows down on a long run.'],
       ['06 / MAKE THE STOP', 'On defense, steer toward the ball carrier; your robot, marked YOU, tackles automatically when he reaches him. While you steer, he stays yours. Let go for two seconds and he plays by himself (AUTO). After three seconds, control moves to the robot nearest the ball. When the visitors punt or kick, choose to block it or set up a return. The view returns overhead after every play.'],
       ['YOUR SEASON', 'Choose your team and play sixteen games. Ten wins earn a playoff spot. A perfect season goes straight to the championship. Exhibition is a shorter, four-possession game. Season games use four quarters.'],
-      ['YOUR PACE', inBasic ? 'To pause, choose Pause / settings in the playbook between plays. Practice removes dropped passes and tackles against your runner. Advanced mode in Settings adds more options.'
-        : 'To pause, choose Pause / settings in the playbook between plays. Settings has slower speeds and “Choose direction” controls that wait between moves. Practice removes dropped passes and tackles against your runner, but a throw let go too early or too late still misses.']
+      ['YOUR PACE', inBasic ? 'To pause, choose Pause / settings in the playbook between plays. Practice has no dropped passes, and the visitors cannot score, but its defenders tackle for real: it is where you learn to dodge. Advanced mode in Settings adds more options.'
+        : 'To pause, choose Pause / settings in the playbook between plays. Settings has slower speeds and “Choose direction” controls that wait between moves. Practice has no dropped passes, and the visitors cannot score, but its defenders tackle for real, and a throw let go too early or too late still misses.']
     ];
     overlay('help', 'EVERY PLAY IS YOURS', 'One or two switches. Real decisions. Your pace.', [
       { name: 'Read instructions aloud', action: () => speaking(inBasic ? 'Choose plays from above the field. Space scans. Enter selects. Hold Space to scan backwards. Players line up before the snap. Passing zooms behind your quarterback. Scan the players on the field, then hold Enter on one. The line grows toward him. Let go when it reaches him and the tone plays. With Easy throw on, just select him. There is no time limit. For a field goal, hold Space to aim, release to stop, press again to reverse, then kick with Enter. With Auto Scan, the aim sweeps automatically. Punts and kickoffs go straight down the field. After a catch, you get a protected moment before running starts. Hold Space to steer left, or Enter to steer right. In one switch mode, hold Enter to steer in the shown direction, then release to swap direction. On defense, steer toward the runner. Tackles happen automatically when you reach him. While you steer, you keep your robot. Let go for two seconds and he plays by himself. After three seconds, control moves to the robot nearest the ball. When the visitors punt or kick, choose to block it or set up a return. To pause, choose Pause / settings in the playbook between plays. A touchdown is worth six points. Then kick the extra point for one more, or go for two with one play from the 2-yard line. The game tosses the coin for you, and every half and every score starts with a kickoff. If you catch a kick in your end zone, choose to run it out or take a knee. Defenders take angles and dive at the runner, so run away from them to break tackles. Season mode has sixteen games and playoffs. Exhibition has four possessions each. Advanced mode in Settings adds more options.'
@@ -367,17 +367,20 @@
     const last = lastResult ? '<div class="last-play tone-' + lastResult.tone + '"><span>LAST PLAY</span><b>' + escape(lastResult.title) + '</b><small>' + escape(lastResult.detail) + '</small></div>' : '';
     const eyebrow = s.toss ? 'COIN TOSS / ' + (s.overtime ? 'OVERTIME' : 'OPENING KICKOFF') : kickoff ? 'SPECIAL TEAMS / ' + homeTeam.shortName + ' KICKING'
       : (choosing || two ? 'CONVERSION / ' : theirKick ? 'SPECIAL TEAMS / ' : defending ? 'DEFENSE / ' : 'OFFENSE / ') + (defending ? awayTeam.shortName : homeTeam.shortName) + ' BALL';
-    overlay('game', title, description, list, { focus: 0, style: 'compact', polite: true, speech: s.toss ? description : theirKick ? sentences(situation(s), description) : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
+    // No play is highlighted yet, so no route preview is drawn on the field.
+    s.previewPlayId = null;
+    overlay('game', title, description, list, { style: 'compact', polite: true, speech: s.toss ? description : theirKick ? sentences(situation(s), description) : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
     $('pause-button').hidden = false;
   }
   function actionPanel(title, detail, list) {
     screen = 'game'; changeContext(); $('overlay').hidden = true; $('action-panel').hidden = false; $('steer-panel').hidden = true;
     $('action-title').textContent = title; $('action-detail').textContent = detail; $('action-kicker').textContent = sim.s.phase === 'defend' ? 'CLOSE THE GAP' : 'READ THE FIELD';
-    makeItems(list, $('action-items')); $('pause-button').hidden = false; updateHint(); speaking(sentences(title, detail, list[0]?.name), true);
+    makeItems(list, $('action-items'), -1); $('pause-button').hidden = false; updateHint(); speaking(sentences(title, detail), true);
   }
   function fieldSelection(list) {
     screen = 'game'; changeContext(); $('overlay').hidden = true; $('action-panel').hidden = true; $('steer-panel').hidden = true;
-    makeItems(list, $('target-labels'));
+    // No receiver is highlighted until the first Space (or auto scan's first step).
+    makeItems(list, $('target-labels'), -1);
     list.forEach((item, i) => {
       item.element.classList.add('field-choice'); item.element.dataset.playerId = sim.s.targets[i];
       // With charging on, a mouse or finger holds on a receiver the same way a held Enter does.
@@ -386,9 +389,9 @@
       item.element.addEventListener('pointercancel', () => { if (charge?.kind === 'throw') cancelCharge(); });
     });
     items.push({ name: 'Pause', element: $('pause-button'), action: pause });
-    $('pause-button').hidden = false; setFocus(0, false); updateHint();
-    const chargeTip = prefs.charge && !hinted.throwCharge ? (hinted.throwCharge = true, ' Hold Enter and the line grows toward him. Let go when it reaches him and the tone plays.') : '';
-    speaking('Choose your receiver. ' + (list[0].say ? list[0].say() : list[0].name) + chargeTip, true);
+    $('pause-button').hidden = false; updateHint();
+    const chargeTip = prefs.charge && !hinted.throwCharge ? (hinted.throwCharge = true, ' Hold Enter on a receiver and the line grows toward him. Let go when it reaches him and the tone plays.') : '';
+    speaking('Choose your receiver.' + chargeTip, true);
   }
   function renderPhase() {
     if (!activeGame || screen !== 'game') return;
@@ -440,7 +443,7 @@
         if (sim.continuePlay()) { phaseSeen = ''; renderPhase(); return; }
         overlay('game', result.title || 'PLAY COMPLETE', result.detail || s.message || 'Get ready for the next play.', [
         { name: 'Next play', desc: 'Return to the overhead playbook', action: () => { sim.continuePlay(); phaseSeen = ''; renderPhase(); } }, { name: 'Pause / settings', action: pause }
-      ], { focus: 0, style: 'compact', eyebrow: 'THE DRIVE CONTINUES' });
+      ], { style: 'compact', eyebrow: 'THE DRIVE CONTINUES' });
       }
     } else if (s.phase === 'final') {
       if (!sim.options.practice) { try { localStorage.removeItem(gameMode === 'season' ? SEASON_SAVE : SAVE); } catch (_) {} }
@@ -571,7 +574,7 @@
         const point = renderer.projectPlayer?.(s.targets[item.target]); if (!point) continue;
         const info=s.targetInfo?.[item.target];
         if(info){const description=tagText(info);if(item.desc!==description){item.desc=description;item.element.querySelector('.desc').textContent=description;}item.element.dataset.open=info.openness.toLowerCase();item.element.setAttribute('aria-label',receiverSpeech(item.target));
-          if(item.target===s.selectedTarget){if(item.heard===undefined)item.heard=info.openness;else if(item.heard!==info.openness&&performance.now()-openSpoken>1500){item.heard=info.openness;openSpoken=performance.now();speaking('Number '+s.players.find(q=>q.id===s.targets[item.target]).number+' is '+(info.openness==='Tight'?'in tight coverage':coverageWord(info))+' now.',true);}}}
+          if(item===items[focusIndex]&&item.target===s.selectedTarget){if(item.heard===undefined)item.heard=info.openness;else if(item.heard!==info.openness&&performance.now()-openSpoken>1500){item.heard=info.openness;openSpoken=performance.now();speaking('Number '+s.players.find(q=>q.id===s.targets[item.target]).number+' is '+(info.openness==='Tight'?'in tight coverage':coverageWord(info))+' now.',true);}}}
         const button = item.element, width = button.offsetWidth, height = button.offsetHeight;
         const x = Math.max(width / 2 + 14, Math.min(innerWidth - width / 2 - 14, point.x));
         const minY = 162 + height, maxY = innerHeight - 124;
@@ -666,7 +669,7 @@
       else sim.step(dt, steer * (renderer.getSteerSign?.() ?? -1), steer !== 0 || (screen === 'game' && livePhase() && fx.runControl === 'hold' && (presses.has('Space') || presses.has('Enter'))));
       if (sim.s.phase !== phaseSeen || resultHeld && !(sim.s.resultRevealRemaining > 0) && sceneReady(now)) renderPhase();
     }
-    renderer.render(sim.s, document.hidden || (activeGame && screen !== 'game') ? 0 : dt, { reducedMotion: fx.reducedMotion, menu: !activeGame, menuOpen: !$('overlay').hidden && $('overlay').classList.contains('compact'), kickGuide: fx.kickGuide, charge, chargeZone: ZONE, chargeMax: CHARGE_MAX, homeTeam, awayTeam });
+    renderer.render(sim.s, document.hidden || (activeGame && screen !== 'game') ? 0 : dt, { reducedMotion: fx.reducedMotion, menu: !activeGame, menuOpen: !$('overlay').hidden && $('overlay').classList.contains('compact'), targetShown: items[focusIndex]?.target !== undefined, kickGuide: fx.kickGuide, charge, chargeZone: ZONE, chargeMax: CHARGE_MAX, homeTeam, awayTeam });
     document.body.classList.toggle('charging', !!charge);
     document.body.classList.toggle('in-game', activeGame && screen === 'game'); document.body.classList.toggle('menu-open', !$('overlay').hidden);
     if (activeGame) updateHud();

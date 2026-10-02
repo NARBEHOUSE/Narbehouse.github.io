@@ -772,7 +772,8 @@
       const targetId=typeof s.selectedTarget==='number'?(s.targets||[])[s.selectedTarget]:s.selectedTarget;
       const target=lookup.get(targetId);
       const markedPlayer=s.phase==='defend'?lookup.get(s.defenseTargetId||s.carrierId):target;
-      this.selection.visible=!menu&&((s.phase==='aim'&&!!target)||(s.phase==='defend'&&!!markedPlayer));
+      // The aim ring marks a receiver only once the scan has highlighted one.
+      this.selection.visible=!menu&&((s.phase==='aim'&&!!target&&options.targetShown!==false)||(s.phase==='defend'&&!!markedPlayer));
       this.selectionMaterial.color.setHex(s.phase==='defend'?0xffbb73:0xd6ff5f);
       if(markedPlayer){this.selection.position.set(markedPlayer.x,.065,markedPlayer.z);const pulse=options.reducedMotion?1:1+Math.sin(this.time*3)*.035;this.selection.scale.setScalar(pulse);}
       const controlled=lookup.get(s.controlledId);
