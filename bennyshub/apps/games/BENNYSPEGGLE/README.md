@@ -85,8 +85,9 @@ Menus follow the hub contract: tap Space = next, hold Space = back, Enter =
 choose, all on release. Every menu scans individual choices in order, including
 modes, campaigns, custom campaigns and unlocked levels. Enter opens the highlighted
 choice directly, with no row or section selection first. Mouse and touch work
-everywhere: move the mouse to aim and click to shoot; on a touch screen drag
-or tap to aim and press **Shoot** (lifting a finger never shoots). The Pause
+everywhere: move the mouse to aim and click to shoot; on a touch screen tap
+where you want the ball to go and it shoots. Dragging a finger only moves the
+aim, and a tap held through a shot does not fire the next ball. The Pause
 button is always in the bottom‑left corner during play.
 
 Settings: Text to Speech, Voice, Before Each Shot, Aim & Guide (aim speed —

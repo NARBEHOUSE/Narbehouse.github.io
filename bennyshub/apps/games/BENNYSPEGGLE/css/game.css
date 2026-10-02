@@ -112,7 +112,7 @@ body[data-orient="tall"] .sbar { display: none; }
 #hudPlate .pl-catch { color: #12a86b; } #hudPlate .pl-bounce { color: #e8642a; } #hudPlate .pl-timed { color: #7a5cff; }
 body[data-mode="hyper"] #hudPlate .pl-catch { color: #4dffb0; } body[data-mode="hyper"] #hudPlate .pl-bounce { color: #ff9a5a; } body[data-mode="hyper"] #hudPlate .pl-timed { color: #b8a6ff; }
 
-/* ── Pause, Shoot, the Play/Pause choice ───────────────────────────────── */
+/* ── Pause, the Play/Pause choice ──────────────────────────────────────── */
 #pauseBtn {
   position: absolute; left: calc(18px + var(--sal)); bottom: calc(18px + var(--sab)); z-index: 30;
   width: max(76px, 4.9rem); height: max(76px, 4.9rem); display: none;
@@ -122,21 +122,11 @@ body[data-mode="hyper"] #hudPlate .pl-catch { color: #4dffb0; } body[data-mode="
 }
 #pauseBtn .pIco { font-size: 1.5rem; letter-spacing: -2px; }
 #pauseBtn.on { display: flex; }
-#shootBtn {
-  position: absolute; right: calc(18px + var(--sar)); bottom: calc(18px + var(--sab)); z-index: 30; display: none;
-  width: 104px; height: 104px; border-radius: 50%; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 35% 30%, #fff, var(--accent) 60%); color: #1d1838; font: 900 1.1rem var(--body);
-  border: 5px solid #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .45); cursor: pointer;
-}
-#shootBtn.on { display: flex; }
-#pauseBtn:is(.focused, :focus-visible), #shootBtn:focus-visible,
-body:not(.choosing) #pauseBtn:hover, body:not(.choosing) #shootBtn:hover {
+#pauseBtn:is(.focused, :focus-visible), body:not(.choosing) #pauseBtn:hover {
   background: var(--selection); color: var(--selectionInk); border-color: var(--selectionInk);
   outline: 4px solid var(--selectionInk); outline-offset: 2px;
   box-shadow: 0 0 0 8px #fff, 0 8px 24px rgba(0, 0, 0, .45);
 }
-body[data-orient="tall"] #shootBtn { width: 84px; height: 84px; bottom: calc(var(--sab) + 18px); }
-body.choosing #shootBtn span::after { content: ''; }
 
 #choiceFrame {
   position: absolute; left: calc(var(--bx) - 10px); top: calc(var(--by) - 10px); width: calc(var(--bw) + 20px); height: calc(var(--bh) + 20px);
@@ -305,7 +295,7 @@ body[data-mode="hyper"] .bigStars span { color: rgba(255, 255, 255, .15); }
 .crash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .85); color: #fff; text-align: center; padding: 24px; font-size: 1.2rem; }
 
 /* Cover screenshots: the board and its world, nothing else. */
-body.cover #hud, body.cover #pauseBtn, body.cover #shootBtn, body.cover #banner, body.cover #holdRing, body.cover .fxPop, body.cover .fxCallout, body.cover #choiceFrame { display: none !important; }
+body.cover #hud, body.cover #pauseBtn, body.cover #banner, body.cover #holdRing, body.cover .fxPop, body.cover .fxCallout, body.cover #choiceFrame { display: none !important; }
 
 /* ── Small screens ─────────────────────────────────────────────────────── */
 @media (max-width: 900px), (max-height: 520px) {

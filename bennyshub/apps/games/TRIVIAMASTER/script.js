@@ -2,9 +2,9 @@
 let TRIVIA_DATA = {}; // Loaded from JSON
 
 // Input configuration - matching other games (BENNYSTICTACTOE, BENNYSMATCHYMATCH)
+// No Enter hold: Pause is a scan stop in the round, so any Enter press just selects
 const config = {
     longPress: 3000,        // 3 seconds to start backwards scanning
-    enterLongPress: 5000,   // 5 seconds for pause menu
     repeatInterval: 2000    // 2 seconds between backward scans
 };
 
@@ -33,20 +33,19 @@ const state = {
     categoryPage: 0,
     previousScreen: null, // To track where to go back from settings
     answerLocked: false, // Prevent double-selection of answers
+    advancePending: false, // Answered, then paused before the next question loaded
     gamePage: 0, // For game selection pagination
     // Input State (matching other games pattern)
     input: {
         spaceHeld: false,
         enterHeld: false,
         spaceTime: 0,
-        enterTime: 0,
-        spaceLongPressFired: false,
-        enterLongPressFired: false
+        spaceLongPressFired: false
     },
     timers: {
         space: null,
         spaceRepeat: null,
-        enter: null
+        advance: null
     }
 };
 
@@ -111,7 +110,7 @@ function speak(text) {
         const isPauseMenuText = Array.from(pauseOverlay.querySelectorAll('.scannable, #pause-overlay h2, #pause-overlay p'))
                                      .some(el => (el.innerText || el.getAttribute('aria-label') || '') === text);
         
-        if (!text.includes("Game Paused") && !text.includes("Game Resumed") && !isPauseMenuText) {
+        if (!text.includes("Game Paused") && !text.includes("Game Resumed") && text !== "I need help" && !isPauseMenuText) {
              // Allow 'Voice changed' feedback even if paused
              if (text !== "Voice changed") {
                  console.log("Blocked background speech while paused:", text);
@@ -254,8 +253,8 @@ function showScreen(screenId) {
 
 // Scanning System
 function getScannables() {
-    // Get scannables from active screen AND header (if visible) AND pause overlay (if visible)
-    
+    // Get scannables from the visible overlay if there is one, otherwise the active screen
+
     // Priority: Editor Warning Overlay
     const editorWarning = document.getElementById('editor-warning-overlay');
     if (editorWarning && !editorWarning.classList.contains('hidden')) {
@@ -275,17 +274,17 @@ function getScannables() {
     }
     
     const activeScreen = document.querySelector('.screen.active');
-    let elements = [];
-    
-    if (!header.classList.contains('hidden')) {
-        elements = elements.concat(Array.from(header.querySelectorAll('.scannable')));
+    if (!activeScreen) return [];
+
+    // In a round, Pause comes after the last answer so it never sits between the question and the answers.
+    // The header stays visible on the end and settings screens, so Pause is only added here.
+    if (activeScreen.id === 'game-screen') {
+        const answers = Array.from(document.querySelectorAll('#answers-container .scannable'));
+        const question = Array.from(document.querySelectorAll('#question-container .scannable'));
+        return [...answers, document.getElementById('pause-btn'), ...question];
     }
-    
-    if (activeScreen) {
-        elements = elements.concat(Array.from(activeScreen.querySelectorAll('.scannable')));
-    }
-    
-    return elements;
+
+    return Array.from(activeScreen.querySelectorAll('.scannable'));
 }
 
 function startScanning() {
@@ -614,11 +613,6 @@ function onSpaceLongPress() {
     }, interval);
 }
 
-function onEnterLongPress() {
-    state.input.enterLongPressFired = true;
-    togglePause();
-}
-
 function onSpaceShortPress() {
     scanNext();
 }
@@ -638,12 +632,7 @@ function setupEventListeners() {
             }
             e.preventDefault();
         } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-            if (!state.input.enterHeld) {
-                state.input.enterHeld = true;
-                state.input.enterTime = Date.now();
-                state.input.enterLongPressFired = false;
-                state.timers.enter = setTimeout(onEnterLongPress, config.enterLongPress);
-            }
+            state.input.enterHeld = true;
             e.preventDefault();
         }
     });
@@ -667,18 +656,9 @@ function setupEventListeners() {
             
             startScanning(); // Reset/Resume auto scan timer if active
         } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-            // Clear timers first
-            clearTimeout(state.timers.enter);
-            state.timers.enter = null;
-            
-            const wasFired = state.input.enterLongPressFired;
+            // However long Enter was held, releasing it selects
             state.input.enterHeld = false;
-            state.input.enterLongPressFired = false;
-            
-            // Only perform short press if long press hasn't fired
-            if (!wasFired) {
-                onEnterShortPress();
-            }
+            onEnterShortPress();
         }
     });
 
@@ -705,17 +685,10 @@ function setupEventListeners() {
             startScanning();
         }
         if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
-            const wasFired = state.input.enterLongPressFired;
             // Reset enter input state
             state.input.enterHeld = false;
-            state.input.enterLongPressFired = false;
-            state.input.enterTime = 0;
-            if (state.timers.enter) {
-                clearTimeout(state.timers.enter);
-                state.timers.enter = null;
-            }
             // If cancelled due to 'too-short', still select
-            if (e.detail.reason === 'too-short' && !wasFired) {
+            if (e.detail.reason === 'too-short') {
                 onEnterShortPress();
             }
         }
@@ -723,7 +696,7 @@ function setupEventListeners() {
 
     // Click handlers for all interactive elements (delegation)
     document.body.addEventListener('click', (e) => {
-        // Allow clicking on scannable items OR the pause button (which is no longer scannable)
+        // Allow clicking on scannable items OR the pause button
         const target = e.target.closest('.scannable, #pause-btn');
         if (!target) return;
 
@@ -744,8 +717,15 @@ function setupEventListeners() {
         } else if (action === 'resume') {
             togglePause();
         } else if (action === 'quit') {
+            // Drop an answer still waiting to move on, or it would pull the player back into the round
+            clearTimeout(state.timers.advance);
+            state.timers.advance = null;
+            state.advancePending = false;
             togglePause(); // Unpause first
-            showScreen('main-menu');        } else if (action === 'settings') {
+            showScreen('main-menu');        } else if (action === 'help') {
+            // Pause-menu Help item: just speak for the caregiver, do NOT close the pause overlay or change any other state
+            speak("I need help");
+        } else if (action === 'settings') {
             // Check if coming from pause menu
             if (state.isPaused) {
                 state.previousScreen = 'game-screen';
@@ -1666,9 +1646,15 @@ function handleAnswer(btn) {
     
     updateHUD();
 
-    // Automatically go to next question after short delay
-    setTimeout(() => {
-        nextQuestion();
+    // Automatically go to next question after short delay.
+    // Pause is scannable right after the answers, so the player may pause first; then it waits for Continue.
+    state.timers.advance = setTimeout(() => {
+        state.timers.advance = null;
+        if (state.isPaused) {
+            state.advancePending = true;
+        } else {
+            nextQuestion();
+        }
     }, 1500);
 }
 
@@ -1804,6 +1790,12 @@ function togglePause() {
         speak("Game Resumed");
     }
     resetScanning();
+
+    // An answer picked just before pausing moves on to its next question now
+    if (!state.isPaused && state.advancePending) {
+        state.advancePending = false;
+        nextQuestion();
+    }
 }
 
 // Start

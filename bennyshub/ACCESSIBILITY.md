@@ -655,7 +655,7 @@ where each game's design work went.
 | **Chess & Checkers, Connect Four, Tic Tac Toe** | Same two‑stage grid selection; scan pieces/columns, select, scan destinations, select. |
 | **Benny's Matchy Match** | Two‑stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
 | **Benny Says** | Simon‑style sequence repetition, deliberately **without** the timing pressure of the original. |
-| **Benny's Word Jumble / Trivia Master** | Scan letters or answers, select. Trivia Master includes a builder for your own quizzes. |
+| **Benny's Word Jumble / Trivia Master** | Scan letters or answers, select. Trivia Master includes a builder for your own quizzes. Trivia Master has **no hold‑to‑pause**: Pause is a scan stop after the last answer, and a long Enter press just selects. |
 | **Benny's Dice** | Select to roll, scan to choose which dice to keep. Yarkle, Fahtzee, Free Throw modes. |
 | **Benny's Bug Blaster** | Tower defence — scan placement positions and upgrades, select. Turn‑paced, not twitch. |
 | **Benny's Mega Slot** | Cause and effect: one press spins, immediate audio‑visual payoff. |
@@ -961,6 +961,14 @@ right now.
 **Games reach pause differently, and that is currently fine.** Some offer an
 on‑screen Pause button you scan to; others use the hold‑Enter gesture; most do
 both. The inconsistency is accepted for now.
+
+**Trivia Master has switched (2026‑10‑02, at the user's request).** The
+hold‑Enter gesture is gone and the header's Pause button is a scan stop. It sits
+after the last answer, so a round still goes question → first answer with no
+extra press. Pause is only added to the scan on the game screen, because the
+header stays visible on the end and settings screens. If the player pauses in the
+moment between picking an answer and the next question loading, the next
+question waits for Continue.
 
 **One known deviation from the ~5 s convention:** P3GL's long Enter hold takes
 **2 s** when Auto Scan is on and 5 s when it is off (`holdToPause()` in

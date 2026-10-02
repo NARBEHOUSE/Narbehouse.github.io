@@ -66,7 +66,6 @@
     document.body.classList.toggle('playing', !!playing);
     document.body.classList.toggle('inmenu', !!overlayOn);
     $('pauseBtn').classList.toggle('on', !!playing);
-    $('shootBtn').classList.toggle('on', !!playing && isTouch);
     $('hud').classList.toggle('on', !!(g && g.match && (g.state === 'play' || g.state === 'intro' || g.state === 'result')));
     refreshChoice();
   }
@@ -847,8 +846,7 @@
   }
 
   /* ── Pointer ──────────────────────────────────────────────────────────── */
-  let isTouch = !!(root.navigator && root.navigator.maxTouchPoints > 0);
-  let ptr = { down: false, x: 0, y: 0, moved: false, type: 'mouse' };
+  let ptr = { down: false, x: 0, y: 0, moved: false, aimed: false };
   function boardPoint(e) {
     const Lyt = P3.main && P3.main.layout;
     if (!Lyt) return null;
@@ -856,15 +854,16 @@
   }
   function inBoard(p) { return p && p.x > -20 && p.x < C.BOARD.W + 20 && p.y > 0 && p.y < C.BOARD.H; }
   function onPointerDown(e) {
-    if (e.pointerType === 'touch') { isTouch = true; refreshChrome(); }
     const c = ctx();
     if (c !== 'play' && c !== 'choice') return;
     const p = boardPoint(e);
     if (!inBoard(p)) return;
     if (G().state === 'intro') { G().beginPlay(); return; }
     if (c === 'choice') { choiceIndex = 0; G().choosePlay(); refreshChoice(); stopAuto(); }
-    ptr = { down: true, x: e.clientX, y: e.clientY, moved: false, type: e.pointerType };
-    G().pointerAim(p.x, p.y);
+    // Only a press that took aim can shoot: one held through a shot must not fire the next ball at the old aim.
+    const g = G();
+    ptr = { down: true, x: e.clientX, y: e.clientY, moved: false, aimed: !!(g.match && g.match.phase === 'aim') };
+    g.pointerAim(p.x, p.y);
     if (e.cancelable) e.preventDefault();
   }
   function onPointerMove(e) {
@@ -879,8 +878,8 @@
   function onPointerUp(e) {
     if (!ptr.down) return;
     ptr.down = false;
-    // Mouse: a click (not a drag) shoots. Touch: lifting never shoots — use the Shoot button.
-    if (ptr.type === 'mouse' && !ptr.moved && ctx() === 'play') G().fire();
+    // A click or tap (not a drag) shoots where it landed; a drag only moves the aim.
+    if (ptr.aimed && !ptr.moved && ctx() === 'play') G().fire();
   }
 
   /* ── Boot ─────────────────────────────────────────────────────────────── */
@@ -916,7 +915,6 @@
     root.addEventListener('pointerup', onPointerUp);
     root.addEventListener('pointercancel', () => { ptr.down = false; });
     U.addTap($('pauseBtn'), () => { if (ctx() === 'choice' || ctx() === 'play') openPause(); });
-    U.addTap($('shootBtn'), () => { if (G().state === 'intro') G().beginPlay(); else if (ctx() === 'choice') { G().choosePlay(); refreshChoice(); } else if (ctx() === 'play') G().fire(); });
     U.addTap($('choiceFrame'), () => { if (ctx() === 'choice') { choiceIndex = 0; choiceSelect(); } });
     U.addTap($('banner'), () => { if (G().state === 'intro') G().beginPlay(); });
 
