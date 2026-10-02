@@ -414,7 +414,7 @@ function renderMenu(menuName, menuItems, containerId = 'menu-container') {
 function showMainMenu() {
     state.mode = 'menu';
     state.menuState = 'main';
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-board-container').style.display = 'none';
@@ -425,7 +425,7 @@ function showMainMenu() {
     if (pauseIcon) pauseIcon.style.display = 'none';
     
     renderMenu('main', menus.main);
-    speak("Benny's Checkers. Single Player.");
+    speak("Benny's Checkers.");
     
     state.scanItems = menus.main; // For input handling
     startAutoScan(); // Will check setting
@@ -434,7 +434,7 @@ function showMainMenu() {
 function showMenu(menuName) {
     state.mode = 'menu';
     state.menuState = menuName;
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     
     // Hide pause button if showing settings from main menu
     const pauseIcon = document.getElementById('pause-button-icon');
@@ -442,30 +442,30 @@ function showMenu(menuName) {
 
     renderMenu(menuName, menus[menuName]);
     state.scanItems = menus[menuName];
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
 function openPauseMenu() {
     state.mode = 'pause';
     state.pauseMenuState = 'main';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1;
     
     const ov = document.getElementById('pause-overlay');
     ov.style.display = 'flex';
     
     renderMenu('pause', menus.pause, 'pause-overlay');
     state.scanItems = menus.pause;
-    speak("Paused. Continue Game.");
+    speak("Paused");
     startAutoScan();
 }
 
 function showPauseSettings() {
     state.pauseMenuState = 'settings';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1; // No highlight until Space is pressed
     renderMenu('settings', menus.pauseSettings, 'pause-overlay');
     state.scanItems = menus.pauseSettings;
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
@@ -1330,9 +1330,9 @@ function scanPrev() {
     } else {
         const menuLen = state.scanItems.length;
         if (state.mode === 'menu') {
-            state.menuIndex = (state.menuIndex - 1 + menuLen) % menuLen;
+            state.menuIndex = state.menuIndex < 0 ? menuLen - 1 : (state.menuIndex - 1 + menuLen) % menuLen;
         } else if (state.mode === 'pause') {
-            state.pauseIndex = (state.pauseIndex - 1 + menuLen) % menuLen;
+            state.pauseIndex = state.pauseIndex < 0 ? menuLen - 1 : (state.pauseIndex - 1 + menuLen) % menuLen;
         }
         updateHighlights();
         announceCurrentMenuItem();
@@ -1365,10 +1365,13 @@ function selectCurrentItem() {
              speak("Selection Cancelled.");
         }
     } else {
-        // Menu Selection
+        // Menu Selection - guard for index -1
         let item;
-        if (state.mode === 'menu') item = menus[state.menuState][state.menuIndex];
-        else if (state.mode === 'pause') {
+        if (state.mode === 'menu') {
+            if (state.menuIndex < 0) return;
+            item = menus[state.menuState][state.menuIndex];
+        } else if (state.mode === 'pause') {
+            if (state.pauseIndex < 0) return;
             const m = state.pauseMenuState === 'main' ? menus.pause : menus.pauseSettings;
             item = m[state.pauseIndex];
         }

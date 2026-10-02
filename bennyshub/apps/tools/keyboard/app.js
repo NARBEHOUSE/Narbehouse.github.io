@@ -134,12 +134,12 @@
 
   // Settings menu state
   let inSettingsMode = false;
-  let settingsRowIndex = 0;
+  let settingsRowIndex = -1;
   let settingsItems = [];
 
   // Scanning state
   let inRowSelectionMode = true;
-  let currentRowIndex = 0;
+  let currentRowIndex = -1;
   let currentButtonIndex = 0;
   let spacebarPressed = false;
   let returnPressed = false;
@@ -237,7 +237,7 @@
         kb.appendChild(btn);
       });
     });
-    highlightTextBox();
+    clearAllHighlights();
   }
 
   document.addEventListener("keydown", (e) => {
@@ -409,7 +409,7 @@
   function scanBackward() {
     if (inRowSelectionMode) {
       const prevRow = currentRowIndex;
-      currentRowIndex = (currentRowIndex - 1 + (rows.length + 2)) % (rows.length + 2);
+      currentRowIndex = currentRowIndex < 0 ? rows.length + 1 : (currentRowIndex - 1 + (rows.length + 2)) % (rows.length + 2);
 
       clearAllHighlights();
       if (currentRowIndex === 0) {
@@ -448,6 +448,7 @@
       return;
     }
 
+    if (currentRowIndex < 0) return;
     if (inRowSelectionMode) {
       if (currentRowIndex === 0) {
         const text = buffer.replace(/\|/g, "").trim();
@@ -508,6 +509,7 @@
         }
       }
 
+      if (inSettingsMode) return;
       inRowSelectionMode = true;
       clearAllHighlights();
       if (currentRowIndex === 0) {
@@ -692,8 +694,10 @@
     textBar.style.display = "none"; // Hide text bar too
 
     settingsItems = Array.from(settingsMenu.querySelectorAll(".settings-item"));
-    settingsRowIndex = 0;
-    highlightSettingsItem(0);
+    settingsRowIndex = -1;
+    clearAllHighlights();
+    highlightSettingsItem(-1);
+    document.activeElement?.blur();
 
     updateThemeDisplay();
     updateScanSpeedDisplay();
@@ -701,6 +705,8 @@
     updateHighlightDisplay();
     updateTTSToggleDisplay(); // Add TTS toggle display update
     updateAutoScanDisplay(); // Add Auto Scan display update
+    stopAutoScan();
+    if (isAutoScanning) startAutoScan();
 
     settingsItems.forEach((item, index) => {
       item.addEventListener('click', () => {
@@ -732,8 +738,12 @@
     });
 
     inRowSelectionMode = true;
-    currentRowIndex = 0;
-    highlightTextBox();
+    currentRowIndex = -1;
+    settingsRowIndex = -1;
+    clearAllHighlights();
+    document.activeElement?.blur();
+    stopAutoScan();
+    if (isAutoScanning) startAutoScan();
   }
 
   function highlightSettingsItem(index) {
@@ -753,7 +763,7 @@
   }
 
   function scanSettingsBackward() {
-    settingsRowIndex = (settingsRowIndex - 1 + settingsItems.length) % settingsItems.length;
+    settingsRowIndex = settingsRowIndex < 0 ? settingsItems.length - 1 : (settingsRowIndex - 1 + settingsItems.length) % settingsItems.length;
     highlightSettingsItem(settingsRowIndex);
 
     const item = settingsItems[settingsRowIndex];
@@ -763,6 +773,7 @@
 
   function selectSettingsItem() {
     const item = settingsItems[settingsRowIndex];
+    if (!item) return;
     const setting = item.dataset.setting;
 
     switch (setting) {

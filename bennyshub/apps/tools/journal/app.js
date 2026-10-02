@@ -328,12 +328,20 @@
   let backwardScanInterval = null;
   let backwardScanningOccurred = false;
 
+  function resetMenuScan() {
+    scanIndex = -1;
+    clearAllHighlights();
+    document.activeElement?.blur();
+    stopAutoScan();
+    if (isAutoScanning) startAutoScan();
+  }
+
   // Screen management
   function showScreen(screenId) {
     $$(".screen").forEach(s => s.classList.remove("active"));
     $(`#${screenId}`).classList.add("active");
     currentScreen = screenId;
-    scanIndex = -1;  // Start at -1 for new screens
+    resetMenuScan();  // Start a fresh scan on each screen
     hasStartedScanning = false;
     inButtonMode = false;
     updateScanItems();
@@ -599,7 +607,7 @@
 
   // ========== KEYBOARD FUNCTIONALITY ==========
   let keyboardBuffer = "";
-  let keyboardRowIndex = 0;
+  let keyboardRowIndex = -1;
   let keyboardButtonIndex = 0;
   let keyboardInRowMode = true;
 
@@ -772,12 +780,11 @@
     showScreen("keyboardScreen");
     setKeyboardBuffer("");
     renderKeyboard();
-    keyboardRowIndex = 0;
+    keyboardRowIndex = -1;
     keyboardButtonIndex = 0;
     keyboardInRowMode = true;
     clearAllHighlights();
-    textBar.classList.add("highlighted");
-    speak("Text Message");
+    speak("Keyboard");
   }
 
   function handleKeyboardLongPress() {
@@ -842,7 +849,7 @@
 
   function keyboardScanBackward() {
     if (keyboardInRowMode) {
-      keyboardRowIndex = (keyboardRowIndex - 1 + (keyboardRows.length + 2)) % (keyboardRows.length + 2);
+      keyboardRowIndex = keyboardRowIndex < 0 ? keyboardRows.length + 1 : (keyboardRowIndex - 1 + (keyboardRows.length + 2)) % (keyboardRows.length + 2);
       clearAllHighlights();
       if (keyboardRowIndex === 0) {
         textBar.classList.add("highlighted");
@@ -872,6 +879,7 @@
   }
 
   async function keyboardSelect() {
+    if (keyboardRowIndex < 0) return;
     if (keyboardInRowMode) {
       if (keyboardRowIndex === 0) {
         const text = keyboardBuffer.trim();
@@ -914,6 +922,7 @@
           insertKey(key);
         }
       }
+      if (currentScreen !== "keyboardScreen") return;
       keyboardInRowMode = true;
       clearAllHighlights();
       if (keyboardRowIndex === keyboardRows.length + 1) {
@@ -1111,13 +1120,13 @@
     entryViewModal.classList.remove("hidden");
     entryViewModal.dataset.entryId = entry.id;
     updateScanItems();
-    scanIndex = -1;  // Start at -1, no highlight until first scan
+    resetMenuScan();  // Start a fresh scan for this dialog
     clearAllHighlights();
   }
 
   function returnToToday() {
     entryViewModal.classList.add("hidden");
-    scanIndex = -1;
+    resetMenuScan();
     navigateEntries("today");
     clearAllHighlights();
     speak("Today. " + formatCurrentViewDate());
@@ -1161,10 +1170,10 @@
       BennyJournalCalendar.render(currentViewDate, entries, date => {
         currentViewDate = date;
         changeViewModal.classList.add("hidden");
-        scanIndex = -1;
+        resetMenuScan();
         renderEntries();
         speak(formatCurrentViewDate());
-      }, speak);
+      }, speak, resetMenuScan);
     }
   }
 
@@ -1256,7 +1265,7 @@
         questionModal.classList.remove("hidden");
         speak(currentQuestion);
         updateScanItems();
-        scanIndex = -1;
+        resetMenuScan();
         clearAllHighlights();
       } else if (action === "add-entry") {
         currentQuestion = "Journal Entry";
@@ -1268,7 +1277,7 @@
       } else if (action === "previous-day" || action === "next-day") {
         if (action === "previous-day" || !isOnTodayOrFuture()) {
           navigateEntries(action === "previous-day" ? "prev-day" : "next-day");
-          scanIndex = -1;
+          resetMenuScan();
           clearAllHighlights();
           speak(formatCurrentViewDate());
         }
@@ -1276,7 +1285,7 @@
         changeViewModal.classList.remove("hidden");
         updateDatePreview();
         updateScanItems();
-        scanIndex = -1;
+        resetMenuScan();
         clearAllHighlights();
       } else if (action === "back-to-menu") {
         showScreen("mainMenu");
@@ -1298,7 +1307,7 @@
   $('[data-action="close-view-modal"]').addEventListener('click', () => {
     BennyJournalCalendar.resetScan();
     changeViewModal.classList.add('hidden');
-    scanIndex = -1;
+    resetMenuScan();
     renderEntries();
   });
 
@@ -1317,7 +1326,7 @@
       } else if (action === "close-modal") {
         questionModal.classList.add("hidden");
         updateScanItems();
-        highlightCurrentItem();
+        resetMenuScan();
       }
     });
   });
@@ -1360,14 +1369,14 @@
         deleteConfirmModal.classList.remove("hidden");
         speak("Are you sure you want to delete this entry?");
         updateScanItems();
-        scanIndex = -1;  // Start at -1, no highlight until first scan
+        resetMenuScan();  // Start a fresh scan for this dialog
         clearAllHighlights();
       } else if (action === "return-today") {
         returnToToday();
       } else if (action === "close-entry-view") {
         entryViewModal.classList.add("hidden");
         updateScanItems();
-        scanIndex = -1;
+        resetMenuScan();
         clearAllHighlights();
       }
     });
@@ -1381,7 +1390,7 @@
         deleteConfirmModal.classList.add("hidden");
         entryToDelete = null;
         updateScanItems();
-        highlightCurrentItem();
+        resetMenuScan();
       } else if (action === "confirm-delete") {
         if (entryToDelete) {
           deleteEntry(entryToDelete);
@@ -1390,6 +1399,7 @@
         deleteConfirmModal.classList.add("hidden");
         entryViewModal.classList.add("hidden");
         entryToDelete = null;
+        resetMenuScan();
         renderEntries();
       }
     });

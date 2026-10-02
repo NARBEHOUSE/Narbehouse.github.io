@@ -564,7 +564,7 @@ class CategoryScene extends Phaser.Scene {
         }));
         this.entries.push({ kind: 'back' });
 
-        this.index = 0;
+        this.index = -1;   // nothing highlighted until the first Space (or Auto Scan tick)
         this.frameIndex = 0;
         this.frameObj = null;
         this.slideTimer = null;
@@ -615,7 +615,14 @@ class CategoryScene extends Phaser.Scene {
 
         this.preloadFrames(() => {
             if (!this.scene.isActive()) return;
-            this.showEntry(0, true);
+            // Arrive on an empty card: no category is highlighted yet, so only
+            // the screen title is spoken. (If the player already moved while
+            // the pictures loaded, redraw that slide with its pictures.)
+            if (this.index >= 0) this.showEntry(this.index, true);
+            else {
+                this.drawCardShell();
+                this.audio.speak('Pick a category', true);
+            }
             this._startAutoScanTimer();
         });
 
@@ -689,7 +696,8 @@ class CategoryScene extends Phaser.Scene {
 
     cycle(dir, fromTimer) {
         const n = this.entries.length;
-        this.index = (this.index + dir + n) % n;
+        // From nothing highlighted: forward lands on the first slide, back on the last.
+        this.index = this.index < 0 ? (dir > 0 ? 0 : n - 1) : (this.index + dir + n) % n;
         this.showEntry(this.index, false, dir);
         this.audio.play('scan');
         if (!fromTimer) this._startAutoScanTimer(); // reset interval on a manual move
@@ -834,6 +842,7 @@ class CategoryScene extends Phaser.Scene {
 
     selectCurrent() {
         const entry = this.entries[this.index];
+        if (!entry) return;   // nothing highlighted yet — Enter does nothing
         if (entry.kind === 'back') { this.leaveScene('TitleScene'); return; }
         this.leaveScene('WheelScene', { categoryIndex: entry.categoryIndex });
     }
@@ -1236,6 +1245,7 @@ class WheelScene extends Phaser.Scene {
         if (handled === 'editor') {
             this.pauseMode = 'editorWarn';
             this.refreshPause(true);
+            this.audio.speak('The editor needs a mouse and keyboard.', true);
             return;
         }
 

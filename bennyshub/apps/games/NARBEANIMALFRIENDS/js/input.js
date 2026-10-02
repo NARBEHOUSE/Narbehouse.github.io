@@ -57,11 +57,9 @@ NAF.Input = (function () {
     /**
      * -1 means NOTHING is highlighted.
      *
-     * Every screen opens in that state. The first press - either switch - reveals
-     * the highlight on the first item without selecting it, and only the press
-     * after that acts. So arriving somewhere new never leaves a button looking
-     * half-chosen, and a stray press on a screen the player has just landed on
-     * cannot fire anything.
+     * Every screen opens in that state. In menus, Space or an Auto Scan tick
+     * reveals the highlight, and Enter waits until an item is highlighted.
+     * Animal play keeps its existing first-press reveal interaction.
      */
     let index = -1;
 
@@ -152,9 +150,9 @@ NAF.Input = (function () {
     }
 
     /** Reveal the highlight on the first item. Returns false if it was already up. */
-    function reveal() {
+    function reveal(direction) {
         if (index !== -1 || !items.length) return false;
-        index = 0;
+        index = direction < 0 ? items.length - 1 : 0;
         paint();
         NAF.Audio.scanBlip();
         speakFocused();
@@ -163,7 +161,7 @@ NAF.Input = (function () {
 
     function step(delta) {
         if (!items.length) return;
-        if (reveal()) return;           // the first press only shows the highlight
+        if (reveal(NAF.UI.current() === 'play' ? 1 : delta)) return; // menus enter at the requested end
         index = (index + delta + items.length) % items.length;
         paint();
         NAF.Audio.scanBlip();
@@ -171,9 +169,9 @@ NAF.Input = (function () {
     }
 
     function activate() {
-        // Nothing highlighted yet: this press reveals it rather than choosing.
-        // A stray press on a screen the player has only just reached should never
-        // fire the first button on it.
+        // Menus wait for Space or Auto Scan before Enter can choose. Keep the
+        // existing first-reveal interaction during animal play.
+        if (index < 0 && NAF.UI.current() !== 'play') return;
         if (reveal()) return;
         const item = items[index];
         if (!item) return;
@@ -228,7 +226,7 @@ NAF.Input = (function () {
 
     function restartAutoScan() {
         stopAutoScan();
-        if (!enabled || !autoScanOn() || items.length < 2) return;
+        if (!enabled || !autoScanOn() || !items.length || (items.length < 2 && NAF.UI.current() === 'play')) return;
         autoTimer = setInterval(function () {
             if (spaceHeld) return;
             step(1);

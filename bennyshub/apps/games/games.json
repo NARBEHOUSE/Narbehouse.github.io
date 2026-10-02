@@ -147,20 +147,9 @@
       ]
     },
     {
-      "id": "bennysminigolf",
-      "title": "Benny's Mini Golf",
-      "description": "A top-down minigolf game you can play with up to four people. The balls have collision on so have fun smacking eachothers balls around! This game has a level editor to create your own golf courses.",
-      "path": "apps/games/BENNYSMINIGOLF/index.html",
-      "image": "images/games/bennysminigolf.png",
-      "genres": [
-        "Sports",
-        "Simulation"
-      ]
-    },
-    {
       "id": "bennyspeggle",
       "title": "Benny's P3GL Game",
-      "description": "Aim, shoot, and clear colorful arcade campaigns. Build peg chains, catch balls, beat stage goals, and create your own layouts in the campaign editor.",
+      "description": "A glowing 3D peg shooter you play with one or two switches. Pick a mood: Cozy for relaxed play that never runs out of balls, Vivid for a steady climb, or Hyper for a wild neon space ride. Nine campaigns, 180 levels, powers, hazards, moving pegs, and a Campaign Editor for building your own.",
       "path": "apps/games/BENNYSPEGGLE/index.html",
       "image": "images/games/bennyspeggle.png",
       "genres": [
@@ -288,6 +277,17 @@
       "genres": [
         "Simulation",
         "Strategy"
+      ]
+    },
+    {
+      "id": "narbeminigolf",
+      "title": "NARBE Mini Golf",
+      "description": "3D mini golf you play with one or two switches. Hold Space to turn your aim and Enter to putt, or pick how hard to hit from a list. Three courses full of bridges, windmills, bumpers, ice, tunnels and a sneaky alligator, with cinematic replays, up to four players, and a Course Creator for building your own holes.",
+      "path": "apps/games/NARBEMINIGOLF/index.html",
+      "image": "images/games/narbeminigolf.png",
+      "genres": [
+        "Sports",
+        "Simulation"
       ]
     }
   ]

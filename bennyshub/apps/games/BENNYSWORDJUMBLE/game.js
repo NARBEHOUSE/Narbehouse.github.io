@@ -579,7 +579,13 @@ class WordJumbleGame {
              // After proceed (e.g. launching editor), where do we stay?
              // Usually we stay on the screen we launched from.
              if (this.state.returnMode === 'menu') this.showMainMenu();
-             else this.renderSettingsMenu();
+             else {
+                 // Back on Settings: nothing highlighted until first Space
+                 this.state.mode = 'settings';
+                 this.state.settingsIndex = -1;
+                 this.renderSettingsMenu();
+                 this.startAutoScan();
+             }
              
              // But wait, showMainMenu/renderSettingsMenu sets the mode.
              // If we just launched a window (editor), the main window is still active.
@@ -593,7 +599,7 @@ class WordJumbleGame {
         this.speak("Warning. This feature requires mouse input. Cancel. Proceed.");
         
         // Use auto scan here too for accessibility safety
-        if (this.settings.autoScan) this.startAutoScan();
+        this.startAutoScan();
         // REMOVED the "else index=0" line so manual users start at -1 (nothing highlighted)
         this.updateWarningHighlights();
     }
@@ -609,7 +615,9 @@ class WordJumbleGame {
             this.showMainMenu();
         } else {
             this.state.mode = 'settings'; 
+            this.state.settingsIndex = -1;
             this.renderSettingsMenu();
+            this.startAutoScan();
         }
     }
 
@@ -687,6 +695,8 @@ class WordJumbleGame {
     
     cycleIndex(current, length, direction) {
         if (length === 0) return 0;
+        // Nothing highlighted yet (-1): forward lands on first, backward on last
+        if (current < 0) return direction > 0 ? 0 : length - 1;
         return (current + direction + length) % length;
     }
 
@@ -709,7 +719,7 @@ class WordJumbleGame {
     // --- Menus ---
     showMainMenu() {
         this.state.mode = 'menu';
-        this.state.menuIndex = 0;
+        this.state.menuIndex = -1; // Nothing highlighted until first Space
         this.pauseOverlay.style.display = 'none';
         
         this.mainContent.innerHTML = `
@@ -731,7 +741,7 @@ class WordJumbleGame {
     
     showCasualMenu() {
         this.state.mode = 'mode_select';
-        this.state.modeSelectIndex = 0;
+        this.state.modeSelectIndex = -1;
         this.gameMode = 'casual';
         
         // This menu now renders a toggle button and a start button
@@ -764,7 +774,7 @@ class WordJumbleGame {
     
     showChallengeMenu() {
         this.state.mode = 'mode_select';
-        this.state.modeSelectIndex = 0;
+        this.state.modeSelectIndex = -1;
         this.gameMode = 'challenge';
         
         this.renderChallengeMenu();
@@ -795,7 +805,7 @@ class WordJumbleGame {
     showSettingsMenu(fromPause = false) {
         this.state.fromPause = fromPause;
         this.state.mode = 'settings';
-        this.state.settingsIndex = 0;
+        this.state.settingsIndex = -1;
         this.renderSettingsMenu();
         this.speak("Settings");
         this.startAutoScan();
@@ -1248,7 +1258,7 @@ class WordJumbleGame {
     showPauseMenu() {
         this.stopAutoScan();
         this.state.mode = 'pause';
-        this.state.pauseIndex = 0;
+        this.state.pauseIndex = -1;
         this.pauseOverlay.style.display = 'flex';
         this.pauseOverlay.innerHTML = `
             <div class="pause-title">PAUSED</div>

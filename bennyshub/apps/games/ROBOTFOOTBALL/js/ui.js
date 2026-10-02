@@ -146,8 +146,9 @@
       fgblock: 'M10 6 V17 H46 V6 M28 17 V6 M16 36 L25 25 M40 36 L31 25', fgreturn: 'M10 6 V17 H46 V6 M28 17 V6 M28 36 L22 30 L32 26' };
     return '<svg class="route-icon" viewBox="0 0 56 40" aria-hidden="true"><path d="' + (paths[id] || 'M10 34 V22 L43 8 M29 34 V8') + '"/>' + (['gofortwo', 'heads', 'tails', 'defer', 'receive'].includes(id) ? '' : '<circle cx="10" cy="34" r="3"/>') + '</svg>';
   }
+  // An initial of -1 opens the list with nothing highlighted; the first Space highlights the first item.
   function makeItems(list, container, initial = 0) {
-    items = list; focusIndex = Math.min(initial, list.length - 1); container.replaceChildren(); container.classList.remove('team-grid');
+    items = list; focusIndex = initial < 0 ? -1 : Math.min(initial, list.length - 1); container.replaceChildren(); container.classList.remove('team-grid');
     list.forEach((item, i) => {
       const button = document.createElement('button'); button.className = 'menu-button'; button.type = 'button';
       button.innerHTML = (item.play ? routeIcon(item.play) : '<span class="number">' + String(i + 1).padStart(2, '0') + '</span>') + '<span class="button-copy">' + (item.tag ? '<span class="tag"></span>' : '') + '<span class="name"></span><span class="desc"></span></span><span class="value"></span>';
@@ -161,7 +162,7 @@
       button.addEventListener('focus', () => { if (focusIndex !== i) setFocus(i, false); });
       container.append(button); item.element = button;
     });
-    setFocus(focusIndex, false); scanClock = 0;
+    if (focusIndex >= 0) setFocus(focusIndex, false); scanClock = 0;
   }
   function setFocus(index, announce = true) {
     if (!items.length) return;
@@ -175,7 +176,8 @@
     if (screen === 'game' && sim.s.phase === 'kickaim' && item.target !== undefined) sim.chooseKick(item.target);
     if (announce) { speaking(item.say ? item.say() : item.spokenName || [item.name, item.value, item.desc].filter(Boolean).join('. ')); audio?.play('hover'); }
   }
-  function advance(direction) { setFocus(focusIndex + direction); scanClock = 0; }
+  // From nothing highlighted (-1), forward lands on the first item and backward on the last.
+  function advance(direction) { setFocus(focusIndex < 0 ? (direction > 0 ? 0 : items.length - 1) : focusIndex + direction); scanClock = 0; }
   function activate() {
     const item = items[focusIndex]; if (!item) return;
     audio?.play('select'); speaking(item.confirm ? item.confirm() : item.spokenName || item.name + (item.value ? '. ' + item.value : '')); item.action();
@@ -187,7 +189,8 @@
     $('menu-content').innerHTML = options.content || ''; $('menu-note').textContent = options.note || '';
     $('hero-copy').hidden = !['main', 'teams'].includes(kind); $('action-panel').hidden = true; $('steer-panel').hidden = true; $('kick-readout').hidden = true; $('kick-controls').hidden = true; $('ready-cue').hidden = true; $('target-labels').replaceChildren();
     $('pause-button').hidden = !activeGame || kind !== 'game'; $('scoreboard').hidden = !activeGame; $('situation').hidden = !activeGame;
-    menuHeading = title; makeItems(list, $('menu-items'), options.focus || 0); updateHint(); syncAudio();
+    // Menus open with nothing highlighted; the playbook passes focus 0 so its first play is ready.
+    menuHeading = title; makeItems(list, $('menu-items'), options.focus ?? -1); updateHint(); syncAudio();
     speaking(sentences(title, options.speech || description, list[focusIndex]?.intro || list[focusIndex]?.name), options.polite);
   }
   function mainMenu() {
@@ -304,12 +307,13 @@
       kickoffs: { name: 'Kickoffs and coin toss', value: prefs.kickoffs ? 'On' : 'Off', desc: 'A coin toss, kickoffs after every score, and returns. Off: every drive starts at the 25', action: () => { prefs.kickoffs = !prefs.kickoffs; refresh('Kickoffs and coin toss'); } },
       // Changing mode applies at once, mid-game too, and keeps focus on this row.
       mode: { name: 'Game mode', value: basic() ? 'Basic' : 'Advanced', desc: basic() ? 'The essentials. Advanced has every option' : 'Every option. Basic keeps only the essentials', action: () => { prefs.mode = basic() ? 'advanced' : 'basic'; refresh('Game mode'); } },
-      reset: { name: 'Reset saved progress', action: () => overlay('confirm', 'RESET PROGRESS?', 'This removes your season, saved exhibition and current session. Your accessibility settings stay as they are.', [{ name: 'Keep progress', action: () => again('Reset saved progress') }, { name: 'Delete saved progress', action: () => { try { localStorage.removeItem(SAVE); localStorage.removeItem(SEASON_SAVE); } catch (_) {} season.reset(); activeGame = false; mainMenu(); toast('Saved progress removed.'); } }]) },
+      reset: { name: 'Reset saved progress', action: () => overlay('confirm', 'RESET PROGRESS?', 'This removes your season, saved exhibition and current session. Your accessibility settings stay as they are.', [{ name: 'Keep progress', action: () => again() },{ name: 'Delete saved progress', action: () => { try { localStorage.removeItem(SAVE); localStorage.removeItem(SEASON_SAVE); } catch (_) {} season.reset(); activeGame = false; mainMenu(); toast('Saved progress removed.'); } }]) },
       back: { name: 'Back', action: () => from === 'pause' ? pauseMenu() : mainMenu() }
     };
     const list = (basic() ? ['sound', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
       : ['tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
-    overlay('settings', 'YOUR SETTINGS', 'Set the pace. Every option works with your switches.', list, { focus: Math.max(0, list.findIndex(item => item.name === focusName)) });
+    // Arriving opens with nothing highlighted; changing a row's value rebuilds the menu with focus kept on that row.
+    overlay('settings', 'YOUR SETTINGS', 'Set the pace. Every option works with your switches.', list, { focus: focusName ? Math.max(0, list.findIndex(item => item.name === focusName)) : -1 });
   }
   // Basic's help leaves out the coin toss choices and every setting Basic hides.
   function help(from) {
@@ -363,7 +367,7 @@
     const last = lastResult ? '<div class="last-play tone-' + lastResult.tone + '"><span>LAST PLAY</span><b>' + escape(lastResult.title) + '</b><small>' + escape(lastResult.detail) + '</small></div>' : '';
     const eyebrow = s.toss ? 'COIN TOSS / ' + (s.overtime ? 'OVERTIME' : 'OPENING KICKOFF') : kickoff ? 'SPECIAL TEAMS / ' + homeTeam.shortName + ' KICKING'
       : (choosing || two ? 'CONVERSION / ' : theirKick ? 'SPECIAL TEAMS / ' : defending ? 'DEFENSE / ' : 'OFFENSE / ') + (defending ? awayTeam.shortName : homeTeam.shortName) + ' BALL';
-    overlay('game', title, description, list, { style: 'compact', polite: true, speech: s.toss ? description : theirKick ? sentences(situation(s), description) : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
+    overlay('game', title, description, list, { focus: 0, style: 'compact', polite: true, speech: s.toss ? description : theirKick ? sentences(situation(s), description) : situation(s), content: s.toss ? '' : last, eyebrow, note: sim.options.practice ? 'PRACTICE / NO FAIL' : sim.options.format === 'regulation' ? season.currentMatchupLabel() + ' · Four quarters' : 'Four possessions per team · No play clock' });
     $('pause-button').hidden = false;
   }
   function actionPanel(title, detail, list) {
@@ -436,7 +440,7 @@
         if (sim.continuePlay()) { phaseSeen = ''; renderPhase(); return; }
         overlay('game', result.title || 'PLAY COMPLETE', result.detail || s.message || 'Get ready for the next play.', [
         { name: 'Next play', desc: 'Return to the overhead playbook', action: () => { sim.continuePlay(); phaseSeen = ''; renderPhase(); } }, { name: 'Pause / settings', action: pause }
-      ], { style: 'compact', eyebrow: 'THE DRIVE CONTINUES' });
+      ], { focus: 0, style: 'compact', eyebrow: 'THE DRIVE CONTINUES' });
       }
     } else if (s.phase === 'final') {
       if (!sim.options.practice) { try { localStorage.removeItem(gameMode === 'season' ? SEASON_SAVE : SAVE); } catch (_) {} }

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P3GL backdrop gallery</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font: 14px system-ui, sans-serif; }
+  #wrap { position: fixed; inset: 0; }
+  #bar { position: fixed; left: 8px; top: 8px; z-index: 5; background: rgba(0,0,0,.6); color: #fff; padding: 6px 10px; border-radius: 8px; }
+  #bar select, #bar input { font: inherit; }
+  body.shot #bar { display: none; }
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<div id="bar">
+  <select id="sel"></select>
+  variant <input id="variant" type="number" min="0" max="19" value="0" style="width:3em">
+  energy <input id="energy" type="range" min="0" max="1" step="0.05" value="0.2">
+  <label><input id="board" type="checkbox" checked> board</label>
+</div>
+<script src="../js/three.min.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/catalog.js"></script>
+<script src="../js/themes.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/post.js"></script>
+<script src="../js/backdrops.js"></script>
+<script src="../js/backdrops-cozy.js" onerror="console.log('no cozy backdrops yet')"></script>
+<script src="../js/backdrops-vivid.js" onerror="console.log('no vivid backdrops yet')"></script>
+<script src="../js/backdrops-hyper.js" onerror="console.log('no hyper backdrops yet')"></script>
+<script>
+/* Query: ?theme=id&variant=n&energy=0.4&warm=6&shot=1&board=0&quality=low&reduced=1 */
+(function () {
+  const q = new URLSearchParams(location.search);
+  if (q.get('shot')) document.body.classList.add('shot');
+  const T = P3.themes;
+  const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  document.getElementById('wrap').appendChild(renderer.domElement);
+  const post = P3.post.create(renderer);
+  post.setQuality(q.get('quality') === 'low' ? 'low' : 'high');
+
+  const sel = document.getElementById('sel');
+  Object.keys(T.THEMES).forEach(function (id) {
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = T.THEMES[id].mode + ' / ' + T.THEMES[id].name + (P3.backdrops.has(id) ? '' : ' (fallback)');
+    sel.appendChild(o);
+  });
+  sel.value = q.get('theme') || 'lantern-garden';
+  document.getElementById('variant').value = q.get('variant') || 0;
+  document.getElementById('energy').value = q.get('energy') || 0.2;
+  document.getElementById('board').checked = q.get('board') !== '0';
+
+  // A stand-in board: tinted glass panel, rails and a ring of glowing pegs.
+  const boardScene = new THREE.Scene();
+  const boardCam = new THREE.OrthographicCamera(0, 1000, 0, -1080, -100, 100);
+  const B = P3.catalog.BOARD;
+  function buildBoard(theme) {
+    while (boardScene.children.length) boardScene.remove(boardScene.children[0]);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(B.W, B.H), new THREE.MeshBasicMaterial({ color: new THREE.Color(theme.glass), transparent: true, opacity: theme.glassAlpha }));
+    glass.position.set(B.W / 2, -B.H / 2, -1); boardScene.add(glass);
+    const railMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(theme.rail).multiplyScalar(1.6) });
+    [0, B.W].forEach(function (x) { const r = new THREE.Mesh(new THREE.PlaneGeometry(6, B.H), railMat); r.position.set(x, -B.H / 2, 0); boardScene.add(r); });
+    const cols = ['#2f8cff', '#ff7a1a', '#22c55e', '#9b5cff'];
+    for (let i = 0; i < 48; i++) {
+      const a = i / 48 * Math.PI * 2, rr = 250 + (i % 2) * 70;
+      const lit = i % 7 === 0;
+      const m = new THREE.Mesh(new THREE.CircleGeometry(17, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(cols[i % 4]).multiplyScalar(lit ? 3.2 : 0.9) }));
+      m.position.set(500 + Math.cos(a) * rr, -(560 + Math.sin(a) * rr), 1); boardScene.add(m);
+    }
+  }
+
+  let bd = null;
+  function load(id) {
+    if (bd) { try { bd.instance.dispose(); } catch (e) { console.error(e); } }
+    bd = P3.backdrops.create(id, { renderer, quality: q.get('quality') === 'low' ? 'low' : 'high', reducedMotion: q.get('reduced') === '1' });
+    bd.instance.setVariant(+document.getElementById('variant').value || 0);
+    post.setGrade(Object.assign({}, T.GRADES[T.theme(id).mode]));
+    buildBoard(T.theme(id));
+    resize();
+  }
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    post.setSize(w, h, renderer.getPixelRatio());
+    const L = P3.layout.compute(w, h);
+    const f = P3.layout.frustum(L);
+    boardCam.left = f.left; boardCam.right = f.right; boardCam.top = f.top; boardCam.bottom = f.bottom; boardCam.updateProjectionMatrix();
+    if (bd) bd.instance.resize(w, h);
+  }
+  window.addEventListener('resize', resize);
+  sel.onchange = function () { load(sel.value); };
+  document.getElementById('variant').onchange = function (e) { bd.instance.setVariant(+e.target.value); };
+
+  let t = 0, last = performance.now(), frames = 0;
+  const fakeBeat = { bpm: 100, beat: 0, phase: 0, bar: 0, playing: true };
+  function setBeat() {
+    const mode = T.theme(sel.value).mode;
+    fakeBeat.bpm = mode === 'hyper' ? 128 : mode === 'vivid' ? 112 : 76;
+    fakeBeat.beat = t * fakeBeat.bpm / 60; fakeBeat.phase = fakeBeat.beat % 1; fakeBeat.bar = Math.floor(fakeBeat.beat / 4);
+  }
+  window.__errors = [];
+  window.addEventListener('error', function (e) { window.__errors.push(String(e.message)); });
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    t += dt; setBeat();
+    try { bd.instance.update(dt, t, fakeBeat, +document.getElementById('energy').value); } catch (e) { window.__errors.push(String(e && e.stack || e)); }
+    const layers = [{ scene: bd.scene, camera: bd.camera, clearColor: 0x000000 }];
+    if (document.getElementById('board').checked) layers.push({ scene: boardScene, camera: boardCam });
+    post.render(layers, t);
+    frames++;
+    if (frames === 30) window.__ready = true;
+  }
+  load(sel.value);
+  // A screenshot can ask for some simulated seconds first (?warm=6).
+  if (q.get('warm')) {
+    const n = +q.get('warm');
+    for (let i = 0; i < n * 30; i++) { t += 1 / 30; setBeat(); bd.instance.update(1 / 30, t, fakeBeat, +document.getElementById('energy').value); }
+  }
+  window.__info = function () { return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries }; };
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

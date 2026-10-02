@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Hole Viewer (dev)</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000} canvas{display:block}</style>
+</head>
+<body>
+<!-- Dev tool: renders one hole with a fixed camera for screenshot review.
+     ?course=sunny_meadows.json&hole=0&cam=overview|tee|cup -->
+<script src="../js/three.min.js"></script>
+<script src="../js/util.js"></script>
+<script src="../js/course.js"></script>
+<script src="../js/physics.js"></script>
+<script src="../js/art.js"></script>
+<script src="../js/scene.js"></script>
+<script>
+(async function () {
+  const q = new URLSearchParams(location.search);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.useLegacyLights = false;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 900);
+  MG.scene.initEnvironment(renderer, scene);
+  let view = null;
+  window.V = {
+    renderer, scene, camera,
+    async show(file, idx, themeOverride) {
+      const raw = await (await fetch('../courses/' + file)).json();
+      const course = MG.course.normaliseCourse(raw);
+      const h = course.holes[idx];
+      const ch = MG.course.compileHole(h);
+      const themeName = themeOverride || h.theme || course.theme;
+      const th = MG.scene.setTheme(themeName);
+      if (view) { scene.remove(view.group); view.dispose(); }
+      view = MG.scene.buildHole(ch, idx + 1, themeName);
+      scene.add(view.group);
+      MG.scene.fitShadows(view.centre.x, view.centre.z, view.radius, th);
+      // A ball on the tee for scale.
+      const ball = MG.art.makeBall('white', ch.ballR * MG.course.S);
+      ball.position.copy(view.toWorld(ch.start.x, ch.start.y, ch.ballR * MG.course.S));
+      scene.add(ball);
+      V.view = view; V.ch = ch;
+      return { name: h.name, walls: ch.walls.length };
+    },
+    cam(kind) {
+      const ch = V.ch, S = MG.course.S;
+      const bb = ch.bounds;
+      if (kind === 'overview') {
+        const cx = (bb.x0 + bb.x1) / 2 * S, cz = (bb.y0 + bb.y1) / 2 * S;
+        const span = Math.max(bb.x1 - bb.x0, (bb.y1 - bb.y0) * camera.aspect) * S;
+        camera.position.set(cx, span * 0.95, cz + span * 0.55);
+        camera.lookAt(cx, 0, cz);
+      } else if (kind === 'tee') {
+        const a = Math.atan2(ch.cup.y - ch.start.y, ch.cup.x - ch.start.x);
+        camera.position.set((ch.start.x - Math.cos(a) * 180) * S, 9, (ch.start.y - Math.sin(a) * 180) * S);
+        camera.lookAt((ch.start.x + Math.cos(a) * 300) * S, 0, (ch.start.y + Math.sin(a) * 300) * S);
+      } else if (kind === 'cup') {
+        const a = Math.atan2(ch.cup.y - ch.start.y, ch.cup.x - ch.start.x);
+        camera.position.set((ch.cup.x + Math.cos(a) * 90) * S, 1.6, (ch.cup.y + Math.sin(a) * 90 + 30) * S);
+        camera.lookAt(ch.cup.x * S, 0, ch.cup.y * S);
+      } else if (kind === 'top') {
+        const cx = (bb.x0 + bb.x1) / 2 * S, cz = (bb.y0 + bb.y1) / 2 * S;
+        const span = Math.max(bb.x1 - bb.x0, (bb.y1 - bb.y0) * camera.aspect) * S;
+        camera.position.set(cx, span * 1.05, cz + 0.01);
+        camera.lookAt(cx, 0, cz);
+      }
+    },
+    frame(t) { view.update(1 / 60, t || 1); MG.scene.updateEnvironment(1 / 60); renderer.render(scene, camera); return renderer.info.render.calls; }
+  };
+  window.__ready = true;
+})();
+</script>
+</body>
+</html>

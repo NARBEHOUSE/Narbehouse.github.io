@@ -329,7 +329,7 @@ function renderMenu(containerId, items, titleText) {
              else if (state.mode === 'pause') state.pauseIndex = index;
              else if (state.mode === 'gameover') state.gameoverIndex = index;
              
-             if (item.action) item.action();
+             if (item && item.action) item.action();
         };
 
         if (isSettings && index === items.length - 1) {
@@ -345,7 +345,7 @@ function renderMenu(containerId, items, titleText) {
 function showMainMenu() {
     state.mode = 'menu';
     state.menuState = 'main';
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-container-inner').style.display = 'none';
@@ -357,22 +357,22 @@ function showMainMenu() {
     document.getElementById('status-display').innerText = ""; // Clear status
     
     renderMenu('menu-container', menus.main, "BENNY'S<br>TIC TAC TOE");
-    speak("Benny's Tic Tac Toe. Single Player");
+    speak("Benny's Tic Tac Toe");
     startAutoScan();
 }
 
 function showSettingsMenu() {
     state.menuState = 'settings';
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     renderMenu('menu-container', menus.settings, "SETTINGS");
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
 function showPauseMenu() {
     state.mode = 'pause';
     state.pauseMenuState = 'main'; // default pause menu
-    state.pauseIndex = 0;
+    state.pauseIndex = -1; // No highlight until Space is pressed
     
     const overlay = document.getElementById('pause-overlay');
     overlay.style.display = 'flex';
@@ -380,21 +380,22 @@ function showPauseMenu() {
     
     renderMenu('pause-overlay', menus.pause, "PAUSED");
     updateHighlights();
-    speak("Paused. Continue Game");
+    speak("Paused");
     startAutoScan();
 }
 
 function showPauseSettings() {
     state.pauseMenuState = 'settings';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1; // No highlight until Space is pressed
     renderMenu('pause-overlay', menus.pauseSettings, "SETTINGS");
-    announceCurrentPauseItem();
+    speak("Settings");
     startAutoScan();
 }
 
 function showGameOver(result) {
     state.mode = 'gameover';
-    state.gameoverIndex = 0;
+    state.gameoverIndex = -1; // No highlight until Space is pressed
+    state.computerThinking = false; // Reset this so scanning works
     
     // Update Stats
     if (state.gameMode === 'single') {
@@ -435,7 +436,7 @@ function showGameOver(result) {
     statsDiv.insertAdjacentElement('afterend', sub);
     
     updateHighlights();
-    speak(message + ". Play again? Yes");
+    speak(message + ". Play again?");
     startAutoScan();
 }
 
@@ -512,6 +513,7 @@ function cycleP2Color(dir, isPause = false) {
 
 function refreshMenu() {
     const items = menus[state.menuState];
+    if (!items[state.menuIndex]) return; // Nothing highlighted
     const btn = document.getElementById(`btn-menu-container-${state.menuIndex}`);
     if (btn) btn.innerHTML = typeof items[state.menuIndex].text === 'function' ? items[state.menuIndex].text() : items[state.menuIndex].text;
     announceCurrentMenuItem();
@@ -519,6 +521,7 @@ function refreshMenu() {
 
 function refreshPauseMenu() {
     const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
+    if (!items[state.pauseIndex]) return; // Nothing highlighted
     const btn = document.getElementById(`btn-pause-overlay-${state.pauseIndex}`);
     if (btn) btn.innerHTML = typeof items[state.pauseIndex].text === 'function' ? items[state.pauseIndex].text() : items[state.pauseIndex].text;
     announceCurrentPauseItem();
@@ -954,7 +957,7 @@ function scanForward() {
 function scanBackward() {
     if (state.mode === 'menu') {
         const items = menus[state.menuState];
-        state.menuIndex = (state.menuIndex - 1 + items.length) % items.length;
+        state.menuIndex = state.menuIndex < 0 ? items.length - 1 : (state.menuIndex - 1 + items.length) % items.length;
         announceCurrentMenuItem();
     } else if (state.mode === 'game') {
         let start = state.scanIndex;
@@ -969,10 +972,10 @@ function scanBackward() {
         announceCell(state.scanIndex);
     } else if (state.mode === 'pause') {
         const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
-        state.pauseIndex = (state.pauseIndex - 1 + items.length) % items.length;
+        state.pauseIndex = state.pauseIndex < 0 ? items.length - 1 : (state.pauseIndex - 1 + items.length) % items.length;
         announceCurrentPauseItem();
     } else if (state.mode === 'gameover') {
-        state.gameoverIndex = (state.gameoverIndex - 1 + menus.gameover.length) % menus.gameover.length;
+        state.gameoverIndex = state.gameoverIndex < 0 ? menus.gameover.length - 1 : (state.gameoverIndex - 1 + menus.gameover.length) % menus.gameover.length;
         speak(menus.gameover[state.gameoverIndex].text);
     }
     updateHighlights();
@@ -986,16 +989,16 @@ function startBackwardsScan() {
 function selectItem() {
     if (state.mode === 'menu') {
         const item = menus[state.menuState][state.menuIndex];
-        if (item.action) item.action();
+        if (item && item.action) item.action();
     } else if (state.mode === 'game') {
         playerMove(state.scanIndex);
     } else if (state.mode === 'pause') {
         const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
         const item = items[state.pauseIndex];
-        if (item.action) item.action();
+        if (item && item.action) item.action();
     } else if (state.mode === 'gameover') {
         const item = menus.gameover[state.gameoverIndex];
-        if (item.action) item.action();
+        if (item && item.action) item.action();
     }
 }
 
@@ -1008,11 +1011,11 @@ function startBackwardsToggle() {
 function performBackwardsToggle() {
     if (state.mode === 'menu') {
         const item = menus[state.menuState][state.menuIndex];
-        if (item.onPrev) item.onPrev();
+        if (item && item.onPrev) item.onPrev();
     } else if (state.mode === 'pause') {
         const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
         const item = items[state.pauseIndex];
-        if (item.onPrev) item.onPrev();
+        if (item && item.onPrev) item.onPrev();
     }
 }
 

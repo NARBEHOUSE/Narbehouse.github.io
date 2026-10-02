@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NARBE Mini Golf Course Creator</title>
+<link rel="stylesheet" href="css/editor.css" />
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">&#9971; Course Creator</div>
+  <label class="field">Course <input id="courseName" type="text" maxlength="40" /></label>
+  <label class="field">Look
+    <select id="courseTheme">
+      <option value="sunny">Sunny Park</option>
+      <option value="sunset">Sunset Lagoon</option>
+      <option value="night">Glow Golf Night</option>
+      <option value="autumn">Autumn Grove</option>
+    </select>
+  </label>
+  <div class="spacer"></div>
+  <button id="btnUndo" title="Undo (Ctrl+Z)">&#8630; Undo</button>
+  <button id="btnRedo" title="Redo (Ctrl+Y)">&#8631; Redo</button>
+  <label class="toggle"><input id="snap" type="checkbox" checked /> Snap</label>
+  <button id="btn3d" title="Show a 3D preview of this hole">3D Preview</button>
+  <span class="sep"></span>
+  <button id="btnNew">New</button>
+  <select id="loadSelect" title="Open a course from the game"><option value="">Open…</option></select>
+  <button id="btnOpenFile" title="Open a course file from this computer">File…</button>
+  <input id="fileInput" type="file" accept=".json,application/json" hidden />
+  <button id="btnSave" class="primary" title="Save (Ctrl+S)">Save</button>
+  <button id="btnTest" class="accent" title="Play this hole in the game">&#9654; Test Play</button>
+</header>
+
+<nav id="holeBar">
+  <div id="holeTabs"></div>
+  <button id="btnAddHole" title="Add a hole">+ Hole</button>
+</nav>
+
+<main>
+  <aside id="tools">
+    <div class="group">Course</div>
+    <button class="tool active" data-tool="select" title="Select and move (V)">&#10022; Select</button>
+    <button class="tool" data-tool="hand" title="Drag to move the view around (H)">&#9995; Hand</button>
+    <button id="btnFit" title="Fit the whole hole on screen (F)">&#10530; Fit</button>
+    <button class="tool" data-tool="lane" title="Click to extend the fairway (L)">&#9644; Fairway</button>
+    <button class="tool" data-tool="tee" title="Click to move the tee">&#9679; Tee</button>
+    <button class="tool" data-tool="cup" title="Click to move the cup">&#9873; Cup</button>
+    <div class="group">Obstacles</div>
+    <button class="tool" data-tool="wall" title="Click to place a wall">&#9646; Wall</button>
+    <button class="tool" data-tool="bumper" title="Click to place a bumper">&#11044; Bumper</button>
+    <button class="tool" data-tool="bush" title="Click to place a bush">&#127807; Bush</button>
+    <button class="tool" data-tool="windmill" title="Click to place a windmill">&#9965; Windmill</button>
+    <button class="tool" data-tool="hill" title="Click to place a hill (or a bowl)">&#9968; Hill</button>
+    <div class="group">Surfaces</div>
+    <button class="tool" data-tool="water" title="Click points to draw a pond, Enter to finish">&#127754; Water</button>
+    <button class="tool" data-tool="sand" title="Click points to draw a bunker">&#9652; Sand</button>
+    <button class="tool" data-tool="ice" title="Click points to draw ice">&#10052; Ice</button>
+    <button class="tool" data-tool="boost" title="Click points to draw a boost pad">&#10148; Boost</button>
+    <button class="tool" data-tool="bridge" title="Click to place a bridge">&#9776; Bridge</button>
+    <button class="tool" data-tool="tunnel" title="Click the way in, then the way out">&#9673; Tunnel</button>
+  </aside>
+
+  <section id="stage">
+    <canvas id="plan"></canvas>
+    <div id="hint"></div>
+    <div id="previewWrap">
+      <div id="previewBar">3D Preview <span class="small" id="previewHelp">drag to turn &middot; right-drag to move &middot; wheel to zoom</span>
+        <button id="previewHand" title="Hand: drag to move the view instead of turning it">&#9995;</button>
+        <button id="previewReset" title="Back to the whole hole">&#10530;</button>
+        <button id="previewClose" title="Close the preview">&#10005;</button></div>
+      <canvas id="preview"></canvas>
+    </div>
+  </section>
+
+  <aside id="panel">
+    <section>
+      <h3>Hole <span id="holeNumber">1</span></h3>
+      <label>Name <input id="holeName" type="text" maxlength="30" /></label>
+      <label>Par <input id="holePar" type="number" min="1" max="9" /></label>
+      <label>Look
+        <select id="holeTheme">
+          <option value="">Same as course</option>
+          <option value="sunny">Sunny Park</option>
+          <option value="sunset">Sunset Lagoon</option>
+          <option value="night">Glow Golf Night</option>
+          <option value="autumn">Autumn Grove</option>
+        </select>
+      </label>
+      <div class="row">
+        <button id="btnCheck" class="primary">Check Hole</button>
+        <button id="btnDupHole">Duplicate</button>
+      </div>
+      <div class="row">
+        <button id="btnMoveLeft" title="Move hole earlier">&#9664;</button>
+        <button id="btnMoveRight" title="Move hole later">&#9654;</button>
+        <button id="btnDelHole" class="danger">Delete Hole</button>
+      </div>
+      <div id="checkOut"></div>
+    </section>
+    <section id="propSection">
+      <h3 id="propTitle">Nothing selected</h3>
+      <div id="props"><p class="muted">Click something on the plan to change it, or pick a tool on the left to add something.</p></div>
+    </section>
+    <section>
+      <h3>Tips</h3>
+      <ul class="tips">
+        <li>Right-click anything for its options (delete, duplicate, turn…).</li>
+        <li>Wheel zooms. The Hand tool, right-drag, or Space + drag moves the view.</li>
+        <li>Delete removes the selection. Ctrl+D duplicates it.</li>
+        <li>Drag the round handles to resize and rotate.</li>
+        <li>Double-click the fairway to add a bend.</li>
+        <li>Arrow keys nudge; hold Shift for big steps.</li>
+      </ul>
+    </section>
+  </aside>
+</main>
+
+<div id="toast"></div>
+<div id="ctxMenu"></div>
+<div id="dialog"><div class="box"><p id="dialogText"></p><div class="row"><button id="dialogNo">Cancel</button><button id="dialogYes" class="primary">OK</button></div></div></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/course.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/art.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

@@ -552,7 +552,8 @@ function onSpaceLongPress() {
 function performBackwardScan() {
     if (state.mode === 'menu') {
         if (state.menuIndex === -1) {
-            state.menuIndex = 0;
+            // Nothing highlighted yet: backward scan starts on the last item
+            state.menuIndex = menus[state.menuState].length - 1;
             renderMenu();
         } else {
             moveMenuScan(-1);
@@ -561,7 +562,7 @@ function performBackwardScan() {
         moveGameScan(-1);
     } else if (state.mode === 'pause') {
         if (state.pauseIndex === -1) {
-            state.pauseIndex = 0;
+            state.pauseIndex = (state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause).length - 1;
             renderPauseMenu();
         } else {
             movePauseScan(-1);
@@ -923,7 +924,7 @@ function openEditor() {
 
 function showLoadWarning() {
     state.menuState = 'loadWarning';
-    state.menuIndex = 0;
+    state.menuIndex = -1;
     renderMenu();
 }
 
@@ -1077,7 +1078,7 @@ function setGameMode(players, mode) {
 function showSetupMenu() {
     state.mode = 'menu';
     state.menuState = 'setup';
-    state.menuIndex = 0;
+    state.menuIndex = -1;
 
     // Initialize Categories Check
     if (state.setup.categories.length === 0) {
@@ -1406,12 +1407,14 @@ function showPauseMenu() {
     state.pauseIndex = -1;
     speak("Paused");
     renderPauseMenu();
+    startAutoScan();
 }
 
 function showPauseSettings() {
     state.pauseMenuState = 'settings';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1;
     renderPauseMenu();
+    startAutoScan();
 }
 
 function resumeGame() {
@@ -1752,6 +1755,7 @@ function moveMenuScan(dir) {
 }
 
 function selectMenuOption() {
+    if (state.menuIndex === -1) return; // Nothing highlighted: Enter does nothing
     state.ignoreHover = true;
     const items = menus[state.menuState];
     items[state.menuIndex].action();
@@ -1813,7 +1817,7 @@ function renderPauseMenu() {
 function movePauseScan(dir) {
     const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
     if (state.pauseIndex === -1) {
-        state.pauseIndex = 0;
+        state.pauseIndex = dir < 0 ? items.length - 1 : 0;
     } else {
         state.pauseIndex = (state.pauseIndex + dir + items.length) % items.length;
     }

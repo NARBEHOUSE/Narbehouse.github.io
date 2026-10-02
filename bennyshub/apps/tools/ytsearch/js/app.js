@@ -731,7 +731,7 @@ class SettingsManager {
         this.settingsMenu = document.getElementById('settingsMenu');
         this.settingsGrid = document.getElementById('settingsGrid');
         this.settingsItems = [];
-        this.currentIndex = 0;
+        this.currentIndex = -1;
         this.isOpen = false;
 
         // Settings state (load from localStorage)
@@ -774,19 +774,21 @@ class SettingsManager {
     openSettings() {
         this.isOpen = true;
         this.settingsMenu.classList.remove('hidden');
-        this.currentIndex = 0;
+        this.currentIndex = -1;
 
         // Open overlay mode in scanning manager
         window.scanningManager.overlayOpen = true;
-        window.scanningManager.overlayIndex = 0;
+        window.scanningManager.overlayIndex = -1;
+        window.scanningManager.stopAutoScan();
+        window.scanningManager.clearKeyHighlights();
+        window.scanningManager.clearRowHighlights();
+        document.activeElement?.blur();
 
         // Start autoscan for settings menu
         this.startAutoScan();
 
-        // Apply initial focus
-        setTimeout(() => {
-            this.applyFocus();
-        }, 100);
+        // Wait for the first scan before highlighting a setting.
+        this.clearFocus();
 
         window.speechManager.speak('settings');
     }
@@ -991,7 +993,7 @@ class SettingsManager {
     focusPrev() {
         if (this.settingsItems.length === 0) return;
 
-        this.currentIndex = (this.currentIndex - 1 + this.settingsItems.length) % this.settingsItems.length;
+        this.currentIndex = this.currentIndex < 0 ? this.settingsItems.length - 1 : (this.currentIndex - 1 + this.settingsItems.length) % this.settingsItems.length;
         this.applyFocus();
     }
 

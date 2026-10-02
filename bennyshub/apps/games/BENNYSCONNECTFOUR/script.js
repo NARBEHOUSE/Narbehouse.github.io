@@ -452,7 +452,7 @@ function renderMenu(menuName, menuItems, containerId = 'menu-container') {
 function showMainMenu() {
     state.mode = 'menu';
     state.menuState = 'main';
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-board-container').style.display = 'none';
@@ -462,7 +462,7 @@ function showMainMenu() {
     if (pauseIcon) pauseIcon.style.display = 'none';
     
     renderMenu('main', menus.main);
-    speak("Benny's Connect Four. Single Player.");
+    speak("Benny's Connect Four.");
     
     state.scanItems = menus.main;
     startAutoScan();
@@ -471,14 +471,14 @@ function showMainMenu() {
 function showMenu(menuName) {
     state.mode = 'menu';
     state.menuState = menuName;
-    state.menuIndex = 0;
+    state.menuIndex = -1; // No highlight until Space is pressed
     
     const pauseIcon = document.getElementById('pause-button-icon');
     if (pauseIcon) pauseIcon.style.display = 'none';
 
     renderMenu(menuName, menus[menuName]);
     state.scanItems = menus[menuName];
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
@@ -498,10 +498,10 @@ function openPauseMenu() {
 
 function showPauseSettings() {
     state.pauseMenuState = 'settings';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1; // No highlight until Space is pressed
     renderMenu('settings', menus.pauseSettings, 'pause-overlay');
     state.scanItems = menus.pauseSettings;
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
@@ -996,9 +996,9 @@ function scanPrev() {
     } else {
         const menuLen = state.scanItems.length;
         if (state.mode === 'menu') {
-            state.menuIndex = (state.menuIndex - 1 + menuLen) % menuLen;
+            state.menuIndex = state.menuIndex < 0 ? menuLen - 1 : (state.menuIndex - 1 + menuLen) % menuLen;
         } else if (state.mode === 'pause') {
-            state.pauseIndex = (state.pauseIndex - 1 + menuLen) % menuLen;
+            state.pauseIndex = state.pauseIndex < 0 ? menuLen - 1 : (state.pauseIndex - 1 + menuLen) % menuLen;
         }
         updateHighlights();
         announceCurrentMenuItem();

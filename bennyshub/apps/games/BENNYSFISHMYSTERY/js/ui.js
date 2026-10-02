@@ -171,7 +171,7 @@ RT.ui = (function () {
 
   let screen = 'title';
   let items = [];
-  let index = 0;
+  let index = -1;
   let layout = 'list';        // 'grid' turns the menu into a card counter
   let autoScanTimer = null;
   let overlayOn = true;
@@ -445,8 +445,7 @@ RT.ui = (function () {
       : stripTags(it.label) + (it.value !== undefined ? ', ' + it.value : ''), it.speechCue);
   }
 
-  /* The last thing a card announced, so it can be said again. Which cards
-     open with nothing selected is meta.listenFirst - see setScreen(). */
+  /* The last thing a card announced, so it can be said again. */
   let lastSaid = null;
 
   /** Say the card's opening line again, exactly as it was said. */
@@ -590,20 +589,8 @@ RT.ui = (function () {
 
   function step(delta) {
     if (!items.length) return;
-    /* OFF NOTHING, ONTO THE FIRST. Stepping into a card that has nothing
-       selected should start at the top of it rather than wrap round to the
-       bottom, whichever way the switch was pressed. */
-    if (index < 0) {
-      index = -1;
-      for (let n = 0; n < items.length; n++) {
-        if (items[n].enabled !== false) { index = n; break; }
-      }
-      if (index < 0) return;
-      updateFocus(); speakItem(); AU.menuMove();
-      if (!didBackHold) restartAutoScan();
-      return;
-    }
-    let i = index;
+    // Enter a new menu at the first item going forward, or the last going back.
+    let i = index < 0 ? (delta > 0 ? -1 : items.length) : index;
     for (let n = 0; n < items.length; n++) {
       i = (i + delta + items.length) % items.length;
       if (items[i].enabled !== false) { index = i; break; }
@@ -616,12 +603,7 @@ RT.ui = (function () {
     const now = Date.now();
     if (now - lastActivate < 140) return;   // debounce switch bounce
     lastActivate = now;
-    /* NOTHING SELECTED: step onto the first row and read it out, rather than
-       act on a choice nobody has made. This is what one switch does with a
-       conversation card - ENTER is the only key it has, so the first press
-       moves and the second takes. On two switches SPACE has already done the
-       moving and this never runs. */
-    if (index < 0) { step(1); return; }
+    if (index < 0) return;
     const it = items[index];
     if (!it || it.enabled === false) { AU.menuBlocked(); return; }
     AU.resume(); AU.menuSelect();
@@ -630,10 +612,10 @@ RT.ui = (function () {
 
   function restartAutoScan() {
     stopAutoScan();
-    if (ctx() !== 'menu') return;          // never scan during play
+    if (ctx() !== 'menu' && ctx() !== 'map') return; // never scan during play
     const s = U.sm();
     if (!s || !s.getSettings().autoScan) return;
-    autoScanTimer = setInterval(() => step(1), s.getScanInterval());
+    autoScanTimer = setInterval(() => mapOn ? focusMapClose() : step(1), s.getScanInterval());
   }
   function stopAutoScan() {
     if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
@@ -1058,7 +1040,7 @@ RT.ui = (function () {
   function setScreen(name, opts) {
     opts = opts || {};
     screen = name;
-    index = 0;
+    index = -1; // A new screen waits for Space or the first Auto Scan tick.
     const meta = SCREENS[name](opts);
 
     const panel = $('panel');
@@ -1102,11 +1084,6 @@ RT.ui = (function () {
       setTimeout(fitPanel, 80);
     }
     showOverlay(true);
-    /* A CONVERSATION OPENS WITH NOTHING CHOSEN. See step() and activate():
-       with no row selected the first press must be a step, and a step reads
-       the row out - which is what "hear the button before you say it" wants,
-       without swallowing a press to get it. */
-    if (meta.listenFirst && opts.index === undefined) index = -1;
     updateFocus();          // and scroll the starting row into view
     if (index >= 0 && items[index] && typeof items[index].onFocus === 'function') {
       items[index].onFocus();
@@ -3266,12 +3243,18 @@ RT.ui = (function () {
 
      Walt's map, opened from Options. It covers the screen - a chart you have
      to squint at is no map at all - and there is exactly one thing on it to
-     press: Close, bottom right, wearing the focus ring from the moment it
-     opens. One switch closes it; two switches step onto the same single
-     choice and press it. Escape closes it too, for anybody on a keyboard.
+     press: Close, bottom right. Space or the first Auto Scan tick highlights
+     it; Enter closes it once highlighted. Escape closes it too, for anybody
+     on a keyboard.
      ══════════════════════════════════════════════════════════════════════ */
 
-  let mapOn = false, mapFrom = null, mapTimer = null;
+  let mapOn = false, mapFrom = null, mapTimer = null, mapFocused = false;
+
+  function focusMapClose() {
+    mapFocused = true;
+    $('mapClose').classList.add('focused');
+    U.speak('Close map');
+  }
 
   function paintMap() {
     const st = G.mapState && G.mapState();
@@ -3295,7 +3278,9 @@ RT.ui = (function () {
     showOverlay(false);
     $('mapView').classList.add('on');
     $('mapView').setAttribute('aria-hidden', 'false');
-    $('mapClose').classList.add('focused');
+    mapFocused = false;
+    $('mapClose').classList.remove('focused');
+    restartAutoScan();
     paintMap();
     /* Kept up to date while it is open. Nothing moves while the game is
        paused, but the map can also be opened from the dock, and a window
@@ -3303,12 +3288,14 @@ RT.ui = (function () {
     mapTimer = setInterval(paintMap, 400);
     const st = G.mapState && G.mapState();
     U.speak('The map of Whispering Lake. ' + ((st && st.label) || 'You are here') +
-            '. Press to close the map.');
+            '. Select Close map to return.');
   }
 
   function closeMap() {
     if (!mapOn) return;
     mapOn = false;
+    mapFocused = false;
+    $('mapClose').classList.remove('focused');
     clearInterval(mapTimer); mapTimer = null;
     $('mapView').classList.remove('on');
     $('mapView').setAttribute('aria-hidden', 'true');
@@ -4023,16 +4010,12 @@ RT.ui = (function () {
   function onKeyUp(e) {
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
-    /* One thing on the map to choose, so a step and a press come to the same
-       thing: Space scans onto Close, which is already where the scan is, and
-       Enter closes. Neither can leave somebody stuck looking at a map. */
+    // The map is a one-button dialog, with the same empty entry state as menus.
     if (mapOn) {
       const k2 = normKey(e.code);
       keyDown[k2] = false;
-      $('mapClose').classList.add('focused');
-      if (k2 === 'Space' && !isOneSwitch()) { U.speak('Close map'); return; }
-      AU.menuSelect();
-      closeMap();
+      if (k2 === 'Space') { focusMapClose(); restartAutoScan(); return; }
+      if (mapFocused) { AU.menuSelect(); closeMap(); }
       return;
     }
     const k = normKey(e.code);

@@ -1,70 +1,163 @@
 # Benny's P3GL
 
-An offline arcade game for Benny's Hub, with colorful fullscreen gameplay scaled uniformly to fit the screen. Before each shot, tap **Space** to move between **Take shot** and **Options**, then press and release **Enter** to choose. **Take shot** enters aiming without firing: the muted board becomes vibrant and both buttons disappear. Hold **Space** to move the aimer immediately and release to stop; each new press reverses the sweep direction, and a short press nudges the aim. Press and release **Enter** again to shoot directly. Holding **Enter** while aiming returns to the two shot choices; holding it from those choices opens Options. During flight, press and release **Enter** to pause. With shared **Auto Scan** on, the choices cycle automatically before aiming and the aimer oscillates continuously after **Take shot**. Press Enter to stop the aimer, then release to shoot. Mouse and touch players choose **Take shot**, move the pointer or drag to aim, then click or tap to shoot. Releasing a drag never shoots. The layout supports PC, tablet, and phone portrait and landscape.
+A 3D peg shooter for Benny's Hub, played with one or two switches. Aim the
+launcher, fire a ball down through the pegs, light them up, and meet each
+level's goal before you run out of balls.
 
-The title screen puts BENNY'S P3GL and a single column of menu choices beside a live gameplay preview. The silent preview plays at least 45 seconds of varied shots before repeating, without changing player progress; Reduced Motion keeps it still. Campaign selection offers **Continue** or **Restart** before play, without returning to the title screen. Continue restores saved progress, including an unfinished shot; Restart starts that campaign over. Each campaign defines its own mission, stage goals, shot rule, boards, and automatic powers while keeping the same controls. Hitting power pegs triggers their effects automatically; a campaign can also apply an automatic starting power at each stage.
+The folder is still called `BENNYSPEGGLE` and saves still use `bennys-peggle-*`
+keys. Older v1 and v2 campaign files still open; the rebuilt game stores its
+progress separately under `bennys-peggle-v3-*`. Everything players see says
+**P3GL**.
 
-Auto Scan, scan speed, voice, and text to speech use the hub's shared managers. Changes made in the hub update the game's settings labels in place and apply to gameplay without rebuilding the menu. The current hub supports 1–6 second scan intervals; P3GL uses that same list. Focus and visibility refreshes also synchronize missed changes.
+## Three moods, nine campaigns, 180 levels
 
-The background library contains 24 distinct landscapes, from forests and harbors to coral reefs, snowy mountains, and space. Each level can select its own image, with themed ambient motion. Reduced Motion freezes the ambient effects. How to play includes all eight peg types, their actual game symbols, and descriptions spoken through switch selection, plus controls and base-plate behavior.
+| Mode | Feel | Rules |
+| --- | --- | --- |
+| **Cozy** | Warm, slow, soothing worlds and music | You never run out of balls (five more arrive when you do). Wide catch plates, a long aim guide, no ball‑popping hazards. Difficulty stays gentle; the goals keep changing. |
+| **Vivid** | Bright, colourful and lively | The classic game. Run out of balls and you try again. Each campaign climbs steadily from easy to challenging. |
+| **Hyper** | Synthwave and deep space, lots of movement | Faster, bouncier, short aim guide, moving pegs everywhere, black holes and spikes. Gets tough by the end. |
 
-Hit pegs crumble into smaller fragments and disappear, normally over 0.8 seconds. Their collision surface shrinks with the visible core, so broken pegs cannot leave invisible obstacles or permanent cracked shells. Campaign authors can choose immediate breaking instead, and individual pegs can override their stage's setting. Brief score feedback is limited to three labels. Reduced Motion keeps the shrinking core still and removes moving chips. After each shot finishes, the board returns to the muted Take shot / Options choices. These two buttons float over the board only between shots; there is no bottom control bar or reserved strip. Both manual and automatic aiming use Enter release to shoot directly, with no buttons or menu scanning during aiming or flight. The choices return before the next shot. Base-plate bounces play a short rebound sound without repeated speech or announcements; catching a ball plays a distinct chime. Both cues follow the Sound effects setting. The board keeps the same uniform scale throughout all three phases.
+Each mode has three campaigns of 20 levels, each with its own world
+(animated 3D backdrop) and music:
 
-If a ball becomes trapped against collected pegs, the blocking peg shells hop away and stop colliding, letting the shot continue. Recovery awards no extra points or powers and never deletes untouched pegs or stone bumpers. Reduced Motion uses a short stationary fade. Recovery tracking survives saved-flight resume, and the existing 16-second ball return remains a final safeguard.
+- Cozy: Lantern Garden, Moonlit Lake, Snowglobe Hollow
+- Vivid: Sugar Rush, Carnival Skies, Coral Groove
+- Hyper: Neon Highway, Starlight Warp, Quasar Core
 
-The **Power Playground** adds twelve stages with twelve different boards and backgrounds. The first seven teach Ghost ball, Blast ball, Multiball, Fireball, Echo ball, Magnet ball, and Super guide; later stages combine them. Hexagon charge pegs bank a power for the **next** shot. One charge of each different power fires together; duplicates stay banked for later shots. Aiming, cancelling, pausing, and Continue preserve the charges. If the last spent ball earns a charge, one rescue shot is returned so the charge can be used. Existing Burst and Multiball pegs still activate on contact; a burst-collected Multiball now activates once instead of losing its effect.
+**Benny's Original** (the first P3GL's 20 levels, moved onto the new board)
+and **My Campaigns** (made in the editor or opened from a file) are on the
+mode screen.
 
-Objective pegs have a bright outline that stays visible on the muted board between shots: sun targets for target goals, gems for gem goals, and every collectible for clear or score goals. Collected pegs and stone blocks are not highlighted. Reduced Motion uses a static outline, and the Workshop previews the same objective highlighting.
+### Goals
 
-The HUD shows banked or active powers, their symbols, stage score, current shot score and hit count, and the last shot's result. Power descriptions appear in How to play and are spoken when selected. The Workshop's **Add power balls** panel places each power directly; a selected charge peg's **Power for the next shot** field changes its power. Charges, custom names, and peg data travel with drafts, saved campaigns, JSON import/export, and isolated playtests.
+Clear the board · Break all the pegs of one colour (they carry a star) ·
+Collect the gems · Light the lanterns · Break the bricks · Reach a score ·
+Break enough pegs · Hit a big chain in one shot.
 
-Ghost ball passes through breakable pegs; Fireball also splashes neighboring pegs within 44 px. Stone blocks stay solid. Blast ball bursts within 110 px on its first hit. Multiball launches three balls, Echo returns each falling ball once from the top, Magnet attracts descending balls toward the plate, and Super guide previews up to three seconds of bounces. Multiple powers share one shot. Existing low score-stage goals are tuned to leave room for charged follow-up shots. A plate catch always returns a ball, but awards points only after a peg was collected in that shot. Free-shot score thresholds are 2,500, 6,000, and 10,000 points per shot. Long shots, bank shots, ten-peg streaks, two charge pegs in one shot, and one-peg plate catches receive once-per-shot style bonuses. Saved flights preserve all power and award state, and older saves default to no charged powers.
+Anything the goal still needs has a pulsing ring. **Shot Fever** starts at ×1
+each shot: lighting or breaking 5, 10 or 15 new pieces raises it to ×2, ×3 or ×5.
+Repeated hits on the same piece do not build Fever. Meeting the goal mid‑shot turns
+the bottom of the board into bonus slots, and balls left over add a bonus.
 
-Design references: [Peggle 2's official manual](https://dlassets-ssl.xboxlive.com/public/content/efd011ea-47b6-4b61-9e86-08063a3e1cfa/GameManual/be144115-0a2f-448a-abe8-855437167d8a/en-US/index.html) for collectible powers, style shots, and score-earned balls; [EA's Peggle 2 launch release](https://s204.q4cdn.com/701424631/files/doc_news/2013/12/1/812500.pdf) for spectral pass-through and enhanced bounce guides. Benny's powers use their own effects and balancing while keeping the same switch controls.
+### The board
 
-Three story campaigns have 20 stages each, with 20 different backgrounds within each campaign:
+- **Pegs** light when hit and clear away in a popping run once the ball is
+  gone. A ball that stalls among lit pegs gets them cleared early.
+- **Powers** (power pegs): Multiball, Extra ball, Double points, Lightning
+  happen at once; Spray shot, Safety net, Blast ball, Fireball and Super guide
+  are saved for your next shot (one of each kind fires together).
+- **Hazards**: Thief (steals a saved power), Shrinker, Sludge, Spike (pops the
+  ball), Black hole (pulls and swallows).
+- **Bricks**: barrier bricks (1–4 hits; colour and dots show hits left),
+  armour (only blasts, fireballs and lightning crack it), glass (shatters,
+  the ball flies through), steel walls, and gates opened by the key of the same
+  colour. Also bumpers, steel posts, portals, lanterns and gems.
+- **The base plate** moves along the bottom and is set per level: **Bounce**
+  (sends the ball back up), **Catch** (catch the ball, keep it), or **Timed**
+  (switches between the two; a bar on the plate shows when). Its state is shown
+  by shape as well as colour: a cup for Catch, springs for Bounce.
 
-- **The Lantern Run:** carry a light across the world for a homecoming festival, with sun targets and automatic powers.
-- **The Tide Post:** deliver invitations along a magical waterway, with gems, extra shots, multiball, and plates that change with the tide.
-- **The Star Workshop:** restore a sky machine and its constellations, with bursts, multiball, and unlimited shots.
+## Controls
 
-Each story campaign varies its base plate across stages, with smaller and larger widths, Catch, Bounce, and timed switching between both. Before each level, a centered story modal appears over that upcoming level's actual pegs and themed background, with just **Start stage** and **Main menu**. The preview stays unplayed until Start stage; its story phase saves and resumes independently of gameplay. Auto Scan waits while story narration is speaking or queued. The recap appears as a modal over the completed board, with stage score, pegs hit, and final-shot chain. Balls and plate freeze at the winning moment while the final fragments finish crumbling. The exact completed board and visual decay progress save with the recap, so Continue can reopen it without replaying a shot or awarding points again. All campaigns use the same controls. The six-stage Lantern Trail remains available as a shorter campaign and editor template. A stage wins immediately when its objective is met, even while balls are moving. Records track achievements and best scores. Progress and unfinished shots save locally. Floating tip boxes are removed from the playfield; spoken feedback remains available.
+The original P3GL controls, kept on purpose.
 
-Original Benny's Campaign retains its 20 peg layouts and uses a bouncing base plate, with new charge pegs at exposed route entrances. All three twenty-stage story campaigns and the six-stage Lantern Trail also include the seven charged-ball powers, placed for each board's lanes, clusters, loops, and plate behavior. Early story stages teach an individual power; later stages offer combinations. Bundled-content updates compare exact historical campaign files to carry over cleared stages, scores, records, and unfinished shots. Live snapshots retain their collection state and moving balls while their untouched pegs gain the new authored powers; completed recaps keep their exact finished board. Selecting that bundled campaign carries over progress from its previous version and updates an unfinished shot to use the bouncing plate.
+| | Two switches (Auto Scan off) | One switch (Auto Scan on) |
+| --- | --- | --- |
+| Aim | Hold **Space** to sweep the aim. Each new press turns the other way. | The aim sweeps back and forth by itself. |
+| Shoot | Release **Enter**. | Press **Enter** to freeze the aim, release to shoot. |
+| Pause | Hold **Enter** (a ring fills and beeps rise). | Hold **Enter** (a shorter hold). |
 
-The Campaign Workshop is a caregiver tool behind a spoken warning. The visual board is the main workspace: select, move, and resize objects directly, with the selected object's settings opening in a sidebar. Campaign settings, stage rules, backgrounds, patterns, save tools, and help use collapsible side panels. The board keeps its proportions and fits smaller desktop windows. Each stage can use one of 24 background templates or an uploaded PNG/JPEG/WebP image up to 1 MB, with a description. Backgrounds appear in the editor preview and actual gameplay, and travel in exported JSON. Stages without their own background inherit their campaign artwork. The editor supports eight peg types, patterns, keyboard coordinate editing, undo/redo, autosaved unfinished drafts, a campaign library, JSON import/export, and isolated playtesting. Original v1 packs remain importable. Old chapter/finale story and picture data is preserved in imported/exported files, with no legacy picture panels in the active editor. Browser storage limits are reported; exported JSON and draft JSON are portable backups.
+**Before Each Shot: Choose Play or Pause** (Settings, in the main menu and in
+the pause menu) puts a two‑stop choice in front of every shot for players who
+cannot hold a switch: the board lights up for **Play**, the **Pause** button in
+the bottom‑left corner lights up for Pause, and Space / Auto Scan moves between
+them like any menu. Off by default ("Aim right away").
+When this choice is enabled, holding Enter does not pause or show the hold ring.
+Releasing Enter still selects the highlighted choice or fires the shot, however
+long the press lasts. Choose Pause or use the corner Pause button to pause.
 
-Campaign selection uses an image-card grid: three columns on desktop, two on tablets, and one on narrow screens. Each card shows its campaign, shot rule, saved progress, and a checkmark when completed, and opens its Continue / Restart choices. Saved campaigns use their authored first-stage background as their cover. Space and Enter follow the same visible card order, with a bright focus outline. **Reset all campaigns** in Settings clears every campaign's progress and records after confirmation, while keeping settings and imported campaign content.
+Selected buttons have a solid yellow fill, dark text and a thick outline in all
+three modes. One button is highlighted at a time, with a solid outline.
+Highlights stay visible without enlarging or pulsing the button.
+The game fills the hub's viewport; fullscreen is handled by the hub.
 
-Workshop board controls:
+Menus follow the hub contract: tap Space = next, hold Space = back, Enter =
+choose, all on release. Every menu scans individual choices in order, including
+modes, campaigns, custom campaigns and unlocked levels. Enter opens the highlighted
+choice directly, with no row or section selection first. Mouse and touch work
+everywhere: move the mouse to aim and click to shoot; on a touch screen drag
+or tap to aim and press **Shoot** (lifting a finger never shoots). The Pause
+button is always in the bottom‑left corner during play.
 
-- **New campaign** offers a blank stage, the three 20-stage story templates, the shorter Lantern Trail, or the original Benny’s P3GL template. Templates create editable copies. **Open campaign** offers saved campaigns and JSON files. Both choosers start on Cancel, and replacing a draft can be undone.
+Settings: Text to Speech, Voice, Before Each Shot, Aim & Guide (aim speed —
+Super slow by default — guide length, colour and size), Display & Sound (music,
+board backdrop for contrast, reduced motion, graphics quality), Auto Scan, Scan
+Speed, Sound Effects, Reset Progress (two‑step).
 
-- Open **Background** to choose a template, upload a picture, or describe the selected stage's background. **Use campaign background** clears the stage override. Other stages keep their own backgrounds, so a campaign can change its setting as the story progresses.
+Progress saves between shots. Continue restores the latest playable checkpoint;
+closing during a shot lets you replay that shot. After three failed tries at a
+level, the results screen offers **Skip This Level**, including the last level.
+If too few pieces remain to achieve a chain goal, the pieces return for another
+attempt. A ball trapped bouncing for too long is returned without costing a ball.
 
-- Open **Power-up names** to rename the three power pegs and four starting powers for this campaign. Defaults include **Burst**, **Multiball**, **Extra shot**, and **Magnet**. Blank fields use the defaults; **Use default power-up names** resets all power-up names and supports Undo. Names are limited to 48 characters and follow the campaign through autosave, JSON export/import, and playtesting. The editor, guide, starting-power introduction, and spoken power feedback use these names, while symbols and effects stay consistent. Optional overrides live in `meta.powerNames`; unnamed older campaigns keep their existing identity.
+## Campaign Editor
 
-- Open **Peg breaking** to choose **Crumble, then disappear** or **Break immediately** for the current stage. Crumble time ranges from 0.2–3 seconds. Select one or more pegs and use **Breaking for selected pegs** for an override, or right-click and choose **Set breaking behavior…**. **Use stage setting** removes the override; stone blocks always stay solid. Settings support Undo, draft autosave, and campaign export/import. Optional data uses `level.pegBreak` and `peg.breakMode`; unchanged default settings are omitted so older campaign identities remain stable.
+`editor.html`, a mouse‑and‑keyboard tool for caregivers, teachers and
+therapists, behind a spoken warning in the game. Campaign settings (title,
+mode, world), a level list, every piece on a palette, pattern tools (line, arc,
+grid, spiral, shape stamps), symmetry, motion (rotate, slide, orbit) with a live
+preview, the base plate (width, speed, Bounce/Catch/Timed), goal settings, live
+problem checks, a bot difficulty estimate with suggested star scores, test
+play inside the editor, "My Campaigns" library, and JSON import/export. Old v1
+and v2 P3GL files open too.
+The editor opens in the game's current window so its library is shared in both
+the web hub and the desktop hub. Use **Back to Game** to return.
 
-- Click the **base plate** on the board, or use **Select base plate**, to edit it. Drag it horizontally to set its starting position; drag either end or scroll over the plate to resize it. Right-click for width, position, Catch, Bounce, or Timed switching. The Base plate sidebar supplies the same controls without dragging. Left/right arrow keys move a selected plate, Shift moves 10 px, and plus/minus changes its width. Timed switching alternates between Catch and Bounce every 0.5–30 seconds, starting with Catch. Width ranges from 100–780 px; the preview includes the Wider base plate power. **Use defaults** restores a centered 240 px catching plate. Edits support Undo, autosaving, and campaign JSON. Story templates include varied plate sizes and behaviors.
+## How it is built
 
-- Click a peg to select it; Shift-click adds or removes a peg. Drag empty space to select a box, or Shift-drag to add to the selection. The peg list also supports multiple selection.
-- Drag any selected peg to move the group. Arrow keys move the selected pegs by 1 px; Shift+Arrow moves by 10 px. Editing X or Y in the inspector moves the group together.
-- Right-click a peg or use **Selection actions** for duplicate, copy, paste, delete, type, shape, and size controls. Shift+F10 opens the menu from the board. Use arrow keys to navigate it and Escape to close it.
-- Change **Radius for selection** to set a shared radius, or use **Smaller** / **Larger** to adjust each selected peg. Blue bounce pegs support circle, square, triangle, star, hexagon, and plus shapes. Other peg types retain their symbols.
-- Scroll up over a peg or block to enlarge it, or down to shrink it. Hovering a selected peg resizes the whole selection, with consecutive wheel steps grouped into one Undo edit. In Add mode with nothing selected, scrolling changes the new-peg size. Ctrl/Command+wheel remains available for browser zoom.
-- With the board focused, Ctrl+A selects all, Ctrl+D duplicates, Ctrl+C / Ctrl+V copies and pastes, and Delete removes selected pegs. Undo and Redo restore group edits together. The visible buttons and inspector provide the same controls without shortcut keys.
+Plain `<script>` tags, one `window.P3` namespace, three.js r155 (the same
+vendored build as the hub's other 3D games), no build step. Sound and music
+are synthesised in code and played through `<audio>` (no `AudioContext`, which
+can crash the desktop app).
 
-`content.js` owns validated content and deterministic physics. `renderer.js` draws bright, distinctly shaped pegs and predicts the aim using a separate copy of the live physics state. `game.js` owns switch controls and campaign flow. Story campaigns are in `levels/story-*.json`. All game sounds use the hub's SafeAudio module. The 21 new landscape images were made with the built-in image generation tool and saved in `assets/backgrounds/`; their complete prompt set is in `assets/background-prompts.json`. The three original scene images and prompts remain in `assets/`.
+| File | Owns |
+| --- | --- |
+| `js/catalog.js` | Every piece, power, hazard, goal and the three modes' tuning |
+| `js/levels.js` | Campaign format v3, validation, v1/v2 import, the editor library |
+| `js/physics.js` | Deterministic 240 Hz board physics. The aim guide runs the same code ahead of time, so the line you aim with is the path the ball really takes |
+| `js/match.js` | The rules of a level; emits events, knows nothing about drawing or sound |
+| `js/game.js` | Level flow, controls, feedback, saving |
+| `js/ui.js` | Menus, HUD, scanning, the Play / Pause choice, pause |
+| `js/board.js`, `js/art.js`, `js/fx.js`, `js/post.js` | Rendering: instanced glossy pegs, effects, bloom and tone mapping |
+| `js/backdrops*.js`, `js/themes.js` | The nine animated worlds |
+| `js/audio.js` | Music, sound effects, speech queue |
+| `js/layout.js` | Where the board and HUD go on any screen, portrait or landscape |
 
-`electron tests/peggle-power-names.cjs` checks campaign naming through editor fields, Undo, saved drafts, exported files, the spoken guide, and actual power hits in gameplay.
+Campaigns are generated: `tools/campaigns/<mode>.cjs` describe the levels with
+`tools/levelkit.cjs`, and `node tools/build-campaigns.cjs <mode> --bot` checks
+every level, plays each one with the bot (`tools/bot.cjs`) to set the star
+scores, and writes `campaigns/*.json`.
 
-`node tests/peggle-stuck.test.cjs` checks trapped-ball recovery, unchanged scoring, saved-flight continuity, and the fallback for enclosed stone blocks. `electron tests/peggle-stuck-tools.cjs` checks the real recovery animation, pause/resume, and Reduced Motion. `electron tests/peggle-flow-tools.cjs` covers campaign continuation and resets, stage briefings, shot choices and aiming, and responsive touch play. Add `--floating-controls-only` for focused checks of full-height board scaling, floating actions, native keyboard/mouse/touch activation, and pausing during flight at PC, tablet and phone sizes.
+## Tests (run from this folder)
 
-`node tests/peggle-break.test.cjs` checks timed crumble, shrinking collisions, immediate removal, once-only powers, and deterministic saved ages. `electron tests/peggle-break-tools.cjs` checks the editor's breaking settings, live peg visuals, the completed-board recap, saved results, narration and responsive controls.
+```
+node tools/test/rules.cjs         every mechanic on a purpose-built board
+node tools/test/guide.cjs         the aim guide matches the real shot
+node tools/test/determinism.cjs   bot trial shots replay exactly
+node tools/test/ui-flow.cjs       switch-only flow in a real browser (Playwright)
+node tools/test/pause-mode.cjs    Play/Pause choice disables hold-to-pause in both switch modes
+node tools/test/selection.cjs     visible selection in all modes, grids and Play/Pause
+node tools/test/navigation.cjs    nested Back paths, settings, help, cancel and resume
+node tools/test/navigation.cjs --hub --repro-only  Aim & Guide roundtrip inside the hub
+node tools/test/navigation-loading.cjs  Back and Continue during delayed campaign loads
+node tools/test/integration.cjs   mobile layouts, touch, save/reload, retries and all worlds
+node tools/test/editor.cjs        editor tools, library, imports, export and live test play
+node tools/test/audio.cjs --quiet music, effects, loudness and clean loop checks
+node tools/build-campaigns.cjs all --bot      rebuild and re-measure every campaign
+node tools/make-covers.cjs        campaign card screenshots (covers/*.jpg)
+node tools/make-hub-shot.cjs      live game screenshot for images/games/bennyspeggle.png
+```
 
-`electron tests/peggle-flow-tools.cjs --story-modal-only` checks the upcoming-board story dialog, its two choices, saved introductions, and PC/tablet/phone layouts. `node tests/scan-manager-sync.test.cjs` checks shared manager updates and saved interval compatibility. `electron tests/peggle-shared-settings-tools.cjs` checks a real parent/game iframe for live scan and voice labels, preserved menu focus, and direct Auto Scan shooting.
-
-Verification from the hub root: `node tests/peggle-model.test.cjs`, `node tests/peggle-story-campaigns.test.cjs`, `node tests/peggle-plate-migration.test.cjs`, `electron tests/peggle-gameplay-tools.cjs`, `electron tests/peggle-editor-tools.cjs`, and `electron tests/peggle-ui-smoke.cjs`. Focused game checks also accept `--campaigns-only`, `--presentation-only`, `--backgrounds-only --catalog-assets`, and `--stories-only`. On Windows, Electron must run with `ELECTRON_RUN_AS_NODE` unset. The UI suites use hidden windows and temporary profiles, and write screenshots under `tmp/`. The campaign test verifies every stage through deterministic physics under its authored shot rules; it complements a real player playtest with one switch.
-
-`node tests/peggle-power-balls.test.cjs` checks charged powers, combinations, spare charges, final-shot rescue, save/resume, style rewards, and campaign content. `electron tests/peggle-power-tools.cjs` checks the real Workshop, portable powers, guide, charged-flight Continue, and responsive HUD including reduced motion. For software-rendered Windows checks, pass `--disable-gpu --in-process-gpu --no-sandbox` before the test path and unset `ELECTRON_RUN_AS_NODE`.
+Playwright comes from the website's `node_modules`. Screenshots go to the
+website's `tmp/` folder. For local play, run `node tools/serve.cjs 8765` and open
+`http://127.0.0.1:8765/apps/games/BENNYSPEGGLE/index.html`.

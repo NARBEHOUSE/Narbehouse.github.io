@@ -93,6 +93,8 @@ function renderPredictions() {
   panel.append(content); el.mainGrid.append(panel);
 }
 updateScannable = function (preserve) {
+  if (!preserve) document.activeElement?.blur();
+  if (!preserve && state.autoScan) startAutoScan();
   syncSentence();
   if (state.videoModalActive) { original.updateScannable(preserve); return; }
   renderPredictions();

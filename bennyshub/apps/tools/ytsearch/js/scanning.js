@@ -2,10 +2,10 @@
 class ScanningManager {
     constructor() {
         this.mode = 'ROWS'; // 'ROWS' or 'KEYS'
-        this.currentRowIndex = 0;
+        this.currentRowIndex = -1;
         this.currentKeyIndex = 0;
         this.overlayOpen = false;
-        this.overlayIndex = 0;
+        this.overlayIndex = -1;
         
         // Timing configuration
         this.SHORT_MIN = 0; // Accept quick taps; the shared scan manager filters switch bounce.
@@ -105,7 +105,7 @@ class ScanningManager {
             NarbeScanManager.subscribe((settings) => {
                 this.updateSettingsFromManager();
                 if (this.autoScanEnabled) {
-                    if (!this.autoScanTimer && !this.overlayOpen) this.startAutoScan();
+                    if (!this.autoScanTimer && !window.settingsManager?.isOpen) this.startAutoScan();
                 } else {
                     this.stopAutoScan();
                 }
@@ -209,6 +209,7 @@ class ScanningManager {
                 this.overlayActivate();
                 this.armCooldown();
             }
+            if (this.autoScanEnabled && !window.settingsManager?.isOpen) this.startAutoScan();
             return;
         }
         
@@ -401,13 +402,14 @@ class ScanningManager {
             return;
         }
         
-        this.currentRowIndex = (this.currentRowIndex - 1 + this.rows.length) % this.rows.length;
+        this.currentRowIndex = this.currentRowIndex < 0 ? this.rows.length - 1 : (this.currentRowIndex - 1 + this.rows.length) % this.rows.length;
         console.log(`Scanning prev: ${this.currentRowIndex + 1}/${this.rows.length} - ${this.rows[this.currentRowIndex]?.dataset?.rowId}`);
         this.highlightRows();
     }
     
     enterRow() {
         const currentRow = this.rows[this.currentRowIndex];
+        if (!currentRow) return;
         const rowId = currentRow.dataset.rowId;
         
         // Handle text row specially
@@ -467,6 +469,7 @@ class ScanningManager {
     highlightRows() {
         this.clearKeyHighlights();
         this.clearRowHighlights();
+        if (this.currentRowIndex < 0) { this.updateStatus(); return; }
         
         if (this.mode === 'ROWS' && !this.overlayOpen && this.rows.length > 0) {
             // Ensure current index is valid
@@ -547,6 +550,7 @@ class ScanningManager {
     // Speech methods - TTS history row contents when scanning
     speakRowLabel() {
         const currentRow = this.rows[this.currentRowIndex];
+        if (!currentRow) return;
         const rowId = currentRow.dataset.rowId;
         
         // Never speak for text row
@@ -660,7 +664,7 @@ class ScanningManager {
             return;
         }
         
-        this.overlayIndex = (this.overlayIndex - 1 + buttons.length) % buttons.length;
+        this.overlayIndex = this.overlayIndex < 0 ? buttons.length - 1 : (this.overlayIndex - 1 + buttons.length) % buttons.length;
         this.applyOverlayFocus(buttons);
     }
     
@@ -696,39 +700,27 @@ class ScanningManager {
     // Public methods for overlay management
     openOverlay() {
         this.overlayOpen = true;
-        this.overlayIndex = 0;
-        
-        // Stop auto scan when overlay is open
-        if (this.autoScanEnabled) {
-            this.stopAutoScan();
-        }
-        
-        // Apply initial focus
-        setTimeout(() => {
-            const buttons = this.getOverlayButtons();
-            if (buttons.length > 0) {
-                this.applyOverlayFocus(buttons);
-            }
-        }, 100);
+        this.overlayIndex = -1;
+        this.clearKeyHighlights();
+        this.clearRowHighlights();
+        this.getOverlayButtons().forEach(button => button.classList.remove('focused'));
+        document.activeElement?.blur();
+        this.stopAutoScan();
+        if (this.autoScanEnabled) this.startAutoScan();
     }
-    
+
     closeOverlay() {
         this.overlayOpen = false;
-        this.overlayIndex = 0;
-        
-        // Clear any overlay button focus
-        document.querySelectorAll('.slideshow-overlay .scan-btn').forEach(btn => {
-            btn.classList.remove('focused');
-        });
-        
-        // Resume auto scan when overlay is closed
-        if (this.autoScanEnabled) {
-            setTimeout(() => {
-                this.startAutoScan();
-            }, 1000);
-        }
+        this.overlayIndex = -1;
+        this.mode = 'ROWS';
+        this.currentRowIndex = -1;
+        this.clearKeyHighlights();
+        this.clearRowHighlights();
+        document.activeElement?.blur();
+        this.stopAutoScan();
+        if (this.autoScanEnabled) this.startAutoScan();
     }
-    
+
     // Update status display
     updateStatus() {
         const statusElement = document.getElementById('status');
@@ -774,7 +766,7 @@ class ScanningManager {
     
     // Auto scan methods
     startAutoScan() {
-        if (!this.autoScanEnabled) return;
+        if (!this.autoScanEnabled || document.getElementById('startup-error')?.open) return;
         
         this.stopAutoScan();
         
@@ -789,11 +781,13 @@ class ScanningManager {
 
         this.autoScanTimer = setInterval(() => {
             // Don't auto scan if user is interacting or in overlay mode
-            if (this.spaceDown || this.enterDown || this.overlayOpen) {
+            if (this.spaceDown || this.enterDown) {
                 return;
             }
             
-            if (this.mode === 'ROWS') {
+            if (this.overlayOpen) {
+                if (!window.settingsManager?.isOpen) this.overlayFocusNext();
+            } else if (this.mode === 'ROWS') {
                 this.scanRowsNext();
             } else {
                 this.scanKeysNext();

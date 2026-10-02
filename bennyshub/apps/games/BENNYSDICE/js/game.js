@@ -1181,7 +1181,11 @@ function setAppState(newState) {
     ui.style.display = 'none'; // Explicitly hide
 
     // Reset scan Index whenever we change screens
-    appState.scanIndex = 0;
+    // Menus open with nothing highlighted (-1) - the first Space highlights the first item.
+    // In-game controls still start on the first item.
+    appState.scanIndex = (newState === 'GAME') ? 0 : -1;
+    // Restart auto scan so its first tick comes a full interval after a menu opens
+    if (newState !== 'GAME') startAutoScan();
 
     if (newState === 'MENU') {
         // STOP GAME AND RESET
@@ -1489,6 +1493,12 @@ function refreshScanFocus(shouldSpeak = true) {
 
     if (targets.length === 0) return;
 
+    // Nothing highlighted yet (a menu just opened): show no focus and announce nothing
+    if (appState.scanIndex < 0) {
+        resetTableColor();
+        return;
+    }
+
     if (appState.scanIndex >= targets.length) appState.scanIndex = 0;
 
     const target = targets[appState.scanIndex];
@@ -1541,7 +1551,7 @@ function refreshScanFocus(shouldSpeak = true) {
 
 function activateFocused() {
     const targets = getFocusables();
-    if (appState.scanIndex >= targets.length) return;
+    if (appState.scanIndex < 0 || appState.scanIndex >= targets.length) return; // nothing highlighted
     const target = targets[appState.scanIndex];
 
     // Visual and audio feedback
@@ -1559,7 +1569,12 @@ function activateFocused() {
 function moveScan(direction) {
     const targets = getFocusables();
     if (targets.length === 0) return;
-    appState.scanIndex = (appState.scanIndex + direction + targets.length) % targets.length;
+    if (appState.scanIndex < 0) {
+        // Nothing highlighted yet: forward lands on the first item, backward on the last
+        appState.scanIndex = direction > 0 ? 0 : targets.length - 1;
+    } else {
+        appState.scanIndex = (appState.scanIndex + direction + targets.length) % targets.length;
+    }
     refreshScanFocus();
 }
 

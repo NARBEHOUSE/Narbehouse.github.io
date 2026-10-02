@@ -3955,7 +3955,7 @@ class GameScene extends BaseballScene {
     }
 
     // ─── Pause ───────────────────────────────────────────────────────────────
-    showPauseMenu(resumeCb) {
+    showPauseMenu(resumeCb, restoreIndex = -1) {
         this.resetFieldCamera(0);
         const vm = window.NarbeVoiceManager;
         const soundOn = this.audio.settings.soundEnabled;
@@ -3977,14 +3977,14 @@ class GameScene extends BaseballScene {
                 { value: 'help', label: 'Help' },
                 { value: 'quit', label: 'Quit to Title' }
             ],
-            onSelect: (opt) => {
+            onSelect: (opt, idx) => {
                 if (opt.value === 'resume') { this.setMenu(null); resumeCb(); }
-                else if (opt.value === 'batting') { this.audio.speak(bb2ToggleBatting(), true); this.showPauseMenu(resumeCb); }
-                else if (opt.value === 'sound') { this.audio.toggleSound(); this.showPauseMenu(resumeCb); }
-                else if (opt.value === 'music') { this.audio.toggleMusic(); this.showPauseMenu(resumeCb); }
+                else if (opt.value === 'batting') { this.audio.speak(bb2ToggleBatting(), true); this.showPauseMenu(resumeCb, idx); }
+                else if (opt.value === 'sound') { this.audio.toggleSound(); this.showPauseMenu(resumeCb, idx); }
+                else if (opt.value === 'music') { this.audio.toggleMusic(); this.showPauseMenu(resumeCb, idx); }
                 else if (opt.value === 'tts') {
                     if (vm && typeof vm.toggleTTS === 'function') vm.toggleTTS();
-                    this.showPauseMenu(resumeCb);
+                    this.showPauseMenu(resumeCb, idx);
                 }
                 else if (opt.value === 'voice') {
                     if (vm && typeof vm.cycleVoice === 'function') {
@@ -3993,13 +3993,18 @@ class GameScene extends BaseballScene {
                             ? vm.getVoiceDisplayName(vm.getCurrentVoice()) : 'voice';
                         this.audio.speak(`Voice: ${nv}.`, true);
                     }
-                    this.showPauseMenu(resumeCb);
+                    this.showPauseMenu(resumeCb, idx);
                 }
-                else if (opt.value === 'nexttrack') { this.audio.nextTrack(); this.showPauseMenu(resumeCb); }
+                else if (opt.value === 'nexttrack') { this.audio.nextTrack(); this.showPauseMenu(resumeCb, idx); }
                 else if (opt.value === 'help') { this.audio.speak('I need help', true); }
                 else if (opt.value === 'quit') { this.setMenu(null); this.scene.start('TitleScene'); }
             }
         }));
+        // Restore the highlighted row so the selection doesn't jump after a toggle.
+        if (restoreIndex >= 0 && restoreIndex < this.menu.options.length) {
+            this.menu.index = restoreIndex;
+            this.menu._draw();
+        }
     }
 }
 

@@ -239,7 +239,7 @@
     <div id="pause-screen" class="screen" style="display:none;">
         <h1>PAUSED</h1>
         <div class="menu-items-list" id="pause-menu-list">
-            <div class="menu-item selected" data-action="resume">CONTINUE GAME</div>
+            <div class="menu-item" data-action="resume">CONTINUE GAME</div>
             <div class="menu-item" data-action="restart">RESTART GAME</div>
             <div class="menu-item" data-action="settings">SETTINGS</div>
             <div class="menu-item" data-action="menu">MAIN MENU</div>
@@ -250,7 +250,7 @@
     <div id="start-screen" class="screen">
         <h1>BENNY'S BASKETBALL</h1>
         <div class="menu-items-list" id="main-menu-list">
-            <div class="menu-item selected" data-action="start">START GAME</div>
+            <div class="menu-item" data-action="start">START GAME</div>
             <div class="menu-item" data-action="settings">SETTINGS</div>
             <div class="menu-item" data-action="exit">EXIT GAME</div>
         </div>
@@ -268,7 +268,7 @@
         <h1>GAME OVER</h1>
         <div id="final-score" style="font-size:3em; margin:20px;">Score: 0</div>
         <div class="menu-items-list" id="gameover-menu-list">
-            <div class="menu-item selected" data-action="restart">PLAY AGAIN</div>
+            <div class="menu-item" data-action="restart">PLAY AGAIN</div>
             <div class="menu-item" data-action="menu">MAIN MENU</div>
         </div>
     </div>
@@ -1570,7 +1570,7 @@
                 // Wait for DOM
                 this.screens = null;
                 this.currentMenu = null;
-                this.activeIndex = 0;
+                this.activeIndex = -1;
                 this.autoScanTimer = null;
                 this.returnToId = 'start';
             }
@@ -1591,11 +1591,15 @@
             
             startAutoScan() {
                 this.stopAutoScan();
-                const scanSettings = window.NarbeScanManager ? window.NarbeScanManager.getSettings() : { autoScan: GameSettings.autoScan, scanSpeed: GameSettings.scanSpeed };
                 
-                if (!scanSettings.autoScan || !this.currentMenu) return;
+                // Get settings from shared manager
+                const scanSettings = window.NarbeScanManager ? window.NarbeScanManager.getSettings() : null;
+                const autoScan = scanSettings ? scanSettings.autoScan : GameSettings.autoScan;
 
-                const interval = (scanSettings.scanSpeed || 2) * 1000;
+                if (!autoScan || !this.currentMenu) return;
+
+                // Use scanInterval (milliseconds) from manager, fallback to local setting
+                const interval = scanSettings ? scanSettings.scanInterval : (GameSettings.scanSpeed * 1000);
                 this.autoScanTimer = setInterval(() => {
                     this.scanNext(true); // Is Auto
                 }, interval);
@@ -1698,9 +1702,7 @@
                 this.refreshSettingsMenu(); // Always refresh settings to ensure latest values
 
                 this.currentMenu = this.screens[menuName];
-                this.activeIndex = -1; 
-                const autoScan = window.NarbeScanManager ? window.NarbeScanManager.getSettings().autoScan : GameSettings.autoScan;
-                if (menuName === 'start' || (menuName === 'settings' && autoScan)) this.activeIndex = 0;
+                this.activeIndex = -1; // Every menu opens with nothing highlighted; first Space highlights the first item
                 
                 this.updateVisuals();
                 this.startAutoScan(); // Restart timer on menu change
@@ -1729,8 +1731,9 @@
             }
 
             selectCurrent() {
-                this.stopAutoScan(); // Pause scan on select
+                // Nothing highlighted: Enter does nothing (and must not stop Auto Scan)
                 if (!this.currentMenu || this.activeIndex === -1) return;
+                this.stopAutoScan(); // Pause scan on select
                 const items = this.currentMenu.getElementsByClassName('menu-item');
                 const selected = items[this.activeIndex];
                 const action = selected.dataset.action;

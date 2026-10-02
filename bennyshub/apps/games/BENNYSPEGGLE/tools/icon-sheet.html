@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>P3GL icon sheet</title>
+<style>
+  body { margin: 0; background: #1b1830; color: #fff; font: 13px system-ui, sans-serif; }
+  .grid { display: grid; grid-template-columns: repeat(8, 120px); gap: 10px; padding: 12px; }
+  .cell { background: rgba(255,255,255,.06); border-radius: 10px; padding: 6px; text-align: center; }
+  canvas { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="grid" id="g"></div>
+<script src="../js/util.js"></script>
+<script src="../js/catalog.js"></script>
+<script src="../js/icons.js"></script>
+<script>
+  const C = P3.catalog, g = document.getElementById('g');
+  const list = Object.keys(C.TYPES).map(t => ({ t }));
+  list.push({ t: 'peg', c: 'orange', target: true }, { t: 'peg', c: 'green', lit: true }, { t: 'brick', hp: 3 }, { t: 'brick', hp: 4 }, { t: 'key', k: 'pink' }, { t: 'gate', k: 'yellow' });
+  for (const it of list) {
+    const d = document.createElement('div'); d.className = 'cell';
+    const c = document.createElement('canvas'); c.width = 108; c.height = 72;
+    const x = c.getContext('2d');
+    P3.icons.item(x, it, 54, 36, 60, { target: it.target, lit: it.lit });
+    d.appendChild(c);
+    d.appendChild(document.createTextNode((C.TYPES[it.t].name) + (it.c ? ' ' + it.c : '') + (it.target ? ' (goal)' : '') + (it.lit ? ' (lit)' : '')));
+    g.appendChild(d);
+  }
+  window.__ready = true;
+</script>
+</body>
+</html>

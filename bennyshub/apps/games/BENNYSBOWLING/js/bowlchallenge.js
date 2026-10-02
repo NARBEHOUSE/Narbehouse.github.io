@@ -572,7 +572,7 @@ var menuBackScanAnnounced = false; // TTS announced flag
 // machine, kept out of Settings so the settings scan list stays short.
 var setupDiv = null;
 var setupItems = [];
-var setupFocusIndex = 0;
+var setupFocusIndex = -1;
 var setupScanHeld = false;
 var setupHoldStart = 0.0;
 var setupLastBackStep = 0.0;
@@ -580,7 +580,7 @@ var setupBackScanAnnounced = false;
 var rebuildSetupItems = function () {};
 
 var settingsItems = [];          // array of {el, key, type}
-var settingsFocusIndex = 0;
+var settingsFocusIndex = -1;
 var settingsScanHeld = false;
 var settingsHoldStart = 0.0;
 var settingsLastBackStep = 0.0;
@@ -1461,7 +1461,8 @@ function updateScene(dt) {
 				}
 				if ((now - setupLastBackStep) >= 2.0) {
 					setupLastBackStep = now;
-					setupFocusIndex = (setupFocusIndex - 1 + setupItems.length) % setupItems.length;
+					if (setupFocusIndex < 0) setupFocusIndex = setupItems.length - 1;
+					else setupFocusIndex = (setupFocusIndex - 1 + setupItems.length) % setupItems.length;
 					applySetupFocus();
 				}
 			}
@@ -1477,7 +1478,8 @@ function updateScene(dt) {
 				}
 				var stepInterval = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - menuLastBackStep) >= stepInterval) {
-					menuFocusIndex = (menuFocusIndex - 1 + mainMenuItems.length) % mainMenuItems.length;
+					if (menuFocusIndex < 0) menuFocusIndex = mainMenuItems.length - 1;
+					else menuFocusIndex = (menuFocusIndex - 1 + mainMenuItems.length) % mainMenuItems.length;
 					menuLastBackStep = now;
 					applyMenuFocus();
 				}
@@ -1493,7 +1495,8 @@ function updateScene(dt) {
 				}
 				var stepIntervalP = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - pauseLastBackStep) >= stepIntervalP) {
-					pauseFocusIndex = (pauseFocusIndex - 1 + pauseMenuItems.length) % pauseMenuItems.length;
+					if (pauseFocusIndex < 0) pauseFocusIndex = pauseMenuItems.length - 1;
+					else pauseFocusIndex = (pauseFocusIndex - 1 + pauseMenuItems.length) % pauseMenuItems.length;
 					pauseLastBackStep = now;
 					applyPauseFocus();
 				}
@@ -1509,7 +1512,8 @@ function updateScene(dt) {
 				}
 				var stepIntervalS = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
 				if ((now - settingsLastBackStep) >= stepIntervalS) {
-					settingsFocusIndex = (settingsFocusIndex - 1 + settingsItems.length) % settingsItems.length;
+					if (settingsFocusIndex < 0) settingsFocusIndex = settingsItems.length - 1;
+					else settingsFocusIndex = (settingsFocusIndex - 1 + settingsItems.length) % settingsItems.length;
 					settingsLastBackStep = now;
 					applySettingsFocus();
 				}
@@ -2281,7 +2285,7 @@ function handlePauseMenuEnter() {
 	} else if (idx === 1) { // Settings
 		showSettings();
 		// Reset settings scan for consistent top-to-bottom order
-		settingsFocusIndex = 0; settingsScanHeld = false; applySettingsFocus();
+		settingsFocusIndex = -1; settingsScanHeld = false; applySettingsFocus();
 	} else if (idx === 2) { // Main Menu
 		hidePauseMenu();
 		returnToMenu();
@@ -2291,6 +2295,7 @@ function handlePauseMenuEnter() {
 }
 
 function handleSettingsEnter() {
+	if (settingsFocusIndex < 0) return; // No selection yet
 	var item = settingsItems[settingsFocusIndex % settingsItems.length];
 	if (!item) return;
 	if (typeof item.action === 'function') item.action();
@@ -2738,7 +2743,7 @@ function buildMenus() {
 		if (settingsFocusIndex >= settingsItems.length) settingsFocusIndex = 0;
 	};
 	rebuildSettingsItems();
-	settingsFocusIndex = 0;
+	settingsFocusIndex = -1;
 }
 
 function applyMenuFocus() {
@@ -2820,6 +2825,12 @@ function showMainMenu() {
 	hideSetup();
 	if (mainMenuDiv) mainMenuDiv.style.display = 'flex';
 	gameState = 'menu';
+	// Arriving at the menu (launch, Back, end of a game) highlights nothing;
+	// the first Space picks the first item.
+	menuFocusIndex = -1;
+	autoScanLastTime = (typeof clock !== 'undefined' && typeof clock.getElapsedTime === 'function')
+			? clock.getElapsedTime() : 0.0;
+	applyMenuFocus();
 }
 function hideMainMenu() { if (mainMenuDiv) mainMenuDiv.style.display = 'none'; }
 function showSetup() {
@@ -2827,7 +2838,7 @@ function showSetup() {
 	setupDiv.style.display = 'flex';
 	hideMainMenu();
 	gameState = 'menu';
-	setupFocusIndex = 0;
+	setupFocusIndex = -1;
 	setupScanHeld = false;
 	setupBackScanAnnounced = false;
 	setupHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
@@ -2875,6 +2886,7 @@ function applySetupFocus() {
 }
 
 function handleSetupEnter() {
+	if (setupFocusIndex < 0) return; // No selection yet
 	var item = setupItems[setupFocusIndex % setupItems.length];
 	if (!item) return;
 	if (typeof item.action === 'function') item.action();
@@ -2895,21 +2907,27 @@ function showSettings() {
 			settingsReturnTo = null;
 		}
 		settingsDiv.style.display = 'flex';
-		// Ensure scanning starts at the top and proceeds one-by-one
-		settingsFocusIndex = 0;
+		// Nothing highlighted on open; the first Space starts at the top
+		settingsFocusIndex = -1;
 		settingsScanHeld = false;
 		settingsHoldStart = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
+		autoScanLastTime = settingsHoldStart;
 		applySettingsFocus();
 	}
 }
 function hideSettings() {
 	if (settingsDiv) settingsDiv.style.display = 'none';
-	// Put back whichever menu we covered up.
+	// Put back whichever menu we covered up, with nothing highlighted:
+	// coming back to a menu is entering it.
 	if (settingsReturnTo === 'menu' && mainMenuDiv) {
 		mainMenuDiv.style.display = 'flex';
+		menuFocusIndex = -1;
+		autoScanLastTime = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
 		applyMenuFocus();
 	} else if (settingsReturnTo === 'pause' && pauseMenuDiv) {
 		pauseMenuDiv.style.display = 'flex';
+		pauseFocusIndex = -1;
+		autoScanLastTime = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
 		applyPauseFocus();
 	}
 	settingsReturnTo = null;
@@ -2930,6 +2948,7 @@ function openPauseMenu() {
 	showPauseMenu();
 	// reset scanning timers for pause menu
 	pauseScanHeld = false; pauseFocusIndex = -1;
+	applyPauseFocus();
 	// Reset auto scan timer to prevent immediate selection
 	autoScanLastTime = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
 	updatePauseUIButtonVisibility();
@@ -3216,7 +3235,7 @@ function startGame() {
 	}
 	// Reset menu scanning states
 	menuScanHeld = false; settingsScanHeld = false;
-	menuFocusIndex = -1; settingsFocusIndex = 0;
+	menuFocusIndex = -1; settingsFocusIndex = -1;
 	armGameplayScanLayer();
 	updatePauseUIButtonVisibility();
 	updateHelpTipsVisibility();

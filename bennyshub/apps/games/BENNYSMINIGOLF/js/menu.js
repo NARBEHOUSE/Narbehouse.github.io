@@ -4,7 +4,7 @@ class MenuSystem {
         this.uiLayer = document.getElementById('ui-layer');
         this.active = true;
         this.state = 'MAIN_MENU'; // MAIN_MENU, SETTINGS, LEVEL_SELECT
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.items = [];
         
         this.menus = {
@@ -113,6 +113,13 @@ class MenuSystem {
     }
 
     handleInput(event) {
+        if (this.ccOverlayState) {
+            this.updateAutoScan();
+            if (event === 'SCAN_NEXT') this.scanCCNext(1);
+            else if (event === 'SCAN_PREV') this.scanCCNext(-1);
+            else if (event === 'SELECT') this.ccOverlayState.items[this.ccOverlayState.index]?.action();
+            return;
+        }
         if (!this.active) return;
 
         // Reset auto scan on any input
@@ -128,7 +135,8 @@ class MenuSystem {
     }
 
     moveSelection(dir) {
-        let nextIndex = this.selectedIndex;
+        if (!this.items.length) return;
+        let nextIndex = this.selectedIndex < 0 ? (dir > 0 ? -1 : this.items.length) : this.selectedIndex;
         let count = 0;
         
         // Find next selectable item
@@ -139,7 +147,7 @@ class MenuSystem {
             count++;
         } while (this.items[nextIndex].selectable === false && count < this.items.length);
 
-        if (count < this.items.length) {
+        if (this.items[nextIndex].selectable !== false) {
             this.selectedIndex = nextIndex;
             this.render();
             
@@ -156,13 +164,13 @@ class MenuSystem {
 
     selectItem() {
         const item = this.items[this.selectedIndex];
-        if (item.selectable !== false && item.action) item.action();
+        if (item && item.selectable !== false && item.action) item.action();
     }
 
     showMainMenu() {
         this.state = 'MAIN_MENU';
         this.items = this.menus['MAIN_MENU'];
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("Benny's Mini Golf");
     }
@@ -170,7 +178,7 @@ class MenuSystem {
     showPauseMenu() {
         this.state = 'PAUSE_MENU';
         this.items = this.menus['PAUSE_MENU'];
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("Paused");
     }
@@ -190,7 +198,7 @@ class MenuSystem {
     showSettings() {
         this.state = 'SETTINGS';
         this.items = this.menus['SETTINGS'];
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("Settings");
     }
@@ -198,9 +206,7 @@ class MenuSystem {
     showInstructions() {
         this.state = 'INSTRUCTIONS';
         this.items = this.menus['INSTRUCTIONS'];
-        // Find the first selectable item (the Back button)
-        this.selectedIndex = this.items.findIndex(item => item.selectable !== false);
-        if (this.selectedIndex === -1) this.selectedIndex = 0;
+        this.selectedIndex = -1;
         
         this.render();
         AudioSys.speak("Instructions. Spacebar to Aim. Enter to Charge and Putt. Settings to change Aimer Style and Thickness, Ball color and other stuff. Casual Mode: try to get the least strokes possible. Challenge Mode: you must complete each hole within the PAR or the course will reset fully. Multiplayer: Play casually with friends. Be careful! You can knock others balls into hazards!");
@@ -214,10 +220,10 @@ class MenuSystem {
         this.state = 'WARNING';
         this.items = [
             { text: "Loading a custom course requires mouse input.", selectable: false },
-            { text: "Proceed", action: () => this.triggerFileLoad() },
-            { text: "Cancel", action: () => this.showLevelSelect() }
+            { text: "Cancel", action: () => this.showLevelSelect() },
+            { text: "Proceed", action: () => this.triggerFileLoad() }
         ];
-        this.selectedIndex = 1; // Default to Proceed
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("Warning. Loading a custom course requires mouse input.");
     }
@@ -253,7 +259,7 @@ class MenuSystem {
             { text: 'Multiplayer', action: () => { this.game.setGameMode('MULTIPLAYER'); this.showMultiplayerSetup(); } },
             { text: 'Back', action: () => this.showMainMenu() }
         ];
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("Select Game Mode");
     }
@@ -266,7 +272,7 @@ class MenuSystem {
             { text: '4 Players', action: () => { this.startMultiplayerSetup(4); } },
             { text: 'Back', action: () => this.showGameModeSelect() }
         ];
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak("How many players?");
     }
@@ -333,7 +339,7 @@ class MenuSystem {
             }
         ];
         
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
         AudioSys.speak(`Player ${playerIndex + 1}, choose color`);
     }
@@ -395,9 +401,9 @@ class MenuSystem {
             }
         ];
         
-        this.selectedIndex = 0;
+        this.selectedIndex = -1;
         this.render();
-        AudioSys.speak("Select Course. " + this.availableCourses[this.selectedCourseIndex].name);
+        AudioSys.speak("Select Course.");
     }
 
     startGame(courseFile) {
@@ -472,8 +478,9 @@ class MenuSystem {
                 this.autoScanTimer = setInterval(() => {
                     // Only scan if not handling other interactions?
                     // Basic safeguard
-                    if (this.active && document.visibilityState === 'visible') {
-                        this.moveSelection(1);
+                    if (document.visibilityState === 'visible') {
+                        if (this.ccOverlayState) this.scanCCNext(1);
+                        else if (this.active) this.moveSelection(1);
                     }
                 }, interval);
             }
@@ -521,7 +528,9 @@ class MenuSystem {
     }
 
     showCourseCreatorWarning() {
-        this.active = false; // Disable scanner for main menu
+        this.active = false; // Scan only the warning while it is open.
+        this.render();
+        document.querySelectorAll('#course-creator-warning-overlay .scanned').forEach(el => el.classList.remove('scanned'));
         
         const overlay = document.getElementById('course-creator-warning-overlay');
         overlay.classList.remove('hidden');
@@ -557,11 +566,7 @@ class MenuSystem {
             ]
         };
 
-        // Scanning Logic for Overlay
-        // Wait for spacebar release to start scanning if key is held
-        this.ccKeyHandler = this.handleCCInput.bind(this);
-        document.addEventListener('keydown', this.ccKeyHandler);
-        document.addEventListener('keyup', this.ccKeyHandler);
+        this.updateAutoScan();
 
         // Click handlers
         document.getElementById('cc-cancel').onclick = () => this.hideCourseCreatorWarning();
@@ -591,34 +596,14 @@ class MenuSystem {
         const overlay = document.getElementById('course-creator-warning-overlay');
         overlay.classList.add('hidden');
         
-        document.removeEventListener('keydown', this.ccKeyHandler);
-        document.removeEventListener('keyup', this.ccKeyHandler);
-        
+        document.querySelectorAll('#course-creator-warning-overlay .scanned').forEach(el => el.classList.remove('scanned'));
         this.ccOverlayState = null;
-        
-        // Delay reactivating menu to prevent "Enter" keyup from triggering selection immediately
-        setTimeout(() => {
-            this.active = true;
-            this.render();
-        }, 500);
+        this.selectedIndex = -1;
+        this.active = true;
+        this.render();
     }
 
-    handleCCInput(e) {
-        if (!this.ccOverlayState) return;
-        
-        if (e.type === 'keyup' && e.code === 'Space') {
-            // Advance scan on release
-            this.scanCCNext();
-        } else if (e.type === 'keydown' && e.code === 'Enter') {
-            // Select currently scanned item
-            if (this.ccOverlayState.index >= 0) {
-                const item = this.ccOverlayState.items[this.ccOverlayState.index];
-                item.action();
-            }
-        }
-    }
-
-    scanCCNext() {
+    scanCCNext(direction = 1) {
         if (!this.ccOverlayState) return;
 
         // Clear previous
@@ -627,11 +612,9 @@ class MenuSystem {
             document.getElementById(prevId).classList.remove('scanned');
         }
 
-        // Advance
-        this.ccOverlayState.index++;
-        if (this.ccOverlayState.index >= this.ccOverlayState.items.length) {
-            this.ccOverlayState.index = 0;
-        }
+        const count = this.ccOverlayState.items.length;
+        const previous = this.ccOverlayState.index;
+        this.ccOverlayState.index = previous < 0 ? (direction > 0 ? 0 : count - 1) : (previous + direction + count) % count;
 
         // Highlight new
         const newId = this.ccOverlayState.items[this.ccOverlayState.index].id;

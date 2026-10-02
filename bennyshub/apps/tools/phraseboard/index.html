@@ -580,14 +580,14 @@
       lastUrl: null,
       navigationHistory: [],
       scanMode: 'row',
-      currentRow: 0,
+      currentRow: -1,
       scannableRows: [],
       csvLoaded: false,
       highlightColor: '#ffff00',
       availableBoards: [],
       theme: 'light',
       modalActive: false,
-      modalScanIndex: 0,
+      modalScanIndex: -1,
       modalButtons: [],
       pendingAction: null,
       modalSpacePressed: false,
@@ -721,7 +721,10 @@ function updateHeaderForCurrentView(){
     function showWarningModal(type) {
       state.modalActive = true;
       state.modalScanIndex = -1;
-      if (state.scanning || state.autoScan) { stopScanning(); state.autoScan = false; }
+      state.scanMode = 'row'; state.currentRow = -1; state.scanIndex = -1; clearScanHighlight();
+      document.activeElement?.blur();
+      stopScanning();
+      if (state.autoScan) startAutoScan();
       if (type === 'create') {
         el.createBoardWarning.classList.add('active');
         state.modalButtons = [el.createBoardBack, el.createBoardProceed];
@@ -769,6 +772,7 @@ function updateHeaderForCurrentView(){
       state.modalSpacePressed = false;
       state.modalSpaceStartTime = 0;
       state.modalEnterPressed = false;
+      if (state.autoScan) startAutoScan();
     }
 
     function highlightModalButton() {
@@ -796,8 +800,9 @@ function updateHeaderForCurrentView(){
     function selectModalButton() {
       if (!state.modalActive || state.modalScanIndex < 0 || !state.modalButtons[state.modalScanIndex]) return;
       const selectedButton = state.modalButtons[state.modalScanIndex];
+      const pendingAction = state.pendingAction;
       if (selectedButton.textContent === 'GO BACK') { hideWarningModal(); if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('Returning to menu'); }
-      else if (selectedButton.textContent === 'PROCEED') { hideWarningModal(); if (state.pendingAction) state.pendingAction(); }
+      else if (selectedButton.textContent === 'PROCEED') { hideWarningModal(); if (pendingAction) pendingAction(); }
     }
 
     // TTS using unified voice manager
@@ -1567,6 +1572,8 @@ function updateHeaderForCurrentView(){
     }
 
     function updateScannable(preservePosition = false) {
+      if (!preservePosition) document.activeElement?.blur();
+      if (!preservePosition && state.autoScan) startAutoScan();
       // Save current position for cell mode preservation
       const savedRow = state.currentRow;
       const savedIndex = state.scanIndex;
@@ -1595,14 +1602,15 @@ function updateHeaderForCurrentView(){
       }
       state.scannableRows = rows;
 
-      // In cell mode with preservePosition, keep the scan position if valid
-      if (preservePosition && isCellMode && savedRow >= 0 && savedIndex >= 0) {
+      // In-place edits keep a valid position in either scan scheme.
+      if (preservePosition && savedRow >= 0) {
         // Make sure the saved position is still valid in the new grid
         if (savedRow < rows.length && savedIndex < rows[savedRow].length) {
           state.currentRow = savedRow;
           state.scanIndex = savedIndex;
           // Re-apply highlight to the element at this position
-          highlightScanIndex();
+          if (isCellMode || state.scanMode === 'column') highlightScanIndex();
+          else highlightCurrentRow();
           return;
         }
       }
@@ -1755,31 +1763,25 @@ function updateHeaderForCurrentView(){
       state.autoScan = settings.autoScan;
       state.scanSpeed = settings.scanInterval;
 
-      // Update timer if running
-      if (state.scanning) {
-        if (state.scanTimer) clearInterval(state.scanTimer);
-        state.scanTimer = setInterval(scanForward, state.scanSpeed);
-      }
+      if (state.autoScan) startAutoScan();
+      else stopScanning(false);
     }
 
     function startAutoScan() {
       if (state.scanTimer) clearInterval(state.scanTimer);
       state.scanning = true;
-      state.scanTimer = setInterval(scanForward, state.scanSpeed);
+      state.scanTimer = setInterval(() => state.modalActive ? scanModalForward() : scanForward(), state.scanSpeed);
     }
 
-    function stopScanning() {
+    function stopScanning(clearFocus = true) {
       if (state.scanTimer) { clearInterval(state.scanTimer); state.scanTimer = null; }
       state.scanning = false;
-      clearScanHighlight();
+      if (clearFocus) clearScanHighlight();
     }
 
     function selectCurrent() {
-      // If nothing is highlighted (currentRow is -1), start scanning
-      if (state.currentRow === -1) {
-        scanForward();
-        return;
-      }
+      // Enter cannot choose anything until Space or Auto Scan highlights a row.
+      if (state.currentRow < 0) return;
 
       if (state.userScanPreference === 'cell') {
         if (state.currentRow >= 0 && state.scanIndex >= 0 &&
@@ -1833,6 +1835,7 @@ function updateHeaderForCurrentView(){
             state.scannableRows[state.currentRow][state.scanIndex]) {
           const element = state.scannableRows[state.currentRow][state.scanIndex];
           const selectedRow = state.currentRow; // Remember which row we were in
+          const screenBefore = `${state.currentMenu}|${state.currentCategory}|${state.page}|${state.videoModalActive}|${state.modalActive}`;
           let selectionText = '';
           if (!state.videoModalActive) {
             if (element === el.sentenceDisplay && state.sentenceMode) {
@@ -1859,6 +1862,12 @@ function updateHeaderForCurrentView(){
           }
           if (selectionText && window.NarbeVoiceManager.getSettings().ttsEnabled && element !== el.sentenceDisplay) { setTimeout(() => speak(selectionText), 100); }
 
+          // A new menu, page or dialog starts without a highlight.
+          if (`${state.currentMenu}|${state.currentCategory}|${state.page}|${state.videoModalActive}|${state.modalActive}` !== screenBefore) {
+            state.scanMode = 'row';
+            return;
+          }
+
           // Return to row mode, highlighting the same row we were in
           state.scanMode = 'row';
           state.currentRow = selectedRow; // Stay on the same row
@@ -1881,7 +1890,7 @@ function updateHeaderForCurrentView(){
 
         // Update scanning state if needed
         if (state.autoScan) {
-           if (!state.scanning && !state.modalActive && !state.videoModalActive) {
+           if (!state.scanning) {
                startAutoScan();
            }
         } else {
@@ -2231,7 +2240,7 @@ function updateHeaderForCurrentView(){
            if (success) {
                el.statusFooter.textContent = `Loaded board: ${targetBoard.name}`;
                updateScannable();
-               state.currentRow = 0; state.scanIndex = 0;
+               state.currentRow = -1; state.scanIndex = -1;
                setTimeout(() => { updateScannable(); }, 100);
                return; // Skip rendering main menu
            }
@@ -2246,7 +2255,7 @@ function updateHeaderForCurrentView(){
       }
 
       updateScannable();
-      state.currentRow = 0; state.scanIndex = 0;
+      state.currentRow = -1; state.scanIndex = -1;
       setTimeout(() => { updateScannable(); }, 100);
     });
 
@@ -2300,7 +2309,7 @@ function updateHeaderForCurrentView(){
 
     function navigateTo(menuName) {
       saveNavigationState();
-      state.page = 0; state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
+      state.page = 0; state.scanMode = 'row'; state.currentRow = -1; state.scanIndex = -1;
       openMenu(menuName);
       updateHeaderForCurrentView();
     }
@@ -2353,7 +2362,7 @@ function updateHeaderForCurrentView(){
     }
 
     function openMenu(menuName) {
-      state.page = 0; state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
+      state.page = 0; state.scanMode = 'row'; state.currentRow = -1; state.scanIndex = -1;
 
       // Speak the menu name when entering
       let menuTitle = '';
@@ -2626,7 +2635,7 @@ function updateHeaderForCurrentView(){
       updateScannable();
       highlightCurrentRow();
 
-      el.closeIframeBtn.focus({preventScroll:true});
+      document.activeElement?.blur();
       const openedFrame = el.mediaFrame;
       if (isYt) {
         try { await Promise.race([loadYtApi(), new Promise((_,reject)=>setTimeout(()=>reject(new Error('Player controls are unavailable. Close or Refresh to retry.')),5000))]); }
@@ -2655,7 +2664,7 @@ function updateHeaderForCurrentView(){
       if (el.mediaFrame) el.mediaFrame.src = 'about:blank';
       el.iframeModal.style.display = 'none';
       state.videoModalActive = false;
-      state.scanMode = 'row'; state.currentRow = 0; state.scanIndex = 0;
+      state.scanMode = 'row'; state.currentRow = -1; state.scanIndex = -1;
       updateScannable();
       highlightCurrentRow();
     }
@@ -2813,13 +2822,14 @@ function updateHeaderForCurrentView(){
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    // Exit to hub function (matches keyboard and BENNYSPEGGLE pattern)
+    // Exit from the hub iframe or from a directly opened browser tab.
     function exitToHub() {
       console.log("Exit button pressed - returning to hub");
       try {
-        // Message parent to focus back button and close iframe
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ action: 'focusBackButton' }, '*');
+        } else {
+          window.location.href = "../../../index.html";
         }
       } catch (err) {
         console.error('Failed to message parent:', err);

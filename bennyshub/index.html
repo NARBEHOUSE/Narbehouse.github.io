@@ -1503,8 +1503,9 @@
       stopAutoScan(); // Restart if running to catch speed changes
 
       autoScanInterval = setInterval(() => {
-        if (!isTransitioning && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
-          focusNext();
+        if (!isTransitioning && !iframeContainer.classList.contains('active')) {
+          if (!fullscreenModal.classList.contains('hidden')) focusFullscreenOption();
+          else focusNext();
         }
       }, getScanDelay());
     }
@@ -1656,8 +1657,49 @@
       }
     }
 
+    function resetMenuFocus() {
+      focusIndex = -1;
+      if (!document.activeElement?.closest('[data-scan-exclude]')) document.activeElement?.blur();
+      if (window.NarbeScanManager?.getSettings().autoScan) startAutoScan();
+      else stopAutoScan();
+    }
+
+    function focusFullscreenOption(direction = 1) {
+      const buttons = [modalFullscreenBtn, modalCancelBtn];
+      const current = buttons.indexOf(document.activeElement);
+      const next = current < 0 ? (direction > 0 ? 0 : buttons.length - 1) : (current + direction + buttons.length) % buttons.length;
+      buttons[next].focus();
+      speak(next === 0 ? 'Fullscreen' : 'Cancel');
+    }
+
+    function beginFullscreenScan() {
+      spacePressed = true;
+      spaceHoldStartTime = Date.now();
+      spaceHoldTimeout = setTimeout(() => {
+        if (!spacePressed || fullscreenModal.classList.contains('hidden')) return;
+        focusFullscreenOption(-1);
+        backwardsScanInterval = setInterval(() => {
+          if (spacePressed && !fullscreenModal.classList.contains('hidden')) focusFullscreenOption(-1);
+        }, getScanDelay());
+      }, BACKWARDS_SCAN_THRESHOLD);
+    }
+
+    function finishFullscreenScan() {
+      if (!spacePressed) return;
+      spacePressed = false;
+      clearTimeout(spaceHoldTimeout);
+      clearInterval(backwardsScanInterval);
+      spaceHoldTimeout = backwardsScanInterval = null;
+      if (Date.now() - spaceHoldStartTime < BACKWARDS_SCAN_THRESHOLD) focusFullscreenOption();
+    }
+
     function closeModal() {
       fullscreenModal.classList.add('hidden');
+      clearTimeout(spaceHoldTimeout);
+      clearInterval(backwardsScanInterval);
+      spaceHoldTimeout = backwardsScanInterval = null;
+      spacePressed = false;
+      resetMenuFocus();
     }
 
     modalFullscreenBtn.addEventListener('click', () => {
@@ -1681,7 +1723,8 @@
       iframeTitle.textContent = title;
       appIframe.src = src;
       iframeContainer.classList.add('active');
-      iframeBack.focus();
+      resetMenuFocus();
+      appIframe.focus();
       announce(`${title} loaded`);
 
       clearTimeout(iframeFocusTimer);
@@ -1708,7 +1751,7 @@
       clearTimeout(iframeFocusTimer);
       iframeContainer.classList.remove('active');
       appIframe.src = 'about:blank';
-      focusIndex = -1;
+      resetMenuFocus();
 
       // Sync scan settings in case they changed in the app
       if (window.NarbeScanManager) {
@@ -1754,7 +1797,7 @@
         renderAppsGrid('games');
       }
 
-      focusIndex = -1;
+      resetMenuFocus();
       spacePressed = false;
       enterPressed = false;
 
@@ -1861,6 +1904,7 @@
         if (filterState[category].page > 0) {
           filterState[category].page--;
           renderAppsGrid(category);
+          resetMenuFocus();
           speak('Previous page');
         }
       });
@@ -1871,6 +1915,7 @@
         if (filterState[category].page < totalPages - 1) {
           filterState[category].page++;
           renderAppsGrid(category);
+          resetMenuFocus();
           speak('Next page');
         }
       });
@@ -1999,7 +2044,7 @@
       if (!fullscreenModal.classList.contains('hidden')) {
         if (e.key === ' ' && !spacePressed) {
           e.preventDefault();
-          spacePressed = true;
+          beginFullscreenScan();
         } else if ((e.key === 'Enter' || e.keyCode === 13) && !enterPressed) {
           e.preventDefault();
           enterPressed = true;
@@ -2062,17 +2107,7 @@
       if (!fullscreenModal.classList.contains('hidden')) {
         if (e.key === ' ' && spacePressed) {
           e.preventDefault();
-          spacePressed = false;
-          if (document.activeElement !== modalFullscreenBtn && document.activeElement !== modalCancelBtn) {
-            modalFullscreenBtn.focus();
-            speak('Fullscreen');
-          } else if (document.activeElement === modalFullscreenBtn) {
-            modalCancelBtn.focus();
-            speak('Cancel');
-          } else {
-            modalFullscreenBtn.focus();
-            speak('Fullscreen');
-          }
+          finishFullscreenScan();
         } else if ((e.key === 'Enter' || e.keyCode === 13) && enterPressed) {
           e.preventDefault();
           enterPressed = false;
@@ -2238,7 +2273,7 @@
 
         // 1. Handle Fullscreen Modal interactions
         if (!fullscreenModal.classList.contains('hidden')) {
-           if (map.key === ' ') spacePressed = true;
+           if (map.key === ' ' && !spacePressed) beginFullscreenScan();
            if (map.key === 'Enter') enterPressed = true;
            return;
         }
@@ -2310,12 +2345,7 @@
         // 1. Handle Fullscreen Modal interactions
         if (!fullscreenModal.classList.contains('hidden')) {
            if (map.key === ' ') {
-             spacePressed = false;
-             // Toggle logic
-             const isFullscreenBtn = document.activeElement === modalFullscreenBtn;
-             const target = isFullscreenBtn ? modalCancelBtn : modalFullscreenBtn;
-             target.focus();
-             speak(target === modalCancelBtn ? 'Cancel' : 'Fullscreen');
+             finishFullscreenScan();
            } else if (map.key === 'Enter') {
              enterPressed = false;
              // Click active

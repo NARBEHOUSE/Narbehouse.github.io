@@ -6,13 +6,13 @@
     const total=populated.reduce((sum,count)=>sum+count,0);
     return total ? total+(total===1?' entry':' entries')+' on '+populated.length+(populated.length===1?' day.':' days.') : 'No entries this '+period+'.';
   }
-  let groups=[],row=-1,cell=-1,inRow=false,say=()=>{};
+  let groups=[],row=-1,cell=-1,inRow=false,say=()=>{},onScanReset=()=>{};
   function shiftMonth(date,delta){
     const result=new Date(date),day=result.getDate();result.setDate(1);result.setMonth(result.getMonth()+delta);
     result.setDate(Math.min(day,new Date(result.getFullYear(),result.getMonth()+1,0).getDate()));return result;
   }
   function clear(){document.querySelectorAll('#changeViewModal .highlighted').forEach(el=>el.classList.remove('highlighted'));}
-  function resetScan(){clear();row=-1;cell=-1;inRow=false;document.getElementById('calendarScanHint').textContent='Space: next row. Enter: choose row.';}
+  function resetScan(){clear();row=-1;cell=-1;inRow=false;document.getElementById('calendarScanHint').textContent='Space: next row. Enter: choose row.';onScanReset();}
   function highlight(){
     clear();const group=groups[row];if(!group)return;
     const active=inRow?[group.buttons[cell]]:group.buttons;
@@ -28,13 +28,13 @@
     highlight();
   }
   function select(){
-    if(row<0){scan();return;}
+    if(row<0)return;
     if(!inRow){inRow=true;cell=0;document.getElementById('calendarScanHint').textContent='Space: next choice. Enter: select. Hold Enter: return to rows.';highlight();}
     else groups[row]?.buttons[cell]?.click();
   }
-  function render(selected,entries,onSelect,onSpeak=()=>{}){
+  function render(selected,entries,onSelect,onSpeak=()=>{},onReset=()=>{}){
     const grid=document.getElementById('journalCalendarDays');if(!grid)return;
-    say=onSpeak;
+    say=onSpeak;onScanReset=onReset;
     const today=new Date();today.setHours(0,0,0,0);
     const counts=new Map();for(const entry of entries){const date=new Date(entry.date);if(Number.isFinite(date.getTime()))counts.set(key(date),(counts.get(key(date))||0)+1);}
     let month=new Date(selected.getFullYear(),selected.getMonth(),1);

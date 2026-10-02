@@ -1,0 +1,106 @@
+{
+  "format": "bennys-peggle-levels-v3",
+  "campaigns": [
+    {
+      "id": "cozy-lantern-garden",
+      "file": "cozy-lantern-garden.json",
+      "mode": "cozy",
+      "title": "Lantern Garden",
+      "theme": "lantern-garden",
+      "blurb": "A dusky garden of paper lanterns, flowers and fireflies. Light them all, at your own pace.",
+      "levels": 20,
+      "cover": "covers/cozy-lantern-garden.jpg"
+    },
+    {
+      "id": "cozy-moonlit-lake",
+      "file": "cozy-moonlit-lake.json",
+      "mode": "cozy",
+      "title": "Moonlit Lake",
+      "theme": "moonlit-lake",
+      "blurb": "A calm night lake where the moon shines twice. Collect moon pearls among ripples and reeds.",
+      "levels": 20,
+      "cover": "covers/cozy-moonlit-lake.jpg"
+    },
+    {
+      "id": "cozy-snowglobe-hollow",
+      "file": "cozy-snowglobe-hollow.json",
+      "mode": "cozy",
+      "title": "Snowglobe Hollow",
+      "theme": "snowglobe-hollow",
+      "blurb": "Soft snow on a cosy village under the aurora. Snowflakes, pine trees and warm windows.",
+      "levels": 20,
+      "cover": "covers/cozy-snowglobe-hollow.jpg"
+    },
+    {
+      "id": "vivid-sugar-rush",
+      "file": "vivid-sugar-rush.json",
+      "mode": "vivid",
+      "title": "Sugar Rush",
+      "theme": "sugar-rush",
+      "blurb": "Lollipops, gumdrops and a giant donut. The gentlest climb, sweet from the first shot to the last.",
+      "levels": 20,
+      "cover": "covers/vivid-sugar-rush.jpg"
+    },
+    {
+      "id": "vivid-carnival-skies",
+      "file": "vivid-carnival-skies.json",
+      "mode": "vivid",
+      "title": "Carnival Skies",
+      "theme": "carnival-skies",
+      "blurb": "Balloons, kites and a turning ferris wheel high above the midway. A brisker climb.",
+      "levels": 20,
+      "cover": "covers/vivid-carnival-skies.jpg"
+    },
+    {
+      "id": "vivid-coral-groove",
+      "file": "vivid-coral-groove.json",
+      "mode": "vivid",
+      "title": "Coral Groove",
+      "theme": "coral-groove",
+      "blurb": "Swim through pearl bubbles, coral castles and spinning tides in a bright living reef.",
+      "levels": 20,
+      "cover": "covers/vivid-coral-groove.jpg"
+    },
+    {
+      "id": "hyper-neon-highway",
+      "file": "hyper-neon-highway.json",
+      "mode": "hyper",
+      "title": "Neon Highway",
+      "theme": "neon-highway",
+      "blurb": "Race a synthwave road into the sunset through spinning wheels, sliding traffic and spike strips.",
+      "levels": 20,
+      "cover": "covers/hyper-neon-highway.jpg"
+    },
+    {
+      "id": "hyper-starlight-warp",
+      "file": "hyper-starlight-warp.json",
+      "mode": "hyper",
+      "title": "Starlight Warp",
+      "theme": "starlight-warp",
+      "blurb": "Warp through hyperspace: ring tunnels, orbiting moons, warp gates and a black hole.",
+      "levels": 20,
+      "cover": "covers/hyper-starlight-warp.jpg"
+    },
+    {
+      "id": "hyper-quasar-core",
+      "file": "hyper-quasar-core.json",
+      "mode": "hyper",
+      "title": "Quasar Core",
+      "theme": "quasar-core",
+      "blurb": "Dive through rotating debris, gravity wells and armoured reactors to the heart of a quasar.",
+      "levels": 20,
+      "cover": "covers/hyper-quasar-core.jpg"
+    },
+    {
+      "id": "bennys-original",
+      "file": "bennys-original.json",
+      "mode": "vivid",
+      "title": "Benny's Original",
+      "theme": "carnival-skies",
+      "blurb": "The twenty levels from the first Benny’s P3GL, on the new board.",
+      "levels": 20,
+      "cover": "covers/bennys-original.jpg",
+      "extra": true
+    }
+  ]
+}

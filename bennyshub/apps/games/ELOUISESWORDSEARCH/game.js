@@ -623,6 +623,8 @@ class WordSearchGame {
     // --- Navigation ---
     cycleIndex(current, length, direction) {
         if (length === 0) return 0;
+        // Nothing highlighted yet (-1): forward lands on first, backward on last
+        if (current < 0) return direction > 0 ? 0 : length - 1;
         return (current + direction + length) % length;
     }
 
@@ -712,7 +714,7 @@ class WordSearchGame {
     // --- Menus ---
     showMainMenu() {
         this.state.mode = 'menu';
-        this.state.menuIndex = 0;
+        this.state.menuIndex = -1; // Nothing highlighted until first Space
         this.clearBankState();
         this.stopAutoScan();
         this.startMenuBackdrop();
@@ -735,7 +737,7 @@ class WordSearchGame {
 
     showPlayMenu() {
         this.state.mode = 'mode_select';
-        this.state.modeSelectIndex = 0;
+        this.state.modeSelectIndex = -1;
         this.pauseOverlay.style.display = 'none';
         this.startMenuBackdrop();
         this.renderPlayMenu();
@@ -803,7 +805,7 @@ class WordSearchGame {
 
     showHowTo() {
         this.state.mode = 'howto';
-        this.state.modeSelectIndex = 0;
+        this.state.modeSelectIndex = -1;
         this.pauseOverlay.style.display = 'none';
         this.startMenuBackdrop();
         this.mainContent.innerHTML = `
@@ -866,7 +868,7 @@ class WordSearchGame {
     showSettingsMenu(fromPause = false) {
         this.state.fromPause = fromPause;
         this.state.mode = 'settings';
-        this.state.settingsIndex = 0;
+        this.state.settingsIndex = -1;
         // Coming from the pause menu, its overlay has to come down or it sits on
         // top of the settings it just opened. Back returns to the pause menu,
         // which puts the overlay up again.
@@ -1048,7 +1050,13 @@ class WordSearchGame {
             if (this.state.warningCallback) this.state.warningCallback();
             this.state.warningCallback = null;
             if (this.state.returnMode === 'menu') this.showMainMenu();
-            else this.renderSettingsMenu();
+            else {
+                // Back on Settings: nothing highlighted until first Space
+                this.state.mode = 'settings';
+                this.state.settingsIndex = -1;
+                this.renderSettingsMenu();
+                this.startAutoScan();
+            }
         };
 
         this.state.warningButtons = [
@@ -1070,7 +1078,9 @@ class WordSearchGame {
             this.showMainMenu();
         } else {
             this.state.mode = 'settings';
+            this.state.settingsIndex = -1;
             this.renderSettingsMenu();
+            this.startAutoScan();
         }
     }
 
@@ -1817,7 +1827,7 @@ class WordSearchGame {
         setTimeout(() => {
             this.state.inputFrozen = false;
             this.state.mode = 'complete';
-            this.state.pauseIndex = 0;
+            this.state.pauseIndex = -1;
             this.pauseOverlay.style.display = 'flex';
             this.pauseOverlay.innerHTML = `
                 <div class="pause-title">SOLVED!</div>
@@ -2150,7 +2160,7 @@ class WordSearchGame {
         this.clearBankState();
         this.stopAutoScan();
         this.state.mode = 'pause';
-        this.state.pauseIndex = 0;
+        this.state.pauseIndex = -1;
         this.pauseOverlay.style.display = 'flex';
         this.pauseOverlay.innerHTML = `
             <div class="pause-title">PAUSED</div>

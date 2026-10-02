@@ -1,35 +1,104 @@
-﻿<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="../../../shared/usage-analytics.js" defer></script>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#132f36">
-  <title>Benny's P3GL</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
-  <link rel="stylesheet" href="game.css">
-  <link rel="stylesheet" href="arcade.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Benny's P3GL</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+<style>html, body { background: #07051a; }</style>
+<link rel="stylesheet" href="css/game.css">
 </head>
-<body>
-  <div class="app-shell">
-    <header class="app-header" hidden>
-      <a class="wordmark" href="#" id="home-link" aria-label="Benny's P3GL main menu"><span class="brand-orb" aria-hidden="true">●</span><span>BENNY'S <b>P3GL</b></span></a>
-      <span class="header-note" id="header-note"></span>
-    </header>
-    <main id="screen" tabindex="-1"></main>
-    <footer id="control-hint">Tap Space = next · hold Space = back · Enter = choose</footer>
+<body data-mode="vivid">
+<div id="app">
+  <div id="stage" aria-hidden="true"></div>
+
+  <!-- The Play / Pause choice before each shot: this frame lights the board. -->
+  <div id="choiceFrame" role="button" aria-label="Play this shot"><span class="chip">Play</span></div>
+
+  <!-- HUD -->
+  <div id="hud" aria-hidden="true">
+    <div class="hp" id="hudLevel"></div>
+    <div class="hp" id="hudGoal"></div>
+    <div class="hp" id="hudBalls"></div>
+    <div class="hp" id="hudPowers"></div>
+    <div class="hp" id="hudScore"></div>
+    <div class="hp" id="hudFever"></div>
+    <div class="hp" id="hudPlate"></div>
   </div>
-  <div id="modal-layer" hidden></div>
-  <div id="hold-indicator" hidden role="status"><span id="hold-progress"></span><b>Keep holding to pause</b></div>
-  <div id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-  <input id="import-file" type="file" accept="application/json,.json" hidden>
-  <script src="../../../shared/safe-audio.js"></script>
-  <script src="../../../shared/voice-manager.js"></script>
-  <script src="../../../shared/ios-audio-fix.js"></script>
-  <script src="../../../shared/scan-manager.js"></script>
-  <script src="content.js"></script>
-  <script src="renderer.js"></script>
-  <script src="game.js"></script>
+
+  <div id="fxLayer" aria-hidden="true"></div>
+
+  <!-- Level intro -->
+  <div id="banner" aria-hidden="true">
+    <div id="bannerNum">1</div>
+    <div id="bannerText">
+      <div id="bannerName">Level</div>
+      <div id="bannerGoal"></div>
+      <div id="bannerIntro"></div>
+    </div>
+  </div>
+
+  <!-- Hold-to-pause ring -->
+  <div id="holdRing" aria-hidden="true">
+    <svg width="110" height="110" viewBox="0 0 110 110">
+      <circle class="track" cx="55" cy="55" r="42" fill="none" stroke-width="12"></circle>
+      <circle class="fill" cx="55" cy="55" r="42" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>
+    </svg>
+    <div class="label">Keep<br>holding</div>
+  </div>
+
+  <!-- Always bottom-left while playing, like every hub game. -->
+  <div id="pauseBtn" role="button" aria-label="Pause"><span class="pIco">&#10074;&#10074;</span><span class="pTxt">Pause</span></div>
+  <div id="shootBtn" role="button" aria-label="Shoot"><span>Shoot</span></div>
+
+  <!-- Every menu renders into this card -->
+  <div id="overlay">
+    <div id="card" class="card">
+      <div id="logo" aria-hidden="true">
+        <div class="lgBenny">Benny's</div>
+        <div class="lgP3GL"><span>P</span><span>3</span><span>G</span><span>L</span></div>
+      </div>
+      <h2 id="cardTitle"></h2>
+      <div id="cardSub"></div>
+      <div id="menu" class="menu"></div>
+      <p id="cardHint"></p>
+    </div>
+  </div>
+
+  <div id="loading"><div class="ld"><div class="lgP3GL small"><span>P</span><span>3</span><span>G</span><span>L</span></div><div class="spin"></div></div></div>
+</div>
+
+<!-- Shared hub scripts -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+
+<!-- Engine -->
+<script src="js/three.min.js"></script>
+
+<!-- Game -->
+<script src="js/util.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/match.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/audio.js" onerror="console.warn('audio.js not loaded')"></script>
+<script src="js/art.js"></script>
+<script src="js/post.js"></script>
+<script src="js/backdrops.js"></script>
+<script src="js/backdrops-cozy.js" onerror="console.warn('backdrops-cozy.js not loaded')"></script>
+<script src="js/backdrops-vivid.js" onerror="console.warn('backdrops-vivid.js not loaded')"></script>
+<script src="js/backdrops-hyper.js" onerror="console.warn('backdrops-hyper.js not loaded')"></script>
+<script src="js/board.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

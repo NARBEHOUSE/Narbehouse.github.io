@@ -4,7 +4,7 @@ class KeyboardController {
         this.isOpen = false;
         this.scanIndex = -1;
         this.inRowMode = true;
-        this.currentRowIndex = 0;
+        this.currentRowIndex = -1;
         this.currentBtnIndex = 0;
 
         // Journal-style Layout (Alphabetical Blocks of 6)
@@ -90,7 +90,7 @@ class KeyboardController {
         this.isOpen = true;
         this.container.classList.remove('hidden');
         this.inRowMode = true;
-        this.currentRowIndex = 0;
+        this.currentRowIndex = -1;
         this.currentBtnIndex = 0;
         this.highlightCurrentState();
         this.speak("Keyboard open. Select row.");
@@ -138,7 +138,7 @@ class KeyboardController {
     scanBackward() {
          if (this.inRowMode) {
              const totalRows = 2 + this.rows.length;
-             this.currentRowIndex = (this.currentRowIndex - 1 + totalRows) % totalRows;
+             this.currentRowIndex = this.currentRowIndex < 0 ? totalRows - 1 : (this.currentRowIndex - 1 + totalRows) % totalRows;
         } else {
              if (this.currentRowIndex === this.predictionRowIndex) {
                  const buttons = this.predictionContainer.querySelectorAll('.prediction-chip');
@@ -158,6 +158,7 @@ class KeyboardController {
     }
 
     select() {
+        if (this.currentRowIndex < 0) return;
         if (this.inRowMode) {
             // Enter the row
             this.inRowMode = false;
@@ -281,6 +282,7 @@ class KeyboardController {
 
     highlightCurrentState() {
         this.clearHighlights();
+        if (this.currentRowIndex < 0) return;
 
         if (this.inRowMode) {
             // Highlight entire row
@@ -312,6 +314,7 @@ class KeyboardController {
     }
 
     speakCurrentState() {
+        if (this.currentRowIndex < 0) return;
         if (this.inRowMode) {
             this.speakRowSummary(this.currentRowIndex);
         } else {
@@ -332,6 +335,7 @@ class KeyboardController {
     }
 
     speakRowSummary(rIdx) {
+        if (rIdx < 0) return;
         if (rIdx === this.predictionRowIndex) {
              const chips = this.predictionContainer.querySelectorAll('.prediction-chip');
              const words = Array.from(chips).map(c => c.textContent).join(', ');

@@ -64,11 +64,11 @@ already do it:
 
 | Game | Editor |
 | --- | --- |
-| Benny's Mini Golf | course editor |
+| NARBE Mini Golf | Course Creator |
 | Benny's Matchy Match | card‑pack editor |
 | Benny's Show n Sound | panel/category editor |
 | Trivia Master | full quiz builder |
-| Benny's P3GL | level editor |
+| Benny's P3GL | Campaign Editor |
 
 An editor turns one game into an unlimited number of them, tuned by a parent, a
 teacher, or a therapist to the specific person in front of them — vocabulary
@@ -280,6 +280,84 @@ function onKeyUp(e) {
 }
 ```
 
+### Menus open with nothing highlighted
+
+When a menu, screen or dialog appears, **nothing on it is highlighted.** The
+player's first Space press highlights the first item, and scanning carries on
+normally from there.
+
+| On a menu that has just opened | What happens |
+| --- | --- |
+| **Space**, short press | Highlights the **first** item and speaks it |
+| **Space**, hold | Highlights the **last** item, then keeps scanning backwards |
+| **Enter** | Nothing. There is nothing to select yet |
+| **Auto Scan** | The first tick, one full scan interval after the menu opens, highlights the first item |
+
+The reason is the press that opened the menu. The player may still be holding
+that switch, or it bounces, or they twitch just after selecting. If the new
+menu arrives with its first item already highlighted, that stray Enter selects
+it, and the player ends up somewhere they never chose. When nothing is
+highlighted, a stray Enter does nothing, so every choice on a new screen starts
+with a deliberate Space.
+
+"Appears" covers every way a menu can come up:
+
+- at launch
+- going into a submenu
+- **coming back to a menu with Back.** Don't restore the item the player left
+  from.
+- the pause menu
+- results and game‑over screens
+- the warning dialogs in §7
+
+On open, speak the menu's title or prompt but not the first item's label,
+because that item isn't highlighted. A warning dialog still speaks its whole
+warning on open.
+
+The rule does **not** cover two things:
+
+- **Changing a value in place.** Cycling Voice or Scan Speed, toggling a
+  setting, or arming a two‑step Reset leaves the player on the same menu, so
+  the highlight stays where it is. Keep the index even when the code rebuilds
+  the screen to show the new value.
+- **Scans that are part of taking a turn.** This means a board's row and
+  column scan, the cards, letters or answers in play, P3GL's **Play / Pause**, and Mini Golf's Easy Pause putter scan and Choose‑from‑List power
+  list. These come round on every move, so an extra press there is a cost the
+  player pays on every move (§12). If the player navigates *through* it, it
+  opens with nothing highlighted. If it's part of playing, leave it alone.
+
+Tools follow the same rule when the tool opens and when any of its screens or
+dialogs opens. Scan resets in the middle of using a tool, such as the keyboard
+going back to row scan after a letter, are part of using it and stay as they
+are.
+
+The hub front page (`bennyshub/index.html`) is the reference. It sets
+`focusIndex = -1` on every screen change and when a game closes.
+`focusNext()` goes from −1 to the first item, `focusPrevious()` goes from −1 to
+the last, and `activateFocused()` only speaks a hint at −1. In a game it comes
+down to four small changes (NARBE Mini Golf's `js/ui.js` is a worked example):
+
+```js
+let index = -1;                                    // -1 = nothing highlighted
+
+function openMenu(items, title) { menu = items; index = -1; render(); speak(title); }
+function focusNext() { index = index < 0 ? 0 : (index + 1) % menu.length; showFocus(); }
+function focusPrevious() { index = index < 0 ? menu.length - 1 : (index - 1 + menu.length) % menu.length; showFocus(); }
+function activateFocused() { if (index < 0) return; menu[index].action(); }
+```
+
+Every piece of code that reads the focused item has to cope with −1: speaking
+it, drawing it, showing its description, and canvas hit tests. Clear both the
+visual highlight and the stored scan selection; hiding the border alone still
+lets Enter activate an invisible choice. Do not use Enter to start scanning.
+
+Some grids already use −1 for a real Back button. Streaming uses `null` for
+nothing highlighted so that Back remains a normal scan stop. Whichever marker
+you use, skip disabled or hidden items when finding the first or last choice.
+Restart the Auto Scan timer on a screen change, including when returning from a
+dialog, so the new screen gets a full scan interval. Keep Auto Scan working
+inside warning dialogs and tool keyboards.
+
 ### Why pause is a long hold
 
 Pause has to be reachable from inside a game where both switches are already
@@ -441,10 +519,10 @@ where one fits.
 window.parent.postMessage({ action: 'focusBackButton' }, '*');
 ```
 
-The hub listens for that and moves focus to its Back button, so the player's
-next Enter press lands somewhere sensible instead of nowhere. **Any new game
-must send this** when the player chooses "Exit Game" — otherwise the player
-reaches the end of your game and is stranded with focus on a dead screen.
+The hub listens for that, closes the game, and returns to the launch menu with
+nothing highlighted. The first Space starts scanning again (§4). **Any new game
+must send this** when the player chooses "Exit Game" so they can return using
+the same switches.
 
 **Hub settings:** highlight colour, highlight style (outline or full), text
 colour, background theme, UI size, TTS on/off, voice, Auto Scan, and scan speed.
@@ -520,10 +598,10 @@ switch‑operable.** Every game that has one already guards it:
 | Game | On-screen | Spoken on open |
 | --- | --- | --- |
 | Trivia Master | Full overlay, plain wording | "Warning. Opening the game editor will leave this site." |
-| Benny's Mini Golf | "Mouse Required" modal | the entire warning, verbatim |
+| NARBE Mini Golf | "Mouse Required" card | the entire warning, verbatim |
 | Benny's Word Jumble | "Warning: This feature requires a mouse or touch input…" | "Warning. This feature requires mouse input. Cancel. Proceed." |
 | Benny's Show n Sound | "Continue (mouse needed)" | "The editor needs a mouse and keyboard." |
-| Benny's P3GL | "Campaign builder needs a mouse" | warns that it needs a mouse and that switch scanning will not work |
+| Benny's P3GL | "Mouse needed" card | the entire warning, verbatim |
 | Benny's Matchy Match | `editorWarning` menu state | warns that it needs a mouse and that switch scanning will not work |
 
 Copy this when you add anything similar:
@@ -567,12 +645,12 @@ where each game's design work went.
 | --- | --- |
 | **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
 | **Benny's Bowling** | A two‑object scan layer opens every ball — the ball itself and the Pause button — scanned with Space and selected with Enter. Selecting the ball gives the shot: Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges for power, non‑linear. Confirms on **release**, not press. Pause is a scan object rather than a hold gesture because hold‑Enter is already the charge. |
-| **Benny's P3GL** | Every shot starts with a two‑item choice, **Take shot** or **Options**: Space moves, Enter release chooses. Options opens pause and settings, so the way out never needs a hold. Take shot starts aiming without firing. Two‑switch: **hold** Space to sweep the aimer, release to stop — a short press only nudges it — and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: Auto Scan cycles the two choices, then the aimer oscillates on its own; press Enter to stop it and release to fire. Aim speed has four presets, defaulting to Super slow. |
+| **Benny's P3GL** | Three modes — Cozy (never runs out of balls), Vivid and Hyper — each with three 20‑level campaigns. Two‑switch: **hold** Space to sweep the aim, release to stop, and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: the aim sweeps by itself at the Aim speed; press Enter to freeze it and release to fire. Hold Enter to pause (ring and rising beeps). **Before Each Shot: Aim right away / Choose Play or Pause** puts a two‑stop choice in front of every shot — the board, or the on‑screen Pause button in the bottom‑left corner — scanned and selected like a menu, so pausing never needs a hold. Aim speed defaults to Super slow; aim guide length, colour and size are settings. Includes a Campaign Editor. |
 | **Benny's Baseball** | Turn‑based play calling — scan the options, select — with one exception: the swing is **hold Enter to charge**, 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. That is a timing mechanic; §9 governs it. |
 | **Benny's Football** | Turn‑based play calling — scan the options, select. Throws scan the receivers and select one, then **hold Enter to charge** the power; field goals aim, then charge. **Easy Throw** in settings drops the charge and keeps the selection: pick the receiver and it throws at ideal power. The hub's shipped example of the §9 rule. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
 | **Pickleball Rally** | Rally returns via scan/select. Built with SCSU, student creator Lily Flack. |
-| **Benny's Mini Golf** | Aim oscillation then power charge, same family as Bowling. Up to 4 players; includes a course editor. |
+| **NARBE Mini Golf** | 3D. Two-switch: hold Space to turn the aim (each new press reverses), hold Enter to charge and release to putt. One-switch: the aim sweeps by itself and Enter stops it. Hold Enter to pause; the **Easy Pause** setting (for players who can't hold) starts every turn with a scan between the putter and the Pause button, so pausing never needs a hold. A Power setting adds no-hold options — pick the strength from a list, or Automatic. The aim view never moves while aiming. Up to 4 players; includes a Course Creator. |
 | **Benny's Battle Boats** | Two‑stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2‑D grid with one switch. |
 | **Chess & Checkers, Connect Four, Tic Tac Toe** | Same two‑stage grid selection; scan pieces/columns, select, scan destinations, select. |
 | **Benny's Matchy Match** | Two‑stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
@@ -780,6 +858,10 @@ Before a game goes into `games.json`:
 - [ ] Every action reachable with **Space and Enter only**
 - [ ] Every action reachable with **Enter alone**, with Auto Scan on
 - [ ] Menu actions fire on **release**, not press
+- [ ] Every menu and dialog opens with nothing highlighted; first Space highlights
+      the first choice, hold-Space starts at the last, and Enter waits for selection
+- [ ] Auto Scan waits a full scan interval after entering or returning to a menu
+- [ ] In-place setting changes retain focus; new screens and Back clear it
 - [ ] Holding Space scans backwards in every menu, repeating at the player's
       scan speed from `NarbeScanManager` — not a rate you picked
 - [ ] Holding Enter opens pause **from anywhere in gameplay**, with a visible
@@ -833,7 +915,7 @@ So the position is:
 - **The eleven handlers are harmless** and should stay — they are the safety net
   the day someone does this properly.
 - **Games missing the handler**, for whoever picks this up: Benny Says, Baseball,
-  Basketball Shooter, Chess & Checkers, Dice, Football, P3GL, Show n Sound, Tic
+  Basketball Shooter, Chess & Checkers, Dice, Football, Show n Sound, Tic
   Tac Toe, Word Jumble, Elouise's Word Search, Pickleball Rally.
 
 **`getInputSensitivity()` kept going missing, and now we know why.** It was
@@ -881,14 +963,15 @@ on‑screen Pause button you scan to; others use the hold‑Enter gesture; most 
 both. The inconsistency is accepted for now.
 
 **One known deviation from the ~5 s convention:** P3GL's long Enter hold takes
-**2 s** when Auto Scan is on and 5 s when it is off
-(`settings.autoScan?2000:5000`). It is no longer how the player reaches pause —
-the **Options** choice before every shot is — so the hold only backs out of
-aiming, or opens Options from the shot choices. No comment or commit message
-records why the time varies, and it is the only game that varies the hold by
-control scheme. Worth a decision when pause gets revisited — either it is a good
-idea that belongs everywhere, or it should fall back in line with the rest of
-the hub. Do not assume it was accidental, and do not assume it was deliberate.
+**2 s** when Auto Scan is on and 5 s when it is off (`holdToPause()` in
+`apps/games/BENNYSPEGGLE/js/game.js`). The campaign‑mode rebuild kept both
+values because it kept the controls players already knew; a player who cannot
+hold turns on **Before Each Shot: Choose Play or Pause** instead. No comment or
+commit message records why the time varies, and it is the only game that varies
+the hold by control scheme. Worth a decision when pause gets revisited — either
+it is a good idea that belongs everywhere, or it should fall back in line with
+the rest of the hub. Do not assume it was accidental, and do not assume it was
+deliberate.
 
 **Where it is going: pause should become a scannable item everywhere.** Holding
 a switch for five seconds is itself a physical demand, and some players cannot
@@ -910,15 +993,16 @@ can manage one, and shuts out the players who cannot; a scannable control lets
 everyone in, and puts a step between every player and the thing they came to
 do.** Neither is simply better.
 
-P3GL is the worked example, and it has now made this trade. It was built
-hold‑first — hold Space to aim, press Enter to fire, hold Enter for pause —
-which kept play down to the fewest possible switch presses but left the way out
-behind a sustained hold. It now puts a two‑item choice before every shot: **Take
-shot** or **Options**. Options reaches pause and settings with the same
-scan‑and‑select as everything else, so no player is locked out of leaving. The
-cost is one selection per shot. Aiming and firing after **Take shot** work as
-before, and during a shot a single Enter press pauses. The long Enter hold stays
-only as a backup.
+P3GL is the worked example, and it settles the trade with a setting. It plays
+hold‑first — hold Space to aim, release Enter to fire, hold Enter for pause —
+which keeps play down to the fewest possible switch presses. **Before Each Shot:
+Choose Play or Pause** (in both the main‑menu and pause settings) puts a
+two‑stop choice in front of every shot: the board itself lights up for Play, and
+the on‑screen Pause button in the bottom‑left corner lights up for Pause, scanned
+and selected like any menu. A player who cannot sustain a hold turns it on and
+is never locked out of leaving; a player who can is never slowed down by it. The
+Pause button works either way. When this choice is on, holding Enter does not
+pause; use the Pause choice instead.
 
 If you are weighing this for something new: prefer keeping the *primary
 gameplay action* off the scan cycle, and put the scannable pause somewhere it

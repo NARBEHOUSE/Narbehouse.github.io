@@ -15,9 +15,9 @@
  *   no card   → a race: NK.controls reads the raw NK.input layer instead.
  *
  * Fish Mystery's fixes are all here: ignoreUntilRelease is captured in EVERY
- * showOverlay(true); cards that arrive on the back of a press (pause, results,
- * standings, trophy) open with nothing focused, and their first press only
- * steps and reads; a time-based ghost-click guard; the hint follows the scheme.
+ * showOverlay(true); every card opens with nothing focused, the first step
+ * lights and reads a row, and choosing does nothing until a row is lit; a
+ * time-based ghost-click guard; the hint follows the scheme.
  *
  * Two players (DESIGN §2.6): on shared screens with Auto Scan on, either switch
  * chooses. On a player's own pick screens (racer, kart) the highlight always
@@ -307,11 +307,12 @@ NK.ui = (function () {
 
   /* Move to the next/previous selectable item — locked items and headers are
      skipped, matching how the other hub apps scan. From "nothing selected" a
-     step lands on the first item, whichever way it was pressed. */
+     step forward lands on the first item, a step back on the last. */
   function step(delta) {
     if (!items.length) return;
     if (index < 0) {
-      for (let n = 0; n < items.length; n++) if (selectable(items[n])) { index = n; break; }
+      if (delta > 0) { for (let n = 0; n < items.length; n++) if (selectable(items[n])) { index = n; break; } }
+      else { for (let n = items.length - 1; n >= 0; n--) if (selectable(items[n])) { index = n; break; } }
       if (index < 0) return;
     } else {
       let i = index;
@@ -334,9 +335,8 @@ NK.ui = (function () {
     if (t - lastActivate < ACTIVATE_DEBOUNCE) return;
     lastActivate = t;
     const i = at !== undefined && at >= 0 && at < items.length ? at : index;
-    // Nothing selected: the first press steps onto the first row and reads it,
-    // rather than acting on a choice nobody has made.
-    if (i < 0) { step(1); return; }
+    // Nothing selected: there is no choice to act on, so choosing does nothing.
+    if (i < 0) return;
     const it = items[i];
     if (!selectable(it)) { sfx('blocked'); return; }
     sfx('select');
@@ -402,9 +402,10 @@ NK.ui = (function () {
     meta = builder(opts) || {};
     items = meta.items || [];
 
-    index = meta.startIndex !== undefined ? meta.startIndex : 0;
-    if (opts.index !== undefined) index = opts.index;
-    else if (meta.listenFirst) index = -1;
+    // Every card opens with nothing focused; the first step lights a row.
+    // Only refresh() (this same card redrawn) passes an index, so a value
+    // changed in place keeps its highlight. startIndex/listenFirst are unused.
+    index = opts.index !== undefined ? opts.index : -1;
     if (index >= items.length) index = items.length - 1;
     if (index >= 0 && !selectable(items[index])) {
       for (let n = 1; n <= items.length; n++) {
@@ -653,7 +654,7 @@ NK.ui = (function () {
     clearTimeout(trophyTimer);
     call('quitToMenu');
     if (NK.hud) NK.hud.clear();
-    setScreen('title', { index: players() === 2 ? 1 : 0 });
+    setScreen('title');
   }
 
   /** Leave the finished race for a menu screen (choose another track, cup …). */
@@ -717,7 +718,7 @@ NK.ui = (function () {
   }
 
   /** Leaving mid-session loses the race, so it asks first; Stay goes back to
-   *  exactly where the player was. */
+   *  the card the player was on, with nothing focused. */
   function confirmExit() {
     setScreen('confirmExit', { from: screen, fromOpts: screenOpts, fromIndex: index });
   }
@@ -731,7 +732,8 @@ NK.ui = (function () {
   function backFromSettings() {
     resetArmed = 0;
     const r = settingsReturn;
-    setScreen(r.screen, Object.assign({}, r.opts || {}, { index: r.index }));
+    // Going back is arriving: the card opens with nothing focused.
+    setScreen(r.screen, Object.assign({}, r.opts || {}, { index: undefined }));
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -886,7 +888,7 @@ NK.ui = (function () {
           { icon: '🏁', label: 'Open', note: 'Real racing: walls, drops and spin-outs.',
             speech: 'Open. Real racing, with walls, drops and spin-outs.',
             action: () => { call('setMode', 'open'); setScreen('type'); } },
-          back(() => setScreen('title', { index: two ? 1 : 0 }))
+          back(() => setScreen('title'))
         ],
         startIndex: last === 'open' ? 1 : 0,
         speech: 'Choose the rules. No-Fail, or Open.' + (two ? ' Player 1 uses Space, Player 2 uses Enter.' : '')
@@ -904,7 +906,7 @@ NK.ui = (function () {
         { icon: '⏱️', label: 'Time Trial', note: two ? 'One player only' : 'Race the clock and your ghost',
           enabled: !two, speech: two ? 'Time Trial. One player only.' : 'Time Trial. Race the clock and your best-time ghost.',
           action: () => { call('setType', 'tt'); setScreen('speed'); }, id: 'tt' },
-        back(() => setScreen('rules', { index: sess().mode === 'open' ? 1 : 0 }))
+        back(() => setScreen('rules'))
       ];
       return {
         art: artHTML('🏁'),
@@ -931,7 +933,7 @@ NK.ui = (function () {
           action: () => { call('setClass', id); setScreen('racer', { player: 0 }); }
         };
       });
-      list.push(back(() => setScreen('type', { index: indexWhere(['gp', 'single', 'tt'], (t) => t === sess().type, 0) })));
+      list.push(back(() => setScreen('type')));
       return {
         art: artHTML('🔥'),
         title: 'Choose a Speed',
@@ -971,7 +973,7 @@ NK.ui = (function () {
       });
       list.push(back(() => {
         if (p === 1) setScreen('kart', { player: 0 });
-        else setScreen('speed', { index: Math.max(0, C.CLASS_ORDER.indexOf(sess().classId)) });
+        else setScreen('speed');
       }));
       const key = C.PLAYER_KEYS[p];
       return {
@@ -1138,7 +1140,7 @@ NK.ui = (function () {
             U.speak('Steering: ' + (stepMode ? 'hold to slide' : 'press to step'));
           } });
       }
-      list.push(back(() => setScreen('title', { index: 2 })));
+      list.push(back(() => setScreen('title')));
       return {
         art: artHTML(pg.art),
         title: '<span class="kicker">How to Play · ' + (page + 1) + ' of ' + pages.length + '</span>' + pg.title,
@@ -1260,7 +1262,7 @@ NK.ui = (function () {
         title: 'Paused',
         sub: two && pausedBy >= 0 ? 'Player ' + (pausedBy + 1) + ' paused the race.' : '',
         // Nothing focused: releasing the switch that paused must not pick an
-        // option, and the first press only steps and reads.
+        // option.
         startIndex: -1,
         items: [
           { icon: '▶️', label: 'Continue', speech: 'Continue', action: resumeRace },
@@ -1435,7 +1437,7 @@ NK.ui = (function () {
         // The safe choice first: a mis-press lands on the way out of the dialog.
         items: [
           { icon: '↩', label: 'Stay', primary: true, speech: 'Stay',
-            action: () => setScreen(o.from || 'title', Object.assign({}, o.fromOpts || {}, { index: o.fromIndex })) },
+            action: () => setScreen(o.from || 'title', Object.assign({}, o.fromOpts || {}, { index: undefined })) },
           { icon: '🏠', label: 'Exit Game', speech: 'Exit Game', action: goToHub }
         ],
         startIndex: 0,

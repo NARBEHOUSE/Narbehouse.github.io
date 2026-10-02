@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NARBE Mini Golf</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="app">
+  <div id="canvasWrap"></div>
+
+  <!-- Cinematic letterbox -->
+  <div id="barTop" class="bar"></div>
+  <div id="barBottom" class="bar"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hudLeft">
+      <div class="chip" id="hudHole"><span class="k">HOLE</span> <b id="hudHoleNum">1</b><span class="of" id="hudHoleOf">/ 9</span></div>
+      <div class="chip" id="hudPar"><span class="k">PAR</span> <b id="hudParNum">2</b></div>
+      <div class="chip big" id="hudStrokes"><span class="k" id="hudStrokesLabel">STROKES</span> <b id="hudStrokesNum">0</b></div>
+    </div>
+    <div id="hudRight">
+      <div class="chip" id="hudTotal"><span class="k">TOTAL</span> <b id="hudTotalNum">E</b></div>
+      <div id="hudBoard"></div>
+    </div>
+    <div id="hudPlayer" class="chip"></div>
+  </div>
+
+  <!-- Power meter -->
+  <div id="power">
+    <div id="powerLabel">POWER</div>
+    <div id="powerTrack">
+      <div id="powerFill"></div>
+      <div class="tick" style="left:25%"></div>
+      <div class="tick" style="left:50%"></div>
+      <div class="tick" style="left:75%"></div>
+    </div>
+    <div id="powerPct">0%</div>
+  </div>
+
+  <!-- Choose-power list (Power: Choose from List) -->
+  <div id="powerMenu"></div>
+
+  <!-- Flyover lower-third -->
+  <div id="banner">
+    <div id="bannerNum">1</div>
+    <div id="bannerText">
+      <div id="bannerName">Welcome Green</div>
+      <div id="bannerPar">PAR 2</div>
+    </div>
+  </div>
+
+  <div id="bigText"></div>
+  <div id="toast"></div>
+  <div id="turnCard"></div>
+  <div id="replayTag">&#9679; REPLAY</div>
+  <div id="skipHint">Press to skip</div>
+
+  <!-- Scorecard -->
+  <div id="scorecard">
+    <div id="scoreTitle">Scorecard</div>
+    <div id="scoreTable"></div>
+    <div id="scoreHint"></div>
+  </div>
+
+  <!-- Hold-to-pause ring -->
+  <div id="holdRing">
+    <svg width="110" height="110" viewBox="0 0 110 110">
+      <circle class="track" cx="55" cy="55" r="42" fill="none" stroke-width="12"></circle>
+      <circle class="fill" cx="55" cy="55" r="42" fill="none" stroke-width="12"
+              stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>
+    </svg>
+    <div class="label">Keep<br>holding</div>
+  </div>
+
+  <div id="pauseBtn">&#10074;&#10074; Pause</div>
+
+  <!-- Every menu renders into this one card -->
+  <div id="overlay">
+    <div id="overlayCard">
+      <div id="overlayArt"></div>
+      <h2 id="overlayTitle">NARBE Mini Golf</h2>
+      <p id="overlaySub"></p>
+      <div id="overlayMenu"></div>
+      <p id="overlayHint">Tap Space = next &middot; hold Space = back &middot; Enter = choose</p>
+    </div>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Mowing the greens&hellip;</div>
+  </div>
+</div>
+
+<!-- Shared accessibility scripts -->
+<script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
+
+<!-- Engine -->
+<script src="js/three.min.js"></script>
+
+<!-- Game -->
+<script src="js/util.js"></script>
+<script src="js/course.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/gator.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

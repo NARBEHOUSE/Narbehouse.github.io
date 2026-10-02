@@ -1,0 +1,90 @@
+/* Mini Golf Course Creator — a mouse tool for caregivers. Calm, clear, dense. */
+:root {
+  --bg: #11261c; --panel: #173326; --panel2: #1e4232; --line: #2d5a45;
+  --text: #eef6ef; --muted: #9fbcab; --gold: #ffc233; --green: #2bb052; --red: #e8574f; --blue: #3d9ee0;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font: 14px/1.35 "Segoe UI", "Trebuchet MS", Verdana, sans-serif; }
+button, select, input { font: inherit; color: var(--text); }
+button { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+button:hover { background: #26553f; }
+button.primary { background: var(--green); border-color: #1d8a3d; color: #fff; font-weight: 600; }
+button.primary:hover { background: #33c35e; }
+button.accent { background: var(--gold); border-color: #d99d10; color: #2a1e00; font-weight: 700; }
+button.danger { background: #5a2420; border-color: #7a312b; }
+button.danger:hover { background: #7a312b; }
+input[type=text], input[type=number], select { background: #0d1f16; border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+input[type=number] { width: 84px; }
+
+#topbar { height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+#topbar .brand { font-weight: 700; font-size: 17px; color: var(--gold); margin-right: 6px; white-space: nowrap; }
+#topbar .field { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+#topbar .spacer { flex: 1; }
+#topbar .sep { width: 1px; height: 26px; background: var(--line); }
+#topbar .toggle { color: var(--muted); display: flex; gap: 4px; align-items: center; }
+#courseName { width: 210px; }
+
+#holeBar { height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: #142c20; border-bottom: 1px solid var(--line); overflow-x: auto; }
+#holeTabs { display: flex; gap: 4px; }
+.holeTab { min-width: 40px; padding: 4px 10px; border-radius: 8px 8px 0 0; background: var(--panel2); border: 1px solid var(--line); cursor: pointer; text-align: center; }
+.holeTab.on { background: var(--gold); color: #2a1e00; font-weight: 700; border-color: #d99d10; }
+.holeTab.bad { box-shadow: inset 0 -3px 0 var(--red); }
+
+main { position: absolute; top: 94px; left: 0; right: 0; bottom: 0; display: flex; }
+#tools { width: 132px; padding: 8px; background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+#tools .group { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin: 8px 2px 2px; }
+#tools .tool { text-align: left; padding: 7px 9px; }
+#tools .tool.active { background: var(--gold); color: #2a1e00; border-color: #d99d10; font-weight: 700; }
+
+#stage { position: relative; flex: 1; overflow: hidden; background: #0b1a12; }
+#plan { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#hint { position: absolute; left: 12px; bottom: 10px; padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; pointer-events: none; font-size: 13px; }
+#hint:empty { display: none; }
+#previewWrap { position: absolute; right: 12px; top: 12px; width: 46%; height: 52%; min-width: 320px; min-height: 220px; display: none;
+  background: #000; border: 2px solid var(--gold); border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+#previewWrap.on { display: block; }
+#previewBar { position: absolute; left: 0; right: 0; top: 0; height: 28px; padding: 4px 8px; background: rgba(0,0,0,.6); color: var(--gold); font-weight: 600; z-index: 2; }
+#previewBar .small { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 6px; }
+#previewBar button { position: absolute; top: 2px; padding: 0 8px; }
+#previewBar #previewClose { right: 4px; }
+#previewBar #previewReset { right: 40px; }
+#previewBar #previewHand { right: 76px; }
+#previewBar #previewHand.on { background: var(--gold); color: #2a1e00; }
+#preview { width: 100%; height: 100%; display: block; cursor: grab; }
+
+#panel { width: 290px; background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; }
+#panel section { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+#panel h3 { margin: 2px 0 8px; font-size: 15px; color: var(--gold); }
+#panel label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; color: var(--muted); }
+#panel label input[type=text], #panel label select { width: 160px; }
+#panel .row { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+#panel .muted { color: var(--muted); }
+#panel .tips { margin: 0; padding-left: 18px; color: var(--muted); }
+#panel .tips li { margin: 3px 0; }
+#checkOut { font-size: 13px; }
+#checkOut .ok { color: #7be08f; }
+#checkOut .bad { color: #ff9a92; }
+#checkOut ul { margin: 4px 0; padding-left: 18px; }
+
+#ctxMenu { position: fixed; z-index: 70; display: none; min-width: 210px; padding: 5px; background: #0f2419; border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.55); }
+#ctxMenu.on { display: block; }
+#ctxMenu .head { padding: 4px 10px 6px; color: var(--gold); font-weight: 700; font-size: 13px; }
+#ctxMenu .item { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 7px; padding: 7px 10px; }
+#ctxMenu .item:hover { background: #26553f; }
+#ctxMenu .item.danger { color: #ff9a92; }
+#ctxMenu .item:disabled { opacity: .4; cursor: default; background: none; }
+#ctxMenu .sep { height: 1px; background: var(--line); margin: 4px 6px; }
+#ctxMenu .sub { color: var(--muted); font-size: 12px; padding: 4px 10px 2px; text-transform: uppercase; letter-spacing: .08em; }
+#tools #btnFit { text-align: left; padding: 7px 9px; }
+
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+  background: var(--gold); color: #2a1e00; font-weight: 700; padding: 10px 18px; border-radius: 10px; transition: all .25s ease; z-index: 50; }
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.bad { background: var(--red); color: #fff; }
+
+#dialog { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 60; }
+#dialog.on { display: flex; }
+#dialog .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; max-width: 420px; }
+#dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }

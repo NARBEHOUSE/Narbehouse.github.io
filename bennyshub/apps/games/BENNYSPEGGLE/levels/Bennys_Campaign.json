@@ -6,19 +6,13 @@
   "levels": [
     {
       "id": 1,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 150,
           "y": 178,
           "radius": 18,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 150,
@@ -67,8 +61,7 @@
           "y": 178,
           "radius": 18,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 299,
@@ -204,11 +197,6 @@
     },
     {
       "id": 2,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 410,
@@ -404,16 +392,14 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 539,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 619,
@@ -458,11 +444,6 @@
     },
     {
       "id": 3,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 80,
@@ -525,8 +506,7 @@
           "y": 231,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 429,
@@ -554,8 +534,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 585,
@@ -762,11 +741,6 @@
     },
     {
       "id": 4,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 377,
@@ -843,16 +817,14 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 322,
           "y": 222,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 234,
@@ -926,11 +898,6 @@
     },
     {
       "id": 5,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 490,
@@ -1077,8 +1044,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "echo"
+          "type": "NORMAL"
         },
         {
           "x": 452,
@@ -1183,8 +1149,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 81,
@@ -1238,11 +1203,6 @@
     },
     {
       "id": 6,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 570,
@@ -1466,8 +1426,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 360,
@@ -1481,8 +1440,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "magnet"
+          "type": "NORMAL"
         },
         {
           "x": 551,
@@ -1686,16 +1644,10 @@
           "type": "BLOCK",
           "block": true
         }
-      ],
-      "shots": 12
+      ]
     },
     {
       "id": 7,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 139,
@@ -1779,16 +1731,14 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 502,
           "y": 177,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 421,
@@ -2011,11 +1961,6 @@
     },
     {
       "id": 8,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 150,
@@ -2092,8 +2037,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 345,
@@ -2121,8 +2065,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "echo"
+          "type": "NORMAL"
         },
         {
           "x": 475,
@@ -2150,8 +2093,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 605,
@@ -2332,11 +2274,6 @@
     },
     {
       "id": 9,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 410,
@@ -2357,8 +2294,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 500,
@@ -2484,16 +2420,14 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 410,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 503,
@@ -2577,11 +2511,6 @@
     },
     {
       "id": 10,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 610,
@@ -2616,8 +2545,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "magnet"
+          "type": "NORMAL"
         },
         {
           "x": 513,
@@ -2736,8 +2664,7 @@
           "y": 282,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 394,
@@ -2765,8 +2692,7 @@
           "y": 232,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 530,
@@ -2892,11 +2818,6 @@
     },
     {
       "id": 11,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 56,
@@ -2931,24 +2852,21 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 501,
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 594,
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 686,
@@ -3351,16 +3269,10 @@
           "type": "BLOCK",
           "block": true
         }
-      ],
-      "shots": 14
+      ]
     },
     {
       "id": 12,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 489,
@@ -3556,16 +3468,14 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 449,
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 482,
@@ -3579,8 +3489,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 541,
@@ -3867,11 +3776,6 @@
     },
     {
       "id": 13,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 56,
@@ -3913,8 +3817,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "magnet"
+          "type": "NORMAL"
         },
         {
           "x": 443,
@@ -3928,8 +3831,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 567,
@@ -3950,8 +3852,7 @@
           "y": 176,
           "radius": 16,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 764,
@@ -4296,11 +4197,6 @@
     },
     {
       "id": 14,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 55,
@@ -4328,24 +4224,21 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "echo"
+          "type": "NORMAL"
         },
         {
           "x": 456,
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 562,
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 667,
@@ -4683,11 +4576,6 @@
     },
     {
       "id": 15,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 55,
@@ -4708,8 +4596,7 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "echo"
+          "type": "NORMAL"
         },
         {
           "x": 284,
@@ -4723,16 +4610,14 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 450,
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 531,
@@ -4746,8 +4631,7 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 695,
@@ -5195,16 +5079,10 @@
           "type": "BLOCK",
           "block": true
         }
-      ],
-      "shots": 12
+      ]
     },
     {
       "id": 16,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 55,
@@ -5232,24 +5110,21 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 407,
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "magnet"
+          "type": "NORMAL"
         },
         {
           "x": 500,
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 592,
@@ -5263,8 +5138,7 @@
           "y": 175,
           "radius": 15,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 765,
@@ -5735,11 +5609,6 @@
     },
     {
       "id": 17,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 490,
@@ -5921,16 +5790,14 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 335,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 365,
@@ -5944,16 +5811,14 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 472,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 527,
@@ -6207,11 +6072,6 @@
     },
     {
       "id": 18,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 54,
@@ -6239,8 +6099,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 370,
@@ -6254,8 +6113,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "echo"
+          "type": "NORMAL"
         },
         {
           "x": 531,
@@ -6276,8 +6134,7 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 752,
@@ -6403,8 +6260,7 @@
           "y": 266,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 611,
@@ -6723,11 +6579,6 @@
     },
     {
       "id": 19,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 54,
@@ -6755,24 +6606,21 @@
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "fireball"
+          "type": "NORMAL"
         },
         {
           "x": 457,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "magnet"
+          "type": "NORMAL"
         },
         {
           "x": 563,
           "y": 174,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 668,
@@ -6800,8 +6648,7 @@
           "y": 178,
           "radius": 14,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 275,
@@ -7107,16 +6954,10 @@
           "type": "BLOCK",
           "block": true
         }
-      ],
-      "shots": 12
+      ]
     },
     {
       "id": 20,
-      "catcher": {
-        "width": 240,
-        "behavior": "bounce",
-        "interval": 3
-      },
       "pegs": [
         {
           "x": 53,
@@ -7137,8 +6978,7 @@
           "y": 173,
           "radius": 13,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "multiball"
+          "type": "NORMAL"
         },
         {
           "x": 287,
@@ -7152,16 +6992,14 @@
           "y": 173,
           "radius": 13,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "ghost"
+          "type": "NORMAL"
         },
         {
           "x": 451,
           "y": 173,
           "radius": 13,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "blast"
+          "type": "NORMAL"
         },
         {
           "x": 533,
@@ -7308,8 +7146,7 @@
           "y": 257,
           "radius": 13,
           "shape": "CIRCLE",
-          "type": "POWER",
-          "power": "guide"
+          "type": "NORMAL"
         },
         {
           "x": 616,

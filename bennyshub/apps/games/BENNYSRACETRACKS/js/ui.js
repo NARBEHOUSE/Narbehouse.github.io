@@ -154,7 +154,8 @@ RT.ui = (function () {
      spacers are skipped, matching how the other hub apps scan. */
   function step(delta) {
     if (!items.length) return;
-    let i = index;
+    // Nothing focused yet: forward lands on the first item, back on the last.
+    let i = index < 0 ? (delta > 0 ? -1 : items.length) : index;
     for (let n = 0; n < items.length; n++) {
       i = (i + delta + items.length) % items.length;
       if (items[i].enabled !== false) { index = i; break; }
@@ -173,7 +174,8 @@ RT.ui = (function () {
     if (now - lastActivate < 140) return;   // debounce switch bounce
     lastActivate = now;
     const it = items[index];
-    if (!it || it.enabled === false) { AU.menuBlocked(); return; }
+    if (!it) return;                        // nothing focused: scan first
+    if (it.enabled === false) { AU.menuBlocked(); return; }
     AU.resume();
     AU.menuSelect();
     if (typeof it.action === 'function') it.action();
@@ -198,7 +200,7 @@ RT.ui = (function () {
   function setScreen(name, opts) {
     opts = opts || {};
     screen = name;
-    index = 0;
+    index = -1;   // every menu opens with nothing focused; the first Space lights the first item
     const builder = SCREENS[name];
     const meta = builder(opts);
 

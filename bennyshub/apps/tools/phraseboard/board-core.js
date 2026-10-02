@@ -109,7 +109,7 @@
       else this.tile = (this.tile + direction + this.groups[this.group].items.length) % this.groups[this.group].items.length;
     }
     select() {
-      if (this.group < 0) { this.move(); return null; }
+      if (this.group < 0) return null;
       if (this.tile < 0) { this.tile = 0; return null; }
       const result = this.groups[this.group].items[this.tile]; this.tile = -1; return result;
     }

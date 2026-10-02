@@ -578,7 +578,7 @@
     <div class="overlayCard">
       <h2>🏓 Pickleball Rally</h2>
       <div id="mainMenu">
-        <div class="menuItem focused" data-midx="0">😌 Casual &nbsp;<span style="opacity:.65;font-size:.85em;">(no timer)</span></div>
+        <div class="menuItem"         data-midx="0">😌 Casual &nbsp;<span style="opacity:.65;font-size:.85em;">(no timer)</span></div>
         <div class="menuItem"         data-midx="1">🐢 Slow &nbsp;<span style="opacity:.65;font-size:.85em;">(10s timer)</span></div>
         <div class="menuItem"         data-midx="2">⚡ Medium &nbsp;<span style="opacity:.65;font-size:.85em;">(6s timer)</span></div>
         <div class="menuItem"         data-midx="3">🔥 Fast &nbsp;<span style="opacity:.65;font-size:.85em;">(3s timer)</span></div>
@@ -595,7 +595,7 @@
     <div class="overlayCard">
       <h2>⏸ Paused</h2>
       <div id="pauseMenu">
-        <div class="menuItem focused" data-pidx="0">▶ Continue</div>
+        <div class="menuItem"         data-pidx="0">▶ Continue</div>
         <div class="menuItem"         data-pidx="1">🏠 Main Menu</div>
         <div class="menuItem"         data-pidx="2">🆘 Help</div>
       </div>
@@ -608,7 +608,7 @@
     <div class="overlayCard">
       <h2>⚙️ Settings</h2>
       <div id="settingsMenu">
-        <div class="menuItem focused" data-sidx="0">Text to Speech: <span id="val-tts">On</span></div>
+        <div class="menuItem"         data-sidx="0">Text to Speech: <span id="val-tts">On</span></div>
         <div class="menuItem"         data-sidx="1">Voice: <span id="val-voice">Default</span></div>
         <div class="menuItem"         data-sidx="2">Auto Scan: <span id="val-autoscan">Off</span></div>
         <div class="menuItem"         data-sidx="3">Scan Speed: <span id="val-speed">2s</span></div>
@@ -679,9 +679,9 @@ const opponentBallPositions = [
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let currentMenu     = 'start';  // 'start' | 'settings' | 'game'
-let menuIndex       = 0;
+let menuIndex       = -1;       // -1 = nothing highlighted until Space is pressed
 const MENU_COUNT    = 6;        // Casual, Slow, Medium, Fast, Settings, Exit
-let settingsIndex   = 0;
+let settingsIndex   = -1;
 const SETTINGS_COUNT = 6;
 let autoScanTimer   = null;
 
@@ -711,7 +711,7 @@ let enterHoldTimer = null;
 let enterDidHold   = false;
 
 let paused = false;
-let pauseMenuIndex = 0;
+let pauseMenuIndex = -1;
 const PAUSE_COUNT  = 3;
 
 function inputCooldown() {
@@ -802,13 +802,18 @@ function onSpace() {
 }
 
 function onSpaceBack() {
-  if (currentMenu === 'start') {
-    menuIndex = (menuIndex - 1 + MENU_COUNT) % MENU_COUNT;
+  if (currentMenu === 'pause') {
+    pauseMenuIndex = pauseMenuIndex < 0 ? PAUSE_COUNT - 1 : (pauseMenuIndex - 1 + PAUSE_COUNT) % PAUSE_COUNT;
+    updatePauseMenuFocus();
+    speakPauseItem();
+    restartAutoScan();
+  } else if (currentMenu === 'start') {
+    menuIndex = menuIndex < 0 ? MENU_COUNT - 1 : (menuIndex - 1 + MENU_COUNT) % MENU_COUNT;
     updateMainMenuFocus();
     speakMainItem();
     restartAutoScan();
   } else if (currentMenu === 'settings') {
-    settingsIndex = (settingsIndex - 1 + SETTINGS_COUNT) % SETTINGS_COUNT;
+    settingsIndex = settingsIndex < 0 ? SETTINGS_COUNT - 1 : (settingsIndex - 1 + SETTINGS_COUNT) % SETTINGS_COUNT;
     updateSettingsMenuFocus();
     speakSettingsItem();
     restartAutoScan();
@@ -823,12 +828,14 @@ function onSpaceBack() {
 
 function onEnter() {
   if (currentMenu === 'pause') {
+    if (pauseMenuIndex < 0) return; // nothing highlighted yet
     if (pauseMenuIndex === 0) closePause();
     else if (pauseMenuIndex === 1) pauseGoMainMenu();
     else speak('I need help');
     return;
   }
   if (currentMenu === 'start') {
+    if (menuIndex < 0) return; // nothing highlighted yet
     if (menuIndex < 4) {
       difficultyIndex = menuIndex;
       startMatch();
@@ -838,7 +845,7 @@ function onEnter() {
       goToHub();
     }
   } else if (currentMenu === 'settings') {
-    activateSettingsItem(settingsIndex);
+    if (settingsIndex >= 0) activateSettingsItem(settingsIndex);
   } else if (currentMenu === 'game') {
     if (matchOver) { returnToTitleScreen(); return; }
     if (!busy)     chooseMoveAndHit();
@@ -896,7 +903,7 @@ function goToHub() {
 // ─── Settings panel ────────────────────────────────────────────────────────────
 function openSettings() {
   currentMenu   = 'settings';
-  settingsIndex = 0;
+  settingsIndex = -1;
   $('settingsOverlay').style.display = 'flex';
   updateSettingsMenuFocus();
   updateSettingsDisplay();
@@ -906,8 +913,10 @@ function openSettings() {
 
 function closeSettings() {
   currentMenu = 'start';
+  menuIndex   = -1;
   $('settingsOverlay').style.display = 'none';
-  speakMainItem();
+  updateMainMenuFocus();
+  speak('Pickleball Rally. Choose your difficulty.');
   restartAutoScan();
 }
 
@@ -1435,7 +1444,7 @@ function openPause() {
   clearGameTimer();
   stopAutoScan();
   currentMenu = 'pause';
-  pauseMenuIndex = 0;
+  pauseMenuIndex = -1;
   $('pauseOverlay').style.display = 'flex';
   updatePauseMenuFocus();
   speak('Game paused. Continue or Main Menu.');
@@ -1518,7 +1527,7 @@ function returnToTitleScreen() {
   $('startOverlay').style.display   = 'flex';
   $('settingsOverlay').style.display = 'none';
   currentMenu = 'start';
-  menuIndex   = 0;
+  menuIndex   = -1;
   updateMainMenuFocus();
   updateSettingsDisplay();
   updatePauseBtn();

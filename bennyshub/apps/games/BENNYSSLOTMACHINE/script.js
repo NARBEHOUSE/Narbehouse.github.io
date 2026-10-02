@@ -927,7 +927,7 @@ function renderMenu(containerId, items, titleText, subtitleText) {
 function showMainMenu() {
     state.mode = 'menu';
     state.menuState = 'main';
-    state.menuIndex = 0;
+    state.menuIndex = -1; // Nothing highlighted until first Space
     state.spinning = false;
     state.bonusMode = false;
 
@@ -950,42 +950,42 @@ function showMainMenu() {
     notice.textContent = 'Contains flashing lights on wins and bonuses.';
     document.getElementById('menu-container').appendChild(notice);
 
-    speak("Mega Slots. Play");
+    speak("Mega Slots");
     startAutoScan();
 }
 
 function showSettingsMenu() {
     state.menuState = 'settings';
-    state.menuIndex = 0;
+    state.menuIndex = -1;
     renderMenu('menu-container', menus.settings, "⚙️ SETTINGS");
-    announceCurrentMenuItem();
+    speak("Settings");
     startAutoScan();
 }
 
 function showPauseMenu() {
     state.mode = 'pause';
     state.pauseMenuState = 'main';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1;
 
     document.getElementById('pause-overlay').style.display = 'flex';
     document.getElementById('pause-overlay').innerHTML = '';
 
     renderMenu('pause-overlay', menus.pause, "⏸️ PAUSED");
-    speak("Paused. Continue");
+    speak("Paused");
     startAutoScan();
 }
 
 function showPauseSettings() {
     state.pauseMenuState = 'settings';
-    state.pauseIndex = 0;
+    state.pauseIndex = -1;
     renderMenu('pause-overlay', menus.pauseSettings, "⚙️ SETTINGS");
-    announceCurrentPauseItem();
+    speak("Settings");
     startAutoScan();
 }
 
 function showGameOver() {
     state.mode = 'gameover';
-    state.gameoverIndex = 0;
+    state.gameoverIndex = -1;
 
     saveCredits();
     stopBackgroundMusic();
@@ -998,7 +998,7 @@ function showGameOver() {
         canRefill ? "Free credits available!" : `Next free credits: ${getTimeUntilRefill()}`);
     
     playSound('lose');
-    speak("Out of credits! " + (canRefill ? "Get free credits" : `Come back in ${getTimeUntilRefill()}`));
+    speak("Out of credits! " + (canRefill ? "Free credits available!" : `Come back in ${getTimeUntilRefill()}`));
     startAutoScan();
 }
 
@@ -1468,7 +1468,7 @@ function handleAutoplayButton() {
 
 function showAutoplayMenu() {
     state.mode = 'autoplay-menu';
-    state.autoplayMenuIndex = 0;
+    state.autoplayMenuIndex = -1;
     
     const pauseOverlay = document.getElementById('pause-overlay');
     pauseOverlay.style.display = 'flex';
@@ -1508,7 +1508,7 @@ function showAutoplayMenu() {
     pauseOverlay.appendChild(cancelBtn);
     
     updateHighlights();
-    speak("Autoplay. 10 spins");
+    speak("Autoplay");
     startAutoScan();
 }
 
@@ -2632,25 +2632,26 @@ function scanForward() {
 function scanBackward() {
     playSound('click');
     
+    // Menu indexes start at -1 (nothing highlighted); backward from there lands on the last item
     if (state.mode === 'menu') {
         const items = menus[state.menuState];
-        state.menuIndex = (state.menuIndex - 1 + items.length) % items.length;
+        state.menuIndex = state.menuIndex < 0 ? items.length - 1 : (state.menuIndex - 1 + items.length) % items.length;
         announceCurrentMenuItem();
     } else if (state.mode === 'game') {
         state.scanIndex = (state.scanIndex - 1 + state.gameActions.length) % state.gameActions.length;
         announceGameAction();
     } else if (state.mode === 'pause') {
         const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
-        state.pauseIndex = (state.pauseIndex - 1 + items.length) % items.length;
+        state.pauseIndex = state.pauseIndex < 0 ? items.length - 1 : (state.pauseIndex - 1 + items.length) % items.length;
         announceCurrentPauseItem();
     } else if (state.mode === 'gameover') {
-        state.gameoverIndex = (state.gameoverIndex - 1 + menus.gameover.length) % menus.gameover.length;
+        state.gameoverIndex = state.gameoverIndex < 0 ? menus.gameover.length - 1 : (state.gameoverIndex - 1 + menus.gameover.length) % menus.gameover.length;
         const item = menus.gameover[state.gameoverIndex];
         const txt = (typeof item.text === 'function' ? item.text() : item.text).replace(/[🎁🏠⏳]/g, '');
         speak(txt);
     } else if (state.mode === 'autoplay-menu') {
         const totalOptions = autoplayOptions.length + 1; // +1 for cancel
-        state.autoplayMenuIndex = (state.autoplayMenuIndex - 1 + totalOptions) % totalOptions;
+        state.autoplayMenuIndex = state.autoplayMenuIndex < 0 ? totalOptions - 1 : (state.autoplayMenuIndex - 1 + totalOptions) % totalOptions;
         announceAutoplayOption();
     }
     updateHighlights();
@@ -2675,6 +2676,12 @@ function startBackwardsScan() {
 }
 
 function selectItem() {
+    // Nothing highlighted yet (index -1): Enter does nothing, not even the select sound
+    if ((state.mode === 'menu' && state.menuIndex < 0) ||
+        (state.mode === 'pause' && state.pauseIndex < 0) ||
+        (state.mode === 'gameover' && state.gameoverIndex < 0) ||
+        (state.mode === 'autoplay-menu' && state.autoplayMenuIndex < 0)) return;
+
     playSound('select');
     
     if (state.mode === 'menu') {

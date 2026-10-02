@@ -14,7 +14,7 @@ let browser;
   await page.evaluate(()=>{NarbeScanManager.updateSettings({autoScan:false,inputSensitivityIndex:3});NarbeVoiceManager.updateSettings({ttsEnabled:false});});
   await page.locator('#mini-footer .mini-footer-bar').click();
   await expect(page.locator('#mini-footer a[href="https://www.youtube.com/t/terms"]')).toBeVisible();
-  await expect(page.locator('#mini-footer a[href="https://policies.google.com/privacy"]')).toBeVisible();
+  await expect(page.locator('#mini-footer a[href="https://policies.google.com/privacy"]').first()).toBeVisible();
   await page.locator('#mini-footer .mini-footer-bar').click();await page.locator('[data-target="tools"]').first().click();
   async function open(){
     await page.locator('#tools-grid [data-title="YouTube Search"]').click();
@@ -23,12 +23,16 @@ let browser;
   }
   let frame=await open();await expect(frame.locator('dialog[open]')).toHaveCount(0);
   const initial=await frame.evaluate(()=>scanningManager.currentRowIndex);
-  await page.keyboard.press('Space');assert.notEqual(await frame.evaluate(()=>scanningManager.currentRowIndex),initial);
+  assert.equal(initial,-1);
+  await page.keyboard.press('Enter');assert.equal(await frame.evaluate(()=>scanningManager.currentRowIndex),-1);
+  await page.waitForTimeout(350);await page.keyboard.press('Space');assert.equal(await frame.evaluate(()=>scanningManager.currentRowIndex),0);
+  await page.waitForTimeout(350);await page.keyboard.press('Space');assert.equal(await frame.evaluate(()=>scanningManager.currentRowIndex),1);
   await page.waitForTimeout(350);await page.keyboard.press('Enter');assert.equal(await frame.evaluate(()=>scanningManager.mode),'KEYS');
   await page.locator('#iframe-back').click();
   await page.context().route('https://www.youtube.com/iframe_api',r=>r.abort());
-  frame=await open();await expect(frame.locator('#startup-error')).toBeVisible();await expect(frame.locator('#startup-back')).toBeFocused();
+  frame=await open();await expect(frame.locator('#startup-error')).toBeVisible();await expect(frame.locator('#startup-back')).not.toBeFocused();
   await expect(frame.locator('#startup-error button')).toHaveCount(1);await expect(frame.locator('#startup-error a')).toHaveCount(0);
-  await page.keyboard.press('Space');await expect(frame.locator('#startup-back')).toBeFocused();await page.waitForTimeout(350);await page.keyboard.press('Enter');await expect(page.locator('#iframe-container')).not.toHaveClass(/active/);
+  await page.keyboard.press('Enter');await expect(frame.locator('#startup-error')).toBeVisible();await expect(page.locator('#iframe-container')).toHaveClass(/active/);
+  await page.waitForTimeout(350);await page.keyboard.press('Space');await expect(frame.locator('#startup-back')).toBeFocused();await page.waitForTimeout(350);await page.keyboard.press('Enter');await expect(page.locator('#iframe-container')).not.toHaveClass(/active/);
   assert.deepEqual(errors,[]);console.log('YouTube opens immediately on first visit/reload and in Hub; Space/Enter scan the app, footer policy links remain, and loading errors have a single switch-accessible exit. External SDKs mocked.');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>browser?.close());

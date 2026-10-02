@@ -1166,11 +1166,8 @@ function showCoverScreen(lookAwayPlayer, readyPlayer, nextAction) {
     
     // Set up scanning for cover screen
     scanState.mode = 'cover';
-    scanState.scanIndex = 0;
+    scanState.scanIndex = -1;  // Nothing highlighted until the first Space
     scanState.coverButtons = [{ element: document.getElementById('coverReadyBtn'), label: 'Ready', action: 'ready' }];
-    
-    // Highlight the Ready button
-    highlightCoverButton();
     
     speak(`Cover your eyes Player ${lookAwayPlayer}. Player ${readyPlayer}'s turn.`);
     startAutoScan();
@@ -1498,6 +1495,7 @@ function hidePauseModal() {
 }
 
 function showSettingsFromPause() {
+    clearAllHighlights();
     // Show settings view inside pause modal
     const pauseMainView = document.getElementById('pauseMainView');
     const pauseSettingsView = document.getElementById('pauseSettingsView');
@@ -1518,6 +1516,7 @@ function showSettingsFromPause() {
 }
 
 function goBackToPauseMenu() {
+    clearAllHighlights();
     // Show main pause view
     const pauseMainView = document.getElementById('pauseMainView');
     const pauseSettingsView = document.getElementById('pauseSettingsView');
@@ -2595,6 +2594,7 @@ function scanForward() {
             break;
         case 'cover':
             // Cover screen only has one button - just highlight it
+            scanState.scanIndex = 0;
             highlightCoverButton();
             break;
         case 'pause-settings':
@@ -2647,6 +2647,7 @@ function scanBackward() {
             break;
         case 'cover':
             // Cover screen only has one button - just highlight it
+            scanState.scanIndex = 0;
             highlightCoverButton();
             break;
         case 'pause-settings':
@@ -2671,6 +2672,7 @@ function scanMainMenuBackward() {
     updateMainMenuButtonsList();
     if (scanState.mainMenuButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.mainMenuButtons.length) % scanState.mainMenuButtons.length;
     highlightMainMenuButton();
     announceCurrentItem();
@@ -2701,6 +2703,7 @@ function scanSettingsMenuBackward() {
     updateSettingsButtonsList();
     if (scanState.settingsButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.settingsButtons.length) % scanState.settingsButtons.length;
     highlightSettingsButton();
     announceCurrentItem();
@@ -2731,6 +2734,7 @@ function scanGameOverBackward() {
     updateGameOverButtonsList();
     if (scanState.gameOverButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.gameOverButtons.length) % scanState.gameOverButtons.length;
     highlightGameOverButton();
     announceCurrentItem();
@@ -2761,6 +2765,7 @@ function scanPauseBackward() {
     updatePauseButtonsList();
     if (scanState.pauseButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.pauseButtons.length) % scanState.pauseButtons.length;
     highlightPauseButton();
     announceCurrentItem();
@@ -2791,6 +2796,7 @@ function scanPauseSettingsBackward() {
     updatePauseSettingsButtonsList();
     if (scanState.pauseSettingsButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.pauseSettingsButtons.length) % scanState.pauseSettingsButtons.length;
     highlightPauseSettingsButton();
     announceCurrentItem();
@@ -2834,6 +2840,7 @@ function scanMenuButtonsBackward() {
     updateMenuButtonsList();
     if (scanState.menuButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.menuButtons.length) % scanState.menuButtons.length;
     highlightMenuButton();
     announceCurrentItem();
@@ -2966,6 +2973,7 @@ function scanModalBackward() {
     updateModalButtonsList();
     if (scanState.modalButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.modalButtons.length) % scanState.modalButtons.length;
     highlightModalButton();
     announceCurrentItem();
@@ -3318,8 +3326,8 @@ function selectCurrentItem() {
 }
 
 function selectCoverButton() {
-    // Cover screen only has one button - Ready
-    if (scanState.coverButtons && scanState.coverButtons.length > 0) {
+    // Cover screen only has one button - Ready (nothing happens until it is highlighted)
+    if (scanState.scanIndex >= 0 && scanState.coverButtons && scanState.coverButtons.length > 0) {
         onCoverReady();
     }
 }
