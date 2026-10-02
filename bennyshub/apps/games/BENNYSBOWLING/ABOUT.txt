@@ -1,6 +1,6 @@
 Benny’s Bowling — Accessible Edition
 
-Modified October 2025 by NARBEHOUSE, LLC to support players with severe mobility disabilities (single‑switch controls, TTS, high‑contrast UI). These small games can make a mega difference in someone’s life. We appreciate the work done on the physics engine and other open‑source components.
+Modified October 2025 by NARBE LLC to support players with severe mobility disabilities (single‑switch controls, TTS, high‑contrast UI). These small games can make a mega difference in someone’s life. We appreciate the work done on the physics engine and other open‑source components.
 
 Original project: iliagrigorevdev — https://github.com/iliagrigorevdev/bowling/
 License: GNU GPLv3 — No warranty.

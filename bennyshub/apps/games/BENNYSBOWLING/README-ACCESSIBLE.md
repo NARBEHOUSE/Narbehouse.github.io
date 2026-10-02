@@ -3,7 +3,7 @@
 A community modification of the original “Benny’s Bowling” by iliagrigorevdev, created to support players with severe mobility disabilities through single‑switch controls, clear visuals, and speech feedback. These small games can make a mega difference in someone’s life. We deeply appreciate the work done on the physics engine and other open‑source components that made this possible.
 
 - Original project: https://github.com/iliagrigorevdev/bowling/
-- Accessible Edition by NARBEHOUSE, LLC
+- Accessible Edition by NARBE LLC
 - Modified: October 2025
 - License: GNU GPLv3 (see LICENSE)
 - Dedicated to @BEAMINBENNY

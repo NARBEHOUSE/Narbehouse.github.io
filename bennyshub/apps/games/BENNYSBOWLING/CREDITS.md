@@ -3,7 +3,7 @@
 - Original project: “Benny’s Bowling” — by iliagrigorevdev  
   Upstream: https://github.com/iliagrigorevdev/bowling/
 
-- Accessible Edition (modifications): NARBEHOUSE, LLC — October 2025
+- Accessible Edition (modifications): NARBE LLC — October 2025
   - Single‑switch controls (Space/Enter)
   - TTS (English voices), UI highlights, pause system
   - Aiming/charge mechanics, strike celebration

@@ -35,7 +35,7 @@
 - All 10 themes reworked to repaint the whole alley; neon themes drive an emissive map so arrows, foul line and approach dots glow.
 - `CAMERA_FAR` raised 10 → 60 so the far end of the house is not clipped; antialiasing enabled.
 
-## 2025‑10 — Accessible Edition (NARBEHOUSE, LLC)
+## 2025‑10 — Accessible Edition (NARBE LLC)
 - Added single‑switch navigation (Space scans forward; hold Space ≥3s scans backward every 2s; Enter selects).
 - Aiming via Space (5s oscillation; resumes from release), thicker aiming line; charge‑to‑throw via Enter (0–3s, non‑linear power).
 - TTS (English voices only, up to 8): UI focus, settings changes, outcomes ("Strike!"), frame calls, final score.
