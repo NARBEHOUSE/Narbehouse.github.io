@@ -95,9 +95,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupInputListeners();
 
-    window.addEventListener('focus', refreshWebStreaming);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshWebStreaming(); });
-    window.addEventListener('storage', e => { if (e.key?.startsWith('benny-web:v1:streaming.')) refreshWebStreaming(); });
+    window.addEventListener('focus', () => refreshWebStreaming());
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) suspendStreamingInput();
+        else refreshWebStreaming();
+    });
+    window.addEventListener('storage', e => {
+        // Player heartbeats already saved progress. They must not reopen a menu.
+        if (e.key?.startsWith('benny-web:v1:streaming.')) refreshWebStreaming(false);
+    });
 
     // Small delay to ensure voice manager is ready before first speak
     setTimeout(() => {
@@ -199,8 +205,13 @@ function applySettings() {
 }
 
 // --- VOICE (uses shared NarbeVoiceManager - same pattern as keyboard/journal) ---
+let pendingSpeechTimeout = null;
+function streamingIsInteractive() {
+    return !document.hidden && document.hasFocus();
+}
+
 function speak(text) {
-    if (!text) return;
+    if (!text || !streamingIsInteractive()) return;
 
     // Clean text: removes arrows
     const spokenText = text.replace(/[←→]/g, '').trim();
@@ -208,11 +219,28 @@ function speak(text) {
 
     // Use shared voice manager (same pattern as keyboard and journal apps)
     if (window.NarbeVoiceManager) {
+        clearTimeout(pendingSpeechTimeout);
         window.NarbeVoiceManager.cancel();
-        setTimeout(() => {
-            window.NarbeVoiceManager.speak(spokenText);
+        pendingSpeechTimeout = setTimeout(() => {
+            pendingSpeechTimeout = null;
+            if (streamingIsInteractive()) window.NarbeVoiceManager.speak(spokenText);
         }, 50);
     }
+}
+
+function suspendStreamingInput() {
+    clearTimeout(scanTimer);
+    clearTimeout(pauseTimer);
+    clearTimeout(keyboardEnterTimer);
+    clearInterval(backwardScanInterval);
+    backwardScanInterval = null;
+    isLongPress = false;
+    spacePressedTime = 0;
+    pauseTriggered = false;
+    stopAutoScan();
+    clearTimeout(pendingSpeechTimeout);
+    pendingSpeechTimeout = null;
+    window.NarbeVoiceManager?.cancel();
 }
 
 // --- NAVIGATION CONTROLLERS ---
@@ -351,8 +379,7 @@ function highlightSettings(idx) {
 
 // --- Menu Options specific functions ---
 
-async function openRecent() {
-    try {
+function recentItems() {
         const recent = WebStreaming.getLastWatched();
 
         // Normalize keys to lowercase and deduplicate (keep most recent)
@@ -372,17 +399,23 @@ async function openRecent() {
             .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0))
             .map(entry => entry[0]);
 
-        filteredData = [];
+        const items = [];
         const seen = new Set(); // Track already-added titles to prevent duplicates
         titles.forEach(t => {
             // Find in allData (case-insensitive match)
             const found = allData.find(x => x.title.toLowerCase() === t.toLowerCase());
             if (found && !seen.has(found.title.toLowerCase())) {
-                filteredData.push(found);
+                items.push(found);
                 seen.add(found.title.toLowerCase());
             }
         });
 
+        return items;
+}
+
+async function openRecent() {
+    try {
+        filteredData = recentItems();
         lastBrowseTitle = "Recently Watched"; // Ensure back button logic works
         openItemsView("Recently Watched");
     } catch(e) {
@@ -717,6 +750,7 @@ function createItemCard(item, slotIdx) {
     const card = document.createElement('div');
     card.className = 'card';
     card.id = `item-${slotIdx}`;
+    card.dataset.itemKey = String(item.id || item.title.toLowerCase());
     card.onclick = () => showModal(item);
 
     const img = document.createElement('img');
@@ -1072,6 +1106,7 @@ async function launchContent(url, title, type="movies", season=null, episode=nul
     try {
         await WebStreaming.launch({url, show:saveTitle, season, episode, saveUrl, type});
     } catch(e) {
+        isLaunching = false;
         WebStreaming.status(e.message);
         speak('Could not open this video.');
         if (window.NarbeScanManager?.getSettings().autoScan) startAutoScan();
@@ -1749,80 +1784,8 @@ function setupInputListeners() {
         }
     });
 
-    // Safety: Stop scanning if window loses focus
-    window.addEventListener('blur', () => {
-        clearTimeout(scanTimer);
-        clearInterval(backwardScanInterval);
-        backwardScanInterval = null;
-        isLongPress = false;
-    });
-
-    // Refresh data when window regains focus (backup for nav-signal)
-    // This handles cases where the user returns from external apps
-    let lastFocusRefresh = 0;
-    window.addEventListener('focus', async () => {
-        const now = Date.now();
-        // Debounce: only refresh if at least 2 seconds since last refresh
-        if (now - lastFocusRefresh < 2000) return;
-        lastFocusRefresh = now;
-
-        console.log('[Streaming] Window regained focus, refreshing data');
-        await loadData();
-
-        // Check if any modal/overlay is visually open - don't refresh view if so
-        const itemModal = document.getElementById('item-modal');
-        const editorModal = document.getElementById('editor-modal');
-        const pauseMenu = document.getElementById('pause-menu');
-
-        const itemModalOpen = itemModal && !itemModal.classList.contains('hidden');
-        const editorModalOpen = editorModal && !editorModal.classList.contains('hidden');
-        const pauseMenuOpen = pauseMenu && !pauseMenu.classList.contains('hidden');
-
-        // If item modal is visually open, restore its state
-        if (itemModalOpen) {
-            console.log('[Streaming] Item modal is visible on focus, restoring STATE.MODAL');
-            currentState = STATE.MODAL;
-            resetMenuFocus();
-            if (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) {
-                startAutoScan();
-            }
-            return;
-        }
-
-        // If editor modal is open, restore its state
-        if (editorModalOpen) {
-            console.log('[Streaming] Editor modal is visible on focus, restoring editor_confirm state');
-            currentState = 'editor_confirm';
-            resetMenuFocus();
-            if (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) {
-                startAutoScan();
-            }
-            return;
-        }
-
-        // If pause menu is open, restore its state
-        if (pauseMenuOpen) {
-            console.log('[Streaming] Pause menu is visible on focus, restoring STATE.PAUSE');
-            currentState = STATE.PAUSE;
-            resetMenuFocus();
-            if (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) {
-                startAutoScan();
-            }
-            return;
-        }
-
-        // If on Recently Watched view, refresh it
-        const viewTitle = document.getElementById('view-title');
-        if (viewTitle && viewTitle.textContent === "Recently Watched") {
-            console.log('[Streaming] Refreshing Recently Watched view on focus');
-            await openRecent();
-        }
-
-        // Restart autoscan if enabled
-        if (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) {
-            startAutoScan();
-        }
-    });
+    // The player opens in another tab. Leave its controls and speech in charge.
+    window.addEventListener('blur', suspendStreamingInput);
 
     // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
     // This ensures our timers are cleared even when keyup events are blocked
@@ -2011,13 +1974,14 @@ function toggleAutoScan() {
 
 let autoScanIntervalId = null;
 function startAutoScan() {
-    if(autoScanIntervalId) clearInterval(autoScanIntervalId);
+    stopAutoScan();
+    if (!streamingIsInteractive() || isLaunching) return;
 
     // Get scan interval from shared manager
     const scanInterval = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000;
 
     autoScanIntervalId = setInterval(() => {
-        if (document.hidden || document.querySelector('#companion-required[open]') || isLongPress) return;
+        if (!streamingIsInteractive() || isLaunching || document.querySelector('#companion-required[open]') || isLongPress) return;
         if (currentState === STATE.KEYBOARD && window.keyboardController?.isOpen) {
             window.keyboardController.scanForward();
         } else {
@@ -2210,12 +2174,37 @@ function clearAllProgress() {
 let keyboardEnterTimer = null;
 
 
-async function refreshWebStreaming() {
-    await WebStreaming.syncProgress();
-    await loadData();
+// A storage notification is a data refresh, never a navigation action. Keep
+// the player's view/selection intact and leave inactive tabs completely quiet.
+let streamingRefreshPromise = null;
+let streamingRefreshPending = false;
+let streamingRefreshNeedsSync = false;
+
+function rebuildGridQuietly(kind, render, index) {
+    const before = index == null || index === -1 ? null : document.getElementById(`${kind}-${index}`);
+    const key = before?.dataset.itemKey;
+    const label = before?.textContent;
+    const navigation = before?.classList.contains('nav-card');
+    render();
+    let next = index;
+    if (index != null && index !== -1) {
+        const candidates = Array.from(document.querySelectorAll(`#${kind === 'item' ? 'items' : 'genre'}-grid [id^="${kind}-"]`));
+        const same = candidates.find(el => el.style.visibility !== 'hidden' && (navigation
+            ? el.id === `${kind}-${index}` && el.classList.contains('nav-card')
+            : key ? el.dataset.itemKey === key : el.textContent === label && !el.classList.contains('nav-card')));
+        next = same ? Number(same.id.slice(kind.length + 1)) : null;
+    }
+    clearHighlights();
+    if (next === -1) document.getElementById('global-back-btn').classList.add('highlighted');
+    else if (next != null) document.getElementById(`${kind}-${next}`)?.classList.add('highlighted');
+    return next;
+}
+
+function refreshStreamingViewQuietly() {
     if (currentState === STATE.ITEMS) {
         const title = document.getElementById('view-title').textContent;
-        if (title === 'Recently Watched') await openRecent();
+        const previous = JSON.stringify(filteredData);
+        if (title === 'Recently Watched') filteredData = recentItems();
         else {
             filteredData = allData.filter(item => item.type !== 'music');
             if (title === 'Search Results') {
@@ -2225,15 +2214,41 @@ async function refreshWebStreaming() {
                 filteredData = filteredData.filter(item => (item.genre || 'Other').split(',').map(g=>g.trim()).includes(title) && (!currentTypeFilter || currentTypeFilter(item.type)));
             }
             filteredData.sort((a,b)=>a.title.localeCompare(b.title));
-            renderItemsGrid();
-            resetMenuFocus();
         }
+        if (JSON.stringify(filteredData) !== previous) itemIndex = rebuildGridQuietly('item', renderItemsGrid, itemIndex);
     } else if (currentState === STATE.GENRES) {
         processGenres(currentTypeFilter ? allData.filter(item=>currentTypeFilter(item.type)) : allData);
-        renderGenreGrid();
-        resetMenuFocus();
+        genreIndex = rebuildGridQuietly('genre', renderGenreGrid, genreIndex);
     }
-    if (window.NarbeScanManager?.getSettings().autoScan && BennyExtension.supports('streaming')) startAutoScan();
+}
+
+function refreshWebStreaming(syncProgress = true) {
+    streamingRefreshPending = true;
+    streamingRefreshNeedsSync ||= syncProgress;
+    if (!streamingIsInteractive()) {
+        stopAutoScan();
+        return Promise.resolve();
+    }
+    if (streamingRefreshPromise) return streamingRefreshPromise;
+    streamingRefreshPromise = Promise.resolve().then(async () => {
+        const sync = streamingRefreshNeedsSync;
+        streamingRefreshNeedsSync = false;
+        streamingRefreshPending = false;
+        if (sync) await WebStreaming.syncProgress();
+        await loadData();
+        if (!streamingIsInteractive()) {
+            streamingRefreshPending = true;
+            return;
+        }
+        refreshStreamingViewQuietly();
+        if (!autoScanIntervalId && !isLaunching && window.NarbeScanManager?.getSettings().autoScan && BennyExtension.supports('streaming')) startAutoScan();
+    }).catch(error => {
+        console.error('[Streaming] Could not refresh saved data:', error);
+    }).finally(() => {
+        streamingRefreshPromise = null;
+        if (streamingRefreshPending && streamingIsInteractive()) refreshWebStreaming(streamingRefreshNeedsSync);
+    });
+    return streamingRefreshPromise;
 }
 window.addEventListener('benny-extension-change', () => {
     if (!BennyExtension.supports('streaming')) stopAutoScan();
