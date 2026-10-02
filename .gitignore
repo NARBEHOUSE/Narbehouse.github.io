@@ -35,4 +35,6 @@ workers/**/.wrangler/
 bennyshub/apps/games/BENNYSFOOTBALL/art/out/
 bennyshub/apps/games/BENNYSBASEBALL2/art/out/
 bennyshub/apps/games/ROBOTFOOTBALL/tools/test-output/
+# Browser profiles left by the game UI tests.
+tmp/
 **/DESKTOP_PROMPT.txt
