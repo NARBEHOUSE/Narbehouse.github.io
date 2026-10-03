@@ -1,5 +1,9 @@
 # Release preparation — Benny's Hub Companion 1.0.5
 
+This guide is for maintainers publishing website changes or Companion updates. Everyday users can open [Benny's Hub at bennyshub.com](https://bennyshub.com); local release preparation is not part of using the app.
+
+Store ZIPs, screenshots, and publisher copy are generated under `releases/1.0.5/`.
+
 The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). Use that existing listing for future Chrome updates. Edge Add-ons submissions remain separate; no Edge listing URL has been supplied.
 
 The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm each update's status in the store dashboard; rebuilding this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
@@ -40,6 +44,10 @@ Publish the **contents of dist/** at the root of the `narbehouse.github.io` repo
 
 The deployment workflow is included at `.github/workflows/pages.yml`; `pages.yml.example` is a reference copy. With Settings > Pages > Source set to GitHub Actions, each push to `main` automatically runs **Publish reviewed website**. It publishes only the built `dist/` artifact after tests, the public-file audit and link checks pass. Failed build checks leave the live site unchanged. The commit receives GitHub Actions checks; open the check indicator or Actions tab for results. A manual Run workflow option remains available for retries. This does not submit or update an extension store listing.
 
+Local edits and commits alone do not publish. On GitHub, a yellow indicator means checks are running, a green check means the workflow succeeded, and a red X means it failed. Open the indicator or **Actions > Publish reviewed website** for details.
+
+For a clean source handoff, run `npm run build`, `npm run audit:release`, `npm run check:pages`, and `npm run prepare:github`. The result is `releases/1.0.5/github-ready/`. The [replacement guide](REPLACE-WEBSITE.md) covers preserving an old checkout and publishing only the built `dist/` website. This is a maintenance workflow, not a user installation step.
+
 `.nojekyll` is included in the website artifact so static filenames are served without Jekyll processing. The automated public-file audit also checks the Pages size target and large individual files. It is not a full accessibility or security certification.
 
 ## Blank slate and private files
@@ -52,6 +60,8 @@ The deployment workflow is included at `.github/workflows/pages.yml`; `pages.yml
 - Public company branding and intended publisher/support contact details remain. Automated scanning cannot prove that every image, free-text passage or imported historical file has no personal information.
 
 ## Rebuild locally
+
+Builds require Node.js and Python 3. `npm run build` also generates the production-origin Companion preview ZIP inside `dist/bennyshub/downloads/`. That download is for developer testing; public users install the Companion through the store. See [preview distribution guidance](PREVIEW-DISTRIBUTION.md).
 
 ```
 npm ci

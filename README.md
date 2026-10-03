@@ -1,37 +1,31 @@
-# Benny's Hub — local release preparation
+# Benny's Hub
 
-Public installation: get [Benny's Hub Companion from the Chrome Web Store](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc), then refresh [Benny's Hub](https://narbehouse.github.io/bennyshub/). The [setup page](https://narbehouse.github.io/bennyshub/extension-setup.html) covers installation, connection, Edge, and migration from an unpacked preview.
+Benny's Hub is a free, open-source collection of accessible games and everyday tools, built for Ben and families like ours. It supports one- and two-switch access, mouse input, head tracking, and eye tracking.
 
-Store ZIPs, screenshots, publisher copy and preparation instructions are built under `releases/1.0.5/`. Start with [the submission guide](submission/START-HERE.md). Pushing to `main` automatically runs the tests, build, public-file audit and link checks, then publishes the website if all checks pass. Local edits and commits alone do not publish. Extension store submissions remain separate. The public streaming library and episodes start empty.
+**[Open Benny's Hub at bennyshub.com](https://bennyshub.com)**
 
-On GitHub, a yellow indicator means checks are running, a green check means the workflow succeeded, and a red X means it failed. If a required build check fails, the current live website stays in place. Click the indicator or open **Actions > Publish reviewed website** for details.
+Use the Hub online in your browser and choose a game or tool to get started.
 
-For a clean repository replacement, run `npm run build`, `npm run audit:release`,
-`npm run check:pages`, then `npm run prepare:github`. The result is
-`releases/1.0.5/github-ready/`. Follow [the replacement guide](submission/REPLACE-WEBSITE.md)
-to preserve your old checkout and publish only the `dist/` website when ready.
+## Games and tools
 
-The three companion apps are implemented under Benny’s Hub → Tools. See [setup, validation and current limitations](WEB-EXTENSION-MIGRATION.md).
+- Play accessible arcade, sports, puzzle, and board games.
+- Communicate with the predictive keyboard and customizable phrase and media boards.
+- Use Companion-enabled tools for streaming, journaling, and Day Hub.
+- Adjust switch scanning, input sensitivity, and voice settings to suit the person using the Hub.
 
-For a local preview: `npm install`, then `npm start`, and open http://127.0.0.1:4173/bennyshub/index.html. Load the `extension` folder as an unpacked extension in desktop Chrome/Edge and reload the Hub.
+## Optional browser Companion
 
-Builds require Node.js and Python 3. `npm run build` generates the production-origin
-Companion preview ZIP inside `dist/bennyshub/downloads/`; this is a developer/tester
-download, not a store install. See [preview distribution guidance](submission/PREVIEW-DISTRIBUTION.md).
+For the Companion-enabled tools, install [Benny's Hub Companion from the Chrome Web Store](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc), then return to the Hub in the same browser profile and refresh. Other games and tools can be used without the Companion.
 
-The Streaming editor offers six optional Quick add collections (223 public title links).
-JSON imports merge into the existing library and skip matching URLs. See
-[collection maintenance and sources](submission/STARTER-COLLECTIONS.md).
+The Hub's **Settings** area includes Companion setup, connection checks, and data controls. Your streaming library and journal start empty so you can add your own content.
 
-Streaming keeps the original catalog link and saves the latest episode/playlist URL separately on this device. Continue uses that saved link; Start Over clears it. Plex retains its own progress handling. Help & shortcuts pauses video and offers spoken help, keyboard, phrase board and Hub main-menu access.
+## Open source
 
-Companion setup and data controls are in the collapsed **Settings** area at the top, outside switch scanning.
-
-The Keyboard uses the original local dictionary and learned words/phrases, including offline. KenLM is no longer loaded or included in the public build. The optional [TMDB Worker](workers/tmdb/README.md) keeps a shared metadata credential off GitHub Pages.
+You can also use, modify, or host your own version under the MIT License. The source code is available here for anyone who wants to contribute or adapt the tools.
 
 ---
 
-# Narbehouse.github.io
+## License
 
 © 2026 NARBE LLC
 
@@ -65,3 +59,17 @@ For partnership or branding inquiries, please visit:
 This accessibility software is not medical software and is provided “AS IS,” without warranty of any kind, express or implied.
 
 ---
+
+<details>
+<summary>For developers and maintainers</summary>
+
+Local development and release preparation are optional workflows for people changing or publishing the project.
+
+For a local preview, run `npm install`, then `npm start`, and open http://127.0.0.1:4173/bennyshub/index.html. To test Companion features locally, load the `extension/` folder as an unpacked extension in desktop Chrome or Edge and refresh the Hub.
+
+- [Development setup, validation, and limitations](WEB-EXTENSION-MIGRATION.md)
+- [Website publishing and Companion release preparation](submission/START-HERE.md)
+- [Streaming collection maintenance](submission/STARTER-COLLECTIONS.md)
+- [Optional TMDB metadata Worker](workers/tmdb/README.md)
+
+</details>
