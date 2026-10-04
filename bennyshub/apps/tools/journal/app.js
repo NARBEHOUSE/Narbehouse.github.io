@@ -74,7 +74,9 @@
 
     window.NarbeScanManager.subscribe((s) => {
       currentScanInterval = s.scanInterval;
+      const modeChanged=isAutoScanning!==s.autoScan;
       isAutoScanning = s.autoScan;
+      if(modeChanged&&spacebarPressed&&!brakeOwned){clearTimeout(backwardTimeout);clearInterval(backwardScanInterval);backwardScanningOccurred=true;}
 
       if (isAutoScanning) {
         stopAutoScan();
@@ -95,7 +97,7 @@
     };
   }
 
-  let autoScanInterval = null;
+  // The shared choice controller owns the automatic clock.
 
   // TTS
   function stripEmojis(text) {
@@ -110,6 +112,7 @@
   }
 
   function speak(text) {
+    if(currentScreen==='optionsScreen'&&choiceScan?.active)return choiceScan.announce(stripEmojis(text));
     if (window.NarbeVoiceManager) {
       window.NarbeVoiceManager.cancel();
       let cleanText = stripEmojis(text);
@@ -328,13 +331,7 @@
   let backwardScanInterval = null;
   let backwardScanningOccurred = false;
 
-  function resetMenuScan() {
-    scanIndex = -1;
-    clearAllHighlights();
-    document.activeElement?.blur();
-    stopAutoScan();
-    if (isAutoScanning) startAutoScan();
-  }
+  function resetMenuScan() { document.activeElement?.blur(); updateScanItems(true); }
 
   // Screen management
   function showScreen(screenId) {
@@ -348,7 +345,7 @@
     clearAllHighlights();  // Don't highlight anything initially
   }
 
-  function updateScanItems() {
+  function collectScanItems() {
     scanItems = [];
 
     // Check for open modals first (highest priority)
@@ -390,220 +387,124 @@
     }
   }
 
+
+  let choiceScan = null, statusHost = null, brakeOwned = false, backwardTimeout = null, selectTimeout = null;
+  const gateOpen = () => !!document.querySelector('#companion-required')?.open;
+  const nativeInput = target => !!target?.closest('input,textarea,[contenteditable="true"]');
+  const itemFor = element => ({id: element.id || element.dataset.entryId && 'entry:' + element.dataset.entryId || element.dataset.setting && 'setting:' + element.dataset.setting || element.dataset.action && 'action:' + element.dataset.action || element.dataset.date && 'date:' + element.dataset.date,
+    element, labelElement: element.querySelector('.option-label,.ctrl-text,.entry-preview') || element,
+    label: () => stripEmojis(element.getAttribute('aria-label') || element.textContent)});
+  function keyboardRoot() {
+    const keys = Array.from(kb.querySelectorAll('.key'));
+    return [{id:'row:text',row:0,kind:'keyboard-row',element:textBar,label:()=> 'Text. '+(keyboardBuffer || 'Empty')},
+      ...keyboardRows.map((row,index)=>({id:'row:'+index,row:index+1,kind:'keyboard-row',element:keys[index*6],labelElement:keys[index*6]?.querySelector('.ctrl-text'),label:index===0?'Controls':row.join(', ')})),
+      {id:'row:predictions',row:8,kind:'keyboard-row',element:predictBar,labelElement:predictBar.querySelector('.chip'),label:'Predictive text'}];
+  }
+  function keyboardChildren(row) {
+    const buttons = row===8 ? Array.from(predictBar.querySelectorAll('.chip')) : Array.from(kb.querySelectorAll('.key')).slice((row-1)*6,row*6);
+    const occurrences=new Map();
+    return buttons.map((element,column)=>{const word=element.textContent,occurrence=occurrences.get(word)||0;occurrences.set(word,occurrence+1);return {id:row===8?'prediction:'+word+':'+occurrence:'key:'+keyboardRows[row-1][column],kind:'keyboard-key',row,column,element,labelElement:element.querySelector('.ctrl-text')||element,label:row===8?element.textContent:keyboardRows[row-1][column]}}).filter(item=>!item.element.disabled);
+  }
+  function calendarRows() {
+    return BennyJournalCalendar.getGroups().map((group,index)=>({id:'calendar-row:'+group.key,kind:'calendar-row',group,element:group.buttons[0],label:group.label}));
+  }
+  function scanContext(fresh=false) {
+    const modal=[deleteConfirmModal,changeViewModal,questionModal,entryViewModal].find(el=>!el.classList.contains('hidden'));
+    const host=modal?.querySelector('.modal-card') || document.getElementById(currentScreen);
+    if(statusHost.parentNode!==host)host.append(statusHost);
+    if(modal===changeViewModal) {
+      const old=choiceScan?.context;
+      if(!fresh&&old?.key.startsWith('calendar-child:'))return old;
+      return {key:'calendar',items:calendarRows(),statusHost};
+    }
+    if(!modal&&currentScreen==='keyboardScreen') {
+      const old=choiceScan?.context;
+      if(!fresh&&old?.key.startsWith('keyboard-child:'))return {key:old.key,items:keyboardChildren(Number(old.key.split(':')[1])),statusHost};
+      return {key:'keyboard',items:keyboardRoot(),statusHost};
+    }
+    return {key:modal?.id || currentScreen,items:scanItems.map(itemFor),statusHost};
+  }
+  function updateScanItems(fresh=false) {
+    collectScanItems(); if(!choiceScan)return;
+    if(gateOpen()){choiceScan.sync(null);return;}
+    choiceScan.sync(scanContext(fresh),{fresh});
+  }
+  function paintChoice(item,state,context) {
+    clearAllHighlights(); scanIndex=state.index;
+    if(context.key==='calendar')$('#calendarScanHint').textContent='Space: next row. Enter: choose row.';
+    if(state.suspended||!item)return;
+    if(item.kind==='keyboard-row') {
+      keyboardInRowMode=true;keyboardRowIndex=item.row;
+      if(item.row===0)textBar.classList.add('highlighted');
+      else if(item.row===8)highlightPredictiveRow();else highlightKeyboardRow(item.row-1);
+    } else if(item.kind==='keyboard-key') {
+      keyboardInRowMode=false;keyboardRowIndex=item.row;keyboardButtonIndex=item.column;item.element.classList.add('highlighted');
+    } else if(item.kind==='calendar-row') item.group.buttons.forEach(el=>el.classList.add('highlighted'));
+    else item.element.classList.add('highlighted');
+    item.element?.scrollIntoView({block:'nearest',inline:'nearest'});
+  }
+  function selectChoice(item) {
+    if(item.kind==='keyboard-row') {
+      if(item.row===0){speak(keyboardBuffer);return;}
+      choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:keyboardChildren(item.row),statusHost});
+    } else if(item.kind==='calendar-row') {
+      choiceScan.enterGroup({key:'calendar-child:'+item.group.key,items:item.group.buttons.map(itemFor),statusHost});
+      $('#calendarScanHint').textContent='Space: next choice. Enter: select. Hold Enter: return to this row.';
+    } else {
+      item.element.click();
+      if(item.kind==='keyboard-key'&&currentScreen==='keyboardScreen')choiceScan.back({restore:true});
+    }
+  }
+  function initChoiceScan(){
+    statusHost=document.createElement('div');statusHost.id='journal-scan-status';
+    choiceScan=NarbeChoiceScanAdapter.create({holdThreshold:3000,statusHost,stateHost:document.body,
+      speak:text=>NarbeVoiceManager.speak(stripEmojis(text)),onHighlight:paintChoice,onSelect:selectChoice});
+  }
+
   function clearAllHighlights() {
     $$(".highlighted").forEach(el => el.classList.remove("highlighted"));
   }
 
-  function highlightCurrentItem() {
-    clearAllHighlights();
-    if (scanIndex >= 0 && scanItems[scanIndex]) {
-      scanItems[scanIndex].classList.add("highlighted");
-      scanItems[scanIndex].scrollIntoView({ block: "nearest", inline: "nearest" });
-    }
+  function highlightCurrentItem() { updateScanItems(); }
+  function handleScan() { choiceScan?.step(1); }
+  function handleScanBack() { choiceScan?.step(-1); }
+  function handleSelect() { choiceScan?.select(); }
+  function resetSwitchInput() {
+    clearTimeout(backwardTimeout);clearTimeout(selectTimeout);clearInterval(backwardScanInterval);
+    backwardTimeout=selectTimeout=backwardScanInterval=null;
+    spacebarPressed=returnPressed=brakeOwned=backwardScanningOccurred=longPressTriggered=false;
+    choiceScan?.cancelInput();
   }
-
-  // Scanning controls managed by ScanManager
-  function handleScan() {
-    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.scan(1); return; }
-    if (currentScreen === "keyboardScreen") {
-      keyboardScanForward();
-      return;
-    }
-    // First scan starts at 0, subsequent scans increment
-    if (scanIndex < 0) {
-      scanIndex = 0;
-    } else {
-      scanIndex = (scanIndex + 1) % scanItems.length;
-    }
-    highlightCurrentItem();
-    speakCurrentItem();
-  }
-
-  function handleScanBack() {
-    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.scan(-1); return; }
-    if (currentScreen === "keyboardScreen") {
-      keyboardScanBackward();
-      return;
-    }
-    // If we haven't started scanning, start at last item
-    if (scanIndex < 0) {
-      scanIndex = scanItems.length - 1;
-    } else {
-      scanIndex = (scanIndex - 1 + scanItems.length) % scanItems.length;
-    }
-    highlightCurrentItem();
-    speakCurrentItem();
-  }
-
-  function handleSelect() {
-    if (!changeViewModal.classList.contains("hidden")) { BennyJournalCalendar.select(); return; }
-    if (currentScreen === "keyboardScreen") {
-      keyboardSelect();
-      return;
-    }
-    // Only select if we have a valid index
-    if (scanIndex >= 0 && scanItems[scanIndex]) {
-      scanItems[scanIndex].click();
-    }
-  }
-
-  function speakCurrentItem() {
-    if (scanItems[scanIndex]) {
-      const text = scanItems[scanIndex].textContent || scanItems[scanIndex].innerText;
-      speak(stripEmojis(text.trim()));
-    }
-  }
-
-  // Input Handling using ScanManager patterns
-  document.addEventListener("keydown", (e) => {
-    if (e.code === "Space") {
-      e.preventDefault();
-      startScanning();
-    } else if (e.code === "Enter") {
-      e.preventDefault();
-      startSelecting();
-    }
+  for(const type of ['keydown','keyup'])document.addEventListener(type,e=>{
+    if(gateOpen()||nativeInput(e.target)||!['Space','Enter','NumpadEnter'].includes(e.code))return;
+    e.preventDefault();if(e.repeat)return;
+    if(e.code==='Space'){if(type==='keydown')startScanning();else stopScanning();}
+    else if(type==='keydown')startSelecting();else stopSelecting();
   });
-
-  document.addEventListener("keyup", (e) => {
-    if (e.code === "Space") {
-      e.preventDefault();
-      stopScanning();
-    } else if (e.code === "Enter") {
-      e.preventDefault();
-      stopSelecting();
-    }
-  });
-
-  // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
-  document.addEventListener('narbe-input-cancelled', (e) => {
-    if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
-      // If cancelled due to 'too-short', still perform forward scan - user intended to press
-      const wasBackwardScanning = backwardScanningOccurred;
-      spacebarPressed = false;
-      spacebarPressTime = null;
-      backwardScanningOccurred = false;
-      if (backwardScanInterval) {
-        clearInterval(backwardScanInterval);
-        backwardScanInterval = null;
-      }
-      // Perform forward scan for short presses (not backward scanning)
-      if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
-        handleScan();
-      }
-    }
-    if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
-      const wasLongPress = longPressTriggered;
-      returnPressed = false;
-      returnPressTime = null;
-      longPressTriggered = false;
-      // Perform select for short presses
-      if (e.detail.reason === 'too-short' && !wasLongPress) {
-        handleSelect();
-      }
-    }
-  });
-
-  function startScanning() {
-    if (!spacebarPressed) {
-      spacebarPressed = true;
-      spacebarPressTime = Date.now();
-      backwardScanningOccurred = false;
-
-      const timings = getScanTimings();
-
-      setTimeout(() => {
-        if (spacebarPressed && (Date.now() - spacebarPressTime) >= timings.longPress) {
-          backwardScanningOccurred = true;
-          handleScanBack(); // Scan once immediately
-          backwardScanInterval = setInterval(() => {
-            if (spacebarPressed) {
-               handleScanBack();
-            }
-          }, timings.backward);
-        }
-      }, timings.longPress);
-    }
+  document.addEventListener('narbe-input-cancelled',resetSwitchInput);
+  window.addEventListener('blur',resetSwitchInput);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)resetSwitchInput();});
+  document.addEventListener('narbe-tool-gate-change',()=>{resetSwitchInput();updateScanItems();});
+  function startScanning(){
+    if(spacebarPressed)return;spacebarPressed=true;backwardScanningOccurred=false;
+    brakeOwned=choiceScan.brakePress();if(brakeOwned)return;choiceScan.setInputHeld(true);
+    backwardTimeout=setTimeout(()=>{if(!spacebarPressed)return;backwardScanningOccurred=true;handleScanBack();backwardScanInterval=setInterval(handleScanBack,currentScanInterval);},3000);
   }
-
-  function stopScanning() {
-    if (spacebarPressed) {
-      spacebarPressed = false;
-      const pressDuration = Date.now() - spacebarPressTime;
-
-      if (backwardScanInterval) {
-        clearInterval(backwardScanInterval);
-        backwardScanInterval = null;
-      }
-
-      // Only scan forward if it wasn't a long press (backward scan)
-      if (!backwardScanningOccurred) {
-         handleScan();
-      }
-
-      spacebarPressTime = null;
-      backwardScanningOccurred = false;
-    }
+  function stopScanning(){
+    if(!spacebarPressed)return;spacebarPressed=false;clearTimeout(backwardTimeout);clearInterval(backwardScanInterval);
+    if(brakeOwned){brakeOwned=false;choiceScan.brakeRelease();}else if(!backwardScanningOccurred)handleScan();
+    choiceScan.setInputHeld(false);
   }
-
-  function startSelecting() {
-    if (!returnPressed) {
-      returnPressed = true;
-      returnPressTime = Date.now();
-      longPressTriggered = false;
-
-      const timings = getScanTimings();
-      if (!changeViewModal.classList.contains("hidden")) {
-        setTimeout(() => {
-          if (returnPressed && !changeViewModal.classList.contains("hidden") && Date.now() - returnPressTime >= timings.longPress) {
-            longPressTriggered = true;
-            BennyJournalCalendar.resetScan();
-            speak("Calendar rows");
-          }
-        }, timings.longPress);
-      }
-      // Check for long press (only for keyboard screen mostly)
-      if (currentScreen === "keyboardScreen") {
-        setTimeout(() => {
-          if (returnPressed && (Date.now() - returnPressTime) >= timings.longPress) {
-            handleKeyboardLongPress();
-          }
-        }, timings.longPress);
-      }
-    }
+  function startSelecting(){
+    if(returnPressed)return;returnPressed=true;longPressTriggered=false;choiceScan.setInputHeld(true);
+    selectTimeout=setTimeout(()=>{if(!returnPressed)return;
+      if(choiceScan.getState()?.depth){longPressTriggered=true;choiceScan.back({restore:true});choiceScan.setInputHeld(true);}
+      else if(currentScreen==='keyboardScreen'){longPressTriggered=true;choiceScan.align('row:predictions');choiceScan.setInputHeld(true);}
+    },3000);
   }
-
-  function stopSelecting() {
-    if (returnPressed) {
-      returnPressed = false;
-      const pressDuration = Date.now() - returnPressTime;
-
-      if (!longPressTriggered && pressDuration >= 100) {
-        handleSelect();
-      }
-
-      returnPressTime = null;
-      longPressTriggered = false;
-    }
-  }
-
-  // Auto scan - Delegated to ScanManager integration
-  function startAutoScan() {
-    if (!autoScanInterval) {
-      const interval = window.NarbeScanManager
-        ? window.NarbeScanManager.getScanInterval()
-        : 2000;
-
-      autoScanInterval = setInterval(() => handleScan(), interval);
-    }
-  }
-
-  function stopAutoScan() {
-    if (autoScanInterval) {
-      clearInterval(autoScanInterval);
-      autoScanInterval = null;
-    }
-  }
+  function stopSelecting(){if(!returnPressed)return;returnPressed=false;clearTimeout(selectTimeout);if(!longPressTriggered)handleSelect();choiceScan.setInputHeld(false);longPressTriggered=false;}
+  function startAutoScan() {}
+  function stopAutoScan() {}
 
   // ========== KEYBOARD FUNCTIONALITY ==========
   let keyboardBuffer = "";
@@ -784,156 +685,11 @@
     keyboardButtonIndex = 0;
     keyboardInRowMode = true;
     clearAllHighlights();
+    updateScanItems(true);
     speak("Keyboard");
   }
 
-  function handleKeyboardLongPress() {
-    longPressTriggered = true;
-    clearAllHighlights();
-
-    if (keyboardInRowMode) {
-      // Jump to predictive text row (last row)
-      keyboardRowIndex = keyboardRows.length + 1;
-      highlightPredictiveRow();
-      speakPredictions();
-    } else {
-      // Revert to row selection mode
-      keyboardInRowMode = true;
-      if (keyboardRowIndex === 0) {
-        textBar.classList.add("highlighted");
-        const text = keyboardBuffer.trim();
-        if (text) speak(text);
-      } else if (keyboardRowIndex === keyboardRows.length + 1) {
-        highlightPredictiveRow();
-        speakPredictions();
-      } else {
-        highlightKeyboardRow(keyboardRowIndex - 1);
-        speakRowTitle(keyboardRowIndex - 1);
-      }
-    }
-  }
-
-  function updateKeyboardScanItems() {
-    // Keyboard has special scanning logic
-  }
-
-  function keyboardScanForward() {
-    if (keyboardInRowMode) {
-      keyboardRowIndex = (keyboardRowIndex + 1) % (keyboardRows.length + 2);
-      clearAllHighlights();
-      if (keyboardRowIndex === 0) {
-        textBar.classList.add("highlighted");
-        // Only speak if there's content in the buffer
-        const text = keyboardBuffer.trim();
-        if (text) speak(text);
-      } else if (keyboardRowIndex === keyboardRows.length + 1) {
-        highlightPredictiveRow();
-        speakPredictions();
-      } else {
-        highlightKeyboardRow(keyboardRowIndex - 1);
-        speakRowTitle(keyboardRowIndex - 1);
-      }
-    } else {
-      if (keyboardRowIndex === keyboardRows.length + 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        keyboardButtonIndex = (keyboardButtonIndex + 1) % chips.length;
-        highlightPredictiveButton(keyboardButtonIndex);
-        speakPredictiveButton(keyboardButtonIndex);
-      } else if (keyboardRowIndex > 0) {
-        keyboardButtonIndex = (keyboardButtonIndex + 1) % keyboardRows[keyboardRowIndex - 1].length;
-        highlightKeyboardButton(keyboardRowIndex - 1, keyboardButtonIndex);
-        speak(keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex]);
-      }
-    }
-  }
-
-  function keyboardScanBackward() {
-    if (keyboardInRowMode) {
-      keyboardRowIndex = keyboardRowIndex < 0 ? keyboardRows.length + 1 : (keyboardRowIndex - 1 + (keyboardRows.length + 2)) % (keyboardRows.length + 2);
-      clearAllHighlights();
-      if (keyboardRowIndex === 0) {
-        textBar.classList.add("highlighted");
-        // Only speak if there's content in the buffer
-        const text = keyboardBuffer.trim();
-        if (text) speak(text);
-      } else if (keyboardRowIndex === keyboardRows.length + 1) {
-        highlightPredictiveRow();
-        speakPredictions();
-      } else {
-        highlightKeyboardRow(keyboardRowIndex - 1);
-        speakRowTitle(keyboardRowIndex - 1);
-      }
-    } else {
-      if (keyboardRowIndex === keyboardRows.length + 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        keyboardButtonIndex = (keyboardButtonIndex - 1 + chips.length) % chips.length;
-        highlightPredictiveButton(keyboardButtonIndex);
-        speakPredictiveButton(keyboardButtonIndex);
-      } else if (keyboardRowIndex > 0) {
-        const rowLen = keyboardRows[keyboardRowIndex - 1].length;
-        keyboardButtonIndex = (keyboardButtonIndex - 1 + rowLen) % rowLen;
-        highlightKeyboardButton(keyboardRowIndex - 1, keyboardButtonIndex);
-        speak(keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex]);
-      }
-    }
-  }
-
-  async function keyboardSelect() {
-    if (keyboardRowIndex < 0) return;
-    if (keyboardInRowMode) {
-      if (keyboardRowIndex === 0) {
-        const text = keyboardBuffer.trim();
-        if (text) speak(text);
-      } else {
-        keyboardInRowMode = false;
-        keyboardButtonIndex = 0;
-        clearAllHighlights();
-        if (keyboardRowIndex === keyboardRows.length + 1) {
-          highlightPredictiveButton(0);
-          speakPredictiveButton(0);
-        } else {
-          highlightKeyboardButton(keyboardRowIndex - 1, 0);
-          speak(keyboardRows[keyboardRowIndex - 1][0]);
-        }
-      }
-    } else {
-      if (keyboardRowIndex === keyboardRows.length + 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        if (chips[keyboardButtonIndex] && chips[keyboardButtonIndex].textContent.trim()) {
-          const word = chips[keyboardButtonIndex].textContent.trim();
-          const currentPartial = getCurrentWord();
-          let newBuffer = keyboardBuffer;
-          let context = keyboardBuffer;
-          if (currentPartial && !keyboardBuffer.endsWith(" ")) {
-            context = keyboardBuffer.slice(0, -currentPartial.length);
-            newBuffer = context + word + " ";
-          } else {
-            if (!keyboardBuffer.endsWith(" ") && keyboardBuffer.length) newBuffer += " ";
-            newBuffer += word + " ";
-          }
-          await setKeyboardBuffer(newBuffer);
-          recordSelectedWord(word, context);
-        }
-      } else {
-        const key = keyboardRows[keyboardRowIndex - 1][keyboardButtonIndex];
-        if (keyboardRowIndex - 1 === 0) {
-          handleKeyboardControl(key);
-        } else {
-          insertKey(key);
-        }
-      }
-      if (currentScreen !== "keyboardScreen") return;
-      keyboardInRowMode = true;
-      clearAllHighlights();
-      if (keyboardRowIndex === keyboardRows.length + 1) {
-        highlightPredictiveRow();
-        speakPredictions();
-      } else {
-        highlightKeyboardRow(keyboardRowIndex - 1);
-        speakRowTitle(keyboardRowIndex - 1);
-      }
-    }
-  }
+  function updateKeyboardScanItems() {}
 
   function highlightKeyboardRow(rowIndex) {
     clearAllHighlights();
@@ -1070,6 +826,7 @@
       chip.disabled = true;
       predictBar.appendChild(chip);
     }
+    if(currentScreen==="keyboardScreen")updateScanItems();
   }
 
   // ========== ENTRIES DISPLAY ==========
@@ -1099,7 +856,7 @@
     } else {
       dayEntries.forEach(entry => {
         const item = document.createElement("button");
-        item.className = "entry-item";
+        item.className = "entry-item"; item.dataset.entryId = entry.id;
         const dateLabel = document.createElement('span');
         dateLabel.className = 'entry-date-label'; dateLabel.textContent = formatShortDate(entry.date);
         const preview = document.createElement('span'); preview.className = 'entry-preview';
@@ -1334,7 +1091,10 @@
   // Options buttons
   $$("#optionsScreen .option-btn").forEach(btn => {
     btn.addEventListener("click", () => {
+      choiceScan.align('setting:'+btn.dataset.setting);
       handleOptionClick(btn.dataset.setting);
+      updateScanItems();
+      choiceScan.announce(stripEmojis(btn.textContent));
     });
   });
 
@@ -1442,6 +1202,7 @@
       setTimeout(updateDisplays, 500);
     }
 
+    initChoiceScan();
     // Show main menu
     showScreen("mainMenu");
     speak("Journal");

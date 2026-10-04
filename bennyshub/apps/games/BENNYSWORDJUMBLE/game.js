@@ -477,6 +477,8 @@ class WordJumbleGame {
     // --- Input & Auto Scan ---
     setupInput() {
         document.addEventListener('keydown', (e) => {
+            if(this.choiceInputDown(e)) return;
+            if(e.code==='NumpadEnter')e={code:'Enter',preventDefault:()=>{}};
             if (e.code === 'Space') {
                 if (!this.state.input.spaceHeld) {
                     this.state.input.spaceHeld = true;
@@ -495,6 +497,8 @@ class WordJumbleGame {
         });
 
         document.addEventListener('keyup', (e) => {
+            if(this.choiceInputUp(e)) return;
+            if(e.code==='NumpadEnter')e={code:'Enter',preventDefault:()=>{}};
             if (e.code === 'Space') {
                 const duration = Date.now() - this.state.input.spaceTime;
                 clearTimeout(this.state.timers.space);
@@ -1282,7 +1286,7 @@ class WordJumbleGame {
 
     speak(text) {
         if (window.NarbeVoiceManager) {
-             window.NarbeVoiceManager.speak(text);
+             return window.NarbeVoiceManager.speak(text);
         } else {
              this.speakWithBrowser(text);
         }
@@ -1298,23 +1302,23 @@ class WordJumbleGame {
     }
     
     clearGameData() {
-        if (confirm("Are you sure you want to clear the 'Local' words cache and high scores? This does not delete files saved to your computer.")) {
+        this.state.mode='warning';this.state.warningIndex=-1;this.state.returnMode='settings';
+        const overlay=document.createElement('div');overlay.id='warning-overlay';
+        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:white';
+        const message=document.createElement('div');message.style.cssText='font-size:5vmin;margin-bottom:5vh;max-width:80%';message.textContent="Clear the local words cache and high scores? Files saved to your computer are kept.";
+        const buttons=document.createElement('div');buttons.id='warning-buttons';buttons.style.cssText='display:flex;flex-direction:column;gap:2vh';
+        const cancel=document.createElement('button');cancel.className='menu-button';cancel.id='cache-cancel';cancel.textContent='Cancel';cancel.onclick=()=>this.closeWarning();
+        const clear=document.createElement('button');clear.className='menu-button';clear.id='cache-clear';clear.textContent='Clear game cache';clear.onclick=()=>{
+            this.closeWarning();
             try {
                 localStorage.removeItem('wordjumble_custom_words');
                 localStorage.removeItem('wordjumble_high_scores');
-                this.speak("Game Cache Cleared");
-                alert("Local Cache Cleared. Reselect Source to refresh.");
-                
-                // If we were on 'local', we are now empty. 
-                // Reloading source would handle this (usually falling back to empty or online if we force it)
-                this.loadWordsSource();
-                this.renderSettingsMenu();
-                
-            } catch (e) {
-                console.error(e);
-                alert("Error clearing cache.");
-            }
-        }
+                this.speak('Game Cache Cleared');
+                this.loadWordsSource();this.renderSettingsMenu();
+            } catch(error){console.error(error);this.speak('Error clearing cache.');}
+        };
+        buttons.append(cancel,clear);overlay.append(message,buttons);document.body.append(overlay);this.state.warningButtons=[cancel,clear];
+        this.startAutoScan();this.speak(message.textContent);this.updateWarningHighlights();
     }
     
     exitGame() {
@@ -1330,5 +1334,39 @@ class WordJumbleGame {
         }, 500);
     }
 }
+
+// Shared choice policy for menus, warnings and the stationary letter task.
+(function(){
+ const P=WordJumbleGame.prototype,rawSpeak=P.speak;const rawSelection=P.triggerSelection;
+ function ensure(g){if(g._choiceAccess)return g._choiceAccess;
+  const status=document.createElement('div');status.id='classic-scan-status';status.hidden=true;status.style.display='none';status.style.width='100%';
+  let heldSpace=false,heldEnter=false,braking=false,cancelSpace=false,lastAuto=NarbeScanManager.getSettings().autoScan;
+  const fields={menu:'menuIndex',settings:'settingsIndex',mode_select:'modeSelectIndex',game:'scanIndex',pause:'pauseIndex',warning:'warningIndex'};
+  let adapter;function describe(){
+   if(g.state.inputFrozen&&g.state.mode==='game')return null;
+   const mode=g.state.mode;let parent=mode==='pause'?g.pauseOverlay:mode==='warning'?document.getElementById('warning-overlay'):g.mainContent;
+   if(!fields[mode]||!parent)return null;
+   const key=mode+(mode==='mode_select'?':'+g.gameMode:mode==='settings'?':'+!!g.state.fromPause:mode==='game'?':'+g.targetWord:'');
+   const list=mode==='game'?g.getGameScanList(): (mode==='pause'?g.state.pauseButtons:mode==='warning'?g.state.warningButtons:g.state.menuButtons||[]).map(element=>({element}));
+   const items=list.filter(x=>x.element&&!x.element.disabled).map((x,index)=>({id:x.element.id||x.element.getAttribute('onclick')||key+':'+(x.element.getAttribute('data-spoken')||x.element.textContent).split(':')[0].trim(),label:x.type==='slot'?'Remove '+x.data:x.type?x.data:(x.element.getAttribute('data-spoken')||x.element.textContent).trim(),element:x.element,nativeIndex:index}));
+   if(status.parentElement!==parent){const choices=parent.querySelector('#menu-list,#warning-buttons');if(choices)parent.insertBefore(status,choices);else parent.prepend(status)}
+   return{key,items,statusHost:status};
+  }
+  function sync(){const next=describe();if(!next){status.hidden=true;status.style.display='none';return adapter.sync(null)}adapter.setInputHeld(heldEnter||heldSpace&&!braking);adapter.sync(next);decorate();return true}
+  function decorate(){for(const item of adapter.context?.items||[]){const el=item.element;if(el.dataset.choiceBound)return;el.dataset.choiceBound='true';const native=el.onclick;if(native)el.onclick=function(event){sync();adapter.align(item.id);const value=native.call(this,event);sync();return value}}}
+  adapter=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:document.body,speak:text=>NarbeVoiceManager.speak(text),onHighlight(item,s){g.state[fields[g.state.mode]]=item?.nativeIndex??-1;document.querySelectorAll('.highlight').forEach(el=>el.classList.remove('highlight'));item?.element.classList.add('highlight');status.hidden=!(s.parked);status.style.display=status.hidden?'none':'flex';if(s.index<0&&document.activeElement?.matches('button,.letter-tile,.slot'))document.activeElement.blur()},onSelect(){rawSelection.call(g);sync()}});
+  function down(e){if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;if(e.repeat)return true;e.preventDefault();sync();if(e.code==='Space'){heldSpace=true;braking=!!adapter.brakePress();if(braking){adapter.setInputHeld(heldEnter);return true}}else heldEnter=true;adapter.setInputHeld(heldEnter||heldSpace);return false}
+  function up(e){if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;e.preventDefault();if(e.code==='Space'){heldSpace=false;if(braking||cancelSpace){if(braking)adapter.brakeRelease();braking=cancelSpace=false;g.state.input.spaceHeld=false;clearTimeout(g.state.timers.space);clearInterval(g.state.timers.spaceRepeat);adapter.setInputHeld(heldEnter);return true}}else heldEnter=false;adapter.setInputHeld(heldEnter||heldSpace);return false}
+  function cancel(){heldSpace=heldEnter=braking=cancelSpace=false;for(const name of ['space','spaceRepeat','enter']){clearTimeout(g.state.timers[name]);clearInterval(g.state.timers[name]);g.state.timers[name]=null}g.state.input.spaceHeld=g.state.input.enterHeld=false;adapter.cancelInput()}
+  NarbeScanManager.subscribe(next=>{if(next.autoScan!==lastAuto&&heldSpace&&!braking){cancelSpace=true;clearTimeout(g.state.timers.space);clearInterval(g.state.timers.spaceRepeat)}lastAuto=next.autoScan;sync()});window.addEventListener('blur',cancel);document.addEventListener('narbe-input-cancelled',cancel);
+  const access={adapter,sync,down,up};g._choiceAccess=access;window.classicChoice={getState:()=>adapter.getState(),getItems:()=>adapter.context?.items.map(({id,label})=>({id,label}))||[],sync};return access;
+ }
+ for(const name of ['showMainMenu','renderCasualMenu','renderChallengeMenu','renderSettingsMenu','renderGameScreen','showPauseMenu','showMouseWarning','closeWarning','resumeGame','nextLevel','selectLetter','removeLetter','resetLevel','checkWin','showAlert']){const native=P[name];P[name]=function(...args){const result=native.apply(this,args);if(this.state.mode==='settings')this.pauseOverlay.style.display='none';ensure(this).sync();return result}}
+ P.startAutoScan=P.stopAutoScan=function(){clearInterval(this.state.timers.autoScan);this.state.timers.autoScan=null;ensure(this).sync()};
+ P.moveScan=function(direction){const x=ensure(this);x.sync();x.adapter.step(direction)};
+ P.triggerSelection=function(){const x=ensure(this);x.sync();x.adapter.select()};
+ P.speak=function(text){const x=ensure(this);x.sync();return x.adapter.active?x.adapter.announce(text):rawSpeak.call(this,text)};
+ P.choiceInputDown=function(e){return ensure(this).down(e)};P.choiceInputUp=function(e){return ensure(this).up(e)};
+})();
 
 const game = new WordJumbleGame();

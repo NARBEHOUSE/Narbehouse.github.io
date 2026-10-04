@@ -1,0 +1,7 @@
+# Preserve the exact bytes of the submitted Companion release across platforms.
+/LICENSE -text
+/extension/** -text
+/bennyshub/shared/choice-scan.js -text
+/bennyshub/shared/voice-manager.js -text
+/bennyshub/shared/scan-status-badge.js -text
+/bennyshub/shared/scan-status-badge.css -text

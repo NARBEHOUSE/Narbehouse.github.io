@@ -100,7 +100,7 @@ function startMusic() {
 function speak(text) {
     if (!tts_enabled) return;
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     }
 }
 
@@ -191,7 +191,7 @@ let TOWER_X = SCREEN_WIDTH / 2 - TOWER_SIZE / 2;
 let TOWER_Y = SCREEN_HEIGHT - 180;
 
 // Game State
-let gameState = 'MENU'; // MENU, PLAYING, BUY, PAUSED, GAME_OVER, GAME_WON
+let gameState = 'MENU'; window.classicChoice?.sync(); // MENU, PLAYING, BUY, PAUSED, GAME_OVER, GAME_WON
 let restart_requested = false;
 
 // --- Config Data ---
@@ -2001,7 +2001,7 @@ function enter_store(save_state=true) {
         save_store_state();
     }
     
-    gameState = 'BUY';
+    gameState = 'BUY'; window.classicChoice?.sync();
     click_block_time = Date.now() + 300;
     menu_selected_index = -1; 
     
@@ -2080,7 +2080,7 @@ function reset_game_state() {
 
 function start_level() {
     purchaseHistory = []; // Clear session history
-    gameState = 'LEVEL_INTRO'; // Was 'PLAYING'
+    gameState = 'LEVEL_INTRO'; window.classicChoice?.sync(); // Was 'PLAYING'
     level_intro_start_time = Date.now() / 1000;
     speak(`Level ${wave_number}`);
     
@@ -2133,7 +2133,7 @@ function start_level() {
 }
 
 function finish_level_intro() {
-    gameState = 'PLAYING';
+    gameState = 'PLAYING'; window.classicChoice?.sync();
     let now = Date.now() / 1000;
     game_time_start = now;
     
@@ -2405,12 +2405,13 @@ function draw_buy_menu() {
         bFontSize = Math.min(bFontSize, bottom_box_height * 0.4);
         
         ctx.font = `bold ${bFontSize}px 'Segoe UI', sans-serif`;
-        ctx.fillText(bButtons[j], x + bottom_button_width/2 - ctx.measureText(bButtons[j]).width/2, bottom_y + bottom_box_height/2 + bFontSize*0.3);
+        const scanLabel=bButtons[j];
+        ctx.fillText(scanLabel, x + bottom_button_width/2 - ctx.measureText(scanLabel).width/2, bottom_y + bottom_box_height/2 + bFontSize*0.3);
     }
 }
 
 function show_confirm_exit_dialog() {
-    gameState = 'CONFIRM_EXIT';
+    gameState = 'CONFIRM_EXIT'; window.classicChoice?.sync();
     menu_selected_index = -1; // Default
     click_block_time = Date.now() + 300;
     speak("Are you sure you want to quit to the main menu? Proceed or Cancel.");
@@ -3052,6 +3053,7 @@ function draw_settings_menu() {
     for (let i = 0; i < options.length; i++) {
         let isSelected = (i === menu_selected_index);
         let txt = options[i];
+        ctx.font = `bold ${optSize}px 'Segoe UI'`;
 
         if (isSelected) {
              ctx.fillStyle = "#2e7d32"; // Greenish for selection
@@ -3123,7 +3125,8 @@ function draw_confirm_exit() {
         
         ctx.fillStyle = "#3e2723";
         ctx.font = `bold ${Math.min(20, btnH*0.4)}px 'Segoe UI'`;
-        ctx.fillText(buttons[i], btnX + btnW/2 - ctx.measureText(buttons[i]).width/2, by + btnH/2 + 7);
+        const scanLabel=buttons[i];
+        ctx.fillText(scanLabel, btnX + btnW/2 - ctx.measureText(scanLabel).width/2, by + btnH/2 + 7);
     }
 }
 
@@ -3228,7 +3231,7 @@ function loop() {
     let autoscan_instructions = (gameState === 'INSTRUCTIONS' && menu_selected_index === -1 && !(window.speechSynthesis && window.speechSynthesis.speaking));
 
     // Autoscan Logic
-    if ((typeof window.NarbeScanManager !== 'undefined' ? window.NarbeScanManager.getSettings().autoScan : autoscan_enabled) && (['MENU', 'BUY', 'PAUSED', 'SETTINGS', 'PLAYING', 'CONFIRM_EXIT'].includes(gameState) || autoscan_instructions)) {
+    if ((typeof window.NarbeScanManager !== 'undefined' ? window.NarbeScanManager.getSettings().autoScan : autoscan_enabled) && gameState === 'PLAYING') {
         let interval = (typeof window.NarbeScanManager !== 'undefined') ? (window.NarbeScanManager.getScanInterval() / 1000.0) : scan_speed_options[scan_speed_index];
         if (Date.now()/1000 - last_autoscan_time >= interval) {
             scanForward();
@@ -3365,16 +3368,16 @@ function loop() {
 
         // Check End Conditions
         if (tower_hp <= 0) {
-            gameState = 'GAME_OVER';
+            gameState = 'GAME_OVER'; window.classicChoice?.sync();
             speak("Game Over");
             setTimeout(() => {
                 reset_game_state();
-                gameState = 'MENU';
+                gameState = 'MENU'; window.classicChoice?.sync();
                 menu_selected_index = -1;
             }, 5000);
         }
         if (Date.now()/1000 - game_time_start >= ROUND_DURATION) {
-            gameState = 'LEVEL_COMPLETE';
+            gameState = 'LEVEL_COMPLETE'; window.classicChoice?.sync();
             // Logic for level completion
             let base = 100;
             let mult = 100 * wave_number;
@@ -3386,17 +3389,17 @@ function loop() {
             
             wave_number++;
             if (wave_number > 20) {
-                gameState = 'GAME_WON';
+                gameState = 'GAME_WON'; window.classicChoice?.sync();
                  speak(`Level complete. You earned ${earned} points.`);
                  setTimeout(() => {
                     reset_game_state();
-                    gameState = 'MENU';
+                    gameState = 'MENU'; window.classicChoice?.sync();
                     menu_selected_index = -1;
                 }, 5000);
             } else {
                 save_store_state(); // Save before entering store loop
                 glue_trap_active = false; // Reset glue trap for next level purchase
-                gameState = 'BUY';
+                gameState = 'BUY'; window.classicChoice?.sync();
                 menu_selected_index = -1;
                 speak(`Level complete. You earned ${earned} points. Garden store: ${storeMsg}`);
             }
@@ -3708,12 +3711,12 @@ function selectAction() {
              reset_game_state();
              enter_store(true); // Save initial state (0 points)
          } else if (menu_selected_index === 1) { // Instructions
-             gameState = 'INSTRUCTIONS';
+             gameState = 'INSTRUCTIONS'; window.classicChoice?.sync();
              menu_selected_index = -1; // Nothing highlighted until Space highlights the Back button
              speak(INSTRUCTIONS_TEXT);
          } else if (menu_selected_index === 2) { // Settings
              settings_return_state = 'MENU';
-             gameState = 'SETTINGS';
+             gameState = 'SETTINGS'; window.classicChoice?.sync();
              menu_selected_index = -1;
          } else {
              speak("Exiting to Hub");
@@ -3726,7 +3729,7 @@ function selectAction() {
              }, 500);
          }
     } else if (gameState === 'INSTRUCTIONS') {
-         gameState = 'MENU';
+         gameState = 'MENU'; window.classicChoice?.sync();
          menu_selected_index = -1;
          window.speechSynthesis.cancel();
     } else if (gameState === 'BUY') {
@@ -3739,7 +3742,7 @@ function selectAction() {
          }
     } else if (gameState === 'PAUSED') {
          if (menu_selected_index === 0) {
-             gameState = 'PLAYING';
+             gameState = 'PLAYING'; window.classicChoice?.sync();
              game_time_start += (Date.now()/1000 - pauseStartTime);
          } else if (menu_selected_index === 1) { // Restart Level
              // Abort to Buy Menu, Restore Pre-Level State
@@ -3755,11 +3758,11 @@ function selectAction() {
              speak("Level restarted. Purchases reverted. Back to store.");
          } else if (menu_selected_index === 2) {
              settings_return_state = 'PAUSED';
-             gameState = 'SETTINGS';
+             gameState = 'SETTINGS'; window.classicChoice?.sync();
              menu_selected_index = -1;
          } else if (menu_selected_index === 3) {
              reset_game_state();
-             gameState = 'MENU';
+             gameState = 'MENU'; window.classicChoice?.sync();
              menu_selected_index = -1;
          }
     } else if (gameState === 'SETTINGS') {
@@ -3798,17 +3801,17 @@ function selectAction() {
             }
             speak("Music " + (music_enabled ? "On" : "Off"));
         } else if (menu_selected_index === 6) { // Back
-            gameState = settings_return_state;
+            gameState = settings_return_state; window.classicChoice?.sync();
             menu_selected_index = -1;
         }
     } else if (gameState === 'CONFIRM_EXIT') {
         if (menu_selected_index === 0) { // Cancel
-            gameState = 'BUY';
+            gameState = 'BUY'; window.classicChoice?.sync();
             menu_selected_index = -1; // Reset buy menu selection
             speak("Cancelled. Back to store.");
         } else if (menu_selected_index === 1) { // Proceed
             reset_game_state();
-            gameState = 'MENU';
+            gameState = 'MENU'; window.classicChoice?.sync();
             menu_selected_index = -1;
         }
     } else if (gameState === 'PLAYING') {
@@ -3824,6 +3827,8 @@ let spaceBackwardInterval = null;
 let backwardScanAnnounced = false;
 
 window.addEventListener('keydown', (e) => {
+    if(window.classicChoiceDown?.(e))return;
+    if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
     if (e.repeat) return; // Ignore auto-repeat
     
     startMusic();
@@ -3851,7 +3856,7 @@ window.addEventListener('keydown', (e) => {
         if (e.code === 'Enter' && gameState === 'PLAYING' && !enterHoldTimeout) {
             enterHoldTimeout = setTimeout(() => {
                 if (keysPressed['Enter'] && gameState === 'PLAYING') {
-                    gameState = 'PAUSED';
+                    gameState = 'PAUSED'; window.classicChoice?.sync();
                     pauseStartTime = Date.now()/1000;
                     menu_selected_index = -1;
                     speak("Paused");
@@ -3893,6 +3898,8 @@ function stopBackwardScan() {
 }
 
 window.addEventListener('keyup', (e) => {
+    if(window.classicChoiceUp?.(e))return;
+    if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
     keysPressed[e.code] = false;
     
     if (e.code === 'Space') {
@@ -3934,9 +3941,7 @@ document.addEventListener('narbe-input-cancelled', (e) => {
         const wasBackwardScanning = spaceBackwardInterval !== null;
         stopBackwardScan();
         // If cancelled due to 'too-short', still forward scan
-        if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
-            scanForward();
-        }
+
     }
     if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
         keysPressed['Enter'] = false;
@@ -3945,9 +3950,7 @@ document.addEventListener('narbe-input-cancelled', (e) => {
             enterHoldTimeout = null;
         }
         // If cancelled due to 'too-short', still select
-        if (e.detail.reason === 'too-short') {
-            selectAction();
-        }
+
     }
 });
 
@@ -3977,7 +3980,7 @@ function handleInput(x, y) {
 
         // Cancel
         if (x >= bx && x <= bx + btnW && y >= by && y <= by + btnH) {
-             gameState = 'BUY';
+             gameState = 'BUY'; window.classicChoice?.sync();
              menu_selected_index = -1;
              speak("Cancelled. Back to store.");
              return;
@@ -3987,7 +3990,7 @@ function handleInput(x, y) {
         let bx2 = bx + (btnW + gap);
         if (x >= bx2 && x <= bx2 + btnW && y >= by && y <= by + btnH) {
              reset_game_state();
-             gameState = 'MENU';
+             gameState = 'MENU'; window.classicChoice?.sync();
              menu_selected_index = -1;
              return;
         }
@@ -3999,7 +4002,7 @@ function handleInput(x, y) {
          let py = SCREEN_HEIGHT - pSize - pMargin;
          
          if (Math.hypot(x - (px + pSize/2), y - (py + pSize/2)) < pSize/2 + 10) {
-             gameState = 'PAUSED';
+             gameState = 'PAUSED'; window.classicChoice?.sync();
              pauseStartTime = Date.now()/1000;
              menu_selected_index = -1;
              speak("Paused");
@@ -4037,13 +4040,13 @@ function handleInput(x, y) {
                      reset_game_state();
                      enter_store();
                  } else if (i === 1) { // NEW: Instructions
-                     gameState = 'INSTRUCTIONS';
+                     gameState = 'INSTRUCTIONS'; window.classicChoice?.sync();
                      menu_selected_index = -1;
                      speak(INSTRUCTIONS_TEXT);
                      click_block_time = Date.now() + 300;
                  } else if (i === 2) { // Settings
                      settings_return_state = 'MENU';
-                     gameState = 'SETTINGS';
+                     gameState = 'SETTINGS'; window.classicChoice?.sync();
                      menu_selected_index = -1;
                      click_block_time = Date.now() + 300;
                  } else if (i === 3) { // Exit
@@ -4068,7 +4071,7 @@ function handleInput(x, y) {
         let by = py + h - 80;
         
         if (x >= bx && x <= bx + btnW && y >= by && y <= by + btnH) {
-             gameState = 'MENU';
+             gameState = 'MENU'; window.classicChoice?.sync();
              menu_selected_index = -1;
              click_block_time = Date.now() + 300;
              window.speechSynthesis.cancel();
@@ -4121,7 +4124,7 @@ function handleInput(x, y) {
                     }
                     speak("Music " + (music_enabled ? "On" : "Off"));
                 } else if (i === 6) { // Back
-                    gameState = settings_return_state;
+                    gameState = settings_return_state; window.classicChoice?.sync();
                     menu_selected_index = -1;
                 }
                 click_block_time = Date.now() + 300;
@@ -4141,7 +4144,7 @@ function handleInput(x, y) {
              // Larger hit area height
              if (y >= by - 25 && y <= by + 25) {
                  if (i === 0) { // Continue
-                     gameState = 'PLAYING';
+                     gameState = 'PLAYING'; window.classicChoice?.sync();
                      game_time_start += (Date.now()/1000 - pauseStartTime);
                      click_block_time = Date.now() + 300;
                  } else if (i === 1) { // Restart Level
@@ -4156,12 +4159,12 @@ function handleInput(x, y) {
                      speak("Level restarted. Purchases reverted. Back to store.");
                  } else if (i === 2) { // Settings
                      settings_return_state = 'PAUSED';
-                     gameState = 'SETTINGS';
+                     gameState = 'SETTINGS'; window.classicChoice?.sync();
                      menu_selected_index = -1;
                      click_block_time = Date.now() + 300;
                  } else if (i === 3) { // Main Menu
                      reset_game_state();
-                     gameState = 'MENU';
+                     gameState = 'MENU'; window.classicChoice?.sync();
                      menu_selected_index = -1;
                      click_block_time = Date.now() + 300;
                  }

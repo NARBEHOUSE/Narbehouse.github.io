@@ -670,31 +670,33 @@ class CategoryScene extends Phaser.Scene {
     // match every other menu exactly, or this screen alone stops responding
     // to a setting Ben already relies on elsewhere.
     _startAutoScanTimer() {
-        this._stopAutoScanTimer();
-        const auto = window.NarbeScanManager && window.NarbeScanManager.getSettings
-            ? !!window.NarbeScanManager.getSettings().autoScan : false;
-        if (!auto) return;
-        const interval = (window.NarbeScanManager && window.NarbeScanManager.getScanInterval)
-            ? window.NarbeScanManager.getScanInterval() : 2200;
-        this.autoScanTimer = this.time.addEvent({
-            delay: interval,
-            loop: true,
-            callback: () => {
-                if (window.NarbeScanManager && window.NarbeScanManager.getSettings) {
-                    if (!window.NarbeScanManager.getSettings().autoScan) { this._stopAutoScanTimer(); return; }
-                }
-                this.cycle(1, true);
-            }
-        });
+        if(!this.choice){
+            const host=document.createElement('div');Object.assign(host.style,{position:'fixed',right:'8px',top:'8px',minBlockSize:'0',pointerEvents:'none',zIndex:'900'});document.body.append(host);
+            const badge=NarbeScanStatusBadge.create({host});let status='';
+            this.choice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:host,speak:text=>NarbeVoiceManager.speak(text),
+                badge:{update(value,c){status=value;badge.update(value,{state:c.state});},destroy(){badge.destroy();host.remove();}},
+                onHighlight:(item,state)=>{const changed=this.index!==state.index;this.index=state.index;
+                    if(changed&&item)this.showEntry(this.index,false,1);
+                    else if(!item){this.stopSlideTimer();this.stopPreviewAudio();this.showFrame(null,true);this.nameTxt.setText('');this.countTxt.setText('');}
+                    this.drawCardShell();
+                    if(item){this.nameTxt.setText((item.source.kind==='back'?'← Back to Main Menu':item.source.category.name));}
+                    if(status==='Paused'){const r=this._card,g=this.card;g.lineStyle(4,0xffffff,1);g.fillStyle(0xffffff,1);for(let x=r.x;x<=r.x+r.w;x+=8){g.fillCircle(x,r.y,2);g.fillCircle(x,r.y+r.h,2);}for(let y=r.y;y<=r.y+r.h;y+=8){g.fillCircle(r.x,y,2);g.fillCircle(r.x+r.w,y,2);}}
+                },onSelect:()=>this.selectCurrent(true)});
+            this.choiceHost=host;this.__stationaryChoice={active:true,scene:this,_choice:{adapter:this.choice}};
+            this.events.once('shutdown',()=>{this.__stationaryChoice.active=false;this.choice.dispose();});
+        }
+        this.choice.sync({key:'categories',statusHost:this.choiceHost,items:this.entries.map(e=>({id:e.kind==='back'?'back':String(e.category.id||e.category.name),label:e.kind==='back'?'Back to main menu':e.category.name+'. '+Math.min(e.category.panels.length,PANEL_MAX)+' pictures.',source:e}))});
     }
 
     _stopAutoScanTimer() {
+        this.choice?.sync(null);
         if (this.autoScanTimer) { this.autoScanTimer.remove(); this.autoScanTimer = null; }
     }
 
     // ─── Carousel ─────────────────────────────────────────────────────────
 
     cycle(dir, fromTimer) {
+        if(this.choice?.active){this.choice.step(dir);return;}
         const n = this.entries.length;
         // From nothing highlighted: forward lands on the first slide, back on the last.
         this.index = this.index < 0 ? (dir > 0 ? 0 : n - 1) : (this.index + dir + n) % n;
@@ -713,7 +715,7 @@ class CategoryScene extends Phaser.Scene {
             this.showFrame(null, immediate, dir);
             this.nameTxt.setText('← Back to Main Menu');
             this.countTxt.setText('');
-            this.audio.speak('Back to main menu', true);
+            if(!this.choice)this.audio.speak('Back to main menu', true);
             return;
         }
 
@@ -721,7 +723,7 @@ class CategoryScene extends Phaser.Scene {
         const n = Math.min(entry.category.panels.length, PANEL_MAX);
         this.nameTxt.setText(entry.category.name);
         this.countTxt.setText(`${n} picture${n === 1 ? '' : 's'}`);
-        this.audio.speak(`${entry.category.name}. ${n} picture${n === 1 ? '' : 's'}.`, true);
+        if(!this.choice)this.audio.speak(`${entry.category.name}. ${n} picture${n === 1 ? '' : 's'}.`, true);
         this.showFrame(entry.frames[0] || null, immediate, dir);
         this.startSlideTimer(entry);
     }
@@ -840,7 +842,8 @@ class CategoryScene extends Phaser.Scene {
         }
     }
 
-    selectCurrent() {
+    selectCurrent(fromChoice=false) {
+        if(this.choice?.active&&!fromChoice){this.choice.select();return;}
         const entry = this.entries[this.index];
         if (!entry) return;   // nothing highlighted yet — Enter does nothing
         if (entry.kind === 'back') { this.leaveScene('TitleScene'); return; }

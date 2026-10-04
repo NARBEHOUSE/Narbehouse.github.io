@@ -56,3 +56,5 @@ body { overflow: auto; }
 
 /* Every Settings option participates in pagination and uses the same row sizing. */
 .main-grid.settings-active { grid-template-rows: repeat(var(--grid-rows,4),minmax(min-content,1fr)) !important; }
+
+[data-narbe-scan-paused] { outline-offset: -6px; }

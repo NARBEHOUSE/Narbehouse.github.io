@@ -142,6 +142,24 @@ NK.ui = (function () {
     catch (e) { /* ignore */ }
   }
 
+
+  let choice=null,choiceStatus=null,spaceBraking=false;
+  let choiceAutoMode=!!window.NarbeScanManager?.getSettings().autoScan;
+  const choiceListeners=new Set();
+  const choicePrefs=()=>{const s=U.sm().getSettings();return{...s,autoScan:scanning(),parking:s.autoScan?s.parking:'off'};};
+  const choiceManager={createChoiceScan:options=>NarbeChoiceScan.create(choiceManager,options),getSettings:choicePrefs,subscribe(fn){choiceListeners.add(fn);},unsubscribe(fn){choiceListeners.delete(fn);},isParkingEnabled:()=>isAutoScan()&&U.sm().isParkingEnabled(),shouldParkAfterLoop:n=>isAutoScan()&&U.sm().shouldParkAfterLoop(n)};
+  function syncChoice(fresh=false){
+    if(!overlayOn){choice?.sync(null);return;}
+    if(!choiceStatus){choiceStatus=document.createElement('div');choiceStatus.id='nkChoiceStatus';choiceStatus.style.minBlockSize='0';$('nkMenu').before(choiceStatus);}
+    if(!choice){const badge=NarbeScanStatusBadge.create({host:choiceStatus,getElement:i=>i.element,getLabelElement:i=>i.labelElement});choice=NarbeChoiceScanAdapter.create({manager:choiceManager,holdThreshold:SCAN_BACK_HOLD,brakeKeyAvailable:()=>owner()<0&&players()===1,stateHost:choiceStatus,
+      speak:text=>text==='park'&&!isAutoScan()?null:U.vm()?.speak(text),badge:{update(v,c){badge.update(!isAutoScan()&&c.state.index<0?'':v,c);},destroy:()=>badge.destroy()},
+      onHighlight(item){const previous=index;index=item?items.indexOf(item.source):-1;updateFocus();if(item&&index!==previous)sfx('move');if(!item&&$('nkMenu').contains(document.activeElement))document.activeElement.blur();},onSelect:()=>activate(undefined,true)});}
+    const seen=new Map();items.forEach(it=>{const base=it.id||U.stripTags(it.label),n=seen.get(base)||0;seen.set(base,n+1);it.scanId=base+':'+n;});
+    for(const fn of choiceListeners)fn(choicePrefs());
+    choice.sync({key:screen+':'+(screenOpts.page||0)+':'+owner(),items:items.filter(selectable).map(it=>({id:it.scanId,label:()=>it.speech!==undefined?it.speech:U.stripTags(it.label)+(it.value!==undefined&&it.value!==''?', '+it.value:''),element:it.element,labelElement:it.element?.querySelector('.nm'),source:it})),statusHost:choiceStatus},{fresh});
+    choice.setInputHeld(menuTouching||(keyDown.Space&&live('Space'))||(keyDown.Enter&&live('Enter'))||ignoreUntilRelease.Space&&live('Space')||ignoreUntilRelease.Enter&&live('Enter'));
+  }
+
   /* ── Content lookups ─────────────────────────────────────────────────── */
 
   function chars() { return (NK.roster && NK.roster.CHARACTERS) || []; }
@@ -196,7 +214,7 @@ NK.ui = (function () {
         '<p id="nkHint" class="nkHint"></p>' +
       '</div>';
     host.appendChild(ov);
-    ov.addEventListener('touchstart', () => { menuTouching = true; stopAutoScan(); }, { passive: true });
+    ov.addEventListener('touchstart', () => { menuTouching = true;choice?.setInputHeld(true); stopAutoScan(); }, { passive: true });
     const touchDone = e => {
       menuTouching = e.touches.length > 0;
       if (!menuTouching) restartAutoScan();
@@ -253,7 +271,7 @@ NK.ui = (function () {
           if (performance.now() - cardOpenedAt < GHOST_MS) return;
           audio('resume');
           if (it.enabled === false) { sfx('blocked'); return; }
-          index = i;
+          index = i;choice?.align(it.scanId);
           updateFocus();
           activate(i);
         });
@@ -267,7 +285,7 @@ NK.ui = (function () {
           restartAutoScan();
         });
       }
-      menu.appendChild(el);
+      it.element=el;menu.appendChild(el);
     });
   }
 
@@ -299,6 +317,7 @@ NK.ui = (function () {
   }
 
   function speakItem() {
+    if(choice?.active){choice.announce();return;}
     const it = items[index];
     if (!it) return;
     U.speak(it.speech !== undefined ? it.speech
@@ -309,6 +328,7 @@ NK.ui = (function () {
      skipped, matching how the other hub apps scan. From "nothing selected" a
      step forward lands on the first item, a step back on the last. */
   function step(delta) {
+    if(choice?.active){choice.step(delta);return;}
     if (!items.length) return;
     if (index < 0) {
       if (delta > 0) { for (let n = 0; n < items.length; n++) if (selectable(items[n])) { index = n; break; } }
@@ -330,9 +350,10 @@ NK.ui = (function () {
     if (!didBackHold) restartAutoScan();
   }
 
-  function activate(at) {
+  function activate(at,fromChoice=false) {
+    if(choice?.active&&!fromChoice){choice.select();return;}
     const t = performance.now();
-    if (t - lastActivate < ACTIVATE_DEBOUNCE) return;
+    // Shared scan-manager owns the release cooldown.
     lastActivate = t;
     const i = at !== undefined && at >= 0 && at < items.length ? at : index;
     // Nothing selected: there is no choice to act on, so choosing does nothing.
@@ -340,7 +361,9 @@ NK.ui = (function () {
     const it = items[i];
     if (!selectable(it)) { sfx('blocked'); return; }
     sfx('select');
+    const selectedContext=choice?.context?.key,selectedId=choice?.getState()?.id;
     if (typeof it.action === 'function') it.action();
+    if(it.value!==undefined&&choice?.active&&choice.context.key===selectedContext&&choice.getState().id===selectedId)choice.announce();
   }
 
   /* Fit without shrinking touch targets. Long cards scroll on small screens;
@@ -370,7 +393,7 @@ NK.ui = (function () {
   /* ── Overlay plumbing ────────────────────────────────────────────────── */
 
   function showOverlay(on) {
-    overlayOn = on;
+    overlayOn = on;if(!on)choice?.sync(null);
     const ov = $('nkOverlay');
     ov.classList.toggle('on', on);
     ov.classList.toggle('showcase', on && !!meta.showcase);
@@ -397,6 +420,7 @@ NK.ui = (function () {
     const builder = SCREENS[name];
     if (!builder) return;
     opts = opts || {};
+    const preserve=screen===name&&opts.index!==undefined;
     screen = name;
     screenOpts = opts;
     meta = builder(opts) || {};
@@ -430,11 +454,12 @@ NK.ui = (function () {
     render();
     showOverlay(true);
     if (!meta.showcase) call('setPreview', null);
+    syncChoice(!preserve);
     updateFocus();
     fitCard();
 
     if (meta.announce !== false && opts.announce !== false) {
-      U.speak(meta.speech || (U.stripTags(meta.title || '') + '. ' + U.stripTags(meta.sub || '')));
+      choice.announce(meta.speech || (U.stripTags(meta.title || '') + '. ' + U.stripTags(meta.sub || '')));
     }
     restartAutoScan();
   }
@@ -487,13 +512,7 @@ NK.ui = (function () {
 
   function scanning() { return owner() >= 0 || isAutoScan(); }
 
-  function restartAutoScan() {
-    stopAutoScan();
-    if (!overlayOn || !scanning() || menuTouching || document.hidden) return;
-    // Paused while a switch that counts is held.
-    if ((keyDown.Space && live('Space')) || (keyDown.Enter && live('Enter'))) return;
-    autoScanTimer = setInterval(() => step(1), scanInterval());
-  }
+  function restartAutoScan() { stopAutoScan();syncChoice(); }
 
   function stopAutoScan() {
     if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
@@ -513,6 +532,7 @@ NK.ui = (function () {
   }
 
   function clearKeys() {
+    choice?.cancelInput();spaceBraking=false;
     keyDown.Space = keyDown.Enter = false;
     pressIndex.Space = pressIndex.Enter = -1;
     clearBackTimers();
@@ -538,6 +558,8 @@ NK.ui = (function () {
     keyDown[k] = true;
     if (!overlayOn || !live(k)) return;      // in a race NK.controls has the switches
 
+    if(k==='Space'&&releaseAction(k)==='step'&&choice?.brakePress()){spaceBraking=true;return;}
+    choice?.setInputHeld(true);
     pressIndex[k] = index;
     stopAutoScan();                           // the highlight waits while it is held
     if (k === 'Space' && !backHoldTimer && !backRepeatTimer) {
@@ -555,10 +577,12 @@ NK.ui = (function () {
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
     const k = normKey(e.code);
-    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; keyDown[k] = false; return; }
+    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; keyDown[k] = false;if(overlayOn)syncChoice(); return; }
     if (!keyDown[k]) return;
     keyDown[k] = false;
     if (!overlayOn || !live(k)) return;
+    if(k==='Space'&&spaceBraking){spaceBraking=false;choice?.brakeRelease();syncChoice();return;}
+    choice?.setInputHeld((keyDown.Space&&live('Space'))||(keyDown.Enter&&live('Enter')));
     if (k === 'Space') {
       const wasBack = didBackHold;
       clearBackTimers();
@@ -585,13 +609,14 @@ NK.ui = (function () {
     const k = e && e.detail ? normKey(e.detail.code) : null;
     if (k !== 'Space' && k !== 'Enter') return;
     if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; keyDown[k] = false; return; }
+    if(spaceBraking&&k==='Space'){spaceBraking=false;choice?.cancelInput();keyDown[k]=false;syncChoice();return;}
     const wasDown = keyDown[k];
     keyDown[k] = false;
     let wasBack = false;
     if (k === 'Space') { wasBack = didBackHold || !!backRepeatTimer; clearBackTimers(); }
     if (!overlayOn || !wasDown || !live(k)) { if (overlayOn) restartAutoScan(); return; }
-    if (e.detail.reason === 'too-short' && !wasBack) release(k);
-    else { pressIndex[k] = -1; restartAutoScan(); }
+    // The global guard owns acceptance; cancellation never commits a choice.
+    pressIndex[k] = -1; choice?.cancelInput(); restartAutoScan();
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -1044,10 +1069,10 @@ NK.ui = (function () {
       return {
         art: artHTML('🏆'),
         title: 'Choose a Cup',
-        sub: 'Four races. Points for every place. A trophy for the top three.',
+        sub: 'Four races. Points for every place. A trophy for the top three. If you use brief taps only, you may need help pressing Pause before the race finishes.',
         items: list,
         startIndex: indexWhere(list, (it) => it.id === last, 0),
-        speech: 'Choose a cup.'
+        speech: 'Choose a cup. If you use brief taps only, you may need help pressing Pause before the race finishes.'
       };
     },
 
@@ -1076,11 +1101,12 @@ NK.ui = (function () {
       return {
         art: '',
         title: tt ? 'Time Trial: Choose a Track' : 'Choose a Track',
+        sub: 'If you use brief taps only, you may need help pressing Pause before the race finishes.',
         items: list,
         layout: 'grid2',
         size: 'wide',
         startIndex: indexWhere(list, (it) => it.id === last, 1),
-        speech: 'Choose a track.'
+        speech: 'Choose a track. If you use brief taps only, you may need help pressing Pause before the race finishes.'
       };
     },
 
@@ -1485,9 +1511,10 @@ NK.ui = (function () {
     // Keep menus in step if the hub changes scan settings while we are open.
     const s = U.sm();
     if (s && s.subscribe) s.subscribe(() => {
+      const mode=isAutoScan();if(mode!==choiceAutoMode){choiceAutoMode=mode;clearBackTimers();for(const key of ['Space','Enter'])if(keyDown[key]){ignoreUntilRelease[key]=true;ignoreSince[key]=performance.now();}}
       if (!overlayOn) return;
       $('nkHint').innerHTML = meta.hint || defaultHint();
-      restartAutoScan();
+      if(screen==='settings')refresh();else restartAutoScan();
     });
 
     setScreen('title');
@@ -1509,7 +1536,7 @@ NK.ui = (function () {
     __dbg: function () {
       return {
         screen, index, selected: index >= 0, overlayOn, inRace,
-        owner: owner(), autoScanRunning: !!autoScanTimer,
+        owner: owner(), autoScanRunning: !!choice?.active&&scanning(),choice:choice?.getState(),
         keyDown: { Space: keyDown.Space, Enter: keyDown.Enter },
         ignore: { Space: ignoreUntilRelease.Space, Enter: ignoreUntilRelease.Enter },
         rows: items.map((it) => String(it.speech || U.stripTags(it.label || '')))

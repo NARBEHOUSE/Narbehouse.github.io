@@ -72,11 +72,25 @@ RT.ui = (function () {
   let lastActivate = 0;
 
   function ctx() { return overlayOn ? 'menu' : 'game'; }
+  let choice = null, choiceStatus = null, spaceBraking = false, choiceMode = isOneSwitch();
+  function itemId(it){return it.scanId;}
+  function syncChoice(fresh=false){
+    if(!overlayOn){choice?.sync(null);return;}
+    const counts=new Map();
+    items.forEach(it=>{const base=it.id||stripTags(it.label),n=counts.get(base)||0;counts.set(base,n+1);it.scanId=screen+':'+base+':'+n;});
+    if(!choiceStatus){choiceStatus=document.createElement('div');choiceStatus.id='choiceScanStatus';choiceStatus.style.minBlockSize='0';choiceStatus.style.paddingBlockEnd='8px';$('overlayMenu').before(choiceStatus);}
+    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:document.body,speak:text=>U.vm()?.speak(text),
+      onHighlight(item,state){index=item?items.indexOf(item.source):-1;updateFocus();if(!item&&$('overlayMenu').contains(document.activeElement))document.activeElement.blur();},
+      onSelect:()=>activate(true)});
+    choice.sync({key:screen,items:items.filter(it=>it.enabled!==false).map(it=>({id:itemId(it),label:it.speech!==undefined?it.speech:stripTags(it.label)+(it.value!==undefined?', '+it.value:''),element:it.element,labelElement:it.element?.firstElementChild,source:it})),statusHost:choiceStatus},{fresh});
+    choice.setInputHeld(keyDown.Space||keyDown.Enter||ignoreUntilRelease.Space||ignoreUntilRelease.Enter);
+  }
 
   /* ── Overlay plumbing ─────────────────────────────────────────────────── */
 
   function showOverlay(on, showcase) {
     overlayOn = on;
+    if(!on)choice?.sync(null);
     $('overlay').classList.toggle('on', on);
     $('overlay').classList.toggle('showcase', !!showcase);
     $('hud').classList.toggle('on', !on && G.isRacing());
@@ -85,6 +99,7 @@ RT.ui = (function () {
       clearCue();
       stopDirScan();
       onDanger(false);
+      ignoreUntilRelease.Space ||= keyDown.Space;ignoreUntilRelease.Enter ||= keyDown.Enter;
       clearKeys();
     }
   }
@@ -115,6 +130,7 @@ RT.ui = (function () {
       U.addTap(el, () => {
         if (it.enabled === false) { AU.menuBlocked(); return; }
         index = i;
+        choice?.align(itemId(it));
         updateFocus();
         activate();
       });
@@ -125,10 +141,12 @@ RT.ui = (function () {
       el.addEventListener('mouseenter', () => {
         if (it.enabled === false || index === i) return;
         index = i;
+        choice?.align(itemId(it));
         updateFocus();
         restartAutoScan();
       });
 
+      it.element=el;
       menu.appendChild(el);
     });
   }
@@ -143,7 +161,7 @@ RT.ui = (function () {
   function speakItem() {
     const it = items[index];
     if (!it) return;
-    U.speak(it.speech !== undefined ? it.speech : stripTags(it.label) + (it.value !== undefined ? ', ' + it.value : ''));
+    if(choice?.active)choice.announce(it.speech !== undefined ? it.speech : stripTags(it.label) + (it.value !== undefined ? ', ' + it.value : ''));else U.speak(it.speech !== undefined ? it.speech : stripTags(it.label) + (it.value !== undefined ? ', ' + it.value : ''));
   }
 
   function stripTags(html) {
@@ -153,6 +171,7 @@ RT.ui = (function () {
   /* Move focus to the next/previous *selectable* item — locked levels and
      spacers are skipped, matching how the other hub apps scan. */
   function step(delta) {
+    if(choice?.active){choice.step(delta);return;}
     if (!items.length) return;
     // Nothing focused yet: forward lands on the first item, back on the last.
     let i = index < 0 ? (delta > 0 ? -1 : items.length) : index;
@@ -169,27 +188,24 @@ RT.ui = (function () {
     if (!didBackHold) restartAutoScan();
   }
 
-  function activate() {
+  function activate(fromChoice=false) {
+    if(choice?.active&&!fromChoice){choice.select();return;}
     const now = Date.now();
-    if (now - lastActivate < 140) return;   // debounce switch bounce
+    // Shared scan-manager owns the release cooldown.   // debounce switch bounce
     lastActivate = now;
     const it = items[index];
     if (!it) return;                        // nothing focused: scan first
     if (it.enabled === false) { AU.menuBlocked(); return; }
     AU.resume();
     AU.menuSelect();
+    const beforeContext=choice?.context?.key, beforeId=choice?.getState().id;
     if (typeof it.action === 'function') it.action();
+    if(it.value!==undefined && choice?.active && choice.context?.key===beforeContext && choice.getState().id===beforeId) choice.announce();
   }
 
   /* ── Auto scan ────────────────────────────────────────────────────────── */
 
-  function restartAutoScan() {
-    stopAutoScan();
-    if (ctx() !== 'menu') return;              // never scan during a race
-    const s = U.sm();
-    if (!s || !s.getSettings().autoScan) return;
-    autoScanTimer = setInterval(() => step(1), s.getScanInterval());
-  }
+  function restartAutoScan() {stopAutoScan();syncChoice();}
 
   function stopAutoScan() {
     if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
@@ -199,6 +215,7 @@ RT.ui = (function () {
 
   function setScreen(name, opts) {
     opts = opts || {};
+    const preserve=screen===name&&opts.index!==undefined;
     screen = name;
     index = -1;   // every menu opens with nothing focused; the first Space lights the first item
     const builder = SCREENS[name];
@@ -228,7 +245,8 @@ RT.ui = (function () {
     G.setPreview(name === 'vehicle' ? sel.vehicle : null);
     if (items[index] && typeof items[index].onFocus === 'function') items[index].onFocus();
 
-    if (meta.announce !== false) U.speak(meta.speech || (stripTags(meta.title) + '. ' + stripTags(meta.sub || '')));
+    syncChoice(!preserve);
+    if (meta.announce !== false) choice.announce(meta.speech || (stripTags(meta.title) + '. ' + stripTags(meta.sub || '')));
     restartAutoScan();
   }
 
@@ -748,6 +766,7 @@ RT.ui = (function () {
   function normKey(code) { return code === 'NumpadEnter' ? 'Enter' : code; }
 
   function clearKeys() {
+    choice?.cancelInput();spaceBraking=false;
     keyDown.Space = false;
     keyDown.Enter = false;
     clearTimeout(backHoldTimer); backHoldTimer = null;
@@ -792,6 +811,7 @@ RT.ui = (function () {
     AU.resume();
 
     if (ctx() === 'menu') {
+      if(k==='Space'&&choice?.brakePress()){spaceBraking=true;return;}choice?.setInputHeld(true);
       if (k === 'Space') {
         didBackHold = false;
         backHoldTimer = setTimeout(() => {
@@ -812,11 +832,13 @@ RT.ui = (function () {
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
     const k = normKey(e.code);
-    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; return; }
+    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false;choice?.setInputHeld(keyDown.Space||keyDown.Enter||ignoreUntilRelease.Space||ignoreUntilRelease.Enter); return; }
     if (!keyDown[k]) return;
     keyDown[k] = false;
 
     if (ctx() === 'menu') {
+      if(k==='Space'&&spaceBraking){spaceBraking=false;choice?.brakeRelease();return;}
+      choice?.setInputHeld(keyDown.Space||keyDown.Enter);
       if (k === 'Space') {
         clearTimeout(backHoldTimer); backHoldTimer = null;
         clearInterval(backRepeatTimer); backRepeatTimer = null;
@@ -842,6 +864,7 @@ RT.ui = (function () {
    * car would steer forever, so treat a cancelled press as a full release.
    */
   function onInputCancelled() {
+    choice?.cancelInput();spaceBraking=false;clearTimeout(backHoldTimer);clearInterval(backRepeatTimer);backHoldTimer=backRepeatTimer=null;didBackHold=false;
     keyDown.Space = false;
     keyDown.Enter = false;
     hideHoldRing();
@@ -902,7 +925,7 @@ RT.ui = (function () {
 
     // Keep menus in sync if the hub changes scan settings while we're open.
     const s = U.sm();
-    if (s && s.subscribe) s.subscribe(() => restartAutoScan());
+    if (s && s.subscribe) s.subscribe(() => {if(choiceMode!==isOneSwitch()){choiceMode=isOneSwitch();clearTimeout(backHoldTimer);clearInterval(backRepeatTimer);backHoldTimer=backRepeatTimer=null;if(keyDown.Space)didBackHold=true;}if(screen==='settings')refresh();else restartAutoScan();});
 
     setScreen('title');
     // Voices load asynchronously; re-announce once they're ready.

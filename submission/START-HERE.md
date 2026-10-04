@@ -1,80 +1,61 @@
-# Release preparation — Benny's Hub Companion 1.0.5
+# Release maintenance — Benny's Hub Companion 1.0.7
 
-This guide is for maintainers publishing website changes or Companion updates. Everyday users can open [Benny's Hub at bennyshub.com](https://bennyshub.com); local release preparation is not part of using the app.
+The owner reports that 1.0.7 has been submitted for store review and remains pending, with 1.0.5 currently public. This is the owner's report, not an independent publisher-dashboard verification. Use the [existing Chrome listing](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc) for updates; no Edge Add-ons listing URL has been supplied. Website deployment and store approval are separate.
 
-Store ZIPs, screenshots, and publisher copy are generated under `releases/1.0.5/`.
+The current immutable package promotes the tested blanket-access runtime; only its manifest version changed. [Validation](VALIDATION.md) describes acceptance and remaining live/manual checks. [The implementation map](../SCAN-UPGRADE-CHANGES.md) records web changes and the locked Electron plan.
 
-The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). Use that existing listing for future Chrome updates. Edge Add-ons submissions remain separate; no Edge listing URL has been supplied.
+## Current files
 
-The packaging tools prepare this kit locally and do not push or submit to stores. The repository workflow automatically checks and deploys website changes pushed to main. Confirm each update's status in the store dashboard; rebuilding this kit does not establish approval. Target website: https://narbehouse.github.io/bennyshub/. Support: narbehousellc@gmail.com.
-
-## Files to use
-
-| File | Destination |
+| Local path | Purpose |
 | --- | --- |
-| bennys-hub-companion-1.0.5.zip | Upload this same ZIP to Chrome Web Store and Microsoft Edge Add-ons. Its root contains manifest.json. |
-| assets/icon128.png | Chrome store icon. |
-| assets/logo300.png | Edge listing logo. |
-| assets/promo440x280.png | Small promotional tile. |
-| assets/promo1400x560.png | Optional large/marquee tile. |
-| assets/01-player-controls.png through 05-journal.png | Store screenshots; all 1280 × 800. |
-| submission/STORE-LISTING.md | Name, descriptions, contact, category and search terms. |
-| submission/PERMISSIONS-AND-PRIVACY.md | Single purpose, permission reasons, data-use disclosures and remote-code answer. |
-| submission/REVIEWER-INSTRUCTIONS.md | Test instructions to paste into the reviewers' notes. |
-| website-github-pages.zip | Separate website artifact, alongside this kit. Do not upload it to an extension store. |
-| SHA256SUMS.txt and release-audit.json | Package checksums and automated public-file scan. |
+| `releases/1.0.7/bennys-hub-companion-1.0.7.zip` | Submitted production-origin package: 101,050 bytes, 26 members. |
+| `releases/1.0.7/extension/` | Exact unpacked production candidate for isolated HTTPS testing. |
+| `submission/COMPANION-SHA256SUMS.txt` | Tracked expected archive checksum used by CI. |
+| `extension/` | Workspace extension for local preview; not the production-origin package. |
+| `dist/` | Generated public website; Pages uploads its contents only. |
+| `submission/STORE-LISTING.md`, `REVIEWER-INSTRUCTIONS.md`, `PERMISSIONS-AND-PRIVACY.md` | Maintained listing/reviewer/privacy reference text. |
 
-## Before public submission
+Release trees, ZIPs, screenshots, logs and browser profiles are generated/local files, not public source. Every prior archive and external Website Backups snapshot remains preserved. The old artwork kit is historical; verify images against the current UI before reusing them.
 
-1. Review the actual ZIP and copy, using the `extension/` folder beside the ZIP for local unpacked testing. The store build only connects to the production Hub origin. The workspace's original `extension/` folder remains suitable for localhost development.
-2. Test the release on the deployed HTTPS site once you decide to publish the website. The current production URL may still serve an older site; preparation does not update it. The packaged website and privacy URL must be publicly reachable for review.
-3. Perform signed-in playback checks on each service you intend to advertise, especially Plex Resume, YouTube playlist navigation and Disney+ next episode. Automated provider fixtures do not prove every paid service's current UI. If a service fails, fix it or remove its advertised support and optional permissions before submission.
-4. Check real one-/two-switch input in desktop Chrome and Edge, plus your intended PWA mode. Browser-level UI such as the address bar and permission dialogs cannot be forcibly controlled by an ordinary extension. Alt+Shift+B deliberately releases the player controls for sign-in.
-5. Test an optional calendar and news feed using a test account; never put a private calendar URL or credentials in reviewer notes. No subscription account is needed for the basic YouTube review path.
-6. Review the privacy declarations and publisher account identity. The supplied privacy page describes the actual local and third-party data flows; local-only processing still needs disclosure.
-7. Use the existing Chrome publisher account and listing for updates. Set up and verify a Microsoft Edge publisher account in Partner Center if submitting to Edge Add-ons.
-8. Upload the extension ZIP to the appropriate existing listing, update copy/disclosures or images when needed, and submit the update. Store acceptance and timing are controlled by Google/Microsoft.
-9. The public setup page links to the Chrome Web Store and explains installation and connection. Developer ZIP instructions remain collapsed. See `PREVIEW-DISTRIBUTION.md`. Add an Edge Add-ons link only after its listing is available. A website button opens the store's install flow; it cannot silently install an extension.
+## Reproduce the website build
 
-## GitHub Pages preparation
+Use Node.js 22.16.0, matching the workflow. Scoped Git attributes preserve the submitted extension bytes, including existing line endings; do not normalize package files during release preparation.
 
-The site uses static HTML/CSS/JS, browser storage and an optional companion. TMDB metadata uses the separately deployed Cloudflare Worker; no Node server or Python helper runs on Pages. The Worker already allows https://narbehouse.github.io. Keep its TMDB secret in Cloudflare.
-
-Publish the **contents of dist/** at the root of the `narbehouse.github.io` repository's Pages artifact, preserving the `bennyshub/` subdirectory. Do not put the artifact inside another `dist/` directory and do not deploy this whole workspace. The PWA scope is `/bennyshub/`. Website storage is origin-specific: localhost data is not automatically copied to GitHub Pages.
-
-The deployment workflow is included at `.github/workflows/pages.yml`; `pages.yml.example` is a reference copy. With Settings > Pages > Source set to GitHub Actions, each push to `main` automatically runs **Publish reviewed website**. It publishes only the built `dist/` artifact after tests, the public-file audit and link checks pass. Failed build checks leave the live site unchanged. The commit receives GitHub Actions checks; open the check indicator or Actions tab for results. A manual Run workflow option remains available for retries. This does not submit or update an extension store listing.
-
-Local edits and commits alone do not publish. On GitHub, a yellow indicator means checks are running, a green check means the workflow succeeded, and a red X means it failed. Open the indicator or **Actions > Publish reviewed website** for details.
-
-For a clean source handoff, run `npm run build`, `npm run audit:release`, `npm run check:pages`, and `npm run prepare:github`. The result is `releases/1.0.5/github-ready/`. The [replacement guide](REPLACE-WEBSITE.md) covers preserving an old checkout and publishing only the built `dist/` website. This is a maintenance workflow, not a user installation step.
-
-`.nojekyll` is included in the website artifact so static filenames are served without Jekyll processing. The automated public-file audit also checks the Pages size target and large individual files. It is not a full accessibility or security certification.
-
-## Blank slate and private files
-
-- Public Streaming starts with `data.json = []` and `episodes.json = {}`. The staging copy has also been cleared. Existing browser-local libraries remain on that user's device; Hub Settings → My data can clear them.
-- The public journal has no saved entries; Day Hub has no personal calendar or default location. No RT-Convo app is shipped.
-- Catalog backups and browser-test profiles remain under the ignored `artifacts/` directory, outside all release artifacts. Do not upload that directory, `TO BE ADDED/`, worker dependencies/secrets, or this whole experimental workspace to a public repository.
-- The Electron journal in Ben's separate software folder was styled earlier, but its personal entries and library are not included in these packages.
-- If a secret ever existed in a previously published repository, deleting a current file does not remove Git history or revoke it. This local preparation has not rewritten any remote history.
-- Public company branding and intended publisher/support contact details remain. Automated scanning cannot prove that every image, free-text passage or imported historical file has no personal information.
-
-## Rebuild locally
-
-Builds require Node.js and Python 3. `npm run build` also generates the production-origin Companion preview ZIP inside `dist/bennyshub/downloads/`. That download is for developer testing; public users install the Companion through the store. See [preview distribution guidance](PREVIEW-DISTRIBUTION.md).
-
-```
+```text
 npm ci
 npm test
 npm run build
 npm run audit:release
 npm run check:pages
-npm run prepare:github
-npm run package:release
-node scripts/release-assets.cjs
-npm run package:release
 ```
 
-The asset script performs isolated browser checks and makes screenshots. The second packaging pass adds those assets and the updated review documents to the kit. `npm run build` and `npm run package:release` need Python 3; assets need Playwright Chromium. Development checks use `npm start` and `HUB_TEST_ORIGIN=http://127.0.0.1:4173`.
+The build checks canonical Companion shared assets, regenerates the exact setup-linked production ZIP and includes only that ZIP in `dist/bennyshub/downloads/`. It refuses to overwrite a differing existing release artifact. CI compares the output to the tracked checksum before publishing. The Pages workflow also runs unit tests, public-file audit and link checks. Browser suites have additional prerequisites in [scripts/README.md](../scripts/README.md).
 
-Official references: [GitHub Pages workflow setup](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages), [Chrome publishing](https://developer.chrome.com/docs/webstore/publish), [Edge publishing](https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/publish-extension).
+For extension-only work:
+
+```text
+node scripts/sync-companion-shared.cjs --check
+node scripts/package-companion.cjs --check
+```
+
+Omit `--check` from the package command only when intentionally preparing a new immutable candidate. If canonical helpers were intentionally changed, run the sync script without `--check` before packaging. No revision suffix is needed for 1.0.7. Do not replace an already submitted version with changed runtime bytes. Legacy Python full-kit/source-handoff commands are not part of this release path.
+
+## Website publication
+
+With GitHub Pages configured for Actions, a push to `main` runs `.github/workflows/pages.yml` and publishes only the verified `dist/` artifact. A failed build leaves the previous deployment in place. Check the actual Actions run; a local edit/commit does not establish deployment success. A website push does not submit or approve the extension.
+
+Production Hub: https://narbehouse.github.io/bennyshub/. Preserve the `bennyshub/` directory beneath the Pages artifact root; do not nest an extra `dist/`. `.nojekyll` is generated. The PWA scope is `/bennyshub/`; localhost browser data does not migrate automatically to this HTTPS origin.
+
+After deployment, check refreshed/offline assets, the package checksum, Companion connection, a public YouTube launch/return and the new settings with both current store 1.0.5 and isolated production 1.0.7. Source compatibility exists at protocol 1; old Companion controls retain their previous behavior until the update arrives. Live compatibility still needs that smoke check.
+
+## Store follow-up and manual acceptance
+
+The owner has already reported submission; do not assume another upload is required. Confirm the dashboard's actual status before any follow-up action. Keep reviewer URLs reachable and update submitted reviewer information if the dashboard permits and the deployed instructions differ. Approval and timing remain the store's decision.
+
+Test signed-in providers, particularly Plex Resume, YouTube playlist actions and Disney+ next episode, as well as physical switches, installed voices and intended Chrome/Edge/PWA modes. Native permission prompts and OS UI require manual review. Calendar/news checks should use test data. Browser fixtures do not certify every provider's current UI. See [review steps](REVIEWER-INSTRUCTIONS.md) and [privacy reference](PERMISSIONS-AND-PRIVACY.md).
+
+## Private data and preserved work
+
+The public Streaming library starts empty (`data.json=[]`, `episodes.json={}`); the public Journal has no entries. Existing user browser data is retained locally. Day Hub has no personal calendar or default place, and RT-Convo is not shipped. Exclude local evidence, browser profiles, `TO BE ADDED/`, dependencies, credentials and backup trees from publication. Keep worker secrets in the configured secret store. Removing a current file does not erase Git history or revoke a previously disclosed secret.
+
+Electron remains a separate, locked task. The web release does not copy files into the desktop app or authorize its launch or modification.

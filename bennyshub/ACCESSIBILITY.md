@@ -159,8 +159,7 @@ Three consequences that catch people out:
 
 ## 3. The two control schemes
 
-The hub supports both, and every game must support both. The player chooses
-once, in Settings, and the choice is remembered globally across every game.
+Every stationary choice scan supports both schemes. The player chooses once in Hub Settings. Gameplay retains each app’s existing modes; Auto Scan does not make every mechanic tap-only.
 
 ### Two‑switch (Auto Scan **OFF** — the default)
 
@@ -201,219 +200,72 @@ switch.
 
 ---
 
-## 4. The universal input contract
+## 4. The choice-scan input contract
 
-Every screen in the hub and every game obeys this. Deviating from it is how you
-strand a player who has learned the pattern everywhere else.
+The test for every scan: **"If Ben stops pressing, does anything in the game keep happening?"**
 
-| Gesture | Where | What it does |
-| --- | --- | --- |
-| **Space**, short press | Any menu | Move highlight forward — **on release** |
-| **Space**, hold | Any menu | Scan **backwards**, repeating at the player's scan speed |
-| **Enter**, short press | Any menu | Select the highlighted item — **on release** |
-| **Enter**, hold | In‑game | Open the pause menu |
-| Mouse click / tap | Anywhere | Same as selecting that item |
+- **No: CHOICE.** Apply all three rules below to stationary board choices, answers, letters, rows, menus, results and confirmations.
+- **Yes: MECHANIC.** Preserve controls, timing, physics, aim, charge, steering and existing pause routes. The choice policy does not run over it.
 
-### Which of these numbers the scan manager actually owns
+Classify each state, not the whole app. P3GL's optional stationary before-shot choices use **-1, Pause/Options, Take Shot**; aiming remains a mechanic. Racer's menus use choice policy; live steering and native multiplayer ownership stay intact. Single-switch gameplay can still require holds.
 
-This trips people up, so be precise about it. **`NarbeScanManager` owns two
-values and no others:**
+### Required park step
 
-- the **scan interval** — 1, 2, 3 or 4 seconds, the player's setting, which is
-  also the repeat rate once backwards scanning has started
-- the **input sensitivity** — 50, 100, 200 or 300 ms, the player's setting,
-  used for the debounce and the anti‑rapid‑press check
+Every root choice loop includes a recurring blank **-1**, in both directions. There is no highlighted or actionable selection there. Skip disabled and hidden items.
 
-**It does not own the hold thresholds.** There is no backwards‑scan threshold
-and no pause threshold in `scan-manager.js` at all. Those are hard‑coded
-separately inside each game — the same `3000` appears in at least thirteen
-files under its own name (`longPress`, `SCAN_BACK_HOLD`, `HOLD_THRESHOLD`,
-`BACKWARDS_SCAN_THRESHOLD`), and Bowling writes it as `3.0` seconds because it
-runs off a Three.js clock.
-
-Two consequences:
-
-1. **The convention is ~3 s to start scanning backwards and ~5 s to pause**, and
-   new games should match it — but it is a convention held together by
-   copy‑paste, not a value anything enforces. A game can drift without breaking
-   a build or failing a test. P3GL already has (§12).
-2. **Never promise a specific duration in any text, player‑facing or not.** The
-   repeat rate genuinely varies per player, and the threshold is whatever that
-   particular game happens to hard‑code. "Hold Space to scan backwards" is true
-   everywhere; "hold for 3 seconds" is true only until someone edits one file.
-
-If these thresholds are ever worth standardising, the fix is to put them in
-`scan-manager.js` next to the values it already owns.
-
-### Never quote these numbers to the player
-
-The thresholds above are for **you**, the implementer. Player‑facing text — help
-screens, hints, footers, and anything spoken aloud — says **"hold Space to scan
-backwards"** and **"hold Enter to pause."** No seconds, no numbers.
-
-Two reasons. The repeat rate once backwards scanning starts follows the player's
-own scan‑speed setting, so any number printed next to it is wrong for most
-players. And a player who is told "hold for 5 seconds" and counts to five while
-nothing visible happens will reasonably conclude it is broken — the ring and the
-rising beeps are what communicate progress, not a number they read once.
-
-Keep control hints to the shortest true sentence. Show n Sound's footer is the
-house style:
-
-> `Tap Space = next · hold Space = back · Enter = choose`
-
-### Act on release, never on press
-
-A player may hold a switch down for seconds without meaning to. If you fire on
-`keydown`, a long press becomes a runaway repeat and the player loses control of
-the screen. Fire on `keyup`, and check how long the press lasted:
-
-```js
-// Menu handling, the way every game in this hub does it
-function onKeyUp(e) {
-  if (key === 'Space') {
-    if (heldLongerThan(3000)) return;  // that was a backwards-scan hold
-    focusNext();                        // ordinary short press
-  } else if (key === 'Enter') {
-    activateFocused();
-  }
-}
-```
-
-### Menus open with nothing highlighted
-
-When a menu, screen or dialog appears, **nothing on it is highlighted.** The
-player's first Space press highlights the first item, and scanning carries on
-normally from there.
-
-| On a menu that has just opened | What happens |
+| State | Behavior |
 | --- | --- |
-| **Space**, short press | Highlights the **first** item and speaks it |
-| **Space**, hold | Highlights the **last** item, then keeps scanning backwards |
-| **Enter** | Nothing. There is nothing to select yet |
-| **Auto Scan** | The first tick, one full scan interval after the menu opens, highlights the first item |
+| Step, -1 | Silent; Enter inert. Space release reaches the first item; reverse scan reaches the last. |
+| Auto, passing -1 | Parking Off passes silently for one full interval, with no park/parked speech or speech wait. With Park when chosen or Auto park, speak “park” when TTS is enabled and honor owned speech wait. |
+| Park when chosen | Enter on Auto -1 parks. |
+| Auto park | Park after the saved 1, 2 or 3 complete root loops; partial loops do not count. |
+| Parked | Clear highlights, stop automatic movement, speak “parked” with TTS, show Parked. Enter resumes the first item without selecting. Preserve native hold-to-pause where provided. |
 
-The reason is the press that opened the menu. The player may still be holding
-that switch, or it bounces, or they twitch just after selecting. If the new
-menu arrives with its first item already highlighted, that stray Enter selects
-it, and the player ends up somewhere they never chose. When nothing is
-highlighted, a stray Enter does nothing, so every choice on a new screen starts
-with a deliberate Space.
+Reserve a status host outside the choices in the existing layout. Bring it into view on actual parking using the existing scroll container. Do not create another scrolling panel.
 
-"Appears" covers every way a menu can come up:
+### Space brake
 
-- at launch
-- going into a submenu
-- **coming back to a menu with Back.** Don't restore the item the player left
-  from.
-- the pause menu
-- results and game‑over screens
-- the warning dialogs in §7
+In ordinary one-player choice contexts, Auto Scan plus Space Brake On freezes **on keydown**, retaining the choice and its speech. This is the explicit act-on-release exception: waiting for release can cut off the label before the user stops the scan.
 
-On open, speak the menu's title or prompt but not the first item's label,
-because that item isn't highlighted. A warning dialog still speaks its whole
-warning on open.
+A short release stays paused. Enter still selects. A second Space tap resumes; a held Space resumes on release using that surface's existing hold threshold. Every resume waits one full scan interval. On -1 or while parked, consume Space without selecting. Brake Off preserves the surface's former Auto Space behavior.
 
-The rule does **not** cover two things:
+Indicate scan pause only with a dotted outline on the selected choice. Do not add Paused text or a Paused badge. Canvas/3D choices need an equivalent outline anchored to the choice. Parked retains its visible status badge. Speak “Paused” only after the owned label ends normally; suppress it after cancellation, timeout, or a state change. Never interrupt the label for that notice.
 
-- **Changing a value in place.** Cycling Voice or Scan Speed, toggling a
-  setting, or arming a two‑step Reset leaves the player on the same menu, so
-  the highlight stays where it is. Keep the index even when the code rebuilds
-  the screen to show the new value.
-- **Scans that are part of taking a turn.** This means a board's row and
-  column scan, the cards, letters or answers in play, P3GL's **Play / Pause**, and Mini Golf's Easy Pause putter scan and Choose‑from‑List power
-  list. These come round on every move, so an extra press there is a cost the
-  player pays on every move (§12). If the player navigates *through* it, it
-  opens with nothing highlighted. If it's part of playing, leave it alone.
+Native multiplayer switches remain assigned to their players. Set brakeKeyAvailable:false wherever Space already selects for a player. Document and test the exception; never steal a player's switch for the brake.
 
-Tools follow the same rule when the tool opens and when any of its screens or
-dialogs opens. Scan resets in the middle of using a tool, such as the keyboard
-going back to row scan after a letter, are part of using it and stay as they
-are.
+### Wait for speech
 
-The hub front page (`bennyshub/index.html`) is the reference. It sets
-`focusIndex = -1` on every screen change and when a game closes.
-`focusNext()` goes from −1 to the first item, `focusPrevious()` goes from −1 to
-the last, and `activateFocused()` only speaks a hint at −1. In a game it comes
-down to four small changes (NARBE Mini Golf's `js/ui.js` is a worked example):
+With Wait for Speech On, advance after the current choice's own label completes **plus a full scan interval**. Input stays available. Other narration and stale tickets cannot release the clock.
 
-```js
-let index = -1;                                    // -1 = nothing highlighted
+NarbeVoiceManager.speak returns started, finished and cancel. Completion resolves on end, error, cancellation, disabled speech or a fallback estimated from text length/rate and capped at **10 seconds**. The cap settles the wait without itself cutting off long narration. Failed/disabled speech follows ordinary interval timing; failed native startup resolves within the fastest interval.
 
-function openMenu(items, title) { menu = items; index = -1; render(); speak(title); }
-function focusNext() { index = index < 0 ? 0 : (index + 1) % menu.length; showFocus(); }
-function focusPrevious() { index = index < 0 ? menu.length - 1 : (index - 1 + menu.length) % menu.length; showFocus(); }
-function activateFocused() { if (index < 0) return; menu[index].action(); }
-```
+### Navigation and identity
 
-Every piece of code that reads the focused item has to cope with −1: speaking
-it, drawing it, showing its description, and canvas hit tests. Clear both the
-visual highlight and the stored scan selection; hiding the border alone still
-lets Enter activate an invisible choice. Do not use Enter to start scanning.
+- New menus, pages, results, confirmations and separate modals start at -1 with a full Auto interval. Owned title/park speech participates in Wait for Speech.
+- In-place settings changes, including Auto on/off, retain the same stable item ID. Live redraws preserve identity, never merely the index, and never activate. If the item disappears, clear safely to -1.
+- Back within a nested task restores the parent row/item by identity. A keyboard key returns to its prior row. Separate modal returns may explicitly start a fresh blank menu.
+- Only the root owns -1. A child row/group starts its item scan; finishing its loop exits to root -1.
+- Clear half-held key state and timers on blur, cancellation and ownership changes. Typing, native dialogs, editors and gameplay own their input while active.
 
-Some grids already use −1 for a real Back button. Streaming uses `null` for
-nothing highlighted so that Back remains a normal scan stop. Whichever marker
-you use, skip disabled or hidden items when finding the first or last choice.
-Restart the Auto Scan timer on a screen change, including when returning from a
-dialog, so the new screen gets a full scan interval. Keep Auto Scan working
-inside warning dialogs and tool keyboards.
+### Input guard and native holds
 
-### Why pause is a long hold
+Ordinary choices act on release. Step Space advances; held Space scans backward at the saved interval. Preserve each surface's existing Space/Enter hold thresholds and native pause feedback. Do not promise a universal hold duration in player hints.
 
-Pause has to be reachable from inside a game where both switches are already
-doing something else. A long hold is the only gesture left that cannot collide
-with gameplay. It is deliberately long enough that no one opens it by accident,
-which means the gesture must be **discoverable while it happens** — otherwise
-it is a secret.
+NarbeScanManager owns Auto, interval (1/2/3/4 seconds), sensitivity (50/100/200/300 ms), parking, loops, brake and speech wait. It does not own native hold thresholds.
 
-Race Tracks does this properly and is worth copying: partway through the hold a
-progress ring appears and starts filling, a **rising beep** plays each second so
-it works with eyes closed, and the menu opens when the ring completes. The
-player can see and hear that something is happening and that continuing to hold
-will finish it.
+Sensitivity is a cooldown and anti-rapid-press filter, **not a minimum press length**. A valid short press counts. Rejected keydown and matching keyup are consumed together. Do not add a second debounce, a 500 ms activation gate or desktop's old minimum-hold filter. Mouse and touch remain direct navigation.
 
-Every game must also offer an **on‑screen Pause button** doing the same thing,
-for mouse, touch, and caregivers.
+### Central settings
 
-### Debounce is handled for you — mostly
+Only Hub Settings exposes Parking, Loops Before Parking, Space Brake and Wait for Speech. Keep them visible with descriptions and disabled when Auto is off; Loops also requires Auto Park. Disabled options retain saved values and are skipped by scanning. Use ordinary page scrolling, without a nested Settings panel.
 
-`shared/scan-manager.js` installs capturing listeners on `keydown`, `keyup`,
-`mousedown`, `mouseup`, `click`, `touchstart` and `touchend`, and filters
-Space/Enter through the player's **Input Sensitivity** setting — 50, 100, 200 or
-300 ms, defaulting to 50. A switch that physically bounces, or a player with a
-tremor who double‑hits, gets one clean press. You do not need to write your own
-debounce, and you should not.
-
-**It is a buffer after a press, not a minimum press length.** A press of any
-duration counts — tap it, or hold it for four seconds — and then nothing else
-registers until the buffer has elapsed. Two checks do the work:
-
-| Check | What it blocks |
-| --- | --- |
-| **Cooldown after a valid release** | a second press arriving too soon after the last one |
-| **Anti‑rapid‑press** | a new press arriving too soon after the previous *release*, so fast tapping is not read as one long hold |
-
-Both block a keydown **and** consume its matching keyup, so a filtered press
-never reaches a game half‑finished. And because press *length* is never
-filtered, the hold gestures behave identically at every setting — hold‑to‑scan‑backwards
-and hold‑to‑pause work the same at 300 ms as at 50 ms.
-
-**Mouse and touch are not filtered.** They are direct navigation for caregivers
-and therapists, not switch input, and bounce is a property of physical switches.
-
-**One deliberate difference from the desktop hub.** Desktop has a third check: it
-rejects presses *shorter* than the threshold by swallowing the keyup. That is not
-ported, and must not be, because by the time the keyup arrives the game has
-already seen the keydown and started whatever the press begins. Swallowing the
-keyup leaves that running with nothing to stop it — see §11.
+Apps retain their existing local Auto, voice and speed controls backed by the managers. Settings update live across Hub, frames, tabs and Companion without resetting selection.
 
 ---
 
 ## 5. Shared modules
 
-All live in `bennyshub/shared/` and are loaded by each game's `index.html`
-before its own scripts. Load order matters: `safe-audio.js` first, then
-`voice-manager.js`, then the rest.
+All live in `bennyshub/shared/`. Load `platform.js`, `scan-status-badge.js` and `choice-scan.js` before the managers and app code. Load `choice-scan-adapter.js` before an app bridge that uses it. Retain existing SafeAudio ordering.
 
 ### `scan-manager.js` — `window.NarbeScanManager`
 
@@ -422,16 +274,24 @@ via `localStorage` (`narbe-scan-settings`), so a player configures their access
 once, not twenty times.
 
 ```js
-NarbeScanManager.getSettings()        // { autoScan, scanSpeedIndex, scanInterval }
+NarbeScanManager.getSettings()        // Auto, interval, sensitivity, parking, loops, brake, speech wait
 NarbeScanManager.getScanInterval()    // ms: 1000 | 2000 | 3000 | 4000
 NarbeScanManager.toggleAutoScan()
 NarbeScanManager.cycleScanSpeed()
 NarbeScanManager.subscribe(cb)        // fires when settings change, incl. from another tab
-NarbeScanManager.getInputSensitivity() // the 250ms debounce constant
+NarbeScanManager.getInputSensitivity() // 50 | 100 | 200 | 300 ms cooldown; no minimum hold
 ```
 
 Subscribe rather than polling — the hub and games share settings live through
 the `storage` event.
+
+### Choice controller and platform boundary
+
+Use NarbeScanManager.createChoiceScan with choice:true, the existing holdThreshold, stable getId/getLabel mappings, a statusHost outside the scan list, and explicit highlight/select callbacks. Forward events after the shared guard. The controller adds no key listeners or debounce. Use open for fresh menus, setItems for redraws, enterGroup/back for nested tasks, and suspension when another surface owns input.
+
+NarbeChoiceScanAdapter.create is an optional explicit app bridge. Contexts supply stable keys and items with id, label and optional element/labelElement. It provides sync, enterGroup, back, align, cancelInput and disposal, without polling the DOM. Canvas/3D apps keep their own rendering.
+
+NarbePlatform isolates settings storage/transport, speech engine events, key capture and lifecycle. Shared policy must not directly access browser storage, Electron IPC or native speech/key APIs. The later Electron pass supplies the same contract; no platform branches belong in shared managers.
 
 ### `voice-manager.js` — `window.NarbeVoiceManager`
 
@@ -513,7 +373,7 @@ where one fits.
 
 **Games run in an iframe** inside the hub, with a `← Back` button in the header.
 
-**Exiting back to the hub** is a message, and all 23 games implement it:
+**Exiting back to the hub** is a message, using this message:
 
 ```js
 window.parent.postMessage({ action: 'focusBackButton' }, '*');
@@ -525,7 +385,7 @@ must send this** when the player chooses "Exit Game" so they can return using
 the same switches.
 
 **Hub settings:** highlight colour, highlight style (outline or full), text
-colour, background theme, UI size, TTS on/off, voice, Auto Scan, and scan speed.
+colour, background theme, UI size, TTS on/off, voice, Auto Scan, scan speed, Input Sensitivity, Parking, Loops Before Parking, Space Brake and Wait for Speech.
 
 ---
 
@@ -560,13 +420,13 @@ Label Auto Scan with what it *means* — "One Switch" / "Two Switches" — not j
 On/Off. It is the control‑scheme selector, and the person changing it is often a
 caregiver setting the game up for someone else.
 
+The four new scan preferences live only in Hub Settings; do not duplicate them in app settings.
+
 **Reset Progress must be two‑step.** A single mis‑scan should never erase
 everything; the item arms first and only wipes on a second, deliberate select.
 
 ### Pause menu
-Opened by holding Enter, or by the on‑screen Pause button — **both, always**. The
-hold alone is not enough: a player who cannot sustain a hold has no way in
-through it. Standard items: **Continue**, **Restart**, **Settings**, **Main
+Preserve the game’s existing hold-to-pause and on-screen Pause routes. A hold-only route may be unavailable to a player limited to short taps; record that limitation accurately. Standard items: **Continue**, **Restart**, **Settings**, **Main
 Menu**, **Exit Game**, and where useful a **Help** item that speaks a line
 without closing the menu.
 
@@ -637,15 +497,13 @@ back with a switch, warn before going in.
 
 ## 8. Per‑game notes
 
-All 23 games implement the §4 contract, the pause menu, the settings screen, and
-the `focusBackButton` exit message. What varies is the *in‑game* input, which is
-where each game's design work went.
+The current web catalog contains 26 games. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See SCAN-UPGRADE-CHANGES.md for the verified surfaces and mechanical exclusions.
 
 | Game | In‑game input model |
 | --- | --- |
 | **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
 | **Benny's Bowling** | A two‑object scan layer opens every ball — the ball itself and the Pause button — scanned with Space and selected with Enter. Selecting the ball gives the shot: Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges for power, non‑linear. Confirms on **release**, not press. Pause is a scan object rather than a hold gesture because hold‑Enter is already the charge. |
-| **Benny's P3GL** | Three modes — Cozy (never runs out of balls), Vivid and Hyper — each with three 20‑level campaigns. Two‑switch: **hold** Space to sweep the aim, release to stop, and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: the aim sweeps by itself at the Aim speed; press Enter to freeze it and release to fire. Hold Enter to pause (ring and rising beeps). **Before Each Shot: Aim right away / Choose Play or Pause** puts a two‑stop choice in front of every shot — the board, or the on‑screen Pause button in the bottom‑left corner — scanned and selected like a menu, so pausing never needs a hold. Aim speed defaults to Super slow; aim guide length, colour and size are settings. Includes a Campaign Editor. |
+| **Benny's P3GL** | Three modes — Cozy (never runs out of balls), Vivid and Hyper — each with three 20‑level campaigns. Two‑switch: **hold** Space to sweep the aim, release to stop, and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: the aim sweeps by itself at the Aim speed; press Enter to freeze it and release to fire. Hold Enter to pause (ring and rising beeps). **Before Each Shot: Aim right away / Choose Play or Pause** puts a choice in front of every shot: blank, Pause/Options, Take Shot (the board), scanned and selected like a menu, so pausing never needs a hold. Aim speed defaults to Super slow; aim guide length, colour and size are settings. Includes a Campaign Editor. |
 | **Benny's Baseball** | Turn‑based play calling — scan the options, select — with one exception: the swing is **hold Enter to charge**, 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. That is a timing mechanic; §9 governs it. |
 | **Benny's Football** | Turn‑based play calling — scan the options, select. Throws scan the receivers and select one, then **hold Enter to charge** the power; field goals aim, then charge. **Easy Throw** in settings drops the charge and keeps the selection: pick the receiver and it throws at ideal power. The hub's shipped example of the §9 rule. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
@@ -671,38 +529,20 @@ game.
 
 ## 9. Design rules
 
-### Never require
+### Choice interfaces must not require
 - Timing precision, reflexes, reaction tests, or a sustained hold **as the only
   way through** — these are allowed as *a* route, never as the only one. See
-  "Timing may be a challenge, never a requirement" below
+  "Timing and holds: preserve play and add options where practical" below
 - Dragging, or holding one input while operating another
 - More than two inputs, ever
 - Reading, without speech as an alternative
 - Two hands, or any specific limb
 
-### Timing may be a challenge, never a requirement
+### Timing and holds: preserve play and add options where practical
 
-The rule above says never require timing. It does not say timing cannot exist.
+Existing aiming, charge, steering, fishing and timing mechanics remain valid. The scan upgrade does not replace them. Aim for an additional tap-friendly route where it can preserve the game; retain the current control mode, default, scoring, physics and difficulty. Some games may continue to require holds. A later per-game decision can choose an optional alternative or an accurate hold-required notice. Neither is automatically required to complete this scan pass.
 
-Some games are the thing they are because of a moment of timing — a swing
-charged and released against a pitch, a hook set while the fish is still on, a
-jump that has to leave the ground before the gap does. Strip the moment out
-entirely and you do not get an easier game; you get a menu that plays itself,
-and you have taken something away from every player who could meet the window
-and enjoyed meeting it.
-
-For a player who can meet a timing window, that window is the game. For a
-player who cannot, it is a wall, and slowing it down does not turn a reaction
-test into something they can do — it just makes the wall arrive later. So the
-rule is not "remove it." The rule is:
-
-> **Any mechanic that depends on timing, reflex, or a sustained hold must ship
-> alongside a route through it that needs neither — and a setting that switches
-> between the two.**
-
-Both are real versions of the game. The no‑timing one is not a practice mode,
-not a baby mode, and not worth fewer points — it plays the same game, scores
-the same way, and unlocks the same things.
+Fish Mystery, Bowling and remaining Mini Golf hold paths are internal follow-ups. Racer has the separately approved pause-access notice. The ideas below guide future explicitly scoped options; they do not authorize gameplay changes now.
 
 **Separate the decision from the execution.** This is the whole method, and it
 is easier than it sounds. Almost every timed action in a game is two things
@@ -853,39 +693,25 @@ hold, the mechanic is not ready to build.
 
 ## 10. Shipping checklist
 
-Before a game goes into `games.json`:
+- [ ] Classify every state with the CHOICE/MECHANIC question in §4.
+- [ ] Every root choice loop visits silent Step -1 both ways; Enter is inert there.
+- [ ] Auto passing, chosen parking and 1/2/3-loop parking work; parked Enter resumes without selecting.
+- [ ] Preserve native long-hold pause while parked and multiplayer switch ownership.
+- [ ] Brake freezes on press, preserves label speech, marks the selected choice, and resumes after a full interval.
+- [ ] Brake Off preserves the former Auto Space behavior.
+- [ ] Speech wait handles end/error/disabled/cancelled/timeout without hangs or stale movement.
+- [ ] Auto/settings changes and redraws retain stable identity; removed items clear safely.
+- [ ] Nested Back restores the same row/item; documented fresh returns open at -1.
+- [ ] Valid short releases work without another debounce or minimum press length.
+- [ ] No key/timer state leaks across blur, modal, typing or gameplay ownership changes.
+- [ ] New global controls remain central-only, visible-disabled, with ordinary page scrolling.
+- [ ] Existing gameplay, defaults, timing, difficulty, art and sound remain intact.
+- [ ] Destructive actions require confirmation; exits return to Hub.
+- [ ] Status/layout stays readable at tablet, narrow and short-window sizes.
+- [ ] Record the actual surfaces tested and engine/device limitations; a page-load check is insufficient.
+- [ ] A person using the intended switch setup tests the complete play path before final release.
 
-- [ ] Every action reachable with **Space and Enter only**
-- [ ] Every action reachable with **Enter alone**, with Auto Scan on
-- [ ] Menu actions fire on **release**, not press
-- [ ] Every menu and dialog opens with nothing highlighted; first Space highlights
-      the first choice, hold-Space starts at the last, and Enter waits for selection
-- [ ] Auto Scan waits a full scan interval after entering or returning to a menu
-- [ ] In-place setting changes retain focus; new screens and Back clear it
-- [ ] Holding Space scans backwards in every menu, repeating at the player's
-      scan speed from `NarbeScanManager` — not a rate you picked
-- [ ] Holding Enter opens pause **from anywhere in gameplay**, with a visible
-      and audible indication while holding
-- [ ] An on‑screen Pause button does the same
-- [ ] Settings reachable from **both** the main menu and the pause menu
-- [ ] Auto Scan and Scan Speed present, reading from `NarbeScanManager`
-- [ ] TTS reads focus, selection, and outcomes, via `NarbeVoiceManager`
-- [ ] Sound through `SafeAudio` — no `AudioContext`
-- [ ] Reset Progress is two‑step
-- [ ] Exit Game sends `postMessage({ action: 'focusBackButton' })`
-- [ ] Mouse and touch work everywhere, and **no interaction requires a drag**
-- [ ] Any timing, reflex, or hold‑to‑charge mechanic has a **route through it
-      needing neither timing nor a hold, behind a settings toggle**, offered in
-      both the main‑menu and pause‑menu settings (§9; games that predate the
-      rule are tracked in §12)
-- [ ] Anything mouse‑only or off‑site sits behind a **spoken confirm dialog**,
-      with Cancel first in the scan order and the scan trapped in the dialog
-- [ ] Progress saves and resumes
-- [ ] Readable at 100 % on a tablet
-- [ ] Added to `apps/games/games.json` with a thumbnail and genres
-- [ ] **Played start to finish with one switch, by someone who is not you**
-
-That last one is the only test that actually counts.
+Gameplay alternatives are separate opt-in work. Keep existing hold mechanics and tap alternatives. Record unresolved hold requirements internally; any player-facing notice needs accurate per-mode wording.
 
 ---
 
@@ -893,8 +719,7 @@ That last one is the only test that actually counts.
 
 Honest notes for whoever works on this next.
 
-**`narbe-input-cancelled` is listened for but still never dispatched — and this
-is now a known blocker, not a curiosity.** Eleven games register a handler for
+**Historical input-port trap, before this choice upgrade:** Eleven games register a handler for
 it. They are not wrong: they were written against the *desktop* scan manager,
 which fires the event when it discards a press for being too short. The web
 build has never had that check, so the handlers have never run.
@@ -909,9 +734,7 @@ was fine. The check was removed again the same day.
 
 So the position is:
 
-- **Do not add a minimum‑hold check** until either every game handles
-  `narbe-input-cancelled`, or the guard buffers the keydown rather than blocking
-  the keyup. Blocking a keyup whose keydown already reached the game is the bug.
+- **Do not add a minimum-hold check.** The current web contract accepts valid short presses. Blocking a keyup whose keydown already reached the game is the bug.
 - **The eleven handlers are harmless** and should stay — they are the safety net
   the day someone does this properly.
 - **Games missing the handler**, for whoever picks this up: Benny Says, Baseball,
@@ -964,8 +787,7 @@ both. The inconsistency is accepted for now.
 
 **Trivia Master has switched (2026‑10‑02, at the user's request).** The
 hold‑Enter gesture is gone and the header's Pause button is a scan stop. It sits
-after the last answer, so a round still goes question → first answer with no
-extra press. Pause is only added to the scan on the game screen, because the
+after the last answer. The choice scan also has its mandatory root blank; the separate question-reading rest remains distinct. Pause is only added to the scan on the game screen, because the
 header stays visible on the end and settings screens. If the player pauses in the
 moment between picking an answer and the next question loading, the next
 question waits for Continue.
@@ -1005,9 +827,7 @@ P3GL is the worked example, and it settles the trade with a setting. It plays
 hold‑first — hold Space to aim, release Enter to fire, hold Enter for pause —
 which keeps play down to the fewest possible switch presses. **Before Each Shot:
 Choose Play or Pause** (in both the main‑menu and pause settings) puts a
-two‑stop choice in front of every shot: the board itself lights up for Play, and
-the on‑screen Pause button in the bottom‑left corner lights up for Pause, scanned
-and selected like any menu. A player who cannot sustain a hold turns it on and
+choice scan in front of every shot, ordered blank, Pause/Options, Take Shot. The board represents Take Shot and the existing Pause button represents Pause. Aiming begins after Take Shot. A player who cannot sustain a hold turns it on and
 is never locked out of leaving; a player who can is never slowed down by it. The
 Pause button works either way. When this choice is on, holding Enter does not
 pause; use the Pause choice instead.
@@ -1018,7 +838,7 @@ does not sit between the player and the thing they came to do. Or make it a
 setting, so a player who needs the scannable route can turn it on and a player
 who does not is not slowed down by it.
 
-**Hold-to-charge and timing mechanics need a select-based alternative.**
+**Hold-to-charge and timing alternatives are optional, separately scoped future work.**
 
 **Benny's Baseball now implements the alternative.** Its persisted setting is
 **Batting: Pick a Swing / Hold to Charge**, reachable from main and pause
@@ -1041,18 +861,14 @@ category; later scans use short labels. Scores use large white numbers on dark c
 team-colored borders and stripes. The occasional repeated-hit-batter warning
 sequence returns everyone automatically and requires no timed response.
 
-**Benny's Fish Mystery** asks for a press to set the hook inside the take
-window, and then a sustained hold to reel. The plan is a setting that holds the
-hook window open until the player scans and selects it, and that resolves the
-reel in steps rather than one long press.
+**Benny’s Fish Mystery** retains its hook timing and sustained reel/boat controls. Click-to-fish/click-to-catch or a stepped reel is an internal research idea, not an approved implementation. A later decision may instead retain the mechanic with an accurate hold-required notice.
 
-**Fish Mystery remains planned work; its timed version is not a bug.** The
+**Fish Mystery, Bowling and remaining Mini Golf hold paths are internal follow-ups; their existing mechanics are not bugs.** The
 timed form stays for players who enjoy it. The rule for providing an alternative
-is in section 9, "Timing may be a challenge, never a requirement."
+is in section 9, "Timing and holds: preserve play and add options where practical."
 
 **Remappable keys: understood, deliberately not built.** Space and Enter are
-hard{NB}coded everywhere — all 23 games compare `e.code` directly, across roughly
-190 sites — so there is no setting a player can change if their hardware sends
+widely hard-coded in app handlers (the historical survey counted roughly 190 sites) — so there is no setting a player can change if their hardware sends
 something else.
 
 **Why that has not mattered much.** Nearly every switch interface is configurable
@@ -1078,15 +894,14 @@ whoever does it:
   intercepts one half of a press and not the other strands games. Deliver
   keydown and keyup as a matched pair or not at all.
 
-Not open work. Recorded so the next person does not start by editing 23 games.
+Not open work. Recorded so the next person does not begin a repository-wide remapping pass.
 
 The pattern behind all three: **any interaction that requires holding a switch
 should have a way through that does not.** Whether that is a menu the player
 scans or the game simply supplying the value, as Football's Easy Throw does, is
 a per‑mechanic call — §9 sets out how to choose. Holding is an ability, and not
-every player has it. For anything new, that is a requirement and §9 states it. For
-what is already here, it is the direction — the entries above are the list, and
-they are not open work until someone picks one up deliberately.
+every player has it. For new work, seek a practical optional route and record any remaining hold requirement. For
+what is already here, these are internal candidates. Neither alternatives nor hold-game notices are authorized by the scan upgrade. Racer’s separately approved pause-access notice is the exception.
 
 ---
 

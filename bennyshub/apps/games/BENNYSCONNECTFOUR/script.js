@@ -1149,7 +1149,7 @@ function updateGameHighlights() {
 
 function speak(text) {
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if (settings.tts && 'speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);

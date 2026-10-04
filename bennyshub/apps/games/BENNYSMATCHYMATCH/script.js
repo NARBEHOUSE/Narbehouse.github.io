@@ -437,6 +437,8 @@ async function cyclePack(dir) {
 // --- Input Handling ---
 function setupInput() {
     document.addEventListener('keydown', (e) => {
+        if(window.classicChoiceDown?.(e))return;
+        if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
         if (e.code === 'Space') {
             if (!state.input.spaceHeld) {
                 state.input.spaceHeld = true;
@@ -457,6 +459,8 @@ function setupInput() {
     });
 
     document.addEventListener('keyup', (e) => {
+        if(window.classicChoiceUp?.(e))return;
+        if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
         if (e.code === 'Space') {
             clearTimeout(state.timers.space);
             clearInterval(state.timers.spaceRepeat);
@@ -496,9 +500,7 @@ function setupInput() {
                 state.timers.spaceRepeat = null;
             }
             // If cancelled due to 'too-short', still perform short press action - user intended to press
-            if (e.detail.reason === 'too-short' && !wasBackScanning) {
-                onSpaceShortPress();
-            }
+
         }
         if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
             // Reset enter input state
@@ -514,9 +516,7 @@ function setupInput() {
                 state.timers.enterRepeat = null;
             }
             // Perform select for short Enter presses
-            if (e.detail.reason === 'too-short') {
-                onEnterShortPress();
-            }
+
         }
     });
 }
@@ -640,7 +640,7 @@ function performToggleBackwards() {
 // --- TTS ---
 function speak(text) {
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if (settings.tts && 'speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
@@ -809,7 +809,13 @@ const menus = {
 };
 
 function clearLocalCache() {
-    if (confirm("Are you sure you want to delete all locally saved games and assets? This cannot be undone.")) {
+    menus.cacheConfirm = [{text: "Cancel", action: showSettingsMenu}, {text: "Clear saved games and assets", action: clearConfirmedLocalCache}];
+    state.mode = "menu"; state.menuState = "cacheConfirm"; state.menuIndex = -1;
+    renderMenu();
+    speak("Delete locally saved games and assets? This cannot be undone. Cancel or Clear saved games and assets.");
+}
+function clearConfirmedLocalCache() {
+    {
          const keysToRemove = [];
          for (let i = 0; i < localStorage.length; i++) {
              const key = localStorage.key(i);
@@ -830,7 +836,7 @@ function clearLocalCache() {
              refreshPacks();
          }
          
-         renderMenu();
+         showSettingsMenu();
     }
 }
 
@@ -889,7 +895,7 @@ function showMainMenu() {
     // Clearing Timers for fresh start
     clearChallengeTimers();
     clearTimeout(state.timers.mismatch);
-    state.busy = false; // Reset busy if user quit during memorize
+    state.busy = false; window.classicChoice?.sync(); // Reset busy if user quit during memorize
     renderMenu();
 }
 
@@ -1364,7 +1370,7 @@ function startChallengePlusSetup() {
 function startChallengePlusLevel() {
     if (state.challengePlus.level >= state.challengePlus.levels.length) {
         // Victory
-        state.busy = true;
+        state.busy = true; window.classicChoice?.sync();
         speak("You are the Champion of the Universe! All levels completed!");
         const container = document.getElementById('main-content');
         container.innerHTML = `<div class="win-message" style="color:gold; font-size:48px;">🏆<br>CHAMPION<br>OF THE UNIVERSE</div>`;
@@ -1377,7 +1383,7 @@ function startChallengePlusLevel() {
     
     // Update Difficulty Display
     // We can inject a level display overlay
-    state.busy = true;
+    state.busy = true; window.classicChoice?.sync();
     showLevelAnnouncement(state.challengePlus.level + 1, lvl.size, lvl.time);
     
     // Increased timeout to allow TTS to finish (approx 4-5 seconds)
@@ -1597,6 +1603,7 @@ function fitSetupButtonText(btn) {
 }
 
 function renderMenu() {
+    if(state.mode==='pause')return renderPauseMenu();
     // Hide game specific displays
     const scoreDisplay = document.getElementById('score-display');
     const turnDisplay = document.getElementById('turn-display');
@@ -1619,7 +1626,8 @@ function renderMenu() {
         boardSize: "SELECT BOARD SIZE",
         challengeDifficulty: "SELECT DIFFICULTY",
         setup: "GAME TYPE",
-        loadWarning: "LOAD CUSTOM GAME"
+        loadWarning: "LOAD CUSTOM GAME",
+        cacheConfirm: "CLEAR SAVED GAMES?"
     };
     title.innerText = titles[state.menuState] || "MENU";
     
@@ -1850,7 +1858,7 @@ function selectPauseOption() {
 function startGame(difficulty) {
     state.mode = 'game';
     state.difficulty = difficulty;
-    state.busy = false; // Reset busy flag if forced restart
+    state.busy = false; window.classicChoice?.sync(); // Reset busy flag if forced restart
     clearTimeout(state.timers.mismatch); // Clear any pending mismatch hides
     state.firstSelection = null;
     state.scan = { row: -1, col: 0, mode: 'row' };
@@ -1914,7 +1922,7 @@ function startGame(difficulty) {
     } else if (state.players === 2) {
         speak(`Player ${state.turn}'s turn`);
     } else if (state.gameMode === 'challenge' || state.gameMode === 'challenge-plus') {
-        state.busy = true;
+        state.busy = true; window.classicChoice?.sync();
         startChallengeSequence();
     }
 }
@@ -1952,7 +1960,7 @@ function startChallengeSequence() {
             
             state.challengePhase = 'playing';
             speak("Go!");
-            state.busy = false; // Enable input
+            state.busy = false; window.classicChoice?.sync(); // Enable input
             renderGame(); // This will bring back the HP bar
         }, revealDuration);
     }, 3000);
@@ -2525,13 +2533,13 @@ function revealCard(r, c) {
                 updateHPBar();
                 playSystemSound('hp-down');
                 if (state.mismatches >= state.mismatchLimit) {
-                    state.busy = true;
+                    state.busy = true; window.classicChoice?.sync();
                     setTimeout(gameOverChallenge, 1000);
                     return true;
                 }
             }
 
-            state.busy = true;
+            state.busy = true; window.classicChoice?.sync();
             state.timers.mismatch = setTimeout(() => {
                 const first = state.firstSelection;
                 if (first) {
@@ -2543,7 +2551,7 @@ function revealCard(r, c) {
                 updateCardVisual(cell.r, cell.c);
 
                 state.firstSelection = null;
-                state.busy = false;
+                state.busy = false; window.classicChoice?.sync();
                 
                 if (state.players === 2) {
                     state.turn = state.turn === 1 ? 2 : 1;

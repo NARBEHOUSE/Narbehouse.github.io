@@ -38,5 +38,17 @@ export function calendarURL(value) {
   return u.href;
 }
 export function scanPrefs(p={}) {
-  return {autoScan:p.autoScan===true,scanInterval:Math.max(1000,Math.min(10000,Number(p.scanInterval)||2000)),inputSensitivity:Math.max(0,Math.min(500,Number(p.inputSensitivity)||50)),voice:typeof p.voice==='string'?p.voice.slice(0,200):'',rate:Math.max(.5,Math.min(2,Number(p.rate)||1)),tts:p.tts!==false};
+  if(!p || typeof p !== 'object') p={};
+  return {
+    autoScan:p.autoScan===true,
+    scanInterval:Math.max(1000,Math.min(10000,Number(p.scanInterval)||2000)),
+    inputSensitivity:Math.max(0,Math.min(500,Number(p.inputSensitivity)||50)),
+    parking:['off','chosen','auto'].includes(p.parking)?p.parking:'off',
+    loopsBeforeParking:Number.isInteger(p.loopsBeforeParking)&&p.loopsBeforeParking>=1&&p.loopsBeforeParking<=3?p.loopsBeforeParking:2,
+    spaceBrake:p.spaceBrake!==false,
+    waitForSpeech:p.waitForSpeech===true,
+    voice:typeof p.voice==='string'?p.voice.slice(0,200):'',
+    rate:Math.max(.5,Math.min(2,Number(p.rate)||1)),
+    tts:p.tts!==false
+  };
 }

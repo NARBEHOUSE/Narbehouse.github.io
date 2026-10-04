@@ -9,13 +9,13 @@ RT.ui = (function () {
   let range=50, yaw=0, moving=false, direction=1, settingReturn='welcome', lastHud='', meterSpeak=0;
   let aimHeld=false,charging=false,aimDir=-1;
   let storyPage=0,campaignEntry=true,pickupNoticeTimer=null,storyBeat=null,storyChoices=[],storyText="",storyChunks=[],storyElapsed=0,storyReadMs=6000,storySawSpeech=false;
-  let kingdom=null,kingdomSource='levels',exploreIndex=0,exploreReturn=null,editorCastleId=null,editorCampaignId=null;
+  let kingdom=null,kingdomSource='levels',kingdomBackId=null,exploreIndex=0,exploreReturn=null,editorCastleId=null,editorCampaignId=null;
   let cameraDrag=null,zoomReturn='manual';
   let pointerAim=null,pointerCharge=null,mouseLast=null,pointerSolution=null,pointerLocation=null;
   function cancelPointer(){if(cameraDrag)G.showView('aim');cameraDrag=null;pointerAim=null;pointerCharge=null;mouseLast=null;}
   function clearPointerTarget(){pointerSolution=null;pointerLocation=null;G.CAM.pointerAiming=false;}
   const ammoCopy={stone:['THE STRAIGHT SHOOTER','A fast, direct shot. Great for timber, glass and exposed mischief-makers.'],boulder:['THE WALL BREAKER','A hefty high arc. Smashes stone, damages nearby blocks on landing, then rolls through anything in its path.'],fire:['THE TIMBER TAMER','Ignites a small area. Flames spread through nearby timber and weaken it over time.'],splitter:['THE TRIPLE TROUBLE','A high shot that splits into three. Covers a wider area.'],bomb:['THE BIG SURPRISE','Explodes on impact, sending nearby blocks tumbling. Crates supply two shots in limited mode.']};
-  function speak(text){$('caption').textContent=text;U.speak(text);}
+  function speak(text){$('caption').textContent=text;return U.vm()?.speak(text);}
   function sound(name){try{window.SafeAudio?.play(name,.45);}catch{}}
   function auto(){return !!U.sm()?.getSettings().autoScan;}
   function easyAim(){return auto()||G.save.easyAim;}
@@ -23,7 +23,61 @@ RT.ui = (function () {
   function interval(){return U.sm()?.getScanInterval()||2000;}
   function canAct(){return G.CAM.phase==='AIM';}
   function isOverlay(){return !!screen;}
-  function restartScan(){clearInterval(autoTimer);autoTimer=null;if(!RT.castleFiles.isOpen()&&auto()&&choices.length)autoTimer=setInterval(()=>{if(!spaceDown&&!enterDown)step(1);},interval());}
+  // Only stationary decisions use the shared choice policy. The active-world
+  // ammo/target/flight scanners, Explore patrol preview and timed narration keep
+  // their original input/timing paths.
+  let choiceScanner=null,choiceActive=false,choiceContext=null,choiceStatus=null;
+  let choiceSpaceBraking=false,choiceSpaceCancelled=false,lastAuto=auto();
+  function isChoiceMenu(){return (!!screen&&!(screen==='story'&&storyBeat))||(!screen&&stage==='zoom');}
+  function choiceId(c){return c.scanId;}
+  function syncChoiceMenu({preserve=false,restoreId=null}={}){
+    if(!isChoiceMenu()||RT.castleFiles.isOpen()){
+      choiceActive=false;choiceContext=null;
+      choiceScanner?.setSuspended(true);if(choiceStatus)choiceStatus.hidden=true;
+      document.body.dataset.choiceScan='false';return;
+    }
+    const context=screen||stage,same=choiceActive&&choiceContext===context;
+    const counts=new Map();
+    choices.forEach(c=>{const key=c.id||choiceSpeech(c),n=counts.get(key)||0;counts.set(key,n+1);c.scanId=context+':'+key+':'+n;});
+    if(!choiceStatus){choiceStatus=document.createElement('div');choiceStatus.id='ballistaScanStatus';}
+    const parent=screen?$('panel'):$('zoomControls');
+    if(choiceStatus.parentNode!==parent)parent.insertBefore(choiceStatus,parent.firstChild);
+    choiceStatus.hidden=false;choiceActive=true;choiceContext=context;
+    if(!choiceScanner)choiceScanner=U.sm().createChoiceScan({
+      choice:true,holdThreshold:D.CFG.SPACE_HOLD_MS,items:[],statusHost:choiceStatus,
+      getId:choiceId,getLabel:c=>choiceSpeech(c)+(c.sub?'. '+c.sub:''),
+      getElement:c=>c.element,getLabelElement:c=>c.element?.querySelector('strong')||c.element,
+      speak,
+      onHighlight(item,state){
+        if(!choiceActive)return;
+        scan=state.index;focus();
+        document.body.dataset.choiceScan='true';document.body.dataset.choiceIndex=String(scan);
+        document.body.dataset.choiceSelected=state.parked?'parked':item?.scanId||'park';
+        document.body.dataset.choiceState=state.parked?'parked':state.braked?'paused':auto()?'running':'step';
+        if(item?.element)item.element.scrollIntoView({block:'nearest',inline:'nearest'});
+        else if($('panel').contains(document.activeElement)||$('zoomControls').contains(document.activeElement))document.activeElement?.blur();
+        positionStoryStatus();
+      },
+      onSelect:item=>choose(choices.indexOf(item),true)
+    });
+    if(choiceScanner.getState().suspended)choiceScanner.setSuspended(false);
+    if(preserve&&same)choiceScanner.setItems(choices);
+    else{choiceScanner.open(choices,{restoreId});choiceScanner.setInputHeld(spaceDown||enterDown);}
+  }
+  function announceMenu(text){
+    if(choiceActive){const parkingLabel=U.sm().isParkingEnabled()&&scan<0;return choiceScanner.announceCurrent(text+(parkingLabel?' Park.':''),{parkingLabel});}
+    return speak(text);
+  }
+  function announceChoiceValue(text){return choiceActive?choiceScanner.announceCurrent(text):speak(text);}
+  function restartScan(){
+    clearInterval(autoTimer);autoTimer=null;
+    if(isChoiceMenu()&&!RT.castleFiles.isOpen()){
+      if(!choiceActive)syncChoiceMenu();
+      return;
+    }
+    if(choiceActive)syncChoiceMenu();
+    if(!RT.castleFiles.isOpen()&&auto()&&choices.length)autoTimer=setInterval(()=>{if(!spaceDown&&!enterDown)step(1);},interval());
+  }
   function focus(){
     if(screen==='story'&&storyBeat){$('skipStory').classList.toggle('scanFocus',scan>=0);return;}
     document.querySelectorAll('.scanFocus').forEach(b=>{b.classList.remove('scanFocus');b.setAttribute('aria-current','false');});
@@ -32,11 +86,11 @@ RT.ui = (function () {
   }
   const choiceSpeech=c=>c.spokenLabel||c.label;
   function targetSpeech(purpose,x){return purpose.replace(/\s*·\s*/g,' ')+(x<-.7?' on the left':x>.7?' on the right':' in the center');}
-  function step(dir){if(!choices.length)return;scan=scan<0?(dir>0?0:choices.length-1):(scan+dir+choices.length)%choices.length;focus();sound('hover');if(screen==='story'&&storyBeat)return;const c=choices[scan];if(c.preview)c.preview();speak(choiceSpeech(c)+(c.sub?'. '+c.sub:''));}
-  function choose(i){const c=choices[i];if(!c)return;sound('select');speak(choiceSpeech(c));c.action();}
-  function button(c,i){const b=document.createElement('button');b.type='button';b.className='choice '+(c.className||'');b.setAttribute('aria-label',choiceSpeech(c)+(c.sub?'. '+c.sub:''));if(c.art)b.innerHTML=c.art;const strong=document.createElement('strong');strong.textContent=c.label;b.append(strong);if(c.sub){const sub=document.createElement('small');sub.textContent=c.sub;b.append(sub);}b.addEventListener('click',()=>choose(i));return b;}
+  function step(dir){if(choiceActive){choiceScanner.step(dir);return;}if(!choices.length)return;scan=scan<0?(dir>0?0:choices.length-1):(scan+dir+choices.length)%choices.length;focus();sound('hover');if(screen==='story'&&storyBeat)return;const c=choices[scan];if(c.preview)c.preview();speak(choiceSpeech(c)+(c.sub?'. '+c.sub:''));}
+  function choose(i,fromScan=false){const c=choices[i];if(!c)return;if(choiceActive&&!fromScan&&choiceScanner.getState().id!==c.scanId)choiceScanner.open(choices,{restoreId:c.scanId});sound('select');speak(choiceSpeech(c));c.action();}
+  function button(c,i){const b=document.createElement('button');b.type='button';b.className='choice '+(c.className||'');b.setAttribute('aria-label',choiceSpeech(c)+(c.sub?'. '+c.sub:''));if(c.art)b.innerHTML=c.art;const strong=document.createElement('strong');strong.textContent=c.label;b.append(strong);if(c.sub){const sub=document.createElement('small');sub.textContent=c.sub;b.append(sub);}b.addEventListener('click',()=>choose(i));c.element=b;return b;}
   const menuPages={};let lastPresentation=null;
-  function show(title,hint,items,overlay=false,note=''){
+  function show(title,hint,items,overlay=false,note='',scanOptions={}){
     $('btnZoom').hidden=true;$('zoomControls').hidden=true;lastPresentation={title,hint,items,overlay,note};
     const key=screen||stage;
     document.body.dataset.screen=key;
@@ -58,7 +112,7 @@ RT.ui = (function () {
     $('meterArea').hidden=overlay||!(stage==='range'||stage==='aim');
     $('modeLabel').textContent=aimLabel()+' · '+(G.save.endlessBolts?'Unlimited shots':'Limited shots');
     $('controlHint').textContent=auto()?'Auto scan · Enter = choose · hold Enter = pause':'Tap Space = next · hold Space = back · Enter = choose';
-    focus();restartScan();
+    syncChoiceMenu(scanOptions);focus();restartScan();
   }
   function centerMenuRows(){
     const holder=$('panelList'),count=holder.children.length;let columns=Number(holder.style.getPropertyValue('--menu-columns'))||3;
@@ -169,17 +223,17 @@ RT.ui = (function () {
   function fire(){if(!canAct())return;const p=selected?.p||{yawRad:yaw*Math.PI/180,rangePct:range};const aimed=pointerSolution?.reachable?pointerSolution:p;G.fire(ammo,aimed.yawRad,aimed.rangePct,aimed.elevation);previousBolts=G.boltsUsed;stage='flight';screen='';moving=false;flightMenu();speak('Shot fired.');}
   function flightMenu(){fieldView('flight');choices=[{...pauseChoice(),element:$('btnPause')}];scan=-1;focus();restartScan();}
   function zoomReadout(){const percent=Math.round(G.viewState().zoom*100);$('zoomReadout').textContent='View '+percent+'%';return percent;}
-  function changeZoom(amount){G.zoomView(amount);const percent=zoomReadout();speak('View '+percent+' percent.');if(stage==='manual'&&pointerLocation){pointerSolution=null;positionCharge();}}
+  function changeZoom(amount){G.zoomView(amount);const percent=zoomReadout();announceChoiceValue('View '+percent+' percent.');if(stage==='manual'&&pointerLocation){pointerSolution=null;positionCharge();}}
   function openZoom(){if(!['ammo','manual','target'].includes(stage))return;zoomReturn=stage;clearHeld();G.openMenu();screen='';stage='zoom';lastPresentation=null;document.body.dataset.screen='zoom';$('overlay').hidden=true;for(const id of ['ammoPicker','targetLayer','targetStatus','manualControls','btnPause','btnZoom','btnChangeAmmo'])$(id).hidden=true;$('zoomControls').hidden=false;
-    choices=[{label:'Zoom in',element:$('zoomIn'),action:()=>changeZoom(.14)},{label:'Zoom out',element:$('zoomOut'),action:()=>changeZoom(-.14)},{label:'Ballista view',element:$('zoomBallista'),action:()=>{G.showView('ballista');speak('Ballista view.');}},{label:'Aim view',element:$('zoomAim'),action:()=>{G.showView('aim');speak('Aim view.');}},{label:'Back',element:$('zoomBack'),action:()=>{G.closeMenu();if(zoomReturn==='ammo')ammoMenu();else if(zoomReturn==='target')targetMenu();else manualMenu();}}];
-    choices.forEach((c,i)=>c.element.onclick=()=>choose(i));scan=-1;focus();restartScan();zoomReadout();$('controlHint').textContent='Space: next camera option · Enter: choose';speak('Camera controls. Space changes option. Enter selects.');
+    choices=[{label:'Zoom in',element:$('zoomIn'),action:()=>changeZoom(.14)},{label:'Zoom out',element:$('zoomOut'),action:()=>changeZoom(-.14)},{label:'Ballista view',element:$('zoomBallista'),action:()=>{G.showView('ballista');announceChoiceValue('Ballista view.');}},{label:'Aim view',element:$('zoomAim'),action:()=>{G.showView('aim');announceChoiceValue('Aim view.');}},{label:'Back',element:$('zoomBack'),action:()=>{G.closeMenu();if(zoomReturn==='ammo')ammoMenu();else if(zoomReturn==='target')targetMenu();else manualMenu();}}];
+    choices.forEach((c,i)=>c.element.onclick=()=>choose(i));scan=-1;syncChoiceMenu();focus();restartScan();zoomReadout();$('controlHint').textContent='Space: next camera option · Enter: choose';announceMenu('Camera controls. Space changes option. Enter selects.');
   }
   function openMenu(name){if(stage==='explore'){clearHeld();leaveExplore(false);return;}if(G.CAM.phase==='ATTRACT')return;moving=false;aimHeld=charging=false;clearHeld();settingReturn=started?'pause':'welcome';if(G.CAM.phase!=='MENU')G.openMenu();screen=name;menu();}
   function resume(){G.closeMenu();screen='';if(!started){started=true;ammoMenu();}else if(stage==='flight')flightMenu();else if(stage==='ammo')ammoMenu();else {G.setAimMode(easyAim()?'easy':'sweep');if(easyAim())targetMenu();else manualMenu();}}
   function exit(){speak('Returning to the hub.');if(window.parent!==window)window.parent.postMessage({action:'focusBackButton'},'*');else window.location.href='../../../index.html';}
-  function setting(label,sub,fn){return {label,sub,action:()=>{const ix=scan;fn();menu();scan=ix;focus();restartScan();const c=choices[ix];if(c)speak(c.label+'. '+c.sub);}};}
+  function setting(label,sub,fn){return {label,sub,action:()=>{fn();menu({preserve:true});const c=choices[scan];if(c)choiceScanner.announceCurrent(c.label+'. '+c.sub);}};}
   function mainMenu(){clearHeld();G.openMenu();started=false;stage='welcome';screen='welcome';settingReturn='welcome';menu();}
-  function selectKingdom(item,source){storyPage=0;campaignEntry=true;kingdom=item.level?{...item,...item.level}:RT.campaigns.find(item.id);kingdomSource=source;loadKingdom();G.openMenu();G.exploreView(0);stage='kingdom';screen='kingdom';menu();}
+  function selectKingdom(item,source){kingdomBackId=choices[scan]?.scanId||null;storyPage=0;campaignEntry=true;kingdom=item.level?{...item,...item.level}:RT.campaigns.find(item.id);kingdomSource=source;loadKingdom();G.openMenu();G.exploreView(0);stage='kingdom';screen='kingdom';menu();}
   function loadKingdom(){if(kingdom.level)G.playCustom(kingdom.level);else G.previewKingdom(kingdom.id);previousBolts=0;targets=[];lastHud='';G.updateAimPreview(null);}
   function beginStory(){storyPage=0;if(G.currentLevel().cutscene){G.openMenu();screen='story';menu();}else playKingdom();}
   function playKingdom(){if(!kingdom)return;if(kingdom.level)G.playCustom(kingdom.level);else G.startKingdom(kingdom.id);previousBolts=0;started=true;ammoMenu();}
@@ -189,7 +243,7 @@ RT.ui = (function () {
     const playLabel=exploreReturn.screen==='pause'?'Continue':'Play';$('explorePlay').textContent=playLabel;
     choices=[{label:'Next view',element:$('exploreNext'),action:()=>{exploreIndex=(exploreIndex+1)%5;view();speak($('exploreView').textContent);}},{label:playLabel,element:$('explorePlay'),action:()=>leaveExplore(true)},{label:'Back',element:$('exploreBack'),action:()=>leaveExplore(false)}];scan=-1;focus();restartScan();speak('Explore '+G.currentLevel().name+'. Watch the guards follow their patrol routes. Choose Next view, '+playLabel+', or Back.');
   }
-  function menu(){
+  function menu(scanOptions={}){
     storyBeat=null;$('skipStory').hidden=true;$('panelList').hidden=false;
     const on=v=>v?'On':'Off';let title='',hint='',spoken=null,storyScene=false,items=[],note='Tap Space = next · hold Space = back · Enter = choose';
     if(screen==='settings'){
@@ -209,19 +263,19 @@ RT.ui = (function () {
       title='Reset all campaigns?';hint=(started?'This ends the current game. ':'')+'Clear every campaign’s levels, scores, stars and collected ammo. Settings and Workshop castles are kept. This cannot be undone.';
       items=[{label:'Cancel',action:()=>{screen='settings';menu();}},{label:'Reset all campaigns',action:()=>{clearHeld();G.resetAllCampaigns();kingdom=null;targets=[];previousBolts=0;lastHud='';campaignEntry=true;mainMenu();speak('All campaign progress reset. Choose Play Game to start a campaign.');}}];
     }else if(screen==='custom'){
-      title='My Castles';hint='Saved in this browser. Choose a castle to play, explore or export.';items=RT.courses.list().map(it=>({label:it.level.name,sub:'Custom castle',action:()=>selectKingdom(it,'custom')}));if(!items.length)hint='Create castles in the Workshop, or import a JSON file or link.';items.push({label:'Import castles',sub:'JSON file or link',action:()=>{clearHeld();RT.castleFiles.open({onCampaign:()=>{screen='customCampaigns';},onClose:()=>{if(screen!=='customCampaigns')screen='custom';menu();}});restartScan();}},{label:'Back',action:()=>{screen='levels';menu();}});
+      title='My Castles';hint='Saved in this browser. Choose a castle to play, explore or export.';items=RT.courses.list().map(it=>({id:'castle:'+it.id,label:it.level.name,sub:'Custom castle',action:()=>selectKingdom(it,'custom')}));if(!items.length)hint='Create castles in the Workshop, or import a JSON file or link.';items.push({label:'Import castles',sub:'JSON file or link',action:()=>{clearHeld();RT.castleFiles.open({onCampaign:()=>{screen='customCampaigns';},onClose:()=>{if(screen!=='customCampaigns')screen='custom';menu();}});restartScan();}},{label:'Back',action:()=>{screen='levels';menu();}});
     }else if(screen==='customCampaigns'){
       title='My Campaigns';hint='Workshop adventures. Play their levels in order; progress and ammunition are saved per campaign.';
-      items=RT.campaigns.kingdoms.filter(k=>k.custom).map(k=>{const p=G.kingdomProgress(k.id);return{label:k.name,sub:k.levels.length+' levels'+(p.next?' · Progress '+Math.min(p.next+1,k.levels.length)+' of '+k.levels.length:''),action:()=>selectKingdom(k,'customCampaigns')};});
-      items.push({label:'Import campaign',sub:'JSON file or link',action:()=>{clearHeld();RT.castleFiles.open({onClose:()=>{screen='customCampaigns';menu();}});}},{label:'Back',action:()=>{screen='levels';menu();}});
+      items=RT.campaigns.kingdoms.filter(k=>k.custom).map(k=>{const p=G.kingdomProgress(k.id);return{id:'kingdom:'+k.id,label:k.name,sub:k.levels.length+' levels'+(p.next?' · Progress '+Math.min(p.next+1,k.levels.length)+' of '+k.levels.length:''),action:()=>selectKingdom(k,'customCampaigns')};});
+      items.push({label:'Import campaign',sub:'JSON file or link',action:()=>{clearHeld();RT.castleFiles.open({onClose:()=>{screen='customCampaigns';menu();}});restartScan();}},{label:'Back',action:()=>{screen='levels';menu();}});
     }else if(screen==='levels'){
 
       title='Choose your kingdom';hint='Each kingdom is a full adventure. Clear its levels in order. Your progress is saved.';
-      items=RT.campaigns.kingdoms.filter(k=>!k.custom).map(k=>{const p=G.kingdomProgress(k.id);return{label:k.name,sub:(p.next===k.levels.length?'Conquered · play again':p.next?'Continue · level '+(p.next+1)+' of '+k.levels.length:k.levels.length+' levels · start with the huts')+' · '+k.sub,action:()=>selectKingdom(k,'levels')};});items.push({label:'My Campaigns',sub:'Full Workshop adventures',action:()=>{screen='customCampaigns';menu();}},{label:'My Castles',sub:'Individual Workshop levels',action:()=>{screen='custom';menu();}},{label:'Back',action:mainMenu});
+      items=RT.campaigns.kingdoms.filter(k=>!k.custom).map(k=>{const p=G.kingdomProgress(k.id);return{id:'kingdom:'+k.id,label:k.name,sub:(p.next===k.levels.length?'Conquered · play again':p.next?'Continue · level '+(p.next+1)+' of '+k.levels.length:k.levels.length+' levels · start with the huts')+' · '+k.sub,action:()=>selectKingdom(k,'levels')};});items.push({label:'My Campaigns',sub:'Full Workshop adventures',action:()=>{screen='customCampaigns';menu();}},{label:'My Castles',sub:'Individual Workshop levels',action:()=>{screen='custom';menu();}},{label:'Back',action:mainMenu});
     }else if(screen==='kingdom'){
       const level=G.currentLevel(),p=kingdom.level?null:G.kingdomProgress(kingdom.id),finished=p&&p.next===kingdom.levels.length;
       title=kingdom.name;hint='';
-      items=[{label:campaignEntry&&!kingdom.level?(p.next>0&&!finished?'Continue campaign':'Start campaign'):'Start level',className:'primary',action:()=>{if(campaignEntry&&!kingdom.level&&!(p.next>0&&!finished)){G.startKingdom(kingdom.id,true);G.openMenu();G.exploreView(0);}beginStory();}},{label:'Explore',action:exploreKingdom},{label:'Back',action:()=>{screen=kingdomSource;menu();}}];
+      items=[{label:campaignEntry&&!kingdom.level?(p.next>0&&!finished?'Continue campaign':'Start campaign'):'Start level',className:'primary',action:()=>{if(campaignEntry&&!kingdom.level&&!(p.next>0&&!finished)){G.startKingdom(kingdom.id,true);G.openMenu();G.exploreView(0);}beginStory();}},{label:'Explore',action:exploreKingdom},{label:'Back',action:()=>{screen=kingdomSource;menu({restoreId:kingdomBackId});}}];
       if(kingdom.level)items.splice(items.length-1,0,{label:'Export JSON',action:()=>{try{RT.courses.download([kingdom.level]);speak('Castle JSON downloaded. Keep it locally or upload it to your own storage.');}catch(error){speak(error.message);}}},{label:'Edit in Workshop',action:()=>{editorCastleId=kingdom.id;editorCampaignId=null;screen='editorWarning';menu();}});
       if(kingdom.custom)items.splice(items.length-1,0,{label:'Export campaign JSON',action:()=>{try{RT.customCampaigns.download(RT.customCampaigns.list().find(c=>c.id===kingdom.id));speak('Campaign JSON downloaded.');}catch(e){speak(e.message);}}},{label:'Edit campaign',action:()=>{editorCastleId=null;editorCampaignId=kingdom.id;screen='editorWarning';menu();}});
       if(campaignEntry&&!kingdom.level&&(p.next>0||p.cleared>0||p.ammo.length>1||Object.keys(p.results).length))items.splice(items.length-1,0,{label:'Restart progress',action:()=>{screen='resetCampaign';menu();}});
@@ -251,18 +305,18 @@ RT.ui = (function () {
     }else{
       title='Paused';hint='';items=[{label:'Continue',className:'primary',action:resume},...(stage==='manual'?[{label:'Change ammunition',action:()=>{G.closeMenu();ammoMenu();}}]:[]),...(['ammo','manual','target'].includes(stage)?[{label:'Zoom view',action:openZoom}]:[]),{label:'Explore level',action:exploreKingdom},{label:'Settings',action:()=>{settingReturn='pause';screen='settings';menu();}},{label:'How to play',action:()=>{settingReturn='pause';screen='help';menu();}},{label:'Restart castle',action:()=>{G.retryLevel();previousBolts=0;ammoMenu();}},{label:'Main Menu',action:mainMenu}];
     }
-    $('panelSub').style.left='';$('panelSub').style.top='';document.body.dataset.storyScene=String(storyScene);show(title,hint,items,true,note);G.showNarrator(storyScene);$('panelSub').dataset.speaker=RT.courses.narrator(G.currentLevel().narrator).name;$('panelEyebrow').textContent=storyScene?RT.courses.narrator(G.currentLevel().narrator).name+' · YOUR GUIDE':'BENNY’S BALLISTA';$('panelSub').hidden=!hint;if(storyScene){storyChoices=items;storyText=spoken;storyBeat='enter';choices=[{label:'Skip intro',element:$('skipStory'),action:revealStoryOptions}];scan=-1;$('panelSub').hidden=true;$('panelList').hidden=true;$('skipStory').hidden=false;focus();restartScan();}else speak(spoken||title+(hint?'. '+hint:'.')); 
+    $('panelSub').style.left='';$('panelSub').style.top='';document.body.dataset.storyScene=String(storyScene);show(title,hint,items,true,note,scanOptions);G.showNarrator(storyScene);$('panelSub').dataset.speaker=RT.courses.narrator(G.currentLevel().narrator).name;$('panelEyebrow').textContent=storyScene?RT.courses.narrator(G.currentLevel().narrator).name+' · YOUR GUIDE':'BENNY’S BALLISTA';$('panelSub').hidden=!hint;if(storyScene){storyChoices=items;storyText=spoken;storyBeat='enter';choices=[{label:'Skip intro',element:$('skipStory'),action:revealStoryOptions}];scan=-1;$('panelSub').hidden=true;$('panelList').hidden=true;$('skipStory').hidden=false;focus();restartScan();}else if(!scanOptions.preserve){const restored=scanOptions.restoreId&&choices[scan];announceMenu(restored?choiceSpeech(restored)+(restored.sub?'. '+restored.sub:''):spoken||title+(hint?'. '+hint:'.'));}
   }
   function drawMap(){const cv=$('minimap'),ctx=cv.getContext('2d');if(!ctx)return;const colors=getComputedStyle(document.body);const color=n=>colors.getPropertyValue('--'+n).trim();ctx.fillStyle=color('panel');ctx.fillRect(0,0,300,300);const bounds=D.castleBounds(G.currentLevel());const span=Math.max(bounds.halfWidth*2+6,12);const px=x=>150+x/span*260,py=z=>150+(z+G.currentLevel().dist)/span*260;
     for(const b of G.targetableBlocks()){ctx.fillStyle=color(b.crown?'crown':'stone');ctx.strokeStyle=color('ink');ctx.lineWidth=2;ctx.fillRect(px(b.x)-5,py(b.z)-5,10,10);ctx.strokeRect(px(b.x)-5,py(b.z)-5,10,10);}
     if(preview){const p=preview.points[preview.points.length-1];const x=px(p.x),y=py(p.z);ctx.strokeStyle=color('accent');ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,12,0,Math.PI*2);ctx.moveTo(x-19,y);ctx.lineTo(x+19,y);ctx.moveTo(x,y-19);ctx.lineTo(x,y+19);ctx.stroke();}ctx.fillStyle=color('text');ctx.font='bold 15px Segoe UI';ctx.fillText('CASTLE MAP',14,24);
   }
-  function clearHeld(){cancelPointer();clearTimeout(holdTimer);clearTimeout(spaceHoldTimer);clearInterval(reverseTimer);spaceDown=enterDown=longSpace=longEnter=false;aimHeld=charging=false;paintCharge();$('holdProgress').hidden=true;restartScan();}
+  function clearHeld(){choiceSpaceBraking=choiceSpaceCancelled=false;if(choiceScanner){choiceScanner.setSuspended(true);if(choiceActive)choiceScanner.setSuspended(false);}cancelPointer();clearTimeout(holdTimer);clearTimeout(spaceHoldTimer);clearInterval(reverseTimer);spaceDown=enterDown=longSpace=longEnter=false;aimHeld=charging=false;paintCharge();$('holdProgress').hidden=true;restartScan();}
   function keyDown(e){if(RT.castleFiles.isOpen())return;if(!['Space','Enter','NumpadEnter'].includes(e.code))return;e.preventDefault();if(e.repeat)return;try{RT.audio?.resume();RT.audio?.musicResume();}catch{}if(G.CAM.phase==='ATTRACT')return;
-    if(e.code==='Space'){if(spaceDown)return;spaceDown=true;clearInterval(autoTimer);if(stage==='manual'&&!screen){startAim();return;}spaceHoldTimer=setTimeout(()=>{longSpace=true;step(-1);reverseTimer=setInterval(()=>step(-1),interval());},D.CFG.SPACE_HOLD_MS);}
-    else{if(enterDown)return;enterDown=true;heldAt=performance.now();beepAt=0;pauseHoldMs=stage==='manual'&&!screen?7000:5000;clearInterval(autoTimer);if(stage==='manual'&&!screen)startCharge();holdTimer=setTimeout(()=>{longEnter=true;$('holdProgress').hidden=true;openMenu(started?'pause':'welcome');},pauseHoldMs);}}
-  function keyUp(e){if(RT.castleFiles.isOpen())return;if(!['Space','Enter','NumpadEnter'].includes(e.code))return;e.preventDefault();if(e.code==='Space'){clearTimeout(spaceHoldTimer);clearInterval(reverseTimer);if(!spaceDown)return;spaceDown=false;if(stage==='manual'&&!screen){aimHeld=false;paintCharge();}else if(!longSpace)step(1);longSpace=false;}else{clearTimeout(holdTimer);if(!enterDown)return;enterDown=false;$('holdProgress').hidden=true;if(!longEnter){if(stage==='manual'&&!screen)finishCharge();else choose(scan);}longEnter=false;}restartScan();}
-  function revealStoryOptions(){if(screen!=='story')return;storyBeat=null;U.vm()?.cancel?.();choices=storyChoices;scan=-1;$('panelSub').hidden=false;$('panelList').hidden=false;$('skipStory').hidden=true;$('skipStory').classList.remove('scanFocus');focus();restartScan();U.speak('Play level or Back.');}
+    if(e.code==='Space'){if(spaceDown)return;spaceDown=true;clearInterval(autoTimer);if(stage==='manual'&&!screen){startAim();return;}if(choiceActive){choiceSpaceBraking=choiceScanner.brakePress();if(choiceSpaceBraking)return;choiceScanner.setInputHeld(true);}spaceHoldTimer=setTimeout(()=>{longSpace=true;step(-1);reverseTimer=setInterval(()=>step(-1),interval());},D.CFG.SPACE_HOLD_MS);}
+    else{if(enterDown)return;enterDown=true;heldAt=performance.now();beepAt=0;pauseHoldMs=stage==='manual'&&!screen?7000:5000;clearInterval(autoTimer);if(choiceActive)choiceScanner.setInputHeld(true);if(stage==='manual'&&!screen)startCharge();holdTimer=setTimeout(()=>{longEnter=true;$('holdProgress').hidden=true;openMenu(started?'pause':'welcome');},pauseHoldMs);}}
+  function keyUp(e){if(RT.castleFiles.isOpen())return;if(!['Space','Enter','NumpadEnter'].includes(e.code))return;e.preventDefault();if(e.code==='Space'){clearTimeout(spaceHoldTimer);clearInterval(reverseTimer);if(!spaceDown)return;spaceDown=false;if(choiceSpaceBraking){choiceScanner.brakeRelease();choiceSpaceBraking=false;}else if(stage==='manual'&&!screen){aimHeld=false;paintCharge();}else if(!longSpace&&!choiceSpaceCancelled)step(1);choiceSpaceCancelled=false;longSpace=false;if(choiceActive)choiceScanner.setInputHeld(enterDown);}else{clearTimeout(holdTimer);if(!enterDown)return;enterDown=false;$('holdProgress').hidden=true;if(!longEnter){if(stage==='manual'&&!screen)finishCharge();else if(choiceActive)choiceScanner.select();else choose(scan);}longEnter=false;if(choiceActive)choiceScanner.setInputHeld(spaceDown&&!choiceSpaceBraking);}restartScan();}
+  function revealStoryOptions(){if(screen!=='story')return;storyBeat=null;U.vm()?.cancel?.();choices=storyChoices;scan=-1;$('panelSub').hidden=false;$('panelList').hidden=false;$('skipStory').hidden=true;$('skipStory').classList.remove('scanFocus');syncChoiceMenu();focus();restartScan();announceMenu('Play level or Back.');}
   function speakStoryChunk(){
     const text=storyChunks[storyPage],bubble=$('panelSub');bubble.textContent=text;bubble.hidden=false;
     if(lastPresentation)lastPresentation.hint=text;
@@ -285,7 +339,13 @@ RT.ui = (function () {
     const rate=U.vm()?.getSettings?.().rate||1;
     if(complete||silent||storyElapsed>Math.max(90000,storyReadMs*3/Math.max(.3,rate))){storyBeat='gap';storyElapsed=0;}
   }
-  function positionStory(){if(screen!=='story')return;const p=G.narratorHead();if(!p)return;const bubble=$('panelSub'),r=document.querySelector('#cvWrap>canvas:not(#minimap)').getBoundingClientRect(),x=r.left+(p.x+1)*r.width/2,y=r.top+(1-p.y)*r.height/2,left=U.clamp(x-bubble.offsetWidth/2,12,innerWidth-bubble.offsetWidth-12);bubble.style.left=left+'px';bubble.style.top=Math.max(54,y-bubble.offsetHeight-22)+'px';bubble.style.setProperty('--bubble-tail',U.clamp(x-left,25,bubble.offsetWidth-25)+'px');}
+  function positionStoryStatus(){
+    if(screen!=='story'||storyBeat||!choiceStatus||choiceStatus.hidden||choiceStatus.querySelector('.narbe-scan-status-badge')?.hidden)return;
+    const row=$('panelList').getBoundingClientRect(),width=choiceStatus.offsetWidth,height=choiceStatus.offsetHeight;
+    choiceStatus.style.setProperty('--story-status-left',Math.max(12,Math.min(innerWidth-width-12,row.right-width))+'px');
+    choiceStatus.style.setProperty('--story-status-top',Math.max(12,row.top-height-8)+'px');
+  }
+  function positionStory(){if(screen!=='story')return;positionStoryStatus();const p=G.narratorHead();if(!p)return;const bubble=$('panelSub'),r=document.querySelector('#cvWrap>canvas:not(#minimap)').getBoundingClientRect(),x=r.left+(p.x+1)*r.width/2,y=r.top+(1-p.y)*r.height/2,left=U.clamp(x-bubble.offsetWidth/2,12,innerWidth-bubble.offsetWidth-12);bubble.style.left=left+'px';bubble.style.top=Math.max(54,y-bubble.offsetHeight-22)+'px';bubble.style.setProperty('--bubble-tail',U.clamp(x-left,25,bubble.offsetWidth-25)+'px');}
   function tick(dt){storyTick(dt);positionStory();positionTargets();positionCharge();const next=G.CAM.phase;
     if(next!==phase){const old=phase;phase=next;if(next==='RESCUE_FAILED'){screen='rescueFailed';stage='rescueFailed';menu();}else if(next==='AIM'&&old==='ATTRACT'){G.openMenu();screen='welcome';menu();const requestedCampaign=RT.campaigns.find(new URLSearchParams(location.search).get('campaign'));if(requestedCampaign?.custom)selectKingdom(requestedCampaign,'customCampaigns');const testId=new URLSearchParams(location.search).get('castle');const custom=RT.courses.list().find(c=>c.id===testId);if(custom){selectKingdom(custom,'custom');}}else if(next==='AIM'&&stage==='flight'){ammoMenu();}else if(next==='RESULTS_MENU'){screen='results';stage='results';menu();sound('win');}else if(next==='OUTOFBOLTS'){screen='out';stage='out';menu();}}
     if(enterDown&&!longEnter){const elapsed=performance.now()-heldAt;if(elapsed>(stage==='manual'?pauseHoldMs-1000:1000)){$('holdProgress').hidden=false;$('holdProgress').querySelector('progress').value=elapsed/pauseHoldMs;if(Math.floor(elapsed/1000)>beepAt){beepAt=Math.floor(elapsed/1000);sound('hover');}}}
@@ -296,7 +356,7 @@ RT.ui = (function () {
     }
     if(G.currentLevel()){const sig=[G.levelIx,G.boltsUsed,G.levelScore,G.remainingGoals(),G.save.endlessBolts,G.shotsRemaining()].join('|');if(sig!==lastHud){lastHud=sig;$('chapter').textContent=G.isCustom()?'WORKSHOP LEVEL':RT.campaigns.forLevel(G.currentLevel()).name+' · LEVEL '+(G.currentLevel().order+1)+' / '+RT.campaigns.forLevel(G.currentLevel()).levels.length;$('castleName').textContent=G.currentLevel().name;$('pCrowns').innerHTML=RT.levelBrief.label(G.currentLevel())+' <b>'+G.remainingGoals()+'</b>';$('pBolts').innerHTML=(G.save.endlessBolts?'Shots used <b>'+G.boltsUsed:'Shots left <b>'+G.shotsRemaining())+'</b>';$('pScore').innerHTML='Score <b>'+G.levelScore+'</b>';}}
   }
-  function init(){window.addEventListener('storage',e=>{if(e.key==='rt-ballista-castles'&&screen==='custom'&&!RT.castleFiles.isOpen())menu();});$('skipStory').onclick=revealStoryOptions;for(const [id,dir]of [['targetPrevious',-1],['targetNext',1]])$(id).onclick=()=>{if(screen||stage!=='target')return;scan=(targetCursor+dir+targets.length)%targets.length;choices[scan].preview();focus();speak(choiceSpeech(choices[scan]));restartScan();};['hover','select','win'].forEach(n=>window.SafeAudio?.preload(n));$('btnZoom').onclick=openZoom;$('btnPause').onclick=()=>openMenu(started?'pause':'welcome');$('exploreNext').onclick=()=>choose(0);$('explorePlay').onclick=()=>choose(1);$('exploreBack').onclick=()=>choose(2);$('btnChangeAmmo').onclick=ammoMenu;$('ammoSelect').onclick=()=>{if(stage==='ammo'&&!screen)choose(ammoCursor);};for(const [id,dir] of [['ammoPrev',-1],['ammoNext',1]])$(id).onclick=()=>{if(stage!=='ammo'||screen)return;const count=G.availableAmmo().filter(a=>G.ammoRemaining(a)>0).length;scan=(ammoCursor+dir+count)%count;choices[scan].preview();focus();speak(choices[scan].label+'. '+choices[scan].sub);restartScan();};window.addEventListener('resize',()=>{if(screen==='story'){positionStory();centerMenuRows();return;}if(lastPresentation){const p=lastPresentation;show(p.title,p.hint,p.items,p.overlay,p.note);}});document.addEventListener('keydown',keyDown);document.addEventListener('keyup',keyUp);window.addEventListener('blur',clearHeld);document.addEventListener('narbe-input-cancelled',clearHeld);document.addEventListener('visibilitychange',()=>{if(document.hidden){moving=false;clearHeld();if(started&&G.CAM.phase!=='MENU')openMenu('pause');clearInterval(autoTimer);}});U.sm()?.subscribe(()=>{if(!screen&&['manual','target'].includes(stage)){clearHeld();targets=[];G.setAimMode(easyAim()?'easy':'sweep');if(easyAim())targetMenu();else manualMenu();}restartScan();$('controlHint').textContent=!screen&&stage==='manual'?'Space: aim · Enter: charge and release · Mouse: aim, hold click to charge':auto()?'Auto scan · Enter = choose · hold Enter = pause':'Tap Space = next · hold Space = back · Enter = choose';});document.addEventListener('pointerdown',()=>{try{RT.audio?.resume();RT.audio?.musicResume();}catch{}},{passive:true});const cv=document.querySelector('#cvWrap>canvas:not(#minimap)');
+  function init(){window.addEventListener('storage',e=>{if(e.key==='rt-ballista-castles'&&screen==='custom'&&!RT.castleFiles.isOpen())menu({preserve:true});});$('skipStory').onclick=revealStoryOptions;for(const [id,dir]of [['targetPrevious',-1],['targetNext',1]])$(id).onclick=()=>{if(screen||stage!=='target')return;scan=(targetCursor+dir+targets.length)%targets.length;choices[scan].preview();focus();speak(choiceSpeech(choices[scan]));restartScan();};['hover','select','win'].forEach(n=>window.SafeAudio?.preload(n));$('btnZoom').onclick=openZoom;$('btnPause').onclick=()=>openMenu(started?'pause':'welcome');$('exploreNext').onclick=()=>choose(0);$('explorePlay').onclick=()=>choose(1);$('exploreBack').onclick=()=>choose(2);$('btnChangeAmmo').onclick=ammoMenu;$('ammoSelect').onclick=()=>{if(stage==='ammo'&&!screen)choose(ammoCursor);};for(const [id,dir] of [['ammoPrev',-1],['ammoNext',1]])$(id).onclick=()=>{if(stage!=='ammo'||screen)return;const count=G.availableAmmo().filter(a=>G.ammoRemaining(a)>0).length;scan=(ammoCursor+dir+count)%count;choices[scan].preview();focus();speak(choices[scan].label+'. '+choices[scan].sub);restartScan();};window.addEventListener('resize',()=>{if(screen==='story'){positionStory();centerMenuRows();return;}if(lastPresentation){const p=lastPresentation;show(p.title,p.hint,p.items,p.overlay,p.note,{preserve:true});}});document.addEventListener('keydown',keyDown);document.addEventListener('keyup',keyUp);window.addEventListener('blur',clearHeld);document.addEventListener('narbe-input-cancelled',clearHeld);document.addEventListener('visibilitychange',()=>{if(document.hidden){moving=false;clearHeld();if(started&&G.CAM.phase!=='MENU')openMenu('pause');clearInterval(autoTimer);}});U.sm()?.subscribe(()=>{const nextAuto=auto();if(choiceActive&&spaceDown&&!choiceSpaceBraking&&nextAuto!==lastAuto){choiceSpaceCancelled=true;clearTimeout(spaceHoldTimer);clearInterval(reverseTimer);}lastAuto=nextAuto;if(!screen&&['manual','target'].includes(stage)){clearHeld();targets=[];G.setAimMode(easyAim()?'easy':'sweep');if(easyAim())targetMenu();else manualMenu();}restartScan();$('controlHint').textContent=!screen&&stage==='manual'?'Space: aim · Enter: charge and release · Mouse: aim, hold click to charge':auto()?'Auto scan · Enter = choose · hold Enter = pause':'Tap Space = next · hold Space = back · Enter = choose';});document.addEventListener('pointerdown',()=>{try{RT.audio?.resume();RT.audio?.musicResume();}catch{}},{passive:true});const cv=document.querySelector('#cvWrap>canvas:not(#minimap)');
     const cameraReady=()=>!screen&&['ammo','manual','target','zoom'].includes(stage)&&!charging&&!enterDown&&!spaceDown;
     document.addEventListener('wheel',e=>{if(!cameraReady()||e.ctrlKey)return;e.preventDefault();const units=e.deltaMode===1?16:e.deltaMode===2?innerHeight:1;G.zoomView(-U.clamp(e.deltaY*units,-120,120)*.0018);zoomReadout();if(pointerLocation)pointerSolution=null;},{passive:false});
     cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -314,5 +374,5 @@ RT.ui = (function () {
     $('btnPointerFire').onclick=e=>{if(e.pointerType==='mouse')return;if(stage==='manual'&&!screen&&!charging&&(!pointerLocation||pointerSolution?.reachable)){aimHeld=false;fire();}};
     document.addEventListener('ballista-ammo-unlocked',e=>{clearTimeout(pickupNoticeTimer);$('pickupNoticeIcon').innerHTML=ammoArt(e.detail.id);$('pickupNoticeName').textContent=e.detail.name+(e.detail.count?' +'+e.detail.count:'');$('pickupNotice').querySelector('span').textContent=e.detail.count?e.detail.count+' shots added · ready for your next shot':e.detail.goalCollected?'Mission item collected · unlimited shots available':'Unlimited ammo unlocked for this kingdom';$('pickupNotice').hidden=false;pickupNoticeTimer=setTimeout(()=>{$('pickupNotice').hidden=true;},4500);speak(e.detail.count?e.detail.count+' '+e.detail.name+' shots collected.':e.detail.goalCollected?e.detail.name+' collected for your mission.':e.detail.name+' unlocked. Unlimited shots for this kingdom.');});
     phase='ATTRACT';}
-  return {init,tick,__test:{targetPlans:()=>targets.map(t=>({label:t.label,p:{...t.p}})),previewAt(y,r){yaw=y;range=r;setPreview({yawRad:y*Math.PI/180,rangePct:r});},assessAim,aimCue:()=>({...aimCueState}),state:()=>({stage,screen,scan,choices:choices.map(c=>c.label),ammo:ammo?.id,ammoCursor,targets:targets.length,selected:selected?.label,moving,aimHeld,charging,yaw,range}),pressSpace:()=>keyDown({code:'Space',preventDefault(){}}),releaseSpace:()=>keyUp({code:'Space',preventDefault(){}}),pressReturn:()=>keyDown({code:'Enter',preventDefault(){}}),releaseReturn:()=>keyUp({code:'Enter',preventDefault(){}})}};
+  return {init,tick,__test:{targetPlans:()=>targets.map(t=>({label:t.label,p:{...t.p}})),previewAt(y,r){yaw=y;range=r;setPreview({yawRad:y*Math.PI/180,rangePct:r});},assessAim,aimCue:()=>({...aimCueState}),choiceState:()=>choiceActive?choiceScanner?.getState():null,state:()=>({stage,screen,scan,choiceActive,choices:choices.map(c=>c.label),ammo:ammo?.id,ammoCursor,targets:targets.length,selected:selected?.label,moving,aimHeld,charging,yaw,range}),pressSpace:()=>keyDown({code:'Space',preventDefault(){}}),releaseSpace:()=>keyUp({code:'Space',preventDefault(){}}),pressReturn:()=>keyDown({code:'Enter',preventDefault(){}}),releaseReturn:()=>keyUp({code:'Enter',preventDefault(){}})}};
 })();

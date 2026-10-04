@@ -716,3 +716,6 @@ body {
         padding: clamp(3px, 0.6vh, 6px);
     }
 }
+[data-narbe-scan-paused] { outline-offset: -6px; }
+
+body [data-narbe-scan-paused] { outline-offset: -6px; }

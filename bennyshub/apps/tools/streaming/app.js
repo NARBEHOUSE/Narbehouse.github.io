@@ -66,6 +66,61 @@ let isLaunching = false; // Launching flag to prevent double execution
 const HOLD_THRESHOLD = 3000; // 3s for backward scan
 const PAUSE_THRESHOLD = 5000; // 5s for pause menu
 
+
+// Explicit stationary menus. Header Back has its own identity; shared -1 is blank.
+let choiceScan=null,choiceStatus=null,choicePress=null,scanAutoMode=false;
+const companionGateOpen=()=>!!document.querySelector('#companion-required')?.open;
+function streamingChoiceContext(fresh=false){
+  const selectors={main:['#main-menu','#main-menu .menu-btn'],settings:['#settings-menu','#settings-menu .setting-row button,#settings-menu .back-btn-large'],genres:['#app-container','#global-back-btn,#genre-grid .genre-card'],items:['#app-container','#global-back-btn,#items-grid .card'],modal:['#item-modal .modal-content','#item-modal .modal-action-btn'],seasons:['#app-container','#global-back-btn,#season-grid > div'],episodes:['#app-container','#global-back-btn,#episode-grid > div'],pause:['#pause-menu .pause-menu-content','#pause-menu .pause-btn'],editor_confirm:['#editor-modal .modal-content','#editor-modal .modal-action-btn']};
+  if(currentState===STATE.KEYBOARD&&window.keyboardController?.isOpen){
+    const keyboard=window.keyboardController,old=choiceScan?.context;
+    const host=document.querySelector('#keyboard-container .keyboard-content');host.append(choiceStatus);
+    const row=!fresh&&old?.key.startsWith('keyboard-child:')?Number(old.key.split(':')[1]):null;
+    return {key:row===null?'keyboard':'keyboard-child:'+row,items:row===null?keyboard.choiceRows():keyboard.choiceChildren(row),statusHost:choiceStatus};
+  }
+  const config=selectors[currentState];if(!config)return null;
+  const host=document.querySelector(config[0]);if(choiceStatus.parentNode!==host)host.append(choiceStatus);
+  const items=Array.from(document.querySelectorAll(config[1])).filter(el=>el.style.visibility!=='hidden'&&!el.disabled).map((element,index)=>{
+    const setting=element.closest('.setting-row'),label=setting?.querySelector('span')||element.querySelector('.card-title,span')||element;
+    const semantic=element.dataset.itemKey?'item:'+element.dataset.itemKey:setting?'setting:'+label.textContent:element.classList.contains('nav-card')?element.id:element.id==='global-back-btn'?'header:back':element.id?.startsWith('genre-')?'genre:'+element.textContent:element.id?.startsWith('max-')?'choice:'+element.textContent:element.id||'action:'+element.textContent.trim();
+    return {id:semantic,element,labelElement:label,label:()=>element.dataset.announcement||(setting?setting.textContent:element.textContent).replace(/[←→]/g,'').replace(/\s+/g,' ').trim(),nativeIndex:element.id==='global-back-btn'?-1:element.id.match(/-(\d+)$/)?.[1]??index};
+  });
+  return {key:currentState,items,statusHost:choiceStatus};
+}
+function syncStreamingChoices(fresh=false){
+  if(!choiceScan)return;
+  if(companionGateOpen()||isLaunching){choiceScan.sync(null);return;}
+  choiceScan.sync(streamingChoiceContext(fresh),{fresh});
+}
+window.refreshStreamingChoices=()=>syncStreamingChoices();
+function initStreamingChoices(){
+  choiceStatus=document.createElement('div');choiceStatus.id='streaming-scan-status';
+  scanAutoMode=NarbeScanManager.getSettings().autoScan;
+  choiceScan=NarbeChoiceScanAdapter.create({holdThreshold:HOLD_THRESHOLD,statusHost:choiceStatus,stateHost:document.body,
+    speak:text=>NarbeVoiceManager.speak(text),
+    onHighlight(item,state){
+      clearHighlights();window.keyboardController?.clearHighlights();
+      mainIndex=settingsIndex=genreIndex=itemIndex=modalIndex=seasonIndex=episodeIndex=pauseIndex=editorModalIndex=null;
+      if(!item||state.suspended)return;
+      if(currentState===STATE.KEYBOARD){window.keyboardController.paintChoice(item);return;}
+      const index=Number(item.nativeIndex);
+      if(currentState===STATE.MAIN)mainIndex=index;else if(currentState===STATE.SETTINGS)settingsIndex=index;else if(currentState===STATE.GENRES)genreIndex=index;else if(currentState===STATE.ITEMS)itemIndex=index;else if(currentState===STATE.MODAL)modalIndex=index;else if(currentState===STATE.SEASONS)seasonIndex=index;else if(currentState===STATE.EPISODES)episodeIndex=index;else if(currentState===STATE.PAUSE)pauseIndex=index;else editorModalIndex=index;
+      item.element.classList.add('highlighted');item.element.scrollIntoView({block:'nearest',inline:'nearest'});
+    },onSelect(item){
+      if(item.kind==='keyboard-row'){
+        if(item.row===0){window.keyboardController.speak(window.keyboardController.inputElement.value||'Empty');return;}
+        choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:window.keyboardController.choiceChildren(item.row),statusHost:choiceStatus});
+      }else {item.element.click();if(item.kind==='keyboard-key'&&window.keyboardController.isOpen)choiceScan.back({restore:true});}
+    }});
+  document.querySelectorAll('#settings-menu .setting-row button').forEach(button=>button.addEventListener('click',()=>{
+    if(currentState!==STATE.SETTINGS)return;syncStreamingChoices();const item=choiceScan.context.items.find(item=>item.element===button);if(item){choiceScan.align(item.id);choiceScan.announce(item.label());}
+  }));
+  document.addEventListener('narbe-tool-gate-change',()=>{cancelChoiceInput();syncStreamingChoices();});
+}
+function cancelChoiceInput(){
+  clearTimeout(scanTimer);clearTimeout(pauseTimer);clearTimeout(keyboardEnterTimer);clearInterval(backwardScanInterval);choicePress=null;isLongPress=pauseTriggered=false;choiceScan?.cancelInput();
+}
+
 // DOM LOAD
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[Streaming] DOMContentLoaded');
@@ -73,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[Streaming] NarbeVoiceManager available:', !!window.NarbeVoiceManager);
 
     loadSettings();
+    initStreamingChoices();
 
     // Subscribe to shared scan manager changes
     if (window.NarbeScanManager) {
@@ -86,7 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 stopAutoScan();
                 if (newSettings.autoScan) startAutoScan();
             }
-            updateSettingsUI();
+            if(scanAutoMode!==newSettings.autoScan&&choicePress&&!choicePress.braking){clearTimeout(scanTimer);clearInterval(backwardScanInterval);choicePress.back=true;}scanAutoMode=newSettings.autoScan;
+            updateSettingsUI();syncStreamingChoices();
         });
     } else {
         console.warn('[Streaming] NarbeScanManager NOT available!');
@@ -216,6 +273,7 @@ function speak(text) {
     // Clean text: removes arrows
     const spokenText = text.replace(/[←→]/g, '').trim();
     if (!spokenText) return;
+    if(currentState===STATE.SETTINGS&&choiceScan?.active){clearTimeout(pendingSpeechTimeout);return choiceScan.announce(spokenText);}
 
     // Use shared voice manager (same pattern as keyboard and journal apps)
     if (window.NarbeVoiceManager) {
@@ -237,7 +295,8 @@ function suspendStreamingInput() {
     isLongPress = false;
     spacePressedTime = 0;
     pauseTriggered = false;
-    stopAutoScan();
+    cancelChoiceInput();
+    choiceScan?.sync(null);
     clearTimeout(pendingSpeechTimeout);
     pendingSpeechTimeout = null;
     window.NarbeVoiceManager?.cancel();
@@ -269,6 +328,7 @@ function highlightMain(idx) {
 function openSettings() {
     // If opening from pause menu, we reuse the settings menu but change back behavior
     const fromPause = (currentState === STATE.PAUSE);
+    if(fromPause)document.getElementById('pause-menu').classList.add('hidden');
 
     switchView('settings-menu');
 
@@ -897,6 +957,7 @@ async function showModal(item) {
     const actionContainer = document.querySelector('.modal-actions');
     actionContainer.innerHTML = 'Loading...';
     document.getElementById('item-modal').classList.remove('hidden');
+    currentState=STATE.MODAL;syncStreamingChoices(true);
 
     // Check for episodes
     let hasEpisodes = false;
@@ -1069,8 +1130,8 @@ async function launchContent(url, title, type="movies", season=null, episode=nul
     }
 
     // Set launching flag
-    isLaunching = true;
-    setTimeout(() => { isLaunching = false; }, 2500);
+    isLaunching = true;syncStreamingChoices();
+    setTimeout(() => { isLaunching = false;syncStreamingChoices(); }, 2500);
 
     // Stop any active scanning (including autoScan)
     clearTimeout(scanTimer);
@@ -1110,7 +1171,7 @@ async function launchContent(url, title, type="movies", season=null, episode=nul
         WebStreaming.status(e.message);
         speak('Could not open this video.');
         if (window.NarbeScanManager?.getSettings().autoScan) startAutoScan();
-    } finally { isLaunching = false; }
+    } finally { isLaunching = false;syncStreamingChoices(); }
 }
 async function playTrailer(url) { await launchContent(url, 'Trailer', 'trailer'); }
 
@@ -1642,108 +1703,21 @@ function handleGlobalBack() {
 // --- SCANNING INPUTS ---
 // Note: scan-manager.js handles global cooldown for Space/Enter
 function setupInputListeners() {
-    document.addEventListener('keydown', (e) => {
-        // Check if scan-manager already blocked this event (anti-tremor/cooldown)
-        if (e.defaultPrevented) return;
-
-        if (e.code === 'Enter') {
-            e.preventDefault();
-            if (e.repeat) return;
-
-            pauseTriggered = false;
-
-            // Differentiate logic based on state
-            if (currentState === STATE.KEYBOARD && window.keyboardController) {
-                // Keyboard specific hold logic (3s)
-                 keyboardEnterTimer = setTimeout(() => {
-                     pauseTriggered = true; // Use same flag to block click
-                     window.keyboardController.handleLongPressEnter();
-                 }, 3000);
-            } else {
-                // Default Pause Timer (5s)
-                 pauseTimer = setTimeout(() => {
-                     pauseTriggered = true;
-                     openPauseMenu();
-                 }, PAUSE_THRESHOLD);
-            }
+    for(const type of ['keydown','keyup'])document.addEventListener(type,e=>{
+        if(e.defaultPrevented||companionGateOpen()||!choiceScan?.active||!['Space','Enter','NumpadEnter'].includes(e.code))return;
+        if(e.target?.closest('textarea,[contenteditable="true"],input:not([readonly])'))return;
+        e.preventDefault();if(e.repeat)return;
+        if(type==='keydown'){
+          if(choicePress)return;choicePress={code:e.code,braking:e.code==='Space'&&choiceScan.brakePress(),back:false};
+          if(choicePress.braking)return;choiceScan.setInputHeld(true);
+          if(e.code==='Space')scanTimer=setTimeout(()=>{if(!choicePress)return;choicePress.back=true;choiceScan.step(-1);backwardScanInterval=setInterval(()=>choiceScan.step(-1),NarbeScanManager.getScanInterval());},HOLD_THRESHOLD);
+          else if(currentState===STATE.KEYBOARD)keyboardEnterTimer=setTimeout(()=>{if(!choicePress)return;choicePress.back=true;if(choiceScan.getState().depth)choiceScan.back({restore:true});else choiceScan.align('row:predictions');choiceScan.setInputHeld(true);},3000);
+          else pauseTimer=setTimeout(()=>{if(!choicePress)return;choicePress.back=true;openPauseMenu();choiceScan.setInputHeld(true);},PAUSE_THRESHOLD);
+        }else if(choicePress?.code===e.code){
+          const press=choicePress;choicePress=null;clearTimeout(scanTimer);clearTimeout(pauseTimer);clearTimeout(keyboardEnterTimer);clearInterval(backwardScanInterval);
+          if(press.braking)choiceScan.brakeRelease();else if(!press.back){if(e.code==='Space')choiceScan.step(1);else choiceScan.select();}
+          choiceScan.setInputHeld(false);
         }
-
-        if (e.code === 'Space') {
-            e.preventDefault();
-            if (e.repeat) return;
-
-            spacePressedTime = Date.now();
-            isLongPress = false;
-
-            // Check for Keyboard Overlay
-            if (window.keyboardController && window.keyboardController.isOpen) {
-                 // Delegate to keyboard logic
-            }
-
-            // Get scan interval from shared manager
-            const scanInterval = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000;
-
-            // Setup Hold Logic
-            if (scanTimer) clearTimeout(scanTimer);
-            scanTimer = setTimeout(() => {
-                isLongPress = true;
-                if (backwardScanInterval) clearInterval(backwardScanInterval); // Safety clear
-
-                if (!window.keyboardController || !window.keyboardController.isOpen) {
-                    scanBackward();
-                    backwardScanInterval = setInterval(scanBackward, scanInterval);
-                } else if (window.keyboardController.isOpen) {
-                    window.keyboardController.scanBackward();
-                    backwardScanInterval = setInterval(() => window.keyboardController.scanBackward(), scanInterval);
-                }
-            }, HOLD_THRESHOLD);
-        }
-    });
-
-    document.addEventListener('keyup', (e) => {
-        // ALWAYS clear timers immediately on keyup to prevent ghost actions
-        // (even if the event was blocked by scan-manager)
-        if (e.code === 'Space') {
-            clearTimeout(scanTimer);
-            clearInterval(backwardScanInterval);
-            backwardScanInterval = null; // Reset
-        }
-        if (e.code === 'Enter') {
-            clearTimeout(pauseTimer);
-            clearTimeout(keyboardEnterTimer);
-        }
-
-        // Check if scan-manager already blocked this event (anti-tremor/cooldown)
-        // If blocked, the narbe-input-cancelled event will handle any needed actions
-        if (e.defaultPrevented) return;
-
-        if (e.code === 'Enter') {
-            // Timer cleared above
-            if (!pauseTriggered) {
-                if (currentState === STATE.PAUSE) {
-                    handlePauseSelect();
-                } else if (window.keyboardController && window.keyboardController.isOpen) {
-                    window.keyboardController.select();
-                } else {
-                    handleSelect();
-                }
-            }
-            pauseTriggered = false;
-        }
-
-        if (e.code === 'Space') {
-            // Timer cleared above
-
-            if (!isLongPress) {
-                if (window.keyboardController && window.keyboardController.isOpen) {
-                    window.keyboardController.scanForward();
-                } else {
-                    scanForward();
-                }
-            }
-            isLongPress = false;
-        }
-        // Cooldown is handled by shared scan-manager.js
     });
 
     // Keyboard Event Hooks
@@ -1787,130 +1761,16 @@ function setupInputListeners() {
     // The player opens in another tab. Leave its controls and speech in charge.
     window.addEventListener('blur', suspendStreamingInput);
 
-    // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
-    // This ensures our timers are cleared even when keyup events are blocked
-    document.addEventListener('narbe-input-cancelled', (e) => {
-        if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
-            // Clear spacebar-related timers
-            const wasLongPress = isLongPress;
-            clearTimeout(scanTimer);
-            clearInterval(backwardScanInterval);
-            backwardScanInterval = null;
-            isLongPress = false;
-            spacePressedTime = 0;
-            // If cancelled due to 'too-short', still perform forward scan - user intended to press
-            if (e.detail.reason === 'too-short' && !wasLongPress) {
-                if (window.keyboardController && window.keyboardController.isOpen) {
-                    window.keyboardController.scanForward();
-                } else {
-                    scanForward();
-                }
-            }
-        }
-        if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
-            // Clear Enter-related timers
-            const wasPauseTriggered = pauseTriggered;
-            clearTimeout(pauseTimer);
-            clearTimeout(keyboardEnterTimer);
-            pauseTriggered = false;
-            // If cancelled due to 'too-short', still perform select action - user intended to press
-            if (e.detail.reason === 'too-short' && !wasPauseTriggered) {
-                if (currentState === STATE.PAUSE) {
-                    handlePauseSelect();
-                } else if (window.keyboardController && window.keyboardController.isOpen) {
-                    window.keyboardController.select();
-                } else {
-                    handleSelect();
-                }
-            }
-        }
-    });
+    document.addEventListener('narbe-input-cancelled',cancelChoiceInput);
 }
 
 // New and returning screens start empty, with a full interval before Auto Scan.
 function resetMenuFocus(restart = true) {
-    mainIndex = settingsIndex = genreIndex = itemIndex = modalIndex = null;
-    seasonIndex = episodeIndex = pauseIndex = editorModalIndex = null;
-    clearHighlights();
-    document.activeElement?.blur();
-    stopAutoScan();
-    if (restart && window.NarbeScanManager?.getSettings().autoScan) startAutoScan();
+    clearHighlights();document.activeElement?.blur();syncStreamingChoices(true);
 }
-
-function currentMenuIndex() {
-    return ({ main: mainIndex, settings: settingsIndex, genres: genreIndex,
-        items: itemIndex, modal: modalIndex, seasons: seasonIndex,
-        episodes: episodeIndex, pause: pauseIndex, editor_confirm: editorModalIndex })[currentState];
-}
-
-// State-Dependent Scanning
-function scanForward() {
-    if (currentState === 'editor_confirm') highlightEditorModal(editorModalIndex === null ? 0 : editorModalIndex + 1);
-    else if (currentState === STATE.MAIN) highlightMain(mainIndex === null ? 0 : mainIndex + 1);
-    else if (currentState === STATE.SETTINGS) highlightSettings(settingsIndex === null ? 0 : settingsIndex + 1);
-    else if (currentState === STATE.GENRES) highlightGenre(genreIndex === null ? -1 : genreIndex + 1);
-    else if (currentState === STATE.ITEMS) highlightItem(itemIndex === null ? -1 : itemIndex + 1, 1);
-    else if (currentState === STATE.MODAL) highlightModal(modalIndex === null ? 0 : modalIndex + 1);
-    else if (currentState === STATE.SEASONS) highlightSeason(seasonIndex === null ? -1 : seasonIndex + 1);
-    else if (currentState === STATE.EPISODES) highlightEpisode(episodeIndex === null ? -1 : episodeIndex + 1);
-    else if (currentState === STATE.PAUSE) highlightPause(pauseIndex === null ? 0 : pauseIndex + 1);
-}
-
-function scanBackward() {
-    if (currentState === 'editor_confirm') highlightEditorModal(editorModalIndex === null ? -1 : editorModalIndex - 1);
-    else if (currentState === STATE.MAIN) highlightMain(mainIndex === null ? -1 : mainIndex - 1);
-    else if (currentState === STATE.SETTINGS) highlightSettings(settingsIndex === null ? -1 : settingsIndex - 1);
-    else if (currentState === STATE.GENRES) highlightGenre(genreIndex === null ? 8 : genreIndex - 1, -1);
-    else if (currentState === STATE.ITEMS) highlightItem(itemIndex === null ? 8 : itemIndex - 1, -1);
-    else if (currentState === STATE.MODAL) highlightModal(modalIndex === null ? -1 : modalIndex - 1);
-    else if (currentState === STATE.SEASONS) highlightSeason(seasonIndex === null ? 8 : seasonIndex - 1, -1);
-    else if (currentState === STATE.EPISODES) highlightEpisode(episodeIndex === null ? 8 : episodeIndex - 1, -1);
-    else if (currentState === STATE.PAUSE) highlightPause(pauseIndex === null ? -1 : pauseIndex - 1);
-}
-
-function handleSelect() {
-    if (currentMenuIndex() == null) return;
-    if (currentState === 'editor_confirm') {
-        selectEditorModal();
-    }
-    else if (currentState === STATE.MAIN) {
-        const btns = document.querySelectorAll('#main-menu .menu-btn');
-        if(btns[mainIndex]) btns[mainIndex].click();
-    }
-    else if (currentState === STATE.SETTINGS) {
-        if (settingsIndex < document.querySelectorAll('.setting-row').length) {
-            const row = document.querySelectorAll('.setting-row')[settingsIndex];
-            row.querySelector('button').click();
-        } else {
-            // Back button - Click it to respect dynamic onclick (Pause vs Main)
-            const backBtn = document.querySelector('#settings-menu .back-btn-large');
-            if(backBtn) backBtn.click();
-        }
-    }
-    else if (currentState === STATE.GENRES) selectGenre(genreIndex);
-    else if (currentState === STATE.ITEMS) selectItem();
-    else if (currentState === STATE.MODAL) selectModalAction();
-    else if (currentState === STATE.SEASONS) {
-        if (seasonIndex === -1) {
-            // Header back button
-            const headerBtn = document.getElementById('global-back-btn');
-            if (headerBtn && headerBtn.onclick) headerBtn.onclick();
-        } else {
-            const sEl = document.getElementById(`max-season-${seasonIndex}`);
-            if (sEl && sEl.onclick) sEl.onclick();
-        }
-    }
-    else if (currentState === STATE.EPISODES) {
-        if (episodeIndex === -1) {
-            // Header back button
-            const headerBtn = document.getElementById('global-back-btn');
-            if (headerBtn && headerBtn.onclick) headerBtn.onclick();
-        } else {
-            const eEl = document.getElementById(`max-ep-${episodeIndex}`);
-            if (eEl && eEl.onclick) eEl.onclick();
-        }
-    }
-}
+function scanForward(){choiceScan?.step(1);}
+function scanBackward(){choiceScan?.step(-1);}
+function handleSelect(){choiceScan?.select();}
 
 // --- SETTINGS ACTIONS ---
 function cycleTheme() {
@@ -1973,26 +1833,8 @@ function toggleAutoScan() {
 }
 
 let autoScanIntervalId = null;
-function startAutoScan() {
-    stopAutoScan();
-    if (!streamingIsInteractive() || isLaunching) return;
-
-    // Get scan interval from shared manager
-    const scanInterval = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000;
-
-    autoScanIntervalId = setInterval(() => {
-        if (!streamingIsInteractive() || isLaunching || document.querySelector('#companion-required[open]') || isLongPress) return;
-        if (currentState === STATE.KEYBOARD && window.keyboardController?.isOpen) {
-            window.keyboardController.scanForward();
-        } else {
-            scanForward();
-        }
-    }, scanInterval);
-}
-function stopAutoScan() {
-    if(autoScanIntervalId) clearInterval(autoScanIntervalId);
-    autoScanIntervalId = null;
-}
+function startAutoScan(){syncStreamingChoices();}
+function stopAutoScan(){} // No app-owned forward clock.
 
 function cycleVoice() {
     console.log('[Streaming] cycleVoice called, NarbeVoiceManager:', !!window.NarbeVoiceManager);
@@ -2019,7 +1861,7 @@ function cycleHighlightColor() {
     saveSettings();
     // Immediate apply
     updateSettingsUI();
-    highlightSettings(settingsIndex); // Re-highlight to show change
+    syncStreamingChoices();
     speak("Color " + settings.highlightColor);
 }
 
@@ -2240,7 +2082,7 @@ function refreshWebStreaming(syncProgress = true) {
             streamingRefreshPending = true;
             return;
         }
-        refreshStreamingViewQuietly();
+        refreshStreamingViewQuietly();syncStreamingChoices();
         if (!autoScanIntervalId && !isLaunching && window.NarbeScanManager?.getSettings().autoScan && BennyExtension.supports('streaming')) startAutoScan();
     }).catch(error => {
         console.error('[Streaming] Could not refresh saved data:', error);

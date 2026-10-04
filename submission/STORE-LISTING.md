@@ -1,12 +1,14 @@
 # Benny's Hub Companion — store copy
 
-The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of an unsubmitted update.
+Copy for Companion 1.0.7. On October 4, 2026, the owner reported this version submitted and awaiting approval, with 1.0.5 currently public. That status has not been independently checked in the publisher dashboard. The owner reports the local changes working well; signed-in provider checks remain separate.
+
+The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of the pending update.
 
 ## Shared fields
 
 - Name: Benny's Hub Companion
 - Publisher: NARBE LLC (must match the verified developer account)
-- Version: 1.0.5
+- Version: 1.0.7 (owner-reported submitted/pending)
 - Language: English (United States)
 - Website: https://narbehouse.github.io/bennyshub/
 - Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html
@@ -21,21 +23,21 @@ The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/
 Benny's Hub Companion connects the Benny's Hub website to supported streaming players and optional Day Hub sources, helping people use these features with one or two switches mapped to Space and Enter (Return).
 
 STREAMING CONTROLS
-Launch a video from the Hub to open a dedicated playback window with a large, color-coded control bar. Controls include Play / Pause, Rewind 10 seconds, Fast forward 10 seconds, volume, mute, previous item, next item, fullscreen and Return to Hub. Return to Hub is always last in the scan order.
+Launch a video from the Hub to open a dedicated playback window with a compact, color-coded control row in its own area below the video. Controls include Play / Pause, Rewind 10 seconds, Fast forward 10 seconds, volume, mute, previous item, next item, fullscreen and Return to Hub. Return to Hub is always last in the scan order.
 
 CONTINUE WATCHING
 For shows and YouTube playlists, the Hub saves the latest playback URL on your device and uses it when you choose Continue. The original library link stays intact. Episode tracking depends on the service updating its playback URL; the service controls resume time within a video. Plex uses its own watch progress.
 
 YOUR SCAN SETTINGS
-The bar follows the Hub's scan mode, scan speed, input sensitivity and voice settings. In two-switch mode, Space moves forward, holding Space for three seconds scans backward, and Enter selects. In one-switch mode, Enter starts a scan loop; selection or the end of the loop returns the bar to its resting state.
+The bar follows the Hub's scan mode, scan speed, input sensitivity and voice settings. It begins with no highlighted control and includes that blank step between loops. In Step mode, Space moves forward, holding Space for three seconds scans backward, and Enter selects a highlighted control. Auto scan follows the Hub's centralized parking, Space brake and speech-wait preferences. Parking off scans continuously; Park when chosen lets Enter at the blank step park the scan; Auto park stops after the chosen number of complete loops. Enter while parked resumes scanning at the first control without activating it. With Space brake on, tap Space to pause scanning, then tap again to resume, or hold for three seconds and release to resume.
 
 CHOOSE YOUR SOURCES
-Use Companion settings to grant access to the services you use. Player adapters are included for YouTube, Plex, Netflix, Disney+, Hulu, Prime Video, HBO Max, Paramount+ and Pluto TV, with Tubi support in preview. Optional Day Hub connections retrieve news and a Google Calendar iCal feed that you choose. Permissions can be removed at any time.
+Use the **Streaming and news** switch in Companion settings to grant access to all listed streaming services and news feeds together. Calendar connects separately. Player adapters are included for YouTube, Plex, Netflix, Disney+, Hulu, Prime Video, HBO Max, Paramount+ and Pluto TV, with Tubi support in preview. Optional Day Hub connections retrieve news and a Google Calendar iCal feed that you choose. Permissions can be removed at any time.
 
 GET STARTED
 1. Install the Companion in desktop Chrome or Microsoft Edge.
 2. Visit https://narbehouse.github.io/bennyshub/ and refresh the page if it was already open.
-3. Open Companion & data → Companion settings, then enable the sources you need. Companion setup has installation and connection help.
+3. Open Companion & data → Companion settings, then turn on Streaming and news. Companion setup has installation and connection help.
 4. Open Tools → Streaming. Add your own links or choose an optional starter collection through Streaming Settings → Open Editor. The public library starts empty; Quick add keeps existing entries and skips matching links.
 
 Help & shortcuts pauses playback and offers a spoken "I need help" message, direct access to the Hub keyboard or phrase board, and a shortcut to the Hub main menu. Returning to the video leaves it paused until you choose Play.
@@ -48,14 +50,15 @@ The Companion does not supply movies, shows or subscriptions and does not bypass
 
 Developed by NARBE LLC. Support: narbehousellc@gmail.com
 
-## Image uploads
+## Image uploads — verify before reuse
 
 - Chrome extension icon: assets/icon128.png (also packaged in the extension).
 - Edge listing logo: assets/logo300.png.
 - Both stores' small promotional tile: assets/promo440x280.png.
 - Optional marquee / large tile: assets/promo1400x560.png.
 - Screenshots: assets/01-player-controls.png through assets/05-journal.png, each 1280 × 800.
-- Screenshot 1 uses clearly labeled demonstration video content, not a customer's library or a provider account. The control bar is the actual packaged extension UI.
+- Existing images are historical assets; verify or refresh them against the current 1.0.7 controls and settings before reuse. No new artwork is claimed by this documentation update.
+- Demonstration playback must not contain a customer library, sign-in details or provider account.
 - Remaining screenshots show actual settings and Hub screens with synthetic or empty data.
 
 ## Sources checked September 27, 2026

@@ -20,7 +20,7 @@ async function launch(extension,label){return chromium.launchPersistentContext(p
   await hub.locator('#modal-cancel').click();await hub.locator('[data-target="tools"]').first().click();await expect(hub.locator('#tools-grid .app-btn')).toHaveCount(6);
   let worker=context.serviceWorkers().find(w=>w.url().startsWith('chrome-extension:'));assert.ok(worker);
   const permission=await worker.evaluate(()=>chrome.permissions.getAll());assert.ok(!(permission.origins||[]).some(x=>x.startsWith('http:')));
-  const settings=await context.newPage();await settings.goto(new URL('options.html',worker.url()).href);await expect(settings.locator('[data-service="youtube"]')).toBeEnabled();await expect(settings.locator('#fixture')).toHaveCount(0);
+  const settings=await context.newPage();await settings.goto(new URL('options.html',worker.url()).href);await expect(settings.locator('#companion-access')).toBeEnabled();await expect(settings.locator('#fixture')).toHaveCount(0);
   const empty=await context.newPage();await empty.goto(site+'/bennyshub/apps/tools/streaming/index.html');await empty.waitForFunction(()=>BennyExtension.supports('streaming'));assert.deepEqual(await empty.evaluate(()=>WebStreaming.getData()),[]);assert.deepEqual(await empty.evaluate(()=>WebStreaming.allEpisodes()),{});
   const privacy=await context.newPage();await privacy.goto(site+'/bennyshub/companion-privacy.html');await expect(privacy.locator('h1')).toContainText('privacy');
   await settings.locator('#return-hub').click();await expect.poll(()=>settings.isClosed()).toBe(true);await expect(hub.locator('#screen-tools')).toHaveClass(/active/);
@@ -39,7 +39,7 @@ async function launch(extension,label){return chromium.launchPersistentContext(p
   const opened=context.waitForEvent('page');await hub.evaluate(()=>BennyExtension.request('OPEN_STREAM',{url:'https://www.youtube.com/watch?v=benny-demo',settings:{tts:false,autoScan:false}}));const player=await opened;
   await player.waitForSelector('#benny-player-controls');await expect(player.locator('[data-benny-player-view]')).toHaveCount(1);await player.screenshot({path:path.join(assets,'01-player-controls.png')});await player.close();
   worker=context.serviceWorkers().find(w=>w.url().startsWith('chrome-extension:'));
-  const options=await context.newPage();await options.goto(new URL('options.html',worker.url()).href);await expect(options.locator('[data-service="youtube"]')).toHaveAttribute('aria-checked','true');
+  const options=await context.newPage();await options.goto(new URL('options.html',worker.url()).href);await expect(options.locator('#companion-access')).toHaveAttribute('aria-checked','true');await expect(options.locator('#companion-access .toggle-state')).toHaveText('Incomplete');
   const optionsCDP=await context.newCDPSession(options);await optionsCDP.send('Emulation.setDeviceMetricsOverride',{width:1600,height:1000,deviceScaleFactor:.8,mobile:false});
   await options.screenshot({path:path.join(assets,'02-companion-settings.png')});await options.close();
   const setup=await context.newPage();await setup.goto(site+'/bennyshub/extension-setup.html');await expect(setup.locator('#status')).toContainText('Connected');await setup.screenshot({path:path.join(assets,'04-companion-connection.png')});await setup.close();

@@ -21,6 +21,11 @@
   </div>
 
   <!-- Include shared voice manager -->
+  <script src="../../../shared/platform.js"></script>
+  <script src="../../../shared/scan-status-badge.js"></script>
+  <script src="../../../shared/choice-scan.js"></script>
+  <script src="../../../shared/choice-scan-adapter.js"></script>
+  <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
   <script src="../../../shared/voice-manager.js"></script>
   <!-- Fix iOS Audio not playing -->
   <script src="../../../shared/ios-audio-fix.js"></script>
@@ -353,6 +358,7 @@
     round = 1;
     highlightIndex = -1; // Start with no highlight until spacebar is pressed
     phase = Phase.SHOWING;
+    window.classicChoice?.sync();
     showSequence();
   }
 
@@ -360,6 +366,7 @@
     stopAutoScan();
     cancelBackScanIfAny();
     phase = Phase.SHOWING;
+    window.classicChoice?.sync();
     // Don't speak here - it was already spoken in the user gesture
     // speak('Round ' + round);
     await sleep(1800); // wait longer so TTS finishes before sequence
@@ -395,12 +402,14 @@
         // Speak the next round immediately while still in interaction context
         speak('Round ' + round);
         phase = Phase.SHOWING;
+    window.classicChoice?.sync();
         setTimeout(showSequence, 320);
       } else {
         startAutoScan();
       }
     } else {
       phase = Phase.GAMEOVER;
+      window.classicChoice?.sync();
       speakGameOverAndReturnToTitle();
     }
   }
@@ -475,6 +484,7 @@
   }
 
   window.addEventListener('keydown', async (e) => {
+    if (window.classicChoiceDown?.(e)) return;
     if (e.code === 'Space') e.preventDefault();
     if (e.repeat) return;
     
@@ -503,6 +513,7 @@
   });
 
   window.addEventListener('keyup', (e) => {
+    if (window.classicChoiceUp?.(e)) return;
     if (e.code === 'Space') {
       e.preventDefault();
       if (!(phase === Phase.PLAYER || phase === Phase.MAIN || phase === Phase.DIFFICULTY || phase === Phase.SETTINGS)) { cancelBackScanIfAny(); return; }
@@ -852,6 +863,8 @@
           ctx.fill();
           if (isSel) {
             ctx.save();
+            ctx.setLineDash(window.classicChoice?.paused(i)?[0,16]:[]);
+            ctx.lineCap=window.classicChoice?.paused(i)?'round':'butt';
             ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255,255,255,0.98)';
             ctx.shadowBlur = 22; ctx.shadowColor = 'rgba(255,255,255,0.9)';
             roundRect(mx, y, mw, btnH, radius);
@@ -891,6 +904,8 @@
           ctx.fill();
           if (isSel) {
             ctx.save();
+            ctx.setLineDash(window.classicChoice?.paused(i)?[0,16]:[]);
+            ctx.lineCap=window.classicChoice?.paused(i)?'round':'butt';
             ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255,255,255,0.98)';
             ctx.shadowBlur = 22; ctx.shadowColor = 'rgba(255,255,255,0.9)';
             roundRect(mx, y, mw, btnH, radius);
@@ -922,6 +937,8 @@
           ctx.fill();
           if (isSel) {
             ctx.save();
+            ctx.setLineDash(window.classicChoice?.paused(i)?[0,16]:[]);
+            ctx.lineCap=window.classicChoice?.paused(i)?'round':'butt';
             ctx.lineWidth = 4; ctx.strokeStyle = '#38bdf8'; // Sky 400
             ctx.shadowBlur = 10; ctx.shadowColor = '#0ea5e9';
             roundRect(mx, y, mw, btnH, 12);
@@ -1008,6 +1025,8 @@
 
     if (phase === Phase.PLAYER && highlightIndex === i) {
       ctx.save();
+      ctx.setLineDash(window.classicChoice?.paused(i)?[0,16]:[]);
+            ctx.lineCap=window.classicChoice?.paused(i)?'round':'butt';
       ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(255,255,255,0.98)';
       ctx.shadowBlur = 28; ctx.shadowColor = 'rgba(255,255,255,0.95)';
       roundRect(q.x, q.y, q.w, q.h, 30); ctx.stroke();
@@ -1074,5 +1093,6 @@
   // Start
   requestAnimationFrame(draw);
   </script>
+  <script src="scan-access.js"></script>
 </body>
 </html>

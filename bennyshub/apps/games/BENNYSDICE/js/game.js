@@ -156,8 +156,7 @@ function showPopupText(text, type = 'score') {
 function speak(text, interrupt = true) {
     // Use NarbeVoiceManager if available - it handles ttsEnabled internally
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text, interrupt);
-        return;
+        return window.NarbeVoiceManager.speak(text, interrupt);
     }
 
     // Fallback to basic speech synthesis
@@ -1608,6 +1607,8 @@ function onSpaceLongPress() {
 
 // Input Listener
 window.addEventListener('keydown', (e) => {
+    if(window.classicChoiceDown?.(e))return;
+    if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
     if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
     }
@@ -1629,6 +1630,8 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
+    if(window.classicChoiceUp?.(e))return;
+    if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
     if (e.code === 'Space' && inputState.spacePressed) {
         e.preventDefault();
         inputState.spacePressed = false;
@@ -1675,16 +1678,12 @@ document.addEventListener('narbe-input-cancelled', (e) => {
             inputState.backwardsScanInterval = null;
         }
         // If cancelled due to 'too-short', still perform short press action - user intended to press
-        if (e.detail.reason === 'too-short' && !wasBackScanning) {
-            onSpaceShortPress();
-        }
+
     }
     if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
         inputState.enterPressed = false;
         // Perform select for short Enter presses
-        if (e.detail.reason === 'too-short') {
-            activateFocused();
-        }
+
     }
 });
 
@@ -1713,11 +1712,28 @@ document.body.addEventListener('mousemove', (e) => {
          const focusables = getFocusables();
          const idx = focusables.indexOf(target);
          if (idx >= 0 && idx !== appState.scanIndex) {
-             appState.scanIndex = idx;
+             window.classicChoice?.align(target);
              refreshScanFocus(false); // Update visual but don't announce constantly
          }
      }
 });
+
+// Shared policy owns stationary choices; physics rolls and CPU turns remain native.
+(function(){
+ const rawFocus=refreshScanFocus,rawActivate=activateFocused,rawSpeak=speak;let adapter,syncing=false,heldSpace=false,heldEnter=false,braking=false,cancelSpace=false,lastAuto=NarbeScanManager.getSettings().autoScan;
+ const status=document.createElement('div');status.id='classic-scan-status';status.hidden=true;status.style.cssText='width:100%;flex-shrink:0;grid-column:1/-1';const style=document.createElement('style');style.textContent='#classic-scan-status[hidden]{display:none!important}[data-narbe-scan-paused]{outline-style:dotted!important}';document.head.append(style);
+ function describe(){const els=getFocusables().filter(el=>!el.disabled);if(!els.length)return null;let parent=appState.state==='GAME'?document.getElementById('ui-container'):appState.state==='FAHTZEE_SCORE'?document.querySelector('#fahtzee-scorecard-overlay > div'):els[0].closest('.menu-panel,.rules-panel');if(!parent)return null;const key=appState.state+(appState.state==='GAME'||appState.state==='RULES'?':'+appState.gameMode:'')+(appState.state==='GAME'?':'+(window.yarkleState?.currentPlayer??0)+':'+(window.fahtzeeState?.currentPlayer??0):'');if(status.parentElement!==parent)parent.prepend(status);return{key,statusHost:status,items:els.map((element,nativeIndex)=>({id:element.id||element.dataset.action||element.getAttribute('onclick')||key+':'+nativeIndex,label:()=>element.textContent.trim()||element.getAttribute('aria-label')||'Die',element,nativeIndex:getFocusables().indexOf(element)}))}}
+ function sync(){if(syncing)return;syncing=true;try{const d=describe();adapter.setInputHeld(heldEnter||heldSpace&&!braking);adapter.sync(d);if(!d){status.hidden=true;appState.scanIndex=-1;rawFocus(false)}}finally{syncing=false}}
+ adapter=NarbeChoiceScanAdapter.create({holdThreshold:inputState.config.longPress,stateHost:document.body,speak:rawSpeak,onHighlight(item,s){appState.scanIndex=item?.nativeIndex??-1;rawFocus(false);status.hidden=!(s.parked);if(s.index<0&&document.activeElement?.matches('button,.menu-item'))document.activeElement.blur()},onSelect(){rawActivate();sync()}});
+ refreshScanFocus=()=>sync();moveScan=dir=>{sync();adapter.step(dir)};activateFocused=()=>{sync();adapter.select()};startAutoScan=stopAutoScan=function(){clearInterval(autoScanTimer);autoScanTimer=null;sync()};speak=function(text,interrupt=true){sync();return adapter.active?adapter.announce(text):rawSpeak(text,interrupt)};
+ for(const name of ['setAppState','handleMenuAction','updateSettingsDisplay','updateSettingsUI','updateUI','renderYarkleDice','renderFahtzeeDice','showFahtzeeScorecard']){const native=eval(name);if(typeof native==='function'){const wrapped=function(...args){const r=native.apply(this,args);sync();return r};switch(name){case 'setAppState':setAppState=wrapped;window.setAppState=wrapped;break;case 'handleMenuAction':handleMenuAction=wrapped;break;case 'updateSettingsDisplay':updateSettingsDisplay=wrapped;break;case 'updateSettingsUI':updateSettingsUI=wrapped;break;case 'updateUI':updateUI=wrapped;break;case 'renderYarkleDice':renderYarkleDice=wrapped;break;case 'renderFahtzeeDice':renderFahtzeeDice=wrapped;break;case 'showFahtzeeScorecard':showFahtzeeScorecard=wrapped;break;case 'closeFahtzeeScorecard':closeFahtzeeScorecard=wrapped;break}}}
+ window.classicChoiceDown=e=>{if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;if(e.repeat)return true;sync();if(e.code==='Space'){heldSpace=true;braking=!!adapter.brakePress();if(braking){e.preventDefault();adapter.setInputHeld(heldEnter);return true}}else heldEnter=true;adapter.setInputHeld(heldEnter||heldSpace);return false};
+ window.classicChoiceUp=e=>{if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;if(e.code==='Space'){heldSpace=false;if(braking||cancelSpace){if(braking)adapter.brakeRelease();braking=cancelSpace=false;inputState.spacePressed=false;clearTimeout(inputState.spaceHoldTimeout);clearInterval(inputState.backwardsScanInterval);inputState.spaceHoldTimeout=inputState.backwardsScanInterval=null;adapter.setInputHeld(heldEnter);return true}}else heldEnter=false;adapter.setInputHeld(heldEnter||heldSpace);return false};
+ function cancel(){heldSpace=heldEnter=braking=cancelSpace=false;inputState.spacePressed=inputState.enterPressed=inputState.spaceLongTriggered=false;clearTimeout(inputState.spaceHoldTimeout);clearInterval(inputState.backwardsScanInterval);inputState.spaceHoldTimeout=inputState.backwardsScanInterval=null;adapter.cancelInput()}
+ NarbeScanManager.subscribe(next=>{if(next.autoScan!==lastAuto&&heldSpace&&!braking){cancelSpace=true;clearTimeout(inputState.spaceHoldTimeout);clearInterval(inputState.backwardsScanInterval);inputState.spaceHoldTimeout=inputState.backwardsScanInterval=null}lastAuto=next.autoScan;sync()});window.addEventListener('blur',cancel);document.addEventListener('narbe-input-cancelled',cancel);
+ document.body.addEventListener('click',e=>{const el=e.target.closest('[data-action],[data-scan=true]');if(!el)return;sync();const item=adapter.context?.items.find(x=>x.element===el);if(item)adapter.align(item.id);queueMicrotask(sync)},true);
+ window.classicChoice={getState:()=>adapter.getState(),getItems:()=>adapter.context?.items.map(x=>({id:x.id,label:typeof x.label==='function'?x.label():x.label}))||[],sync,align(element){sync();const item=adapter.context?.items.find(x=>x.element===element);if(item)adapter.align(item.id)}};
+})();
 
 updateUI();
 setAppState('MENU');

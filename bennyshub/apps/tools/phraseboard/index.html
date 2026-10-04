@@ -545,6 +545,11 @@
   <input id="csvFile" type="file" accept=".csv" style="display:none" />
 
   <!-- Include shared voice manager -->
+  <script src="../../../shared/platform.js"></script>
+  <script src="../../../shared/scan-status-badge.js"></script>
+  <script src="../../../shared/choice-scan.js"></script>
+  <script src="../../../shared/choice-scan-adapter.js"></script>
+  <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
   <script src="../../../shared/voice-manager.js"></script>
   <script src="../../../shared/scan-manager.js"></script>
   <script src="board-core.js"></script>
@@ -835,18 +840,18 @@ function updateHeaderForCurrentView(){
             clearTimeout(state.ttsBlockTimer);
             state.ttsBlockTimer = null;
           }
-          state.ttsBlockInput = true;
+          state.ttsBlockInput = true; window.PhraseChoice?.sync();
           utterance.onend = () => {
             // Add 1 second delay after TTS finishes before allowing input
             state.ttsBlockTimer = setTimeout(() => {
-              state.ttsBlockInput = false;
+              state.ttsBlockInput = false; window.PhraseChoice?.sync();
               state.ttsBlockTimer = null;
             }, 1000);
           };
           utterance.onerror = () => {
             // Also unblock on error
             state.ttsBlockTimer = setTimeout(() => {
-              state.ttsBlockInput = false;
+              state.ttsBlockInput = false; window.PhraseChoice?.sync();
               state.ttsBlockTimer = null;
             }, 1000);
           };
@@ -880,13 +885,13 @@ function updateHeaderForCurrentView(){
             clearTimeout(state.ttsBlockTimer);
             state.ttsBlockTimer = null;
           }
-          state.ttsBlockInput = true;
+          state.ttsBlockInput = true; window.PhraseChoice?.sync();
           // Use speechSynthesis events since NarbeVoiceManager uses it internally
           const checkSpeaking = setInterval(() => {
             if (!window.speechSynthesis.speaking) {
               clearInterval(checkSpeaking);
               state.ttsBlockTimer = setTimeout(() => {
-                state.ttsBlockInput = false;
+                state.ttsBlockInput = false; window.PhraseChoice?.sync();
                 state.ttsBlockTimer = null;
               }, 1000);
             }
@@ -895,7 +900,7 @@ function updateHeaderForCurrentView(){
           setTimeout(() => {
             clearInterval(checkSpeaking);
             if (state.ttsBlockInput) {
-              state.ttsBlockInput = false;
+              state.ttsBlockInput = false; window.PhraseChoice?.sync();
               if (state.ttsBlockTimer) {
                 clearTimeout(state.ttsBlockTimer);
                 state.ttsBlockTimer = null;
@@ -1542,7 +1547,7 @@ function updateHeaderForCurrentView(){
         const item = cat.items[i];
         const btn = createButton(item.display || item.speak || 'Speak', '', () => onTileClick(item));
         // Store the speak text for scan selection to use
-        btn.dataset.speakText = item.speak || item.display || '';
+        btn.dataset.speakText = item.speak || item.display || ''; btn.dataset.scanIdentity='tile:'+item.category+':'+item.tileOrder+':'+(item.speak||item.display||'');
         if (item.image) {
           const img = document.createElement('img');
           img.src = item.image;
@@ -1907,196 +1912,6 @@ function updateHeaderForCurrentView(){
     let returnActionTimer = null;
     let modalBackwardScanTimer = null;
     let modalBackwardScanInterval = null;
-
-    window.addEventListener('keydown', (e) => {
-      if (e.target.closest?.('.header-right')) return;
-      if (e.repeat) return;
-      // Allow F12/DevTools
-      if (e.key === 'F12') return;
-
-      // Block scan input while TTS is speaking a phrase
-      if (state.ttsBlockInput && (e.code === 'Space' || e.code === 'Enter')) {
-        e.preventDefault();
-        return;
-      }
-
-      const now = Date.now();
-      if (now - state.lastKeyPressTime < state.debounceDelay) { e.preventDefault(); return; }
-
-      // Modal handling - track state on keydown, action on keyup (same pattern as main scan)
-      if (state.modalActive) {
-        if (e.code === 'Space' && !state.modalSpacePressed) {
-          e.preventDefault();
-          state.modalSpacePressed = true;
-          state.modalSpaceStartTime = Date.now();
-          // Set timeout for backwards scanning (same as main scan)
-          modalBackwardScanTimer = setTimeout(() => {
-            if (state.modalSpacePressed && state.modalActive) {
-              scanModalBackward();
-              modalBackwardScanInterval = setInterval(() => {
-                if (state.modalSpacePressed && state.modalActive) scanModalBackward();
-                else { clearInterval(modalBackwardScanInterval); modalBackwardScanInterval = null; }
-              }, state.scanSpeed);
-            }
-          }, 3000);
-          return;
-        } else if (e.code === 'Space' && state.modalSpacePressed) {
-          // Already pressed, ignore repeats
-          e.preventDefault();
-          return;
-        } else if (e.code === 'Enter' && !state.modalEnterPressed) {
-          e.preventDefault();
-          state.modalEnterPressed = true;
-          return;
-        } else if (e.code === 'Enter' && state.modalEnterPressed) {
-          e.preventDefault(); // ignore key-repeat
-          return;
-        }
-      }
-
-      // Auto Scan Logic
-      if (state.autoScan) {
-        if ((e.code === 'Space' || e.code === 'Enter') && !state.spacePressed && !state.returnPressed) {
-            e.preventDefault();
-            // In auto scan, any switch selects
-            selectCurrent();
-            state.lastKeyPressTime = now;
-        }
-        return;
-      }
-
-      // Manual Scan Logic
-      if (e.code === 'Space' && !state.spacePressed) {
-        e.preventDefault();
-        state.spacePressed = true;
-        state.spaceStartTime = Date.now();
-        backwardScanTimer = setTimeout(() => {
-          if (state.spacePressed) {
-            scanBackward();
-            backwardScanInterval = setInterval(() => {
-              if (state.spacePressed) scanBackward();
-              else { clearInterval(backwardScanInterval); backwardScanInterval = null; }
-            }, state.scanSpeed);
-          }
-        }, 3000);
-      } else if (e.code === 'Enter' && !state.returnPressed) {
-        e.preventDefault();
-        state.returnPressed = true;
-        state.returnStartTime = Date.now();
-        state.returnActionExecuted = false;
-        returnActionTimer = setTimeout(() => {
-          if (state.returnPressed) {
-            state.returnActionExecuted = true;
-            if (state.scanMode === 'column') {
-              state.scanMode = 'row';
-              highlightCurrentRow();
-            } else if (state.scanMode === 'row') {
-              if (!state.videoModalActive) {
-                if (state.sentenceMode && el.sentenceRow.classList.contains('active')) {
-                  state.currentRow = 0;
-                  highlightCurrentRow();
-                  if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('Sentence row');
-                } else {
-                  if (state.currentMenu === 'category' || state.csvLoaded) navigateBack();
-                }
-              }
-            }
-          }
-        }, 3000);
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.target.closest?.('.header-right')) return;
-      // Handle modal spacebar release - scan forward on keyup (same pattern as main scan)
-      if (state.modalActive) {
-        if (e.code === 'Space' && state.modalSpacePressed) {
-          e.preventDefault();
-          const duration = Date.now() - state.modalSpaceStartTime;
-          state.modalSpacePressed = false;
-          state.modalSpaceStartTime = 0;
-          // Clear backward scan timers
-          if (modalBackwardScanTimer) { clearTimeout(modalBackwardScanTimer); modalBackwardScanTimer = null; }
-          if (modalBackwardScanInterval) { clearInterval(modalBackwardScanInterval); modalBackwardScanInterval = null; }
-          // Short press = scan forward (only if not already backward scanning)
-          if (duration < 3000) {
-            scanModalForward();
-          }
-        } else if (e.code === 'Enter' && state.modalEnterPressed) {
-          e.preventDefault();
-          state.modalEnterPressed = false;
-          selectModalButton();
-        }
-        return;
-      }
-      if (state.autoScan) return; // Auto scan handles action on keydown
-
-      const now = Date.now();
-      if (e.code === 'Space' && state.spacePressed) {
-        e.preventDefault();
-        const duration = Date.now() - state.spaceStartTime;
-        state.spacePressed = false;
-        if (backwardScanTimer) { clearTimeout(backwardScanTimer); backwardScanTimer = null; }
-        if (backwardScanInterval) { clearInterval(backwardScanInterval); backwardScanInterval = null; }
-        if (duration < 3000 && now - state.lastKeyPressTime >= state.debounceDelay) {
-          scanForward();
-          state.lastKeyPressTime = now;
-        }
-      } else if (e.code === 'Enter' && state.returnPressed) {
-        e.preventDefault();
-        const duration = Date.now() - state.returnStartTime;
-        state.returnPressed = false;
-        if (returnActionTimer) { clearTimeout(returnActionTimer); returnActionTimer = null; }
-        if (!state.returnActionExecuted && duration < 3000 && now - state.lastKeyPressTime >= state.debounceDelay) {
-          selectCurrent();
-          state.lastKeyPressTime = now;
-        }
-        state.returnActionExecuted = false;
-      }
-    });
-
-    // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
-    document.addEventListener('narbe-input-cancelled', (e) => {
-      if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
-        // Handle modal state reset and action
-        if (state.modalActive) {
-          const wasModalBackwardScanning = !!modalBackwardScanInterval;
-          state.modalSpacePressed = false;
-          state.modalSpaceStartTime = 0;
-          // Clear modal backward scan timers
-          if (modalBackwardScanTimer) { clearTimeout(modalBackwardScanTimer); modalBackwardScanTimer = null; }
-          if (modalBackwardScanInterval) { clearInterval(modalBackwardScanInterval); modalBackwardScanInterval = null; }
-          // If cancelled due to 'too-short', still perform modal scan - user intended to press (only if not already backward scanning)
-          if (e.detail.reason === 'too-short' && !wasModalBackwardScanning) {
-            scanModalForward();
-          }
-          return;
-        }
-        // If cancelled due to 'too-short', still perform forward scan - user intended to press
-        const wasBackwardScanning = !!backwardScanInterval;
-        state.spacePressed = false;
-        state.spaceStartTime = 0;
-        if (backwardScanTimer) { clearTimeout(backwardScanTimer); backwardScanTimer = null; }
-        if (backwardScanInterval) { clearInterval(backwardScanInterval); backwardScanInterval = null; }
-        // Perform forward scan for short presses (not backward scanning, not auto-scan mode)
-        if (e.detail.reason === 'too-short' && !wasBackwardScanning && !state.autoScan) {
-          scanForward();
-          state.lastKeyPressTime = Date.now();
-        }
-      }
-      if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
-        const wasLongPress = state.returnActionExecuted;
-        state.returnPressed = false;
-        state.returnStartTime = 0;
-        state.returnActionExecuted = false;
-        if (returnActionTimer) { clearTimeout(returnActionTimer); returnActionTimer = null; }
-        // Perform select for short presses (not auto-scan mode)
-        if (e.detail.reason === 'too-short' && !wasLongPress && !state.autoScan) {
-          selectCurrent();
-          state.lastKeyPressTime = Date.now();
-        }
-      }
-    });
 
     // Event Listeners
     el.csvFile.addEventListener('change', (e) => {
@@ -2867,5 +2682,6 @@ function updateHeaderForCurrentView(){
   </style>
   <link rel="stylesheet" href="board-enhancements.css" />
   <script src="board-live.js"></script>
+  <script src="board-choice.js"></script>
 </body>
 </html>

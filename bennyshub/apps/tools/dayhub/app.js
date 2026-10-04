@@ -73,7 +73,9 @@
   let backwardScanInterval = null;
   let returnPressed = false;
   let returnPressTime = null;
-  let autoScanInterval = null;
+  let choiceScan = null;
+  let spaceBraking = false;
+  let backwardTimeout = null;
   let currentScanInterval = 2000;
 
   function loadWeatherPrefs() {
@@ -184,35 +186,16 @@
     };
   }
 
-  if (window.NarbeScanManager) {
-    const s = window.NarbeScanManager.getSettings();
-    currentScanInterval = s.scanInterval;
-    window.NarbeScanManager.subscribe((st) => {
-      currentScanInterval = st.scanInterval;
-      if (st.autoScan && !isSettingsOpen()) {
-        stopAutoScan();
-        startAutoScan();
-      } else if (!st.autoScan) {
-        stopAutoScan();
-      }
-    });
-    if (window.NarbeScanManager.getSettings().autoScan) {
-      startAutoScan();
-    }
-  }
+  currentScanInterval = NarbeScanManager.getScanInterval();
+  let autoMode=NarbeScanManager.getSettings().autoScan;
+  NarbeScanManager.subscribe(settings => {
+    if(autoMode!==settings.autoScan&&spacebarPressed&&!spaceBraking){clearTimeout(backwardTimeout);clearInterval(backwardScanInterval);backwardScanningOccurred=true;}
+    autoMode=settings.autoScan;currentScanInterval=settings.scanInterval;
+  });
 
-  function startAutoScan() {
-    if (autoScanInterval || isSettingsOpen()) return;
-    const ms = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000;
-    autoScanInterval = setInterval(() => handleScanForward(), ms);
-  }
-
-  function stopAutoScan() {
-    if (autoScanInterval) {
-      clearInterval(autoScanInterval);
-      autoScanInterval = null;
-    }
-  }
+  function gateOpen() { return !!document.querySelector('#companion-required')?.open; }
+  function startAutoScan() { choiceScan?.setSuspended(isSettingsOpen() || gateOpen()); }
+  function stopAutoScan() { choiceScan?.setSuspended(true); }
 
   function rebuildScanItems() {
     scanItems = [
@@ -223,9 +206,7 @@
       document.getElementById('btnNews'),
       document.getElementById('btnExit')
     ].filter(Boolean);
-    if (scanIndex >= scanItems.length) {
-      scanIndex = Math.max(0, scanItems.length - 1);
-    }
+    choiceScan?.setItems(scanItems);
   }
 
   function clearHighlights() {
@@ -251,38 +232,9 @@
     if (t) speak(t);
   }
 
-  function handleScanForward() {
-    if (isSettingsOpen()) return;
-    if (scanItems.length === 0) return;
-    if (scanIndex < 0) {
-      scanIndex = 0;
-    } else {
-      scanIndex = (scanIndex + 1) % scanItems.length;
-    }
-    highlightCurrent();
-    speakScanPrompt(scanItems[scanIndex]);
-  }
-
-  function handleScanBack() {
-    if (isSettingsOpen()) return;
-    if (scanItems.length === 0) return;
-    if (scanIndex < 0) {
-      scanIndex = scanItems.length - 1;
-    } else {
-      scanIndex = (scanIndex - 1 + scanItems.length) % scanItems.length;
-    }
-    highlightCurrent();
-    speakScanPrompt(scanItems[scanIndex]);
-  }
-
-  function handleSelect() {
-    if (isSettingsOpen()) return;
-    if (scanIndex < 0 || !scanItems[scanIndex]) {
-      speak('Press space to move first');
-      return;
-    }
-    scanItems[scanIndex].click();
-  }
+  function handleScanForward() { if (!isSettingsOpen()) choiceScan?.step(1); }
+  function handleScanBack() { if (!isSettingsOpen()) choiceScan?.step(-1); }
+  function handleSelect() { if (!isSettingsOpen()) choiceScan?.select(); }
 
   function exitHub() {
     speak('Back to hub');
@@ -578,6 +530,7 @@
   }
 
   function openSettings() {
+    resetSwitchInput();
     stopAutoScan();
     const overlay = document.getElementById('settingsOverlay');
     overlay.classList.add('open');
@@ -596,12 +549,12 @@
     overlay.setAttribute('aria-hidden', 'true');
     setWeatherMsg('');
     setCalendarMsg('');
-    if (window.NarbeScanManager && window.NarbeScanManager.getSettings().autoScan) {
-      startAutoScan();
-    }
+    choiceScan.open(scanItems);
+    choiceScan.setSuspended(gateOpen());
   }
 
   document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
     if (isSettingsOpen()) {
       const tag = document.activeElement && document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -645,77 +598,45 @@
     }
   });
 
-  document.addEventListener('narbe-input-cancelled', (e) => {
-    if (isSettingsOpen()) return;
-    if (e.detail && (e.detail.code === 'Space' || e.detail.key === ' ')) {
-      const wasBack = backwardScanningOccurred;
-      spacebarPressed = false;
-      spacebarPressTime = null;
-      backwardScanningOccurred = false;
-      if (backwardScanInterval) {
-        clearInterval(backwardScanInterval);
-        backwardScanInterval = null;
-      }
-      if (e.detail.reason === 'too-short' && !wasBack) {
-        handleScanForward();
-      }
-    }
-    if (e.detail && (e.detail.code === 'Enter' || e.detail.key === 'Enter')) {
-      returnPressed = false;
-      returnPressTime = null;
-      if (e.detail.reason === 'too-short') {
-        handleSelect();
-      }
-    }
-  });
-
-  function startScanning() {
-    if (!spacebarPressed) {
-      spacebarPressed = true;
-      spacebarPressTime = Date.now();
-      backwardScanningOccurred = false;
-      const timings = getScanTimings();
-      setTimeout(() => {
-        if (spacebarPressed && Date.now() - spacebarPressTime >= timings.longPress) {
-          backwardScanningOccurred = true;
-          handleScanBack();
-          backwardScanInterval = setInterval(() => {
-            if (spacebarPressed) handleScanBack();
-          }, timings.backward);
-        }
-      }, timings.longPress);
-    }
+  function resetSwitchInput() {
+    clearTimeout(backwardTimeout); clearInterval(backwardScanInterval);
+    backwardTimeout = backwardScanInterval = null;
+    spacebarPressed = returnPressed = spaceBraking = backwardScanningOccurred = false;
+    spacebarPressTime = returnPressTime = null;
+    choiceScan?.setInputHeld(false);
   }
-
+  document.addEventListener('narbe-input-cancelled', resetSwitchInput);
+  window.addEventListener('blur', resetSwitchInput);
+  document.addEventListener('narbe-tool-gate-change', () => {
+    resetSwitchInput(); choiceScan?.setSuspended(gateOpen() || isSettingsOpen());
+  });
+  function startScanning() {
+    if (spacebarPressed) return;
+    spacebarPressed = true; spacebarPressTime = Date.now(); backwardScanningOccurred = false;
+    spaceBraking = choiceScan.brakePress();
+    if (spaceBraking) return;
+    choiceScan.setInputHeld(true);
+    backwardTimeout = setTimeout(() => {
+      if (!spacebarPressed) return;
+      backwardScanningOccurred = true; handleScanBack();
+      backwardScanInterval = setInterval(() => { if (spacebarPressed) handleScanBack(); }, currentScanInterval);
+    }, BACKWARD_MS);
+  }
   function stopScanning() {
     if (!spacebarPressed) return;
-    spacebarPressed = false;
-    if (backwardScanInterval) {
-      clearInterval(backwardScanInterval);
-      backwardScanInterval = null;
-    }
-    if (!backwardScanningOccurred) {
-      handleScanForward();
-    }
-    backwardScanningOccurred = false;
-    spacebarPressTime = null;
+    spacebarPressed = false; clearTimeout(backwardTimeout); clearInterval(backwardScanInterval);
+    backwardTimeout = backwardScanInterval = null;
+    if (spaceBraking) { spaceBraking = false; choiceScan.brakeRelease(); }
+    else { if (!backwardScanningOccurred) handleScanForward(); choiceScan.setInputHeld(false); }
+    backwardScanningOccurred = false; spacebarPressTime = null;
   }
-
   function startSelecting() {
-    if (!returnPressed) {
-      returnPressed = true;
-      returnPressTime = Date.now();
-    }
+    if (returnPressed) return;
+    returnPressed = true; choiceScan.setInputHeld(true);
   }
-
   function stopSelecting() {
     if (!returnPressed) return;
-    returnPressed = false;
-    const pressDuration = Date.now() - returnPressTime;
-    returnPressTime = null;
-    if (pressDuration >= 100) {
-      handleSelect();
-    }
+    returnPressed = false; handleSelect(); choiceScan.setInputHeld(false);
   }
 
   document.getElementById('btnSettings').addEventListener('click', () => openSettings());
@@ -809,5 +730,23 @@
   updateTimeButton();
   setInterval(updateTimeButton, 30000);
   rebuildScanItems();
+  const statusHost = document.createElement('div'); statusHost.id = 'day-scan-status';
+  statusHost.setAttribute('aria-label', 'Scan status'); document.getElementById('app').append(statusHost);
+  choiceScan = NarbeScanManager.createChoiceScan({
+    choice: true, holdThreshold: BACKWARD_MS, items: scanItems, statusHost,
+    getId: item => item.id,
+    getLabel: item => item.getAttribute('data-scan-label') || item.textContent.replace(/\s+/g, ' ').trim(),
+    getLabelElement: item => item.querySelector('.btn-kicker, .btn-label') || item,
+    onHighlight(item, state) {
+      scanIndex = state.index; clearHighlights();
+      const app = document.getElementById('app');
+      app.dataset.scanIndex = state.index; app.dataset.scanSelected = state.id || '';
+      app.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : 'running';
+      if (item && !state.suspended) { item.classList.add('highlighted'); item.focus({preventScroll: true}); item.scrollIntoView({block:'nearest',inline:'nearest'}); }
+      else if (document.activeElement?.classList.contains('scan-target')) document.activeElement.blur();
+    },
+    onSelect: item => item.click()
+  });
+  choiceScan.setSuspended(gateOpen() || isSettingsOpen());
   refreshWeatherSilent();
 })();

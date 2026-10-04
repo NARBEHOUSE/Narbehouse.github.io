@@ -1550,8 +1550,7 @@ NAF.UI = (function () {
 
         // The on-screen keyboard: one .naf-key-row per row, each independently
         // scannable as a whole before its keys are - see nameEditorScannables
-        // for how "back to rows" is reached from inside one without a visible
-        // button of its own.
+        // for the explicit Back to rows choice and parent-row restoration.
         const kb = node('div', 'naf-keyboard', wrap);
         el.nameKbEl = kb;
 
@@ -1597,6 +1596,7 @@ NAF.UI = (function () {
         back.type = 'button';
         back.dataset.key = 'Backspace';
 
+        const rowsBack=menuButton(wrap,'Back to rows','home','slate');rowsBack.dataset.name='rows-back';rowsBack.hidden=true;
         const done = menuButton(wrap, 'Done', 'check', 'green');
         done.dataset.name = 'done';
         const clear = menuButton(wrap, 'Clear the Name', 'cross', 'slate');
@@ -1698,18 +1698,11 @@ NAF.UI = (function () {
                     });
                 });
             }
-            // An invisible stop at the end of the row's own keys, with no
-            // button of its own (no `el`, so nothing is highlighted here -
-            // NAF.Input's paint() only ever lights up an item that HAS one).
-            // In a list that wraps, one stop placed after the last key is
-            // also the very thing scanned BACKWARDS from the first key, so
-            // this single entry serves as the "before the first key" and
-            // "after the last key" deadzone both. Choosing it (Enter) is the
-            // way back to row scanning, spoken so a switch user still knows
-            // where they landed even though nothing lit up.
+            // Visible Back returns to the same parent row. Passing either end
+            // of this child list instead returns to the shared root blank.
             list.push({
-                id: 'name:deadzone',
-                el: null,
+                id: 'name:rows-back',
+                el: el.settingsList.querySelector('[data-name="rows-back"]'),
                 speak: 'Back to rows.',
                 action: backToNameKbRows
             });
@@ -1736,8 +1729,7 @@ NAF.UI = (function () {
                     nameKbMode = 'keys';
                     nameKbRow = ri;
                     NAF.Input.refresh(false);
-                    NAF.Input.setIndex(0);
-                    NAF.Input.speakFocused();
+                    // Shared enterGroup opens the first key; Back restores this row by identity.
                 }
             });
         });
@@ -1854,6 +1846,16 @@ NAF.UI = (function () {
         }
     }
 
+
+    let scanHost=null;
+    function scanContext(){
+        if(!scanHost){scanHost=node('div','naf-scan-status');scanHost.style.minBlockSize='0';}
+        const parent=screen==='play'?el.hud:el[screen]?.querySelector('.naf-card');
+        if(parent&&scanHost.parentElement!==parent)parent.prepend(scanHost);
+        const rowBack=el.settingsList?.querySelector('[data-name="rows-back"]');if(rowBack)rowBack.hidden=!(nameEditing&&nameKbMode==='keys');
+        return{key:screen+(nameEditing?':name:'+nameKbMode+(nameKbMode==='keys'?':'+nameKbRow:''):'')+(screen==='play'?':'+NAF.Game.mode():''),host:scanHost};
+    }
+
     function applyChrome() {
         el.root.classList.toggle('naf-no-hints', !S().get('grownUpPrompts'));
     }
@@ -1863,6 +1865,9 @@ NAF.UI = (function () {
         show: show,
         current: current,
         scannables: scannables,
+        scanContext: scanContext,
+        updateScanFeedback:function(){if(screen!=='play')fitCard();},
+        applyScanContext:function(key){if(key==='settings:name:rows')nameKbMode='rows';else if(key.startsWith('settings:name:keys:')){nameKbMode='keys';nameKbRow=Number(key.split(':').pop());}const b=el.settingsList?.querySelector('[data-name="rows-back"]');if(b)b.hidden=!(nameEditing&&nameKbMode==='keys');},
         renderStamps: renderStamps,
         skinZone: skinZone,
         celebrateRow: celebrateRow,

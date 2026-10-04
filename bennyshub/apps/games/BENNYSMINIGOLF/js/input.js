@@ -19,10 +19,24 @@ class InputHandler {
         this.onEvent = null; // (eventType, data) => {}
 
         this.setupListeners();
+        let previousAuto=!!window.NarbeScanManager?.getSettings().autoScan;
+        window.NarbeScanManager?.subscribe(()=>{const next=!!NarbeScanManager.getSettings().autoScan;if(next!==previousAuto){previousAuto=next;this.cancelMenuInput(true);}});
+        window.addEventListener('blur',()=>this.cancelMenuInput(false));
+        document.addEventListener('visibilitychange',()=>{if(document.hidden)this.cancelMenuInput(false);});
+    }
+
+    cancelMenuInput(keepPhysicalHold) {
+        if(this.mode!=='MENU'||!this.choiceMenu?.choice?.active)return;
+        const held=!!this.keys.Space||!!this.keys.Enter;
+        this.spacePressed=this.enterPressed=this.choiceBraking=false;
+        clearTimeout(this.spaceHoldTimeout);this.spaceHoldTimeout=null;this.stopBackwardScan();
+        if(!keepPhysicalHold)this.keys.Space=this.keys.Enter=false;
+        this.choiceMenu.choice.cancelInput();this.choiceMenu.choice.setInputHeld(keepPhysicalHold&&held);
     }
 
     setMode(mode) {
         this.mode = mode;
+        this.choiceBraking=false;this.choiceMenu?.choice?.cancelInput();
         // Reset states on mode switch to prevent stuck inputs
         this.spacePressed = false;
         this.enterPressed = false;
@@ -43,6 +57,7 @@ class InputHandler {
         
         // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
         document.addEventListener('narbe-input-cancelled', (e) => {
+            this.choiceBraking=false;this.choiceMenu?.choice?.cancelInput();
             if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
                 const wasBackwardScanning = this.backwardScanInterval !== null;
                 this.spacePressed = false;
@@ -54,9 +69,7 @@ class InputHandler {
                     this.spaceHoldTimeout = null;
                 }
                 // If cancelled due to 'too-short', still perform forward scan in menu mode - user intended to press
-                if (e.detail.reason === 'too-short' && !wasBackwardScanning && this.mode === 'MENU') {
-                    this.trigger('SCAN_NEXT');
-                }
+                // A cancelled press never activates or advances a choice.
             }
             if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
                 const wasPauseTriggered = this.pauseTriggered;
@@ -69,17 +82,17 @@ class InputHandler {
                     this.pauseHoldTimeout = null;
                 }
                 // If cancelled due to 'too-short', still perform select in menu mode - user intended to press
-                if (e.detail.reason === 'too-short' && !wasPauseTriggered && this.mode === 'MENU') {
-                    this.trigger('SELECT');
-                }
+                // A cancelled press never selects a choice.
             }
         });
     }
 
     handleKeyDown(e) {
+        if(e.code==='NumpadEnter')e={code:'Enter',repeat:e.repeat,preventDefault:()=>{}};
         if (e.repeat) return; // Ignore auto-repeat
         if (this.keys[e.code]) return; // Already down
         this.keys[e.code] = true;
+        if(this.mode==='MENU'&&['Space','Enter'].includes(e.code)&&this.choiceMenu?.choice?.active){if(e.code==='Space'&&this.choiceMenu.choice.brakePress()){this.choiceBraking=true;return;}this.choiceMenu.choice.setInputHeld(true);}
 
         if (e.code === 'Space' && !this.spacePressed) {
             this.spacePressed = true;
@@ -122,6 +135,8 @@ class InputHandler {
     }
 
     handleKeyUp(e) {
+        if(e.code==='NumpadEnter')e={code:'Enter'};
+        if(e.code==='Space'&&this.choiceBraking){this.choiceBraking=false;this.keys.Space=false;this.choiceMenu?.choice?.brakeRelease();return;}
         this.keys[e.code] = false;
 
         if (e.code === 'Space' && this.spacePressed) {
@@ -167,10 +182,11 @@ class InputHandler {
             }
             this.pauseTriggered = false;
         }
+        if(this.mode==='MENU')this.choiceMenu?.choice?.setInputHeld(this.spacePressed||this.enterPressed);
     }
 
     startBackwardScan() {
-        if (typeof window.NarbeVoiceManager !== 'undefined') {
+        if (!this.choiceMenu?.choice?.active && typeof window.NarbeVoiceManager !== 'undefined') {
             window.NarbeVoiceManager.speak('Backwards scanning');
         }
         this.trigger('SCAN_PREV'); // Immediate first backward scan

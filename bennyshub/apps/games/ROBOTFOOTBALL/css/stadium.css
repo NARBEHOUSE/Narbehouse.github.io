@@ -326,3 +326,6 @@ body.large-text .target-tag{font-size:19px;padding:9px 14px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 body.reduced-motion *{transition:none!important;animation:none!important}
+
+/* Keep the shared paused dash inside the native clipped menu button. */
+.menu-button[data-narbe-scan-paused] { outline-offset: -6px !important; }

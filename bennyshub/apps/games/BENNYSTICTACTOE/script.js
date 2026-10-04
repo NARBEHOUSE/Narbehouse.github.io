@@ -722,6 +722,7 @@ function computerMove() {
              
              state.turn = 'X';
              state.computerThinking = false;
+             window.classicChoice?.sync();
              document.getElementById('status-display').innerText = `Turn: ${state.turn}`;
              
              setTimeout(() => speak("Your turn"), settings.locationTTS ? 1500 : 500);
@@ -864,6 +865,8 @@ function announceCell(index) {
 
 function setupInput() {
     document.addEventListener('keydown', e => {
+        if (window.classicChoiceInputDown?.(e)) return;
+        if (e.code === 'NumpadEnter') e = {code:'Enter',preventDefault:()=>{}};
         if (e.code === 'Space') {
             if (!state.input.spaceHeld) {
                 state.input.spaceHeld = true;
@@ -893,6 +896,8 @@ function setupInput() {
     });
 
     document.addEventListener('keyup', e => {
+        if (window.classicChoiceInputUp?.(e)) return;
+        if (e.code === 'NumpadEnter') e = {code:'Enter',preventDefault:()=>{}};
         if (e.code === 'Space') {
             if (state.input.spaceHeld) {
                 clearTimeout(state.timers.space);
@@ -1023,7 +1028,7 @@ function performBackwardsToggle() {
 
 function speak(text) {
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if (settings.tts && 'speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);

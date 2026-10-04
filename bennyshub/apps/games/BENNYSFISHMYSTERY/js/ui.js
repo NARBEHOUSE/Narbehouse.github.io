@@ -213,6 +213,52 @@ RT.ui = (function () {
     return 'game';
   }
 
+
+  // Explicit stationary menu/world/map bridge. Fishing controls never enter it.
+  let choiceScan=null, choiceBraking=false, choiceAuto=false;
+  const choiceMemory=new Map();
+  function choiceId(it){return String(it.id || it.key || it.card?.title || stripTags(it.label));}
+  function choiceLabel(it){return it.speech !== undefined ? it.speech : stripTags(it.label)+(it.value!==undefined?', '+it.value:'');}
+  function choiceHost(id,parent){
+    let host=$(id);if(!host){host=document.createElement('div');host.id=id;parent.prepend(host);}return host;
+  }
+  function choiceContext(){
+    const kind=ctx();
+    if(kind==='game')return null;
+    if(kind==='map')return {key:'map',statusHost:choiceHost('fish-map-status',$('mapView')),items:[{id:'close-map',label:'Close map',element:$('mapClose'),action:closeMap}]};
+    if(kind==='world')return {key:'world:'+worldPlace,statusHost:choiceHost('fish-world-status',$('app')),items:worldItems.map((it,n)=>({
+      id:it.key,label:it.speech,element:it.domId?$(it.domId):$('scanFrame'),labelElement:it.domId==='dockHud'?$('dockZone'):it.domId?$(it.domId):$('scanFrame'),nativeIndex:n,
+      action(){worldIndex=n;worldActivate();}
+    }))};
+    return {key:'menu:'+screen,statusHost:choiceHost('fish-menu-status',$('panel')),items:items.map((it,n)=>({
+      id:choiceId(it),label:choiceLabel(it),element:$('panelMenu').children[n],labelElement:$('panelMenu').children[n]?.querySelector('.cardName,span')||$('panelMenu').children[n],nativeIndex:n,cue:it.speechCue,action:it.action
+    })).filter((it,n)=>items[n].enabled!==false)};
+  }
+  function initChoiceScan(){
+    choiceScan=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:$('app'),
+      speak:text=>{
+        const current=choiceScan?.context?.items.find(it=>it.id===choiceScan.getState()?.id);
+        return U.speakChoice(text,current?.label===text?current.cue:null);
+      },
+      onHighlight(item,state,context){
+        if(!context||state.suspended)return;
+        if(context.key==='map'){mapFocused=!!item;$('mapClose').classList.toggle('focused',!!item);}
+        else if(context.key.startsWith('world:')){worldIndex=item?.nativeIndex??-1;applyWorldFocus();}
+        else {index=item?.nativeIndex??-1;updateFocus();}
+      },
+      onSelect(item){AU.resume();AU.menuSelect();item.action?.();}
+    });
+    choiceAuto=U.sm().getSettings().autoScan;
+  }
+  function syncChoiceScan(options){if(choiceScan)choiceScan.sync(choiceContext(),options);}
+  function alignChoice(kind,n){
+    if(!choiceScan)return;
+    const expected=kind==='world'?'world:'+worldPlace:'menu:'+screen;
+    if(choiceScan.context?.key!==expected)syncChoiceScan();
+    const it=choiceScan.context?.items.find(it=>it.nativeIndex===n);
+    if(it)choiceScan.align(it.id);
+  }
+
   /* ══════════════════════════════════════════════════════════════════════
      OVERLAY PLUMBING
      ══════════════════════════════════════════════════════════════════════ */
@@ -248,6 +294,7 @@ RT.ui = (function () {
       clearKeys();
     }
     if (on && worldOn) closeWorldScan();
+    if(!on)syncChoiceScan();
   }
 
   function syncSidePanels() {
@@ -367,11 +414,11 @@ RT.ui = (function () {
           (it.card.note ? '<span class="cardNote">' + it.card.note + '</span>' : '');
         U.addTap(el, () => {
           if (it.enabled === false) { AU.menuBlocked(); return; }
-          index = i; updateFocus(); activate();
+          alignChoice('menu',i); activate();
         });
-        el.addEventListener('mouseenter', () => {
+        el.addEventListener('mousemove', () => {
           if (it.enabled === false || index === i) return;
-          index = i; updateFocus(); restartAutoScan();
+          alignChoice('menu',i); restartAutoScan();
         });
         menu.appendChild(el);
         return;
@@ -389,11 +436,11 @@ RT.ui = (function () {
 
       U.addTap(el, () => {
         if (it.enabled === false) { AU.menuBlocked(); return; }
-        index = i; updateFocus(); activate();
+        alignChoice('menu',i); activate();
       });
-      el.addEventListener('mouseenter', () => {
+      el.addEventListener('mousemove', () => {
         if (it.enabled === false || index === i) return;
-        index = i; updateFocus(); restartAutoScan();
+        alignChoice('menu',i); restartAutoScan();
       });
       menu.appendChild(el);
     });
@@ -587,22 +634,10 @@ RT.ui = (function () {
     else U.speak(lastSaid.text, lastSaid.cue, lastSaid.tail);
   }
 
-  function step(delta) {
-    if (!items.length) return;
-    // Enter a new menu at the first item going forward, or the last going back.
-    let i = index < 0 ? (delta > 0 ? -1 : items.length) : index;
-    for (let n = 0; n < items.length; n++) {
-      i = (i + delta + items.length) % items.length;
-      if (items[i].enabled !== false) { index = i; break; }
-    }
-    updateFocus(); speakItem(); AU.menuMove();
-    if (!didBackHold) restartAutoScan();
-  }
+  function step(delta) { if(choiceScan?.step(delta))AU.menuMove(); }
 
   function activate() {
-    const now = Date.now();
-    if (now - lastActivate < 140) return;   // debounce switch bounce
-    lastActivate = now;
+    if(choiceScan?.active){choiceScan.select();return;}
     if (index < 0) return;
     const it = items[index];
     if (!it || it.enabled === false) { AU.menuBlocked(); return; }
@@ -613,9 +648,7 @@ RT.ui = (function () {
   function restartAutoScan() {
     stopAutoScan();
     if (ctx() !== 'menu' && ctx() !== 'map') return; // never scan during play
-    const s = U.sm();
-    if (!s || !s.getSettings().autoScan) return;
-    autoScanTimer = setInterval(() => mapOn ? focusMapClose() : step(1), s.getScanInterval());
+    syncChoiceScan();
   }
   function stopAutoScan() {
     if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
@@ -678,7 +711,7 @@ RT.ui = (function () {
      off by the announcement, mid-word. */
   let worldNote = '';
 
-  function enterWorld(place, pickStart) {
+  function enterWorld(place, pickStart, restoreKey=null) {
     worldPlace = place;
     worldSince = Date.now();
     showOverlay(false);
@@ -694,7 +727,7 @@ RT.ui = (function () {
     worldItems = place === 'shop' ? G.shopTargets()
                : place === 'spot' ? G.spotTargets()
                : G.dockTargets();
-    worldIndex = pickStart ? pickStart() : 0;
+    worldIndex = -1;
     /* Options takes its turn in every scene's scan now, and it lives on this
        button - so the button has to be on screen for the frame to land on,
        whether or not a trip is running. */
@@ -709,7 +742,9 @@ RT.ui = (function () {
                      (place === 'shop' ? 'The tackle shop. '
                     : place === 'spot' ? '' : 'The dock. ');
     worldNote = '';
-    U.speak(preamble + (worldItems[worldIndex] ? worldItems[worldIndex].speech : ''));
+    syncChoiceScan({fresh:true,restoreId:restoreKey});
+    const parkingLabel = !worldItems[worldIndex]?.speech && isOneSwitch() && NarbeScanManager.isParkingEnabled();
+    choiceScan.announce(preamble + (worldItems[worldIndex]?.speech || (parkingLabel?'Park.':'')), {parkingLabel});
     startWorldScan();
   }
 
@@ -730,6 +765,7 @@ RT.ui = (function () {
                : G.dockTargets();
     renderWorldLabels();
     if (worldPlace === 'dock') paintDockHud();
+    syncChoiceScan();
   }
 
   function indexOfKey(k) {
@@ -746,28 +782,18 @@ RT.ui = (function () {
     $('dockHud').classList.remove('on');
     $('pauseBtn').classList.remove('focused');
     G.setDockFocus(-1);
+    syncChoiceScan();
   }
 
   function startWorldScan() {
     stopWorldScan();
-    const s = U.sm();
-    if (!s || !s.getSettings().autoScan) return;
-    worldTimer = setInterval(() => worldStep(1), s.getScanInterval());
+    syncChoiceScan();
   }
   function stopWorldScan() {
     if (worldTimer) { clearInterval(worldTimer); worldTimer = null; }
   }
 
-  function worldStep(delta) {
-    if (!worldItems.length) return;
-    worldIndex = (worldIndex + delta + worldItems.length) % worldItems.length;
-    applyWorldFocus();
-    U.speak(worldItems[worldIndex].speech);
-    AU.menuMove();
-    // While Space is held to scan backwards, the forward auto-scan must stay
-    // off — the same rule step() follows in a menu.
-    if (!didBackHold) startWorldScan();
-  }
+  function worldStep(delta) { if(choiceScan?.step(delta))AU.menuMove(); }
 
   function worldActivate() {
     AU.resume();
@@ -785,7 +811,7 @@ RT.ui = (function () {
        there is no play mode to fall back into, it would leave the screen with
        nothing highlighted at all. */
     if (it.key === 'options') {
-      const back = { place: worldPlace, index: worldIndex };
+      const back = { place: worldPlace, key: it.key };
       closeWorldScan();
       openPause(back);
       return;
@@ -842,8 +868,7 @@ RT.ui = (function () {
       if (!key || !worldOn) return;   // the scan moved on; this click is late
       const ix = worldItems.findIndex(w => w.key === key);
       if (ix < 0) return;             // and this button is not in this scene
-      worldIndex = ix;
-      applyWorldFocus();
+      alignChoice('world',ix);
       worldActivate();
     });
   }
@@ -869,7 +894,7 @@ RT.ui = (function () {
       el.dataset.i = String(i);
       el.innerHTML = it.label + (it.sub ? '<span class="sub">' + it.sub + '</span>' : '');
       el.style.pointerEvents = 'auto';
-      U.addTap(el, () => { worldIndex = i; applyWorldFocus(); worldActivate(); });
+      U.addTap(el, () => { alignChoice('world',i); worldActivate(); });
       wrap.appendChild(el);
     });
   }
@@ -1039,6 +1064,8 @@ RT.ui = (function () {
 
   function setScreen(name, opts) {
     opts = opts || {};
+    const retain=opts.preserve && screen===name;
+    if(choiceScan?.context?.key==='menu:'+screen)choiceMemory.set(screen,choiceScan.getState().id);
     screen = name;
     index = -1; // A new screen waits for Space or the first Auto Scan tick.
     const meta = SCREENS[name](opts);
@@ -1063,7 +1090,7 @@ RT.ui = (function () {
     items = meta.items || [];
     layout = meta.layout || 'list';
     if (meta.startIndex !== undefined) index = meta.startIndex;
-    if (opts.index !== undefined) index = opts.index;
+    // Same-context redraw restores by identity through the shared controller.
     if (items[index] && items[index].enabled === false) {
       for (let n = 0; n < items.length; n++) {
         const i = (index + n) % items.length;
@@ -1084,6 +1111,7 @@ RT.ui = (function () {
       setTimeout(fitPanel, 80);
     }
     showOverlay(true);
+    syncChoiceScan({fresh:!retain,restoreId:opts.restore?choiceMemory.get(name):null});
     updateFocus();          // and scroll the starting row into view
     if (index >= 0 && items[index] && typeof items[index].onFocus === 'function') {
       items[index].onFocus();
@@ -1110,7 +1138,7 @@ RT.ui = (function () {
     restartAutoScan();
   }
 
-  function refresh() { setScreen(screen, { index: index, announce: false }); }
+  function refresh() { setScreen(screen, { preserve:true, announce:false }); }
 
   const SCREENS = {
 
@@ -1147,7 +1175,7 @@ RT.ui = (function () {
         ? v.getVoiceDisplayName(v.getCurrentVoice()) : 'Default';
       const autoScan = sm ? sm.getSettings().autoScan : false;
       const speed = sm ? sm.getScanInterval() : 2000;
-      /* Input sensitivity - how long a switch must be held before it counts -
+      /* Input sensitivity - the shared cooldown / anti-rapid-press filter -
          belongs to the hub's scan manager, which is where a carer sets it once
          for every game. A second copy of it here was a row to scan past. */
       const theme = THEMES.find(t => t.id === G.getTheme()) || THEMES[0];
@@ -1311,7 +1339,7 @@ RT.ui = (function () {
           action: (function (t) { return function () { U.speak(t); }; })(line(f))
         };
       });
-      rows.push({ label: '\u2190 Back', speech: 'Back', action: () => setScreen('keeper') });
+      rows.push({ label: '\u2190 Back', speech: 'Back', action: () => setScreen('keeper', {restore:true}) });
 
       return {
         art: icon('rod', '' + ic('rod') + ''),
@@ -1368,7 +1396,7 @@ RT.ui = (function () {
            baits.length + tools.length,
            check && !check.ok && /magnet|lure/.test(check.need) ? 'Not what this job needs.' : '');
 
-      list.push({ label: '\u2190 Back', speech: 'Back', action: () => setScreen('tackle') });
+      list.push({ label: '\u2190 Back', speech: 'Back', action: () => setScreen('tackle', {restore:true}) });
 
       let stats = '';
       if (want) {
@@ -1432,7 +1460,7 @@ RT.ui = (function () {
           action: action
         });
       };
-      const close = () => { AU.menuSelect(); setScreen('kit'); };
+      const close = () => { AU.menuSelect(); setScreen('kit', {restore:true}); };
 
       let title, sub, speech;
       if (kitTray === 'line') {
@@ -1517,7 +1545,7 @@ RT.ui = (function () {
       }
 
       list.push({ label: '\u2190 Back to the Box', speech: 'Back to the tackle box',
-                  action: () => setScreen('kit'),
+                  action: () => setScreen('kit', {restore:true}),
                   card: { icon: ic('tacklebox'), title: 'Back to the Box', wide: true } });
       /* "Your Rods" reads; "Your On the Line" does not - so the possessive is
          only put on the trays that are a THING you own, and the slot keeps
@@ -3214,10 +3242,7 @@ RT.ui = (function () {
        worse than open it again. */
     const here = worldOn
       ? { place: worldPlace,
-          index: (function () {
-            const k = worldItems.findIndex(it => it.key === 'options');
-            return k >= 0 ? k : worldIndex;
-          })() }
+          key: worldItems.some(it=>it.key==='options') ? 'options' : worldItems[worldIndex]?.key }
       : null;
     pausedWorld = back || here;
     if (G.run) { G.pause(); AU.stopReelLoop(); }
@@ -3231,7 +3256,7 @@ RT.ui = (function () {
     if (pausedWorld) {
       const pw = pausedWorld;
       pausedWorld = null;
-      enterWorld(pw.place, () => pw.index);   // re-enters and hides the overlay
+      enterWorld(pw.place, null, pw.key);   // re-enters and hides the overlay
       return;
     }
     showOverlay(false);
@@ -3280,6 +3305,7 @@ RT.ui = (function () {
     $('mapView').setAttribute('aria-hidden', 'false');
     mapFocused = false;
     $('mapClose').classList.remove('focused');
+    syncChoiceScan({fresh:true});
     restartAutoScan();
     paintMap();
     /* Kept up to date while it is open. Nothing moves while the game is
@@ -3763,8 +3789,7 @@ RT.ui = (function () {
     // Scene target index -> our list index.
     const k = worldItems.findIndex(it => it.sceneIndex === i);
     if (k < 0 || k === worldIndex) return;
-    worldIndex = k;
-    applyWorldFocus();
+    alignChoice('world',k);
     startWorldScan();          // hovering restarts the dwell, like a menu does
   }
 
@@ -3800,8 +3825,7 @@ RT.ui = (function () {
         const k = worldItems.findIndex(it => it.sceneIndex === i);
         if (k >= 0) {
           if (e.cancelable) e.preventDefault();
-          worldIndex = k;
-          applyWorldFocus();
+          alignChoice('world',k);
           worldActivate();
         }
       }
@@ -3919,7 +3943,35 @@ RT.ui = (function () {
     if (st === S.WAITING) { G.setReelHold(keyDown.Enter || keyDown.Space); return; }
   }
 
+
+  function choiceInput(e){
+    if(ctx()==='game'||!isSwitchKey(e.code))return false;
+    e.preventDefault();const k=normKey(e.code);
+    if(e.type==='keydown'){
+      if(ignoreUntilRelease[k]||e.repeat||keyDown[k])return true;
+      keyDown[k]=true;keyDownAt[k]=Date.now();spent[k]=false;AU.resume();
+      if(k==='Space')choiceBraking=choiceScan.brakePress();
+      if(k!=='Space'||!choiceBraking)choiceScan.setInputHeld(true);
+      if(k==='Space'&&!choiceBraking&&!(ctx()==='world'&&isOneSwitch())){
+        didBackHold=false;
+        backHoldTimer=setTimeout(()=>{if(!keyDown.Space||ctx()==='game')return;didBackHold=true;choiceScan.step(-1);backRepeatTimer=setInterval(()=>choiceScan.step(-1),U.sm().getScanInterval());},SCAN_BACK_HOLD);
+      }
+    }else{
+      if(ignoreUntilRelease[k]){ignoreUntilRelease[k]=false;keyDown[k]=false;return true;}
+      if(!keyDown[k])return true;
+      keyDown[k]=false;clearTimeout(backHoldTimer);clearInterval(backRepeatTimer);backHoldTimer=backRepeatTimer=null;
+      if(k==='Space'){
+        if(choiceBraking)choiceScan.brakeRelease();
+        else if(!didBackHold){if(ctx()==='world'&&isOneSwitch())choiceScan.select();else choiceScan.step(1);}
+        didBackHold=false;choiceBraking=false;
+      }else choiceScan.select();
+      choiceScan.setInputHeld(keyDown.Space||keyDown.Enter);
+    }
+    return true;
+  }
+
   function onKeyDown(e) {
+    if(choiceInput(e))return;
     if (mapOn) {
       if (e.code === 'Escape') { closeMap(); return; }
       if (!isSwitchKey(e.code)) return;
@@ -4008,6 +4060,7 @@ RT.ui = (function () {
   }
 
   function onKeyUp(e) {
+    if(choiceInput(e))return;
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
     // The map is a one-button dialog, with the same empty entry state as menus.
@@ -4102,6 +4155,7 @@ RT.ui = (function () {
    * select it would have.
    */
   function onInputCancelled(e) {
+    if(ctx()!=='game'){clearKeys();choiceBraking=false;choiceScan?.cancelInput();return;}
     const wasBackScanning = !!backRepeatTimer;
     clearTimeout(backHoldTimer); backHoldTimer = null;
     clearInterval(backRepeatTimer); backRepeatTimer = null;
@@ -4318,6 +4372,7 @@ RT.ui = (function () {
      ══════════════════════════════════════════════════════════════════════ */
 
   function init() {
+    initChoiceScan();
     G.callbacks.onHud = onHud;
     G.callbacks.onSpots = onSpots;
     G.callbacks.onGuide = onGuide;
@@ -4344,7 +4399,8 @@ RT.ui = (function () {
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('narbe-input-cancelled', onInputCancelled);
-    window.addEventListener('blur', clearKeys);
+    window.addEventListener('blur',()=>{clearKeys();choiceBraking=false;choiceScan?.cancelInput();});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();choiceBraking=false;choiceScan?.cancelInput();}});
 
     U.addTap($('pauseBtn'), () => openPause());
     /* The map's Close button. It looks like a button, it has a pointer
@@ -4354,13 +4410,13 @@ RT.ui = (function () {
     U.addTap($('mapClose'), () => closeMap());
 
     const s = U.sm();
-    if (s && s.subscribe) s.subscribe(() => {
-      restartAutoScan();
-      if (worldOn) startWorldScan();
+    if (s && s.subscribe) s.subscribe(next => {
+      if(next.autoScan!==choiceAuto && keyDown.Space && !choiceBraking){clearTimeout(backHoldTimer);clearInterval(backRepeatTimer);backHoldTimer=backRepeatTimer=null;didBackHold=true;}
+      choiceAuto=next.autoScan;syncChoiceScan();
     });
 
     setScreen('title');
-    setTimeout(() => { if (screen === 'title') speakItem(); }, 900);
+    // Choice labels are announced by the owned scanner, without a delayed duplicate.
     /* Trace the lake in the background. The map is drawn from a picture of the
        depths that costs about a second to make; made now, while the title
        screen is being read, it is waiting the moment anybody opens the map. */
@@ -4381,7 +4437,7 @@ RT.ui = (function () {
               next press will act or only read the row out - for the browser
               checks, which cannot see any of that from the DOM. */
            __dbg: function () {
-             return { screen: screen, index: index,
+             return { screen: screen, index: index, choice:choiceScan?.getState(), worldPlace, worldIndex,
                       /* -1 means nothing is selected yet: the card is waiting
                          for a step, which is what reads a row out. */
                       selected: index >= 0,

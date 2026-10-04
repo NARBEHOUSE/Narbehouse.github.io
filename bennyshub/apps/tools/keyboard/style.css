@@ -781,3 +781,5 @@ body.theme-red {
     font-size: clamp(9px, 1.5vh, 16px);
   }
 }
+/* Keep the paused dashes over the highlighted fill, with visible contrast. */
+body [data-narbe-scan-paused] { outline-offset: -6px; }

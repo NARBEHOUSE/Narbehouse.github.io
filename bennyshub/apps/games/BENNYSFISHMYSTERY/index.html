@@ -1496,6 +1496,10 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
   #panelMenu:not(.grid) .menuItem{ min-height:44px }
   #pauseBtn, #mapClose{ min-height:44px; box-sizing:border-box }
 }
+#fish-world-status,#fish-map-status{position:absolute;top:12px;right:12px;z-index:250;pointer-events:none}
+#fish-menu-status{min-height:2.5rem}
+.menuItem[data-narbe-scan-paused],#dockHud[data-narbe-scan-paused]{outline-offset:-10px}
+#scanFrame[data-narbe-scan-paused]{outline-offset:-4px}
 </style>
 </head>
 <body data-theme="ben">
@@ -1732,6 +1736,10 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
 <!-- Hub-shared managers: scan speed, auto-scan, TTS and voice all come from
      the hub. This game adds no duplicate options. (Ground rule §2.5) -->
 <script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
@@ -1753,6 +1761,7 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
 <script src="js/data.js"></script>
 <script src="js/quests.js"></script>
 <script src="js/game.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>

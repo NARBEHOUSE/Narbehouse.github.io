@@ -271,7 +271,7 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      padding: 24px clamp(16px, 3vw, 32px) 40px;
+      padding: 24px clamp(16px, 3vw, 32px) calc(40px + var(--hub-footer-height, 27px));
     }
 
     #main { flex: 1; }
@@ -346,6 +346,14 @@
     }
 
     /* Settings screen layout */
+    #scan-settings { grid-column: 1 / -1; min-width: 0; }
+    #scan-settings h2 { margin: 8px 0 14px; }
+    #scan-settings > .grid { margin-bottom: 14px; }
+    #scan-settings button:disabled { cursor: default; transform: none; box-shadow: none; background: rgba(128,128,128,.08); }
+    #scan-settings button:disabled .btn-title { background: none; color: var(--muted); }
+    #scan-settings button:disabled .pill { background: rgba(128,128,128,.2); color: var(--muted); }
+    #screen-settings:focus { outline: none; }
+    #settings-scan-status { margin-left: auto; }
     #screen-settings .grid{
       grid-template-columns: repeat(3, 1fr);
       max-width: 100%;
@@ -949,8 +957,9 @@
       <section id="screen-settings" class="screen" aria-labelledby="settings-heading" data-screen="settings" tabindex="-1">
         <div class="controls-bar">
           <div class="controls-left">
-            <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
+            <button id="settings-back" class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
           </div>
+          <div id="settings-scan-status" class="narbe-scan-status-host"></div>
         </div>
         <h2 id="settings-heading" class="sr-only">Settings</h2>
         <div class="grid" role="group" aria-label="Settings list">
@@ -990,6 +999,15 @@
             </div>
           </button>
 
+          <button class="card-btn" id="uisize-toggle">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Size</div>
+            <div class="row">
+              <p class="desc">Change text and tile size</p>
+              <span class="pill" id="uisize-status">Default</span>
+            </div>
+          </button>
+
           <button class="card-btn" id="tts-toggle">
             <span class="kicker">Setting</span>
             <div class="btn-title">Text-to-Speech</div>
@@ -1008,43 +1026,10 @@
             </div>
           </button>
 
-          <button class="card-btn" id="autoscan-toggle">
-            <span class="kicker">Setting</span>
-            <div class="btn-title">Auto Scan</div>
-            <div class="row">
-              <p class="desc">Automatically move focus on the timing you select</p>
-              <span class="pill" id="autoscan-status">Off</span>
-            </div>
-          </button>
-
-          <button class="card-btn" id="scanspeed-toggle">
-            <span class="kicker">Setting</span>
-            <div class="btn-title">Scan Speed</div>
-            <div class="row">
-              <p class="desc">Change auto/backward scan speed</p>
-              <span class="pill" id="scanspeed-status">Medium</span>
-            </div>
-          </button>
-
-          <button class="card-btn" id="sensitivity-toggle">
-            <span class="kicker">Setting</span>
-            <div class="btn-title">Input Sensitivity</div>
-            <div class="row">
-              <p class="desc">Anti-tremor filter threshold</p>
-              <span class="pill" id="sensitivity-status">50ms</span>
-            </div>
-          </button>
-
-          <button class="card-btn" id="uisize-toggle">
-            <span class="kicker">Setting</span>
-            <div class="btn-title">Size</div>
-            <div class="row">
-              <p class="desc">Change text and tile size</p>
-              <span class="pill" id="uisize-status">Default</span>
-            </div>
-          </button>
+          <section id="scan-settings" aria-labelledby="scan-settings-heading"></section>
         </div>
-        <p class="footer-note">Press <span class="kbd">spacebar</span> to move focus. Press <span class="kbd">return</span> to toggle settings. Use the Back button to return home.</p>
+        <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Press <span class="kbd">return</span> to change the highlighted setting. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
+
       </section>
 
       <!-- Live polite announcements for screen-reader users -->
@@ -1067,9 +1052,14 @@
   </div>
 
   <!-- Include shared voice manager -->
+  <script src="shared/platform.js"></script>
+  <script src="shared/scan-status-badge.js"></script>
+  <script src="shared/choice-scan.js"></script>
+  <link rel="stylesheet" href="shared/scan-status-badge.css">
   <script src="shared/voice-manager.js"></script>
   <!-- Shared Scan Manager -->
   <script src="shared/scan-manager.js"></script>
+  <script src="shared/scan-settings.js"></script>
 
   <script>
     /**
@@ -1156,9 +1146,13 @@
     }
 
     function refreshExtensionTools() {
+      const selected = typeof hubMenuScanner !== 'undefined' && hubMenuContext === 'tools' ? hubMenuScanner?.getState().id : null;
       appsData.tools = allTools.filter(t => !t.requiresExtension || BennyExtension.supports(t.requiresExtension));
       showConnectionStatus();
-      filterState.tools.page = 0;
+      const visible = filterItemsByGenre('tools', filterState.tools.genre);
+      const remembered = selected?.startsWith('app:') ? visible.findIndex(item => 'app:' + item.path === selected) : -1;
+      filterState.tools.page = remembered >= 0 ? Math.floor(remembered / ITEMS_PER_PAGE) :
+        Math.min(filterState.tools.page, Math.max(0, Math.ceil(visible.length / ITEMS_PER_PAGE) - 1));
       if (currentScreen === 'tools') renderAppsGrid('tools');
     }
     window.addEventListener('benny-extension-change', refreshExtensionTools);
@@ -1337,8 +1331,7 @@
         });
       });
 
-      // Removed focusIndex reset to preserve focus e.g. on genre toggle button
-      // focusIndex = -1;
+      refreshHubMenuItems(category);
     }
 
     // Render genre filter screen
@@ -1457,45 +1450,9 @@
       };
       document.getElementById('bgtheme-status').textContent = bgThemeNames[settings.bgTheme];
 
-      // Apply scan speed
-      let autoScan = false;
-      let scanSpeedName = 'Medium';
-      let sensitivityName = '50ms';
-
-      if (window.NarbeScanManager) {
-          const scanSettings = window.NarbeScanManager.getSettings();
-          autoScan = scanSettings.autoScan;
-
-          // Map index to name
-          const speedNames = ['Fast (1s)', 'Medium (2s)', 'Slow (3s)', 'Super Slow (4s)'];
-          scanSpeedName = speedNames[scanSettings.scanSpeedIndex] || 'Medium (2s)';
-
-          // Map sensitivity index to name
-          const sensitivityNames = ['50ms', '100ms', '200ms', '300ms'];
-          sensitivityName = sensitivityNames[scanSettings.inputSensitivityIndex] || '50ms';
-      }
-
-      document.getElementById('scanspeed-status').textContent = scanSpeedName;
-
-      const sensitivityStatus = document.getElementById('sensitivity-status');
-      if (sensitivityStatus) sensitivityStatus.textContent = sensitivityName;
-
-      // Apply auto scan setting
-      document.getElementById('autoscan-status').textContent = autoScan ? 'On' : 'Off';
-
-      // Auto Scan runs at whatever Scan Speed is set to, so the description
-      // points at that setting rather than naming a duration that then has to
-      // be kept in sync with it.
-      const autoScanDesc = document.querySelector('#autoscan-toggle .desc');
-      if(autoScanDesc) autoScanDesc.textContent = 'Automatically move focus on the timing you select';
-
-      if (autoScan) {
-        // Restart to apply new speed if changed
-        stopAutoScan();
-        startAutoScan();
-      } else {
-        stopAutoScan();
-      }
+      // Choice controllers own timing; refreshing settings preserves selection.
+      if (window.NarbeScanManager.getSettings().autoScan) startAutoScan();
+      else stopAutoScan();
 
       // Apply TTS status (from voice manager)
       const voiceSettings = window.NarbeVoiceManager.getSettings();
@@ -1507,14 +1464,9 @@
 
     // Auto scan functions
     function startAutoScan() {
-      stopAutoScan(); // Restart if running to catch speed changes
-
-      autoScanInterval = setInterval(() => {
-        if (!isTransitioning && !iframeContainer.classList.contains('active')) {
-          if (!fullscreenModal.classList.contains('hidden')) focusFullscreenOption();
-          else focusNext();
-        }
-      }, getScanDelay());
+      stopAutoScan();
+      syncSettingsOwnership();
+      syncHubMenuOwnership();
     }
 
     function stopAutoScan() {
@@ -1525,24 +1477,8 @@
     }
 
     function focusPrevious() {
-      const list = getFocusables();
-      if(list.length === 0) return;
-
-      if (focusIndex === -1) {
-        focusIndex = list.length - 1;
-        list[focusIndex].focus();
-        speakFocusedElement(list[focusIndex]);
-        return;
-      }
-
-      const currentFocused = document.activeElement;
-      const currentIndex = list.indexOf(currentFocused);
-
-      if (currentIndex >= 0) {
-        focusIndex = currentIndex;
-      }
-
-      focusAt(focusIndex - 1);
+      if(settingsOwnsScan())ensureSettingsScanner().step(-1);
+      else if(hubMenuOwnsScan())ensureHubMenuScanner().step(-1);
     }
 
     // TTS functionality using unified voice manager
@@ -1569,14 +1505,14 @@
       settings.highlightColor = colors[(currentIndex + 1) % colors.length];
       applySettings();
       saveSettings();
-      speak(`Highlight color changed to ${settings.highlightColor}`);
+      announceSetting(`Highlight color changed to ${settings.highlightColor}`);
     });
 
     document.getElementById('highlight-style-toggle').addEventListener('click', () => {
       settings.highlightStyle = settings.highlightStyle === 'outline' ? 'full' : 'outline';
       applySettings();
       saveSettings();
-      speak(`Highlight style changed to ${settings.highlightStyle === 'full' ? 'Full Cell' : 'Outline'}`);
+      announceSetting(`Highlight style changed to ${settings.highlightStyle === 'full' ? 'Full Cell' : 'Outline'}`);
     });
 
     document.getElementById('textcolor-toggle').addEventListener('click', () => {
@@ -1585,7 +1521,7 @@
       settings.textColor = textColors[(currentIndex + 1) % textColors.length];
       applySettings();
       saveSettings();
-      speak(`Text color changed to ${settings.textColor}`);
+      announceSetting(`Text color changed to ${settings.textColor}`);
     });
 
     document.getElementById('bgtheme-toggle').addEventListener('click', () => {
@@ -1594,14 +1530,14 @@
       settings.bgTheme = bgThemes[(currentIndex + 1) % bgThemes.length];
       applySettings();
       saveSettings();
-      speak(`Background theme changed to ${settings.bgTheme}`);
+      announceSetting(`Background theme changed to ${settings.bgTheme}`);
     });
 
     document.getElementById('tts-toggle').addEventListener('click', () => {
       const ttsEnabled = window.NarbeVoiceManager.toggleTTS();
       applySettings();
       if (ttsEnabled) {
-        speak('Text to speech enabled');
+        announceSetting('Text to speech enabled');
       }
     });
 
@@ -1611,36 +1547,7 @@
       // Announce the new voice using the new voice
       const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
       const displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
-      speak(`Voice ${displayName}`);
-    });
-
-    document.getElementById('autoscan-toggle').addEventListener('click', () => {
-      if (window.NarbeScanManager) {
-        const current = window.NarbeScanManager.getSettings().autoScan;
-        window.NarbeScanManager.setAutoScan(!current);
-        applySettings();
-        speak(`Auto scan ${!current ? 'enabled' : 'disabled'}`);
-      }
-    });
-
-    document.getElementById('scanspeed-toggle').addEventListener('click', () => {
-      if (window.NarbeScanManager) {
-          const newIndex = window.NarbeScanManager.cycleScanSpeed();
-          const speedNames = ['Fast', 'Medium', 'Slow', 'Super Slow'];
-          const name = speedNames[newIndex] || 'Medium';
-          applySettings();
-          speak(`Scan speed changed to ${name}`);
-      }
-    });
-
-    document.getElementById('sensitivity-toggle').addEventListener('click', () => {
-      if (window.NarbeScanManager) {
-          const newIndex = window.NarbeScanManager.cycleInputSensitivity();
-          const sensitivityNames = ['50 milliseconds', '100 milliseconds', '200 milliseconds', '300 milliseconds'];
-          const name = sensitivityNames[newIndex] || '50 milliseconds';
-          applySettings();
-          speak(`Input sensitivity changed to ${name}`);
-      }
+      announceSetting(`Voice ${displayName}`);
     });
 
     document.getElementById('uisize-toggle').addEventListener('click', () => {
@@ -1649,7 +1556,7 @@
       settings.uiSize = sizes[(currentIndex + 1) % sizes.length];
       applySettings();
       saveSettings();
-      speak(`Size changed to ${settings.uiSize}`);
+      announceSetting(`Size changed to ${settings.uiSize}`);
     });
 
     // Fullscreen management
@@ -1665,39 +1572,18 @@
     }
 
     function resetMenuFocus() {
+      clearSettingsInput();
+      clearHubMenuInput();
+      syncSettingsOwnership();
+      syncHubMenuOwnership({fresh:true});
+      if (currentScreen === 'settings' && !isTransitioning) {
+        ensureSettingsScanner().open(settingsItems());
+        syncSettingsOwnership();
+      }
       focusIndex = -1;
       if (!document.activeElement?.closest('[data-scan-exclude]')) document.activeElement?.blur();
       if (window.NarbeScanManager?.getSettings().autoScan) startAutoScan();
       else stopAutoScan();
-    }
-
-    function focusFullscreenOption(direction = 1) {
-      const buttons = [modalFullscreenBtn, modalCancelBtn];
-      const current = buttons.indexOf(document.activeElement);
-      const next = current < 0 ? (direction > 0 ? 0 : buttons.length - 1) : (current + direction + buttons.length) % buttons.length;
-      buttons[next].focus();
-      speak(next === 0 ? 'Fullscreen' : 'Cancel');
-    }
-
-    function beginFullscreenScan() {
-      spacePressed = true;
-      spaceHoldStartTime = Date.now();
-      spaceHoldTimeout = setTimeout(() => {
-        if (!spacePressed || fullscreenModal.classList.contains('hidden')) return;
-        focusFullscreenOption(-1);
-        backwardsScanInterval = setInterval(() => {
-          if (spacePressed && !fullscreenModal.classList.contains('hidden')) focusFullscreenOption(-1);
-        }, getScanDelay());
-      }, BACKWARDS_SCAN_THRESHOLD);
-    }
-
-    function finishFullscreenScan() {
-      if (!spacePressed) return;
-      spacePressed = false;
-      clearTimeout(spaceHoldTimeout);
-      clearInterval(backwardsScanInterval);
-      spaceHoldTimeout = backwardsScanInterval = null;
-      if (Date.now() - spaceHoldStartTime < BACKWARDS_SCAN_THRESHOLD) focusFullscreenOption();
     }
 
     function closeModal() {
@@ -1780,7 +1666,7 @@
       }
 
       announce('Returned to menu');
-      speak('Returned to menu. Press spacebar to start scanning');
+      announceFreshHubMenu('Returned to menu.');
     }
 
     iframeBack.addEventListener('click', () => {
@@ -1809,6 +1695,7 @@
       enterPressed = false;
 
       setTimeout(() => {
+        if (currentScreen !== name) return;
         const activeScreen = document.querySelector('.screen.active');
         if (activeScreen && !document.activeElement?.closest('[data-scan-exclude]')) {
           activeScreen.focus();
@@ -1820,6 +1707,14 @@
         announce(`${name} menu`);
         speak(`${name} menu. Press spacebar to start scanning`);
         isTransitioning = false;
+        if (name === 'settings') {
+          // Resume ownership before opening so park speech also gets its full wait.
+          syncSettingsOwnership();
+          ensureSettingsScanner().open(settingsItems());
+        }
+        syncSettingsOwnership();
+        syncHubMenuOwnership({fresh:true});
+        if (hubMenuOwnsScan()) announceFreshHubMenu(name + ' menu.');
       }, 100);
     }
 
@@ -1836,7 +1731,7 @@
       const active = document.querySelector('.screen.active');
       if(!active) return [];
       return Array.from(active.querySelectorAll('button:not([disabled])'))
-        .filter(el => !el.hasAttribute('disabled'));
+        .filter(el => !el.closest('[hidden], [data-scan-exclude]'));
     }
 
     function speakFocusedElement(el) {
@@ -1948,8 +1843,8 @@
       const displayGenre = nextGenre === 'all' ? 'All' : nextGenre;
       if(btn) btn.textContent = `Genre: ${displayGenre}`;
 
-      speak(`Genre ${displayGenre}`);
       renderAppsGrid(category);
+      announceHubMenu(`Genre ${displayGenre}`);
     }
 
     function resetGenre(category) {
@@ -1959,8 +1854,8 @@
       const btn = document.getElementById(`${category}-filter-btn`);
       if(btn) btn.textContent = 'Genre: All';
 
-      speak('Filter reset to All');
       renderAppsGrid(category);
+      announceHubMenu('Filter reset to All');
     }
 
     // Attach listeners
@@ -1986,119 +1881,359 @@
     let enterPressed = false;
     let isTransitioning = false;
     let suppressEnterClick = false;
-    let lastActivationTime = 0;
-    const DEBOUNCE_DELAY = 500;
-
-    function focusAt(idx) {
-      const list = getFocusables();
-      if(list.length === 0) return;
-      focusIndex = ((idx % list.length) + list.length) % list.length;
-      list[focusIndex].focus();
-      speakFocusedElement(list[focusIndex]);
-    }
 
     function focusNext() {
-      const list = getFocusables();
-      if(list.length === 0) return;
-
-      if (focusIndex === -1) {
-        focusIndex = 0;
-        list[focusIndex].focus();
-        speakFocusedElement(list[focusIndex]);
-        return;
-      }
-
-      const currentFocused = document.activeElement;
-      const currentIndex = list.indexOf(currentFocused);
-
-      if (currentIndex >= 0) {
-        focusIndex = currentIndex;
-      }
-
-      focusAt(focusIndex + 1);
+      if(settingsOwnsScan())ensureSettingsScanner().step(1);
+      else if(hubMenuOwnsScan())ensureHubMenuScanner().step(1);
     }
-
     function activateFocused() {
-      if (isTransitioning) return;
-
-      const currentTime = Date.now();
-      if (currentTime - lastActivationTime < DEBOUNCE_DELAY) {
-        return;
-      }
-      lastActivationTime = currentTime;
-
-      const list = getFocusables();
-      if(list.length === 0) return;
-
-      if (focusIndex === -1) {
-        speak('Press spacebar first to select an item');
-        return;
-      }
-
-      const currentFocused = document.activeElement;
-      const currentIndex = list.indexOf(currentFocused);
-
-      if (currentIndex >= 0) {
-        focusIndex = currentIndex;
-      }
-
-      const el = list[focusIndex];
-      el.click();
+      if(settingsOwnsScan())ensureSettingsScanner().select();
+      else if(hubMenuOwnsScan())ensureHubMenuScanner().select();
     }
 
-    // Keyboard event handlers
-    document.addEventListener('keydown', (e) => {
-      if (!fullscreenModal.classList.contains('hidden')) {
-        if (e.key === ' ' && !spacePressed) {
-          e.preventDefault();
-          beginFullscreenScan();
-        } else if ((e.key === 'Enter' || e.keyCode === 13) && !enterPressed) {
-          e.preventDefault();
-          enterPressed = true;
-          suppressEnterClick = true;
+    // Settings retains its dedicated owner and visible-disabled option list.
+    let settingsScanner = null;
+    let settingsScanSuspended = true;
+    let settingsSpaceDown = false, settingsEnterDown = false;
+    let settingsSpaceBraking = false, settingsSpaceCancelled = false, settingsSpaceAt = 0;
+    let settingsAutoMode = window.NarbeScanManager.getSettings().autoScan;
+    let settingsReverseTimer = null, settingsReverseInterval = null;
+    const settingsScreen = SCREENS.settings;
+
+    function settingsOwnsScan() {
+      return currentScreen === 'settings' && !isTransitioning &&
+        fullscreenModal.classList.contains('hidden') &&
+        !iframeContainer.classList.contains('active') &&
+        !document.getElementById('hub-settings').open;
+    }
+    function settingsItems() {
+      return Array.from(settingsScreen.querySelectorAll('button:not([disabled])'))
+        .filter(el => !el.closest('[hidden], [data-scan-exclude]'));
+    }
+    function settingsLabel(el) {
+      const title = el.querySelector('.btn-title')?.textContent || el.getAttribute('aria-label') || el.textContent.trim();
+      const value = el.querySelector('.pill')?.textContent;
+      const description = el.querySelector('.desc')?.textContent;
+      return [title, value, description].filter(Boolean).join('. ');
+    }
+    function clearSettingsInput() {
+      settingsSpaceDown = settingsEnterDown = settingsSpaceBraking = settingsSpaceCancelled = false;
+      clearTimeout(settingsReverseTimer);
+      clearInterval(settingsReverseInterval);
+      settingsReverseTimer = settingsReverseInterval = null;
+      suppressEnterClick = false;
+      settingsScanner?.setInputHeld(false);
+    }
+    function syncSettingsOwnership() {
+      if (!settingsScanner) return;
+      const suspended = !settingsOwnsScan();
+      if (suspended !== settingsScanSuspended) {
+        settingsScanSuspended = suspended;
+        if (suspended) clearSettingsInput();
+        settingsScanner.setSuspended(suspended);
+      }
+    }
+    // Keep choice cards in the usable viewport above the fixed footer. This
+    // uses the existing page scroll; oversized cards keep their title visible.
+    function revealHubChoice(item) {
+      // A pointer press must finish on the same target before we move it.
+      if (item.matches(':active')) return;
+      if (!item.closest('.screen')) {
+        item.scrollIntoView({block: 'nearest', inline: 'nearest'});
+        return;
+      }
+      item.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop || 0;
+      const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
+      const footerTop = document.getElementById('mini-footer')?.getBoundingClientRect().top ?? viewportBottom;
+      const top = viewportTop + 20;
+      const bottom = Math.min(viewportBottom, footerTop) - 20;
+      const bounds = item.getBoundingClientRect();
+      const targetTop = top + Math.max(0, (bottom - top - bounds.height) / 2);
+      window.scrollBy({top: bounds.top - targetTop, behavior: 'instant'});
+    }
+    function revealCurrentHubChoice() {
+      let item;
+      if (settingsOwnsScan()) {
+        const id = settingsScanner?.getState().id;
+        if (id) item = document.getElementById(id);
+      } else if (hubMenuOwnsScan()) {
+        const id = hubMenuScanner?.getState().id;
+        if (id) item = menuItems().find(el => menuId(el) === id);
+      }
+      if (item) revealHubChoice(item);
+    }
+    window.addEventListener('resize', revealCurrentHubChoice);
+    window.visualViewport?.addEventListener('resize', revealCurrentHubChoice);
+    document.addEventListener('DOMContentLoaded', () => {
+      const footer = document.getElementById('mini-footer');
+      if (footer) {
+        new ResizeObserver(() => {
+          // Reserve page space even when the legal footer is expanded, so the
+          // last choices can still scroll completely above it.
+          document.documentElement.style.setProperty('--hub-footer-height', Math.ceil(footer.getBoundingClientRect().height) + 'px');
+          revealCurrentHubChoice();
+        }).observe(footer);
+      }
+    }, {once: true});
+
+    function drawSettingsScan(item, state) {
+      settingsScreen.dataset.scanIndex = String(state.index);
+      settingsScreen.dataset.selected = item?.id || (state.parked ? 'parked' : 'park');
+      settingsScreen.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : window.NarbeScanManager.getSettings().autoScan ? 'running' : 'step';
+      if (!settingsOwnsScan()) return;
+      focusIndex = state.index;
+      if (item) {
+        item.focus({preventScroll: true});
+        revealHubChoice(item);
+      }
+      else if (settingsScreen.contains(document.activeElement)) settingsScreen.focus({preventScroll: true});
+    }
+    function ensureSettingsScanner() {
+      if (settingsScanner) return settingsScanner;
+      settingsScanner = window.NarbeScanManager.createChoiceScan({
+        choice: true, holdThreshold: BACKWARDS_SCAN_THRESHOLD,
+        items: settingsItems(), getId: el => el.id, getLabel: settingsLabel,
+        getElement: el => el, getLabelElement: el => el.querySelector('.btn-title') || el,
+        statusHost: document.getElementById('settings-scan-status'),
+        speak: text => window.NarbeVoiceManager.speak(text),
+        onHighlight: drawSettingsScan,
+        onSelect: item => item.click()
+      });
+      settingsScanSuspended = !settingsOwnsScan();
+      settingsScanner.setSuspended(settingsScanSuspended);
+      return settingsScanner;
+    }
+    function announceSetting(text) {
+      if (settingsScanner && settingsOwnsScan()) {
+        // Appearance/size changes can move an already-focused card. Refresh
+        // labels and its scroll position without changing the selected id.
+        settingsScanner.setItems(settingsItems());
+        return settingsScanner.announceCurrent(text);
+      }
+      return window.NarbeVoiceManager.speak(text);
+    }
+    function alignSettingsFocus(button) {
+      if (!settingsOwnsScan() || !settingsItems().includes(button)) return;
+      const scanner = ensureSettingsScanner();
+      if (scanner.getState().id !== button.id) {
+        scanner.open(settingsItems(), {restoreId: button.id});
+        scanner.setInputHeld(settingsSpaceDown || settingsEnterDown);
+      }
+    }
+    settingsScreen.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (button) alignSettingsFocus(button);
+    }, true);
+    settingsScreen.addEventListener('focusin', event => {
+      if (event.target.matches('button')) alignSettingsFocus(event.target);
+    });
+    const scanSettingsUI = window.NarbeScanSettings.mount(document.getElementById('scan-settings'), {
+      manager: window.NarbeScanManager,
+      onChange(next) {
+        if (settingsAutoMode !== next.autoScan && settingsSpaceDown && !settingsSpaceBraking) {
+          // A Step/backward gesture belongs to the mode in which it began.
+          // Consume its release without movement after a live mode change.
+          settingsSpaceCancelled = true;
+          clearTimeout(settingsReverseTimer);
+          clearInterval(settingsReverseInterval);
+          settingsReverseTimer = settingsReverseInterval = null;
+          settingsScanner?.setInputHeld(true);
         }
-        return;
-      }
+        settingsAutoMode = next.autoScan;
+        settingsScanner?.setItems(settingsItems());
+      },
+      onAnnounce: announceSetting
+    });
+    document.getElementById('hub-settings').addEventListener('toggle', syncSettingsOwnership);
+    window.addEventListener('blur', clearSettingsInput);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') clearSettingsInput();
+    });
 
-      if (isTransitioning) {
-        if (e.key === ' ' || e.key === 'Enter' || e.keyCode === 13) {
-          e.preventDefault();
-        }
-        return;
-      }
-
-      const tag = document.activeElement?.tagName;
-      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
-        return;
-      }
-
-      if(e.key === ' ' && !spacePressed){
-        e.preventDefault();
-        spacePressed = true;
-        spaceHoldStartTime = Date.now();
-
-        // Set timeout for backwards scanning
-        spaceHoldTimeout = setTimeout(() => {
-          if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
-            speak('Backwards scanning');
-            focusPrevious();
-
-            // Start backwards auto-scan
-            backwardsScanInterval = setInterval(() => {
-              if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
-                focusPrevious();
-              } else {
-                clearInterval(backwardsScanInterval);
-                backwardsScanInterval = null;
-              }
-            }, getScanDelay());
+    // The manager's single global guard runs first. This surface adds no
+    // minimum press duration or second activation debounce.
+    window.NarbePlatform.input.capture(event => {
+      if (!settingsOwnsScan()) return;
+      if (event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      const isSpace = event.code === 'Space' || event.key === ' ';
+      const isEnter = event.key === 'Enter' || event.code === 'NumpadEnter';
+      if (!isSpace && !isEnter) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const scanner = ensureSettingsScanner();
+      if (event.type === 'keydown') {
+        if (event.repeat) return;
+        if (isSpace && !settingsSpaceDown) {
+          settingsSpaceDown = true;
+          settingsSpaceCancelled = false;
+          settingsSpaceAt = Date.now();
+          settingsSpaceBraking = scanner.brakePress();
+          if (!settingsSpaceBraking) {
+            scanner.setInputHeld(true);
+            settingsReverseTimer = setTimeout(() => {
+              if (!settingsSpaceDown || !settingsOwnsScan()) return;
+              scanner.step(-1);
+              settingsReverseInterval = setInterval(() => {
+                if (settingsSpaceDown && settingsOwnsScan()) scanner.step(-1);
+              }, getScanDelay());
+            }, BACKWARDS_SCAN_THRESHOLD);
           }
-        }, BACKWARDS_SCAN_THRESHOLD);
+        } else if (isEnter && !settingsEnterDown) {
+          settingsEnterDown = true;
+          suppressEnterClick = true;
+          scanner.setInputHeld(true);
+        }
+      } else if (isSpace && settingsSpaceDown) {
+        settingsSpaceDown = false;
+        clearTimeout(settingsReverseTimer);
+        clearInterval(settingsReverseInterval);
+        settingsReverseTimer = settingsReverseInterval = null;
+        if (settingsSpaceBraking) scanner.brakeRelease();
+        else if (!settingsSpaceCancelled && Date.now() - settingsSpaceAt < BACKWARDS_SCAN_THRESHOLD) scanner.step(1);
+        settingsSpaceBraking = settingsSpaceCancelled = false;
+        scanner.setInputHeld(settingsEnterDown);
+      } else if (isEnter && settingsEnterDown) {
+        settingsEnterDown = false;
+        suppressEnterClick = false;
+        scanner.select();
+        scanner.setInputHeld(settingsSpaceDown && !settingsSpaceBraking);
+      }
+    });
 
-      } else if((e.key === 'Enter' || e.keyCode === 13) && !enterPressed){
-        e.preventDefault();
-        enterPressed = true;
-        suppressEnterClick = true;
+
+    // All remaining Hub menus are stationary choices. This owner is separate
+    // from Settings and the active iframe; app gameplay keeps its own events.
+    let hubMenuScanner = null, hubMenuContext = '', hubMenuSuspended = true;
+    let hubMenusReady = false, hubMenuDrawing = false;
+    let menuSpaceDown = false, menuEnterDown = false, menuBraking = false;
+    let menuCancelled = false, menuSpaceAt = 0, menuReverseTimer = null, menuReverseInterval = null;
+    let menuAutoMode = window.NarbeScanManager.getSettings().autoScan;
+    function menuContext() { return fullscreenModal.classList.contains('hidden') ? currentScreen : 'fullscreen'; }
+    function menuRoot() { return menuContext() === 'fullscreen' ? fullscreenModal.querySelector('.modal-content') : SCREENS[currentScreen]; }
+    function hubMenuOwnsScan() {
+      return hubMenusReady && !isTransitioning && !iframeContainer.classList.contains('active') &&
+        (menuContext() === 'fullscreen' || (currentScreen !== 'settings' && !document.getElementById('hub-settings').open));
+    }
+    function menuItems() {
+      // Keep the fullscreen prompt's existing switch order.
+      if (menuContext() === 'fullscreen') return [modalFullscreenBtn, modalCancelBtn];
+      return getFocusables();
+    }
+    function menuId(el) {
+      return el.id || (el.dataset.path ? 'app:' + el.dataset.path :
+        el.dataset.genre ? 'genre:' + el.dataset.genre :
+        el.dataset.target ? (el.classList.contains('backbtn') ? 'back:' : 'nav:') + el.dataset.target : el.textContent.trim());
+    }
+    function menuLabel(el) {
+      return el.getAttribute('aria-label') || [el.querySelector('.btn-title')?.textContent || el.textContent.trim(), el.querySelector('.desc')?.textContent].filter(Boolean).join('. ');
+    }
+    function menuHost(root) {
+      let host = root.querySelector(':scope > .hub-menu-scan-status');
+      if (!host) {
+        host = document.createElement('div');host.className = 'hub-menu-scan-status';
+        host.id = 'hub-menu-status-' + menuContext();root.prepend(host);
+      }
+      root.setAttribute('tabindex', '-1');return host;
+    }
+    function clearHubMenuInput() {
+      menuSpaceDown = menuEnterDown = menuBraking = menuCancelled = false;
+      clearTimeout(menuReverseTimer);clearInterval(menuReverseInterval);
+      menuReverseTimer = menuReverseInterval = null;suppressEnterClick = false;
+      hubMenuScanner?.setInputHeld(false);
+    }
+    function ensureHubMenuScanner() {
+      const context = menuContext(), root = menuRoot();
+      if (hubMenuScanner && hubMenuContext === context) return hubMenuScanner;
+      clearHubMenuInput();hubMenuScanner?.dispose();hubMenuContext = context;
+      hubMenuScanner = window.NarbeScanManager.createChoiceScan({
+        choice:true, holdThreshold:BACKWARDS_SCAN_THRESHOLD, items:menuItems(),
+        getId:menuId, getLabel:menuLabel, getElement:el=>el,
+        getLabelElement:el=>el.querySelector('.btn-title')||el, statusHost:menuHost(root),
+        speak:text=>window.NarbeVoiceManager.speak(text),
+        onHighlight(item,state) {
+          root.dataset.scanIndex = String(state.index);
+          root.dataset.selected = item ? menuId(item) : state.parked ? 'parked' : 'park';
+          root.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : window.NarbeScanManager.getSettings().autoScan ? 'running' : 'step';
+          if (!hubMenuOwnsScan() || context !== menuContext() || state.suspended) return;
+          focusIndex = state.index;hubMenuDrawing = true;
+          try {
+            if (item) { item.focus({preventScroll:true});revealHubChoice(item); }
+            else if (!document.activeElement?.closest('[data-scan-exclude]')) root.focus({preventScroll:true});
+          } finally { hubMenuDrawing = false; }
+        },
+        onSelect:item=>item.click()
+      });
+      hubMenuSuspended = !hubMenuOwnsScan();hubMenuScanner.setSuspended(hubMenuSuspended);
+      return hubMenuScanner;
+    }
+    function syncHubMenuOwnership({fresh=false}={}) {
+      const suspended = !hubMenuOwnsScan();
+      if (suspended) {
+        if (hubMenuScanner && !hubMenuSuspended) { clearHubMenuInput();hubMenuSuspended=true;hubMenuScanner.setSuspended(true); }
+        return;
+      }
+      const scanner = ensureHubMenuScanner();
+      if (hubMenuSuspended) { hubMenuSuspended=false;scanner.setSuspended(false); }
+      if (fresh) scanner.open(menuItems());
+      else scanner.setItems(menuItems());
+    }
+    function refreshHubMenuItems(category) {
+      if (hubMenuScanner && hubMenuContext === category && currentScreen === category && fullscreenModal.classList.contains('hidden')) hubMenuScanner.setItems(menuItems());
+    }
+    function announceHubMenu(text, options) {
+      if (hubMenuOwnsScan()) { const scanner=ensureHubMenuScanner();scanner.setItems(menuItems());return scanner.announceCurrent(text, options); }
+      return window.NarbeVoiceManager.speak(text);
+    }
+    function announceFreshHubMenu(text, stepHint = ' Press spacebar to start scanning.') {
+      const parkingLabel = window.NarbeScanManager.isParkingEnabled();
+      const suffix = parkingLabel ? ' Park.' : window.NarbeScanManager.getSettings().autoScan ? '' : stepHint;
+      return announceHubMenu(text + suffix, {parkingLabel});
+    }
+    function alignHubMenuFocus(button) {
+      if (hubMenuDrawing || !hubMenuOwnsScan() || !menuItems().includes(button)) return;
+      const scanner=ensureHubMenuScanner();
+      if (scanner.getState().id !== menuId(button)) {
+        scanner.open(menuItems(),{restoreId:menuId(button)});scanner.setInputHeld(menuSpaceDown || menuEnterDown);
+      }
+    }
+    document.addEventListener('click', event=>{const button=event.target.closest('button');if(button)alignHubMenuFocus(button);},true);
+    document.addEventListener('focusin', event=>{if(event.target.matches('button'))alignHubMenuFocus(event.target);});
+    document.getElementById('hub-settings').addEventListener('toggle',()=>syncHubMenuOwnership());
+    window.addEventListener('blur',clearHubMenuInput);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)clearHubMenuInput();});
+    document.addEventListener('narbe-input-cancelled',()=>{clearHubMenuInput();if(hubMenuScanner){hubMenuScanner.setSuspended(true);hubMenuSuspended=true;syncHubMenuOwnership();}});
+    window.NarbeScanManager.subscribe(next=>{
+      if (next.autoScan !== menuAutoMode && menuSpaceDown && !menuBraking) {
+        menuCancelled=true;clearTimeout(menuReverseTimer);clearInterval(menuReverseInterval);
+        menuReverseTimer=menuReverseInterval=null;hubMenuScanner?.setInputHeld(true);
+      }
+      menuAutoMode=next.autoScan;
+    });
+    window.NarbePlatform.input.capture(event=>{
+      if (!hubMenuOwnsScan() || event.target?.closest?.('input,textarea,select,[contenteditable="true"]')) return;
+      const space=event.code==='Space'||event.key===' ', enter=event.code==='Enter'||event.code==='NumpadEnter'||event.key==='Enter';
+      if (!space&&!enter) return;
+      event.preventDefault();event.stopImmediatePropagation();const scanner=ensureHubMenuScanner();
+      if(event.type==='keydown') {
+        if(event.repeat)return;
+        if(space&&!menuSpaceDown) {
+          menuSpaceDown=true;menuCancelled=false;menuSpaceAt=Date.now();menuBraking=scanner.brakePress();
+          if(!menuBraking) {
+            scanner.setInputHeld(true);
+            menuReverseTimer=setTimeout(()=>{
+              if(!menuSpaceDown||!hubMenuOwnsScan())return;
+              scanner.step(-1);menuReverseInterval=setInterval(()=>{if(menuSpaceDown&&hubMenuOwnsScan())scanner.step(-1);},getScanDelay());
+            },BACKWARDS_SCAN_THRESHOLD);
+          }
+        } else if(enter&&!menuEnterDown) {menuEnterDown=true;suppressEnterClick=true;scanner.setInputHeld(true);}
+      } else if(space&&menuSpaceDown) {
+        menuSpaceDown=false;clearTimeout(menuReverseTimer);clearInterval(menuReverseInterval);menuReverseTimer=menuReverseInterval=null;
+        if(menuBraking)scanner.brakeRelease();else if(!menuCancelled&&Date.now()-menuSpaceAt<BACKWARDS_SCAN_THRESHOLD)scanner.step(1);
+        menuBraking=menuCancelled=false;scanner.setInputHeld(menuEnterDown);
+      } else if(enter&&menuEnterDown) {
+        menuEnterDown=false;suppressEnterClick=false;scanner.select();scanner.setInputHeld(menuSpaceDown&&!menuBraking);
       }
     });
 
@@ -2109,79 +2244,6 @@
         if (e.stopImmediatePropagation) e.stopImmediatePropagation();
       }
     }, true);
-
-    document.addEventListener('keyup', (e) => {
-      if (!fullscreenModal.classList.contains('hidden')) {
-        if (e.key === ' ' && spacePressed) {
-          e.preventDefault();
-          finishFullscreenScan();
-        } else if ((e.key === 'Enter' || e.keyCode === 13) && enterPressed) {
-          e.preventDefault();
-          enterPressed = false;
-          suppressEnterClick = false;
-          if (document.activeElement === modalFullscreenBtn) {
-            modalFullscreenBtn.click();
-          } else if (document.activeElement === modalCancelBtn) {
-            modalCancelBtn.click();
-          } else {
-            speak('Press spacebar first to select a button');
-          }
-        }
-        return;
-      }
-
-      if (isTransitioning) {
-        if (e.key === ' ') {
-          spacePressed = false;
-          // Clear timers
-          if (spaceHoldTimeout) {
-            clearTimeout(spaceHoldTimeout);
-            spaceHoldTimeout = null;
-          }
-          if (backwardsScanInterval) {
-            clearInterval(backwardsScanInterval);
-            backwardsScanInterval = null;
-          }
-        }
-        if (e.key === 'Enter' || e.keyCode === 13) {
-          enterPressed = false;
-          suppressEnterClick = false;
-        }
-        return;
-      }
-
-      const tag = document.activeElement?.tagName;
-      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable){
-        return;
-      }
-
-      if(e.key === ' ' && spacePressed){
-        e.preventDefault();
-        spacePressed = false;
-
-        // Clear backwards scanning timers
-        if (spaceHoldTimeout) {
-          clearTimeout(spaceHoldTimeout);
-          spaceHoldTimeout = null;
-        }
-        if (backwardsScanInterval) {
-          clearInterval(backwardsScanInterval);
-          backwardsScanInterval = null;
-        }
-
-        // Check if this was a short press (normal forward scanning)
-        const holdDuration = Date.now() - spaceHoldStartTime;
-        if (holdDuration < BACKWARDS_SCAN_THRESHOLD) {
-          focusNext();
-        }
-
-      } else if((e.key === 'Enter' || e.keyCode === 13) && enterPressed){
-        e.preventDefault();
-        enterPressed = false;
-        suppressEnterClick = false;
-        activateFocused();
-      }
-    });
 
     // Fixed destinations from the Companion; no paths or executable data accepted.
     let companionNavigationReady=false;
@@ -2237,8 +2299,10 @@
         document.getElementById('main').focus();
       }
 
+      hubMenusReady=true;
+      syncHubMenuOwnership({fresh:true});
       companionNavigationReady=true;
-      if(!companionNavigation())speak('Use Fullscreen for the Best Experience. Press spacebar to start');
+      if(!companionNavigation())announceFreshHubMenu('Use Fullscreen for the Best Experience.', ' Press spacebar to start.');
     });
 
     // Listen for messages from iframe content
@@ -2278,11 +2342,9 @@
         const map = this._mapActionToKey(actionName);
         if(!map) return;
 
-        // 1. Handle Fullscreen Modal interactions
         if (!fullscreenModal.classList.contains('hidden')) {
-           if (map.key === ' ' && !spacePressed) beginFullscreenScan();
-           if (map.key === 'Enter') enterPressed = true;
-           return;
+          if(hubMenuOwnsScan())document.dispatchEvent(new KeyboardEvent('keydown',{...map,bubbles:true,cancelable:true}));
+          return;
         }
 
         // 2. Handle Game/Tool Iframe interactions
@@ -2308,38 +2370,7 @@
            return;
         }
 
-        // 3. Handle standard Hub Navigation
-        if (isTransitioning) return;
-
-        // Simulate keydown logic for hub
-        if (map.key === ' ') {
-           if(!spacePressed) {
-             spacePressed = true;
-             spaceHoldStartTime = Date.now();
-
-             // Backwards scan logic
-             spaceHoldTimeout = setTimeout(() => {
-               if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
-                 speak('Backwards scanning');
-                 focusPrevious();
-
-                 backwardsScanInterval = setInterval(() => {
-                   if (spacePressed && !iframeContainer.classList.contains('active') && fullscreenModal.classList.contains('hidden')) {
-                     focusPrevious();
-                   } else {
-                     clearInterval(backwardsScanInterval);
-                     backwardsScanInterval = null;
-                   }
-                 }, getScanDelay());
-               }
-             }, BACKWARDS_SCAN_THRESHOLD);
-           }
-        } else if (map.key === 'Enter') {
-           if(!enterPressed) {
-             enterPressed = true;
-             suppressEnterClick = true;
-           }
-        }
+        if(settingsOwnsScan()||hubMenuOwnsScan())document.dispatchEvent(new KeyboardEvent('keydown',{...map,bubbles:true,cancelable:true}));
       },
 
       /**
@@ -2349,17 +2380,9 @@
         const map = this._mapActionToKey(actionName);
         if(!map) return;
 
-        // 1. Handle Fullscreen Modal interactions
         if (!fullscreenModal.classList.contains('hidden')) {
-           if (map.key === ' ') {
-             finishFullscreenScan();
-           } else if (map.key === 'Enter') {
-             enterPressed = false;
-             // Click active
-             if (document.activeElement === modalFullscreenBtn) modalFullscreenBtn.click();
-             else if (document.activeElement === modalCancelBtn) modalCancelBtn.click();
-           }
-           return;
+          if(hubMenuOwnsScan())document.dispatchEvent(new KeyboardEvent('keyup',{...map,bubbles:true,cancelable:true}));
+          return;
         }
 
         // 2. Handle Game/Tool Iframe interactions
@@ -2385,33 +2408,7 @@
            return;
         }
 
-        // 3. Handle standard Hub Navigation
-        if (isTransitioning) {
-            spacePressed = false;
-            enterPressed = false;
-            if (spaceHoldTimeout) { clearTimeout(spaceHoldTimeout); spaceHoldTimeout = null; }
-            if (backwardsScanInterval) { clearInterval(backwardsScanInterval); backwardsScanInterval = null; }
-            return;
-        }
-
-        if (map.key === ' ') {
-           if(spacePressed) {
-             spacePressed = false;
-             if (spaceHoldTimeout) { clearTimeout(spaceHoldTimeout); spaceHoldTimeout = null; }
-             if (backwardsScanInterval) { clearInterval(backwardsScanInterval); backwardsScanInterval = null; }
-
-             const holdDuration = Date.now() - (spaceHoldStartTime || 0);
-             if (holdDuration < BACKWARDS_SCAN_THRESHOLD) {
-               focusNext();
-             }
-           }
-        } else if (map.key === 'Enter') {
-           if(enterPressed) {
-             enterPressed = false;
-             suppressEnterClick = false;
-             activateFocused();
-           }
-        }
+        if(settingsOwnsScan()||hubMenuOwnsScan())document.dispatchEvent(new KeyboardEvent('keyup',{...map,bubbles:true,cancelable:true}));
       },
 
       /**
@@ -2445,12 +2442,12 @@
       <div class="mini-footer-content">
 
         <!-- Privacy text mirrors bennyshub/companion-privacy.html; keep both versions aligned. -->
-<h4>Privacy</h4><p class="date">Updated September 30, 2026 · NARBE LLC</p>
+<h4>Privacy</h4><p class="date">Updated October 4, 2026 · NARBE LLC</p>
 <p>This policy covers the Benny's Hub website and Benny's Hub Companion for Google Chrome and Microsoft Edge. The Companion provides switch-accessible playback controls and optional calendar and news connections. The Companion has no advertising, analytics SDK, or developer-operated user account system. External services used by the website have their own data practices, described below.</p>
 <h4>Information used on your device</h4>
 
 <p><strong>Playback:</strong> the Companion uses URLs and tab/window identifiers for streams launched from the Hub, media elements, player controls, playback state and switch input. This lets it operate the player, return to your Hub and update supported episode links. It does not collect a general browser history. When a streaming service shows profile choices, the Companion can display those names in its control bar so you can select a profile. It does not store the profile names.</p>
-<p><strong>Preferences:</strong> scan timing, input sensitivity, scan mode, voice preferences and source permissions are used to personalize controls. Temporary playback and scan state is stored in browser session storage. News preferences and an optional calendar address use extension local storage; they are not synchronized through Chrome or Edge account sync by this extension.</p>
+<p><strong>Preferences:</strong> scan timing, input sensitivity, scan mode, voice preferences and source permissions are used to personalize controls. Temporary playback and scan state is stored in browser session storage. News preferences, the toolbar speech preference and an optional calendar address use extension local storage; they are not synchronized through Chrome or Edge account sync by this extension.</p>
 <p><strong>Calendar:</strong> if you connect a private Google Calendar iCal address, the extension stores that address locally and retrieves the calendar from Google. The address is an access credential. Calendar data can contain names, event descriptions, locations and other personal information. The extension processes it to display your week in Day Hub. It does not send your calendar to NARBE LLC.</p>
 <p><strong>News:</strong> when enabled, the extension retrieves public feeds. An optional place name supplied for local news is sent to Google News as a search term.</p>
 
@@ -2467,7 +2464,7 @@
 <p>Information is used to provide the features you choose and understand overall website usage. NARBE LLC does not sell personal data, use it for advertising, use it for credit decisions, or transfer it for unrelated purposes. The extension has no endpoint that uploads your journals, calendar contents, switch history or personal library to NARBE LLC. Data may be sent directly to the services described above when you use those features.</p>
 <p>The use of information received through browser APIs is limited to the Companion's stated functionality and follows the Chrome Web Store User Data Policy, including its Limited Use requirements, and Microsoft Edge Add-ons data-use requirements.</p>
 <h4>Your choices and deletion</h4>
-<p>Enable or revoke individual sources in Companion settings. Remove a calendar there to delete its stored address and revoke the extension's calendar access; invalidate a shared private calendar link in Google Calendar if you need to revoke the link itself. Uninstalling the extension removes its local storage; temporary session state is cleared when the browser session ends. Local website data remains until you clear it or the browser removes it. To remove the website's saved data, use Hub Settings → My data, or clear site data in your browser. Removing the extension does not remove website storage or exported backup files. Export important entries before clearing storage. The website's offline cache contains public application assets, not authenticated feeds or streaming video. Clearing local data does not delete records held by third-party services; use their privacy controls for that.</p>
+<p>Turn streaming and news access on or off together in Companion settings. The page lists the supported services and their uses. Calendar access is managed separately. Remove a calendar there to delete its stored address and revoke the extension's calendar access; invalidate a shared private calendar link in Google Calendar if you need to revoke the link itself. Uninstalling the extension removes its local storage; temporary session state is cleared when the browser session ends. Local website data remains until you clear it or the browser removes it. To remove the website's saved data, use Hub Settings → My data, or clear site data in your browser. Removing the extension does not remove website storage or exported backup files. Export important entries before clearing storage. The website's offline cache contains public application assets, not authenticated feeds or streaming video. Clearing local data does not delete records held by third-party services; use their privacy controls for that.</p>
 <h4>Contact and changes</h4>
 <p>For support, privacy questions or deletion assistance, contact <a href="mailto:narbehousellc@gmail.com">narbehousellc@gmail.com</a>. Information you choose to email is used to respond to your request. Changes to data handling will be reflected on this page before release.</p>
 

@@ -413,3 +413,6 @@ html, body {
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid rgba(91, 176, 255, 0.45);
 }
+
+/* Keep the paused dashes over the highlighted fill, with visible contrast. */
+body [data-narbe-scan-paused] { outline-offset: -6px; }

@@ -1352,6 +1352,7 @@ function selectCurrentItem() {
     if (state.mode === 'game') {
         if (state.scanItems.length === 0) return;
         const item = state.scanItems[state.scanIndexV];
+        if (!item) return;
         if (item.type === 'piece') {
             handleCellClick(item.r, item.c);
         } else if (item.type === 'move') {
@@ -1447,6 +1448,7 @@ function updateGameHighlights() {
     
     if (state.scanItems.length === 0) return;
     const item = state.scanItems[state.scanIndexV];
+    if (!item) return;
     
     let targetR, targetC;
 
@@ -1489,7 +1491,7 @@ function updateGameHighlights() {
 
 function speak(text) {
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if (settings.tts && 'speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);

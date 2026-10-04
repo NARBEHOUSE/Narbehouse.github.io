@@ -969,3 +969,9 @@ body.color-white { --highlight-color: white; --highlight-text-color: black; }
 @media (max-width: 440px) {
     #item-modal .modal-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Keep the paused dashes over the highlighted fill, with visible contrast. */
+body [data-narbe-scan-paused] { outline-offset: -6px; }
+
+.search-text-row { display:flex; align-items:stretch; gap:8px; }
+.search-text-row #search-input { flex:1; min-width:0; }

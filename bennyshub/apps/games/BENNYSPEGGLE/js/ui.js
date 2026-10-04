@@ -50,6 +50,23 @@
     return 'idle';
   }
 
+
+  let choice=null,choiceStatus=null,spaceBraking=false;
+  let choiceAutoMode=!!window.NarbeScanManager?.getSettings().autoScan;
+  function syncChoice(fresh=false,restoreId=null){
+    const context=ctx();if(context!=='menu'&&context!=='choice'){choice?.sync(null);return;}
+    if(context==='menu'&&!overlayOn){choice?.sync(null);return;}
+    if(!choiceStatus){choiceStatus=document.createElement('div');choiceStatus.id='p3ChoiceStatus';choiceStatus.style.minBlockSize='0';}
+    if(context==='menu'){Object.assign(choiceStatus.style,{position:'static',bottom:'',left:''});$('menu').before(choiceStatus);}
+    else{Object.assign(choiceStatus.style,{position:'absolute',bottom:'92px',left:'20px',zIndex:'30',pointerEvents:'none'});$('pauseBtn').before(choiceStatus);}
+    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:document.body,speak:text=>U.vm()?.speak(text),
+      onHighlight(item){if(ctx()==='choice'){choiceIndex=item?item.position:-1;refreshChoice();}else{index=item?items.indexOf(item.source):-1;updateFocus();}if(!item&&($('menu').contains(document.activeElement)||document.activeElement===$('pauseBtn')||document.activeElement===$('choiceFrame')))document.activeElement.blur();},
+      onSelect:()=>ctx()==='choice'?choiceSelect(true):activate(true)});
+    const seen=new Map();items.forEach(it=>{const base=it.id||U.stripTags(it.label||it.html||'item'),n=seen.get(base)||0;seen.set(base,n+1);it.scanId=base+':'+n;});
+    const mapped=context==='choice'?[{id:'pause',label:'Pause / Options',element:$('pauseBtn'),labelElement:$('pauseBtn').querySelector('.pTxt'),position:1},{id:'shot',label:'Take Shot',element:$('choiceFrame'),labelElement:$('choiceFrame').querySelector('.chip'),position:0}]:items.filter(selectable).map(it=>({id:it.scanId,label:()=>itemLabel(it),element:it.element,labelElement:it.element?.querySelector('.lab,.mcName')||it.element,source:it}));
+    choice.sync({key:context==='choice'?'pre-shot':screen,items:mapped,statusHost:choiceStatus},{fresh,restoreId});choice.setInputHeld(keyDown.Space||keyDown.Enter);
+  }
+
   /* ── Overlay plumbing ─────────────────────────────────────────────────── */
 
   function showOverlay(on) {
@@ -95,12 +112,12 @@
         if (it.value !== undefined) { const v = document.createElement('span'); v.className = 'val'; v.textContent = val(it); el.appendChild(v); }
       }
       U.addTap(el, () => {
-        if (it.enabled === false || it.info && !it.action) { if (!it.info) AU().play('menuBlocked'); else { index = i; updateFocus(); speakItem(); } return; }
-        index = i; updateFocus(); activate();
+        if (it.enabled === false || it.info && !it.action) { if (!it.info) AU().play('menuBlocked'); else { index = i;choice?.align(it.scanId); updateFocus(); speakItem(); } return; }
+        index = i;choice?.align(it.scanId); updateFocus(); activate();
       });
-      el.addEventListener('mouseenter', () => { if (it.enabled === false || index === i) return; index = i; updateFocus(); });
-      el.addEventListener('focus', () => { index = i; updateFocus(); speakItem(); });
-      menu.appendChild(el);
+      el.addEventListener('mouseenter', () => { if (it.enabled === false || index === i) return; index = i;choice?.align(it.scanId); updateFocus(); });
+      el.addEventListener('focus', () => { index = i;choice?.align(it.scanId); updateFocus(); speakItem(); });
+      it.element=el;menu.appendChild(el);
     });
   }
 
@@ -125,6 +142,7 @@
   }
 
   function speakItem() {
+    if(choice?.active){choice.announce();return;}
     const it = items[index];
     if (it) AU().say(itemLabel(it));
   }
@@ -132,6 +150,7 @@
   const selectable = (it) => it && !it.rowBreak && it.enabled !== false && (!it.info || it.focusable);
 
   function step(d) {
+    if(choice?.active){choice.step(d);return;}
     if (!items.length) return;
     // Nothing highlighted yet (-1): forward lands on the first item, back on the last.
     let i = index < 0 ? (d > 0 ? -1 : items.length) : index;
@@ -144,27 +163,23 @@
     if (!didBack) restartAuto();
   }
 
-  function activate() {
+  function activate(fromChoice=false) {
+    if(choice?.active&&!fromChoice){choice.select();return;}
     if (index < 0) return;             // menus open with nothing highlighted
-    if (Date.now() < lockUntil) return;
+    // Shared release guard handles switch bounce; fresh menus already start blank.
     const now = Date.now();
-    if (now - lastActivate < 160) return;
+    // Shared scan-manager owns the release cooldown.
     lastActivate = now;
     const it = items[index];
     if (!it || it.enabled === false || (it.info && !it.action)) { AU().play('menuBlocked'); return; }
     AU().play('menuSelect');
+    const selectedContext=choice?.context?.key,selectedId=choice?.getState()?.id;
     if (it.action) it.action();
+    if(it.value!==undefined&&choice?.active&&choice.context.key===selectedContext&&choice.getState().id===selectedId)choice.announce();
   }
 
   /* ── Auto scan ────────────────────────────────────────────────────────── */
-  function restartAuto() {
-    stopAuto();
-    const c = ctx();
-    if (c !== 'menu' && c !== 'choice') return;
-    if (!U.isOneSwitch()) return;
-    if (keyDown.Space || keyDown.Enter) return;
-    autoTimer = setInterval(() => { if (ctx() === 'choice') choiceStep(); else step(1); }, U.scanInterval());
-  }
+  function restartAuto() { stopAuto();syncChoice(); }
   function stopAuto() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
 
   /* ── Screens ──────────────────────────────────────────────────────────── */
@@ -173,7 +188,8 @@
     o = o || {};
     const S = SCREENS[name];
     if (!S) return;
-    if (o.push && screen && screen !== name) stack.push({ name: screen, index, opts: def && def.opts });
+    if (o.push && screen && screen !== name) stack.push({ name: screen, index, restoreId:choice?.getState()?.id ?? null, opts: def && def.opts });
+    const preserve=screen===name&&o.index!==undefined;
     screen = name;
     navigationVersion++;
     def = S(o) || {};
@@ -181,6 +197,7 @@
     // Replaying push on Back would put the submenu back into the return path.
     def.opts = Object.assign({}, o);
     delete def.opts.push;
+    delete def.opts.restoreId;
     items = def.items || [];
     $('cardTitle').innerHTML = def.title || '';
     $('cardSub').innerHTML = def.sub || '';
@@ -194,17 +211,18 @@
     while (items[index] && !selectable(items[index]) && index < items.length - 1) index++;
     showOverlay(true);
     render();
+    syncChoice(!preserve,o.restoreId ?? null);
     updateFocus();
     if (def.onShow) def.onShow();
     if (o.silent) return;
     const intro = def.speech !== undefined ? def.speech : U.stripTags(def.title || '');
     const first = items[index] ? itemLabel(items[index]) : '';
-    AU().say(first ? (intro ? intro + '. ' : '') + first : intro);
+    choice.announce(first ? (intro ? intro + '. ' : '') + first : intro);
   }
 
   function back() {
     const prev = stack.pop();
-    if (prev) setScreen(prev.name, Object.assign({}, prev.opts || {}, { index: undefined }));
+    if (prev) setScreen(prev.name, Object.assign({}, prev.opts || {}, { index: undefined,restoreId:prev.restoreId }));
     else setScreen(G() && G().paused ? 'pause' : 'title');
   }
 
@@ -214,7 +232,7 @@
   function cycle(list, cur) { const i = list.indexOf(cur); return list[(i + 1) % list.length]; }
   function voiceName() { const v = U.vm(); if (!v) return 'Default'; try { return v.getVoiceDisplayName(v.getCurrentVoice()) || 'Default'; } catch (e) { return 'Default'; } }
   function ttsOn() { const v = U.vm(); try { return !!(v && v.getSettings().ttsEnabled); } catch (e) { return false; } }
-  function setSay(k, v, speech) { G().store.set(k, v); refreshValues(); AU().say(speech); }
+  function setSay(k, v, speech) { G().store.set(k, v); refreshValues(); if(choice?.active)choice.announce(speech);else AU().say(speech); }
 
   function modeIcon(m) { return m === 'cozy' ? '☕' : m === 'hyper' ? '🚀' : '🎨'; }
 
@@ -604,23 +622,27 @@
     $('pauseBtn').classList.toggle('focused', on && choiceIndex === 1);
   }
   function openChoice() {
-    choiceIndex = 0;
+    choiceIndex = -1;
     ignore.Space = keyDown.Space; ignore.Enter = keyDown.Enter;
     refreshChoice();
-    if (!choiceSaid) { choiceSaid = true; AU().sayQueued('Play, or pause. Play.'); } else AU().sayIfIdle('Play.');
+    if (!choiceSaid) { choiceSaid = true; AU().sayQueued('Pause or Options, then Take Shot.'); }
+    syncChoice(true);
     restartAuto();
   }
-  function choiceStep() {
+  function choiceStep(direction=1) {
+    if(choice?.active){choice.step(direction);return;}
     choiceIndex = 1 - choiceIndex;
     refreshChoice();
     AU().play('menuMove');
     AU().say(choiceIndex === 0 ? 'Play' : 'Pause');
     if (!didBack) restartAuto();
   }
-  function choiceSelect() {
+  function choiceSelect(fromChoice=false) {
+    if(choice?.active&&!fromChoice){choice.select();return;}
+    if(choiceIndex<0)return;
     AU().play('menuSelect');
     if (choiceIndex === 1) openPause();
-    else { G().choosePlay(); refreshChoice(); stopAuto(); }
+    else { G().choosePlay(); refreshChoice(); stopAuto();choice?.sync(null); }
   }
 
   /* ── Hold-to-pause ring ───────────────────────────────────────────────── */
@@ -759,6 +781,7 @@
   const norm = (c) => (c === 'NumpadEnter' ? 'Enter' : c);
 
   function clearKeysKeepIgnores() {
+    spaceBraking=false;choice?.cancelInput();
     keyDown.Space = false; keyDown.Enter = false;
     clearTimeout(backHold); backHold = null; clearInterval(backRepeat); backRepeat = null; didBack = false;
     clearTimeout(choiceHoldTimer); choiceHoldTimer = null;
@@ -777,12 +800,13 @@
     const c = ctx();
     if (c === 'menu' || c === 'choice') {
       stopAuto();
+      if(k==='Space'&&choice?.brakePress()){spaceBraking=true;return;}choice?.setInputHeld(true);
       if (k === 'Space' && !backHold && !backRepeat) {
         didBack = false;
         backHold = setTimeout(() => {
           backHold = null; didBack = true;
-          if (ctx() === 'choice') choiceStep(); else step(-1);
-          backRepeat = setInterval(() => { if (ctx() === 'choice') choiceStep(); else step(-1); }, U.scanInterval());
+          if (ctx() === 'choice') choiceStep(-1); else step(-1);
+          backRepeat = setInterval(() => { if (ctx() === 'choice') choiceStep(-1); else step(-1); }, U.scanInterval());
         }, SCAN_BACK_HOLD);
       }
       if (k === 'Enter' && c === 'choice' && !G().store.get('preShot')) {
@@ -810,11 +834,12 @@
     if (!isSwitch(e.code)) return;
     e.preventDefault();
     const k = norm(e.code);
-    if (ignore[k]) { ignore[k] = false; keyDown[k] = false; hideHold(); return; }
+    if (ignore[k]) { ignore[k] = false; keyDown[k] = false;choice?.setInputHeld(keyDown.Space||keyDown.Enter); hideHold(); return; }
     if (!keyDown[k]) return;
     keyDown[k] = false;
     const c = ctx();
     if (c === 'menu' || c === 'choice') {
+      if(k==='Space'&&spaceBraking){spaceBraking=false;choice?.brakeRelease();return;}choice?.setInputHeld(keyDown.Space||keyDown.Enter);
       clearTimeout(choiceHoldTimer); choiceHoldTimer = null; hideHold();
       if (k === 'Space') {
         clearTimeout(backHold); backHold = null; clearInterval(backRepeat); backRepeat = null;
@@ -836,7 +861,7 @@
   function onInputCancelled(e) {
     const code = e && e.detail ? norm(e.detail.code) : null;
     if (code !== 'Space' && code !== 'Enter') return;
-    keyDown[code] = false;
+    keyDown[code] = false;choice?.cancelInput();spaceBraking=false;
     if (ignore[code]) { ignore[code] = false; return; }
     clearTimeout(backHold); backHold = null; clearInterval(backRepeat); backRepeat = null; didBack = false;
     hideHold();
@@ -891,7 +916,7 @@
     g.on('result', onResult);
     g.on('hold', (h) => showHold(h.p, h.seconds));
     g.on('requestPause', openPause);
-    g.on('choice', (c) => { if (c.open) openChoice(); else { refreshChoice(); stopAuto(); } });
+    g.on('choice', (c) => { if (c.open) openChoice(); else { refreshChoice(); stopAuto();syncChoice(); } });
     g.on('settings', () => { if (overlayOn) refreshValues(); });
 
     document.addEventListener('keydown', onKeyDown);
@@ -915,11 +940,11 @@
     root.addEventListener('pointerup', onPointerUp);
     root.addEventListener('pointercancel', () => { ptr.down = false; });
     U.addTap($('pauseBtn'), () => { if (ctx() === 'choice' || ctx() === 'play') openPause(); });
-    U.addTap($('choiceFrame'), () => { if (ctx() === 'choice') { choiceIndex = 0; choiceSelect(); } });
+    U.addTap($('choiceFrame'), () => { if (ctx() === 'choice') { choice?.align('shot');choiceIndex = 0; choiceSelect(); } });
     U.addTap($('banner'), () => { if (G().state === 'intro') G().beginPlay(); });
 
     const s = U.sm();
-    if (s && s.subscribe) s.subscribe(() => { restartAuto(); if (overlayOn) refreshValues(); });
+    if (s && s.subscribe) s.subscribe(() => { const mode=U.isOneSwitch();if(mode!==choiceAutoMode){choiceAutoMode=mode;clearTimeout(backHold);clearInterval(backRepeat);backHold=backRepeat=null;if(keyDown.Space)didBack=true;} restartAuto(); if (overlayOn) refreshValues(); });
 
     index_ = await L.loadIndex();
 

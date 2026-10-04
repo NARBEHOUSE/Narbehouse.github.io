@@ -6,32 +6,13 @@
     const total=populated.reduce((sum,count)=>sum+count,0);
     return total ? total+(total===1?' entry':' entries')+' on '+populated.length+(populated.length===1?' day.':' days.') : 'No entries this '+period+'.';
   }
-  let groups=[],row=-1,cell=-1,inRow=false,say=()=>{},onScanReset=()=>{};
+  let groups=[],say=()=>{},onScanReset=()=>{};
   function shiftMonth(date,delta){
     const result=new Date(date),day=result.getDate();result.setDate(1);result.setMonth(result.getMonth()+delta);
     result.setDate(Math.min(day,new Date(result.getFullYear(),result.getMonth()+1,0).getDate()));return result;
   }
   function clear(){document.querySelectorAll('#changeViewModal .highlighted').forEach(el=>el.classList.remove('highlighted'));}
-  function resetScan(){clear();row=-1;cell=-1;inRow=false;document.getElementById('calendarScanHint').textContent='Space: next row. Enter: choose row.';onScanReset();}
-  function highlight(){
-    clear();const group=groups[row];if(!group)return;
-    const active=inRow?[group.buttons[cell]]:group.buttons;
-    active.forEach(button=>button?.classList.add('highlighted'));
-    active[0]?.scrollIntoView({block:'nearest',inline:'nearest'});
-    if(!inRow)document.getElementById('calendarOverview').textContent=group.label;
-    say(inRow?(active[0]?.getAttribute('aria-label')||active[0]?.textContent):group.label);
-  }
-  function scan(delta=1){
-    if(!groups.length)return;
-    if(inRow)cell=(cell+delta+groups[row].buttons.length)%groups[row].buttons.length;
-    else row=row<0?(delta>0?0:groups.length-1):(row+delta+groups.length)%groups.length;
-    highlight();
-  }
-  function select(){
-    if(row<0)return;
-    if(!inRow){inRow=true;cell=0;document.getElementById('calendarScanHint').textContent='Space: next choice. Enter: select. Hold Enter: return to rows.';highlight();}
-    else groups[row]?.buttons[cell]?.click();
-  }
+  function resetScan(){clear();document.getElementById('calendarScanHint').textContent='Space: next row. Enter: choose row.';onScanReset();}
   function render(selected,entries,onSelect,onSpeak=()=>{},onReset=()=>{}){
     const grid=document.getElementById('journalCalendarDays');if(!grid)return;
     say=onSpeak;onScanReset=onReset;
@@ -47,7 +28,7 @@
       const monthDates=Array.from({length:days},(_,i)=>new Date(month.getFullYear(),month.getMonth(),i+1));
       const monthSummary=monthName+'. '+overview(monthDates,counts,'month');
       document.getElementById('calendarOverview').textContent=monthSummary;
-      grid.replaceChildren();groups=[{label:monthSummary+' Month controls.',buttons:[previous,next].filter(b=>!b.disabled)}];
+      grid.replaceChildren();groups=[{key:'controls',label:monthSummary+' Month controls.',buttons:[previous,next].filter(b=>!b.disabled)}];
       let week,weekButtons=[],weekDates=[];
       for(let offset=0;offset<Math.ceil((start+days)/7)*7;offset++){
         if(offset%7===0){week=document.createElement('div');week.className='calendar-week';grid.append(week);weekButtons=[];weekDates=[];}
@@ -67,11 +48,11 @@
           const short=date=>date.toLocaleDateString('en-US',{month:'long',day:'numeric'});
           const summary='Week '+short(weekDates[0])+' through '+short(weekDates[weekDates.length-1])+'. '+overview(weekDates,counts,'week');
           week.setAttribute('role','group');week.setAttribute('aria-label',summary);
-          groups.push({label:summary,buttons:weekButtons});
+          groups.push({key:key(weekDates[0]),label:summary,buttons:weekButtons});
         }
       }
       const todayButton=document.getElementById('calendarToday');todayButton.onclick=()=>{resetScan();onSelect(today);};
-      groups.push({label:'Today or back',buttons:[todayButton,document.querySelector('[data-action="close-view-modal"]')]});
+      groups.push({key:'footer',label:'Today or back',buttons:[todayButton,document.querySelector('[data-action="close-view-modal"]')]});
       resetScan();
       say((opening?'Calendar view. ':'')+monthSummary);
     }
@@ -79,5 +60,5 @@
     next.onclick=()=>{if(!next.disabled){month=shiftMonth(month,1);draw();}};
     draw(true);
   }
-  window.BennyJournalCalendar={render,shiftMonth,scan,select,resetScan};
+  window.BennyJournalCalendar={render,shiftMonth,resetScan,getGroups:()=>groups};
 })();

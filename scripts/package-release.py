@@ -1,8 +1,10 @@
 """Prepare local artifacts only. Does not publish or contact either store."""
 from pathlib import Path
-import json, re, shutil, zipfile, hashlib, sys
+import json, re, shutil, zipfile, hashlib, sys, subprocess
 
 ROOT=Path(__file__).resolve().parents[1]
+# Shared policy must be current before creating any release artifact.
+subprocess.run(['node',str(ROOT/'scripts'/'sync-companion-shared.cjs'),'--check'],cwd=ROOT,check=True)
 SOURCE=ROOT/'extension'
 manifest=json.loads((SOURCE/'manifest.json').read_text(encoding='utf-8'))
 OUT=ROOT/'releases'/manifest['version']
@@ -11,7 +13,7 @@ OUT.mkdir(parents=True,exist_ok=True)
 if PACKAGE.exists():
     assert not PACKAGE.is_symlink() and PACKAGE.resolve().is_relative_to((ROOT/'releases').resolve())
 PACKAGE.mkdir(exist_ok=True)
-runtime=['background.mjs','calendar.mjs','hub-content.js','options.html','options.css','options.mjs','player-adapters.js','player-content.js','player-loading.html','player-registration.mjs','player-view.js','policy.mjs','vendor/ical.es5.min.cjs','vendor/ICAL-LICENSE']
+runtime=['background.mjs','calendar.mjs','hub-content.js','options.html','options.css','options.mjs','player-adapters.js','player-platform.js','shared/choice-scan.js','shared/voice-manager.js','shared/scan-status-badge.js','shared/scan-status-badge.css','shared/scan-status-badge-style.js','player-content.js','player-loading.html','player-registration.mjs','player-view.js','policy.mjs','vendor/ical.es5.min.cjs','vendor/ICAL-LICENSE']
 # Resolve the exact bundled parser filename from the source tree.
 runtime=[name for name in runtime if not name.startswith('vendor/')]+[str(p.relative_to(SOURCE)).replace('\\','/') for p in (SOURCE/'vendor').iterdir() if p.is_file()]
 runtime += ['icons/icon'+str(size)+'.png' for size in [16,32,48,128]]

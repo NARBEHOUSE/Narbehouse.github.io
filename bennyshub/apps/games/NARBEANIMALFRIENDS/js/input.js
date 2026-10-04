@@ -30,27 +30,8 @@ NAF.Input = (function () {
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to start scanning backwards
 
-    /**
-     * Input cooldowns.
-     *
-     * The hub's scan manager debounces key presses, but only by the player's
-     * sensitivity setting - 50ms by default - and it deliberately skips mouse and
-     * touch events entirely. So nothing stopped a switch being hammered, or a
-     * button being click-spammed, into dozens of inputs a second.
-     *
-     * STEP is short: moving the highlight is cheap and a player who wants to get
-     * somewhere should not be slowed down. SELECT is longer, because selecting
-     * starts something that needs a moment to happen. An item can ask for a
-     * longer one of its own - see `cooldown` on the scan list entries.
-     *
-     * These limit the RATE of input, not what input can do. A press during the
-     * reveal still cuts it short and starts a fresh one, as it always has.
-     */
-    const STEP_COOLDOWN = 250;
-    const SELECT_COOLDOWN = 300;
-
-    let lastStepAt = 0;
-    let lastSelectAt = 0;
+    // NarbeScanManager owns accepted switch press/release filtering. Native
+    // per-item busy guards below retain ownership of reveals and narration.
 
     let provider = function () { return []; };
     let items = [];
@@ -67,6 +48,22 @@ NAF.Input = (function () {
     let backTimer = null, backRepeat = null;
     let autoTimer = null;
     let enabled = true;
+
+
+    let choice=null,enterHeld=false,braking=false,cancelSpaceRelease=false;
+    let previousAuto=!!window.NarbeScanManager?.getSettings().autoScan;
+    function syncChoice(fresh=false){
+        if(!enabled){choice?.sync(null);return;}
+        const context=NAF.UI.scanContext();
+        if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:BACK_SCAN_HOLD,stateHost:document.getElementById('naf'),speak:text=>NAF.Voice.speak(text),
+            onContext(context){NAF.UI.applyScanContext(context.key);items=context.items.map(it=>it.source);},
+            onHighlight(item){const previous=index;index=item?items.indexOf(item.source):-1;paint();NAF.UI.updateScanFeedback();if(item&&previous!==index)NAF.Audio.scanBlip();if(!item&&items.some(x=>x.el===document.activeElement||x.el?.contains(document.activeElement)))document.activeElement.blur();},onSelect:()=>activate(true)});
+        const next={key:context.key,statusHost:context.host,items:items.filter(it=>it.el&&!it.el.disabled).map(it=>({id:it.id,label:()=>typeof it.speak==='function'?it.speak():it.speak,element:it.el,labelElement:it.el.querySelector('.naf-row-label,.naf-menu-label')||it.el,source:it}))};
+        if(!fresh&&choice.context?.key==='settings:name:rows'&&context.key.startsWith('settings:name:keys:'))choice.enterGroup(next);
+        else if(!fresh&&context.key==='settings:name:rows'&&choice.getState()?.depth>0){choice.back({restore:true});choice.sync(next);}
+        else choice.sync(next,{fresh});
+        choice.setInputHeld(spaceHeld||enterHeld);
+    }
 
     // --- the scan list -----------------------------------------------------------
 
@@ -89,7 +86,7 @@ NAF.Input = (function () {
         if (resetIndex) NAF.Audio.resetScanTune();
         paint();
         wireClicks();
-        restartAutoScan();
+        syncChoice(!!resetIndex);restartAutoScan();
     }
 
     function wireClicks() {
@@ -100,7 +97,7 @@ NAF.Input = (function () {
                 e.preventDefault();
                 const at = items.findIndex(function (it) { return it.el === item.el; });
                 if (at >= 0) {
-                    index = at;
+                    index = at;choice?.align(items[at].id);
                     paint();
                     trySelect();
                 }
@@ -143,6 +140,7 @@ NAF.Input = (function () {
     }
 
     function speakFocused() {
+        if(choice?.active){return choice.announce();}
         const item = items[index];
         if (!item) return;
         const line = typeof item.speak === 'function' ? item.speak() : item.speak;
@@ -160,6 +158,7 @@ NAF.Input = (function () {
     }
 
     function step(delta) {
+        if(choice?.active){choice.step(delta);return;}
         if (!items.length) return;
         if (reveal(NAF.UI.current() === 'play' ? 1 : delta)) return; // menus enter at the requested end
         index = (index + delta + items.length) % items.length;
@@ -168,7 +167,8 @@ NAF.Input = (function () {
         speakFocused();
     }
 
-    function activate() {
+    function activate(fromChoice=false) {
+        if(choice?.active&&!fromChoice){choice.select();return;}
         // Menus wait for Space or Auto Scan before Enter can choose. Keep the
         // existing first-reveal interaction during animal play.
         if (index < 0 && NAF.UI.current() !== 'play') return;
@@ -180,21 +180,14 @@ NAF.Input = (function () {
         if (typeof item.action === 'function') item.action(item);
     }
 
-    // --- rate limiting ------------------------------------------------------------
-    //
-    // Every route a player can take - a switch, a click, a tap - goes through
-    // these, so there is one place the rate is decided rather than three.
+    // --- accepted input and native busy ownership --------------------------------
 
     function tryStep(delta) {
-        const now = Date.now();
-        if (now - lastStepAt < STEP_COOLDOWN) return;
-        lastStepAt = now;
         step(delta);
     }
 
     function trySelect() {
         const item = items[index];
-        const now = Date.now();
 
         // An item can say it is still carrying out the last press. Selecting it
         // again is refused until it is done, so an action always gets to finish.
@@ -202,10 +195,6 @@ NAF.Input = (function () {
         // the barn is mid-reveal, which is what stops this becoming a trap.
         if (item && typeof item.busy === 'function' && item.busy()) return;
 
-        // An item can also ask for longer than the default cooldown.
-        const wait = (item && item.cooldown) || SELECT_COOLDOWN;
-        if (now - lastSelectAt < wait) return;
-        lastSelectAt = now;
         activate();
     }
 
@@ -224,14 +213,7 @@ NAF.Input = (function () {
         autoTimer = null;
     }
 
-    function restartAutoScan() {
-        stopAutoScan();
-        if (!enabled || !autoScanOn() || !items.length || (items.length < 2 && NAF.UI.current() === 'play')) return;
-        autoTimer = setInterval(function () {
-            if (spaceHeld) return;
-            step(1);
-        }, scanInterval());
-    }
+    function restartAutoScan() { stopAutoScan();syncChoice(); }
 
     // --- backwards scan ----------------------------------------------------------
 
@@ -251,6 +233,7 @@ NAF.Input = (function () {
         if (backTimer) { clearTimeout(backTimer); backTimer = null; }
         stopBackwardsScan();
         spaceHeld = false;
+        cancelSpaceRelease = false;
     }
 
     // --- key handling ------------------------------------------------------------
@@ -279,6 +262,8 @@ NAF.Input = (function () {
         if (!enabled || !isSwitchKey(e.code) || inTextField(e)) return;
         e.preventDefault();
         if (e.repeat) return;
+        if(e.code!=='Space'){enterHeld=true;choice?.setInputHeld(true);}
+        if(e.code==='Space'&&choice?.brakePress()){braking=true;return;}
 
         if (e.code === 'Space' && !spaceHeld && !backRepeat) {
             spaceHeld = true;
@@ -294,26 +279,30 @@ NAF.Input = (function () {
         if (!enabled || !isSwitchKey(e.code) || inTextField(e)) return;
         e.preventDefault();
 
+        if(e.code==='Space'&&braking){braking=false;choice?.brakeRelease();return;}
         if (e.code === 'Space') {
+            const discardRelease = cancelSpaceRelease;
             const wasScanningBack = backRepeat !== null;
             const wasHeld = spaceHeld;
             clearSpaceState();
             // A short press steps forward on release. A press long enough to have
             // started scanning backwards does not also step forward.
-            if (wasHeld && !wasScanningBack) tryStep(1);
+            if (wasHeld && !wasScanningBack && !discardRelease) tryStep(1);
             restartAutoScan();
         } else {
+            if(!enterHeld)return;enterHeld=false;choice?.setInputHeld(spaceHeld);
             trySelect();
         }
     }
 
     /**
-     * The scan manager swallows presses shorter than the player's sensitivity
-     * setting and fires this instead. Treat it as if nothing happened, and clear
-     * the Space hold state so a backwards scan is never left running.
+     * The shared guard reports rejected repeats or cancelled input ownership.
+     * Clear the native hold state without acting on the rejected release, so
+     * a backwards scan is never left running.
      */
     function onCancelled(e) {
         const code = e.detail && e.detail.code;
+        choice?.cancelInput();braking=false;if(code==='Enter'||code==='NumpadEnter')enterHeld=false;
         if (code === 'Space') clearSpaceState();
     }
 
@@ -323,16 +312,27 @@ NAF.Input = (function () {
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('keyup', onKeyUp);
         document.addEventListener('narbe-input-cancelled', onCancelled);
+        window.addEventListener('blur',()=>{clearSpaceState();enterHeld=false;braking=false;choice?.cancelInput();});
         if (window.NarbeScanManager && window.NarbeScanManager.subscribe) {
-            window.NarbeScanManager.subscribe(function () { restartAutoScan(); });
+            window.NarbeScanManager.subscribe(function (next) {
+                if (next.autoScan !== previousAuto && spaceHeld) {
+                    if (backTimer) { clearTimeout(backTimer); backTimer = null; }
+                    stopBackwardsScan();
+                    // Preserve physical hold ownership until its release, but
+                    // do not run a gesture armed under the previous scan mode.
+                    cancelSpaceRelease = true;
+                }
+                previousAuto = next.autoScan;
+                restartAutoScan();
+            });
         }
     }
 
     /** Suspend scanning without tearing anything down. */
     function setEnabled(on) {
-        enabled = !!on;
+        enabled = !!on;choice?.cancelInput();enterHeld=false;braking=false;
         clearSpaceState();
-        if (!enabled) stopAutoScan();
+        if (!enabled) {stopAutoScan();choice?.sync(null);}
         else restartAutoScan();
     }
 
@@ -350,7 +350,8 @@ NAF.Input = (function () {
         setIndex: function (i) {
             if (!items.length) { index = -1; return; }
             index = Math.max(0, Math.min(items.length - 1, i));
-            paint();
-        }
+            if(choice?.active)choice.align(items[index].id);paint();
+        },
+        scanState:()=>choice?.getState()
     };
 })();

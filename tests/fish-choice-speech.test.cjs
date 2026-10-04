@@ -1,0 +1,14 @@
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+function fixture(){
+ const clips=[],timers=new Map(),spoken=[];let enabled=true,next=0;
+ const voice={getSettings:()=>({ttsEnabled:enabled,rate:1}),cancel(){},speak(text){spoken.push(text);return {started:Promise.resolve(enabled),finished:Promise.resolve({reason:enabled?'end':'disabled',started:enabled}),cancel(){}}}};
+ class Clip{constructor(url){this.url=url;this.events={};this.paused=false;this.ended=false;clips.push(this)}addEventListener(type,fn){(this.events[type]??=[]).push(fn)}emit(type){for(const fn of this.events[type]||[])fn()}play(){this.emit('playing');return Promise.resolve()}pause(){this.paused=true;this.emit('pause')}}
+ class Request{open(){}send(){this.status=200;this.responseText=JSON.stringify({lines:{sample:'sample.mp3'}});this.onload()}}
+ const context={window:{NarbeVoiceManager:voice},document:{addEventListener(){}},Audio:Clip,XMLHttpRequest:Request,console,setTimeout(fn,ms){timers.set(++next,{fn,ms});return next},clearTimeout(id){timers.delete(id)}};
+ context.window.RT={};context.RT=context.window.RT;vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../bennyshub/apps/games/BENNYSFISHMYSTERY/js/util.js'),'utf8'),context);
+ return {speak:context.RT.util.speakChoice,clips,timers,spoken,setEnabled:value=>enabled=value};
+}
+test('Fish choice speech waits for its recorded clip normal end',async()=>{const f=fixture(),ticket=f.speak('A recorded label','sample');assert.equal(await ticket.started,true);let settled=false;ticket.finished.then(()=>settled=true);await Promise.resolve();assert.equal(settled,false);f.clips[0].ended=true;f.clips[0].emit('ended');assert.equal((await ticket.finished).reason,'end');assert.equal(f.timers.size,0)});
+test('Fish recorded speech cap releases wait without pausing the clip',async()=>{const f=fixture(),ticket=f.speak('x'.repeat(1000),'sample');const timer=[...f.timers.values()][0];assert.equal(timer.ms,10000);timer.fn();assert.equal((await ticket.finished).reason,'timeout');assert.equal(f.clips[0].paused,false)});
+test('Fish recorded label cancellation settles and stops only its clip',async()=>{const f=fixture(),ticket=f.speak('sample','sample');ticket.cancel();assert.equal((await ticket.finished).reason,'cancelled');assert.equal(f.clips[0].paused,true);assert.equal(f.timers.size,0)});
+test('Fish choice recording failure and disabled TTS use voice-manager completion',async()=>{const f=fixture(),ticket=f.speak('sample','sample');f.clips[0].emit('error');assert.equal((await ticket.finished).reason,'end');assert.deepEqual(f.spoken,['sample']);f.setEnabled(false);assert.equal((await f.speak('quiet','sample').finished).reason,'disabled');assert.equal(f.clips.length,1)});

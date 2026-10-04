@@ -1,0 +1,31 @@
+/* Keep this status slot outside the choices, in the existing page flow. */
+.narbe-scan-status-host {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-block-size: 2.5rem;
+  padding-inline: .5rem;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  color-scheme: light dark;
+}
+.narbe-scan-status-badge {
+  display: inline-block;
+  padding: .2rem .6rem;
+  border: 2px solid currentColor;
+  border-radius: .35rem;
+  font: 700 1rem/1.4 system-ui, sans-serif;
+  background: Canvas;
+  color: CanvasText;
+  pointer-events: none;
+}
+.narbe-scan-status-badge[hidden] { display: none; }
+@media (forced-colors: active) {
+  .narbe-scan-status-badge { border-color: CanvasText; background: Canvas; color: CanvasText; }
+}
+
+/* Scan pause changes only the selected outline; no extra text or layout. */
+[data-narbe-scan-paused] {
+  outline: 4px dotted currentColor !important;
+  outline-offset: 3px;
+}

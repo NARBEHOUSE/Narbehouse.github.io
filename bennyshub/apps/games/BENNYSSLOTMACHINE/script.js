@@ -2471,6 +2471,7 @@ function updateGameUI() {
 
 function setupInput() {
     document.addEventListener('keydown', e => {
+        if(window.classicChoiceDown?.(e))return;
         if (e.repeat) return; // Ignore auto-repeat from held keys
         
         if (e.code === 'Space') {
@@ -2508,6 +2509,7 @@ function setupInput() {
     });
 
     document.addEventListener('keyup', e => {
+        if(window.classicChoiceUp?.(e))return;
         if (e.code === 'Space') {
             // Clear the hold timeout
             if (state.timers.space) {
@@ -2745,7 +2747,7 @@ function performBackwardsToggle() {
 function speak(text) {
     // Check NarbeVoiceManager first (it has its own ttsEnabled check)
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if (settings.tts && 'speechSynthesis' in window) {
         // Fallback to native speech synthesis
         speechSynthesis.cancel();

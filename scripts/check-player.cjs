@@ -1,12 +1,13 @@
 const {chromium,expect}=require('@playwright/test');
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:3000';let context;
+const executablePath=process.argv.find(arg=>arg.startsWith('--browser-path='))?.slice('--browser-path='.length)||process.env.HUB_BROWSER_PATH;
+const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173';let context;
 (async()=>{
   const dir=path.join(root,'artifacts','player-extension-'+Date.now());await fs.cp(path.join(root,'extension'),dir,{recursive:true});
   const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));
   // No localhost host permission: reproduce the real Hub tab URL visibility problem.
   manifest.host_permissions=['https://app.plex.tv/*'];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest));
-  context=await chromium.launchPersistentContext(path.join(root,'artifacts','player-profile-'+Date.now()),{channel:'chromium',headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
+  context=await chromium.launchPersistentContext(path.join(root,'artifacts','player-profile-'+Date.now()),{...(executablePath?{executablePath}:{channel:'chromium'}),headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
   await context.route('**/___vscode_livepreview_injected_script',r=>r.fulfill({contentType:'application/javascript',body:''}));
   await context.route('https://app.plex.tv/**',r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><head><script>
     window.pageKeys=0;window.startClicks=0;window.resumeClicks=0;window.keyLog=[];
@@ -40,35 +41,44 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   await player.mouse.click(80,80);await player.mouse.dblclick(100,100);
   await player.waitForTimeout(1900);await expect.poll(()=>player.evaluate(()=>document.activeElement?.id)).toBe('benny-player-controls');
   assert.equal(await player.locator('iframe').evaluate(f=>f.inert),true);
-  const bar=player.locator('#benny-player-controls');await expect(bar).toHaveAttribute('data-selected','play');
+  const bar=player.locator('#benny-player-controls');const waitChoice=(choice,timeout=5000)=>expect.poll(()=>bar.getAttribute('data-selected'),{timeout,intervals:[75]}).toBe(choice);await expect(bar).toHaveAttribute('data-selected','park');
+  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','park');assert.equal(await player.locator('video').evaluate(v=>v.paused),false);
   console.log('Scan settings',await worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base));
-  await player.keyboard.down('Space');await expect(bar).toHaveAttribute('data-selected','return',{timeout:4000});
-  await expect(bar).toHaveAttribute('data-selected','suspend',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','help',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','fullscreen',{timeout:2600});await expect(bar).toHaveAttribute('data-selected','next',{timeout:2600});await player.keyboard.up('Space');
+  await player.waitForTimeout(320);await player.keyboard.down('Space');await waitChoice('return',4000);
+  await waitChoice('suspend',2600);await waitChoice('help',2600);await waitChoice('fullscreen',2600);await waitChoice('next',2600);await player.keyboard.up('Space');
   await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-selected','next');assert.equal(await player.evaluate(()=>pageKeys),0);assert.equal(await player.locator('#typing').inputValue(),'');
   // Mouse focus attempts, page autofocus and an iframe cannot divert switch keys.
   await player.mouse.click(80,80);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','fullscreen');assert.equal(await player.locator('#typing').inputValue(),'');
   // The keyboard-only shortcut allows ordinary typing, then resumes control-bar ownership.
   await player.keyboard.press('Alt+Shift+B');await player.locator('#typing').fill('Text');await player.locator('#typing').press('Space');assert.equal(await player.locator('#typing').inputValue(),'Text ');
-  await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-selected','play');
+  await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-selected','park');
   // Anti-tremor matches Scan Manager, including releases of filtered presses.
   await hub.evaluate(()=>NarbeScanManager.updateSettings({inputSensitivityIndex:3,autoScan:false}));
   await expect.poll(()=>worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base)).toMatchObject({inputSensitivity:300});
-  await player.waitForTimeout(1200);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','back');
-  await player.waitForTimeout(180);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','back');
-  await player.waitForTimeout(160);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','back');
-  await player.waitForTimeout(330);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','forward');
-  await player.keyboard.press('Alt+Shift+B');await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-selected','play');
-  // One-switch mode parks until Enter, scans one loop, then parks again.
-  await hub.evaluate(()=>NarbeScanManager.updateSettings({scanSpeedIndex:0,inputSensitivityIndex:3,autoScan:true}));
-  await expect.poll(()=>worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base)).toMatchObject({scanInterval:1000,inputSensitivity:300,autoScan:true});
+  await player.waitForTimeout(1200);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','play');
+  await player.waitForTimeout(180);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','play');
+  await player.waitForTimeout(160);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','play');
+  await player.waitForTimeout(330);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','back');
+  await player.keyboard.press('Alt+Shift+B');await player.keyboard.press('Alt+Shift+B');await expect(bar).toHaveAttribute('data-selected','park');
+  // Parking is explicit: choose it at -1, resume without selecting, then
+  // prove ordinary selection retains focus and Auto park counts a full loop.
+  await hub.evaluate(()=>NarbeScanManager.updateSettings({scanSpeedIndex:0,inputSensitivityIndex:3,autoScan:true,parking:'chosen',loopsBeforeParking:1}));
+  await expect.poll(()=>worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base)).toMatchObject({scanInterval:1000,inputSensitivity:300,autoScan:true,parking:'chosen'});
+  await expect(bar).toHaveAttribute('data-selected','park');await player.waitForTimeout(320);await player.keyboard.press('Enter');
   await expect(bar).toHaveAttribute('data-selected','parked');await player.waitForTimeout(1300);await expect(bar).toHaveAttribute('data-selected','parked');
-  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await expect(bar).toHaveAttribute('data-selected','back',{timeout:2000});await expect(bar).toHaveAttribute('data-selected','parked',{timeout:14000});
-  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await player.waitForTimeout(320);await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','parked');
+  await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await player.waitForTimeout(320);await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');
   assert.equal(await player.locator('video').evaluate(v=>v.paused),true);
+  await hub.evaluate(()=>NarbeScanManager.updateSettings({parking:'auto',loopsBeforeParking:1}));
+  await waitChoice('back',2000);
+  // A policy change during an existing pass does not count that partial pass.
+  await waitChoice('park',16000);await expect(bar).toHaveAttribute('data-scan-loops','0');
+  await expect(bar).toHaveAttribute('data-selected','parked',{timeout:16000});
+  await player.waitForTimeout(320);await player.keyboard.press('Enter');await expect(bar).toHaveAttribute('data-selected','play');await expect(bar).toHaveAttribute('data-selected','parked',{timeout:16000});
   await player.screenshot({path:path.join(root,'artifacts','player-centered-parked.png')});
   // Change back to two switches with a slower repeat interval, while already open.
-  await hub.evaluate(()=>NarbeScanManager.updateSettings({scanSpeedIndex:2,autoScan:false}));await expect(bar).toHaveAttribute('data-selected','play');await player.waitForTimeout(400);
-  await player.keyboard.down('Space');await expect(bar).toHaveAttribute('data-selected','return',{timeout:4000});await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-selected','return');await player.keyboard.up('Space');
+  await hub.evaluate(()=>NarbeScanManager.updateSettings({scanSpeedIndex:2,autoScan:false}));await expect(bar).toHaveAttribute('data-selected','park');await player.waitForTimeout(400);
+  await player.keyboard.down('Space');await waitChoice('return',4000);await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-selected','return');await player.keyboard.up('Space');
+  await player.waitForTimeout(320);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','park');
   await player.waitForTimeout(320);await player.keyboard.press('Space');await expect(bar).toHaveAttribute('data-selected','play');
   // Return must work even though tabs.get cannot expose the Hub URL.
   for(let i=0;i<11;i++){await player.waitForTimeout(320);await player.keyboard.press('Space');}

@@ -78,6 +78,7 @@ class MenuSystem {
             ]
         };
 
+        Input.choiceMenu=this;
         this.setupInput();
         this.showMainMenu();
 
@@ -88,7 +89,7 @@ class MenuSystem {
                 const items = Array.from(this.uiLayer.querySelectorAll('.menu-item'));
                 const index = items.indexOf(e.target);
                 if (index !== -1) {
-                    this.selectedIndex = index;
+                    this.selectedIndex = index;this.choice?.align(String(index));
                     this.selectItem();
                 }
             }
@@ -113,6 +114,7 @@ class MenuSystem {
     }
 
     handleInput(event) {
+        if(this.choice?.active){if(event==='SCAN_NEXT')this.choice.step(1);else if(event==='SCAN_PREV')this.choice.step(-1);else if(event==='SELECT')this.choice.select();return;}
         if (this.ccOverlayState) {
             this.updateAutoScan();
             if (event === 'SCAN_NEXT') this.scanCCNext(1);
@@ -135,6 +137,7 @@ class MenuSystem {
     }
 
     moveSelection(dir) {
+        if(this.choice?.active){this.choice.step(dir);return;}
         if (!this.items.length) return;
         let nextIndex = this.selectedIndex < 0 ? (dir > 0 ? -1 : this.items.length) : this.selectedIndex;
         let count = 0;
@@ -162,7 +165,8 @@ class MenuSystem {
         }
     }
 
-    selectItem() {
+    selectItem(fromChoice=false) {
+        if(this.choice?.active&&!fromChoice){this.choice.select();return;}
         const item = this.items[this.selectedIndex];
         if (item && item.selectable !== false && item.action) item.action();
     }
@@ -346,6 +350,7 @@ class MenuSystem {
 
     async showLevelSelect() {
         this.state = 'LEVEL_SELECT';
+        this.choice?.sync(null); // File-list loading owns no selectable choices.
         
         let courses = [];
         try {
@@ -407,6 +412,7 @@ class MenuSystem {
     }
 
     startGame(courseFile) {
+        this.choice?.sync(null);
         this.active = false;
         this.uiLayer.innerHTML = ''; // Clear menu
         this.game.loadCourse(courseFile);
@@ -468,27 +474,25 @@ class MenuSystem {
     }
 
     updateAutoScan() {
-        if (this.autoScanTimer) clearInterval(this.autoScanTimer);
-        this.autoScanTimer = null;
-        
-        if (typeof NarbeScanManager !== 'undefined') {
-            const settings = NarbeScanManager.getSettings();
-            if (settings.autoScan) {
-                const interval = NarbeScanManager.getScanInterval();
-                this.autoScanTimer = setInterval(() => {
-                    // Only scan if not handling other interactions?
-                    // Basic safeguard
-                    if (document.visibilityState === 'visible') {
-                        if (this.ccOverlayState) this.scanCCNext(1);
-                        else if (this.active) this.moveSelection(1);
-                    }
-                }, interval);
-            }
-        }
+        if(this.autoScanTimer)clearInterval(this.autoScanTimer);this.autoScanTimer=null;
+        if(!this.active&&!this.ccOverlayState){this.choice?.sync(null);return;}
+        const warning=!!this.ccOverlayState,key=warning?'creator-warning':this.state;
+        let host=warning?document.getElementById('course-creator-warning-overlay'):this.uiLayer.querySelector('.menu-overlay');if(!host)return;
+        let status=host.querySelector('.legacy-scan-status');if(!status){status=document.createElement('div');status.className='legacy-scan-status';status.style.minBlockSize='0';host.prepend(status);}
+        if(!this.choice)this.choice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:this.uiLayer,speak:text=>NarbeVoiceManager.speak(text),onHighlight:(item,state,context)=>{
+            if(context.key==='creator-warning'){this.ccOverlayState.index=item?item.position:-1;this.ccOverlayState.items.forEach((it,i)=>document.getElementById(it.id).classList.toggle('scanned',i===this.ccOverlayState.index));}
+            else{this.selectedIndex=item?item.position:-1;this.uiLayer.querySelectorAll('.menu-item').forEach((el,i)=>el.classList.toggle('selected',i===this.selectedIndex));}
+            if(!item&&context.items.some(it=>it.element===document.activeElement||it.element?.contains(document.activeElement)))document.activeElement.blur();
+        },onSelect:()=>{const before=this.state;if(this.ccOverlayState)this.ccOverlayState.items[this.ccOverlayState.index]?.action();else this.selectItem(true);if(this.state===before&&this.active)this.choice.announce();}});
+        const elements=[...this.uiLayer.querySelectorAll('.menu-item')];
+        const mapped=warning?this.ccOverlayState.items.map((it,i)=>({id:it.id,label:()=>document.getElementById(it.id).textContent,element:document.getElementById(it.id),position:i})):this.items.map((it,i)=>({id:String(i),label:()=>String(typeof it.text==='function'?it.text():it.text).replace(/<[^>]*>/g,''),element:elements[i],position:i,selectable:it.selectable})).filter(it=>it.selectable!==false);
+        this.choice.sync({key,items:mapped,statusHost:status},{fresh:this.choice.context?.key!==key||(!warning&&this.selectedIndex<0&&this.choice.getState()?.index>=0)});
+        this.choice.setInputHeld(Input.spacePressed||Input.enterPressed);
     }
 
     render() {
         if (!this.active) {
+            this.choice?.sync(null);
             this.uiLayer.innerHTML = '';
             if (this.autoScanTimer) { clearInterval(this.autoScanTimer); this.autoScanTimer = null; }
             return;
@@ -604,6 +608,7 @@ class MenuSystem {
     }
 
     scanCCNext(direction = 1) {
+        if(this.choice?.active){this.choice.step(direction);return;}
         if (!this.ccOverlayState) return;
 
         // Clear previous

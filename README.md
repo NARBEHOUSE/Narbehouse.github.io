@@ -67,6 +67,7 @@ Local development and release preparation are optional workflows for people chan
 
 For a local preview, run `npm install`, then `npm start`, and open http://127.0.0.1:4173/bennyshub/index.html. To test Companion features locally, load the `extension/` folder as an unpacked extension in desktop Chrome or Edge and refresh the Hub.
 
+- [October 2026 scan-upgrade test guide](SCAN-UPGRADE-TESTING.md)
 - [Development setup, validation, and limitations](WEB-EXTENSION-MIGRATION.md)
 - [Website publishing and Companion release preparation](submission/START-HERE.md)
 - [Streaming collection maintenance](submission/STARTER-COLLECTIONS.md)

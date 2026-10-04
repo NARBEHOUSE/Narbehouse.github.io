@@ -118,8 +118,8 @@
   function applyOptions() { const fx = effective(); sim.options.pace = fx.pace; sim.options.difficulty = fx.difficulty; sim.options.kickoffs = fx.kickoffs; }
   function saveMatch() { if (!activeGame || sim.options.practice || sim.s.phase === 'final') return; const data = sim.snapshot(); if (data) store(gameMode === 'season' ? SEASON_SAVE : SAVE, { version: 2, sim: data, mode: gameMode, seasonMatchId, homeTeamId: homeTeam.id, awayTeamId: awayTeam.id }); }
   function syncAudio() { if (!['main', 'game'].includes(screen) || document.hidden) audio?.pause(); else audio?.resume(); }
-  function clearHeld() { cancelCharge(); tossHold = null; presses.clear(); inputLocks.clear(); pointerSteer = 0; pointerAim = false; }
-  function changeContext() { cancelCharge(); autoKickAt = 0; epoch++; for (const key of presses.keys()) inputLocks.add(key); presses.clear(); scanClock = 0; pointerSteer = 0; pointerAim = false; burstTime = 0; $('pause-button').classList.remove('focused'); }
+  function clearHeld() { choice?.cancelInput(); cancelCharge(); tossHold = null; presses.clear(); inputLocks.clear(); pointerSteer = 0; pointerAim = false; }
+  function changeContext() { choice?.sync(null); cancelCharge(); autoKickAt = 0; epoch++; for (const key of presses.keys()) inputLocks.add(key); presses.clear(); scanClock = 0; pointerSteer = 0; pointerAim = false; burstTime = 0; $('pause-button').classList.remove('focused'); }
   function updateHint() {
     if (screen === 'game' && (sim?.s.phase === 'tackle' || sim?.s.phase === 'result' && (sim.s.resultRevealRemaining > 0 || resultHeld))) { $('controls-hint').innerHTML = '<span>Watch the play finish</span>'; return; }
     if (screen === 'game' && tossHold) { $('controls-hint').innerHTML = '<span>Coin toss</span>'; return; }
@@ -146,6 +146,19 @@
       fgblock: 'M10 6 V17 H46 V6 M28 17 V6 M16 36 L25 25 M40 36 L31 25', fgreturn: 'M10 6 V17 H46 V6 M28 17 V6 M28 36 L22 30 L32 26' };
     return '<svg class="route-icon" viewBox="0 0 56 40" aria-hidden="true"><path d="' + (paths[id] || 'M10 34 V22 L43 8 M29 34 V8') + '"/>' + (['gofortwo', 'heads', 'tails', 'defer', 'receive'].includes(id) ? '' : '<circle cx="10" cy="34" r="3"/>') + '</svg>';
   }
+
+  let choice = null, paintingChoice = false;
+  const choiceLabel = item => item.say ? item.say() : item.spokenName || [item.name,item.value,item.desc].filter(Boolean).join('. ');
+  function syncChoices(container, fresh) {
+    if(screen === 'game' && ['aim','kickaim'].includes(sim?.s.phase)){choice?.sync(null);return;}
+    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:document.body,speak:text=>{speechQueue=[];$('live').textContent=text;return voice?.speak(text);},
+      onHighlight(item){paintingChoice=true;setFocus(item?items.indexOf(item.source):-1,false);paintingChoice=false;},onSelect:()=>activate(true)});
+    let host=container.previousElementSibling;
+    if(!host?.classList.contains('stationary-scan-status')){host=document.createElement('div');host.className='stationary-scan-status';host.style.minBlockSize='0';container.before(host);}
+    const seen=new Map();const mapped=items.map(item=>{const base=String(item.id||item.play||item.name),n=seen.get(base)||0;seen.set(base,n+1);return{id:base+':'+n,label:()=>choiceLabel(item),element:item.element,labelElement:item.element.querySelector('.name'),source:item};});
+    choice.sync({key:screen+':'+(screen==='game'?sim?.s.phase:'')+':'+menuHeading+':'+container.id,items:mapped,statusHost:host},{fresh});
+    choice.setInputHeld(presses.size>0);
+  }
   // An initial of -1 opens the list with nothing highlighted; the first Space highlights the first item.
   function makeItems(list, container, initial = 0) {
     items = list; focusIndex = initial < 0 ? -1 : Math.min(initial, list.length - 1); container.replaceChildren(); container.classList.remove('team-grid');
@@ -158,17 +171,20 @@
       button.querySelector('.desc').textContent = item.desc || '';
       button.querySelector('.value').textContent = item.value || '';
       button.setAttribute('aria-label', item.spokenName || [item.name, item.value, item.desc].filter(Boolean).join('. '));
-      button.addEventListener('click', () => { if (item.target !== undefined && prefs.charge && sim?.s.phase === 'aim') return; audio?.unlock(); focusIndex = i; activate(); });
+      button.addEventListener('click', () => { if (item.target !== undefined && prefs.charge && sim?.s.phase === 'aim') return; audio?.unlock(); if(choice?.active)choice.align(choice.context.items[i].id);focusIndex = i; activate(); });
       button.addEventListener('focus', () => { if (focusIndex !== i) setFocus(i, false); });
       container.append(button); item.element = button;
     });
     if (focusIndex >= 0) setFocus(focusIndex, false); scanClock = 0;
+    syncChoices(container, initial < 0);
   }
   function setFocus(index, announce = true) {
     if (!items.length) return;
-    focusIndex = (index + items.length) % items.length;
+    if(choice?.active&&!paintingChoice){const it=choice.context.items[index];if(it){choice.align(it.id);if(announce)choice.announce();}return;}
+    focusIndex = index < 0 ? -1 : (index + items.length) % items.length;
     items.forEach((item, i) => { item.element.classList.toggle('focused', i === focusIndex); item.element.tabIndex = i === focusIndex ? 0 : -1; item.element.setAttribute('aria-current', i === focusIndex ? 'true' : 'false'); });
     const item = items[focusIndex];
+    if(!item){if(items.some(it=>it.element===document.activeElement))document.activeElement.blur();return;}
     item.element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
     if (screen === 'teams' && item.team) { if (item.teamSlot === 'away') awayTeam = item.team; else homeTeam = item.team; }
     if (screen === 'game' && sim.s.phase === 'playcall') sim.s.previewPlayId = item.play || null;
@@ -177,10 +193,11 @@
     if (announce) { speaking(item.say ? item.say() : item.spokenName || [item.name, item.value, item.desc].filter(Boolean).join('. ')); audio?.play('hover'); }
   }
   // From nothing highlighted (-1), forward lands on the first item and backward on the last.
-  function advance(direction) { setFocus(focusIndex < 0 ? (direction > 0 ? 0 : items.length - 1) : focusIndex + direction); scanClock = 0; }
-  function activate() {
+  function advance(direction) { if(choice?.active){choice.step(direction);return;} setFocus(focusIndex < 0 ? (direction > 0 ? 0 : items.length - 1) : focusIndex + direction); scanClock = 0; }
+  function activate(fromChoice=false) {
+    if(choice?.active&&!fromChoice){choice.select();return;}
     const item = items[focusIndex]; if (!item) return;
-    audio?.play('select'); speaking(item.confirm ? item.confirm() : item.spokenName || item.name + (item.value ? '. ' + item.value : '')); item.action();
+    audio?.play('select'); speaking(item.confirm ? item.confirm() : item.spokenName || item.name + (item.value ? '. ' + item.value : '')); const context=choice?.context?.key,id=choice?.getState()?.id;item.action();if(item.value!==undefined&&choice?.active&&choice.context.key===context&&choice.getState().id===id)choice.announce();
   }
   function overlay(kind, title, description, list, options = {}) {
     screen = kind; changeContext(); $('overlay').hidden = false; $('overlay').className = options.style ?? 'centered';
@@ -512,19 +529,22 @@
   window.addEventListener('keydown', e => {
     const key = keyName(e); if (!key) return; e.preventDefault(); if (e.repeat || presses.has(key) || inputLocks.has(key)) return;
     audio?.unlock(); presses.set(key, { start: performance.now(), epoch, screen, phase: sim?.s.phase, reverse: false, nextReverse: 3000 }); scanClock = 0;
+    if(choice?.active){if(key==='Space'&&choice.brakePress()){presses.get(key).brake=true;return;}choice.setInputHeld(true);}
     if (screen === 'game' && sim?.s.phase === 'kickaim' && !straightKick() && key === 'Space' && !auto()) aimDirection *= -1;
     if (screen === 'game' && key === 'Enter' && prefs.charge && startCharge()) presses.get(key).charging = true;
   });
   window.addEventListener('keyup', e => {
     const key = keyName(e); if (!key) return; e.preventDefault(); if (inputLocks.delete(key)) return;
     const press = presses.get(key); presses.delete(key);
+    if(press?.brake){choice?.brakeRelease();return;}
+    if(choice?.active)choice.setInputHeld(presses.size>0);
     if (!press || press.epoch !== epoch) return;
     if (press.charging) { releaseCharge(); return; }
     if (screen === 'game' && sim.s.phase === 'kickaim') { if (key === 'Enter') { sim.kick(); phaseSeen = ''; renderPhase(); } return; }
     if (screen === 'game' && livePhase() && effective().runControl === 'hold') { if (key === 'Enter' && auto()) { armed *= -1; speaking(armed < 0 ? 'Left armed' : 'Right armed'); } return; }
     if (key === 'Space') { if (!press.reverse) advance(1); } else activate();
   });
-  document.addEventListener('narbe-input-cancelled', e => { const key = keyName(e.detail || {}); if (key) presses.delete(key); pointerSteer = 0; });
+  document.addEventListener('narbe-input-cancelled', e => { const key = keyName(e.detail || {}); if (key) presses.delete(key); choice?.cancelInput();pointerSteer = 0; });
   $('pause-button').addEventListener('click', pause);
   $('aim-button').addEventListener('pointerdown', e => { if (screen !== 'game' || sim.s.phase !== 'kickaim') return; e.preventDefault(); audio?.unlock(); $('aim-button').setPointerCapture?.(e.pointerId); aimDirection *= -1; pointerAim = true; });
   for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) $('aim-button').addEventListener(event, () => { pointerAim = false; });
@@ -540,11 +560,11 @@
   function loseFocus() { clearHeld(); if (activeGame && screen === 'game' && sim.s.phase !== 'final') pause(); audio?.pause(); }
   window.addEventListener('blur', loseFocus); document.addEventListener('visibilitychange', () => { if (document.hidden) loseFocus(); });
   window.addEventListener('pagehide', () => { saveMatch(); audio?.dispose(); });
-  scan?.subscribe(() => { scanClock = 0; clearHeld(); updateHint(); });
+  scan?.subscribe(() => { const selectedName=items[focusIndex]?.name || '';scanClock = 0; clearHeld();if(screen==='settings')settings(returnScreen,selectedName);else updateHint(); });
   function updateInput(dt, now) {
     const space = presses.get('Space');
-    if (space && items.length && now - space.start >= space.nextReverse) { space.reverse = true; space.nextReverse += interval(); advance(-1); }
-    if (auto() && items.length && !presses.size && !document.hidden) { scanClock += dt * 1000; if (scanClock >= interval()) { scanClock %= interval(); advance(1); } }
+    if (space && !space.brake && items.length && now - space.start >= space.nextReverse) { space.reverse = true; space.nextReverse += interval(); advance(-1); }
+    if (!choice?.active && auto() && items.length && !presses.size && !document.hidden) { scanClock += dt * 1000; if (scanClock >= interval()) { scanClock %= interval(); advance(1); } }
   }
   function updateHud() {
     const s = sim.s, fx = effective(); $('home-score').textContent = s.homeScore; $('away-score').textContent = s.awayScore;

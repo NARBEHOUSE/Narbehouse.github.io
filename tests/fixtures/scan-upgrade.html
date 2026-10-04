@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shared scan test fixture</title>
+<link rel="stylesheet" href="/bennyshub/shared/scan-status-badge.css">
+<style>
+:root { color-scheme: light dark; font: 18px system-ui; background: Canvas; color: CanvasText; }
+body { margin: 1.5rem; max-width: 42rem; }
+h1 { font-size: 1.3rem; }
+#choices { display: flex; gap: 1rem; margin-block: 1.5rem; }
+.choice { padding: 1.2rem; border: 3px solid transparent; background: ButtonFace; color: ButtonText; }
+.choice.active { border-color: CanvasText; text-decoration: underline; }
+#status { margin-top: 1rem; }
+#setup { display: flex; gap: .7rem; flex-wrap: wrap; }
+label { display: grid; gap: .25rem; }
+select, button { font: inherit; }
+</style>
+<script src="/bennyshub/shared/platform.js"></script>
+<script src="/bennyshub/shared/scan-status-badge.js"></script>
+<script src="/bennyshub/shared/choice-scan.js"></script>
+<script src="/bennyshub/shared/scan-manager.js"></script>
+<script src="/bennyshub/shared/voice-manager.js"></script>
+</head>
+<body>
+<h1>Shared scan test fixture</h1>
+<p>Developer fixture only. Space steps or brakes; Enter selects on release.</p>
+<div id="setup" data-scan-exclude>
+<label>Mode<select id="mode"><option value="false">Step</option><option value="true">Auto</option></select></label>
+<label>Parking<select id="parking"><option value="off">Off</option><option value="chosen">When chosen</option><option value="auto">After loops</option></select></label>
+<label>Loops<select id="loops"><option>1</option><option selected>2</option><option>3</option></select></label>
+<label>Brake<select id="brake"><option value="true">On</option><option value="false">Off</option></select></label>
+<label>Wait for speech<select id="wait"><option value="false">Off</option><option value="true">On</option></select></label>
+<button id="apply">Apply test values</button>
+</div>
+<div id="choices"><button class="choice" data-id="a">Alpha</button><button class="choice" data-id="b">Bravo</button></div>
+<div id="status"></div>
+<p id="selection">No selection</p>
+<script>
+if (!new URLSearchParams(location.search).has('child')) {
+  window.selections = [];
+  window.controller = NarbeScanManager.createChoiceScan({
+    choice: true, holdThreshold: 3000, statusHost: document.querySelector('#status'),
+    items: [{id:'a',label:'Alpha'}, {id:'b',label:'Bravo'}],
+    onHighlight(item) {
+      document.querySelectorAll('.choice').forEach(node => node.classList.toggle('active', node.dataset.id === item?.id));
+    },
+    onSelect(item) {
+      selections.push(item.id);
+      document.querySelector('#selection').textContent = 'Selected: ' + item.label;
+    }
+  });
+  function showTestValues() {
+    const settings = NarbeScanManager.getSettings();
+    for (const [id, key] of Object.entries({ mode: 'autoScan', parking: 'parking', loops: 'loopsBeforeParking', brake: 'spaceBrake', wait: 'waitForSpeech' })) {
+      document.querySelector('#' + id).value = String(settings[key]);
+    }
+  }
+  NarbeScanManager.subscribe(showTestValues);
+  showTestValues();
+  document.querySelector('#apply').onclick = () => {
+    NarbeScanManager.updateSettings({
+      autoScan: document.querySelector('#mode').value === 'true', scanSpeedIndex: 0,
+      parking: document.querySelector('#parking').value,
+      loopsBeforeParking: Number(document.querySelector('#loops').value),
+      spaceBrake: document.querySelector('#brake').value === 'true',
+      waitForSpeech: document.querySelector('#wait').value === 'true'
+    });
+    document.activeElement.blur();
+  };
+  let spaceDown = false, enterDown = false, backwards = false, holdTimer, repeatTimer;
+  document.addEventListener('keydown', event => {
+    if (event.target.closest('[data-scan-exclude]') || event.repeat) return;
+    if (event.code === 'Space') {
+      event.preventDefault();
+      if (controller.brakePress()) return;
+      if (NarbeScanManager.getSettings().autoScan) return;
+      spaceDown = true;
+      holdTimer = setTimeout(() => {
+        backwards = true;
+        controller.step(-1);
+        repeatTimer = setInterval(() => controller.step(-1), NarbeScanManager.getScanInterval());
+      }, 3000);
+    } else if (event.code === 'Enter') { event.preventDefault(); enterDown = true; }
+  });
+  document.addEventListener('keyup', event => {
+    if (event.target.closest('[data-scan-exclude]')) return;
+    if (event.code === 'Space') {
+      event.preventDefault();
+      if (controller.brakeRelease()) return;
+      clearTimeout(holdTimer); clearInterval(repeatTimer);
+      if (spaceDown && !backwards) controller.step();
+      spaceDown = false; backwards = false;
+    } else if (event.code === 'Enter') {
+      event.preventDefault();
+      if (enterDown) controller.select();
+      enterDown = false;
+    }
+  });
+  document.querySelectorAll('.choice').forEach(node => node.onclick = () => {
+    controller.open([{id:'a',label:'Alpha'}, {id:'b',label:'Bravo'}], {restoreId:node.dataset.id});
+    controller.select();
+  });
+}
+</script>
+</body>
+</html>

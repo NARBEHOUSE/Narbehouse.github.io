@@ -573,6 +573,19 @@
     putterFocus = !!v;
     if (!putterFocus) glowPutter(0);
   }
+  /** Read-only screen bounds for the scan brake outline; gameplay and transforms stay native. */
+  function putterScreenBounds() {
+    if (!putter?.visible || !MG.main.camera || !MG.main.renderer) return null;
+    const camera=MG.main.camera, rect=MG.main.renderer.domElement.getBoundingClientRect();
+    const box=new THREE.Box3().setFromObject(putter), points=[];
+    for (const x of [box.min.x,box.max.x]) for (const y of [box.min.y,box.max.y]) for (const z of [box.min.z,box.max.z]) points.push(new THREE.Vector3(x,y,z).project(camera));
+    if (points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.z < -1 || p.z > 1)) return null;
+    const left=Math.max(rect.left+4,Math.min(...points.map(p=>rect.left+(p.x+1)*rect.width/2))-6);
+    const top=Math.max(rect.top+4,Math.min(...points.map(p=>rect.top+(1-p.y)*rect.height/2))-6);
+    const right=Math.min(rect.right-4,Math.max(...points.map(p=>rect.left+(p.x+1)*rect.width/2))+6);
+    const bottom=Math.min(rect.bottom-4,Math.max(...points.map(p=>rect.top+(1-p.y)*rect.height/2))+6);
+    return right>left&&bottom>top?{left,top,width:right-left,height:bottom-top}:null;
+  }
   function glowPutter(k) {
     putter.traverse(o => { if (o.isMesh) { o.material.emissive.set('#ffc233'); o.material.emissiveIntensity = k; } });
   }
@@ -1429,7 +1442,7 @@
     get testMode() { return testMode; },
     isPlaying() { return ['ready', 'aim', 'charge', 'powerMenu', 'swing', 'shot', 'settle', 'holeOut', 'replay', 'scorecard', 'gator', 'holeIntro', 'courseIntro', 'challengeFail', 'courseEnd'].includes(state); },
     inTurn() { return state === 'ready' || state === 'aim' || state === 'charge' || state === 'powerMenu'; },
-    choosePutt, setPutterFocus,
+    choosePutt, setPutterFocus, putterScreenBounds,
     currentBall() { const p = players[current]; return p && p.ball ? p.ball : null; },
     get current() { return current; },
     debug: { get shot() { return shot; }, computeAutoPower, smartAim: () => smartAim(cur().ball) }

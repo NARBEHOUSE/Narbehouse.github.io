@@ -1,5 +1,7 @@
 const {chromium,expect}=require('@playwright/test');
+const {expectPlayerLayout}=require('./player-layout-checks.cjs');
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
+const executablePath=process.argv.find(arg=>arg.startsWith('--browser-path='))?.slice('--browser-path='.length)||process.env.HUB_BROWSER_PATH;
 const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173';let context;
 const cases=[
   ['youtube','www.youtube.com','class="ytp-fullscreen-button"'],
@@ -15,7 +17,7 @@ const cases=[
   const dir=path.join(root,'artifacts','fullscreen-extension-'+Date.now());await fs.cp(path.join(root,'extension'),dir,{recursive:true});
   const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));
   manifest.host_permissions=[...new Set(cases.map(([,host])=>'https://'+host+'/*'))];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest));
-  context=await chromium.launchPersistentContext(path.join(root,'artifacts','fullscreen-profile-'+Date.now()),{channel:'chromium',headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
+  context=await chromium.launchPersistentContext(path.join(root,'artifacts','fullscreen-profile-'+Date.now()),{...(executablePath?{executablePath}:{channel:'chromium'}),headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
   context.setDefaultTimeout(15000);const errors=[];context.on('page',p=>p.on('pageerror',e=>errors.push(e.message)));
   for(const [,host] of cases)await context.route('https://'+host+'/**',route=>{
     const name=new URL(route.request().url()).searchParams.get('fixture');const attrs=cases.find(c=>c[0]===name)?.[2];
@@ -52,9 +54,9 @@ const cases=[
     await player.bringToFront();
     if(service==='youtube'){
       // Without any switch input, the nested video and outer player must fill
-      // the browser window even while YouTube hides its fullscreen button.
+      // the reserved video area above controls even while YouTube hides its fullscreen button.
       await expect(player.locator('#player')).toHaveAttribute('data-benny-player-view','');
-      await expect.poll(()=>player.locator('video').evaluate(v=>{const r=v.getBoundingClientRect();return Math.abs(r.width-innerWidth)<2&&Math.abs(r.height-innerHeight)<2&&Math.abs(r.x)<2&&Math.abs(r.y)<2;})).toBe(true);
+      await expectPlayerLayout(player);
       assert.equal(await player.evaluate(()=>fullscreenClicks),0);
       assert.equal(await player.evaluate(()=>!!document.fullscreenElement),false);
       await expect(player.locator('#related')).toHaveCSS('opacity','0');
@@ -63,19 +65,21 @@ const cases=[
       await expect(player.locator('#late-related')).toHaveCSS('opacity','0');
       await player.screenshot({path:path.join(root,'artifacts','youtube-automatic-fullscreen.png')});
     }
-    for(let i=0;i<8;i++){await player.waitForTimeout(70);await player.keyboard.press('Space');}
+    for(let i=0;i<9;i++){await player.waitForTimeout(70);await player.keyboard.press('Space');}
     await expect(bar).toHaveAttribute('data-selected','fullscreen');await player.waitForTimeout(70);await player.keyboard.press('Enter');
     if(service==='youtube'){
       // First activation leaves the automatic view; the next enters native fullscreen.
       await expect(player.locator('[data-benny-player-view]')).toHaveCount(0);
       await expect(player.locator('#related')).toHaveCSS('opacity','1');
       await expect(player.locator('#late-related')).toHaveCSS('opacity','1');
+      await expectPlayerLayout(player);
       assert.equal(await player.locator('.html5-video-container').getAttribute('style'),'position:relative;width:640px;height:360px');
       await player.locator('#provider-fullscreen').evaluate(b=>b.style.visibility='visible');
       await player.waitForTimeout(100);await player.keyboard.press('Enter');
     }
     await expect.poll(()=>player.evaluate(()=>document.fullscreenElement?.id)).toBe('player');
     assert.equal(await player.evaluate(()=>fullscreenClicks),attrs?1:0);
+    await expectPlayerLayout(player);
     if(service!=='netflix')await expect.poll(()=>player.evaluate(()=>document.activeElement?.id)).toBe('benny-player-controls');
     assert.equal(await bar.evaluate(el=>el.matches(':popover-open')),true);
     await player.mouse.click(100,100);await player.mouse.dblclick(110,110);
@@ -85,6 +89,7 @@ const cases=[
     await scan(1);await expect(bar).toHaveAttribute('data-selected','help');
     await scan(1);await expect(bar).toHaveAttribute('data-selected','suspend');
     await scan(1);await expect(bar).toHaveAttribute('data-selected','return'); // Last control.
+    await scan(1);await expect(bar).toHaveAttribute('data-selected','park');
     await scan(1);await expect(bar).toHaveAttribute('data-selected','play');
     await expect.poll(()=>player.locator('video').evaluate(v=>v.paused)).toBe(false);
     await select();await expect.poll(()=>player.locator('video').evaluate(v=>v.paused)).toBe(true);
@@ -96,10 +101,11 @@ const cases=[
     await scan(1);await expect(bar).toHaveAttribute('data-selected','fullscreen');
     await player.waitForTimeout(70);await player.keyboard.press('Enter');await expect.poll(()=>player.evaluate(()=>!!document.fullscreenElement)).toBe(false);
     if(!attrs)assert.equal(await player.locator('video').getAttribute('style'),'width:640px;height:360px');
+    await expectPlayerLayout(player);
     assert.equal(await player.evaluate(()=>switchLeaks),0);assert.equal(await player.locator('#typing').inputValue(),'');
     if(service!=='netflix')await expect.poll(()=>player.evaluate(()=>document.activeElement?.id)).toBe('benny-player-controls');
     assert.equal((await worker.evaluate(id=>chrome.windows.get(id),playerWindow.id)).state,'fullscreen');
-    await player.close();console.log(service+': fullscreen, play/pause, previous/next, disabled controls, accidental clicks and switch capture passed');
+    await player.close();console.log(service+': reserved video area, fullscreen, play/pause, previous/next, disabled controls, accidental clicks and switch capture passed');
   }
   assert.deepEqual(errors,[]);
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>context?.close());

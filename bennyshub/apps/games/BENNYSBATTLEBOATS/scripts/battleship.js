@@ -368,7 +368,7 @@ function playSound(type) {
 function speak(text) {
     if (!settings.tts) return;  // Respect TTS setting
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
@@ -2301,11 +2301,7 @@ function setupScanningInput() {
             }
             scanState.spaceHeld = false;
             
-            // If cancelled due to 'too-short' but wasn't backward scanning, do a forward scan
-            if (e.detail.reason === 'too-short' && !wasBackwardScanning) {
-                scanState.lastInputTime = Date.now();
-                scanForward();
-            }
+            // Rejected releases never perform a choice action.
         }
         if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
             // Clear enter timer to prevent accidental pause
@@ -2316,10 +2312,7 @@ function setupScanningInput() {
             scanState.enterHeld = false;
             scanState.enterLongTriggered = false;
             
-            if (e.detail.reason === 'too-short') {
-                scanState.lastInputTime = Date.now();
-                selectCurrentItem();
-            }
+
         }
     });
 }
@@ -2329,10 +2322,7 @@ function handleKeyDown(e) {
     
     // Anti-tremor: check minimum time between inputs
     const now = Date.now();
-    const sensitivity = window.NarbeScanManager ? window.NarbeScanManager.getInputSensitivity() : 50;
-    if (now - scanState.lastInputTime < sensitivity) {
-        return; // Ignore input - too fast (anti-tremor)
-    }
+    // Shared input guard already filters presses; do not apply a second local gate.
     
     if (e.code === 'Space') {
         e.preventDefault();
@@ -3520,7 +3510,7 @@ function enterCellMode() {
     scanState.mode = 'cell';
     scanState.cellIndex = -1;
     speak(`Row ${letters[scanState.rowIndex]} selected. Scan columns. Press Enter to place. Hold Enter to go back.`);
-    scanForward(); // Move to first cell
+    window.classicChoice?.sync(); // Shared child group enters its first cell
 }
 
 function placeShipAtCurrentCell() {
@@ -3557,7 +3547,7 @@ function enterGameCellMode() {
     scanState.mode = 'game-cell';
     scanState.cellIndex = -1;
     speak(`Row ${letters[scanState.rowIndex]} selected. Scan columns. Press Enter to fire. Hold Enter to go back.`);
-    scanForward(); // Move to first unfired cell
+    window.classicChoice?.sync(); // Shared child group enters its first unfired cell
 }
 
 function fireAtCurrentCell() {

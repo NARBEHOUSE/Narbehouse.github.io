@@ -429,7 +429,7 @@
         <ul>
           <li><strong>Entire app and every game must be fully usable with only two keys:</strong> Spacebar and Return, plus optional mouse or touch for caregivers or users who have those access options.</li>
           <li><strong>And fully usable with one key.</strong> With Auto Scan on, Return alone must reach everything. One switch is the real floor, not two.</li>
-          <li><strong>No reflex or precision demand without a way around it.</strong> Timing windows, charge-and-release and fail states are allowed &mdash; several shipped games use them, and for players who can meet them they <em>are</em> the game. What is not allowed is making one the <em>only</em> route through. Anything you build here pairs such a mechanic with an alternative that needs no timing and no hold &mdash; either the game supplies the value itself, or the player scans a choice instead &mdash; and a setting that switches between the two. Football's <code>Easy Throw</code> is the pattern to copy. Some of the older games in the hub do not have this yet; they are being updated as they are revisited, and the reason is worth understanding &mdash; see <a href="#mechanics">Game Mechanics That Work Well</a>.</li>
+          <li><strong>Preserve working gameplay and add access options where practical.</strong> Keep existing aim, charge, timing and hold mechanics. A separately scoped tap-friendly option can offer another way to play while keeping the same rules and difficulty. Some games may retain hold requirements; record them accurately. The scan upgrade changes stationary choices only.</li>
           <li><strong>All actions should be available through scanning and selection.</strong></li>
           <li><strong>Independence is the measure.</strong> A player must get from the hub's front page, into a game, through its menus, into a round, out to pause and settings, and back to the hub, alone. A screen that quietly needs a second person is a serious bug.</li>
           <li><strong>"One switch" describes an input, not a person.</strong> Build for the range: difficulty options, no-fail modes, and editors that let a caregiver tune content to the player.</li>
@@ -443,7 +443,7 @@
           <h3>Spacebar Controls</h3>
           <ul>
             <li><strong>Short press (release):</strong> Move highlight forward in the current scan list. Activates on release so accidental holds don't trigger selection.</li>
-            <li><strong>Hold:</strong> Scan backwards through the list, repeating at the player's chosen scan speed. Release stops it. (Auto-scan is a saved setting, not a hold gesture — see Scanning Behavior.)</li>
+            <li><strong>Hold:</strong> In Step, scan backwards at the chosen speed. In Auto, Space Brake may own the press and release — see Scanning Behavior.</li>
           </ul>
         </div>
 
@@ -467,17 +467,22 @@
 
       <section class="section" id="scanning">
         <h2>Scanning Behavior</h2>
-        <ul>
-          <li><strong>Two schemes, and every game supports both.</strong> The player picks once, in Settings, and the choice is shared across the whole hub by <code>NarbeScanManager</code>. <strong>Auto Scan off (default) = two switches:</strong> Spacebar moves the highlight, Return selects. <strong>Auto Scan on = one switch:</strong> the highlight advances by itself and Return is the only key needed.</li>
-          <li><strong>Scan speed is the player's setting, not yours.</strong> 1, 2, 3, or 4 seconds, read from <code>NarbeScanManager.getScanInterval()</code>. Never hard-code a scan interval, and never print one in help text.</li>
-          <li><strong>Know what the scan manager does and does not own.</strong> It owns the scan interval (which is also the repeat rate once backwards scanning starts) and the 250 ms debounce — nothing else. The <em>hold thresholds</em> are not in it: each game hard-codes its own, and the same 3000 appears in more than a dozen files under a different name each time. So match the convention — roughly 3s to start scanning backwards, roughly 5s to pause — but never state a duration as a promise, because nothing enforces it.</li>
-          <li><strong>With Auto Scan off, scanning starts on the first Spacebar press</strong> in a scene. With Auto Scan on it starts by itself — a one-switch player must never have to press anything to get the cursor moving.</li>
-          <li><strong>Row scanning:</strong> Spacebar cycles rows, Return enters a row. Within a row, Spacebar cycles buttons, Return selects. This is how the grid games (Battle Boats, Connect Four, Chess &amp; Checkers) stay reachable with one switch.</li>
-          <li><strong>Predictable loop order:</strong> Top to bottom, left to right. Never reorder during a session.</li>
-          <li><strong>Focus memory:</strong> When returning from a submenu, restore highlight to the last focused item.</li>
-          <li><strong>Debounce is already handled.</strong> <code>scan-manager.js</code> enforces a 250 ms global cooldown after any release, so a bouncing switch or a tremor produces one clean press. Do not add your own.</li>
-        </ul>
-        <p style="opacity:.75; font-size:.95em;"><em>Recommended but not yet standard: a "deadzone" step with no highlight before a list wraps back to the top, letting the screen rest and making the wrap audible. Only Benny Says does this today.</em></p>
+        <p>Choose Auto Scan and scan speed once in Hub Settings. Every stationary choice context follows the rules below; gameplay keeps its existing controls.</p>
+        <h3>Required park step</h3>
+        <p><strong>"If Ben stops pressing, does anything in the game keep happening?"</strong> No means a CHOICE scan: apply all three features. Yes means a gameplay MECHANIC: preserve it.</p>
+        <p>Every root choice loop includes a blank <code>-1</code> in both directions. In Step mode it clears highlights silently and Enter does nothing. In Auto, Parking Off passes through silently for one full interval and continues; only Park when Chosen or Auto Park speaks “park” when TTS is on. Park when Chosen parks on Enter; Auto Park stops after 1, 2 or 3 complete loops. Parked clears all highlights, shows a visible Parked badge, and Enter resumes the first item without selecting. Preserve native hold-to-pause.</p>
+        <p>P3GL’s optional before-shot choice order is blank, Pause/Options, Take Shot; its aim sweep is unchanged. Racer’s stationary menus use the rule, while live steering and native multiplayer controls remain mechanics.</p>
+        <h3>Space brake</h3>
+        <p>With Auto and Space Brake on, freeze the current choice <strong>on Space press</strong> so its label can finish. This is the act-on-release exception. A tap stays paused; Enter selects; a second tap or a held Space release resumes after one full interval. Show only a dotted outline on the paused scan choice, including after scrolling; do not add Paused text or a Paused badge. Keep the Parked badge. Speak Paused after the owned label ends normally; cancel stale notices. On blank or parked, Space does not select. Brake Off preserves the old Auto Space behavior. Never intercept a multiplayer player’s selection switch.</p>
+        <h3>Wait for speech</h3>
+        <p>When enabled, advance after the owned label ends plus a full scan interval. Input remains available. Disabled or failed speech uses ordinary timing. The voice manager bounds completion using text length/rate with a 10-second cap; the cap releases the wait without cutting off narration. A stale completion cannot move another menu.</p>
+        <h3>Focus and settings</h3>
+        <p>Fresh menus open blank. Changing an option or redrawing a live list retains stable item identity. Back within a task restores its parent row/item; a separate modal return may start fresh. A child row’s loop exits to root blank. Removed items clear safely without selecting anything.</p>
+        <p>Parking, Loops Before Parking, Space Brake and Wait for Speech appear only in Hub Settings. Keep them visible with descriptions and disabled when Auto is off; Loops also requires Auto Park. Keep the original page scrolling. Existing app Auto, voice and speed controls still use the same managers, with live updates across the Hub, frames, tabs and Companion.</p>
+        <h3>Shared input and platform contract</h3>
+        <p>Use <code>NarbeScanManager.createChoiceScan</code> or the explicit <code>NarbeChoiceScanAdapter</code> with stable IDs, labels, a status host and the existing native hold threshold. Suspend it when gameplay, typing or a native dialog owns input. The shared controller installs no keyboard listeners or extra debounce.</p>
+        <p>Input Sensitivity is the existing 50/100/200/300 ms cooldown and anti-rapid filter, default 50 ms. It is <strong>not a minimum press duration</strong>; never add another gate. Scan intervals remain 1/2/3/4 seconds. Hold thresholds remain owned by each app.</p>
+        <p><code>NarbePlatform</code> isolates storage and transport, speech start/end/error, key capture and lifecycle. Shared policy uses that contract; the future Electron adapter supplies its own implementation. Electron remains a separately authorized pass.</p>
       </section>
 
       <section class="section" id="visibility">
@@ -539,7 +544,7 @@
         <ul>
           <li><strong>Oscillate and stop</strong> — instead of <em>aiming</em>, a marker travels along the arc and the player stops it where they want it. This replaces pointing entirely. It has two forms, and a game should offer whichever matches the player's scheme: <em>player-driven</em> (the marker moves only while the switch is held, and each press reverses it — full control, needs a hold) and <em>self-driven</em> (the marker sweeps continuously and a single press commits — needs no hold at all). Bowling, P3GL and Basketball Shooter all use this; P3GL switches between the two forms with Auto Scan</li>
           <li><strong>Charge and release</strong> — instead of setting a power level, hold and let go; longer hold, more power, on a non-linear curve so short taps stay usable. Bowling, Football, Baseball, Mini Golf. <em>Build a no-hold alternative beside it, behind a setting</em> &mdash; two options, charge or don't. The method is to <strong>separate the decision from the execution and keep only the decision</strong>. Football is the worked example: a throw is <em>scan the receivers, select one</em>, and then a hold for power. <code>Easy Throw</code> drops the hold and keeps the selection &mdash; pick the receiver and it throws at ideal power &mdash; so a player who cannot sustain a hold still plays the whole season. Where an action has no selection under the charge, give it one (a named swing or power level) rather than leaving the player nothing to choose. It sits in both the main-menu and the pause settings and persists &mdash; that is the shape to copy</li>
-          <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats, Connect Four, Chess &amp; Checkers, Tic Tac Toe, Matchy Match</li>
+          <li><strong>Row, then column</strong> — two-stage scanning reaches any 2-D grid with one switch. Battle Boats and Matchy Match; other games scan their existing legal moves or columns</li>
           <li><strong>Armed direction</strong> — one switch drives two directions by making <em>release</em> meaningful: press moves the armed way, letting go arms the other, so a quick tap swaps sides. Race Tracks' one-switch steering</li>
         </ul>
 
@@ -630,7 +635,7 @@
           <li>✓ Does anything mouse-only or off-site sit behind a spoken confirm, with Cancel first and the scan trapped in the dialog?</li>
           <li>✓ Do menu actions fire on <strong>release</strong>, not on press?</li>
           <li>✓ Does holding Spacebar scan backwards in every menu?</li>
-          <li>✓ Does holding Return open Pause from anywhere in gameplay, with visible <em>and</em> audible feedback while holding?</li>
+          <li>✓ Does the native pause route remain available, with visible and audible feedback for supported holds? Document any gameplay lockout, such as Racer’s approved notice.</li>
           <li>✓ Is there an on-screen Pause button that does the same?</li>
           <li>✓ Are Settings reachable from both the main menu and the pause menu?</li>
           <li>✓ Do Auto Scan and Scan Speed read from <code>NarbeScanManager</code>, with no hard-coded interval?</li>
@@ -640,7 +645,7 @@
           <li>✓ Does Exit Game send <code>postMessage({ action: 'focusBackButton' })</code>?</li>
           <li>✓ Does help text describe holds <strong>without quoting a number of seconds</strong>?</li>
           <li>✓ Is there nothing that demands precise pointing, a drag, or two axes at once?</li>
-          <li>✓ If the game has a timed window, reaction moment, fail state, timer, or hold-to-charge, is there a no-fail alternative that needs no timing and no hold, <strong>behind a setting</strong>, offered in both the main-menu and the pause settings?</li>
+          <li>✓ Have timed and hold mechanics been preserved, with any proposed tap-friendly alternatives recorded for a separate optional gameplay pass? Existing hold mechanics do not fail the scan-upgrade checklist.</li>
           <li>✓ Is it readable at 100% on a tablet?</li>
           <li>✓ Does the game auto-save and resume correctly?</li>
           <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>

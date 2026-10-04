@@ -1491,3 +1491,8 @@ html, body {
     .naf-btn.naf-open-barn { min-height: 72px; bottom: 2.5vh; }
     .naf-open-barn .naf-icon-chip { width: 42px; height: 42px; }
 }
+
+/* Keep scan-brake dots visible against keyboard row and key backgrounds. */
+.naf-key-row[data-narbe-scan-paused],
+.naf-key[data-narbe-scan-paused] { outline-color: #3d2718 !important; }
+[data-name="rows-back"][hidden] { display: none !important; }

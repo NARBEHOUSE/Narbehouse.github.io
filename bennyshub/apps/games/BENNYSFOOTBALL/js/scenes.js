@@ -347,6 +347,14 @@ class ColorSelectScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         this.drawColor();
+        this.startMenu.active=false;
+        this.startMenu.zones[0].on('pointerdown',()=>this.start(true));
+        const host=document.createElement('div');Object.assign(host.style,{position:'fixed',right:'8px',top:'8px',minBlockSize:'0',zIndex:'900'});document.body.append(host);
+        const badge=NarbeScanStatusBadge.create({host});let status='';
+        this.colorChoice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:host,speak:text=>NarbeVoiceManager.speak(text),badge:{update(v,c){status=v;badge.update(v,{state:c.state});},destroy(){badge.destroy();host.remove();}},onHighlight:(item,state)=>{if(item)this.colorIndex=item.position;this.drawColor();if(item){this.nameTxt.setText(TEAM_COLORS[this.colorIndex].name);const r=this._card,g=this.card;g.lineStyle(4,0xffffff,1);if(status==='Paused'){g.fillStyle(0xffffff,1);for(let x=r.x;x<=r.x+r.w;x+=8){g.fillCircle(x,r.y,2);g.fillCircle(x,r.y+r.h,2);}for(let y=r.y;y<=r.y+r.h;y+=8){g.fillCircle(r.x,y,2);g.fillCircle(r.x+r.w,y,2);}}else g.strokeRoundedRect(r.x,r.y,r.w,r.h,18);}},onSelect:()=>this.start(true)});
+        this.__stationaryChoice={active:true,scene:this,_choice:{adapter:this.colorChoice}};
+        this.colorChoice.sync({key:'team-color',statusHost:host,items:TEAM_COLORS.map((c,i)=>({id:c.name,label:c.name,position:i}))});
+        this.events.once('shutdown',()=>{this.__stationaryChoice.active=false;this.colorChoice.dispose();});
 
         // Keyboard: arrows + SPACE cycle the colour, ENTER starts.
         this.input.keyboard.on('keydown-LEFT', () => this.cycle(-1));
@@ -372,6 +380,7 @@ class ColorSelectScene extends Phaser.Scene {
     }
 
     cycle(dir) {
+        if(this.colorChoice?.active){this.colorChoice.step(dir);return;}
         this.colorIndex = (this.colorIndex + dir + TEAM_COLORS.length) % TEAM_COLORS.length;
         this.drawColor();
         audioSys().play('scan');
@@ -391,7 +400,8 @@ class ColorSelectScene extends Phaser.Scene {
         this.nameTxt.setText(c.name);
     }
 
-    start() {
+    start(fromChoice=false) {
+        if(this.colorChoice?.active&&!fromChoice){this.colorChoice.select();return;}
         const colorName = TEAM_COLORS[this.colorIndex].name;
         const season = seasonMgr();
         let opponentColorName;

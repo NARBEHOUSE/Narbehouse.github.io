@@ -41,7 +41,7 @@ clearGrid = function () {
 };
 function tileButton(item) {
   const btn = button(item.display || item.speak || 'Speak', () => onTileClick(item));
-  btn.dataset.speakText = item.speak || item.display || '';
+  btn.dataset.speakText = item.speak || item.display || ''; btn.dataset.scanIdentity='tile:'+item.category+':'+item.tileOrder+':'+(item.speak||item.display||'');
   if (item.image) { const img = document.createElement('img'); img.src = item.image; img.alt = ''; btn.prepend(img); }
   return btn;
 }
@@ -50,7 +50,7 @@ renderCategory = function () {
   if (PB.layout(rows) !== 'free') { original.renderCategory(); return; }
   clearGrid(); state.currentMenu = 'category'; el.mainGrid.classList.add('free-active');
   const nav = document.createElement('div'); nav.className = 'free-nav';
-  const backGroup = button('Back to groups', () => { groupScanner?.back(); paintGroups(); }); backGroup.id = 'backToGroups'; backGroup.hidden = true;
+  const backGroup = button('Back to groups', () => { window.PhraseChoice?.back(); }); backGroup.id = 'backToGroups'; backGroup.hidden = true;
   nav.append(backGroup);
   nav.append(button('Back to categories', () => { state.navigationHistory = []; openMenu('categories'); }), button('Settings', () => navigateTo('settings')));
   el.mainGrid.append(nav);
@@ -101,7 +101,7 @@ updateScannable = function (preserve) {
   if (el.mainGrid.classList.contains('free-active')) {
     const groups = [];
     if (messageActive()) groups.push({name:'Message',items:[el.sentenceDisplay,el.deleteWordBtn,el.clearSentenceBtn]});
-    groups.push({name:'Navigation',items:[...el.mainGrid.querySelectorAll('.free-nav button:not(#backToGroups)')]},...groupElements);
+    groups.push({name:'Navigation',items:[...el.mainGrid.querySelectorAll('.free-nav button:not(#backToGroups)')]},...groupElements.map(group=>({...group,items:[...group.items]})));
     groups.push({name:'Suggestions',items:[...el.mainGrid.querySelectorAll('[data-prediction]')]});
     const back = document.getElementById('backToGroups');
     if (back) groups.forEach(g => { if (g.items.length) g.items = [...g.items,back]; });

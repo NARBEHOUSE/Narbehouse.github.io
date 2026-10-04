@@ -6,26 +6,24 @@
     <div class="topline"><span class="wordmark">Benny's Hub <span>/ Companion</span></span><span class="version" id="version"></span></div>
     <p class="eyebrow">YOUR BROWSER, YOUR SETTINGS</p>
     <h1>Companion settings</h1>
-    <p class="intro">Choose the sources that work with your Hub.</p>
+    <p class="intro">One switch for streaming controls and Day Hub news.</p>
   </header>
-  <section class="quick-start" aria-labelledby="quick-heading">
-    <div><h2 id="quick-heading">Get everything ready</h2><p>Turn on all streaming services and news with one browser permission request. You can turn off any source below.</p></div>
-    <button id="enable-all" class="primary" disabled>Enable all sources <span aria-hidden="true">↗</span></button>
+  <section class="quick-start" aria-labelledby="access-heading">
+    <div><h2 id="access-heading">Streaming and news</h2><p id="access-description">Turn on access to all the services listed below. Your browser will ask you to approve access.</p><p id="access-state">Checking access…</p></div>
+    <button id="companion-access" class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="access-heading" aria-describedby="access-description access-state" disabled><span class="toggle-state">Off</span><span class="toggle-track" aria-hidden="true"></span></button>
   </section>
   <p id="status" role="status" aria-live="polite"></p>
   <section class="sources" aria-labelledby="streaming-heading">
-    <div class="section-heading"><div><p class="eyebrow">WATCH</p><h2 id="streaming-heading">Streaming services</h2></div><span class="count" id="source-count">Checking access…</span></div>
-    <p class="section-description">Add the player control bar to streams opened from the Hub. Sign in on each service as usual.</p>
-    <div id="services" class="grid"></div>
-    <p class="hint">Green is on. Gray is off. Changes are saved automatically.</p>
+    <h2 id="streaming-heading">What this enables</h2>
+    <h3 class="access-label">Streaming controls</h3>
+    <p class="section-description">Open videos from the Hub with the Companion control bar for playback, sound and returning to the Hub. Sign in on each service as usual.</p>
+    <ul id="services" class="service-list"></ul>
+    <h3 class="access-label">Day Hub news</h3>
+    <p class="section-description">Read headlines from NPR, BBC and Google News in Day Hub. Local news uses the place you enter in Day Hub.</p>
   </section>
   <section class="day-section" aria-labelledby="day-heading">
-    <div class="section-heading"><div><p class="eyebrow">YOUR DAY</p><h2 id="day-heading">Day Hub</h2></div></div>
-    <div class="source-card news-card">
-      <span class="source-icon news-icon" aria-hidden="true">N</span>
-      <div class="source-copy"><h3 id="news-label">News</h3><p>NPR, BBC &amp; Google News</p></div>
-      <button id="news" class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="news-label" disabled><span class="toggle-state">Off</span><span class="toggle-track" aria-hidden="true"></span></button>
-    </div>
+    <h2 id="day-heading">Calendar</h2>
+    <p class="section-description">Connect your calendar separately to show your schedule in Day Hub.</p>
     <details class="calendar-panel">
       <summary><span>Calendar <small>Your private Google Calendar</small></span><span class="count" id="calendar-status">Not connected</span></summary>
       <form id="calendar-form">

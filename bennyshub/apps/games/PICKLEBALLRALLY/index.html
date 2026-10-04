@@ -622,6 +622,11 @@
 
 <!-- Shared accessibility scripts -->
 <script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
@@ -718,11 +723,33 @@ function inputCooldown() {
   return sm() ? sm().getInputSensitivity() : 200;
 }
 
+
+// Timed rallies keep their native scanner. Only untimed Casual choices use shared parking.
+let choice=null,choiceHost=null,spaceBraking=false,zoneRestore=null;
+function syncStationary(){
+  const casual=currentMenu==='game'&&!busy&&!matchOver&&difficulties[difficultyIndex].noTimer;
+  const selector={start:'#mainMenu .menuItem',settings:'#settingsMenu .menuItem',pause:'#pauseMenu .menuItem'}[currentMenu];
+  if(!selector&&!casual){choice?.sync(null);return false;}
+  if(!choiceHost){choiceHost=document.createElement('div');choiceHost.style.minBlockSize='0';choiceHost.id='choiceScanStatus';}
+  let elements=casual?zones:[...document.querySelectorAll(selector)];
+  if(casual){Object.assign(choiceHost.style,{position:'absolute',top:'8px',right:'8px',zIndex:'20'});$('court').append(choiceHost);}else{Object.assign(choiceHost.style,{position:'static',top:'',right:''});elements[0].parentElement.before(choiceHost);}
+  if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:HOLD_THRESHOLD,stateHost:document.body,speak:text=>vm()?.speak(text),
+    onHighlight(item,state,context){const i=item?item.position:-1;if(currentMenu==='start'){menuIndex=i;updateMainMenuFocus();}else if(currentMenu==='settings'){settingsIndex=i;updateSettingsMenuFocus();}else if(currentMenu==='pause'){pauseMenuIndex=i;updatePauseMenuFocus();}else if(currentMenu==='game'){const changed=selectedIndex!==i;selectedIndex=i;updateGlow();if(i>=0&&changed)zoneTone(i);zones.forEach((el,n)=>{const t=el.querySelector('.choice-zone-label');if(t)t.style.display=state.braked&&n===i?'block':'none';});}if(!item&&context.items.some(it=>it.element===document.activeElement))document.activeElement.blur();},onSelect:()=>onEnter(true)});
+  const labels=casual?ZONE_NAMES:currentMenu==='settings'?null:currentMenu==='start'?['Casual','Slow','Medium','Fast','Settings','Exit Game']:['Continue','Main Menu','Help'];
+  const mapped=elements.map((el,i)=>{let labelElement=el;if(casual){labelElement=el.querySelector('.choice-zone-label');if(!labelElement){labelElement=document.createElement('span');labelElement.className='choice-zone-label';labelElement.textContent=ZONE_NAMES[i];Object.assign(labelElement.style,{display:'none',position:'absolute',top:'8px',left:'8px',background:'#062d20',color:'#fff',padding:'4px'});el.append(labelElement);}}else labelElement=el.querySelector('span')||el;return{id:String(i),label:()=>labels?labels[i]:buildSettingsLabel(i),element:el,labelElement,position:i};});
+  choice.sync({key:casual?'casual':currentMenu,items:mapped,statusHost:choiceHost},{fresh:casual&&!choice.active});
+  if(casual&&zoneRestore!==null){choice.align(zoneRestore);zoneRestore=null;}
+  choice.setInputHeld(!!keyIsDown.Space||!!keyIsDown.Enter);return true;
+}
+function cancelChoiceInput(){clearTimeout(spaceHoldTimer);clearInterval(spaceHoldRepeat);clearTimeout(enterHoldTimer);spaceHoldTimer=spaceHoldRepeat=enterHoldTimer=null;keyIsDown.Space=keyIsDown.Enter=false;spaceDidHold=enterDidHold=spaceBraking=false;choice?.cancelInput();}
+document.addEventListener('narbe-input-cancelled',cancelChoiceInput);window.addEventListener('blur',cancelChoiceInput);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelChoiceInput();});
+
 document.addEventListener('keydown', e => {
   if (e.code === 'Space') {
     e.preventDefault();
     if (keyIsDown['Space']) return; // ignore browser auto-repeat
     keyIsDown['Space'] = true;
+    if(choice?.active&&choice.brakePress()){spaceBraking=true;return;}choice?.active&&choice.setInputHeld(true);
     spaceDidHold = false;
     spaceHoldTimer = setTimeout(() => {
       spaceDidHold = true;
@@ -731,10 +758,10 @@ document.addEventListener('keydown', e => {
       spaceHoldRepeat = setInterval(onSpaceBack, repeatMs);
     }, HOLD_THRESHOLD);
   }
-  if (e.code === 'Enter') {
+  if (e.code === 'Enter' || e.code === 'NumpadEnter') {
     e.preventDefault();
     if (keyIsDown['Enter']) return;
-    keyIsDown['Enter'] = true;
+    keyIsDown['Enter'] = true;choice?.active&&choice.setInputHeld(true);
     enterDidHold = false;
     enterHoldTimer = setTimeout(() => {
       enterDidHold = true;
@@ -753,25 +780,26 @@ document.addEventListener('keyup', e => {
 
     if (!keyIsDown['Space']) return;
     keyIsDown['Space'] = false;
+    if(spaceBraking){spaceBraking=false;choice?.brakeRelease();return;}choice?.active&&choice.setInputHeld(!!keyIsDown.Enter);
 
     if (!spaceDidHold) {
       // Short tap → forward scan
       const now = Date.now();
-      if (now - (lastKeyUp['Space'] || 0) < inputCooldown()) return;
+      if (!choice?.active && now - (lastKeyUp['Space'] || 0) < inputCooldown()) return;
       lastKeyUp['Space'] = now;
       onSpace();
     }
     spaceDidHold = false;
   }
 
-  if (e.code === 'Enter') {
+  if (e.code === 'Enter' || e.code === 'NumpadEnter') {
     clearTimeout(enterHoldTimer);
     enterHoldTimer = null;
     if (!keyIsDown['Enter']) return;
-    keyIsDown['Enter'] = false;
+    keyIsDown['Enter'] = false;choice?.active&&choice.setInputHeld(!!keyIsDown.Space);
     if (enterDidHold) { enterDidHold = false; return; }
     const now = Date.now();
-    if (now - (lastKeyUp['Enter'] || 0) < inputCooldown()) return;
+    if (!choice?.active && now - (lastKeyUp['Enter'] || 0) < inputCooldown()) return;
     lastKeyUp['Enter'] = now;
     onEnter();
   }
@@ -779,6 +807,7 @@ document.addEventListener('keyup', e => {
 
 // ─── Space / Enter dispatch ────────────────────────────────────────────────────
 function onSpace() {
+  if(choice?.active){choice.step(1);return;}
   if (currentMenu === 'pause') {
     pauseMenuIndex = (pauseMenuIndex + 1) % PAUSE_COUNT;
     updatePauseMenuFocus();
@@ -802,6 +831,7 @@ function onSpace() {
 }
 
 function onSpaceBack() {
+  if(choice?.active){choice.step(-1);return;}
   if (currentMenu === 'pause') {
     pauseMenuIndex = pauseMenuIndex < 0 ? PAUSE_COUNT - 1 : (pauseMenuIndex - 1 + PAUSE_COUNT) % PAUSE_COUNT;
     updatePauseMenuFocus();
@@ -826,7 +856,8 @@ function onSpaceBack() {
   }
 }
 
-function onEnter() {
+function onEnter(fromChoice=false) {
+  if(choice?.active&&!fromChoice){choice.select();return;}
   if (currentMenu === 'pause') {
     if (pauseMenuIndex < 0) return; // nothing highlighted yet
     if (pauseMenuIndex === 0) closePause();
@@ -927,21 +958,21 @@ function activateSettingsItem(idx) {
       if (v) {
         v.toggleTTS();
         updateSettingsDisplay();
-        if (v.getSettings().ttsEnabled) speak(buildSettingsLabel(0));
+        if (v.getSettings().ttsEnabled) (choice?.active?text=>choice.announce(text):speak)(buildSettingsLabel(0));
       }
       break;
     case 1: // Cycle voice
       if (v) {
         v.cycleVoice();
         updateSettingsDisplay();
-        speak(buildSettingsLabel(1));
+        (choice?.active?text=>choice.announce(text):speak)(buildSettingsLabel(1));
       }
       break;
     case 2: // Auto scan toggle
       if (s) {
         s.toggleAutoScan();
         updateSettingsDisplay();
-        speak(buildSettingsLabel(2));
+        (choice?.active?text=>choice.announce(text):speak)(buildSettingsLabel(2));
         restartAutoScan();
       }
       break;
@@ -949,7 +980,7 @@ function activateSettingsItem(idx) {
       if (s) {
         s.cycleScanSpeed();
         updateSettingsDisplay();
-        speak(buildSettingsLabel(3));
+        (choice?.active?text=>choice.announce(text):speak)(buildSettingsLabel(3));
         restartAutoScan();
       }
       break;
@@ -957,7 +988,7 @@ function activateSettingsItem(idx) {
       soundEnabled = !soundEnabled;
       localStorage.setItem('pb-sound', soundEnabled);
       updateSettingsDisplay();
-      speak(buildSettingsLabel(4));
+      (choice?.active?text=>choice.announce(text):speak)(buildSettingsLabel(4));
       break;
     case 5: // Back
       closeSettings();
@@ -983,12 +1014,14 @@ function updateSettingsDisplay() {
 // ─── Auto scan ────────────────────────────────────────────────────────────────
 function restartAutoScan() {
   if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
+  if(syncStationary())return;
   const s = sm();
   if (!s || !s.getSettings().autoScan) return;
   autoScanTimer = setInterval(onSpace, s.getScanInterval());
 }
 
 function stopAutoScan() {
+  choice?.sync(null);
   if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
 }
 
@@ -1388,7 +1421,7 @@ function computerReturn() {
 }
 
 function chooseMoveAndHit() {
-  if (busy || matchOver) return;
+  if (busy || matchOver || selectedIndex<0) return;
   stopAutoScan();
   busy = true;
   clearGameTimer();
@@ -1439,6 +1472,7 @@ function speakPauseItem() {
 }
 
 function openPause() {
+  if(choice?.active&&choice.context.key==='casual')zoneRestore=choice.getState().id;
   if (paused || currentMenu !== 'game') return;
   paused = true;
   clearGameTimer();
@@ -1551,6 +1585,16 @@ window.addEventListener('load', () => {
   }, 600);
 });
 
+// A mode change cancels a pending stationary reverse gesture, without changing native rally keys.
+let choiceAutoMode = sm()?.getSettings().autoScan;
+sm()?.subscribe(next => {
+  if (next.autoScan !== choiceAutoMode && choice?.active && keyIsDown.Space && !spaceBraking) {
+    clearTimeout(spaceHoldTimer); clearInterval(spaceHoldRepeat);
+    spaceHoldTimer = spaceHoldRepeat = null; spaceDidHold = true;
+  }
+  choiceAutoMode = next.autoScan;
+});
+
 // ─── Mouse & touch support ────────────────────────────────────────────────────
 
 // Helper: treat a pointer event as a single activation (debounced so touch
@@ -1614,7 +1658,7 @@ document.querySelectorAll('#mainMenu .menuItem').forEach((el, i) => {
 document.querySelectorAll('#settingsMenu .menuItem').forEach((el, i) => {
   addTap(el, 'settings-' + i, () => {
     if (currentMenu !== 'settings') return;
-    settingsIndex = i;
+    settingsIndex = i;choice?.align(String(i));
     updateSettingsMenuFocus();
     activateSettingsItem(i);
   });
@@ -1628,7 +1672,7 @@ function handleCourtPointer(e) {
   const zoneEl = e.target.closest('.zone');
   if (zoneEl) {
     const i = zones.indexOf(zoneEl);
-    if (i >= 0) { selectedIndex = i; updateGlow(); }
+    if (i >= 0) { if(choice?.active)choice.align(String(i));selectedIndex = i; updateGlow(); }
   }
   chooseMoveAndHit();
 }

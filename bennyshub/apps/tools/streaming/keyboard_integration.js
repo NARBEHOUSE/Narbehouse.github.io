@@ -45,6 +45,7 @@ class KeyboardController {
         // Ensure elements exist
         if (!this.container) console.error("Keyboard container not found");
 
+        this.textRow=document.createElement('div');this.textRow.className='search-text-row';this.inputElement.before(this.textRow);this.textRow.append(this.inputElement);
         this.initDOM();
     }
 
@@ -108,107 +109,16 @@ class KeyboardController {
 
     // --- Scanning Logic ---
 
-    scanForward() {
-        if (this.inRowMode) {
-            // Cycle through logical rows
-            // Total = input + prediction + keys
-            const totalRows = 2 + this.rows.length;
-            this.currentRowIndex = (this.currentRowIndex + 1) % totalRows;
-        } else {
-            // Cycle through buttons in the current row
-            if (this.currentRowIndex === this.predictionRowIndex) {
-                // Prediction row
-                const buttons = this.predictionContainer.querySelectorAll('.prediction-chip');
-                if (buttons.length > 0) {
-                    this.currentBtnIndex = (this.currentBtnIndex + 1) % buttons.length;
-                }
-            } else if (this.currentRowIndex === this.inputRowIndex) {
-                 this.currentBtnIndex = 0;
-            } else {
-                // Standard row (offset by firstKeyRowIndex)
-                const realRowIdx = this.currentRowIndex - this.firstKeyRowIndex;
-                const rowItems = this.rows[realRowIdx];
-                this.currentBtnIndex = (this.currentBtnIndex + 1) % rowItems.length;
-            }
-        }
-        this.highlightCurrentState();
-        this.speakCurrentState();
+    choiceRows(){
+      return [{id:'row:text',row:0,kind:'keyboard-row',element:this.textRow,labelElement:this.textRow,label:()=>this.inputElement.value||'Empty text'},
+      {id:'row:predictions',row:1,kind:'keyboard-row',element:this.predictionContainer,labelElement:this.predictionContainer.querySelector('button'),label:'Predictions'},
+      ...this.rows.map((row,index)=>({id:'row:'+index,row:index+2,kind:'keyboard-row',element:document.getElementById('kb-row-'+index),labelElement:document.getElementById('kb-row-'+index)?.querySelector('.label,button'),label:index===0?'Controls':row.join(', ')}))];
     }
-
-    scanBackward() {
-         if (this.inRowMode) {
-             const totalRows = 2 + this.rows.length;
-             this.currentRowIndex = this.currentRowIndex < 0 ? totalRows - 1 : (this.currentRowIndex - 1 + totalRows) % totalRows;
-        } else {
-             if (this.currentRowIndex === this.predictionRowIndex) {
-                 const buttons = this.predictionContainer.querySelectorAll('.prediction-chip');
-                 if (buttons.length > 0) {
-                     this.currentBtnIndex = (this.currentBtnIndex - 1 + buttons.length) % buttons.length;
-                 }
-             } else if (this.currentRowIndex === this.inputRowIndex) {
-                 this.currentBtnIndex = 0;
-             } else {
-                 const realRowIdx = this.currentRowIndex - this.firstKeyRowIndex;
-                 const rowItems = this.rows[realRowIdx];
-                 this.currentBtnIndex = (this.currentBtnIndex - 1 + rowItems.length) % rowItems.length;
-             }
-        }
-        this.highlightCurrentState();
-        this.speakCurrentState();
+    choiceChildren(row){
+      const elements=Array.from(row===1?this.predictionContainer.querySelectorAll('button'):document.getElementById('kb-row-'+(row-2)).querySelectorAll('button')),occurrences=new Map();
+      return elements.map((element,column)=>{const word=element.textContent.trim(),occurrence=occurrences.get(word)||0;occurrences.set(word,occurrence+1);return {id:row===1?'prediction:'+word+':'+occurrence:'key:'+this.rows[row-2][column],row,column,kind:'keyboard-key',element,labelElement:element.querySelector('.label')||element,label:row===1?word:this.rows[row-2][column]};});
     }
-
-    select() {
-        if (this.currentRowIndex < 0) return;
-        if (this.inRowMode) {
-            // Enter the row
-            this.inRowMode = false;
-            this.currentBtnIndex = 0;
-            this.highlightCurrentState();
-
-            // Speak immediates
-            if (this.currentRowIndex === this.predictionRowIndex) {
-                this.speak("Predictions");
-            } else if (this.currentRowIndex === this.inputRowIndex) {
-                const txt = this.inputElement.value;
-                this.speak(txt ? txt : "Empty text box");
-            } else {
-                const realRowIdx = this.currentRowIndex - this.firstKeyRowIndex;
-                const firstKey = this.rows[realRowIdx][0];
-                this.speak(firstKey);
-            }
-        } else {
-            // Click the button
-            this.executeKey();
-
-            if (this.isOpen) {
-                this.inRowMode = true;
-                this.highlightCurrentState();
-
-                // Speak next state
-                this.speakRowSummary(this.currentRowIndex);
-            }
-        }
-    }
-
-    executeKey() {
-        if (this.currentRowIndex === this.predictionRowIndex) {
-            // Prediction
-            const chips = this.predictionContainer.querySelectorAll('.prediction-chip');
-            if (chips[this.currentBtnIndex]) {
-                const text = chips[this.currentBtnIndex].textContent;
-                this.applyPrediction(text);
-            }
-        } else if (this.currentRowIndex === this.inputRowIndex) {
-             // Input box
-             const txt = this.inputElement.value;
-             this.speak(txt ? "Typed: " + txt : "Text box is empty");
-        } else {
-            // Key
-            const realRowIdx = this.currentRowIndex - this.firstKeyRowIndex;
-            const key = this.rows[realRowIdx][this.currentBtnIndex];
-            this.handleKeyInput(key);
-        }
-    }
+    paintChoice(item){this.currentRowIndex=item.row;this.currentBtnIndex=item.column||0;this.inRowMode=item.kind==='keyboard-row';this.highlightCurrentState();}
 
     handleKeyInput(key) {
         let val = this.inputElement.value;
@@ -381,6 +291,7 @@ class KeyboardController {
         }
 
         this.renderPredictions(preds);
+        if(this.isOpen)window.refreshStreamingChoices?.();
     }
 
     renderPredictions(words) {
@@ -393,8 +304,7 @@ class KeyboardController {
             // Mouse click support
             chip.onclick = () => {
                 this.applyPrediction(w);
-                this.inRowMode = true;
-                this.highlightCurrentState();
+                window.refreshStreamingChoices?.();
             };
             this.predictionContainer.appendChild(chip);
         });
@@ -440,26 +350,6 @@ class KeyboardController {
         this.speak(this.inputElement.value); // Confirm new state
     }
 
-    handleLongPressEnter() {
-        if (!this.inRowMode) {
-             // Button Mode -> Back to Row Mode
-            this.inRowMode = true;
-            this.highlightCurrentState();
-
-             // Announce context immediately
-            this.speak("Row mode");
-            setTimeout(() => this.speakRowSummary(this.currentRowIndex), 800);
-        } else {
-             // Row Mode -> Jump to Predictions
-             this.currentRowIndex = this.predictionRowIndex;
-             this.inRowMode = true;
-             this.highlightCurrentState();
-
-             // Announce predictions
-             this.speak("Predictions");
-             setTimeout(() => this.speakRowSummary(this.currentRowIndex), 800);
-        }
-    }
 }
 
 // Global instance

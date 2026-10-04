@@ -61,6 +61,18 @@
     return 'idle';
   }
 
+  // Shared policy is restricted here to stationary overlay menus.
+  let choice=null,choiceStatus=null,spaceBraking=false;
+  let choiceAutoMode=!!window.NarbeScanManager?.getSettings().autoScan;
+  function syncChoice(fresh=false,restoreId=null){
+    if(!overlayOn){choice?.sync(null);return;}
+    const seen=new Map();items.forEach(it=>{const base=it.id||stripTags(it.label),n=seen.get(base)||0;seen.set(base,n+1);it.scanId=screen+':'+base+':'+n;});
+    if(!choiceStatus){choiceStatus=document.createElement('div');choiceStatus.id='choiceScanStatus';choiceStatus.style.minBlockSize='0';$('overlayMenu').before(choiceStatus);}
+    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:document.body,speak:text=>U.vm()?.speak(text),
+      onHighlight(item,state){index=item?items.indexOf(item.source):-1;updateFocus();if(!item&&$('overlayMenu').contains(document.activeElement))document.activeElement.blur();},onSelect:()=>activate(true)});
+    choice.sync({key:screen,items:items.filter(it=>it.enabled!==false&&!it.info).map(it=>({id:it.scanId,label:()=>{const v=typeof it.value==='function'?it.value():it.value;return it.speech?(typeof it.speech==='function'?it.speech():it.speech):stripTags(it.label)+(v!==undefined?', '+v:'');},element:it.element,labelElement:it.labelElement,source:it})),statusHost:choiceStatus},{fresh,restoreId});choice.setInputHeld(keyDown.Space||keyDown.Enter);
+  }
+
   /* ── Overlay plumbing ─────────────────────────────────────────────────── */
 
   function showOverlay(on, opts) {
@@ -110,12 +122,13 @@
       }
       U.addTap(el, () => {
         if (it.enabled === false) { AU.play('menuBlocked', 0.4); return; }
-        index = i; updateFocus(); activate();
+        index = i;choice?.align(it.scanId); updateFocus(); activate();
       });
       el.addEventListener('mouseenter', () => {
         if (it.enabled === false || index === i) return;
-        index = i; updateFocus(); restartAutoScan();
+        index = i;choice?.align(it.scanId); updateFocus(); restartAutoScan();
       });
+      it.element=el;it.labelElement=label;
       menu.appendChild(el);
     });
   }
@@ -137,6 +150,7 @@
   }
 
   function speakItem() {
+    if(overlayOn&&choice?.active){choice.announce();return;}
     const it = items[index];
     if (!it) return;
     if (it.speech) { AU.say(typeof it.speech === 'function' ? it.speech() : it.speech); return; }
@@ -145,6 +159,7 @@
   }
 
   function step(delta) {
+    if(overlayOn&&choice?.active){choice.step(delta);return;}
     if (powerMenuOn) { pmStep(delta); return; }
     if (!items.length) return;
     // Nothing highlighted yet: forward lands on the first item, back on the last.
@@ -159,22 +174,26 @@
     if (!didBackHold) restartAutoScan();
   }
 
-  function activate() {
+  function activate(fromChoice=false) {
+    if(overlayOn&&choice?.active&&!fromChoice){choice.select();return;}
     if (powerMenuOn) { pmActivate(); return; }
     if (index < 0) return;      // nothing highlighted: Enter does nothing until Space picks something
     const now = Date.now();
-    if (now - lastActivate < 150) return;
+    // Shared scan-manager owns the release cooldown.
     lastActivate = now;
     const it = items[index];
     if (!it || it.enabled === false || it.info) { AU.play('menuBlocked', 0.4); return; }
     AU.play('menuSelect', 0.35);
+    const selectedContext=choice?.context?.key,selectedId=choice?.getState()?.id;
     if (it.action) it.action();
+    if(it.value!==undefined&&choice?.active&&choice.context.key===selectedContext&&choice.getState().id===selectedId)choice.announce();
   }
 
   /* ── Auto scan ────────────────────────────────────────────────────────── */
 
   function restartAutoScan() {
-    stopAutoScan();
+    stopAutoScan();syncChoice();syncPowerChoice();
+    if(overlayOn||powerMenuOn)return;
     if (ctx() !== 'menu') return;
     if (!U.isOneSwitch()) return;
     autoScanTimer = setInterval(() => step(1), U.scanInterval());
@@ -190,7 +209,8 @@
     opts = opts || {};
     const def = SCREENS[name];
     if (!def) return;
-    if (opts.push && screen !== name) screenStack.push({ name: screen });
+    if (opts.push && screen !== name) screenStack.push({ name: screen, restoreId: choice?.getState()?.id ?? null });
+    const preserve=screen===name&&opts.index!==undefined;
     screen = name;
     screenDef = def;
     const built = def.build(opts);
@@ -205,14 +225,15 @@
     while (items[index] && (items[index].enabled === false || items[index].info) && index < items.length - 1) index++;
     showOverlay(true, { center: !!built.center, wide: !!built.wide });
     render();
+    syncChoice(!preserve,opts.restoreId ?? null);
     updateFocus();
     if (opts.silent) return;
-    AU.say(built.speech !== undefined ? built.speech : stripTags(built.title || ''));
+    choice.announce(built.speech !== undefined ? built.speech : stripTags(built.title || ''));
   }
 
   function back() {
     const prev = screenStack.pop();
-    if (prev) setScreen(prev.name);
+    if (prev) setScreen(prev.name, { restoreId:prev.restoreId });
     else setScreen(G.paused ? 'pause' : 'title');
   }
 
@@ -226,7 +247,7 @@
   function setAndSpeak(key, value, speech) {
     MG.settings.set(key, value);
     refreshValues();
-    AU.say(speech);
+    if(choice?.active)choice.announce(speech);else AU.say(speech);
   }
 
   const AIM_LINE_LABEL = { trajectory: 'Trajectory', preview: 'Putt Preview', arrow: 'Arrow' };
@@ -632,6 +653,27 @@
   let pmItems = [], pmIndex = 0, pmMode = 'power';
   let choiceHintSaid = false;
 
+  let pmChoice=null,pmStatus=null,putterScanOutline=null;
+  function updatePutterScanOutline(state=pmChoice?.getState()) {
+    if(!putterScanOutline)return;
+    const rect=powerMenuOn&&!overlayOn&&pmMode==='choice'&&pmIndex===0&&state?.braked?G.putterScreenBounds():null;
+    putterScanOutline.style.display=rect?'block':'none';
+    if(rect)for(const key of ['left','top','width','height'])putterScanOutline.style[key]=rect[key]+'px';
+  }
+  function syncPowerChoice(fresh=false){
+    if(!powerMenuOn||overlayOn){pmChoice?.sync(null);return;}
+    if(!pmStatus){pmStatus=document.createElement('div');pmStatus.id='powerScanStatus';Object.assign(pmStatus.style,{position:'absolute',top:'8px',left:'50%',transform:'translateX(-50%)',zIndex:'18',minBlockSize:'0',pointerEvents:'none'});document.body.append(pmStatus);
+      putterScanOutline=document.createElement('span');putterScanOutline.id='putterScanOutline';putterScanOutline.setAttribute('aria-hidden','true');Object.assign(putterScanOutline.style,{position:'fixed',zIndex:'18',borderRadius:'4px',pointerEvents:'none',display:'none',outlineColor:'#fff',outlineOffset:'0'});document.body.append(putterScanOutline);}
+    if(!pmChoice)pmChoice=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:pmStatus,speak:text=>U.vm()?.speak(text),
+      onHighlight(item,state){const previous=pmIndex;pmIndex=item?item.position:-1;if(pmMode==='choice')renderChoice();else{for(const [i,el] of [...$('powerMenu').children].entries())el.classList.toggle('focused',i===pmIndex);if(item&&previous!==pmIndex)G.previewChoice(item.source.p||null);}
+        updatePutterScanOutline(state);
+        if(!item&&($('powerMenu').contains(document.activeElement)||document.activeElement===$('pauseBtn')))document.activeElement.blur();
+      },onSelect:()=>pmActivate(true)});
+    pmChoice.sync({key:'shot:'+pmMode,items:pmItems.map((it,i)=>({id:it.label,label:it.speech||it.label,element:pmMode==='choice'?(it.putt?putterScanOutline:$('pauseBtn')):it.element,labelElement:pmMode==='choice'?(it.putt?putterScanOutline:$('pauseBtn')):it.labelElement,source:it,position:i})),statusHost:pmStatus},{fresh});
+    pmChoice.setInputHeld(keyDown.Space||keyDown.Enter);
+  }
+
+
   /**
    * Easy Pause: before each putt the scan goes between two things already on
    * screen — the putter (pick it to take the putt) and the Pause button. The
@@ -643,11 +685,12 @@
     powerMenuOn = true;
     pmMode = 'choice';
     pmItems = [{ label: 'Putter', speech: 'Putter', putt: true }, { label: 'Pause', speech: 'Pause', pause: true }];
-    pmIndex = 0;
+    pmIndex = -1;
     renderChoice();
     // Queued, so it follows "Ready." / "Player 2's turn." instead of cutting it off.
     if (!choiceHintSaid) { choiceHintSaid = true; AU.sayQueued('Your putter, or pause. Putter.'); }
     else AU.sayQueued('Putter.');
+    syncPowerChoice(true);
     refreshChrome();
     restartAutoScan();
   }
@@ -669,18 +712,21 @@
     pmMode = 'power';
     pmItems = G.POWER_STEPS.map(s => ({ label: s.label, p: s.p }))
       .concat([{ label: 'Aim Again', alt: true, reaim: true }, { label: 'Pause', alt: true, options: true }]);
-    pmIndex = 2;
+    // Keep the existing medium preview and opening instruction; selection begins blank.
+    const initialPreview=pmItems[2];
+    pmIndex = -1;
     renderPowerMenu();
     $('powerMenu').classList.add('on');
-    G.previewChoice(pmItems[pmIndex].p);
-    AU.say('How hard? ' + pmItems[pmIndex].label);
+    G.previewChoice(initialPreview.p);
+    AU.say('How hard? ' + initialPreview.label);
+    syncPowerChoice(true);
     refreshChrome();
     restartAutoScan();
   }
 
   function closePowerMenu() {
     const wasChoice = powerMenuOn && pmMode === 'choice';
-    powerMenuOn = false;
+    powerMenuOn = false;pmChoice?.sync(null);if(putterScanOutline)putterScanOutline.style.display='none';
     $('powerMenu').classList.remove('on');
     if (wasChoice) renderChoice();
     stopAutoScan();
@@ -692,14 +738,15 @@
     pmItems.forEach((it, i) => {
       const d = document.createElement('div');
       d.className = 'pItem' + (it.alt ? ' alt' : '') + (i === pmIndex ? ' focused' : '');
-      d.innerHTML = it.label + (it.p ? '<span class="bar" style="width:' + Math.round(20 + it.p * 80) + '%"></span>' : '');
-      U.addTap(d, () => { pmIndex = i; renderPowerMenu(); pmActivate(); });
-      d.addEventListener('mouseenter', () => { if (pmIndex !== i) { pmIndex = i; renderPowerMenu(); if (pmMode === 'power') G.previewChoice(pmItems[i].p || null); } });
-      el.appendChild(d);
+      d.innerHTML = '<span class="power-label">'+it.label+'</span>' + (it.p ? '<span class="bar" style="width:' + Math.round(20 + it.p * 80) + '%"></span>' : '');
+      U.addTap(d, () => { pmChoice?.align(it.label); pmActivate(); });
+      d.addEventListener('mouseenter', () => { if (pmIndex !== i) pmChoice?.align(it.label); });
+      it.element=d;it.labelElement=d.querySelector('.power-label');el.appendChild(d);
     });
   }
 
   function pmStep(delta) {
+    if(pmChoice?.active){pmChoice.step(delta);return;}
     pmIndex = (pmIndex + delta + pmItems.length) % pmItems.length;
     if (pmMode === 'choice') renderChoice(); else renderPowerMenu();
     const it = pmItems[pmIndex];
@@ -709,9 +756,11 @@
     if (!didBackHold) restartAutoScan();
   }
 
-  function pmActivate() {
+  function pmActivate(fromChoice=false) {
+    if(pmChoice?.active&&!fromChoice){pmChoice.select();return;}
+    if(pmIndex<0)return;
     const now = Date.now();
-    if (now - lastActivate < 150) return;
+    // Shared scan-manager owns the release cooldown.
     lastActivate = now;
     const it = pmItems[pmIndex];
     AU.play('menuSelect', 0.35);
@@ -941,6 +990,7 @@
   const normKey = (code) => (code === 'NumpadEnter' ? 'Enter' : code);
 
   function clearKeysKeepIgnores() {
+    spaceBraking=false;choice?.cancelInput();pmChoice?.cancelInput();
     keyDown.Space = false; keyDown.Enter = false;
     clearTimeout(backHoldTimer); backHoldTimer = null;
     clearInterval(backRepeatTimer); backRepeatTimer = null;
@@ -962,6 +1012,9 @@
 
     const c = ctx();
     if (c === 'menu') {
+      const scanner=overlayOn?choice:pmChoice;
+      if(k==='Space'&&scanner?.brakePress()){spaceBraking=true;return;}
+      scanner?.setInputHeld(true);
       if (k === 'Space' && !backHoldTimer && !backRepeatTimer) {
         didBackHold = false;
         backHoldTimer = setTimeout(() => {
@@ -997,13 +1050,16 @@
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
     const k = normKey(e.code);
-    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; keyDown[k] = false; hideHoldRing(); return; }
+    if (ignoreUntilRelease[k]) { ignoreUntilRelease[k] = false; keyDown[k] = false; (overlayOn?choice:pmChoice)?.setInputHeld(keyDown.Space||keyDown.Enter);hideHoldRing(); return; }
     if (!keyDown[k]) return;
     keyDown[k] = false;
     hideHoldRing();
 
     const c = ctx();
     if (c === 'menu') {
+      const scanner=overlayOn?choice:pmChoice;
+      if(k==='Space'&&spaceBraking){spaceBraking=false;scanner?.brakeRelease();scanner?.setInputHeld(keyDown.Enter);return;}
+      scanner?.setInputHeld(keyDown.Space||keyDown.Enter);
       if (k === 'Space') {
         clearTimeout(backHoldTimer); backHoldTimer = null;
         clearInterval(backRepeatTimer); backRepeatTimer = null;
@@ -1023,6 +1079,7 @@
    * drop the charge rather than spend a stroke on it.
    */
   function onInputCancelled(e) {
+    spaceBraking=false;choice?.cancelInput();
     const code = e && e.detail ? normKey(e.detail.code) : null;
     const wasBack = !!backRepeatTimer;
     const c = ctx();
@@ -1046,6 +1103,7 @@
   /* ── Per-frame ────────────────────────────────────────────────────────── */
 
   function tick() {
+    updatePutterScanOutline();
     const c = ctx();
     if (c === 'menu' || c === 'idle') { if (!keyDown.Enter) hideHoldRing(); return; }
     // The pause hold: counted from the press, or from the moment a charge
@@ -1099,7 +1157,7 @@
     U.addTap($('scorecard'), () => G.skip());
 
     const s = U.sm();
-    if (s && s.subscribe) s.subscribe(() => { G.setOneSwitch(U.isOneSwitch()); restartAutoScan(); if (overlayOn) refreshValues(); });
+    if (s && s.subscribe) s.subscribe(() => { const mode=U.isOneSwitch();if(mode!==choiceAutoMode){choiceAutoMode=mode;clearTimeout(backHoldTimer);clearInterval(backRepeatTimer);backHoldTimer=backRepeatTimer=null;if(keyDown.Space)didBackHold=true;} G.setOneSwitch(U.isOneSwitch()); restartAutoScan(); if (overlayOn) refreshValues(); });
     G.setOneSwitch(U.isOneSwitch());
     if (window.SafeAudio) SafeAudio.setEnabled(MG.settings.get('sfx') !== false);
 

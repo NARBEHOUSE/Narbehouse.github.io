@@ -1,6 +1,7 @@
 const {chromium,expect}=require('@playwright/test');
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..'),base='http://127.0.0.1:4173';let context;
+const executablePath=process.argv.find(arg=>arg.startsWith('--browser-path='))?.slice('--browser-path='.length)||process.env.HUB_BROWSER_PATH;
+const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173';let context;
 (async()=>{
  const cases=[
   {start:'https://www.youtube.com/watch?v=first&list=series',last:'https://www.youtube.com/watch?v=seventh',saved:'https://www.youtube.com/watch?v=seventh&list=series',type:'videos'},
@@ -12,7 +13,7 @@ const root=path.resolve(__dirname,'..'),base='http://127.0.0.1:4173';let context
  const dir=path.join(root,'artifacts','progress-extension-'+Date.now());await fs.cp(path.join(root,'extension'),dir,{recursive:true});
  const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));manifest.host_permissions=cases.map(c=>new URL(c.start).origin+'/*');await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest));
  const script=path.join(dir,'player-content.js');await fs.writeFile(script,(await fs.readFile(script,'utf8')).replace("mode:'closed'","mode:'open'"));
- context=await chromium.launchPersistentContext(path.join(root,'artifacts','progress-profile-'+Date.now()),{channel:'chromium',headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
+ context=await chromium.launchPersistentContext(path.join(root,'artifacts','progress-profile-'+Date.now()),{...(executablePath?{executablePath}:{channel:'chromium'}),headless:true,args:['--disable-extensions-except='+dir,'--load-extension='+dir]});
  for(const c of cases)await context.route(new URL(c.start).origin+'/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Episode fixture</title><body><video></video></body>'}));
  const hub=await context.newPage();await hub.goto(base+'/bennyshub/index.html#companion=home');await hub.waitForFunction(()=>BennyExtension.supports('streaming'));
  await hub.evaluate(()=>{NarbeVoiceManager.updateSettings({ttsEnabled:false});NarbeScanManager.updateSettings({autoScan:false,inputSensitivityIndex:0});});

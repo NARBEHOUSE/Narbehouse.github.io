@@ -1356,6 +1356,36 @@ function updateGame(player, dt) {
 	player._prevSimActive = player.physics.simulationActive;
 }
 
+
+// Explicit stationary menu contexts; ball positioning, aiming, charging and rolls remain native.
+var bowlChoice=null,bowlChoiceKey='',bowlChoiceHost=null,bowlBallLabel=null,bowlPainting=false,bowlKeys={},bowlBrake=false,bowlBackTimer=null,bowlBackRepeat=null,bowlDidBack=false;
+function bowlChoiceContext(){
+ if(gameOverDiv&&gameOverDiv.style.display==='flex')return null; // timed result presentation
+ if(setupIsOpen())return{key:'setup',entries:setupItems,host:setupDiv};
+ if(settingsDiv&&settingsDiv.style.display==='flex')return{key:'settings',entries:settingsItems,host:settingsDiv};
+ if(gameState==='menu'&&mainMenuDiv?.style.display==='flex')return{key:'main',entries:mainMenuItems.map(el=>({el})),host:mainMenuDiv};
+ if(gameState==='paused')return{key:'pause',entries:pauseMenuItems.map(el=>({el})),host:pauseMenuDiv};
+ if(gameplayScanActive())return{key:'ball',entries:[{el:bowlBallLabel},{el:pauseUIButton}],host:document.body};
+ return null;
+}
+function syncBowlChoice(force=false){
+ if(!bowlChoiceHost){bowlChoiceHost=document.createElement('div');bowlChoiceHost.id='bowlingScanStatus';bowlChoiceHost.style.minBlockSize='0';bowlBallLabel=document.createElement('span');bowlBallLabel.textContent='Bowling ball';Object.assign(bowlBallLabel.style,{display:'none',position:'fixed',left:'16px',bottom:'84px',padding:'8px',background:'#000',color:'#0f9',zIndex:'40',pointerEvents:'none'});document.body.append(bowlBallLabel);}
+ const c=bowlChoiceContext();if(!c){bowlChoice?.sync(null);bowlChoiceKey='';bowlBallLabel.style.display='none';return;}
+ if(!force&&bowlChoiceKey===c.key&&bowlChoice?.active)return;
+ if(c.key==='ball'){Object.assign(bowlChoiceHost.style,{position:'fixed',top:'8px',left:'8px',zIndex:'40'});document.body.append(bowlChoiceHost);}else{Object.assign(bowlChoiceHost.style,{position:'static',top:'',left:''});const first=c.entries[0]?.el;first?.parentElement.prepend(bowlChoiceHost);}
+ if(!bowlChoice)bowlChoice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:document.body,speak:text=>NarbeVoiceManager.speak(text),onHighlight(item,state,context){const i=item?item.position:-1;bowlPainting=true;
+  if(context.key==='main'){menuFocusIndex=i;applyMenuFocus();}else if(context.key==='pause'){pauseFocusIndex=i;applyPauseFocus();}else if(context.key==='settings'){settingsFocusIndex=i;applySettingsFocus();}else if(context.key==='setup'){setupFocusIndex=i;applySetupFocus();}else{gameplayScanIndex=i;applyGameplayScanFocus(false);}
+  bowlPainting=false;bowlBallLabel.style.display=context.key==='ball'&&i===0&&state.braked?'block':'none';if(!item&&context.items.some(it=>it.element===document.activeElement))document.activeElement.blur();
+ },onSelect(item,state,context){if(context.key==='main')handleMainMenuEnter();else if(context.key==='pause')handlePauseMenuEnter();else if(context.key==='settings')handleSettingsEnter();else if(context.key==='setup')handleSetupEnter();else handleGameplayScanEnter(true);syncBowlChoice(true);if(['settings','setup'].includes(context.key)&&bowlChoice.context.key===context.key)bowlChoice.announce();}});
+ const seen=new Map();const mapped=c.entries.filter(e=>e.el&&!e.el.disabled).map((e,i)=>{const label=()=>c.key==='ball'?GAMEPLAY_SCAN_ITEMS[i]:e.el.textContent;const base=c.key==='ball'?String(i):e.el.id||e.el.firstChild?.textContent||label(),n=seen.get(base)||0;seen.set(base,n+1);const item={id:base+':'+n,label,element:e.el,labelElement:e.el.firstElementChild?.tagName==='DIV'?e.el.firstElementChild:e.el,position:i};
+ if(c.key!=='ball'&&!e.el.__choiceClick){const original=e.el.onclick;e.el.__choiceClick=true;e.el.onclick=function(event){bowlChoice?.align(item.id);const result=original?.call(this,event);syncBowlChoice(true);return result;};}return item;});
+ const fresh=bowlChoiceKey!==c.key;bowlChoiceKey=c.key;bowlChoice.sync({key:c.key,items:mapped,statusHost:bowlChoiceHost},{fresh});bowlChoice.setInputHeld(!!bowlKeys.Space||!!bowlKeys.Enter||enterHeld||spaceHeld);
+}
+function cancelBowlChoiceInput(){clearTimeout(bowlBackTimer);clearInterval(bowlBackRepeat);bowlBackTimer=bowlBackRepeat=null;bowlKeys={};bowlBrake=bowlDidBack=false;bowlChoice?.cancelInput();}
+function bowlChoiceDown(event){const key=event.code==='NumpadEnter'?'Enter':event.code;if(!['Space','Enter'].includes(key))return false;syncBowlChoice();if(!bowlChoice?.active)return false;event.preventDefault();if(event.repeat||bowlKeys[key])return true;bowlKeys[key]=true;if(key==='Space'&&bowlChoice.brakePress()){bowlBrake=true;return true;}bowlChoice.setInputHeld(true);if(key==='Space'){bowlDidBack=false;bowlBackTimer=setTimeout(()=>{bowlDidBack=true;bowlChoice.step(-1);bowlBackRepeat=setInterval(()=>bowlChoice.step(-1),NarbeScanManager.getScanInterval());},3000);}return true;}
+function bowlChoiceUp(event){const key=event.code==='NumpadEnter'?'Enter':event.code;if(!['Space','Enter'].includes(key))return false;syncBowlChoice();if(!bowlChoice?.active&&!bowlKeys[key])return false;event.preventDefault();const held=bowlKeys[key];delete bowlKeys[key];if(key==='Enter')enterHeld=false;if(!held){bowlChoice?.setInputHeld(!!bowlKeys.Space||!!bowlKeys.Enter);return true;}if(key==='Space'){clearTimeout(bowlBackTimer);clearInterval(bowlBackRepeat);if(bowlBrake){bowlBrake=false;bowlChoice.brakeRelease();return true;}if(!bowlDidBack)bowlChoice.step(1);bowlDidBack=false;}else bowlChoice.select();bowlChoice?.setInputHeld(!!bowlKeys.Space||!!bowlKeys.Enter);syncBowlChoice();return true;}
+document.addEventListener('narbe-input-cancelled',cancelBowlChoiceInput);window.addEventListener('blur',cancelBowlChoiceInput);
+
 function updateScene(dt) {
 	if (imitations) {
 		for (var i = 0; i < imitations.length; i++) {
@@ -1363,165 +1393,11 @@ function updateScene(dt) {
 		}
 	}
 
-	// Gameplay scan layer timers. Same contract as every menu in the hub: a
-	// short Space steps forward, a 3s hold scans backwards at the player's scan
-	// interval until the switch is released, and Auto Scan steps on its own.
-	// The list being two items long changes nothing about the gesture.
-	if (gameplayScanActive()) {
-		var nowG = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
-		var smG = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
-		var scanIntG = (smG ? smG.getScanInterval() : 2000) / 1000.0;
-
-		// The layer sleeps while the ball rolls, so restart the Auto Scan clock
-		// the moment it wakes -- otherwise the whole roll counts as dwell time
-		// and the scanner steps off the ball on the first frame back.
-		if (!gameplayScanWasActive) {
-			gameplayScanWasActive = true;
-			autoScanLastTime = nowG;
-		}
-
-		if (smG && smG.getSettings().autoScan && !gameplayScanHeld) {
-			if ((nowG - autoScanLastTime) >= scanIntG) {
-				autoScanLastTime = nowG;
-				stepGameplayScan(1);
-			}
-		}
-
-		if (gameplayScanHeld) {
-			var heldG = Math.max(0.0, nowG - gameplayHoldStart);
-			if (heldG >= 3.0) {
-				if (!gameplayBackScanAnnounced) {
-					gameplayBackScanAnnounced = true;
-					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
-				}
-				if ((nowG - gameplayLastBackStep) >= scanIntG) {
-					gameplayLastBackStep = nowG;
-					stepGameplayScan(-1);
-				}
-			}
-		}
-
-		applyGameplayScanFocus(false);
-		updateBallScanPulse(nowG);
-	} else {
-		// Not the player's moment to choose: drop both highlights so nothing
-		// glows while the ball is rolling or a menu is up.
-		setBallScanHighlight(false);
-		setPauseScanHighlight(false);
-		gameplayScanHeld = false;
-		gameplayBackScanAnnounced = false;
-		gameplayScanWasActive = false;
-	}
-
-	// Handle menu/pause scanning timers when in menu or paused
-	if (gameState === 'menu' || gameState === 'paused') {
-		var now = (typeof clock.getElapsedTime === 'function') ? clock.getElapsedTime() : 0.0;
-		
-		// Auto Scan Logic (Forward)
-		var sm = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager : null;
-		var scanInt = (sm ? sm.getScanInterval() : 2000) / 1000.0;
-		if (sm && sm.getSettings().autoScan) {
-			if ((now - autoScanLastTime) >= scanInt) {
-				// New game setup
-				if (setupIsOpen() && !setupScanHeld) {
-					setupFocusIndex = (setupFocusIndex + 1) % setupItems.length;
-					applySetupFocus();
-					autoScanLastTime = now;
-				}
-				// Settings
-				else if (settingsDiv && settingsDiv.style.display === 'flex' && !settingsScanHeld) {
-					settingsFocusIndex = (settingsFocusIndex + 1) % settingsItems.length;
-					applySettingsFocus();
-					autoScanLastTime = now;
-				}
-				// Menu
-				else if (gameState === 'menu' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && !menuScanHeld) {
-					if (menuFocusIndex === -1) menuFocusIndex = 0;
-					else menuFocusIndex = (menuFocusIndex + 1) % mainMenuItems.length;
-					applyMenuFocus();
-					autoScanLastTime = now;
-				}
-				// Pause
-				else if (gameState === 'paused' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && !pauseScanHeld) {
-					if (pauseFocusIndex === -1) pauseFocusIndex = 0;
-					else pauseFocusIndex = (pauseFocusIndex + 1) % pauseMenuItems.length;
-					applyPauseFocus();
-					autoScanLastTime = now;
-				}
-			}
-		}
-
-		// Setup screen backward scan every 2s after a 3s hold
-		if (setupIsOpen() && setupScanHeld) {
-			var heldSetup = Math.max(0.0, now - setupHoldStart);
-			if (heldSetup >= 3.0) {
-				if (!setupBackScanAnnounced) {
-					setupBackScanAnnounced = true;
-					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
-				}
-				if ((now - setupLastBackStep) >= 2.0) {
-					setupLastBackStep = now;
-					if (setupFocusIndex < 0) setupFocusIndex = setupItems.length - 1;
-					else setupFocusIndex = (setupFocusIndex - 1 + setupItems.length) % setupItems.length;
-					applySetupFocus();
-				}
-			}
-		}
-
-		// Main menu backward scan every 2s after 3s hold
-		if (gameState === 'menu' && !setupIsOpen() && (!settingsDiv || settingsDiv.style.display !== 'flex') && menuScanHeld) {
-			var held = Math.max(0.0, now - menuHoldStart);
-			if (held >= 3.0) {
-				if (!menuBackScanAnnounced) {
-					menuBackScanAnnounced = true;
-					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
-				}
-				var stepInterval = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
-				if ((now - menuLastBackStep) >= stepInterval) {
-					if (menuFocusIndex < 0) menuFocusIndex = mainMenuItems.length - 1;
-					else menuFocusIndex = (menuFocusIndex - 1 + mainMenuItems.length) % mainMenuItems.length;
-					menuLastBackStep = now;
-					applyMenuFocus();
-				}
-			}
-		}
-		// Pause menu backward scan
-		if (gameState === 'paused' && (!settingsDiv || settingsDiv.style.display !== 'flex') && pauseScanHeld) {
-			var heldP = Math.max(0.0, now - pauseHoldStart);
-			if (heldP >= 3.0) {
-				if (!pauseBackScanAnnounced) {
-					pauseBackScanAnnounced = true;
-					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
-				}
-				var stepIntervalP = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
-				if ((now - pauseLastBackStep) >= stepIntervalP) {
-					if (pauseFocusIndex < 0) pauseFocusIndex = pauseMenuItems.length - 1;
-					else pauseFocusIndex = (pauseFocusIndex - 1 + pauseMenuItems.length) % pauseMenuItems.length;
-					pauseLastBackStep = now;
-					applyPauseFocus();
-				}
-			}
-		}
-		// Settings backward scan (shared for menu or paused)
-		if (settingsDiv && settingsDiv.style.display === 'flex' && settingsScanHeld) {
-			var heldS = Math.max(0.0, now - settingsHoldStart);
-			if (heldS >= 3.0) {
-				if (!settingsBackScanAnnounced) {
-					settingsBackScanAnnounced = true;
-					if (window.NarbeVoiceManager) window.NarbeVoiceManager.speak('Backwards scanning');
-				}
-				var stepIntervalS = (typeof NarbeScanManager !== 'undefined') ? (NarbeScanManager.getScanInterval() / 1000.0) : 2.0;
-				if ((now - settingsLastBackStep) >= stepIntervalS) {
-					if (settingsFocusIndex < 0) settingsFocusIndex = settingsItems.length - 1;
-					else settingsFocusIndex = (settingsFocusIndex - 1 + settingsItems.length) % settingsItems.length;
-					settingsLastBackStep = now;
-					applySettingsFocus();
-				}
-			}
-		}
-		// Skip gameplay updates while in menu
-		return;
-	}
+	// Reconcile only native context boundaries, never arbitrary DOM lists.
+	syncBowlChoice();
+	if(gameplayScanActive()){applyGameplayScanFocus(false);updateBallScanPulse(clock.getElapsedTime());}
+	else{setBallScanHighlight(false);setPauseScanHighlight(false);}
+	if(gameState==='menu'||gameState==='paused')return;
 
 	var localPlayer = getLocalPlayer();
 	if (localPlayer && !localPlayer.physics.simulationActive
@@ -1973,6 +1849,7 @@ function onDocumentTouchEnd(event) {
 }
 
 function onDocumentKeyDown(event) {
+	if(bowlChoiceDown(event))return;
 	// Menu/paused keyboard controls override gameplay
 	if (gameState === 'menu' || gameState === 'paused') {
 		if (setupIsOpen()) {
@@ -2102,6 +1979,7 @@ function onDocumentKeyDown(event) {
 }
 
 function onDocumentKeyUp(event) {
+	if(bowlChoiceUp(event))return;
 	if (gameState === 'menu' || gameState === 'paused') {
 		if (setupIsOpen()) {
 			if (event.code === 'Space') {
@@ -3006,7 +2884,8 @@ function gameplayScanActive() {
 // remember where the scanner was left.
 function armGameplayScanLayer() {
 	ballSelected = false;
-	gameplayScanIndex = 0;
+	gameplayScanIndex = -1;
+	bowlChoiceKey="";
 	gameplayScanHeld = false;
 	gameplayBackScanAnnounced = false;
 	gameplayHoldStart = 0.0;
@@ -3020,6 +2899,7 @@ function armGameplayScanLayer() {
 // dir is +1 forward, -1 backward. Both wrap, so backward scanning behaves here
 // exactly as it does in a ten-item menu.
 function stepGameplayScan(dir) {
+	if(bowlChoice?.active){bowlChoice.step(dir);return;}
 	var n = GAMEPLAY_SCAN_ITEMS.length;
 	gameplayScanIndex = ((gameplayScanIndex + dir) % n + n) % n;
 	applyGameplayScanFocus(true);
@@ -3028,11 +2908,13 @@ function stepGameplayScan(dir) {
 function applyGameplayScanFocus(announce) {
 	var onPause = (gameplayScanIndex === 1);
 	setPauseScanHighlight(onPause);
-	setBallScanHighlight(!onPause);
+	setBallScanHighlight(gameplayScanIndex>=0&&!onPause);
 	if (announce) speakText(GAMEPLAY_SCAN_ITEMS[gameplayScanIndex]);
 }
 
-function handleGameplayScanEnter() {
+function handleGameplayScanEnter(fromChoice=false) {
+	if(bowlChoice?.active&&!fromChoice){bowlChoice.select();return;}
+	if(gameplayScanIndex<0)return;
 	if (gameplayScanIndex === 1) {
 		openPauseMenu();
 		return;
@@ -3680,6 +3562,7 @@ function positionChargeBarUnderScore() {
 
 // ---------- Text-to-Speech (TTS) helpers ----------
 function speakText(text) {
+	if(bowlPainting)return;
 	if (!window.NarbeVoiceManager) return;
 	if (!window.NarbeVoiceManager.getSettings().ttsEnabled) return;
 	window.NarbeVoiceManager.speak(text);

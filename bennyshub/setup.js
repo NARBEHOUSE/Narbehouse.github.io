@@ -32,7 +32,7 @@ document.getElementById('back').onclick = async () => {
   try{
     await BennyExtension.check();
     if(!BennyExtension.state.connected){location.href='index.html';return;}
-    if(!BennyExtension.supports('settings-return'))throw Error('Update and reload Companion 1.0.5, then reload this page to return to your existing Hub tab.');
+    if(!BennyExtension.supports('settings-return'))throw Error('Update and reload the latest Companion, then reload this page to return to your existing Hub tab.');
     await BennyExtension.request('SETTINGS_RETURN',{},6000);
   }catch(e){error.textContent=e.message;error.hidden=false;button.disabled=false;}
 };

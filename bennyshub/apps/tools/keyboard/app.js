@@ -32,7 +32,8 @@
   // TTS functionality using unified voice manager
   function speak(text) {
     // Use the unified voice manager's speakProcessed function for better pronunciation
-    window.NarbeVoiceManager.speakProcessed(text);
+    if (choiceScan && inSettingsMode) return choiceScan.announceCurrent(text);
+    return window.NarbeVoiceManager.speakProcessed(text);
   }
 
   // Track TTS usage for learning and text clearing
@@ -103,7 +104,8 @@
   };
 
   let currentScanSpeed = settings.scanSpeed || "medium";
-  let autoScanInterval = null;
+  let choiceScan = null, statusHost = null;
+  let spaceBraking = false, cancelledSpace = false, backwardTimeout = null, enterTimeout = null;
   let isAutoScanning = false;
 
   // Theme management
@@ -241,10 +243,11 @@
   }
 
   document.addEventListener("keydown", (e) => {
+    if (e.repeat) return;
     if (e.code === "Space") {
       e.preventDefault();
       startScanning();
-    } else if (e.code === "Enter") {
+    } else if ((e.code === "Enter" || e.code === "NumpadEnter")) {
       e.preventDefault();
       startSelecting();
     }
@@ -254,274 +257,127 @@
     if (e.code === "Space") {
       e.preventDefault();
       stopScanning();
-    } else if (e.code === "Enter") {
+    } else if ((e.code === "Enter" || e.code === "NumpadEnter")) {
       e.preventDefault();
       stopSelecting();
     }
   });
 
+  function resetSwitchInput() {
+    clearTimeout(backwardTimeout); clearTimeout(enterTimeout); clearInterval(backwardScanInterval);
+    backwardTimeout = enterTimeout = backwardScanInterval = null;
+    spacebarPressed = returnPressed = spaceBraking = cancelledSpace = backwardScanStarted = longPressTriggered = false;
+    choiceScan?.setInputHeld(false);
+  }
+  window.addEventListener('blur', resetSwitchInput);
+  document.addEventListener('narbe-input-cancelled', resetSwitchInput);
   function startScanning() {
-    if (!spacebarPressed) {
-      spacebarPressed = true;
-      spacebarPressTime = Date.now();
-      backwardScanStarted = false; // Reset the flag
-
-      const speed = scanSpeeds[currentScanSpeed];
-      const backwardSpeed = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager.getScanInterval() : speed.backward;
-
-      setTimeout(() => {
-        if (spacebarPressed && (Date.now() - spacebarPressTime) >= speed.longPress) {
-          backwardScanStarted = true; // Mark that backward scanning started
-          backwardScanInterval = setInterval(() => {
-            if (spacebarPressed) {
-              if (inSettingsMode) {
-                scanSettingsBackward();
-              } else {
-                scanBackward();
-              }
-            }
-          }, backwardSpeed);
-        }
-      }, speed.longPress);
-    }
+    if (spacebarPressed) return;
+    spacebarPressed = true; backwardScanStarted = cancelledSpace = false;
+    spaceBraking = choiceScan.brakePress();
+    if (spaceBraking) return;
+    choiceScan.setInputHeld(true);
+    const speed = scanSpeeds[currentScanSpeed];
+    backwardTimeout = setTimeout(() => {
+      if (!spacebarPressed || cancelledSpace) return;
+      backwardScanStarted = true;
+      // Retain this keyboard's existing first-repeat timing after its 2 s hold.
+      backwardScanInterval = setInterval(() => { if (spacebarPressed) choiceScan.step(-1); }, NarbeScanManager.getScanInterval());
+    }, speed.longPress);
   }
-
   function stopScanning() {
-    if (spacebarPressed) {
-      spacebarPressed = false;
-      const pressDuration = Date.now() - spacebarPressTime;
-
-      if (backwardScanInterval) {
-        clearInterval(backwardScanInterval);
-        backwardScanInterval = null;
-      }
-
-      // Only trigger forward scan if:
-      // 1. Press duration is at least 100ms
-      // 2. Backward scanning was NOT started (short press)
-      if (pressDuration >= 100 && !backwardScanStarted) {
-        if (inSettingsMode) {
-          scanSettingsForward();
-        } else {
-          scanForward();
-        }
-      } else if (backwardScanStarted) {
-      }
-
-      spacebarPressTime = null;
-      backwardScanStarted = false; // Reset the flag
-    }
+    if (!spacebarPressed) return;
+    spacebarPressed = false; clearTimeout(backwardTimeout); clearInterval(backwardScanInterval);
+    backwardTimeout = backwardScanInterval = null;
+    if (spaceBraking) { spaceBraking = false; choiceScan.brakeRelease(); }
+    else { if (!backwardScanStarted && !cancelledSpace) choiceScan.step(1); choiceScan.setInputHeld(false); }
+    backwardScanStarted = cancelledSpace = false;
   }
-
-  // Added: handle Enter key press start for selection and long-press detection
   function startSelecting() {
-    if (!returnPressed) {
-      returnPressed = true;
-      returnPressTime = Date.now();
-      longPressTriggered = false;
-      const speed = scanSpeeds[currentScanSpeed];
-      setTimeout(() => {
-        if (returnPressed && (Date.now() - returnPressTime) >= speed.longPress) {
-          handleLongPress();
-        }
-      }, speed.longPress);
-    }
+    if (returnPressed) return;
+    returnPressed = true; longPressTriggered = false; choiceScan.setInputHeld(true);
+    enterTimeout = setTimeout(() => { if (returnPressed) handleLongPress(); }, scanSpeeds[currentScanSpeed].longPress);
   }
-
   function stopSelecting() {
-    if (returnPressed) {
-      returnPressed = false;
-      const pressDuration = Date.now() - returnPressTime;
-
-      if (!longPressTriggered && pressDuration >= 100) {
-        selectButton();
-      }
-
-      returnPressTime = null;
-      longPressTriggered = false;
-    }
+    if (!returnPressed) return;
+    returnPressed = false; clearTimeout(enterTimeout);
+    if (!longPressTriggered) choiceScan.select();
+    longPressTriggered = false; choiceScan.setInputHeld(false);
   }
-
   function handleLongPress() {
     longPressTriggered = true;
-    clearAllHighlights();
-
-    if (inRowSelectionMode) {
-      currentRowIndex = 1;
-      inRowSelectionMode = true;
-      highlightPredictiveRow();
-
-      // Read all predictive text words when entering predictive mode
-      const predictButtons = document.querySelectorAll('#predictBar .chip');
-      if (predictButtons.length > 0) {
-        const predictions = Array.from(predictButtons).map(btn => btn.textContent).filter(text => text);
-        if (predictions.length > 0) {
-          const announcement = predictions.join(", ");
-          window.NarbeVoiceManager.speak(announcement);
-        }
-      }
-    } else {
-      inRowSelectionMode = true;
-      if (currentRowIndex === 0) {
-        highlightTextBox();
-      } else if (currentRowIndex === 1) {
-        highlightPredictiveRow();
-        speakRowTitle(rows.length);
-      } else {
-        highlightRow(currentRowIndex - 2);
-        speakRowTitle(currentRowIndex - 2);
-      }
+    if (inSettingsMode) return;
+    if (choiceScan.getState().depth) choiceScan.back({restore: true});
+    else {
+      choiceScan.open(rowChoices(), {restoreId: 'row:predictions'});
+      const words = [...predictBar.querySelectorAll('.chip')].map(chip => chip.textContent).filter(Boolean);
+      if (words.length) choiceScan.announceCurrent(words.join(', '));
     }
+    choiceScan.setInputHeld(true);
   }
-
-  function scanForward() {
-    if (inRowSelectionMode) {
-      const prevRow = currentRowIndex;
-      currentRowIndex = (currentRowIndex + 1) % (rows.length + 2);
-
-      clearAllHighlights();
-      if (currentRowIndex === 0) {
-        highlightTextBox();
-      } else if (currentRowIndex === 1) {
-        highlightPredictiveRow();
-        speakRowTitle(rows.length);
-      } else {
-        highlightRow(currentRowIndex - 2);
-        speakRowTitle(currentRowIndex - 2);
-      }
-    } else {
-      const prevButton = currentButtonIndex;
-      if (currentRowIndex === 0) {
-        return;
-      } else if (currentRowIndex === 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        currentButtonIndex = (currentButtonIndex + 1) % chips.length;
-        highlightPredictiveButton(currentButtonIndex, prevButton);
-        speakPredictiveButtonLabel(currentButtonIndex);
-      } else {
-        currentButtonIndex = (currentButtonIndex + 1) % rows[currentRowIndex - 2].length;
-        highlightButton(currentButtonIndex, prevButton);
-        speakButtonLabel(currentButtonIndex);
-      }
-    }
-  }
-
-  function scanBackward() {
-    if (inRowSelectionMode) {
-      const prevRow = currentRowIndex;
-      currentRowIndex = currentRowIndex < 0 ? rows.length + 1 : (currentRowIndex - 1 + (rows.length + 2)) % (rows.length + 2);
-
-      clearAllHighlights();
-      if (currentRowIndex === 0) {
-        highlightTextBox();
-      } else if (currentRowIndex === 1) {
-        highlightPredictiveRow();
-        speakRowTitle(rows.length);
-      } else {
-        highlightRow(currentRowIndex - 2);
-        speakRowTitle(currentRowIndex - 2);
-      }
-    } else {
-      const prevButton = currentButtonIndex;
-      if (currentRowIndex === 0) {
-        return;
-      } else if (currentRowIndex === 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        currentButtonIndex = (currentButtonIndex - 1 + chips.length) % chips.length;
-        highlightPredictiveButton(currentButtonIndex, prevButton);
-        speakPredictiveButtonLabel(currentButtonIndex);
-      } else {
-        currentButtonIndex = (currentButtonIndex - 1 + rows[currentRowIndex - 2].length) % rows[currentRowIndex - 2].length;
-        highlightButton(currentButtonIndex, prevButton);
-        speakButtonLabel(currentButtonIndex);
-      }
-    }
-  }
+  function scanForward() { choiceScan?.step(1); }
+  function scanBackward() { choiceScan?.step(-1); }
 
   async function updatePredictiveButtons() {
     await renderPredictions();
   }
 
-  function selectButton() {
-    if (inSettingsMode) {
-      selectSettingsItem();
+  function selectButton() { choiceScan?.select(); }
+
+  function rowChoices() {
+    return [
+      {id: 'row:text', kind: 'row', row: 0, element: textBar, label: 'Text. ' + (buffer || 'Empty')},
+      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: 'predictive text'},
+      ...rows.map((keys, row) => ({id: 'row:' + row, kind: 'row', row: row + 2,
+        element: kb.querySelectorAll('.key')[row * 6], label: row === 0 ? 'controls' : keys.join(' ')}))
+    ];
+  }
+  function childChoices(row) {
+    if (row === 1) {
+      const occurrences = new Map();
+      return [...predictBar.querySelectorAll('.chip')].map((element, column) => {
+        const word = element.textContent.trim(), occurrence = occurrences.get(word) || 0;
+        occurrences.set(word, occurrence + 1);
+        return {id: 'prediction:' + word + ':' + occurrence, kind: 'key', row, column, element, label: word};
+      }).filter(item => item.label && !item.element.disabled);
+    }
+    return rows[row - 2].map((key, column) => ({id: 'key:' + key, kind: 'key', row, column,
+      element: kb.querySelectorAll('.key')[(row - 2) * 6 + column],
+      label: key === 'Del Letter' ? 'delete letter' : key === 'Del Word' ? 'delete word' : key}));
+  }
+  function settingsChoices() {
+    return settingsItems.map((element, column) => ({id: 'setting:' + element.dataset.setting,
+      kind: 'setting', column, element,
+      label: [element.querySelector('.setting-label')?.textContent, element.querySelector('.setting-value')?.textContent].filter(Boolean).join('. ')}));
+  }
+  function refreshChoices() {
+    if (!choiceScan) return;
+    choiceScan.setItems(inSettingsMode ? settingsChoices() : choiceScan.getState().depth ? childChoices(currentRowIndex) : rowChoices());
+  }
+  function drawChoice(item, state) {
+    clearAllHighlights(); settingsItems.forEach(element => element.classList.remove('highlighted'));
+    document.body.dataset.scanIndex = state.index; document.body.dataset.scanDepth = state.depth;
+    document.body.dataset.scanSelected = state.id || ''; document.body.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : 'running';
+    if (!item) { currentRowIndex = settingsRowIndex = -1; inRowSelectionMode = true; document.activeElement?.blur(); return; }
+    if (item.kind === 'setting') { settingsRowIndex = item.column; highlightSettingsItem(item.column); }
+    else {
+      currentRowIndex = item.row; inRowSelectionMode = item.kind === 'row'; currentButtonIndex = item.column || 0;
+      if (item.kind === 'key') item.element.classList.add('highlighted');
+      else if (item.row === 0) highlightTextBox();
+      else if (item.row === 1) highlightPredictiveRow();
+      else highlightRow(item.row - 2);
+    }
+    if (!state.suspended) item.element?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  }
+  function chooseItem(item) {
+    if (item.kind === 'setting') { settingsRowIndex = item.column; selectSettingsItem(); if (inSettingsMode) refreshChoices(); return; }
+    if (item.kind === 'row') {
+      if (item.row === 0) textBar.click();
+      else choiceScan.enterGroup(childChoices(item.row));
       return;
     }
-
-    if (currentRowIndex < 0) return;
-    if (inRowSelectionMode) {
-      if (currentRowIndex === 0) {
-        const text = buffer.replace(/\|/g, "").trim();
-        if (text) {
-          speak(text);
-          trackTTSAndLearn(text); // Use the unified tracking function
-        }
-      } else if (currentRowIndex === 1) {
-        inRowSelectionMode = false;
-        currentButtonIndex = 0;
-        clearAllHighlights();
-        const chips = predictBar.querySelectorAll(".chip");
-        if (chips.length > 0) {
-          highlightPredictiveButton(0);
-          speakPredictiveButtonLabel(0);
-        }
-      } else {
-        inRowSelectionMode = false;
-        currentButtonIndex = 0;
-        clearAllHighlights();
-        highlightButton(0);
-        speakButtonLabel(0);
-      }
-    } else {
-      if (currentRowIndex === 0) {
-        return;
-      } else if (currentRowIndex === 1) {
-        const chips = predictBar.querySelectorAll(".chip");
-        if (chips[currentButtonIndex] && chips[currentButtonIndex].textContent.trim()) {
-          const word = chips[currentButtonIndex].textContent.trim();
-          const currentPartialWord = currentWord();
-          let newBuffer = buffer;
-
-          if (currentPartialWord && !buffer.endsWith(" ")) {
-            newBuffer = buffer.slice(0, -currentPartialWord.length) + word + " ";
-          } else {
-            if (!buffer.endsWith(" ") && buffer.length) newBuffer += " ";
-            newBuffer += word + " ";
-          }
-
-          setBuffer(newBuffer);
-
-          // REMOVED: Don't record the word when selecting from predictions
-          // This was causing the issue - words were being recorded as "used"
-          // which might affect future predictions
-          // window.predictionSystem.recordLocalWord(word);
-          // const context = buffer.replace("|", "").trim();
-          // if (context) {
-          //   window.predictionSystem.recordNgram(context, word);
-          // }
-        }
-      } else {
-        const key = rows[currentRowIndex - 2][currentButtonIndex];
-        if (currentRowIndex - 2 === 0) {
-          handleControl(key);
-        } else {
-          insertKey(key);
-        }
-      }
-
-      if (inSettingsMode) return;
-      inRowSelectionMode = true;
-      clearAllHighlights();
-      if (currentRowIndex === 0) {
-        highlightTextBox();
-      } else if (currentRowIndex === 1) {
-        setTimeout(() => {
-          highlightPredictiveRow();
-        }, 50);
-      } else {
-        highlightRow(currentRowIndex - 2);
-      }
-    }
+    item.element.click();
+    if (!inSettingsMode) choiceScan.back({restore: true});
   }
 
   let predictionRenderVersion = 0;
@@ -575,14 +431,7 @@
       predictBar.appendChild(chip);
     }
 
-    if (wasPredictiveRowHighlighted) {
-      highlightPredictiveRow();
-    } else if (wasInButtonMode) {
-      const chips = predictBar.querySelectorAll(".chip");
-      if (chips[savedButtonIndex]) {
-        highlightPredictiveButton(savedButtonIndex);
-      }
-    }
+    refreshChoices();
   }
 
   function currentWord() {
@@ -705,23 +554,15 @@
     updateHighlightDisplay();
     updateTTSToggleDisplay(); // Add TTS toggle display update
     updateAutoScanDisplay(); // Add Auto Scan display update
-    stopAutoScan();
-    if (isAutoScanning) startAutoScan();
+    settingsMenu.append(statusHost);
+    choiceScan.open(settingsChoices());
 
     settingsItems.forEach((item, index) => {
       item.addEventListener('click', () => {
-        settingsRowIndex = index;
-        highlightSettingsItem(settingsRowIndex);
-        selectSettingsItem();
+        choiceScan.open(settingsChoices(), {restoreId: 'setting:' + item.dataset.setting});
+        choiceScan.select();
       });
 
-      item.addEventListener('mouseenter', () => {
-        settingsRowIndex = index;
-        highlightSettingsItem(settingsRowIndex);
-
-        const label = item.querySelector(".setting-label").textContent;
-        speak(label.toLowerCase());
-      });
     });
   }
 
@@ -742,8 +583,8 @@
     settingsRowIndex = -1;
     clearAllHighlights();
     document.activeElement?.blur();
-    stopAutoScan();
-    if (isAutoScanning) startAutoScan();
+    document.querySelector('main').append(statusHost);
+    choiceScan.open(rowChoices());
   }
 
   function highlightSettingsItem(index) {
@@ -753,23 +594,8 @@
     }
   }
 
-  function scanSettingsForward() {
-    settingsRowIndex = (settingsRowIndex + 1) % settingsItems.length;
-    highlightSettingsItem(settingsRowIndex);
-
-    const item = settingsItems[settingsRowIndex];
-    const label = item.querySelector(".setting-label").textContent;
-    speak(label.toLowerCase());
-  }
-
-  function scanSettingsBackward() {
-    settingsRowIndex = settingsRowIndex < 0 ? settingsItems.length - 1 : (settingsRowIndex - 1 + settingsItems.length) % settingsItems.length;
-    highlightSettingsItem(settingsRowIndex);
-
-    const item = settingsItems[settingsRowIndex];
-    const label = item.querySelector(".setting-label").textContent;
-    speak(label.toLowerCase());
-  }
+  function scanSettingsForward() { choiceScan?.step(1); }
+  function scanSettingsBackward() { choiceScan?.step(-1); }
 
   function selectSettingsItem() {
     const item = settingsItems[settingsRowIndex];
@@ -954,25 +780,9 @@
     }
   }
 
-  function startAutoScan() {
-    if (autoScanInterval) return;
-
-    const speed = (typeof NarbeScanManager !== 'undefined') ? NarbeScanManager.getScanInterval() : autoScanSpeeds[currentScanSpeed];
-    autoScanInterval = setInterval(() => {
-      if (inSettingsMode) {
-        scanSettingsForward();
-      } else {
-        scanForward();
-      }
-    }, speed);
-  }
-
-  function stopAutoScan() {
-    if (autoScanInterval) {
-      clearInterval(autoScanInterval);
-      autoScanInterval = null;
-    }
-  }
+  // The shared controller owns the only forward clock, including settings.
+  function startAutoScan() {}
+  function stopAutoScan() {}
 
   function readInstructions() {
     const instructions = `
@@ -1096,18 +906,7 @@
   });
 
   const originalSetBuffer = setBuffer;
-  setBuffer = function(newBuffer) {
-    const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
-
-    originalSetBuffer(newBuffer);
-    updatePredictiveButtons().then(() => {
-      if (wasPredictiveRowHighlighted) {
-        setTimeout(() => {
-          highlightPredictiveRow();
-        }, 50);
-      }
-    });
-  };
+  setBuffer = function(newBuffer) { originalSetBuffer(newBuffer); };
 
   function init() {
     // Wait for voice manager to load voices, then update display
@@ -1134,6 +933,23 @@
     }
 
     renderKeyboard();
+    statusHost = document.createElement('div'); statusHost.id = 'keyboard-scan-status';
+    statusHost.setAttribute('aria-label', 'Scan status'); document.querySelector('main').append(statusHost);
+    choiceScan = NarbeScanManager.createChoiceScan({
+      choice: true, holdThreshold: scanSpeeds[currentScanSpeed].longPress, items: rowChoices(), statusHost,
+      getId: item => item.id, getLabel: item => item.label, getElement: item => item.element,
+      getLabelElement: item => item.kind === 'setting' ? item.element.querySelector('.setting-label') :
+        item.row === 1 && item.kind === 'row' ? item.element.querySelector('.chip') : item.element.querySelector('.ctrl-text') || item.element,
+      speak: text => NarbeVoiceManager.speakProcessed(text), onHighlight: drawChoice, onSelect: chooseItem
+    });
+    let previousAuto = NarbeScanManager.getSettings().autoScan;
+    NarbeScanManager.subscribe(next => {
+      if (next.autoScan !== previousAuto && spacebarPressed && !spaceBraking) {
+        cancelledSpace = true; clearTimeout(backwardTimeout); clearInterval(backwardScanInterval);
+      }
+      previousAuto = next.autoScan; isAutoScanning = next.autoScan;
+      updateAutoScanDisplay(); updateScanSpeedDisplay(); refreshChoices();
+    });
     setBuffer("");
     setTimeout(() => renderPredictions(), 100);
 

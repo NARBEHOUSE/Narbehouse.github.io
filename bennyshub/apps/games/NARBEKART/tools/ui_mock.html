@@ -52,6 +52,7 @@
     background: #1d1b2e; padding: .5rem 1.4rem; border-radius: 999px; border: 4px solid #fff;
   }
 </style>
+<link rel="stylesheet" href="../../../../shared/scan-status-badge.css">
 </head>
 <body>
 
@@ -70,6 +71,7 @@
     var real = { roster: extra.indexOf('roster') >= 0, tracks: extra.indexOf('tracks') >= 0 };
     var shared = '../../../../shared/';
     var list = [
+      [shared + 'platform.js', 1], [shared + 'scan-status-badge.js', 1], [shared + 'choice-scan.js', 1],
       [shared + 'safe-audio.js', 1], [shared + 'voice-manager.js', 1], [shared + 'ios-audio-fix.js', 1],
       ['../js/input.js'], [shared + 'scan-manager.js', 1]
     ];

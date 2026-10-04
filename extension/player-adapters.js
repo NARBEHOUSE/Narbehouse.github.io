@@ -63,9 +63,11 @@
   }
   function create(service){
     const profile=profiles[service]||{},clicked=new WeakMap();let attempts=0,started=Date.now(),stopped=false,mediaAttempt;
-    // Disney and Netflix own their video/DRM layout. Their native player must
-    // not be resized or covered by our automatic CSS fullscreen layer.
-    const view=globalThis.BennyPlayerView?.create();let automaticView=!!service&&!['disney','netflix'].includes(service);
+    // Netflix/Disney keep their native player hierarchy and surrounding page.
+    // They receive the reserved frame without generic ancestor/layout resets.
+    const view=globalThis.BennyPlayerView?.create();let frameRect,videoFullscreenExit;
+    let nativeVideoOnly=false,videoFullscreenFallback=false,viewEnabled=true,viewGeneration=0;
+    let automaticView=!!service&&!['disney','netflix'].includes(service);
     function profileChoices(){
       if(service!=='netflix')return [];
       // Only existing profile tiles in the chooser, never Add/Manage Profile.
@@ -116,8 +118,25 @@
       }
       return 'waiting';
     }
+    function syncView(){
+      if(viewEnabled&&!login()&&!profileChoices().length){
+        const v=media();
+        const player=service==='youtube'?v?.closest('#movie_player,.html5-video-player'):null;
+        view?.sync(v,fullscreenButton(),player,frameRect,!automaticView);
+      }else view?.clear();
+    }
+    function recoverVideoFullscreen(){
+      if(videoFullscreenExit)return videoFullscreenExit;
+      if(document.fullscreenElement?.tagName!=='VIDEO')return Promise.resolve(false);
+      // A dock outside a fullscreen replaced VIDEO is visible but inert. Keep
+      // playback in the already-fullscreen browser frame so every control works.
+      nativeVideoOnly=true;videoFullscreenFallback=true;view?.clear();
+      const generation=viewGeneration;
+      videoFullscreenExit=Promise.resolve(document.exitFullscreen()).then(()=>{if(generation===viewGeneration)syncView();return true;}).finally(()=>{videoFullscreenExit=null;});
+      return videoFullscreenExit;
+    }
     return {
-      media,profileChoices,
+      media,profileChoices,recoverVideoFullscreen,
       pause(){
         stopped=true;const v=media();
         if(!v)return false;
@@ -125,19 +144,16 @@
         if(!v.paused)v.pause();return true;
       },
       restartStartup(){stopped=false;started=Date.now();attempts=0;mediaAttempt=null;},
-      syncView(){
-        if(automaticView&&!login()&&!profileChoices().length){
-          const v=media();
-          // Identify YouTube's player even when its fullscreen control is hidden.
-          const player=service==='youtube'?v?.closest('#movie_player,.html5-video-player'):null;
-          view?.sync(v,fullscreenButton(),player);
-        }else view?.clear();
-      },
-      clearView(){view?.clear();},
+      setFrame(frame){frameRect=frame;},
+      syncView(){viewEnabled=true;syncView();},
+      clearView(){viewEnabled=false;viewGeneration++;view?.clear();},
       async fullscreen(){
-        automaticView=false;
-        if(document.fullscreenElement){view?.clear();await document.exitFullscreen();return 'Player fullscreen off';}
-        if(view?.active){view.clear();return 'Player fullscreen off';}
+        const generation=viewGeneration;
+        const current=()=>viewEnabled&&generation===viewGeneration;
+        videoFullscreenFallback=false;
+        const leaveAutomatic=automaticView&&view?.active;automaticView=false;
+        if(document.fullscreenElement){view?.clear();await document.exitFullscreen();if(current())syncView();return 'Player fullscreen off';}
+        if(leaveAutomatic){syncView();return 'Player fullscreen off';}
         if(login())throw Error('Sign in and start the video first.');
         const v=media();
         if(!v)throw Error('Start the video with Play first.');
@@ -150,25 +166,23 @@
         for(let parent=button?.parentElement;parent&&parent!==document.body&&parent!==document.documentElement;parent=parent.parentElement){
           if(parent.contains(v)){target=parent;break;}
         }
-        if(button){
+        if(button&&!nativeVideoOnly){
           const entered=new Promise(resolve=>{
             const done=()=>{clearTimeout(timer);document.removeEventListener('fullscreenchange',done);resolve();};
             const timer=setTimeout(done,350);document.addEventListener('fullscreenchange',done);
           });
           button.click();await entered;
         }
+        if(!current())return 'Player view changed';
+        if(videoFullscreenFallback||document.fullscreenElement?.tagName==='VIDEO'){
+          await recoverVideoFullscreen();if(current())syncView();return 'Video fitted above controls';
+        }
         if(!document.fullscreenElement){
           if(!target.requestFullscreen)throw Error('Player fullscreen is unavailable on this page.');
-          const properties={position:'fixed',inset:'0',width:'100%',height:'100%',maxWidth:'none',maxHeight:'none',objectFit:'contain'};
-          const original=v.getAttribute('style');
-          const restore=()=>{if(document.fullscreenElement===target)return;document.removeEventListener('fullscreenchange',restore);if(original===null)v.removeAttribute('style');else v.setAttribute('style',original);};
-          try{
-            await target.requestFullscreen();
-            for(const [key,value] of Object.entries(properties))v.style.setProperty(key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),value,'important');
-            document.addEventListener('fullscreenchange',restore);
-          }catch{throw Error('Select Fullscreen again to allow player fullscreen.');}
+          try{await target.requestFullscreen();}
+          catch{throw Error('Select Fullscreen again to allow player fullscreen.');}
         }
-        return 'Player fullscreen on';
+        if(current())syncView();return 'Player fullscreen on';
       },
       async startup(){
         if(profileChoices().length){started=Date.now();return 'waiting';}

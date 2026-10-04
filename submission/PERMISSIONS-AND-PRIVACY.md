@@ -14,13 +14,13 @@ Provide switch-accessible control of streaming playback and chosen daily-informa
 
 **https://narbehouse.github.io/bennyshub/* content script:** Connect the Hub's web interface to a fixed allowlist of extension actions, verify the launching Hub tab, and synchronize scan preferences. No access to other GitHub Pages sites is requested by the store manifest.
 
-**Optional streaming origins:** YouTube (www, bare and mobile); Netflix (www and bare); Disney+ (www and bare); Hulu (www and bare); Prime Video (www and bare) and www.amazon.com; play.hbomax.com, www.hbomax.com, play.max.com, www.max.com; www.paramountplus.com; app.plex.tv and watch.plex.tv; pluto.tv and www.pluto.tv. Required to find and operate the corresponding player controls when the user launches that service. Access is requested through an explicit settings action and is revocable. Amazon access supports Prime Video playback on Amazon; it is not used for shopping or purchase automation.
+**Optional streaming origins:** YouTube (www, bare and mobile); Netflix (www and bare); Disney+ (www and bare); Hulu (www and bare); Prime Video (www and bare) and www.amazon.com; play.hbomax.com, www.hbomax.com, play.max.com, www.max.com; www.paramountplus.com; app.plex.tv and watch.plex.tv; pluto.tv and www.pluto.tv. Required to find and operate the corresponding player controls when the user launches that service. Streaming and news host access is requested together through the explicit **Streaming and news** switch in Companion settings and can be revoked together. Calendar access stays separate. Amazon access supports Prime Video playback on Amazon; it is not used for shopping or purchase automation.
 
 **https://calendar.google.com/*:** Optional. Fetch the Google Calendar iCal feed provided by the user and display the week's events in Day Hub. No content script is injected into calendar pages.
 
 **https://feeds.npr.org/*, https://feeds.bbci.co.uk/*, https://news.google.com/*:** Optional. Retrieve news headlines for Day Hub, with an optional user-entered place name for local news. No feed content is executed as code.
 
-**https://tubitv.com/*, https://www.tubitv.com/*:** Optional Tubi preview support. Operate media and visible player controls only in a Tubi tab launched from the Hub. Access is requested through source settings and can be revoked. Live Tubi compatibility still needs testing; generic media controls are covered by local fixtures.
+**https://tubitv.com/*, https://www.tubitv.com/*:** Optional Tubi preview support. Operate media and visible player controls only in a Tubi tab launched from the Hub. Access is included in the **Streaming and news** switch and can be revoked with it. Live Tubi compatibility still needs testing; generic media controls are covered by local fixtures.
 
 The store ZIP excludes development localhost permissions and local testing UI. It requests no debugger, native messaging, cookies, history, downloads, or broad tabs permission. If you already uploaded an earlier ZIP, upload this rebuilt package and update the optional-host justification before final review; local edits do not update a submitted package.
 

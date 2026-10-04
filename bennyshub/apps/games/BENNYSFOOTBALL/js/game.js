@@ -3211,6 +3211,7 @@ class GameScene extends Phaser.Scene {
         if (this.phase === 'gameover') return;
         if (this.paused) { this.closePause(); return; }
         this.paused = true;
+        if(this.playMenu){this.playMenu._stopTimer();this.playMenu.index=-1;this.playMenu._draw();} // Pause owns focus; the controller retains the tactical choice for Continue.
         this.tweens.pauseAll();
         this._pausedGameTimers = [...(this._gameTimers || [])].filter(event => event.callback && !event.paused);
         this._pausedGameTimers.forEach(event => { event.paused = true; });

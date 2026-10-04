@@ -3,55 +3,46 @@ import {SERVICES,NEWS_ORIGINS,calendarURL} from './policy.mjs';
 const $=id=>document.getElementById(id),status=(text,error=false)=>{ $('status').textContent=text;$('status').dataset.error=String(error); };
 const originsFor=s=>s.hosts.map(h=>'https://'+h+'/*');
 const allOrigins=[...Object.values(SERVICES).flatMap(originsFor),...NEWS_ORIGINS];
-const icons={youtube:['▶','#ffb9bd','#482630'],netflix:['N','#ffafb8','#492631'],disney:['D+','#b9ccff','#26385b'],hulu:['h','#9cecc4','#234636'],prime:['P','#9adeff','#213f54'],max:['M','#cec0ff','#362c56'],paramount:['P+','#acd0ff','#263e5d'],plex:['P','#f5d287','#4c3d24'],pluto:['TV','#e8e59b','#414026'],tubi:['T','#ffeb82','#453f23']};
-let ready=false,busy=false,revision=0;
-const serviceButtons=new Map();
-function setToggle(button,on){button.setAttribute('aria-checked',String(on));button.querySelector('.toggle-state').textContent=on?'On':'Off';button.closest('.source-card').dataset.enabled=String(on);}
+let ready=false,busy=false,revision=0,accessEnabled=false;
 function controlsDisabled(disabled){for(const button of document.querySelectorAll('button'))button.disabled=disabled;}
 async function refresh(){
   const current=++revision;
-  const [states,newsAccess,calendarAccess,data]=await Promise.all([
-    Promise.all(Object.values(SERVICES).map(s=>chrome.permissions.contains({origins:originsFor(s)}))),
-    chrome.permissions.contains({origins:NEWS_ORIGINS}),chrome.permissions.contains({origins:['https://calendar.google.com/*']}),chrome.storage.local.get(['newsEnabled','calendarUrl'])
+  const [access,granted,calendarAccess,data]=await Promise.all([
+    chrome.permissions.contains({origins:allOrigins}),chrome.permissions.getAll(),
+    chrome.permissions.contains({origins:['https://calendar.google.com/*']}),chrome.storage.local.get(['newsEnabled','calendarUrl'])
   ]);
   if(current!==revision)return;
-  let count=0;Object.keys(SERVICES).forEach((id,i)=>{setToggle(serviceButtons.get(id),states[i]);if(states[i])count++;});
-  setToggle($('news'),!!data.newsEnabled&&newsAccess);
-  $('source-count').textContent=`${count} of ${states.length} on`;
+  const allEnabled=access&&!!data.newsEnabled;
+  accessEnabled=access||(granted.origins||[]).some(origin=>allOrigins.includes(origin));
+  const partial=accessEnabled&&!allEnabled;
+  const button=$('companion-access');
+  button.setAttribute('aria-checked',String(accessEnabled));
+  button.querySelector('.toggle-state').textContent=allEnabled?'On':partial?'Incomplete':'Off';
+  button.closest('.quick-start').dataset.enabled=String(allEnabled);
+  $('access-state').textContent=allEnabled?'All streaming services and news are on.':partial?'Only some streaming and news access is enabled. Turn off, then on, to enable all services.':'Streaming and news access is off.';
   $('calendar-status').textContent=data.calendarUrl?(calendarAccess?'Connected':'Access needed'):'Not connected';
-  const allOn=count===states.length&&newsAccess&&!!data.newsEnabled;
-  $('enable-all').textContent=allOn?'All sources enabled':'Enable all sources';
-  controlsDisabled(busy||!ready);$('enable-all').disabled=busy||!ready||allOn;$('clear-calendar').disabled=busy||!ready||!data.calendarUrl;
+  controlsDisabled(busy||!ready);$('clear-calendar').disabled=busy||!ready||!data.calendarUrl;
+
 }
 async function change(button,operation){
   if(busy||!ready)return;busy=true;controlsDisabled(true);status('Updating access…');
   try{status(await operation());}catch(e){status(e.message||'Could not change access. Try again.',true);}
   finally{busy=false;try{await refresh();}catch{status('Could not check access. Reopen Companion settings.',true);controlsDisabled(false);}if(!button.disabled)button.focus({preventScroll:true});}
 }
-for(const [id,service] of Object.entries(SERVICES)){
-  const card=document.createElement('div');card.className='source-card';
-  const icon=document.createElement('span');icon.className='source-icon';icon.setAttribute('aria-hidden','true');const [initial,color,bg]=icons[id];icon.textContent=initial;icon.style.setProperty('--icon',color);icon.style.setProperty('--icon-bg',bg);
-  const copy=document.createElement('div');copy.className='source-copy';const name=document.createElement('h3');name.id='label-'+id;name.textContent=service.label;copy.append(name);
-  const button=document.createElement('button');button.type='button';button.className='toggle';button.dataset.service=id;button.setAttribute('role','switch');button.setAttribute('aria-labelledby',name.id);button.setAttribute('aria-checked','false');button.disabled=true;
-  const state=document.createElement('span');state.className='toggle-state';state.textContent='Off';const track=document.createElement('span');track.className='toggle-track';track.setAttribute('aria-hidden','true');button.append(state,track);
-  button.onclick=()=>change(button,async()=>{
-    const enabled=button.getAttribute('aria-checked')==='true';
-    // Keep the browser permission request in the original click's user gesture.
-    const ok=await chrome.permissions[enabled?'remove':'request']({origins:originsFor(service)});
-    if(!ok)throw Error(enabled?'Access could not be removed.':'Permission was not granted. '+service.label+' is still off.');
-    await updateScripts();return service.label+(enabled?' turned off.':' is on. Launch a new stream from the Hub.');
-  });
-  serviceButtons.set(id,button);card.append(icon,copy,button);$('services').append(card);
+for(const service of Object.values(SERVICES)){
+  const item=document.createElement('li');item.textContent=service.label;$('services').append(item);
 }
-$('enable-all').onclick=()=>change($('enable-all'),async()=>{
-  if(!await chrome.permissions.request({origins:allOrigins}))throw Error('Permission was not granted. Your current sources have not changed.');
-  await chrome.storage.local.set({newsEnabled:true});await updateScripts();return 'All streaming services and news are on. You can turn off individual sources below.';
-});
-$('news').onclick=()=>change($('news'),async()=>{
-  const enabled=$('news').getAttribute('aria-checked')==='true';
-  if(enabled){if(!await chrome.permissions.remove({origins:NEWS_ORIGINS}))throw Error('News access could not be removed.');await chrome.storage.local.set({newsEnabled:false});}
-  else{if(!await chrome.permissions.request({origins:NEWS_ORIGINS}))throw Error('News access was not granted.');await chrome.storage.local.set({newsEnabled:true});}
-  return enabled?'News turned off.':'News is on.';
+$('companion-access').onclick=()=>change($('companion-access'),async()=>{
+  const enabled=accessEnabled;
+  // Request all streaming/news hosts in the original click's user gesture.
+  const ok=await chrome.permissions[enabled?'remove':'request']({origins:allOrigins});
+  if(!ok)throw Error(enabled?'Access could not be turned off. Try again.':'Permission was not granted. Streaming and news access has not changed.');
+  await chrome.storage.local.set({newsEnabled:!enabled});
+  await updateScripts();
+  if(!enabled&&!await chrome.permissions.contains({origins:allOrigins}))throw Error('Some access is still missing. Check the Streaming and news switch to try again.');
+  if(enabled&&(await chrome.permissions.getAll()).origins?.some(origin=>allOrigins.includes(origin)))throw Error('Some streaming or news access could not be turned off. Reopen Companion settings to check access.');
+  // The live access summary is authoritative, including later browser changes.
+  return '';
 });
 $('calendar-form').onsubmit=e=>{e.preventDefault();change(e.submitter||$('calendar-form').querySelector('button'),async()=>{
   const url=calendarURL($('calendar').value.trim());

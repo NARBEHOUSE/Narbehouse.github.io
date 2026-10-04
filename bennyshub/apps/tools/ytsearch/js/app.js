@@ -716,6 +716,7 @@ class NARBEApp {
                 button.style.pointerEvents = 'none';
             }
         });
+        window.scanningManager?.updateRows();
     }
 
     showExitMessage() {
@@ -760,7 +761,9 @@ class SettingsManager {
         // Set up click handlers
         this.settingsItems.forEach(item => {
             item.addEventListener('click', () => {
+                window.scanningManager.scanner.align('setting:'+item.dataset.setting+':0');
                 this.handleSettingClick(item.dataset.setting);
+                if(this.isOpen){window.scanningManager.updateRows();window.scanningManager.scanner.announce(item.textContent.replace(/\s+/g,' ').trim());}
             });
         });
 
@@ -776,16 +779,7 @@ class SettingsManager {
         this.settingsMenu.classList.remove('hidden');
         this.currentIndex = -1;
 
-        // Open overlay mode in scanning manager
-        window.scanningManager.overlayOpen = true;
-        window.scanningManager.overlayIndex = -1;
-        window.scanningManager.stopAutoScan();
-        window.scanningManager.clearKeyHighlights();
-        window.scanningManager.clearRowHighlights();
-        document.activeElement?.blur();
-
-        // Start autoscan for settings menu
-        this.startAutoScan();
+        window.scanningManager.openOverlay();
 
         // Wait for the first scan before highlighting a setting.
         this.clearFocus();
@@ -982,84 +976,9 @@ class SettingsManager {
         }
     }
 
-    // Scanning support methods
-    focusNext() {
-        if (this.settingsItems.length === 0) return;
-
-        this.currentIndex = (this.currentIndex + 1) % this.settingsItems.length;
-        this.applyFocus();
-    }
-
-    focusPrev() {
-        if (this.settingsItems.length === 0) return;
-
-        this.currentIndex = this.currentIndex < 0 ? this.settingsItems.length - 1 : (this.currentIndex - 1 + this.settingsItems.length) % this.settingsItems.length;
-        this.applyFocus();
-    }
-
-    applyFocus() {
-        this.clearFocus();
-
-        const currentItem = this.settingsItems[this.currentIndex];
-        if (currentItem) {
-            currentItem.classList.add('focused');
-
-            // Speak the setting label
-            const label = currentItem.querySelector('.setting-label');
-            const value = currentItem.querySelector('.setting-value');
-            if (label && value) {
-                window.speechManager.speak(label.textContent + ' ' + value.textContent);
-            }
-        }
-    }
-
-    clearFocus() {
-        this.settingsItems.forEach(item => {
-            item.classList.remove('focused');
-        });
-    }
-
-    activate() {
-        const currentItem = this.settingsItems[this.currentIndex];
-        if (currentItem) {
-            currentItem.click();
-        }
-    }
-
-    // Auto scan methods for settings
-    startAutoScan() {
-        if (!window.scanningManager.autoScanEnabled) return;
-
-        this.stopAutoScan();
-
-        let interval = window.scanningManager.currentScanInterval;
-        if (!interval) {
-             const speedKey = window.scanningManager.scanSpeed;
-             interval = window.scanningManager.scanSpeeds[speedKey] || 2000;
-        }
-
-        // Safety
-        if (interval < 500) interval = 2000;
-
-        this.autoScanTimer = setInterval(() => {
-            // Don't auto scan if user is interacting
-            if (window.scanningManager.spaceDown || window.scanningManager.enterDown) {
-                return;
-            }
-
-            this.focusNext();
-        }, interval);
-
-        console.log(`Settings auto scan started: ${window.scanningManager.scanSpeed} (${interval}ms)`);
-    }
-
-    stopAutoScan() {
-        if (this.autoScanTimer) {
-            clearInterval(this.autoScanTimer);
-            this.autoScanTimer = null;
-            console.log('Settings auto scan stopped');
-        }
-    }
+    clearFocus(){this.settingsItems.forEach(item=>item.classList.remove('focused'));}
+    startAutoScan(){window.scanningManager.updateRows();}
+    stopAutoScan(){}
 }
 
 // Initialize the application when DOM is loaded

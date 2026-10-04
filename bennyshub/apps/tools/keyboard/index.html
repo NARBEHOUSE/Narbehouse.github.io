@@ -79,25 +79,13 @@
   </div>
 
   <!-- Include shared voice manager -->
+  <script src="../../../shared/platform.js"></script>
+  <script src="../../../shared/scan-status-badge.js"></script>
+  <script src="../../../shared/choice-scan.js"></script>
+  <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
   <script src="../../../shared/voice-manager.js"></script>
   <script src="../../../shared/scan-manager.js"></script>
   <script src="predictions.js"></script>
   <script src="app.js"></script>
-  <script>
-    // Exit/Close button handler
-    const closeBtn = document.querySelector('[data-setting="close"]');
-    closeBtn.addEventListener('click', () => {
-      // Simply close the settings menu
-      const settingsMenu = document.getElementById('settingsMenu');
-      if (settingsMenu) {
-        settingsMenu.classList.add('hidden');
-        // Return focus to the keyboard or main interface
-        const keyboard = document.getElementById('keyboard');
-        if (keyboard) {
-          keyboard.focus();
-        }
-      }
-    });
-  </script>
 </body>
 </html>

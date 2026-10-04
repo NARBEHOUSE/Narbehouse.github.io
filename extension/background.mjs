@@ -2,6 +2,8 @@ import {updatePlayerScripts} from './player-registration.mjs';
 import {PROTOCOL,isHub,playerURL,scanPrefs,SERVICES} from './policy.mjs';
 import {calendarWeek} from './calendar.mjs';
 const trustedStorage=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})]).then(()=>chrome.storage.session.remove('ai'));
+const toolbarSpeechKey='playerToolbarSpeechEnabled';
+let toolbarSpeechQueue=Promise.resolve();
 const launchBusy=new Set();
 const returning=new Map();let returnQueue=Promise.resolve();
 async function hubLocation(tabId) {
@@ -145,7 +147,26 @@ async function handle(m,sender){
   if(m.action==='PLAYER_HELLO'){
     const session=await managed(sender);await rememberPosition(sender,session,m.payload?.url);
     const synced=(await chrome.storage.session.get('scan:'+session.hubOrigin))['scan:'+session.hubOrigin];
-    return {session:{settings:synced||session.settings,service:session.service||'',startup:session.startup!==false,browserUnlocked:session.browserUnlocked===true}};
+    const toolbarSpeechEnabled=(await chrome.storage.local.get(toolbarSpeechKey))[toolbarSpeechKey]!==false;
+    return {session:{toolbarSpeechEnabled,settings:scanPrefs(synced||session.settings),service:session.service||'',startup:session.startup!==false,browserUnlocked:session.browserUnlocked===true}};
+  }
+  if(m.action==='PLAYER_TOOLBAR_SPEECH'){
+    await managed(sender);
+    if(typeof m.payload?.enabled!=='boolean')throw Error('Invalid toolbar speech state.');
+    const enabled=m.payload.enabled;
+    const update=toolbarSpeechQueue.catch(()=>{}).then(async()=>{
+      await chrome.storage.local.set({[toolbarSpeechKey]:enabled});
+      const stored=await chrome.storage.session.get(null);
+      // One local Companion preference across managed players, never Hub voice
+      // settings. Keep local storage restricted to trusted extension contexts.
+      await Promise.allSettled(Object.entries(stored)
+        .filter(([key,session])=>/^player:\d+$/.test(key)&&session?.hubOrigin)
+        .map(([key])=>chrome.tabs.sendMessage(Number(key.slice(7)),{
+          protocol:PROTOCOL,action:'PLAYER_TOOLBAR_SPEECH',payload:{enabled}
+        },{frameId:0})));
+      return {enabled};
+    });
+    toolbarSpeechQueue=update;return update;
   }
   if(m.action==='PLAYER_ACCESS'){
     const session=await managed(sender);
@@ -169,14 +190,29 @@ async function handle(m,sender){
     case 'HELLO':return {protocol:PROTOCOL,version:chrome.runtime.getManifest().version,capabilities:['streaming','journal','dayhub','settings-return']};
     case 'OPEN_OPTIONS':await chrome.storage.session.set({settingsHub:topURL});await chrome.runtime.openOptionsPage();return {};
     case 'SYNC_SCAN':{
-      const settings=scanPrefs(p);await chrome.storage.session.set({['scan:'+new URL(sender.url).origin]:settings});return {settings};
+      const hubOrigin=new URL(sender.url).origin;
+      const cached=(await chrome.storage.session.get('scan:'+hubOrigin))['scan:'+hubOrigin];
+      // Older Hub pages send only their original voice/speed fields. Retain
+      // centralized preferences that are absent from that partial payload.
+      const settings=scanPrefs({...cached,...p});
+      await chrome.storage.session.set({['scan:'+hubOrigin]:settings});
+      const stored=await chrome.storage.session.get(null);
+      // Preferences belong to their website origin. Only that origin's
+      // managed players receive live updates; PLAYER_HELLO remains a fallback
+      // for a sleeping tab or a content script that is still loading.
+      await Promise.allSettled(Object.entries(stored)
+        .filter(([key,session])=>/^player:\d+$/.test(key)&&session?.hubOrigin===hubOrigin)
+        .map(([key])=>chrome.tabs.sendMessage(Number(key.slice(7)),{
+          protocol:PROTOCOL,action:'PLAYER_SCAN_SETTINGS',payload:{settings}
+        },{frameId:0})));
+      return {settings};
     }
     case 'STREAM_PROGRESS':{
       if(!new URL(sender.url).pathname.startsWith('/bennyshub/apps/tools/streaming/'))throw Error('Progress is available only in Streaming.');
       return (await chrome.storage.session.get('resume:'+sender.tab.id))['resume:'+sender.tab.id]||null;
     }
     case 'OPEN_STREAM':{
-      const url=playerURL(p.url);if(!await hasOrigin(url.href))throw Error('Enable this streaming service in Companion settings first.');
+      const url=playerURL(p.url);if(!await hasOrigin(url.href))throw Error('Turn on Streaming and news in Companion settings first.');
       if(launchBusy.has(sender.tab.id))throw Error('Already opening a stream.');launchBusy.add(sender.tab.id);
       let tab;
       try{
@@ -185,7 +221,9 @@ async function handle(m,sender){
         tab=playerWindow.tabs?.[0];if(!tab)throw Error('Could not create the player window.');
         const tracking=p.trackProgress===true&&typeof p.playbackId==='string'&&/^[\w-]{1,80}$/.test(p.playbackId)&&new URL(sender.url).pathname.startsWith('/bennyshub/apps/tools/streaming/');
         const service=Object.entries(SERVICES).find(([,s])=>s.hosts.includes(url.hostname))?.[0]||'';
-        const hubOrigin=new URL(topURL).origin,settings=scanPrefs(p.settings);
+        const hubOrigin=new URL(topURL).origin;
+        const cached=(await chrome.storage.session.get('scan:'+hubOrigin))['scan:'+hubOrigin];
+        const settings=scanPrefs({...cached,...p.settings});
         await chrome.storage.session.set({['scan:'+hubOrigin]:settings,['player:'+tab.id]:{hubTab:sender.tab.id,hubURL:topURL,hubOrigin,service,startup:!!service,settings,...(tracking?{playbackId:p.playbackId,startURL:url.href}:{})}});
         await chrome.tabs.update(tab.id,{url:url.href,active:true});
         // Chromium can ignore fullscreen in windows.create for popup windows.
@@ -200,10 +238,10 @@ async function handle(m,sender){
       return calendarWeek(await fetchText(calendarUrl));
     }
     case 'NEWS':{
-      const {newsEnabled}=await chrome.storage.local.get('newsEnabled');if(!newsEnabled)throw Error('Enable news in Companion settings first.');
+      const {newsEnabled}=await chrome.storage.local.get('newsEnabled');if(!newsEnabled)throw Error('Turn on Streaming and news in Companion settings first.');
       const feeds={national:'https://feeds.npr.org/1001/rss.xml',world:'https://feeds.bbci.co.uk/news/world/rss.xml'};
       if(typeof p.localLabel==='string'&&p.localLabel.trim())feeds.local='https://news.google.com/rss/search?q='+encodeURIComponent(p.localLabel.slice(0,100))+'&hl=en-US&gl=US&ceid=US:en';
-      const result={};for(const [key,url]of Object.entries(feeds)){if(!await hasOrigin(url))throw Error('News permission is missing. Enable news in Companion settings.');result[key]=await fetchText(url);}return result;
+      const result={};for(const [key,url]of Object.entries(feeds)){if(!await hasOrigin(url))throw Error('Turn on Streaming and news in Companion settings first.');result[key]=await fetchText(url);}return result;
     }
     default:throw Error('Unsupported action.');
   }

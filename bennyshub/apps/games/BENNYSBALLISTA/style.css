@@ -125,3 +125,8 @@ body[data-story-scene=true] #panelList{overflow:visible;padding:5px}
 @media(max-width:600px){#zoomControls>div{grid-template-columns:repeat(3,minmax(0,1fr))}#zoomControls button{font-size:14px}#btnZoom{left:128px;min-width:72px}}
 
 @media(max-width:700px){#btnZoom{bottom:59px}}
+
+/* Choice status shares the story’s fixed layout, above its existing buttons. */
+body[data-screen=story][data-choice-scan=true] #ballistaScanStatus{position:fixed;left:var(--story-status-left,12px);top:var(--story-status-top,54px);width:max-content;min-block-size:0;padding:0}
+/* Preserve the game’s inset focus ring, distinguishing only scan pause. */
+.choice[data-narbe-scan-paused],button[data-narbe-scan-paused],input[data-narbe-scan-paused]{outline-style:dotted!important}

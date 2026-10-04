@@ -275,6 +275,11 @@
 
     <div id="canvas-container"></div>
 
+    <script src="../../../shared/platform.js"></script>
+    <script src="../../../shared/scan-status-badge.js"></script>
+    <script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+    <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
     <script src="../../../shared/voice-manager.js"></script>
     <script src="../../../shared/ios-audio-fix.js"></script>
     <script src="../../../shared/scan-manager.js"></script>
@@ -351,7 +356,7 @@
 
             speak(text) {
                 if (window.NarbeVoiceManager) {
-                    window.NarbeVoiceManager.speak(text);
+                    return window.NarbeVoiceManager.speak(text);
                 } else if (this.ttsEnabled && 'speechSynthesis' in window) {
                     speechSynthesis.cancel();
                     const u = new SpeechSynthesisUtterance(text);
@@ -2531,5 +2536,6 @@
         // Wait for load
         window.addEventListener('load', init);
     </script>
+<script src="scan-access.js"></script>
 </body>
 </html>

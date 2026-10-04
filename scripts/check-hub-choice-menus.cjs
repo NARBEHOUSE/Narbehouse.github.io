@@ -1,0 +1,41 @@
+const {chromium,expect}=require('@playwright/test');
+const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173';
+const artifact=path.join(root,'artifacts/scan-completion-hub');
+const report={checks:[],errors:[]};let browser;
+const pass=text=>{report.checks.push(text);console.log('PASS '+text)};
+(async()=>{
+ await fs.mkdir(artifact,{recursive:true});
+ browser=await chromium.launch({executablePath:process.env.HUB_BROWSER_PATH||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+ const context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+ await context.addInitScript(()=>{window.__speech=[];let active;Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[{name:'Fixture',lang:'en-US'}],addEventListener(){},removeEventListener(){},cancel(){active=null;},speak(u){active=u;window.__speech.push(u.text);u.onstart?.();setTimeout(()=>{if(active===u)u.onend?.()},250)}}});window.SpeechSynthesisUtterance=class{constructor(text){this.text=text}};});
+ const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
+ await page.clock.install({time:new Date('2026-10-03T12:00:00Z')});await page.clock.pauseAt(new Date('2026-10-03T12:00:01Z'));
+ await page.goto(base+'/bennyshub/');const tick=ms=>page.clock.runFor(ms);
+ const state=()=>page.evaluate(()=>hubMenuScanner.getState());
+ const tap=async(key,after=60)=>{await page.keyboard.down(key);await tick(1);await page.keyboard.up(key);await tick(after)};
+ const pref=async value=>{await page.evaluate(v=>NarbeScanManager.updateSettings(v),value);await tick(1)};
+ const blank=async()=>{assert.equal((await state()).index,-1);assert.equal(await page.locator('.screen.active button:focus,.modal:not(.hidden) button:focus').count(),0)};
+ async function cycle(label){await blank();const n=await page.evaluate(()=>menuItems().length);for(let i=0;i<n;i++){await tap('Space');assert.equal((await state()).index,i,label+' forward '+i)}await tap('Space');await blank();const before=page.url();await tap('Enter');assert.equal(page.url(),before);await blank();await page.keyboard.down('Space');await tick(3000);assert.equal((await state()).index,n-1);await tick(n*2000);await blank();await page.keyboard.up('Space');await tick(60);await blank();pass(label+' fresh blank, full forward/backward loop, inert blank Enter');}
+ await tick(300);await cycle('Fullscreen');await page.locator('#modal-cancel').click();await tick(150);await cycle('Home');
+ await page.locator('#screen-home [data-target="games"]').click();await tick(150);await cycle('Games');
+ await page.locator('#games-next').click();await tick(150);await blank();pass('Paging opens with a fresh blank');
+ await page.locator('#games-filter-btn').click();assert.equal((await state()).id,'games-filter-btn');await page.locator('#games-reset-btn').click();assert.equal((await state()).id,'games-reset-btn');pass('Filter and Reset retain the changed option');await page.evaluate(()=>{renderGenreFilter('games','games');showScreen('genre-filter')});await tick(150);await cycle('Genre filter');
+ await page.locator('#genre-back-btn').click();await tick(150);await page.locator('#screen-games .backbtn').click();await tick(150);
+ await page.locator('#screen-home [data-target="tools"]').click();await tick(150);await cycle('Tools');
+ await page.evaluate(()=>{const b=menuItems().find(el=>el.dataset.path);b.focus()});const beforeId=(await state()).id;
+ await page.evaluate(()=>window.dispatchEvent(new Event('benny-extension-change')));assert.equal((await state()).id,beforeId);pass('Live capability redraw retains the same available tool');
+ await pref({autoScan:true,scanSpeedIndex:0,spaceBrake:true,parking:'chosen',waitForSpeech:false});assert.equal((await state()).id,beforeId);
+ await page.keyboard.down('Space');assert.equal((await state()).braked,true);assert.equal((await state()).id,beforeId);
+ const target=page.locator('[data-narbe-scan-paused]');assert.equal(await target.count(),1);assert.equal(await target.evaluate(el=>getComputedStyle(el).outlineStyle),'dotted');
+ await page.keyboard.up('Space');await tick(5000);assert.equal((await state()).id,beforeId);await tap('Space',0);assert.equal((await state()).braked,false);await tick(999);assert.equal((await state()).id,beforeId);await tick(1);assert.notEqual((await state()).id,beforeId);pass('Auto identity, apparent Space pause, full-interval resume');
+ await page.evaluate(()=>syncHubMenuOwnership({fresh:true}));await blank();await tap('Enter');assert.equal((await state()).parked,true);await tick(3000);await tap('Enter',0);assert.equal((await state()).index,0);assert.equal((await state()).parked,false);assert.equal(await page.locator('.iframe-container.active').count(),0);pass('Chosen parking resumes first choice without selecting it');
+ await pref({parking:'auto',loopsBeforeParking:1});await page.evaluate(()=>syncHubMenuOwnership({fresh:true}));const count=await page.evaluate(()=>menuItems().length);await tick((count+1)*1000);assert.equal((await state()).parked,true);pass('Automatic parking after one complete root loop');
+ await pref({parking:'chosen',waitForSpeech:true});await page.evaluate(()=>{syncHubMenuOwnership({fresh:true});hubMenuScanner.announceCurrent('Park')});await tick(1299);assert.equal((await state()).index,-1);await tick(1);assert.equal((await state()).index,0);pass('Wait for owned speech completion plus one full interval');
+ await pref({autoScan:true,parking:'off',waitForSpeech:true});
+ for(const screen of ['home','games','tools']){await page.evaluate(screen=>{__speech.length=0;showScreen(screen)},screen);await tick(500);assert.ok(!(await page.evaluate(()=>__speech)).some(text=>/\bpark(?:ed)?\b/i.test(text)),screen+' menu must not append Park with Parking Off');}
+ pass('Fresh Home, Games and Tools announcements omit Park when Parking is Off');
+ await page.screenshot({path:path.join(artifact,'hub-tools.png')});
+ await pref({autoScan:false});await page.locator('#screen-tools .backbtn').click();await tick(150);await page.locator('#screen-home [data-target="games"]').click();await tick(150);await page.locator('#games-grid .app-btn').first().click();await tick(150);assert.equal((await state()).suspended,true);await page.locator('#iframe-back').click();await tick(150);await blank();pass('Iframe owns input; returning from app opens blank launch menu');
+ assert.deepEqual(report.errors,[]);report.status='pass';
+})().catch(e=>{report.status='fail';report.failure=e.stack;console.error(e);process.exitCode=1}).finally(async()=>{await fs.mkdir(artifact,{recursive:true});await fs.writeFile(path.join(artifact,'hub-report.json'),JSON.stringify(report,null,2));await browser?.close()});

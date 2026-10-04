@@ -344,6 +344,29 @@ RT.util = (function () {
     if (sayTimer) { clearTimeout(sayTimer); sayTimer = null; }
   }
 
+
+  // Only choice labels use this ticket; story sequences retain their native timing.
+  function speakChoice(text,cue){
+    dropEvents();
+    const v=vm();
+    if(!v)return null;
+    if(!v.getSettings().ttsEnabled || !cue || !voHas(cue))return v.speak(sayable(text));
+    if(voAudio){voAudio.pause();voAudio=null;}
+    v.cancel();
+    const clip=voAudio=new Audio('audio/vo/'+voIndex[cue]);
+    let resolveStart,resolveFinish,done=false,didStart=false,fallback=null,timer;
+    const started=new Promise(resolve=>resolveStart=resolve),finished=new Promise(resolve=>resolveFinish=resolve);
+    const finish=result=>{if(done)return;done=true;clearTimeout(timer);resolveStart(didStart);resolveFinish(result);};
+    const fail=()=>{if(done||fallback)return;fallback=v.speak(sayable(text));fallback.started.then(value=>{didStart=value;resolveStart(value)});fallback.finished.then(finish);};
+    clip.addEventListener('playing',()=>{didStart=true;resolveStart(true);});
+    clip.addEventListener('ended',()=>finish({reason:'end',started:didStart}));
+    clip.addEventListener('pause',()=>{if(!clip.ended)finish({reason:'cancelled',started:didStart});});
+    clip.addEventListener('error',fail);
+    timer=setTimeout(()=>finish({reason:'timeout',started:didStart}),Math.min(10000,Math.ceil(String(text).length/(15*Math.max(.1,v.getSettings().rate||1))*1000)+2000));
+    try{clip.play().catch(fail);}catch(e){fail();}
+    return {started,finished,cancel(){if(done)return;finish({reason:'cancelled',started:didStart});fallback?.cancel();clip.pause();}};
+  }
+
   function sysSpeak(text) {
     const v = vm();
     if (v && text) v.speak(sayable(text));
@@ -354,6 +377,6 @@ RT.util = (function () {
     clamp, lerp, damp, smoothstep,
     load, save,
     $, addTap,
-    vm, sm, speak, speakSeq, speakEvent, speakUrgent, dropEvents, voHas
+    vm, sm, speak, speakChoice, speakSeq, speakEvent, speakUrgent, dropEvents, voHas
   };
 })();

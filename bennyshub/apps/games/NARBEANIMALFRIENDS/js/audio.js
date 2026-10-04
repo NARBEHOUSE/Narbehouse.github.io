@@ -481,7 +481,7 @@ NAF.Voice = (function () {
     /** Hand one line straight to the shared manager, no queueing. */
     function rawSpeak(text) {
         try {
-            window.NarbeVoiceManager.speak(text);
+            return window.NarbeVoiceManager.speak(text);
         } catch (e) {
             console.warn('[NAF] Speech failed:', e);
         }
@@ -544,8 +544,7 @@ NAF.Voice = (function () {
                 if (window.NarbeVoiceManager.cancel) window.NarbeVoiceManager.cancel();
             } catch (e) { /* speech is never load-bearing */ }
             speakingUntil = Date.now() + estimateMs(text);
-            rawSpeak(text);
-            return;
+            return rawSpeak(text);
         }
 
         queue.push({ text: String(text), gap: opts.gapAfter || 0 });

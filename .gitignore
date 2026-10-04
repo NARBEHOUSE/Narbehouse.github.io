@@ -40,3 +40,7 @@ tmp/
 **/DESKTOP_PROMPT.txt
 # Local P3GL campaign experiments and generated preview sheets.
 bennyshub/apps/games/BENNYSPEGGLE/tools/tmp-*
+
+# Local task specification and historical workstation-only preservation audit.
+/HUB SCAN UPGRADE PROMPT FULL
+/scripts/check-scan-completion-package.cjs

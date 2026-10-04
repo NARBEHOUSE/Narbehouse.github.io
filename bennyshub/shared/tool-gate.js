@@ -1,52 +1,73 @@
 (() => {
   const capability=document.documentElement.dataset.extensionTool;if(!capability)return;
   const setup=new URL('../../../extension-setup.html',location.href).href;
-  let dialog, scanTimer=null, selected=false, pressed=null, holdTimer=null, repeatTimer=null;
-  function focusBack(){
-    if(!dialog?.open)return;selected=true;dialog.querySelector('#gate-back').focus();
-    window.NarbeVoiceManager?.speak('Back to Hub');
-  }
-  function resetInput(){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed=null;}
-  function restartScan(){
-    clearInterval(scanTimer);scanTimer=null;
-    if(dialog?.open&&window.NarbeScanManager?.getSettings().autoScan){
-      scanTimer=setInterval(()=>{if(!pressed&&!document.activeElement?.closest('#companion-required details'))focusBack();},NarbeScanManager.getScanInterval());
-    }
+  let dialog,scanner,pressed=null,holdTimer=null,repeatTimer=null,drawing=false;
+  const owns=()=>!!dialog?.open&&!dialog.querySelector('details').open;
+  const signal=()=>document.dispatchEvent(new CustomEvent('narbe-tool-gate-change',{detail:{open:!!dialog?.open}}));
+  function resetInput(){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed=null;scanner?.setInputHeld(false);}
+  function sync(){if(scanner){resetInput();scanner.setSuspended(!owns());}}
+  function createScanner(){
+    const back=dialog.querySelector('#gate-back');
+    scanner=NarbeScanManager.createChoiceScan({choice:true,holdThreshold:3000,items:[back],
+      getId:el=>el.id,getLabel:()=> 'Back to Hub',getElement:el=>el,
+      statusHost:dialog.querySelector('#gate-scan-status'),
+      speak:text=>NarbeVoiceManager.speak(text),
+      onHighlight(item,state){
+        dialog.dataset.scanIndex=String(state.index);dialog.dataset.scanSuspended=String(state.suspended);dialog.dataset.scanState=state.parked?'parked':state.braked?'paused':NarbeScanManager.getSettings().autoScan?'running':'step';
+        if(!owns()||state.suspended)return;
+        drawing=true;try{(item||dialog).focus({preventScroll:true});}finally{drawing=false;}
+      },onSelect:item=>item.click()});
+    back.addEventListener('focus',()=>{if(!drawing&&owns()&&scanner.getState().id!==back.id)scanner.open([back],{restoreId:back.id});});
   }
   function update(){
     const available=BennyExtension.supports(capability);
-    if(available){if(dialog?.open){dialog.close();selected=false;resetInput();restartScan();}return;}
+    if(available){if(dialog?.open){dialog.close();sync();signal();}return;}
     if(!dialog){
-      dialog=document.createElement('dialog');dialog.id='companion-required';dialog.style.cssText='max-width:560px;background:#101c2c;color:white;border:2px solid #83caff;border-radius:16px;padding:28px;font:20px system-ui';
-      dialog.innerHTML='<h2>This tool is unavailable</h2><p>Your work is kept while this tool reconnects.</p><button type="button" id="gate-back">Back to Hub</button><details style="margin-top:24px;font-size:14px"><summary>Settings</summary><p>Enable Benny’s Hub Companion, then reload this page if needed.</p><p role="status" id="gate-status"></p><button type="button" id="gate-retry">Check again</button> <a href="'+setup+'" target="_blank" rel="noopener">Setup instructions</a></details>';
-      const retry=dialog.querySelector('#gate-retry'),back=dialog.querySelector('#gate-back');for(const b of [retry,back])b.style.cssText='font:inherit;padding:12px;margin:8px;cursor:pointer';
-      retry.onclick=async()=>{dialog.querySelector('[role=status]').textContent='Checking…';await BennyExtension.check();if(!BennyExtension.supports(capability))dialog.querySelector('[role=status]').textContent='Not connected. Enable the extension and reload this page.';};
-      back.onclick=()=>{if(parent!==window)parent.postMessage({action: 'focusBackButton'},location.origin);else location.href='../../../index.html';};
+      dialog=document.createElement('dialog');dialog.id='companion-required';dialog.tabIndex=-1;
+      dialog.style.cssText='max-width:560px;background:#101c2c;color:white;border:2px solid #83caff;border-radius:16px;padding:28px;font:20px system-ui';
+      dialog.innerHTML='<h2>This tool is unavailable</h2><p>Your work is kept while this tool reconnects.</p><div id="gate-scan-status"></div><button type="button" id="gate-back">Back to Hub</button><details data-scan-exclude style="margin-top:24px;font-size:14px"><summary>Settings</summary><p>Enable Benny’s Hub Companion, then reload this page if needed.</p><p role="status" id="gate-status"></p><button type="button" id="gate-retry">Check again</button> <a href="'+setup+'" target="_blank" rel="noopener">Setup instructions</a></details>';
+      const retry=dialog.querySelector('#gate-retry'),back=dialog.querySelector('#gate-back');
+      for(const b of [retry,back])b.style.cssText='font:inherit;padding:12px;margin:8px;cursor:pointer';
+      retry.onclick=async()=>{dialog.querySelector('#gate-status').textContent='Checking…';await BennyExtension.check();if(!BennyExtension.supports(capability))dialog.querySelector('#gate-status').textContent='Not connected. Enable the extension and reload this page.';};
+      back.onclick=()=>{if(parent!==window)parent.postMessage({action:'focusBackButton'},location.origin);else location.href='../../../index.html';};
       dialog.addEventListener('cancel',e=>e.preventDefault());
-      back.addEventListener('focus',()=>{selected=true;});
+      dialog.querySelector('details').addEventListener('toggle',sync);
       document.body.append(dialog);
+      createScanner();
     }
     if(!dialog.open){
-      dialog.showModal();dialog.tabIndex=-1;dialog.focus();selected=false;resetInput();restartScan();
-      window.NarbeVoiceManager?.speak('This tool is unavailable. Your work is kept while this tool reconnects.');
+      dialog.showModal();dialog.focus();resetInput();scanner.setSuspended(false);scanner.open([dialog.querySelector('#gate-back')]);signal();
+      const parkingLabel=NarbeScanManager.isParkingEnabled();
+      scanner.announceCurrent('This tool is unavailable. Your work is kept while this tool reconnects.'+(parkingLabel?' Park.':''),{parkingLabel});
     }
   }
-  // Existing app scan listeners must not activate controls behind the reconnect dialog.
-  for(const type of ['keydown','keyup'])window.addEventListener(type,e=>{
-    if(!dialog?.open)return;e.stopImmediatePropagation();
-    if(e.target?.closest('details'))return;
+  function input(e){
+    if(!dialog?.open)return;
     if(!['Space','Enter','NumpadEnter'].includes(e.code))return;
+    // Details belongs to native pointer/typing controls; block only the app behind it.
+    e.stopImmediatePropagation();if(e.target?.closest('details')||!owns())return;
     e.preventDefault();
-    if(type==='keydown'){
-      if(e.repeat||pressed)return;pressed={code:e.code,back:false};
-      if(e.code==='Space')holdTimer=setTimeout(()=>{if(!pressed)return;pressed.back=true;focusBack();repeatTimer=setInterval(focusBack,window.NarbeScanManager?.getScanInterval()||2000);},3000);
+    if(e.type==='keydown'){
+      if(e.repeat||pressed)return;
+      pressed={code:e.code,back:false,braking:e.code==='Space'&&scanner.brakePress()};
+      if(!pressed.braking)scanner.setInputHeld(true);
+      if(e.code==='Space'&&!pressed.braking)holdTimer=setTimeout(()=>{if(!pressed)return;pressed.back=true;scanner.step(-1);repeatTimer=setInterval(()=>scanner.step(-1),NarbeScanManager.getScanInterval());},3000);
     }else if(pressed?.code===e.code){
-      const press=pressed;resetInput();
-      if(e.code==='Space'){if(!press.back)focusBack();}
-      else if(selected&&document.activeElement===dialog.querySelector('#gate-back'))dialog.querySelector('#gate-back').click();
+      const press=pressed;clearTimeout(holdTimer);clearInterval(repeatTimer);pressed=null;
+      if(e.code==='Space'){if(press.braking)scanner.brakeRelease();else if(!press.back)scanner.step(1);}
+      else scanner.select();
+      scanner.setInputHeld(false);
     }
-  },true);
-  window.addEventListener('benny-extension-change',update);
+  }
+  window.addEventListener('benny-extension-change',()=>{if(document.readyState!=='loading')update();});
   window.addEventListener('blur',resetInput);
-  document.addEventListener('DOMContentLoaded',()=>{window.NarbeScanManager?.subscribe(restartScan);update();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInput();});
+  document.addEventListener('narbe-input-cancelled',()=>{resetInput();if(scanner){scanner.setSuspended(true);scanner.setSuspended(!owns());}});
+  document.addEventListener('DOMContentLoaded',()=>{
+    // Registered after the single global cooldown guard and before app bubble handlers.
+    window.addEventListener('keydown',input,true);window.addEventListener('keyup',input,true);
+    let auto=NarbeScanManager.getSettings().autoScan;
+    NarbeScanManager.subscribe(next=>{if(auto!==next.autoScan&&pressed&&!pressed.braking){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed.back=true;}auto=next.autoScan;});
+    update();
+  });
 })();

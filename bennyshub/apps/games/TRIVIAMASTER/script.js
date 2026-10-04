@@ -120,7 +120,7 @@ function speak(text) {
     }
 
     if (window.NarbeVoiceManager) {
-        window.NarbeVoiceManager.speak(text);
+        return window.NarbeVoiceManager.speak(text);
     } else {
         // Fallback if manager not available
         if (!state.settings.tts) return;
@@ -623,6 +623,7 @@ function onEnterShortPress() {
 
 function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
+        if(window.classicChoiceDown?.(e)) return;
         if (e.code === 'Space') {
             if (!state.input.spaceHeld) {
                 state.input.spaceHeld = true;
@@ -638,6 +639,7 @@ function setupEventListeners() {
     });
 
     document.addEventListener('keyup', (e) => {
+        if(window.classicChoiceUp?.(e)) return;
         if (e.code === 'Space') {
             // Clear timers first
             clearTimeout(state.timers.space);
@@ -850,15 +852,22 @@ function setupEventListeners() {
             document.getElementById('load-game-warning-overlay').classList.add('hidden');
             resetScanning();
         } else if (action === 'clear-custom-games') {
-             if (confirm("Are you sure you want to clear all custom saved games? This cannot be undone.")) {
-                 localStorage.removeItem('trivia_game_library');
-                 localStorage.removeItem('trivia_custom_games'); // Legacy cleanup
-                 
-                 TRIVIA_DATA = {};
-                 
-                 speak("All custom games cleared. Reloading.");
-                 setTimeout(() => window.location.reload(), 1000);
-             }
+            const overlay = document.getElementById('editor-warning-overlay');
+            const original = overlay.innerHTML;
+            overlay.innerHTML = '<div class="pause-content"><h2>Clear saved games?</h2><p>This deletes custom games saved in this browser. This cannot be undone.</p><button class="scannable" data-action="cancel-clear">Cancel</button><button class="scannable" data-action="confirm-clear">Clear saved games</button></div>';
+            const close = () => { overlay.classList.add('hidden'); overlay.innerHTML = original; resetScanning(); };
+            overlay.querySelector('[data-action="cancel-clear"]').onclick = close;
+            overlay.querySelector('[data-action="confirm-clear"]').onclick = () => {
+                close();
+                localStorage.removeItem('trivia_game_library');
+                localStorage.removeItem('trivia_custom_games');
+                TRIVIA_DATA = {};
+                speak('All custom games cleared. Reloading.');
+                setTimeout(() => window.location.reload(), 1000);
+            };
+            overlay.classList.remove('hidden');
+            speak('Clear custom saved games? This cannot be undone.');
+            resetScanning();
         } else if (action === 'proceed-load-game') {
             document.getElementById('load-game-warning-overlay').classList.add('hidden');
             triggerFileLoad();
@@ -1580,12 +1589,7 @@ function loadQuestion() {
     state.questionStartTime = Date.now();
     resetScanning();
 
-    // Start scanning on the Question Text immediately
-    const qIndex = state.activeElements.findIndex(el => el.id === 'question-text-wrapper');
-    if (qIndex !== -1) {
-        state.currentIndex = qIndex - 1;
-        scanNext();
-    }
+    // Fresh questions start at the shared unselected step.
 }
 
 function handleAnswer(btn) {
@@ -1804,6 +1808,50 @@ function togglePause() {
     // init();
 // });
 // New Start Logic: Just Init, let loadGamesList handle display
+// Explicit screen/overlay mapping; answer feedback and media readout retain native ownership.
+(function(){
+ const status=document.createElement('div');status.id='classic-scan-status';status.hidden=true;status.style.cssText='display:none;grid-column:1/-1;width:100%;flex-shrink:0';
+ const rawSpeak=speak,rawStart=startScanning,rawNext=scanNext,rawPrev=scanPrev,rawSelect=selectCurrent;
+ let heldSpace=false,heldEnter=false,braking=false,cancelSpace=false,mediaRest=false,lastItem=null,lastAuto=NarbeScanManager.getSettings().autoScan,syncing=false;
+ function special(el){return el?.id==='media-container'||el?.id==='question-text-wrapper'}
+ function describe(){
+  let parent=['editor-warning-overlay','load-game-warning-overlay'].map(id=>document.getElementById(id)).find(el=>el&&!el.classList.contains('hidden'));
+  if(!parent&&state.isPaused){const p=document.getElementById('pause-overlay');if(!p.classList.contains('hidden'))parent=p}
+  if(!parent)parent=document.querySelector('.screen.active');if(!parent)return null;
+  if(parent.id==='game-screen'&&state.answerLocked)return null;
+  const key=parent.id+(parent.id==='game-screen'?':'+state.currentCategory+':'+state.currentQuestionIndex:parent.id==='category-selection'?':'+state.categoryPage:parent.id==='game-selection'?':'+state.gamePage:'');
+  const elements=getScannables().filter(el=>el&&!el.disabled&&el.getClientRects().length);state.activeElements=elements;
+  const counts=new Map();const items=elements.map((element,index)=>{const base=element.id||(element.dataset.action?[element.dataset.action,element.dataset.path,element.dataset.category,element.dataset.index,element.dataset.action==='answer'?element.innerText:''].filter(Boolean).join(':'):element.innerText);const n=counts.get(base)||0;counts.set(base,n+1);return{id:key+':'+base+':'+n,label:element.innerText||element.getAttribute('aria-label')||'Button',element,nativeIndex:index}});
+  if(status.parentElement!==parent)parent.prepend(status);return{key,items,statusHost:status};
+ }
+ const adapter=NarbeChoiceScanAdapter.create({holdThreshold:config.longPress,stateHost:document.body,speak:text=>NarbeVoiceManager.speak(text),onHighlight(item,s){
+  document.querySelectorAll('.scanned').forEach(el=>el.classList.remove('scanned'));state.currentIndex=item?.nativeIndex??-1;item?.element.classList.add('scanned');
+  if(item?.id!==lastItem){updateImagePopup(item?.element||null);if(item&&!syncing){audio.playScan();item.element.scrollIntoView({block:'nearest'})}mediaRest=!!item&&special(item.element)&&NarbeScanManager.getSettings().autoScan;lastItem=item?.id||null;adapter.setInputHeld(heldEnter||heldSpace&&!braking||mediaRest)}
+  status.hidden=!(s.parked);status.style.display=status.hidden?'none':'flex';if(s.index<0&&document.activeElement?.closest('.scannable'))document.activeElement.blur();
+ },onSelect(item){
+  if(NarbeScanManager.getSettings().autoScan&&special(item.element)){
+   const next=adapter.context.items[item.nativeIndex+1];mediaRest=false;adapter.setInputHeld(heldEnter||heldSpace&&!braking);adapter.sync(adapter.context,{fresh:true,restoreId:next?.id||null});return;
+  }
+  rawSelect();sync();
+ }});
+ function sync(options){const next=describe();if(!next){status.hidden=true;status.style.display='none';mediaRest=false;adapter.sync(null);return false}if(!NarbeScanManager.getSettings().autoScan)mediaRest=false;adapter.setInputHeld(heldEnter||heldSpace&&!braking||mediaRest);syncing=true;try{adapter.sync(next,options)}finally{syncing=false}
+  for(const item of adapter.context.items){const el=item.element;if(el.dataset.choiceBound)continue;el.dataset.choiceBound='true';el.addEventListener('click',()=>{sync();const current=adapter.context?.items.find(x=>x.element===el);if(current)adapter.align(current.id);const key=adapter.context?.key;queueMicrotask(()=>{sync();if(adapter.context?.key===key&&key==='settings-screen')adapter.announce()})})}return true;
+ }
+ function wrap(name){const native=window[name];window[name]=function(...args){const result=native.apply(this,args);sync();return result}}
+ for(const name of ['showScreen','updateSettingsUI','loadCategories','loadQuestion','handleAnswer','togglePause','endGame'])wrap(name);
+ resetScanning=function(){updateImagePopup(null);state.activeElements=getScannables();sync();startScanning()};
+ startScanning=function(){clearInterval(state.scanTimer);state.scanTimer=null;if(!sync())rawStart()};
+ scanNext=function(){if(sync()){mediaRest=false;adapter.setInputHeld(heldEnter||heldSpace&&!braking);adapter.step(1)}else rawNext()};
+ scanPrev=function(){if(sync()){mediaRest=false;adapter.setInputHeld(heldEnter||heldSpace&&!braking);adapter.step(-1)}else rawPrev()};
+ selectCurrent=function(){if(sync())adapter.select();else rawSelect()};
+ speak=function(text){sync();if(state.isPaused){const allowed=['Game Paused','Game Resumed','I need help','Voice changed'].some(x=>text?.includes(x))||[...document.querySelectorAll('#pause-overlay .scannable,#pause-overlay h2,#pause-overlay p')].some(el=>(el.innerText||el.getAttribute('aria-label'))===text);if(!allowed)return rawSpeak(text)}return adapter.active?adapter.announce(text):rawSpeak(text)};
+ window.classicChoiceDown=function(e){if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;if(e.repeat)return true;sync();if(e.code==='Space'){heldSpace=true;braking=!!adapter.brakePress();if(braking){e.preventDefault();adapter.setInputHeld(heldEnter||mediaRest);return true}}else heldEnter=true;adapter.setInputHeld(heldEnter||heldSpace||mediaRest);return false};
+ window.classicChoiceUp=function(e){if(!['Space','Enter','NumpadEnter'].includes(e.code))return false;if(e.code==='Space'){heldSpace=false;if(braking||cancelSpace){e.preventDefault();if(braking)adapter.brakeRelease();braking=cancelSpace=false;state.input.spaceHeld=false;clearTimeout(state.timers.space);clearInterval(state.timers.spaceRepeat);adapter.setInputHeld(heldEnter||mediaRest);return true}}else heldEnter=false;adapter.setInputHeld(heldEnter||heldSpace||mediaRest);return false};
+ function cancel(){heldSpace=heldEnter=braking=cancelSpace=false;clearTimeout(state.timers.space);clearInterval(state.timers.spaceRepeat);state.input.spaceHeld=state.input.enterHeld=false;adapter.cancelInput();adapter.setInputHeld(mediaRest)}
+ NarbeScanManager.subscribe(next=>{if(next.autoScan!==lastAuto&&heldSpace&&!braking){cancelSpace=true;clearTimeout(state.timers.space);clearInterval(state.timers.spaceRepeat)}lastAuto=next.autoScan;sync()});window.addEventListener('blur',cancel);document.addEventListener('narbe-input-cancelled',cancel);
+ window.classicChoice={getState:()=>({...adapter.getState(),mediaRest}),getItems:()=>adapter.context?.items.map(({id,label})=>({id,label}))||[],sync};sync();
+})();
+
 init();
 loadGamesList();
 

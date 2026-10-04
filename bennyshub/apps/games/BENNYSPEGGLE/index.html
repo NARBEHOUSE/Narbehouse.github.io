@@ -15,7 +15,7 @@
   <div id="stage" aria-hidden="true"></div>
 
   <!-- The Play / Pause choice before each shot: this frame lights the board. -->
-  <div id="choiceFrame" role="button" aria-label="Play this shot"><span class="chip">Play</span></div>
+  <div id="choiceFrame" role="button" aria-label="Take Shot"><span class="chip">Take Shot</span></div>
 
   <!-- HUD -->
   <div id="hud" aria-hidden="true">
@@ -71,6 +71,11 @@
 
 <!-- Shared hub scripts -->
 <script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
