@@ -1,1 +1,1 @@
-d8822dcb55df204d55af00b33206a0ac9cd809e561fde4170d2d4a8fb7a66c25  dist/bennyshub/downloads/bennys-hub-companion-1.0.8-journal-storage.zip
+4db777db1037e3ff9fd7469211ab385302cdebf25acb116cd73d433b0bbf3eab  dist/bennyshub/downloads/bennys-hub-companion-1.0.8-keyboard-wrap.zip

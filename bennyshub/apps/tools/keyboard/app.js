@@ -374,7 +374,7 @@
     if (item.kind === 'setting') { settingsRowIndex = item.column; selectSettingsItem(); if (inSettingsMode) refreshChoices(); return; }
     if (item.kind === 'row') {
       if (item.row === 0) textBar.click();
-      else choiceScan.enterGroup(childChoices(item.row));
+      else choiceScan.enterGroup(childChoices(item.row),{wrap:true});
       return;
     }
     item.element.click();

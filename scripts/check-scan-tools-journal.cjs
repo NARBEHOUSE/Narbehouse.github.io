@@ -84,12 +84,12 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
    for(let i=0;i<3;i++)await tap('Space');assert.equal(await identity(),'row:1');await tap('Enter');assert.equal(await identity(),'key:A');
    await page.keyboard.down('Enter');await advance(page,3000);await page.keyboard.up('Enter');await advance(page,65);assert.equal(await identity(),'row:1');
    await tap('Enter');await tap('Enter');await expect(page.locator('#textBar')).toHaveText('A|');assert.equal(await identity(),'row:1');
-   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await state(),'-1');await expect(surface).toHaveAttribute('data-choice-context','keyboard');
+   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await identity(),'key:A');await expect(surface).toHaveAttribute('data-choice-context','keyboard-child:2');
    await page.locator('#keyboard .send').click();await advance(page,1000);if(await page.locator('#entriesScreen [data-action="return-today"]').isEnabled())await page.locator('#entriesScreen [data-action="return-today"]').click();await page.locator('.entry-item').first().click();assert.equal(await state(),'-1');await page.locator('[data-action="delete-entry"]').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');await page.locator('[data-action="cancel-delete"]').click();assert.equal(await state(),'-1');await page.locator('[data-action="close-entry-view"]').click();
    await page.locator('[data-action="question-entry"]').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');
    await tap('Space');assert.equal(await identity(),'action:new-question');await tap('Enter');assert.equal(await identity(),'action:new-question');
    await page.locator('#questionModal [data-action="close-modal"]').click();
-   pass(tool,'settings keep mode identity; calendar child Back restores row and month opens blank; keyboard selects/restores row, exits child loop to root blank; question, saved-entry and delete-cancel dialogs start blank');
+   pass(tool,'settings keep mode identity; calendar child Back restores row and month opens blank; keyboard selects/restores row, wraps within the selected keyboard row; question, saved-entry and delete-cancel dialogs start blank');
    report.tools[tool]={...report.tools[tool],result:'passed',checks:report.checks.filter(x=>x.startsWith(tool+':'))};await page.close();
  }
  assert.deepEqual(report.errors,[]);report.result='passed';

@@ -2,14 +2,14 @@
 
 Companion 1.0.8 is a prepared local candidate, not a submitted or approved update. On October 4, 2026, the owner reported 1.0.7 submitted and pending review, with 1.0.5 public. That earlier status is the owner's report, not an independent publisher-dashboard verification. Use the [existing Chrome listing](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc) for updates; no Edge Add-ons listing URL has been supplied. Website deployment and store approval are separate.
 
-The current candidate keeps manifest version 1.0.8 and uses the separate `journal-storage` filename revision. It adds Companion-managed storage for Journal, Keyboard, Streaming and Day Hub, with caregiver backup/restore through the existing My data page. The original 1.0.8 ZIP remains immutable. It also retains the Netflix framing fix: provider centering transforms could move the fitted picture outside its frame so only a quarter remained visible. The fix adds no permissions and preserves captions and the reserved control area. The 1.0.7 archive and earlier releases remain immutable. [Validation](VALIDATION.md) describes acceptance and remaining live/manual checks. [The implementation map](../SCAN-UPGRADE-CHANGES.md) records web changes and the locked Electron plan.
+The current candidate keeps manifest version 1.0.8 and uses the separate `keyboard-wrap` filename revision. It adds Companion-managed storage for Journal, Keyboard, Streaming and Day Hub, with caregiver backup/restore through the existing My data page. It also includes the shared keyboard-row compatibility repair. The previous journal-storage candidate and original 1.0.8 ZIP remain immutable. It also retains the Netflix framing fix: provider centering transforms could move the fitted picture outside its frame so only a quarter remained visible. The fix adds no permissions and preserves captions and the reserved control area. The 1.0.7 archive and earlier releases remain immutable. [Validation](VALIDATION.md) describes acceptance and remaining live/manual checks. [The implementation map](../SCAN-UPGRADE-CHANGES.md) records web changes and the locked Electron plan.
 
 ## Current files
 
 | Local path | Purpose |
 | --- | --- |
-| `releases/1.0.8-journal-storage/bennys-hub-companion-1.0.8-journal-storage.zip` | Current production-origin candidate, 29 members; not submitted or approved. |
-| `releases/1.0.8-journal-storage/extension/` | Exact unpacked production candidate for isolated HTTPS testing. |
+| `releases/1.0.8-keyboard-wrap/bennys-hub-companion-1.0.8-keyboard-wrap.zip` | Current production-origin candidate, 29 members; not submitted or approved. |
+| `releases/1.0.8-keyboard-wrap/extension/` | Exact unpacked production candidate for isolated HTTPS testing. |
 | `submission/COMPANION-SHA256SUMS.txt` | Tracked expected archive checksum used by CI. |
 | `extension/` | Workspace extension for local preview; not the production-origin package. |
 | `dist/` | Generated public website; Pages uploads its contents only. |
@@ -35,10 +35,10 @@ For extension-only work:
 
 ```text
 node scripts/sync-companion-shared.cjs --check
-node scripts/package-companion.cjs --revision=journal-storage --check
+node scripts/package-companion.cjs --revision=keyboard-wrap --check
 ```
 
-Omit `--check` from the package command only when intentionally preparing a new immutable candidate. If canonical helpers were intentionally changed, run the sync script without `--check` before packaging. The `journal-storage` revision suffix is required to keep the earlier 1.0.8 archive unchanged. Manifest version stays 1.0.8 as requested. Do not replace an already submitted version with changed runtime bytes. Legacy Python full-kit/source-handoff commands are not part of this release path.
+Omit `--check` from the package command only when intentionally preparing a new immutable candidate. If canonical helpers were intentionally changed, run the sync script without `--check` before packaging. The `keyboard-wrap` revision suffix keeps the earlier journal-storage candidate and original 1.0.8 archive unchanged. Manifest version stays 1.0.8 as requested. Do not replace an already submitted version with changed runtime bytes. Legacy Python full-kit/source-handoff commands are not part of this release path.
 
 ## Website publication
 

@@ -68,3 +68,40 @@ test('adapter forwards parking ownership for composed labels without cancelling 
   await h.tick(1);assert.equal(h.adapter.getState().id,'a');
  }
 });
+
+// Keyboard rows are a continuous task: wrapping must never switch to row selection.
+test('keyboard rows wrap repeatedly in both directions and Back restores the same row',()=>{
+ const h=harness();h.adapter.sync(h.root);h.adapter.align('b');
+ const child={key:'keyboard:b',statusHost:{},items:['A','B','C','D','E','F'].map(id=>({id,label:id}))};
+ h.adapter.enterGroup(child,{wrap:true});
+ for(const direction of [-1,1])for(let i=0;i<25;i++){
+  const before=h.adapter.getState().index;h.adapter.step(direction);
+  assert.equal(h.adapter.getState().index,(before+direction+6)%6);
+  assert.equal(h.adapter.getState().depth,1);assert.equal(h.adapter.context.key,child.key);
+ }
+ const remembered=h.adapter.getState().id;h.adapter.sync({...child,items:[...child.items]});
+ assert.equal(h.adapter.getState().id,remembered);h.adapter.step(-1);assert.equal(h.adapter.getState().depth,1);
+ h.adapter.back({restore:true});assert.equal(h.adapter.getState().id,'b');assert.equal(h.adapter.getState().depth,0);
+ // The keyboard opt-in cannot leak to other nested choices.
+ h.adapter.enterGroup(child);h.adapter.step(-1);assert.equal(h.adapter.getState().index,-1);assert.equal(h.adapter.getState().depth,0);
+});
+
+test('keyboard wrapping survives settings changes, Auto brake, speech wait and root parking',async()=>{
+ for(const interval of [1000,2000,3000,4000,5000]){
+  const h=harness();h.adapter.sync(h.root);h.adapter.align('a');
+  const child={key:'keys',statusHost:{},items:[{id:'A',label:'A'},{id:'B',label:'B'}]};
+  h.adapter.enterGroup(child,{wrap:true});h.update({autoScan:true,scanInterval:interval,parking:'auto',loopsBeforeParking:1});
+  await h.tick(interval*6);assert.equal(h.adapter.getState().id,'A');assert.equal(h.adapter.getState().depth,1);assert.equal(h.adapter.getState().parked,false);
+  h.adapter.brakePress();h.adapter.brakeRelease();await h.tick(interval*3);assert.equal(h.adapter.getState().id,'A');assert.equal(h.adapter.getState().braked,true);
+  h.adapter.brakePress();h.adapter.brakeRelease();await h.tick(interval-1);assert.equal(h.adapter.getState().id,'A');await h.tick(1);assert.equal(h.adapter.getState().id,'B');
+  h.update({waitForSpeech:true});await h.tick(interval*3);assert.equal(h.adapter.getState().id,'B');h.spoken.at(-1).end();await h.tick(interval-1);assert.equal(h.adapter.getState().id,'B');await h.tick(1);assert.equal(h.adapter.getState().id,'A');
+  h.update({autoScan:false,waitForSpeech:false});h.adapter.step(-1);assert.equal(h.adapter.getState().id,'B');assert.equal(h.adapter.getState().depth,1);
+  h.adapter.back({restore:true});h.update({autoScan:true});await h.tick(interval*5);assert.equal(h.adapter.getState().parked,true);assert.equal(h.adapter.getState().depth,0);
+ }
+});
+
+test('single-key keyboard rows wrap and removing the selected prediction clears safely',()=>{
+ const h=harness();h.adapter.sync(h.root);h.adapter.align('a');h.adapter.enterGroup({key:'predictions',statusHost:{},items:[{id:'word',label:'Word'}]},{wrap:true});
+ for(const d of [-1,1,-1]){h.adapter.step(d);assert.equal(h.adapter.getState().id,'word');assert.equal(h.adapter.getState().depth,1);}
+ h.adapter.sync({key:'predictions',statusHost:{},items:[]});assert.equal(h.adapter.getState().index,-1);assert.equal(h.adapter.getState().depth,0);
+});

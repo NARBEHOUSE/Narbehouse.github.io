@@ -449,7 +449,7 @@
   function selectChoice(item) {
     if(item.kind==='keyboard-row') {
       if(item.row===0){speak(keyboardBuffer);return;}
-      choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:keyboardChildren(item.row),statusHost});
+      choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:keyboardChildren(item.row),statusHost},{wrap:true});
     } else if(item.kind==='calendar-row') {
       choiceScan.enterGroup({key:'calendar-child:'+item.group.key,items:item.group.buttons.map(itemFor),statusHost});
       $('#calendarScanHint').textContent='Space: next choice. Enter: select. Hold Enter: return to this row.';

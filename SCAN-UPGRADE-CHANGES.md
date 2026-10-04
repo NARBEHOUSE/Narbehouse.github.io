@@ -271,6 +271,61 @@ Website cache advances to v29. Offline acceptance verifies the new scan-manager 
 | `scripts/check-scan-offline.cjs` | WEB-ONLY | Verify cache v29, exact manager bytes and enabled five-second Step setting offline. |
 | `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY | Record this fix and its completed desktop application. |
 
+## Accessibility documentation reconciliation — 2026-10-04
+
+Verified the shipped sources before editing. Web ACCESSIBILITY.md §§4, 7–9, 11 and 12 now records all five scan speeds, all 26 catalog games (five previously missing), current cancellation handlers, optional batting/pause routes, actual Bowling oscillation periods and the distinct board scan models. Pause coverage distinguishes scan choices from pointer-only buttons and native holds; Racer is not the only remaining hold-dependent game. BENNYSMINIGOLF is identified as the separate legacy direct-URL build.
+
+The user separately requested matching Electron documentation and Matchy Match edits in this session. The desktop root ACCESSIBILITY.md retains its native storage, bridge and Python notes, uses its actual 28-game catalog, adds Pet Pals and Sphere Splash notes, and records seven of eight tool cancellation handlers (Web Search has none). Desktop scan speeds were already correct. Desktop Matchy Match lacks the web full spoken consequence warning on open; the document now states that gap. Show n Sound's Continue-first warning remains outside the authorized app-code change.
+
+In each build, the only application-code change swaps Cancel and Continue (Mouse Needed) in Matchy Match's editorWarning array. Existing actions, speech, defaults, timing, mechanics and scan behavior are preserved. Originals of both edited desktop files and all three web files are backed up under Website Backups/Accessibility-doc-sync-20261004-1791149761767.
+
+Validation: npm test passed **203/203** web tests. Four headless Edge renderer checks (web/desktop source × Step/Auto) verified fresh blank focus, inert blank Enter, Cancel as the first scanned choice, return to Settings and no editor tab on Cancel. Electron has no npm test script; its native runtime was not launched. Exact comparison against backups verifies that each script differs only by the requested two-item order. Git diff --check passes.
+
+| Files | Scope / port | Change |
+| --- | --- | --- |
+| `bennyshub/ACCESSIBILITY.md` | SHARED / ADAPTED ON ELECTRON | Reconcile documented controls, catalog coverage, cancellation history and pause routes. |
+| `bennyshub/apps/games/BENNYSMATCHYMATCH/script.js` | ADAPTER / DONE ON ELECTRON | Put Cancel before Continue in the editor warning; preserve all other code. |
+| Electron `ACCESSIBILITY.md` | DESKTOP / DONE ON ELECTRON | Apply equivalent corrections with the desktop catalog, extra games and actual tool/warning gaps. |
+| Electron `bennyshub/apps/games/BENNYSMATCHYMATCH/script.js` | DESKTOP / DONE ON ELECTRON | Apply only the same two-item warning reorder to the existing desktop file. |
+| `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY | Record authorized scope, backups and validation. |
+
+## Keyboard row compatibility repair — 2026-10-04
+
+The owner explicitly requested repairs in both the website and the Electron app. This scoped desktop repair is authorized separately from the historical locked port plan below. The previous accessibility documentation and Matchy Match warning-order changes remain intact.
+
+Compared the pre-conversion Keyboard, Journal and Streaming code in `Bennys-Hub-tools-before-choice-conversion-20261003` with the desktop backup dated `2026-10-04T14-37-42-938Z` (including Messenger). Native keyboard keys used modulo wrapping in both directions. The shared child-boundary policy had replaced that with a return to root blank, so another held reverse tick selected the bottom row. Keyboard groups now opt into `enterGroup(children, {wrap:true})`; root blanks, non-keyboard groups, app-owned hold thresholds, defaults and gameplay remain under their existing rules. Keyboard-local cycles do not count as completed root parking loops. Selection and native Back routes still leave the row. RT Convo keeps its existing five-second return to the text row.
+
+Touched-file backups and the guarded desktop staging manifest are in `../Website Backups/Keyboard-row-wrap-before-20261004-1791151042905`. Existing release archives were not changed. Desktop files are patched against their own originals, preserving desktop-specific integrations and data.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| `bennyshub/shared/choice-scan.js` | SHARED / DONE ON ELECTRON | Opt-in local wrapping on the group stack; no root parking count for keyboard-local cycles. |
+| `extension/shared/choice-scan.js` | WEB-ONLY / NOT NEEDED | Keep the checked-in Companion helper byte-identical; no extension install or release. |
+| `bennyshub/apps/tools/keyboard/app.js`, `bennyshub/apps/tools/journal/app.js`, `bennyshub/apps/tools/streaming/app.js`, `bennyshub/apps/games/NARBEANIMALFRIENDS/js/input.js` | SHARED / DONE ON ELECTRON | Opt keyboard rows into wrapping; calendar and other nested choices keep their existing behavior. |
+| `bennyshub/apps/tools/ytsearch/js/scanning.js` | WEB-ONLY / NOT NEEDED | Wrap the YouTube Search keyboard row. |
+| Desktop `bennyshub/apps/tools/messenger/keyboard.js`, `bennyshub/apps/tools/search/app.js`, `bennyshub/apps/tools/rt-convo/index.html`, `bennyshub/apps/games/NARBEPETPALS/js/scan-access.js` | DESKTOP / DONE ON ELECTRON | Wrap composer, search, typing-mode and spelling rows. RT Convo non-typing board groups are unchanged. |
+| `bennyshub/ACCESSIBILITY.md`; desktop root `ACCESSIBILITY.md` | SHARED / ADAPTED ON ELECTRON | Section 4 documents keyboard-local wrapping and root parking. Desktop section 11 corrects handler coverage: direct inspection confirms Web Search also registers cancellation, so all eight tools do. |
+| `AGENTS.md`, `developer-guide.html` | WEB-ONLY / NOT NEEDED | Document the keyboard exception so the generic child-boundary rule cannot reintroduce this regression. |
+| `tests/choice-scan-adapter.test.cjs` | WEB-ONLY / NOT NEEDED | Regression tests for repeated forward/reverse wraps, single-item rows, redraw/removal, Back, default-group isolation, five speeds, Auto, brake, speech wait and root parking. |
+| `scripts/check-keyboard-row-wrap.cjs` | WEB-ONLY / TESTS BOTH SOURCES | Actual renderer regression suite with real key events and synthetic native services; optional `--desktop-root` and `--desktop-overlay`. |
+| `scripts/check-scan-tools-core.cjs`, `scripts/check-scan-tools-journal.cjs`, `scripts/check-scan-tools-streaming.cjs`, `scripts/check-scan-tools-ytsearch.cjs`, `scripts/check-scan-sports-animal-deep.cjs` | WEB-ONLY / NOT NEEDED | Correct earlier assertions that encoded keyboard child-to-root exits. |
+| `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY / NOT NEEDED | Record cause, authorization, backup, scope and validation. |
+
+Validation: the three new unit regressions failed against the original scanner and pass after repair. `npm test`: 206/206 passed. Renderer checks cover five web keyboards and eight desktop keyboards, each with three complete held-Space reverse cycles, forward wrap, release behavior, Auto, brake, settings changes, native Back and key selection. Keyboard and Messenger also run held reverse at the five-second scan speed with Auto Brake Off. Native messaging, credentials, microphone and backend writes are isolated; no message is sent. These are renderer checks of the actual app files, not a claim that the live Electron process or physical switch device was exercised. Results: `artifacts/keyboard-row-wrap/report.json`.
+
+## Authorized site publication — keyboard compatibility repair
+
+The owner requested publishing the completed fixes. GitHub Pages deploys the reviewed `dist` artifact on a push to `main`. Canonical scanner parity changes the Companion ZIP bytes, so the build uses a separate immutable `1.0.8-keyboard-wrap` candidate (manifest remains 1.0.8); the earlier journal-storage archive is preserved. No store submission is part of this website deployment.
+
+| Files | Scope / Electron status | Publication change |
+| --- | --- | --- |
+| `bennyshub/extension-setup.html` | WEB-ONLY / NOT NEEDED | Link the new immutable testing ZIP. |
+| `bennyshub/service-worker.js` | WEB-ONLY / NOT NEEDED | Increment the offline shell cache to v33. |
+| `extension/README.md`, `submission/START-HERE.md`, `submission/VALIDATION.md`, `submission/COMPANION-SHA256SUMS.txt` | RELEASE / NOT NEEDED | Document the exact candidate, preserved archive, keyboard validation and CI checksum. |
+| `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY / NOT NEEDED | Record the authorized publishing scope and required release metadata. |
+
+Publication metadata backups are in `../Website Backups/Keyboard-site-publish-20261004-1791151996892`. The package checksum is `4db777db1037e3ff9fd7469211ab385302cdebf25acb116cd73d433b0bbf3eab` (112,120 bytes, 29 members).
+
 ## ELECTRON PORT PLAN — LOCKED
 
 No desktop files were changed. This plan may start only after the user tests/confirms the web changes and explicitly says **"start the Electron pass."**

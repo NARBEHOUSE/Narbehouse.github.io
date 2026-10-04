@@ -64,15 +64,15 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
      await page.locator('#settingsCloseBtn').click();await advance(page,65);assert.equal(await state(),'-1');await tap('Space');assert.equal(await identity(),'btnTime');
      pass(tool,'ordinary setup typing remains native and closing setup opens a fresh blank choice menu');
    }else{
-     // The same-row task returns by identity, while completing a child row exits to root -1.
+     // The same-row task returns by identity, while a keyboard row wraps locally.
      for(let i=0;i<4;i++)await tap('Space');assert.equal(await identity(),'row:1');await tap('Enter');await expect(surface).toHaveAttribute('data-scan-depth','1');assert.equal(await identity(),'key:A');
      await page.keyboard.down('Enter');await advance(page,2000);await page.keyboard.up('Enter');await advance(page,65);assert.equal(await identity(),'row:1');
      await tap('Enter');await tap('Enter');await expect(page.locator('#textBar')).toHaveText('A|');assert.equal(await identity(),'row:1');
-     await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await state(),'-1');await expect(surface).toHaveAttribute('data-scan-depth','0');
+     await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await identity(),'key:A');await expect(surface).toHaveAttribute('data-scan-depth','1');
      await page.locator('#keyboard button.settings').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');
      await tap('Space');const setting=await identity();await tap('Enter');assert.equal(await identity(),setting);
      await page.locator('[data-setting="close"]').click();assert.equal(await state(),'-1');await expect(page.locator('#keyboard')).toBeVisible();
-     pass(tool,'long Back and letter selection restore the original row; row boundary returns to root blank; settings preserve changed-option identity');
+     pass(tool,'long Back and letter selection restore the original row; keyboard row boundary wraps to its first key; settings preserve changed-option identity');
    }
    report.tools[tool]={...report.tools[tool],result:'passed',checks:report.checks.filter(x=>x.startsWith(tool+':'))};await page.close();
  }

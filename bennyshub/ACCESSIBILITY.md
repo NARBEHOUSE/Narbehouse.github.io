@@ -244,14 +244,14 @@ NarbeVoiceManager.speak returns started, finished and cancel. Completion resolve
 - New menus, pages, results, confirmations and separate modals start at -1 with a full Auto interval. Owned title/park speech participates in Wait for Speech.
 - In-place settings changes, including Auto on/off, retain the same stable item ID. Live redraws preserve identity, never merely the index, and never activate. If the item disappears, clear safely to -1.
 - Back within a nested task restores the parent row/item by identity. A keyboard key returns to its prior row. Separate modal returns may explicitly start a fresh blank menu.
-- Only the root owns -1. A child row/group starts its item scan; finishing its loop exits to root -1.
+- Only the root owns -1. Keyboard rows wrap continuously in both directions, including held-Space reverse scanning and Auto scanning; crossing the first or last key never switches to row selection. Selecting a key or using the existing Back route returns to its row. Keyboard-local cycles do not count as root parking loops. Other child groups finish their loop at root -1.
 - Clear half-held key state and timers on blur, cancellation and ownership changes. Typing, native dialogs, editors and gameplay own their input while active.
 
 ### Input guard and native holds
 
 Ordinary choices act on release. Step Space advances; held Space scans backward at the saved interval. Preserve each surface's existing Space/Enter hold thresholds and native pause feedback. Do not promise a universal hold duration in player hints.
 
-NarbeScanManager owns Auto, interval (1/2/3/4 seconds), sensitivity (50/100/200/300 ms), parking, loops, brake and speech wait. It does not own native hold thresholds.
+NarbeScanManager owns Auto, interval (1/2/3/4/5 seconds), sensitivity (50/100/200/300 ms), parking, loops, brake and speech wait. It does not own native hold thresholds.
 
 Sensitivity is a cooldown and anti-rapid-press filter, **not a minimum press length**. A valid short press counts. Rejected keydown and matching keyup are consumed together. Do not add a second debounce, a 500 ms activation gate or desktop's old minimum-hold filter. Mouse and touch remain direct navigation.
 
@@ -472,8 +472,8 @@ Copy this when you add anything similar:
    screen. Put a dialog in front of it.
 2. **Put the safe option first in the scan order.** Cancel before Continue. If
    the player mis‑scans *again* inside the warning dialog, the accident should
-   land on the way out, not the way in. Trivia Master and Mini Golf do this;
-   Matchy Match currently lists Continue first, which is the wrong way round.
+   land on the way out, not the way in. Trivia Master, NARBE Mini Golf and
+   Matchy Match put the safe option first.
 3. **Trap the scan inside the dialog.** While the warning is open, the scan list
    must contain only the dialog's own buttons — a warning you can scan straight
    past is not a warning. Trivia Master's `getScannables()` is the model: it
@@ -499,28 +499,38 @@ back with a switch, warn before going in.
 
 ## 8. Per‑game notes
 
-The current web catalog contains 26 games. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See SCAN-UPGRADE-CHANGES.md for the verified surfaces and mechanical exclusions.
+The current web catalog contains **26 games**, verified against `apps/games/games.json`. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See §12 for scannable pause routes and their limits, and SCAN-UPGRADE-CHANGES.md for the verified surfaces and mechanical exclusions.
 
 | Game | In‑game input model |
 | --- | --- |
-| **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. |
-| **Benny's Bowling** | A two‑object scan layer opens every ball — the ball itself and the Pause button — scanned with Space and selected with Enter. Selecting the ball gives the shot: Space oscillates position, then aim, on a 5 s sweep — release to lock. Enter charges for power, non‑linear. Confirms on **release**, not press. Pause is a scan object rather than a hold gesture because hold‑Enter is already the charge. |
-| **Benny's P3GL** | Three modes — Cozy (never runs out of balls), Vivid and Hyper — each with three 20‑level campaigns. Two‑switch: **hold** Space to sweep the aim, release to stop, and each new press reverses direction so the player walks it onto the target; release Enter to fire. One‑switch: the aim sweeps by itself at the Aim speed; press Enter to freeze it and release to fire. Hold Enter to pause (ring and rising beeps). **Before Each Shot: Aim right away / Choose Play or Pause** puts a choice in front of every shot: blank, Pause/Options, Take Shot (the board), scanned and selected like a menu, so pausing never needs a hold. Aim speed defaults to Super slow; aim guide length, colour and size are settings. Includes a Campaign Editor. |
-| **Benny's Baseball** | Turn‑based play calling — scan the options, select — with one exception: the swing is **hold Enter to charge**, 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. That is a timing mechanic; §9 governs it. |
-| **Benny's Football** | Turn‑based play calling — scan the options, select. Throws scan the receivers and select one, then **hold Enter to charge** the power; field goals aim, then charge. **Easy Throw** in settings drops the charge and keeps the selection: pick the receiver and it throws at ideal power. The hub's shipped example of the §9 rule. |
+| **Benny's Race Tracks** | Two‑switch: hold Space = left, hold Enter = right. One‑switch: hold Enter to move the armed way, release to swap sides. Optional star per level; Cruise mode is no‑fail. During racing, switch pause requires holding Enter; the on-screen Pause button is clickable but is not a scan choice. |
+| **NARBE Racer (NARBE Kart / `NARBEKART`)** | Automatic acceleration. **Hold to Slide**: two switches steer left/right with Space/Enter; one switch holds to slide the armed way and releases to reverse it. **Press to Step**: two switches move one lane left/right on press; one switch selects the highlighted lane from the moving five-lane scan. Two-player play gives each player their own switch. Live-race pause remains hold-dependent (Enter, or either player's own switch); the clickable Pause button is not a scan choice. Cup/track selection carries the brief-taps pause-access notice. |
+| **Benny's Ballista** | Scan ammunition, then use **Easy Aim** to scan numbered targets and select to fire. **Pause is a scan choice on the ammo, Easy Aim and flight screens**, alongside zoom/change-ammo choices where available. Manual aiming instead holds Space to turn (each press reverses), then holds Enter to charge and releases to fire. Native Enter pause holds remain: 5 s in ordinary contexts, 7 s during manual aiming/charging. Includes the Castle Workshop. |
+| **Benny's Bowling** | Every ball starts with a scan between the bowling ball and Pause. Selecting the ball starts the shot: manual Space holds move position, then aim; release locks each. In Auto, position and aim sweep by themselves and Enter locks them. The full oscillation period is 20 s in manual mode and 10 s in Auto. Enter charges power and releases to bowl. Pause is a scan object before the shot; the charge remains a mechanic. |
+| **Benny's P3GL** | Three modes — Cozy (never runs out of balls), Vivid and Hyper — each with three 20-level campaigns. Two-switch: hold Space to sweep aim, release to stop; each new press reverses direction. Release Enter to fire. One-switch: aim sweeps at the Aim speed; press Enter to freeze it and release to fire. **Before Each Shot: Aim right away / Choose Play or Pause** optionally adds blank, Pause/Options, Take Shot before each shot. Without that choice, Enter holds pause (2 s in Auto, 5 s otherwise); with it on, use the Pause choice. Aim speed defaults to Super slow. Includes a Campaign Editor. |
+| **Benny's Baseball** | Turn-based play calling and field choices include Pause. **Batting: Pick a Swing** is the default without a saved preference: select Ready to Swing, hear the pitch, then scan Normal, Power, Bunt, Take Pitch or Pause while the ball waits near contact. **Hold to Charge** remains optional: 0–2 s bunt, 2–4 s normal, 4–6 s power, released against the pitch. §12 describes the no-hold route. |
+| **Benny's Football** | Scan play calls and receivers. Normally hold Enter to charge throws; field goals aim, then charge. **Easy Throw** removes the charge: select the receiver to throw at ideal power, or lock the aim to kick at ideal power. Pause is a scan choice in play calling and receiver selection. |
+| **Robot Football** | Scan play calls and receivers. Throws/kicks can charge on Enter and release; **Easy throw** (Basic) / **Charge throws and kicks** (Advanced) makes charging optional. Two-switch running holds Space left/Enter right; one-switch running holds Enter in the armed direction and releases to swap. Advanced **Run controls: Choose direction** waits between short movement bursts. Pause is scannable in the playbook, receiver selection, return choices, results and Choose direction controls; live hold-steering and kick mechanics keep their own input. |
 | **Benny's Basketball Shooter** | Oscillating power meter — the charge sweeps up and down, release to shoot. Same "stop the sweep" family as Bowling and P3GL, no reaction test. |
-| **Pickleball Rally** | Rally returns via scan/select. Built with SCSU, student creator Lily Flack. |
-| **NARBE Mini Golf** | 3D. Two-switch: hold Space to turn the aim (each new press reverses), hold Enter to charge and release to putt. One-switch: the aim sweeps by itself and Enter stops it. Hold Enter to pause; the **Easy Pause** setting (for players who can't hold) starts every turn with a scan between the putter and the Pause button, so pausing never needs a hold. A Power setting adds no-hold options — pick the strength from a list, or Automatic. The aim view never moves while aiming. Up to 4 players; includes a Course Creator. |
-| **Benny's Battle Boats** | Two‑stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2‑D grid with one switch. |
-| **Chess & Checkers, Connect Four, Tic Tac Toe** | Same two‑stage grid selection; scan pieces/columns, select, scan destinations, select. |
-| **Benny's Matchy Match** | Two‑stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
-| **Benny Says** | Simon‑style sequence repetition, deliberately **without** the timing pressure of the original. |
-| **Benny's Word Jumble / Trivia Master** | Scan letters or answers, select. Trivia Master includes a builder for your own quizzes. Trivia Master has **no hold‑to‑pause**: Pause is a scan stop after the last answer, and a long Enter press just selects. |
-| **Benny's Dice** | Select to roll, scan to choose which dice to keep. Yarkle, Fahtzee, Free Throw modes. |
-| **Benny's Bug Blaster** | Tower defence — scan placement positions and upgrades, select. Turn‑paced, not twitch. |
-| **Benny's Mega Slot** | Cause and effect: one press spins, immediate audio‑visual payoff. |
-| **Benny's Show n Sound** | Cause and effect: a spinning‑wheel See 'n Say. Press to spin, hear the panel named. Phaser‑based. |
-| **Benny's Fish Mystery** | Aim and charge the cast by scan, then **press to set the hook while the take is on** and **hold to reel**, easing off on a run. Timed on the hook, hold‑based on the reel; §9 governs both. Three.js, with a content editor. |
+| **Pickleball Rally** | Rally returns via scan/select. Switch pause uses an Enter hold; the visible Pause button is clickable, not part of the gameplay scan. Built with SCSU, student creator Lily Flack. |
+| **NARBE Mini Golf** | 3D. Two-switch: hold Space to turn aim (each press reverses), hold Enter to charge and release to putt. One-switch: aim sweeps by itself and Enter stops it. Hold Enter to pause. **Easy Pause**, off by default, starts every turn with a scan between the putter and Pause. Power can also be chosen from a list (which includes Pause) or set to Automatic. The aim view stays still while aiming. Up to 4 players; includes a Course Creator. |
+| **Benny's Battle Boats** | Two-stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2-D grid with one switch. |
+| **Benny's Chess and Checkers** | Scan selectable pieces, select a piece, then scan its legal destinations or Cancel. |
+| **Benny's Connect Four** | Scan available columns and select to drop a piece; there is no separate row-selection stage. |
+| **Benny's Tic Tac Toe** | Scan empty cells directly and select to place a mark. |
+| **Benny's Matchy Match** | Two-stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
+| **Benny Says** | Simon-style sequence repetition, deliberately without the timing pressure of the original. |
+| **Benny's Word Jumble** | Scan unused letters, the sentence readout and filled slots; select to place/remove a letter or hear the sentence. Switch pause uses an Enter hold; the clickable Pause button is outside that scan list. |
+| **Elouise's Word Search** | Scan a row, a starting letter, then an available direction; extend along that direction to choose the word. The row scan also includes the spoken word bank and Pause. Later stages offer Back, and a long Enter backs out of the attempt rather than pausing. Includes a word-list editor. |
+| **Trivia Master** | Scan answers and select. Pause follows the last answer on the game screen; there is no hold-to-pause, and a long Enter press selects. Includes a quiz builder. |
+| **Benny's Dice** | Free Throw, Yarkle and Fahtzee. Scan Roll and other available actions, including Pause; Fahtzee also scans dice to keep, while Yarkle keeps scoring dice automatically. Scanning waits during rolling, initiative and CPU turns. |
+| **Benny's Bug Blaster** | Tower defence — scan placement positions and upgrades, select. Turn-paced, not twitch. |
+| **Benny's Mega Slot** | Scan Spin, bet controls, Auto Play and Pause during ordinary play. Bonus mechanics retain their own input. A spin gives an immediate audio-visual payoff. |
+| **Benny's Show n Sound** | Cause and effect: a spinning-wheel See 'n Say. Press to spin, hear the panel named. Phaser-based. |
+| **NARBE Animal Friends** | Scan the reveal action in Peekaboo play, or animal choices in the other play modes, then select on Enter release. Pause is always last in the play scan and remains available while an animal reveal is busy. Space steps, or Auto advances for one-switch play. No score, deadline or losing. |
+| **Benny's Fish Mystery** | Aim and charge the cast by scan, then press to set the hook while the take is on and hold to reel, easing off on a run. Timed on the hook, hold-based on the reel; §9 governs both. The world/scene scans end with **Options**, opening pause, settings and the route back; fishing and boat mechanics retain their native controls. Three.js, with a content editor. |
+
+**Benny's Mini Golf (`BENNYSMINIGOLF`)** is a separate legacy direct-URL build; the catalog's NARBE Mini Golf points to `NARBEMINIGOLF` instead.
 
 For in‑game specifics beyond this, each game's own source is authoritative;
 Bowling additionally ships a full `README-ACCESSIBLE.md` documenting its
@@ -582,7 +592,8 @@ difficulty ladder: charge, or do not charge. Do not add a menu step that decides
 nothing — if the action already has a selection in it, that selection *is* the
 no‑hold version, and the toggle just stops asking for the hold afterwards.
 
-**There is already one of these in the hub.** Benny's Football throws by
+**Benny's Football is one shipped example.** Baseball's Pick a Swing and Mini
+Golf's power choices also provide alternatives (§8). Football throws by
 scanning the receivers and selecting one; with the charge on, a hold then sets
 the power. **Easy Throw** in settings drops that second half — select the
 receiver and it throws at ideal power, and field goals kick at ideal power once
@@ -671,8 +682,10 @@ hold, the mechanic is not ready to build.
   one press commits — needs no hold). P3GL swaps between them with Auto Scan
 - Make the speed of anything that moves on its own a **setting**, defaulted to
   the slow, accessible end — P3GL's Aim speed defaults to Super slow
-- Two‑stage selection (row, then column) to reach a grid — Battle Boats,
-  Connect Four, Chess & Checkers, Tic Tac Toe and Matchy Match all use it
+- Two-stage selection to reach a grid — Battle Boats, Matchy Match and
+  Elouise's Word Search scan rows then cells; Chess & Checkers scans pieces
+  then legal destinations. Connect Four scans columns directly; Tic Tac Toe
+  scans empty cells
 - Generous or absent time limits
 - No‑fail modes alongside competitive ones — Race Tracks' Cruise mode is the
   pattern
@@ -721,27 +734,23 @@ Gameplay alternatives are separate opt-in work. Keep existing hold mechanics and
 
 Honest notes for whoever works on this next.
 
-**Historical input-port trap, before this choice upgrade:** Eleven games register a handler for
-it. They are not wrong: they were written against the *desktop* scan manager,
-which fires the event when it discards a press for being too short. The web
-build has never had that check, so the handlers have never run.
+**Historical input-port trap, before this choice upgrade:** Some games already
+registered `narbe-input-cancelled` handlers for the desktop scan manager's
+rejected presses. The web build did not use desktop's minimum-hold check.
 
 **This was tested the hard way.** The Input Sensitivity port briefly brought
-desktop's minimum‑hold check across, which swallows the keyup of a too‑short
-press. Twelve of the twenty‑three games have no `narbe-input-cancelled` handler,
-and they stranded immediately: Benny Says sets `spaceIsDown` on keydown and only
-clears it on keyup, so a swallowed keyup left it scanning backwards forever,
-with releasing the switch doing nothing. Bowling, which *does* have the handler,
-was fine. The check was removed again the same day.
+desktop's minimum-hold check across, swallowing the keyup of a too-short
+press. In that historical twenty-three-game survey, twelve games had no
+`narbe-input-cancelled` handler and could strand held state: Benny Says set
+`spaceIsDown` on keydown and only cleared it on keyup, so a swallowed keyup
+left it scanning backwards forever. Bowling, which already had the handler,
+was fine. The check was removed again the same day. Those counts describe
+that earlier port, not current handler coverage.
 
 So the position is:
 
 - **Do not add a minimum-hold check.** The current web contract accepts valid short presses. Blocking a keyup whose keydown already reached the game is the bug.
-- **The eleven handlers are harmless** and should stay — they are the safety net
-  the day someone does this properly.
-- **Games missing the handler**, for whoever picks this up: Benny Says, Baseball,
-  Basketball Shooter, Chess & Checkers, Dice, Football, Show n Sound, Tic
-  Tac Toe, Word Jumble, Elouise's Word Search, Pickleball Rally.
+- **All current web games and tools register the handler**, in their app input code or choice bridge: all 26 catalog games, the separate legacy Mini Golf build and all six tools. Keep those handlers as the safety net for cancelled input; there is no current missing-game list.
 
 **`getInputSensitivity()` kept going missing, and now we know why.** It was
 removed by a revert and by a rewrite, and each time it silently broke
@@ -783,9 +792,33 @@ either break them or duplicate the thinking. **None of these are open work
 items.** The controls as they stand work, and changing them is not on the table
 right now.
 
-**Games reach pause differently, and that is currently fine.** Some offer an
-on‑screen Pause button you scan to; others use the hold‑Enter gesture; most do
-both. The inconsistency is accepted for now.
+**Games reach pause differently, and that is currently fine.** A clickable
+Pause button is not automatically a switch scan choice. The current scannable
+routes are:
+
+| Game | Scannable pause route |
+| --- | --- |
+| NARBE Mini Golf | **Easy Pause**, off by default, adds putter/Pause before each turn. The separate power-choice list also includes Pause. |
+| Benny's Ballista | Pause on ammo, Easy Aim and flight screens. Manual aiming/charging still uses the native hold route (7 s there; 5 s in ordinary contexts). |
+| Benny's P3GL | **Before Each Shot: Choose Play or Pause** adds Pause/Options before aiming; this setting disables the native hold-to-pause. |
+| Benny's Bowling | Ball/Pause scan before each shot; position, aim and charge remain mechanics. |
+| Trivia Master | Pause after the last answer, on the game screen only. |
+| Benny's Baseball | Pause in field/play choices and the frozen-pitch Pick a Swing menu. |
+| Benny's Football | Pause in play calling and receiver selection. |
+| Robot Football | Playbook, receiver selection, return choices, results and the optional Choose direction movement controls. |
+| NARBE Animal Friends | Pause is always last in the play scan, including during reveals. |
+| Elouise's Word Search | Pause in the root row scan, after the word bank; Back returns from the later stages. |
+| Benny's Dice | Pause among the available turn controls; scanning waits during rolling, initiative and CPU turns. |
+| Benny's Mega Slot | Pause in the ordinary play scan; bonus mechanics use their own controls. |
+| Benny's Fish Mystery | **Options** at the end of world/scene scans opens pause and settings; live fishing/boat controls remain separate. |
+
+**NARBE Racer retains hold-dependent switch pause during a live race**, including
+Press to Step. Its cup/track screens carry the approved notice that players
+using brief taps may need help pressing Pause. In two-player play either player
+can hold their own switch. The on-screen Pause button also works with a pointer.
+Racer is not the only remaining hold-dependent game: Race Tracks, Word Jumble
+and Pickleball Rally also have native hold routes without an in-play Pause scan
+choice. Preserve these controls; this inventory does not authorize retrofits.
 
 **Trivia Master has switched (2026‑10‑02, at the user's request).** The
 hold‑Enter gesture is gone and the header's Pause button is a scan stop. It sits
@@ -794,16 +827,12 @@ header stays visible on the end and settings screens. If the player pauses in th
 moment between picking an answer and the next question loading, the next
 question waits for Continue.
 
-**One known deviation from the ~5 s convention:** P3GL's long Enter hold takes
-**2 s** when Auto Scan is on and 5 s when it is off (`holdToPause()` in
-`apps/games/BENNYSPEGGLE/js/game.js`). The campaign‑mode rebuild kept both
-values because it kept the controls players already knew; a player who cannot
-hold turns on **Before Each Shot: Choose Play or Pause** instead. No comment or
-commit message records why the time varies, and it is the only game that varies
-the hold by control scheme. Worth a decision when pause gets revisited — either
-it is a good idea that belongs everywhere, or it should fall back in line with
-the rest of the hub. Do not assume it was accidental, and do not assume it was
-deliberate.
+**P3GL's pause hold varies by control scheme:** it takes **2 s** with Auto Scan
+on and **5 s** with it off (`holdToPause()` in
+`apps/games/BENNYSPEGGLE/js/game.js`). These values apply when the before-shot
+choice is off. A player who cannot hold can enable **Before Each Shot: Choose
+Play or Pause**. Ballista's manual-aim hold is another exception to a five-second
+pause assumption; there is no universal duration to promise in player hints.
 
 **Where it is going: pause should become a scannable item everywhere.** Holding
 a switch for five seconds is itself a physical demand, and some players cannot

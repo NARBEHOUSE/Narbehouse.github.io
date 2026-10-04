@@ -1,8 +1,17 @@
 # Validation — web scan upgrade and Companion 1.0.8
 
-Companion 1.0.8 is the prepared update for the Netflix-style video clipping defect and Companion-managed app storage. The current candidate uses the `journal-storage` filename revision while keeping manifest version 1.0.8. It has not been submitted to or approved by the store. On October 4, 2026, the owner previously reported 1.0.7 submitted/pending while 1.0.5 remained public; the publisher dashboard has not been independently checked. Website deployment and store approval are separate.
+Companion 1.0.8 is the prepared update for the Netflix-style video clipping defect and Companion-managed app storage. The current candidate uses the `keyboard-wrap` filename revision while keeping manifest version 1.0.8. It has not been submitted to or approved by the store. On October 4, 2026, the owner previously reported 1.0.7 submitted/pending while 1.0.5 remained public; the publisher dashboard has not been independently checked. Website deployment and store approval are separate.
 
-## Current app-storage candidate
+## Current keyboard compatibility candidate
+
+Current package: `releases/1.0.8-keyboard-wrap/bennys-hub-companion-1.0.8-keyboard-wrap.zip`.
+
+- **112,120 bytes; 29 members; SHA-256 `4db777db1037e3ff9fd7469211ab385302cdebf25acb116cd73d433b0bbf3eab`.**
+- The canonical shared scanner adds an opt-in keyboard-row wrap. Companion playback groups retain their default behavior. Manifest version, permissions, storage and provider code are unchanged from the journal-storage candidate.
+- All 206 unit tests pass. Thirteen actual-renderer checks pass across five web and eight desktop keyboard surfaces, including repeated held reverse scans, forward wrapping, Auto, brake, native return routes and key selection. Native services are isolated in these tests. Evidence: `artifacts/keyboard-row-wrap/report.json`.
+- The v33 service worker refreshes the offline shell for this deployment. Earlier archives remain immutable.
+
+## Preserved app-storage candidate
 
 Current package: `releases/1.0.8-journal-storage/bennys-hub-companion-1.0.8-journal-storage.zip`.
 
@@ -73,4 +82,4 @@ Native aim/charge/steering, moving/timed receivers, CPU/physics/animation, busy 
 - Verify actual switches, installed voices, speech quality, focus/OS dialogs, intended Chrome/Edge/PWA modes, and signed-in live providers. CDN/provider fixtures and mock media cannot prove current Netflix/Disney/Plex layouts, all paid-service controls or provider-specific resume/next behavior.
 - Test optional news/calendar with a test account; no personal feed URL or credentials belong in public evidence.
 
-No Electron files were changed or tested. The complete future plan remains locked at the end of [the implementation record](../SCAN-UPGRADE-CHANGES.md). Follow [the manual checklist](../SCAN-UPGRADE-TESTING.md) and [script prerequisites](../scripts/README.md). Website checks do not authorize an Electron port.
+The earlier blanket scan validation did not change or test Electron. The owner subsequently authorized a scoped keyboard repair: eight desktop keyboard renderers were tested and their source files updated, as recorded in [the implementation record](../SCAN-UPGRADE-CHANGES.md). The live desktop process and physical switches were not exercised. Follow [the manual checklist](../SCAN-UPGRADE-TESTING.md) and [script prerequisites](../scripts/README.md). Website checks do not authorize an Electron port.

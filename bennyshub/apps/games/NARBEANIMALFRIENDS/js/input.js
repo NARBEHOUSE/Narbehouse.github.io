@@ -59,7 +59,7 @@ NAF.Input = (function () {
             onContext(context){NAF.UI.applyScanContext(context.key);items=context.items.map(it=>it.source);},
             onHighlight(item){const previous=index;index=item?items.indexOf(item.source):-1;paint();NAF.UI.updateScanFeedback();if(item&&previous!==index)NAF.Audio.scanBlip();if(!item&&items.some(x=>x.el===document.activeElement||x.el?.contains(document.activeElement)))document.activeElement.blur();},onSelect:()=>activate(true)});
         const next={key:context.key,statusHost:context.host,items:items.filter(it=>it.el&&!it.el.disabled).map(it=>({id:it.id,label:()=>typeof it.speak==='function'?it.speak():it.speak,element:it.el,labelElement:it.el.querySelector('.naf-row-label,.naf-menu-label')||it.el,source:it}))};
-        if(!fresh&&choice.context?.key==='settings:name:rows'&&context.key.startsWith('settings:name:keys:'))choice.enterGroup(next);
+        if(!fresh&&choice.context?.key==='settings:name:rows'&&context.key.startsWith('settings:name:keys:'))choice.enterGroup(next,{wrap:true});
         else if(!fresh&&context.key==='settings:name:rows'&&choice.getState()?.depth>0){choice.back({restore:true});choice.sync(next);}
         else choice.sync(next,{fresh});
         choice.setInputHeld(spaceHeld||enterHeld);
