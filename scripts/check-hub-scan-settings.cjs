@@ -86,8 +86,11 @@ const pass=label=>{report.checks.push(label);console.log('PASS '+label)};
   await expect(button('auto-scan-options')).toBeVisible();
   await expect(button('autoscan-toggle')).toBeVisible();
   await expect(button('sensitivity-toggle')).toBeVisible();
-  for(const id of ['scanspeed-toggle',...newControls]){await expect(button(id)).toBeVisible();await expect(button(id)).toBeDisabled()}
-  await expect(button('autoscan-toggle')).toBeEnabled();await expect(button('sensitivity-toggle')).toBeEnabled();
+  for(const id of newControls){await expect(button(id)).toBeVisible();await expect(button(id)).toBeDisabled()}
+  await expect(button('autoscan-toggle')).toBeEnabled();await expect(button('sensitivity-toggle')).toBeEnabled();await expect(button('scanspeed-toggle')).toBeEnabled();
+  assert.deepEqual(await page.getByRole('group',{name:'Scan mode and timing',exact:true}).locator('button').evaluateAll(items=>items.map(el=>el.id)),scanOrder.slice(0,3));
+  const modeTops=await Promise.all(scanOrder.slice(0,3).map(id=>button(id).evaluate(el=>el.getBoundingClientRect().top)));
+  assert.ok(Math.max(...modeTops)-Math.min(...modeTops)<1,'Auto Scan, Input Sensitivity and Scan Speed share the desktop row');
   for(const id of scanOrder){
     assert.equal(await button('scan-settings').locator('#'+id).count(),1,id+' belongs only to the central Scan section');
     assert.ok((await button(id).locator('.desc').textContent()).trim(),id+' has a plain-language description');
@@ -95,9 +98,9 @@ const pass=label=>{report.checks.push(label);console.log('PASS '+label)};
   const initial=await prefs();await tap('Enter');assert.deepEqual(await prefs(),initial);await expectSelected('park');
   // Disabled cards stay visible, are inert to native clicks, and do not enter
   // the switch scan. Step still includes a recurring -1.
-  for(const id of ['scanspeed-toggle',...newControls]){await button(id).click({force:true});assert.deepEqual(await prefs(),initial);await expectSelected('park')}
+  for(const id of newControls){await button(id).click({force:true});assert.deepEqual(await prefs(),initial);await expectSelected('park')}
   const stepIds=await scanIds();
-  assert.deepEqual(stepIds.filter(id=>scanOrder.includes(id)),['autoscan-toggle','sensitivity-toggle']);
+  assert.deepEqual(stepIds.filter(id=>scanOrder.includes(id)),scanOrder.slice(0,3));
   for(const id of stepIds){await tap('Space');await expectSelected(id)}
   assert.notEqual(await selected(),'park');await tap('Space');await expectSelected('park');
   await tap('Space');
@@ -106,6 +109,16 @@ const pass=label=>{report.checks.push(label);console.log('PASS '+label)};
   await page.keyboard.up('Space');await tick(60);
   assert.equal(await scanState(),'step');
   pass('Central Scan controls stay visible and described; disabled Auto choices are inert and excluded from Step, with recurring -1 both ways');
+
+  await freshSettings();await stepTo('scanspeed-toggle');
+  const beforeSpeed=await prefs();await tap('Enter');await expectSelected('scanspeed-toggle');
+  const stepSpeed=await prefs();assert.equal(stepSpeed.autoScan,false);assert.notEqual(stepSpeed.scanSpeedIndex,beforeSpeed.scanSpeedIndex);
+  await page.keyboard.down('Space');await tick(3000);await expectSelected('sensitivity-toggle');
+  await tick(stepSpeed.scanInterval-1);await expectSelected('sensitivity-toggle');
+  await tick(1);await expectSelected('autoscan-toggle');
+  await page.keyboard.up('Space');await tick(60);
+  await setPrefs({scanSpeedIndex:initial.scanSpeedIndex});
+  pass('Scan Speed stays selectable in Step and the chosen interval controls held reverse scanning');
 
   await freshSettings();await stepTo('autoscan-toggle');
   await tap('Enter');assert.equal((await prefs()).autoScan,true);await expectSelected('autoscan-toggle');
@@ -169,7 +182,8 @@ const pass=label=>{report.checks.push(label);console.log('PASS '+label)};
   await focusByPointer('waitspeech-toggle');await setPrefs({waitForSpeech:true});
   await setPrefs({autoScan:false});
   await expect(button('auto-scan-options')).toBeVisible();
-  for(const id of ['scanspeed-toggle',...newControls])await expect(button(id)).toBeDisabled();
+  for(const id of newControls)await expect(button(id)).toBeDisabled();
+  await expect(button('scanspeed-toggle')).toBeEnabled();
   await expectSelected('park');
   assert.deepEqual(Object.fromEntries(Object.entries(await prefs()).filter(([key])=>['parking','loopsBeforeParking','spaceBrake','waitForSpeech'].includes(key))),
     {parking:'chosen',loopsBeforeParking:3,spaceBrake:false,waitForSpeech:true});

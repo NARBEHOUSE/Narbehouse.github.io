@@ -257,6 +257,8 @@ Sensitivity is a cooldown and anti-rapid-press filter, **not a minimum press len
 
 ### Central settings
 
+Auto Scan, Input Sensitivity and Scan Speed share the first Scan row. Scan Speed stays enabled with Auto Scan on or off because it also controls held backward scanning.
+
 Only Hub Settings exposes Parking, Loops Before Parking, Space Brake and Wait for Speech. Keep them visible with descriptions and disabled when Auto is off; Loops also requires Auto Park. Disabled options retain saved values and are skipped by scanning. Use ordinary page scrolling, without a nested Settings panel.
 
 Apps retain their existing local Auto, voice and speed controls backed by the managers. Settings update live across Hub, frames, tabs and Companion without resetting selection.

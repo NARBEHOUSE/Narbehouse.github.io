@@ -67,7 +67,7 @@ window.NarbeScanSettings = (function () {
     }
     const heading = node('h2', '', 'Scan');
     heading.id = 'scan-settings-heading';
-    const modeGroup = grid('Scan mode');
+    const modeGroup = grid('Scan mode and timing');
     const autoOptions = grid('Auto Scan options');
     autoOptions.id = 'auto-scan-options';
 
@@ -77,8 +77,6 @@ window.NarbeScanSettings = (function () {
     mode.setAttribute('aria-controls', autoOptions.id);
     modeGroup.append(mode);
     autoOptions.append(
-      card('scanspeed', 'Scan Speed', 'Time between automatic or backward scan steps.',
-        settings => ({ scanSpeedIndex: (settings.scanSpeedIndex + 1) % speeds.length })),
       card('parking', 'Parking', 'Keep scanning, park when chosen, or park after complete loops.',
         settings => ({ parking: parkingModes[(parkingModes.indexOf(settings.parking) + 1) % parkingModes.length] })),
       card('parking-loops', 'Loops before parking', 'Park after this many complete scans.',
@@ -91,6 +89,8 @@ window.NarbeScanSettings = (function () {
     modeGroup.append(card('sensitivity', 'Input Sensitivity',
       'Ignore switch bounce and very rapid repeat presses.',
       settings => ({ inputSensitivityIndex: (settings.inputSensitivityIndex + 1) % sensitivities.length })));
+    modeGroup.append(card('scanspeed', 'Scan Speed', 'Time between automatic or backward scan steps.',
+      settings => ({ scanSpeedIndex: (settings.scanSpeedIndex + 1) % speeds.length })));
     const owned = [heading, modeGroup, autoOptions];
     host.replaceChildren(...owned);
 
@@ -108,7 +108,7 @@ window.NarbeScanSettings = (function () {
       setValue('sensitivity', sensitivity + ' ms', sensitivity + ' milliseconds');
       // Keep the layout stable. Unavailable choices remain visible, but native
       // disabled buttons cannot activate and are omitted from switch scanning.
-      for (const id of ['scanspeed', 'parking', 'parking-loops', 'spacebrake', 'waitspeech']) {
+      for (const id of ['parking', 'parking-loops', 'spacebrake', 'waitspeech']) {
         cards.get(id).button.disabled = !settings.autoScan;
       }
       cards.get('parking-loops').button.disabled = !settings.autoScan || settings.parking !== 'auto';
