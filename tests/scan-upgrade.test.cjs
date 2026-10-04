@@ -742,3 +742,36 @@ test('composed menu announcements opt into parking ownership so live Off cancels
     await h.tick(1); assert.equal(c.getState().id, 'a');
   }
 });
+
+
+test('scan speed exposes exactly 1–5 seconds, preserves stored fifth choice and wraps after five', () => {
+  const h = harness();
+  assert.deepEqual(plain(h.manager.getAvailableSpeeds()), [1000, 2000, 3000, 4000, 5000]);
+  assert.equal(h.manager.getScanInterval(), 2000);
+  h.manager.setScanSpeedIndex(3);
+  assert.equal(h.manager.cycleScanSpeed(), 4);
+  assert.equal(h.manager.getScanInterval(), 5000);
+  assert.equal(JSON.parse(h.memory.get('narbe-scan-settings')).scanSpeedIndex, 4);
+  h.manager.updateSettings({ scanSpeedIndex: 5 });
+  assert.equal(h.manager.getScanInterval(), 5000, 'six seconds is not an available choice');
+  assert.equal(h.manager.cycleScanSpeed(), 0);
+  assert.equal(h.manager.getScanInterval(), 1000);
+  const restored = harness({ saved: { 'narbe-scan-settings': { autoScan: false, scanSpeedIndex: 4 } } });
+  assert.equal(restored.manager.getScanInterval(), 5000);
+  const peer = { postMessage: data => restored.sent.push(data) }; restored.frames.push(peer);
+  restored.dispatch('message', { origin: 'https://hub.test', source: peer, data: { type: 'narbe-scan-settings-request' } });
+  assert.equal(restored.sent.at(-1).settings.scanInterval, 5000);
+});
+
+test('five-second Auto interval and full-interval brake resume are honored', async () => {
+  const h = harness(); h.voice.updateSettings({ ttsEnabled: false });
+  h.manager.updateSettings({ autoScan: true, scanSpeedIndex: 4, parking: 'off' });
+  const { c } = h.create();
+  await h.tick(4999); assert.equal(c.getState().index, -1);
+  await h.tick(1); assert.equal(c.getState().id, 'a');
+  c.brakePress(); c.brakeRelease();
+  await h.tick(6000); assert.equal(c.getState().id, 'a');
+  c.brakePress(); c.brakeRelease();
+  await h.tick(4999); assert.equal(c.getState().id, 'a');
+  await h.tick(1); assert.equal(c.getState().id, 'b');
+});

@@ -172,7 +172,7 @@ The player drives both halves of the interaction.
 
 The highlight moves *by itself* on a timer. The player only confirms.
 
-- **The highlight advances automatically** every 1, 2, 3, or 4 seconds
+- **The highlight advances automatically** every 1, 2, 3, 4, or 5 seconds
 - **Enter** = select whatever is highlighted right now
 - Space still works for players who can hit it, but nothing *requires* it
 
@@ -277,7 +277,7 @@ once, not twenty times.
 
 ```js
 NarbeScanManager.getSettings()        // Auto, interval, sensitivity, parking, loops, brake, speech wait
-NarbeScanManager.getScanInterval()    // ms: 1000 | 2000 | 3000 | 4000
+NarbeScanManager.getScanInterval()    // ms: 1000 | 2000 | 3000 | 4000 | 5000
 NarbeScanManager.toggleAutoScan()
 NarbeScanManager.cycleScanSpeed()
 NarbeScanManager.subscribe(cb)        // fires when settings change, incl. from another tab
@@ -413,7 +413,7 @@ round*. The canonical set, in this order
 | Voice | cycles available voices |
 | *(game‑specific options)* | e.g. Direction Help, Ball Style, Theme — and any timing/hold toggle §9 calls for |
 | **Auto Scan** | `On — One Switch` / `Off — Two Switches` |
-| **Scan Speed** | 1 s / 2 s / 3 s / 4 s |
+| **Scan Speed** | 1 s / 2 s / 3 s / 4 s / 5 s; default 2 s |
 | Sound Effects | On / Off |
 | Reset Progress | two‑step confirm |
 | ← Back | returns to previous screen |

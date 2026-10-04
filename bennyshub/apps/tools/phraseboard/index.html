@@ -1330,6 +1330,7 @@ function updateHeaderForCurrentView(){
         else if (state.scanSpeed === 2000) currentSpeedIndex = 1;
         else if (state.scanSpeed === 3000) currentSpeedIndex = 2;
         else if (state.scanSpeed === 4000) currentSpeedIndex = 3;
+        else if (state.scanSpeed === 5000) currentSpeedIndex = 4;
       }
 
       const buttons = [
@@ -1359,13 +1360,13 @@ function updateHeaderForCurrentView(){
         }, className: 'muted-blue-btn' },
 
         { text: `Speed: ${(currentSpeedIndex + 1)}s`, icon: '⏱️', action: () => {
-             let nextIndex = (currentSpeedIndex + 1) % 4;
+             const speeds = window.NarbeScanManager?.getAvailableSpeeds() || [1000, 2000, 3000, 4000, 5000];
+             const nextIndex = (currentSpeedIndex + 1) % speeds.length;
              if (window.NarbeScanManager) {
                  window.NarbeScanManager.updateSettings({ scanSpeedIndex: nextIndex });
                  const newSettings = window.NarbeScanManager.getSettings();
                  state.scanSpeed = newSettings.scanInterval;
              } else {
-                 const speeds = [1000, 2000, 3000, 4000];
                  state.scanSpeed = speeds[nextIndex];
              }
 
@@ -1887,7 +1888,7 @@ function updateHeaderForCurrentView(){
       if (window.NarbeScanManager) {
         const settings = window.NarbeScanManager.getSettings();
         state.autoScan = settings.autoScan;
-        const speeds = [1000, 2000, 3000, 4000];
+        const speeds = window.NarbeScanManager.getAvailableSpeeds();
         // Use the speed from manager, fallback to 2000 if invalid index
         state.scanSpeed = speeds[settings.scanSpeedIndex] !== undefined ? speeds[settings.scanSpeedIndex] : 2000;
         // Sync input sensitivity - scan-manager handles the actual blocking, but we use this for our debounce

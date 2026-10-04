@@ -4,7 +4,7 @@
  */
 window.NarbeScanManager = (function () {
   'use strict';
-  const SCAN_SPEEDS = [1000, 2000, 3000, 4000];
+  const SCAN_SPEEDS = [1000, 2000, 3000, 4000, 5000];
   const INPUT_SENSITIVITIES = [50, 100, 200, 300];
   const DEFAULT_SETTINGS = {
     autoScan: false, scanSpeedIndex: 1, inputSensitivityIndex: 0,
