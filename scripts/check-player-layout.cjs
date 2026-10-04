@@ -13,7 +13,8 @@ const report={checks:[],layouts:[],errors:[],baseline:{report:'artifacts/player-
 function providerFixture(service){
   const nativeVideo=service==='native-video',youtube=service==='youtube';
   const attrs={youtube:'class="ytp-fullscreen-button"',plex:'data-testid="fullscreenButton"',netflix:'data-uia="control-fullscreen-enter"',disney:'data-testid="fullscreen-button"'}[service];
-  const video='<video id="fixture-video" muted style="width:640px;height:360px"></video>';
+  // Netflix-style centering must be removed when Companion owns the fitted coordinates.
+  const video=(service==='netflix'?'<style>#fixture-video{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}</style>':'')+'<video id="fixture-video" muted style="width:640px;height:360px"></video>';
   const movie=nativeVideo?video+'<button id="provider-fullscreen" class="ytp-fullscreen-button" style="position:absolute;top:0;right:0;opacity:0">Fullscreen</button>':'<section id="player" '+(youtube?'class="html5-video-player"':'')+' style="position:relative;width:640px;height:360px"><div id="surface" class="html5-video-container" style="position:relative;width:640px;height:360px">'+video+'<div data-fixture-caption="inside" style="position:absolute;bottom:12px;left:10px;color:white;background:#000c">Caption inside video surface</div></div><div data-fixture-caption="outer" style="position:absolute;bottom:36px;left:10px;color:white;background:#000c">Caption beside native video surface</div><button id="provider-fullscreen" '+attrs+' style="position:absolute;top:0;right:0;opacity:0">Fullscreen</button></section>';
   return '<!doctype html><html><head><style>body{margin:0;background:#161616;color:white}button,input{font:18px system-ui}#typing{position:absolute;top:380px;left:10px}</style></head><body>'+movie+'<input id="typing" aria-label="Provider text input"><script>('+function(){
     window.fixtureClicks=0;window.profileClicks=0;window.switchLeaks=0;window.nativeVideoEntries=0;

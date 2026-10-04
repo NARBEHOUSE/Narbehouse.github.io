@@ -1,8 +1,27 @@
-# Web scan implementation and Companion 1.0.7
+# Web scan implementation and Companion 1.0.8
 
 The web upgrade covers all 26 catalogue games, six tools, legacy Mini Golf, Hub menus/Settings and Companion. The owner reports the local changes working well. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 still public. Store status has not been independently checked in the publisher dashboard.
 
 This public map replaces the chronological working ledger; its complete original, task notes, backups and test attempts remain preserved locally. Current policy is maintained in [ACCESSIBILITY.md](bennyshub/ACCESSIBILITY.md) and [the developer guide](developer-guide.html). See [validation](submission/VALIDATION.md) and [the test checklist](SCAN-UPGRADE-TESTING.md).
+
+## Companion 1.0.8 video-frame correction
+
+A centered provider video could retain its CSS translation after the Companion forced its box to the reserved frame. The translated image was then clipped to its lower-right quarter at the upper left. The fitted video, intermediate surfaces and frame now clear their own transform properties while caption positioning and the native DOM hierarchy remain intact. Unlock restores the original provider styling.
+
+- `extension/player-view.js` — COMPANION / WEB-ONLY: normalize transforms only on fitted boxes; no Electron port.
+- `scripts/check-player-layout.cjs` — COMPANION TEST / WEB-ONLY: the Netflix fixture now includes a centered video to catch the clipping regression.
+- `SCAN-UPGRADE-CHANGES.md` — documentation / WEB-ONLY: record this correction and its validation.
+
+Validation: the loaded-extension layout fixtures passed for Netflix, Disney, YouTube, Plex and direct-video fullscreen, including Help resizing, captions, scan selection and Unlock restoration. Eleven player-adapter/return unit checks passed. Independent transform reproduction and screenshots are retained under `artifacts/netflix-frame-fix`. These are controlled provider fixtures; signed-in Netflix playback still needs user confirmation. The submitted 1.0.7 ZIP and archived release are unchanged; the 1.0.8 package is prepared for review and is not a store-published update.
+
+Release preparation on October 4, 2026 uses an immutable 1.0.8 ZIP with the frame correction. Additional file ledger:
+
+| Files | Scope / port | Release change |
+| --- | --- | --- |
+| `extension/manifest.json` | COMPANION / WEB-ONLY | Advance to 1.0.8; no permission changes. |
+| `bennyshub/extension-setup.html`, `bennyshub/service-worker.js` | WEB-ONLY | Link the 1.0.8 testing download; refresh cached setup under v30. |
+| `extension/README.md`, `WEB-EXTENSION-MIGRATION.md` | Documentation / WEB-ONLY | Describe the frame correction, new candidate and current Scan Speed behavior. |
+| `submission/START-HERE.md`, `submission/STORE-LISTING.md`, `submission/REVIEWER-INSTRUCTIONS.md`, `submission/VALIDATION.md`, `submission/COMPANION-SHA256SUMS.txt` | Release records / WEB-ONLY | Current package, reviewer notes, validation and exact checksum; preserve the historical 1.0.7 submission record. |
 
 ## Current behavior
 
@@ -34,7 +53,7 @@ All helper filenames below are relative to `bennyshub/shared/` unless a full pat
 | `scan-settings.js` | SHARED | Portable centralized controls retaining option identity. | COPY-AS-IS |
 | `bennyshub/index.html` | SHARED | Hub/Settings ownership, normal page/footer visibility and disclosure boundaries. | RE-PORT |
 | `tool-gate.js` | WEB-ONLY | Companion-unavailable dialog suspends tool input and owns its choices. | WEB-ONLY |
-| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with final scan assets under v28. | WEB-ONLY |
+| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with final scan assets under v30. | WEB-ONLY |
 | `bennyshub/setup.js`, `bennyshub/extension-setup.html`, `bennyshub/companion-privacy.html` | WEB-ONLY | Setup/return flow, package link and storage/access disclosures. | WEB-ONLY |
 
 ## Companion file map
@@ -49,7 +68,7 @@ Files below are relative to `extension/`; every row has scope COMPANION and port
 | `background.mjs` | Validated managed-player transport, live settings and serialized speech preference persistence. |
 | `player-registration.mjs`, `policy.mjs` | Granted-host registration, dependency order, validated preferences and production origins. |
 | `options.html`, `options.css`, `options.mjs` | Single Streaming and news switch, ten static platform names and separate Calendar. |
-| `manifest.json` | Version 1.0.7 without added permissions. |
+| `manifest.json` | Version 1.0.8 without added permissions. |
 | `shared/choice-scan.js`, `shared/voice-manager.js`, `shared/scan-status-badge.js`, `shared/scan-status-badge.css` | Exact copies of canonical helpers. |
 | `shared/scan-status-badge-style.js` | Generated CSS text for the player shadow root. |
 

@@ -1,1 +1,1 @@
-51cc9dfb80e6eb2eb47341fd9abb11861ea17e98f857dcabd26e6f49007172f0  dist/bennyshub/downloads/bennys-hub-companion-1.0.7.zip
+be4c9c670eedc01322ba7023e538046cd4db94f9593a6580a3eb44e4e9bfa544  dist/bennyshub/downloads/bennys-hub-companion-1.0.8.zip

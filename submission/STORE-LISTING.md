@@ -1,6 +1,6 @@
 # Benny's Hub Companion — store copy
 
-Copy for Companion 1.0.7. On October 4, 2026, the owner reported this version submitted and awaiting approval, with 1.0.5 currently public. That status has not been independently checked in the publisher dashboard. The owner reports the local changes working well; signed-in provider checks remain separate.
+Copy for the local Companion 1.0.8 candidate, which has not been submitted or approved. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 public. That historical status has not been independently checked in the publisher dashboard. Version 1.0.8 fixes Netflix framing where provider centering transforms could leave only a quarter of the picture visible; it adds no permissions. Previous release archives remain unchanged. Signed-in provider checks remain separate.
 
 The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of the pending update.
 
@@ -8,7 +8,7 @@ The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/
 
 - Name: Benny's Hub Companion
 - Publisher: NARBE LLC (must match the verified developer account)
-- Version: 1.0.7 (owner-reported submitted/pending)
+- Version: 1.0.8 (local candidate; not submitted or approved)
 - Language: English (United States)
 - Website: https://narbehouse.github.io/bennyshub/
 - Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html
@@ -29,7 +29,7 @@ CONTINUE WATCHING
 For shows and YouTube playlists, the Hub saves the latest playback URL on your device and uses it when you choose Continue. The original library link stays intact. Episode tracking depends on the service updating its playback URL; the service controls resume time within a video. Plex uses its own watch progress.
 
 YOUR SCAN SETTINGS
-The bar follows the Hub's scan mode, scan speed, input sensitivity and voice settings. It begins with no highlighted control and includes that blank step between loops. In Step mode, Space moves forward, holding Space for three seconds scans backward, and Enter selects a highlighted control. Auto scan follows the Hub's centralized parking, Space brake and speech-wait preferences. Parking off scans continuously; Park when chosen lets Enter at the blank step park the scan; Auto park stops after the chosen number of complete loops. Enter while parked resumes scanning at the first control without activating it. With Space brake on, tap Space to pause scanning, then tap again to resume, or hold for three seconds and release to resume.
+The bar follows the Hub's scan mode, scan speed, input sensitivity and voice settings. Scan Speed remains available with Auto Scan Off because it also sets the backward-scanning interval. It begins with no highlighted control and includes that blank step between loops. In Step mode, Space moves forward, holding Space for three seconds scans backward, and Enter selects a highlighted control. Auto scan follows the Hub's centralized parking, Space brake and speech-wait preferences. Parking off scans continuously; Park when chosen lets Enter at the blank step park the scan; Auto park stops after the chosen number of complete loops. Enter while parked resumes scanning at the first control without activating it. With Space brake on, tap Space to pause scanning, then tap again to resume, or hold for three seconds and release to resume.
 
 CHOOSE YOUR SOURCES
 Use the **Streaming and news** switch in Companion settings to grant access to all listed streaming services and news feeds together. Calendar connects separately. Player adapters are included for YouTube, Plex, Netflix, Disney+, Hulu, Prime Video, HBO Max, Paramount+ and Pluto TV, with Tubi support in preview. Optional Day Hub connections retrieve news and a Google Calendar iCal feed that you choose. Permissions can be removed at any time.
@@ -57,7 +57,7 @@ Developed by NARBE LLC. Support: narbehousellc@gmail.com
 - Both stores' small promotional tile: assets/promo440x280.png.
 - Optional marquee / large tile: assets/promo1400x560.png.
 - Screenshots: assets/01-player-controls.png through assets/05-journal.png, each 1280 × 800.
-- Existing images are historical assets; verify or refresh them against the current 1.0.7 controls and settings before reuse. No new artwork is claimed by this documentation update.
+- Existing images are historical assets; verify or refresh them against the current 1.0.8 controls and settings before reuse. No new artwork is claimed by this documentation update.
 - Demonstration playback must not contain a customer library, sign-in details or provider account.
 - Remaining screenshots show actual settings and Hub screens with synthetic or empty data.
 

@@ -83,12 +83,14 @@
         style=document.createElement('style');
         style.textContent=`
           [data-benny-player-ancestor]{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;content-visibility:visible!important;overflow:visible!important;clip-path:none!important}
+          /* These boxes now use frame coordinates. Provider centering transforms
+             would move the fitted picture out of its frame; captions keep theirs. */
+          [data-benny-fit-video],[data-benny-player-surface],[data-benny-player-view],[data-benny-player-frame],[data-benny-full-surface],[data-benny-full-player]{transform:none!important;translate:none!important;scale:none!important;rotate:none!important}
           [data-benny-fit-video]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;box-sizing:border-box!important;margin:0!important;padding:0!important}
           [data-benny-player-surface]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important}
           [data-benny-player-outside]{opacity:0!important;pointer-events:none!important}
           [data-benny-player-view],[data-benny-player-frame],[data-benny-full-surface]{position:fixed!important;inset:auto!important;left:${x}px!important;top:${y}px!important;width:${w}px!important;height:${h}px!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;box-sizing:border-box!important;margin:0!important;padding:0!important;background:#000!important;z-index:2147483640!important}
           [data-benny-player-view],[data-benny-player-frame]{border:2px solid #8bccff!important;border-bottom:0!important;border-radius:14px 14px 0 0!important;overflow:hidden!important}
-          [data-benny-player-view]{transform:none!important}
           [data-benny-full-player]{box-sizing:border-box!important;padding-bottom:${bottom}px!important;background:#000!important}
           [data-benny-full-video]{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;padding:${y}px ${right}px ${bottom}px ${x}px!important;object-fit:contain!important;background:#000!important}
         `+overlayCSS;document.documentElement.append(style);
