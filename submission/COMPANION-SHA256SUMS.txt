@@ -1,1 +1,1 @@
-be4c9c670eedc01322ba7023e538046cd4db94f9593a6580a3eb44e4e9bfa544  dist/bennyshub/downloads/bennys-hub-companion-1.0.8.zip
+d8822dcb55df204d55af00b33206a0ac9cd809e561fde4170d2d4a8fb7a66c25  dist/bennyshub/downloads/bennys-hub-companion-1.0.8-journal-storage.zip

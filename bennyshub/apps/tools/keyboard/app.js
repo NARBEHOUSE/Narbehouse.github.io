@@ -1,4 +1,5 @@
-(() => {
+(async () => {
+  if(window.BennyAppStorage)await BennyAppStorage.ready('keyboard');
   const $ = (sel) => document.querySelector(sel);
   const textBar = $("#textBar");
   const predictBar = $("#predictBar");
@@ -26,7 +27,7 @@
     }
   }
   function saveSettings() {
-    localStorage.setItem("kb_settings", JSON.stringify(settings));
+    if(window.BennyAppStorage)BennyAppStorage.setItem('keyboard','kb_settings',JSON.stringify(settings));else localStorage.setItem('kb_settings',JSON.stringify(settings));
   }
 
   // TTS functionality using unified voice manager

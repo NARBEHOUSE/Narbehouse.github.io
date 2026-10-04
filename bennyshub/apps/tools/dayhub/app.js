@@ -1,4 +1,5 @@
-(function () {
+(async function () {
+  if(window.BennyAppStorage)await BennyAppStorage.ready('dayhub');
   'use strict';
 
   const WEATHER_STORAGE_KEY = 'dayhub_weather_web_v2';
@@ -97,7 +98,7 @@
 
   function saveWeatherPrefs(p) {
     weatherPrefs = { ...p };
-    localStorage.setItem(WEATHER_STORAGE_KEY, JSON.stringify(weatherPrefs));
+    if(window.BennyAppStorage)BennyAppStorage.setItem('dayhub',WEATHER_STORAGE_KEY,JSON.stringify(weatherPrefs));else localStorage.setItem(WEATHER_STORAGE_KEY,JSON.stringify(weatherPrefs));
     updateWeatherLocationLine();
   }
 

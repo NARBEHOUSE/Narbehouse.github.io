@@ -122,7 +122,8 @@ function cancelChoiceInput(){
 }
 
 // DOM LOAD
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if(window.BennyAppStorage)await BennyAppStorage.ready('streaming');
     console.log('[Streaming] DOMContentLoaded');
     console.log('[Streaming] NarbeScanManager available:', !!window.NarbeScanManager);
     console.log('[Streaming] NarbeVoiceManager available:', !!window.NarbeVoiceManager);
@@ -233,7 +234,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('benny-web:v1:streaming.settings', JSON.stringify(settings));
+    if(window.BennyAppStorage)BennyAppStorage.setItem('streaming','benny-web:v1:streaming.settings',JSON.stringify(settings));else localStorage.setItem('benny-web:v1:streaming.settings',JSON.stringify(settings));
     applySettings();
 }
 
@@ -2076,8 +2077,13 @@ function refreshWebStreaming(syncProgress = true) {
         const sync = streamingRefreshNeedsSync;
         streamingRefreshNeedsSync = false;
         streamingRefreshPending = false;
+        // Returning from My data or another window must read the current
+        // Companion copy before progress or cached library values are reused.
+        if (window.BennyAppStorage) await BennyAppStorage.read('streaming');
         if (sync) await WebStreaming.syncProgress();
         await loadData();
+        loadSettings();
+        if (currentState === STATE.SETTINGS) updateSettingsUI();
         if (!streamingIsInteractive()) {
             streamingRefreshPending = true;
             return;

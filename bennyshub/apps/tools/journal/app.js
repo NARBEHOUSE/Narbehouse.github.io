@@ -248,44 +248,47 @@
   let entryToDelete = null;
   let editingEntryId = null;
 
+  let journalState=null,storageReady=false,activeDraft=null,savingEntry=false,restoringBuffer=false;
+  let draftSave=Promise.resolve(),storageError='';
+  let editingBase=null;
+  function storageMessage(message='') {
+    storageError=message;
+    const host=$('#journalStorageStatus');host.textContent=message;host.hidden=!message;
+  }
+  function adoptJournal(state) {
+    journalState=state;entries=state.entries;
+    const draft=state.recoveryDraft||state.draft;
+    const add=$('[data-action="add-entry"]'),question=$('[data-action="question-entry"]');
+    add.textContent=draft?.answer?.trim()?'Continue Entry':'Add Entry';
+    question.disabled=!!draft?.answer?.trim();
+    if(currentScreen==='entriesScreen'&&choiceScan)renderEntries();
+    return state;
+  }
   async function loadEntries() {
+    try {adoptJournal(await BennyJournalStorage.read());storageReady=true;storageMessage();}
+    catch(error){storageReady=false;storageMessage(error.message);}
+  }
+  async function ensureStorage() {
+    if(!storageReady)await loadEntries();
+    if(!storageReady){speak(storageError||'Journal could not connect. Your work is kept.');return false;}
+    return true;
+  }
+  function pendingDraft() {return journalState?.recoveryDraft||journalState?.draft;}
+  function saveDraft() {
+    if(restoringBuffer||!activeDraft||!storageReady)return;
+    const value=keyboardBuffer.trim()?{...activeDraft,question:currentQuestion,answer:keyboardBuffer,editingEntryId,editingUpdatedAt:activeDraft.editingUpdatedAt??null}:null;
     try {
-      const stored = BennyData.get('journal.entries', []);
-      if (!Array.isArray(stored)) throw new Error('Invalid journal data.');
-      entries = stored;
-    } catch (error) { entries = []; alert(error.message + ' Use My data in the Hub to export your saved data before making changes.'); }
+      draftSave=BennyJournalStorage.saveDraft(value).then(state=>{adoptJournal(state);storageMessage();return state;},error=>{storageMessage(error.message+' Your text is kept.');throw error;});
+      // A failed draft remains in the recovery copy and the visible text field.
+      draftSave.catch(()=>{});
+    }catch(error){storageMessage(error.message+' Keep Journal open and try saving again.');draftSave=Promise.reject(error);draftSave.catch(()=>{});}
   }
-  function saveEntries() {
-    try { BennyData.set('journal.entries', entries); }
-    catch (error) { alert(error.message); throw error; }
-  }
-
-
-  function addEntry(question, answer) {
-    const entry = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      question: question,
-      answer: answer
-    };
-    entries.unshift(entry);
-    saveEntries();
-    return entry;
-  }
-
-  function updateEntry(id, answer) {
-    const entryIndex = entries.findIndex(e => e.id === id);
-    if (entryIndex !== -1) {
-      entries[entryIndex].answer = answer;
-      saveEntries();
-      return entries[entryIndex];
-    }
-    return null;
-  }
-
-  function deleteEntry(entryId) {
-    entries = entries.filter(e => e.id !== entryId);
-    saveEntries();
+  async function deleteEntry(entryId) {
+    if(!await ensureStorage())return false;
+    try {
+      const entry=entries.find(e=>e.id===String(entryId));
+      adoptJournal(await BennyJournalStorage.deleteEntry(String(entryId),entry?.updatedAt??null));storageMessage();return true;
+    }catch(error){storageMessage(error.message);speak('Could not delete the entry. Your entries are kept.');return false;}
   }
 
   function formatDate(dateStr) {
@@ -372,7 +375,7 @@
       // Keep the date shortcut reachable before the entry list.
       scanItems = [
         ...Array.from($$("#entriesScreen .view-label-container .action-btn:not(:disabled)")),
-        ...Array.from($$("#entriesScreen .entries-actions .action-btn")),
+        ...Array.from($$("#entriesScreen .entries-actions .action-btn:not(:disabled)")),
         ...Array.from($$("#entriesScreen .entry-item")),
         ...Array.from($$("#entriesScreen .journal-date-nav .action-btn:not(:disabled)"))
       ];
@@ -566,9 +569,11 @@
   }
 
   async function setKeyboardBuffer(txt) {
+    if(savingEntry&&!restoringBuffer)return;
     keyboardBuffer = txt;
     textBar.textContent = keyboardBuffer + "|";
     adjustTextSize(keyboardBuffer + "|");
+    saveDraft();
     await renderPredictions();
   }
 
@@ -650,43 +655,55 @@
     }
   }
 
-  function submitEntry() {
-    const answer = keyboardBuffer.trim();
-    if (answer) {
-      if (editingEntryId) {
-        updateEntry(editingEntryId, answer);
-        speak("Entry updated!");
-      } else {
-        addEntry(currentQuestion, answer);
-        speak("Entry saved!");
-      }
-      setTimeout(() => {
-        closeKeyboard();
-        renderEntries();
-      }, 1000);
-    } else {
-      speak("Please type an answer first");
+  async function submitEntry() {
+    if(savingEntry||!await ensureStorage())return;
+    const answer=keyboardBuffer.trim();
+    if(!answer){speak('Please type an answer first');return;}
+    savingEntry=true;
+    try {
+      // Finish the draft before committing its entry and clearing it atomically.
+      await draftSave;
+      const old=editingEntryId?editingBase:null;
+      const entry={id:old?.id||activeDraft?.id||crypto.randomUUID(),date:old?.date||activeDraft?.date||new Date().toISOString(),question:currentQuestion,answer};
+      const draft=journalState?.draft;
+      const clearDraft=draft&&draft.id===activeDraft?.id?{id:draft.id,expectedUpdatedAt:draft.updatedAt}:undefined;
+      const state=await BennyJournalStorage.saveEntry(entry,old?.updatedAt??null,clearDraft);
+      BennyJournalStorage.forgetRecovery(activeDraft?.id);adoptJournal(state);storageMessage();
+      activeDraft=null;restoringBuffer=true;await setKeyboardBuffer('');restoringBuffer=false;
+      editingEntryId=null;showScreen('entriesScreen');questionModal.classList.add('hidden');renderEntries();
+      speak(old?'Entry updated!':'Entry saved!');
+    }catch(error){
+      if(error.code==='CONFLICT'){
+        try{
+          const recovered={id:'recovered-'+activeDraft.id,date:activeDraft.date,question:currentQuestion,answer};
+          const ownDraft=journalState?.draft;
+          const clearOwn=!journalState?.recoveryConflict&&ownDraft?.id===activeDraft.id?{id:ownDraft.id,expectedUpdatedAt:ownDraft.updatedAt}:undefined;
+          const recoveredState=await BennyJournalStorage.saveEntry(recovered,null,clearOwn);
+          BennyJournalStorage.forgetRecovery(activeDraft.id);adoptJournal(recoveredState);activeDraft=null;
+          restoringBuffer=true;await setKeyboardBuffer('');restoringBuffer=false;editingEntryId=null;editingBase=null;
+          showScreen('entriesScreen');renderEntries();storageMessage();speak('Saved as a separate entry to keep both versions.');
+        }catch(recoveryError){storageMessage(recoveryError.message+' Your text is kept.');speak('Could not finish saving. Your text is kept.');}
+      }else {storageMessage(error.message+' Your text is kept.');speak('Could not finish saving. Your text is kept. Try Send again.');}
+      draftSave=Promise.resolve();
     }
+    finally{savingEntry=false;}
   }
-
   function closeKeyboard() {
-    setKeyboardBuffer("");
-    editingEntryId = null;
-    showScreen("entriesScreen");
-    questionModal.classList.add("hidden");
-    renderEntries();
+    if(savingEntry)return;
+    saveDraft();activeDraft=null;editingEntryId=null;
+    restoringBuffer=true;setKeyboardBuffer('');restoringBuffer=false;
+    showScreen('entriesScreen');questionModal.classList.add('hidden');renderEntries();
   }
-
-  function openKeyboard() {
-    showScreen("keyboardScreen");
-    setKeyboardBuffer("");
-    renderKeyboard();
-    keyboardRowIndex = -1;
-    keyboardButtonIndex = 0;
-    keyboardInRowMode = true;
-    clearAllHighlights();
-    updateScanItems(true);
-    speak("Keyboard");
+  async function openKeyboard() {
+    if(!await ensureStorage())return;
+    const unfinished=pendingDraft();
+    if(unfinished?.answer?.trim()){
+      activeDraft={...unfinished};currentQuestion=unfinished.question;editingEntryId=unfinished.editingEntryId;const existing=entries.find(e=>e.id===editingEntryId);editingBase=existing?{...existing,updatedAt:unfinished.editingUpdatedAt??null}:null;
+    }else activeDraft={id:crypto.randomUUID(),date:new Date().toISOString(),question:currentQuestion,answer:'',editingEntryId,editingUpdatedAt:editingBase?.updatedAt??null};
+    showScreen('keyboardScreen');restoringBuffer=true;
+    await setKeyboardBuffer(unfinished?.answer||'');restoringBuffer=false;
+    renderKeyboard();keyboardRowIndex=-1;keyboardButtonIndex=0;keyboardInRowMode=true;
+    clearAllHighlights();updateScanItems(true);speak(unfinished?.answer?'Continue your entry':'Keyboard');
   }
 
   function updateKeyboardScanItems() {}
@@ -1107,25 +1124,27 @@
 
   // Entry view modal buttons
   $$("#entryViewModal .modal-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const action = btn.dataset.action;
       if (action === "read-entry") {
         const question = $("#entryViewQuestion").textContent;
         const answer = $("#entryViewAnswer").textContent;
         speak(`${question} ${answer}`);
       } else if (action === "edit-entry") {
-        const entryId = parseInt(entryViewModal.dataset.entryId);
+        const entryId = String(entryViewModal.dataset.entryId);
         const entry = entries.find(e => e.id === entryId);
         if (entry) {
           editingEntryId = entryId;
+          editingBase = {...entry};
           currentQuestion = entry.question;
           entryViewModal.classList.add("hidden");
-          openKeyboard();
-          setKeyboardBuffer(entry.answer);
+          const unfinished=pendingDraft();
+          await openKeyboard();
+          if(!unfinished?.answer?.trim())setKeyboardBuffer(entry.answer);
           speak("Edit your entry");
         }
       } else if (action === "delete-entry") {
-        entryToDelete = parseInt(entryViewModal.dataset.entryId);
+        entryToDelete = String(entryViewModal.dataset.entryId);
         deleteConfirmModal.classList.remove("hidden");
         speak("Are you sure you want to delete this entry?");
         updateScanItems();
@@ -1144,7 +1163,7 @@
 
   // Delete confirmation modal buttons
   $$("#deleteConfirmModal .modal-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const action = btn.dataset.action;
       if (action === "cancel-delete") {
         deleteConfirmModal.classList.add("hidden");
@@ -1153,7 +1172,7 @@
         resetMenuScan();
       } else if (action === "confirm-delete") {
         if (entryToDelete) {
-          deleteEntry(entryToDelete);
+          if(!await deleteEntry(entryToDelete))return;
           speak("Entry deleted");
         }
         deleteConfirmModal.classList.add("hidden");
@@ -1180,7 +1199,7 @@
   async function init() {
     console.log("Initializing Ben's Journal App...");
 
-    // Load entries from server/localStorage FIRST
+    // Load Companion storage (or an older Companion browser fallback) first.
     await loadEntries();
     await loadQuestions();
     loadUsedQuestions();
@@ -1202,6 +1221,9 @@
       setTimeout(updateDisplays, 500);
     }
 
+    // Entries and Options become available only after saved data is loaded.
+    $$('#mainMenu .menu-btn').forEach(button => { button.disabled = false; });
+    mainMenu.removeAttribute('aria-busy');
     initChoiceScan();
     // Show main menu
     showScreen("mainMenu");
@@ -1224,5 +1246,10 @@
     console.log("Journal app initialized!");
   }
 
+  BennyJournalStorage.subscribe(state=>{if(storageReady)adoptJournal(state);});
+  window.addEventListener('focus',()=>{if(currentScreen!=='keyboardScreen'&&!savingEntry)loadEntries();});
+  window.addEventListener('benny-extension-change',()=>{if(!storageReady&&document.readyState!=='loading')loadEntries();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)saveDraft();});
+  window.addEventListener('pagehide',saveDraft);
   init();
 })();

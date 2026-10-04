@@ -13,7 +13,7 @@
   window.addEventListener('message',event=>{
     const m=event.data;if(event.source!==window||event.origin!==location.origin||m?.channel!=='benny-hub-response'||m.protocol!==1)return;
     const entry=pending.get(m.id);if(!entry)return;clearTimeout(entry.timer);pending.delete(m.id);
-    if(m.response?.ok)entry.resolve(m.response.data);else entry.reject(Error(m.response?.error||'Companion request failed.'));
+    if(m.response?.ok)entry.resolve(m.response.data);else {const error=Error(m.response?.error||'Companion request failed.');if(m.response?.code)error.code=m.response.code;entry.reject(error);}
   });
   async function check(){
     if(checking)return checking;

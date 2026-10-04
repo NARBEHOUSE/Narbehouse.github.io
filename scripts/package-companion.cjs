@@ -21,8 +21,8 @@ if (revisionArgs.length && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(revision) || revi
   throw Error('Revision must be a short lowercase label containing only letters, numbers and single hyphens');
 }
 const runtime = [
-  'background.mjs', 'calendar.mjs', 'hub-content.js', 'options.html', 'options.css', 'options.mjs',
-  'player-adapters.js', 'player-platform.js', 'shared/choice-scan.js', 'shared/voice-manager.js',
+  'background.mjs', 'calendar.mjs', 'journal-store.mjs', 'app-data-store.mjs', 'hub-content.js', 'options.html', 'options.css', 'options.mjs',
+  'player-adapters.js', 'player-platform.js', 'shared/data-backup.js', 'shared/choice-scan.js', 'shared/voice-manager.js',
   'shared/scan-status-badge.js', 'shared/scan-status-badge.css', 'shared/scan-status-badge-style.js',
   'player-content.js', 'player-loading.html', 'player-registration.mjs', 'player-view.js', 'policy.mjs'
 ];

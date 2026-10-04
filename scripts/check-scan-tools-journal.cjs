@@ -4,7 +4,20 @@ const root=path.resolve(__dirname,'..'),base='http://127.0.0.1:4173',artifacts=p
 const executablePath=process.env.HUB_BROWSER_PATH||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const requested=process.argv.find(arg=>arg.startsWith('--tool='))?.slice(7);
 let context;const report={checks:[],errors:[],tools:{}};
-async function advance(page,ms){while(ms>0){const step=Math.min(ms,400);await page.clock.runFor(step);ms-=step;await new Promise(r=>setTimeout(r,20));}}
+async function drainCompanion(page){
+  // Page clocks accelerate the HELLO timeout, but extension IPC and storage
+  // still use wall time. Drain each real reply before advancing another slice
+  // so a busy test machine cannot spuriously open the Companion gate.
+  let timer;
+  try{
+    const state=await Promise.race([
+      page.evaluate(()=>window.BennyExtension?.check()),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Companion bridge did not settle before advancing the scan clock.')),10000);})
+    ]);
+    if(state)assert.equal(state.connected,true,'Companion must remain connected during accelerated scan checks.');
+  }finally{clearTimeout(timer);}
+}
+async function advance(page,ms){while(ms>0){const step=Math.min(ms,400);await page.clock.runFor(step);ms-=step;await drainCompanion(page);}}
 const {feedbackGeometry}=require('./check-scan-tools-feedback.cjs');
 function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+tool+': '+text)}
 (async()=>{

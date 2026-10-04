@@ -2,14 +2,14 @@
 
 Companion 1.0.8 is a prepared local candidate, not a submitted or approved update. On October 4, 2026, the owner reported 1.0.7 submitted and pending review, with 1.0.5 public. That earlier status is the owner's report, not an independent publisher-dashboard verification. Use the [existing Chrome listing](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc) for updates; no Edge Add-ons listing URL has been supplied. Website deployment and store approval are separate.
 
-The current immutable package fixes Netflix framing: provider centering transforms could move the fitted picture outside its frame so only a quarter remained visible. The fix adds no permissions and preserves captions and the reserved control area. The 1.0.7 archive and earlier releases remain immutable. [Validation](VALIDATION.md) describes acceptance and remaining live/manual checks. [The implementation map](../SCAN-UPGRADE-CHANGES.md) records web changes and the locked Electron plan.
+The current candidate keeps manifest version 1.0.8 and uses the separate `journal-storage` filename revision. It adds Companion-managed storage for Journal, Keyboard, Streaming and Day Hub, with caregiver backup/restore through the existing My data page. The original 1.0.8 ZIP remains immutable. It also retains the Netflix framing fix: provider centering transforms could move the fitted picture outside its frame so only a quarter remained visible. The fix adds no permissions and preserves captions and the reserved control area. The 1.0.7 archive and earlier releases remain immutable. [Validation](VALIDATION.md) describes acceptance and remaining live/manual checks. [The implementation map](../SCAN-UPGRADE-CHANGES.md) records web changes and the locked Electron plan.
 
 ## Current files
 
 | Local path | Purpose |
 | --- | --- |
-| `releases/1.0.8/bennys-hub-companion-1.0.8.zip` | Local production-origin candidate, 26 members; not submitted or approved. |
-| `releases/1.0.8/extension/` | Exact unpacked production candidate for isolated HTTPS testing. |
+| `releases/1.0.8-journal-storage/bennys-hub-companion-1.0.8-journal-storage.zip` | Current production-origin candidate, 29 members; not submitted or approved. |
+| `releases/1.0.8-journal-storage/extension/` | Exact unpacked production candidate for isolated HTTPS testing. |
 | `submission/COMPANION-SHA256SUMS.txt` | Tracked expected archive checksum used by CI. |
 | `extension/` | Workspace extension for local preview; not the production-origin package. |
 | `dist/` | Generated public website; Pages uploads its contents only. |
@@ -35,10 +35,10 @@ For extension-only work:
 
 ```text
 node scripts/sync-companion-shared.cjs --check
-node scripts/package-companion.cjs --check
+node scripts/package-companion.cjs --revision=journal-storage --check
 ```
 
-Omit `--check` from the package command only when intentionally preparing a new immutable candidate. If canonical helpers were intentionally changed, run the sync script without `--check` before packaging. No revision suffix is needed for 1.0.8. Do not replace an already submitted version with changed runtime bytes. Legacy Python full-kit/source-handoff commands are not part of this release path.
+Omit `--check` from the package command only when intentionally preparing a new immutable candidate. If canonical helpers were intentionally changed, run the sync script without `--check` before packaging. The `journal-storage` revision suffix is required to keep the earlier 1.0.8 archive unchanged. Manifest version stays 1.0.8 as requested. Do not replace an already submitted version with changed runtime bytes. Legacy Python full-kit/source-handoff commands are not part of this release path.
 
 ## Website publication
 
@@ -46,13 +46,13 @@ With GitHub Pages configured for Actions, a push to `main` runs `.github/workflo
 
 Production Hub: https://narbehouse.github.io/bennyshub/. Preserve the `bennyshub/` directory beneath the Pages artifact root; do not nest an extra `dist/`. `.nojekyll` is generated. The PWA scope is `/bennyshub/`; localhost browser data does not migrate automatically to this HTTPS origin.
 
-After deployment, check refreshed/offline assets, the package checksum, Companion connection, a public YouTube launch/return and the new settings with the actual current store version and isolated production 1.0.8. Source compatibility exists at protocol 1; old Companion controls retain their previous behavior until the update arrives. Live compatibility still needs that smoke check.
+After deployment, check refreshed/offline assets, the package checksum, Companion connection, a public YouTube launch/return and the new settings with the actual current store version and isolated production 1.0.8. Protocol 1 remains; old Companion controls retain their previous behavior until the update arrives. Storage is negotiated using `journal-storage-v1` and `app-storage-v1`, so an older 1.0.8 package does not falsely claim storage support. Until a storage-capable Companion connects, existing browser-storage behavior remains available. Live compatibility still needs that smoke check.
 
 ## Store follow-up and manual acceptance
 
 The owner's submission report applies to 1.0.7 only. The local 1.0.8 candidate has not been submitted; a website push does not upload it to a store. Confirm the dashboard's actual status before any store follow-up action. Keep reviewer URLs reachable and update submitted reviewer information if the dashboard permits and the deployed instructions differ. Approval and timing remain the store's decision.
 
-Test signed-in providers, particularly Netflix picture framing after resize/fullscreen, Plex Resume, YouTube playlist actions and Disney+ next episode, as well as physical switches, installed voices and intended Chrome/Edge/PWA modes. Native permission prompts and OS UI require manual review. Calendar/news checks should use test data. Browser fixtures do not certify every provider's current UI. See [review steps](REVIEWER-INSTRUCTIONS.md) and [privacy reference](PERMISSIONS-AND-PRIVACY.md).
+With synthetic records, verify automatic migration, draft recovery, clear-site-data recovery, normal extension-update persistence, exports/restores and intentional clearing. Test signed-in providers, particularly Netflix picture framing after resize/fullscreen, Plex Resume, YouTube playlist actions and Disney+ next episode, as well as physical switches, installed voices and intended Chrome/Edge/PWA modes. Native permission prompts and OS UI require manual review. Calendar/news checks should use test data. Browser fixtures do not certify every provider's current UI. See [review steps](REVIEWER-INSTRUCTIONS.md) and [privacy reference](PERMISSIONS-AND-PRIVACY.md).
 
 ## Private data and preserved work
 

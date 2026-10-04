@@ -7,6 +7,7 @@
   function resetInput(){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed=null;scanner?.setInputHeld(false);}
   function sync(){if(scanner){resetInput();scanner.setSuspended(!owns());}}
   function createScanner(){
+    if(!window.NarbeScanManager?.createChoiceScan)return; // Caregiver-only editors use native controls.
     const back=dialog.querySelector('#gate-back');
     scanner=NarbeScanManager.createChoiceScan({choice:true,holdThreshold:3000,items:[back],
       getId:el=>el.id,getLabel:()=> 'Back to Hub',getElement:el=>el,
@@ -36,13 +37,13 @@
       createScanner();
     }
     if(!dialog.open){
-      dialog.showModal();dialog.focus();resetInput();scanner.setSuspended(false);scanner.open([dialog.querySelector('#gate-back')]);signal();
-      const parkingLabel=NarbeScanManager.isParkingEnabled();
-      scanner.announceCurrent('This tool is unavailable. Your work is kept while this tool reconnects.'+(parkingLabel?' Park.':''),{parkingLabel});
+      dialog.showModal();dialog.focus();resetInput();scanner?.setSuspended(false);scanner?.open([dialog.querySelector('#gate-back')]);if(!scanner)dialog.querySelector('#gate-back').focus();signal();
+      const parkingLabel=window.NarbeScanManager?.isParkingEnabled()||false;
+      scanner?.announceCurrent('This tool is unavailable. Your work is kept while this tool reconnects.'+(parkingLabel?' Park.':''),{parkingLabel});
     }
   }
   function input(e){
-    if(!dialog?.open)return;
+    if(!dialog?.open||!scanner)return;
     if(!['Space','Enter','NumpadEnter'].includes(e.code))return;
     // Details belongs to native pointer/typing controls; block only the app behind it.
     e.stopImmediatePropagation();if(e.target?.closest('details')||!owns())return;
@@ -66,8 +67,8 @@
   document.addEventListener('DOMContentLoaded',()=>{
     // Registered after the single global cooldown guard and before app bubble handlers.
     window.addEventListener('keydown',input,true);window.addEventListener('keyup',input,true);
-    let auto=NarbeScanManager.getSettings().autoScan;
-    NarbeScanManager.subscribe(next=>{if(auto!==next.autoScan&&pressed&&!pressed.braking){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed.back=true;}auto=next.autoScan;});
+    let auto=window.NarbeScanManager?.getSettings().autoScan;
+    window.NarbeScanManager?.subscribe(next=>{if(auto!==next.autoScan&&pressed&&!pressed.braking){clearTimeout(holdTimer);clearInterval(repeatTimer);pressed.back=true;}auto=next.autoScan;});
     update();
   });
 })();

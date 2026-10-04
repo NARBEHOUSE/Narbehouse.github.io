@@ -1,6 +1,6 @@
 # Benny's Hub Companion — store copy
 
-Copy for the local Companion 1.0.8 candidate, which has not been submitted or approved. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 public. That historical status has not been independently checked in the publisher dashboard. Version 1.0.8 fixes Netflix framing where provider centering transforms could leave only a quarter of the picture visible; it adds no permissions. Previous release archives remain unchanged. Signed-in provider checks remain separate.
+Copy for the local Companion 1.0.8 candidate, which has not been submitted or approved. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 public. That historical status has not been independently checked in the publisher dashboard. Version 1.0.8 fixes Netflix framing where provider centering transforms could leave only a quarter of the picture visible. This revised 1.0.8 candidate also provides Companion-managed storage for Journal, Keyboard, Streaming and Day Hub using the existing storage permission; it adds no permissions. Previous release archives remain unchanged. Signed-in provider checks remain separate.
 
 The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of the pending update.
 
@@ -20,10 +20,13 @@ The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/
 
 ## Full description — paste into either store
 
-Benny's Hub Companion connects the Benny's Hub website to supported streaming players and optional Day Hub sources, helping people use these features with one or two switches mapped to Space and Enter (Return).
+Benny's Hub Companion connects the Benny's Hub website to supported streaming players, local app-data storage and optional Day Hub sources, helping people use these features with one or two switches mapped to Space and Enter (Return).
 
 STREAMING CONTROLS
 Launch a video from the Hub to open a dedicated playback window with a compact, color-coded control row in its own area below the video. Controls include Play / Pause, Rewind 10 seconds, Fast forward 10 seconds, volume, mute, previous item, next item, fullscreen and Return to Hub. Return to Hub is always last in the scan order.
+
+SAVED APP DATA
+Journal entries and drafts save automatically inside Companion. Keyboard vocabulary and preferences, Streaming library and progress, and Day Hub weather preferences also stay in Companion storage when supported. Clearing Hub website data does not clear these extension records; normal updates preserve them. The accessible app interface stays familiar, with no file dialogs while writing. A caregiver can export and restore separate backups through Companion & data → My data. Removing Companion or its browser profile removes its stored data, so keep a separate backup. No Google account or cloud storage is required.
 
 CONTINUE WATCHING
 For shows and YouTube playlists, the Hub saves the latest playback URL on your device and uses it when you choose Continue. The original library link stays intact. Episode tracking depends on the service updating its playback URL; the service controls resume time within a video. Plex uses its own watch progress.

@@ -4,6 +4,37 @@ The web upgrade covers all 26 catalogue games, six tools, legacy Mini Golf, Hub 
 
 This public map replaces the chronological working ledger; its complete original, task notes, backups and test attempts remain preserved locally. Current policy is maintained in [ACCESSIBILITY.md](bennyshub/ACCESSIBILITY.md) and [the developer guide](developer-guide.html). See [validation](submission/VALIDATION.md) and [the test checklist](SCAN-UPGRADE-TESTING.md).
 
+## Companion app storage and caregiver restore — 2026-10-04
+
+Companion now keeps Journal entries and unfinished drafts, Keyboard vocabulary/preferences, Streaming library/progress/settings and Day Hub weather preferences in local extension storage. With the new capabilities connected, these copies survive clearing the Hub website's storage. No cloud account or new permission is required. Removing Companion or its browser profile can remove these copies, so caregiver exports remain available.
+
+The manifest stays at 1.0.8. The new immutable `journal-storage` revision includes this work and the earlier video-frame correction; the original 1.0.8 and 1.0.7 archives remain unchanged. Detection uses `journal-storage-v1` and `app-storage-v1`, since the original 1.0.8 package lacks these capabilities. Older Companion versions retain browser storage. This pass is WEB-ONLY; no Electron files were changed.
+
+Migration preserves existing data, records origin-specific receipts and waits for successful durable writes before acknowledging saves. Concurrent edits use revision checks; differing legacy data and Journal drafts retain recovery copies. Clearing website storage does not clear Companion data. Journal resumes unfinished entries through Continue Entry, and waits for initialization before enabling Entries and Options.
+
+Companion & data → My data keeps the existing Journal export/restore location and adds matching restores for Keyboard, Streaming and Day Hub. Validated imports target only that app's keys and use the same storage clients as its actual reader. A quiet Journal backup reminder stays in the caregiver area; the recorded export time means an export was requested, not that a download was independently verified on disk. Normal switch use saves automatically.
+
+| Files | Scope / Electron port | Change |
+| --- | --- | --- |
+| `extension/journal-store.mjs`, `extension/app-data-store.mjs` | COMPANION / WEB-ONLY | Serialized local stores, migration receipts, validation, recovery copies and revision protection. |
+| `extension/background.mjs`, `extension/hub-content.js` | COMPANION / WEB-ONLY | Restrict storage commands to authorized Hub pages; expose capabilities and persist validated playback progress. |
+| `bennyshub/shared/journal-storage.js`, `bennyshub/shared/app-storage.js` | WEB-ONLY / WEB-ONLY | Shared Companion clients, browser fallback, pending-write recovery and startup hydration. |
+| `bennyshub/shared/data-backup.js`, `extension/shared/data-backup.js` | WEB / COMPANION / WEB-ONLY | Exact shared backup validator for the actual app storage formats. |
+| `bennyshub/shared/extension-client.js` | WEB-ONLY / WEB-ONLY | Preserve structured storage conflict errors. |
+| `bennyshub/shared/tool-gate.js` | WEB-ONLY / WEB-ONLY | Allow the native caregiver editor gate to work when no scan manager is loaded. |
+| `bennyshub/apps/tools/journal/app.js`, `index.html`, `journal-look.css` | WEB-ONLY / WEB-ONLY | Automatic durable entry/draft saves, Continue Entry, inline errors and safe startup navigation; retain Journal scan behavior. |
+| `bennyshub/apps/tools/keyboard/app.js`, `index.html`, `predictions.js` | WEB-ONLY / WEB-ONLY | Restore before reading preferences/vocabulary and persist explicit app writes. |
+| `bennyshub/apps/tools/dayhub/app.js`, `index.html` | WEB-ONLY / WEB-ONLY | Restore and save weather preferences through the shared client. |
+| `bennyshub/apps/tools/streaming/app.js`, `index.html`, `editor.html`, `editor.js`, `web-streaming.js` | WEB-ONLY / WEB-ONLY | Restore library/settings/progress, protect against stale editor saves and await playback persistence. |
+| `bennyshub/index.html`, `bennyshub/data-settings.html`, `bennyshub/data-settings.js` | WEB-ONLY / WEB-ONLY | Existing caregiver export/restore area, per-app restore/clear validation and quiet Journal backup reminder. |
+| `bennyshub/service-worker.js` | WEB-ONLY / WEB-ONLY | Cache v32 with the new shared storage helpers. |
+| `.gitattributes`, `scripts/sync-companion-shared.cjs`, `scripts/package-companion.cjs` | RELEASE / WEB-ONLY | Canonical helper parity and reproducible immutable revision packaging. |
+| `scripts/check-companion-app-storage.cjs`, `scripts/check-scan-tools-journal.cjs`, `tests/app-data-store.test.cjs`, `tests/companion-data-client.test.cjs`, `tests/data-backup.test.cjs`, `tests/journal-security.test.cjs`, `tests/journal-store.test.cjs`, `tests/streaming.test.cjs` | TEST / WEB-ONLY | Real app migration/recovery/export/restore, storage failure/concurrency/security and legacy compatibility checks; drain real Companion replies between simulated scan-clock slices. |
+| `bennyshub/extension-setup.html`, `bennyshub/companion-privacy.html`, `extension/README.md`, `submission/PERMISSIONS-AND-PRIVACY.md`, `submission/REVIEWER-INSTRUCTIONS.md`, `submission/START-HERE.md`, `submission/STORE-LISTING.md`, `submission/VALIDATION.md`, `submission/COMPANION-SHA256SUMS.txt` | RELEASE / WEB-ONLY | New download, precise local-storage/privacy limits, reviewer instructions and package checksum. |
+| `SCAN-UPGRADE-CHANGES.md` | DOCUMENTATION / WEB-ONLY | Record changed files, behavior, validation and desktop scope. |
+
+Validation: 203 unit checks and five Journal scan groups passed. Real unpacked-Companion checks exercise all four legacy migrations and app readers, entry/draft saving, recovery after website storage clearing, downloaded exports/restores and browser restart. Final acceptance and release results are recorded in `submission/VALIDATION.md`. The full tracked pre-change backup and test evidence remain locally under `artifacts/journal-companion-storage`; the backup is `before-75a5d99.zip`.
+
 ## Companion 1.0.8 video-frame correction
 
 A centered provider video could retain its CSS translation after the Companion forced its box to the reserved frame. The translated image was then clipped to its lower-right quarter at the upper left. The fitted video, intermediate surfaces and frame now clear their own transform properties while caption positioning and the native DOM hierarchy remain intact. Unlock restores the original provider styling.
@@ -65,7 +96,7 @@ All helper filenames below are relative to `bennyshub/shared/` unless a full pat
 | `scan-settings.js` | SHARED | Portable centralized controls retaining option identity. | COPY-AS-IS |
 | `bennyshub/index.html` | SHARED | Hub/Settings ownership, normal page/footer visibility and disclosure boundaries. | RE-PORT |
 | `tool-gate.js` | WEB-ONLY | Companion-unavailable dialog suspends tool input and owns its choices. | WEB-ONLY |
-| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with final scan assets and tutorial under v31. | WEB-ONLY |
+| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with scan assets, tutorial and Companion storage helpers under v32. | WEB-ONLY |
 | `bennyshub/setup.js`, `bennyshub/extension-setup.html`, `bennyshub/companion-privacy.html` | WEB-ONLY | Setup/return flow, package link and storage/access disclosures. | WEB-ONLY |
 
 ## Companion file map

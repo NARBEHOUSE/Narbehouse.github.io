@@ -9,6 +9,7 @@ class LocalPredictionSystem {
   }
 
   async initializeData() {
+    if(window.BennyAppStorage)await BennyAppStorage.ready('keyboard');
     // Try to load user data from localStorage first
     this.loadUserData();
 
@@ -392,7 +393,7 @@ class LocalPredictionSystem {
       }
 
       // Save to localStorage
-      localStorage.setItem('userKeyboardData', JSON.stringify(this.userData));
+      if(window.BennyAppStorage)BennyAppStorage.setItem('keyboard','userKeyboardData',JSON.stringify(this.userData));else localStorage.setItem('userKeyboardData',JSON.stringify(this.userData));
     } catch (error) {
     }
   }
@@ -416,7 +417,7 @@ class LocalPredictionSystem {
   // Method to clear user data
   clearUserData() {
     this.userData = { frequent_words: {}, bigrams: {}, trigrams: {} };
-    localStorage.removeItem('userKeyboardData');
+    if(window.BennyAppStorage)BennyAppStorage.removeItem('keyboard','userKeyboardData');else localStorage.removeItem('userKeyboardData');
     this.mergeData();
   }
 

@@ -5,3 +5,5 @@
 /bennyshub/shared/voice-manager.js -text
 /bennyshub/shared/scan-status-badge.js -text
 /bennyshub/shared/scan-status-badge.css -text
+
+/bennyshub/shared/data-backup.js -text

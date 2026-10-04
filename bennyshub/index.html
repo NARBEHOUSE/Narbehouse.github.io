@@ -6,6 +6,7 @@
 
   <meta charset="utf-8" />
   <script src="shared/extension-client.js"></script>
+  <script src="shared/journal-storage.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0f14">
   <link rel="manifest" href="manifest.webmanifest">
@@ -838,7 +839,8 @@
           </div>
           <div>
             <button type="button" id="personal-data" aria-describedby="personal-data-help">My data</button>
-            <p id="personal-data-help">Export or clear saved Hub data. Available with or without the extension.</p>
+            <p id="personal-data-help">Export, restore or clear saved Hub data. Keep a separate journal backup here.</p>
+            <p id="journal-backup-reminder" hidden></p>
           </div>
         </div>
         <details id="companion-tutorial" class="companion-tutorial">
@@ -1248,6 +1250,35 @@
     document.getElementById('hub-settings').addEventListener('toggle', syncCompanionTutorial);
     document.getElementById('extension-setup').onclick = () => window.open('extension-setup.html', '_blank', 'noopener');
     document.getElementById('personal-data').onclick = () => window.open('data-settings.html', '_blank', 'noopener');
+    let journalBackupCheck;
+    function showJournalBackupReminder(snapshot) {
+      const reminder = document.getElementById('journal-backup-reminder');
+      const hasWork = (snapshot.entryCount ?? snapshot.entries?.length ?? 0) > 0 ||
+        (snapshot.draftPresent ?? Boolean(snapshot.draft?.answer?.trim()));
+      reminder.hidden = !hasWork;
+      if (!hasWork) return;
+      reminder.textContent = snapshot.mode !== 'companion'
+        ? 'Journal is still saved in website storage. Export a backup in My data and update to the latest Companion 1.0.8 package.'
+        : snapshot.exportRevision == null || snapshot.exportRevision < snapshot.revision
+          ? 'Journal backup reminder: use My data → Export Journal to keep a separate copy of your latest work.'
+          : 'Last journal backup export: ' + new Date(snapshot.lastExportAt).toLocaleDateString() + '. Keep the downloaded file somewhere private.';
+    }
+    async function checkJournalBackup() {
+      if (!document.getElementById('hub-settings').open || journalBackupCheck) return;
+      journalBackupCheck = (async () => {
+        try { showJournalBackupReminder(await BennyJournalStorage.status()); }
+        catch {
+          const reminder = document.getElementById('journal-backup-reminder');
+          reminder.textContent = 'Journal storage could not be checked. Reconnect Companion to access its journal backups in My data.';
+          reminder.hidden = false;
+        } finally { journalBackupCheck = null; }
+      })();
+      await journalBackupCheck;
+    }
+    BennyJournalStorage.subscribe(showJournalBackupReminder);
+    document.getElementById('hub-settings').addEventListener('toggle', checkJournalBackup);
+    window.addEventListener('focus', checkJournalBackup);
+    window.addEventListener('benny-extension-change', checkJournalBackup);
     // Get unique genres for a category
     function getGenres(category) {
       const items = appsData[category] || [];

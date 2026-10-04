@@ -1,7 +1,11 @@
 import {updatePlayerScripts} from './player-registration.mjs';
 import {PROTOCOL,isHub,playerURL,scanPrefs,SERVICES} from './policy.mjs';
 import {calendarWeek} from './calendar.mjs';
+import {JOURNAL_ACTIONS,authorizeJournal,createJournalStore} from './journal-store.mjs';
+import {APP_DATA_ACTIONS,authorizeAppData,createAppDataStore} from './app-data-store.mjs';
 const trustedStorage=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})]).then(()=>chrome.storage.session.remove('ai'));
+const journalStore=createJournalStore(chrome.storage.local);
+const appDataStore=createAppDataStore(chrome.storage.local);
 const toolbarSpeechKey='playerToolbarSpeechEnabled';
 let toolbarSpeechQueue=Promise.resolve();
 const launchBusy=new Set();
@@ -44,6 +48,10 @@ async function rememberPosition(sender,session,currentURL=sender.url) {
   if(service===SERVICES.tubi&&!/^\/(tv-shows|movies)\/\d+/.test(url.pathname))return;
   const progress={playbackId:session.playbackId,url:url.href};
   await chrome.storage.session.set({['resume:'+session.hubTab]:progress});
+  // Keep the approved managed player's progress with its Companion-owned
+  // library, even when website data was cleared or its original tab is gone.
+  const savedProgress=await appDataStore.rememberPlayback(session.playbackId,url.href).catch(()=>null);
+  if(savedProgress)progress.savedProgress=savedProgress;
   // Persist to the owning website before navigation destroys its Streaming iframe.
   // Session storage remains a fallback while a Hub tab is reloading/unavailable.
   await chrome.tabs.sendMessage(session.hubTab,{protocol:PROTOCOL,action:'STREAM_POSITION',progress},{frameId:0}).catch(()=>{});
@@ -186,8 +194,16 @@ async function handle(m,sender){
   const topURL=isHub(sender.tab.url)?sender.tab.url:await hubLocation(sender.tab.id);
   if(new URL(topURL).origin!==new URL(sender.url).origin)throw Error('Only Benny’s Hub can use this action.');
   const p=m.payload||{};
+  if(JOURNAL_ACTIONS.includes(m.action)){
+    authorizeJournal(m.action,sender.url,sender.frameId);
+    return journalStore.request(m.action,p,new URL(sender.url).origin);
+  }
+  if(APP_DATA_ACTIONS.includes(m.action)){
+    authorizeAppData(m.action,sender.url,sender.frameId,m.action==='APP_DATA_RESTORE'?p.backup?.app:p.app);
+    return appDataStore.request(m.action,p,new URL(sender.url).origin);
+  }
   switch(m.action){
-    case 'HELLO':return {protocol:PROTOCOL,version:chrome.runtime.getManifest().version,capabilities:['streaming','journal','dayhub','settings-return']};
+    case 'HELLO':return {protocol:PROTOCOL,version:chrome.runtime.getManifest().version,capabilities:['streaming','journal','journal-storage-v1','app-storage-v1','dayhub','settings-return']};
     case 'OPEN_OPTIONS':await chrome.storage.session.set({settingsHub:topURL});await chrome.runtime.openOptionsPage();return {};
     case 'SYNC_SCAN':{
       const hubOrigin=new URL(sender.url).origin;
@@ -247,7 +263,7 @@ async function handle(m,sender){
   }
 }
 chrome.runtime.onMessage.addListener((message,sender,reply)=>{
-  handle(message,sender).then(data=>reply({ok:true,data}),e=>reply({ok:false,error:e.message||'Request failed.'}));return true;
+  handle(message,sender).then(data=>reply({ok:true,data}),e=>reply({ok:false,error:e.message||'Request failed.',...(e.code?{code:e.code}:{})}));return true;
 });
 chrome.tabs.onRemoved.addListener(id=>{chrome.storage.session.remove(['player:'+id,'resume:'+id]);});
 chrome.action.onClicked.addListener(()=>chrome.runtime.openOptionsPage());

@@ -13,6 +13,7 @@
   <script src="../../../shared/extension-client.js"></script>
 <script src="../../../shared/tool-gate.js"></script>
 <script src="../../../shared/web-data.js"></script>
+<script src="../../../shared/journal-storage.js"></script>
 
   <!-- Shared resources -->
   <script src="../../../shared/ios-audio-fix.js"></script>
@@ -26,13 +27,14 @@
 </head>
 <body>
   <div id="app">
+    <p id="journalStorageStatus" class="journal-storage-status" role="status" hidden></p>
     <!-- Main Menu Screen -->
-    <div id="mainMenu" class="screen active">
+    <div id="mainMenu" class="screen active" aria-busy="true">
       <svg class="journal-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="10" y="5" width="30" height="38" rx="4" stroke="currentColor" stroke-width="2"/><path d="M17 5v38M23 16h11M23 23h11M23 30h7M7 13h6M7 24h6M7 35h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <h1 class="title">Journal</h1>
       <div class="menu-buttons">
-        <button class="menu-btn" data-action="entries">Entries</button>
-        <button class="menu-btn" data-action="options">Options</button>
+        <button class="menu-btn" data-action="entries" disabled>Entries</button>
+        <button class="menu-btn" data-action="options" disabled>Options</button>
         <button class="menu-btn danger" data-action="exit">Exit</button>
       </div>
     </div>
