@@ -765,7 +765,7 @@
       color: var(--narbe-orange);
     }
     .hub-settings { margin: 0 0 14px; text-align: right; font-size: 13px; color: var(--muted); }
-    .hub-settings summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
+    .hub-settings > summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
     .settings-panel { text-align: left; padding: 16px; margin-top: 8px; background: #121b28; border: 1px solid #3a4e63; border-radius: 12px; }
     .settings-panel a { color: #9ed7ff; text-underline-offset: 3px; }
     .settings-panel p { line-height: 1.6; }
@@ -775,6 +775,16 @@
     .settings-panel button:hover { background: #2c4863; }
     .settings-panel button:disabled { cursor: wait; opacity: .7; }
     .settings-error { color: #ffb4b4; }
+    .companion-tutorial { margin: 16px 0; border: 1px solid #7095b8; border-radius: 8px; }
+    .companion-tutorial > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; color: var(--text); background: #21384e; border-radius: 8px; font-weight: 700; cursor: pointer; list-style: none; }
+    .companion-tutorial > summary::-webkit-details-marker { display: none; }
+    .companion-tutorial > summary:hover { background: #2c4863; }
+    .companion-tutorial-icon { width: 22px; height: 22px; flex: 0 0 auto; }
+    .companion-tutorial-chevron { width: 16px; height: 16px; margin-left: auto; flex: 0 0 auto; }
+    .companion-tutorial[open] > summary { border-radius: 8px 8px 0 0; }
+    .companion-tutorial[open] .companion-tutorial-chevron { transform: rotate(180deg); }
+    .companion-tutorial-video { width: 100%; aspect-ratio: 16 / 9; min-height: 200px; background: #000; }
+    .companion-tutorial-video iframe { display: block; width: 100%; height: 100%; min-height: inherit; border: 0; }
     @media (max-width: 600px) { .settings-actions { grid-template-columns: 1fr; } }
     .hub-settings :focus-visible { outline: 3px solid #ffdf65; outline-offset: 3px; }
     .connection-status { display: inline-block; border: 1px solid currentColor; border-radius: 20px; padding: 6px 12px; font-weight: 700; color: #ffdf83; background: #302816; }
@@ -831,6 +841,14 @@
             <p id="personal-data-help">Export or clear saved Hub data. Available with or without the extension.</p>
           </div>
         </div>
+        <details id="companion-tutorial" class="companion-tutorial">
+          <summary>
+            <svg class="companion-tutorial-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="m10 8 6 4-6 4V8Z" fill="currentColor"/></svg>
+            <span>Watch tutorial</span>
+            <svg class="companion-tutorial-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </summary>
+          <div id="companion-tutorial-video" class="companion-tutorial-video"></div>
+        </details>
         <p>The optional Companion adds Day Hub, Journal and Streaming to your Tools menu. Games, Keyboard, Phraseboard and YouTube Search work without it.</p>
         <p>Need the extension? Get it from the <a id="extension-store" href="https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc" target="_blank" rel="noopener noreferrer">Chrome Web Store</a>, then refresh the Hub.</p>
       </div>
@@ -1203,6 +1221,31 @@
     document.getElementById('extension-recheck').onclick = checkCompanionConnection;
     document.getElementById('extension-settings').onclick = openCompanionSettings;
     document.getElementById('hub-settings').addEventListener('toggle', event => { if (event.target.open) checkCompanionConnection(); });
+    const companionTutorial = document.getElementById('companion-tutorial');
+    const companionTutorialVideo = document.getElementById('companion-tutorial-video');
+    function syncCompanionTutorial() {
+      if (!document.getElementById('hub-settings').open) companionTutorial.open = false;
+      if (!companionTutorial.open) {
+        companionTutorialVideo.replaceChildren(); // Stop playback when either disclosure closes.
+        return;
+      }
+      if (companionTutorialVideo.firstElementChild) return;
+      const player = document.createElement('iframe');
+      player.title = 'Benny’s Hub Companion setup tutorial';
+      player.src = 'https://www.youtube-nocookie.com/embed/6MFJWrkgSM4?rel=0';
+      player.allow = 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+      player.allowFullscreen = true;
+      player.referrerPolicy = 'strict-origin-when-cross-origin';
+      companionTutorialVideo.append(player);
+    }
+    function closeCompanionTutorial() {
+      if (!companionTutorial.open && !companionTutorialVideo.firstElementChild) return;
+      document.getElementById('hub-settings').open = false;
+      companionTutorial.open = false;
+      companionTutorialVideo.replaceChildren();
+    }
+    companionTutorial.addEventListener('toggle', syncCompanionTutorial);
+    document.getElementById('hub-settings').addEventListener('toggle', syncCompanionTutorial);
     document.getElementById('extension-setup').onclick = () => window.open('extension-setup.html', '_blank', 'noopener');
     document.getElementById('personal-data').onclick = () => window.open('data-settings.html', '_blank', 'noopener');
     // Get unique genres for a category
@@ -1612,6 +1655,7 @@
         speak('Enable Benny’s Hub Companion first.');
         return;
       }
+      closeCompanionTutorial();
       window.BennyUsage?.open(src);
       iframeTitle.textContent = title;
       appIframe.src = src;
@@ -1676,6 +1720,7 @@
 
     // Screen management
     function showScreen(name) {
+      closeCompanionTutorial();
       isTransitioning = true;
       currentScreen = name;
 

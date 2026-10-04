@@ -23,6 +23,18 @@ Release preparation on October 4, 2026 uses an immutable 1.0.8 ZIP with the fram
 | `extension/README.md`, `WEB-EXTENSION-MIGRATION.md` | Documentation / WEB-ONLY | Describe the frame correction, new candidate and current Scan Speed behavior. |
 | `submission/START-HERE.md`, `submission/STORE-LISTING.md`, `submission/REVIEWER-INSTRUCTIONS.md`, `submission/VALIDATION.md`, `submission/COMPANION-SHA256SUMS.txt` | Release records / WEB-ONLY | Current package, reviewer notes, validation and exact checksum; preserve the historical 1.0.7 submission record. |
 
+## Companion setup tutorial — 2026-10-04
+
+Companion & data now includes a collapsed Watch tutorial disclosure with a video icon. Opening it loads the owner's YouTube setup video in a responsive, titled player; closing either disclosure or opening another Hub screen removes the player and stops playback. It uses the existing native caregiver-menu keyboard handling and normal page scrolling. This is website-only; Companion 1.0.8 and the Electron app are unchanged.
+
+| Files | Scope / port | Change |
+| --- | --- | --- |
+| `bennyshub/index.html` | WEB-ONLY | Add the accessible tutorial disclosure, responsive embed and playback cleanup. |
+| `bennyshub/service-worker.js` | WEB-ONLY | Refresh the cached Hub shell under v31. |
+| `SCAN-UPGRADE-CHANGES.md` | Documentation / WEB-ONLY | Record this addition and its scope. |
+
+Validation: desktop and mobile browser checks cover collapsed startup, Enter/Space disclosure controls, exact video URL, no horizontal overflow and cleanup on parent collapse or Hub/app navigation. The public YouTube embed loaded successfully in isolated Edge. All 145 unit tests, the public build, release audit and 905-link check passed. Local backup and browser evidence are retained under `artifacts/companion-tutorial`.
+
 ## Current behavior
 
 - Stationary CHOICE menus use the shared scanner. Moving/timed MECHANIC surfaces retain native timing, input ownership and gameplay.
@@ -53,7 +65,7 @@ All helper filenames below are relative to `bennyshub/shared/` unless a full pat
 | `scan-settings.js` | SHARED | Portable centralized controls retaining option identity. | COPY-AS-IS |
 | `bennyshub/index.html` | SHARED | Hub/Settings ownership, normal page/footer visibility and disclosure boundaries. | RE-PORT |
 | `tool-gate.js` | WEB-ONLY | Companion-unavailable dialog suspends tool input and owns its choices. | WEB-ONLY |
-| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with final scan assets under v30. | WEB-ONLY |
+| `bennyshub/service-worker.js` | WEB-ONLY | Offline shell with final scan assets and tutorial under v31. | WEB-ONLY |
 | `bennyshub/setup.js`, `bennyshub/extension-setup.html`, `bennyshub/companion-privacy.html` | WEB-ONLY | Setup/return flow, package link and storage/access disclosures. | WEB-ONLY |
 
 ## Companion file map
