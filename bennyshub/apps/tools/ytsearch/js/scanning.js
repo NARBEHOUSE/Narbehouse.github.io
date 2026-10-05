@@ -26,7 +26,7 @@ class ScanningManager {
   const current=this.scanner.context;
   if(!fresh&&current?.key.startsWith('keys:')){const row=this.rows.find(row=>row.dataset.rowId===current.key.slice(5));if(row)return {key:current.key,items:this.rowItems(row),statusHost:this.statusHost};}
   return {key:'rows',items:this.rows.map(element=>({id:'row:'+element.dataset.rowId,kind:'row',element,labelElement:element.querySelector('.row-label')||element.querySelector('button')||element,
-    label:()=>element.dataset.rowId.startsWith('row_history')?this.rowItems(element).map(item=>item.label()).join(', '):this.rowLabels[element.dataset.rowId]||element.dataset.label||'Row'})),statusHost:this.statusHost};
+    label:()=>element.dataset.rowId==='predRow'?(this.rowItems(element).map(item=>item.element.textContent.trim()).filter(Boolean).join(', ')||'No predictions'):element.dataset.rowId.startsWith('row_history')?this.rowItems(element).map(item=>item.label()).join(', '):this.rowLabels[element.dataset.rowId]||element.dataset.label||'Row'})),statusHost:this.statusHost};
  }
  updateRows(fresh=false){this.getAllRows();if(document.getElementById('startup-error')?.open){this.scanner.sync(null);return;}this.scanner.sync(this.context(fresh),{fresh});}
  paint(item,state,context){this.clearKeyHighlights();this.clearRowHighlights();document.querySelectorAll('.settings-item.focused').forEach(el=>el.classList.remove('focused'));this.currentRowIndex=this.currentKeyIndex=this.overlayIndex=-1;this.mode=state.depth?'KEYS':'ROWS';if(window.settingsManager)settingsManager.currentIndex=-1;

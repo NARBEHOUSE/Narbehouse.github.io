@@ -1,5 +1,29 @@
 # Web scan implementation and Companion 1.0.8
 
+## Predictive keyboard row speech — 2026-10-05
+
+The owner reported that predictive keyboard rows announced generic labels such as “Word predictions” instead of reading each displayed suggestion, and requested checking all predictive keyboards in both web and desktop apps. This is a scoped repair to the current desktop integration, separately authorized from the historical port plan below.
+
+Prediction rows now resolve their current available suggestions when scanned and speak them in display order with pauses. This covers manual forward/reverse, Auto, and nested parent-row returns. Desktop Keyboard also reads predicted letters. Empty/disabled suggestions are omitted; empty rows announce “No predictions” (or “No letter predictions”). Journal retains word-pronunciation processing. Keyboard’s long-Enter shortcut uses one announcement instead of cancelling and repeating it. The controller owns the full speech completion ticket, preserving Wait for Speech.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| Web and desktop `bennyshub/apps/tools/keyboard/app.js` | SHARED / DONE ON ELECTRON | Live word/letter prediction labels; evaluate dynamic labels; remove duplicate long-Enter speech. |
+| Web and desktop `bennyshub/apps/tools/journal/app.js` | SHARED / DONE ON ELECTRON | Read current words in order, preserving pronunciation. |
+| Web and desktop `bennyshub/apps/tools/streaming/keyboard_integration.js` | SHARED / DONE ON ELECTRON | Read available search predictions. |
+| `bennyshub/apps/tools/ytsearch/js/scanning.js` | WEB-ONLY / NOT NEEDED | Read current prediction words, omitting blank cells. |
+| `scripts/check-prediction-row-speech.cjs` | WEB-ONLY / TESTS BOTH SOURCES | Speech regressions across four web and six desktop keyboards, covering 14 prediction rows. |
+| `AGENTS.md`, `bennyshub/ACCESSIBILITY.md` | WEB-ONLY / BEHAVIOR REFERENCE | Document the prediction speech contract. |
+| `bennyshub/service-worker.js` | WEB-ONLY / NOT NEEDED | Cache v34 prepares browsers for fixed scripts on the next publication. |
+| `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY / NOT NEEDED | Record scope, verification and desktop application. |
+
+Desktop Messenger’s word, phrase and common-word rows, Web Search’s prediction row, and RT Convo’s typing word/phrase rows already read their contents correctly; all passed without production edits.
+
+Validation: reproduced the original web Keyboard failure (“predictive text” in place of six words). All **14 prediction rows** passed real Space/Enter renderer checks with captured platform speech: displayed order, refreshed suggestions, blank cells, nested return, held reverse, Auto entry, Wait for Speech completion plus a full interval, and TTS Off. Empty-row fallbacks were checked on repaired keyboards. **58 focused unit tests passed.** The existing row-wrap renderer suite also passed all **13 web/desktop keyboard surfaces**, covering reverse/forward wrapping, release behavior, Auto, brake, settings, Back and key selection. Native services/storage were isolated; no messages or AI requests were sent. These checks validate renderer behavior and speech text, not the live Electron process or physical switch hardware.
+
+Backups, staged desktop copies, failing/passing evidence and the checksum-guarded apply script are in `../Website Backups/Prediction-row-speech-20261005-1791201436145`. All three applied desktop files match their tested staged checksums. The owner authorized publication. The website publishes through the existing GitHub Pages workflow on a push to main. Pre-publication validation passed all 206 unit tests, the reviewed build, the release audit (1,182 files, no findings), 920 page references, and the unchanged Companion ZIP checksum. Cache v34 delivers the updated app scripts.
+
+
 The web upgrade covers all 26 catalogue games, six tools, legacy Mini Golf, Hub menus/Settings and Companion. The owner reports the local changes working well. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 still public. Store status has not been independently checked in the publisher dashboard.
 
 This public map replaces the chronological working ledger; its complete original, task notes, backups and test attempts remain preserved locally. Current policy is maintained in [ACCESSIBILITY.md](bennyshub/ACCESSIBILITY.md) and [the developer guide](developer-guide.html). See [validation](submission/VALIDATION.md) and [the test checklist](SCAN-UPGRADE-TESTING.md).

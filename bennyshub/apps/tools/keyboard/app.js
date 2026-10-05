@@ -311,8 +311,6 @@
     if (choiceScan.getState().depth) choiceScan.back({restore: true});
     else {
       choiceScan.open(rowChoices(), {restoreId: 'row:predictions'});
-      const words = [...predictBar.querySelectorAll('.chip')].map(chip => chip.textContent).filter(Boolean);
-      if (words.length) choiceScan.announceCurrent(words.join(', '));
     }
     choiceScan.setInputHeld(true);
   }
@@ -328,7 +326,7 @@
   function rowChoices() {
     return [
       {id: 'row:text', kind: 'row', row: 0, element: textBar, label: 'Text. ' + (buffer || 'Empty')},
-      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: 'predictive text'},
+      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: () => childChoices(1).map(item => item.label).join(', ') || 'No predictions'},
       ...rows.map((keys, row) => ({id: 'row:' + row, kind: 'row', row: row + 2,
         element: kb.querySelectorAll('.key')[row * 6], label: row === 0 ? 'controls' : keys.join(' ')}))
     ];
@@ -938,7 +936,7 @@
     statusHost.setAttribute('aria-label', 'Scan status'); document.querySelector('main').append(statusHost);
     choiceScan = NarbeScanManager.createChoiceScan({
       choice: true, holdThreshold: scanSpeeds[currentScanSpeed].longPress, items: rowChoices(), statusHost,
-      getId: item => item.id, getLabel: item => item.label, getElement: item => item.element,
+      getId: item => item.id, getLabel: item => typeof item.label === 'function' ? item.label() : item.label, getElement: item => item.element,
       getLabelElement: item => item.kind === 'setting' ? item.element.querySelector('.setting-label') :
         item.row === 1 && item.kind === 'row' ? item.element.querySelector('.chip') : item.element.querySelector('.ctrl-text') || item.element,
       speak: text => NarbeVoiceManager.speakProcessed(text), onHighlight: drawChoice, onSelect: chooseItem

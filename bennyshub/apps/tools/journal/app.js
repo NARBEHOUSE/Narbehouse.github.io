@@ -401,7 +401,7 @@
     const keys = Array.from(kb.querySelectorAll('.key'));
     return [{id:'row:text',row:0,kind:'keyboard-row',element:textBar,label:()=> 'Text. '+(keyboardBuffer || 'Empty')},
       ...keyboardRows.map((row,index)=>({id:'row:'+index,row:index+1,kind:'keyboard-row',element:keys[index*6],labelElement:keys[index*6]?.querySelector('.ctrl-text'),label:index===0?'Controls':row.join(', ')})),
-      {id:'row:predictions',row:8,kind:'keyboard-row',element:predictBar,labelElement:predictBar.querySelector('.chip'),label:'Predictive text'}];
+      {id:'row:predictions',row:8,kind:'keyboard-row',element:predictBar,labelElement:predictBar.querySelector('.chip'),label:()=>keyboardChildren(8).map(item=>NarbeVoiceManager.processTextForTTS(item.label.trim())).filter(Boolean).join(', ')||'No predictions'}];
   }
   function keyboardChildren(row) {
     const buttons = row===8 ? Array.from(predictBar.querySelectorAll('.chip')) : Array.from(kb.querySelectorAll('.key')).slice((row-1)*6,row*6);
