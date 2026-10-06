@@ -131,26 +131,38 @@
     }
 
     // ---------- LED boards ----------
+    // Shrink a line of text until it fits maxWidth (the fallback font, before Bebas Neue loads, runs much wider)
+    function fitFont(ctx, text, size, maxWidth) {
+        ctx.font = `bold ${size}px ${FONT}`;
+        const w = ctx.measureText(text).width;
+        if (w > maxWidth) ctx.font = `bold ${Math.floor(size * maxWidth / w)}px ${FONT}`;
+    }
+
     function ribbonTexture(messages, h = 64) {
         const [c, ctx] = canvas(2048, h);
-        ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, 2048, h);
-        let x = 0;
         const seg = 2048 / messages.length;
-        messages.forEach((msg, i) => {
-            const g = ctx.createLinearGradient(x, 0, x + seg, 0);
-            g.addColorStop(0, msg.bg[0]); g.addColorStop(1, msg.bg[1]);
-            ctx.fillStyle = g; ctx.fillRect(x + 2, 3, seg - 4, h - 6);
-            ctx.fillStyle = msg.fg;
-            ctx.font = `bold ${Math.round(h * 0.72)}px ${FONT}`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(msg.text, x + seg / 2, h / 2 + 2);
-            x += seg;
-        });
-        // LED dot grid (kept faint: a hard 1px grid shimmers as it scrolls)
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        for (let yy = 0; yy < h; yy += 4) ctx.fillRect(0, yy, 2048, 1);
-        for (let xx = 0; xx < 2048; xx += 4) ctx.fillRect(xx, 0, 1, h);
-        return tex(c, { repeatX: 1 });
+        function draw() {
+            ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, 2048, h);
+            let x = 0;
+            messages.forEach(msg => {
+                const g = ctx.createLinearGradient(x, 0, x + seg, 0);
+                g.addColorStop(0, msg.bg[0]); g.addColorStop(1, msg.bg[1]);
+                ctx.fillStyle = g; ctx.fillRect(x + 2, 3, seg - 4, h - 6);
+                ctx.fillStyle = msg.fg;
+                fitFont(ctx, msg.text, Math.round(h * 0.72), seg - 40); // keep clear of the panel edges
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(msg.text, x + seg / 2, h / 2 + 2);
+                x += seg;
+            });
+            // LED dot grid (kept faint: a hard 1px grid shimmers as it scrolls)
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            for (let yy = 0; yy < h; yy += 4) ctx.fillRect(0, yy, 2048, 1);
+            for (let xx = 0; xx < 2048; xx += 4) ctx.fillRect(xx, 0, 1, h);
+        }
+        draw();
+        const t = tex(c, { repeatX: 1 });
+        t.repaint = draw; // r128 textures have no userData
+        return t;
     }
 
     const RIBBON = [
@@ -295,7 +307,7 @@
         ctx.restore();
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const text = (t, y, size, color = '#ffffff') => {
-            ctx.font = `bold ${size}px ${FONT}`; ctx.fillStyle = color; ctx.fillText(t, 256, y);
+            fitFont(ctx, t, size, 420); ctx.fillStyle = color; ctx.fillText(t, 256, y);
         };
         const star = (x, y, r, color) => {
             ctx.fillStyle = color; ctx.beginPath();
@@ -409,6 +421,7 @@
             fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying vec3 vN; varying vec3 vV; varying float vY;
                 void main() { float face = abs(dot(normalize(vN), normalize(vV)));
                     float along = smoothstep(0.0, 0.75, vY) * (1.0 - smoothstep(0.9, 1.0, vY));
+                    along *= smoothstep(8.0, 24.0, length(vV)); // fade out near the camera so a shaft never fogs the view
                     gl_FragColor = vec4(uColor * pow(face, 2.5) * along * uOpacity, 1.0); }`,
             transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
         });
@@ -440,12 +453,19 @@
             mesh.position.addScaledVector(f.out, -0.2);
         });
         const adTex = ribbonTexture(BASE_ADS, 96);
-        ledBoard(group, 70, 2.8, adTex, new THREE.Vector3(0, 1.45, -18.12), 0, scrollers);   // just in front of the housing face (z -18.2)
-        ledBoard(group, 46, 2.8, adTex, new THREE.Vector3(-28.42, 1.45, 6), Math.PI / 2, scrollers);
-        ledBoard(group, 46, 2.8, adTex, new THREE.Vector3(28.42, 1.45, 6), -Math.PI / 2, scrollers);
+        // The three boards meet exactly at the corners (x ±28.42, z -18.12) so no board hides another's end
+        ledBoard(group, 56.84, 2.8, adTex, new THREE.Vector3(0, 1.45, -18.12), 0, scrollers);   // just in front of the housing face (z -18.2)
+        ledBoard(group, 47.12, 2.8, adTex, new THREE.Vector3(-28.42, 1.45, 5.44), Math.PI / 2, scrollers);
+        ledBoard(group, 47.12, 2.8, adTex, new THREE.Vector3(28.42, 1.45, 5.44), -Math.PI / 2, scrollers);
+        // Repaint the boards once the display font has loaded (every board shares the canvas, but each
+        // board's texture has to be re-uploaded)
+        if (document.fonts && document.fonts.load) {
+            const repaint = () => { ribbonTex.repaint(); adTex.repaint(); scrollers.forEach(sc => { sc.tex.needsUpdate = true; }); };
+            document.fonts.load(`bold 60px "Bebas Neue"`).then(repaint, () => {});
+        }
         // board housings
         const housing = new THREE.MeshStandardMaterial({ color: 0x0a0b10, roughness: 0.5, metalness: 0.4 });
-        [[0, -18.4, 71, 0], [-28.7, 6, 47, Math.PI / 2], [28.7, 6, 47, -Math.PI / 2]].forEach(([x, z, w, ry]) => {
+        [[0, -18.4, 57.6, 0], [-28.7, 5.3, 48, Math.PI / 2], [28.7, 5.3, 48, -Math.PI / 2]].forEach(([x, z, w, ry]) => {
             const b = new THREE.Mesh(new THREE.BoxGeometry(w, 3.2, 0.4), housing);
             b.position.set(x, 1.5, z); b.rotation.y = ry; group.add(b);
         });

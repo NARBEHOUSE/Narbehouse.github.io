@@ -47,7 +47,7 @@
     {
       "id": "bennysbasketball",
       "title": "Benny's Basketball Shooter",
-      "description": "A fun basketball shooting game with special bonus mode to try to get the highest score possible.",
+      "description": "Shoot hoops in a packed arena. Chase a high score in the 12-shot Shootout (a perfect game unlocks sudden-death bonus shots), or play HORSE with a friend: pick a spot and make shots they have to match. Audio cues help you aim and time each shot.",
       "path": "apps/games/BENNYSBASKETBALLSHOOTER/index.html",
       "image": "images/games/bennysbasketball.png",
       "genres": [

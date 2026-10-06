@@ -881,7 +881,7 @@
         function horseResult(made) {
             const ev = BB.Horse.shotResult(horse, made);
             const name = i => horse.players[i].name;
-            const spell = s => s.split('').join(' ');
+            const spell = (s, sep = ', ') => s.split('').join(sep);
             let wait = 2600;
             if (ev.type === 'set_made') {
                 celebrate(made);
@@ -896,8 +896,8 @@
             } else if (ev.type === 'letter') {
                 missReaction();
                 SFX.play('buzzer', 0.6, { minGap: 1 });
-                showMessage(`LETTER ${ev.letter}`, '#ff5a5a', `${name(ev.shooter)}: ${ev.letters}`);
-                audio.speakSoon(`${name(ev.shooter)} gets an ${ev.letter}. ${spell(ev.letters)}.`);
+                showMessage(`LETTER ${ev.letter}`, '#ff5a5a', `${name(ev.shooter)}: ${spell(ev.letters, '-')}`);
+                audio.speakSoon(`${name(ev.shooter)} gets a letter: ${spell(ev.letters)}.`);
                 wait = 3200;
             } else if (ev.type === 'win') {
                 missReaction();
