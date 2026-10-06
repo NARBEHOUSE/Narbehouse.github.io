@@ -58,6 +58,8 @@ For partnership or branding inquiries, please visit:
 
 This accessibility software is not medical software and is provided “AS IS,” without warranty of any kind, express or implied.
 
+The keyboard, phrase board, and other communication features are supplemental tools and are not a replacement for a prescribed augmentative and alternative communication (AAC) device.
+
 ---
 
 <details>
