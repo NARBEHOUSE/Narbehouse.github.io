@@ -4,7 +4,9 @@
         "Small Animals": [
             {
                 "image": "dog.png",
-                "sound": null,
+                "sound": [
+                    "dog.mp3"
+                ],
                 "title": "dog",
                 "altTitle": "",
                 "ttsText": "",
@@ -12,7 +14,9 @@
             },
             {
                 "image": "cat.png",
-                "sound": null,
+                "sound": [
+                    "cat.mp3"
+                ],
                 "title": "cat",
                 "altTitle": "",
                 "ttsText": "",
@@ -21,6 +25,7 @@
             {
                 "image": "fish.svg",
                 "sound": null,
+                "soundTodo": "bubbles underwater",
                 "title": "fish",
                 "altTitle": "",
                 "ttsText": "",
@@ -29,6 +34,7 @@
             {
                 "image": "turtle.svg",
                 "sound": null,
+                "soundTodo": "voice: say 'turtle'",
                 "title": "turtle",
                 "altTitle": "",
                 "ttsText": "",
@@ -37,6 +43,7 @@
             {
                 "image": "lizard.svg",
                 "sound": null,
+                "soundTodo": "voice: say 'lizard'",
                 "title": "lizard",
                 "altTitle": "",
                 "ttsText": "",
@@ -44,7 +51,9 @@
             },
             {
                 "image": "bird.png",
-                "sound": null,
+                "sound": [
+                    "bird.mp3"
+                ],
                 "title": "bird",
                 "altTitle": "",
                 "ttsText": "",
@@ -53,6 +62,7 @@
             {
                 "image": "ferret.svg",
                 "sound": null,
+                "soundTodo": "a ferret dooking",
                 "title": "ferret",
                 "altTitle": "",
                 "ttsText": "",
@@ -61,6 +71,7 @@
             {
                 "image": "mouse.svg",
                 "sound": null,
+                "soundTodo": "a mouse squeaking",
                 "title": "mouse",
                 "altTitle": "",
                 "ttsText": "",
@@ -69,6 +80,7 @@
             {
                 "image": "mole.png",
                 "sound": null,
+                "soundTodo": "digging in dirt",
                 "title": "mole",
                 "altTitle": "",
                 "ttsText": "",
@@ -77,6 +89,7 @@
             {
                 "image": "squirrel.png",
                 "sound": null,
+                "soundTodo": "a squirrel chattering",
                 "title": "squirrel",
                 "altTitle": "",
                 "ttsText": "",
@@ -85,6 +98,7 @@
             {
                 "image": "rabbit.png",
                 "sound": null,
+                "soundTodo": "rabbit munching a carrot",
                 "title": "rabbit",
                 "altTitle": "",
                 "ttsText": "",
@@ -92,17 +106,205 @@
             },
             {
                 "image": "frog.svg",
-                "sound": null,
+                "sound": [
+                    "frog.mp3"
+                ],
                 "title": "frog",
                 "altTitle": "",
                 "ttsText": "",
                 "_created": 1768680894567
+            },
+            {
+                "image": "hamster.svg",
+                "sound": [
+                    "hamster.mp3"
+                ],
+                "title": "hamster",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866311
+            },
+            {
+                "image": "guinea_pig.png",
+                "sound": [
+                    "guinea_pig.mp3"
+                ],
+                "title": "guinea pig",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866312
+            },
+            {
+                "image": "hedgehog.svg",
+                "sound": [
+                    "hedgehog.mp3"
+                ],
+                "title": "hedgehog",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866313
+            },
+            {
+                "image": "chipmunk.svg",
+                "sound": [
+                    "chipmunk.mp3"
+                ],
+                "title": "chipmunk",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866314
+            },
+            {
+                "image": "raccoon.png",
+                "sound": null,
+                "soundTodo": "a raccoon chattering",
+                "title": "raccoon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866315
+            },
+            {
+                "image": "skunk.png",
+                "sound": null,
+                "soundTodo": "voice: 'pee-yew!'",
+                "title": "skunk",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866316
+            },
+            {
+                "image": "fox.png",
+                "sound": [
+                    "fox.mp3"
+                ],
+                "title": "fox",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866317
+            },
+            {
+                "image": "rat.png",
+                "sound": [
+                    "rat.mp3"
+                ],
+                "title": "rat",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866318
+            },
+            {
+                "image": "bat.png",
+                "sound": [
+                    "bat.mp3"
+                ],
+                "title": "bat",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866319
+            },
+            {
+                "image": "snake.png",
+                "sound": [
+                    "snake.mp3"
+                ],
+                "title": "snake",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866320
+            },
+            {
+                "image": "toad.svg",
+                "sound": [
+                    "toad.mp3"
+                ],
+                "title": "toad",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866321
+            },
+            {
+                "image": "beaver.png",
+                "sound": [
+                    "beaver.mp3"
+                ],
+                "title": "beaver",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866322
+            },
+            {
+                "image": "otter.png",
+                "sound": [
+                    "otter.mp3"
+                ],
+                "title": "otter",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866323
+            },
+            {
+                "image": "porcupine.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'porcupine'",
+                "title": "porcupine",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866324
+            },
+            {
+                "image": "armadillo.png",
+                "sound": null,
+                "soundTodo": "voice: say 'armadillo'",
+                "title": "armadillo",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866325
+            },
+            {
+                "image": "meerkat.png",
+                "sound": null,
+                "soundTodo": "meerkats chirping",
+                "title": "meerkat",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866326
+            },
+            {
+                "image": "koala.png",
+                "sound": [
+                    "koala.mp3"
+                ],
+                "title": "koala",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866327
+            },
+            {
+                "image": "monkey.png",
+                "sound": [
+                    "monkey.mp3"
+                ],
+                "title": "monkey",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866328
+            },
+            {
+                "image": "sloth.png",
+                "sound": null,
+                "soundTodo": "a slow yawn",
+                "title": "sloth",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866329
             }
         ],
         "Large Animals": [
             {
                 "image": "whale.png",
-                "sound": null,
+                "sound": [
+                    "whale.mp3"
+                ],
                 "title": "whale",
                 "altTitle": "",
                 "ttsText": "",
@@ -110,7 +312,9 @@
             },
             {
                 "image": "elephant.png",
-                "sound": null,
+                "sound": [
+                    "elephant.mp3"
+                ],
                 "title": "elephant",
                 "altTitle": "",
                 "ttsText": "",
@@ -119,6 +323,7 @@
             {
                 "image": "giraffe.png",
                 "sound": null,
+                "soundTodo": "leaves munching",
                 "title": "giraffe",
                 "altTitle": "",
                 "ttsText": "",
@@ -126,7 +331,9 @@
             },
             {
                 "image": "rhino.svg",
-                "sound": null,
+                "sound": [
+                    "rhino.mp3"
+                ],
                 "title": "rhino",
                 "altTitle": "",
                 "ttsText": "",
@@ -134,7 +341,9 @@
             },
             {
                 "image": "moose.png",
-                "sound": null,
+                "sound": [
+                    "moose.mp3"
+                ],
                 "title": "moose",
                 "altTitle": "",
                 "ttsText": "",
@@ -142,7 +351,9 @@
             },
             {
                 "image": "hippopotamus.png",
-                "sound": null,
+                "sound": [
+                    "hippopotamus.mp3"
+                ],
                 "title": "hippopotamus",
                 "altTitle": "",
                 "ttsText": "",
@@ -150,7 +361,9 @@
             },
             {
                 "image": "horse.png",
-                "sound": null,
+                "sound": [
+                    "horse.mp3"
+                ],
                 "title": "horse",
                 "altTitle": "",
                 "ttsText": "",
@@ -159,6 +372,7 @@
             {
                 "image": "gorilla.svg",
                 "sound": null,
+                "soundTodo": "a gorilla beating its chest and grunting",
                 "title": "gorilla",
                 "altTitle": "",
                 "ttsText": "",
@@ -167,10 +381,1089 @@
             {
                 "image": "bison.png",
                 "sound": null,
+                "soundTodo": "a bison grunting",
                 "title": "bison",
                 "altTitle": "",
                 "ttsText": "",
                 "_created": 1768921164288
+            },
+            {
+                "image": "lion.png",
+                "sound": [
+                    "lion.mp3"
+                ],
+                "title": "lion",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866308
+            },
+            {
+                "image": "tiger.png",
+                "sound": [
+                    "tiger.mp3"
+                ],
+                "title": "tiger",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866309
+            },
+            {
+                "image": "bear.png",
+                "sound": [
+                    "bear.mp3"
+                ],
+                "title": "bear",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866310
+            },
+            {
+                "image": "polar_bear.png",
+                "sound": [
+                    "polar_bear.mp3"
+                ],
+                "title": "polar bear",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866311
+            },
+            {
+                "image": "panda.png",
+                "sound": [
+                    "panda.mp3"
+                ],
+                "title": "panda",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866312
+            },
+            {
+                "image": "zebra.png",
+                "sound": [
+                    "zebra.mp3"
+                ],
+                "title": "zebra",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866313
+            },
+            {
+                "image": "camel.png",
+                "sound": [
+                    "camel.mp3"
+                ],
+                "title": "camel",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866314
+            },
+            {
+                "image": "cow.png",
+                "sound": [
+                    "cow.mp3"
+                ],
+                "title": "cow",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866315
+            },
+            {
+                "image": "pig.png",
+                "sound": [
+                    "pig.mp3"
+                ],
+                "title": "pig",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866316
+            },
+            {
+                "image": "sheep.png",
+                "sound": [
+                    "sheep.mp3"
+                ],
+                "title": "sheep",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866317
+            },
+            {
+                "image": "goat.png",
+                "sound": [
+                    "goat.mp3"
+                ],
+                "title": "goat",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866318
+            },
+            {
+                "image": "donkey.png",
+                "sound": [
+                    "donkey.mp3"
+                ],
+                "title": "donkey",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866319
+            },
+            {
+                "image": "llama.png",
+                "sound": [
+                    "llama.mp3"
+                ],
+                "title": "llama",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866320
+            },
+            {
+                "image": "kangaroo.png",
+                "sound": null,
+                "soundTodo": "hopping thumps",
+                "title": "kangaroo",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866321
+            },
+            {
+                "image": "crocodile.png",
+                "sound": [
+                    "crocodile.mp3"
+                ],
+                "title": "crocodile",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866322
+            },
+            {
+                "image": "cheetah.svg",
+                "sound": null,
+                "soundTodo": "a cheetah chirping",
+                "title": "cheetah",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866323
+            },
+            {
+                "image": "wolf.png",
+                "sound": [
+                    "wolf.mp3"
+                ],
+                "title": "wolf",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866324
+            },
+            {
+                "image": "hyena.png",
+                "sound": null,
+                "soundTodo": "a hyena laughing",
+                "title": "hyena",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866325
+            },
+            {
+                "image": "chimpanzee.png",
+                "sound": [
+                    "chimpanzee.mp3"
+                ],
+                "title": "chimpanzee",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866326
+            },
+            {
+                "image": "orangutan.png",
+                "sound": [
+                    "orangutan.mp3"
+                ],
+                "title": "orangutan",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866327
+            },
+            {
+                "image": "warthog.png",
+                "sound": null,
+                "soundTodo": "a warthog grunting",
+                "title": "warthog",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866328
+            }
+        ],
+        "Birds": [
+            {
+                "image": "chicken.png",
+                "sound": [
+                    "chicken.mp3"
+                ],
+                "title": "chicken",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866299
+            },
+            {
+                "image": "rooster.svg",
+                "sound": [
+                    "rooster.mp3"
+                ],
+                "title": "rooster",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866300
+            },
+            {
+                "image": "chick.png",
+                "sound": [
+                    "chick.mp3"
+                ],
+                "title": "chick",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866301
+            },
+            {
+                "image": "duck.png",
+                "sound": [
+                    "duck.mp3"
+                ],
+                "title": "duck",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866302
+            },
+            {
+                "image": "goose.png",
+                "sound": [
+                    "goose.mp3"
+                ],
+                "title": "goose",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866303
+            },
+            {
+                "image": "turkey.svg",
+                "sound": [
+                    "turkey.mp3"
+                ],
+                "title": "turkey",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866304
+            },
+            {
+                "image": "owl.png",
+                "sound": [
+                    "owl.mp3"
+                ],
+                "title": "owl",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866305
+            },
+            {
+                "image": "eagle.png",
+                "sound": null,
+                "soundTodo": "an eagle screeching",
+                "title": "eagle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866306
+            },
+            {
+                "image": "parrot.png",
+                "sound": [
+                    "parrot.mp3"
+                ],
+                "title": "parrot",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866307
+            },
+            {
+                "image": "penguin.png",
+                "sound": [
+                    "penguin.mp3"
+                ],
+                "title": "penguin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866308
+            },
+            {
+                "image": "flamingo.svg",
+                "sound": [
+                    "flamingo.mp3"
+                ],
+                "title": "flamingo",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866309
+            },
+            {
+                "image": "peacock.png",
+                "sound": [
+                    "peacock.mp3"
+                ],
+                "title": "peacock",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866310
+            },
+            {
+                "image": "swan.png",
+                "sound": [
+                    "swan.mp3"
+                ],
+                "title": "swan",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866311
+            },
+            {
+                "image": "pigeon.png",
+                "sound": [
+                    "pigeon.mp3"
+                ],
+                "title": "pigeon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866312
+            },
+            {
+                "image": "crow.png",
+                "sound": [
+                    "crow.mp3"
+                ],
+                "title": "crow",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866313
+            },
+            {
+                "image": "woodpecker.png",
+                "sound": null,
+                "soundTodo": "a woodpecker pecking a tree",
+                "title": "woodpecker",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866314
+            },
+            {
+                "image": "hummingbird.png",
+                "sound": [
+                    "hummingbird.mp3"
+                ],
+                "title": "hummingbird",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866315
+            },
+            {
+                "image": "ostrich.png",
+                "sound": null,
+                "soundTodo": "an ostrich booming",
+                "title": "ostrich",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866316
+            },
+            {
+                "image": "toucan.png",
+                "sound": [
+                    "toucan.mp3"
+                ],
+                "title": "toucan",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866317
+            },
+            {
+                "image": "pelican.png",
+                "sound": null,
+                "soundTodo": "splash of a diving pelican",
+                "title": "pelican",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866318
+            },
+            {
+                "image": "seagull.png",
+                "sound": [
+                    "seagull.mp3"
+                ],
+                "title": "seagull",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866319
+            },
+            {
+                "image": "cardinal.svg",
+                "sound": null,
+                "soundTodo": "a cardinal bird singing",
+                "title": "cardinal",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866320
+            },
+            {
+                "image": "vulture.png",
+                "sound": null,
+                "soundTodo": "vulture wings flapping",
+                "title": "vulture",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866321
+            },
+            {
+                "image": "stork.png",
+                "sound": [
+                    "stork.mp3"
+                ],
+                "title": "stork",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866322
+            },
+            {
+                "image": "puffin.svg",
+                "sound": [
+                    "puffin.mp3"
+                ],
+                "title": "puffin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866323
+            },
+            {
+                "image": "canary.png",
+                "sound": [
+                    "canary.mp3"
+                ],
+                "title": "canary",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866324
+            },
+            {
+                "image": "sparrow.png",
+                "sound": [
+                    "sparrow.mp3"
+                ],
+                "title": "sparrow",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866325
+            },
+            {
+                "image": "dove.svg",
+                "sound": [
+                    "dove.mp3"
+                ],
+                "title": "dove",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866326
+            },
+            {
+                "image": "heron.svg",
+                "sound": [
+                    "heron.mp3"
+                ],
+                "title": "heron",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866327
+            },
+            {
+                "image": "magpie.png",
+                "sound": [
+                    "magpie.mp3"
+                ],
+                "title": "magpie",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866328
+            },
+            {
+                "image": "quail.png",
+                "sound": [
+                    "quail.mp3"
+                ],
+                "title": "quail",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866329
+            }
+        ],
+        "Bugs": [
+            {
+                "image": "ant.png",
+                "sound": null,
+                "soundTodo": "tiny marching footsteps",
+                "title": "ant",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866299
+            },
+            {
+                "image": "bee.png",
+                "sound": [
+                    "bee.mp3"
+                ],
+                "title": "bee",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866300
+            },
+            {
+                "image": "butterfly.png",
+                "sound": null,
+                "soundTodo": "soft fluttering wings",
+                "title": "butterfly",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866301
+            },
+            {
+                "image": "ladybug.png",
+                "sound": null,
+                "soundTodo": "voice: say 'ladybug'",
+                "title": "ladybug",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866302
+            },
+            {
+                "image": "spider.png",
+                "sound": null,
+                "soundTodo": "creepy scuttle",
+                "title": "spider",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866303
+            },
+            {
+                "image": "caterpillar.svg",
+                "sound": null,
+                "soundTodo": "munching a leaf",
+                "title": "caterpillar",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866304
+            },
+            {
+                "image": "grasshopper.png",
+                "sound": [
+                    "grasshopper.mp3"
+                ],
+                "title": "grasshopper",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866305
+            },
+            {
+                "image": "cricket.png",
+                "sound": [
+                    "cricket.mp3"
+                ],
+                "title": "cricket",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866306
+            },
+            {
+                "image": "dragonfly.png",
+                "sound": null,
+                "soundTodo": "dragonfly wings buzzing",
+                "title": "dragonfly",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866307
+            },
+            {
+                "image": "fly.png",
+                "sound": [
+                    "fly.mp3"
+                ],
+                "title": "fly",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866308
+            },
+            {
+                "image": "mosquito.png",
+                "sound": [
+                    "mosquito.mp3"
+                ],
+                "title": "mosquito",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866309
+            },
+            {
+                "image": "beetle.png",
+                "sound": [
+                    "beetle.mp3"
+                ],
+                "title": "beetle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866310
+            },
+            {
+                "image": "worm.png",
+                "sound": null,
+                "soundTodo": "squishy wiggle",
+                "title": "worm",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866311
+            },
+            {
+                "image": "snail.png",
+                "sound": null,
+                "soundTodo": "slow slimy squelch",
+                "title": "snail",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866312
+            },
+            {
+                "image": "moth.svg",
+                "sound": [
+                    "moth.mp3"
+                ],
+                "title": "moth",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866313
+            },
+            {
+                "image": "firefly.png",
+                "sound": null,
+                "soundTodo": "magical twinkle",
+                "title": "firefly",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866314
+            },
+            {
+                "image": "centipede.png",
+                "sound": null,
+                "soundTodo": "many tiny legs scuttling",
+                "title": "centipede",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866315
+            },
+            {
+                "image": "scorpion.png",
+                "sound": null,
+                "soundTodo": "clicking pincers",
+                "title": "scorpion",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866316
+            },
+            {
+                "image": "wasp.png",
+                "sound": [
+                    "wasp.mp3"
+                ],
+                "title": "wasp",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866317
+            },
+            {
+                "image": "termite.png",
+                "sound": [
+                    "termite.mp3"
+                ],
+                "title": "termite",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866318
+            },
+            {
+                "image": "praying_mantis.png",
+                "sound": null,
+                "soundTodo": "voice: say 'praying mantis'",
+                "title": "praying mantis",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866319
+            },
+            {
+                "image": "stick_insect.png",
+                "sound": null,
+                "soundTodo": "twig snap",
+                "title": "stick insect",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866320
+            },
+            {
+                "image": "slug.png",
+                "sound": null,
+                "soundTodo": "slimy squelch",
+                "title": "slug",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866321
+            },
+            {
+                "image": "cicada.png",
+                "sound": [
+                    "cicada.mp3"
+                ],
+                "title": "cicada",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866322
+            },
+            {
+                "image": "tarantula.png",
+                "sound": null,
+                "soundTodo": "creepy scuttle",
+                "title": "tarantula",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866323
+            },
+            {
+                "image": "earwig.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'earwig'",
+                "title": "earwig",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866324
+            },
+            {
+                "image": "stag_beetle.png",
+                "sound": null,
+                "soundTodo": "voice: say 'stag beetle'",
+                "title": "stag beetle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866325
+            },
+            {
+                "image": "dung_beetle.png",
+                "sound": null,
+                "soundTodo": "voice: say 'dung beetle'",
+                "title": "dung beetle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791308239387
+            },
+            {
+                "image": "pill_bug.png",
+                "sound": null,
+                "soundTodo": "voice: say 'roly poly'",
+                "title": "pill bug",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866328
+            },
+            {
+                "image": "water_strider.png",
+                "sound": null,
+                "soundTodo": "voice: say 'water strider'",
+                "title": "water strider",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791308239389
+            },
+            {
+                "image": "silkworm.png",
+                "sound": null,
+                "soundTodo": "voice: say 'silkworm'",
+                "title": "silkworm",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866329
+            }
+        ],
+        "Sea Creatures": [
+            {
+                "image": "shark.png",
+                "sound": null,
+                "soundTodo": "dun-dun shark theme",
+                "title": "shark",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866299
+            },
+            {
+                "image": "dolphin.png",
+                "sound": [
+                    "dolphin.mp3"
+                ],
+                "title": "dolphin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866300
+            },
+            {
+                "image": "octopus.png",
+                "sound": null,
+                "soundTodo": "bubbly squish",
+                "title": "octopus",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866301
+            },
+            {
+                "image": "jellyfish.png",
+                "sound": null,
+                "soundTodo": "wobbly bloop",
+                "title": "jellyfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866302
+            },
+            {
+                "image": "crab.svg",
+                "sound": null,
+                "soundTodo": "clicking claws",
+                "title": "crab",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866303
+            },
+            {
+                "image": "lobster.png",
+                "sound": null,
+                "soundTodo": "clicking claws",
+                "title": "lobster",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866304
+            },
+            {
+                "image": "starfish.png",
+                "sound": null,
+                "soundTodo": "voice: say 'starfish'",
+                "title": "starfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866305
+            },
+            {
+                "image": "seahorse.png",
+                "sound": null,
+                "soundTodo": "voice: say 'seahorse'",
+                "title": "seahorse",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866306
+            },
+            {
+                "image": "seal.png",
+                "sound": [
+                    "seal.mp3"
+                ],
+                "title": "seal",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866307
+            },
+            {
+                "image": "walrus.svg",
+                "sound": null,
+                "soundTodo": "a walrus bellowing",
+                "title": "walrus",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866308
+            },
+            {
+                "image": "squid.png",
+                "sound": null,
+                "soundTodo": "ink squirt",
+                "title": "squid",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866309
+            },
+            {
+                "image": "shrimp.png",
+                "sound": null,
+                "soundTodo": "voice: say 'shrimp'",
+                "title": "shrimp",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866310
+            },
+            {
+                "image": "clam.png",
+                "sound": null,
+                "soundTodo": "shell snapping shut",
+                "title": "clam",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791305038765
+            },
+            {
+                "image": "oyster.png",
+                "sound": null,
+                "soundTodo": "shell snapping shut",
+                "title": "oyster",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866311
+            },
+            {
+                "image": "eel.png",
+                "sound": null,
+                "soundTodo": "electric zap",
+                "title": "eel",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866312
+            },
+            {
+                "image": "orca.png",
+                "sound": [
+                    "orca.mp3"
+                ],
+                "title": "orca",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866313
+            },
+            {
+                "image": "narwhal.png",
+                "sound": null,
+                "soundTodo": "voice: say 'narwhal'",
+                "title": "narwhal",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866314
+            },
+            {
+                "image": "manatee.png",
+                "sound": null,
+                "soundTodo": "gentle underwater munching",
+                "title": "manatee",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866315
+            },
+            {
+                "image": "pufferfish.svg",
+                "sound": null,
+                "soundTodo": "puffing up pop",
+                "title": "pufferfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866316
+            },
+            {
+                "image": "clownfish.png",
+                "sound": null,
+                "soundTodo": "bubbles",
+                "title": "clownfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866317
+            },
+            {
+                "image": "swordfish.png",
+                "sound": null,
+                "soundTodo": "splash",
+                "title": "swordfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866318
+            },
+            {
+                "image": "hammerhead_shark.png",
+                "sound": null,
+                "soundTodo": "voice: say 'hammerhead shark'",
+                "title": "hammerhead shark",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791308239381
+            },
+            {
+                "image": "sea_urchin.png",
+                "sound": null,
+                "soundTodo": "voice: say 'sea urchin'",
+                "title": "sea urchin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866319
+            },
+            {
+                "image": "coral.png",
+                "sound": null,
+                "soundTodo": "underwater reef ambience",
+                "title": "coral",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866320
+            },
+            {
+                "image": "hermit_crab.png",
+                "sound": null,
+                "soundTodo": "shell clicking",
+                "title": "hermit crab",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866321
+            },
+            {
+                "image": "manta_ray.png",
+                "sound": null,
+                "soundTodo": "swoosh through water",
+                "title": "manta ray",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866322
+            },
+            {
+                "image": "sea_turtle.png",
+                "sound": null,
+                "soundTodo": "swimming splash",
+                "title": "sea turtle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866323
+            },
+            {
+                "image": "goldfish.svg",
+                "sound": null,
+                "soundTodo": "bubbles",
+                "title": "goldfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866326
+            },
+            {
+                "image": "anglerfish.png",
+                "sound": null,
+                "soundTodo": "spooky deep sea hum",
+                "title": "anglerfish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866327
+            },
+            {
+                "image": "beluga_whale.png",
+                "sound": null,
+                "soundTodo": "beluga whales whistling and chirping underwater",
+                "title": "beluga whale",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791303866328
             }
         ]
     }

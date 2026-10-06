@@ -1,0 +1,906 @@
+{
+    "categories": {
+        "Fruit": [
+            {
+                "image": "apple.png",
+                "sound": null,
+                "soundTodo": "crunchy apple bite",
+                "title": "apple",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "banana.png",
+                "sound": null,
+                "soundTodo": "banana peeling",
+                "title": "banana",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "orange.png",
+                "sound": null,
+                "soundTodo": "orange peeling and juice squeeze",
+                "title": "orange",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "grapes.png",
+                "sound": null,
+                "soundTodo": "voice: say 'grapes'",
+                "title": "grapes",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "strawberry.png",
+                "sound": null,
+                "soundTodo": "voice: say 'strawberry'",
+                "title": "strawberry",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "watermelon.png",
+                "sound": null,
+                "soundTodo": "juicy watermelon chomp",
+                "title": "watermelon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "pineapple.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'pineapple'",
+                "title": "pineapple",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "pear.png",
+                "sound": null,
+                "soundTodo": "voice: say 'pear'",
+                "title": "pear",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "peach.png",
+                "sound": null,
+                "soundTodo": "voice: say 'peach'",
+                "title": "peach",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "cherries.png",
+                "sound": null,
+                "soundTodo": "voice: say 'cherries'",
+                "title": "cherries",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "lemon.png",
+                "sound": null,
+                "soundTodo": "sour 'eww' face voice",
+                "title": "lemon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "lime.png",
+                "sound": null,
+                "soundTodo": "voice: say 'lime'",
+                "title": "lime",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "mango.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'mango'",
+                "title": "mango",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "kiwi.png",
+                "sound": null,
+                "soundTodo": "voice: say 'kiwi'",
+                "title": "kiwi",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "coconut.png",
+                "sound": null,
+                "soundTodo": "coconut cracking open",
+                "title": "coconut",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "blueberries.png",
+                "sound": null,
+                "soundTodo": "voice: say 'blueberries'",
+                "title": "blueberries",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "raspberry.png",
+                "sound": null,
+                "soundTodo": "blowing a raspberry",
+                "title": "raspberry",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "plum.png",
+                "sound": null,
+                "soundTodo": "voice: say 'plum'",
+                "title": "plum",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "pomegranate.png",
+                "sound": null,
+                "soundTodo": "voice: say 'pomegranate'",
+                "title": "pomegranate",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "papaya.png",
+                "sound": null,
+                "soundTodo": "voice: say 'papaya'",
+                "title": "papaya",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "grapefruit.png",
+                "sound": null,
+                "soundTodo": "voice: say 'grapefruit'",
+                "title": "grapefruit",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "melon.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'melon'",
+                "title": "melon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "fig.png",
+                "sound": null,
+                "soundTodo": "voice: say 'fig'",
+                "title": "fig",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "avocado.png",
+                "sound": null,
+                "soundTodo": "voice: say 'avocado'",
+                "title": "avocado",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "blackberry.png",
+                "sound": null,
+                "soundTodo": "voice: say 'blackberry'",
+                "title": "blackberry",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "dragon_fruit.png",
+                "sound": null,
+                "soundTodo": "voice: say 'dragon fruit'",
+                "title": "dragon fruit",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "star_fruit.png",
+                "sound": null,
+                "soundTodo": "voice: say 'star fruit'",
+                "title": "star fruit",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "cranberries.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'cranberries'",
+                "title": "cranberries",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "dates.png",
+                "sound": null,
+                "soundTodo": "voice: say 'dates'",
+                "title": "dates",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "lychee.png",
+                "sound": null,
+                "soundTodo": "voice: say 'lychee'",
+                "title": "lychee",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "gooseberry.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'gooseberry'",
+                "title": "gooseberry",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            }
+        ],
+        "Vegetables": [
+            {
+                "image": "carrot.png",
+                "sound": null,
+                "soundTodo": "crunchy carrot bite",
+                "title": "carrot",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "broccoli.png",
+                "sound": null,
+                "soundTodo": "voice: say 'broccoli'",
+                "title": "broccoli",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "corn.png",
+                "sound": null,
+                "soundTodo": "corn husk ripping",
+                "title": "corn",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "potato.png",
+                "sound": null,
+                "soundTodo": "voice: say 'potato'",
+                "title": "potato",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "tomato.png",
+                "sound": null,
+                "soundTodo": "squishy splat",
+                "title": "tomato",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "lettuce.png",
+                "sound": null,
+                "soundTodo": "crisp leaf crunch",
+                "title": "lettuce",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "cucumber.png",
+                "sound": null,
+                "soundTodo": "crunchy slice",
+                "title": "cucumber",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "bell_pepper.png",
+                "sound": null,
+                "soundTodo": "voice: say 'bell pepper'",
+                "title": "bell pepper",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "onion.png",
+                "sound": null,
+                "soundTodo": "chopping on a cutting board",
+                "title": "onion",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "garlic.png",
+                "sound": null,
+                "soundTodo": "voice: say 'garlic'",
+                "title": "garlic",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "peas.png",
+                "sound": null,
+                "soundTodo": "peas rolling",
+                "title": "peas",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "pumpkin.png",
+                "sound": null,
+                "soundTodo": "hollow knock",
+                "title": "pumpkin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "eggplant.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'eggplant'",
+                "title": "eggplant",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "mushroom.png",
+                "sound": null,
+                "soundTodo": "voice: say 'mushroom'",
+                "title": "mushroom",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "celery.png",
+                "sound": null,
+                "soundTodo": "loud celery crunch",
+                "title": "celery",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "cabbage.png",
+                "sound": null,
+                "soundTodo": "voice: say 'cabbage'",
+                "title": "cabbage",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "cauliflower.png",
+                "sound": null,
+                "soundTodo": "voice: say 'cauliflower'",
+                "title": "cauliflower",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "spinach.png",
+                "sound": null,
+                "soundTodo": "voice: say 'spinach'",
+                "title": "spinach",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "green_beans.png",
+                "sound": null,
+                "soundTodo": "bean snapping",
+                "title": "green beans",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "sweet_potato.png",
+                "sound": null,
+                "soundTodo": "voice: say 'sweet potato'",
+                "title": "sweet potato",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "radish.png",
+                "sound": null,
+                "soundTodo": "voice: say 'radish'",
+                "title": "radish",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "beet.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'beet'",
+                "title": "beet",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "asparagus.png",
+                "sound": null,
+                "soundTodo": "voice: say 'asparagus'",
+                "title": "asparagus",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "artichoke.png",
+                "sound": null,
+                "soundTodo": "voice: say 'artichoke'",
+                "title": "artichoke",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "brussels_sprouts.png",
+                "sound": null,
+                "soundTodo": "voice: say 'brussels sprouts'",
+                "title": "brussels sprouts",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "chili_pepper.svg",
+                "sound": null,
+                "soundTodo": "spicy 'hot hot hot' voice",
+                "title": "chili pepper",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "leek.png",
+                "sound": null,
+                "soundTodo": "voice: say 'leek'",
+                "title": "leek",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "ginger.png",
+                "sound": null,
+                "soundTodo": "voice: say 'ginger'",
+                "title": "ginger",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "turnip.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'turnip'",
+                "title": "turnip",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "olives.png",
+                "sound": null,
+                "soundTodo": "voice: say 'olives'",
+                "title": "olives",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "parsnip.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'parsnip'",
+                "title": "parsnip",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            }
+        ],
+        "Yummy Food": [
+            {
+                "image": "pizza.png",
+                "sound": null,
+                "soundTodo": "voice: 'pizza time!'",
+                "title": "pizza",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "hamburger.png",
+                "sound": [
+                    "hamburger.mp3"
+                ],
+                "title": "hamburger",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "hot_dog.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'hot dog'",
+                "title": "hot dog",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "french_fries.svg",
+                "sound": [
+                    "french_fries.mp3"
+                ],
+                "title": "french fries",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "ice_cream.png",
+                "sound": null,
+                "soundTodo": "ice cream truck jingle (used by vehicle)",
+                "title": "ice cream",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "cake.png",
+                "sound": null,
+                "soundTodo": "happy birthday party blowers",
+                "title": "cake",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "cookie.svg",
+                "sound": null,
+                "soundTodo": "crunchy cookie bite",
+                "title": "cookie",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "donut.png",
+                "sound": null,
+                "soundTodo": "voice: say 'donut'",
+                "title": "donut",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "popcorn.svg",
+                "sound": [
+                    "popcorn.mp3"
+                ],
+                "title": "popcorn",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "candy.svg",
+                "sound": [
+                    "candy.mp3"
+                ],
+                "title": "candy",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "chocolate.png",
+                "sound": null,
+                "soundTodo": "voice: 'mmm chocolate'",
+                "title": "chocolate",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "cupcake.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'cupcake'",
+                "title": "cupcake",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "pie.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'pie'",
+                "title": "pie",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "pretzel.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'pretzel'",
+                "title": "pretzel",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "potato_chips.svg",
+                "sound": [
+                    "potato_chips.mp3"
+                ],
+                "title": "potato chips",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "taco.svg",
+                "sound": null,
+                "soundTodo": "crunchy taco bite",
+                "title": "taco",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "burrito.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'burrito'",
+                "title": "burrito",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "sandwich.png",
+                "sound": null,
+                "soundTodo": "voice: say 'sandwich'",
+                "title": "sandwich",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "spaghetti.png",
+                "sound": null,
+                "soundTodo": "slurping noodles",
+                "title": "spaghetti",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "pancakes.svg",
+                "sound": [
+                    "pancakes.mp3"
+                ],
+                "title": "pancakes",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "cereal.png",
+                "sound": [
+                    "cereal.mp3"
+                ],
+                "title": "cereal",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "toast.png",
+                "sound": [
+                    "toast.mp3"
+                ],
+                "title": "toast",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "bacon.png",
+                "sound": [
+                    "bacon.mp3"
+                ],
+                "title": "bacon",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "cheese.png",
+                "sound": null,
+                "soundTodo": "voice: say 'cheese!'",
+                "title": "cheese",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "sushi.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'sushi'",
+                "title": "sushi",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "soup.png",
+                "sound": [
+                    "soup.mp3"
+                ],
+                "title": "soup",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "salad.png",
+                "sound": null,
+                "soundTodo": "crisp lettuce crunch",
+                "title": "salad",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "chicken_nuggets.png",
+                "sound": null,
+                "soundTodo": "voice: say 'chicken nuggets'",
+                "title": "chicken nuggets",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "lollipop.png",
+                "sound": null,
+                "soundTodo": "voice: say 'lollipop'",
+                "title": "lollipop",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "milkshake.svg",
+                "sound": [
+                    "milkshake.mp3"
+                ],
+                "title": "milkshake",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "soda.png",
+                "sound": [
+                    "soda.mp3"
+                ],
+                "title": "soda",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            },
+            {
+                "image": "milk.png",
+                "sound": [
+                    "milk.mp3"
+                ],
+                "title": "milk",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835692
+            },
+            {
+                "image": "bread.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'bread'",
+                "title": "bread",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835693
+            },
+            {
+                "image": "muffin.png",
+                "sound": null,
+                "soundTodo": "voice: say 'muffin'",
+                "title": "muffin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835694
+            },
+            {
+                "image": "juice.png",
+                "sound": [
+                    "juice.mp3"
+                ],
+                "title": "juice",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835695
+            },
+            {
+                "image": "rice.svg",
+                "sound": null,
+                "soundTodo": "voice: say 'rice'",
+                "title": "rice",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835696
+            }
+        ]
+    }
+}
