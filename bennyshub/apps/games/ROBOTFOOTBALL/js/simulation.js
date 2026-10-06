@@ -30,6 +30,16 @@
   const COVERS = ['CB1', 'CB2', 'SS', 'LB2'];
   // A pass let go early can still be caught, diving, only if it lands this close to him.
   const SHORT_CATCH_YARDS = 1.1;
+  // A tackled robot goes down forward and lands with the ball this far past his feet (the
+  // renderer tips him 1.48 rad, ball at chest height). Landing over the goal line is a touchdown.
+  const FALL_REACH = 1.3;
+  // Interceptions are seen coming: a pass is judged PICK_LOOK seconds before it lands, and the
+  // defender who will pick it off breaks on the ball from up to PICK_REACH yards away. Your
+  // throw to an Open receiver is never picked; into coverage, up to PICK_MAX of throws are, more
+  // the tighter the window. Your nearest robot picks the visitors' throws: more often the closer
+  // he is, and most of all in Deep Cover (CPU_PICK, by your call).
+  const PICK_LOOK = .7, PICK_REACH = 4.5, PICK_MAX = { rookie: .2, pro: .26 };
+  const CPU_PICK = { zone: .34, man: .26, contain: .18, blitz: .14 };
   const COVERAGE = ['Open', 'Covered', 'Tight'], COVERAGE_GAP = { Open: [4.5, Infinity], Covered: [2.6, 4.5], Tight: [0, 2.6] };
   // Kickoffs, as in classic football: from the kicking team's 35 to open each half and
   // after every score, a punted free kick from the 20 after a safety, and a touchback
@@ -484,7 +494,12 @@
       });
       this._followBall();
       // Forward progress: the ball is spotted where he was hit, not where the fall shoved him.
-      if (t.elapsed >= t.duration - 1e-7) this._finishPlay(t.spot, t.reason);
+      // But a runner who goes down with the ball over the goal line has broken the plane: touchdown.
+      if (t.elapsed >= t.duration - 1e-7) {
+        const d = this._direction(), reach = p.z + Math.cos(p.heading) * FALL_REACH;
+        const over = (d === 1 ? reach >= 100 : reach <= 0) && !(this.options.practice && s.possession === 'away');
+        this._finishPlay(over ? reach : t.spot, t.reason);
+      }
     }
     _armControl() {
       this.s.controlGrace = CONTROL_GRACE;
@@ -862,9 +877,9 @@
     // The ball changes hands in the middle of a play, so the new possession counts now.
     // A four-possession game never starts a possession it does not have.
     _canReturn() { const s = this.s; return this.options.format !== 'drives' || s.possessionNumber + 1 < s.maxDrives * 2; }
-    _takeOver() {
+    _takeOver(team = 'home') {
       const s = this.s;
-      s.possessionNumber++; s.possession = 'home'; s.drive = Math.floor(s.possessionNumber / 2) + 1;
+      s.possessionNumber++; s.possession = team; s.drive = Math.floor(s.possessionNumber / 2) + 1;
       s.down = 1; s.distance = 10; s.conversion = null;
     }
     // Your returner fields the visitors' kick where it comes down and runs it back.
@@ -899,20 +914,86 @@
       }
       return this._startReturn();
     }
-    _startReturn() {
+    _startReturn(call) {
       const s = this.s, p = this._player(s.returnerId);
       s.carrierId = p.id; p.anim = 'catch'; s.returnFrom = p.z;
       this._runTime = 0; this._armControl(); this._followBall();
       if (s.possession === 'home') {
         s.phase = 'run'; s.controlledId = p.id;
-        this._emit('catch', 'Caught. Run it back.');
+        this._emit('catch', call || 'Caught. Run it back.');
       } else {
         s.phase = 'defend'; s.defenseStage = 'chase'; s.opponentPlayType = 'return';
         this._cpuLane = p.x; this._cpuSway = this._rand() * Math.PI * 2;
+        // Who caught it is heard first, then which robot you now control.
+        this._emit('catch', call || 'Caught. Make the tackle.');
         this._takeClosestDefender(true);
-        this._emit('catch', 'Caught. Make the tackle.');
       }
       return true;
+    }
+    // A pass is judged a moment before it lands, so a defender who picks it off is seen breaking
+    // on the ball. Your own throw keeps its single roll (catch, miss or pick), now drawn here.
+    _judgePass(f) {
+      const s = this.s, thrower = f.kind === 'pass' ? 'home' : 'away';
+      f.judged = true;
+      const nearest = (range, rushers) => s.players
+        .filter(q => q.team !== thrower && !(q.stun > 0) && (rushers || !/^D[ET]\d$/.test(q.role)))
+        .map(q => ({ q: q, gap: distance(q, f.to) })).filter(o => o.gap < range).sort((a, b) => a.gap - b.gap)[0];
+      let by = null;
+      if (f.kind === 'pass') {
+        f.roll = this._rand();
+        if (this.options.practice) return;
+        if (f.short) {
+          // An underthrown ball with a defender sitting under it.
+          const under = nearest(2.2, true);
+          if (under && f.roll >= f.chance && f.roll > .85) by = under;
+        } else {
+          // Only out of the misses, so a pick never takes away the catch chance you were told.
+          const pick = Math.min(1 - f.chance, clamp(1 - f.separation / COVERAGE_GAP.Open[0], 0, 1) * PICK_MAX[this.options.difficulty === 'pro' ? 'pro' : 'rookie']);
+          if (f.roll >= 1 - pick) {
+            const cover = this._player('away-' + COVERS[s.targets.indexOf(f.targetId)]);
+            by = cover && !(cover.stun > 0) && distance(cover, f.to) < PICK_REACH ? { q: cover } : nearest(PICK_REACH, false);
+          }
+        }
+      } else {
+        const near = nearest(PICK_REACH, true);
+        const chance = near ? (CPU_PICK[s.playId] || .15) * (1 - near.gap / PICK_REACH) * (this.options.difficulty === 'pro' ? .75 : 1) : 0;
+        // A low roll favours the thrower, as everywhere else.
+        if (near && this._rand() >= 1 - chance) by = near;
+      }
+      if (!by) return;
+      // He undercuts the route: he meets the ball a step in front of the receiver.
+      const dx = f.from.x - f.to.x, dz = f.from.z - f.to.z, len = Math.hypot(dx, dz) || 1;
+      f.pickId = by.q.id;
+      f.pickBreak = { x: by.q.x, z: by.q.z, at: f.elapsed, spot: { x: f.to.x + dx / len * .7, z: f.to.z + dz / len * .7 } };
+    }
+    _breakOnBall(f) {
+      const s = this.s, q = this._player(f.pickId), b = f.pickBreak;
+      if (!q || !b) return;
+      const k = clamp((f.elapsed - b.at) / Math.max(.05, f.duration - b.at), 0, 1);
+      q.x = b.x + (b.spot.x - b.x) * k; q.z = b.z + (b.spot.z - b.z) * k;
+      q.goal = { x: b.spot.x, z: b.spot.z }; q.heading = Math.atan2(s.ball.x - q.x, s.ball.z - q.z);
+      q.anim = f.duration - f.elapsed < .4 ? 'catch' : 'run'; q.assignment = 'Break on the ball';
+    }
+    // Picked off: he runs it back the way a kick is returned. A two-point try just ends, and so
+    // does the last possession of a four-drive game.
+    _intercepted(f) {
+      const s = this.s, q = this._player(f.pickId), thrower = s.possession, yours = thrower === 'away';
+      this._flight = null; this._cpuPass = null; q.anim = 'catch';
+      this._stat(thrower, 'turnovers', 1);
+      if (s.conversion) return this._kickAfter('Intercepted!', 'The two-point try is over.');
+      if (!this._canReturn()) return this._finishPossession(clamp(q.z, 1, 99), 'Intercepted!', yours ? 'Your defense takes the ball.' : 'The visitors take the ball.');
+      // When your robot picks it off, the receiver he jumped is knocked off balance as the
+      // return starts, so he cannot simply tackle him on the spot. Your own beaten receiver
+      // stays on his feet: he is your best chance to stop a visitors' return.
+      const beaten = yours && this._player(f.targetId);
+      if (beaten) {
+        beaten.stun = .7; beaten.heading = Math.atan2(q.x - beaten.x, q.z - beaten.z);
+        beaten.shove = { x: Math.sin(beaten.heading), z: Math.cos(beaten.heading) };
+      }
+      this._takeOver(yours ? 'home' : 'away');
+      s.kickReturn = { title: 'Interception return', touchdown: 'Pick six! Touchdown!' };
+      s.returnerId = q.id; s.defenseTargetId = null; s.defenseStage = null;
+      return this._startReturn(yours ? 'Intercepted! Run it back.' : 'Intercepted! Make the tackle.');
     }
     // A knee in the end zone, or run it out. The play waits for this choice.
     chooseReturn(runIt) {
@@ -1229,13 +1310,15 @@
       // (A defender right at the catch point contests the catch instead.)
       if ((f.kind === 'pass' || f.kind === 'cpu-pass') && !f.over && t > .12 && t < .97 && s.ball.y < 2.5) {
         const thrower = f.kind === 'pass' ? 'home' : 'away';
-        const swat = s.players.find(q => q.team !== thrower && !(q.stun > 0) && Math.hypot(q.x - s.ball.x, q.z - s.ball.z) < .7 && Math.hypot(q.x - f.to.x, q.z - f.to.z) > .9);
+        const swat = s.players.find(q => q.team !== thrower && !(q.stun > 0) && q.id !== f.pickId && Math.hypot(q.x - s.ball.x, q.z - s.ball.z) < .7 && Math.hypot(q.x - f.to.x, q.z - f.to.z) > .9);
         if (swat) {
           this._flight = null; this._cpuPass = null; swat.anim = 'catch';
           swat.heading = Math.atan2(s.ball.x - swat.x, s.ball.z - swat.z); s.ball.y = .2;
           this._finishPlay(s.lineOfScrimmage, 'Knocked down'); return;
         }
       }
+      if ((f.kind === 'pass' || f.kind === 'cpu-pass') && !f.over && !f.judged && f.duration - f.elapsed < PICK_LOOK) this._judgePass(f);
+      if (f.pickId) this._breakOnBall(f);
       if ((f.kind === 'pass' || f.kind === 'cpu-pass') && f.duration - f.elapsed < .4) {
         const receiver = this._player(f.targetId), qb = this._player(s.passerId);
         receiver.heading = Math.atan2(qb.x - receiver.x, qb.z - receiver.z);
@@ -1250,7 +1333,8 @@
         const gap = nearest ? distance(nearest, p) : 20;
         const completion = clamp(f.chance - Math.max(0, 3 - gap) * .08, .12, .94);
         this._cpuPass = null;
-        if (roll < completion) {
+        if (f.pickId) this._intercepted(f);
+        else if (roll < completion) {
           p.anim = 'catch';
           s.carrierId = p.id; s.controlledId = 'home-MLB'; s.phase = 'defend'; s.defenseStage = 'chase';
           this._runTime = 0; this._cpuLane = p.x; this._cpuSway = this._rand() * Math.PI * 2;
@@ -1260,11 +1344,6 @@
             if (this.options.practice) this._finishPlay(3, 'Goal-line stop');
             else this._finishPlay(p.z, 'Touchdown');
           }
-        } else if (gap < 3.5 && roll > (s.playId === 'zone' ? .9 : s.playId === 'man' ? .93 : .95)) {
-          nearest.anim = 'catch'; this._stat('away', 'turnovers', 1);
-          if (s.conversion) this._kickAfter('Intercepted!', 'The two-point try is over.');
-          else this._finishPossession(clamp(p.z, 1, 99), 'Intercepted!', 'Your defense takes the ball at the catch spot.');
-          this._emit('catch', 'Interception. Your ball.');
         } else {
           s.ball.y = .2;
           this._finishPlay(s.lineOfScrimmage, 'Incomplete pass');
@@ -1298,30 +1377,23 @@
       } else if (f.kind === 'pass' && f.short) {
         // An underthrown ball: now and then the receiver dives and gets it, and a defender
         // sitting under it can pick it off; most of the time it falls incomplete.
-        const p = this._player(f.targetId), roll = this._rand();
-        const under = s.players.filter(q => q.team !== s.possession).some(q => distance(q, f.to) < 2.2);
-        if (roll < f.chance) {
+        const p = this._player(f.targetId), roll = f.judged ? f.roll : this._rand();
+        if (f.pickId) this._intercepted(f);
+        else if (roll < f.chance) {
           s.carrierId = p.id; s.controlledId = p.id; p.anim = 'catch'; s.phase = 'run';
           this._runTime = 0; this._armControl(); this._followBall();
           s.message = 'Diving catch!'; this._emit('catch', s.message);
-        } else if (under && !this.options.practice && roll > .85) {
-          this._stat('home', 'turnovers', 1);
-          if (s.conversion) this._kickAfter('Intercepted', 'The underthrown ball is picked off. The two-point try is over.');
-          else this._finishPossession(clamp(f.to.z, 1, 99), 'Intercepted', 'The underthrown ball is picked off. The visitors take over.');
         } else {
           s.ball.y = 0.2; this._finishPlay(s.lineOfScrimmage, 'Thrown short');
         }
       } else if (f.kind === 'pass') {
-        const p = this._player(f.targetId), roll = this._rand();
-        if (roll < f.chance || this.options.practice) {
+        const p = this._player(f.targetId), roll = f.judged ? f.roll : this._rand();
+        if (f.pickId) this._intercepted(f);
+        else if (roll < f.chance || this.options.practice) {
           s.carrierId = p.id; s.controlledId = p.id; p.anim = 'catch'; s.phase = 'run';
           this._runTime = 0; this._armControl(); this._followBall();
           s.message = 'Caught!'; this._emit('catch', s.message);
           if (p.z >= 100) this._finishPlay(p.z, 'Touchdown');
-        } else if (f.separation < 3 && roll > 0.94) {
-          this._stat('home', 'turnovers', 1);
-          if (s.conversion) this._kickAfter('Intercepted', 'The two-point try is over.');
-          else this._finishPossession(clamp(p.z, 1, 99), 'Intercepted', 'The visitors take possession at the catch spot.');
         } else {
           s.ball.y = 0.2; this._finishPlay(s.lineOfScrimmage, 'Incomplete pass');
         }
