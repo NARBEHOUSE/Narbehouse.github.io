@@ -7,230 +7,217 @@
     <title>Benny's 3D Basketball Shooter</title>
     <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; }
-        
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 10;
+        :root {
+            --gold: #f2a900; --gold-hi: #ffd25a; --team: #123c8c; --team-hi: #2f6bff; --red: #ff3b3b;
+            --glass: rgba(10, 16, 34, 0.72); --line: rgba(255, 255, 255, 0.16);
+            --display: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+            --ui: 'Barlow Condensed', 'Segoe UI', Tahoma, Arial, sans-serif;
         }
+        body { margin: 0; overflow: hidden; background-color: #05060c; font-family: var(--ui); }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
 
         /* --- Screens --- */
         .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: auto;
-            color: white;
-            z-index: 20;
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at center, rgba(5, 10, 28, 0.55) 0%, rgba(2, 4, 12, 0.88) 75%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto; color: white; z-index: 20;
         }
-        
-        .screen h1 { font-size: 4em; color: #ff9900; margin-bottom: 20px; }
-        
+        .screen h1, h1 {
+            font-family: var(--display); font-weight: 400; font-size: 4.4em; letter-spacing: 0.04em; margin: 0 0 18px;
+            background: linear-gradient(180deg, #fff6d0 0%, var(--gold-hi) 40%, var(--gold) 70%, #b36b00 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(242, 169, 0, 0.35));
+        }
+        .title-logo { width: 150px; height: auto; margin-bottom: 4px; filter: drop-shadow(0 6px 24px rgba(47, 107, 255, 0.55)); }
+        .title-sub { font-family: var(--ui); font-weight: 700; letter-spacing: 0.35em; color: #9fb3d9; margin: -12px 0 22px; font-size: 1.05em; }
+        .hint { margin-top: 18px; font-size: 1.15em; color: #c9d4ee; letter-spacing: 0.06em; }
+
         /* Menu Items */
-        .menu-items-list {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
+        .menu-items-list { display: flex; flex-direction: column; align-items: center; width: 100%; }
         .menu-item {
-            font-size: 2em;
-            margin: 10px;
-            padding: 10px 40px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            border-radius: 10px;
-            transition: all 0.2s;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            width: 300px;
-            text-align: center;
+            font-family: var(--ui); font-weight: 800; font-size: 1.9em; letter-spacing: 0.05em; text-transform: uppercase;
+            margin: 8px; padding: 10px 40px; cursor: pointer; border-radius: 12px;
+            border: 2px solid var(--line); border-left: 6px solid var(--team-hi);
+            background: linear-gradient(180deg, rgba(36, 52, 96, 0.78), rgba(14, 22, 46, 0.86));
+            color: #ffffff; width: 340px; text-align: center; transition: transform 0.15s, background 0.15s, border-color 0.15s;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
         .menu-item.selected {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-color: #fff;
-            color: #ff9900;
-            transform: scale(1.1);
-            font-weight: bold;
+            background: linear-gradient(180deg, #ffe08a, var(--gold) 60%, #c47f00);
+            border-color: #fff; border-left-color: #ffffff; color: #1a1205; transform: scale(1.08);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6), 0 0 34px rgba(242, 169, 0, 0.75);
         }
 
-        #header {
-            padding: 20px;
-            text-align: center;
-            color: white;
-            text-shadow: 2px 2px 4px #000;
+        /* --- HUD --- */
+        #hud { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: none; }
+        .bug {
+            display: flex; align-items: stretch; border-radius: 14px; overflow: hidden;
+            background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
+        .bug-logo { width: 58px; height: 58px; padding: 6px 10px; background: linear-gradient(135deg, var(--team), #0a1f4a); }
+        .bug-cell { display: flex; flex-direction: column; justify-content: center; padding: 4px 18px; border-left: 1px solid var(--line); min-width: 74px; text-align: center; }
+        .bug-cell .lbl { font-weight: 700; font-size: 0.85em; letter-spacing: 0.2em; color: #9fb3d9; }
+        .bug-cell .val { font-family: var(--display); font-size: 2.1em; line-height: 1; color: #ffffff; }
+        #hud-score { color: var(--gold-hi); }
+        .fire { display: none; align-items: center; padding: 0 16px; font-family: var(--display); font-size: 1.7em; color: #fff;
+                background: linear-gradient(90deg, #ff3b00, #ffb300); letter-spacing: 0.05em; }
+        .fire.on { display: flex; animation: firepulse 0.6s ease-in-out infinite alternate; }
+        @keyframes firepulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
 
-        h1 { margin: 0; font-size: 3em; color: #ff9900; -webkit-text-stroke: 1px black; }
-        #score-board { font-size: 2em; font-weight: bold; }
-        
-        #instructions {
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-            position: absolute;
-            top: 60%; /* Moved down slightly */
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1.5em;
-            display: block;
-        }
-
-        #power-container {
-            position: absolute;
-            bottom: 50px;
-            right: 50px;
-            width: 40px;
-            height: 300px;
-            background: #333;
-            border: 3px solid white;
-            border-radius: 20px;
-            overflow: hidden;
-            display: none;
-        }
-
-        #power-bar {
-            width: 100%;
-            height: 0%;
-            background: linear-gradient(to top, yellow, red);
-            position: absolute;
-            bottom: 0;
-            transition: height 0.05s linear;
-        }
-
-        /* Removed old aim indicator styling */
-        #aim-indicator { display: none !important; }
+        #horse-hud { position: absolute; top: 14px; left: 0; right: 0; display: none; justify-content: center; gap: 18px; align-items: flex-start; }
+        .hp { background: var(--glass); border: 2px solid var(--line); border-radius: 14px; padding: 8px 16px 10px; text-align: center; backdrop-filter: blur(6px); min-width: 210px; }
+        .hp.active { border-color: var(--gold); box-shadow: 0 0 26px rgba(242, 169, 0, 0.55); }
+        .hp-name { font-weight: 800; letter-spacing: 0.15em; color: #c9d4ee; font-size: 1.15em; }
+        .hp.active .hp-name { color: var(--gold-hi); }
+        .hp-letters { display: flex; gap: 6px; justify-content: center; margin-top: 4px; }
+        .hp-letters span { width: 34px; height: 42px; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 2em;
+                           border-radius: 8px; background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.28); border: 1px solid var(--line); }
+        .hp-letters span.on { background: linear-gradient(180deg, #ff5a5a, #c8102e); color: #fff; border-color: #ffb3b3; }
+        #horse-status { align-self: center; font-family: var(--display); font-size: 2em; color: #fff; padding: 6px 18px; border-radius: 12px;
+                        background: linear-gradient(90deg, rgba(18, 60, 140, 0.85), rgba(47, 107, 255, 0.85)); letter-spacing: 0.05em; text-align: center; }
 
         #message {
-            position: absolute;
-            top: 30%;
-            width: 100%;
-            text-align: center;
-            font-size: 3em;
-            font-weight: bold;
-            color: yellow;
-            text-shadow: 3px 3px 0 #000;
-            opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
+            position: absolute; top: 24%; width: 100%; text-align: center; pointer-events: none; opacity: 0;
+            font-family: var(--display); font-size: 6.2em; letter-spacing: 0.04em; color: #ffe08a;
+            -webkit-text-stroke: 2px rgba(0, 0, 0, 0.6); text-shadow: 0 6px 0 rgba(0, 0, 0, 0.5), 0 0 30px currentColor;
+        }
+        #message small { display: block; font-size: 0.42em; color: #fff; -webkit-text-stroke: 1px rgba(0, 0, 0, 0.6); }
+        #message.show { animation: pop 2.1s cubic-bezier(.2, .9, .3, 1.2) forwards; }
+        @keyframes pop {
+            0% { opacity: 0; transform: scale(0.4) skewX(-8deg); }
+            12% { opacity: 1; transform: scale(1.12) skewX(-8deg); }
+            22% { transform: scale(1) skewX(-8deg); }
+            80% { opacity: 1; transform: scale(1) skewX(-8deg); }
+            100% { opacity: 0; transform: scale(1.05) skewX(-8deg); }
         }
 
-        /* --- Settings Grid and Responsive Styles --- */
-        #settings-menu-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 90%;
-            max-width: 800px;
-            margin: 0 auto; /* Center */
+        /* Power meter */
+        #power-container {
+            position: absolute; bottom: 60px; right: 50px; width: 46px; height: 320px; display: none;
+            border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, rgba(20, 26, 46, 0.9), rgba(8, 10, 20, 0.9));
+            border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 0 22px rgba(0, 0, 0, 0.6);
         }
-
-        #settings-menu-list .menu-item {
-            width: auto;
-            margin: 0;
-            font-size: 1.4em; /* Smaller text */
-            padding: 10px;
-        }
-        
-        .span-two-cols {
-            grid-column: 1 / -1;
-            justify-self: center;
-            width: 50% !important; /* Half width for the back button */
-        }
-
-        @media (max-width: 768px) {
-            h1 { font-size: 2em !important; }
-            .menu-item { 
-                font-size: 1.2em !important; 
-                padding: 10px 20px !important; 
-                width: 90% !important; /* Full width on mobile */
-            }
-            #settings-menu-list {
-                grid-template-columns: 1fr; /* Stack on mobile */
-                width: 95%;
-            }
-            #settings-menu-list .menu-item {
-                font-size: 1.2em;
-            }
-            .span-two-cols {
-                width: 90% !important;
-            }
-            
-            #score-board { font-size: 1.2em !important; }
-            #pause-button { bottom: 15px; left: 15px; width: 60px; height: 60px; font-size: 24px; pointer-events: auto; }
-            #instructions { font-size: 1em !important; top: 70%; }
-        }
+        #power-sweet { position: absolute; left: 0; right: 0; bottom: 45%; height: 10%; background: rgba(255, 215, 0, 0.28); border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); z-index: 2; }
+        #power-bar { width: 100%; height: 0%; position: absolute; bottom: 0; background: linear-gradient(to top, #ffd400, #ff6a00 60%, #ff2a2a); }
+        #power-bar.sweet { background: linear-gradient(to top, #fff3b0, #ffd700); box-shadow: 0 0 24px #ffd700; }
 
         #pause-button {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            /* Safe area for iPhone X+ */
-            margin-bottom: env(safe-area-inset-bottom, 0px);
-            margin-left: env(safe-area-inset-left, 0px);
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            cursor: pointer;
-            z-index: 9999;
-            user-select: none;
-            border: 2px solid rgba(255,255,255,0.5);
-            backdrop-filter: blur(4px);
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            pointer-events: auto; /* Ensure it can be clicked even if ui-layer has pointer-events: none */
+            position: fixed; bottom: 20px; left: 20px; margin-bottom: env(safe-area-inset-bottom, 0px); margin-left: env(safe-area-inset-left, 0px);
+            width: 70px; height: 70px; background: rgba(255, 255, 255, 0.16); color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; z-index: 9999; user-select: none;
+            border: 2px solid rgba(255, 255, 255, 0.5); backdrop-filter: blur(4px); transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); pointer-events: auto;
         }
+        #pause-button:hover { background: rgba(255, 255, 255, 0.35); transform: scale(1.1); }
 
-        #pause-button:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.1);
+        /* Settings grid */
+        #settings-menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 90%; max-width: 820px; margin: 0 auto; }
+        #settings-menu-list .menu-item { width: auto; margin: 0; font-size: 1.35em; padding: 10px; }
+        .span-two-cols { grid-column: 1 / -1; justify-self: center; width: 50% !important; }
+
+        /* HORSE spot picker */
+        #spot-screen { justify-content: flex-start; padding-top: 18px; box-sizing: border-box; }
+        .spot-head { text-align: center; margin-bottom: 10px; }
+        #spot-title { font-family: var(--display); font-size: 3em; color: var(--gold-hi); line-height: 1; }
+        #spot-sub { font-weight: 700; letter-spacing: 0.25em; color: #c9d4ee; }
+        .spot-layout { display: flex; gap: 26px; align-items: center; justify-content: center; width: 96%; max-width: 1200px; flex: 1; min-height: 0; }
+        .spot-court { flex: 0 1 560px; max-height: 78vh; aspect-ratio: 1; }
+        .court-svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.6)); }
+        .court-svg .apron { fill: #0b2357; }
+        .court-svg .wood { fill: #d9b07a; }
+        .court-svg .paint { fill: #123c8c; opacity: 0.92; }
+        .court-svg .lines * { fill: none; stroke: #fff; stroke-width: 0.35; }
+        .court-svg .board { stroke: #fff; stroke-width: 0.6; }
+        .court-svg .rim { fill: none; stroke: #ff6a00; stroke-width: 0.45; }
+        .spot-marker { cursor: pointer; }
+        .spot-ring { fill: none; stroke: transparent; stroke-width: 0.6; }
+        .spot-dot { fill: #ffffff; stroke: #0b2357; stroke-width: 0.45; }
+        .spot-num { font-family: var(--display); font-size: 2.5px; text-anchor: middle; fill: #0b2357; }
+        .spot-marker.active .spot-dot { fill: var(--gold); }
+        .spot-marker.active .spot-ring { stroke: var(--gold-hi); animation: ring 0.9s ease-in-out infinite alternate; }
+        @keyframes ring { from { stroke-width: 0.4; opacity: 0.6; } to { stroke-width: 1.1; opacity: 1; } }
+        #spot-menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: auto; flex: 0 1 520px; }
+        #spot-menu-list .menu-item { width: auto; margin: 0; font-size: 1.25em; padding: 8px 10px; text-align: left; }
+        #spot-menu-list .menu-item::before { content: attr(data-num); display: inline-block; min-width: 1.6em; color: var(--gold-hi); }
+        #spot-menu-list .menu-item.selected::before { color: #1a1205; }
+        #spot-menu-list .menu-item[data-action="horse_quit"] { grid-column: 1 / -1; text-align: center; }
+
+        @media (max-width: 768px) {
+            h1, .screen h1 { font-size: 2.4em !important; }
+            .menu-item { font-size: 1.25em !important; padding: 10px 20px !important; width: 90% !important; }
+            #settings-menu-list { grid-template-columns: 1fr; width: 95%; }
+            #settings-menu-list .menu-item { font-size: 1.15em; }
+            .span-two-cols { width: 90% !important; }
+            .title-logo { width: 96px; }
+            .bug-logo { display: none; }
+            .bug-cell { padding: 2px 10px; min-width: 52px; }
+            .bug-cell .val { font-size: 1.5em; }
+            #horse-hud { flex-wrap: wrap; gap: 6px; }
+            .hp { min-width: 0; padding: 4px 8px; }
+            .hp-letters span { width: 24px; height: 30px; font-size: 1.4em; }
+            #horse-status { order: 3; font-size: 1.3em; }
+            #message { font-size: 3.4em; }
+            #pause-button { bottom: 15px; left: 15px; width: 60px; height: 60px; font-size: 24px; }
+            #power-container { right: 18px; height: 220px; width: 36px; }
+            .spot-layout { flex-direction: column; gap: 10px; overflow-y: auto; }
+            .spot-court { flex: 0 0 auto; width: 70vw; max-height: none; }
+            #spot-menu-list { width: 94%; }
+            #spot-menu-list .menu-item { width: auto !important; font-size: 1em !important; }
         }
     </style>
-    <!-- Import Three.js and Cannon.js via CDNs -->
+    <!-- Three.js and Cannon.js via CDN (unchanged versions) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
-    <!-- Import OBJLoader -->
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <!-- three.js r128 add-ons, served locally (MIT) -->
+    <script src="js/vendor/RoomEnvironment.js"></script>
+    <script src="js/vendor/Reflector.js"></script>
+    <script src="js/vendor/CopyShader.js"></script>
+    <script src="js/vendor/LuminosityHighPassShader.js"></script>
+    <script src="js/vendor/GammaCorrectionShader.js"></script>
+    <script src="js/vendor/EffectComposer.js"></script>
+    <script src="js/vendor/RenderPass.js"></script>
+    <script src="js/vendor/ShaderPass.js"></script>
+    <script src="js/vendor/UnrealBloomPass.js"></script>
+    <script src="js/sfx.js"></script>
+    <script src="js/court.js"></script>
+    <script src="js/arena.js"></script>
+    <script src="js/hoop.js"></script>
+    <script src="js/fx.js"></script>
+    <script src="js/horse.js"></script>
 </head>
 <body>
 
     <div id="ui-layer">
-        <div id="header">
-            <!-- <h1>BENNY'S BASKETBALL SHOOTER</h1> -->
-            <div id="score-board">Score: 0 | Shot: 1/12</div>
+        <div id="hud">
+            <div class="bug">
+                <img class="bug-logo" src="images/beamin-benny.png" alt="">
+                <div class="bug-cell"><span class="lbl">SCORE</span><span class="val" id="hud-score">0</span></div>
+                <div class="bug-cell"><span class="lbl" id="hud-shot-label">SHOT</span><span class="val" id="hud-shot">1/12</span></div>
+                <div class="bug-cell"><span class="lbl">BEST</span><span class="val" id="hud-best">0</span></div>
+                <div class="fire" id="hud-fire">ON FIRE</div>
+            </div>
         </div>
-        
-        <div id="message">SWISH!</div>
 
-        <div id="instructions" style="display:none;">
-            <p>Press <strong>SPACEBAR</strong> to aim</p>
+        <div id="horse-hud">
+            <div class="hp" id="hp0"><div class="hp-name">PLAYER 1</div><div class="hp-letters"><span>H</span><span>O</span><span>R</span><span>S</span><span>E</span></div></div>
+            <div id="horse-status">H-O-R-S-E</div>
+            <div class="hp" id="hp1"><div class="hp-name">PLAYER 2</div><div class="hp-letters"><span>H</span><span>O</span><span>R</span><span>S</span><span>E</span></div></div>
         </div>
+
+        <div id="message"></div>
 
         <div id="pause-button">&#10074;&#10074;</div>
 
         <div id="power-container">
+            <div id="power-sweet"></div>
             <div id="power-bar"></div>
         </div>
     </div>
@@ -242,31 +229,45 @@
             <div class="menu-item" data-action="resume">CONTINUE GAME</div>
             <div class="menu-item" data-action="restart">RESTART GAME</div>
             <div class="menu-item" data-action="settings">SETTINGS</div>
+            <div class="menu-item" data-action="help">HELP</div>
             <div class="menu-item" data-action="menu">MAIN MENU</div>
         </div>
     </div>
 
     <!-- Main Menu Screen -->
     <div id="start-screen" class="screen">
+        <img class="title-logo" src="images/beamin-benny.png" alt="">
         <h1>BENNY'S BASKETBALL</h1>
+        <div class="title-sub">ARENA SHOOTOUT</div>
         <div class="menu-items-list" id="main-menu-list">
-            <div class="menu-item" data-action="start">START GAME</div>
+            <div class="menu-item" data-action="start">1 PLAYER SHOOTOUT</div>
+            <div class="menu-item" data-action="horse">2 PLAYER HORSE</div>
             <div class="menu-item" data-action="settings">SETTINGS</div>
             <div class="menu-item" data-action="exit">EXIT GAME</div>
         </div>
-        <p style="margin-top:20px; font-size: 1.2em;">Space to Scan | Enter to Select</p>
+        <p class="hint">Space to Scan | Enter to Select</p>
     </div>
 
-        <!-- Settings Screen -->
+    <!-- Settings Screen -->
     <div id="settings-screen" class="screen" style="display:none; overflow-y: auto;">
         <h1>SETTINGS</h1>
-        <div class="menu-items-list" id="settings-menu-list">
-            <!-- Dynamic Settings will be injected here -->
+        <div class="menu-items-list" id="settings-menu-list"></div>
+    </div>
+
+    <!-- HORSE spot picker -->
+    <div id="spot-screen" class="screen" style="display:none;">
+        <div class="spot-head"><div id="spot-title">PLAYER 1</div><div id="spot-sub">PICK YOUR SPOT</div></div>
+        <div class="spot-layout">
+            <div class="spot-court" id="spot-court"></div>
+            <div class="menu-items-list" id="spot-menu-list"></div>
         </div>
-    </div>    <!-- Game Over Screen -->
+    </div>
+
+    <!-- Game Over Screen -->
     <div id="game-over-screen" class="screen" style="display:none;">
-        <h1>GAME OVER</h1>
-        <div id="final-score" style="font-size:3em; margin:20px;">Score: 0</div>
+        <h1 id="game-over-title">GAME OVER</h1>
+        <div id="final-score" style="font-family: var(--display); font-size:3em; margin:10px;">Score: 0</div>
+        <div id="high-score-display" style="font-size:2em; color:#FFD700; margin-bottom:20px;"></div>
         <div class="menu-items-list" id="gameover-menu-list">
             <div class="menu-item" data-action="restart">PLAY AGAIN</div>
             <div class="menu-item" data-action="menu">MAIN MENU</div>
@@ -284,7 +285,7 @@
     <script src="../../../shared/ios-audio-fix.js"></script>
     <script src="../../../shared/scan-manager.js"></script>
     <script>
-        
+
         // --- Game Settings Manager ---
         const GameSettings = {
             tts: true,
@@ -297,149 +298,105 @@
             aimerColor: 'white',
             ballTheme: 'standard',
             bgTheme: 'arena',
-            
+            graphics: 'auto', // auto, high, low
+
             load: function() {
                 try {
                     const saved = JSON.parse(localStorage.getItem('bennys_ball_settings'));
-                    if (saved) {
-                        Object.assign(this, saved);
-                    }
+                    if (saved) Object.assign(this, saved);
                 } catch(e) {}
             },
-            
+
             save: function() {
-                try {
-                    localStorage.setItem('bennys_ball_settings', JSON.stringify(this));
-                } catch(e) {}
+                try { localStorage.setItem('bennys_ball_settings', JSON.stringify(this)); } catch(e) {}
             }
         };
         GameSettings.load();
+        const SFX = window.BB.SFX;
 
         // --- Audio System ---
         class AudioManager {
             constructor() {
                 this.enabled = GameSettings.sfx;
-                this.ttsEnabled = GameSettings.tts; 
+                this.ttsEnabled = GameSettings.tts;
                 this.ctx = null;
-                
-                // Music
+                this.speechToken = 0;
                 this.bgm = new Audio('sounds/courtside-chill.mp3');
                 this.bgm.loop = true;
-                this.bgm.volume = 0.2;
+                this.bgm.volume = 0.1;
             }
-            
+
             updateSettings() {
                 this.enabled = GameSettings.sfx;
-                // Sync TTS with NarbeVoiceManager
                 if (window.NarbeVoiceManager) {
                     this.ttsEnabled = window.NarbeVoiceManager.getSettings().ttsEnabled;
                     GameSettings.tts = this.ttsEnabled;
                 } else {
                     this.ttsEnabled = GameSettings.tts;
                 }
-                if (GameSettings.music) {
-                    this.playMusic();
-                } else {
-                    this.stopMusic();
-                }
+                if (GameSettings.music) this.playMusic(); else this.stopMusic();
             }
 
-            playMusic() {
-                // User interaction required first usually
-                this.bgm.play().catch(e => console.log("Audio play blocked", e));
-            }
-            
-            stopMusic() {
-                this.bgm.pause();
-                this.bgm.currentTime = 0;
-            }
+            playMusic() { this.bgm.play().catch(e => console.log("Audio play blocked", e)); }
+            stopMusic() { this.bgm.pause(); this.bgm.currentTime = 0; }
 
             speak(text) {
                 if (window.NarbeVoiceManager) {
-                    return window.NarbeVoiceManager.speak(text);
+                    const ticket = window.NarbeVoiceManager.speak(text);
+                    // Duck the effects under the voice; only the latest line may un-duck
+                    const mine = ++this.speechToken;
+                    if (this.ttsEnabled) SFX.duck(true);
+                    if (ticket && ticket.finished) ticket.finished.then(() => { if (mine === this.speechToken) SFX.duck(false); });
+                    else SFX.duck(false);
+                    return ticket;
                 } else if (this.ttsEnabled && 'speechSynthesis' in window) {
                     speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance(text);
-                    speechSynthesis.speak(u);
+                    speechSynthesis.speak(new SpeechSynthesisUtterance(text));
                 }
             }
 
+            // Speak after a short beat (so the crowd reaction lands first). Skipped if anything else
+            // was spoken in the meantime, e.g. the player paused.
+            speakSoon(text, ms = 650) {
+                const token = this.speechToken;
+                setTimeout(() => { if (token === this.speechToken) this.speak(text); }, ms);
+            }
+
             init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-                // Check music on init
-                if(GameSettings.music) this.playMusic();
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                SFX.attach(this.ctx);
+                SFX.setEnabled(GameSettings.sfx);
+                SFX.startAmbience();
+                if (GameSettings.music) this.playMusic();
             }
 
             playTone(freq, type='sine', duration=0.1, vol=0.1) {
                 if (!this.enabled || !this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol * 0.5, this.ctx.currentTime); // cue tones sit under the TTS voice
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
                 osc.stop(this.ctx.currentTime + duration);
             }
 
-            playBeep(pitch = 600) {
-                this.playTone(pitch, 'square', 0.1, 0.05);
+            playBeep(pitch = 600) { this.playTone(pitch, 'square', 0.1, 0.05); }
+            playDing() { this.playTone(1000, 'sine', 0.8, 0.2); } // aim/power sweet-spot cue
+            playSwish() { SFX.play('swish', 1, { minGap: 0.4 }); }
+            playCheer(big = false) {
+                SFX.play('cheer', big ? 0.55 : 0.4, { minGap: 1 });
+                setTimeout(() => SFX.play('applause', 0.28, { minGap: 1 }), 900);
             }
 
-            playDing() {
-                this.playTone(1000, 'sine', 0.8, 0.2); // Clean bell
-            }
-
-            playSwish() {
-                this.playTone(400, 'triangle', 0.3, 0.2);
-            }
-
-            playCheer() {
-                if (!this.enabled || !this.ctx) return;
-                
-                // Create simulation of crowd cheer (filtered noise)
-                const duration = 2.0;
-                const bufferSize = this.ctx.sampleRate * duration;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * 0.5; // White noise
-                }
-
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-
-                // Filter to make it sound like a distant crowd
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
-                filter.Q.value = 1;
-
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.1); // Attack
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); // Decay
-
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-                noise.start();
-            }
-            
             toggle() {
                 GameSettings.sfx = !GameSettings.sfx;
                 this.enabled = GameSettings.sfx;
+                SFX.setEnabled(this.enabled);
                 return this.enabled;
             }
 
@@ -451,637 +408,199 @@
                     GameSettings.tts = !GameSettings.tts;
                 }
                 this.ttsEnabled = GameSettings.tts;
-                if(this.ttsEnabled) this.speak("TTS Enabled");
+                if (this.ttsEnabled) this.speak("TTS Enabled");
                 return this.ttsEnabled;
             }
         }
-        
+
         const audio = new AudioManager();
 
         // --- Game High Level Variables ---
-        let gameState = 'MENU'; // MENU, AIMING, CHARGING, SHOOTING, RESETTING, GAME_OVER
+        let gameState = 'MENU'; // MENU, AIMING, CHARGING, SHOOTING, PAUSED
+        let gameMode = 'single'; // single (12-shot shootout) or horse
         let score = 0;
         let round = 1;
-        let shotsTaken = 0; // Total shots out of 12
+        let shotsTaken = 0;
         const MAX_SHOTS = 12;
-        
+
         let bonusMode = false;
-        let perfectGame = true; // Tracks if missed any shot in regular rounds
+        let perfectGame = true;
         let highScore = parseInt(localStorage.getItem('bennys_ball_highscore')) || 0;
+        let streak = 0;
+        let onFire = false;
 
-        // AIMING variables
-        let aimAngle = 0;     // Current visual aim offset (-1 to 1 range approx)
-        let aimActive = false; // Is the aim currently moving?
-        let aimDirection = 1; // 1 (right) or -1 (left)
-        
-        // SPEED CALC: Distance from -1 to 1 is 2.0 units.
-        // Requested time: 10 seconds for full swing.
-        // Speed = 2.0 / 10.0 = 0.2 units per second.
-        // Per 60fps frame: 0.2 / 60 = 0.00333...
-        const AIM_SPEED = 0.0033; 
-        
+        let horse = null;          // HORSE game state (see js/horse.js)
+
+        let aimAngle = 0;
+        let aimActive = false;
+        let aimDirection = 1;
+
         let chargePower = 0;
-        let chargeDirection = 1;
-        let lastChargeBeep = 0; // To track 25/50/75 beeps
+        let lastChargeBeep = 0;
 
-        
-        // --- Three.js Setup ---
+        // --- Renderer, scene, quality ---
+        function resolveQuality() {
+            if (GameSettings.graphics === 'high' || GameSettings.graphics === 'low') return GameSettings.graphics;
+            try { return localStorage.getItem('bennys_ball_autoq') || 'high'; } catch (e) { return 'high'; }
+        }
+        let quality = resolveQuality();
+
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Sky blue
-        
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        scene.background = new THREE.Color(0x05060c);
+        scene.fog = new THREE.Fog(0x05060c, 120, 280);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // Optimize for high-DPI screens (like Surface Pro) to prevent lag
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // --- Cannon.js Physics Setup ---
-        const world = new CANNON.World();
-        world.gravity.set(0, -9.82 * 1.5, 0); // Slightly heavier gravity for arcade feel
-        world.broadphase = new CANNON.NaiveBroadphase();
-        world.solver.iterations = 7; // Reduced from 10 for performance
+        let envMap = null;
+        if (THREE.RoomEnvironment) {
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            envMap = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+            pmrem.dispose();
+        }
 
-        // Materials
+        // --- Cannon.js Physics Setup (unchanged tuning) ---
+        const world = new CANNON.World();
+        world.gravity.set(0, -9.82 * 1.5, 0);
+        world.broadphase = new CANNON.NaiveBroadphase();
+        world.solver.iterations = 7;
+
         const groundMaterial = new CANNON.Material();
         const ballMaterial = new CANNON.Material();
         const rimMaterial = new CANNON.Material();
         const backboardMaterial = new CANNON.Material();
+        world.addContactMaterial(new CANNON.ContactMaterial(ballMaterial, groundMaterial, { friction: 0.3, restitution: 0.7 }));
+        world.addContactMaterial(new CANNON.ContactMaterial(ballMaterial, rimMaterial, { friction: 0.1, restitution: 0.6 }));
+        world.addContactMaterial(new CANNON.ContactMaterial(ballMaterial, backboardMaterial, { friction: 0.1, restitution: 0.5 }));
 
-        const ballGroundContact = new CANNON.ContactMaterial(ballMaterial, groundMaterial, {
-            friction: 0.3,
-            restitution: 0.7 // Bouncy
-        });
-        const ballRimContact = new CANNON.ContactMaterial(ballMaterial, rimMaterial, {
-            friction: 0.1,
-            restitution: 0.6
-        });
-        const ballBackboardContact = new CANNON.ContactMaterial(ballMaterial, backboardMaterial, {
-            friction: 0.1,
-            restitution: 0.5
-        });
-
-        world.addContactMaterial(ballGroundContact);
-        world.addContactMaterial(ballRimContact);
-        world.addContactMaterial(ballBackboardContact);
-
-        // --- Objects Storage ---
         const meshes = [];
-        const bodies = [];
         let ballBody, ballMesh;
 
         // --- Scene Building ---
+        const court = BB.Court.build(scene, renderer, { quality, envMap });
+        const arena = BB.Arena.build(scene, { quality });
+        const hoop = BB.Hoop.build(scene, world, { rimMaterial, backboardMaterial, envMap });
+        const fx = BB.FX.build(scene);
+        const boardMesh = hoop.boardMesh, rimMesh = hoop.rimMesh, rimHalo = hoop.rimHalo, innerSquareWhite = hoop.innerSquare;
+        const HOOP_TARGET = new THREE.Vector3(0, 10, -10);
 
-        // 1. Lighting - Atmospheric Setup
-        scene.background = new THREE.Color(0x050510); // Dark Midnight Blue Arena
-        
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); 
-        scene.add(ambientLight);
-        
-        // Main Court Spotlight
-        const spotLight = new THREE.SpotLight(0xffffee, 1.2);
-        spotLight.position.set(0, 60, 20);
-        spotLight.angle = 0.6;
-        spotLight.penumbra = 0.3;
-        spotLight.castShadow = true;
-        scene.add(spotLight);
-
-        // Fill Light
-        const dirLight = new THREE.DirectionalLight(0xccddff, 0.3); 
-        dirLight.position.set(50, 100, 50);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-
-        // 2. Court Floor
-        // Better looking floor material with reflection
-        const planeGeo = new THREE.PlaneGeometry(100, 100);
-        const planeMat = new THREE.MeshPhongMaterial({ 
-            color: 0xD2B48C, 
-            shininess: 30,
-            specular: 0x111111
-        }); 
-        let floorMesh = new THREE.Mesh(planeGeo, planeMat);
-        floorMesh.rotation.x = -Math.PI / 2;
-        floorMesh.receiveShadow = true;
-        scene.add(floorMesh);
-
-        // Court markings (simple lines)
-        // Key area box
-        const keyGeo = new THREE.BoxGeometry(12, 0.01, 19);
-        const keyMesh = new THREE.Mesh(keyGeo, new THREE.MeshBasicMaterial({color: 0xaa2222, opacity: 0.5, transparent: true}));
-        keyMesh.position.set(0, 0.02, 19/2 - 10); // Offset to be under hoop
-        scene.add(keyMesh);
-
-        // --- Arena Environment ---
-        const crowdMembers = []; // Store references for animation
-        
-        function createTextTexture(text, bgColor, textColor) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0,0,512,256);
-            ctx.fillStyle = textColor;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            
-            // Check for newlines
-            if (text.includes('\n')) {
-                const lines = text.split('\n');
-                ctx.font = "bold 60px Arial";
-                lines.forEach((line, i) => {
-                    ctx.fillText(line, 256, 128 - 30 + (i*60));
-                });
-            } else {
-                ctx.font = "bold 80px Arial";
-                ctx.fillText(text, 256, 128);
-            }
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        function createHoopBannerTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 512; // Tall banner
-            const ctx = canvas.getContext('2d');
-            
-            // Yellow Background
-            ctx.fillStyle = '#FFD700';
-            ctx.fillRect(0,0,256,512);
-            
-            // Stylized Hoop
-            ctx.strokeStyle = '#b33e00'; // Rust orange
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.arc(128, 200, 60, 0, Math.PI); // Half circle for net/rim
-            ctx.stroke();
-            
-            // Rim line
-            ctx.strokeStyle = '#dd4400';
-            ctx.lineWidth = 15;
-            ctx.beginPath();
-            ctx.moveTo(60, 200); ctx.lineTo(196, 200);
-            ctx.stroke();
-            
-            // Ball under it
-            ctx.fillStyle = '#C85A17';
-            ctx.beginPath();
-            ctx.arc(128, 320, 50, 0, Math.PI*2);
-            ctx.fill();
-            // Ball lines
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(128, 270); ctx.lineTo(128, 370); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(78, 320); ctx.lineTo(178, 320); ctx.stroke();
-            
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        let scoreboardMesh;
-
-        function createScoreboardTexture(homeScore='0', guestScore='0') {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            
-            // Frame
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0,0,512,256);
-            ctx.strokeStyle = '#444';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(5,5,502,246);
-            
-            // Text
-            ctx.font = "bold 40px Courier New";
-            ctx.fillStyle = "red";
-            ctx.textAlign = "center";
-            ctx.fillText("SCORE", 128, 50);
-            ctx.fillStyle = "cyan";
-            ctx.fillText("SHOT", 384, 50);
-            
-            // Scores
-            ctx.font = "bold 100px Courier New";
-            ctx.textBaseline = "middle"; // Center vertically
-            ctx.fillStyle = "#ff5555";
-            ctx.fillText(homeScore, 128, 150);
-            ctx.fillStyle = "#55ffff";
-            ctx.fillText(guestScore, 384, 150);
-            
-            // Dots
-            ctx.fillStyle = "yellow";
-            ctx.beginPath(); ctx.arc(256, 130, 8, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(256, 170, 8, 0, Math.PI*2); ctx.fill();
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        let arenaArchitecture = new THREE.Group();
-        scene.add(arenaArchitecture);
-
-        function createArena() {
-             const wallMat = new THREE.MeshPhongMaterial({ color: 0x1a1a25, side: THREE.DoubleSide });
-             
-             // Back Wall (Behind Hoop)
-             const backWall = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), wallMat);
-             backWall.position.set(0, 50, -60);
-             arenaArchitecture.add(backWall);
-
-             // Side Walls
-             const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), wallMat);
-             leftWall.rotation.y = Math.PI/2;
-             leftWall.position.set(-80, 50, 0);
-             arenaArchitecture.add(leftWall);
-
-             const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(200, 100), wallMat);
-             rightWall.rotation.y = -Math.PI/2;
-             rightWall.position.set(80, 50, 0);
-             arenaArchitecture.add(rightWall);
-
-             // --- Fancy Bits ---
-             // 1. Scoreboard (Back Wall)
-             const sbGeo = new THREE.BoxGeometry(30, 15, 2);
-             const sbMat = new THREE.MeshLambertMaterial({ map: createScoreboardTexture(score, shotsTaken + '/' + MAX_SHOTS) });
-             scoreboardMesh = new THREE.Mesh(sbGeo, sbMat);
-             scoreboardMesh.position.set(0, 35, -58); // High up above hoop
-             arenaArchitecture.add(scoreboardMesh);
-
-             // 2. Banners (Hanging from ceiling)
-             const bannerGeo = new THREE.PlaneGeometry(10, 20);
-             const banner1 = new THREE.Mesh(bannerGeo, new THREE.MeshLambertMaterial({ map: createTextTexture("BEAMIN\nBENNY", "#aa0000", "#ffffff"), side: THREE.DoubleSide }));
-             banner1.position.set(-25, 35, -50);
-             arenaArchitecture.add(banner1);
-             
-             const banner2 = new THREE.Mesh(bannerGeo, new THREE.MeshLambertMaterial({ map: createTextTexture("#1", "#0000aa", "#ffffff"), side: THREE.DoubleSide }));
-             banner2.position.set(25, 35, -50);
-             arenaArchitecture.add(banner2);
-
-             // 3. Hoop Banners (Side Walls) replacing Luxury Boxes
-             const boxGeo = new THREE.PlaneGeometry(8, 16); // Tall banners
-             const hoopBannerTex = createHoopBannerTexture();
-             const boxMat = new THREE.MeshLambertMaterial({ map: hoopBannerTex, side: THREE.DoubleSide });
-             
-             // Add a few rows on left/right
-             for(let i=0; i<3; i++) {
-                 // Left wall banners
-                 const boxL = new THREE.Mesh(boxGeo, boxMat);
-                 boxL.rotation.y = Math.PI/2;
-                 boxL.position.set(-79, 30, -20 + i*20);
-                 arenaArchitecture.add(boxL);
-                 
-                 // Light above banners (Add to Group too?)
-                 // Lights don't respect hierarchy position strictly in old three.js versions sometimes but mostly yes.
-                 // Actually lights are expensive, maybe hide them too when architecture is hidden?
-                 const pl = new THREE.PointLight(0xffaa00, 0.4, 20);
-                 pl.position.set(-75, 38, -20 + i*20);
-                 arenaArchitecture.add(pl);
-
-                 // Right wall banners
-                 const boxR = new THREE.Mesh(boxGeo, boxMat);
-                 boxR.rotation.y = -Math.PI/2;
-                 boxR.position.set(79, 30, -20 + i*20);
-                 arenaArchitecture.add(boxR);
-                 
-                 const pr = new THREE.PointLight(0xffaa00, 0.4, 20);
-                 pr.position.set(75, 38, -20 + i*20);
-                 arenaArchitecture.add(pr);
-             }
-
-
-             // Stands/Crowd Generation (Re-adding the blocky crowd)
-             const standGeo = new THREE.BoxGeometry(160, 2, 5);
-             const standsGroup = new THREE.Group();
-             for(let row=0; row<10; row++) {
-                 // Bleacher step
-                 const step = new THREE.Mesh(standGeo, new THREE.MeshPhongMaterial({color: 0x333333}));
-                 step.position.set(0, row*3 + 5, -20 - (row*5));
-                 standsGroup.add(step);
-                 
-                 // Block People
-                 // Distribute people in slots to prevent overlapping
-                 const numPeople = 15; // Set count
-                 const width = 150;
-                 const slotSize = width / numPeople;
-                 
-                 for(let p=0; p<numPeople; p++) {
-                     const personGroup = new THREE.Group();
-                     
-                     // Calculate position in slot with some randomness, but ensuring no overlap
-                     // Start at left edge (-75), add slot offset, add random position within slot (padded)
-                     const slotStart = -(width/2) + (p * slotSize);
-                     const xPos = slotStart + 1 + (Math.random() * (slotSize - 2));
-
-                     const zPos = -20 - (row*5);
-                     const yPos = row*3 + 7;
-                     
-                     personGroup.position.set(xPos, yPos, zPos);
-                     
-                     // Random color shirt
-                     const r = Math.random();
-                     const color = new THREE.Color();
-                     if (r < 0.25) color.setHex(0xff0000); 
-                     else if (r < 0.5) color.setHex(0x00ff00);
-                     else if (r < 0.75) color.setHex(0x0000ff);
-                     else color.setHex(0xffaa00);
-
-                     // Body
-                     const bodyParts = new THREE.Mesh(
-                         new THREE.BoxGeometry(1, 1.5, 0.5), 
-                         new THREE.MeshLambertMaterial({color: color})
-                     );
-                     bodyParts.position.y = 0.75;
-                     personGroup.add(bodyParts);
-                     
-                     // Head
-                     const head = new THREE.Mesh(
-                         new THREE.BoxGeometry(0.6, 0.6, 0.6),
-                         new THREE.MeshLambertMaterial({color: 0xffccaa}) // Skin toneish
-                     );
-                     head.position.y = 1.8;
-                     personGroup.add(head);
-
-                     standsGroup.add(personGroup);
-                     
-                     // Store for animation
-                     crowdMembers.push({
-                         mesh: personGroup,
-                         baseY: yPos,
-                         offset: Math.random() * Math.PI * 2
-                     });
-                 }
-             }
-             // Move stands behind the hoop
-             standsGroup.position.set(0, 0, -30);
-             scene.add(standsGroup);
-        }
-        createArena();
-
-        const groundShape = new CANNON.Plane();
         const groundBody = new CANNON.Body({ mass: 0, material: groundMaterial });
-        groundBody.addShape(groundShape);
+        groundBody.addShape(new CANNON.Plane());
         groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
         world.addBody(groundBody);
 
-        // 3. Hoop Structure
-        const hoopGroup = new THREE.Group();
-        const startZ = -10; // Hoop position z
-        hoopGroup.position.set(0, 0, startZ);
-        scene.add(hoopGroup);
-
-        // Assign Spotlight Target now that group exists
-        spotLight.target = hoopGroup;
-        scene.add(spotLight.target); // Target must be in scene to work if it's an object
-
-        // Pole
-        const poleGeo = new THREE.CylinderGeometry(0.3, 0.3, 10, 16);
-        const poleMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
-        const poleMesh = new THREE.Mesh(poleGeo, poleMat);
-        poleMesh.position.set(0, 5, -2); // Slightly behind backboard
-        poleMesh.castShadow = true;
-        hoopGroup.add(poleMesh);
-
-        // Pole Physics
-        const poleShape = new CANNON.Cylinder(0.3, 0.3, 10, 8);
-        const poleBody = new CANNON.Body({ mass: 0, material: backboardMaterial });
-        const q = new CANNON.Quaternion();
-        q.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-        poleBody.addShape(poleShape, new CANNON.Vec3(0, 5, startZ - 2), q);
-        world.addBody(poleBody);
-
-
-        // Backboard
-        const boardW = 6, boardH = 4, boardD = 0.2; // Bigger Backboard (User Request)
-        const boardGeo = new THREE.BoxGeometry(boardW, boardH, boardD);
-        const boardMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
-        const boardMesh = new THREE.Mesh(boardGeo, boardMat);
-        boardMesh.position.set(0, 11.5, -0.5);
-        boardMesh.castShadow = true;
-        hoopGroup.add(boardMesh);
-
-        // Backboard Physics
-        const boardShape = new CANNON.Box(new CANNON.Vec3(boardW/2, boardH/2, boardD/2));
-        const boardBody = new CANNON.Body({ mass: 0, material: backboardMaterial });
-        boardBody.addShape(boardShape, new CANNON.Vec3(0, 11.5, startZ - 0.5));
-        world.addBody(boardBody);
-        
-        // Inner Square on Backboard
-        const innerSquare = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.5), new THREE.MeshBasicMaterial({color:0xff0000, side:THREE.DoubleSide}));
-        innerSquare.position.set(0, 11, -0.39);
-        hoopGroup.add(innerSquare);
-        // White fill for inner square to make it look like frame
-        const innerSquareWhite = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.3), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
-        innerSquareWhite.position.set(0, 11, -0.38);
-        hoopGroup.add(innerSquareWhite);
-
-        // Backboard Halo (Visual) - "Neon Light" Frame
-        const haloGeo = new THREE.BoxGeometry(boardW + 0.4, boardH + 0.4, 0.1);
-        const haloMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
-        const boardHalo = new THREE.Mesh(haloGeo, haloMat);
-        boardHalo.position.set(0, 11.5, -0.55); // Behind board
-        boardHalo.visible = false;
-        hoopGroup.add(boardHalo);
-
-
-        // Rim
-        const rimRadius = 1.3; // Bigger Hoop (User Request)
-        const rimTube = 0.05;
-        const rimY = 10;
-        const rimZ = 0.8; // Stick out from backboard
-
-        const rimGeo = new THREE.TorusGeometry(rimRadius, rimTube, 16, 32);
-        const rimMat = new THREE.MeshPhongMaterial({ color: 0xff4500 });
-        const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-        rimMesh.rotation.x = Math.PI / 2;
-        rimMesh.position.set(0, rimY, rimZ);
-        rimMesh.castShadow = true;
-        hoopGroup.add(rimMesh);
-
-        // Rim Halo (Visual)
-        const rimHaloGeo = new THREE.TorusGeometry(rimRadius + 0.2, 0.1, 16, 32);
-        const rimHaloMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-        const rimHalo = new THREE.Mesh(rimHaloGeo, rimHaloMat);
-        rimHalo.rotation.x = Math.PI / 2;
-        rimHalo.position.set(0, rimY, rimZ);
-        rimHalo.visible = false;
-        hoopGroup.add(rimHalo);
-
-        // Net (Simple cone for visual)
-        const netGeo = new THREE.CylinderGeometry(rimRadius, rimRadius * 0.7, 1.5, 16, 1, true);
-        const netMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee, wireframe: true, side: THREE.DoubleSide });
-        const netMesh = new THREE.Mesh(netGeo, netMat);
-        netMesh.position.set(0, rimY - 0.75, rimZ);
-        hoopGroup.add(netMesh);
-
-        // Rim Physics - multiple spheres or cylinders
-        const rimBody = new CANNON.Body({ mass: 0, material: rimMaterial });
-        const numRimSegments = 16; // More segments for smoother bigger hoop
-        for(let i=0; i<numRimSegments; i++){
-            const angle = (i / numRimSegments) * Math.PI * 2;
-            const x = Math.cos(angle) * rimRadius;
-            const z = Math.sin(angle) * rimRadius;
-            // Use sphere for segment collision
-            const shape = new CANNON.Sphere(rimTube);
-            rimBody.addShape(shape, new CANNON.Vec3(x, rimY, startZ + rimZ + z));
-        }
-        world.addBody(rimBody);
-
-        // 4. The Ball
-        // Use OBJLoader to load local model
-        const ballRadius = 0.7; // Standard ball
-        
-        // Global texture storage for switching themes
+        // --- The Ball ---
+        const ballRadius = 0.7;
         let loadedBallTexture = null;
-
-        // Placeholder until loaded
-        const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
-        const ballMat = new THREE.MeshPhongMaterial({ color: 0xC85A17 }); 
-        ballMesh = new THREE.Mesh(ballGeo, ballMat);
+        const ballMatProps = () => ({ color: 0xffffff, roughness: 0.62, metalness: 0, envMap: arenaEnv || envMap, envMapIntensity: 0.6 });
+        ballMesh = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 32, 32), new THREE.MeshStandardMaterial({ color: 0xC85A17, roughness: 0.6 }));
         ballMesh.castShadow = true;
         scene.add(ballMesh);
-        
-        // Load Texture First
-        const texLoader = new THREE.TextureLoader();
-        texLoader.load(
-            'basketball object/10487_basketball_diffuse.jpg',
-            function(texture) {
-                loadedBallTexture = texture;
-                if(ballMesh && ballMesh.userData.isModel) {
-                     applyVisualSettings();
-                }
-            }
-        );
 
-        // Load Model
-        const loader = new THREE.OBJLoader();
-        loader.load(
+        new THREE.TextureLoader().load('basketball object/10487_basketball_diffuse.jpg', function(texture) {
+            texture.encoding = THREE.sRGBEncoding;
+            texture.anisotropy = 4;
+            loadedBallTexture = texture;
+            applyVisualSettings();
+        });
+
+        new THREE.OBJLoader().load(
             'basketball object/10487_basketball_v1_3dmax2011_it2.obj',
             function (object) {
-                // Remove placeholder
                 scene.remove(ballMesh);
-                
-                // Process loaded object
                 ballMesh = object;
                 ballMesh.userData.isModel = true;
-                
-                // Scale it
-                // We need to normalize size to radius 0.7
-                const box = new THREE.Box3().setFromObject(ballMesh);
-                const size = new THREE.Vector3();
-                box.getSize(size);
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = (ballRadius * 2) / maxDim; // *2 because radius vs diameter
-                
+                const size = new THREE.Box3().setFromObject(ballMesh).getSize(new THREE.Vector3());
+                const scale = (ballRadius * 2) / Math.max(size.x, size.y, size.z);
                 ballMesh.scale.set(scale, scale, scale);
-                
                 ballMesh.traverse(function (child) {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        // Default Material properties for better looking
-                        // We will set color in applyVisualSettings
-                        child.material = new THREE.MeshPhongMaterial({
-                            color: 0xffffff, // White allows texture to show true colors
-                            specular: 0x111111,
-                            shininess: 10
-                        });
+                        child.material = new THREE.MeshStandardMaterial(ballMatProps());
                     }
                 });
-                
                 ballMesh.position.copy(ballBody.position);
                 ballMesh.quaternion.copy(ballBody.quaternion);
+                ballMesh.visible = gameState === 'SHOOTING';
                 scene.add(ballMesh);
-
-                // Update the Physics Sync Array
-                // Find entry that has ballBody and update its mesh reference
                 const meshIndex = meshes.findIndex(m => m[1] === ballBody);
-                if (meshIndex !== -1) {
-                    meshes[meshIndex][0] = ballMesh;
-                }
-                
-                // Also update holding ball
-                updateHoldingBallModel(object.clone()); // Pass a clone!
-                
-                // Re-apply settings once loaded
+                if (meshIndex !== -1) meshes[meshIndex][0] = ballMesh;
+                updateHoldingBallModel(object.clone());
                 applyVisualSettings();
             },
-            function (xhr) {
-                // progress
-            },
-            function (error) {
-                console.error('An error happened loading basketball model', error);
-                // Fallback to sphere if fail is already there
-            }
+            undefined,
+            function (error) { console.error('An error happened loading basketball model', error); }
         );
 
         ballBody = new CANNON.Body({ mass: 5, material: ballMaterial });
-        const ballShape = new CANNON.Sphere(ballRadius);
-        ballBody.addShape(ballShape);
+        ballBody.addShape(new CANNON.Sphere(ballRadius));
         ballBody.linearDamping = 0.2;
         ballBody.angularDamping = 0.2;
-        // Start position
         ballBody.position.set(0, 5, 10);
         world.addBody(ballBody);
+        meshes.push([ballMesh, ballBody]);
 
-        meshes.push([ballMesh, ballBody]); // Warning: This pushes the PLACEHOLDER ref. 
-        // We need to update the mesh ref in the array when loaded.
-        // Actually meshes array stores objects. 
-        // Easier: modify the 'meshes' array update logic to just use 'ballMesh' global variable.
+        // Contact sounds and shot bookkeeping
+        let shotTouches = { rim: false, board: false, floor: false };
+        ballBody.addEventListener('collide', function(e) {
+            let v = 4;
+            try { v = Math.abs(e.contact.getImpactVelocityAlongNormal()); } catch (err) {}
+            if (v < 0.8) return;
+            const vol = Math.min(1, v / 12);
+            if (e.body === hoop.rimBody) {
+                if (gameState === 'SHOOTING') shotTouches.rim = true;
+                SFX.play('rim', 0.45 + vol * 0.7, { minGap: 0.12 });
+                hoop.net.shake(0.04 + vol * 0.06);
+                fx.shake(0.04 * vol);
+            } else if (e.body === hoop.boardBody || e.body === hoop.poleBody) {
+                if (gameState === 'SHOOTING') shotTouches.board = true;
+                SFX.play('backboard', 0.35 + vol * 0.7, { minGap: 0.12 });
+                fx.shake(0.03 * vol);
+            } else if (e.body === groundBody) {
+                if (gameState === 'SHOOTING') shotTouches.floor = true;
+                SFX.play('bounce', 0.2 + vol * 0.8, { minGap: 0.08 });
+            }
+        });
 
-
-        // Helpers
         let ballStartPos = new THREE.Vector3(0, 4, 15);
 
-        // --- Visual Enhancements ---
-        
-        // 1. Holding Ball (Visual Only)
-        // Attached to Camera so it moves with view
+        // Holding ball (attached to the camera)
         let holdingBallMesh;
         {
-            // Initial Placeholder
-            const hBallGeo = new THREE.SphereGeometry(0.5, 32, 32);
-            const hBallMat = new THREE.MeshPhongMaterial({ color: 0xC85A17 }); 
-            holdingBallMesh = new THREE.Mesh(hBallGeo, hBallMat);
-            
-            holdingBallMesh.position.set(0, -1.1, -1.2); 
-            
-            camera.add(holdingBallMesh);
-            scene.add(camera); 
-        }
-        
-        function updateHoldingBallModel(clonedModel) {
-            // Remove old
-            if(holdingBallMesh) {
-                camera.remove(holdingBallMesh);
-                // clean up?
-            }
-            
-            holdingBallMesh = clonedModel;
-            
-            // Re-Scale specifically for holding view (radius 0.5)
-            // The cloned model already has scale for radius 0.7
-            // So we multiply by 0.5/0.7
-            const s = 0.5 / 0.7;
-            holdingBallMesh.scale.multiplyScalar(s);
-            
+            holdingBallMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({ color: 0xC85A17, roughness: 0.6 }));
             holdingBallMesh.position.set(0, -1.1, -1.2);
+            camera.add(holdingBallMesh);
+            scene.add(camera);
+            const handLight = new THREE.PointLight(0xffe6c0, 0.5, 4);
+            handLight.position.set(0, 0.2, 0);
+            camera.add(handLight);
+        }
+
+        function updateHoldingBallModel(clonedModel) {
+            if (holdingBallMesh) camera.remove(holdingBallMesh);
+            holdingBallMesh = clonedModel;
+            holdingBallMesh.scale.multiplyScalar(0.5 / 0.7);
+            holdingBallMesh.position.set(0, -1.1, -1.2);
+            holdingBallMesh.visible = gameState === 'AIMING' || gameState === 'CHARGING';
             camera.add(holdingBallMesh);
         }
 
-        // 2. Trajectory Line (Flat Dashes)
+        // Trajectory guide (a dotted arc of small glowing beads)
         let trajectoryPoints = [];
         let trajectoryGroup = new THREE.Group();
         {
-            // Flat Dash (White) - Simple flat lines, no glow
-            // Width (X), Thickness (Y), Length (Z)
-            // Length is along Z because lookAt aligns Z axis to direction
-            // Width increased by 50% (0.25 -> 0.38)
-            const geometry = new THREE.BoxGeometry(0.38, 0.02, 0.8); 
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0xffffff,
-                transparent: true, 
-                opacity: 0.3 
-            });
-            
-            for(let i=0; i<40; i++) { // Increased to 40 for denser lines
+            const geometry = new THREE.SphereGeometry(0.075, 12, 8);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, toneMapped: false, depthWrite: false });
+            for (let i = 0; i < 60; i++) {
                 const mesh = new THREE.Mesh(geometry, material.clone());
                 trajectoryGroup.add(mesh);
                 trajectoryPoints.push(mesh);
@@ -1090,358 +609,449 @@
             trajectoryGroup.visible = false;
         }
 
-        // --- Visual Enhancements: Confetti ---
-        const confettiParticles = [];
-        const confettiGeometry = new THREE.PlaneGeometry(0.3, 0.3);
-        
-        function triggerConfetti() {
-            for(let i=0; i<80; i++) {
-                const color = new THREE.Color();
-                color.setHSL(Math.random(), 1.0, 0.5);
-                
-                const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-                const mesh = new THREE.Mesh(confettiGeometry, material);
-                
-                // Spawn above crowd area (Back of arena)
-                // Crowd is roughly Z -30 to -80. Width -75 to 75.
-                mesh.position.set(
-                    (Math.random()-0.5) * 120, // Wide spread
-                    30 + Math.random()*10,     // High up from ceiling
-                    -55 + (Math.random()-0.5)*20 // Depth over stands
-                );
-                
-                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                
-                scene.add(mesh);
-                
-                confettiParticles.push({
-                    mesh: mesh,
-                    vel: new THREE.Vector3((Math.random()-0.5)*5, Math.random()*2, (Math.random()-0.5)*5),
-                    rotVel: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5)
+        // --- Reflections: bake an environment map of the arena itself ---
+        // Glossy surfaces (floor varnish, rim, glass, ball) then reflect the real stands and lights
+        // instead of a generic white room. Re-baked once fonts and logos have painted.
+        let arenaEnv = null, arenaEnvRT = null;
+        const ENV_INTENSITY = { floor: 0.55, glass: 1.1 };
+        function bakeArenaEnv() {
+            if (!THREE.PMREMGenerator || !envMap) return;
+            try {
+                // r128 stores the probe as 8-bit RGBE, which can't take blending or custom shaders:
+                // leave out anything transparent, additive or hand-written (light shafts, floor mirror, glass)
+                const hidden = [trajectoryGroup, holdingBallMesh, ballMesh];
+                scene.traverse(o => {
+                    if (!o.material || !o.visible) return;
+                    const mats = Array.isArray(o.material) ? o.material : [o.material];
+                    if (mats.some(m => m.transparent || m.isShaderMaterial || m.blending !== THREE.NormalBlending)) hidden.push(o);
                 });
+                const wasVisible = hidden.map(o => o && o.visible);
+                hidden.forEach(o => { if (o) o.visible = false; });
+                scene.position.set(0, -9, 2); // probe at shooter height, in front of the hoop
+                const pmrem = new THREE.PMREMGenerator(renderer);
+                const rt = pmrem.fromScene(scene, 0.02, 0.5, 400);
+                pmrem.dispose();
+                scene.position.set(0, 0, 0);
+                hidden.forEach((o, i) => { if (o) o.visible = wasVisible[i]; });
+                const old = arenaEnv;
+                scene.traverse(o => {
+                    if (!o.material) return;
+                    (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+                        if (m.envMap && (m.envMap === envMap || m.envMap === old)) { m.envMap = rt.texture; m.needsUpdate = true; }
+                    });
+                });
+                court.floor.material.envMapIntensity = ENV_INTENSITY.floor;
+                boardMesh.material.envMapIntensity = ENV_INTENSITY.glass;
+                if (arenaEnvRT) arenaEnvRT.dispose();
+                arenaEnv = rt.texture; arenaEnvRT = rt;
+            } catch (e) {
+                scene.position.set(0, 0, 0);
+                console.warn('Arena reflections unavailable', e);
             }
         }
 
-        function updateConfetti(dt) {
-             for(let i=confettiParticles.length-1; i>=0; i--) {
-                 const p = confettiParticles[i];
-                 p.vel.y -= 9.8 * dt; // Gravity
-                 p.mesh.position.addScaledVector(p.vel, dt);
-                 p.mesh.rotation.x += p.rotVel.x * 5 * dt;
-                 p.mesh.rotation.y += p.rotVel.y * 5 * dt;
-                 
-                 // Remove if below floor
-                 if(p.mesh.position.y < 0) {
-                     p.mesh.geometry.dispose();
-                     p.mesh.material.dispose();
-                     scene.remove(p.mesh);
-                     confettiParticles.splice(i, 1);
-                 }
-             }
+        // --- Post-processing (high quality) ---
+        let composer = null;
+        function setupComposer() {
+            composer = null;
+            if (quality !== 'high' || !THREE.EffectComposer || !THREE.RenderPass || !THREE.UnrealBloomPass || !THREE.ShaderPass || !THREE.GammaCorrectionShader) return;
+            try {
+                const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+                let target;
+                if (renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget) {
+                    target = new THREE.WebGLMultisampleRenderTarget(size.x, size.y, { format: THREE.RGBAFormat });
+                }
+                composer = new THREE.EffectComposer(renderer, target);
+                composer.addPass(new THREE.RenderPass(scene, camera));
+                composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.42, 0.45, 0.93));
+                composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
+            } catch (e) {
+                console.warn('Bloom unavailable', e);
+                composer = null;
+            }
         }
 
-        // --- Game Logic ---
+        function applyQuality() {
+            renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1);
+            court.setQuality(quality);
+            arena.setQuality(quality);
+            setupComposer();
+            onResize();
+        }
 
-        // Predefined 12 Shot Locations
-        // Pattern: Dist 1 (Close), Dist 2, Dist 3, Dist 4
-        // Every dist has 3 angles: Left (-30), Center (0), Right (30)
-        // Distances: 15, 20, 25, 30
+        // --- Shot locations ---
+        // Single player: 12 shots at 15/20/25/30 ft, left/centre/right; bonus keeps backing up 5 ft.
         function getShotConfig(shotIndex) {
-            
-            // Bonus Mode Logic: Continue increasing distance
             if (shotIndex >= 12) {
-                // Calculate how many full cycles of 3 angles we've done in bonus
                 const bonusIndex = shotIndex - 12;
                 const cycle = Math.floor(bonusIndex / 3);
-                const angleIndex = bonusIndex % 3;
-                
-                // Start from 35 and add 5 every cycle
-                const dist = 35 + (cycle * 5);
                 const angles = [-30, 0, 30];
-                const angleDeg = angles[angleIndex];
-                const angleRad = angleDeg * (Math.PI / 180);
-                
-                return { dist, angleRad };
+                return { dist: 35 + (cycle * 5), angleRad: angles[bonusIndex % 3] * (Math.PI / 180) };
             }
+            const distances = [15, 20, 25, 30];
+            const angles = [-30, 0, 30];
+            return { dist: distances[Math.floor(shotIndex / 3) % distances.length], angleRad: angles[shotIndex % 3] * (Math.PI / 180) };
+        }
 
-            const distanceIndex = Math.floor(shotIndex / 3);
-            const angleIndex = shotIndex % 3; // 0=Left, 1=Center, 2=Right
-            
-            const distances = [15, 20, 25, 30]; // 4 Distances
-            const angles = [-30, 0, 30];        // 3 Angles
+        // boost: per-spot launch-speed factor so 50% power is the sweet spot from close range too
+        let shotBoost = 1;
+        function placePlayer(dist, angleRad, boost = 1) {
+            shotBoost = boost;
+            const hoopZ = -10;
+            ballStartPos.x = Math.sin(angleRad) * dist;
+            ballStartPos.z = (Math.cos(angleRad) * dist) + hoopZ;
+            ballStartPos.y = 4.5;
+            updateCameraPosition();
+        }
 
-            const dist = distances[distanceIndex % distances.length];
-            const angleDeg = angles[angleIndex];
-            const angleRad = angleDeg * (Math.PI / 180);
-
-            return { dist, angleRad };
+        function beginAiming() {
+            gameState = 'AIMING';
+            aimAngle = Math.random() < 0.5 ? -0.9 : 0.9;
+            chargePower = 0;
+            aimActive = false;
+            aimDirection = (aimAngle < 0) ? 1 : -1;
+            shotTouches = { rim: false, board: false, floor: false };
+            shotResolved = false;
+            scored = false;
+            document.getElementById('power-container').style.display = 'none';
+            holdingBallMesh.visible = true;
+            ballMesh.visible = false;
+            trajectoryGroup.visible = true;
+            hoop.net.relax(0.8); // settle the net back to its hanging shape before every shot
+            showHud();
+            SFX.play('dribble', 0.55, { minGap: 1 });
         }
 
         function setupRound() {
-            // Check High Score Update Live
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('bennys_ball_highscore', highScore);
             }
-
             if (shotsTaken >= MAX_SHOTS && !bonusMode) {
-                // Determine if we go to Bonus or Game Over
                 if (perfectGame) {
                     bonusMode = true;
                     audio.speak("Perfect Game! Entering Bonus Mode! Sudden Death!");
-                    showMessage("BONUS MODE!", "gold");
-                    // Continue to setup round...
+                    showMessage("BONUS MODE!", "#ffd25a", "SUDDEN DEATH");
                 } else {
                     gameOver();
                     return;
                 }
             } else if (bonusMode && !perfectGame) {
-                // Missed in bonus mode = Game Over (handled in checkResult/nextRound mostly, but safety here)
                 gameOver();
                 return;
             }
 
             round = shotsTaken + 1;
-            
             const config = getShotConfig(shotsTaken);
-            const hoopZ = -10;
-            // Place player
-            ballStartPos.x = Math.sin(config.angleRad) * config.dist;
-            ballStartPos.z = (Math.cos(config.angleRad) * config.dist) + hoopZ;
-            ballStartPos.y = 4.5; // Holding height
-
-            updateCameraPosition();
-            
-            // Reset Aim
-            gameState = 'AIMING';
-            // Start aim at far left or far right (randomly) so user has to aim
-            aimAngle = Math.random() < 0.5 ? -0.9 : 0.9;
-            chargePower = 0;
-            aimActive = false; 
-            // Set direction to move towards center
-            aimDirection = (aimAngle < 0) ? 1 : -1;
-            
-            // Visuals
-            document.getElementById('instructions').style.display = 'block';
-            if (GameSettings.autoScan) {
-                 document.getElementById('instructions').innerHTML = "<p>Auto-Aim Active<br>Press <strong>ENTER</strong> to Charge</p>";
-            } else {
-                 document.getElementById('instructions').innerHTML = "<p>Hold <strong>SPACE</strong> to Aim</p>";
-            }
-            
-            if (bonusMode) {
-                document.getElementById('instructions').innerHTML += "<p style='color:gold'>BONUS MODE: SUDDEN DEATH</p>";
-            }
-            
-            document.getElementById('power-container').style.display = 'none';
-            document.getElementById('message').style.opacity = 0;
-            
-            holdingBallMesh.visible = true;
-            ballMesh.visible = false;
-            
-            trajectoryGroup.visible = true;
-
+            placePlayer(config.dist, config.angleRad);
+            beginAiming();
             updateScoreBoard();
-            
-            let msg = bonusMode ? `BONUS ${round-12}` : `Shot ${round}/${MAX_SHOTS}`;
-            showMessage(msg, bonusMode ? "gold" : "yellow");
+            if (!bonusMode || round > 13) {
+                const msg = bonusMode ? `BONUS ${round - 12}` : `SHOT ${round}`;
+                showMessage(msg, bonusMode ? "#ffd25a" : "#ffffff", bonusMode ? `${config.dist} FEET` : `OF ${MAX_SHOTS}`);
+            }
         }
-        
+
         function gameOver() {
-            gameState = 'MENU'; 
+            gameState = 'MENU';
+            hideHud();
+            document.getElementById('power-container').style.display = 'none';
+            trajectoryGroup.visible = false;
             MenuManager.setActiveMenu('gameover');
             document.getElementById('game-over-screen').style.display = 'flex';
-            document.getElementById('final-score').innerText = "Score: " + score;
-            document.getElementById('high-score-display').innerText = "High Score: " + highScore;
-            audio.speak("Game Over. Final Score " + score);
-        }
-
-        // Removed old setupUI function as we use MenuSystem now
-
-
-        function resetBall() {
-            // Unused mostly now, handled in setupRound
-            ballBody.velocity.set(0,0,0);
-            ballBody.angularVelocity.set(0,0,0);
-            ballBody.position.set(ballStartPos.x, ballStartPos.y, ballStartPos.z);
-            ballBody.sleep();
-            ballBody.wakeUp();
+            SFX.play('buzzer', 0.8, { minGap: 1 });
+            if (gameMode === 'horse' && horse) {
+                const w = horse.players[horse.winner];
+                document.getElementById('game-over-title').innerText = `${w.name} WINS!`;
+                document.getElementById('final-score').innerText = horse.players.map(p => `${p.name}: ${BB.Horse.letters(p.letters) || '-'}`).join('   ');
+                document.getElementById('high-score-display').innerText = 'H-O-R-S-E';
+                audio.playCheer(true);
+                audio.speak(`Game over. ${w.name} wins!`);
+            } else {
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('bennys_ball_highscore', highScore);
+                }
+                document.getElementById('game-over-title').innerText = 'GAME OVER';
+                document.getElementById('final-score').innerText = "Score: " + score;
+                document.getElementById('high-score-display').innerText = "High Score: " + highScore;
+                audio.speak("Game Over. Final Score " + score);
+            }
+            arena.videoboard.set({ status: 'FINAL' });
         }
 
         function updateCameraPosition() {
-            const hoopPos = new THREE.Vector3(0, 10, -10);
             const ballPos = new THREE.Vector3(ballStartPos.x, ballStartPos.y, ballStartPos.z);
-            
-            // Direction from ball to hoop
-            const direction = new THREE.Vector3().subVectors(hoopPos, ballPos).normalize();
-            
-            // Camera position: First Person View
-            // Camera essentially where the 'head' would be.
-            // Ball is at y=4.5. Head at y=6.
-            // Camera slightly behind ball.
-            
-            camera.position.set(
-                ballPos.x - direction.x * 0.5,
-                ballPos.y + 1.5, // Eye level
-                ballPos.z - direction.z * 0.5
-            );
-            
-            // Ensure camera looks at hoop
-            camera.lookAt(hoopPos);
+            const direction = new THREE.Vector3().subVectors(HOOP_TARGET, ballPos).normalize();
+            camera.position.set(ballPos.x - direction.x * 0.5, ballPos.y + 1.5, ballPos.z - direction.z * 0.5);
+            camera.lookAt(HOOP_TARGET);
+            lookCurrent.copy(HOOP_TARGET);
+            cameraBase.copy(camera.position);
+        }
+
+        function showHud() {
+            const single = gameMode === 'single';
+            document.getElementById('hud').style.display = single ? 'block' : 'none';
+            document.getElementById('horse-hud').style.display = single ? 'none' : 'flex';
+        }
+        function hideHud() {
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('horse-hud').style.display = 'none';
         }
 
         function updateScoreBoard() {
-            document.getElementById('score-board').innerText = `Score: ${score} | Shot: ${round}/${MAX_SHOTS}`;
-            
-            // Update 3D Scoreboard Texture
-            if (scoreboardMesh && scoreboardMesh.material) {
-                // Dispose old texture to free memory
-                if(scoreboardMesh.material.map) scoreboardMesh.material.map.dispose();
-                
-                // Create new texture with updated values
-                // Home: Score, Guest: Shot Count
-                scoreboardMesh.material.map = createScoreboardTexture(score.toString(), round + '/' + MAX_SHOTS);
-                scoreboardMesh.material.needsUpdate = true;
+            if (gameMode === 'horse' && horse) {
+                horse.players.forEach((p, i) => {
+                    const card = document.getElementById('hp' + i);
+                    card.classList.toggle('active', horse.shooter === i);
+                    card.querySelectorAll('.hp-letters span').forEach((s, k) => s.classList.toggle('on', k < p.letters));
+                });
+                const shooter = horse.players[horse.shooter];
+                const status = horse.phase === 'match' ? `${shooter.name} · MATCH IT` : `${shooter.name} · SET THE SHOT`;
+                document.getElementById('horse-status').innerText = horse.spot ? `${status}\n${horse.spot.label}` : status;
+                arena.videoboard.set({ mode: 'horse', p: horse.players.map((p, i) => ({ name: p.name, letters: p.letters, active: horse.shooter === i })), status: horse.spot ? horse.spot.label : 'H-O-R-S-E' });
+                hoop.setClock('P' + (horse.shooter + 1));
+                return;
+            }
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-shot-label').innerText = bonusMode ? 'BONUS' : 'SHOT';
+            document.getElementById('hud-shot').innerText = bonusMode ? String(round - 12) : `${round}/${MAX_SHOTS}`;
+            document.getElementById('hud-best').innerText = Math.max(highScore, score);
+            document.getElementById('hud-fire').classList.toggle('on', onFire);
+            arena.videoboard.set({ mode: 'single', score, shot: bonusMode ? 'B' + (round - 12) : `${round}/${MAX_SHOTS}`, best: Math.max(highScore, score), status: onFire ? 'ON FIRE!' : (bonusMode ? 'SUDDEN DEATH' : "LET'S GO BENNY!") });
+            hoop.setClock(bonusMode ? 'B' : String(Math.max(0, MAX_SHOTS - shotsTaken)));
+        }
+
+        let messageTimer = null;
+        function showMessage(text, color, sub) {
+            const el = document.getElementById('message');
+            el.innerHTML = '';
+            el.appendChild(document.createTextNode(text));
+            if (sub) { const s = document.createElement('small'); s.innerText = sub; el.appendChild(s); }
+            el.style.color = color || '#ffe08a';
+            el.classList.remove('show');
+            void el.offsetWidth;
+            el.classList.add('show');
+            clearTimeout(messageTimer);
+            messageTimer = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        // --- HORSE ---
+        function startHorse() {
+            gameMode = 'horse';
+            horse = BB.Horse.newGame();
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            SFX.play('whistle', 0.7, { minGap: 1 });
+            audio.speak(`HORSE. ${horse.players[horse.leader].name} goes first.`);
+            setTimeout(goToSpotPicker, 1200);
+        }
+
+        function goToSpotPicker() {
+            if (gameMode !== 'horse' || !horse) return;
+            gameState = 'MENU';
+            hideHud();
+            trajectoryGroup.visible = false;
+            holdingBallMesh.visible = false;
+            document.getElementById('power-container').style.display = 'none';
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            const leader = horse.players[horse.leader];
+            document.getElementById('spot-title').innerText = leader.name;
+            document.getElementById('spot-sub').innerText = 'PICK YOUR SPOT';
+            document.getElementById('spot-screen').style.display = 'flex';
+            MenuManager.setActiveMenu('spots');
+            updateScoreBoard();
+            audio.speak(`${leader.name}, pick your spot.`);
+        }
+
+        function beginHorseShot() {
+            const spot = horse.spot;
+            placePlayer(spot.dist, spot.angle * Math.PI / 180, spot.boost || 1);
+            beginAiming();
+            updateScoreBoard();
+            const shooter = horse.players[horse.shooter];
+            if (horse.phase === 'match') {
+                showMessage(shooter.name, '#ffd25a', 'MATCH IT · ' + spot.label);
+                audio.speak(`${shooter.name}, match it from the ${spot.label.toLowerCase()}.`);
+            } else {
+                showMessage(shooter.name, '#ffffff', spot.label);
+                audio.speak(`${shooter.name} shoots from the ${spot.label.toLowerCase()}.`);
             }
         }
 
-        function showMessage(text, color) {
-            const el = document.getElementById('message');
-            el.innerText = text;
-            el.style.color = color;
-            el.style.opacity = 1;
+        function horseResult(made) {
+            const ev = BB.Horse.shotResult(horse, made);
+            const name = i => horse.players[i].name;
+            const spell = s => s.split('').join(' ');
+            let wait = 2600;
+            if (ev.type === 'set_made') {
+                celebrate(made);
+                audio.speakSoon(`${name(ev.shooter)} makes it! ${name(ev.next)}, match it.`);
+            } else if (ev.type === 'set_missed') {
+                missReaction();
+                showMessage('MISS', '#ff6a6a', `${name(ev.next)} PICKS NEXT`);
+                audio.speakSoon(`Miss. ${name(ev.next)} picks the next spot.`);
+            } else if (ev.type === 'matched') {
+                celebrate(made);
+                audio.speakSoon(`${name(ev.shooter)} matches it! No letter.`);
+            } else if (ev.type === 'letter') {
+                missReaction();
+                SFX.play('buzzer', 0.6, { minGap: 1 });
+                showMessage(`LETTER ${ev.letter}`, '#ff5a5a', `${name(ev.shooter)}: ${ev.letters}`);
+                audio.speakSoon(`${name(ev.shooter)} gets an ${ev.letter}. ${spell(ev.letters)}.`);
+                wait = 3200;
+            } else if (ev.type === 'win') {
+                missReaction();
+                showMessage('H-O-R-S-E', '#ff5a5a', `${name(ev.winner)} WINS!`);
+                audio.speakSoon(`${name(ev.shooter)} spells HORSE.`);
+                wait = 3000;
+            }
+            updateScoreBoard();
             setTimeout(() => {
-                el.style.opacity = 0;
-            }, 2000);
+                if (gameMode !== 'horse' || gameState === 'PAUSED') return;
+                if (horse.phase === 'over') gameOver();
+                else if (horse.phase === 'match') beginHorseShot();
+                else goToSpotPicker();
+            }, wait);
+        }
+
+        function buildSpotPicker() {
+            document.getElementById('spot-court').innerHTML = BB.Horse.courtSVG();
+            const list = document.getElementById('spot-menu-list');
+            list.innerHTML = '';
+            BB.Horse.SPOTS.forEach((s, i) => {
+                const el = document.createElement('div');
+                el.className = 'menu-item';
+                el.dataset.action = 'spot:' + s.id;
+                el.dataset.num = (i + 1) + '';
+                el.innerText = s.label;
+                list.appendChild(el);
+            });
+            const quit = document.createElement('div');
+            quit.className = 'menu-item';
+            quit.dataset.action = 'horse_quit';
+            quit.innerText = 'MAIN MENU';
+            list.appendChild(quit);
+            document.querySelectorAll('.spot-marker').forEach(m => {
+                m.addEventListener('click', () => {
+                    if (gameState !== 'MENU') return;
+                    if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+                    if (!audio.ctx) audio.init();
+                    MenuManager.handleAction('spot:' + m.dataset.spot);
+                });
+            });
         }
 
         // --- Input Handling ---
-
-        // Spacebar Aiming Logic:
-        // KeyDown: Start Aiming
-        // KeyUp: Stop Aiming, toggle direction
-        
-        // --- Input Handling & Menu System ---
-        
         class InputHandler {
             constructor() {
                 this.spacePressed = false;
                 this.spacePressTime = 0;
                 this.enterPressed = false;
                 this.enterPressTime = 0;
-                
                 this.spaceLongPressTimer = null;
                 this.spaceRepeatTimer = null;
                 this.enterLongPressTimer = null;
+                this.isCharging = false;  // Track if actively charging (mouse or keyboard)
+                this.mouseDown = false;   // Track if mouse is held down
 
                 window.addEventListener('keydown', (e) => this.handleKeyDown(e));
                 window.addEventListener('keyup', (e) => this.handleKeyUp(e));
-                
-                // Mouse Logic
                 window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
                 window.addEventListener('mousedown', (e) => this.handleMouseDown(e));
                 window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-
-                // Touch Logic
                 window.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive: false});
                 window.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive: false});
                 window.addEventListener('touchend', (e) => this.handleTouchEnd(e));
-                
-                // Also add global click for audio context
-                window.addEventListener('click', () => { if(audio.ctx && audio.ctx.state==='suspended') audio.ctx.resume(); });
+                window.addEventListener('click', () => { if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume(); });
+
+                // Listen for cancelled inputs from scan-manager (e.g., too-short presses blocked by anti-tremor)
+                document.addEventListener('narbe-input-cancelled', (e) => {
+                    if (e.detail && (e.detail.key === ' ' || e.detail.code === 'Space')) {
+                        const wasRepeating = this.spaceRepeatTimer !== null;
+                        this.spacePressed = false;
+                        this.spacePressTime = 0;
+                        if (this.spaceLongPressTimer) { clearTimeout(this.spaceLongPressTimer); this.spaceLongPressTimer = null; }
+                        if (this.spaceRepeatTimer) { clearInterval(this.spaceRepeatTimer); this.spaceRepeatTimer = null; }
+                        // If cancelled due to 'too-short', still perform forward scan in menu - user intended to press
+                        if (e.detail.reason === 'too-short' && !wasRepeating && (gameState === 'MENU' || gameState === 'PAUSED')) {
+                            MenuManager.scanNext();
+                        }
+                    }
+                    if (e.detail && (e.detail.key === 'Enter' || e.detail.code === 'Enter' || e.detail.code === 'NumpadEnter')) {
+                        const wasLongPress = this.longPressTriggered;
+                        this.enterPressed = false;
+                        this.enterPressTime = 0;
+                        if (this.enterLongPressTimer) { clearTimeout(this.enterLongPressTimer); this.enterLongPressTimer = null; }
+                        this.longPressTriggered = false;
+                        // If cancelled due to 'too-short', still perform select in menu - user intended to press
+                        if (e.detail.reason === 'too-short' && !wasLongPress && (gameState === 'MENU' || gameState === 'PAUSED')) {
+                            MenuManager.selectCurrent();
+                        }
+                    }
+                });
             }
 
             handleMouseMove(e) {
-                if (gameState === 'AIMING' || gameState === 'CHARGING') {
-                   this.updateAimFromInput(e.clientX);
-                }
+                if (gameState === 'AIMING' || gameState === 'CHARGING') this.updateAimFromInput(e.clientX);
             }
-            
-            updateAimFromInput(clientX) {
-                const width = window.innerWidth;
-                // Normalized -1 to 1
-                let val = (clientX / width) * 2 - 1;
-                // Clamp
-                if(val < -1) val = -1;
-                if(val > 1) val = 1;
-                
-                aimAngle = val;
 
-                // Audio Feedback for Mouse Movement (Center Crossing)
+            updateAimFromInput(clientX) {
+                let val = (clientX / window.innerWidth) * 2 - 1;
+                aimAngle = Math.max(-1, Math.min(1, val));
                 if (GameSettings.aimAssist && Math.abs(aimAngle) < 0.05 && !dingCooldown) {
                     try { audio.playDing(); } catch(e){}
                     dingCooldown = true;
-                    setTimeout(() => dingCooldown = false, 500); 
+                    setTimeout(() => dingCooldown = false, 500);
                 }
             }
 
             handleMouseDown(e) {
-                // Ensure audio init
                 if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
                 if (!audio.ctx) audio.init();
-
-                // If clicking a menu interaction, ignore
-                if (e.target.closest('.menu-item') || e.target.closest('#pause-button')) return;
-
+                if (e.target.closest('.menu-item') || e.target.closest('#pause-button') || e.target.closest('.spot-marker')) return;
+                this.mouseDown = true;
                 if (gameState === 'AIMING') {
-                    // Update Aim immediately to click location
                     this.updateAimFromInput(e.clientX);
-                    
-                    // Start Charging
                     this.startCharging();
                 }
             }
 
             handleMouseUp(e) {
-                if (gameState === 'CHARGING') {
-                    shootBall();
-                }
+                this.mouseDown = false;
+                this.isCharging = false;
+                if (gameState === 'CHARGING') shootBall();
             }
 
             handleTouchStart(e) {
-                // Prevent scrolling/zooming on game touch
-                if (!e.target.closest('.menu-item') && !e.target.closest('#pause-button')) {
-                   e.preventDefault(); 
-                }
-
-                // Ensure audio
+                if (!e.target.closest('.menu-item') && !e.target.closest('#pause-button') && !e.target.closest('.spot-marker')) e.preventDefault();
                 if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
                 if (!audio.ctx) audio.init();
-
-                // If touching UI, ignore
-                if (e.target.closest('.menu-item') || e.target.closest('#pause-button')) return;
-
+                if (e.target.closest('.menu-item') || e.target.closest('#pause-button') || e.target.closest('.spot-marker')) return;
+                this.mouseDown = true;  // Use same flag for touch
+                this.touchActive = true;
                 if (gameState === 'AIMING') {
-                    // Start Charging
                     this.startCharging();
-                    
-                    // Update Aim immediately to touch location
-                    if (e.touches && e.touches.length > 0) {
-                        this.updateAimFromInput(e.touches[0].clientX);
-                    }
+                    if (e.touches && e.touches.length > 0) this.updateAimFromInput(e.touches[0].clientX);
                 }
             }
-            
+
             handleTouchMove(e) {
-                 if (gameState === 'CHARGING' || gameState === 'AIMING') {
-                     // Allow adjusting aim while charging or just aiming?
-                     // Request was "aim in the direction im clicking", so assume dragging works too
-                     if (e.touches && e.touches.length > 0) {
-                        e.preventDefault();
-                        this.updateAimFromInput(e.touches[0].clientX);
-                     }
-                 }
+                if ((gameState === 'CHARGING' || gameState === 'AIMING') && e.touches && e.touches.length > 0) {
+                    e.preventDefault();
+                    this.updateAimFromInput(e.touches[0].clientX);
+                }
             }
 
             handleTouchEnd(e) {
-                if (gameState === 'CHARGING') {
-                    shootBall();
-                }
+                this.mouseDown = false;
+                this.touchActive = false;
+                this.isCharging = false;
+                if (gameState === 'CHARGING') shootBall();
             }
 
             startCharging() {
                 gameState = 'CHARGING';
-                document.getElementById('instructions').innerHTML = "<p>Release to Shoot</p>";
+                this.isCharging = true;
                 document.getElementById('power-container').style.display = 'block';
                 chargePower = 0;
                 lastChargeBeep = 0;
@@ -1449,63 +1059,43 @@
 
             handleKeyDown(e) {
                 if (e.repeat) return;
-                
-                // Ensure audio context is running
                 if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
                 if (!audio.ctx) audio.init();
 
                 if (e.code === 'Space') {
-                    this.spacePressed = true;
-                    this.spacePressTime = Date.now();
-                    
-                    if (gameState === 'MENU' || gameState === 'PAUSED') {
-                        // Start timer for Long Press detection (3s)
-                        this.spaceLongPressTimer = setTimeout(() => {
-                            this.startBackwardScan();
-                        }, 3000);
-                    } else if (gameState === 'AIMING' || gameState === 'CHARGING') {
-                        aimActive = true;
-                    } 
+                    if (!this.spacePressed && !this.spaceLongPressTimer && !this.spaceRepeatTimer) {
+                        this.spacePressed = true;
+                        this.spacePressTime = Date.now();
+                        if (gameState === 'MENU' || gameState === 'PAUSED') {
+                            this.spaceLongPressTimer = setTimeout(() => {
+                                this.startBackwardScan();
+                                this.spaceLongPressTimer = null;
+                            }, 3000);
+                        } else if (gameState === 'AIMING' || gameState === 'CHARGING') {
+                            aimActive = true;
+                        }
+                    }
                 }
 
                 if (e.code === 'Enter') {
-                    this.enterPressed = true;
-                    this.enterPressTime = Date.now();
-                    this.longPressTriggered = false; // Reset trigger
-                    
-                    if (gameState === 'AIMING') {
-                        // If AutoScan is ON, pressing Enter acts as "Stop Aim" and "Start Charge"
-                        // Or if standard, it just transitions.
-                        // Standard logic: Space=Aim (Hold), Enter=Charge (Hold).
-                        // AutoScan logic: Aiming is automatic. Enter Stop Aim & Start Charge.
-                        
-                        // Wait, previous logic for AIMING->CHARGING was handled in Enter handling?
-                        // No. Previous logic:
-                        // Space KEYDOWN: Aim Active.
-                        // Space KEYUP: Aim Stop.
-                        // Enter KEYDOWN: If Aiming -> Start Pause Timer, Change to Charging.
-                        
-                        // New Logic must support Single Button Mode for Auto Scan.
-                        // If AutoScan: Aim is oscillating automatically.
-                        // Press Enter: Lock Aim, Start Charging immediately.
-                        
-                        this.enterLongPressTimer = setTimeout(() => {
-                            if (gameState !== 'PAUSED' && gameState !== 'MENU') {
-                                this.longPressTriggered = true; // Mark as consumed
-                                MenuManager.togglePause();
-                            }
-                        }, 10000); // 10 seconds hold to pause
-                        
-                        gameState = 'CHARGING';
-                        document.getElementById('instructions').innerHTML = "<p>Hold <strong>ENTER</strong> to Charge</p><p>Release to Shoot</p>";
-                        document.getElementById('power-container').style.display = 'block';
-                        chargePower = 0;
-                        lastChargeBeep = 0;
-                        
-                    } else if (gameState === 'CHARGING') { 
-                        // Already charging, handled in loop
-                    } else if (gameState === 'MENU' || gameState === 'PAUSED') {
-                        // Visual feedback on down press
+                    if (!this.enterPressed && !this.enterLongPressTimer) {
+                        this.enterPressed = true;
+                        this.enterPressTime = Date.now();
+                        this.longPressTriggered = false;
+                        if (gameState === 'AIMING') {
+                            // Hold Enter to charge, release to shoot; holding 10 s pauses instead
+                            this.enterLongPressTimer = setTimeout(() => {
+                                if (gameState !== 'PAUSED' && gameState !== 'MENU') {
+                                    this.longPressTriggered = true;
+                                    MenuManager.togglePause();
+                                }
+                                this.enterLongPressTimer = null;
+                            }, 10000);
+                            gameState = 'CHARGING';
+                            document.getElementById('power-container').style.display = 'block';
+                            chargePower = 0;
+                            lastChargeBeep = 0;
+                        }
                     }
                 }
             }
@@ -1514,34 +1104,27 @@
                 if (e.code === 'Space') {
                     this.spacePressed = false;
                     clearTimeout(this.spaceLongPressTimer);
+                    this.spaceLongPressTimer = null;
                     this.stopBackwardScan();
-                    
                     const duration = Date.now() - this.spacePressTime;
-                    
                     if (gameState === 'MENU' || gameState === 'PAUSED') {
-                        if (duration < 3000) {
-                            MenuManager.scanNext();
-                        }
+                        if (duration < 3000) MenuManager.scanNext();
                     } else if (gameState === 'AIMING' || gameState === 'CHARGING') {
                         aimActive = false;
-                        // aimDirection reverses on release (Manual toggle)
                         aimDirection *= -1;
                     }
                 }
 
                 if (e.code === 'Enter') {
                     this.enterPressed = false;
-                    clearTimeout(this.enterLongPressTimer); // Cancel pause timer
-                    
-                    // If long press triggered pause, do not shoot or select
+                    this.isCharging = false;
+                    clearTimeout(this.enterLongPressTimer);
+                    this.enterLongPressTimer = null;
                     if (this.longPressTriggered) {
                         this.longPressTriggered = false;
                         return;
                     }
-
                     if (gameState === 'CHARGING') {
-                        // shootBall();
-                        // Only shoot if game is still running (timer didn't switch it)
                         shootBall();
                     } else if (gameState === 'MENU' || gameState === 'PAUSED') {
                         MenuManager.selectCurrent();
@@ -1550,12 +1133,11 @@
             }
 
             startBackwardScan() {
-                // Initial backward step
                 MenuManager.scanPrev();
-                // Repeat based on shared Scan Manager setting
                 const interval = window.NarbeScanManager ? window.NarbeScanManager.getScanInterval() : 2000;
                 this.spaceRepeatTimer = setInterval(() => {
-                    MenuManager.scanPrev();
+                    if (this.spacePressed) MenuManager.scanPrev();
+                    else this.stopBackwardScan();
                 }, interval);
             }
 
@@ -1567,12 +1149,10 @@
             }
         }
 
-        // Helper to get element by id safely
         function safeGet(id) { return document.getElementById(id); }
 
         class MenuSystem {
             constructor() {
-                // Wait for DOM
                 this.screens = null;
                 this.currentMenu = null;
                 this.activeIndex = -1;
@@ -1585,29 +1165,23 @@
                     'start': safeGet('main-menu-list'),
                     'settings': safeGet('settings-menu-list'),
                     'gameover': safeGet('gameover-menu-list'),
-                    'pause': safeGet('pause-menu-list')
+                    'pause': safeGet('pause-menu-list'),
+                    'spots': safeGet('spot-menu-list')
                 };
-                if(this.screens['start']) {
+                if (this.screens['start']) {
                     this.currentMenu = this.screens['start'];
                     this.setupMouseListeners();
                     this.updateVisuals();
                 }
             }
-            
+
             startAutoScan() {
                 this.stopAutoScan();
-                
-                // Get settings from shared manager
                 const scanSettings = window.NarbeScanManager ? window.NarbeScanManager.getSettings() : null;
                 const autoScan = scanSettings ? scanSettings.autoScan : GameSettings.autoScan;
-
                 if (!autoScan || !this.currentMenu) return;
-
-                // Use scanInterval (milliseconds) from manager, fallback to local setting
                 const interval = scanSettings ? scanSettings.scanInterval : (GameSettings.scanSpeed * 1000);
-                this.autoScanTimer = setInterval(() => {
-                    this.scanNext(true); // Is Auto
-                }, interval);
+                this.autoScanTimer = setInterval(() => this.scanNext(true), interval);
             }
 
             stopAutoScan() {
@@ -1618,55 +1192,37 @@
             }
 
             setupMouseListeners() {
-                // Attach delegation listeners to all menu-lists
                 Object.values(this.screens).forEach(menuList => {
                     if (!menuList) return;
-                    
                     menuList.addEventListener('click', (e) => {
                         const item = e.target.closest('.menu-item');
                         if (!item) return;
-                        
-                        // Ensure context
                         if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
                         if (!audio.ctx) audio.init();
-
-                        // Set active menu details
                         this.currentMenu = menuList;
                         const items = Array.from(menuList.getElementsByClassName('menu-item'));
                         this.activeIndex = items.indexOf(item);
                         this.updateVisuals();
-
-                        // Trigger Action
                         const action = item.dataset.action;
-                        if (action) {
-                            // audio.playDing(); // Removed ding on selection
-                            this.handleAction(action, item);
-                        }
+                        if (action) this.handleAction(action, item);
                     });
-
                     menuList.addEventListener('mouseover', (e) => {
                         const item = e.target.closest('.menu-item');
                         if (!item) return;
-                        
-                        // Only update if this is the visible menu
-                        if (menuList.offsetParent !== null) { 
-                             this.currentMenu = menuList;
-                             const items = Array.from(menuList.getElementsByClassName('menu-item'));
-                             this.activeIndex = items.indexOf(item);
-                             this.updateVisuals();
+                        if (menuList.offsetParent !== null) {
+                            this.currentMenu = menuList;
+                            const items = Array.from(menuList.getElementsByClassName('menu-item'));
+                            this.activeIndex = items.indexOf(item);
+                            this.updateVisuals();
                         }
                     });
                 });
             }
-            
+
             refreshSettingsMenu() {
                 const list = safeGet('settings-menu-list');
                 list.innerHTML = '';
-                
-                // Get Scan Settings from Manager
-                let scanSettings;
-                let displaySpeed;
-
+                let scanSettings, displaySpeed;
                 if (window.NarbeScanManager) {
                     const s = window.NarbeScanManager.getSettings();
                     scanSettings = { autoScan: s.autoScan };
@@ -1675,7 +1231,7 @@
                     scanSettings = { autoScan: GameSettings.autoScan };
                     displaySpeed = GameSettings.scanSpeed;
                 }
-                
+                const graphicsLabel = GameSettings.graphics === 'auto' ? `AUTO (${quality.toUpperCase()})` : GameSettings.graphics.toUpperCase();
                 const settings = [
                     { label: `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (GameSettings.tts ? 'ON' : 'OFF')}`, action: 'toggle_tts' },
                     { label: `SFX: ${GameSettings.sfx ? 'ON' : 'OFF'}`, action: 'toggle_sfx' },
@@ -1686,31 +1242,25 @@
                     { label: `Aimer Speed: ${GameSettings.aimerSpeed.toUpperCase()}`, action: 'cycle_aimer_speed' },
                     { label: `Aimer Color: ${GameSettings.aimerColor.toUpperCase()}`, action: 'cycle_aimer' },
                     { label: `Ball Theme: ${GameSettings.ballTheme.toUpperCase()}`, action: 'cycle_ball' },
+                    { label: `Graphics: ${graphicsLabel}`, action: 'cycle_graphics' },
                     { label: `BACK`, action: 'back' }
                 ];
-                
                 settings.forEach(opt => {
                     const el = document.createElement('div');
                     el.className = 'menu-item';
-                    if (opt.action === 'back') {
-                        el.classList.add('span-two-cols');
-                    }
+                    if (opt.action === 'back') el.classList.add('span-two-cols');
                     el.innerText = opt.label;
                     el.dataset.action = opt.action;
-                    // Listeners handled by delegation in setupMouseListeners
                     list.appendChild(el);
                 });
             }
 
             setActiveMenu(menuName) {
-                // Find element
-                this.refreshSettingsMenu(); // Always refresh settings to ensure latest values
-
+                this.refreshSettingsMenu();
                 this.currentMenu = this.screens[menuName];
                 this.activeIndex = -1; // Every menu opens with nothing highlighted; first Space highlights the first item
-                
                 this.updateVisuals();
-                this.startAutoScan(); // Restart timer on menu change
+                this.startAutoScan();
             }
 
             scanNext(isAuto = false) {
@@ -1718,14 +1268,12 @@
                 const items = this.currentMenu.getElementsByClassName('menu-item');
                 this.activeIndex = (this.activeIndex + 1) % items.length;
                 this.updateVisuals();
-                if(!isAuto) audio.playBeep(200); // Only beep on manual to avoid annoyance? Or always? Original was always.
-                // Reverting to original beep logic for consistency
-                audio.playBeep(200); 
+                audio.playBeep(200);
                 this.speakSelection();
             }
-            
+
             scanPrev() {
-                this.stopAutoScan(); // Manual Action Stops Auto? Maybe just resets.
+                this.stopAutoScan();
                 if (!this.currentMenu) return;
                 const items = this.currentMenu.getElementsByClassName('menu-item');
                 if (this.activeIndex === -1) this.activeIndex = items.length - 1;
@@ -1736,98 +1284,92 @@
             }
 
             selectCurrent() {
-                // Nothing highlighted: Enter does nothing (and must not stop Auto Scan)
                 if (!this.currentMenu || this.activeIndex === -1) return;
-                this.stopAutoScan(); // Pause scan on select
+                this.stopAutoScan();
                 const items = this.currentMenu.getElementsByClassName('menu-item');
                 const selected = items[this.activeIndex];
-                const action = selected.dataset.action;
-                
-                // audio.playDing(); // Removed ding on selection
-                this.handleAction(action, selected);
-                
-                // If staying in menu, resume scan
-                if(gameState === 'MENU' || gameState === 'PAUSED') this.startAutoScan();
+                this.handleAction(selected.dataset.action, selected);
+                if (gameState === 'MENU' || gameState === 'PAUSED') this.startAutoScan();
             }
 
             updateVisuals() {
-                 if (!this.currentMenu) return;
-                 const items = this.currentMenu.getElementsByClassName('menu-item');
-                 for(let i=0; i<items.length; i++) {
-                     if (i === this.activeIndex) {
-                         items[i].classList.add('selected');
-                     } else {
-                         items[i].classList.remove('selected');
-                     }
-                 }
+                if (!this.currentMenu) return;
+                const items = this.currentMenu.getElementsByClassName('menu-item');
+                for (let i = 0; i < items.length; i++) items[i].classList.toggle('selected', i === this.activeIndex);
+                // Mirror the highlighted spot on the court diagram
+                if (this.currentMenu.id === 'spot-menu-list') {
+                    const active = items[this.activeIndex];
+                    const spotId = active && active.dataset.action.startsWith('spot:') ? active.dataset.action.slice(5) : null;
+                    document.querySelectorAll('.spot-marker').forEach(m => m.classList.toggle('active', m.dataset.spot === spotId));
+                }
             }
 
             handleAction(action, element) {
+                if (action && action.startsWith('spot:')) {
+                    if (gameMode !== 'horse' || !horse || horse.phase !== 'pick') return;
+                    const spot = BB.Horse.SPOTS.find(s => s.id === action.slice(5));
+                    if (!spot) return;
+                    this.stopAutoScan();
+                    document.getElementById('spot-screen').style.display = 'none';
+                    BB.Horse.chooseSpot(horse, spot);
+                    beginHorseShot();
+                    return;
+                }
                 switch(action) {
                     case 'start':
-                        this.stopAutoScan(); // Ensure menu scan stops
+                        this.stopAutoScan();
                         document.getElementById('start-screen').style.display = 'none';
                         audio.speak("Starting Game");
-                        shotsTaken = 0;
-                        score = 0;
-                        setupRound();
+                        gameMode = 'single';
+                        resetGame();
+                        break;
+                    case 'horse':
+                        this.stopAutoScan();
+                        startHorse();
+                        break;
+                    case 'horse_quit':
+                        this.handleAction('menu');
                         break;
                     case 'settings':
-                        if (gameState === 'PAUSED') {
-                            this.returnToId = 'pause';
-                        } else {
-                            this.returnToId = 'start';
-                        }
-                        
+                        this.returnToId = gameState === 'PAUSED' ? 'pause' : 'start';
                         document.querySelectorAll('.screen').forEach(s => s.style.display='none');
                         document.getElementById('settings-screen').style.display = 'flex';
                         audio.speak("Settings");
                         this.setActiveMenu('settings');
-                        // Keep previous gameState (MENU or PAUSED)
                         break;
                     case 'exit':
                         audio.speak("Exiting to Hub");
                         setTimeout(() => {
                             if (window.parent && window.parent !== window) {
-                              window.parent.postMessage({ action: 'focusBackButton' }, '*');
+                                window.parent.postMessage({ action: 'focusBackButton' }, '*');
                             } else {
-                              window.location.href = "../../../index.html";
+                                window.location.href = "../../../index.html";
                             }
                         }, 500);
                         break;
-                        
-                    // Settings Toggles
+
                     case 'toggle_tts':
                         audio.toggleTTS();
                         GameSettings.save();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
                     case 'toggle_sfx':
                         audio.toggle();
                         GameSettings.save();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
                     case 'toggle_music':
                         GameSettings.music = !GameSettings.music;
                         audio.updateSettings();
                         GameSettings.save();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
                     case 'toggle_aimassist':
                         GameSettings.aimAssist = !GameSettings.aimAssist;
                         GameSettings.save();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
-                    case 'toggle_autoscan':
-                        // Use Sync Manager
+                    case 'toggle_autoscan': {
                         if (window.NarbeScanManager) {
                             const currentS = window.NarbeScanManager.getSettings();
                             window.NarbeScanManager.updateSettings({ autoScan: !currentS.autoScan });
@@ -1835,113 +1377,121 @@
                             GameSettings.autoScan = !GameSettings.autoScan;
                             GameSettings.save();
                         }
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
-                        
-                        // Restart scan if needed
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         const isAuto = window.NarbeScanManager ? window.NarbeScanManager.getSettings().autoScan : GameSettings.autoScan;
-                        if(isAuto) this.startAutoScan();
-                        else this.stopAutoScan();
+                        if (isAuto) this.startAutoScan(); else this.stopAutoScan();
                         break;
+                    }
                     case 'cycle_speed':
                         if (window.NarbeScanManager) {
                             window.NarbeScanManager.cycleScanSpeed();
                         } else {
                             const speeds = [1, 2, 3, 5];
-                            let idx = speeds.indexOf(GameSettings.scanSpeed);
-                            GameSettings.scanSpeed = speeds[(idx + 1) % speeds.length];
+                            GameSettings.scanSpeed = speeds[(speeds.indexOf(GameSettings.scanSpeed) + 1) % speeds.length];
                             GameSettings.save();
                         }
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
-                        this.startAutoScan(); // Update interval
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
+                        this.startAutoScan();
                         break;
-                    case 'cycle_aimer_speed':
+                    case 'cycle_aimer_speed': {
                         const speeds = ['default', 'slower', 'slowest'];
-                        const nextSpeed = speeds[(speeds.indexOf(GameSettings.aimerSpeed) + 1) % speeds.length];
-                        GameSettings.aimerSpeed = nextSpeed;
+                        GameSettings.aimerSpeed = speeds[(speeds.indexOf(GameSettings.aimerSpeed) + 1) % speeds.length];
                         GameSettings.save();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
-                    case 'cycle_aimer':
+                    }
+                    case 'cycle_aimer': {
                         const colors = ['white', 'red', 'green', 'pink', 'blue', 'yellow', 'orange'];
-                        let cIdx = colors.indexOf(GameSettings.aimerColor);
-                        GameSettings.aimerColor = colors[(cIdx + 1) % colors.length];
+                        GameSettings.aimerColor = colors[(colors.indexOf(GameSettings.aimerColor) + 1) % colors.length];
                         GameSettings.save();
                         applyVisualSettings();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
-                    case 'cycle_ball':
+                    }
+                    case 'cycle_ball': {
                         const balls = ['orange', 'red', 'blue', 'yellow', 'brown', 'green'];
-                        // Default to orange if unknown
-                        let currentBall = balls.includes(GameSettings.ballTheme) ? GameSettings.ballTheme : 'orange';
-                        let bIdx = balls.indexOf(currentBall);
-                        GameSettings.ballTheme = balls[(bIdx + 1) % balls.length];
+                        const currentBall = balls.includes(GameSettings.ballTheme) ? GameSettings.ballTheme : 'orange';
+                        GameSettings.ballTheme = balls[(balls.indexOf(currentBall) + 1) % balls.length];
                         GameSettings.save();
                         applyVisualSettings();
-                        this.refreshSettingsMenu();
-                        this.updateVisuals();
-                        this.speakSelection();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
-                    
+                    }
+                    case 'cycle_graphics': {
+                        const modes = ['auto', 'high', 'low'];
+                        GameSettings.graphics = modes[(modes.indexOf(GameSettings.graphics) + 1) % modes.length];
+                        GameSettings.save();
+                        if (GameSettings.graphics === 'auto') { try { localStorage.removeItem('bennys_ball_autoq'); } catch (e) {} }
+                        quality = resolveQuality();
+                        applyQuality();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
+                        break;
+                    }
+
+                    case 'help':
+                        // Speak only. Do not change gameState, close, or navigate -
+                        // pause menu stays open exactly as-is.
+                        audio.speak("I need help");
+                        break;
+
                     case 'back':
                         document.querySelectorAll('.screen').forEach(s => s.style.display='none');
                         audio.speak("Back");
-                        
                         if (this.returnToId === 'pause') {
-                             document.getElementById('pause-screen').style.display = 'flex';
-                             this.setActiveMenu('pause');
-                             gameState = 'PAUSED';
+                            document.getElementById('pause-screen').style.display = 'flex';
+                            this.setActiveMenu('pause');
+                            gameState = 'PAUSED';
                         } else {
-                             document.getElementById('start-screen').style.display = 'flex';
-                             this.setActiveMenu('start');
-                             gameState = 'MENU';
+                            document.getElementById('start-screen').style.display = 'flex';
+                            this.setActiveMenu('start');
+                            gameState = 'MENU';
                         }
                         break;
 
                     case 'resume':
                         document.getElementById('pause-screen').style.display = 'none';
                         audio.speak("Resume Game");
-                        gameState = 'AIMING'; 
+                        gameState = 'AIMING';
                         chargePower = 0;
-                       
-                        
+                        document.getElementById('power-container').style.display = 'none';
+                        holdingBallMesh.visible = true;
+                        trajectoryGroup.visible = true;
+                        showHud();
                         this.stopAutoScan();
                         break;
                     case 'restart':
-                        this.stopAutoScan(); // Ensure menu scan stops
+                        this.stopAutoScan();
                         document.querySelectorAll('.screen').forEach(s => s.style.display='none');
                         audio.speak("Restarting Game");
-                        resetGame();
+                        if (gameMode === 'horse') startHorse(); else resetGame();
                         break;
                     case 'menu':
+                        this.stopAutoScan();
                         document.querySelectorAll('.screen').forEach(s => s.style.display='none');
                         document.getElementById('start-screen').style.display = 'flex';
                         audio.speak("Main Menu");
+                        hideHud();
+                        trajectoryGroup.visible = false;
+                        holdingBallMesh.visible = false;
+                        document.getElementById('power-container').style.display = 'none';
+                        horse = null;
+                        gameMode = 'single';
                         this.setActiveMenu('start');
                         gameState = 'MENU';
                         break;
                 }
             }
-            
+
             speakSelection() {
                 if (!this.currentMenu || this.activeIndex === -1) return;
                 const items = this.currentMenu.getElementsByClassName('menu-item');
-                const text = items[this.activeIndex].innerText;
-                audio.speak(text); 
+                audio.speak(items[this.activeIndex].innerText);
             }
 
             togglePause() {
                 if (gameState === 'PAUSED') {
-                   this.handleAction('resume');
+                    this.handleAction('resume');
                 } else {
-                    // Pause
                     gameState = 'PAUSED';
                     document.getElementById('pause-screen').style.display = 'flex';
                     this.setActiveMenu('pause');
@@ -1949,591 +1499,415 @@
                 }
             }
         }
-        
+
         function resetGame() {
+            gameMode = 'single';
             shotsTaken = 0;
             score = 0;
+            streak = 0;
+            onFire = false;
             perfectGame = true;
             bonusMode = false;
+            SFX.play('whistle', 0.7, { minGap: 1 });
             setupRound();
         }
 
         const MenuManager = new MenuSystem();
         const Input = new InputHandler();
 
-        // --- Removed old key listeners ---
-        // (Cleaned up in this replacement)
+        // Subscribe to scan manager changes to update auto-scan timing
+        if (window.NarbeScanManager) {
+            window.NarbeScanManager.subscribe(() => {
+                if (MenuManager.autoScanTimer) MenuManager.startAutoScan();
+                MenuManager.refreshSettingsMenu();
+            });
+        }
 
+        // --- Shooting ---
+        function shotVelocity(fromPos, aim, power) {
+            const playerPos = fromPos.clone(); playerPos.y = 0;
+            const targetPos = HOOP_TARGET.clone(); targetPos.y = 0;
+            const direction = new THREE.Vector3().subVectors(targetPos, playerPos).normalize();
+            direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), -aim * 30 * (Math.PI / 180));
+            const dist = playerPos.distanceTo(targetPos);
+            const total = Math.sqrt(dist) * 4.8 * shotBoost * (0.7 + (power / 100) * 0.6);
+            const elevation = 50 * (Math.PI / 180);
+            const v = direction.clone().multiplyScalar(Math.cos(elevation) * total);
+            v.y = Math.sin(elevation) * total;
+            return { v, direction };
+        }
+
+        let shotResolved = false;
+        let resultTimer = null;
         function shootBall() {
             gameState = 'SHOOTING';
             document.getElementById('power-container').style.display = 'none';
-            document.getElementById('instructions').style.display = 'none';
             trajectoryGroup.visible = false;
-            
-            // Clear Backboard Highlight
-            if (boardMesh) {
-                boardMesh.material.emissive.setHex(0x000000);
-                boardMesh.material.emissiveIntensity = 0;
-            }
-            if (boardHalo) boardHalo.visible = false;
-            
-            // Visual Swap
+            hoop.setBoardGlow(0x000000, 0);
+            rimHalo.visible = false;
+            rimMesh.material.emissive.setHex(0x000000);
+
             holdingBallMesh.visible = false;
             ballMesh.visible = true;
-            
-            // Get World Position of Holding Ball for launch point
+
             const launchPos = new THREE.Vector3();
             holdingBallMesh.getWorldPosition(launchPos);
-            
-            // Physics Body reset
             ballBody.position.set(launchPos.x, launchPos.y, launchPos.z);
-            ballBody.velocity.set(0,0,0);
-            ballBody.angularVelocity.set(0,0,0);
+            ballBody.velocity.set(0, 0, 0);
+            ballBody.angularVelocity.set(0, 0, 0);
 
-            // Calculate Vector
-            const hoopPos = new THREE.Vector3(0, 10, -10);
-            // const ballPos = new THREE.Vector3(ballStartPos.x, ballStartPos.y, ballStartPos.z);
-            // Use camera/player pos (which is roughly ballPos)
-            const playerPos = camera.position.clone();
-            playerPos.y = 0; // flatten
-            const targetPos = hoopPos.clone();
-            targetPos.y = 0; // flatten
-            
-            // Base Direction to Hoop
-            let direction = new THREE.Vector3().subVectors(targetPos, playerPos).normalize();
-            
-            // Apply Aim Angle
-            const maxDeviation = 30 * (Math.PI / 180); // Wider aim 
-            const deviation = -aimAngle * maxDeviation; 
-
-            // Rotate aim vector around Y axis
-            const axis = new THREE.Vector3(0, 1, 0);
-            direction.applyAxisAngle(axis, deviation);
-
-            // Power
-            const dist = playerPos.distanceTo(targetPos);
-            const baseVelocity = Math.sqrt(dist) * 4.8; 
-            const modifier = 0.7 + (chargePower / 100) * 0.6;
-            const totalVelocity = baseVelocity * modifier;
-
-            // Elevation
-            const elevation = 50 * (Math.PI / 180);
-            
-            // Combine
-            const shotVelocity = direction.clone();
-            shotVelocity.multiplyScalar(Math.cos(elevation) * totalVelocity);
-            shotVelocity.y = Math.sin(elevation) * totalVelocity;
-
-            // Apply
+            const { v, direction } = shotVelocity(camera.position, aimAngle, chargePower);
             ballBody.wakeUp();
-            ballBody.velocity.set(shotVelocity.x, shotVelocity.y, shotVelocity.z);
-            
-            // Backspin
-            const backspinAxis = direction.clone().cross(new THREE.Vector3(0,1,0)).normalize();
-            const backspinForce = 5; 
-            // Random spin direction slightly to look realistic
-            ballBody.angularVelocity.set(
-                backspinAxis.x * backspinForce + (Math.random()-0.5), 
-                backspinAxis.y * backspinForce, 
-                backspinAxis.z * backspinForce + (Math.random()-0.5)
-            );
-            
-            // Check for result logic after delay
-            setTimeout(checkResult, 4000); 
+            ballBody.velocity.set(v.x, v.y, v.z);
+            const backspinAxis = direction.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+            ballBody.angularVelocity.set(backspinAxis.x * 5 + (Math.random() - 0.5), backspinAxis.y * 5, backspinAxis.z * 5 + (Math.random() - 0.5));
+
+            shotTouches = { rim: false, board: false, floor: false };
+            shotResolved = false;
+            scored = false;
+            fx.shake(0.03);
+            const dist = camera.position.distanceTo(HOOP_TARGET);
+            if (dist > 22) SFX.swellAmbience(0.2, 2.5);
+
+            clearTimeout(resultTimer);
+            shotClock = 0;
         }
 
+        // A shot that hasn't dropped after this much ball-flight time is a miss. Counted in physics
+        // time (not wall-clock), so a slow frame rate can't call a make a miss before the ball arrives.
+        const SHOT_TIMEOUT = 6.4;
+        let shotClock = 0;
         function checkResult() {
-             if (gameState === 'SHOOTING') {
-                if (!scored) {
-                    // Check if ball has fallen below floor or stopped
-                    // Just timeout handled this generally, but if we call this from timeout:
-                    audio.speak("Miss");
-                    showMessage("MISS", "red");
-                    
-                    if (bonusMode) {
-                        perfectGame = false;
-                        // End immediately after delay
-                        setTimeout(gameOver, 2000);
-                    } else {
-                        perfectGame = false;
-                        setTimeout(nextRound, 1500);
-                    }
-                }
-             }
+            if (gameState === 'SHOOTING' && !scored) onShotResult(false);
         }
 
+        function celebrate(made) {
+            const swish = !shotTouches.rim && !shotTouches.board;
+            audio.playSwish();
+            audio.playCheer(onFire || swish);
+            arena.cheer(onFire ? 1.2 : 1);
+            hoop.flashBoard(onFire ? 0xff7a00 : 0xff2a2a);
+            fx.sparks(hoop.RIM_CENTER.clone(), swish ? 0x9ef0ff : 0xffd27a, swish ? 40 : 26);
+            fx.confetti(swish ? 160 : 90);
+            return swish;
+        }
+
+        function missReaction() {
+            SFX.play(shotTouches.rim ? 'ooh' : 'groan', 0.55, { minGap: 1 });
+            arena.calm();
+        }
+
+        function onShotResult(made) {
+            if (shotResolved) return;
+            shotResolved = true;
+            clearTimeout(resultTimer);
+            if (gameMode === 'horse' && horse) return horseResult(made);
+
+            if (made) {
+                const points = (shotsTaken >= 9) ? 3 : 2;
+                score += points;
+                streak++;
+                const wasOnFire = onFire;
+                onFire = streak >= 3;
+                const swish = celebrate(true);
+                const flair = shotTouches.board ? 'BANK SHOT!' : swish ? 'SWISH!' : points === 3 ? 'FROM DOWNTOWN!' : 'BUCKET!';
+                showMessage(flair, swish ? '#9ef0ff' : '#ffe08a', `+${points} POINTS`);
+                arena.videoboard.flash(flair.replace('!', ''));
+                let speech = `${flair.replace('!', '')}! ${points} points!`;
+                if (onFire && !wasOnFire) {
+                    speech += " You're on fire!";
+                    setTimeout(() => showMessage('ON FIRE!', '#ff8a2a', `${streak} IN A ROW`), 2300);
+                }
+                audio.speakSoon(speech);
+                updateScoreBoard();
+                setTimeout(nextRound, onFire && !wasOnFire ? 4300 : 2600);
+            } else {
+                streak = 0;
+                onFire = false;
+                missReaction();
+                audio.speakSoon("Miss");
+                showMessage("MISS", "#ff6a6a");
+                perfectGame = false;
+                updateScoreBoard();
+                if (bonusMode) setTimeout(gameOver, 2400);
+                else setTimeout(nextRound, 2200);  // long enough to watch the ball bounce away
+            }
+        }
 
         let scored = false;
+        // Runs after every physics step while a shot is in the air
+        function checkBasket() {
+            const b = ballBody.position;
+            const rDist = Math.sqrt(b.x * b.x + (b.z + 9.2) ** 2);
+            if (!scored && rDist < 0.6 && b.y < 10 && b.y > 9.0 && ballBody.velocity.y < 0) {
+                scored = true;
+                onShotResult(true);
+            }
+            // A miss is certain once the ball is coming down below the rim without having dropped
+            // through, or touches the floor, so call it right then (the crowd reacts as it happens)
+            if (!scored && !shotResolved && (shotTouches.floor || (b.y < 8.6 && ballBody.velocity.y < 0))) {
+                onShotResult(false);
+            }
+            // The net drags the ball as it drops through
+            if (rDist < 1.25 && b.y < 10.1 && b.y > 8.2) {
+                ballBody.velocity.x *= 0.95;
+                ballBody.velocity.z *= 0.95;
+            }
+        }
+
         function nextRound() {
+            if (gameMode !== 'single' || gameState === 'PAUSED' || gameState === 'MENU') return;
             scored = false;
-            // Always increment, setupRound handles the logic of Game Over vs Bonus
             shotsTaken++;
             setupRound();
         }
 
         // --- Loop ---
         let dingCooldown = false;
-
-        // Create global variable to track if animation loop is active to prevent duplicates
         let isAnimating = false;
-        
-        // Time based animation
         const clock = new THREE.Clock();
-        
-        // Physics Accumulator for consistent speed across devices
         let physicsAccumulator = 0;
-        const TIME_STEP = 1 / 60; // Fixed 60Hz physics
-        const GAME_SPEED = 1.6; // Speed up the physics by 60% relative to "Real Time" to counter floaty scale
+        const TIME_STEP = 1 / 60;
+        const GAME_SPEED = 1.6;
+        const lookCurrent = new THREE.Vector3().copy(HOOP_TARGET);
+        const cameraBase = new THREE.Vector3();
+        const ballPosV = new THREE.Vector3();
+        let perfFrames = 0, perfTime = 0, perfChecked = false;
+        let menuT = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             isAnimating = true;
-            
-            const dt = clock.getDelta(); // Time since last frame in seconds
-            
-            // Clamp dt for safety (prevent spiral of death on lag spikes)
-            // But allow enough for low FPS catching up
-            // Multiply by GAME_SPEED to make time flow faster
-            const frameTime = Math.min(dt, 0.1) * GAME_SPEED; 
+            const dt = clock.getDelta();
+            const frameTime = Math.min(dt, 0.1) * GAME_SPEED;
+            const now = performance.now();
 
-            // Crowd Animation (Visual only, keep relative to real time but sped up looks fine too)
-            const time = Date.now() * 0.005;
-            
-            // Update Confetti (Visual)
-            if (confettiParticles.length > 0) updateConfetti(dt); // Keep visual fx smooth at real time? No, maybe match game speed? Let's leave visual fx at dt.
-
-            if (typeof crowdMembers !== 'undefined' && crowdMembers.length > 0) {
-                crowdMembers.forEach(member => {
-                    if (scored) {
-                        // Cheer! Jump and rotate
-                        member.mesh.position.y = member.baseY + Math.abs(Math.sin(time*3 + member.offset))*1.5;
-                        member.mesh.rotation.y = Math.sin(time*5)*0.5;
-                    } else {
-                        // Idle sway
-                        member.mesh.position.y = member.baseY;
-                        member.mesh.rotation.y = Math.sin(time + member.offset)*0.2;
-                    }
-                });
-            }
-
-            // Physics Stepping (Accumulator)
             physicsAccumulator += frameTime;
             while (physicsAccumulator >= TIME_STEP) {
                 world.step(TIME_STEP);
                 physicsAccumulator -= TIME_STEP;
+                if (gameState === 'SHOOTING') {
+                    checkBasket(); // every physics step, so a slow frame can't skip a make
+                    shotClock += TIME_STEP;
+                    if (shotClock > SHOT_TIMEOUT) checkResult();
+                }
             }
 
-            // Sync Meshes
             if (ballMesh.visible) {
-                 meshes.forEach(params => {
+                meshes.forEach(params => {
                     params[0].position.copy(params[1].position);
                     params[0].quaternion.copy(params[1].quaternion);
                 });
             }
 
-            // Logic per State
+            const menuScreen = document.getElementById('start-screen').style.display !== 'none' ||
+                               document.getElementById('game-over-screen').style.display === 'flex' ||
+                               document.getElementById('settings-screen').style.display === 'flex';
+            const spotScreen = document.getElementById('spot-screen').style.display === 'flex';
+            if (gameState === 'MENU' && (menuScreen || spotScreen)) {
+                // Cinematic orbit behind the menus; aerial view behind the spot picker
+                menuT += dt;
+                if (spotScreen) {
+                    camera.position.set(Math.sin(menuT * 0.05) * 6, 46, 26);
+                    camera.lookAt(0, 0, -2);
+                } else {
+                    const a = menuT * 0.07;
+                    camera.position.set(Math.sin(a) * 40, 15 + Math.sin(menuT * 0.11) * 4, Math.cos(a) * 34 - 4);
+                    camera.lookAt(0, 8, -8);
+                }
+            }
+
             if (gameState === 'AIMING' || gameState === 'CHARGING') {
-                // Highlight Rim Check based on Aim Angle (Yellow -> Green -> Yellow)
-                if (rimMesh) {
-                     const aimVal = Math.abs(aimAngle);
-                     if (GameSettings.aimAssist && aimVal < 0.05) {
-                         // Perfect Center - Green
-                         rimMesh.material.emissive.setHex(0x00ff00); 
-                         rimMesh.material.emissiveIntensity = 0.8;
-                         if(rimHalo) { rimHalo.visible = true; rimHalo.material.color.setHex(0x00ff00); }
-                     } else if (GameSettings.aimAssist && aimVal < 0.15) {
-                         // Near Center - Yellow
-                         rimMesh.material.emissive.setHex(0xffff00); 
-                         rimMesh.material.emissiveIntensity = 0.5;
-                         if(rimHalo) { rimHalo.visible = true; rimHalo.material.color.setHex(0xffff00); }
-                     } else {
-                         // Off
-                         rimMesh.material.emissive.setHex(0x000000);
-                         rimMesh.material.emissiveIntensity = 0;
-                         if(rimHalo) rimHalo.visible = false;
-                     }
+                const aimVal = Math.abs(aimAngle);
+                if (GameSettings.aimAssist && aimVal < 0.05) {
+                    rimMesh.material.emissive.setHex(0x00ff00);
+                    rimMesh.material.emissiveIntensity = 0.8;
+                    rimHalo.visible = true; rimHalo.material.color.setHex(0x00ff00);
+                } else if (GameSettings.aimAssist && aimVal < 0.15) {
+                    rimMesh.material.emissive.setHex(0xffff00);
+                    rimMesh.material.emissiveIntensity = 0.5;
+                    rimHalo.visible = true; rimHalo.material.color.setHex(0xffff00);
+                } else {
+                    rimMesh.material.emissive.setHex(0x000000);
+                    rimMesh.material.emissiveIntensity = 0;
+                    rimHalo.visible = false;
                 }
 
                 const autoScan = window.NarbeScanManager ? window.NarbeScanManager.getSettings().autoScan : GameSettings.autoScan;
-
                 if (aimActive || (autoScan && gameState === 'AIMING')) {
-                    // Determine Speed Logic
-                    let duration = 6.0; // Seconds for full swipe (-1 to 1)
+                    let duration = 6.0;
                     if (GameSettings.aimerSpeed === 'slower') duration = 9.0;
                     if (GameSettings.aimerSpeed === 'slowest') duration = 12.0;
-
                     let currentSpeed = 2.0 / duration;
-                    
-                    // Slow down by 70% when near the center (the target)
-                    // Target is at 0. Let's slow down between -0.15 and 0.15
-                    if (Math.abs(aimAngle) < 0.15 && GameSettings.aimAssist) {
-                        currentSpeed *= 0.3; 
-                    }
-
+                    if (Math.abs(aimAngle) < 0.15 && GameSettings.aimAssist) currentSpeed *= 0.3;
                     aimAngle += (currentSpeed * dt) * aimDirection;
-                    
-                    // Bounce at ends
-                    if (aimAngle > 1) { 
-                        aimAngle = 1; 
-                        aimDirection = -1; // Reverse direction
-                    }
-                    if (aimAngle < -1) { 
-                        aimAngle = -1; 
-                        aimDirection = 1; // Reverse direction 
-                    }
-                    
-                    // Ding logic: "when aiming toward the hoop" (near 0)
-                    // Only if Aim Assist is on
+                    if (aimAngle > 1) { aimAngle = 1; aimDirection = -1; }
+                    if (aimAngle < -1) { aimAngle = -1; aimDirection = 1; }
                     if (GameSettings.aimAssist && Math.abs(aimAngle) < 0.05 && !dingCooldown) {
                         try { audio.playDing(); } catch(e){}
                         dingCooldown = true;
-                        // Cooldown must be long enough to not spam during one pass
-                        setTimeout(() => dingCooldown = false, 500); 
+                        setTimeout(() => dingCooldown = false, 500);
                     }
                 }
-                
-                // Update Trajectory Line
-                const hoopPos = new THREE.Vector3(0, 10, -10);
-                const playerPos = camera.position.clone(); playerPos.y = 0;
-                const targetPos = hoopPos.clone(); targetPos.y = 0;
-                let direction = new THREE.Vector3().subVectors(targetPos, playerPos).normalize();
-                
-                const maxDeviation = 30 * (Math.PI / 180);
-                const deviation = -aimAngle * maxDeviation; 
-                direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), deviation);
-                
-                // Simulate Physics Step for Line
-                const dist = playerPos.distanceTo(targetPos);
-                
-                // Calculate modifier based on state
-                // If Aiming, show "Ideal" path (Sweet Spot ~50%)
-                // If Charging, show actual path based on current charge
-                let trajPower = 50;
-                if (gameState === 'CHARGING') {
-                    trajPower = chargePower;
-                }
-                
-                const baseVel = Math.sqrt(dist) * 4.8;
-                const modifier = 0.7 + (trajPower / 100) * 0.6;
-                const totalVel = baseVel * modifier;
-                
-                const elevation = 50 * (Math.PI / 180);
-                
-                const velocity = direction.clone();
-                velocity.multiplyScalar(Math.cos(elevation) * totalVel);
-                velocity.y = Math.sin(elevation) * totalVel;
-                
+
+                // Holding-ball motion: gentle idle bob, dips back as power builds
+                const p = gameState === 'CHARGING' ? Math.min(chargePower, 100) / 100 : 0;
+                holdingBallMesh.position.set(Math.sin(now / 900) * 0.01, -1.1 - p * 0.1 + Math.sin(now / 420) * 0.015 * (1 - p), -1.2 + p * 0.08);
+                holdingBallMesh.rotation.y += dt * 0.4;
+
+                // Trajectory preview (same velocity maths as the real shot)
+                const trajPower = gameState === 'CHARGING' ? chargePower : 50;
+                const { v: velocity } = shotVelocity(camera.position, aimAngle, trajPower);
                 const currentPos = new THREE.Vector3();
                 holdingBallMesh.getWorldPosition(currentPos);
-                
-                // Simulate Physics Steps for Line (Iterative for Accuracy)
-                // Use the same damping and gravity as physics engine
                 const simGravity = new THREE.Vector3(0, -9.82 * 1.5, 0);
-                const simDamping = 0.2; // linearDamping of ballBody
-                
+                const simDamping = 0.2;
                 const simPos = currentPos.clone();
                 const simVel = velocity.clone();
-                // If CHARGING, we want the line to be very accurate = match physics
-                // If AIMING, we show ideal curve, so minimal damping logic or standard
-                // But generally iterative approach is better for both.
-                
-                const timeStep = 0.1; // Reduced step size for closer segments
-                const speed = 0.000045; // Super slow visual animation rate
-                const tOffset = (Date.now() * speed) % timeStep; // Animation offset
-                
-                // Pre-step for animation offset
+                const timeStep = 0.07;
+                const tOffset = (Date.now() * 0.00006) % timeStep;
                 if (tOffset > 0) {
-                     simPos.addScaledVector(simVel, tOffset);
-                     simVel.addScaledVector(simGravity, tOffset);
-                     simVel.multiplyScalar(Math.pow(1 - simDamping, tOffset));
+                    simPos.addScaledVector(simVel, tOffset);
+                    simVel.addScaledVector(simGravity, tOffset);
+                    simVel.multiplyScalar(Math.pow(1 - simDamping, tOffset));
                 }
-
-                if (trajectoryPoints.length > 0) {
-                     for(let i=0; i<trajectoryPoints.length; i++) {
-                        
-                        // Set current position BEFORE stepping so the first dash starts at the ball
-                        trajectoryPoints[i].position.copy(simPos);
-                        
-                        // Physics Step (Advance to next point)
-                        simPos.addScaledVector(simVel, timeStep);
-                        simVel.addScaledVector(simGravity, timeStep);
-                        simVel.multiplyScalar(Math.pow(1 - simDamping, timeStep));
-                        
-                        // Orientation: Look at the new simPos (where the next segment starts)
-                        trajectoryPoints[i].lookAt(simPos);
-
-                        // Checks for stopping the line
-                        const backboardZ = -9.9; // Stop just before backboard (at -10)
-                        const hitGround = simPos.y < 0;
-                        const hitBackboard = simPos.z < backboardZ; // Simple plane check
-
-                        if (hitGround || hitBackboard) {
-                             trajectoryPoints[i].visible = false;
-                        } else {
-                             if (gameState === 'CHARGING') {
-                                 // Fade near the hoop to prevent clutter
-                                 // Start fading at Z = -5 down to backboardZ
-                                 let alpha = 0.5;
-                                 if (simPos.z < -5) {
-                                     const range = Math.abs(-5 - backboardZ);
-                                     const current = Math.abs(simPos.z - backboardZ);
-                                     alpha = 0.5 * (current / range);
-                                 }
-                                 
-                                 trajectoryPoints[i].material.opacity = alpha;
-                                 trajectoryPoints[i].visible = (alpha > 0.05);
-                             } else {
-                                 // AIMING MODE: SHORT STUB
-                                 // Only show first few segments
-                                 const stubLength = 5;
-                                 if (i < stubLength) { 
-                                    let alpha = 0.5 * (1 - (i / stubLength));
-                                    trajectoryPoints[i].material.opacity = alpha;
-                                    trajectoryPoints[i].visible = true;
-                                 } else {
-                                    trajectoryPoints[i].visible = false;
-                                 }
-                             }
-                        }
-                     }
-                }
-
-
-            } 
-            
-            if (gameState === 'CHARGING') {
-                // Charge logic
-                try {
-                    // chargePower += 1.0; 
-                    // Calculate speed so total time is 8s, including the slow section.
-                    // Fast range (0-35, 65-100) = 70 units. Slow range (35-65) = 30 units.
-                    // T_fast + T_slow = 8. T_slow is with 30% speed.
-                    // (70/V) + (30/(0.3*V)) = 8  =>  (70 + 100)/V = 8  =>  170/V = 8  => V = 21.25
-                    let currentChargeSpeed = 21.25;
-
-                    // Slow down when approaching and inside the sweet spot (45-55)
-                    // We'll slow down from 35 to 65 to give ample reaction time
-                    if (GameSettings.aimAssist && chargePower > 35 && chargePower < 65) {
-                        currentChargeSpeed *= 0.3; // 70% slower
-                    }
-
-                    chargePower += (currentChargeSpeed * dt);
-
-                    // But InputHandler has a 10s timer that toggles pause.
-                    // We just need to make sure we don't shoot automatically or loop.
-                    if (chargePower > 105) { 
-                        // Stop visual updates, let the input timer handle the pause?
-                        // Or just cap it.
-                        chargePower = 105;
-                    } 
-                    
-                    const pBar = document.getElementById('power-bar');
-                    pBar.style.height = `${Math.min(chargePower, 100)}%`;
-                    
-                    // Sweet Spot Logic (Around 50% is calibrated shot)
-                    // Highlighting the sweet spot
-                    const inSweetSpot = (chargePower > 45 && chargePower < 55);
-
-                    if (inSweetSpot) {
-                        pBar.style.backgroundColor = '#FFD700'; // Gold
-                        pBar.style.boxShadow = '0 0 20px #FFD700';
-                        if (!dingCooldown && GameSettings.aimAssist) {
-                             audio.playDing(); // Ding when hitting sweet spot
-                             dingCooldown = true;
-                             setTimeout(()=>dingCooldown=false, 1500); // Only once per pass
-                        }
+                for (let i = 0; i < trajectoryPoints.length; i++) {
+                    trajectoryPoints[i].position.copy(simPos);
+                    simPos.addScaledVector(simVel, timeStep);
+                    simVel.addScaledVector(simGravity, timeStep);
+                    simVel.multiplyScalar(Math.pow(1 - simDamping, timeStep));
+                    const backboardZ = -9.9;
+                    const nearCam = trajectoryPoints[i].position.distanceTo(camera.position) < 3.5; // too close to read, would fill the screen
+                    if (simPos.y < 0 || simPos.z < backboardZ || nearCam) {
+                        trajectoryPoints[i].visible = false;
+                    } else if (gameState === 'CHARGING') {
+                        let alpha = 0.85;
+                        if (simPos.z < -5) alpha = 0.85 * (Math.abs(simPos.z - backboardZ) / Math.abs(-5 - backboardZ));
+                        trajectoryPoints[i].material.opacity = alpha;
+                        trajectoryPoints[i].visible = alpha > 0.05;
                     } else {
-                        pBar.style.backgroundColor = '#ff4444';
-                        pBar.style.boxShadow = 'none';
-                    }
-                    
-                    // Backboard Highlight on charge
-                    if (boardMesh && innerSquareWhite) {
-                        // Pulse intensity increases as we get closer to sweet spot
-                        const diff = Math.abs(chargePower - 50);
-                        // At 50, diff is 0. At 0 or 100, diff is 50.
-                        // Normalize 0-1 where 1 is best
-                        const quality = Math.max(0, (20 - diff) / 20); // Window of +/- 20
-                        
-                        // Flash green/gold if in sweet spot
-                        if (inSweetSpot && GameSettings.aimAssist) {
-                             boardMesh.material.emissive.setHex(0x00ff00);
-                             boardMesh.material.emissiveIntensity = 0.5 + Math.sin(Date.now()/50)*0.2; // Fast pulse
-                             if(boardHalo) {
-                                 boardHalo.visible = true;
-                                 boardHalo.material.color.setHex(0x00ff00); // Green Halo
-                             }
-                        } else if (quality > 0 && GameSettings.aimAssist) {
-                             boardMesh.material.emissive.setHex(0xffff00);
-                             boardMesh.material.emissiveIntensity = quality * 0.3;
-                             if(boardHalo) {
-                                 boardHalo.visible = true;
-                                 boardHalo.material.color.setHex(0xffff00); // Yellow Halo
-                                 boardHalo.material.opacity = quality * 0.5;
-                             }
-                        } else {
-                             boardMesh.material.emissive.setHex(0x000000);
-                             boardMesh.material.emissiveIntensity = 0;
-                             if(boardHalo) boardHalo.visible = false;
-                        }
-                    }
-
-                    
-                    // Audio Beeps
-                    if (chargePower >= 25 && lastChargeBeep < 25) { audio.playBeep(400); lastChargeBeep = 25; }
-                    if (chargePower >= 50 && lastChargeBeep < 50) { 
-                        // audio.playBeep(500); // Skip, we use Ding for sweet spot 
-                        lastChargeBeep = 50; 
-                    }
-                    if (chargePower >= 75 && lastChargeBeep < 75) { audio.playBeep(600); lastChargeBeep = 75; }
-                    if (chargePower >= 99 && lastChargeBeep < 99) { audio.playBeep(800); lastChargeBeep = 100; }
-                    if (chargePower < 5) {
-                         lastChargeBeep = 0; 
-                         dingCooldown = false; // Reset ability to ding
-                    }
-                } catch(e) {}
-
-            } else if (gameState === 'SHOOTING') {
-                if (!scored) {
-                    const b = ballBody.position;
-                    // Check Score
-                    const rimX = 0; 
-                    const rimZ = -9.2; // -10 + 0.8
-                    const rDist = Math.sqrt((b.x - rimX)**2 + (b.z - rimZ)**2);
-                    
-                    if (rDist < 0.6 && b.y < 10 && b.y > 9.0) {
-                        if (ballBody.velocity.y < 0) {
-                            scored = true;
-                            
-                            const isThreePointer = (shotsTaken >= 9);
-                            const points = isThreePointer ? 3 : 2;
-                            score += points;
-                            
-                            const msg = points + " POINTS!";
-                            
-                            audio.playSwish(); // Net sound
-                            setTimeout(() => audio.playCheer(), 200); // Delayed applause
-                            triggerConfetti(); // Visual celebration
-                            
-                            audio.speak(msg);
-                            showMessage(msg, "lime");
-                            setTimeout(nextRound, 2500); // Slightly longer delay to enjoy celebration
-                        }
+                        const stubLength = 12;
+                        trajectoryPoints[i].visible = i < stubLength;
+                        if (i < stubLength) trajectoryPoints[i].material.opacity = 0.85 * (1 - i / stubLength);
                     }
                 }
             }
 
-            renderer.render(scene, camera);
+            if (gameState === 'CHARGING') {
+                try {
+                    let currentChargeSpeed = 21.25;
+                    if (GameSettings.aimAssist && chargePower > 35 && chargePower < 65) currentChargeSpeed *= 0.3;
+                    if (Input && (Input.enterPressed || Input.mouseDown || Input.isCharging)) {
+                        chargePower = Math.min(105, chargePower + currentChargeSpeed * dt);
+                    }
+                    const pBar = document.getElementById('power-bar');
+                    pBar.style.height = `${Math.min(chargePower, 100)}%`;
+                    const inSweetSpot = (chargePower > 45 && chargePower < 55);
+                    pBar.classList.toggle('sweet', inSweetSpot);
+                    if (inSweetSpot && !dingCooldown && GameSettings.aimAssist) {
+                        audio.playDing();
+                        dingCooldown = true;
+                        setTimeout(() => dingCooldown = false, 1500);
+                    }
+                    // Backboard LED edge shows how close the power is to the sweet spot
+                    const quality01 = Math.max(0, (20 - Math.abs(chargePower - 50)) / 20);
+                    if (inSweetSpot && GameSettings.aimAssist) hoop.setBoardGlow(0x00ff66, 0.75 + Math.sin(Date.now() / 50) * 0.2);
+                    else if (quality01 > 0 && GameSettings.aimAssist) hoop.setBoardGlow(0xffee00, quality01 * 0.6);
+                    else hoop.setBoardGlow(0x000000, 0);
+
+                    if (chargePower >= 25 && lastChargeBeep < 25) { audio.playBeep(400); lastChargeBeep = 25; }
+                    if (chargePower >= 50 && lastChargeBeep < 50) { lastChargeBeep = 50; }
+                    if (chargePower >= 75 && lastChargeBeep < 75) { audio.playBeep(600); lastChargeBeep = 75; }
+                    if (chargePower >= 99 && lastChargeBeep < 99) { audio.playBeep(800); lastChargeBeep = 100; }
+                    if (chargePower < 5) { lastChargeBeep = 0; dingCooldown = false; }
+                } catch(e) {}
+            } else if (gameState === 'SHOOTING') {
+                const b = ballBody.position;
+                ballPosV.set(b.x, b.y, b.z);
+                fx.trail(ballPosV, onFire);
+                // Follow-cam: keep the hoop framed while leaning toward the ball
+                const desired = HOOP_TARGET.clone().lerp(ballPosV, 0.35);
+                lookCurrent.lerp(desired, 1 - Math.exp(-dt * 4));
+                camera.lookAt(lookCurrent);
+            }
+
+            // Auto graphics: drop to low quality if the machine can't keep up
+            if (!perfChecked && GameSettings.graphics === 'auto' && quality === 'high' && (gameState === 'AIMING' || gameState === 'CHARGING' || gameState === 'SHOOTING')) {
+                perfFrames++; perfTime += dt;
+                if (perfTime > 4) {
+                    perfChecked = true;
+                    if (perfFrames / perfTime < 34) {
+                        quality = 'low';
+                        try { localStorage.setItem('bennys_ball_autoq', 'low'); } catch (e) {}
+                        applyQuality();
+                    }
+                }
+            }
+
+            hoop.net.update(dt, ballMesh.visible ? new THREE.Vector3(ballBody.position.x, ballBody.position.y, ballBody.position.z) : null, ballRadius);
+            hoop.update(dt, now);
+            arena.update(dt, now);
+            fx.update(dt, camera);
+
+            if (composer) composer.render(); else renderer.render(scene, camera);
         }
 
-        // Handle Resize
-        window.addEventListener('resize', () => {
+        function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-       function applyVisualSettings() {
-             // 1. Aimer Color
-             if (typeof trajectoryPoints !== 'undefined' && trajectoryPoints.length > 0) {
-                 const c = GameSettings.aimerColor === 'white' ? 0xffffff : GameSettings.aimerColor;
-                 trajectoryPoints.forEach(p => {
-                     p.material.color.set(c);
-                 });
-             }
-             
-            // 2. Ball Theme
-            // Simple colors as requested, but always keep texture overlay
-            let ballColor = 0xC85A17; 
-            
-            // Base choice
-            switch(GameSettings.ballTheme) {
-                case 'orange': ballColor = 0xffffff; break; // White allows full texture color
-                case 'red': ballColor = 0xff0000; break;
-                case 'blue': ballColor = 0x0000ff; break;
-                case 'yellow': ballColor = 0xffff00; break;
-                case 'brown': ballColor = 0x8B4513; break;
-                case 'green': ballColor = 0x008000; break;
+            if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+            if (court.reflector && court.reflector.getRenderTarget) {
+                court.reflector.getRenderTarget().setSize(Math.round(window.innerWidth * 0.5), Math.round(window.innerHeight * 0.5));
             }
-             
-             // Check if meshes exist before setting
-             if(typeof ballMesh !== 'undefined' && ballMesh) {
-                 ballMesh.traverse((child) => {
-                     if (child.isMesh) {
-                         // Always try to use texture if loaded
-                         if (typeof loadedBallTexture !== 'undefined' && loadedBallTexture) {
-                             child.material.map = loadedBallTexture;
-                         }
-                         child.material.color.setHex(ballColor);
-                         child.material.needsUpdate = true;
-                     }
-                 });
-             }
-             if(typeof holdingBallMesh !== 'undefined' && holdingBallMesh) {
-                 holdingBallMesh.traverse((child) => {
-                     if (child.isMesh) {
-                         if (typeof loadedBallTexture !== 'undefined' && loadedBallTexture) {
-                             child.material.map = loadedBallTexture;
-                         }
-                         child.material.color.setHex(ballColor);
-                         child.material.needsUpdate = true;
-                     }
-                 });
-             }
-             
-             // 3. Background Theme & Arena Architecture (Forced to Arena)
-             scene.background.setHex(0x050510);
-             if(typeof arenaArchitecture !== 'undefined') arenaArchitecture.visible = true;
-             if(typeof floorMesh !== 'undefined' && floorMesh) floorMesh.material.color.setHex(0xD2B48C); // Wood
+        }
+        window.addEventListener('resize', onResize);
+
+        function applyVisualSettings() {
+            const c = GameSettings.aimerColor === 'white' ? 0xffffff : GameSettings.aimerColor;
+            trajectoryPoints.forEach(p => p.material.color.set(c));
+
+            let ballColor = 0xffffff;
+            switch(GameSettings.ballTheme) {
+                case 'red': ballColor = 0xff3030; break;
+                case 'blue': ballColor = 0x3a6bff; break;
+                case 'yellow': ballColor = 0xffe14a; break;
+                case 'brown': ballColor = 0x9b5a2a; break;
+                case 'green': ballColor = 0x2fae4a; break;
+            }
+            [ballMesh, holdingBallMesh].forEach(obj => {
+                if (!obj) return;
+                obj.traverse((child) => {
+                    if (!child.isMesh) return;
+                    if (loadedBallTexture) child.material.map = loadedBallTexture;
+                    child.material.color.setHex(ballColor);
+                    child.material.needsUpdate = true;
+                });
+            });
         }
 
-        // Initialize
         function init() {
-            // Initialize Systems
             MenuManager.init();
-            
-            // Add Pause Button Event Listener
+            buildSpotPicker();
+
             const pauseBtn = document.getElementById('pause-button');
-            if(pauseBtn) {
-                pauseBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent other clicks
-                    MenuManager.togglePause();
-                });
-                
-                // Allow touch interactions
-                pauseBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    MenuManager.togglePause();
-                });
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); MenuManager.togglePause(); });
+                pauseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); MenuManager.togglePause(); });
             }
 
-            // Apply Visuals on Load
             applyVisualSettings();
-            
-            // Initial call to setup menu state
+            setupComposer();
+            updateScoreBoard();
+            bakeArenaEnv();
+            setTimeout(bakeArenaEnv, 3000);
             MenuManager.setActiveMenu('start');
             setTimeout(() => {
                 audio.speak("Welcome to Benny's Basketball Shooter. Press Space to Scan menu options. Press Enter to select.");
             }, 1000);
-            
-            // Start Loop ONLY if not running (prevent double speed on reload/cached state)
-            if(!isAnimating) {
-                animate();
-            }
+            if (!isAnimating) animate();
         }
-        
-        // Add High Score to Game Over Screen HTML
-        const hsDiv = document.createElement('div');
-        hsDiv.id = 'high-score-display';
-        hsDiv.style.fontSize = '2em';
-        hsDiv.style.color = '#FFD700';
-        hsDiv.style.marginBottom = '20px';
-        hsDiv.innerText = '';
-        const goVars = document.getElementById('final-score');
-        if(goVars) goVars.parentNode.insertBefore(hsDiv, goVars.nextSibling);
 
-        // Wait for load
         window.addEventListener('load', init);
     </script>
 <script src="scan-access.js"></script>
