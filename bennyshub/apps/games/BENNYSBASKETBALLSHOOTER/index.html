@@ -99,14 +99,23 @@
         }
 
         /* Power meter */
-        #power-container {
-            position: absolute; bottom: 60px; right: 50px; width: 46px; height: 320px; display: none;
-            border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, rgba(20, 26, 46, 0.9), rgba(8, 10, 20, 0.9));
+        #power-container { position: absolute; top: 96px; bottom: 36px; right: 40px; width: 62px; display: none; }
+        #power-track {
+            position: absolute; inset: 0; border-radius: 31px; overflow: hidden;
+            background: linear-gradient(180deg, rgba(20, 26, 46, 0.9), rgba(8, 10, 20, 0.9));
             border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 0 22px rgba(0, 0, 0, 0.6);
         }
-        #power-sweet { position: absolute; left: 0; right: 0; bottom: 45%; height: 10%; background: rgba(255, 215, 0, 0.28); border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); z-index: 2; }
-        #power-bar { width: 100%; height: 0%; position: absolute; bottom: 0; background: linear-gradient(to top, #ffd400, #ff6a00 60%, #ff2a2a); }
-        #power-bar.sweet { background: linear-gradient(to top, #fff3b0, #ffd700); box-shadow: 0 0 24px #ffd700; }
+        /* Tick every 10% so the fill's progress is easy to read on a tall bar */
+        #power-ticks { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+            background: repeating-linear-gradient(to top, transparent 0, transparent calc(10% - 2px), rgba(255, 255, 255, 0.14) calc(10% - 2px), rgba(255, 255, 255, 0.14) 10%); }
+        /* Sweet spot: placed per shot (low and wide close in, high and narrow far out); green for contrast with the fill */
+        /* A bracket that overhangs both sides of the bar, so it stays easy to see whatever the fill is doing */
+        #power-sweet { position: absolute; left: -16px; right: -16px; bottom: 45%; height: 10%; z-index: 3; pointer-events: none; box-sizing: border-box;
+            background: rgba(77, 255, 136, 0.2); border: 4px solid #4dff88; border-radius: 8px;
+            box-shadow: 0 0 20px rgba(77, 255, 136, 0.75), inset 0 0 14px rgba(77, 255, 136, 0.45); animation: sweetpulse 0.9s ease-in-out infinite alternate; }
+        @keyframes sweetpulse { from { opacity: 0.75; } to { opacity: 1; } }
+        #power-bar { width: 100%; height: 0%; position: absolute; bottom: 0; z-index: 2; background: linear-gradient(to top, #ffd400, #ff6a00 60%, #ff2a2a); }
+        #power-bar.sweet { background: linear-gradient(to top, #e6fff0, #4dff88); box-shadow: 0 0 24px #4dff88; }
 
         #pause-button {
             position: fixed; bottom: 20px; left: 20px; margin-bottom: env(safe-area-inset-bottom, 0px); margin-left: env(safe-area-inset-left, 0px);
@@ -165,7 +174,9 @@
             #horse-status { order: 3; font-size: 1.3em; }
             #message { font-size: 3.4em; }
             #pause-button { bottom: 15px; left: 15px; width: 60px; height: 60px; font-size: 24px; }
-            #power-container { right: 18px; height: 220px; width: 36px; }
+            #power-container { right: 22px; top: 120px; bottom: 24px; width: 40px; }
+            #power-track { border-radius: 20px; }
+            #power-sweet { left: -10px; right: -10px; }
             .spot-layout { flex-direction: column; gap: 10px; overflow-y: auto; }
             .spot-court { flex: 0 0 auto; width: 70vw; max-height: none; }
             #spot-menu-list { width: 94%; }
@@ -217,8 +228,11 @@
         <div id="pause-button">&#10074;&#10074;</div>
 
         <div id="power-container">
+            <div id="power-track">
+                <div id="power-ticks"></div>
+                <div id="power-bar"></div>
+            </div>
             <div id="power-sweet"></div>
-            <div id="power-bar"></div>
         </div>
     </div>
 
@@ -292,6 +306,7 @@
             sfx: true,
             music: true,
             aimAssist: true,
+            sweetSpot: 'moving', // moving: placed by shot distance; fixed: always the middle of the bar
             autoScan: false,
             scanSpeed: 2, // Seconds
             aimerSpeed: 'default', // default, slower, slowest
@@ -693,10 +708,36 @@
             return { dist: distances[Math.floor(shotIndex / 3) % distances.length], angleRad: angles[shotIndex % 3] * (Math.PI / 180) };
         }
 
-        // boost: per-spot launch-speed factor so 50% power is the sweet spot from close range too
-        let shotBoost = 1;
+        // --- Sweet spot ---
+        // Where on the power bar a perfect release sits. Close shots: low on the bar and wide;
+        // long shots: higher and narrower. Anywhere inside the band is a perfect release; outside
+        // it the shot runs long or short in proportion to how far outside it was.
+        let sweet = { center: 50, half: 5 };
+        function sweetSpotFor(dist) {
+            if (GameSettings.sweetSpot === 'fixed') return { center: 50, half: 5 };
+            const t = Math.max(0, Math.min(1, (dist - 12) / 31));      // 12 ft (block) .. 43 ft (half court)
+            const half = 8 - 5.5 * t;                                    // band 16% of the bar close in, 5% far out
+            let center = 30 + 48 * t + (Math.random() * 8 - 4);          // small nudge so repeat distances differ
+            center = Math.max(10 + half, Math.min(92 - half, center));
+            return { center, half };
+        }
+        function layoutSweetSpot() {
+            const el = document.getElementById('power-sweet');
+            el.style.bottom = (sweet.center - sweet.half) + '%';
+            el.style.height = (2 * sweet.half) + '%';
+        }
+        // Launch-speed multiplier for a release at this power: 1 (perfect) inside the band
+        function powerFactor(power) {
+            const lo = sweet.center - sweet.half, hi = sweet.center + sweet.half;
+            const off = power < lo ? power - lo : power > hi ? power - hi : 0;
+            return 1 + off * 0.006;
+        }
+
+        // boost: per-spot launch-speed factor so a perfect release scores from close range too
+        let shotBoost = 1, shotDist = 15;
         function placePlayer(dist, angleRad, boost = 1) {
             shotBoost = boost;
+            shotDist = dist;
             const hoopZ = -10;
             ballStartPos.x = Math.sin(angleRad) * dist;
             ballStartPos.z = (Math.cos(angleRad) * dist) + hoopZ;
@@ -713,6 +754,13 @@
             shotTouches = { rim: false, board: false, floor: false };
             shotResolved = false;
             scored = false;
+            // HORSE: whoever matches a shot gets the same sweet spot the setter had
+            if (gameMode === 'horse' && horse && horse.phase === 'match' && horse.sweet) sweet = horse.sweet;
+            else {
+                sweet = sweetSpotFor(shotDist);
+                if (gameMode === 'horse' && horse) horse.sweet = sweet;
+            }
+            layoutSweetSpot();
             document.getElementById('power-container').style.display = 'none';
             holdingBallMesh.visible = true;
             ballMesh.visible = false;
@@ -1237,6 +1285,7 @@
                     { label: `SFX: ${GameSettings.sfx ? 'ON' : 'OFF'}`, action: 'toggle_sfx' },
                     { label: `Music: ${GameSettings.music ? 'ON' : 'OFF'}`, action: 'toggle_music' },
                     { label: `Shot Helper: ${GameSettings.aimAssist ? 'ON' : 'OFF'}`, action: 'toggle_aimassist' },
+                    { label: `Sweet Spot: ${GameSettings.sweetSpot === 'fixed' ? 'FIXED' : 'MOVES'}`, action: 'toggle_sweetspot' },
                     { label: `Auto Scan: ${scanSettings.autoScan ? 'ON' : 'OFF'}`, action: 'toggle_autoscan' },
                     { label: `Scan Speed: ${displaySpeed}s`, action: 'cycle_speed' },
                     { label: `Aimer Speed: ${GameSettings.aimerSpeed.toUpperCase()}`, action: 'cycle_aimer_speed' },
@@ -1366,6 +1415,11 @@
                         break;
                     case 'toggle_aimassist':
                         GameSettings.aimAssist = !GameSettings.aimAssist;
+                        GameSettings.save();
+                        this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
+                        break;
+                    case 'toggle_sweetspot':
+                        GameSettings.sweetSpot = GameSettings.sweetSpot === 'fixed' ? 'moving' : 'fixed';
                         GameSettings.save();
                         this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
@@ -1530,7 +1584,7 @@
             const direction = new THREE.Vector3().subVectors(targetPos, playerPos).normalize();
             direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), -aim * 30 * (Math.PI / 180));
             const dist = playerPos.distanceTo(targetPos);
-            const total = Math.sqrt(dist) * 4.8 * shotBoost * (0.7 + (power / 100) * 0.6);
+            const total = Math.sqrt(dist) * 4.8 * shotBoost * powerFactor(power);
             const elevation = 50 * (Math.PI / 180);
             const v = direction.clone().multiplyScalar(Math.cos(elevation) * total);
             v.y = Math.sin(elevation) * total;
@@ -1756,7 +1810,7 @@
                 holdingBallMesh.rotation.y += dt * 0.4;
 
                 // Trajectory preview (same velocity maths as the real shot)
-                const trajPower = gameState === 'CHARGING' ? chargePower : 50;
+                const trajPower = gameState === 'CHARGING' ? chargePower : sweet.center;
                 const { v: velocity } = shotVelocity(camera.position, aimAngle, trajPower);
                 const currentPos = new THREE.Vector3();
                 holdingBallMesh.getWorldPosition(currentPos);
@@ -1796,13 +1850,15 @@
             if (gameState === 'CHARGING') {
                 try {
                     let currentChargeSpeed = 21.25;
-                    if (GameSettings.aimAssist && chargePower > 35 && chargePower < 65) currentChargeSpeed *= 0.3;
+                    const lo = sweet.center - sweet.half, hi = sweet.center + sweet.half;
+                    // Shot Helper slows the fill around the sweet spot to give time to release
+                    if (GameSettings.aimAssist && chargePower > lo - 10 && chargePower < hi + 10) currentChargeSpeed *= 0.3;
                     if (Input && (Input.enterPressed || Input.mouseDown || Input.isCharging)) {
                         chargePower = Math.min(105, chargePower + currentChargeSpeed * dt);
                     }
                     const pBar = document.getElementById('power-bar');
                     pBar.style.height = `${Math.min(chargePower, 100)}%`;
-                    const inSweetSpot = (chargePower > 45 && chargePower < 55);
+                    const inSweetSpot = (chargePower >= lo && chargePower <= hi);
                     pBar.classList.toggle('sweet', inSweetSpot);
                     if (inSweetSpot && !dingCooldown && GameSettings.aimAssist) {
                         audio.playDing();
@@ -1810,7 +1866,7 @@
                         setTimeout(() => dingCooldown = false, 1500);
                     }
                     // Backboard LED edge shows how close the power is to the sweet spot
-                    const quality01 = Math.max(0, (20 - Math.abs(chargePower - 50)) / 20);
+                    const quality01 = Math.max(0, (15 - Math.max(0, lo - chargePower, chargePower - hi)) / 15);
                     if (inSweetSpot && GameSettings.aimAssist) hoop.setBoardGlow(0x00ff66, 0.75 + Math.sin(Date.now() / 50) * 0.2);
                     else if (quality01 > 0 && GameSettings.aimAssist) hoop.setBoardGlow(0xffee00, quality01 * 0.6);
                     else hoop.setBoardGlow(0x000000, 0);
