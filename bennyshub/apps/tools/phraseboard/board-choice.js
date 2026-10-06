@@ -14,7 +14,7 @@
   });}
   function rows(){
     if(state.modalActive)return [];
-    if(useGroups())return groupScanner.groups.filter(group=>group.items.length).map(group=>({id:'group:'+group.name,label:group.name,items:identities(group.items),element:group.items[0],labelElement:group.label||group.items[0],group}));
+    if(useGroups())return groupScanner.groups.filter(group=>group.items.length).map(group=>({id:'group:'+group.name,label:group.name,items:identities(group.items.filter(element=>element.id!=='backToGroups')),element:group.items[0],labelElement:group.label||group.items[0],group}));
     const allRows=(state.scannableRows||[]).filter(row=>row.length),allItems=identities(allRows.flat());let offset=0;
     return allRows.map(row=>{const items=allItems.slice(offset,offset+row.length);offset+=row.length;return {id:'row:'+items[0].id,label:()=>items.map(item=>item.label()).join(', '),items,element:row[0],labelElement:row[0]};});
   }
@@ -30,7 +30,7 @@
       clearScanHighlight();state.modalButtons.forEach(btn=>btn.classList.remove('modal-highlight'));
       el.mainGrid.querySelectorAll('.group-active,.group-dim').forEach(n=>n.classList.remove('group-active','group-dim'));
       state.currentRow=state.scanIndex=state.modalScanIndex=-1;state.scanMode='row';
-      const back=document.getElementById('backToGroups');if(back)back.hidden=scan.depth===0;
+      const back=document.getElementById('backToGroups');if(back)back.hidden=true; // The row's spoken Back stop replaces this button.
       if(!item||scan.suspended)return;
       if(state.modalActive){state.modalScanIndex=scan.index;item.element.classList.add('modal-highlight');}
       else if(item.kind==='row'){
@@ -41,7 +41,7 @@
       }
       item.element.scrollIntoView({block:'nearest',inline:'nearest'});
     },onSelect(item){
-      if(item.kind==='row'){scanner.enterGroup({key:rootsKey()+'|child:'+item.id,scope:scopeKey(),parentId:item.id,items:item.items,statusHost:host});return;}
+      if(item.kind==='row'){scanner.enterGroup({key:rootsKey()+'|child:'+item.id,scope:scopeKey(),parentId:item.id,items:item.items,statusHost:host},{wrap:true,backStop:true});return;}
       const previous=rootsKey(),depth=scanner.getState().depth;
       if(state.modalActive){state.modalScanIndex=state.modalButtons.indexOf(item.element);selectModalButton();sync(true);return;}
       if(item.element.id==='backToGroups'){scanner.back({restore:true});return;}
@@ -59,7 +59,7 @@
       const parent=groups.find(row=>row.items.some(item=>item.id===current.id));
       if(parent){
         if(context.items.some(item=>item.id===current.id))scanner.sync(context,{fresh:true,restoreId:current.id});
-        else {scanner.sync(context,{fresh:true,restoreId:parent.id});scanner.enterGroup({key:rootsKey()+'|child:'+parent.id,scope:scopeKey(),parentId:parent.id,items:parent.items,statusHost:host},{restoreId:current.id});}
+        else {scanner.sync(context,{fresh:true,restoreId:parent.id});scanner.enterGroup({key:rootsKey()+'|child:'+parent.id,scope:scopeKey(),parentId:parent.id,items:parent.items,statusHost:host},{restoreId:current.id,wrap:true,backStop:true});}
         bindSettingPointers();return;
       }
     }
@@ -72,7 +72,7 @@
       const before=scopeKey(),root=rootContext(),parent=rows().find(row=>row.items.some(item=>item.element===button)),item=parent?.items.find(item=>item.element===button);if(!item)return;
       if(scanner.context.items.some(value=>value.id===item.id))scanner.align(item.id);
       else if(root.items.some(value=>value.id===item.id))scanner.sync(root,{fresh:true,restoreId:item.id});
-      else {scanner.sync(root,{fresh:true,restoreId:parent.id});scanner.enterGroup({key:rootsKey()+'|child:'+parent.id,scope:scopeKey(),parentId:parent.id,items:parent.items,statusHost:host},{restoreId:item.id});}
+      else {scanner.sync(root,{fresh:true,restoreId:parent.id});scanner.enterGroup({key:rootsKey()+'|child:'+parent.id,scope:scopeKey(),parentId:parent.id,items:parent.items,statusHost:host},{restoreId:item.id,wrap:true,backStop:true});}
       queueMicrotask(()=>{if(scopeKey()===before){sync();const current=scanner.context.items.find(value=>value.id===scanner.getState().id);if(current)scanner.announce(current.label());}});
     },true);});
   }

@@ -1,5 +1,25 @@
 # Web scan implementation and Companion 1.0.8
 
+## Row Back stop — 2026-10-06
+
+The owner reported that holding Space to scan backward through Messenger’s channels returned to the Channels/Exit menu instead of staying in the list, then asked for one consistent row behavior across apps and games. Every row the player enters now loops in both directions, including held-Space reverse and Auto, through its items plus a Back stop. The Back stop says “Back”, highlights no item and draws a dashed outline around the row; choosing it returns to the same row in row mode with its normal highlight. Scanning never leaves a row on its own, and rows no longer carry their own visible Back buttons. Row mode keeps its blank between the last row and the text row, which remains the only parking place. Hold-Enter Back still works where it did.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| Web and desktop `bennyshub/shared/choice-scan-adapter.js` | SHARED / DONE ON ELECTRON | `enterGroup(items, {wrap:true, backStop:true})` adds the looping Back stop and its dashed row outline (visible part only). Space there is consumed without pausing, as on the root blank. |
+| Web and desktop `bennyshub/apps/tools/keyboard/app.js`, `index.html` | SHARED / DONE ON ELECTRON | The direct controller appends its own Back stop and uses the shared outline; the page loads the adapter. |
+| Web and desktop `journal/app.js`, `streaming/app.js`, `phraseboard/board-choice.js` | SHARED / DONE ON ELECTRON | Keyboard, calendar and phrase rows (Row scan style and free-placement groups) use the Back stop; Phraseboard’s “Back to groups” button stays hidden. |
+| Web and desktop `BENNYSBATTLEBOATS/scan-access.js`, `BENNYSMATCHYMATCH/scan-access.js`, `ELOUISESWORDSEARCH/game.js`, `NARBEANIMALFRIENDS/js/input.js`, `ui.js` | SHARED / DONE ON ELECTRON | Row-then-item grids and the name keyboard use the Back stop; Word Search’s Back item and Animal Friends’ “Back to rows” button are replaced by it. |
+| `bennyshub/apps/tools/ytsearch/js/scanning.js` | WEB-ONLY / NOT NEEDED | Keyboard rows use the Back stop. |
+| `tests/choice-scan-adapter.test.cjs`, `scripts/check-keyboard-row-wrap.cjs` | WEB-ONLY / TESTS | Loop order both ways, spoken Back, same-row return, root blank, Auto without parking, empty rows, app never receiving Back, and outline geometry; the browser row check counts the stop and returns through it. |
+| `AGENTS.md`, `bennyshub/ACCESSIBILITY.md` | WEB-ONLY / BEHAVIOR REFERENCE | Document the row contract. |
+| `bennyshub/service-worker.js` | WEB-ONLY / NOT NEEDED | Cache v35 prepares browsers for the changed scripts. |
+| `SCAN-UPGRADE-CHANGES.md` | WEB-ONLY / NOT NEEDED | Record scope and verification. |
+
+Desktop-only surfaces received the same change: Messenger channels, messages and composer keyboard, Search, every RT Convo row (Convo, Phrases and Typing), and the Pet Pals name keyboard, whose per-row “Rows” key is replaced by the Back stop.
+
+`choice-scan.js` is unchanged, so the Companion’s synced copy and its 1.0.8-keyboard-wrap package are untouched; `sync-companion-shared.cjs --check` and `package-companion.cjs --check` pass with the same SHA-256. Validation: `npm test` passes (214) and the desktop scan suite passes (72). The owner tested the desktop app and reports it working. The browser row check was updated for the stop but not run in this pass.
+
 ## Predictive keyboard row speech — 2026-10-05
 
 The owner reported that predictive keyboard rows announced generic labels such as “Word predictions” instead of reading each displayed suggestion, and requested checking all predictive keyboards in both web and desktop apps. This is a scoped repair to the current desktop integration, separately authorized from the historical port plan below.

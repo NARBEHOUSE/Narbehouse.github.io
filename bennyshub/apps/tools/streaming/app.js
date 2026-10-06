@@ -109,7 +109,7 @@ function initStreamingChoices(){
     },onSelect(item){
       if(item.kind==='keyboard-row'){
         if(item.row===0){window.keyboardController.speak(window.keyboardController.inputElement.value||'Empty');return;}
-        choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:window.keyboardController.choiceChildren(item.row),statusHost:choiceStatus},{wrap:true});
+        choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:window.keyboardController.choiceChildren(item.row),statusHost:choiceStatus},{wrap:true,backStop:true});
       }else {item.element.click();if(item.kind==='keyboard-key'&&window.keyboardController.isOpen)choiceScan.back({restore:true});}
     }});
   document.querySelectorAll('#settings-menu .setting-row button').forEach(button=>button.addEventListener('click',()=>{

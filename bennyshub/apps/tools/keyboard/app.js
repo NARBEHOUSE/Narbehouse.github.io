@@ -106,6 +106,7 @@
 
   let currentScanSpeed = settings.scanSpeed || "medium";
   let choiceScan = null, statusHost = null;
+  const rowOutline = NarbeChoiceScanAdapter.createRowOutline(); // dashed outline around a row while its Back stop is current
   let spaceBraking = false, cancelledSpace = false, backwardTimeout = null, enterTimeout = null;
   let isAutoScanning = false;
 
@@ -275,7 +276,9 @@
   function startScanning() {
     if (spacebarPressed) return;
     spacebarPressed = true; backwardScanStarted = cancelledSpace = false;
-    spaceBraking = choiceScan.brakePress();
+    // Like the row blank, Space on the Back stop is consumed without pausing.
+    const settings = NarbeScanManager.getSettings();
+    spaceBraking = choiceScan.getState().id === 'key:row-back' ? settings.autoScan && settings.spaceBrake : choiceScan.brakePress();
     if (spaceBraking) return;
     choiceScan.setInputHeld(true);
     const speed = scanSpeeds[currentScanSpeed];
@@ -326,12 +329,18 @@
   function rowChoices() {
     return [
       {id: 'row:text', kind: 'row', row: 0, element: textBar, label: 'Text. ' + (buffer || 'Empty')},
-      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: () => childChoices(1).map(item => item.label).join(', ') || 'No predictions'},
+      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: () => rowKeys(1).map(item => item.label).join(', ') || 'No predictions'},
       ...rows.map((keys, row) => ({id: 'row:' + row, kind: 'row', row: row + 2,
         element: kb.querySelectorAll('.key')[row * 6], label: row === 0 ? 'controls' : keys.join(' ')}))
     ];
   }
+  // Every key row loops through its keys plus a stop that highlights nothing and
+  // says "Back"; choosing it returns to the same row. Empty rows are not entered.
   function childChoices(row) {
+    const keys = rowKeys(row);
+    return keys.length ? [...keys, {id: 'key:row-back', kind: 'back', row, element: null, label: 'Back'}] : keys;
+  }
+  function rowKeys(row) {
     if (row === 1) {
       const occurrences = new Map();
       return [...predictBar.querySelectorAll('.chip')].map((element, column) => {
@@ -354,10 +363,15 @@
     choiceScan.setItems(inSettingsMode ? settingsChoices() : choiceScan.getState().depth ? childChoices(currentRowIndex) : rowChoices());
   }
   function drawChoice(item, state) {
-    clearAllHighlights(); settingsItems.forEach(element => element.classList.remove('highlighted'));
+    clearAllHighlights(); settingsItems.forEach(element => element.classList.remove('highlighted')); rowOutline.hide();
     document.body.dataset.scanIndex = state.index; document.body.dataset.scanDepth = state.depth;
     document.body.dataset.scanSelected = state.id || ''; document.body.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : 'running';
     if (!item) { currentRowIndex = settingsRowIndex = -1; inRowSelectionMode = true; document.activeElement?.blur(); return; }
+    if (item.kind === 'back') {
+      currentRowIndex = item.row; inRowSelectionMode = false; document.activeElement?.blur();
+      if (!state.suspended) rowOutline.show(rowKeys(item.row).map(key => key.element));
+      return;
+    }
     if (item.kind === 'setting') { settingsRowIndex = item.column; highlightSettingsItem(item.column); }
     else {
       currentRowIndex = item.row; inRowSelectionMode = item.kind === 'row'; currentButtonIndex = item.column || 0;
@@ -369,6 +383,7 @@
     if (!state.suspended) item.element?.scrollIntoView({block: 'nearest', inline: 'nearest'});
   }
   function chooseItem(item) {
+    if (item.kind === 'back') { choiceScan.back({restore: true}); return; }
     if (item.kind === 'setting') { settingsRowIndex = item.column; selectSettingsItem(); if (inSettingsMode) refreshChoices(); return; }
     if (item.kind === 'row') {
       if (item.row === 0) textBar.click();
@@ -937,7 +952,7 @@
     choiceScan = NarbeScanManager.createChoiceScan({
       choice: true, holdThreshold: scanSpeeds[currentScanSpeed].longPress, items: rowChoices(), statusHost,
       getId: item => item.id, getLabel: item => typeof item.label === 'function' ? item.label() : item.label, getElement: item => item.element,
-      getLabelElement: item => item.kind === 'setting' ? item.element.querySelector('.setting-label') :
+      getLabelElement: item => item.kind === 'back' ? null : item.kind === 'setting' ? item.element.querySelector('.setting-label') :
         item.row === 1 && item.kind === 'row' ? item.element.querySelector('.chip') : item.element.querySelector('.ctrl-text') || item.element,
       speak: text => NarbeVoiceManager.speakProcessed(text), onHighlight: drawChoice, onSelect: chooseItem
     });

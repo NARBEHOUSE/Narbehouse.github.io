@@ -81,37 +81,38 @@ async function main(){
   if((await state()).id!==target)console.log(await page.evaluate(()=>({state:document.body.dataset,active:document.activeElement?.outerHTML,body:document.body.innerText.slice(0,1300)})));assert.equal((await state()).id,target,source+':'+spec.name+' row reachable');await tap('Enter');
   const start=await state();assert.equal(start.depth,1,source+':'+spec.name+' entered keyboard row');assert.equal(start.index,0);
   const count=spec.name==='animal'?await page.evaluate(()=>NAF.UI.scannables().length):spec.name==='pet'?await page.evaluate(()=>petChoice.getItems().length):6;
+  const stops=count+1; // the row's keys plus its spoken Back stop (highlights nothing)
   const firstDelay=spec.firstDelay,repeat=spec.repeat||1000;
   await page.keyboard.down('Space');await tick(firstDelay-1);assert.equal((await state()).id,start.id,'hold threshold preserved');
-  await tick(1);assert.equal((await state()).index,count-1,'first reverse wraps to last key');
-  for(let n=2;n<=count*3+1;n++){
-   await tick(repeat);const s=await state();assert.equal(s.depth,1,'hold stays inside row');assert.equal(s.index,(count-(n%count))%count,'reverse order');assert.equal(s.context,start.context);
+  await tick(1);assert.equal((await state()).index,stops-1,'first reverse wraps to the Back stop');
+  for(let n=2;n<=stops*3;n++){
+   await tick(repeat);const s=await state();assert.equal(s.depth,1,'hold stays inside row');assert.equal(s.index,(stops-(n%stops))%stops,'reverse order');assert.equal(s.context,start.context);
   }
   const beforeRelease=await state();await page.keyboard.up('Space');await tick(100);assert.deepEqual(await state(),beforeRelease,'release must not add a forward step');
-  for(let n=0;n<count;n++)await tap('Space');assert.equal((await state()).id,beforeRelease.id,'forward wraps within same row');
+  for(let n=0;n<stops;n++){await tap('Space');assert.equal((await state()).depth,1,'forward never leaves the row');}assert.equal((await state()).id,beforeRelease.id,'forward loops within same row through the Back stop');
   // Settings must retain the row and key. Auto loops locally, brake pauses and resumes.
-  await prefs({autoScan:true,parking:'auto',loopsBeforeParking:1});const autoStart=await state();await tick(count*2000);assert.equal((await state()).id,autoStart.id);assert.equal((await state()).depth,1);assert.notEqual((await state()).mode,'parked');
+  await prefs({autoScan:true,parking:'auto',loopsBeforeParking:1});const autoStart=await state();await tick(stops*2000);assert.equal((await state()).id,autoStart.id);assert.equal((await state()).depth,1);assert.notEqual((await state()).mode,'parked');
   await tap('Space');const paused=await state();assert.equal(paused.mode,'paused');await tick(5000);assert.equal((await state()).id,paused.id);
   await tap('Space');await tick(899);assert.equal((await state()).id,paused.id);await tick(1);assert.notEqual((await state()).id,paused.id);
   if(spec.name==='keyboard'||spec.name==='messenger'){
    await prefs({autoScan:true,spaceBrake:false,scanSpeedIndex:4});
    const heldStart=await state(),delay=spec.name==='keyboard'?7000:3000;
    await page.keyboard.down('Space');await tick(delay);
-   assert.equal((await state()).index,(heldStart.index-1+count)%count);
-   for(let i=2;i<=count*2;i++){await tick(5000);assert.equal((await state()).index,(heldStart.index-i+count*2)%count);assert.equal((await state()).depth,1);}
+   assert.equal((await state()).index,(heldStart.index-1+stops)%stops);
+   for(let i=2;i<=stops*2;i++){await tick(5000);assert.equal((await state()).index,(heldStart.index-i+stops*2)%stops);assert.equal((await state()).depth,1);}
    await page.keyboard.up('Space');await tick(4999);assert.equal((await state()).id,heldStart.id);
-   await tick(1);assert.equal((await state()).index,(heldStart.index+1)%count);
+   await tick(1);assert.equal((await state()).index,(heldStart.index+1)%stops);
    await prefs({scanSpeedIndex:0,spaceBrake:true});
   }
   await prefs({autoScan:false,parking:'off'});
-  if(spec.back){await page.keyboard.down('Enter');await tick(spec.back);await page.keyboard.up('Enter');await tick(100);assert.equal((await state()).id,spec.backTarget||target,'native Back destination preserved');assert.equal((await state()).depth,0);}
-  // Return through the native Back choice where Enter has no hold gesture.
-  else {const backId=spec.name==='animal'?'name:rows-back':null;
-   for(let i=0;i<count;i++){const s=await state();if(backId?s.id===backId:await page.evaluate(()=>/back/i.test(petChoice.getItems()[petChoice.getState().index]?.label||'')))break;await tap('Space');}
-   await tap('Enter');assert.equal((await state()).depth,0);assert.equal((await state()).id,target);
-  }
+  // Choosing the Back stop after the last key returns to the same row in row mode, never the top.
+  for(let i=0;i<stops&&(await state()).index!==count;i++)await tap('Space');
+  assert.equal((await state()).index,count,'reached the Back stop');assert.equal((await state()).depth,1);
+  await tap('Enter');assert.equal((await state()).depth,0,'Back stop returns to row mode');assert.equal((await state()).id,target,'Back stop restores the same row');
+  // The native hold-Enter Back still works where the surface has one.
+  if(spec.back){await tap('Enter');assert.equal((await state()).depth,1);await page.keyboard.down('Enter');await tick(spec.back);await page.keyboard.up('Enter');await tick(100);assert.equal((await state()).id,spec.backTarget||target,'native Back destination preserved');assert.equal((await state()).depth,0);}
   for(let i=0;i<30&&(await state()).id!==target;i++)await tap('Space');await tap('Enter');await tap('Enter');assert.equal((await state()).depth,0,'selecting first key returns to row');if(spec.name!=='rt-convo')assert.equal((await state()).id,target);else assert.match(await page.locator('#textBar').innerText(),/A/);
-  report.checks.push(source+':'+spec.name+': three reverse cycles, forward wrap, release, Auto, brake, settings, Back and key selection');console.log('PASS '+report.checks.at(-1));
+  report.checks.push(source+':'+spec.name+': three reverse cycles, forward loop through Back stop, release, Auto, brake, settings, Back stop, hold Back and key selection');console.log('PASS '+report.checks.at(-1));
   await ctx.close();
  }
  assert.deepEqual(report.errors,[]);report.result='passed';

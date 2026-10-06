@@ -1596,7 +1596,6 @@ NAF.UI = (function () {
         back.type = 'button';
         back.dataset.key = 'Backspace';
 
-        const rowsBack=menuButton(wrap,'Back to rows','home','slate');rowsBack.dataset.name='rows-back';rowsBack.hidden=true;
         const done = menuButton(wrap, 'Done', 'check', 'green');
         done.dataset.name = 'done';
         const clear = menuButton(wrap, 'Clear the Name', 'cross', 'slate');
@@ -1698,14 +1697,7 @@ NAF.UI = (function () {
                     });
                 });
             }
-            // Visible Back returns to the same parent row. Passing either end
-            // of this child list instead returns to the shared root blank.
-            list.push({
-                id: 'name:rows-back',
-                el: el.settingsList.querySelector('[data-name="rows-back"]'),
-                speak: 'Back to rows.',
-                action: backToNameKbRows
-            });
+            // The shared scan adds the row's spoken Back stop after the last key.
             return list;
         }
 
@@ -1852,7 +1844,6 @@ NAF.UI = (function () {
         if(!scanHost){scanHost=node('div','naf-scan-status');scanHost.style.minBlockSize='0';}
         const parent=screen==='play'?el.hud:el[screen]?.querySelector('.naf-card');
         if(parent&&scanHost.parentElement!==parent)parent.prepend(scanHost);
-        const rowBack=el.settingsList?.querySelector('[data-name="rows-back"]');if(rowBack)rowBack.hidden=!(nameEditing&&nameKbMode==='keys');
         return{key:screen+(nameEditing?':name:'+nameKbMode+(nameKbMode==='keys'?':'+nameKbRow:''):'')+(screen==='play'?':'+NAF.Game.mode():''),host:scanHost};
     }
 
@@ -1867,7 +1858,7 @@ NAF.UI = (function () {
         scannables: scannables,
         scanContext: scanContext,
         updateScanFeedback:function(){if(screen!=='play')fitCard();},
-        applyScanContext:function(key){if(key==='settings:name:rows')nameKbMode='rows';else if(key.startsWith('settings:name:keys:')){nameKbMode='keys';nameKbRow=Number(key.split(':').pop());}const b=el.settingsList?.querySelector('[data-name="rows-back"]');if(b)b.hidden=!(nameEditing&&nameKbMode==='keys');},
+        applyScanContext:function(key){if(key==='settings:name:rows')nameKbMode='rows';else if(key.startsWith('settings:name:keys:')){nameKbMode='keys';nameKbRow=Number(key.split(':').pop());}},
         renderStamps: renderStamps,
         skinZone: skinZone,
         celebrateRow: celebrateRow,

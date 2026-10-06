@@ -449,9 +449,9 @@
   function selectChoice(item) {
     if(item.kind==='keyboard-row') {
       if(item.row===0){speak(keyboardBuffer);return;}
-      choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:keyboardChildren(item.row),statusHost},{wrap:true});
+      choiceScan.enterGroup({key:'keyboard-child:'+item.row,items:keyboardChildren(item.row),statusHost},{wrap:true,backStop:true});
     } else if(item.kind==='calendar-row') {
-      choiceScan.enterGroup({key:'calendar-child:'+item.group.key,items:item.group.buttons.map(itemFor),statusHost});
+      choiceScan.enterGroup({key:'calendar-child:'+item.group.key,items:item.group.buttons.map(itemFor),statusHost},{wrap:true,backStop:true});
       $('#calendarScanHint').textContent='Space: next choice. Enter: select. Hold Enter: return to this row.';
     } else {
       item.element.click();
