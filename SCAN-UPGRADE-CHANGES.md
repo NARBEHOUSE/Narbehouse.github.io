@@ -1,5 +1,47 @@
 # Web scan implementation and Companion 1.0.8
 
+## Robot Pickleball catalog and web release — 2026-10-07
+
+The owner approved the repaired game and requested a fresh screenshot, updated descriptions in the PC Hub, web Hub and NARBEHOUSE homepage, and publication of all pending web updates. This release promotes the existing repaired Robot Pickleball build into the web catalog without changing its gameplay. The pickleballrally ID and favorites remain intact, and Lily Flack’s original stays accessible from credits. The new 1920×1080 screenshot was captured from the matching local web game in normal Chrome.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/games.json | WEB + DESKTOP / CATALOG UPDATED | Robot Pickleball title, launch path, current controls/pace description and versioned screenshot. |
+| bennyshub/images/games/narbe-pickleball-2026-10.png | WEB + DESKTOP / ASSET UPDATED | Actual repaired court and serve-target screenshot. |
+| index.html | WEB-ONLY / NOT NEEDED | NARBEHOUSE card uses the new game, image, description and title. |
+| bennyshub/apps/games/NARBEPICKLEBALL/index.html, README.md | WEB-ONLY METADATA / NOT NEEDED | Web edition label and current launch/catalog documentation. |
+| bennyshub/ACCESSIBILITY.md | WEB-ONLY REFERENCE / NOT NEEDED | Identify the preserved original as a credits link. |
+| bennyshub/service-worker.js | WEB-ONLY / NOT NEEDED | Cache v36 for the updated catalog. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY RECORD / NOT NEEDED | Scope, publication and verification record. |
+
+The release also includes the already-pending NARBEPICKLEBALL implementation/model tests and the basketball between-shot Pause changes documented below. Its legacy scripts/check-rally-club.cjs browser fixture targets the initial prototype; it was not run or used as release evidence. Validation: all 239 Node tests pass, including 25 current pickleball model tests. The Node 22.16.0 production build passes; its audit reports 1,865 public files with no findings or problems, and all 954 checked local references pass. The immutable Companion candidate retains its recorded SHA-256. Desktop and web model, game, scene and stylesheet hashes match. Electron was not launched during this catalog refresh.
+
+## Rally Club desktop installation authorized — 2026-10-07
+
+The owner clarified: “this game should be on bennys pc hub too. this is where ben tests games.” The desktop pass is now completed for this game. Its existing pickleballrally ID launches NARBE Pickleball Rally with a new thumbnail and an Electron-bridge entry point. The original game is preserved through Credits. No shared managers or other catalog entries changed. The web catalog remains unchanged. Desktop documentation and exact changed files are recorded in ELECTRON-SCAN-UPGRADE.md in Benny’s PC Hub. Four model tests and 23 integration checks pass using the actual Electron hub/preload/iframe/native-settings path and an isolated profile; the report has zero renderer errors. Physical-switch testing with Ben remains next. This supersedes the Electron-pending status in the web-preview entry below for this game only.
+
+
+## NARBE Rally Club preview — 2026-10-07
+
+User-authorized pickleball redesign; this is new gameplay work, not a scan-policy conversion. The original Pickleball Rally and both catalogs remain unchanged. The separate preview uses automatic movement, continuous sweeping aim or untimed placements, drive/dink/lob, independent pace and opponent settings, optional safe in-bounds shots, and no-fail target rallies. Credits retain SCSU and Lily Flack and identify NARBE's redesign. No online publication.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/NARBEPICKLEBALL/index.html, style.css | WEB PREVIEW / ELECTRON CANDIDATE ONLY | New DOM interface and responsive court controls. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/model.js | WEB PREVIEW / ELECTRON CANDIDATE ONLY | Deterministic rally simulation and opponent reach. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js | WEB PREVIEW / ELECTRON CANDIDATE ONLY | Procedural court, players and animation. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/game.js | WEB PREVIEW / ELECTRON CANDIDATE ONLY | Shared choice adapter, independent aim mechanics, release input, pause, saves and credits. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/three.min.js, THIRD-PARTY-LICENSES.txt | WEB PREVIEW / ELECTRON CANDIDATE ONLY | Existing local r155 dependency and retained MIT notice. |
+| bennyshub/apps/games/NARBEPICKLEBALL/README.md | WEB PREVIEW / DOCUMENTATION | Controls, model limits and test coverage. |
+| tests/rally-model.test.cjs, scripts/check-rally-club.cjs | WEB-ONLY / TESTS | 4 model tests and 45 browser checks pass. |
+| artifacts/rally-club/ | WEB-ONLY / EVIDENCE | Test report and separately rendered screenshots. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NOT NEEDED | This record. |
+
+Reviewed 3D rendering at desktop, tablet and phone sizes; behavioral tests additionally cover 844×390 landscape. The same input contract passes with two switches and Auto Scan: recurring blank, reverse, parking, brake, owned speech, cancellation, pause, full match/replay and save recovery. Original game backed up and verified unchanged. Actual switch-user and Electron verification remain pending; do not treat this as a released game.
+
+Separate approved website copy: SWITCHEDGAMES/index.html retains level submissions, changes the hero link to Create With Us, replaces full-game uploads with a collaboration proposal through the existing contact form, and explains NARBE accessibility/quality review with credited collaborators. Original file backed up before edit. No form submission, external message or deployment.
+
+
 ## Row Back stop — 2026-10-06
 
 The owner reported that holding Space to scan backward through Messenger’s channels returned to the Channels/Exit menu instead of staying in the list, then asked for one consistent row behavior across apps and games. Every row the player enters now loops in both directions, including held-Space reverse and Auto, through its items plus a Back stop. The Back stop says “Back”, highlights no item and draws a dashed outline around the row; choosing it returns to the same row in row mode with its normal highlight. Scanning never leaves a row on its own, and rows no longer carry their own visible Back buttons. Row mode keeps its blank between the last row and the text row, which remains the only parking place. Hold-Enter Back still works where it did.
@@ -411,3 +453,133 @@ Re-port behavior in `bennyshub/apps/tools/streaming/utils/control_bar.py`: recur
 Back up the complete working desktop first. Test speech end/failure/timeout/cancellation, recorded-label completion, IPC/cache startup races, storage persistence, live settings, duplicate key capture, valid short releases, native long holds, focus loss, app/iframe ownership, multiplayer keys, all nested returns and visible status at the actual desktop window sizes. Re-run the per-app web checklists with the real desktop engines. Audit COPY-AS-IS hashes and mark every ledger entry DONE ON ELECTRON or NOT NEEDED only after verification.
 
 Desktop-only Pet Pals, Sphere Splash, Web Search, Messenger and RT Convo remain unverified and require their own scope and checklists. Do not label them web-tested.
+
+
+## 2026-10-07 — Pickleball first-person redesign requested by owner
+
+Scope: owner explicitly requested the game in Benny’s PC Hub and then a first-person CPU match, Peggle/Bowling hold-Space reversing aim, optional auto aim, direct touch/mouse court play, and compact embedded controls. This supersedes the previous prototype controls within this game only. Desktop was already explicitly authorized; this is not an unsolicited Electron scan port.
+
+Changed web preview files (Electron flag: already implemented in the owner-authorized desktop game):
+- bennyshub/apps/games/NARBEPICKLEBALL/index.html — direct court surface and compact HUD; web entry retains no Electron bridge.
+- bennyshub/apps/games/NARBEPICKLEBALL/style.css — removes shot/aim panels; 64px court options, responsive compact score and hints.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — manual held/reversing aim, optional auto aim, immediate aiming, optional in-court Play/Pause scan, pointer capture, hold pause, cancellation and saved shot style.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — player-eye camera, facing CPU, animated hand/paddle, procedural court surface and palms; ball framing follows necessary movement.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — current controls, source scope and test evidence.
+- SCAN-UPGRADE-CHANGES.md — this ledger.
+
+Backups of the prior web preview and this ledger are in the desktop workspace under tmp/rally-first-person-backup. Original Pickleball, web catalog, shared managers, release ZIPs, dependencies and live website are unchanged. Desktop controls passed the actual Hub fixture; pointer/touch and responsive tests cover the common game code. Test evidence remains local under tmp/rally-electron and tmp/rally-first-person in the desktop workspace.
+
+
+
+## 2026-10-07 — Pickleball direct shot scan and continuous bounce
+
+Owner-requested game follow-up, implemented first in the explicitly authorized desktop Hub. Scope: Space/Enter must reach Drive, Dink and Lob directly on court, and returns must visibly bounce in slow motion to the paddle. The court scan now offers Drive, Dink, Lob and Pause before aiming. Held/reversing Space remains the aim control after selecting a shot. Ball flights now distinguish bounce and contact, slow on the player approach, and keep their position continuous at CPU return and ready state. Initial serves and between-point feeds are animated too.
+
+Changed web files (Electron flag: already applied and tested in the authorized desktop build):
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — continuous bounce/contact paths, slow approach, serve feed and old-save flight migration.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — direct shot scan, selection previews, settings/help and bounce cue.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — trajectory preview and ball spin synchronized to flight.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — current controls and validation.
+- SCAN-UPGRADE-CHANGES.md — this ledger.
+
+Backup: desktop tmp/rally-shot-bounce-backup, including the prior web game and ledger. Desktop validation passes 39 native Hub checks, 21 browser checks and 8 simulation tests. Actual rendered bounce/ready/shot-selection screenshots reviewed. Shared managers, original game, catalogs, releases and live deployment are unchanged.
+
+
+
+## 2026-10-07 — Robot Pickleball, automatic paddle and accessible movement
+
+Owner-requested game work, already explicitly authorized in Benny's desktop Hub. Final play uses automatic forehand/backhand returns and positioning-based contact, Space/Enter left/right controls, alternating one-switch control, optional tap-without-hold movement and automatic depth coverage. Full speed, slower approaches and stopped-ball no-fail play are available. Every rally offers Serve/Pause through the shared CHOICE scan. Scoring tracks service and uses standard singles side-outs and 11/win-by-two; serves are diagonal from the proper baseline side. Robots replace every humanoid, including the first-person hand. Lily's original and credit remain.
+
+Changed web files (Electron flag: already implemented and tested in the owner-authorized desktop game):
+- bennyshub/apps/games/NARBEPICKLEBALL/index.html — compact Serve/Pause controls; no Electron bridge.
+- bennyshub/apps/games/NARBEPICKLEBALL/style.css — short-screen hint placement and court controls.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — service ownership, scoring guards, automatic contact quality, depth coverage and full-speed flight.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — one/two-switch and no-hold movement, automatic returns, no-fail waiting, neutral Continue and owned pause timers.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — robot athletes/crowd/gripper, forehand/backhand poses and reach animation.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — final controls, rules, scope and verification.
+- SCAN-UPGRADE-CHANGES.md — this ledger.
+
+Backups live in the desktop workspace under tmp/rally-move-charge-backup and tmp/rally-robot-backup. Fifteen model tests and 32 actual native Hub checks pass. The desktop browser run and this F-drive prototype each pass 45 checks, with no runtime errors; rendered mobile/desktop layouts reviewed. CSS and all three game JavaScript files match the desktop by SHA-256. Shared managers, original game, web catalog, release ZIPs and live deployment remain unchanged.
+
+
+## 2026-10-07 — Club sign, Enter steering, target taps and automatic matches
+
+Owner-requested desktop testing refinements, mirrored to this prototype. The NARBE RALLY CLUB sign has padded text fitting and is raised above the robot; movement tiers are about one-third faster with saved-setting migration. Tap input targets the incoming contact position and stops without overshoot; it remains timed and forgiving outside No-fail. Hub Auto Scan now enables Enter-only alternating held movement as Racer does. Opponent selection and the result menu are removed; completed matches automatically prepare the next opponent at Serve/Pause. No-fail and Just rally offer the same blank Serve/Pause break after six returns without changing service or scores.
+
+Changed web files (Electron flag: already implemented in the explicitly authorized desktop game):
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — bounded target movement, faster default and current return prompts.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — input integration, speed migration, tap targeting, automatic opponent sequence and periodic no-fail break.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — fitted, raised NARBE RALLY CLUB sign.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — revised behavior and verification.
+- SCAN-UPGRADE-CHANGES.md — this record.
+
+Backup: desktop tmp/rally-tap-refinement-backup contains prior desktop/web game files, tests, thumbnail and ledgers. Seventeen model tests pass. Thirty-seven native Hub checks verify Enter-only controls, no-overshoot taps, input cancellation and saved settings in an isolated profile. The initial desktop browser run passes 57 checks; additional checks cover the subsequently requested periodic no-fail breaks and timed tap deadlines. Final browser verification is recorded below. The web catalog, original game and live deployment remain unchanged.
+
+Final expanded verification: all 67 browser checks pass on the synchronized F-drive prototype with no runtime errors. This covers early and late full-speed taps, continued timed play beyond six returns, regular No-fail/Just rally Serve/Pause breaks, blank Enter safety, short-press Pause access and final-shot target-star retention. Report: desktop tmp/rally-tap-refinement-web-check/browser-report.json. The earlier desktop 57-check and native 37-check reports are retained in tmp/rally-tap-refinement. The short practice cue reads BREAK EVERY 6 for small-screen fit.
+
+
+## 2026-10-07 — Armed direction, physical paddle contacts and score-free practice
+
+Explicit owner-requested follow-up in the desktop Hub and matching web prototype. A compact, noninteractive arrow shows NEXT HOLD left/right in one-switch held play and HOLDING while moving; it is absent from choice menus, tap targeting and two-switch play. The home entry is now Settings. Short Enter gameplay presses never pause; the six-second pause timer verifies continuous ownership by the initiating held input. Selecting Serve cancels the old prompt and says You serve or Robot serves.
+
+The CPU moves beside and behind the contact point. Articulated shoulder/elbow/gripper poses put its paddle face one ball radius from contact for forehand, backhand, low and overhead returns, with follow-through. Body collisions resolve as paddle misses instead of passing through the robot. First-person paddle height/side follow the ball; low-shot depth keeps contact visible. Once aligned after a one-switch or tap input, the remaining approach finishes continuously in about 0.22 seconds after the bounce (up to 0.5 seconds before it), retaining the bounce and timed-mode deadline. Bench robot thighs now rest above the seat, with knees/shins beyond the edge. No-fail and Just rally suppress points, wins, target stars and the scoreboard; only returns-until-break remains. The six-return Serve/Pause break remains available.
+
+Changed game files: index.html, style.css, js/model.js, js/game.js, js/scene.js and README.md under bennyshub/apps/games/NARBEPICKLEBALL. Electron flag: already implemented in the explicitly authorized desktop game. The web entry omits the Electron bridge and keeps WEB PREVIEW. This change ledger is updated. Desktop-only updates also include ACCESSIBILITY.md, ELECTRON-SCAN-UPGRADE.md, all three tests/rally-* fixtures and the rendered bennyshub/images/games/narbe-pickleball-court.png thumbnail.
+
+Backups: desktop tmp/rally-direction-cue-backup and tmp/rally-contact-backup. Validation so far: 21 model tests, 80 desktop browser checks and 41 native Hub checks. Native testing uses real input events in an isolated profile; short Enter presses move, and six-second holds pause. CPU paddle-face contact was measured at exactly the 0.135 ball radius for all four stroke poses; actual one-switch and tap post-bounce quick returns measured about 222 ms. Mobile/desktop direction cues, stroke poses and spectator seating were visually reviewed. Evidence: desktop tmp/rally-contact-review. Final prototype verification follows below.
+
+Final verification: the synchronized F-drive prototype passes all 80 browser checks with no runtime errors. The final model passes all 21 tests. Desktop native input evidence remains 41 passing checks. CSS, model, controller, renderer and README match desktop by SHA-256; entry HTML differs only by the intentional Electron bridge and preview label. Reports: desktop tmp/rally-contact-web-check/browser-report.json and tmp/rally-contact-review. Original Pickleball, shared managers, catalog identities and release packages remain unchanged.
+
+
+## 2026-10-07 — Incoming-ball one-switch direction and fixed robot arms
+
+Owner-requested follow-up in Benny's PC Hub and the matching F-drive prototype. For each opponent return, a fresh one-switch Enter press chooses the direction toward its receiving/contact position, even while the ball is still on the opposite side of the court. It can choose the same direction on successive presses. The cue uses the same decision, shows READY when already aligned, and the direction remains fixed throughout a hold. Release stops movement; the six-second pause behavior is retained. Outside an incoming return, alternating repositioning remains. Help text and the desktop catalog description now reflect this change.
+
+Both visible paddle arms use fixed upper-arm and forearm lengths through a two-joint solver. The CPU stands closer laterally and forward to the ball, crouches slightly for low returns, and keeps its feet grounded. Its paddle is scaled to match the normal arm reach. Physically unreachable shots resolve as misses rather than extending the arm. The first-person arm also retains fixed lengths, with a small lean/crouch for wide and low contacts. Forehand, backhand, low and overhead strokes still meet the ball.
+
+Changed web files (Electron flag: already implemented and tested in the explicitly authorized desktop game):
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — incoming receiving-side input and cue, instructions.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — closer footwork and physical paddle reach.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — fixed-length joints, contact poses and low-shot stance.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — current behavior and verification.
+- SCAN-UPGRADE-CHANGES.md — this record.
+
+Desktop-only changes: bennyshub/apps/games/games.json (description only), ACCESSIBILITY.md, ELECTRON-SCAN-UPGRADE.md and the three tests/rally-* fixtures. Backup: desktop tmp/rally-ball-direction-backup, including the prior F-drive files and ledger.
+
+Validation: all 22 model tests, 84 desktop browser checks, 84 synchronized F-drive browser checks and 41 native Hub checks pass with no runtime errors. The new browser cases cover the receiving-side direction while the ball is on the opposite side, a fresh press toward that position, and READY feedback. Rendered measurements across both sides and three heights confirm CPU segment lengths 0.46/0.44 and first-person lengths 0.44/0.42, with paddle-face contact one ball radius (0.135) away. Evidence: desktop tmp/rally-ball-direction-review and tmp/rally-ball-direction-web-check. The four synchronized game files match by SHA-256. Lily's original still matches its pre-redesign backup; shared managers, other games, web catalog, release packages and the production profile were not changed. No live deployment.
+
+
+## 2026-10-07 — Correct paddle orientation and head/torso clearance
+
+Owner-requested correction in the desktop game and F-drive prototype. The first-person arm base is lower and behind the paddle, with separate low/normal/overhead heights; its elbow bends toward the player instead of leaving an upper-arm segment ahead of the resting paddle. The opponent holds its ready paddle slightly angled in front, with its elbow behind the grip. A supported forward shoulder mount, height-dependent elbow bend and forward limits on recovery keep the arm out of the head and torso. CPU receiving depth and physical-reach calculations use the same mount. Fixed limb lengths and actual ball/paddle contacts are retained.
+
+Changed web files (Electron flag: already implemented in the explicitly authorized Benny's PC Hub game):
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — shared shoulder position and corresponding receiving depth/reach.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — player arm orientation, front ready grip, shoulder mount and full swing clearance.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — corrected poses and verification.
+- SCAN-UPGRADE-CHANGES.md — this record.
+
+Desktop-only changes: tests/rally-arm-poses.cjs (new repeatable rendering regression), ELECTRON-SCAN-UPGRADE.md. Backup: desktop tmp/rally-arm-facing-backup, including previous desktop/web sources and both ledgers. Controls and camera framing are unchanged.
+
+Validation: all 22 model tests and 84 desktop browser checks pass. The new rendering fixture passes on both desktop and synchronized F-drive source: 27 complete shot/position combinations spanning 5,940 frames, conservative capsule-versus-head/torso clearance, constant limb lengths, 16 first-person contact poses with the shoulder behind the paddle, and six CPU contacts one ball radius from the face. Close-up ready/overhead and first-person low/normal/overhead images were reviewed. Evidence: desktop tmp/rally-arm-facing-review and tmp/rally-arm-facing-web-check. The three copied game files match by SHA-256. No shared managers, original game, release packages or personal profile changed; no live deployment.
+
+## 2026-10-07 — Rebuild both robots' paddle arms; footwork without warping; serve aim
+
+Owner-requested fix in the desktop game (Benny's PC Hub, where Ben tests) and the F-drive prototype. The previous attempt was replaced, not tuned: its player arm could stretch, switch sides or float, and the opponent's elbow bent inside out through its head and body. Both robots now share one paddle arm on a shoulder socket fixed to the torso, with fixed-length upper arm and forearm and an elbow solve with joint limits that swivels away from the head and torso. Each stroke (forehand, backhand, low, overhead and the underhand serve) runs take-back, contact, follow-through and recovery; take-back and finish turn the contact arm at the shoulder so elbow and wrist stay natural, and every stroke swings through the ball. Reach comes from footwork: an eased step capped at a stepping pace, a crouch and torso turn. Displayed robots never move faster than a sprint, robots walk to their serve spots between points instead of appearing there, and mouse/touch dragging runs the robot to the spot. First person looks out through the player robot's visor and briefly follows the ball onto the paddle. Serve aim: two-switch Space holds move the target (release stops, each hold reverses), One switch and Tap sweep it by itself, Enter stops it on the press and the release serves; the target stays in the legal diagonal box, shown by a glowing box, target ring, flight arc and a pin of light with a direction chevron; a six-second Enter hold pauses instead; robot serves need no aim.
+
+Changed web files (Electron flag: already implemented in the explicitly authorized Benny's PC Hub game):
+- bennyshub/apps/games/NARBEPICKLEBALL/js/model.js — stroke zones and footwork reach, player stance depth, serve aim limits, walk to serve spots.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js — shared arm rig, joint-space strokes and clearance, eased footwork and no-warp follower, visor camera, serve aim visuals.
+- bennyshub/apps/games/NARBEPICKLEBALL/js/game.js — serve aim controls, continuous pointer movement, help text.
+- bennyshub/apps/games/NARBEPICKLEBALL/README.md — behavior and verification.
+- bennyshub/ACCESSIBILITY.md — added the missing NARBE Robot Pickleball row (F-drive copy only had Pickleball Rally).
+- tests/rally-model.test.cjs — replaced the stale F-drive copy, which already failed (it tested an older first-to-seven/target-mode version), with the maintained desktop test.
+- SCAN-UPGRADE-CHANGES.md — this record.
+
+Desktop-only changes: ACCESSIBILITY.md (row updated), ELECTRON-SCAN-UPGRADE.md, new Node-only tests/rally-arm-rig.test.cjs, tests/rally-game-controls.test.cjs, tests/rally-visual-review.cjs and tests/rally-stroke-tuner.cjs; tests/rally-arm-poses.cjs removed (superseded; it read arm internals that no longer exist). Backup: desktop tmp/rally-arm-rebuild-backup (desktop sources before this change; F-drive sources, ledger and accessibility guide before sync). The unfinished attempt's backup remains at tmp/rally-attached-arm-backup. index.html and style.css are unchanged on both sides.
+
+Validation (Node only; no browser, Electron or GPU on this PC): rally-model 25/25, rally-arm-rig 7/7 and rally-game-controls 10/10 pass on the desktop files and on the synchronized F-drive prototype. A 40,557-frame vertex sweep found no arm or paddle penetration of either robot's own head, torso or legs. Review sheets rendered from the real scene graph were inspected. Not run: tests/rally-browser.cjs, tests/rally-electron.cjs and scripts/check-rally-club.cjs, which may need the new serve-aim step. Ben's physical-switch play test is still needed.
+
+### Follow-up — serve aim covers the whole legal box
+
+Owner feedback: the aim swept only a narrow band near the receiving robot. The target now sweeps the whole diagonal service box (centre line/T to sideline, still never into the other box, which would be a fault) and the serve lands deep, about a metre inside the baseline (model SERVE_DEPTH). The receiving robot waits behind its baseline instead of standing on the target, so wide and T serves make it move. While aiming, the first-person view eases up and zooms toward the far box; the target ring is smaller so it stays inside the lines. Files: model.js, scene.js, game.js, README.md, tests/rally-model.test.cjs (synchronized to the F-drive prototype). Backup of the previous versions: desktop tmp/rally-arm-rebuild-backup/before-serve-aim-wide. Validation: rally-model 25/25, rally-arm-rig 7/7 and rally-game-controls 10/10 on desktop and F-drive copies; serve-aim review renders inspected.

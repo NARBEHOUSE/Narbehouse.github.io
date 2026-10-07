@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#082c31"><title>NARBE Rally Club · Robot Pickleball</title><link rel="stylesheet" href="../../../shared/scan-status-badge.css"><link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="scene" aria-hidden="true"></div>
+<div id="app">
+<header class="topbar"><a class="brand" href="#" id="brand" aria-label="NARBE Rally Club main menu"><span class="brand-mark">N</span><span>NARBE<span class="brand-sub">RALLY CLUB</span></span></a><span class="venue">PALM COURT <span>01 / OPEN AIR</span></span><button id="pauseButton" class="quiet" hidden>Ⅱ <span>Pause</span></button></header>
+<main id="menu" class="menu-shell"><div class="menu-content"><p class="eyebrow" id="eyebrow">A LITTLE COURT. A BIG FEELING.</p><h1 id="title">Find your<br><em>rally.</em></h1><p id="description" class="description">Step onto the court. Find your angle. Make it a rally.</p><div id="menuStatus"></div><div id="menuItems" class="menu-items"></div><p id="menuHint" class="menu-hint"></p><p class="edition">ROBOT PICKLEBALL, AT YOUR PACE. <span>WEB EDITION</span></p></div><div id="heroNote" class="hero-note"><span class="tiny-label">THE RALLY CLUB WAY</span><strong>All the feeling.<br>Time to make it yours.</strong><p>Move to the ball · Automatic paddle<br>One or two switches · No rush</p></div></main>
+<section id="play" hidden aria-label="Pickleball match">
+<button id="courtSurface" aria-label="Court. Point or drag to aim, release to hit." aria-describedby="courtHint"></button>
+<div class="scoreboard"><div><span id="playerLabel">YOU</span><strong id="playerScore">0</strong></div><div class="score-mid"><span id="modeLabel">FRIENDLY MATCH</span><b id="rallyCount">11 · WIN BY 2</b></div><div><span id="opponentLabel">FINN-01</span><strong id="cpuScore">0</strong></div></div>
+<div class="rally-badge"><span id="rallyLabel">RALLY</span><b id="rallyValue">0</b><small id="bestValue">BEST 0</small></div>
+<div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+<div id="serveKit" class="shot-kit" aria-label="Serve options" hidden><button id="serveButton"><span>↗</span>Your serve</button><button id="servePause"><span>Ⅱ</span>Pause</button></div>
+<div id="directionCue" class="direction-cue" role="status" aria-live="polite" aria-atomic="true" hidden><span id="directionArrow" class="direction-arrow" aria-hidden="true">←</span><span><small id="directionAction">NEXT HOLD</small><strong id="directionLabel">LEFT</strong></span></div>
+<div id="playStatus"></div><p id="courtHint" class="court-hint"></p><div id="holdRing" aria-hidden="true"><span>Ⅱ</span></div>
+</section>
+<div id="error" class="error" hidden role="alert"><h2>The court couldn’t open.</h2><p id="errorText">Try a browser with 3D graphics enabled.</p><button onclick="location.reload()">Try again</button><a href="../PICKLEBALLRALLY/index.html">Play Lily’s original game</a><a href="../../../index.html">Back to Hub</a></div>
+<footer id="footer"><span><i class="status-dot"></i> YOUR PACE. YOUR GAME.</span><span id="controlHint"><kbd>SPACE</kbd> Move <kbd>ENTER</kbd> Choose</span></footer>
+</div>
+<script src="../../../shared/safe-audio.js"></script><script src="../../../shared/platform.js"></script><script src="../../../shared/scan-status-badge.js"></script><script src="../../../shared/choice-scan.js"></script><script src="../../../shared/choice-scan-adapter.js"></script><script src="../../../shared/voice-manager.js"></script><script src="../../../shared/ios-audio-fix.js"></script><script src="../../../shared/scan-manager.js"></script><script src="js/three.min.js"></script><script src="js/model.js"></script><script src="js/scene.js"></script><script src="js/game.js"></script>
+</body></html>

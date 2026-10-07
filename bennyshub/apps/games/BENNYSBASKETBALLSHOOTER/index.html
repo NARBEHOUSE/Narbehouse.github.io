@@ -125,6 +125,14 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); pointer-events: auto;
         }
         #pause-button:hover { background: rgba(255, 255, 255, 0.35); transform: scale(1.1); }
+        /* Pressed while a shot is in the air: the pause opens once the shot is over */
+        #pause-button.queued { background: var(--gold); color: #1a1205; border-color: #ffffff; box-shadow: 0 0 24px rgba(242, 169, 0, 0.8); }
+
+        /* Between shots (1 player): the court stays in view, the choice sits low on the screen */
+        #ready-screen { justify-content: flex-end; padding-bottom: 7vh; box-sizing: border-box;
+            background: linear-gradient(to top, rgba(2, 4, 12, 0.88) 0%, rgba(2, 4, 12, 0.4) 45%, transparent 70%); }
+        #ready-title { font-family: var(--display); font-size: 3.2em; line-height: 1; color: var(--gold-hi); letter-spacing: 0.04em; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.55); }
+        #ready-sub { font-weight: 700; letter-spacing: 0.25em; color: #c9d4ee; margin-bottom: 10px; }
 
         /* Settings grid */
         #settings-menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 90%; max-width: 820px; margin: 0 auto; }
@@ -156,7 +164,7 @@
         #spot-menu-list .menu-item { width: auto; margin: 0; font-size: 1.25em; padding: 8px 10px; text-align: left; }
         #spot-menu-list .menu-item::before { content: attr(data-num); display: inline-block; min-width: 1.6em; color: var(--gold-hi); }
         #spot-menu-list .menu-item.selected::before { color: #1a1205; }
-        #spot-menu-list .menu-item[data-action="horse_quit"] { grid-column: 1 / -1; text-align: center; }
+        #spot-menu-list .menu-item[data-action="pause"] { grid-column: 1 / -1; text-align: center; }
 
         @media (max-width: 768px) {
             h1, .screen h1 { font-size: 2.4em !important; }
@@ -174,6 +182,8 @@
             #horse-status { order: 3; font-size: 1.3em; }
             #message { font-size: 3.4em; }
             #pause-button { bottom: 15px; left: 15px; width: 60px; height: 60px; font-size: 24px; }
+            #ready-screen { padding-bottom: 96px; }
+            #ready-title { font-size: 2.4em; }
             #power-container { right: 22px; top: 120px; bottom: 24px; width: 40px; }
             #power-track { border-radius: 20px; }
             #power-sweet { left: -10px; right: -10px; }
@@ -274,6 +284,16 @@
         <div class="spot-layout">
             <div class="spot-court" id="spot-court"></div>
             <div class="menu-items-list" id="spot-menu-list"></div>
+        </div>
+    </div>
+
+    <!-- Between shots (1 player) -->
+    <div id="ready-screen" class="screen" style="display:none;">
+        <div id="ready-title">SHOT 2 OF 12</div>
+        <div id="ready-sub">15 FEET · 2 POINTS</div>
+        <div class="menu-items-list" id="ready-menu-list">
+            <div class="menu-item" data-action="take_shot">TAKE SHOT</div>
+            <div class="menu-item" data-action="pause">PAUSE</div>
         </div>
     </div>
 
@@ -445,6 +465,14 @@
         let onFire = false;
 
         let horse = null;          // HORSE game state (see js/horse.js)
+
+        // Pause: CONTINUE GAME returns to where play stopped: 'aim', 'ready' (between shots) or 'spots' (HORSE picker)
+        let resumeTo = null;
+        let pauseQueued = false;   // pause pressed while a shot was in the air: opens at the next stop
+        function queuePause(on) {
+            pauseQueued = on;
+            document.getElementById('pause-button').classList.toggle('queued', on);
+        }
 
         let aimAngle = 0;
         let aimActive = false;
@@ -767,6 +795,7 @@
             trajectoryGroup.visible = true;
             hoop.net.relax(0.8); // settle the net back to its hanging shape before every shot
             showHud();
+            document.getElementById('pause-button').style.display = 'flex';
             SFX.play('dribble', 0.55, { minGap: 1 });
         }
 
@@ -775,10 +804,11 @@
                 highScore = score;
                 localStorage.setItem('bennys_ball_highscore', highScore);
             }
+            let lead = '';
             if (shotsTaken >= MAX_SHOTS && !bonusMode) {
                 if (perfectGame) {
                     bonusMode = true;
-                    audio.speak("Perfect Game! Entering Bonus Mode! Sudden Death!");
+                    lead = "Perfect Game! Entering Bonus Mode! Sudden Death!";
                     showMessage("BONUS MODE!", "#ffd25a", "SUDDEN DEATH");
                 } else {
                     gameOver();
@@ -792,15 +822,39 @@
             round = shotsTaken + 1;
             const config = getShotConfig(shotsTaken);
             placePlayer(config.dist, config.angleRad);
-            beginAiming();
             updateScoreBoard();
-            if (!bonusMode || round > 13) {
-                const msg = bonusMode ? `BONUS ${round - 12}` : `SHOT ${round}`;
-                showMessage(msg, bonusMode ? "#ffd25a" : "#ffffff", bonusMode ? `${config.dist} FEET` : `OF ${MAX_SHOTS}`);
-            }
+            // The first shot starts straight away; after that the player chooses when to shoot
+            if (shotsTaken === 0) beginSingleShot();
+            else showReady(lead);
+        }
+
+        function beginSingleShot() {
+            beginAiming();
+            if (bonusMode) showMessage(`BONUS ${round - 12}`, "#ffd25a", `${shotDist} FEET`);
+            else showMessage(`SHOT ${round}`, "#ffffff", `OF ${MAX_SHOTS}`);
+        }
+
+        // Single player, between shots: the next spot is set up; TAKE SHOT or PAUSE
+        function showReady(lead) {
+            gameState = 'MENU';
+            document.getElementById('power-container').style.display = 'none';
+            trajectoryGroup.visible = false;
+            holdingBallMesh.visible = false;
+            ballMesh.visible = false;
+            showHud();
+            const points = shotsTaken >= 9 ? 3 : 2;
+            document.getElementById('ready-title').innerText = bonusMode ? `BONUS SHOT ${round - 12}` : `SHOT ${round} OF ${MAX_SHOTS}`;
+            document.getElementById('ready-sub').innerText = `${shotDist} FEET · ${points} POINTS`;
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById('ready-screen').style.display = 'flex';
+            if (pauseQueued) return MenuManager.pause();
+            MenuManager.setActiveMenu('ready');
+            const line = bonusMode ? `Bonus shot ${round - 12}, ${shotDist} feet.` : `Shot ${round} of ${MAX_SHOTS}, ${shotDist} feet.`;
+            audio.speak(lead ? `${lead} ${line}` : line);
         }
 
         function gameOver() {
+            queuePause(false);
             gameState = 'MENU';
             hideHud();
             document.getElementById('power-container').style.display = 'none';
@@ -888,13 +942,14 @@
         function startHorse() {
             gameMode = 'horse';
             horse = BB.Horse.newGame();
+            queuePause(false);
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             SFX.play('whistle', 0.7, { minGap: 1 });
             audio.speak(`HORSE. ${horse.players[horse.leader].name} goes first.`);
             setTimeout(goToSpotPicker, 1200);
         }
 
-        function goToSpotPicker() {
+        function goToSpotPicker(lead) {
             if (gameMode !== 'horse' || !horse) return;
             gameState = 'MENU';
             hideHud();
@@ -906,9 +961,10 @@
             document.getElementById('spot-title').innerText = leader.name;
             document.getElementById('spot-sub').innerText = 'PICK YOUR SPOT';
             document.getElementById('spot-screen').style.display = 'flex';
-            MenuManager.setActiveMenu('spots');
             updateScoreBoard();
-            audio.speak(`${leader.name}, pick your spot.`);
+            if (pauseQueued) return MenuManager.pause();
+            MenuManager.setActiveMenu('spots');
+            audio.speak(`${lead ? lead + ' ' : ''}${leader.name}, pick your spot.`);
         }
 
         function beginHorseShot() {
@@ -916,6 +972,7 @@
             placePlayer(spot.dist, spot.angle * Math.PI / 180, spot.boost || 1);
             beginAiming();
             updateScoreBoard();
+            if (pauseQueued) return MenuManager.pause();
             const shooter = horse.players[horse.shooter];
             if (horse.phase === 'match') {
                 showMessage(shooter.name, '#ffd25a', 'MATCH IT · ' + spot.label);
@@ -974,11 +1031,12 @@
                 el.innerText = s.label;
                 list.appendChild(el);
             });
-            const quit = document.createElement('div');
-            quit.className = 'menu-item';
-            quit.dataset.action = 'horse_quit';
-            quit.innerText = 'MAIN MENU';
-            list.appendChild(quit);
+            // PAUSE, not MAIN MENU: one stray select here mustn't end the game
+            const pause = document.createElement('div');
+            pause.className = 'menu-item';
+            pause.dataset.action = 'pause';
+            pause.innerText = 'PAUSE';
+            list.appendChild(pause);
             document.querySelectorAll('.spot-marker').forEach(m => {
                 m.addEventListener('click', () => {
                     if (gameState !== 'MENU') return;
@@ -1214,7 +1272,8 @@
                     'settings': safeGet('settings-menu-list'),
                     'gameover': safeGet('gameover-menu-list'),
                     'pause': safeGet('pause-menu-list'),
-                    'spots': safeGet('spot-menu-list')
+                    'spots': safeGet('spot-menu-list'),
+                    'ready': safeGet('ready-menu-list')
                 };
                 if (this.screens['start']) {
                     this.currentMenu = this.screens['start'];
@@ -1308,6 +1367,8 @@
                 this.refreshSettingsMenu();
                 this.currentMenu = this.screens[menuName];
                 this.activeIndex = -1; // Every menu opens with nothing highlighted; first Space highlights the first item
+                // The pause button only shows during a game
+                document.getElementById('pause-button').style.display = ['start', 'gameover', 'settings'].includes(menuName) ? 'none' : 'flex';
                 this.updateVisuals();
                 this.startAutoScan();
             }
@@ -1376,8 +1437,13 @@
                         this.stopAutoScan();
                         startHorse();
                         break;
-                    case 'horse_quit':
-                        this.handleAction('menu');
+                    case 'take_shot':
+                        this.stopAutoScan();
+                        document.getElementById('ready-screen').style.display = 'none';
+                        beginSingleShot();
+                        break;
+                    case 'pause':
+                        this.pause();
                         break;
                     case 'settings':
                         this.returnToId = gameState === 'PAUSED' ? 'pause' : 'start';
@@ -1502,8 +1568,12 @@
                         }
                         break;
 
-                    case 'resume':
+                    case 'resume': {
                         document.getElementById('pause-screen').style.display = 'none';
+                        const to = resumeTo;
+                        resumeTo = null;
+                        if (to === 'ready') { showReady('Resume Game.'); break; }
+                        if (to === 'spots') { goToSpotPicker('Resume Game.'); break; }
                         audio.speak("Resume Game");
                         gameState = 'AIMING';
                         chargePower = 0;
@@ -1513,8 +1583,10 @@
                         showHud();
                         this.stopAutoScan();
                         break;
+                    }
                     case 'restart':
                         this.stopAutoScan();
+                        resumeTo = null;
                         document.querySelectorAll('.screen').forEach(s => s.style.display='none');
                         audio.speak("Restarting Game");
                         if (gameMode === 'horse') startHorse(); else resetGame();
@@ -1530,6 +1602,8 @@
                         document.getElementById('power-container').style.display = 'none';
                         horse = null;
                         gameMode = 'single';
+                        resumeTo = null;
+                        queuePause(false);
                         this.setActiveMenu('start');
                         gameState = 'MENU';
                         break;
@@ -1543,14 +1617,24 @@
             }
 
             togglePause() {
-                if (gameState === 'PAUSED') {
-                    this.handleAction('resume');
-                } else {
-                    gameState = 'PAUSED';
-                    document.getElementById('pause-screen').style.display = 'flex';
-                    this.setActiveMenu('pause');
-                    audio.speak("Paused");
-                }
+                if (gameState !== 'PAUSED') this.pause();
+                else if (document.getElementById('pause-screen').style.display === 'flex') this.handleAction('resume');
+            }
+
+            pause() {
+                if (gameState === 'PAUSED') return;
+                // A shot in the air (or its result) plays out first, so the shot is never lost
+                if (gameState === 'SHOOTING') { queuePause(true); return; }
+                const stop = document.getElementById('ready-screen').style.display === 'flex' ? 'ready'
+                           : document.getElementById('spot-screen').style.display === 'flex' ? 'spots' : null;
+                if (gameState === 'MENU' && !stop) return; // no game running
+                resumeTo = stop || 'aim';
+                queuePause(false);
+                document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+                gameState = 'PAUSED';
+                document.getElementById('pause-screen').style.display = 'flex';
+                this.setActiveMenu('pause');
+                audio.speak("Paused");
             }
         }
 
@@ -1562,6 +1646,7 @@
             onFire = false;
             perfectGame = true;
             bonusMode = false;
+            queuePause(false);
             SFX.play('whistle', 0.7, { minGap: 1 });
             setupRound();
         }

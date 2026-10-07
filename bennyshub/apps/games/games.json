@@ -226,10 +226,10 @@
     },
     {
       "id": "pickleballrally",
-      "title": "Pickleball Rally",
-      "description": "Rally against the computer by scanning to the right side of the court and returning every serve. In collaboration with SCSU, student creator: Lily Flack.",
-      "path": "apps/games/PICKLEBALLRALLY/index.html",
-      "image": "images/games/pickleballrally.png",
+      "title": "NARBE Robot Pickleball",
+      "description": "First-person robot pickleball with aimed serves and automatic returns. Play with one or two switches, tap without holding, or use mouse and touch. Choose full speed, slow motion or score-free no-fail play. In collaboration with SCSU and Lily Flack; redesigned and developed by NARBE.",
+      "path": "apps/games/NARBEPICKLEBALL/index.html",
+      "image": "images/games/narbe-pickleball-2026-10.png",
       "genres": [
         "Sports",
         "Arcade"
