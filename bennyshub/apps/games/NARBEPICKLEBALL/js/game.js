@@ -1,10 +1,10 @@
 /* CHOICE: menus and Serve/Pause. MECHANIC: positioning and automatic paddle returns. */
 'use strict';
 const $=id=>document.getElementById(id),M=RallyModel,sm=NarbeScanManager,vm=NarbeVoiceManager;
-const STORE='narbe-rally-club-v1',defaults={playStyle:'manual',moveSpeed:2.4,noHold:false,pace:.65,assist:true,reduceMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,sound:true};
+const STORE='narbe-rally-club-v1',defaults={playStyle:'manual',moveSpeed:3.4,noHold:false,pace:1,assist:true,reduceMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,sound:true};
 let settings={...defaults},stats={wins:0,best:0,stars:0,nextOpponent:0},saved=null;
 try{const raw=JSON.parse(localStorage.getItem(STORE)||'{}');for(const key of Object.keys(defaults))if(typeof raw.settings?.[key]===typeof defaults[key])settings[key]=raw.settings[key];for(const key of Object.keys(stats))if(Number.isFinite(raw.stats?.[key])&&raw.stats[key]>=0)stats[key]=raw.stats[key];saved=raw.saved;}catch{}
-settings.playStyle=['manual','one','assisted'].includes(settings.playStyle)?settings.playStyle:'manual';settings.moveSpeed=({1.2:1.6,1.8:2.4,2.6:3.4})[settings.moveSpeed]||settings.moveSpeed;settings.moveSpeed=[1.6,2.4,3.4].includes(settings.moveSpeed)?settings.moveSpeed:2.4;settings.pace=[0,.4,.65,1].includes(settings.pace)?settings.pace:.65;stats.nextOpponent=Number.isInteger(stats.nextOpponent)&&stats.nextOpponent<M.OPPONENTS.length?stats.nextOpponent:0;
+settings.playStyle=['manual','one','assisted'].includes(settings.playStyle)?settings.playStyle:'manual';settings.moveSpeed=({1.2:1.6,1.8:2.4,2.6:3.4})[settings.moveSpeed]||settings.moveSpeed;settings.moveSpeed=[1.6,2.4,3.4].includes(settings.moveSpeed)?settings.moveSpeed:defaults.moveSpeed;settings.pace=[0,.4,.65,1].includes(settings.pace)?settings.pace:defaults.pace;stats.nextOpponent=Number.isInteger(stats.nextOpponent)&&stats.nextOpponent<M.OPPONENTS.length?stats.nextOpponent:0;
 let state=M.create(),view='menu',returnView='menu',pausedView=null,scene,choice,lastFrame=performance.now(),lastEvent=-1,lastPhase=-1,feedbackUntil=0,lastAimRegion='',checkpointTime=0;
 const keys={Space:false,Enter:false};let spaceTimer=null,spaceRepeat=null,enterTimer=null,spaceHeld=false,braking=false,enterHeld=false,enterAt=0,pointerId=null,pointerRole=null,pointerStartX=0,pointerStartPlayer=0,movePointer=0,arrowPointer=null,chargeStart=null,chargeTier='',moveKey=null,moveLatched=false,tapTarget=null,pointerTarget=null,contactIntent=false,pauseGestureKey=null;
 function speak(text){return vm.speak(text);}

@@ -14,7 +14,7 @@ The robot automatically returns a visible ball within paddle reach, choosing for
 - **Automatic:** the robot also follows the ball sideways, for hands-free rallies.
 - **Mouse/touch:** drag across the court to send the robot there; it runs to the spot at a quick, steady pace rather than jumping. Returning the ball remains automatic.
 
-Sideways speed is about one-third faster: Relaxed 1.6, Steady 2.4 (default), Brisk 3.4 court units per second. Existing saved speed choices migrate to the matching faster tier. Ball pace is independent.
+Movement defaults to **Brisk** (3.4 court units per second), with Steady (2.4) and Relaxed (1.6) also available. Ball pace defaults to **Full speed** and is independent of movement speed. Existing saved speed and pace choices are retained; legacy movement speeds migrate to the matching tier.
 
 Before every rally, the court offers **Your serve / Receive serve** and **Pause**. Space scans, Enter selects; Auto Scan supports one-switch menu use. Choices start at silent blank. A held Enter for six seconds also pauses during play; One switch accepts a six-second Space hold as well. Short Enter presses never pause gameplay, including Automatic mode; only a continuous six-second hold does. The pause timer checks the same still-held input that started it. Escape and the visible Pause control work throughout. Continue rally has neutral styling until actually highlighted by the scan.
 

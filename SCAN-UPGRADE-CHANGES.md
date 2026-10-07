@@ -1,5 +1,17 @@
 # Web scan implementation and Companion 1.0.8
 
+## Robot Pickleball default speeds — 2026-10-07
+
+User-requested defaults: Movement is Brisk (3.4), and Ball pace is Full speed (1). Missing or invalid settings use these defaults; valid saved choices remain intact. This scoped gameplay-default update applies to both the PC Hub and website.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/game.js | SHARED / DONE ON DESKTOP | Brisk/Full speed initialization and matching invalid-value fallbacks. |
+| bennyshub/apps/games/NARBEPICKLEBALL/README.md | SHARED DOCUMENTATION / DONE ON DESKTOP | Document both defaults and saved-preference behavior. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY RECORD / NOT NEEDED | Record this authorized defaults change. |
+
+Validation: fresh/missing, malformed and invalid stored settings initialize to Brisk/Full speed; valid saved access choices remain unchanged. All 239 web Node tests and all 10 desktop Node control checks pass. Desktop and web game source match.
+
 ## Robot Pickleball catalog and web release — 2026-10-07
 
 The owner approved the repaired game and requested a fresh screenshot, updated descriptions in the PC Hub, web Hub and NARBEHOUSE homepage, and publication of all pending web updates. This release promotes the existing repaired Robot Pickleball build into the web catalog without changing its gameplay. The pickleballrally ID and favorites remain intact, and Lily Flack’s original stays accessible from credits. The new 1920×1080 screenshot was captured from the matching local web game in normal Chrome.
