@@ -1,5 +1,26 @@
 # Web scan implementation and Companion 1.0.8
 
+## Battleboats presentation upgrade — 2026-10-08
+
+User requested syncing the already-approved PC Hub Battleboats upgrade into the website game folder. Detailed SVG ships, shot/splash/explosion effects, five original WAV sounds, sunk-ship reveals, fleet/accuracy displays, reduced-motion and volume controls, scanned Pause and persistent results/replay are included. Automatic scenes wait for their owned speech ticket and a 650 ms trailing buffer; paused and abandoned turns cannot resume from stale callbacks.
+
+Website analytics, favicons, existing pause-menu choices and highlight cleanup are preserved. The browser edition uses its existing shared managers and mobile audio unlocker, with no Electron bridge. No desktop files, shared managers, catalogs, existing thumbnail edits, release ZIPs or deployments are changed by this sync.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/index.html | SHARED PRESENTATION / ALREADY DONE ON DESKTOP; WEB ENTRY ADAPTED | New interface and local assets; retained website metadata and browser integration. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/scripts/battleship.js | SHARED / ALREADY DONE ON DESKTOP | Reveal/shot lifecycle, pause/replay/settings, speech completion and trailing buffer; retained website-specific pause behavior. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/scripts/presentation.js | SHARED / ALREADY DONE ON DESKTOP | Ship artwork, stable fleet overlays, bounded effects, reports and SafeAudio. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/styles/command.css | SHARED / ALREADY DONE ON DESKTOP | Responsive naval presentation, effects and full mobile fleet reveal. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/scan-access.js | SHARED / ALREADY DONE ON DESKTOP | Pause/result scan choices and visible settings highlights. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/audio/hit.wav, launch.wav, miss.wav, sonar.wav, sunk.wav | SHARED ASSETS / ALREADY DONE ON DESKTOP | Original procedural sound effects. |
+| bennyshub/apps/games/BENNYSBATTLEBOATS/README.md | WEB DOCUMENTATION / DESKTOP EQUIVALENT EXISTS | Features, access controls and browser validation commands. |
+| scripts/generate-battleboats-audio.cjs | WEB TOOL / DESKTOP EQUIVALENT EXISTS | Reproducible original audio generator. |
+| scripts/check-battleboats.cjs | WEB TEST / DESKTOP EQUIVALENT EXISTS | Headless-browser adaptation of the complete regression fixture. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY RECORD / NOT NEEDED | This sync record. |
+
+Validation: 51 real-browser assertions passed with the website shared modules, including both player modes, switch navigation, paused/abandoned shots, results/replay, reduced motion, five decoded WAVs, phone layouts and delayed speech tickets. All 17 local HTML asset references resolve. The service worker does not cache this game, so its cache version is unchanged. Previous website files are backed up at `C:/Users/ass/OneDrive/BEN'S SOFTWARE/Documents/Python Projects/Benny's PC Hub/tmp/battleboats-web-sync-20261008-uaBnaY/backup`.
+
 ## Robot Pickleball default speeds — 2026-10-07
 
 User-requested defaults: Movement is Brisk (3.4), and Ball pace is Full speed (1). Missing or invalid settings use these defaults; valid saved choices remain intact. This scoped gameplay-default update applies to both the PC Hub and website.

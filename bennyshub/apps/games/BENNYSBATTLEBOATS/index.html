@@ -2,32 +2,39 @@
 <html lang="en">
 <head>
   <script src="../../../shared/usage-analytics.js" defer></script>
+    <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Benny's Battle Boats</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/command.css">
 </head>
 <body>
     <!-- Shared accessibility scripts -->
-    <script src="../../../shared/platform.js"></script>
+<script src="../../../shared/platform.js"></script>
     <script src="../../../shared/scan-status-badge.js"></script>
     <script src="../../../shared/choice-scan.js"></script>
 <script src="../../../shared/choice-scan-adapter.js"></script>
     <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
     <script src="../../../shared/scan-manager.js"></script>
     <script src="../../../shared/voice-manager.js"></script>
+    <script src="../../../shared/safe-audio.js"></script>
+    <script src="../../../shared/ios-audio-fix.js"></script>
     <div class="app-shell">
         <!-- Main Menu -->
         <div id="mainMenuScreen" class="menu-screen">
             <div class="menu-container" id="mainMenuContainer">
-                <h1 class="menu-title">BENNY'S<br>BATTLE BOATS</h1>
+                <div class="menu-eyebrow">NAVAL COMMAND / EST. BENNY</div>
+                <h1 class="menu-title"><span>BENNY'S</span>BATTLE<br>BOATS<span class="title-dot">.</span></h1>
+                <p class="menu-tagline">Find their fleet. Make every shot count.</p>
                 <button id="onePlayerBtn" class="menu-button">1 Player</button>
                 <button id="twoPlayerBtn" class="menu-button">2 Players</button>
                 <button id="settingsBtn" class="menu-button">Settings</button>
                 <button id="exitBtn" class="menu-button">Exit</button>
+            <p class="menu-controls">Space to scan · Enter to choose<br>One switch? Turn on Auto Scan in Settings.</p>
             </div>
+            <div class="menu-scene" aria-hidden="true"><div class="radar-rings"></div><div class="radar-sweep"></div><div id="heroShip" class="hero-ship"></div><div class="scene-caption">FLEET READY<span>05 VESSELS / ONE COMMANDER</span></div><span class="radar-contact c1"></span><span class="radar-contact c2"></span></div>
         </div>
         
         <!-- Settings Menu -->
@@ -37,6 +44,8 @@
                 <div class="settings-grid">
                     <button id="ttsBtn" class="menu-button setting-btn">TTS: On</button>
                     <button id="soundBtn" class="menu-button setting-btn">Sound: On</button>
+                    <button id="motionBtn" class="menu-button setting-btn">Motion: Full</button>
+                    <button id="volumeBtn" class="menu-button setting-btn">Effects volume: Medium</button>
                     <button id="themeBtn" class="menu-button setting-btn">Theme: Ocean</button>
                     <button id="highlightStyleBtn" class="menu-button setting-btn">Style: Glow</button>
                     <button id="highlightColorBtn" class="menu-button setting-btn">Color: Gold</button>
@@ -61,7 +70,7 @@
                         <div class="menu-buttons" id="menuButtons">
                             <button id="backToMenuBtn" class="action-btn back-btn" aria-label="Back to Main Menu">Back</button>
                             <button id="randomizeBtn" class="action-btn randomize-btn" aria-label="Randomize All Ships">Randomize</button>
-                            <button id="startGameBtn" class="start-game-btn" aria-label="Place Ships">Place Ships</button>
+                            <button id="startGameBtn" class="start-game-btn" aria-label="Launch Battle">Launch Battle</button>
                         </div>
                         
                         <div class="status" id="statusText" aria-live="polite">Press Space to scan, Enter to select.</div>
@@ -74,7 +83,7 @@
         <div id="attackPhaseScreen" class="phase-screen hidden">
             <header class="phase-header">
                 <div class="phase-indicator attack-phase">
-                    <span class="phase-icon">🎯</span>
+                    <span class="phase-icon" aria-hidden="true">⌖</span>
                     <span class="phase-text">YOUR TURN - ATTACK</span>
                 </div>
                 <div class="ship-status-bar" id="enemyShipStatus">
@@ -85,6 +94,15 @@
                 <div class="phase-grid-container">
                     <div class="grid-grid" id="attackGrid"></div>
                 </div>
+                <aside class="command-panel" aria-label="Attack battle report">
+ <div class="panel-eyebrow">TARGETING CONSOLE</div><h2>Enemy waters</h2>
+ <p class="panel-description">Choose a row, then a square. Find and sink all five ships.</p>
+ <div class="shot-report" id="attackReport" data-result="ready"><span class="report-label">LAST SHOT</span><strong class="report-title">Awaiting orders</strong><span class="report-detail">The ocean is quiet.</span></div>
+ <div class="battle-stats" id="attackStats"></div>
+ <div class="board-legend"><span><i class="legend-hit">×</i>Hit</span><span><i class="legend-miss">○</i>Miss</span><span><i class="legend-sunk">▰</i>Sunk</span></div>
+ <p class="tactical-note">A hit reveals damage. Sink a ship to uncover its full hull.</p>
+ <p class="scan-hint">Space: scan · Enter: choose<br>Pause is in the row scan.</p>
+</aside>
                 <div class="status" id="attackStatusText" aria-live="polite">Scan rows to target enemy fleet.</div>
             </section>
         </div>
@@ -93,7 +111,7 @@
         <div id="defensePhaseScreen" class="phase-screen hidden">
             <header class="phase-header">
                 <div class="phase-indicator defense-phase">
-                    <span class="phase-icon">🛡️</span>
+                    <span class="phase-icon" aria-hidden="true">◈</span>
                     <span class="phase-text">ENEMY TURN</span>
                 </div>
                 <div class="ship-status-bar" id="playerShipStatus">
@@ -104,6 +122,15 @@
                 <div class="phase-grid-container">
                     <div class="grid-grid" id="defenseGrid"></div>
                 </div>
+                <aside class="command-panel" aria-label="Defense battle report">
+ <div class="panel-eyebrow">FLEET MONITOR</div><h2>Home waters</h2>
+ <p class="panel-description">Your fleet is holding position. Watch for incoming fire.</p>
+ <div class="shot-report" id="defenseReport" data-result="ready"><span class="report-label">LAST SHOT</span><strong class="report-title">Awaiting orders</strong><span class="report-detail">The ocean is quiet.</span></div>
+ <div class="battle-stats" id="defenseStats"></div>
+ <div class="board-legend"><span><i class="legend-hit">×</i>Hit</span><span><i class="legend-miss">○</i>Miss</span><span><i class="legend-sunk">▰</i>Sunk</span></div>
+ <p class="tactical-note">Your ships stay visible. Every damaged section is marked.</p>
+ <p class="scan-hint">Space: scan · Enter: choose<br>Pause is in the row scan.</p>
+</aside>
                 <div class="status" id="defenseStatusText" aria-live="polite">Enemy is targeting...</div>
             </section>
         </div>
@@ -137,7 +164,7 @@
             <div class="modal-content game-over-modal">
                 <h2 id="gameOverTitle">Game Over</h2>
                 <p id="gameOverMessage" aria-live="assertive"></p>
-                <button id="gameOverOkBtn" class="menu-button">OK</button>
+                <div id="resultsStats" class="results-stats"></div><p class="results-note">The full enemy fleet is revealed on the board.</p><div class="result-actions"><button id="playAgainBtn" class="menu-button">Play Again</button><button id="gameOverOkBtn" class="menu-button">Main Menu</button></div>
             </div>
         </div>
         
@@ -159,6 +186,9 @@
                     <div class="modal-buttons pause-buttons pause-settings-grid">
                         <button id="pauseTtsBtn" class="menu-button setting-btn">TTS: On</button>
                         <button id="pauseSoundBtn" class="menu-button setting-btn">Sound: On</button>
+                        <button id="pauseMotionBtn" class="menu-button setting-btn">Motion: Full</button>
+                        <button id="pauseVolumeBtn" class="menu-button setting-btn">Effects volume: Medium</button>
+                        <button id="pauseAutoScanBtn" class="menu-button setting-btn">Auto Scan: Off</button>
                         <button id="pauseThemeBtn" class="menu-button setting-btn">Theme: Ocean</button>
                         <button id="pauseHighlightStyleBtn" class="menu-button setting-btn">Style: Glow</button>
                         <button id="pauseHighlightColorBtn" class="menu-button setting-btn">Color: Gold</button>
@@ -170,12 +200,13 @@
         </div>
         
         <!-- Pause Button (fixed position, shown during gameplay) -->
-        <div id="pauseButton" class="pause-button" title="Pause Game" style="display: none;">&#10074;&#10074;</div>
+        <button id="pauseButton" class="pause-button" aria-label="Pause Game" title="Pause Game" style="display: none;">Ⅱ <span>Pause</span></button>
         
         <!-- Sunk Ship Toast -->
         <div class="sunk-toast" id="sunkToast" aria-live="assertive"></div>
     </div>
 
+    <script src="scripts/presentation.js"></script>
     <script src="scripts/battleship.js"></script>
 <script src="scan-access.js"></script>
 </body>
