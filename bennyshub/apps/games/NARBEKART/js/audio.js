@@ -27,6 +27,7 @@
  *     coin(n)                 n = coins now held; the pitch climbs with n
  *     driftLevel(level) turbo(level)          level 1..3
  *     boostPad() bump() railRub() wallScrape() jump() trick() land() fall() drone()
+ *     splash() whoosh()       through a waterfall · into a loop-the-loop
  *     lap() finalLap() finish(place) placeUp() placeDown()
  *     cue(dir, player)        dir -1 low · 0 middle · +1 high; player 0 bell, 1 marimba.
  *                             In one-player races pass { pan: dir } for the panned cue.
@@ -41,7 +42,8 @@
  *                             speedNorm 0..1 · boosting bool · drifting false | true | level 1..3
  *
  *   Music ('menu' 'meadow' 'shores' 'candy' 'dunes' 'frost' 'spooky' 'lava'
- *          'starlight' 'podium' 'results'):
+ *          'starlight' 'jungle' 'isles' 'reef' 'dino' 'toybox' 'carnival'
+ *          'neon' 'factory' 'podium' 'results'):
  *     music(songId)           rendered the first time it is asked for, then cached;
  *                             changing song crossfades
  *     musicTempo(mult)        e.g. 1.12 on the final lap (pitch preserved)
@@ -431,7 +433,11 @@
     }
   }
 
-  /** Struck bars (marimba, xylophone, kalimba): decaying partials plus a mallet click. */
+  /**
+   * Struck bars (marimba, xylophone, kalimba, vibraphone): decaying partials
+   * plus a mallet click; `trem` adds the vibraphone motor's tremolo (depth,
+   * rate `tr` Hz), starting each note at full level.
+   */
   function malletNote(o, t0, f, dur, vel, P) {
     const sp = span(o, t0, dur, P.rel), i0 = sp.i0, n = sp.n;
     if (n <= 0) return;
@@ -443,11 +449,13 @@
       dk[k] = Math.exp(-1 / (parts[k][2] * SR));
     }
     const fade = Math.min(n, 0.004 * SR), g = vel * (P.g || 0.5), clickN = Math.round(0.004 * SR), click = P.click || 0;
+    const trem = P.trem || 0, tr = (P.tr || 5.5) / SR;
     let lpc = 0;
     for (let i = 0; i < n; i++) {
       let v = 0;
       for (let k = 0; k < np; k++) { ph[k] += dp[k]; if (ph[k] >= 1) ph[k] -= 1; v += amp[k] * sn(ph[k]); amp[k] *= dk[k]; }
       if (i < clickN) { lpc += 0.5 * (nz() - lpc); v += click * lpc * (1 - i / clickN); }
+      if (trem) v *= 1 - trem * (0.5 - 0.5 * sn(i * tr + 0.25));
       let env = i < 12 ? i / 12 : 1;
       if (i > n - fade) env *= (n - i) / fade;
       o[i0 + i] += v * env * g;
@@ -725,6 +733,19 @@
     }
   }
 
+  /**
+   * Tuned timpani for bass-style parts, so the drum follows the chords (the
+   * kits' timp is fixed in pitch): the kit drum's recipe at any pitch. A drum
+   * is not damped by the gate; it rings for `rel` from every stroke.
+   */
+  function timpNote(o, t0, f, dur, vel, P) {
+    const len = P.rel || 1.2, g = vel * (P.g || 0.6);
+    tone(o, t0, len, f * 1.03, f, { w: 'sine', a: 0.004, d: P.tau || 0.55, g: 0.8 * g });
+    tone(o, t0, len * 0.65, f * 1.51, f * 1.5, { w: 'sine', a: 0.004, d: 0.3, g: 0.3 * g });
+    tone(o, t0, len * 0.4, f * 1.99, f * 1.98, { w: 'sine', a: 0.004, d: 0.2, g: 0.18 * g });
+    noise(o, t0, 0.08, { type: 'lp', f0: 600, q: 0.7, d: 0.03, g: 0.3 * g });
+  }
+
   /* The instrument table: parts and effects name an instrument and may
    * override any of its parameters. */
   const INSTR = {
@@ -738,6 +759,7 @@
     marimba:  { rel: 0.7, fn: malletNote, P: { parts: [[1, 1, 0.38], [3.98, 0.3, 0.07], [9.9, 0.07, 0.02]], click: 0.1, g: 0.55 } },
     xylo:     { rel: 0.45, fn: malletNote, P: { parts: [[1, 1, 0.18], [3.0, 0.42, 0.05], [6.1, 0.12, 0.02]], click: 0.15, g: 0.5 } },
     kalimba:  { rel: 0.8, fn: malletNote, P: { parts: [[1, 1, 0.5], [5.4, 0.2, 0.04], [2.0, 0.06, 0.2]], click: 0.06, g: 0.55 } },
+    vibes:    { rel: 1.4, fn: malletNote, P: { parts: [[1, 1, 0.75], [4, 0.14, 0.1], [10, 0.03, 0.025]], click: 0.03, trem: 0.3, tr: 5.2, g: 0.5 } },
     pluck:    { rel: 0.3, fn: pluckNote,  P: { bright: 0.6, t60: 1.4, g: 0.55 } },
     surf:     { rel: 0.45, fn: pluckNote, P: { bright: 0.8, t60: 2.2, vib: 0.004, vr: 5.5, g: 0.5 } },
     oud:      { rel: 0.3, fn: pluckNote,  P: { bright: 0.88, t60: 1.1, g: 0.55 } },
@@ -746,6 +768,7 @@
     bassPluck:{ rel: 0.1, fn: pluckNote,  P: { bright: 0.28, t60: 1.2, body: 0.55, g: 0.7 } },
     lead:     { rel: 0.1, fn: leadNote,   P: { duty: 0.35, pwm: 0.08, vib: 0.005, cut: 3600, g: 0.4 } },
     chip:     { rel: 0.06, fn: leadNote,  P: { duty: 0.25, d: 0.08, s: 0, cut: 5200, g: 0.34 } },
+    kazoo:    { rel: 0.08, fn: leadNote,  P: { duty: 0.13, pwm: 0.025, pwr: 1.3, vib: 0.011, vr: 6.2, vd: 0.06, scoop: 0.05, a: 0.01, d: 0.2, s: 0.85, cut: 2300, g: 0.42 } },
     sawLead:  { rel: 0.14, fn: sawNote,   P: { det: 0.004, cut: 2800, cutEnv: 0.8, cutTau: 0.2, vib: 0.006, g: 0.4 } },
     rockLead: { rel: 0.14, fn: sawNote,   P: { det: 0.003, cut: 2600, cutEnv: 0.5, cutTau: 0.25, vib: 0.008, drive: 2, g: 0.34 } },
     brass:    { rel: 0.1, fn: sawNote,    P: { det: 0.003, cut: 1900, cutAtk: 0.05, cutEnv: 0.9, cutTau: 0.18, q: 1.1, scoop: 0.025, vib: 0.005, vd: 0.25, a: 0.02, g: 0.45 } },
@@ -753,6 +776,7 @@
     flute:    { rel: 0.12, fn: fluteNote, P: { h2: 0.25, h3: 0.08, breath: 0.1, a: 0.04, vib: 0.006, g: 0.5 } },
     whistle:  { rel: 0.08, fn: fluteNote, P: { h2: 0.02, h3: 0.05, breath: 0.035, a: 0.015, vib: 0.008, scoop: 0.03, g: 0.5 } },
     ney:      { rel: 0.2, fn: fluteNote,  P: { h2: 0.18, h3: 0.1, breath: 0.22, a: 0.07, vib: 0.01, vr: 4.8, g: 0.5 } },
+    calliope: { rel: 0.06, fn: fluteNote, P: { h2: 0.4, h3: 0.28, breath: 0.12, a: 0.012, vib: 0.014, vr: 7, vd: 0.05, scoop: 0.015, g: 0.45 } },
     pad:      { rel: 0.6, chord: 1, fn: padChord,   P: { uni: 2, det: 0.0035, cut: 1700, a: 0.25, g: 0.3 } },
     warmPad:  { rel: 0.8, chord: 1, fn: padChord,   P: { wave: 'tri', uni: 2, det: 0.003, cut: 1400, a: 0.4, g: 0.36 } },
     supersaw: { rel: 0.5, chord: 1, fn: padChord,   P: { uni: 3, det: 0.006, cut: 2400, a: 0.08, g: 0.28 } },
@@ -764,6 +788,7 @@
     bass:     { rel: 0.06, fn: bassNote,  P: { wave: 'saw', cut: 480, env: 3, envTau: 0.12, sub: 0.45, g: 0.6 } },
     bassSq:   { rel: 0.06, fn: bassNote,  P: { wave: 'sq', cut: 650, env: 2, envTau: 0.1, sub: 0.35, g: 0.55 } },
     sub:      { rel: 0.08, fn: subNote,   P: { h2: 0.22, g: 0.72 } },
+    timp:     { rel: 1.2, fn: timpNote,   P: { tau: 0.55, g: 0.6 } },
     bloop:    { rel: 0.16, fn: bloopNote, P: { drop: 1, tau: 0.09, g: 0.5 } }
   };
 
@@ -900,6 +925,13 @@
     brush(P) {
       const o = new Float32Array(Math.round(0.25 * SR));
       noise(o, 0, 0.24, { type: 'bp', f0: 3600, q: 0.8, a: 0.015, d: 0.07, g: 0.7 });
+      return fadeEnd(o);
+    },
+    anvil(P) {                   // a struck steel bar: a hard strike, then a bright inharmonic clang
+      const f = P.f || 780, o = new Float32Array(Math.round(0.8 * SR));
+      [[1, 0.5, 0.3], [2.76, 0.3, 0.18], [5.4, 0.18, 0.1], [8.93, 0.08, 0.05]].forEach(([r, g, d]) =>
+        tone(o, 0, 0.78, f * r, f * r, { w: 'sine', a: 0.0005, d, g }));
+      noise(o, 0, 0.03, { type: 'bp', f0: 3500, q: 1.2, a: 0.0003, d: 0.006, g: 0.6 });
       return fadeEnd(o);
     }
   };
@@ -1313,6 +1345,32 @@
     inst('bellSoft', o, 1.1, midiHz(88), 0.15, 0.55);
   }, { pans: 'LR' });
 
+  /* Set pieces (Wonder Cup). Both are heard often and close to the ear, so
+   * they stay soft and round: pink and brown noise, nothing that leads above
+   * about 2.5 kHz, slow attacks rather than cracks. */
+  def('splash', 0.85, -23, (o, r) => {
+    // Through the waterfall: a rush of spray that swells in fast, a soft wet
+    // slap as the curtain parts, then droplets pattering away behind.
+    noise(o, 0, 0.55, { type: 'bp', f0: 650, f1: 1500, q: 0.8, a: 0.05, d: 0.2, r: 0.2, g: 0.75, color: 'pink' });
+    noise(o, 0.03, 0.75, { type: 'lp', f0: 2300, f1: 700, q: 0.7, a: 0.03, d: 0.22, r: 0.3, g: 0.45, am: [19, 0.45] });
+    noise(o, 0.04, 0.14, { type: 'lp', f0: 900, q: 0.8, a: 0.004, d: 0.045, g: 0.4, color: 'brown' });
+    tone(o, 0.04, 0.14, 240, 130, { w: 'sine', a: 0.003, d: 0.05, g: 0.12 });
+    for (let k = 0; k < 10; k++) {
+      // Each droplet a tiny rising "plip", fewer and quieter as they fall away.
+      const t = 0.16 + 0.6 * k / 10 + r() * 0.05, f = 650 + r() * 750;
+      tone(o, t, 0.05, f, f * 1.45, { w: 'sine', a: 0.002, d: 0.013, g: 0.16 * (1 - k / 13) });
+    }
+  }, { pans: 'LR', verb: [0.12, 0.6] });
+
+  def('whoosh', 1.1, -24, (o) => {
+    // Into the loop-the-loop: air rushing past, swelling and climbing as the
+    // kart tips up the wall, then easing away; a hum underneath rises with it.
+    noise(o, 0, 1.05, { type: 'bp', f0: 380, f1: 1700, q: 1.1, a: 0.45, r: 0.5, g: 0.95, color: 'pink' });
+    noise(o, 0, 1.05, { type: 'lp', f0: 350, f1: 900, q: 0.7, a: 0.35, r: 0.55, g: 0.3, color: 'brown' });
+    tone(o, 0.05, 0.95, 150, 330, { w: 'sine', a: 0.35, r: 0.45, g: 0.09, vib: [5, 0.01] });
+    tone(o, 0.05, 0.95, 300, 660, { w: 'tri', a: 0.4, r: 0.45, g: 0.035, lp: 1200 });
+  }, { pans: 'LR' });
+
   /* ── Laps, places, finishing ─────────────────────────────────────────── */
   def('lap', 1.15, -20, (o) => {
     // A new lap: a bright rising bell triad.
@@ -1543,6 +1601,11 @@
    *   power  like chord, voiced root + fifth + octave (rock guitar)
    * The whole song renders into a ring the length of the loop, so any note,
    * echo or reverb tail that runs past the end lands back at the start.
+   *
+   * Three-four: a waltz sets meter: 12 (the bar length the accents, and the
+   * arpeggio restarts, follow) and writes its tune and chords in waltz bars
+   * re-barred onto the grid by rebar(); patterns 12 or 24 long keep their
+   * place across grid bars, and bars must be a multiple of three.
    */
 
   const PCS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -1621,6 +1684,41 @@
     return out;
   }
 
+  /**
+   * Re-bar a tune (or, with chords set, a chord chart) written in bars of
+   * `from` sixteenths into the grid's 16-step bars: a note crossing a grid bar
+   * line is split and tied, a rest split, a chord written twice. Four waltz
+   * bars (from = 12) fill three grid bars. Throws on a bar of the wrong length.
+   */
+  function rebar(str, from, chords) {
+    const items = [];
+    str.split('|').forEach((bar, bi) => {
+      const toks = bar.trim().split(/\s+/).filter(Boolean);
+      let pos = 0;
+      toks.forEach((tk) => {
+        const m = /^([^:!]+)(?::(\d+))?(!?)$/.exec(tk);
+        if (!m) throw new Error('rebar: bad token "' + tk + '"');
+        const len = m[2] ? +m[2] : chords ? from / toks.length : 2;
+        items.push({ sym: m[1], len, acc: m[3] });
+        pos += len;
+      });
+      if (pos !== from) throw new Error('rebar: bar ' + (bi + 1) + ' has ' + pos + ' sixteenths, not ' + from);
+    });
+    const out = [];
+    let bar = [], room = 16;
+    items.forEach((it) => {
+      let left = it.len, first = true;
+      while (left > 0) {
+        const n = Math.min(left, room);
+        bar.push((first || chords || it.sym === 'r' ? it.sym : '-') + ':' + n + (first ? it.acc : ''));
+        left -= n; room -= n; first = false;
+        if (!room) { out.push(bar.join(' ')); bar = []; room = 16; }
+      }
+    });
+    if (bar.length) throw new Error('rebar: the tune does not fill whole 16-step bars');
+    return out.join(' | ');
+  }
+
   function barRange(song, part) { return part.bars ? part.bars : [1, song.bars]; }
 
   function degreeNote(c, ch, next, lo, prev) {
@@ -1644,7 +1742,7 @@
 
   function bassEvents(song, part, chords) {
     const pat = part.bass.replace(/\s+/g, ''), plen = pat.length, br = barRange(song, part);
-    const lo = midiOf(part.lo || 'E1'), total = song.bars * 16, out = [];
+    const lo = midiOf(part.lo || 'E1'), total = song.bars * 16, meter = song.meter || 16, out = [];
     let last = null, prev = null;
     for (let s = (br[0] - 1) * 16, k = 0; s < br[1] * 16; s++, k++) {
       const c = pat[k % plen];
@@ -1652,7 +1750,7 @@
       if (c === '-') { last = null; continue; }
       const cd = chordAt(chords, s), nx = chordAt(chords, (cd.step + cd.len) % total);
       const m = degreeNote(c, cd.ch, nx.ch, lo, prev);
-      last = { step: s, len: 1, m, acc: s % 16 === 0 };
+      last = { step: s, len: 1, m, acc: s % meter === 0 };
       prev = m;
       out.push(last);
     }
@@ -1668,15 +1766,16 @@
   function arpEvents(song, part, chords) {
     const rh = part.rhythm.replace(/\s+/g, ''), rl = rh.length, br = barRange(song, part);
     const seq = part.arp.trim().split(/\s+/).map(Number), lo = midiOf(part.lo), hi = midiOf(part.hi), out = [];
+    const meter = song.meter || 16;
     let last = null, si = 0;
     for (let s = (br[0] - 1) * 16, k = 0; s < br[1] * 16; s++, k++) {
-      if (s % 16 === 0) si = 0;                               // the pattern restarts every bar
+      if (s % meter === 0) si = 0;                            // the pattern restarts every bar
       const c = rh[k % rl];
       if (c === '.') { if (last) last.len++; continue; }
       if (c === '-') { last = null; continue; }
       const tl = toneList(chordAt(chords, s).ch, lo, hi), idx = seq[si++ % seq.length];
       const m = tl[idx % tl.length] + 12 * Math.floor(idx / tl.length);
-      last = { step: s, len: 1, m, acc: s % 16 === 0 };
+      last = { step: s, len: 1, m, acc: s % meter === 0 };
       out.push(last);
     }
     return out;
@@ -1709,7 +1808,7 @@
       if (c === '.' && !last) continue;
       const ms = power ? [0, 7, 12].map((x) => lo + ((cd.ch.root - lo) % 12 + 12) % 12 + x) : voiceChord(cd.ch, lo, hi, part.voices || 3, prev);
       prev = ms;
-      last = { step: s, len: 1, ms, cd, acc: s % 16 === 0 };
+      last = { step: s, len: 1, ms, cd, acc: s % (song.meter || 16) === 0 };
       out.push(last);
     }
     return out;
@@ -1746,9 +1845,9 @@
   }
 
   /** Downbeats a touch louder, off-beats softer: the difference between a groove and a grid. */
-  function metric(step, acc) {
-    const s = step % 16;
-    const v = s === 0 ? 1.08 : s === 8 ? 1.04 : s % 4 === 0 ? 1 : s % 2 === 0 ? 0.94 : 0.9;
+  function metric(step, acc, meter) {
+    const bar = meter || 16, s = step % bar;
+    const v = s === 0 ? 1.08 : s === 8 && bar === 16 ? 1.04 : s % 4 === 0 ? 1 : s % 2 === 0 ? 0.94 : 0.9;
     return acc ? v * 1.12 : v;
   }
 
@@ -1850,6 +1949,30 @@
     march: {
       T: ['timp', { f: 65.4 }, 0.6, -0.15, 0.2], V: ['timp', { f: 98 }, 0.55, 0.15, 0.2],
       s: ['snare', { tone: 210, snap: 0.08 }, 0.4, 0.2, 0.2], x: ['crash', {}, 0.3, -0.25, 0.15]
+    },
+    // Tribal: a mid tom on the backbeat and a floor tom in the gaps instead of
+    // a snare, a pair of congas, shaker and a wood-block clave.
+    jungle: {
+      k: ['kick', { f0: 125, f1: 50, tau: 0.15, click: 0.2 }, 0.85, 0, 0], t: ['tom', { f: 150 }, 0.42, 0.25, 0.12],
+      u: ['tom', { f: 98 }, 0.5, -0.25, 0.12], q: ['conga', { f: 210, tau: 0.12 }, 0.38, -0.35, 0.08],
+      w: ['conga', { f: 315, tau: 0.08 }, 0.32, 0.35, 0.08], S: ['shaker', {}, 0.2, 0.4, 0],
+      b: ['wood', { f: 1050 }, 0.2, -0.45, 0.1], x: ['crash', {}, 0.22, -0.2, 0.1]
+    },
+    // Toy box: a small tight bass drum, a high snappy toy snare, a wood block,
+    // a tambourine, a little cymbal and two toy toms.
+    toy: {
+      k: ['kick', { f0: 170, f1: 70, tau: 0.09, click: 0.25 }, 0.7, 0, 0], s: ['snare', { tone: 260, snap: 0.07, hp: 2400 }, 0.42, 0.15, 0.15],
+      b: ['wood', { f: 1500 }, 0.22, -0.4, 0.08], m: ['tamb', {}, 0.13, 0.4, 0.05], x: ['crash', {}, 0.2, -0.25, 0.1],
+      t: ['tom', { f: 230 }, 0.36, 0.3, 0.1], u: ['tom', { f: 170 }, 0.36, -0.3, 0.1]
+    },
+    // Clockwork: a tight kick and snare, a two-pitch wood block for the tick
+    // and the tock, a rim, a closed hat, a hiss of steam (a long, darker open
+    // hat) and an anvil clank.
+    clock: {
+      k: ['kick', { f0: 140, f1: 48, tau: 0.13, click: 0.35 }, 0.9, 0, 0], s: ['snare', { tone: 200, snap: 0.07 }, 0.45, 0.05, 0.12],
+      i: ['wood', { f: 1900 }, 0.2, 0.4, 0.05], j: ['wood', { f: 1250 }, 0.22, -0.4, 0.05], r: ['rim', {}, 0.2, 0.2, 0.08],
+      h: ['hat', { tau: 0.022 }, 0.13, 0.25, 0], o: ['hat', { tau: 0.16, hp: 3800 }, 0.1, -0.2, 0.08],
+      a: ['anvil', { f: 784 }, 0.2, 0.15, 0.15], x: ['crash', {}, 0.24, -0.25, 0.1]
     }
   };
   const VEL = { X: 1, x: 0.8, o: 0.45 };
@@ -1898,7 +2021,7 @@
           I.fn(buf, 0, e.ms ? e.ms.map(midiHz) : midiHz(e.m), dur, 1, P);
           cache.set(nkey, buf);
         }
-        const vel = vel0 * metric(e.step, e.acc) * (1 + (rnd() - 0.5) * 0.08);
+        const vel = vel0 * metric(e.step, e.acc, song.meter) * (1 + (rnd() - 0.5) * 0.08);
         mixRing(buf, Math.round(ts * SR), vel, gl, gr, gv, gd, toL, toR, V, D);
         if ((++count & 7) === 0) yield;
       }
@@ -2250,6 +2373,359 @@
       order: 'AAAAAAAA AAAAAAAA DDDD EEER', crash: [1, 9, 17, 21]
     },
     mix: { rev: [0.85, 0.3, 0.5], dly: [0.75, 0.38, 3000, 0.5], pump: [0.5, 0.13], lv: -13 }
+  };
+
+  /* Jungle — "Canopy Chase" (B♭ major with a mixolydian A♭, 128, a touch of
+   * swing): an explorer's march through the canopy. A marimba hook on a
+   * 3-3-2 rhythm climbs the chord and tumbles back down over A♭ (the
+   * "adventure" chord); floor toms, congas and a wood-block clave drive it,
+   * and a bird whistles back from the trees through the echo. The middle is a
+   * bold brass call over G minor (in thirds the second time), the end a flute
+   * turnaround on the hook's rhythm whose ii–V lands back on bar 1. */
+  const JUNGLE_A = 'D5:3 F5:3 A5:2 Bb5:2 C6:2 D6:4 | C6:3 Ab5:3 F5:2 Eb5:2 F5:2 Ab5:4 | Eb5:3 G5:3 Bb5:2 Eb6:2 F6:2 Eb6:2 Bb5:2 | C6:6 A5:2 F5:4 r:4 | ' +
+    'D5:3 F5:3 A5:2 Bb5:2 C6:2 D6:2 F6:2 | Eb6:3 C6:3 Bb5:2 Ab5:2 Bb5:2 C6:4 | Bb5:2 G5:2 Eb5:2 G5:2 A5:2 C6:2 F6:2 Eb6:2 | D6:6 C6:2 Bb5:4 r:4';
+  const JUNGLE_B1 = 'G5:3 G5:1 D6:6 C6:2 Bb5:2 A5:2 | Bb5:6 G5:2 Eb5:8 | G5:3 G5:1 Eb6:6 D6:2 C6:2 Bb5:2 | A5:6 C6:2 F5:8';
+  const JUNGLE_B2 = 'Bb5:3 C6:1 D6:6 F6:2 D6:2 Bb5:2 | Eb6:6 D6:2 Bb5:4 G5:4 | Ab5:3 Bb5:1 C6:4 Eb6:4 C6:4 | D6:6 Bb5:2 F6:8';
+  const JUNGLE_B2H = 'G5:3 G5:1 Bb5:6 D6:2 Bb5:2 G5:2 | G5:6 F5:2 G5:4 Eb5:4 | Eb5:3 Eb5:1 Ab5:4 C6:4 Ab5:4 | Bb5:6 F5:2 D6:8';
+  const JUNGLE_C = 'Eb6:3 Bb5:3 G5:2 Bb5:2 C6:2 Eb6:4 | F6:3 C6:3 A5:2 C6:2 D6:2 F6:4 | G6:3 D6:3 Bb5:2 G5:2 Bb5:2 Eb6:4 | C6:2 Bb5:2 G5:2 Eb5:2 Eb6:2 C6:2 A5:2 F5:2';
+  const JUNGLE_BIRD = 'r:16 | r:16 | r:16 | r:12 F6:1 D6:1 F6:1 r:1 | r:16 | r:16 | r:16 | r:12 F6:1 D6:1 F6:1 r:1 | r:16 | r:16 | r:16 | r:13 C6:1 A5:1 C6:1';
+  SONGS.jungle = {
+    id: 'jungle', title: 'Canopy Chase', bpm: 128, swing: 0.15, bars: 20, key: ['Bb', 'mixolydian'],
+    chords: 'Bb | Ab | Eb | F | Bb | Ab | Eb F | Bb | Gm | Eb | Cm | F | Gm | Eb | Ab | Bb | Eb | F | Gm Eb | Cm7 F7',
+    parts: [
+      { v: 'marimba', n: JUNGLE_A, g: 0.62, pan: 0.05, rev: 0.18, dly: 0.1 },
+      { v: 'brass', n: JUNGLE_B1 + ' | ' + JUNGLE_B2, from: 9, g: 0.8, rev: 0.22, dly: 0.08 },
+      { v: 'brass', n: JUNGLE_B2H, from: 13, g: 0.55, pan: -0.3, rev: 0.22 },
+      { v: 'flute', n: JUNGLE_C, from: 17, g: 0.5, pan: 0.05, rev: 0.25, dly: 0.12 },
+      { v: 'marimba', n: JUNGLE_C, from: 17, oct: -1, g: 0.3, pan: -0.25 },
+      { v: 'whistle', n: JUNGLE_BIRD, g: 0.26, pan: 0.45, rev: 0.2, dly: 0.35, P: { scoop: 0.12, vib: 0 } },
+      { v: 'kalimba', arp: '0 2 1 3 2 4 3 1', rhythm: 'x.x.x.x.x.x.x.x.', lo: 'F4', hi: 'F5', bars: [9, 20], g: 0.22, pan: -0.35, rev: 0.15 },
+      { v: 'stab', chord: '..x..x...x..x...', lo: 'Bb3', hi: 'Bb4', voices: 3, g: 0.2, pan: 0.3 },
+      { v: 'bassPluck', bass: '1..8..5.--1.5.a.', lo: 'G1', g: 0.62 },
+      { v: 'warmPad', chord: 'x...............', lo: 'F3', hi: 'D5', voices: 3, bars: [9, 20], g: 0.13, rev: 0.3 }
+    ],
+    drums: {
+      kit: 'jungle',
+      pat: {
+        A: { k: 'x.....x.x.......', t: '....x.......x...', u: '...o......x..o..', w: '..x...x...x...x.', S: 'xoxoxoxoxoxoxoxo', b: 'x..x..x...x.x...' },
+        B: { k: 'x.....x.x.....x.', t: '....x.......x...', u: '..x..x....x..x..', q: 'x.......x.......', w: '..x.x.x...x.x.x.', S: 'XoxoXoxoXoxoXoxo' },
+        C: { k: 'x.....x.x.......', t: '....x.......x...', q: '......x.......x.', w: '..x...x...x...x.', S: 'xoxoxoxoxoxoxoxo', b: 'x..x..x...x.x...' },
+        F: { k: 'x.......x.......', t: '....x...x.x.x...', u: '.........x.x.xXX', S: 'xoxoxoxo........', b: 'x..x..x.........' }
+      },
+      order: 'AAAAAAAF BBBBBBBF CCCF', crash: [1, 9, 17]
+    },
+    mix: { rev: [0.78, 0.38, 0.45], dly: [0.75, 0.3, 2600, 0.4], lv: -13 }
+  };
+
+  /* Isles — "Cloud Hopper" (E♭ major, 136): sky-high and weightless. Flute
+   * and glockenspiel hop up a sixth, island to island, over harp arpeggios
+   * (a second flute joins in thirds); the chorus soars on a bright pulse lead
+   * with bells and chiptune sparkle; then the beat falls away to celesta, harp
+   * sweeps and a low gliding voice (the sky whale), and a ♭VI–♭VII lift
+   * (C♭, D♭) carries it back up to E♭ at the top. */
+  const ISLES_A1 = 'Eb5:2 G5:2 Eb6:6 D6:2 Bb5:4 | C5:2 Eb5:2 C6:6 Bb5:2 Ab5:4 | G5:2 C6:2 Eb6:6 F6:2 Eb6:2 D6:2 | D6:8 Bb5:4 r:4';
+  const ISLES_A2 = 'Eb5:2 G5:2 Eb6:6 F6:2 G6:4 | Ab6:6 G6:2 Eb6:4 C6:4 | C6:2 Ab5:2 F5:2 Ab5:2 Bb5:2 D6:2 F6:4 | G6:6 F6:2 Eb6:4 r:2 Bb5:2';
+  const ISLES_A2H = 'Bb4:2 Eb5:2 G5:6 Ab5:2 Bb5:4 | C6:6 Bb5:2 C6:4 Ab5:4 | Ab5:2 F5:2 C5:2 F5:2 F5:2 Bb5:2 D6:4 | Bb5:6 Ab5:2 G5:4 r:4';
+  const ISLES_B = 'C6:6 Bb5:2 Ab5:2 Bb5:2 C6:4 | D6:6 C6:2 Bb5:2 C6:2 D6:4 | Bb5:4 D6:4 G6:6 F6:2 | Eb6:6 D6:2 C6:4 G5:4 | ' +
+    'C6:6 Bb5:2 Ab5:2 Bb5:2 C6:4 | D6:6 C6:2 Bb5:2 D6:2 F6:4 | Bb5:2 Eb6:2 G6:4 Ab6:6 G6:2 | F6:12 D6:2 Bb5:2';
+  const ISLES_C = 'G5:4 Eb6:8 D6:2 C6:2 | C6:4 Ab6:8 G6:2 Eb6:2 | Bb5:4 G6:8 F6:2 Eb6:2 | F6:4 Eb6:4 D6:8';
+  const ISLES_WHALE = 'r:4 G3:6 C4:6 | r:4 Ab3:4 Eb4:8 | r:4 Bb3:4 G4:8 | F4:8 D4:4 r:4';
+  const ISLES_D = 'Ab5:2 C6:2 Eb6:4 C6:2 Eb6:2 Ab6:4 | Bb5:2 D6:2 F6:4 D6:2 F6:2 Bb6:4 | G6:4 F6:2 D6:2 Eb6:4 G6:4 | Eb6:2 Gb6:2 Eb6:2 Cb6:2 F6:2 Ab6:2 F6:2 Db6:2';
+  SONGS.isles = {
+    id: 'isles', title: 'Cloud Hopper', bpm: 136, bars: 24, key: ['Eb', 'major'],
+    chords: 'Eb | Ab | Cm | Bb | Eb | Ab | Fm7 Bb | Eb | Ab | Bb | Gm | Cm | Ab | Bb | Eb/G Ab | Bb | Cm | Ab | Eb | Bbsus4 Bb | Ab | Bb | Gm Cm | Cb Db',
+    parts: [
+      { v: 'flute', n: ISLES_A1 + ' | ' + ISLES_A2, g: 0.36, rev: 0.28, dly: 0.16 },
+      { v: 'glock', n: ISLES_A1 + ' | ' + ISLES_A2, g: 0.14, pan: 0.3, rev: 0.25 },
+      { v: 'flute', n: ISLES_A2H, from: 5, g: 0.17, pan: -0.3, rev: 0.28 },
+      { v: 'lead', n: ISLES_B, from: 9, g: 0.5, rev: 0.22, dly: 0.2 },
+      { v: 'bell', n: ISLES_B, from: 9, g: 0.32, pan: -0.2, rev: 0.3 },
+      { v: 'sawLead', n: ISLES_B, from: 9, oct: -1, g: 0.2, pan: 0.25 },
+      { v: 'celesta', n: ISLES_C, from: 17, g: 0.36, rev: 0.35, dly: 0.25 },
+      { v: 'theremin', legato: 1, n: ISLES_WHALE, from: 17, g: 0.1, pan: -0.25, rev: 0.55, P: { glide: 0.2, vib: 0.016, vr: 3.4, a: 0.22, r: 0.45 } },
+      { v: 'lead', n: ISLES_D, from: 21, g: 0.46, rev: 0.22, dly: 0.2 },
+      { v: 'bell', n: ISLES_D, from: 21, g: 0.3, pan: -0.2, rev: 0.3 },
+      { v: 'harp', arp: '0 1 2 3 4 3 2 1', rhythm: 'x.x.x.x.x.x.x.x.', lo: 'Bb3', hi: 'Bb5', bars: [1, 8], g: 0.2, pan: -0.3, rev: 0.3 },
+      { v: 'harp', arp: '0 1 2 3 4 5 6 7', rhythm: 'xxxxxxxx........', lo: 'Bb3', hi: 'Bb5', bars: [17, 20], g: 0.3, pan: -0.3, rev: 0.4 },
+      { v: 'chip', arp: '0 1 2 1 3 2 4 3 0 1 2 1 3 2 4 3', rhythm: 'xxxxxxxxxxxxxxxx', lo: 'Bb4', hi: 'Bb6', bars: [9, 16], g: 0.12, pan: 0.35, dly: 0.15 },
+      { v: 'chip', arp: '0 1 2 1 3 2 4 3 0 1 2 1 3 2 4 3', rhythm: 'xxxxxxxxxxxxxxxx', lo: 'Bb4', hi: 'Bb6', bars: [21, 24], g: 0.12, pan: 0.35, dly: 0.15 },
+      { v: 'supersaw', chord: 'x...............', lo: 'G3', hi: 'Eb5', voices: 4, bars: [1, 8], g: 0.13, rev: 0.3 },
+      { v: 'supersaw', chord: 'x...............', lo: 'G3', hi: 'Eb5', voices: 4, bars: [9, 16], g: 0.2, rev: 0.3 },
+      { v: 'warmPad', chord: 'x...............', lo: 'G3', hi: 'Eb5', voices: 4, bars: [17, 20], g: 0.16, rev: 0.4 },
+      { v: 'supersaw', chord: 'x.......x.......', lo: 'G3', hi: 'Eb5', voices: 4, bars: [21, 24], g: 0.2, rev: 0.3 },
+      { v: 'sub', bass: '1.......5...1...', lo: 'Ab1', bars: [1, 8], g: 0.45 },
+      { v: 'bass', bass: '1..1..1.8..8..5.', lo: 'Ab1', bars: [9, 16], g: 0.5 },
+      { v: 'sub', bass: '1...............', lo: 'Ab1', bars: [17, 20], g: 0.4 },
+      { v: 'bass', bass: '1..1..1.8..8..5.', lo: 'Ab1', bars: [21, 24], g: 0.5 }
+    ],
+    drums: {
+      kit: 'pop',
+      pat: {
+        A: { k: 'x.......x.x.....', c: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', S: '..x...x...x...x.' },
+        B: { k: 'x...x...x...x...', c: '....x.......x...', o: '..x...x...x...x.', S: 'xoxoxoxoxoxoxoxo', m: '....x.......x...' },
+        D: { k: 'x...............', S: 'x.o.x.o.x.o.x.o.' },
+        E: { k: 'x...x...x...x...', c: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', S: 'xoxoxoxoxoxoxoxo' },
+        F: { k: 'x.......x.x.....', c: '....x.......x.xx', h: 'x.x.x.x.........', t: '........x.x.....', u: '............x.x.' },
+        R: { k: 'x...x...x...x...', s: 'o.o.o.o.x.x.xxXX', h: 'x.x.x.x.x.x.....' }
+      },
+      order: 'AAAAAAAF BBBBBBBF DDDD EEER', crash: [1, 9, 17, 21]
+    },
+    mix: { rev: [0.86, 0.3, 0.55], dly: [0.75, 0.35, 3000, 0.45], lv: -13 }
+  };
+
+  /* Reef — "Bubble Lagoon" (E major, 122, a light lilt): swimming along the
+   * coral. A kalimba hook hops up the chord and stops for breath while a
+   * bubble pops in the gap, a celesta shimmering with it; an organ skank on
+   * two and four, a rubbery bass and a kick on every beat keep it bobbing.
+   * The middle hands the tune to a vibraphone over rippling harp, drifts
+   * through C major (sunlight through the water) and turns back to the hook. */
+  const REEF_A = 'B4:2 E5:2 G#5:1 r:1 B5:2 r:2 G#5:2 B5:2 C#6:2 | B5:6 G#5:2 E5:2 F#5:2 G#5:4 | A4:2 C#5:2 E5:1 r:1 A5:2 r:2 E5:2 A5:2 B5:2 | B5:6 A5:2 F#5:2 D#5:2 F#5:4 | ' +
+    'C#5:2 E5:2 G#5:1 r:1 C#6:2 r:2 G#5:2 C#6:2 D#6:2 | E6:6 C#6:2 A5:2 B5:2 C#6:4 | A5:2 F#5:2 A5:2 C#6:2 E6:2 C#6:2 A5:2 C#6:2 | D#6:6 C#6:2 B5:2 A5:2 F#5:2 G#5:2';
+  const REEF_B = 'E5:2 A5:2 C#6:6 B5:2 A5:4 | F#5:2 B5:2 D#6:6 C#6:2 B5:4 | G#5:2 B5:2 D#6:2 G#6:6 D#6:4 | E6:6 C#6:2 G#5:8 | ' +
+    'E5:2 A5:2 C#6:6 E6:2 C#6:4 | F#5:2 B5:2 D#6:6 F#6:2 D#6:4 | G5:2 C6:2 E6:6 D6:2 C6:2 B5:2 | A5:6 F#5:2 D#5:4 B4:4';
+  const REEF_C = 'E6:2 B5:2 G#5:1 r:1 E6:2 r:2 B5:2 E6:2 F#6:2 | G#6:6 E6:2 C#6:2 B5:2 C#6:4 | A5:2 C#6:2 E6:1 r:1 A6:2 r:2 F#6:2 E6:2 C#6:2 | D#6:6 C#6:2 B5:2 A5:2 F#5:2 D#5:2';
+  SONGS.reef = {
+    id: 'reef', title: 'Bubble Lagoon', bpm: 122, swing: 0.2, bars: 20, key: ['E', 'major'],
+    chords: 'E | E/G# | A | B | C#m | A | F#m7 | B7 | A | B | G#m | C#m | A | B | C | B7 | E | C#m | A F#m7 | B7',
+    parts: [
+      { v: 'kalimba', n: REEF_A, g: 0.62, pan: 0.05, rev: 0.22, dly: 0.12 },
+      { v: 'celesta', n: REEF_A, g: 0.16, pan: 0.3, rev: 0.3 },
+      { v: 'vibes', n: REEF_B, from: 9, g: 0.62, rev: 0.3, dly: 0.18 },
+      { v: 'kalimba', n: REEF_C, from: 17, g: 0.62, pan: 0.05, rev: 0.22, dly: 0.12 },
+      { v: 'celesta', n: REEF_C, from: 17, g: 0.16, pan: 0.3, rev: 0.3 },
+      { v: 'harp', arp: '0 1 2 3 4 5 4 3 1 2 3 4 5 6 5 4', rhythm: 'xxxxxxxxxxxxxxxx', lo: 'E4', hi: 'E6', bars: [9, 20], g: 0.18, pan: -0.35, rev: 0.3, dly: 0.15 },
+      { v: 'bloop', arp: '3 5 2', rhythm: '--------x.x-----' + '----x.......x.x.', lo: 'E5', hi: 'E7', g: 0.3, pan: -0.3, dly: 0.25 },
+      { v: 'organStab', chord: '....x.......x...', lo: 'G#3', hi: 'G#4', voices: 3, g: 0.16, pan: 0.3, gate: 0.35, P: { over: { bars: [0, 0.8, 0.3, 0.6, 0.25, 0.3, 0.1, 0] } } },
+      { v: 'bass', bass: '1..1..8.--5.8.5.', lo: 'E1', g: 0.62, P: { cut: 360, env: 4, envTau: 0.07, d: 0.18, s: 0.45 } },
+      { v: 'warmPad', chord: 'x...............', lo: 'G#3', hi: 'E5', voices: 3, g: 0.1, rev: 0.4, P: { a: 0.6 } }
+    ],
+    drums: {
+      kit: 'calypso',
+      over: { k: ['kick', { f0: 120, f1: 55, tau: 0.12, click: 0.2 }, 0.9, 0, 0], h: ['hat', { tau: 0.025 }, 0.13, 0.35, 0], m: ['tamb', {}, 0.12, -0.4, 0.05] },
+      pat: {
+        A: { k: 'x...x...x...x...', r: '....x.......x...', S: 'xoxoxoxoxoxoxoxo', q: 'x.......x.....x.', w: '..x...x...x..x..' },
+        B: { k: 'x...x...x...x...', r: '....x.......x...', S: 'xoxoxoxoxoxoxoxo', q: 'x.....x.x.......', w: '..x..x....x..x..', h: '..x...x...x...x.', m: '....x.......x...' },
+        F: { k: 'x...x...x...x...', r: '....x.......x...', S: 'xoxoxoxo........', q: '........x.x.xx..', w: '.........x.x..xx' }
+      },
+      order: 'AAAAAAAF BBBBBBBF AAAF', crash: [1, 9, 17]
+    },
+    mix: { rev: [0.84, 0.35, 0.55], dly: [0.75, 0.33, 2400, 0.45], lv: -13 }
+  };
+
+  /* Dino — "Stomp Valley" (A♭ major, 144): giant, friendly footsteps.
+   * Timpani follow the chords and stomp with the kick, toms and claps drive a
+   * tribal groove, and the brass hook leaps up a fourth and a fifth over an
+   * A♭ pedal that lifts through B♭ major (the bright, heroic lydian chord).
+   * Little xylophone feet scamper in the gaps; the second time round a horn
+   * harmony and a soaring flute join in, and the bridge climbs through F
+   * minor and G♭ before an E♭7 sends it back to the top. */
+  const DINO_A = 'Eb5:3 Ab5:1 Ab5:4 C6:6 Bb5:2 | Bb5:2 C6:2 D6:6 C6:2 Bb5:4 | Ab5:3 Db6:1 Db6:4 F6:6 Eb6:2 | Eb6:4 C6:2 Ab5:2 Eb5:8 | ' +
+    'F5:3 Ab5:1 C6:4 F6:6 Eb6:2 | Db6:2 C6:2 Ab5:4 F5:6 Ab5:2 | Bb5:3 Db6:1 F6:4 Eb6:3 Db6:1 Bb5:4 | Ab5:8 r:4 C5:2 Db5:2';
+  const DINO_AH = 'C5:3 Eb5:1 Eb5:4 Ab5:6 G5:2 | F5:2 Ab5:2 Bb5:6 Ab5:2 F5:4 | F5:3 Ab5:1 Ab5:4 Db6:6 C6:2 | C6:4 Ab5:2 Eb5:2 C5:8 | ' +
+    'C5:3 F5:1 Ab5:4 C6:6 Bb5:2 | Ab5:2 Ab5:2 F5:4 Db5:6 F5:2 | F5:3 Bb5:1 Db6:4 Bb5:3 Bb5:1 G5:4 | Eb5:8 r:4 Ab4:2 Bb4:2';
+  const DINO_B = 'F5:4 Ab5:4 Db6:6 C6:2 | Bb5:4 G5:4 Eb5:8 | Eb5:4 G5:4 C6:6 Bb5:2 | Ab5:4 C6:2 Ab5:2 F5:8 | ' +
+    'F5:4 Ab5:4 Db6:4 F6:4 | Gb6:6 F6:2 Db6:4 Bb5:4 | F6:4 Db6:2 Bb5:2 Ab5:4 F5:4 | G5:2 Bb5:2 Db6:2 Eb6:6 Bb5:2 G5:1 F5:1';
+  const DINO_SKY = 'Eb6:16 | F6:16 | F6:16 | Eb6:16 | C6:16 | Db6:8 F6:8 | F6:8 G6:8 | Ab6:12 r:4';
+  const DINO_FEET = 'r:16 | r:16 | r:16 | r:8 Eb6:1 F6:1 Ab6:1 r:1 C7:1 r:1 Ab6:2 | r:16 | r:16 | r:16 | r:8 Ab6:1 Eb6:1 C6:1 Eb6:1 Ab6:2 r:2';
+  SONGS.dino = {
+    id: 'dino', title: 'Stomp Valley', bpm: 144, bars: 24, key: ['Ab', 'major'],
+    chords: 'Ab | Bb/Ab | Db/Ab | Ab | Fm | Db | Bbm7 Eb | Ab | Ab | Bb/Ab | Db/Ab | Ab | Fm | Db | Bbm7 Eb | Ab | Db | Eb | Cm | Fm | Db | Gb | Bbm7 | Eb7',
+    parts: [
+      { v: 'brass', n: DINO_A + ' | ' + DINO_A + ' | ' + DINO_B, g: 0.5, rev: 0.2, dly: 0.08 },
+      { v: 'brass', n: DINO_AH, from: 9, g: 0.3, pan: -0.3, rev: 0.22 },
+      { v: 'brass', n: DINO_B, from: 17, oct: -1, g: 0.22, pan: 0.3, rev: 0.22 },
+      { v: 'flute', n: DINO_SKY, from: 9, g: 0.13, pan: 0.25, rev: 0.35, dly: 0.12 },
+      { v: 'xylo', n: DINO_FEET + ' | ' + DINO_FEET, g: 0.3, pan: 0.35, rev: 0.15 },
+      { v: 'timp', bass: '1.......5.......', lo: 'Ab1', bars: [1, 16], g: 0.5, rev: 0.2 },
+      { v: 'timp', bass: '1...5...1...5...', lo: 'Ab1', bars: [17, 24], g: 0.45, rev: 0.2 },
+      { v: 'bass', bass: '1.1.1.1.1.1.1.1.', lo: 'Ab1', g: 0.5, P: { cut: 420, env: 2.5 } },
+      { v: 'pad', chord: 'x...............', lo: 'Eb3', hi: 'C5', voices: 4, g: 0.12, rev: 0.3 }
+    ],
+    drums: {
+      kit: 'jungle',
+      over: { k: ['kick', { f0: 105, f1: 38, tau: 0.3, click: 0.3 }, 1.0, 0, 0.05], c: ['clap', { tail: 0.1 }, 0.42, 0, 0.2] },
+      pat: {
+        A: { k: 'x.......x.x.....', c: '....x.......x...', t: '...x.......x....', u: '......x.......x.', S: 'xoxoxoxoxoxoxoxo' },
+        B: { k: 'x.....x.x.x.....', c: '....x.......x...', t: '...x.......x....', u: '..x...x...x..xx.', w: 'x.x.x.x.x.x.x.x.', S: 'XoxoXoxoXoxoXoxo' },
+        C: { k: 'x.......x.......', c: '....x.......x...', t: 'x..x..x...x.....', u: '.....x..x...x.x.', b: 'x..x..x...x.x...', S: 'xoxoxoxoxoxoxoxo' },
+        F: { k: 'x.......x.......', c: '....x...........', t: '....x.x.x...x...', u: '.........x.x.xXX', S: 'xoxoxoxo........' }
+      },
+      order: 'AAAAAAAF BBBBBBBF CCCCCCCF', crash: [1, 9, 17, 21]
+    },
+    mix: { rev: [0.85, 0.4, 0.55], dly: [0.75, 0.2, 2400, 0.3], lv: -13 }
+  };
+
+  /* Toy box — "Toy Parade" (D♭ major, 160): the toys march out. A cheeky
+   * kazoo leads in dotted march steps with a chromatic wiggle, over an
+   * oom-pah of square bass and xylophone; the toy piano and a music-box
+   * glockenspiel take the middle (with a sly turn to G♭ minor), then the
+   * kazoo comes back in B♭ minor with the toy piano an octave above and
+   * tumbles down a scale into the top again. Xylophone runs fill the gaps. */
+  const TOY_A = 'Ab4:3 Db5:1 F5:2 Ab5:2 F5:2 Db5:2 Ab4:4 | C5:3 Eb5:1 Gb5:2 Ab5:2 Gb5:1 F5:1 Eb5:2 C5:4 | Db5:3 F5:1 Ab5:2 Db6:2 C6:1 Db6:1 Eb6:2 Db6:4 | Bb5:2 Ab5:2 Gb5:2 Eb5:2 Db5:4 r:4 | ' +
+    'Ab4:3 Db5:1 F5:2 Ab5:2 F5:2 Db5:2 Ab4:4 | Bb4:3 Db5:1 F5:2 Bb5:2 Ab5:1 Bb5:1 C6:2 Db6:4 | Eb6:2 Db6:2 C6:2 Bb5:2 Ab5:2 Gb5:2 F5:2 Eb5:2 | Db5:2 r:2 Ab4:2 r:2 Db5:4 r:4';
+  const TOY_B = 'Gb5:2 Bb5:2 Db6:2 Gb6:2 F6:1 Gb6:1 Db6:2 Bb5:4 | F5:2 Ab5:2 Db6:2 F6:2 E6:1 F6:1 Db6:2 Ab5:4 | Eb5:2 Ab5:2 C6:2 Eb6:2 D6:1 Eb6:1 C6:2 Gb5:4 | F5:2 Ab5:2 Db6:4 Ab5:2 F5:2 Db5:4 | ' +
+    'Gb5:2 Bb5:2 Db6:2 Gb6:2 F6:1 Gb6:1 Bb6:2 Gb6:4 | A6:2 Gb6:2 Db6:2 A5:2 Bb5:1 A5:1 Gb5:2 Db5:4 | F5:2 Ab5:2 Db6:2 F6:2 Eb6:2 C6:2 Ab5:2 Gb5:2 | Db6:4 Ab5:2 F5:2 Db5:4 r:4';
+  const TOY_C = 'F5:3 F5:1 Bb5:2 Db6:2 F6:2 Db6:2 Bb5:4 | A5:3 A5:1 C6:2 Eb6:2 Db6:1 C6:1 A5:2 F5:4 | Bb5:3 Bb5:1 Db6:2 F6:2 Gb6:1 F6:1 Db6:2 Bb5:4 | G5:3 G5:1 Bb5:2 Db6:2 Eb6:4 r:4 | ' +
+    'Gb5:2 Bb5:2 Db6:2 Gb6:2 F6:1 Gb6:1 Ab6:2 Gb6:4 | Db6:4 Ab5:2 F5:2 Ab5:4 Db6:4 | Eb6:2 Db6:2 Bb5:2 G5:2 Eb5:4 G5:4 | Ab5:2 r:2 Ab5:2 r:2 C6:1 Bb5:1 Ab5:1 Gb5:1 F5:1 Eb5:1 D5:1 Eb5:1';
+  const TOY_RUNS = 'r:16 | r:16 | r:16 | r:12 Db6:1 Eb6:1 F6:1 Gb6:1 | r:16 | r:16 | r:16 | r:12 Ab5:1 Bb5:1 C6:1 Db6:1 | ' +
+    'r:16 | r:16 | r:16 | r:16 | r:16 | r:16 | r:16 | r:12 F5:1 Gb5:1 Ab5:1 Bb5:1 | r:16 | r:16 | r:16 | r:12 G6:1 F6:1 Eb6:1 Db6:1';
+  SONGS.toybox = {
+    id: 'toybox', title: 'Toy Parade', bpm: 160, bars: 24, key: ['Db', 'major'],
+    chords: 'Db | Ab7 | Db | Gb | Db | Bbm | Eb7 Ab7 | Db | Gb | Db | Ab7 | Db | Gb | Gbm | Db/Ab Ab7 | Db | Bbm | F7 | Bbm | Eb7 | Gb | Db/Ab | Eb7 | Ab7',
+    parts: [
+      { v: 'kazoo', n: TOY_A, g: 0.7, rev: 0.15, dly: 0.08 },
+      { v: 'toy', n: TOY_B, from: 9, g: 0.55, pan: 0.05, rev: 0.2, dly: 0.1 },
+      { v: 'glock', n: TOY_B, from: 9, g: 0.16, pan: 0.3, rev: 0.25 },
+      { v: 'kazoo', n: TOY_C, from: 17, g: 0.7, rev: 0.15, dly: 0.08 },
+      { v: 'toy', n: TOY_C, from: 17, oct: 1, g: 0.18, pan: 0.3, rev: 0.2 },
+      { v: 'xylo', n: TOY_RUNS, g: 0.32, pan: -0.3, rev: 0.15 },
+      { v: 'xylo', arp: '1', rhythm: '....x.......x...', lo: 'F4', hi: 'F5', g: 0.2, pan: -0.25, rev: 0.1 },
+      { v: 'xylo', arp: '2', rhythm: '....x.......x...', lo: 'F4', hi: 'F5', g: 0.2, pan: -0.25, rev: 0.1 },
+      { v: 'bassSq', bass: '1...5...1...5...', lo: 'Ab1', g: 0.45, gate: 0.55 }
+    ],
+    drums: {
+      kit: 'toy',
+      pat: {
+        A: { k: 'x.......x.......', s: '....x..o....x.oo', m: '..x...x...x...x.' },
+        B: { k: 'x.......x.....x.', s: '....x..o....x.oo', m: '..x...x...x...x.', b: '.......x.......x' },
+        F: { k: 'x.......x.......', s: 'x..ox..ox.xoXXXX', m: '..x...x.........', t: '........x.......', u: '..........x.....' }
+      },
+      order: 'AAAAAAAF BBBBBBBF AAAAAAAF', crash: [1, 9, 17]
+    },
+    mix: { rev: [0.72, 0.4, 0.4], dly: [0.5, 0.25, 3000, 0.35], lv: -13 }
+  };
+
+  /* Carnival — "Midway Mayhem" (B major, 172, a fast waltz): sunset at the
+   * funfair. A steam calliope, with the band organ's glockenspiel, swirls up
+   * the chord and turns about itself over a tuba oom and organ pah-pahs; a
+   * horn harmony joins it the second time; the trio moves up to E for a big
+   * brass tune with calliope whoops in the gaps, then a swirling sequence
+   * slips through E minor (the carousel's sigh) and an F♯7 spins it back to
+   * the top. Written in three-four (eight waltz bars to six grid bars). */
+  const CARN_A = 'F#5:4 B5:4 D#6:4 | F#6:8 D#6:4 | E6:2 D#6:2 E6:2 F#6:2 G#6:4 | F#6:8 D#6:4 | ' +
+    'D#6:2 C#6:2 B5:2 C#6:2 D#6:4 | E#6:2 D#6:2 C#6:2 B5:2 G#5:4 | A#5:2 C#6:2 E6:4 F#6:4 | E6:4 C#6:4 A#5:2 C#6:2';
+  const CARN_A2 = 'F#5:4 B5:4 D#6:4 | F#6:8 D#6:4 | E6:2 D#6:2 E6:2 F#6:2 G#6:4 | F#6:8 D#6:4 | ' +
+    'D#6:2 C#6:2 B5:2 C#6:2 D#6:4 | G#6:6 E6:2 B5:4 | A#5:2 C#6:2 E6:2 D#6:2 C#6:4 | B5:8 r:4';
+  const CARN_A2H = 'D#5:4 F#5:4 B5:4 | D#6:8 B5:4 | B5:2 B5:2 B5:2 D#6:2 E6:4 | D#6:8 B5:4 | ' +
+    'B5:2 A#5:2 G#5:2 A#5:2 B5:4 | E6:6 B5:2 G#5:4 | F#5:2 A#5:2 C#6:2 B5:2 A#5:4 | D#5:8 r:4';
+  const CARN_TRIO = 'B4:4 E5:4 G#5:4 | B5:8 G#5:4 | A5:4 F#5:4 D#5:4 | B5:8 A5:4 | ' +
+    'G#5:4 B5:4 E6:4 | E6:6 C#6:2 A5:4 | A#5:4 C#6:2 E6:2 F#6:4 | E6:4 C#6:4 A#5:4';
+  const CARN_WHOOP = 'r:12 | r:4 E6:2 F#6:2 G#6:2 B6:2 | r:12 | r:4 D#6:2 E6:2 F#6:2 A6:2 | r:12 | r:12 | r:12 | r:4 C#6:2 E6:2 F#6:2 A#6:2';
+  const CARN_C = 'D#6:2 E6:2 D#6:2 C#6:2 B5:4 | C#6:2 D#6:2 C#6:2 A#5:2 G5:4 | B5:2 C#6:2 B5:2 A#5:2 G#5:4 | A5:4 D#6:4 F#6:4 | ' +
+    'G#6:6 F#6:2 E6:4 | G6:6 F#6:2 E6:4 | D#6:4 B5:4 F#5:4 | A#5:4 C#6:2 E6:2 A#5:2 C#6:2';
+  SONGS.carnival = {
+    id: 'carnival', title: 'Midway Mayhem', bpm: 172, meter: 12, bars: 24, key: ['B', 'major'],
+    chords: rebar('B | B | E | B | G#m | C#7 | F#7 | F#7 | B | B | E | B | G#m | E | F#7 | B | ' +
+      'E | E | B7 | B7 | E | A | F#7 | F#7 | B | D#7 | G#m | B7 | E | Em | B/F# | F#7', 12, true),
+    parts: [
+      { v: 'calliope', n: rebar(CARN_A + ' | ' + CARN_A2, 12), g: 0.46, rev: 0.2, dly: 0.08 },
+      { v: 'glock', n: rebar(CARN_A + ' | ' + CARN_A2, 12), g: 0.13, pan: 0.3, rev: 0.25 },
+      { v: 'brass', n: rebar(CARN_A2H, 12), from: 7, g: 0.4, pan: -0.3, rev: 0.22 },
+      { v: 'brass', n: rebar(CARN_TRIO, 12), from: 13, g: 0.85, rev: 0.2, dly: 0.08 },
+      { v: 'calliope', n: rebar(CARN_WHOOP, 12), from: 13, g: 0.3, pan: 0.2, rev: 0.25, dly: 0.15 },
+      { v: 'calliope', n: rebar(CARN_C, 12), from: 19, g: 0.46, rev: 0.2, dly: 0.08 },
+      { v: 'glock', n: rebar(CARN_C, 12), from: 19, g: 0.13, pan: 0.3, rev: 0.25 },
+      { v: 'brass', n: rebar(CARN_C, 12), from: 19, oct: -1, g: 0.24, pan: -0.3, rev: 0.22 },
+      { v: 'organStab', chord: '----x...x...', lo: 'D#4', hi: 'D#5', voices: 3, g: 0.2, pan: -0.2, gate: 0.6 },
+      { v: 'brass', bass: '1...--------5...--------', lo: 'B1', g: 0.55, P: { cut: 700, cutEnv: 1.2, cutTau: 0.1, vib: 0, a: 0.012, d: 0.25, s: 0.6 } },
+      { v: 'sub', bass: '1...--------5...--------', lo: 'B1', g: 0.3 }
+    ],
+    drums: {
+      kit: 'pop',
+      over: { k: ['kick', { f0: 120, f1: 50, tau: 0.15, click: 0.2 }, 0.8, 0, 0], r: ['ride', {}, 0.16, 0.3, 0.05] },
+      pat: {
+        W: { k: 'x...........', r: 'x...........', s: '....o...o...', h: '..x...x...x.' },
+        T: { k: 'x...........', r: 'x...........', c: '....x...x...', h: 'x.x.x.x.x.x.', m: '....x...x...' },
+        C: { k: 'x.......x...', r: 'x...........', s: '....x...x...', h: 'x.x.x.x.x.x.', m: '..x...x...x.' },
+        F: { k: '....x.......x...', s: 'o...x.o.x.x.xxXX', h: 'x.x.x...........', t: '........x.......', u: '..........x.....' }
+      },
+      order: 'WWWWWF WWWWWF TTTTTF CCCCCF', crash: [1, 7, 13, 19]
+    },
+    mix: { rev: [0.8, 0.4, 0.45], dly: [1, 0.22, 2600, 0.3], lv: -13 }
+  };
+
+  /* Neon — "Neon Nights" (F♯ minor, 118): synthwave down a glowing city at
+   * night. A big saw lead sings a syncopated tune over the i–VI–III–VII
+   * turn, a galloping octave bass and a snare drenched in reverb; the chorus
+   * lifts through B minor and A major 7 with the lead doubled an octave
+   * below and syncopated supersaw stabs pumping under the kick; then a
+   * glassy electric piano sings a slower verse while the arpeggio keeps
+   * spinning, and C♯7 drops it back to the start. */
+  const NEON_A = 'C#5:3 F#5:3 A5:4 G#5:2 A5:2 C#6:2 | C#6:6 A5:2 F#5:4 D5:4 | C#5:3 E5:3 A5:4 G#5:2 A5:2 B5:2 | B5:6 G#5:2 E5:4 r:4 | ' +
+    'C#5:3 F#5:3 A5:4 C#6:2 F#6:4 | F#6:6 C#6:2 A5:4 F#5:4 | D6:3 C#6:3 B5:2 A5:2 F#5:2 D5:4 | C#5:4 F#5:4 E#5:4 G#5:4';
+  const NEON_B = 'F#6:6 E6:2 D6:4 B5:4 | E6:6 D6:2 B5:4 G#5:4 | C#6:4 E6:4 G#6:6 E6:2 | F#6:8 C#6:4 A5:4 | ' +
+    'F#6:6 E6:2 D6:4 B5:2 D6:2 | E6:4 G#6:4 B6:6 G#6:2 | G#6:4 E#6:4 C#6:4 B5:4 | E#6:6 C#6:2 G#5:4 E#5:4';
+  const NEON_C = 'A5:4 C#6:4 F#6:8 | G#6:6 F#6:2 E6:4 B5:4 | D6:4 F#6:4 A6:8 | G#6:6 E#6:2 C#6:4 G#5:4';
+  SONGS.neon = {
+    id: 'neon', title: 'Neon Nights', bpm: 118, bars: 20, key: ['F#', 'minor'],
+    chords: 'F#m | Dmaj7 | A | E | F#m | Dmaj7 | Bm7 | C#sus4 C# | Bm7 | E | Amaj7 | Dmaj7 | Bm7 | E | C#7 | C#7 | Dmaj7 | E | Bm7 | C#7',
+    parts: [
+      { v: 'sawLead', n: NEON_A + ' | ' + NEON_B, g: 0.52, rev: 0.25, dly: 0.28 },
+      { v: 'lead', n: NEON_B, from: 9, oct: -1, g: 0.2, pan: -0.25, dly: 0.15 },
+      { v: 'ep', n: NEON_C, from: 17, g: 0.32, rev: 0.3, dly: 0.3 },
+      { v: 'bellSoft', n: NEON_C, from: 17, g: 0.12, pan: 0.3, rev: 0.35 },
+      { v: 'sawLead', arp: '0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 3', rhythm: 'xxxxxxxxxxxxxxxx', lo: 'F#4', hi: 'F#5', g: 0.22, pan: 0.3, dly: 0.2, pump: 1,
+        P: { d: 0.1, s: 0, cut: 1600, cutEnv: 2.5, cutTau: 0.06, vib: 0, det: 0.006 } },
+      { v: 'pad', chord: 'x...............', lo: 'E3', hi: 'E5', voices: 4, bars: [1, 8], g: 0.15, rev: 0.3, pump: 1 },
+      { v: 'supersaw', chord: 'x..x..x.x..x..x.', lo: 'E3', hi: 'E5', voices: 4, bars: [9, 16], g: 0.18, rev: 0.25, pump: 1, gate: 0.75 },
+      { v: 'warmPad', chord: 'x...............', lo: 'E3', hi: 'E5', voices: 4, bars: [17, 20], g: 0.17, rev: 0.4, pump: 1 },
+      { v: 'bass', bass: '1.181.181.181.18', lo: 'F#1', g: 0.45, P: { cut: 420, env: 3, envTau: 0.08 } }
+    ],
+    drums: {
+      kit: 'electro',
+      over: { s: ['snare', { tone: 185, snap: 0.2 }, 0.5, 0, 0.5] },
+      pat: {
+        A: { k: 'x.......x.x.....', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', o: '......x.......x.' },
+        B: { k: 'x...x...x...x...', s: '....x.......x...', c: '....x.......x...', h: 'xxxxxxxxxxxxxxxx', o: '..x...x...x...x.' },
+        F: { k: 'x.......x.x.....', s: '....x.......x.xx', h: 'x.x.x.x.........', t: '........x..x....', u: '..........x..x..' },
+        D: { k: 'x.......x.......', s: '....x.......x...', h: '..x...x...x...x.' },
+        R: { k: 'x...x...x...x...', s: 'o.o.o.o.x.o.x.xX', h: 'x.x.x.x.x.x.x.x.' }
+      },
+      order: 'AAAAAAAF BBBBBBBF DDDR', crash: [1, 9, 17]
+    },
+    mix: { rev: [0.88, 0.3, 0.6], dly: [0.75, 0.4, 2600, 0.5], pump: [0.45, 0.14], lv: -13 }
+  };
+
+  /* Factory — "Gearworks" (G minor, 134): a clockwork factory running like
+   * a watch. A whistled hook ticks out staccato over pizzicato and a plucked
+   * ostinato that mesh like gears, the bass steps down a chromatic line (G,
+   * F♯, F, E, E♭) and the wood blocks go tick-tock; the middle swaps to
+   * brass stabs answered by the whistle swinging up and down like a
+   * pendulum, an anvil clanking on the downbeat, and the end builds steam on
+   * D7 to wind it back to the top. */
+  const FACTORY_A = 'G5:2 r:2 D5:2 r:2 G5:2 A5:2 Bb5:2 r:2 | Bb5:2 r:2 D5:2 r:2 Bb5:2 A5:2 G5:2 r:2 | G5:2 r:2 D5:2 r:2 G5:2 A5:2 Bb5:2 D6:2 | C6:4 G5:2 E5:2 G5:4 r:4 | ' +
+    'Bb5:2 r:2 G5:2 r:2 Bb5:2 C6:2 Eb6:2 r:2 | Eb6:2 D6:2 C6:2 G5:2 Eb5:4 r:4 | C6:2 A5:2 Eb5:2 G5:2 F#5:2 A5:2 C6:2 D6:2 | Bb5:4 G5:2 D5:2 G5:2 r:6';
+  const FACTORY_STABS = 'D5:2 r:1 D5:1 F5:2 Bb5:2 r:8 | C5:2 r:1 C5:1 F5:2 A5:2 r:8 | Bb4:2 r:1 Bb4:1 D5:2 G5:2 r:8 | A4:2 r:1 A4:1 D5:2 F#5:2 r:8 | ' +
+    'G5:2 r:1 G5:1 Bb5:2 Eb6:2 r:8 | F5:2 r:1 F5:1 Bb5:2 D6:2 r:8 | Eb5:2 r:1 Eb5:1 G5:2 C6:2 r:2 Bb5:2 r:4 | F#5:2 r:1 F#5:1 A5:2 D6:2 r:2 C6:2 r:2 A5:2';
+  const FACTORY_SWING = 'r:8 F5:2 Bb5:2 D6:4 | r:8 C6:2 A5:2 F5:4 | r:8 G5:2 Bb5:2 D6:4 | r:8 C6:2 A5:2 F#5:2 D5:2 | ' +
+    'r:8 Eb6:2 D6:2 Bb5:4 | r:8 F5:2 Bb5:2 D6:4 | r:8 Eb6:2 r:6 | r:16';
+  const FACTORY_C = 'Bb5:6 G5:2 Eb5:4 G5:4 | C6:6 G5:2 Eb5:4 G5:4 | A5:4 C6:4 F#5:4 A5:4 | D6:4 C6:2 A5:2 F#5:2 D5:2 F#5:2 A5:2';
+  const FACTORY_CH = 'G5:6 Eb5:2 Bb4:4 Eb5:4 | G5:6 Eb5:2 C5:4 Eb5:4 | F#5:4 A5:4 D5:4 F#5:4 | A5:4 A5:2 F#5:2 D5:2 A4:2 D5:2 F#5:2';
+  SONGS.factory = {
+    id: 'factory', title: 'Gearworks', bpm: 134, bars: 20, key: ['G', 'minor'],
+    chords: 'Gm | Gm/F# | Gm/F | C/E | Eb | Cm | Am7b5 D7 | Gm | Bb | F/A | Gm | D7 | Eb | Bb/D | Cm7 | D7 | Eb | Cm | D7 | D7',
+    parts: [
+      { v: 'whistle', n: FACTORY_A, g: 0.58, rev: 0.18, dly: 0.12, P: { scoop: 0.05 } },
+      { v: 'brass', n: FACTORY_STABS, from: 9, g: 0.85, rev: 0.18, gate: 0.7 },
+      { v: 'whistle', n: FACTORY_SWING, from: 9, g: 0.42, pan: 0.15, rev: 0.2, dly: 0.15, P: { scoop: 0.05 } },
+      { v: 'whistle', n: FACTORY_C, from: 17, g: 0.42, rev: 0.2, dly: 0.12, P: { scoop: 0.05 } },
+      { v: 'brass', n: FACTORY_CH, from: 17, g: 0.32, pan: -0.3, rev: 0.2 },
+      { v: 'pizz', arp: '0 2 1 2 0 2 1 2', rhythm: 'x.x.x.x.x.x.x.x.', lo: 'G3', hi: 'G4', g: 0.3, pan: -0.3, rev: 0.12 },
+      { v: 'pluck', arp: '3 4 3 5 3 4 3 5', rhythm: '.x.x.x.x.x.x.x.x', lo: 'G4', hi: 'D6', g: 0.3, pan: 0.35, rev: 0.12, P: { t60: 0.45, bright: 0.75 } },
+      { v: 'bassPluck', bass: '1.1.1.1.1.1.1.5.', lo: 'C2', g: 0.5, gate: 0.6 },
+      { v: 'warmPad', chord: 'x...............', lo: 'G3', hi: 'D5', voices: 3, g: 0.09, rev: 0.3 }
+    ],
+    drums: {
+      kit: 'clock',
+      pat: {
+        A: { k: 'x.....x...x.....', s: '....x.......x...', i: 'x.......x.......', j: '....x.......x...', h: '..x...x...x...x.' },
+        B: { k: 'x.....x.x.x.....', s: '....x.......x...', i: 'x...x...x...x...', j: '..x...x...x...x.', h: 'xxxxxxxxxxxxxxxx', a: 'x...............' },
+        C: { k: 'x.....x.x.x.....', s: '....x.......x...', i: 'x...x...x...x...', j: '..x...x...x...x.', h: 'x.x.x.x.x.x.x.x.', a: 'x...............' },
+        F: { k: 'x.....x.x.......', s: '....x...x.x.xxxx', i: 'x.x.x.x.........', o: '............x...' }
+      },
+      order: 'AAAAAAAF BBBBBBBF CCCF', crash: [1, 9, 17]
+    },
+    mix: { rev: [0.7, 0.45, 0.35], dly: [0.5, 0.22, 2600, 0.3], lv: -13 }
   };
 
   /* Podium — "Victory Lap Fanfare" (C major, 108): a brass choir in three
@@ -3148,6 +3624,8 @@
     land: (o) => play('land', o),
     fall: (o) => play('fall', o),
     drone: (o) => play('drone', o),
+    splash: (o) => play('splash', o),
+    whoosh: (o) => play('whoosh', o),
     lap: (o) => play('lap', o),
     finalLap: (o) => play('finalLap', o),
     finish: (place, o) => play(place === 1 ? 'finish:win' : place <= 3 ? 'finish:podium' : 'finish:other', o),

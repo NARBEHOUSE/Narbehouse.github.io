@@ -44,7 +44,9 @@ NK.ui = (function () {
   const CUE_NAMES = ['Off', 'Visual', 'On'];
   const CUE_SPEECH = ['off', 'visual only', 'visual help and occasional hazard calls'];
   const THEME_EMOJI = { meadow: '🌻', shores: '🏖️', candy: '🍭', dunes: '🏜️',
-                        frost: '❄️', spooky: '🎃', lava: '🌋', starlight: '🌌' };
+                        frost: '❄️', spooky: '🎃', lava: '🌋', starlight: '🌌',
+                        jungle: '🌴', isles: '☁️', reef: '🐠', dino: '🦕',
+                        toybox: '🧸', carnival: '🎡', neon: '🌃', factory: '⚙️' };
   const MEDAL = { gold: '🥇', silver: '🥈', bronze: '🥉', done: '✅' };
   const CLASS_NOTE = { easy: 'A gentle pace to learn the tracks', medium: 'Quicker rivals, same tracks',
                        fast: 'Full speed, sharp rivals', mirror: 'Every track flipped left to right' };
@@ -924,7 +926,7 @@ NK.ui = (function () {
       const two = players() === 2;
       const last = lastPicks().type;
       const list = [
-        { icon: '🏆', label: 'Grand Prix', note: 'Four races, points, and a trophy', speech: 'Grand Prix. Four races, points, and a trophy.',
+        { icon: '🏆', label: 'Grand Prix', note: 'A cup of races, points, and a trophy', speech: 'Grand Prix. A cup of races, points, and a trophy.',
           action: () => { call('setType', 'gp'); setScreen('speed'); }, id: 'gp' },
         { icon: '🚩', label: 'Single Race', note: 'Pick any open track', speech: 'Single Race. Pick any open track.',
           action: () => { call('setType', 'single'); setScreen('speed'); }, id: 'single' },
@@ -951,9 +953,9 @@ NK.ui = (function () {
           id: id,
           icon: def.emoji,
           label: def.name + ' <span class="cc">' + def.cc + '</span>',
-          note: locked ? 'Win a trophy in both cups at Fast, Open rules' : CLASS_NOTE[id],
+          note: locked ? 'Win a trophy in the Sunshine and Moonlight cups at Fast, Open rules' : CLASS_NOTE[id],
           enabled: !locked,
-          speech: locked ? 'Mirror. Locked. Win a trophy in both cups at Fast, with Open rules, to unlock it.'
+          speech: locked ? 'Mirror. Locked. Win a trophy in the Sunshine and Moonlight cups at Fast, with Open rules, to unlock it.'
                          : def.name + '. ' + def.cc.replace('cc', ' C C') + '. ' + CLASS_NOTE[id] + '.',
           action: () => { call('setClass', id); setScreen('racer', { player: 0 }); }
         };
@@ -1054,14 +1056,15 @@ NK.ui = (function () {
       const last = lastPicks().cupId;
       const list = cups().map((c, i) => {
         const ok = i < open;
+        const before = i > 0 ? cups()[i - 1].name : '';
         const tr = call('trophy', s.mode, s.classId, c.id);
         const names = (c.tracks || []).map(trackName);
         return {
-          id: c.id, icon: c.emoji, label: esc(c.name), note: names.map(esc).join(' · '),
+          id: c.id, icon: c.emoji, label: esc(c.name), note: names.length + ' races: ' + names.map(esc).join(' · '),
           badge: tr ? MEDAL[tr] : '', enabled: ok,
-          speech: ok ? c.name + '. ' + names.join(', ') + '.' + (tr && tr !== 'done' ? ' You have the ' + tr + ' trophy.' : '')
-                     : c.name + '. Locked. ' + (s.mode === 'open' ? 'Finish in the top three of the Sunshine Cup to open it.'
-                                                                  : 'Finish the Sunshine Cup to open it.'),
+          speech: ok ? c.name + '. ' + names.length + ' races: ' + names.join(', ') + '.' + (tr && tr !== 'done' ? ' You have the ' + tr + ' trophy.' : '')
+                     : c.name + '. Locked. ' + (s.mode === 'open' ? 'Finish in the top three of the ' + before + ' to open it.'
+                                                                  : 'Finish the ' + before + ' to open it.'),
           action: () => { call('setCup', c.id); launch('start'); }
         };
       });
@@ -1069,7 +1072,7 @@ NK.ui = (function () {
       return {
         art: artHTML('🏆'),
         title: 'Choose a Cup',
-        sub: 'Four races. Points for every place. A trophy for the top three. If you use brief taps only, you may need help pressing Pause before the race finishes.',
+        sub: 'Points for every place. A trophy for the top three. If you use brief taps only, you may need help pressing Pause before the race finishes.',
         items: list,
         startIndex: indexWhere(list, (it) => it.id === last, 0),
         speech: 'Choose a cup. If you use brief taps only, you may need help pressing Pause before the race finishes.'
@@ -1134,6 +1137,7 @@ NK.ui = (function () {
         { art: '⚡', title: 'Items and Boosts',
           sub: '<p>Drive through a <b>Power Box</b> to get an item.</p>' +
                '<p>Your item fires by itself after <b>3 to 6 seconds</b>. <b>USE IN</b> beside the item shows the countdown.</p>' +
+               '<p>Collect <b>coins</b>: the more you have when you reach a Power Box, the better your item can be, and coins count for even more when you are behind. Getting an item uses your coins up.</p>' +
                '<p>Glowing pads and road arrows give a free boost. Stay on the <b>inside of a bend</b> to charge a mini-turbo.</p>' },
         { art: '⏸️', title: 'Pausing and Menus',
           sub: '<p>To pause, <b>hold Enter</b> (two players: hold your switch), or press the <b>Pause</b> button.</p>' +

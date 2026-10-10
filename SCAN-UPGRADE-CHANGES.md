@@ -1,5 +1,25 @@
 # Web scan implementation and Companion 1.0.8
 
+## NARBE Racer: Wonder and Dream cups, set pieces, coin luck, item icons — 2026-10-10
+
+User requested publishing the PC Hub NARBE Racer update to the website. Sixteen tracks in four cups: every track's big jump is now a full-width landscape gap (creek, canyon, moat, sea trench, tar pit, ball pit, city street, molten gear pit and more); the Wonder Cup (Jungle Falls, Floating Isles, Coral Reef, Dino Valley) and the new Dream Cup (Toy Room, Funfair, Neon City, Clockwork Factory) add loop-de-loops, steep berms, drive-through waterfalls and themed curtains (bubbles, steam, hologram, confetti), archway runs and sky islands, each with its own scenery set and theme song. Coins are now item luck: the coins a player holds at a Power Box pull the odds toward better items (more when further behind, reaching a jackpot band in last place) and are spent on the item; coin trails hop between two lanes. The HUD item slot and roulette use drawn, centred icons instead of platform emoji.
+
+Controls, scanning, pause, menus and defaults are unchanged; every set piece is automatic. Website analytics, favicons and the scan-badge test page (`tools/ui_mock.html`) are preserved; the browser edition keeps no Electron bridge. Cups unlock in order (Sunshine, Moonlight, Wonder, Dream); Mirror keeps its original Sunshine + Moonlight condition, so saved progress is unaffected.
+
+| File(s) | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/NARBEKART/js/tracks.js, themes.js, world.js, spline.js, race.js, camera.js, items.js, constants.js, game.js, hud.js, ui.js, art-items.js, audio.js | SHARED / ALREADY DONE ON DESKTOP | Sixteen circuits and four cups; landscape gaps, loops, berms, curtains, archways, sky islands; coin luck and lane-hopping coin trails; six new songs; drawn HUD item icons. |
+| bennyshub/apps/games/NARBEKART/js/props-gaps.js, props-wonder.js, props-wonder2.js, props-dream1.js, props-dream2.js, item-icons.js | SHARED ASSETS / ALREADY DONE ON DESKTOP | New procedural scenery, hazards, set pieces and item icons. |
+| bennyshub/apps/games/NARBEKART/css/nk.css | SHARED / ALREADY DONE ON DESKTOP | Curtain wash variants and drawn-icon sizing. |
+| bennyshub/apps/games/NARBEKART/index.html | SHARED / ALREADY DONE ON DESKTOP; WEB ENTRY ADAPTED | New script tags; retained website analytics and favicons, no Electron bridge. |
+| bennyshub/apps/games/NARBEKART/DESIGN.md, readme.md | DOCUMENTATION / ALREADY DONE ON DESKTOP | Cups, set pieces, coins, catalog and load order. |
+| bennyshub/apps/games/NARBEKART/tools/* (except ui_mock.html) | DEV TOOLS (not published) / ALREADY DONE ON DESKTOP | Track validator rules, set-piece race tests, Node scene renderer. |
+| bennyshub/ACCESSIBILITY.md | WEB DOCUMENTATION / DESKTOP EQUIVALENT EXISTS | NARBE Racer row: automatic set pieces, gentle curtain wash, coin rules. |
+| bennyshub/apps/games/games.json, index.html | WEB CATALOG / NOT NEEDED | Listing and homepage card mention the sixteen tracks. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY RECORD / NOT NEEDED | This sync record. |
+
+Validation (Node only, no browser launched on this PC): all 16 circuits and their mirrors pass the track validator; 71 set-piece checks (full 12-kart races on every track in both rule sets and mirrored, loops, camera, coin trails); 21 race, 20 item/guidance/AI and 38-ramp jump-layout checks; audio check with every existing song and sound bit-identical; every script in the page resolves. Previous website files are backed up at `C:/Users/ass/OneDrive/BEN'S SOFTWARE/Documents/Python Projects/Benny's PC Hub/tmp/narberacer-web-sync-20261010/backup`.
+
 ## Battleboats presentation upgrade — 2026-10-08
 
 User requested syncing the already-approved PC Hub Battleboats upgrade into the website game folder. Detailed SVG ships, shot/splash/explosion effects, five original WAV sounds, sunk-ship reveals, fleet/accuracy displays, reduced-motion and volume controls, scanned Pause and persistent results/replay are included. Automatic scenes wait for their owned speech ticket and a 650 ms trailing buffer; paused and abandoned turns cannot resume from stale callbacks.

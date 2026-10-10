@@ -10,7 +10,8 @@ NK.game = (function () {
   Object.keys(defaults).forEach(k => { if (!valid[k].includes(data[k])) data[k] = defaults[k]; });
   let progress = object(U.load('progress', {}));
   progress.cups = Object.assign({ nofail: 1, open: 1 }, object(progress.cups));
-  progress.cups.nofail = U.clamp(+progress.cups.nofail || 1, 1, 2); progress.cups.open = U.clamp(+progress.cups.open || 1, 1, 2);
+  const CUP_COUNT = NK.tracks.CUPS.length;
+  progress.cups.nofail = U.clamp(+progress.cups.nofail || 1, 1, CUP_COUNT); progress.cups.open = U.clamp(+progress.cups.open || 1, 1, CUP_COUNT);
   progress.mirror = progress.mirror === true;
   let trophies = object(U.load('trophies', {})), best = object(U.load('best', {}));
   let picks = object(U.load('picks', {}));
@@ -122,6 +123,8 @@ NK.game = (function () {
     humanEvent('itemUse',(h,id)=>{ const d=NK.items.DEFS[id]; AU.itemUse(id,soundFor(h)); NK.hud.pop(h.human,(d?d.name:id)+'!','item'); });
     humanEvent('hit',h=>AU.hit(R.mode.hitKind,soundFor(h)));
     humanEvent('coin',h=>AU.coin(h.coins,soundFor(h)));
+    // Coins held at a Power Box improve the item (NK.items.odds) and are spent on it.
+    humanEvent('coinsSpent',(h,n)=>{ if(n>=3) NK.hud.pop(h.human,'COIN BONUS!','good'); });
     humanEvent('boost',(h,src)=>{ if(src==='pad') AU.boostPad(soundFor(h)); });
     humanEvent('turbo',(h,level)=>{ AU.turbo(level,soundFor(h)); NK.hud.pop(h.human,'TURBO!','good'); });
     humanEvent('driftLevel',(h,level)=>AU.driftLevel(level,soundFor(h)));
@@ -129,6 +132,13 @@ NK.game = (function () {
     humanEvent('box',h=>AU.boxSmash(soundFor(h)));
     humanEvent('roulette',h=>AU.rouletteTick(0,soundFor(h)));
     humanEvent('jump',h=>AU.jump(soundFor(h))); humanEvent('land',h=>AU.land(soundFor(h)));
+    // Set pieces: bursting through a waterfall, swooping into a loop.
+    humanEvent('splash',(h,fl)=>{
+      const style=(fl&&fl.style)||'water', wet=style==='water'||style==='bubbles'||style==='steam';
+      if(wet&&AU.splash) AU.splash(soundFor(h)); else if(!wet&&AU.whoosh) AU.whoosh(soundFor(h));
+      if(NK.hud.splash) NK.hud.splash(h.human,style);
+    });
+    humanEvent('loop',h=>{ if(AU.whoosh) AU.whoosh(soundFor(h)); });
     humanEvent('fall',h=>{ AU.fall(soundFor(h)); NK.hud.pop(h.human,'RESCUE ON THE WAY','lap'); });
     humanEvent('rescued',h=>AU.drone(soundFor(h)));
     humanEvent('place',(h,old,now)=>{ if(R.time>5) (now<old?AU.placeUp:AU.placeDown)(soundFor(h)); });
@@ -150,7 +160,12 @@ NK.game = (function () {
     if(ghost) {
       const ix=R.time*10, a=ghost.samples[Math.floor(ix)], b=ghost.samples[Math.floor(ix)+1];
       ghost.mesh.visible=!!a;
-      if(a) { const p=b?U.lerp(a[0],b[0],ix%1):a[0], x=b?U.lerp(a[1],b[1],ix%1):a[1]; W.pointAt(p,x,ghost.mesh.position); ghost.mesh.rotation.y=W.frameAt(p).yaw; }
+      if(a) {
+        const p=b?U.lerp(a[0],b[0],ix%1):a[0], x=b?U.lerp(a[1],b[1],ix%1):a[1];
+        const lp=W.loopPose?W.loopPose(p,x):null;
+        if(lp) { ghost.mesh.position.copy(lp.pos); ghost.mesh.quaternion.copy(lp.quat); }
+        else { W.pointAt(p,x,ghost.mesh.position); ghost.mesh.position.y+=W.gapLift?W.gapLift(p):0; ghost.mesh.rotation.set(0,W.frameAt(p).yaw,0); }
+      }
     }
   }
   function saveBest(h) {
@@ -174,9 +189,14 @@ NK.game = (function () {
         const old=trophy(session.mode,session.classId,session.cupId);
         if(!old||rank[kind]>rank[old]) trophies[session.mode][session.classId][session.cupId]=kind;
       }
-      if(session.mode==='nofail'||i<3) { if(session.cupId==='sunshine') progress.cups[session.mode]=2; }
+      // Finishing a cup (top three in Open) opens the next one.
+      if(session.mode==='nofail'||i<3) {
+        const at=NK.tracks.CUPS.findIndex(c=>c.id===session.cupId);
+        if(at>=0) progress.cups[session.mode]=Math.max(progress.cups[session.mode]||1,Math.min(CUP_COUNT,at+2));
+      }
     });
-    progress.mirror=progress.mirror||NK.tracks.CUPS.every(c=>['gold','silver','bronze'].includes(trophy('open','fast',c.id)));
+    // Mirror keeps its original condition: a Fast Open trophy in the first two cups.
+    progress.mirror=progress.mirror||NK.tracks.CUPS.slice(0,2).every(c=>['gold','silver','bronze'].includes(trophy('open','fast',c.id)));
     U.save('trophies',trophies); U.save('progress',progress); return awards;
   }
   function scoreRace() {
@@ -199,7 +219,10 @@ NK.game = (function () {
   }
   function startSession() {
     if(session.players===2&&session.type==='tt') session.type='single';
-    if(session.type==='gp') { session.gp={race:1,of:4,standings:[],done:false,trophies:[]}; gpRoster=roster(); }
+    if(session.type==='gp') {
+      const cup=NK.tracks.CUPS.find(c=>c.id===session.cupId)||NK.tracks.CUPS[0];
+      session.gp={race:1,of:cup.tracks.length,standings:[],done:false,trophies:[]}; gpRoster=roster();
+    }
     else session.gp=null;
     savePicks(); loadRace();
   }

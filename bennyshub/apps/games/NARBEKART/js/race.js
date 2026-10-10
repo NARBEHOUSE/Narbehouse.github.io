@@ -51,6 +51,7 @@ NK.race = (function () {
     const coinReady = new Float64Array(F.coins.length);
     const pairReady = new Map();
     const pos = new THREE.Vector3(), local = new THREE.Vector3(), backward = new THREE.Vector3();
+    const qLocal = new THREE.Quaternion(), eLocal = new THREE.Euler();
     let disposed = false, countdownT = 3, endAt = null, finalOrder = null, visualTime = 0;
 
     function on(name, fn) {
@@ -323,7 +324,10 @@ NK.race = (function () {
         r.vy -= 26 * dt;
         r.y += r.vy * dt + oldY - surfaceY(r.s, r.x);
         if (r.fallT === 0) {
-          r._rescue = { progress: r.progress, x: r.x, y: r.y, target: Math.max(-40, r._fall.progress - 10) };
+          // Never set a kart down where a jump's gap has no road.
+          let target = Math.max(-40, r._fall.progress - 10);
+          if (W.safeProgress) target = W.safeProgress(target);
+          r._rescue = { progress: r.progress, x: r.x, y: r.y, target };
           r.rescueT = 1.4;
           r.v = r.vy = 0;
         }
@@ -378,10 +382,13 @@ NK.race = (function () {
       let effects = Math.max(r.boostT ? C.BOOST_MUL : 1, r.starT ? 1.25 : 1, r.megaT ? 1.12 : 1, r.jetT ? 1.75 : 1);
       if (r.shrinkT > 0) effects *= 0.72;
       const pace = !r.isHuman ? (NK.ai && NK.ai.pace ? NK.ai.pace(R, r) : R.mode.cpuPace) : 1;
-      let target = R.classDef.speed * r.stats.speedMul * (1 + C.COIN_SPEED * r.coins) * surface * effects * pace;
+      let target = R.classDef.speed * r.stats.speedMul * surface * effects * pace;
       if (r.spinT > 0) target = 0;
       r.v = U.damp(r.v, target, target > r.v ? r.stats.accelRate : 1.4, dt);
-      r.progress += r.v * dt;
+      // A loop is longer than the track it spans: the kart advances by metres
+      // of road as driven, so its visible speed round the loop is its real
+      // speed (and a frame that crosses into or out of a loop stays exact).
+      r.progress = W.shiftS ? W.shiftS(r.progress, r.v * dt) : r.progress + r.v * dt;
       r.s = U.mod(r.progress, R.L);
       if (r.airT > 0) {
         r.airT += dt;
@@ -449,10 +456,35 @@ NK.race = (function () {
       clearDrift(r);
       emit('jump', r, row.kind);
     }
+    /** A gap ramp launches every kart that reaches it, whatever its lane:
+     *  past its lip there is no road to drive on. */
+    function launches(row, r, at) {
+      return row.gap || onLanes(xAt(r, at), row.lanes, C.LANE_W * 0.5);
+    }
+    /** Set pieces passed this frame: waterfall curtains and loop entries. */
+    function pieceCrossings(r, old, now) {
+      const P = W.pieces;
+      if (!P) return;
+      for (let k = 0; k < P.falls.length; k++) {
+        if (crossing(P.falls[k].s, old, now) !== null) {
+          fx.splash(racerPoint(r, 1.2), 26);
+          emit('splash', r, P.falls[k]);
+        }
+      }
+      for (let k = 0; k < P.loops.length; k++) {
+        if (crossing(P.loops[k].s0, old, now) !== null) emit('loop', r, P.loops[k]);
+      }
+    }
     function features(r) {
       r._puddle = false;
-      if (r.finished || r.fallT > 0 || r.rescueT > 0 || r.progress < r._prevProgress) return;
+      if (r.fallT > 0 || r.rescueT > 0 || r.progress < r._prevProgress) return;
       const old = r._prevProgress, now = r.progress;
+      pieceCrossings(r, old, now);
+      if (r.finished) {
+        // The cool-down lap still flies the gaps.
+        if (r.airT === 0) F.ramps.forEach((row) => { const at = crossing(row.s, old, now); if (at !== null && row.gap) jump(r, row, at); });
+        return;
+      }
       if (r.airT === 0 && r.y < 2.6) {
         F.coins.forEach((coin, i) => {
           if (coinReady[i] > R.time) return;
@@ -476,7 +508,11 @@ NK.race = (function () {
             if (!r.item && r.roulette <= 0) {
               r.roulette = 1.4;
               r.rouletteKind = NK.items && NK.items.roll ? NK.items.roll(R, r) : 'rocket';
+              // The coins held improved this roll (NK.items.odds); getting the item spends them.
+              const spent = r.coins;
+              r.coins = 0;
               emit('roulette', r);
+              if (spent) emit('coinsSpent', r, spent);
             }
           });
         });
@@ -492,7 +528,7 @@ NK.race = (function () {
         });
         F.ramps.forEach((row) => {
           const at = crossing(row.s, old, now);
-          if (at !== null && onLanes(xAt(r, at), row.lanes, C.LANE_W * 0.5)) jump(r, row, at);
+          if (at !== null && launches(row, r, at)) jump(r, row, at);
         });
       }
       F.hazards.forEach((hazard, i) => {
@@ -524,7 +560,9 @@ NK.race = (function () {
       for (let i = 0; i < racers.length; i++) for (let j = i + 1; j < racers.length; j++) {
         const a = racers[i], b = racers[j];
         if (a.finished || b.finished || a.fallT > 0 || b.fallT > 0 || a.rescueT > 0 || b.rescueT > 0 || Math.abs(a.y - b.y) > 1.8) continue;
-        const ds = U.loopDelta(a.s, b.s, R.L), dx = b.x - a.x;
+        // Measured along the road as driven, so two karts round a loop
+        // touch only when they really are side by side.
+        const ds = W.arcGap ? W.arcGap(a.progress, b.progress) : U.loopDelta(a.s, b.s, R.L), dx = b.x - a.x;
         const width = C.KART_HALF * 2 + 0.1;
         if (Math.abs(ds) >= C.KART_LEN || Math.abs(dx) >= width) continue;
         const powered = (r) => r.jetT > 0 ? 'jet' : r.starT > 0 ? 'star' : r.megaT > 0 ? 'mega' : null;
@@ -647,6 +685,18 @@ NK.race = (function () {
         r.shadow.rotation.set(pitch, yaw, -bank, 'YXZ');
         r.shadow.scale.setScalar(r._scale * (1 + Math.max(0, r.y) * 0.025));
         r.shadow.visible = r.fallT <= 0 && r.rescueT <= 0;
+        // Round a loop the road's own frame replaces yaw/pitch/bank: the kart,
+        // its ring and its shadow lie on the loop, upside down at the top.
+        const lp = W.loopPose ? W.loopPose(r.progress, r.x) : null;
+        if (lp) {
+          mesh.position.copy(lp.pos).addScaledVector(lp.up, r.y);
+          eLocal.set(r.airT > 0 ? -r.vy * 0.012 : 0, turn, roll, 'YXZ');
+          mesh.quaternion.copy(lp.quat).multiply(qLocal.setFromEuler(eLocal));
+          backward.copy(lp.forward).multiplyScalar(-1);
+          if (r.playerRing) { r.playerRing.position.copy(lp.pos).addScaledVector(lp.up, 0.09); r.playerRing.quaternion.copy(lp.quat); }
+          r.shadow.position.copy(lp.pos).addScaledVector(lp.up, 0.055);
+          r.shadow.quaternion.copy(lp.quat);
+        }
         v.blob.material.opacity = 0.85 / (1 + Math.max(0, r.y) * 0.12);
         const itemArt = NK.art.items || {};
         kartEffect(r, 'aura', r.starT > 0, itemArt.starAura);

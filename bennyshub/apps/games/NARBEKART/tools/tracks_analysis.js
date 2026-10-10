@@ -63,12 +63,62 @@
       far: ['planet_ringed', 'planet', 'space_station', 'comet'],
       landmarks: ['space_station', 'moon_big'],
       hazards: { block: 'space_rock', roller: 'meteor', geyser: 'plasma_vent', puddle: 'gravity_well' }
+    },
+    jungle: {
+      near: ['jungle_tree', 'giant_fern', 'jungle_flower', 'banana_plant', 'mossy_rock', 'tiki_torch', 'bamboo_clump'],
+      far: ['jungle_hill', 'giant_tree', 'temple_ruin', 'waterfall_cliff'],
+      landmarks: ['temple_big', 'stone_head'],
+      hazards: { block: 'tiki_block', roller: 'coconut', geyser: 'water_spout', puddle: 'jungle_mud' }
+    },
+    isles: {
+      near: ['cloud_puff', 'sky_flower', 'windmill_small', 'banner_pole', 'crystal_small', 'sky_tree'],
+      far: ['floating_island', 'airship', 'cloud_castle', 'cloud_bank'],
+      landmarks: ['sky_whale', 'sky_castle'],
+      hazards: { block: 'cloud_block', roller: 'thunder_ball', geyser: 'wind_gust', puddle: 'rain_puddle' }
+    },
+    reef: {
+      near: ['coral_branch', 'coral_fan', 'brain_coral', 'kelp', 'sea_anemone', 'giant_clam', 'starfish_rock'],
+      far: ['coral_tower', 'kelp_forest', 'sunken_temple', 'fish_school'],
+      landmarks: ['giant_turtle', 'treasure_galleon'],
+      hazards: { block: 'clam_block', roller: 'pufferfish', geyser: 'bubble_vent', puddle: 'seagrass_patch' }
+    },
+    dino: {
+      near: ['cycad', 'tree_fern', 'horsetail', 'egg_nest', 'mossy_boulder', 'baby_dino', 'fossil_rock'],
+      far: ['volcano_smoking', 'conifer_tall', 'mesa_green', 'pterodactyl_flock'],
+      landmarks: ['long_neck', 'triceratops_big'],
+      hazards: { block: 'egg_block', roller: 'rolling_log', geyser: 'hot_spring', puddle: 'tar_puddle' }
+    },
+    toybox: {
+      near: ['toy_blocks', 'crayon_bundle', 'rubber_duck', 'spinning_top', 'wind_up_robot', 'marble_pile', 'dominoes'],
+      far: ['book_stack', 'toy_castle', 'block_tower', 'stuffed_bunny'],
+      landmarks: ['teddy_giant', 'toy_rocket_big'],
+      hazards: { block: 'toy_block', roller: 'bouncy_ball', geyser: 'jack_in_box', puddle: 'juice_spill' }
+    },
+    carnival: {
+      near: ['balloon_cart', 'popcorn_stand', 'lamp_garland', 'prize_booth', 'carnival_flag', 'teacup_ride'],
+      far: ['ferris_wheel', 'circus_tent', 'carousel', 'coaster_hill'],
+      landmarks: ['ferris_giant', 'drop_tower'],
+      hazards: { block: 'gift_block', roller: 'circus_ball', geyser: 'confetti_cannon', puddle: 'soda_spill' }
+    },
+    neon: {
+      near: ['neon_lamp', 'planter_tree', 'hydrant', 'neon_sign', 'city_bench', 'vending_machine'],
+      far: ['skyscraper', 'skyscraper_slim', 'billboard_tower', 'apartment_block'],
+      landmarks: ['neon_tower', 'giant_cat_sign'],
+      hazards: { block: 'road_barrier', roller: 'rolling_tire', geyser: 'steam_manhole', puddle: 'oil_slick' }
+    },
+    factory: {
+      near: ['pipe_stack', 'crate_stack', 'barrel_group', 'gear_post', 'lamp_cage', 'valve_wheel'],
+      far: ['smokestack', 'factory_hall', 'gasometer', 'crane_tower'],
+      landmarks: ['clock_tower', 'gear_tower'],
+      hazards: { block: 'crate_block', roller: 'oil_drum', geyser: 'steam_pipe', puddle: 'oil_puddle' }
     }
   };
 
   const CUPS = [
     { id: 'sunshine', tracks: ['meadow', 'shores', 'candy', 'dunes'] },
-    { id: 'moonlight', tracks: ['frost', 'spooky', 'lava', 'starlight'] }
+    { id: 'moonlight', tracks: ['frost', 'spooky', 'lava', 'starlight'] },
+    { id: 'wonder', tracks: ['jungle', 'isles', 'reef', 'dino'] },
+    { id: 'dream', tracks: ['toybox', 'carnival', 'neon', 'factory'] }
   ];
 
   /* ── The rules, in metres ─────────────────────────────────────────────── */
@@ -97,13 +147,27 @@
     jumpLanding: 60,
     glideLanding: 130,
     glideDrop: 5,             // metres the road must fall over the glide's flight
-    landmarkClear: 24         // landmark origin to the nearest road centreline
+    landmarkClear: 24,        // landmark origin to the nearest road centreline
+    gapStraight: 0.003,       // a landscape gap's road is this straight (|k|) from ramp to landing
+    gapGuard: 20,             // walls (never a drop) this far either side of a gap jump
+    loopFlat: 0.02,           // a loop's straight is level to within this slope…
+    loopStraight: 0.0025,     // …and this straight (|k|), with LOOP_MARGIN metres to spare
+    loopMargin: 10,
+    loopClear: 30,            // the loop's road keeps this far from other stretches
+    pieceClear: 15,           // no row feature this close to a loop or a waterfall
+    maxBerm: 0.7,             // steepest berm bank, radians
+    archK: 1 / 45,            // archways stand on bends no tighter than the design radius
+    archSpan: [2, 8],         // archways per run
+    archSpacing: [10, 30]     // metres between archways
   };
+  const GAP_SCENES = ['creek', 'inlet', 'choco', 'canyon', 'crevasse', 'ravine', 'moat', 'void', 'gorge', 'sky',
+    'trench', 'dinoriver', 'tarpit', 'ballpit', 'street', 'gearpit', 'bumpercars'];
+  const CURTAINS = ['water', 'bubbles', 'steam', 'hologram', 'confetti'];
 
   const EDGE_KINDS = ['wall', 'verge', 'drop'];
   const HAZARD_KINDS = ['block', 'roller', 'geyser', 'puddle'];
   const ROAD_STYLES = ['asphalt', 'rainbow', 'ice', 'candy', 'stone', 'sand'];
-  const LIQUIDS = ['water', 'lava', 'chocolate', 'void'];
+  const LIQUIDS = ['water', 'lava', 'chocolate', 'void', 'cloud', 'balls'];
   const AMBIENTS = ['leaves', 'petals', 'snow', 'embers', 'stars', null];
   const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -112,6 +176,8 @@
   const ahead = (a, b, L) => mod(b - a, L);
   /** Shortest distance between two positions on the lap. */
   const gap = (a, b, L) => { const d = ahead(a, b, L); return Math.min(d, L - d); };
+  /** Signed shortest distance from a to b round the lap. */
+  const U_loopDelta = (a, b, L) => { const d = ahead(a, b, L); return d > L / 2 ? d - L : d; };
 
   /* ── Curvature regions ────────────────────────────────────────────────── */
 
@@ -303,6 +369,7 @@
 
     const of = (type) => rows.filter((r) => r.type === type);
     const linkedRamp = (h) => h.jumpObstacle && of('ramps').find((r) => Math.abs(r.ref.at - h.rampAt) < 1e-9);
+    const isGap = (r) => !!(r && r.ref && r.ref.gap);
     of('itemRows').forEach((r) => { if (r.lanes.length < 4) issues.push(r.where + ' should span four or five lanes'); });
     of('padRows').forEach((r) => {
       if (r.lanes.length < 2 || r.lanes.length > 3) issues.push(r.where + ' should span 2-3 lanes');
@@ -360,11 +427,23 @@
     const sampleAt = (s) => S.sample(loop, s);
     of('ramps').forEach((r) => {
       const kind = r.ref.kind;
-      if (kind !== 'jump' && kind !== 'glide') { issues.push(r.where + ' kind "' + kind + '" unknown'); return; }
+      if (!C.JUMPS[kind]) { issues.push(r.where + ' kind "' + kind + '" unknown'); return; }
       const flight = C.JUMPS[kind];
       const land = flight.rampLength + flight.flightLength + 12;
       const cleared = of('hazards').filter((h) => linkedRamp(h.ref) === r);
-      if (cleared.length !== 1) issues.push(r.where + ' needs exactly one linked obstacle to clear');
+      if (isGap(r)) {
+        // A landscape gap: the jump clears the gap itself. Every lane launches,
+        // the road is straight across, and walls guard the approach and landing.
+        if (GAP_SCENES.indexOf(r.ref.gap) < 0) issues.push(r.where + ' gap "' + r.ref.gap + '" is not a known landscape');
+        if (r.lanes.length !== C.LANE_COUNT) issues.push(r.where + ' gap jumps span the whole road');
+        if (cleared.length) issues.push(r.where + ' gap jumps clear the landscape, not a linked obstacle');
+        let kMax = 0;
+        for (let d = 0; d <= flight.rampLength + flight.flightLength; d += loop.seg) kMax = Math.max(kMax, Math.abs(sampleAt(r.s + d).k));
+        if (kMax > RULES.gapStraight) issues.push(r.where + ' gap is not on a straight (max curvature ' + kMax.toFixed(4) + ')');
+        for (let d = -RULES.gapGuard; d <= flight.rampLength + flight.flightLength + RULES.gapGuard; d += loop.seg / 2) {
+          if (edgeAt(r.s + d, 'left') !== 'wall' || edgeAt(r.s + d, 'right') !== 'wall') { issues.push(r.where + ' gap needs walls both sides from ' + RULES.gapGuard + ' m before the ramp to ' + RULES.gapGuard + ' m past the landing'); break; }
+        }
+      } else if (cleared.length !== 1) issues.push(r.where + ' needs exactly one linked obstacle to clear');
       cleared.forEach((h) => {
         if (h.ref.kind !== 'block') issues.push(h.where + ' jump obstacle must be a predictable static block');
         if (JSON.stringify(h.lanes) !== JSON.stringify(r.lanes)) issues.push(h.where + ' jump obstacle lanes must exactly match its ramp');
@@ -378,11 +457,11 @@
         if (d > 0 && d <= land && o.lanes.some((l) => r.lanes.includes(l)))
           issues.push(r.where + ' (' + kind + ') flies over or lands on ' + o.where + ' ' + d.toFixed(0) + ' m after it');
       });
-      if (kind === 'jump') {
+      if (kind !== 'glide') {
         let kMax = 0;
-        for (let d = -20; d <= RULES.jumpLanding; d += loop.seg) kMax = Math.max(kMax, Math.abs(sampleAt(r.s + d).k));
-        if (kMax > 0.006) issues.push(r.where + ' jump is not on a straight (max curvature ' + kMax.toFixed(4) + ')');
-        if (r.lanes.length < 2) issues.push(r.where + ' jump should span 2+ lanes');
+        for (let d = -20; d <= Math.max(RULES.jumpLanding, flight.rampLength + flight.flightLength + 12); d += loop.seg) kMax = Math.max(kMax, Math.abs(sampleAt(r.s + d).k));
+        if (kMax > 0.006) issues.push(r.where + ' ' + kind + ' is not on a straight (max curvature ' + kMax.toFixed(4) + ')');
+        if (r.lanes.length < 2) issues.push(r.where + ' ' + kind + ' should span 2+ lanes');
       } else {
         const drop = sampleAt(r.s).y - sampleAt(r.s + 150).y;
         if (drop < RULES.glideDrop) issues.push(r.where + ' glide is not before a long downhill (falls only ' + drop.toFixed(1) + ' m over 150 m)');
@@ -390,23 +469,114 @@
       }
     });
 
+    /* Set pieces: loops and waterfalls */
+    const pieces = track.pieces || [];
+    const rowNear = (s0, s1, what) => rows.forEach((o) => {
+      const a = ahead(s0 - RULES.pieceClear, o.s, L);
+      if (a <= (s1 - s0) + 2 * RULES.pieceClear) issues.push(o.where + ' is on or within ' + RULES.pieceClear + ' m of ' + what);
+    });
+    const index0 = S.makeIndex(loop, 32);
+    pieces.forEach((p, i) => {
+      const where = 'pieces[' + i + ']';
+      if (!fracOk(p.at, where)) return;
+      if (p.kind === 'loop') {
+        const len = Math.round(C.LOOP.length / loop.seg) * loop.seg, s0 = Math.round(p.at * L / loop.seg) * loop.seg;
+        if (p.side !== 1 && p.side !== -1) issues.push(where + ' loop side must be -1 or 1');
+        let kMax = 0, slope = 0;
+        for (let d = -RULES.loopMargin; d <= len + RULES.loopMargin; d += loop.seg / 2) {
+          const a = sampleAt(s0 + d), b = sampleAt(s0 + d + 1);
+          kMax = Math.max(kMax, Math.abs(a.k)); slope = Math.max(slope, Math.abs(b.y - a.y));
+          if (d >= 0 && d < len && (edgeAt(s0 + d, 'left') !== 'wall' || edgeAt(s0 + d, 'right') !== 'wall')) { issues.push(where + ' loop needs walls both sides'); d = Infinity; }
+        }
+        if (kMax > RULES.loopStraight) issues.push(where + ' loop is not on a straight (max curvature ' + kMax.toFixed(4) + ')');
+        if (slope > RULES.loopFlat) issues.push(where + ' loop is not level (slope ' + (slope * 100).toFixed(1) + '%)');
+        rowNear(s0, s0 + len, where + ' (loop)');
+        // The loop's road (way up, over and down beside) keeps clear of other road.
+        const path = S.loopPath({ radius: C.LOOP.radius, entry: C.LOOP.entry, circle: C.LOOP.circle, length: len, shift: C.LOOP.shift, side: p.side || 1 });
+        const base = S.sample(loop, s0), Fx = Math.sin(base.h), Fz = -Math.cos(base.h), Rx = Math.cos(base.h), Rz = Math.sin(base.h);
+        for (let sg = 0; sg <= path.arc; sg += 4) {
+          const o = path.at(sg), x = base.x + Fx * o.f + Rx * o.l, z = base.z + Fz * o.f + Rz * o.l;
+          const near = S.nearest(index0, x, z, RULES.loopClear + 12);
+          if (near && near.d < RULES.loopClear && Math.abs(U_loopDelta(near.s, s0 + len / 2, L)) > len / 2 + 40) { issues.push(where + ' loop passes within ' + near.d.toFixed(0) + ' m of another stretch'); break; }
+        }
+      } else if (p.kind === 'falls') {
+        const s = p.at * L;
+        if (p.style !== undefined && CURTAINS.indexOf(p.style) < 0) issues.push(where + ' curtain style "' + p.style + '" unknown');
+        if (p.gate !== undefined && (typeof p.gate !== 'string' || p.air)) issues.push(where + ' gate must name a prop, and only on the ground');
+        rowNear(s - 10, s + 10, where + ' (waterfall)');
+        if (p.air) {
+          const inFlight = of('ramps').some((r) => isGap(r) && ahead(r.s + C.JUMPS[r.ref.kind].rampLength, s, L) < C.JUMPS[r.ref.kind].flightLength - 10);
+          if (!inFlight) issues.push(where + ' an air waterfall must hang inside a gap jump\'s flight');
+        } else {
+          let kMax = 0;
+          for (let d = -15; d <= 15; d += loop.seg) kMax = Math.max(kMax, Math.abs(sampleAt(s + d).k));
+          if (kMax > 0.0125) issues.push(where + ' waterfall arch needs a gentle bend at most (curvature ' + kMax.toFixed(4) + ')');
+          for (let d = -12; d <= 12; d += 2) if (edgeAt(s + d, 'left') !== 'wall' || edgeAt(s + d, 'right') !== 'wall') { issues.push(where + ' waterfall arch stands on walls both sides'); break; }
+        }
+      } else if (p.kind === 'arches') {
+        // A run of archways over the road: square to a gentle stretch, its
+        // feet on solid ground (never a drop), clear of loops and gap jumps.
+        const count = p.count || 4, spacing = p.spacing || 14, s0 = p.at * L, len = (count - 1) * spacing;
+        if (typeof p.prop !== 'string' || !p.prop) issues.push(where + ' arches need a prop');
+        if (count < RULES.archSpan[0] || count > RULES.archSpan[1]) issues.push(where + ' arch count ' + count + ' outside ' + RULES.archSpan.join('-'));
+        if (spacing < RULES.archSpacing[0] || spacing > RULES.archSpacing[1]) issues.push(where + ' arch spacing ' + spacing + ' m outside ' + RULES.archSpacing.join('-'));
+        let kMax = 0;
+        for (let d = -6; d <= len + 6; d += loop.seg / 2) {
+          kMax = Math.max(kMax, Math.abs(sampleAt(s0 + d).k));
+          if (edgeAt(s0 + d, 'left') === 'drop' || edgeAt(s0 + d, 'right') === 'drop') { issues.push(where + ' arches stand over a drop'); break; }
+        }
+        if (kMax > RULES.archK) issues.push(where + ' arches stand on too tight a bend (curvature ' + kMax.toFixed(4) + ')');
+        pieces.forEach((o) => {
+          if (o.kind !== 'loop') return;
+          const from = o.at * L - 20, span = C.LOOP.length + 40;
+          if (ahead(from, s0, L) <= span || ahead(from, s0 + len, L) <= span) issues.push(where + ' arches overlap a loop');
+        });
+        of('ramps').forEach((r) => {
+          if (!isGap(r)) return;
+          const from = r.s - 20, span = C.JUMPS[r.ref.kind].rampLength + C.JUMPS[r.ref.kind].flightLength + 40;
+          if (ahead(from, s0, L) <= span || ahead(from, s0 + len, L) <= span) issues.push(where + ' arches overlap a gap jump');
+        });
+      } else issues.push(where + ' kind "' + p.kind + '" unknown');
+    });
+    (track.opts && track.opts.banks || []).forEach((z, i) => {
+      if (!(z[0] >= 0 && z[0] < 1 && z[1] >= 0 && z[1] <= 1)) issues.push('opts.banks[' + i + '] from/to must be lap fractions');
+      if (!(z[2] > 0 && z[2] <= RULES.maxBerm)) issues.push('opts.banks[' + i + '] bank must be in (0, ' + RULES.maxBerm + '] radians');
+    });
+    if (theme && theme.ground && theme.ground.type === 'islands') {
+      const isl = track.islands || [];
+      if (!isl.length) issues.push('a sky circuit needs islands');
+      const onIsland = (s) => isl.some((sp) => ahead(sp[0] * L, s, L) <= ahead(sp[0] * L, sp[1] * L, L));
+      for (let d = -RULES.gridZone; d <= RULES.lineClear; d += 4) if (!onIsland(d)) { issues.push('the start line and grid must sit on an island'); break; }
+    }
+
     /* Coins */
     const coinLines = [];
     (F.coins || []).forEach((c, i) => {
       const where = 'coins[' + i + ']';
       if (!fracOk(c.from, where) || !fracOk(c.to, where)) return;
-      if (!(c.lane === (c.lane | 0) && c.lane >= 0 && c.lane < C.LANE_COUNT)) { issues.push(where + ' lane invalid'); return; }
+      const path = Array.isArray(c.lane) ? c.lane : [c.lane];
+      if (!path.length || path.some((l) => !(l === (l | 0) && l >= 0 && l < C.LANE_COUNT))) { issues.push(where + ' lane invalid'); return; }
+      if (path.some((l, k) => k && Math.abs(l - path[k - 1]) !== 1)) issues.push(where + ' must hop one lane at a time');
       const s0 = c.from * L, len = ahead(s0, c.to * L, L);
       if (len < RULES.coinLen[0] || len > RULES.coinLen[1]) issues.push(where + ' is ' + len.toFixed(0) + ' m long (want ' + RULES.coinLen.join('-') + ')');
       if (inClearZone(s0) || inClearZone(s0 + len)) issues.push(where + ' runs onto the grid / start zone');
+      // Runs of coins: [offset from, offset to, lane]; a hopping trail leaves room to change lane.
+      let runs = [[0, len, path[0]]];
+      if (path.length > 1) {
+        const run = (C.COIN_RUN - 1) * C.COIN_GAP, hop = (len - path.length * run) / (path.length - 1);
+        if (hop < C.COIN_HOP) issues.push(where + ' leaves ' + hop.toFixed(0) + ' m to change lane (want ' + C.COIN_HOP + ')');
+        runs = path.map((l, g) => [g * (run + hop), g * (run + hop) + run, l]);
+      }
       of('hazards').forEach((h) => {
         if (h.ref.kind === 'roller' || h.ref.kind === 'geyser') return;     // those are the risky line
-        if (h.lanes.indexOf(c.lane) < 0) return;
-        const d = ahead(s0, h.s, L);
-        if (d >= -6 && d <= len + 6) issues.push(where + ' runs through ' + h.where);
+        runs.forEach(([a, b, lane]) => {
+          if (h.lanes.indexOf(lane) < 0) return;
+          const d = U_loopDelta(s0 + a, h.s, L);
+          if (d >= -6 && d <= b - a + 6) issues.push(where + ' runs through ' + h.where);
+        });
       });
       of('ramps').forEach((r) => {
-        if (!r.lanes.includes(c.lane)) return;
+        if (!path.some((l) => r.lanes.includes(l))) return;
         const flight = C.JUMPS[r.ref.kind];
         if (!flight) return;
         let start = ahead(r.s, s0, L); if (start > L / 2) start -= L;
@@ -414,7 +584,7 @@
         if (start <= end && start + len >= 0)
           issues.push(where + ' lies under ' + r.where + ' flight / landing corridor');
       });
-      coinLines.push({ s: s0, len: len, lane: c.lane });
+      coinLines.push({ s: s0, len: len, lane: path[0], path: path });
     });
 
     /* Landmarks */

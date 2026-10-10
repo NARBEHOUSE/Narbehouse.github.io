@@ -10,7 +10,7 @@ try {
   $env:ELECTRON_RUN_AS_NODE = $null
   Push-Location -LiteralPath $projectRoot
   try {
-    foreach ($check in @('validate_tracks.js','items_ai_test.cjs','race_test.cjs')) {
+    foreach ($check in @('validate_tracks.js','jump_layout_test.cjs','items_ai_test.cjs','race_test.cjs','setpiece_test.cjs')) {
       & node ('bennyshub/apps/games/NARBEKART/tools/' + $check)
       if ($LASTEXITCODE -ne 0) { throw ($check + ' failed.') }
     }

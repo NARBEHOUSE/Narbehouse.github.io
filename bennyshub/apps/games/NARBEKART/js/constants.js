@@ -64,14 +64,33 @@ NK.C = (function () {
   /* ── Boosts ───────────────────────────────────────────────────────────── */
   const BOOST_MUL = 1.45;      // rocket, boost pad, mini-turbo, trick landing
   const COIN_MAX = 10;
-  const COIN_SPEED = 0.012;    // +1.2 % top speed per coin held
+  /** Coin trails: metres between coins, coins per lane run, and the least
+   *  road (metres) a trail leaves between runs to change lane. */
+  const COIN_GAP = 6, COIN_RUN = 3, COIN_HOP = 24;
+  /** Per coin a player holds at a Power Box, how far the odds move toward the
+   *  next band up: [in first place, in last place] (NK.items.odds). */
+  const COIN_PULL = [0.03, 0.1];
 
   // Automatic ramps use the same dimensions as the drawn wedges and a
   // fixed landing distance, so every engine class clears the obstacle.
+  // `apron` is the paved landing strip a gap jump keeps before its landing
+  // point: the road resumes that far ahead of where the kart touches down.
   const JUMPS = {
-    jump: { rampLength: 6, rampHeight: 1.1, flightLength: 32, peakHeight: 4.5 },
-    glide: { rampLength: 9, rampHeight: 1.8, flightLength: 90, peakHeight: 12 }
+    jump: { rampLength: 6, rampHeight: 1.1, flightLength: 32, peakHeight: 4.5, apron: 6 },
+    leap: { rampLength: 7.5, rampHeight: 1.4, flightLength: 55, peakHeight: 7, apron: 8 },
+    glide: { rampLength: 9, rampHeight: 1.8, flightLength: 90, peakHeight: 12, apron: 12 }
   };
+
+  /* ── Loop-de-loops ────────────────────────────────────────────────────────
+   * A loop sits on a flat straight of the circuit. In track space it is an
+   * ordinary span of road; the world draws the road there as a vertical loop
+   * that climbs, turns upside down and comes back down beside its own entry
+   * (shifted sideways), then swings back onto the line. `entry` metres of road
+   * lead in, the circle takes `circle` metres of track and `shift` is the
+   * sideways step between the way up and the way down. The race slows
+   * progress through the span so a kart's visible speed stays its real speed.
+   */
+  const LOOP = { radius: 16, entry: 10, circle: 14, length: 88, shift: 24 };
 
   /* ── Drift (automatic) ────────────────────────────────────────────────── */
   const DRIFT_K = 0.0085;      // |curvature| that counts as a drift bend (r ≈ 118 m)
@@ -129,7 +148,7 @@ NK.C = (function () {
     KART_HALF, KART_LEN, RACERS, LAPS,
     STEER_SPEEDS, STEER_ORDER, SETTLE_LAMBDA,
     CLASSES, CLASS_ORDER,
-    BOOST_MUL, COIN_MAX, COIN_SPEED, JUMPS,
+    BOOST_MUL, COIN_MAX, COIN_PULL, COIN_GAP, COIN_RUN, COIN_HOP, JUMPS, LOOP,
     DRIFT_K, DRIFT_END_K, DRIFT_LEVELS, MINI_TURBO,
     POINTS, MODES, HIT,
     PLAYER_COLORS, PLAYER_KEYS

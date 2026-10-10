@@ -3,7 +3,7 @@
     {
       "id": "narbekart",
       "title": "NARBE Racer",
-      "description": "Pick your racer and vehicle, then race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
+      "description": "Pick your racer and vehicle, then race sixteen tracks across four cups, with loop-de-loops, banked turns, drive-through waterfalls and a big jump over a different landscape on every track. Race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
       "path": "apps/games/NARBEKART/index.html",
       "image": "images/games/narberacer.png",
       "genres": [

@@ -21,12 +21,34 @@ NK.items = (function () {
     { through: 12, weights: { rocket: 5, rocket3: 22, goldrocket: 14, ball: 3, bee: 10, zapper: 7, star: 13, shrink: 6, jet: 10, horn: 2, mega: 7, bomb: 1 } }
   ];
 
+  /** Past the back band: the best a player at the back with a full purse can reach. */
+  const JACKPOT = { rocket3: 20, goldrocket: 30, star: 24, jet: 18, mega: 8 };
+
+  /**
+   * The odds a racer rolls from. Place picks the band. A player's coins then
+   * pull the odds part of the way toward the next band up: a little per coin,
+   * more per coin the further back the player is (C.COIN_PULL), and from the
+   * back band on into JACKPOT. CPUs roll by place alone. The coins are spent
+   * by the roll (race.js). → { band, pull 0..1, weights }
+   */
+  function odds(R, r) {
+    const count = Math.max(1, R.racers.length);
+    const place = R.placeOf ? R.placeOf(r) : r.place;
+    const back = count === 1 ? 0 : U.clamp((place - 1) / (count - 1), 0, 1);
+    const band = ODDS.findIndex((b) => 1 + back * 11 <= b.through);
+    const per = C.COIN_PULL[0] + (C.COIN_PULL[1] - C.COIN_PULL[0]) * back;
+    const pull = r.isHuman ? Math.min(1, (r.coins || 0) * per) : 0;
+    const from = ODDS[band].weights;
+    if (!pull) return { band, pull, weights: from };
+    const to = band + 1 < ODDS.length ? ODDS[band + 1].weights : JACKPOT, weights = {};
+    Object.keys(from).concat(Object.keys(to)).forEach((id) => { weights[id] = (from[id] || 0) * (1 - pull) + (to[id] || 0) * pull; });
+    return { band, pull, weights };
+  }
+
   function roll(R, r) {
     if (R.timeTrial) return 'rocket';
-    const count = Math.max(1, R.racers.length);
-    const rank = count === 1 ? 1 : 1 + ((R.placeOf ? R.placeOf(r) : r.place) - 1) * 11 / (count - 1);
-    const weights = ODDS.find((band) => rank <= band.through).weights;
-    const entries = Object.keys(weights).filter((id) => id !== 'zapper' || R.mode.zapper);
+    const weights = odds(R, r).weights;
+    const entries = Object.keys(weights).filter((id) => weights[id] > 0 && (id !== 'zapper' || R.mode.zapper));
     const weight = (id) => weights[id] * (R.modeId === 'nofail' && r.isHuman && DEFS[id].type === 'boost' ? 1.5 : 1);
     let pick = R.rng.next() * entries.reduce((sum, id) => sum + weight(id), 0);
     for (let i = 0; i < entries.length; i++) { pick -= weight(entries[i]); if (pick < 0) return entries[i]; }
@@ -149,15 +171,21 @@ NK.items = (function () {
   function pose(R, o, dt) {
     if (!o.mesh) return;
     const mesh = o.mesh, A = NK.art.items;
-    R.world.pointAt(o.s, o.x, mesh.position);
-    const frame = R.world.frameAt(o.s);
-    mesh.rotation.y = frame.yaw === undefined ? -frame.heading : frame.yaw;
-    mesh.rotation.z = -(frame.bank || 0);
     let height = 0.08;
     if (o.type === 'bee') height += 0.65 + Math.sin(o.age * 12) * 0.12;
     if (o.type === 'zapper') height += 5 + Math.sin(o.age * 6) * 0.3;
     if (o.type === 'bomb' && o.age < 0.55) height += 4.5 * Math.sin(Math.PI * o.age / 0.55);
-    mesh.position.y += height;
+    // Round a loop, items ride the loop's surface like the karts do.
+    const lp = R.world.loopPose ? R.world.loopPose(o.progress, o.x) : null;
+    if (lp) {
+      mesh.position.copy(lp.pos).addScaledVector(lp.up, height);
+      mesh.quaternion.copy(lp.quat);
+    } else {
+      R.world.pointAt(o.s, o.x, mesh.position);
+      const frame = R.world.frameAt(o.s);
+      mesh.rotation.set(0, frame.yaw === undefined ? -frame.heading : frame.yaw, -(frame.bank || 0));
+      mesh.position.y += height;
+    }
     const d = mesh.userData;
     if (o.type === 'ball' && d.roll) d.roll.rotation.x -= o.v * dt / (d.radius || 0.8);
     if (o.type === 'bee' && d.wings) d.wings.forEach((wing, i) => { wing.rotation.z = (i ? 1 : -1) * Math.sin(o.age * 55) * 0.55; });
@@ -199,8 +227,14 @@ NK.items = (function () {
       }
       if (!o.dead) {
         if (o.type === 'bomb') o.progress = o.launchProgress + 35 * Math.min(1, o.age / 0.55);
-        else o.progress += o.v * dt;
+        else o.progress = R.world.shiftS ? R.world.shiftS(o.progress, o.v * dt) : o.progress + o.v * dt;
         o.s = U.mod(o.progress, R.L);
+        // Over a jump's gap there is no road: peels and balls tumble away.
+        if ((o.type === 'peel' || o.type === 'ball') && R.world.inGap && R.world.inGap(o.progress)) {
+          burst(R, o.s, o.x, 0xffda46, 10); o.dead = true;
+        }
+      }
+      if (!o.dead) {
         if (o.type !== 'horn' && o.type !== 'zapper' && (o.type !== 'bomb' || o.age >= 0.45)) {
           for (let k = 0; k < R.racers.length; k++) {
             const r = R.racers[k];
@@ -224,5 +258,5 @@ NK.items = (function () {
   }
   function objects(R) { return list(R).filter((o) => !o.dead && o.type !== 'horn'); }
   function clear(R) { list(R).forEach(destroy); list(R).length = 0; }
-  return { DEFS, ODDS, roll, give, tickHeld, use, update, objects, clear };
+  return { DEFS, ODDS, JACKPOT, odds, roll, give, tickHeld, use, update, objects, clear };
 })();
