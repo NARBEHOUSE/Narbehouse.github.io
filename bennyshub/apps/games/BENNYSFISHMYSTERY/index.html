@@ -1285,6 +1285,9 @@ body[data-theme="contrast"] .meterText{ color:var(--paper); text-shadow:none }
   transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
 .menuItem .val{ font-weight:normal; color:var(--ink2); font-size:1rem }
+#panelMenu .menuItem.graphicsQuality{ grid-column:1 / -1; gap:12px }
+.menuItem.graphicsQuality > span{ min-width:0; overflow-wrap:anywhere }
+.menuItem.graphicsQuality .val{ flex:1; text-align:right }
 .menuItem.locked{ opacity:.4; cursor:default }
 /* Focus is fill + outline + lift + scale — unmistakable, and never colour alone. */
 .menuItem.focused{
@@ -1737,6 +1740,7 @@ body[data-theme="contrast"] #panel.panel-catch.cardbg-certificate #panelSub{ col
      the hub. This game adds no duplicate options. (Ground rule §2.5) -->
 <script src="../../../shared/safe-audio.js"    onerror="console.warn('safe-audio.js not loaded')"></script>
 <script src="../../../shared/platform.js"></script>
+<script src="../../../shared/graphics-quality.js"></script>
 <script src="../../../shared/scan-status-badge.js"></script>
 <script src="../../../shared/choice-scan.js"></script>
 <link rel="stylesheet" href="../../../shared/scan-status-badge.css">

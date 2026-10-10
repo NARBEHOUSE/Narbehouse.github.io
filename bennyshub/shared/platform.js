@@ -14,7 +14,7 @@ window.NarbePlatform = (function () {
     try { peer.postMessage(data, window.location.origin); } catch (_) { /* closed/cross-origin frame */ }
   }
   function openSettings({ key, normalize, project = value => value, onChange }) {
-    let state;
+    let state, disposed = false;
     function read() {
       try { return normalize(JSON.parse(window.localStorage.getItem(key) || '{}')); }
       catch (_) { return state ? { ...state } : normalize({}); }
@@ -27,6 +27,7 @@ window.NarbePlatform = (function () {
       }
     }
     function commit(value, source, persist = true) {
+      if (disposed) return;
       const next = normalize(value);
       if (JSON.stringify(next) === JSON.stringify(state)) return;
       state = next;
@@ -37,14 +38,12 @@ window.NarbePlatform = (function () {
       broadcast(source);
     }
     function reload() { commit(read(), null, false); return { ...state }; }
-    window.addEventListener('storage', event => {
-      if (event.key === key || event.key === null) reload();
-    });
+    const storage = event => { if (event.key === key || event.key === null) reload(); };
+    window.addEventListener('storage', storage);
     window.addEventListener('focus', reload);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') reload();
-    });
-    window.addEventListener('message', event => {
+    const visible = () => { if (document.visibilityState === 'visible') reload(); };
+    document.addEventListener('visibilitychange', visible);
+    const message = event => {
       if (event.origin !== window.location.origin || !peers().includes(event.source)) return;
       if (event.data?.type === key + '-request') {
         post(event.source, { type: key + '-changed', settings: project(state) });
@@ -53,14 +52,23 @@ window.NarbePlatform = (function () {
         // Older pages send only their known fields. Preserve newer settings.
         commit({ ...state, ...event.data.settings }, event.source);
       }
-    });
+    };
+    window.addEventListener('message', message);
     if (window.parent && window.parent !== window) {
       post(window.parent, { type: key + '-request' });
     }
     return {
       readCached: () => ({ ...state }),
       save: value => { commit(value); return { ...state }; },
-      reload
+      reload,
+      ready: Promise.resolve(),
+      dispose() {
+        disposed = true;
+        window.removeEventListener('storage', storage);
+        window.removeEventListener('focus', reload);
+        document.removeEventListener('visibilitychange', visible);
+        window.removeEventListener('message', message);
+      }
     };
   }
 
@@ -90,6 +98,12 @@ window.NarbePlatform = (function () {
       window.removeEventListener('focus', focus);
       document.removeEventListener('visibilitychange', visibility);
     };
+  }
+
+  function onClose(callback) {
+    const close = event => { if (!event.persisted) callback(); };
+    window.addEventListener('pagehide', close);
+    return () => window.removeEventListener('pagehide', close);
   }
 
   let currentSpeech = null;
@@ -157,7 +171,7 @@ window.NarbePlatform = (function () {
   return {
     settings: { open: openSettings },
     input: { capture },
-    lifecycle: { onActivity },
+    lifecycle: { onActivity, onClose },
     speech: {
       getVoices() {
         try { return window.speechSynthesis?.getVoices() || []; } catch (_) { return []; }

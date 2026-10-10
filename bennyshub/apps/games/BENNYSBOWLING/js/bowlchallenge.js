@@ -1,3 +1,4 @@
+var hubGraphics = NarbeGraphics.openGame('bowling', { highRatio: Infinity });
 const CAMERA_FOV = 50.0;
 const CAMERA_NEAR = 0.1;
 // Far enough to take in the neighbouring lanes and the back of the house.
@@ -678,11 +679,11 @@ function init() {
 
 	container = document.getElementById("container");
 
-	renderer = new THREE.WebGLRenderer({ antialias: true });
-	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({ antialias: true }));
+	renderer.setPixelRatio(hubGraphics.pixelRatio(window.devicePixelRatio, window.innerWidth, window.innerHeight));
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	renderer.gammaOutput = true;
-	renderer.shadowMap.enabled = true;
+	renderer.shadowMap.enabled = !hubGraphics.isLightweight();
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 	container.appendChild(renderer.domElement);
 
@@ -1507,7 +1508,10 @@ function updateScene(dt) {
 	}
 }
 
+hubGraphics.subscribe(() => { if (renderer) { hubGraphics.shadows(renderer, scene, true); resizeViewport(); } });
+
 function resizeViewport() {
+	if (renderer) renderer.setPixelRatio(hubGraphics.pixelRatio(window.devicePixelRatio, window.innerWidth, window.innerHeight));
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1564,6 +1568,7 @@ function syncView(player) {
 }
 
 function render() {
+	hubGraphics.frame(performance.now());
 	var dt = clock.getDelta();
 
 	updateScene(dt);
@@ -2550,6 +2555,10 @@ function buildMenus() {
 	function getAimerColorName(){ var c=AIM_COLORS[Math.abs(settings.aimerColorIndex)%AIM_COLORS.length]; return c?c.name:'Green'; }
 	function cycleAimerColor(){ settings.aimerColorIndex=(settings.aimerColorIndex+1)%AIM_COLORS.length; saveSettings(); applyAimerStyleToLocal(); try{ speakText && speakText('Aimer color ' + getAimerColorName()); }catch(e){} }
 	var aimerRow = makeRow(()=>'Aimer Color', ()=> getAimerColorName(), ()=>{ cycleAimerColor(); aimerRow._update(); }, false);
+	var graphicsRow = makeRow(()=>'Graphics quality', ()=>hubGraphics.label().replace('Graphics quality: ', ''), ()=>{ hubGraphics.cycle(); speakText(hubGraphics.label()); }, false);
+	graphicsRow.id = 'graphics-quality';
+	hubGraphics.subscribe(() => { graphicsRow._update(); if (settingsDiv.style.display === 'flex') syncBowlChoice(true); });
+
 	var closeRow = document.createElement('div');
 	closeRow.style = 'display:flex; justify-content:flex-end; margin-top:12px;';
 	var closeBtn = document.createElement('button'); closeBtn.textContent = 'Close'; closeBtn.style = 'padding:10px 14px; color:#00ff99; background:#000000; border:2px solid #00ff99; border-radius:8px; font-weight:800; letter-spacing:1px; cursor:pointer; box-shadow:0 0 10px #00ff99;';
@@ -2613,7 +2622,7 @@ function buildMenus() {
 	rebuildSettingsItems = function () {
 		var rows = [
 			ttsRow, musicRow, sfxRow, chargeCueRow, aimCueRow, voiceRow,
-			autoScanRow, scanSpeedRow, aimerRow, closeBtn
+			autoScanRow, scanSpeedRow, aimerRow, graphicsRow, closeBtn
 		];
 		settingsItems = rows.map(function (el) {
 			return { el: el, action: function () { el.onclick(); } };

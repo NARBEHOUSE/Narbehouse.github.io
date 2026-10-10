@@ -27,6 +27,7 @@
  */
 RT.ui = (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('fishmystery');
 
   const U = RT.util;
   const G = RT.game;
@@ -396,6 +397,7 @@ RT.ui = (function () {
     items.forEach((it, i) => {
       const el = document.createElement('div');
       el.className = 'menuItem';
+      if (it.id === 'graphics-quality') el.classList.add('graphicsQuality');
       if (it.enabled === false) el.classList.add('locked');
       if (i === index) el.classList.add('focused');
 
@@ -1138,6 +1140,8 @@ RT.ui = (function () {
     restartAutoScan();
   }
 
+  hubGraphics.subscribe(() => { if (screen === 'settings') refresh(); });
+
   function refresh() { setScreen(screen, { preserve:true, announce:false }); }
 
   const SCREENS = {
@@ -1185,6 +1189,7 @@ RT.ui = (function () {
         art: icon('settings', '' + ic('settings') + ''),
         title: 'Settings',
         items: [
+          { id: 'graphics-quality', label: 'Graphics quality', value: hubGraphics.label().replace('Graphics quality: ', ''), speech: hubGraphics.label(), action: () => { hubGraphics.cycle(); refresh(); U.speak(hubGraphics.label()); } },
           { label: 'Text to Speech', value: tts ? 'On' : 'Off',
             speech: 'Text to Speech, ' + (tts ? 'On' : 'Off'),
             action: () => {

@@ -1046,6 +1046,15 @@
             </div>
           </button>
 
+          <button class="card-btn" id="graphics-toggle" aria-describedby="graphics-help">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Graphics quality</div>
+            <div class="row">
+              <p class="desc" id="graphics-help">Auto adjusts detail for smoother play. Or choose High, Standard, or Low.</p>
+              <span class="pill" id="graphics-status">Standard</span>
+            </div>
+          </button>
+
           <section id="scan-settings" aria-labelledby="scan-settings-heading"></section>
         </div>
         <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Press <span class="kbd">return</span> to change the highlighted setting. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
@@ -1073,6 +1082,7 @@
 
   <!-- Include shared voice manager -->
   <script src="shared/platform.js"></script>
+  <script src="shared/graphics-quality.js"></script>
   <script src="shared/scan-status-badge.js"></script>
   <script src="shared/choice-scan.js"></script>
   <link rel="stylesheet" href="shared/scan-status-badge.css">
@@ -1571,6 +1581,16 @@
       updateVoiceDisplay();
       applySettings();
     });
+
+    function refreshGraphicsSetting() {
+      document.getElementById('graphics-status').textContent = NarbeGraphics.title(NarbeGraphics.getHub());
+      settingsScanner?.setItems(settingsItems());
+    }
+    NarbeGraphics.subscribeHub(refreshGraphicsSetting);
+    document.getElementById('graphics-toggle').onclick = () => {
+      NarbeGraphics.cycleHub();
+      announceSetting('Graphics quality: ' + NarbeGraphics.title(NarbeGraphics.getHub()));
+    };
 
     // Settings toggles
     document.getElementById('highlight-toggle').addEventListener('click', () => {
@@ -2341,6 +2361,7 @@
     // Initialize application
     window.addEventListener('load', async () => {
       loadSettings();
+      refreshGraphicsSetting();
 
       await loadAppsData();
       refreshExtensionTools();

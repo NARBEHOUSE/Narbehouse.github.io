@@ -1,8 +1,9 @@
 /* Procedural court and characters. Local Three.js; no remote assets. */
 window.RallyScene=function(host){
 'use strict';
+const hubGraphics=NarbeGraphics.openGame('pickleball');
 const T=THREE,scene=new T.Scene();const sky=document.createElement('canvas');sky.width=16;sky.height=512;const skyCtx=sky.getContext('2d'),skyGradient=skyCtx.createLinearGradient(0,0,0,512);skyGradient.addColorStop(0,'#70b7d0');skyGradient.addColorStop(.55,'#c6e4de');skyGradient.addColorStop(1,'#fbefd3');skyCtx.fillStyle=skyGradient;skyCtx.fillRect(0,0,16,512);const skyTex=new T.CanvasTexture(sky);skyTex.colorSpace=T.SRGBColorSpace;scene.background=skyTex;scene.fog=new T.Fog('#cfdfd1',28,85);
-const renderer=new T.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.append(renderer.domElement);
+const renderer=new T.WebGLRenderer(hubGraphics.rendererOptions({antialias:true,alpha:false}));renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(devicePixelRatio,2),host.clientWidth||innerWidth,host.clientHeight||innerHeight));renderer.shadowMap.enabled=!hubGraphics.isLightweight();renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.append(renderer.domElement);
 const camera=new T.PerspectiveCamera(40,1,.1,120);camera.position.set(11,12,18);camera.lookAt(-2,0,0);
 scene.add(new T.HemisphereLight('#e7faff','#647059',1.8));const sun=new T.DirectionalLight('#ffe5b1',3.1);sun.position.set(-10,14,-5);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-15,right:15,top:18,bottom:-18,near:1,far:55});sun.shadow.bias=-.0003;sun.shadow.normalBias=.025;scene.add(sun);
 const materials={};function mat(color){return materials[color]||(materials[color]=new T.MeshStandardMaterial({color,roughness:.85}));}
@@ -70,7 +71,7 @@ box(7,.22,4,'#f5dfb7',-10,3.25,-13);for(const x of [-13,-7])for(const z of [-14.
 for(const x of [-5.1,5.1]){cylinder(.35,.25,.55,'#eee0bb',x,.275,-6.2);for(let i=0;i<7;i++){const leaf=sphere(.25,'#43785c',x+Math.sin(i*2.4)*.24,.65+(i%3)*.12,-6.2+Math.cos(i*2.4)*.24);leaf.scale.set(.6,1.7,.6);}}
 const sunDisc=new T.Mesh(new T.SphereGeometry(2,24,16),new T.MeshBasicMaterial({color:'#fff1c3'}));sunDisc.position.set(-24,21,-58);scene.add(sunDisc);
 
-let elapsed=0,mode='menu',lastEvent=-1,burst=0;function size(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}size();addEventListener('resize',size);
+let elapsed=0,mode='menu',lastEvent=-1,burst=0;function size(){const w=host.clientWidth,h=host.clientHeight;renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(devicePixelRatio,2),w,h));hubGraphics.shadows(renderer,scene,true);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}size();addEventListener('resize',size);const stopGraphics=hubGraphics.subscribe(size);
 // ---- Strokes ----------------------------------------------------------------------------------
 // A stroke runs ready → take-back → contact → follow-through → recovery. Poses are in the robot's
 // torso frame (+z faces the net, -x is the paddle side) and stored as arm joints: qu = upper-arm
@@ -177,6 +178,6 @@ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();d
 function aimAt(x,y,z){const rect=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new T.Vector2((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1),camera);plane.constant=-z;return ray.ray.intersectPlane(plane,intersection)?intersection.x:null;}
 function isBallVisible(point){camera.updateMatrixWorld(true);const p=new T.Vector3(point.x,point.y,point.z),local=p.clone().applyMatrix4(camera.matrixWorldInverse),depth=-local.z;if(depth<=camera.near)return false;const ndc=p.project(camera),ry=RallyModel.BALL_RADIUS/(depth*Math.tan(T.MathUtils.degToRad(camera.fov/2))),rx=ry/camera.aspect;return ndc.z>=-1&&ndc.z<=1&&ndc.x>=-1-rx&&ndc.x<=1+rx&&ndc.y>=-1-ry&&ndc.y<=1+ry;}
 // _rig: hook for the Node-only arm checks and stroke tuner in tests/ (no effect on play).
-return {render,renderer,aimAt,isBallVisible,_rig:{strokePose,contactKey,strokeFor,solve,armFK,bodyGap,armGap,STROKES,BANDS,READY,SOCKET,BODY_BOXES,HEAD_BOXES,GRIP,SWEET,applyPose,robots:{player,cpu}},dispose(){removeEventListener('resize',size);renderer.dispose();}};
+return {render,renderer,aimAt,isBallVisible,_rig:{strokePose,contactKey,strokeFor,solve,armFK,bodyGap,armGap,STROKES,BANDS,READY,SOCKET,BODY_BOXES,HEAD_BOXES,GRIP,SWEET,applyPose,robots:{player,cpu}},dispose(){stopGraphics();removeEventListener('resize',size);renderer.dispose();}};
 
 };

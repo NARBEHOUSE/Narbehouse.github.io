@@ -6,19 +6,21 @@
 
   const P3 = root.P3;
   const U = P3.util;
+  const hubGraphics = NarbeGraphics.openGame('p3gl', { legacyPreference: P3.game.store.get('quality') });
+  let preferredPixelRatio = 1;
   let renderer, post, board, fx, layout = null;
   let last = 0, running = true, frames = 0, errors = 0, errorAt = 0;
 
   function init() {
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: false });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(startRatio());
+    renderer.setPixelRatio(hubGraphics.pixelRatio(startRatio(), root.innerWidth, root.innerHeight));
     renderer.setSize(root.innerWidth, root.innerHeight);
     U.$('stage').appendChild(renderer.domElement);
 
     post = P3.post.create(renderer);
-    const q = P3.game.store.get('quality');
-    post.setQuality(q === 'low' ? 'low' : 'high');
+    const q = hubGraphics.isLightweight() ? 'lightweight' : hubGraphics.get().quality;
+    post.setQuality(q === 'lightweight' ? 'off' : q === 'low' ? 'low' : 'high');
     post.setSize(root.innerWidth, root.innerHeight, renderer.getPixelRatio());
     applyQualitySetting();
 
@@ -78,6 +80,7 @@
   }
 
   function onResize() {
+    renderer.setPixelRatio(hubGraphics.pixelRatio(preferredPixelRatio, root.innerWidth, root.innerHeight));
     renderer.setSize(root.innerWidth, root.innerHeight);
     post.setSize(root.innerWidth, root.innerHeight, renderer.getPixelRatio());
     P3.game.resizeBackdrop();
@@ -94,20 +97,25 @@
   function startRatio() { return Math.min(root.devicePixelRatio || 1, U.isPhone() ? 1.25 : 1.0); }
 
   function applyQualitySetting() {
-    const q = P3.game.store.get('quality');
+    const q = hubGraphics.isLightweight() ? 'lightweight' : hubGraphics.get().quality === 'high' ? 'high' : 'auto';
     settled = q !== 'auto';
-    if (q === 'high') { post.setQuality('high'); postLevel = 2; setRatio(Math.min(root.devicePixelRatio || 1, 1.5)); }
+    if (q === 'lightweight') { post.setQuality('off'); postLevel = 0; setRatio(startRatio()); }
+    else if (q === 'high') { post.setQuality('high'); postLevel = 2; setRatio(Math.min(root.devicePixelRatio || 1, 1.5)); }
     else if (q === 'low') { post.setQuality('low'); postLevel = 1; setRatio(Math.min(root.devicePixelRatio || 1, 0.85)); }
-    else { settled = false; sampleN = 0; sampleT = 0; }
+    else { settled = false; sampleN = 0; sampleT = 0; postLevel = 2; step = 2; post.setQuality('high'); setRatio(startRatio()); }
   }
 
   function setRatio(r) {
-    renderer.setPixelRatio(r);
+    preferredPixelRatio = r;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(r, root.innerWidth, root.innerHeight));
     renderer.setSize(root.innerWidth, root.innerHeight);
-    post.setSize(root.innerWidth, root.innerHeight, r);
+    post.setSize(root.innerWidth, root.innerHeight, renderer.getPixelRatio());
   }
 
+  hubGraphics.subscribe(() => { if (renderer) applyQualitySetting(); });
+
   function adapt(dt) {
+    if (hubGraphics.get().mode !== 'standard') return;
     if (settled) return;
     sampleN++; sampleT += dt;
     if (sampleT < 2.5) return;
@@ -142,6 +150,7 @@
     try {
       if (budget() < 1 / 40 && P3.game.state === 'play') adapt(raw);
       P3.game.update(dt);
+      hubGraphics.frame(now, 1 / budget());
       post.render(P3.game.layers(), now / 1000);
       frames++;
       if (frames === 20) root.__ready = true;

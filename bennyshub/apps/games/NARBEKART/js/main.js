@@ -1,6 +1,7 @@
 /** NARBE Racer — renderer, split views, adaptive quality and boot. */
 NK.main = (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('racer');
   let renderer, scene, views = [], layout = 'single', running = false, last = 0;
   const frames = [], before = [], steps = [0.66, 0.8, 1, 1.25, 1.5, 2];
   let ratio = 3, sampleTime = 0, sampleFrames = 0, fps = 60, errors = 0, errorAt = 0;
@@ -27,6 +28,7 @@ NK.main = (function () {
   function resize() {
     if (!renderer) return;
     const s = viewportSize();
+    renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(window.devicePixelRatio || 1, steps[ratio]), s.width, s.height));
     renderer.setSize(s.width, s.height, false);
   }
   function setViews(next, mode) {
@@ -34,16 +36,18 @@ NK.main = (function () {
     document.documentElement.dataset.nkLayout = layout;
     resize();
   }
+  hubGraphics.subscribe(() => { if (renderer) { ratio = 3; sampleTime = sampleFrames = 0; resize(); } });
   function quality(dt) {
+    if (hubGraphics.get().mode !== 'standard') return;
     sampleTime += dt; sampleFrames++;
     if (sampleTime < 3) return;
     fps = sampleFrames / sampleTime; sampleTime = sampleFrames = 0;
     const cap = Math.min(window.devicePixelRatio || 1, 2);
     if (fps < (views.length > 1 ? 42 : 48)) {
       if (renderer.shadowMap.enabled) { renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
-      else if (ratio > 0) { ratio--; renderer.setPixelRatio(Math.min(cap, steps[ratio])); resize(); }
+      else if (ratio > 0) { ratio--; renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(cap, steps[ratio]), viewportSize().width, viewportSize().height)); resize(); }
     } else if (fps > 59 && ratio < steps.length - 1 && steps[ratio] < cap) {
-      ratio++; renderer.setPixelRatio(Math.min(cap, steps[ratio])); resize();
+      ratio++; renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(cap, steps[ratio]), viewportSize().width, viewportSize().height)); resize();
     }
   }
   function render() {
@@ -85,6 +89,7 @@ NK.main = (function () {
     requestAnimationFrame(loop); if (!running) return;
     const raw = Math.max(0, (now - last) / 1000); last = now;
     if (!raw || document.hidden) return;
+    hubGraphics.frame(now);
     try {
       if (now - errorAt > 4000) errors = 0;
       quality(raw); const dt = Math.min(raw, 0.05);
@@ -97,12 +102,12 @@ NK.main = (function () {
   function init() {
     if (renderer) return;
     scene = new THREE.Scene();
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({ antialias: true, powerPreference: 'high-performance' }));
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.useLegacyLights = false; renderer.toneMapping = THREE.NoToneMapping;
     // All karts have blob shadows; world shadow maps are an optional expense.
     renderer.shadowMap.enabled = false; renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.autoClear = false; renderer.info.autoReset = false;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, steps[ratio]));
+    renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(window.devicePixelRatio || 1, steps[ratio]), viewportSize().width, viewportSize().height));
     (document.getElementById('canvasWrap') || document.body).appendChild(renderer.domElement);
     resize(); window.addEventListener('resize', resize);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);

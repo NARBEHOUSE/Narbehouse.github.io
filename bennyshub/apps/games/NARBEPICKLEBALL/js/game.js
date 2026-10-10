@@ -1,5 +1,6 @@
 /* CHOICE: menus and Serve/Pause. MECHANIC: positioning and automatic paddle returns. */
 'use strict';
+const hubGraphics=NarbeGraphics.openGame('pickleball');
 const $=id=>document.getElementById(id),M=RallyModel,sm=NarbeScanManager,vm=NarbeVoiceManager;
 const STORE='narbe-rally-club-v1',defaults={playStyle:'manual',moveSpeed:3.4,noHold:false,pace:1,assist:true,reduceMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,sound:true};
 let settings={...defaults},stats={wins:0,best:0,stars:0,nextOpponent:0},saved=null;
@@ -71,6 +72,7 @@ function openSettings(back='menu',refresh=false){returnView=back;const toggle=ke
 {id:'tts',title:'Speech: '+(vm.getSettings().ttsEnabled?'On':'Off'),action:()=>{vm.toggleTTS();openSettings(returnView,true);}},
 {id:'voice',title:'Voice',detail:vm.getVoiceDisplayName()||'Default',action:()=>{vm.cycleVoice();openSettings(returnView,true);}},
 {id:'pace',title:'Ball pace: '+(settings.pace===0?'No-fail':settings.pace===.4?'Slow motion':settings.pace===.65?'Relaxed':'Full speed'),detail:settings.pace===0?'Ball stops until you reach it':settings.pace===1?'Real-time ball flight · Get there quickly':'Extra time as the ball approaches your paddle',action:cycle('pace',[.4,.65,1,0])},
+{id:'graphics-quality',title:hubGraphics.label(),action:()=>{hubGraphics.cycle();speak(hubGraphics.label());}},
 {id:'motion',title:'Reduced motion: '+(settings.reduceMotion?'On':'Off'),detail:'No confetti, trails or idle animation',action:toggle('reduceMotion')},
 {id:'auto',title:'Auto Scan: '+(sm.getSettings().autoScan?'On · One switch':'Off · Two switches'),action:()=>{sm.toggleAutoScan();}},
 {id:'scan-speed',title:'Scan speed: '+sm.getScanInterval()/1000+' seconds',action:()=>{sm.cycleScanSpeed();}},
@@ -114,11 +116,12 @@ if(choice.active){choice.setInputHeld(keys.Space||keys.Enter);if(key==='Space'){
 if(!enterHeld&&view==='serveAim'&&pauseRelease&&state.serveAimFrozen)commenceServe();if(moveKey===key){moveKey=keys.Space?'Space':keys.Enter?'Enter':null;if(!isOneSwitch()&&moveKey)state.moveDir=moveKey==='Space'?-1:1;}
 });
 
+hubGraphics.subscribe(()=>{if(view==='settings')openSettings(returnView,true);});
 let autoMode=sm.getSettings().autoScan;sm.subscribe(next=>{if(next.autoScan!==autoMode){clearKeys();autoMode=next.autoScan;}updateControls();if(view==='settings')openSettings(returnView,true);});
 document.addEventListener('narbe-input-cancelled',lostInput);window.addEventListener('blur',lostInput);document.addEventListener('visibilitychange',()=>{if(document.hidden){checkpoint();lostInput();}});addEventListener('pagehide',checkpoint);document.addEventListener('rally-render-lost',()=>{lostInput();screen('graphics','The court needs a restart.','Your rally is saved. Reload to restore the graphics.',[{id:'reload',title:'Reload game',primary:true,action:()=>location.reload()},{id:'exit',title:'Back to Hub',action:exit}]);});
 if(saved&&!validSave(saved))saved=null;
 try{scene=new RallyScene($('scene'));home();}catch(error){console.error(error);screen('graphics','The court couldn’t open.','3D graphics are unavailable in this browser.',[{id:'original',title:'Play Lily’s original game',primary:true,action:()=>location.href='../PICKLEBALLRALLY/index.html'},{id:'exit',title:'Back to Hub',action:exit}]);}
-function frame(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;const active=activeGame();if(active){
+function frame(now){if(scene)hubGraphics.frame(now);const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;const active=activeGame();if(active){
 if(view==='serveAim'){state.serveAimCue=state.serveAimFrozen||pointerId!==null?0:automaticServeAim()||keys.Space?state.serveAimDir:-state.serveAimDir;}
 if(view==='serveAim'&&pointerId===null&&!state.serveAimFrozen&&(automaticServeAim()||keys.Space)){const bounds=M.serveTargetBounds(state),speed=(automaticServeAim()?.5:.6)*settings.moveSpeed/2.4;state.serveAimX+=state.serveAimDir*speed*dt;if(state.serveAimX>=bounds[1]){state.serveAimX=bounds[1];if(automaticServeAim())state.serveAimDir=-1;}else if(state.serveAimX<=bounds[0]){state.serveAimX=bounds[0];if(automaticServeAim())state.serveAimDir=1;}}
 if(view==='manual'&&state.phase!=='serve'){if(Number.isFinite(pointerTarget)){if(M.moveTowardBall(state,dt,settings.moveSpeed*1.6,pointerTarget))pointerTarget=null;}else if(settings.noHold&&moveLatched){if(!Number.isFinite(M.ballTargetX(state))||M.moveTowardBall(state,dt,settings.moveSpeed,tapTarget)){moveLatched=false;tapTarget=null;}}else if(!settings.noHold&&moveKey&&keys[moveKey])M.movePlayer(state,state.moveDir,dt,settings.moveSpeed);}

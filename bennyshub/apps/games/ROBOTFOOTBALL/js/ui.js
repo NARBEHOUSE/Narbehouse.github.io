@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('robotfootball');
   const $ = id => document.getElementById(id);
   const SAVE = 'bennys-stadium-match-v1', SEASON_SAVE = 'bennys-stadium-season-match-v1', PREFS = 'bennys-stadium-settings-v1';
   const AIM_SPEEDS = [0.14, 0.24, 0.36, 0.55];
@@ -301,12 +302,14 @@
   function exitGame() { saveMatch(); audio?.pause(); clearHeld(); scan?.resetInputState?.(); window.parent.postMessage({ action: 'focusBackButton' }, '*'); if (window.parent === window) location.href = '../../../index.html'; }
   // Basic lists only the essentials, in the same order as Benny's Football; Advanced lists every option.
   // Rows that wrap the hub's shared voice and scanning stay in both: a game opened outside the hub has no other way to reach them.
+  hubGraphics.subscribe(() => { if (screen === 'settings') settings(returnScreen, items[focusIndex]?.name || ''); });
   function settings(from = returnScreen, focusName = '') {
     returnScreen = from;
     const again = name => settings(from, name), refresh = name => { preferencesChanged(); again(name); };
     const tts = voice?.getSettings().ttsEnabled !== false;
     const voiceName = voice?.getVoiceDisplayName?.(voice?.getCurrentVoice?.()) || 'System voice';
     const row = {
+      graphics: { name: 'Graphics quality', value: hubGraphics.label().replace('Graphics quality: ', ''), action: () => { hubGraphics.cycle(); again('Graphics quality'); } },
       tts: { name: 'Text to speech', value: tts ? 'On' : 'Off', action: () => { voice?.toggleTTS(); again('Text to speech'); } },
       voice: { name: 'Voice', value: voiceName, action: () => { voice?.cycleVoice(); again('Voice'); } },
       difficulty: { name: 'Difficulty', value: prefs.difficulty === 'rookie' ? 'Rookie' : 'Pro', desc: 'Defender pressure and pass coverage', action: () => { prefs.difficulty = prefs.difficulty === 'rookie' ? 'pro' : 'rookie'; refresh('Difficulty'); } },
@@ -329,8 +332,8 @@
       reset: { name: 'Reset saved progress', action: () => overlay('confirm', 'RESET PROGRESS?', 'This removes your season, saved exhibition and current session. Your accessibility settings stay as they are.', [{ name: 'Keep progress', action: () => again() },{ name: 'Delete saved progress', action: () => { try { localStorage.removeItem(SAVE); localStorage.removeItem(SEASON_SAVE); } catch (_) {} season.reset(); activeGame = false; mainMenu(); toast('Saved progress removed.'); } }]) },
       back: { name: 'Back', action: () => from === 'pause' ? pauseMenu() : mainMenu() }
     };
-    const list = (basic() ? ['sound', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
-      : ['tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
+    const list = (basic() ? ['sound', 'graphics', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
+      : ['graphics', 'tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
     // Arriving opens with nothing highlighted; changing a row's value rebuilds the menu with focus kept on that row.
     overlay('settings', 'YOUR SETTINGS', 'Set the pace. Every option works with your switches.', list, { focus: focusName ? Math.max(0, list.findIndex(item => item.name === focusName)) : -1 });
   }
@@ -658,6 +661,7 @@
     cueKey = key; cue.className = 'tone-' + tone; void cue.offsetWidth; cue.classList.add('pop');
   }
   function frame(now) {
+    hubGraphics.frame(now);
     const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000)); lastTime = now;
     updateInput(dt, now); const fx = effective();
     let steer = pointerSteer;

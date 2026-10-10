@@ -15,6 +15,7 @@ window.NAF = window.NAF || {};
 
 NAF.UI = (function () {
     'use strict';
+    const hubGraphics = NarbeGraphics.openGame('animalfriends');
 
     const STAMP_SLOTS = 5;
 
@@ -1439,6 +1440,10 @@ NAF.UI = (function () {
                     NAF.GameSong.refresh();
                 }
             },
+            ...(s.get('preset') === 'simple' ? [] : [{
+                id: 'graphics-quality', label: 'Graphics quality', value: hubGraphics.label().replace('Graphics quality: ', ''),
+                speak: () => hubGraphics.label(), action: () => hubGraphics.cycle()
+            }]),
             {
                 label: '← Back', value: '', nav: true,
                 speak: 'Back.',
@@ -1447,6 +1452,7 @@ NAF.UI = (function () {
         ];
     }
 
+    hubGraphics.subscribe(() => { if (screen === 'settings' && !nameEditing && el.settings) { renderSettings(); NAF.Input.refresh(false); } });
     function renderSettings() {
         settingsCache = settingsItems();
         el.settingsTitle.textContent = nameEditing ? 'Player Name' : 'Settings';
@@ -1459,6 +1465,7 @@ NAF.UI = (function () {
         settingsCache.forEach(function (item, i) {
             const b = row(el.settingsList, item.label, item.value);
             b.dataset.setting = String(i);
+            if (item.id === 'graphics-quality') b.classList.add('naf-graphics-setting');
         });
         fitCard();
     }
@@ -1753,7 +1760,7 @@ NAF.UI = (function () {
         if (nameEditing) return nameEditorScannables();
         return settingsCache.map(function (item, i) {
             return {
-                id: 'set:' + i,
+                id: item.id || 'set:' + i,
                 el: el.settingsList.querySelector('[data-setting="' + i + '"]'),
                 speak: item.speak,
                 action: function () {

@@ -1,3 +1,4 @@
+const hubGraphics = NarbeGraphics.openGame('dice');
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
@@ -48,6 +49,8 @@ function saveGameSettings() {
 }
 
 function updateSettingsDisplay() {
+    const graphicsItem = document.getElementById('graphics-quality');
+    if (graphicsItem) graphicsItem.textContent = hubGraphics.label();
     // Update TTS display (from VoiceManager)
     const ttsValue = document.getElementById('setting-tts-value');
     if (ttsValue) {
@@ -273,9 +276,10 @@ const camera = new THREE.PerspectiveCamera(35, gameArea.clientWidth / gameArea.c
 camera.position.set(0, 45, 1);
 camera.lookAt(0, 0, 0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({ antialias: true }));
+renderer.setPixelRatio(hubGraphics.pixelRatio(1, gameArea.clientWidth, gameArea.clientHeight));
 renderer.setSize(gameArea.clientWidth, gameArea.clientHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !hubGraphics.isLightweight();
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 gameArea.appendChild(renderer.domElement);
 
@@ -1354,6 +1358,7 @@ function handleMenuAction(action) {
             speak("Voice " + displayName);
         }
     }
+    if (action === 'cycle-graphics') { hubGraphics.cycle(); speak(hubGraphics.label()); }
     if (action === 'back-from-settings') {
         setAppState(appState.previousState || 'MENU');
     }
@@ -3727,6 +3732,7 @@ function animate() {
         });
     }
 
+    hubGraphics.frame(performance.now());
     renderer.render(scene, camera);
     } catch(e) { console.error("Animate Error:", e); }
 }
@@ -3740,10 +3746,12 @@ function handleResize() {
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(hubGraphics.pixelRatio(1, width, height));
     renderer.setSize(width, height);
 }
 
 window.addEventListener('resize', handleResize);
+hubGraphics.subscribe(() => { hubGraphics.shadows(renderer, scene, true); handleResize(); updateSettingsDisplay(); });
 
 // --- 3D Dice Highlight System ---
 // focusedDieIndex and originalDieColors are declared at top of script

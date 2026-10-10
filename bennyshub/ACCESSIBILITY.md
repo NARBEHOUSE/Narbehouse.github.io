@@ -952,3 +952,9 @@ This is not medical software. It was made by a family, for a brother, and then
 opened up because other families needed the same thing.
 
 Dedicated to [@BEAMINBENNY](https://github.com/narbehouse).
+
+## Graphics quality (web)
+
+Hub Settings has a switch-accessible **Graphics quality** default for supported games: Auto / High / Standard / Low. Auto adjusts detail for smoother play. Each covered game offers Use Hub setting / Auto / High / Standard / Low in its own settings; this preference stays on the current device. Keep text, scan highlights and gameplay cues readable, retain stable IDs on value changes, and announce the resolved value through the existing speech owner. Renderer changes requiring a reopen say **full change next launch** without restarting play.
+
+Future graphics-intensive games must follow the public integration, profile audit and release checklist in `../GRAPHICS-QUALITY.md` and `../developer-guide.html#graphics`. Desktop source parity is implemented; Raspberry Pi hardware and user acceptance remain pending; see `../GRAPHICS-DESKTOP-PARITY.md` and `../GRAPHICS-VALIDATION.md`.

@@ -3,6 +3,8 @@
  */
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('minigolf');
+  let preferredPixelRatio = 1;
 
   const U = MG.util;
   let renderer, scene, camera;
@@ -12,7 +14,7 @@
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 900);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({ antialias: true, powerPreference: 'high-performance' }));
     // Start modest and climb only if the machine keeps up (Race Tracks' lesson:
     // a Surface Pro reports DPR 2 on an integrated GPU).
     applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
@@ -20,7 +22,7 @@
     renderer.useLegacyLights = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !hubGraphics.isLightweight();
     renderer.shadowMap.type = THREE.PCFShadowMap;   // the soft variant costs several times more per pixel
     U.$('canvasWrap').appendChild(renderer.domElement);
 
@@ -38,11 +40,20 @@
   let prIndex = 2, sampleFrames = 0, sampleTime = 0, settled = false;
 
   function applyPixelRatio(r) {
-    renderer.setPixelRatio(r);
+    preferredPixelRatio = r;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(r, window.innerWidth, window.innerHeight));
     renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  hubGraphics.subscribe(() => {
+    if (!renderer) return;
+    prIndex = 2; sampleFrames = 0; sampleTime = 0; settled = false;
+    hubGraphics.shadows(renderer, scene, true);
+    applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
+  });
+
   function adaptQuality(dt) {
+    if (hubGraphics.get().mode !== 'standard') return;
     if (settled) return;
     sampleFrames++; sampleTime += dt;
     if (sampleTime < 2.5) return;
@@ -66,6 +77,7 @@
 
   function onResize() {
     if (!renderer) return;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(preferredPixelRatio, window.innerWidth, window.innerHeight));
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -95,6 +107,7 @@
       if (frameBudget() < 1 / 40) adaptQuality(rawDt);
       MG.ui.tick(dt);
       MG.game.update(dt);
+      hubGraphics.frame(now, 1 / frameBudget());
       renderer.render(scene, camera);
       frames++;
     } catch (err) {

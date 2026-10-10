@@ -27,6 +27,8 @@ window.NAF = window.NAF || {};
 
 NAF.Stage3D = (function () {
     'use strict';
+    const hubGraphics = NarbeGraphics.openGame('animalfriends');
+    let stopGraphics = null;
 
     // --- scene constants --------------------------------------------------------
 
@@ -177,15 +179,15 @@ NAF.Stage3D = (function () {
         zone = NAF.Zones.current();
         theme = zone.theme;
         try {
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'default' });
+            renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({ antialias: true, alpha: false, powerPreference: 'default' }));
         } catch (e) {
             console.warn('[NAF] WebGL failed to start, falling back to the Simple renderer:', e);
             renderer = null;
             return false;
         }
 
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(window.devicePixelRatio || 1, 2), container.clientWidth || innerWidth, container.clientHeight || innerHeight));
+        renderer.shadowMap.enabled = !hubGraphics.isLightweight();
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.domElement.className = 'naf-stage-canvas';
@@ -200,6 +202,7 @@ NAF.Stage3D = (function () {
         setPreset(preset);
         resize();
 
+        stopGraphics = hubGraphics.subscribe(resize);
         mounted = true;
         clock0 = performance.now();
         loop();
@@ -877,6 +880,7 @@ NAF.Stage3D = (function () {
         if (!renderer || !scene) return;
 
         const now = performance.now();
+        hubGraphics.frame(now);
         const dt = Math.min(0.05, (now - (last || now)) / 1000);
         last = now;
         const t = (now - clock0) / 1000;
@@ -1075,6 +1079,8 @@ NAF.Stage3D = (function () {
         if (!parent) return;
         const w = parent.clientWidth || window.innerWidth;
         const h = parent.clientHeight || window.innerHeight;
+        renderer.setPixelRatio(hubGraphics.pixelRatio(Math.min(window.devicePixelRatio || 1, 2), w, h));
+        hubGraphics.shadows(renderer, scene, true);
         renderer.setSize(w, h, false);
         camera.aspect = w / Math.max(1, h);
         // Widen the field of view on a tall screen so the barn still fits.
@@ -1083,6 +1089,7 @@ NAF.Stage3D = (function () {
     }
 
     function destroy() {
+        stopGraphics?.(); stopGraphics = null;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         mounted = false;

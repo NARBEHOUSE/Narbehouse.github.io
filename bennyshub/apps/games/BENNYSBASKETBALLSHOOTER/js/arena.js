@@ -104,6 +104,9 @@
         sc.set(1, 1, 1);
         bodyGeo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
         headGeo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
+        const simpleHeadGeo = new THREE.IcosahedronGeometry(0.34, 0);
+        simpleHeadGeo.translate(0, 2.05, 0);
+        simpleHeadGeo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
         [seatMesh, bodyMesh, headMesh].forEach(mesh => { mesh.instanceMatrix.needsUpdate = true; group.add(mesh); });
 
         // A few fans holding up signs
@@ -127,7 +130,7 @@
             signs.push(sign);
         });
 
-        return { fascias, signs, fanCount: fans.length };
+        return { fascias, signs, fanCount: fans.length, seatMesh, headMesh, headGeo, simpleHeadGeo };
     }
 
     // ---------- LED boards ----------
@@ -495,8 +498,9 @@
         stands.position.set(0, 40, 60);
         scene.add(stands);
 
-        let excite = 0;
+        let excite = 0, lightweight = false;
         function update(dt, now) {
+            if (lightweight) { videoboard.update(now); return; }
             uniforms.uTime.value = now / 1000;
             excite = Math.max(0, excite - dt * 0.4);
             uniforms.uExcite.value = excite;
@@ -506,6 +510,10 @@
             videoboard.update(now);
         }
         function setQuality(q) {
+            lightweight = q === 'lightweight';
+            bowl.seatMesh.visible = !lightweight;
+            bowl.headMesh.geometry = lightweight ? bowl.simpleHeadGeo : bowl.headGeo;
+            if (lightweight) { uniforms.uTime.value = 0; uniforms.uExcite.value = 0; }
             key.shadow.mapSize.set(q === 'high' ? 2048 : 1024, q === 'high' ? 2048 : 1024);
             if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; }
             rig.beams.forEach(b => { b.visible = q === 'high'; });

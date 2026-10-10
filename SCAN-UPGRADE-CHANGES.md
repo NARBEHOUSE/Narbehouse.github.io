@@ -1,5 +1,100 @@
 # Web scan implementation and Companion 1.0.8
 
+## Website publication approval — 2026-10-10
+
+After local testing and the High/Low fidelity review, the owner explicitly approved pushing the website. Publish the complete web change through the existing main → GitHub Pages workflow. The shared manager, service-worker cache v39, all 13 web profiles and future-game framework requirements are included. Desktop source remains local; no desktop installer or Companion store submission is included. Deployment success must be confirmed from the Actions run and live site.
+
+Publication-record changes: GRAPHICS-QUALITY.md, GRAPHICS-VALIDATION.md, GRAPHICS-DESKTOP-PARITY.md and SCAN-UPGRADE-CHANGES.md (DOCUMENTATION / NO RUNTIME PORT). Existing local validation remains 253 passing Node tests, a successful build, 978 clean page/link checks and a clean 1,879-file public audit.
+
+## High/Low fidelity review — 2026-10-10
+
+Owner-requested comparison against the verified pre-graphics source, especially NARBE Racer. Native Racer's fresh High menu and race match the original scene/material/light signatures, color pipeline, drawing-buffer dimensions and four-sample antialiasing. Switching from Auto/Low to High in an existing renderer retains its original no-MSAA context until the game is reopened; the setting's full-change-next-launch indication remains intentional and avoids restarting a round. High's geometry and art have not been reduced. Low reduces drawing-buffer size and disables launch MSAA without changing race geometry or gameplay.
+
+One fidelity correction: Bowling's High mode now preserves its original uncapped display density. The shared default cap of 2 had reduced resolution on displays above 2×. Low retains the 921,600-pixel budget. The game registration is covered by a regression check at 1×, 1.5×, 2× and 3×, including Low-to-High restoration.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/BENNYSBOWLING/js/bowlchallenge.js | RENDERING / DESKTOP IMPLEMENTED | Preserve original display density on High; shared Low cap retained. |
+| tests/graphics-quality.test.cjs | TEST / DESKTOP IMPLEMENTED | Exercise the real Bowling registration and High/Low density contract. |
+| GRAPHICS-QUALITY.md | DOCUMENTATION / DESKTOP IMPLEMENTED | Record Bowling's original uncapped High resolution. |
+| GRAPHICS-VALIDATION.md | VALIDATION / DESKTOP RESULTS REFERENCED | Current test totals and fidelity evidence. |
+| bennyshub/service-worker.js | WEB CACHE / NO DESKTOP PORT | v39 invalidates the preceding local experiment cache. |
+| SCAN-UPGRADE-CHANGES.md | WEB RECORD / NO RUNTIME PORT | Record this fidelity audit and exact scope. |
+
+Desktop audit evidence and source checkpoints: tmp/graphics-quality-audit-20261010/. Its native rendering audit checks High → Low → High restoration, fresh Low MSAA, pixel budgets, shadows, Basketball reflections/bloom and P3GL post-processing across all 13 desktop Three.js games. Source inspection also confirms Baseball's High uses its original maximum 3× canvas scale. These checks establish rendering fidelity and reduced GPU work; low-end-device FPS remains a user acceptance check. Nothing pushed, deployed or packaged.
+
+
+Validation completed: 13/13 native Three.js fidelity profiles pass with actual draws after each change; Racer menu/race comparisons pass; Bowling's 3×-display regression is reproduced and corrected (original/new High 2400×1800, prior High 1600×1200, Low 800×600 in an 800×600 CSS viewport). Racer original versus High race captures differ in only 29 pixels out of 1,890,672, by at most one channel value out of 255. Focused desktop Node checks: 31/31. Web Node checks: 253/253; local build, 978-page checks and 1,879-file release audit pass. Reports include all-games-report.json, racer-report.json, racer-race-report.json and bowling-density-report.json in the audit directory.
+
+## Universal graphics: Auto, High, Standard, Low — 2026-10-10
+
+The user clarified that the universal setting must exist in both desktop and web, then specified Auto, High, Standard and Low. That explicit request authorized the desktop work after the initial web-only phase. Both source trees are implemented locally; no push, deployment or installer build occurs before user testing.
+
+Auto is the fresh default and measures each actual renderer's frames, reduces detail after sustained slow rendering, and cautiously retries higher detail with hysteresis/backoff. Manual High, Standard and Low and per-game inheritance are supported; existing Lightweight migrates to Low and explicit legacy High/Low to those named choices. Gameplay clocks, physics, input and speech are preserved. Shared runtime details and hardware limits are in GRAPHICS-QUALITY.md.
+
+The web has 13 profiles; desktop has the same 13 plus its catalog-only Sphere Splash. Desktop uses production preload/IPC, isolated per-key persistence in userData and authoritative async startup for every renderer. Native differences were selectively retained. The table below records the original web file scope with its updated desktop disposition. Desktop-specific files and final test results are recorded in its ELECTRON-SCAN-UPGRADE.md. Four-mode verification supersedes the earlier 247-test/two-mode snapshot; current outcomes are in GRAPHICS-VALIDATION.md. Pi performance and user acceptance remain pending.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| AGENTS.md | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| GRAPHICS-DESKTOP-PARITY.md | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| GRAPHICS-QUALITY.md | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| GRAPHICS-VALIDATION.md | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| SCAN-UPGRADE-CHANGES.md | WEB RECORD / NO RUNTIME PORT | This file-level implementation and test record. |
+| bennyshub/ACCESSIBILITY.md | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| bennyshub/apps/games/BENNYSBALLISTA/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSBALLISTA/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/BENNYSBALLISTA/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/BENNYSBASEBALL2/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSBASEBALL2/js/game.js | SHARED RENDERING/SETTINGS / DESKTOP IMPLEMENTED | Display-density profile, canvas settings/status and pause layout; retain logical world/input coordinates. |
+| bennyshub/apps/games/BENNYSBASEBALL2/js/rendering.js | SHARED RENDERING/SETTINGS / DESKTOP IMPLEMENTED | Display-density profile, canvas settings/status and pause layout; retain logical world/input coordinates. |
+| bennyshub/apps/games/BENNYSBASEBALL2/js/scenes.js | SHARED RENDERING/SETTINGS / DESKTOP IMPLEMENTED | Display-density profile, canvas settings/status and pause layout; retain logical world/input coordinates. |
+| bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/js/arena.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Simplify crowd heads/seats and freeze decorative motion only; preserve scoreboard and random sequence. |
+| bennyshub/apps/games/BENNYSBOWLING/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSBOWLING/js/bowlchallenge.js | SHARED RENDERING/SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Integrate graphics settings and rendering without gameplay/input retuning. |
+| bennyshub/apps/games/BENNYSDICE/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSDICE/js/game.js | SHARED RENDERING/SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Integrate graphics settings and rendering without gameplay/input retuning. |
+| bennyshub/apps/games/BENNYSFISHMYSTERY/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSFISHMYSTERY/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/BENNYSFISHMYSTERY/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/BENNYSPEGGLE/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSPEGGLE/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/BENNYSPEGGLE/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/BENNYSRACETRACKS/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/BENNYSRACETRACKS/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/BENNYSRACETRACKS/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/NARBEANIMALFRIENDS/css/style.css | SHARED PRESENTATION / DESKTOP IMPLEMENTED | Wrap the graphics status inside the Animal Friends settings row. |
+| bennyshub/apps/games/NARBEANIMALFRIENDS/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/NARBEANIMALFRIENDS/js/stage3d.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/NARBEANIMALFRIENDS/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/NARBEKART/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/NARBEKART/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/NARBEKART/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/NARBEMINIGOLF/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/NARBEMINIGOLF/js/main.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/NARBEMINIGOLF/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/apps/games/NARBEPICKLEBALL/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/game.js | SHARED RENDERING/SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Integrate graphics settings and rendering without gameplay/input retuning. |
+| bennyshub/apps/games/NARBEPICKLEBALL/js/scene.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/ROBOTFOOTBALL/index.html | WEB ENTRY / SELECTIVE DESKTOP PORT IMPLEMENTED | Load shared graphics manager after platform; retain analytics/favicons. Basketball/Baseball include renderer bootstrap/settings; Fish includes scoped label wrapping. |
+| bennyshub/apps/games/ROBOTFOOTBALL/js/renderer.js | SHARED RENDERING / DESKTOP IMPLEMENTED | Renderer options, resize/adaptive caps, shadows, safe live updates and renderer-owned subscription cleanup. |
+| bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js | SHARED SETTINGS / SELECTIVE DESKTOP PORT IMPLEMENTED | Existing scan-adapter graphics choice, live label and stable redraw identity; scoped text fit. |
+| bennyshub/index.html | WEB HUB / DESKTOP HUNKS IMPLEMENTED | Accessible Graphics quality default, live value and stable settings scan ID. |
+| bennyshub/service-worker.js | WEB ONLY / NO DESKTOP PORT | Version v38 and precache shared graphics resolver; retain named-asset network-first policy. |
+| bennyshub/shared/graphics-quality.js | SHARED / DESKTOP IMPLEMENTED | Public resolver, device-local precedence, migration, caps, launch-only options and disposal. |
+| bennyshub/shared/platform.js | PLATFORM-SPECIFIC / DESKTOP ADAPTATION IMPLEMENTED | Expose settings readiness/disposal and final-page close lifecycle; preserve storage/speech/input behavior. |
+| developer-guide.html | DOCUMENTATION / DESKTOP GUIDANCE UPDATED | Graphics integration contract, profiles, audit, recovery, verification or desktop parity guidance. |
+| scripts/check-graphics-exits.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics-frames.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics-gameplay.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics-games.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics-interactions.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics-offline.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| scripts/check-graphics.cjs | WEB TEST / NATIVE SUITES ADDED | Reproducible browser graphics/settings/gameplay/lifecycle checks; isolated profiles and local artifacts. |
+| tests/graphics-quality.test.cjs | WEB TEST / NATIVE SUITES ADDED | Thirteen shared-contract tests, including future-game and asynchronous adapter cases. |
+
+
 ## NARBE Racer: Wonder and Dream cups, set pieces, coin luck, item icons — 2026-10-10
 
 User requested publishing the PC Hub NARBE Racer update to the website. Sixteen tracks in four cups: every track's big jump is now a full-width landscape gap (creek, canyon, moat, sea trench, tar pit, ball pit, city street, molten gear pit and more); the Wonder Cup (Jungle Falls, Floating Isles, Coral Reef, Dino Valley) and the new Dream Cup (Toy Room, Funfair, Neon City, Clockwork Factory) add loop-de-loops, steep berms, drive-through waterfalls and themed curtains (bubbles, steam, hologram, confetti), archway runs and sky islands, each with its own scenery set and theme song. Coins are now item luck: the coins a player holds at a Power Box pull the odds toward better items (more when further behind, reaching a jackpot band in last place) and are spent on the item; coin trails hop between two lanes. The HUD item slot and roulette use drawn, centred icons instead of platform emoji.

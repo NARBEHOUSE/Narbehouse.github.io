@@ -27,6 +27,7 @@
  */
 NK.ui = (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('racer');
 
   const U = NK.util;
   const C = NK.C;
@@ -465,6 +466,8 @@ NK.ui = (function () {
     }
     restartAutoScan();
   }
+
+  hubGraphics.subscribe(() => { if (screen === 'settings') refresh(); });
 
   function refresh() {
     setScreen(screen, Object.assign({}, screenOpts, { index: index, announce: false }));
@@ -1200,6 +1203,7 @@ NK.ui = (function () {
       const nextSpeed = C.STEER_ORDER[(C.STEER_ORDER.indexOf(steerSpeed) + 1) % C.STEER_ORDER.length];
 
       const list = [
+        { id: 'graphics-quality', label: 'Graphics quality', value: hubGraphics.label().replace('Graphics quality: ', ''), speech: hubGraphics.label(), action: () => { hubGraphics.cycle(); refresh(); U.speak(hubGraphics.label()); } },
         { icon: '🗣️', label: 'Text to Speech', value: tts ? 'On' : 'Off', speech: 'Text to Speech, ' + (tts ? 'On' : 'Off'),
           action: () => { if (v) { v.toggleTTS(); refresh(); if (v.getSettings().ttsEnabled) U.speak('Text to speech on'); } } },
         { icon: '🎙️', label: 'Voice', value: voiceName, speech: 'Voice, ' + voiceName,

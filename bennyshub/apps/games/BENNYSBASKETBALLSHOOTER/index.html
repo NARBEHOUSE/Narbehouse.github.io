@@ -311,6 +311,7 @@
     <div id="canvas-container"></div>
 
     <script src="../../../shared/platform.js"></script>
+    <script src="../../../shared/graphics-quality.js"></script>
     <script src="../../../shared/scan-status-badge.js"></script>
     <script src="../../../shared/choice-scan.js"></script>
 <script src="../../../shared/choice-scan-adapter.js"></script>
@@ -347,6 +348,7 @@
             }
         };
         GameSettings.load();
+        const graphics = NarbeGraphics.openGame('basketball', { legacyPreference: GameSettings.graphics });
         const SFX = window.BB.SFX;
 
         // --- Audio System ---
@@ -483,7 +485,9 @@
 
         // --- Renderer, scene, quality ---
         function resolveQuality() {
-            if (GameSettings.graphics === 'high' || GameSettings.graphics === 'low') return GameSettings.graphics;
+            if (graphics.isLightweight()) return 'lightweight';
+            if (graphics.get().quality === 'high') return 'high';
+            if (graphics.get().mode === 'auto') return 'low';
             try { return localStorage.getItem('bennys_ball_autoq') || 'high'; } catch (e) { return 'high'; }
         }
         let quality = resolveQuality();
@@ -493,13 +497,13 @@
         scene.fog = new THREE.Fog(0x05060c, 120, 280);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        const renderer = new THREE.WebGLRenderer(graphics.rendererOptions({ antialias: true, powerPreference: 'high-performance' }));
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1);
+        renderer.setPixelRatio(graphics.pixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1, window.innerWidth, window.innerHeight));
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
-        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.enabled = !graphics.isLightweight();
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
@@ -696,6 +700,19 @@
         // --- Post-processing (high quality) ---
         let composer = null;
         function setupComposer() {
+            if (composer) {
+                composer.passes.forEach(pass => {
+                    pass.dispose?.();
+                    pass.material?.dispose();
+                    pass.materialHighPassFilter?.dispose();
+                    pass.separableBlurMaterials?.forEach(material => material.dispose());
+                    pass.compositeMaterial?.dispose();
+                    pass.materialCopy?.dispose();
+                });
+                composer.renderTarget1.dispose();
+                composer.renderTarget2.dispose();
+                composer.copyPass?.material?.dispose();
+            }
             composer = null;
             if (quality !== 'high' || !THREE.EffectComposer || !THREE.RenderPass || !THREE.UnrealBloomPass || !THREE.ShaderPass || !THREE.GammaCorrectionShader) return;
             try {
@@ -715,7 +732,8 @@
         }
 
         function applyQuality() {
-            renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1);
+            graphics.shadows(renderer, scene, true);
+            renderer.setPixelRatio(graphics.pixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1, window.innerWidth, window.innerHeight));
             court.setQuality(quality);
             arena.setQuality(quality);
             setupComposer();
@@ -1338,7 +1356,7 @@
                     scanSettings = { autoScan: GameSettings.autoScan };
                     displaySpeed = GameSettings.scanSpeed;
                 }
-                const graphicsLabel = GameSettings.graphics === 'auto' ? `AUTO (${quality.toUpperCase()})` : GameSettings.graphics.toUpperCase();
+
                 const settings = [
                     { label: `TTS: ${window.NarbeVoiceManager ? (window.NarbeVoiceManager.getSettings().ttsEnabled ? 'ON' : 'OFF') : (GameSettings.tts ? 'ON' : 'OFF')}`, action: 'toggle_tts' },
                     { label: `SFX: ${GameSettings.sfx ? 'ON' : 'OFF'}`, action: 'toggle_sfx' },
@@ -1350,7 +1368,7 @@
                     { label: `Aimer Speed: ${GameSettings.aimerSpeed.toUpperCase()}`, action: 'cycle_aimer_speed' },
                     { label: `Aimer Color: ${GameSettings.aimerColor.toUpperCase()}`, action: 'cycle_aimer' },
                     { label: `Ball Theme: ${GameSettings.ballTheme.toUpperCase()}`, action: 'cycle_ball' },
-                    { label: `Graphics: ${graphicsLabel}`, action: 'cycle_graphics' },
+                    { label: graphics.label(), action: 'cycle_graphics' },
                     { label: `BACK`, action: 'back' }
                 ];
                 settings.forEach(opt => {
@@ -1538,12 +1556,7 @@
                         break;
                     }
                     case 'cycle_graphics': {
-                        const modes = ['auto', 'high', 'low'];
-                        GameSettings.graphics = modes[(modes.indexOf(GameSettings.graphics) + 1) % modes.length];
-                        GameSettings.save();
-                        if (GameSettings.graphics === 'auto') { try { localStorage.removeItem('bennys_ball_autoq'); } catch (e) {} }
-                        quality = resolveQuality();
-                        applyQuality();
+                        graphics.cycle();
                         this.refreshSettingsMenu(); this.updateVisuals(); this.speakSelection();
                         break;
                     }
@@ -1817,6 +1830,7 @@
         function animate() {
             requestAnimationFrame(animate);
             isAnimating = true;
+            graphics.frame(performance.now());
             const dt = clock.getDelta();
             const frameTime = Math.min(dt, 0.1) * GAME_SPEED;
             const now = performance.now();
@@ -1973,7 +1987,7 @@
             }
 
             // Auto graphics: drop to low quality if the machine can't keep up
-            if (!perfChecked && GameSettings.graphics === 'auto' && quality === 'high' && (gameState === 'AIMING' || gameState === 'CHARGING' || gameState === 'SHOOTING')) {
+            if (!perfChecked && graphics.get().mode === 'standard' && quality === 'high' && (gameState === 'AIMING' || gameState === 'CHARGING' || gameState === 'SHOOTING')) {
                 perfFrames++; perfTime += dt;
                 if (perfTime > 4) {
                     perfChecked = true;
@@ -1994,6 +2008,7 @@
         }
 
         function onResize() {
+            renderer.setPixelRatio(graphics.pixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 1.75) : 1, window.innerWidth, window.innerHeight));
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -2049,6 +2064,12 @@
             if (!isAnimating) animate();
         }
 
+        graphics.subscribe(() => {
+            quality = resolveQuality();
+            perfChecked = false; perfFrames = 0; perfTime = 0;
+            applyQuality();
+            MenuManager.refreshSettingsMenu();
+        });
         window.addEventListener('load', init);
     </script>
 <script src="scan-access.js"></script>
