@@ -1,5 +1,45 @@
 # Web scan implementation and Companion 1.0.8
 
+## Legal-page publication authorized — 2026-10-10
+
+The owner explicitly instructed "ok push" after reviewing the local privacy/terms work, superseding the earlier local-only restriction. Publish the current generic notices and confirmed LLC operator/privacy contact through the existing main-to-Pages workflows. Outstanding provider/form settings and legal applicability remain documented in the private review; approval does not verify them. No tracking/consent settings or game/scan/speech/Electron behavior is changed.
+
+Resolve the build's license dependency by keeping the byte-identical released license in extension/LICENSE. Only the separate branding paragraph may differ from the current website LICENSE; any other license change fails packaging. Existing immutable destinations are verified and skipped instead of rewritten. The active Companion ZIP/version, runtime, permissions, setup references and checksums remain unchanged.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| extension/LICENSE | BUILD INPUT / WEB-ONLY / NO PORT | Exact reviewed Companion license snapshot, preserving the released package bytes. |
+| scripts/companion-license.cjs | BUILD / WEB-ONLY / NO PORT | Permit only the separate branding paragraph to differ; fail other license changes. |
+| scripts/package-companion.cjs | BUILD / WEB-ONLY / NO PORT | Use the validated snapshot; avoid rewriting already-verified immutable files. |
+| tests/companion-license.test.cjs | TEST / WEB-ONLY / NO PORT | Cover branding-only changes, grant/disclaimer changes, malformed input and reviewed snapshot hash. |
+| README.md, CHANGELOG.md, SCAN-UPGRADE-CHANGES.md | DOCUMENTATION / WEB-ONLY / NO PORT | Explain snapshot maintenance and record publication authorization. |
+| ../SWITCHEDGAMES/CHANGELOG.md | DOCUMENTATION / WEB-ONLY / NO PORT | Record the owner's publication instruction. |
+
+Pre-publication uncommitted files backed up and hash-verified outside the websites at F:/PROJECT FILES/WEBSITES/Website Backups/Legal-publication-2026-10-10-1791680815715. Its release baseline records 1,657 existing release/download files and timestamps. The original legal-page backup and fact table remain at F:/PROJECT FILES/WEBSITES/Website Backups/SwitchedGames-legal-2026-10-10-1791679705308.
+
+Validation before push: 257 Node tests pass; build succeeds; 994 page/link checks pass; public release audit covers 1,881 files with no problems/findings. The active Companion ZIP matches the submitted SHA-256; all 1,657 pre-existing release/download files retain their bytes and timestamps. The 201 legal-page browser checks remain applicable to unchanged HTML/CSS.
+
+## SwitchedGames privacy, terms and branding — 2026-10-10
+
+Local review only. This request does not authorize publication, regardless of prior approvals recorded below. Preserve graphics/audio changes, game behavior, shared scan/speech code, Electron applications and existing release archives. No Electron port.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| index.html | WEB-ONLY / NO PORT | Add SwitchedGames names and a separate policy pointer outside the unchanged mirrored privacy text. |
+| bennyshub/index.html | WEB-ONLY / NO PORT | Narrow SwitchedGames branding and third-party/contributor ownership clarification only. |
+| crypto-statement/index.html | WEB-ONLY / NO PORT | Matching narrow branding clarification. |
+| LICENSE | WEB-ONLY / NO PORT | Add SwitchedGames name variants in the separate branding note; preserve license grants. |
+| README.md | WEB-ONLY / NO PORT | Matching SwitchedGames branding reference. |
+| CHANGELOG.md | WEB-ONLY / NO PORT | Record the local legal/branding change. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NO PORT | Record every changed source file and related-site scope. |
+| ../SWITCHEDGAMES/privacy.html, terms.html, legal.css | WEB-ONLY / NO PORT | New readable static legal pages; no Analytics, fonts API, widget or automatic notice script. |
+| ../SWITCHEDGAMES/index.html, aboutus.html, crypto-statement/index.html | WEB-ONLY / NO PORT | Add accessible Privacy Policy and Terms of Use footer links and align structured publisher metadata with the owner-confirmed LLC operator; existing integrations unchanged. |
+| ../SWITCHEDGAMES/CHANGELOG.md | WEB-ONLY / NO PORT | Record related-site changes. |
+
+Backup originals verified with SHA-256 before editing: F:/PROJECT FILES/WEBSITES/Website Backups/SwitchedGames-legal-2026-10-10-1791679705308. Review evidence, fact table, validation and publication blockers are outside the published trees in its review directory. Both working trees were clean at the recorded baseline.
+
+Source-license branding is also bundled by scripts/package-companion.cjs into the immutable active Companion candidate. The build's byte-comparison guard must remain intact; no release ZIP, generated dist output, extension permission or shared privacy disclosure is edited by hand. See the external review report for the actual build result and required publication follow-up.
+
 ## Website publication approval — 2026-10-10
 
 After local testing and the High/Low fidelity review, the owner explicitly approved pushing the website. Publish the complete web change through the existing main → GitHub Pages workflow. The shared manager, service-worker cache v39, all 13 web profiles and future-game framework requirements are included. Desktop source remains local; no desktop installer or Companion store submission is included. Deployment success must be confirmed from the Actions run and live site.

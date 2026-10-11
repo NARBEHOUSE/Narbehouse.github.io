@@ -37,6 +37,8 @@ You are free to use, modify, distribute, and use this software commercially, pro
 
 See the [LICENSE](./LICENSE) file for full details.
 
+Companion packaging uses the byte-preserved `extension/LICENSE` snapshot so website branding updates do not rewrite released archives. Packaging requires every part except the separate branding paragraph to match the root license. Changes to software license terms require review of the snapshot and a new immutable release candidate.
+
 ---
 
 ## Trademark & Attribution
@@ -45,7 +47,7 @@ See the [LICENSE](./LICENSE) file for full details.
 
 The MIT License applies to the source code only.
 
-Use of the project name, logo, or branding does **not** grant trademark rights.
+Use of the project name, logo, or branding does **not** grant trademark rights. This includes SwitchedGames (also presented as Switched Games and SwitchedGames.org), a product of NARBE LLC.
 
 Forks and derivative works must not imply endorsement, sponsorship, or official affiliation with NARBE LLC or the NARBE Foundation without written permission.
 
