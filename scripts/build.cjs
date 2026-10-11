@@ -19,7 +19,7 @@ async function build(){
   runPackage(['--check']);
   const existing=await fs.lstat(dest).catch(()=>null);if(existing){if(existing.isSymbolicLink()||(await fs.realpath(dest))!==dest)throw Error('Refusing unsafe build destination');await fs.rm(dest,{recursive:true});}
   await fs.mkdir(dest);
-  const publicRoots=['bennyshub','logos','videos','steviesmusic','index.html','ai-workflow.html','developer-guide.html','the-dream.html','LICENSE'];
+  const publicRoots=['crypto-statement','bennyshub','logos','videos','steviesmusic','index.html','ai-workflow.html','developer-guide.html','the-dream.html','LICENSE'];
   const extensions=new Set(['.html','.js','.mjs','.css','.json','.webmanifest','.svg','.png','.jpg','.jpeg','.gif','.webp','.ico','.wav','.mp3','.mp4','.webm','.ogg','.wasm','.gz','.csv','.txt','.woff','.woff2','.ttf','.glb','.gltf','.bin','.obj','.mtl']);
   for(const item of publicRoots)await fs.cp(path.join(root,item),path.join(dest,item),{recursive:true,filter:async source=>{
     const rel=path.relative(root,source).replaceAll('\\','/');const name=path.basename(source);
