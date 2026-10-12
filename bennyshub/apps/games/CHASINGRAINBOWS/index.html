@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chasing Rainbows</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- The weather: a living sky behind the table (js/sky.js). -->
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<!-- Top to bottom: what's being said, the other players, the table (only cards live in the
+     middle of the screen), your rainbow and your hand, and your choices under your hand. -->
+<div id="game">
+  <div id="caption" aria-live="polite"></div>
+  <section id="seats" aria-label="Other players"></section>
+  <main id="table" aria-label="Card table"></main>
+  <section id="mineRow">
+    <div id="mine" aria-label="Your rainbow"></div>
+    <section id="hand" aria-label="Your hand"></section>
+  </section>
+  <nav id="bar" aria-label="Your choices">
+    <div id="banner"></div>
+    <div id="choices" class="choices"></div>
+    <div id="panels"></div>
+    <div id="choiceStatus"></div>
+  </nav>
+</div>
+<button id="pauseBtn" type="button" aria-label="Pause"><span>⏸️</span> Pause</button>
+<div id="fly" aria-hidden="true"></div>
+<div id="fxLayer" aria-hidden="true"></div>
+<div id="overlay"></div>
+<div id="holdRing" aria-hidden="true"><i></i><span>Keep holding to pause</span></div>
+
+<!-- Hub shared modules first, in the hub's order (ACCESSIBILITY.md §5): the platform and the
+     choice scanner before the managers, the adapter before the game. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js missing')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js missing')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js missing')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js missing')"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+
+<!-- The rules: pure, no DOM - the same files the Node tests run. -->
+<script src="js/cards.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/words.js"></script>
+<script src="js/menus.js"></script>
+<script src="js/display.js"></script>
+<!-- The show. -->
+<script src="js/sky.js" onerror="console.warn('sky.js missing: the game plays without weather')"></script>
+<script src="js/table.js"></script>
+<script src="js/narrator.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

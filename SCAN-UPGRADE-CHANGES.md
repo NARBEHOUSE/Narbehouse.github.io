@@ -1,5 +1,88 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows creator review release — 2026-10-12
+
+The owner explicitly requested publishing Chasing Rainbows for creator testing at a direct Benny's Hub link, without adding it to the manifest. The game remains absent from the Hub catalog and SwitchedGames listing. The game is publicly reachable at its direct URL; noindex/nofollow discourages indexing and is not access control. All creator credits and ownership restrictions remain intact. Original partner reference documents and artwork stay local. No desktop application or shared scan/speech module is changed.
+
+Direct URL: https://narbehouse.github.io/bennyshub/apps/games/CHASINGRAINBOWS/index.html
+
+Backup: F:/PROJECT FILES/WEBSITES/Website Backups/ChasingRainbows-before-web-2026-10-12. Baseline commit: 1a8433ca420ef20c704967d1ffa96239d3337819. The existing games.json remains byte-for-byte unchanged (SHA-256 a6671526c2c89a8f1f47be2f0f3b1debc0c8463b9682ba4da8b0df174b71c2a8).
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| .gitignore | WEB-ONLY / NO PORT | Exclude original partner reference documents and art from Git. |
+| scripts/build.cjs | WEB-ONLY / NO PORT | Exclude the local REFERENCE DATA folder from the public build. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NO PORT | Record the direct-link publication scope and checks. |
+| bennyshub/apps/games/CHASINGRAINBOWS/NOTICE.md | WEB-ONLY / NO PORT | Retain creator ownership/reuse notices and record the authorized creator review release. |
+| bennyshub/apps/games/CHASINGRAINBOWS/README-ACCESSIBLE.md | WEB-ONLY / NO PORT | Preserve the existing game and accessibility documentation. |
+| bennyshub/apps/games/CHASINGRAINBOWS/README.md | WEB-ONLY / NO PORT | Preserve the existing game and accessibility documentation. |
+| bennyshub/apps/games/CHASINGRAINBOWS/SPEC.md | WEB-ONLY / NO PORT | Retain the game design history and record the direct-link review authorization. |
+| bennyshub/apps/games/CHASINGRAINBOWS/css/style.css | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/fonts/Nunito.ttf | WEB-ONLY / NO PORT | Ship the existing local font and its license. |
+| bennyshub/apps/games/CHASINGRAINBOWS/fonts/OFL.txt | WEB-ONLY / NO PORT | Ship the existing local font and its license. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/back.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/blue.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/cloud.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/day.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/double.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/fog.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/green.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/indigo.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/night.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/orange.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/rain.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/red.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/storm.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/sun.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/violet.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/wild.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/wind.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/img/cards/yellow.webp | WEB-ONLY / NO PORT | Ship the existing optimized card artwork. |
+| bennyshub/apps/games/CHASINGRAINBOWS/index.html | WEB-ONLY / NO PORT | Add the web entry, noindex/nofollow metadata, and omit the unavailable desktop electron bridge. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/ai.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/app.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/audio.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/cards.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/display.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/engine.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/fx.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/menus.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/narrator.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/sky.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/table.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/words.js | WEB-ONLY / NO PORT | Ship the existing game code/styles without gameplay or control changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/card.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/chime.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/fog.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/night.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note0.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note1.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note2.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note3.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note4.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note5.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note6.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/note7.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/pop.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/puff.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/rain.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/shuffle.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/slam.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/sparkle.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/thunder.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/turn.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/sound/whoosh.wav | WEB-ONLY / NO PORT | Ship the existing game audio. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/display.test.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/dom-smoke.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/menus.test.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/rules.test.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/sim.test.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/sky.test.cjs | WEB-ONLY / NO PORT | Preserve the existing game verification harness. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tools/make-card-art.py | WEB-ONLY / NO PORT | Preserve local asset-generation source; excluded from the public build. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tools/make-sounds.py | WEB-ONLY / NO PORT | Preserve local asset-generation source; excluded from the public build. |
+
+Validation: 46 existing game checks and 257 website checks passed. The web build passed, 1,017 case-sensitive page/link checks passed, and the 1,937-file public release audit reported no problems or findings. The existing Companion ZIP hash remains unchanged. The focused switch-navigation integration run passed every menu, nested settings, pause, main-menu save/resume, Look/Back navigation and a complete game to results with no script errors. The remaining long-running scenarios were stopped after this coverage; the full seven-scenario suite was not completed. Browser rendering was not exercised on this development PC, per the game README.
+
 ## Legal-page publication authorized — 2026-10-10
 
 The owner explicitly instructed "ok push" after reviewing the local privacy/terms work, superseding the earlier local-only restriction. Publish the current generic notices and confirmed LLC operator/privacy contact through the existing main-to-Pages workflows. Outstanding provider/form settings and legal applicability remain documented in the private review; approval does not verify them. No tracking/consent settings or game/scan/speech/Electron behavior is changed.
