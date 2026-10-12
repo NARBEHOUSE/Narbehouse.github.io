@@ -165,12 +165,30 @@ async function play(label, settings, opts) {
     if (opts.tour && !toured && d.turnNo >= 4 && d.ids.includes('pause')) { toured = true; await saveAndResume(); stats.resumed = 1; continue; }
     // In a Look row: hear one thing, then leave by the Back stop.
     if (d.ids[0] === 'look:hand') {
-      await choose(d.ids[Math.floor(rand() * d.ids.length)]);
-      stats.looks++;
-      await sleep(40);
-      for (let k = 0; k < (auto ? 400 : 12) && dbg().choice && dbg().choice.id !== 'narbe:row-back'; k++) { if (auto) await sleep(25); else await press('Space'); }
-      await press('Enter');
-      stats.backs++;
+      // The Look row must be on screen: the bar swaps to its panel (a hidden panel once left
+      // the player hearing "My hand" with nothing to see).
+      const doc = w.document, bar = doc.getElementById('bar');
+      const panel = doc.querySelector('#panels .panel:last-child');
+      if (!bar.classList.contains('nested') || !panel || panel.querySelectorAll('.list .choice').length !== d.ids.length) {
+        throw new Error(label + ': the Look row is not on screen (bar nested: ' + bar.classList.contains('nested') + ')');
+      }
+      const atMenu = () => { const x = dbg(); return x.ids.includes('look') && x.ids.includes('pause') && !bar.classList.contains('nested'); };
+      if (rand() < 0.5) {
+        // Choose something to look at: the answer shows, and you're back at the turn menu on Look.
+        await choose(d.ids[Math.floor(rand() * d.ids.length)]);
+        stats.looks++;
+        await sleep(60);
+        const out = doc.getElementById('lookToast');
+        if (!out || !out.textContent.trim() || !out.classList.contains('show')) throw new Error(label + ': Look chose an item but showed no answer');
+        if (!atMenu() || dbg().choice.id !== 'look') throw new Error(label + ': choosing a Look item did not return to the turn menu on Look');
+      } else {
+        // Or leave by the row's Back stop.
+        for (let k = 0; k < (auto ? 400 : 12) && dbg().choice && dbg().choice.id !== 'narbe:row-back'; k++) { if (auto) await sleep(25); else await press('Space'); }
+        await press('Enter');
+        await sleep(60);
+        if (!atMenu()) throw new Error(label + ': the Back stop did not return to the turn menu');
+        stats.backs++;
+      }
       continue;
     }
     const moves = d.ids.filter((id, i) => !['look', 'pause'].includes(id));

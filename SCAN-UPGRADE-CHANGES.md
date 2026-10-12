@@ -1,5 +1,19 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows Look navigation update — 2026-10-12
+
+The owner requested publication of the latest local game update. Look answers now appear in a large-print callout and return focus to Look in the turn menu; mouse/touch can return through the row title or dimmed turn menu, and choosing a different row item retains its parent navigation. The game remains direct-link only, with the existing Hub manifest byte-for-byte unchanged. No shared module or Electron application is changed.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/app.js | WEB-ONLY / NO PORT | Publish the supplied Look answer, row visibility and pointer-navigation changes. |
+| bennyshub/apps/games/CHASINGRAINBOWS/css/style.css | WEB-ONLY / NO PORT | Publish the supplied answer callout, emphasis and row-title styling. |
+| bennyshub/apps/games/CHASINGRAINBOWS/README-ACCESSIBLE.md | WEB-ONLY / NO PORT | Document Look return behavior and mouse/touch navigation. |
+| bennyshub/apps/games/CHASINGRAINBOWS/tests/dom-smoke.cjs | WEB-ONLY / NO PORT | Publish the supplied checks for visible Look choices, answer feedback and return navigation. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NO PORT | Record the update and publication validation. |
+
+Validation: all 46 game checks pass. A focused Node/jsdom check exercises all five Look answers, row Back, row-title Back, dimmed-menu Back, pointer selection of an unhighlighted Look item and pause/settings/resume, with no script errors. Build, 1,017 page/link checks and the 1,937-file public audit pass. The source and built game manifests match the original SHA-256 a6671526c2c89a8f1f47be2f0f3b1debc0c8463b9682ba4da8b0df174b71c2a8. Visual rendering, real speech and switch hardware were not exercised on this PC, per the game README. Focused check evidence: ../tmp/chasingrainbows-look-release/. Prior public version: c8ab8fda86fa201f9e4c01087b8a345d419dea7d.
+
 ## Chasing Rainbows creator review release — 2026-10-12
 
 The owner explicitly requested publishing Chasing Rainbows for creator testing at a direct Benny's Hub link, without adding it to the manifest. The game remains absent from the Hub catalog and SwitchedGames listing. The game is publicly reachable at its direct URL; noindex/nofollow discourages indexing and is not access control. All creator credits and ownership restrictions remain intact. Original partner reference documents and artwork stay local. No desktop application or shared scan/speech module is changed.

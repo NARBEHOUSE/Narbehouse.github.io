@@ -40,6 +40,10 @@ Choices marked ▸ open a row, and the row puts the highlight right where the ac
 Every row loops through a spoken **Back** stop, shown with a dashed outline. Back returns to
 the choice that opened the row (ACCESSIBILITY.md §4).
 
+With a mouse or touch, tap the row's title (‹) or the dimmed turn menu to go back. Tapping a
+choice inside a row steps the highlight to it rather than jumping. A jump would reopen the
+row as a new top-level menu and lose its way back.
+
 To save presses:
 
 - **Auto-draw:** when drawing is the only option, the game draws for you and says so.
@@ -68,6 +72,10 @@ The **Block prompts** setting decides when you're asked:
   - the other players;
   - the piles;
   - **What just happened**.
+
+  Choosing one speaks it and shows it in big print above the choice bar. Like a key on a
+  keyboard row, it then returns you to the turn menu with Look still lit, so Enter opens
+  Look again.
 - Every move by every player is spoken one line at a time and never cut off by the next scene.
 - Your own scanning always cuts in. Anything you talk over can be replayed from What just happened.
 - **Captions** show every spoken line in large print, for players who can't hear it.

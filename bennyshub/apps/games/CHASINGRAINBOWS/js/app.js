@@ -288,10 +288,29 @@
     if (!choice || !choice.active || performance.now() - openedAt < GHOST_MS) return;
     const cur = choice.context;
     if (!cur) return;
+    // Inside a row, tapping the row's title or the dimmed turn menu goes back out.
+    if (ctx === 'table' && levels.length && (e.target.closest('.crumb') || e.target.closest('#choices'))) {
+      backOut(!!e.target.closest('#choices'));
+      return;
+    }
     const hit = cur.items.find(it => it.element && it.element.contains(e.target));
     if (!hit) return;
-    if (choice.getState().id !== hit.id) choice.align(hit.id);
+    if (choice.getState().id !== hit.id) {
+      // align() would re-open this row as a fresh top-level menu, losing its Back stop and
+      // the way out. Inside a row, step the highlight round to the tapped item instead.
+      if (choice.getState().depth > 0) {
+        for (let k = 0; k < cur.items.length + 2 && choice.getState().id !== hit.id; k++) choice.step(1);
+        if (choice.getState().id !== hit.id) return;
+      } else choice.align(hit.id);
+    }
     choice.select();
+  }
+  /** Leave the open row (all of them with toRoot), landing on the choice that opened it. */
+  function backOut(toRoot) {
+    for (let guard = 0; levels.length && guard < 8; guard++) {
+      if (!choice.back({ restore: true })) break;
+      if (!toRoot) break;
+    }
   }
 
   /* ══ switch input ════════════════════════════════════════════════════════ */
@@ -462,11 +481,14 @@
     if (needsPanel) {
       lvl.panel = document.createElement('div');
       lvl.panel.className = 'panel';
-      lvl.panel.innerHTML = '<div class="crumb">' + esc(ref.label) + ' ›</div><div class="list"></div>';
+      // The title doubles as a way back for mouse and touch (switches use the Back stop).
+      lvl.panel.innerHTML = '<div class="crumb" title="Back"><span class="bk">‹</span>' + esc(ref.label) + '</div><div class="list"></div>';
       $('panels').appendChild(lvl.panel);
     }
     const list = ref.children.map(ch => ({ id: ch.id, label: () => labelFor(ch), element: place(ch, lvl, lvl.panel && lvl.panel.querySelector('.list')), ref: ch }));
     levels.push(lvl);
+    // Show this row's panel (the bar swaps to it) before the scanner lands on its first item.
+    refreshPicking();
     const ok = choice && choice.enterGroup({ key: lvl.key, kind: 'table', items: list, statusHost: $('choiceStatus') }, { wrap: true, backStop: true });
     if (!ok) cleanupLevel(levels.pop());
     updateBanner();
@@ -487,7 +509,13 @@
   function tableChoice(ref) {
     if (ref.kind === 'group') { enterRow(ref); return; }
     if (ref.kind === 'pause') { openPause(); return; }
-    if (ref.kind === 'look') { lookAt(ref.id); return; }
+    if (ref.kind === 'look') {
+      // Like a key on a keyboard row, choosing returns to the menu it came from, with Look
+      // still lit: Enter opens it again. The answer is spoken and stays on screen.
+      if (choice) choice.back({ restore: true });
+      lookAt(ref.id);
+      return;
+    }
     if (typeof ref.action === 'function') { ref.action(); return; }
     if (ref.kind === 'move') {
       if (S.confirmDiscard && /^discard:/.test(ref.move) && !ref.confirmed) {
@@ -520,7 +548,27 @@
     else if (id === 'look:piles') text = W.sayPiles(v);
     else if (id === 'look:recent') { const r = N.recent(6); text = r.length ? r.join(' ') : 'Nothing has happened yet.'; }
     N.caption(text);
+    showLook(text);
+    // Point at what's being described.
+    const at = { 'look:hand': $('hand'), 'look:rainbow': $('mine'), 'look:players': $('seats'), 'look:piles': $('piles') }[id];
+    if (at) T.pulse(at, 'lookpulse');
     if (choice) choice.announce(text); else scanSpeak(text);
+  }
+
+  /** Look's answer, in big print above the choice bar, until it has had time to be read. */
+  let lookTimer = null;
+  function showLook(text) {
+    let box = $('lookToast');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'lookToast';
+      box.setAttribute('aria-live', 'polite');
+      $('bar').appendChild(box);
+    }
+    box.textContent = text;
+    box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+    clearTimeout(lookTimer);
+    lookTimer = setTimeout(() => box.classList.remove('show'), Math.max(7000, text.length * 75));
   }
 
   /* ══ the game loop ═══════════════════════════════════════════════════════ */

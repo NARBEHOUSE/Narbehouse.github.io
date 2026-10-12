@@ -396,6 +396,19 @@ body:not([data-motion="full"]) .hcard.foil .shine, body:not([data-motion="full"]
 .panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
 #panels .panel:last-child { display: flex; }
 #panels .panel:not(:last-child) { display: none; }
+#bar { position: relative; }
+#lookToast {
+  display: none; position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); z-index: 20;
+  width: max-content; max-width: min(900px, 92vw); padding: 12px 20px; border-radius: 18px;
+  background: rgba(10, 18, 44, .95); border: 3px solid var(--hl); box-shadow: 0 10px 30px rgba(0, 0, 30, .5);
+  font-size: calc(1.2rem * var(--ui)); font-weight: 800; line-height: 1.35; text-align: center;
+}
+#lookToast.show { display: block; animation: captionIn .35s ease-out; }
+.lookpulse { animation: lookp 1.2s ease-out; }
+@keyframes lookp { 0% { box-shadow: 0 0 0 0 rgba(255, 213, 79, .85); } 100% { box-shadow: 0 0 0 18px rgba(255, 213, 79, 0); } }
+.panel .crumb { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, .1); border: 2px solid rgba(255, 255, 255, .25); }
+.panel .crumb .bk { font-size: 1.4em; line-height: 1; }
 .panel .crumb { font-size: calc(1rem * var(--ui)); font-weight: 900; color: var(--soft); white-space: nowrap; }
 
 .choice, .item {
