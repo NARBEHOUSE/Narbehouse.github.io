@@ -140,10 +140,18 @@
       menu.appendChild(el);
     });
   }
-  /** No card may need a scrollbar: tighten, then scale (never below 0.6). */
+  const phoneLayout = () => getComputedStyle(document.documentElement).getPropertyValue('--phone-layout').trim() === '1';
+  function revealOnPhone(el, block = 'nearest') {
+    if (phoneLayout() && el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block, inline: 'nearest', behavior: 'instant' });
+    }
+  }
+
+  /** Large screens tighten then scale; phones keep readable controls in the scrolling overlay. */
   function fitCard() {
     const card = $('card'), ov = $('overlay');
     card.classList.remove('tight'); card.style.transform = '';
+    if (phoneLayout()) return;
     const room = ov.clientHeight - 24;
     const natural = () => Math.max(card.getBoundingClientRect().height, card.scrollHeight + 10);
     if (natural() <= room) return;
@@ -185,7 +193,7 @@
     $('cardSub').innerHTML = meta.sub || '';
     $('hint').innerHTML = meta.hint !== undefined ? meta.hint : defaultHint();
     renderCard();
-    if (!keep) swallowHeld();
+    if (!keep) { ov.scrollTop = 0; swallowHeld(); }
     fitCard();
     syncChoice({ fresh: !keep, restoreId: opts.restore ? memory.get(memKey(name, opts)) : null });
     showFocus();
@@ -232,6 +240,8 @@
       if (ref.card && ref.move && /^discard:/.test(ref.move) && item.element && !item.element.classList.contains('hcard')) its.push([T.handEl(ref.card), 'echo']);
     }
     setFocus(its);
+    // The phone page scrolls. Follow the actual choice, never its decorative pile/card echo.
+    revealOnPhone(item && item.element);
     const paused = !!(item && state && state.braked);
     document.body.classList.toggle('scan-paused', paused);
   }
@@ -567,6 +577,7 @@
     }
     box.textContent = text;
     box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+    revealOnPhone(box, 'start');
     clearTimeout(lookTimer);
     lookTimer = setTimeout(() => box.classList.remove('show'), Math.max(7000, text.length * 75));
   }

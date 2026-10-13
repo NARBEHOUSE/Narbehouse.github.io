@@ -636,3 +636,133 @@ body[data-motion="calm"] .seat.active .avatar::after, body[data-motion="calm"] .
   -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 3px #14143a; paint-order: stroke fill;
 }
 body[data-motion="calm"] .showfan img, body[data-motion="calm"] .hcard > img, body[data-motion="calm"] #pileDraw.inviting .stack img { animation: none; }
+
+/* Phones use a readable, vertically scrolling layout. Keep the existing tablet/desktop
+   composition above; short landscape phones need the same escape from fixed-height sizing. */
+@media (max-width: 600px), (max-width: 960px) and (max-height: 500px) {
+  :root {
+    --phone-layout: 1;
+    --pileH: clamp(70px, 22vw, 112px);
+    --meldH: 42px;
+  }
+  #game, #overlay {
+    bottom: auto; height: 100%; height: 100dvh;
+    overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    scroll-padding-block: 16px;
+  }
+  #game {
+    gap: 16px; padding-top: calc(max(12px, env(safe-area-inset-top)) + 52px);
+    scroll-padding-top: calc(max(12px, env(safe-area-inset-top)) + 52px);
+  }
+  #game > * { min-width: 0; }
+  #caption {
+    width: 100%; align-self: stretch; padding: 8px 10px;
+    font-size: calc(1rem * var(--ui)); overflow-wrap: anywhere;
+  }
+  #pauseBtn {
+    top: max(8px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+    min-height: 44px; font-size: 1rem; padding: 8px 14px; background: #101b40;
+  }
+  #seats { gap: 14px 10px; padding: 6px; }
+  .seat { flex: 1 1 130px; max-width: 260px; padding: 8px; gap: 6px; grid-template-columns: auto minmax(0, 1fr); }
+  .seat .avatar { width: 34px; height: 34px; font-size: 22px; }
+  .seat .nm { white-space: normal; overflow-wrap: anywhere; font-size: calc(.95rem * var(--ui)); }
+  .seat .ct { font-size: calc(.8rem * var(--ui)); }
+  .seat .badges { grid-column: 1 / -1; justify-content: center; }
+  .seat .fan { display: none; }
+  .seat.active, .seat.focused { transform: none; }
+  .seat .fogged { position: static; grid-column: 1 / -1; transform: none; white-space: normal; text-align: center; }
+
+  /* No size containment here: the felt grows with every player's played combos. */
+  #table { flex: 0 0 auto; container-type: normal; padding: 12px 4px 4px; }
+  #felt { min-width: 0; padding: 28px 8px 18px; gap: 24px; border-radius: 24px; }
+  .turntag { max-width: 100%; padding: 5px 12px; font-size: calc(.95rem * var(--ui)); white-space: normal; text-align: center; overflow-wrap: anywhere; }
+  #piles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; align-items: center; justify-items: center; }
+  .pile { min-width: 0; max-width: 100%; padding: 4px; }
+  .pile .stack, .pile .slot { height: var(--pileH); }
+  .spot { height: var(--spotH); }
+  .pile .lbl { font-size: calc(.7rem * var(--ui)); letter-spacing: .04em; overflow-wrap: anywhere; text-align: center; }
+  .pile .count { font-size: calc(.8rem * var(--ui)); right: -4px; padding: 2px 6px; }
+  .pile .frozen { max-width: 100%; padding: 3px; font-size: calc(.7rem * var(--ui)); white-space: normal; transform: translate(-50%, -50%); }
+  .spot .spotlbl { max-width: calc(100% + 16px); padding: 3px 5px; font-size: calc(.75rem * var(--ui)); white-space: normal; text-align: center; overflow-wrap: anywhere; }
+  #melds { width: 100%; gap: 18px 10px; }
+  .meld { max-width: 100%; min-width: 0; padding: 6px 10px 16px; }
+  .meld .mname { overflow-wrap: anywhere; max-width: 100%; }
+  .meld .mrow { flex-wrap: wrap; justify-content: center; gap: 18px 12px; }
+  .mgroup img { height: var(--meldH); }
+
+  #mineRow { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #mine { min-width: 0; padding: 10px; gap: 10px; }
+  #mine .who, #mine .bow, #mine .duo { min-width: 0; max-width: 100%; }
+  #mine .who { flex-wrap: wrap; overflow-wrap: anywhere; }
+  #mine .bow { flex: 1 1 100%; gap: 6px; }
+  #mine .bow .chip { min-width: calc(28px * var(--ui)); flex: 1 1 calc(28px * var(--ui)); }
+  #mine .bow .prog { margin-left: 0; }
+  #mine .duo { gap: 8px; }
+  #mine.nobody { display: none; }
+
+  /* Unoverlapped cards stay touchable even with a large hand. The desktop fan is unchanged. */
+  #hand {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+    gap: 26px 16px; align-items: start; justify-items: center;
+    padding: 24px 12px 20px; min-height: 0; perspective: none;
+  }
+  #hand.empty { display: flex; min-height: 70px; }
+  #hand .hcard, #hand:not(.myturn):not(.picking) .hcard {
+    width: 100%; max-width: 96px; height: auto; margin: 0;
+    transform: none; transform-style: flat; scroll-margin-block: 28px;
+  }
+  #hand .hcard.focused, #hand:not(.myturn):not(.picking) .hcard.focused { transform: translateY(-4px); }
+  #hand .hcard.arrive { animation-name: captionIn; }
+  #hand .hcard > img { animation: none; }
+  .hcard .n { font-size: calc(.85rem * var(--ui)); padding: 2px 6px; }
+  .hcard .star { font-size: calc(1.2rem * var(--ui)); right: -6px; }
+
+  #bar { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'banner' 'main' 'status'; gap: 12px; padding: 12px 10px; }
+  #banner { max-width: none; min-width: 0; padding: 0; overflow-wrap: anywhere; }
+  #choiceStatus:empty { display: none; }
+  .choices, .panel .list { width: 100%; gap: 10px; }
+  .choice { flex: 1 1 180px; max-width: 100%; min-width: 0; }
+  .choice, .item { min-height: 48px; padding: 10px; gap: 8px; font-size: calc(1rem * var(--ui)); scroll-margin-block: 16px; }
+  .choice .nm, .item .nm, .choice small, .item small { white-space: normal; overflow-wrap: anywhere; }
+  .choice .ic, .item .ic { font-size: calc(1.25rem * var(--ui)); width: 1.25em; }
+  .choice.focused, .item.focused { transform: none; }
+  .panel { min-width: 0; max-width: 100%; }
+  .panel .crumb { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  #lookToast {
+    position: static; grid-column: 1 / -1; grid-row: 1; transform: none;
+    width: 100%; max-width: 100%; padding: 10px; overflow-wrap: anywhere;
+  }
+  #bar:has(#lookToast.show) { grid-template-areas: 'answer' 'banner' 'main' 'status'; }
+  #lookToast.show { grid-area: answer; }
+
+  /* Menus scroll at the chosen text size instead of shrinking below a usable tap size. */
+  #overlay { align-items: flex-start; }
+  .card, .card.size-wide, .card.tight {
+    width: 100%; min-width: 0; max-width: 760px; max-height: none; flex: 0 0 auto;
+    margin-block: auto; padding: 16px 12px; border-radius: 20px;
+  }
+  .card > * { flex-shrink: 0; min-width: 0; }
+  .card h1 { font-size: calc(1.65rem * var(--ui)); overflow-wrap: anywhere; }
+  .card .sub { font-size: calc(1rem * var(--ui)); overflow-wrap: anywhere; }
+  .menu.grid2, .menu.cols2 { grid-template-columns: minmax(0, 1fr); }
+  .item { flex-wrap: wrap; min-width: 0; }
+  .item .lb { flex: 1 1 120px; }
+  .item .val { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .bigcard { height: auto; width: min(45vw, 190px); max-width: 100%; }
+  .showfan { width: 100%; max-width: 100%; height: 126px; }
+  .showfan img { height: 80px; bottom: 34px; }
+  .titlerow { flex-wrap: wrap; gap: 6px; max-width: 100%; }
+  .titlerow svg { width: 48px; flex: 0 0 48px; }
+  .wordmark { font-size: calc(clamp(1.6rem, 7vw, 2.3rem) * var(--ui)) !important; }
+  .by { font-size: calc(.95rem * var(--ui)); text-align: center; }
+  table.board { width: 100%; table-layout: fixed; font-size: calc(.9rem * var(--ui)); }
+  table.board td { padding: 6px 3px; overflow-wrap: anywhere; }
+  .card.results.win h1 { font-size: calc(2rem * var(--ui)); }
+  .callout { max-width: 90vw; white-space: normal; text-align: center; }
+  .callout span { font-size: calc(clamp(1.6rem, 7vw, 2.5rem) * var(--ui)); overflow-wrap: anywhere; }
+  .sweep span { padding: 10px 20px; font-size: calc(1.5rem * var(--ui)); text-align: center; }
+}

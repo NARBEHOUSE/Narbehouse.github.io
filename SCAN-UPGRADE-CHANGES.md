@@ -1,5 +1,22 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows phone layout — 2026-10-13
+
+The owner requested a mobile layout fix while keeping the working PC/tablet design. Phone widths up to 600px, plus short landscape viewports up to 960px wide and 500px high, now use a vertically scrolling game and menu overlay. Cards use a non-overlapping touch grid; seats, rainbow progress, choices, values and long labels wrap. Table piles size from width and played combos grow the felt instead of collapsing a size-contained table. Menus retain the chosen text size instead of shrinking to 60%; safe-area padding and dynamic viewport height accommodate phone browser chrome. Pause remains reachable, with scroll clearance beneath it. Highlighted choices and Look answers reveal themselves within the scrolling page. Existing scan identities, timing, gameplay and tablet/desktop CSS are retained.
+
+Backup: F:/PROJECT FILES/WEBSITES/Website Backups/ChasingRainbows-before-mobile-2026-10-13. The owner authorized pushing this update for collaborator testing through the existing direct link. Chasing Rainbows remains absent from games.json, and no catalog image is added. The Hub game catalog, shared modules, desktop application and existing release archives are unchanged.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/CHASINGRAINBOWS/css/style.css | WEB-ONLY / NO PORT | Add the phone breakpoint, scrolling/safe-area layout, wrapping cards and controls, and readable menus. |
+| bennyshub/apps/games/CHASINGRAINBOWS/js/app.js | WEB-ONLY / NO PORT | Bypass whole-menu scaling on phones; reset new menu scroll, retain in-place settings scroll, and reveal scan choices/Look answers. |
+| bennyshub/apps/games/CHASINGRAINBOWS/README-ACCESSIBLE.md | WEB-ONLY / NO PORT | Document the phone layout and automatic focus scrolling. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NO PORT | Record the change and verification limits. |
+
+Validation: all 46 existing game checks and 257 website checks passed. Node/jsdom navigation checks passed with desktop and phone layout flags: settings, menu resize transitions, in-place scroll retention, all five Look answers, row Back, row-title/dimmed-menu/pointer navigation, pause/settings/resume, and a six-player game at 150% text size including hand-card focus and row Back. JavaScript syntax and CSS parsing passed; the pre-existing CSS remains byte-for-byte unchanged before the appended phone rules. The web build, 1,017 page/link checks, and 1,937-file public audit passed. Built game CSS and JavaScript match source. Evidence: ../tmp/chasingrainbows-mobile/.
+
+Visual layout, CSS media-query rendering, real touch, speech and switch hardware remain unverified. jsdom does not render layout; its phone flag exercises the app's responsive behavior only. No browser was launched on this PC, following the game's README. Device review should cover 320–430px portrait widths, short landscape, long settings/Look answers and six-player games at 150% text size.
+
 ## Chasing Rainbows Look navigation update — 2026-10-12
 
 The owner requested publication of the latest local game update. Look answers now appear in a large-print callout and return focus to Look in the turn menu; mouse/touch can return through the row title or dimmed turn menu, and choosing a different row item retains its parent navigation. The game remains direct-link only, with the existing Hub manifest byte-for-byte unchanged. No shared module or Electron application is changed.

@@ -139,6 +139,17 @@ other seats.
 - **Text Size** goes up to 150%. Every panel is dark glass with white text, so the weather
   never reduces contrast.
 
+## Phones
+
+Phone-sized screens use a vertically scrolling table and menus. Hand cards wrap into
+separate, tappable tiles; player seats, the Rainbow Tracker and choices wrap to the
+available width. Menus keep the selected Text Size instead of scaling the whole menu
+down. The layout allows space for notches and the home indicator in either orientation.
+
+Switch scanning brings the highlighted choice into view automatically. Look answers
+scroll to their first line, and new menus begin at the top; changing a setting keeps
+the menu's scroll position. Desktop and tablet screens retain their existing layout.
+
 ## Settings
 
 Text to Speech · Voice · Rainbow Helper · Block prompts · Turn pace · Auto-draw ·
