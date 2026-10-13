@@ -1,5 +1,18 @@
 # Web scan implementation and Companion 1.0.8
 
+## SwitchedGames logo refresh — 2026-10-13
+
+Use the owner-supplied connected-halves logo with larger button circles in both NARBE House links to SwitchedGames. New references use the new filename; the legacy image URL also serves the new artwork.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| index.html | WEB-ONLY / NO PORT | Point both SwitchedGames images to logos/switchedgames-logo.svg. |
+| logos/switchedgames-logo.svg | WEB-ONLY / NO PORT | Add the exact supplied SVG. |
+| logos/switchedgames_emblem_v5.svg | WEB-ONLY / NO PORT | Serve the new SVG at the legacy URL for existing consumers. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY / NO PORT | Record scope and verification. |
+
+Validation: the web build, 1,078 page/link checks, and public-file audit passed. Both logo references load the new SVG in Chromium; source, legacy, and built SVGs match the supplied file byte for byte. Full House layout verification is limited by blocked Tailwind/Lucide CDN access in the local browser. Original changed files are backed up in ../tmp/switchedgames-logo-20261013/before/narbehouse/. Related updates cover SwitchedGames and NARBE Foundation. The owner approved publication on 2026-10-13. No Electron port.
+
 ## Chasing Rainbows phone layout — 2026-10-13
 
 The owner requested a mobile layout fix while keeping the working PC/tablet design. Phone widths up to 600px, plus short landscape viewports up to 960px wide and 500px high, now use a vertically scrolling game and menu overlay. Cards use a non-overlapping touch grid; seats, rainbow progress, choices, values and long labels wrap. Table piles size from width and played combos grow the felt instead of collapsing a size-contained table. Menus retain the chosen text size instead of shrinking to 60%; safe-area padding and dynamic viewport height accommodate phone browser chrome. Pause remains reachable, with scroll clearance beneath it. Highlighted choices and Look answers reveal themselves within the scrolling page. Existing scan identities, timing, gameplay and tablet/desktop CSS are retained.
