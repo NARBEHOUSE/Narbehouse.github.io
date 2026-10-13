@@ -32,6 +32,7 @@ canvas { display: block; }
 
 <!-- Shared hub accessibility / audio helpers -->
 <script src="../../../shared/platform.js"></script>
+<script src="../../../shared/graphics-quality.js"></script>
 <script src="../../../shared/scan-status-badge.js"></script>
 <script src="../../../shared/choice-scan.js"></script>
 <script src="../../../shared/choice-scan-adapter.js"></script>
@@ -71,6 +72,7 @@ window.addEventListener('load', () => {
         return obj;
     };
 
+    const graphicsOptions = bb2Graphics.rendererOptions({ antialias: true });
     const config = {
         type: Phaser.AUTO,
         width: W * renderScale,
@@ -79,7 +81,7 @@ window.addEventListener('load', () => {
         backgroundColor: '#0a1408',
         render: {
             antialias: true,
-            antialiasGL: true,
+            antialiasGL: graphicsOptions.antialias,
             roundPixels: false,
             pixelArt: false
         },
@@ -91,6 +93,19 @@ window.addEventListener('load', () => {
         scene: [TitleScene, SettingsScene, InstructionsScene, ColorSelectScene, SeasonScene, GameScene, ResultScene]
     };
     const game = window.__baseball2Game = new Phaser.Game(config);
+    game.events.on('prestep', time => bb2Graphics.frame(time));
+    bb2Graphics.subscribe(() => {
+        bb2ResizeRender(game);
+        for (const scene of game.scene.getScenes(false)) {
+            const menu = scene.menu, index = menu?.options?.findIndex(option => option.value === 'graphics-quality');
+            if (index >= 0) {
+                Object.assign(menu.options[index], bb2GraphicsOption());
+                menu.labels[index].setText(menu.options[index].label);
+                bb2GraphicsCaption(menu);
+                menu._draw();
+            }
+        }
+    });
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);

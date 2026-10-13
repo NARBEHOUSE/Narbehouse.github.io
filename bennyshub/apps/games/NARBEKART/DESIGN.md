@@ -190,7 +190,8 @@ returning player can just keep pressing select.
 CPUs are always hit with full spin-outs (hitting them is the fun part).
 
 ### 3.2 Grand Prix
-4 races per cup, 12 racers, points `NK.C.POINTS`. Race 1: humans start at the
+One race per track in the cup (four in every cup; `gp.of` is the cup's track
+count), 12 racers, points `NK.C.POINTS`. Race 1: humans start at the
 back. Later races: grid in reverse standings order (the points leader starts at
 the back — keeps the humans in the action). Ties
 broken by the last race's finish. After race 4: trophy ceremony (gold/silver/
@@ -205,9 +206,12 @@ countdown starts when racing begins). Best time per track × class saved; the be
 a translucent **ghost** vehicle (record `[progress, x]` at 10 Hz).
 
 ### 3.5 Unlocks & saves (localStorage prefix `nk-`)
-- Cup 1 (Sunshine) open from the start; Cup 2 (Moonlight) unlocks per §3.1.
-- Mirror class unlocks after any trophy in both cups at Fast (Open mode).
-- `nk-progress` `{ cups: { nofail: 1|2, open: 1|2 }, mirror: bool }`
+- Cup 1 (Sunshine) open from the start; each cup opens the next per §3.1
+  (Sunshine → Moonlight → Wonder → Dream).
+- Mirror class unlocks after any trophy in the Sunshine and Moonlight cups at
+  Fast (Open mode) — the original condition; the Wonder and Dream cups are not
+  required.
+- `nk-progress` `{ cups: { nofail: 1..4, open: 1..4 }, mirror: bool }`
 - `nk-trophies` `{ [mode]: { [classId]: { [cupId]: 'gold'|'silver'|'bronze'|'done' } } }`
 - `nk-best` `{ [trackId]: { [classId]: seconds } }`, `nk-ghost-<track>-<class>`
 - `nk-picks` `{ p1: {char, kart}, p2: {char, kart}, mode, type, classId, cupId, trackId }`
@@ -238,7 +242,7 @@ A racer finishes when `progress >= laps * L`. Frame conventions are in
 ### 4.2 Speed
 `v` eases toward `vTarget` (accelerating at the racer's `accelRate`, slowing at 1.4/s):
 ```
-vTarget = class.speed × stats.speedMul × (1 + COIN_SPEED × coins) × surface × effects × pace
+vTarget = class.speed × stats.speedMul × surface × effects × pace
 ```
 - surface: 1 on the road; 0.62 on the verge in Open mode (ignored while boosting / star / jet).
 - effects (take the largest boost, then apply penalties): boost/turbo/pad/trick ×1.45,
@@ -260,22 +264,44 @@ vTarget = class.speed × stats.speedMul × (1 + COIN_SPEED × coins) × surface 
 ### 4.4 Jumps
 `C.JUMPS` shares dimensions between the drawn ramp and the driving model:
 
-| Kind | Ramp length | Ramp rise | Flight distance after takeoff | Arc peak height |
-|---|---:|---:|---:|---:|
-| `jump` | 6 m | 1.1 m | 32 m | 4.5 m |
-| `glide` | 9 m | 1.8 m | 90 m | 12 m |
+| Kind | Ramp length | Ramp rise | Flight distance after takeoff | Arc peak height | Landing apron |
+|---|---:|---:|---:|---:|---:|
+| `jump` | 6 m | 1.1 m | 32 m | 4.5 m | 6 m |
+| `leap` | 7.5 m | 1.4 m | 55 m | 7 m | 8 m |
+| `glide` | 9 m | 1.8 m | 90 m | 12 m | 12 m |
 
 The vehicle climbs the wedge before taking off. Flight follows a smooth arc based
 on distance along the road, with the peak added above the line joining takeoff
 and landing heights. This keeps jumps clearable at every speed class and over
 sloping terrain. Glide ramps deploy the vehicle's glider. Tricks are automatic;
 landing gives a 0.5 s boost ("Trick!"). No jump button or timed release is needed.
+Airborne, the chase camera rises with the kart (0.8 × its height) and looks down
+past it, so a big jump shows the landscape below.
 
-Each ramp has a themed block obstacle near its flight apex, in the ramp's lanes.
-Pickups are cleared from the ramp through its landing area so the route reads
-clearly. Resolved ramps expose `flightLength` and `peakHeight`; paired hazards
-expose `rampS` and `jumpObstacle` so the race and guidance can recognise the
-clearable obstacle. A racer who stays on the ramp's route passes above it.
+**Landscape gaps.** Every circuit's signature jump is a full-width ramp
+(`ramps[i].gap = <landscape>`) over a gap in the road: the road stops exactly at
+the ramp's lip (the lip is snapped to a centreline node) and resumes `apron`
+metres before the landing point. A gap ramp launches **every** kart that
+reaches it, whatever its lane — finished karts on their cool-down lap too —
+so nobody can ever drive onto missing road; walls guard 20 m before the ramp
+to 20 m past the landing (validated). On terrain worlds `world.js` cuts a
+canyon across the road (holes in the terrain sheet, explicit strata walls,
+a rim strip and a bed under the theme's liquid) and dresses it from
+`GAP_DRESS`; in space the road just ends in lit lips; on a sky circuit the
+islands end in cliffs. Landscapes: `creek` (Meadow), `inlet` (Shores),
+`choco` (Candy), `canyon` (Dunes), `crevasse` (Frost), `ravine` (Spooky),
+`moat` (Lava), `void` (Starlight: a giant star ring at the apex), `gorge`
+(Jungle), `sky` (Isles). Rescues never set a kart down in a gap
+(`W.safeProgress`), peels and balls over a gap fall away, and Time Trial
+ghosts follow the known gap arc (`W.gapLift`).
+
+**Optional ramps.** A ramp without `gap` spans some lanes and has a themed block
+obstacle near its flight apex, in the ramp's lanes; the lanes beside it are a
+ground bypass. Pickups are cleared from the ramp through its landing area so the
+route reads clearly. Resolved ramps expose `flightLength` and `peakHeight`;
+paired hazards expose `rampS` and `jumpObstacle` so the race and guidance can
+recognise the clearable obstacle. A racer who stays on the ramp's route passes
+above it. (Frosty Peaks keeps one of these beside its crevasse glide.)
 
 ### 4.5 Edges, verges and falling
 Each track section declares a left and right edge: `'wall'`, `'verge'` or
@@ -299,9 +325,78 @@ sound throttled to 0.45 s per pair. A star / mega / jet vehicle instead hits the
 other vehicle (§6.3).
 
 ### 4.7 Coins & Boost Pads
-- Coins sit in lines along a lane; +1 each, max 10, respawn after 10 s; each coin
-  held adds 1.2 % top speed. Spin-outs scatter 3.
+- Coins sit in **hopping trails**: a run of `COIN_RUN` (3) coins `COIN_GAP` (6 m)
+  apart in one lane, then the next run in an adjacent lane, at least `COIN_HOP`
+  (24 m) further on so there is time to change lane at any class and steering
+  speed. A line's `lane` is its path (`[2, 3]`); collecting a whole trail takes
+  steering, and two players cannot both sit in one lane and take it all. +1 per
+  coin, max 10, respawn after 10 s. Spin-outs scatter 3.
+- Coins are **item luck**, nothing else (no speed). When a player drives through
+  a Power Box, each coin held pulls the odds part of the way toward the next band
+  up (`NK.items.odds`): `COIN_PULL` = 3 % per coin in first place rising to 10 %
+  per coin in last, so ten coins in first is a modest nudge while ten coins in
+  last reaches past the back band into the `JACKPOT` odds (Golden Rocket, Star,
+  Jet, Triple Rocket, Mega). Getting the item **spends every coin** (the count
+  returns to 0; `'coinsSpent'`, and a COIN BONUS! pop for 3 or more). A box hit
+  while already holding an item spends nothing. CPUs roll by place alone.
 - Boost Pads (chevron arrows): crossing one = 1.0 s boost.
+
+### 4.8 Set pieces: loops, berms, waterfalls, archways, sky islands
+None of these changes the controls: lanes, steering, auto-accelerate and the
+"doing nothing is safe" promise hold everywhere.
+
+**Loop-de-loops** (`pieces: [{ kind: 'loop', at, side }]`, dimensions
+`NK.C.LOOP`). A loop occupies `LOOP.length` metres (88, snapped to whole
+nodes) of a level, straight stretch with walls both sides. In track space it
+is ordinary road; the world draws it as a vertical loop of radius 16 m that
+climbs, turns upside down and comes down beside its own entry (stepped
+`LOOP.shift` = 24 m towards `side`), then swings back onto the line.
+`NKSpline.loopPath()` (shared by world, race and validator) maps track metres
+onto arc metres piecewise: the entry and exit keep their scale, the circle is
+stretched about 7.5×. The race advances karts and items by **metres of road as
+driven** (`W.shiftS(progress, v·dt)`), so the visible speed round a loop is the
+real speed; contact uses `W.arcGap` so karts touch only when truly side by side.
+Karts, rings, shadows, items and ghosts take their pose from `W.loopPose()`
+(upside down at the top). The chase camera measures its offsets along the road,
+tucks in round the circle (`W.loopBlend`) to keep the kart on screen, and rolls
+with the road. Loops play the `whoosh` cue and emit `'loop'`. No drifts, ramps,
+pickups or hazards within 15 m of a loop.
+
+**Berms** (`opts.banks: [[from, to, maxBank], ...]`). Bends inside a zone bank
+up to `maxBank` radians (≤ 0.7; the new circuits use 0.5–0.62, about 30–35°),
+easing in over 40 m. The chase camera rolls with banks beyond 0.24 rad (up to
+55 % of the excess), so a berm reads as leaning into the turn; with Camera
+Shake off the horizon stays level on berms (loops always roll — a level camera
+would flip over at the top).
+
+**Waterfalls** (`pieces: [{ kind: 'falls', at, air?, style?, gate? }]`). A
+scrolling curtain across the road that every kart bursts through. On the ground
+it pours from a rock arch (crags, lintel, vines, plants) standing on walls both
+sides; in the air (`air: true`) it falls from a floating island across a gap
+jump's flight. `style` swaps the water for `bubbles`, `steam`, `hologram` or
+`confetti`, and `gate` names a themed archway prop that frames the curtain in
+place of the rock arch (coral gate, bubble machine, balloon gate, holo gate,
+steam gate). Crossing it splashes (particles; the `splash` cue for wet styles,
+`whoosh` for the others; a gentle HUD wash tinted to the style for that player —
+one fade, never a flash) and emits `'splash'`. Purely visual: no slowdown,
+nothing to avoid.
+
+**Archways** (`pieces: [{ kind: 'arches', at, prop, count?, spacing? }]`). One
+prop repeated `count` times (2–8, default 4) `spacing` metres apart (10–30,
+default 14), each square to the road: a fossil ribcage, coral rings, neon hoops,
+carnival light arches, toy arches, factory pipes. Every arch prop keeps a clear
+opening over the road (nothing where |x| < 12.5 m below 12 m), stands on a bend
+no tighter than 45 m, never over a drop, and keeps clear of loops and gap
+jumps. Purely scenery: karts, items and the camera pass straight under.
+
+**Sky islands** (theme `ground.type: 'islands'`, track `islands: [[from, to],
+...]`). There is no terrain sheet. Island spans (minus jump gaps) get a grassy
+top beside the road over a rocky underside that hangs down to a point, cut off
+in cliffs at gaps; their width follows the edges (a `drop` edge is the island's
+cliff) and never reaches another stretch. Everything else is a bridge: a marble
+deck with gold trim and a hanging arch beneath, castle parapets as its walls.
+Below is a sea of cloud (liquid `cloud`); a fall drops into it and the Rescue
+Drone brings the kart back as usual. The start line and grid sit on an island.
 
 ---
 
@@ -357,12 +452,13 @@ lane; Open uses the lanes listed by the track.
 | `jet` | Jet Mode | ✈️ | 5 s autopilot at ×1.75, invincible, picks the safest lane itself |
 | `horn` | Honk Horn | 📯 | shockwave: destroys nearby peels/balls/bees/bombs **and a Zapper**, spins vehicles within 8 m |
 | `mega` | Mega Grow | 💪 | 7 s giant, ×1.12, invincible, flattens vehicles it touches |
-| `coins` | Coin Bag | 🪙 | +3 coins |
+| `coins` | Coin Bag | 🪙 | +3 coins (luck for the next Power Box) |
 | `bomb` | Boom Box | 💣 | lobbed 35 m ahead, bursts after 1.2 s or on touch, 7 m radius |
 
 Odds are weighted by race position (leaders get defensive items, the back of
-the pack gets boosts, stars and jets), in `NK.items.ODDS`. No-Fail removes the
-Zapper and nudges humans toward boosts. Time Trial has no boxes.
+the pack gets boosts, stars and jets), in `NK.items.ODDS`. A player's coins lift
+the odds toward the next band, more per coin the further back they are (§4.7). No-Fail removes the Zapper and nudges humans
+toward boosts. Time Trial has no boxes.
 
 ### 6.4 Being hit
 `R.hitRacer(victim, cause)` is the one place hits are applied:
@@ -439,10 +535,33 @@ faster, slower to steer, no wheels).
 |---|---|
 | ☀️ Sunshine Cup | `meadow` Meadow Circuit · `shores` Sandy Shores · `candy` Candy Canyon · `dunes` Dusty Dunes |
 | 🌙 Moonlight Cup | `frost` Frosty Peaks · `spooky` Spooky Woods · `lava` Lava Castle · `starlight` Starlight Road |
+| 🎢 Wonder Cup | `jungle` Jungle Falls · `isles` Floating Isles · `reef` Coral Reef · `dino` Dino Valley |
+| 💫 Dream Cup | `toybox` Toy Room · `carnival` Funfair · `neon` Neon City · `factory` Clockwork Factory |
 
 Laps of 1000–1500 m, 3 laps, difficulty rising through the list; Meadow has no
 drops at all, Starlight Road is drops almost everywhere (in Open). No road
 crosses itself in this version (no bridges over other stretches).
+
+**Jungle Falls**: through the temple waterfall on the first sweeper, a
+loop-de-loop on the west straight, a climb to the river gorge glide, then a
+double hairpin of steep berms. **Floating Isles**: a loop-de-loop on a sky
+bridge, a leap from island to island, a climb across the big island and a glide
+to the next one straight through a waterfall, a banked island hairpin, and a
+castle bridge home. **Coral Reef** (underwater: no sun, no clouds): a loop on the
+sea floor, a tunnel of five coral rings, banked hairpins, a glide over the deep
+glowing trench (jellyfish, anglerfish, bubble columns) and a bubble curtain in a
+coral gate on the long sweeper. **Dino Valley**: a leap over the bubbling tar
+pit, banked hairpins, a glide over the dinosaur river with long-necks wading
+below, and a fossil ribcage to drive through on the sweeper home.
+
+**Toy Room** (indoors: no sun, no clouds): banked S-bends round giant toys, a
+loop, a leap over the ball pit, a bubble-machine curtain and toy arches over the
+home straight. **Funfair** (a heart-shaped lap): a balloon-gate confetti curtain,
+banked sweepers, then a loop and a leap over the bumper-car arena on one long
+straight, and carnival light arches home. **Neon City** (night): a glide off a
+rooftop over the busy street, a curving tunnel of neon hoops, a hologram gate and
+a loop through the skyline. **Clockwork Factory**: steep banked gear hairpins, a
+loop, a glide over the molten gear pit, a run of pipe arches and a steam gate.
 
 ### 9.4 Prop catalog (names are the contract between themes.js, props and world.js)
 Each builder is `NK.art.props[name](rng) → Object3D` (origin on the ground,
@@ -461,6 +580,39 @@ warning) for any name that does not exist yet.
 | `spooky` | dead_tree, pumpkin, gravestone, lantern_post, glow_mushroom, iron_fence | haunted_house, spooky_hill, dead_tree_big | haunted_house, bell_tower | pumpkin_big, ghost, —, goo_puddle |
 | `lava` | lava_rock, torch_pillar, spike_rock, chain_post, skull_rock | volcano, castle_tower, castle_wall_piece, rock_spire | castle_gate, volcano | stone_block, rolling_boulder, lava_geyser, ash_puddle |
 | `starlight` | star_buoy, asteroid_small, crystal_spire, ring_gate, light_pylon | planet_ringed, planet, space_station, comet | space_station, moon_big | space_rock, meteor, plasma_vent, gravity_well |
+| `jungle` | jungle_tree, giant_fern, jungle_flower, banana_plant, mossy_rock, tiki_torch, bamboo_clump | jungle_hill, giant_tree, temple_ruin, waterfall_cliff | temple_big, stone_head | tiki_block, coconut, water_spout, jungle_mud |
+| `isles` | cloud_puff, sky_flower, windmill_small, banner_pole, crystal_small, sky_tree | floating_island, airship, cloud_castle, cloud_bank (all float) | sky_whale, sky_castle (float) | cloud_block, thunder_ball, wind_gust, rain_puddle |
+| `reef` | coral_branch, coral_fan, brain_coral, kelp, sea_anemone, giant_clam, starfish_rock | coral_tower, kelp_forest, sunken_temple, fish_school (floats) | giant_turtle (floats), treasure_galleon | clam_block, pufferfish, bubble_vent, seagrass_patch |
+| `dino` | cycad, tree_fern, horsetail, egg_nest, mossy_boulder, baby_dino, fossil_rock | volcano_smoking, conifer_tall, mesa_green, pterodactyl_flock (floats) | long_neck, triceratops_big | egg_block, rolling_log, hot_spring, tar_puddle |
+| `toybox` | toy_blocks, crayon_bundle, rubber_duck, spinning_top, wind_up_robot, marble_pile, dominoes | book_stack, toy_castle, block_tower, stuffed_bunny | teddy_giant, toy_rocket_big | toy_block, bouncy_ball, jack_in_box, juice_spill |
+| `carnival` | balloon_cart, popcorn_stand, lamp_garland, prize_booth, carnival_flag, teacup_ride | ferris_wheel, circus_tent, carousel, coaster_hill | ferris_giant, drop_tower | gift_block, circus_ball, confetti_cannon, soda_spill |
+| `neon` | neon_lamp, planter_tree, hydrant, neon_sign, city_bench, vending_machine | skyscraper, skyscraper_slim, billboard_tower, apartment_block | neon_tower, giant_cat_sign | road_barrier, rolling_tire, steam_manhole, oil_slick |
+| `factory` | pipe_stack, crate_stack, barrel_group, gear_post, lamp_cage, valve_wheel | smokestack, factory_hall, gasometer, crane_tower | clock_tower, gear_tower | crate_block, oil_drum, steam_pipe, oil_puddle |
+
+Jungle and Isles props live in `js/props-wonder.js` (also `hanging_roots`,
+`hanging_crystals`, hung under the sky islands). Floating props set
+`userData.floats` and hang at their own height instead of standing on ground.
+The landscape-gap dressing lives in `js/props-gaps.js` and is placed by
+`world.js` (`GAP_DRESS`), not by the theme lists: lily_pads, duck_family,
+reed_clump, stepping_stones, watermill · sea_arch, shipwreck, dolphin_pod,
+buoy_bell · choco_falls, rock_candy, marshmallow_stones, candy_raft ·
+rope_bridge_dangling, natural_arch_red, canyon_falls, river_rocks · icicle_row,
+frozen_falls, ice_floe, ice_spire · broken_bridge_wood, wisp_lights,
+lantern_boat, twisted_roots · lava_falls, lava_plume, chain_bridge_broken,
+obsidian_spire · ring_gate_big (origin at the ring's centre), black_hole,
+asteroid_cluster. Waterfalls' origin is the base of the falling sheet; rim
+pieces' origin is the rim edge with their front (-Z) over the drop.
+
+Reef and Dino props live in `js/props-wonder2.js`, Toy Room and Funfair in
+`js/props-dream1.js`, Neon City and Factory in `js/props-dream2.js`. Each also
+builds its landscapes' gap dressing and its archway / gate set pieces:
+glow_jellyfish, angler_light, trench_coral, bubble_column, coral_gate,
+coral_ring · sauropod_wading, river_ferns, tar_bubbles, tar_bones, pterodactyl,
+rib_arch · giant_ball, toy_slide, beach_bucket, bubble_machine_gate, toy_arch ·
+bumper_car, arena_lights, balloon_gate, light_arch · traffic_car, bus_city,
+street_light_low, crosswalk, holo_gate, neon_hoop · gear_giant (origin at the
+gear's centre), molten_pour, catwalk_broken, steam_gate, pipe_arch. Gate and
+arch props are centred on the road, span X and keep the opening clear.
 
 Shared set pieces (in `art.js`, used on every track): `grandstand`,
 `billboard` (NARBE Racer signage), `startGantry(width)` with start lights,
@@ -479,9 +631,11 @@ Load order in `index.html` (`input.js` must precede `scan-manager.js`, §2.5):
 ../../../shared/safe-audio.js → ../../../shared/voice-manager.js →
 ../../../shared/ios-audio-fix.js → js/input.js → ../../../shared/scan-manager.js →
 js/three.min.js → js/spline.js → js/util.js → js/constants.js → js/audio.js →
-js/art.js → js/art-items.js → js/props-sunshine.js → js/props-moonlight.js → js/roster.js →
+js/art.js → js/art-items.js → js/props-sunshine.js → js/props-moonlight.js →
+js/props-gaps.js → js/props-wonder.js → js/props-wonder2.js →
+js/props-dream1.js → js/props-dream2.js → js/roster.js →
 js/themes.js → js/tracks.js → js/world.js → js/items.js → js/guide.js →
-js/ai.js → js/race.js → js/camera.js → js/hud.js → js/controls.js →
+js/ai.js → js/race.js → js/camera.js → js/item-icons.js → js/hud.js → js/controls.js →
 js/game.js → js/ui.js → js/main.js
 ```
 (`input.js` creates `window.NK` itself if needed, since it loads before util.js.)
@@ -555,17 +709,19 @@ one mesh on one shared material; wheels stay separate (they spin).
 NK.themes[id] = { id, name, night, sky:[top,mid,horizon], fog:{color,near,far},
   light:{ hemiSky, hemiGround, hemiInt, sunColor, sunInt, ambInt, sunDir:[x,y,z] },
   road:{ style:'asphalt'|'rainbow'|'ice'|'candy'|'stone'|'sand', base, edge, lane, center },
-  rail:{ a, b }, wall:{ style, color }, ground:{ type, colors:[a,b], hills },
-  liquid: null | { kind:'water'|'lava'|'chocolate'|'void', color, emissive, level },
+  rail:{ a, b }, wall:{ style, color }, ground:{ type /* …|'none' space|'islands' sky */, colors:[a,b], hills },
+  liquid: null | { kind:'water'|'lava'|'chocolate'|'void'|'cloud', color, emissive, level },
   props:{ near:[names], far:[names], density }, hazards:{ block, roller, geyser, puddle },
   music, ambient:'leaves'|'petals'|'snow'|'embers'|'stars'|null }
 NK.tracks.CUPS   = [{ id, name, emoji, tracks:[ids] }]
 NK.tracks.TRACKS = { [id]: { id, name, cup, theme, blurb, seed, laps:3,
-  points:[[x,z,y]...], opts:{ bankGain, bankMax, scale },
+  points:[[x,z,y]...], opts:{ bankGain, bankMax, scale, banks?:[[from, to, maxBank, gain?]] },
   edges:[{ from, to, left, right }],            // lap fractions; default 'verge'
   features:{ itemRows:[{at, lanes}], padRows:[{at, lanes}], boostPads:[{at, lanes}],
-               coins:[{from, to, lane}], ramps:[{at, kind, lanes, flightLength?, peakHeight?}],
+               coins:[{from, to, lane /* or a hop path [a, b] */}], ramps:[{at, kind /* jump|leap|glide */, lanes, gap?, flightLength?, peakHeight?}],
                hazards:[{at, kind, lanes, period, phase, rampAt?, rampOffset?, jumpObstacle?}] },
+  pieces?:[{ kind:'loop', at, side } | { kind:'falls', at, air? }],   // §4.8
+  islands?:[[from, to], ...],                    // sky circuits only
   landmarks:[{ at, side, off, prop }] } }
 NK.tracks.get(id, { mirror }) → resolved copy (lanes mirrored)
 ```
@@ -578,8 +734,15 @@ after a box row, nothing within 40 m of the line except the grid.
 ```
 NK.world.build(scene, trackId, { mode, mirror, quality }) → W
 W.track, W.theme, W.loop, W.L
-W.frameAt(s) → { pos, right, forward, heading, yaw, bank, curvature, y }  // REUSED objects
-W.pointAt(s, x, outVec3) → road surface point (banking included)
+W.frameAt(s) → { pos, right, forward, heading, yaw, bank, curvature, y }  // REUSED objects; the
+                                         // centreline frame (a loop's span reads as its straight)
+W.pointAt(s, x, outVec3) → road surface point (banking and loops included)
+W.loopPose(s, x, out?) → { pos, quat, up, forward, right } inside a loop, else null
+W.upAt(s, out?) → road normal (loop or banked road)
+W.pieces → { gaps:[{rampS, takeoff, end, land, scene, kind}], loops:[{s0, len, arc}], falls:[{s, air}] }
+W.shiftS(p, metres) → progress `metres` of road as driven from p (≠ p + metres only round loops)
+W.warpAt(p) · W.arcGap(a, b) · W.loopBlend(p) · W.inLoop(p)    // loop helpers (§4.8)
+W.inGap(p) · W.safeProgress(p) · W.gapLift(p)                   // gap helpers (§4.4)
 W.edgeAt(s) → { left, right }            // 'wall'|'verge'|'drop'|'rail'
 W.limits(s) → { minX, maxX, fallL, fallR } // steering clamp + fall thresholds for this mode
 W.features  // resolved: itemRows[{s,lanes}], padRows, boostPads, coins[{s,lane}],
@@ -613,6 +776,7 @@ R.on(event, fn)                  // 'countdown'(n) 'go' 'lap'(r,lap) 'finalLap'(
                                  // 'itemGet'(r,kind) 'itemUse'(r,kind) 'hit'(r,cause) 'fall'(r)
                                  // 'rescued'(r) 'place'(r,old,new) 'coin'(r) 'boost'(r,src)
                                  // 'turbo'(r,level) 'trick'(r) 'bump'(a,b) 'done'(results)
+                                 // 'splash'(r, falls) 'loop'(r, loop)   (§4.8)
 R.dispose()
 ```
 Racer:
@@ -627,7 +791,7 @@ Racer:
 ### 10.6 `NK.items`, `NK.guide`, `NK.ai`
 ```
 NK.items.DEFS[id] = { id, name, emoji, speech, type }
-NK.items.ODDS, NK.items.roll(R, racer) → id
+NK.items.ODDS, NK.items.JACKPOT, NK.items.odds(R, racer) → { band, pull, weights } (place, then a player's coins), NK.items.roll(R, racer) → id
 NK.items.use(R, racer), NK.items.update(R, dt), NK.items.objects(R) → [{ type, s, x, ownerIdx }]
 NK.items.clear(R)
 NK.guide.laneScores(R, racer, horizonSec) → Float32Array(5)
@@ -658,6 +822,7 @@ NK.hud.update(v, d)        // d = { place, of, lap, laps, item, roulette, itemUs
 NK.hud.control(v, c)       // c = { scheme:'two'|'one'|'step-two'|'step-scan', armed:-1|1,
                            //       match, scanLane, targetLane, pauseHold:0..1 }
 NK.hud.pop(v, text, kind)  // big centre messages; v = -1 for every view
+NK.hud.splash(v)           // waterfall: a gentle water wash over that view, one fade
 NK.hud.minimap(v, W, racers, focusIdx)
 NK.hud.clear()
 ```
@@ -898,11 +1063,13 @@ SFX list: menu move/select/blocked, countdown beeps and GO, box smash, roulette
 ticks (slowing), item reveal, rocket whoosh, peel drop, ball/bee launch, zapper
 siren, star loop, shrink zap, horn blast, bomb, hit/spin, wobble, coin (rising
 pitch run), drift crackle + three level chimes, mini-turbo (by level), boost
-pad, bump, rail rub, wall scrape, jump, trick, landing, fall, drone, lap chime,
+pad, bump, rail rub, wall scrape, jump, trick, landing, fall, drone, waterfall
+splash, loop whoosh, lap chime,
 final-lap stinger, finish jingles (1st / podium / other), place up / down,
 cue tones, danger pulse, pause-hold ticks.
 Music: composed loops (melody + bass + chords + drums, 30–50 s, seamless) for
-the menu and each of the 8 themes, plus a podium fanfare and a results jingle.
+the menu and each of the 10 themes (Jungle: "Canopy Chase"; Isles: "Cloud
+Hopper"), plus a podium fanfare and a results jingle.
 
 ---
 
@@ -916,6 +1083,18 @@ Race Tracks' `RT.perf()`.
 ---
 
 ## 13. Test surface — `NK.debug` and the harness
+
+**Node-only checks** (safe on any machine; no browser or GPU): `validate_tracks.js`
+(every layout rule, mirrored), `jump_layout_test.cjs` (jumps, landscape gaps,
+loops, waterfalls, islands, berms — including malformed layouts it must
+reject), `setpiece_test.cjs` (full 12-kart races on the real worlds in both rule
+sets: nobody ever drives on missing road, rescues land on road, loop speed is
+true, loop lookups agree, the camera keeps the kart in view round a loop),
+`race_test.cjs`, `items_ai_test.cjs`, `audio_check.js`. `node_render.cjs` renders
+the real scene graph on the CPU to PNG (chase views of a track, prop sheets)
+for visual review without a browser.
+
+The Electron harness below is for machines where running a browser is fine.
 `tools/harness/run.cjs` runs a scenario in a real Electron 40 window against
 an http server rooted at `bennyshub/` (so the shared scripts resolve), with a
 fresh profile, silent recorded speech and muted audio:

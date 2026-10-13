@@ -96,6 +96,8 @@ const scanSpeeds = [
 const settings = {
     tts: true,
     sound: true,
+    motion: 'system',
+    volumeIndex: 1,
     themeIndex: 0,
     highlightColorIndex: 0,
     highlightStyleIndex: 0,
@@ -114,6 +116,7 @@ function loadSettings() {
     }
     applyTheme();
     applyHighlightStyle();
+    BattlePresentation.configure(settings);
 }
 
 function saveSettings() {
@@ -155,14 +158,17 @@ function applyHighlightStyle() {
 }
 
 function toggleTTS() {
-    settings.tts = !settings.tts;
+    if (window.NarbeVoiceManager) NarbeVoiceManager.toggleTTS();
+    else settings.tts = !settings.tts;
     saveSettings();
     updateSettingsDisplay();
-    if (settings.tts) speak('Text to speech on');
+    updatePauseSettingsDisplay();
+    speak('Text to speech on');
 }
 
 function toggleSound() {
     settings.sound = !settings.sound;
+    BattlePresentation.configure(settings);
     saveSettings();
     updateSettingsDisplay();
     if (settings.sound) playSound('select');
@@ -233,13 +239,14 @@ function updateSettingsDisplay() {
         `${window.NarbeScanManager.getScanInterval() / 1000} Seconds` : 
         scanSpeeds[settings.scanSpeedIndex].name;
     
-    if (ttsBtn) ttsBtn.textContent = `TTS: ${settings.tts ? 'On' : 'Off'}`;
+    if (ttsBtn) ttsBtn.textContent = `TTS: ${(window.NarbeVoiceManager ? NarbeVoiceManager.getSettings().ttsEnabled : settings.tts) ? 'On' : 'Off'}`;
     if (soundBtn) soundBtn.textContent = `Sound: ${settings.sound ? 'On' : 'Off'}`;
     if (themeBtn) themeBtn.textContent = `Theme: ${themes[settings.themeIndex].name}`;
     if (highlightStyleBtn) highlightStyleBtn.textContent = `Style: ${highlightStyles[settings.highlightStyleIndex].name}`;
     if (highlightColorBtn) highlightColorBtn.textContent = `Color: ${highlightColors[settings.highlightColorIndex].name}`;
     if (autoScanBtn) autoScanBtn.textContent = `Auto Scan: ${autoScanOn ? 'On' : 'Off'}`;
     if (scanSpeedBtn) scanSpeedBtn.textContent = `Speed: ${scanSpeedText}`;
+    updateEffectsSettings();
 }
 
 // =========================================
@@ -288,85 +295,15 @@ const scanState = {
 // =========================================
 // AUDIO CONTEXT FOR SOUNDS
 // =========================================
-let audioCtx = null;
-function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-    return audioCtx;
-}
-
-window.addEventListener('touchstart', () => { getAudioCtx(); }, { once: true, passive: true });
-window.addEventListener('click', () => { getAudioCtx(); }, { once: true });
-
 function playSound(type) {
-    if (!settings.sound && type !== 'scan') return;  // Always allow scan sound for feedback
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    if (type === 'scan') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.05);
-    } else if (type === 'select') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(660, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-    } else if (type === 'place') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(784, ctx.currentTime + 0.15);
-        gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
-    } else if (type === 'hit') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.3);
-        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-    } else if (type === 'miss') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(200, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-    } else if (type === 'win') {
-        const notes = [523, 659, 784, 1047];
-        notes.forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.connect(g);
-            g.connect(ctx.destination);
-            o.type = 'sine';
-            o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
-            g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
-            g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.15 + 0.3);
-            o.start(ctx.currentTime + i * 0.15);
-            o.stop(ctx.currentTime + i * 0.15 + 0.3);
-        });
-    } else if (type === 'error') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-    }
+    if (settings.sound) BattlePresentation.sound(type);
 }
 
 // =========================================
 // TTS (Text-to-Speech)
 // =========================================
 function speak(text) {
-    if (!settings.tts) return;  // Respect TTS setting
+    if (window.NarbeVoiceManager ? !NarbeVoiceManager.getSettings().ttsEnabled : !settings.tts) return;
     if (window.NarbeVoiceManager) {
         return window.NarbeVoiceManager.speak(text);
     } else if ('speechSynthesis' in window) {
@@ -428,7 +365,7 @@ function handleAttackGridClick(row, col) {
     // Only allow clicks during attack phase and when it's player's turn
     if (!gameStarted) return;
     if (gamePhase !== 'attack') return;
-    if (awaitingEnemy) return;
+    if (awaitingEnemy || battlePaused || battleFinished) return;
     
     // Check if already fired here
     if (isCellAlreadyFired(row, col)) {
@@ -460,6 +397,8 @@ function renderBoards() {
         tile.classList.remove('occupied', 'selected-ship', 'player-hit', 'enemy-hit', 'player-miss');
         
         tile.classList.toggle('occupied', !!p.occupied);
+        const vessel = ships.find(s => s.coords.some(c => c.row === row && c.col === col));
+        tile.setAttribute('aria-label', getCellLabel(row,col) + (vessel ? ', ' + vessel.label : ', water'));
         tile.classList.toggle('player-hit', !!(p.hit || p.miss));
         tile.classList.toggle('enemy-hit', !!(e && e.hit));
         tile.classList.toggle('player-miss', !!(e && e.miss));
@@ -474,6 +413,7 @@ function renderBoards() {
             }
         }
     });
+    BattlePresentation.renderFleet(board, ships.filter(s => s.placed));
 }
 
 function updateShipDisplay() {
@@ -860,78 +800,14 @@ function startBattlePhase() {
     switchToAttackPhase();
 }
 
-function initShipStatusDisplays() {
-    // Enemy ship status (what we've sunk)
-    const enemyStatus = document.getElementById('enemyShipStatus');
-    if (enemyStatus) {
-        enemyStatus.innerHTML = '';
-        const enemyShipList = gameMode === '2p' ? player2.ships : enemyShips;
-        enemyShipList.forEach(ship => {
-            const icon = document.createElement('div');
-            icon.className = 'ship-icon';
-            icon.id = `enemy-ship-${ship.id}`;
-            icon.innerHTML = `
-                <span class="ship-icon-emoji">${ship.emoji || '🚢'}</span>
-                <span class="ship-icon-name">${ship.label}</span>
-            `;
-            enemyStatus.appendChild(icon);
-        });
-    }
-    
-    // Player ship status (what enemy has sunk)
-    const playerStatus = document.getElementById('playerShipStatus');
-    if (playerStatus) {
-        playerStatus.innerHTML = '';
-        const playerShipList = gameMode === '2p' ? player1.ships : ships;
-        playerShipList.forEach(ship => {
-            const icon = document.createElement('div');
-            icon.className = 'ship-icon';
-            icon.id = `player-ship-${ship.id}`;
-            icon.innerHTML = `
-                <span class="ship-icon-emoji">${ship.emoji || '🚢'}</span>
-                <span class="ship-icon-name">${ship.label}</span>
-            `;
-            playerStatus.appendChild(icon);
-        });
-    }
+function initShipStatusDisplays() { updateShipStatusDisplaysFor2P();
 }
 
 function updateShipStatusDisplaysFor2P() {
-    // In 2P mode, update displays based on current player
-    const enemyShips = currentPlayer === 1 ? player2.ships : player1.ships;
-    const myShips = currentPlayer === 1 ? player1.ships : player2.ships;
-    
-    // Update enemy ship status (ships we're attacking)
-    const enemyStatus = document.getElementById('enemyShipStatus');
-    if (enemyStatus) {
-        enemyStatus.innerHTML = '';
-        enemyShips.forEach(ship => {
-            const icon = document.createElement('div');
-            icon.className = 'ship-icon' + (ship.sunk ? ' sunk' : '');
-            icon.id = `enemy-ship-${ship.id}`;
-            icon.innerHTML = `
-                <span class="ship-icon-emoji">${ship.emoji || '🚢'}</span>
-                <span class="ship-icon-name">${ship.label}</span>
-            `;
-            enemyStatus.appendChild(icon);
-        });
-    }
-    
-    // Update player ship status (our ships)
-    const playerStatus = document.getElementById('playerShipStatus');
-    if (playerStatus) {
-        playerStatus.innerHTML = '';
-        myShips.forEach(ship => {
-            const icon = document.createElement('div');
-            icon.className = 'ship-icon' + (ship.sunk ? ' sunk' : '');
-            icon.id = `player-ship-${ship.id}`;
-            icon.innerHTML = `
-                <span class="ship-icon-emoji">${ship.emoji || '🚢'}</span>
-                <span class="ship-icon-name">${ship.label}</span>
-            `;
-            playerStatus.appendChild(icon);
-        });
-    }
+    const opposingFleet = gameMode === '2p' ? (currentPlayer === 1 ? player2.ships : player1.ships) : enemyShips;
+    const ownFleet = currentPlayer === 1 ? player1.ships : player2.ships;
+    BattlePresentation.fleetStatus(document.getElementById('enemyShipStatus'),opposingFleet,'enemy');
+    BattlePresentation.fleetStatus(document.getElementById('playerShipStatus'),ownFleet,'player');
 }
 
 function switchToAttackPhase() {
@@ -1051,6 +927,14 @@ function renderAttackGrid() {
             }
         }
     });
+    BattlePresentation.renderFleet(attackGrid, enemyShipList.filter(s => s.sunk || battleFinished));
+    tiles.forEach(tile => {
+        const r=Number(tile.dataset.row), c=Number(tile.dataset.col), shot=attacks[r][c];
+        const revealed=enemyShipList.find(s=>(s.sunk || battleFinished) && s.coords.some(p=>p.row===r && p.col===c));
+        tile.setAttribute('aria-label', getCellLabel(r,c)+', '+(revealed ? revealed.label+(revealed.sunk?', sunk':', revealed') : shot.fired ? shot.hit?'hit':'miss' : 'unfired'));
+    });
+    BattlePresentation.stats(document.getElementById('attackStats'), attacks, enemyShipList);
+    BattlePresentation.fleetStatus(document.getElementById('enemyShipStatus'), enemyShipList, 'enemy');
 }
 
 function renderDefenseGrid() {
@@ -1061,7 +945,7 @@ function renderDefenseGrid() {
     const myCells = gameMode === '2p' ? 
         (currentPlayer === 1 ? player1.cells : player2.cells) : playerCells;
     const myShips = gameMode === '2p' ? 
-        (currentPlayer === 1 ? player1.ships : player2.ships) : ships;
+        (currentPlayer === 1 ? player1.ships : player2.ships) : player1.ships;
     const enemyAttacks = gameMode === '2p' ? 
         (currentPlayer === 1 ? player2.attacks : player1.attacks) : [];
     
@@ -1092,6 +976,14 @@ function renderDefenseGrid() {
             tile.classList.add('defense-miss');
         }
     });
+    BattlePresentation.renderFleet(defenseGrid, myShips);
+    tiles.forEach(tile => {
+        const r=Number(tile.dataset.row), c=Number(tile.dataset.col), cell=myCells[r][c];
+        const ship=myShips.find(s=>s.coords.some(p=>p.row===r && p.col===c));
+        tile.setAttribute('aria-label',getCellLabel(r,c)+', '+(ship?ship.label:'water')+(cell.hit?', hit':cell.miss?', miss':''));
+    });
+    BattlePresentation.stats(document.getElementById('defenseStats'), myCells, myShips);
+    BattlePresentation.fleetStatus(document.getElementById('playerShipStatus'), myShips, 'player');
 }
 
 function generateEnemyFleet() {
@@ -1222,87 +1114,38 @@ function updateShipStatusIcon(shipId, isPlayerShip) {
 }
 
 function fireAtEnemy(row, col) {
-    if (!gameStarted) return;
-    if (awaitingEnemy) return;
-    
-    // Determine target cells based on game mode
-    const targetCells = gameMode === '2p' ? 
-        (currentPlayer === 1 ? player2.cells : player1.cells) : enemyCells;
-    const targetShips = gameMode === '2p' ?
-        (currentPlayer === 1 ? player2.ships : player1.ships) : enemyShips;
-    const attackArray = gameMode === '2p' ?
-        (currentPlayer === 1 ? player1.attacks : player2.attacks) : player1.attacks;
-    
-    // Check if already fired here
-    if (attackArray[row][col].fired) return;
-    
+    if (!gameStarted || awaitingEnemy || battlePaused || battleFinished || gamePhase !== 'attack') return;
+    const targetCells = gameMode === '2p' ? (currentPlayer === 1 ? player2.cells : player1.cells) : enemyCells;
+    const targetShips = gameMode === '2p' ? (currentPlayer === 1 ? player2.ships : player1.ships) : enemyShips;
+    const attacks = currentPlayer === 1 ? player1.attacks : player2.attacks;
+    if (!attacks[row]?.[col] || attacks[row][col].fired) return;
     awaitingEnemy = true;
     stopAutoScan();
-    
-    // Mark as fired
-    attackArray[row][col].fired = true;
-    
-    let shipSunk = false;
-    const cell = targetCells[row][col];
-    
-    if (cell.occupied) {
-        cell.hit = true;
-        attackArray[row][col].hit = true;
-        playSound('hit');
-        speak('Hit!');
-        
-        // Check if ship is sunk
-        for (const ship of targetShips) {
-            const coord = ship.coords.find(c => c.row === row && c.col === col);
-            if (coord) {
-                coord.hit = true;
-                if (!ship.sunk && ship.coords.every(c => c.hit)) {
-                    ship.sunk = true;
-                    shipSunk = true;
-                    updateShipStatusIcon(ship.id, false);
-                    
-                    const allSunk = targetShips.every(s => s.sunk);
-                    if (!allSunk) {
-                        showSunkToast(`You sank their ${ship.label}!`);
-                        speak(`You sank their ${ship.label}!`);
-                    }
-                }
-                break;
+    clearAllHighlights();
+    BattlePresentation.launch(attackGrid,row,col);
+    document.getElementById('attackStatusText').textContent = 'Shot away. Target ' + getCellLabel(row,col) + '.';
+    scheduleBattle(() => {
+        const cell=targetCells[row][col];
+        const result=resolveShot(cell,targetShips,row,col);
+        attacks[row][col]={fired:true,hit:cell.occupied};
+        renderAttackGrid();
+        const narration=presentShot('attack',attackGrid,row,col,result);
+        const won=targetShips.every(s=>s.sunk);
+        scheduleBattle(() => {
+            if (won) {
+                const winner=gameMode==='2p'?'Player '+currentPlayer:'You';
+                showGameOverModal('Victory!',winner+' sank the enemy fleet!');
+            } else if (gameMode==='2p') {
+                currentPlayer=currentPlayer===1?2:1;
+                switchToAttackPhase();
+            } else {
+                switchToDefensePhase();
+                const turnNarration=speak('Enemy turn.');
+                playSound('sonar');
+                scheduleBattle(enemyFire,650,turnNarration);
             }
-        }
-    } else {
-        cell.miss = true;
-        playSound('miss');
-        speak('Miss.');
-    }
-    
-    // Update the attack grid display
-    renderAttackGrid();
-    
-    // Check win condition
-    if (targetShips.every(s => s.sunk)) {
-        awaitingEnemy = false;
-        const winner = gameMode === '2p' ? `Player ${currentPlayer}` : 'You';
-        showGameOverModal('Victory!', `${winner} sank the enemy fleet!`);
-        return;
-    }
-    
-    // Transition to defense phase after a delay
-    const cooldown = shipSunk ? 3500 : 1500;
-    
-    setTimeout(() => {
-        if (gameMode === '2p') {
-            // 2-Player: Switch to next player's attack directly (no cover screen needed during gameplay)
-            const nextPlayer = currentPlayer === 1 ? 2 : 1;
-            currentPlayer = nextPlayer;
-            switchToAttackPhase();
-        } else {
-            // 1-Player: Switch to defense phase for AI turn
-            switchToDefensePhase();
-            speak('Enemy turn.');
-            setTimeout(enemyFire, 1000);
-        }
-    }, cooldown);
+        }, result.type==='sunk'?2200:1100,narration);
+    }, BattlePresentation.reduced ? 80 : 380);
 }
 
 function markEnemyShipHit(row, col) {
@@ -1403,47 +1246,38 @@ function checkLoseCondition() {
 }
 
 function showGameOverModal(title, message) {
-    const modal = document.getElementById('gameOverModal');
-    const titleEl = document.getElementById('gameOverTitle');
-    const messageEl = document.getElementById('gameOverMessage');
-    const okBtn = document.getElementById('gameOverOkBtn');
-    
+    cancelBattleSequence();
+    battleFinished=true;
+    document.body.classList.add('battle-results');
+    gameStarted=false;
+    awaitingEnemy=false;
     stopAutoScan();
     clearAllHighlights();
-    
-    // Hide the OK button - we'll auto-dismiss instead
-    if (okBtn) okBtn.style.display = 'none';
-    
-    if (titleEl) {
-        titleEl.textContent = title;
-        // Set color based on win/lose
-        if (title.includes('Victory')) {
-            titleEl.style.color = '#2ecc40';
-            titleEl.style.textShadow = '0 0 20px rgba(46, 204, 64, 0.6)';
-        } else {
-            titleEl.style.color = '#f25042';
-            titleEl.style.textShadow = '0 0 20px rgba(242, 80, 66, 0.6)';
-        }
-    }
-    if (messageEl) messageEl.textContent = message;
-    if (modal) modal.style.display = 'flex';
-    
-    // Speak the actual title and message
-    speak(`${title} ${message}`);
-    
-    // Auto-dismiss after 5 seconds and return to main menu
-    setTimeout(() => {
-        hideGameOverModal();
-        returnToMainMenu();
-    }, 5000);
+    document.getElementById('defensePhaseScreen').classList.add('hidden');
+    document.getElementById('attackPhaseScreen').classList.remove('hidden');
+    renderAttackGrid();
+    document.getElementById('pauseButton').style.display='none';
+    document.querySelector('#attackPhaseScreen .phase-text').textContent='BATTLE COMPLETE';
+    document.getElementById('gameOverTitle').textContent=title;
+    document.getElementById('gameOverMessage').textContent=message;
+    document.getElementById('gameOverModal').style.display='flex';
+    document.getElementById('gameOverModal').dataset.victory=String(title.includes('Victory'));
+    const attacks=currentPlayer===1?player1.attacks:player2.attacks;
+    const fleet=gameMode==='2p'?(currentPlayer===1?player2.ships:player1.ships):enemyShips;
+    BattlePresentation.stats(document.getElementById('resultsStats'),attacks,fleet);
+    scanState.mode='game-over';
+    scanState.scanIndex=-1;
+    updateGameOverButtonsList();
+    playSound(title.includes('Victory')?'win':'lose');
+    speak(title+' '+message+' Play again or return to the main menu.');
+    startAutoScan();
 }
 
 function updateGameOverButtonsList() {
-    scanState.gameOverButtons = [];
-    const okBtn = document.getElementById('gameOverOkBtn');
-    if (okBtn) {
-        scanState.gameOverButtons.push({ element: okBtn, label: 'OK', action: 'ok' });
-    }
+    scanState.gameOverButtons = [
+        {element:document.getElementById('playAgainBtn'),label:'Play Again',action:'replay'},
+        {element:document.getElementById('gameOverOkBtn'),label:'Main Menu',action:'ok'}
+    ];
 }
 
 function hideGameOverModal() {
@@ -1455,8 +1289,8 @@ function hideGameOverModal() {
 // PAUSE MODAL
 // =========================================
 function showPauseModal() {
-    // Don't show pause during defense phase (enemy's turn)
-    if (gamePhase === 'defense') return;
+    if (battleFinished) return;
+    pauseBattleSequence();
     
     // Don't show pause if modal is already visible
     const modal = document.getElementById('pauseModal');
@@ -1466,7 +1300,8 @@ function showPauseModal() {
     clearAllHighlights();
     
     if (modal) modal.style.display = 'flex';
-    
+    document.getElementById('pauseMainView').style.display='block';
+    document.getElementById('pauseSettingsView').style.display='none';
     // Switch to pause scanning mode
     scanState.mode = 'pause';
     scanState.scanIndex = -1;
@@ -1477,20 +1312,13 @@ function showPauseModal() {
 }
 
 function hidePauseModal() {
-    const modal = document.getElementById('pauseModal');
-    if (modal) modal.style.display = 'none';
-    
-    // Return to previous mode
-    if (gameStarted) {
-        scanState.mode = 'game-row';
-        scanState.scanIndex = -1;
-        highlightGameRow();
-        speak('Game resumed. Your turn.');
-    } else {
-        scanState.mode = 'buttons';
-        scanState.scanIndex = -1;
-        speak('Resuming. Scan buttons.');
-    }
+    document.getElementById('pauseModal').style.display='none';
+    scanState.mode=gameStarted?'game-row':'buttons';
+    scanState.scanIndex=-1;
+    scanState.rowIndex=-1;
+    clearAllHighlights();
+    resumeBattleSequence();
+    speak(awaitingEnemy?'Battle resumed.':'Resuming. Scan to choose.');
     startAutoScan();
 }
 
@@ -1547,13 +1375,19 @@ function updatePauseSettingsButtonsList() {
         `Speed ${window.NarbeScanManager.getScanInterval() / 1000} Seconds` : 
         `Speed ${scanSpeeds[settings.scanSpeedIndex].name}`;
     
-    if (ttsBtn) scanState.pauseSettingsButtons.push({ element: ttsBtn, label: settings.tts ? 'TTS On' : 'TTS Off', action: 'tts' });
+    if (ttsBtn) scanState.pauseSettingsButtons.push({ element: ttsBtn, label: (window.NarbeVoiceManager ? NarbeVoiceManager.getSettings().ttsEnabled : settings.tts) ? 'TTS On' : 'TTS Off', action: 'tts' });
     if (soundBtn) scanState.pauseSettingsButtons.push({ element: soundBtn, label: settings.sound ? 'Sound On' : 'Sound Off', action: 'sound' });
     if (themeBtn) scanState.pauseSettingsButtons.push({ element: themeBtn, label: `Theme ${themes[settings.themeIndex].name}`, action: 'theme' });
     if (highlightStyleBtn) scanState.pauseSettingsButtons.push({ element: highlightStyleBtn, label: `Style ${highlightStyles[settings.highlightStyleIndex].name}`, action: 'highlightStyle' });
     if (highlightColorBtn) scanState.pauseSettingsButtons.push({ element: highlightColorBtn, label: `Color ${highlightColors[settings.highlightColorIndex].name}`, action: 'highlightColor' });
     if (scanSpeedBtn) scanState.pauseSettingsButtons.push({ element: scanSpeedBtn, label: scanSpeedLabel, action: 'scanSpeed' });
     if (backBtn) scanState.pauseSettingsButtons.push({ element: backBtn, label: 'Back', action: 'back' });
+    const extra = [
+        {element:document.getElementById('pauseMotionBtn'),action:'motion'},
+        {element:document.getElementById('pauseVolumeBtn'),action:'volume'},
+        {element:document.getElementById('pauseAutoScanBtn'),action:'autoScan'}
+    ];
+    scanState.pauseSettingsButtons.splice(2,0,...extra.map(item=>({...item,label:item.element.textContent})));
 }
 
 function updatePauseSettingsDisplay() {
@@ -1564,7 +1398,7 @@ function updatePauseSettingsDisplay() {
     const highlightColorBtn = document.getElementById('pauseHighlightColorBtn');
     const scanSpeedBtn = document.getElementById('pauseScanSpeedBtn');
     
-    if (ttsBtn) ttsBtn.textContent = `TTS: ${settings.tts ? 'On' : 'Off'}`;
+    if (ttsBtn) ttsBtn.textContent = `TTS: ${(window.NarbeVoiceManager ? NarbeVoiceManager.getSettings().ttsEnabled : settings.tts) ? 'On' : 'Off'}`;
     if (soundBtn) soundBtn.textContent = `Sound: ${settings.sound ? 'On' : 'Off'}`;
     if (themeBtn) themeBtn.textContent = `Theme: ${themes[settings.themeIndex].name}`;
     if (highlightStyleBtn) highlightStyleBtn.textContent = `Style: ${highlightStyles[settings.highlightStyleIndex].name}`;
@@ -1574,12 +1408,13 @@ function updatePauseSettingsDisplay() {
         `${window.NarbeScanManager.getScanInterval() / 1000} Seconds` : 
         scanSpeeds[settings.scanSpeedIndex].name;
     if (scanSpeedBtn) scanSpeedBtn.textContent = `Speed: ${scanSpeedText}`;
+    updateEffectsSettings();
 }
 
 function returnToMainMenuFromPause() {
     const modal = document.getElementById('pauseModal');
     if (modal) modal.style.display = 'none';
-    
+
     returnToMainMenu();
 }
 
@@ -1618,98 +1453,46 @@ function updatePauseButtonsList() {
     const continueBtn = document.getElementById('pauseContinueBtn');
     const settingsBtn = document.getElementById('pauseSettingsBtn');
     const mainMenuBtn = document.getElementById('pauseMainMenuBtn');
-    
+
     if (continueBtn) scanState.pauseButtons.push({ element: continueBtn, label: 'Continue', action: 'continue' });
     if (settingsBtn) scanState.pauseButtons.push({ element: settingsBtn, label: 'Settings', action: 'settings' });
     if (mainMenuBtn) scanState.pauseButtons.push({ element: mainMenuBtn, label: 'Main Menu', action: 'mainMenu' });
 }
 
 function enemyFire() {
-    let row, col;
-    let shipSunk = false;
-    
-    // Target player 1's cells (always the human in 1P mode)
-    const targetCells = player1.cells.length ? player1.cells : playerCells;
-    const targetShips = player1.ships.length ? player1.ships : ships;
-    
-    // Smart targeting: if we have targets queued, use them
-    if (aiTargetQueue.length > 0) {
-        let foundTarget = false;
-        while (aiTargetQueue.length > 0 && !foundTarget) {
-            const target = aiTargetQueue.shift();
-            row = target.row;
-            col = target.col;
-            if (row >= 0 && row < 10 && col >= 0 && col < 10 &&
-                !targetCells[row][col].hit && !targetCells[row][col].miss) {
-                foundTarget = true;
-            }
-        }
-        if (!foundTarget) {
-            do {
-                row = Math.floor(Math.random() * 10);
-                col = Math.floor(Math.random() * 10);
-            } while (targetCells[row][col].hit || targetCells[row][col].miss);
-        }
-    } else {
-        do {
-            row = Math.floor(Math.random() * 10);
-            col = Math.floor(Math.random() * 10);
-        } while (targetCells[row][col].hit || targetCells[row][col].miss);
+    if (!gameStarted || battleFinished || gamePhase!=='defense') return;
+    const targetCells=player1.cells, targetShips=player1.ships;
+    let target;
+    while (aiTargetQueue.length && !target) {
+        const candidate=aiTargetQueue.shift();
+        if (!targetCells[candidate.row][candidate.col].hit && !targetCells[candidate.row][candidate.col].miss) target=candidate;
     }
-    
-    const cell = targetCells[row][col];
-    
-    if (cell.occupied) {
-        cell.hit = true;
-        aiHitStack.push({ row, col });
-        addAdjacentTargets(row, col);
-        
-        playSound('hit');
-        speak('Hit!');
-        
-        // Check if ship is sunk
-        for (const ship of targetShips) {
-            const coord = ship.coords.find(c => c.row === row && c.col === col);
-            if (coord) {
-                coord.hit = true;
-                if (!ship.sunk && ship.coords.every(c => c.hit)) {
-                    ship.sunk = true;
-                    shipSunk = true;
-                    updateShipStatusIcon(ship.id, true);
-                    cleanupSunkShipHits();
-                    
-                    const allSunk = targetShips.every(s => s.sunk);
-                    if (!allSunk) {
-                        showSunkToast(`Your ${ship.label} was sunk!`, true);
-                        speak(`Your ${ship.label} was sunk!`);
-                    }
-                }
-                break;
-            }
+    if (!target) {
+        const available=[];
+        targetCells.forEach((row,r)=>row.forEach((cell,c)=>{
+            if(!cell.hit && !cell.miss) available.push({row:r,col:c});
+        }));
+        target=available[Math.floor(Math.random()*available.length)];
+    }
+    if (!target) return;
+    const {row,col}=target;
+    BattlePresentation.launch(defenseGrid,row,col);
+    document.getElementById('defenseStatusText').textContent='Incoming fire. '+getCellLabel(row,col)+'.';
+    scheduleBattle(()=>{
+        const cell=targetCells[row][col];
+        const result=resolveShot(cell,targetShips,row,col);
+        if(cell.hit) {
+            aiHitStack.push({row,col});
+            addAdjacentTargets(row,col);
+            if(result.type==='sunk') cleanupSunkShipHits();
         }
-    } else {
-        cell.miss = true;
-        playSound('miss');
-        speak('Miss.');
-    }
-    
-    // Update the defense grid display
-    renderDefenseGrid();
-    
-    awaitingEnemy = false;
-    
-    // Check lose condition
-    if (targetShips.every(s => s.sunk)) {
-        showGameOverModal('Defeat!', 'The enemy sank your fleet.');
-        return;
-    }
-    
-    // After showing the result, transition back to attack phase
-    const cooldown = shipSunk ? 3500 : 2000;
-    
-    setTimeout(() => {
-        switchToAttackPhase();
-    }, cooldown);
+        renderDefenseGrid();
+        const narration=presentShot('defense',defenseGrid,row,col,result);
+        scheduleBattle(()=>{
+            if(targetShips.every(s=>s.sunk)) showGameOverModal('Defeat!','The enemy sank your fleet.');
+            else switchToAttackPhase();
+        },result.type==='sunk'?2200:1300,narration);
+    },BattlePresentation.reduced?80:380);
 }
 
 function addAdjacentTargets(row, col) {
@@ -1781,7 +1564,7 @@ function getHitDirection() {
 
 function cleanupSunkShipHits() {
     // Check each ship to see if it was just sunk
-    for (const ship of ships) {
+    for (const ship of player1.ships) {
         if (ship.sunk) {
             // Remove this ship's coordinates from the hit stack
             aiHitStack = aiHitStack.filter(hit => {
@@ -1811,6 +1594,9 @@ function showPlayAgain() {
 // MENU NAVIGATION
 // =========================================
 function showMainMenu() {
+    cancelBattleSequence();
+    battlePaused=false;
+    BattlePresentation.clearEffects();
     stopAutoScan();
     clearAllHighlights();
     
@@ -1864,6 +1650,7 @@ function showSettings() {
 }
 
 function showGame(mode) {
+    hideGameOverModal();
     gameMode = mode;
     stopAutoScan();
     clearAllHighlights();
@@ -1969,6 +1756,11 @@ function initPlayerData() {
 }
 
 function resetGameState() {
+    cancelBattleSequence();
+    BattlePresentation.reset();
+    battleFinished=false;
+    document.body.classList.remove('battle-results');
+    battlePaused=false;
     gameStarted = false;
     playerTurn = true;
     awaitingEnemy = false;
@@ -1986,6 +1778,7 @@ function resetGameState() {
 }
 
 function returnToMainMenu() {
+    document.getElementById('pauseModal').style.display='none';
     // Hide game over modal if showing
     hideGameOverModal();
     
@@ -2001,6 +1794,8 @@ function returnToMainMenu() {
 }
 
 function exitGame() {
+    cancelBattleSequence();
+    BattlePresentation.clearEffects();
     speak("Exiting to Hub");
     setTimeout(() => {
         if (window.parent && window.parent !== window) {
@@ -2037,7 +1832,7 @@ function updateSettingsButtonsList() {
     
     const autoScanOn = window.NarbeScanManager ? window.NarbeScanManager.getSettings().autoScan : false;
     
-    if (ttsBtn) scanState.settingsButtons.push({ element: ttsBtn, label: `TTS: ${settings.tts ? 'On' : 'Off'}`, action: 'tts' });
+    if (ttsBtn) scanState.settingsButtons.push({ element: ttsBtn, label: `TTS: ${(window.NarbeVoiceManager ? NarbeVoiceManager.getSettings().ttsEnabled : settings.tts) ? 'On' : 'Off'}`, action: 'tts' });
     if (soundBtn) scanState.settingsButtons.push({ element: soundBtn, label: `Sound: ${settings.sound ? 'On' : 'Off'}`, action: 'sound' });
     if (themeBtn) scanState.settingsButtons.push({ element: themeBtn, label: `Theme: ${themes[settings.themeIndex].name}`, action: 'theme' });
     if (highlightStyleBtn) scanState.settingsButtons.push({ element: highlightStyleBtn, label: `Style: ${highlightStyles[settings.highlightStyleIndex].name}`, action: 'highlightStyle' });
@@ -2045,6 +1840,11 @@ function updateSettingsButtonsList() {
     if (autoScanBtn) scanState.settingsButtons.push({ element: autoScanBtn, label: `Auto Scan: ${autoScanOn ? 'On' : 'Off'}`, action: 'autoScan' });
     if (scanSpeedBtn) scanState.settingsButtons.push({ element: scanSpeedBtn, label: `Speed: ${scanSpeeds[settings.scanSpeedIndex].name}`, action: 'scanSpeed' });
     if (backBtn) scanState.settingsButtons.push({ element: backBtn, label: 'Back', action: 'back' });
+    const extra = [
+        {element:document.getElementById('motionBtn'),action:'motion'},
+        {element:document.getElementById('volumeBtn'),action:'volume'}
+    ];
+    scanState.settingsButtons.splice(2,0,...extra.map(item=>({...item,label:item.element.textContent})));
 }
 
 function resetForNewGame() {
@@ -2073,7 +1873,7 @@ function resetForNewGame() {
     if (menuButtons) menuButtons.classList.remove('hidden');
     
     const startBtn = document.getElementById('startGameBtn');
-    if (startBtn) startBtn.textContent = 'Place Ships';
+    if (startBtn) startBtn.textContent = 'Launch Battle';
     
     updateTurnIndicator();
     updateStatus('Ships randomized! Press Space to scan, Enter to select.');
@@ -2093,6 +1893,7 @@ function resetForNewGame() {
 document.addEventListener('DOMContentLoaded', () => {
     // Load settings first
     loadSettings();
+    setupEffectsSettings();
     
     // Get DOM references
     placementBoard = document.getElementById('placementBoard');
@@ -2143,12 +1944,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game over button handler
     const gameOverOkBtn = document.getElementById('gameOverOkBtn');
     if (gameOverOkBtn) gameOverOkBtn.addEventListener('click', returnToMainMenu);
+    document.getElementById('playAgainBtn').addEventListener('click',()=>showGame(gameMode));
     
     // Pause modal button handlers
     const pauseContinueBtn = document.getElementById('pauseContinueBtn');
     const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
     const pauseMainMenuBtn = document.getElementById('pauseMainMenuBtn');
-    
+
     if (pauseContinueBtn) pauseContinueBtn.addEventListener('click', hidePauseModal);
     if (pauseSettingsBtn) pauseSettingsBtn.addEventListener('click', showSettingsFromPause);
     if (pauseMainMenuBtn) pauseMainMenuBtn.addEventListener('click', returnToMainMenuFromPause);
@@ -2232,8 +2034,10 @@ function updateMenuButtonsList() {
     scanState.menuButtons.push({ element: null, label: 'Select Ship to Modify', action: 'selectShip' });
     
     if (startGameBtn && startGameBtn.offsetParent !== null) {
-        scanState.menuButtons.push({ element: startGameBtn, label: 'Place Ships', action: 'start' });
+        scanState.menuButtons.push({ element: startGameBtn, label: 'Launch Battle', action: 'start' });
     }
+    const pause=document.getElementById('pauseButton');
+    if(pause && pause.style.display!=='none') scanState.menuButtons.push({element:pause,label:'Pause Game',action:'pause'});
 }
 
 // =========================================
@@ -2418,7 +2222,7 @@ function handleEscapeKey() {
         case 'game-row':
             // During gameplay, ESC goes back to pause button focus or does nothing
             // Pause is triggered by holding Enter for 5 seconds instead
-            speak('Hold Enter to pause.');
+            showPauseModal();
             break;
         case 'game-over':
             // Return to main menu
@@ -2902,6 +2706,7 @@ function scanShipsBackward() {
     buildShipScanList();
     if (scanState.shipButtons.length === 0) return;
     
+    if (scanState.scanIndex < 0) scanState.scanIndex = 0; // nothing highlighted yet: wrap to the last item
     scanState.scanIndex = (scanState.scanIndex - 1 + scanState.shipButtons.length) % scanState.shipButtons.length;
     highlightShip();
     announceCurrentItem();
@@ -3345,6 +3150,9 @@ function selectPauseSettingsButton() {
         const item = scanState.pauseSettingsButtons[scanState.scanIndex];
         
         switch (item.action) {
+            case 'motion': cycleMotion(); break;
+            case 'volume': cycleEffectsVolume(); break;
+            case 'autoScan': toggleAutoScan(); break;
             case 'tts':
                 toggleTTS();
                 updatePauseSettingsDisplay();
@@ -3402,6 +3210,8 @@ function selectSettingsButton() {
         const item = scanState.settingsButtons[scanState.scanIndex];
         
         switch (item.action) {
+            case 'motion': cycleMotion(); break;
+            case 'volume': cycleEffectsVolume(); break;
             case 'tts':
                 toggleTTS();
                 updateSettingsButtonsList();
@@ -3441,12 +3251,7 @@ function selectSettingsButton() {
 }
 
 function selectGameOverButton() {
-    if (scanState.scanIndex >= 0 && scanState.scanIndex < scanState.gameOverButtons.length) {
-        const item = scanState.gameOverButtons[scanState.scanIndex];
-        if (item.action === 'ok') {
-            returnToMainMenu();
-        }
-    }
+    scanState.gameOverButtons[scanState.scanIndex]?.element.click();
 }
 
 function selectMenuButton() {
@@ -3684,4 +3489,134 @@ function enterGameMode() {
     speak('Your turn. Scan rows to target enemy.');
     announceCurrentItem();
     startAutoScan();
+}
+
+// A single owned turn timer prevents a previous match or a paused shot from advancing.
+let battleTimer = null;
+let battlePending = null;
+let battlePaused = false;
+let battleFinished = false;
+
+function scheduleBattle(callback, delay, speechTicket = null) {
+    cancelBattleSequence();
+    const step={callback,remaining:delay,due:performance.now()+delay,
+        speechPending:!!speechTicket?.finished,elapsed:false,speechTimeout:null};
+    battlePending=step;
+    if (!battlePaused) battleTimer=setTimeout(runBattleStep,delay);
+    if (!step.speechPending) return;
+    const settle=result=>{
+        if(battlePending!==step || !step.speechPending) return;
+        step.speechPending=false;
+        clearTimeout(step.speechTimeout);
+        clearTimeout(battleTimer);
+        const remaining=step.elapsed?0:battlePaused?step.remaining:Math.max(0,step.due-performance.now());
+        // Leave breathing room after spoken outcomes; disabled/failed speech adds no delay.
+        step.remaining=Math.max(remaining,result?.started===false?0:650);
+        step.due=performance.now()+step.remaining;
+        if(!battlePaused) battleTimer=setTimeout(runBattleStep,step.remaining);
+    };
+    Promise.resolve(speechTicket.finished).then(settle,()=>settle({started:false}));
+    // A broken speech engine must never strand a player between turns.
+    step.speechTimeout=setTimeout(()=>settle({started:true}),10000);
+}
+function runBattleStep() {
+    if (battlePaused || !battlePending) return;
+    clearTimeout(battleTimer);
+    battleTimer=null;
+    if(battlePending.speechPending) {
+        battlePending.elapsed=true;
+        battlePending.remaining=0;
+        return;
+    }
+    const next=battlePending.callback;
+    clearTimeout(battlePending.speechTimeout);
+    battlePending=null;
+    next();
+}
+function cancelBattleSequence() {
+    clearTimeout(battleTimer);
+    clearTimeout(battlePending?.speechTimeout);
+    battleTimer=null;
+    battlePending=null;
+}
+function pauseBattleSequence() {
+    if (battlePaused) return;
+    battlePaused=true;
+    if(battlePending) battlePending.remaining=Math.max(0,battlePending.due-performance.now());
+    clearTimeout(battleTimer);
+    battleTimer=null;
+    BattlePresentation.clearEffects();
+}
+function resumeBattleSequence() {
+    battlePaused=false;
+    if(battlePending) {
+        battlePending.due=performance.now()+battlePending.remaining;
+        battleTimer=setTimeout(runBattleStep,battlePending.remaining);
+    }
+}
+function resolveShot(cell, fleet, row, col) {
+    if (!cell.occupied) {
+        cell.miss=true;
+        return {type:'miss'};
+    }
+    cell.hit=true;
+    const ship=fleet.find(s=>s.coords.some(c=>c.row===row && c.col===col));
+    const coord=ship.coords.find(c=>c.row===row && c.col===col);
+    coord.hit=true;
+    ship.sunk=ship.coords.every(c=>c.hit);
+    return {type:ship.sunk?'sunk':'hit',ship};
+}
+function presentShot(side, grid, row, col, result) {
+    BattlePresentation.impact(grid,row,col,result.type);
+    BattlePresentation.report(side,row,col,result.type,result.ship?.label);
+    const label=getCellLabel(row,col);
+    const text=result.type==='sunk'
+        ? (side==='attack'?'You sank their ':'Your ')+result.ship.label+(side==='attack'?'!':' was sunk!')
+        : result.type==='hit' ? (side==='attack'?'Direct hit!':'Your ship was hit!') : (side==='attack'?'Miss. Open water.':'Enemy missed.');
+    document.getElementById(side+'StatusText').textContent=label+' — '+text;
+    return speak(label+'. '+text);
+}
+function updateEffectsSettings() {
+    const motionLabel=settings.motion==='system'?'System':settings.motion==='reduced'?'Reduced':'Full';
+    for(const id of ['motionBtn','pauseMotionBtn']) {
+        const el=document.getElementById(id);
+        if(el) el.textContent='Motion: '+motionLabel;
+    }
+    for(const id of ['volumeBtn','pauseVolumeBtn']) {
+        const el=document.getElementById(id);
+        if(el) el.textContent='Effects volume: '+(['Low','Medium','High'][settings.volumeIndex]||'Medium');
+    }
+    const auto=window.NarbeScanManager?.getSettings().autoScan;
+    for(const id of ['autoScanBtn','pauseAutoScanBtn']) {
+        const el=document.getElementById(id);
+        if(el) el.textContent=auto?'Auto Scan: On — One Switch':'Auto Scan: Off — Two Switches';
+    }
+}
+function cycleMotion() {
+    const modes=['system','full','reduced'];
+    settings.motion=modes[(modes.indexOf(settings.motion)+1)%modes.length];
+    BattlePresentation.configure(settings);
+    saveSettings();
+    updateSettingsDisplay();
+    updatePauseSettingsDisplay();
+    speak(document.getElementById('motionBtn').textContent);
+}
+function cycleEffectsVolume() {
+    settings.volumeIndex=(settings.volumeIndex+1)%3;
+    BattlePresentation.configure(settings);
+    saveSettings();
+    updateSettingsDisplay();
+    updatePauseSettingsDisplay();
+    playSound('sonar');
+    speak(document.getElementById('volumeBtn').textContent);
+}
+function setupEffectsSettings() {
+    for(const id of ['motionBtn','pauseMotionBtn']) document.getElementById(id).addEventListener('click',cycleMotion);
+    for(const id of ['volumeBtn','pauseVolumeBtn']) document.getElementById(id).addEventListener('click',cycleEffectsVolume);
+    document.getElementById('pauseAutoScanBtn').addEventListener('click',toggleAutoScan);
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>BattlePresentation.configure(settings));
+    window.NarbeVoiceManager?.onSettingsChange?.(()=>{
+        updateSettingsDisplay();
+        updatePauseSettingsDisplay();
+    });
 }

@@ -6,6 +6,7 @@
 
   <meta charset="utf-8" />
   <script src="shared/extension-client.js"></script>
+  <script src="shared/journal-storage.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0f14">
   <link rel="manifest" href="manifest.webmanifest">
@@ -765,7 +766,7 @@
       color: var(--narbe-orange);
     }
     .hub-settings { margin: 0 0 14px; text-align: right; font-size: 13px; color: var(--muted); }
-    .hub-settings summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
+    .hub-settings > summary { cursor: pointer; display: inline-block; padding: 8px 12px; border: 1px solid #3a4e63; border-radius: 8px; }
     .settings-panel { text-align: left; padding: 16px; margin-top: 8px; background: #121b28; border: 1px solid #3a4e63; border-radius: 12px; }
     .settings-panel a { color: #9ed7ff; text-underline-offset: 3px; }
     .settings-panel p { line-height: 1.6; }
@@ -775,6 +776,16 @@
     .settings-panel button:hover { background: #2c4863; }
     .settings-panel button:disabled { cursor: wait; opacity: .7; }
     .settings-error { color: #ffb4b4; }
+    .companion-tutorial { margin: 16px 0; border: 1px solid #7095b8; border-radius: 8px; }
+    .companion-tutorial > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; color: var(--text); background: #21384e; border-radius: 8px; font-weight: 700; cursor: pointer; list-style: none; }
+    .companion-tutorial > summary::-webkit-details-marker { display: none; }
+    .companion-tutorial > summary:hover { background: #2c4863; }
+    .companion-tutorial-icon { width: 22px; height: 22px; flex: 0 0 auto; }
+    .companion-tutorial-chevron { width: 16px; height: 16px; margin-left: auto; flex: 0 0 auto; }
+    .companion-tutorial[open] > summary { border-radius: 8px 8px 0 0; }
+    .companion-tutorial[open] .companion-tutorial-chevron { transform: rotate(180deg); }
+    .companion-tutorial-video { width: 100%; aspect-ratio: 16 / 9; min-height: 200px; background: #000; }
+    .companion-tutorial-video iframe { display: block; width: 100%; height: 100%; min-height: inherit; border: 0; }
     @media (max-width: 600px) { .settings-actions { grid-template-columns: 1fr; } }
     .hub-settings :focus-visible { outline: 3px solid #ffdf65; outline-offset: 3px; }
     .connection-status { display: inline-block; border: 1px solid currentColor; border-radius: 20px; padding: 6px 12px; font-weight: 700; color: #ffdf83; background: #302816; }
@@ -828,9 +839,18 @@
           </div>
           <div>
             <button type="button" id="personal-data" aria-describedby="personal-data-help">My data</button>
-            <p id="personal-data-help">Export or clear saved Hub data. Available with or without the extension.</p>
+            <p id="personal-data-help">Export, restore or clear saved Hub data. Keep a separate journal backup here.</p>
+            <p id="journal-backup-reminder" hidden></p>
           </div>
         </div>
+        <details id="companion-tutorial" class="companion-tutorial">
+          <summary>
+            <svg class="companion-tutorial-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="m10 8 6 4-6 4V8Z" fill="currentColor"/></svg>
+            <span>Watch tutorial</span>
+            <svg class="companion-tutorial-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </summary>
+          <div id="companion-tutorial-video" class="companion-tutorial-video"></div>
+        </details>
         <p>The optional Companion adds Day Hub, Journal and Streaming to your Tools menu. Games, Keyboard, Phraseboard and YouTube Search work without it.</p>
         <p>Need the extension? Get it from the <a id="extension-store" href="https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc" target="_blank" rel="noopener noreferrer">Chrome Web Store</a>, then refresh the Hub.</p>
       </div>
@@ -1026,6 +1046,15 @@
             </div>
           </button>
 
+          <button class="card-btn" id="graphics-toggle" aria-describedby="graphics-help">
+            <span class="kicker">Setting</span>
+            <div class="btn-title">Graphics quality</div>
+            <div class="row">
+              <p class="desc" id="graphics-help">Auto adjusts detail for smoother play. Or choose High, Standard, or Low.</p>
+              <span class="pill" id="graphics-status">Standard</span>
+            </div>
+          </button>
+
           <section id="scan-settings" aria-labelledby="scan-settings-heading"></section>
         </div>
         <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Press <span class="kbd">return</span> to change the highlighted setting. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
@@ -1044,6 +1073,9 @@
         <p style="margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5;">
           Created with Ben by <a href="https://narbehouse.com" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">NARBE House</a> and shared freely through the <a href="https://narbefoundation.org" target="_blank" rel="noopener" style="color: var(--narbe-blue); text-decoration: none; font-weight: 700;">NARBE Foundation</a>. This web app is free to use. If you would like to show your support, you may contribute any amount <a href="https://shop.beacons.ai/narbehouse/e6137d30-c44e-4185-98ea-570312516462?pageViewSource=lib_view&referrer=https%3A%2F%2Fbeacons.ai%2Fnarbehouse&show_back_button=true" target="_blank" rel="noopener" style="color: var(--narbe-orange); text-decoration: none; font-weight: 700;">here</a>. Thank you for being part of this community.
         </p>
+        <p data-scan-exclude style="margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5;">
+          NARBE is not affiliated with any cryptocurrency or crypto token. <a href="https://narbehouse.github.io/crypto-statement/" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">Read our official statement</a>.
+        </p>
         <p id="switch-kit-callout" data-scan-exclude style="margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
           Need a switch kit? <a href="https://narbefoundation.org/switchkit" target="_blank" rel="noopener noreferrer" style="color: var(--narbe-blue); text-underline-offset: 3px;">Apply for a free switch kit<span class="sr-only"> (opens in a new tab)</span></a>.
         </p>
@@ -1053,6 +1085,7 @@
 
   <!-- Include shared voice manager -->
   <script src="shared/platform.js"></script>
+  <script src="shared/graphics-quality.js"></script>
   <script src="shared/scan-status-badge.js"></script>
   <script src="shared/choice-scan.js"></script>
   <link rel="stylesheet" href="shared/scan-status-badge.css">
@@ -1203,8 +1236,62 @@
     document.getElementById('extension-recheck').onclick = checkCompanionConnection;
     document.getElementById('extension-settings').onclick = openCompanionSettings;
     document.getElementById('hub-settings').addEventListener('toggle', event => { if (event.target.open) checkCompanionConnection(); });
+    const companionTutorial = document.getElementById('companion-tutorial');
+    const companionTutorialVideo = document.getElementById('companion-tutorial-video');
+    function syncCompanionTutorial() {
+      if (!document.getElementById('hub-settings').open) companionTutorial.open = false;
+      if (!companionTutorial.open) {
+        companionTutorialVideo.replaceChildren(); // Stop playback when either disclosure closes.
+        return;
+      }
+      if (companionTutorialVideo.firstElementChild) return;
+      const player = document.createElement('iframe');
+      player.title = 'Benny’s Hub Companion setup tutorial';
+      player.src = 'https://www.youtube-nocookie.com/embed/6MFJWrkgSM4?rel=0';
+      player.allow = 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+      player.allowFullscreen = true;
+      player.referrerPolicy = 'strict-origin-when-cross-origin';
+      companionTutorialVideo.append(player);
+    }
+    function closeCompanionTutorial() {
+      if (!companionTutorial.open && !companionTutorialVideo.firstElementChild) return;
+      document.getElementById('hub-settings').open = false;
+      companionTutorial.open = false;
+      companionTutorialVideo.replaceChildren();
+    }
+    companionTutorial.addEventListener('toggle', syncCompanionTutorial);
+    document.getElementById('hub-settings').addEventListener('toggle', syncCompanionTutorial);
     document.getElementById('extension-setup').onclick = () => window.open('extension-setup.html', '_blank', 'noopener');
     document.getElementById('personal-data').onclick = () => window.open('data-settings.html', '_blank', 'noopener');
+    let journalBackupCheck;
+    function showJournalBackupReminder(snapshot) {
+      const reminder = document.getElementById('journal-backup-reminder');
+      const hasWork = (snapshot.entryCount ?? snapshot.entries?.length ?? 0) > 0 ||
+        (snapshot.draftPresent ?? Boolean(snapshot.draft?.answer?.trim()));
+      reminder.hidden = !hasWork;
+      if (!hasWork) return;
+      reminder.textContent = snapshot.mode !== 'companion'
+        ? 'Journal is still saved in website storage. Export a backup in My data and update to the latest Companion 1.0.8 package.'
+        : snapshot.exportRevision == null || snapshot.exportRevision < snapshot.revision
+          ? 'Journal backup reminder: use My data → Export Journal to keep a separate copy of your latest work.'
+          : 'Last journal backup export: ' + new Date(snapshot.lastExportAt).toLocaleDateString() + '. Keep the downloaded file somewhere private.';
+    }
+    async function checkJournalBackup() {
+      if (!document.getElementById('hub-settings').open || journalBackupCheck) return;
+      journalBackupCheck = (async () => {
+        try { showJournalBackupReminder(await BennyJournalStorage.status()); }
+        catch {
+          const reminder = document.getElementById('journal-backup-reminder');
+          reminder.textContent = 'Journal storage could not be checked. Reconnect Companion to access its journal backups in My data.';
+          reminder.hidden = false;
+        } finally { journalBackupCheck = null; }
+      })();
+      await journalBackupCheck;
+    }
+    BennyJournalStorage.subscribe(showJournalBackupReminder);
+    document.getElementById('hub-settings').addEventListener('toggle', checkJournalBackup);
+    window.addEventListener('focus', checkJournalBackup);
+    window.addEventListener('benny-extension-change', checkJournalBackup);
     // Get unique genres for a category
     function getGenres(category) {
       const items = appsData[category] || [];
@@ -1498,6 +1585,16 @@
       applySettings();
     });
 
+    function refreshGraphicsSetting() {
+      document.getElementById('graphics-status').textContent = NarbeGraphics.title(NarbeGraphics.getHub());
+      settingsScanner?.setItems(settingsItems());
+    }
+    NarbeGraphics.subscribeHub(refreshGraphicsSetting);
+    document.getElementById('graphics-toggle').onclick = () => {
+      NarbeGraphics.cycleHub();
+      announceSetting('Graphics quality: ' + NarbeGraphics.title(NarbeGraphics.getHub()));
+    };
+
     // Settings toggles
     document.getElementById('highlight-toggle').addEventListener('click', () => {
       const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'white'];
@@ -1612,6 +1709,7 @@
         speak('Enable Benny’s Hub Companion first.');
         return;
       }
+      closeCompanionTutorial();
       window.BennyUsage?.open(src);
       iframeTitle.textContent = title;
       appIframe.src = src;
@@ -1676,6 +1774,7 @@
 
     // Screen management
     function showScreen(name) {
+      closeCompanionTutorial();
       isTransitioning = true;
       currentScreen = name;
 
@@ -2265,6 +2364,7 @@
     // Initialize application
     window.addEventListener('load', async () => {
       loadSettings();
+      refreshGraphicsSetting();
 
       await loadAppsData();
       refreshExtensionTools();
@@ -2470,11 +2570,13 @@
 
         <h4>⚠️ Disclaimer & Warranty</h4>
         <p><strong>THIS SOFTWARE IS NOT MEDICAL SOFTWARE OR A MEDICAL DEVICE.</strong> This software supports access to tools and games through one or two switches. It is not intended to diagnose, treat, cure, or prevent any disease or medical condition.</p>
-        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, NARBE LLC, OR THE NARBE FOUNDATION BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+        <p>The keyboard, phrase board, and other communication features are supplemental tools and are not a replacement for a prescribed augmentative and alternative communication (AAC) device.</p>
+        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR NARBE LLC BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
         <p>USE OF THIS SOFTWARE IS ENTIRELY AT YOUR OWN RISK. The authors and NARBE LLC make no representations or warranties regarding the accuracy, reliability, completeness, or timeliness of the software or its suitability for any particular purpose.</p>
 
         <h4>™ Trademark & Intellectual Property</h4>
-        <p>"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," and all related names, logos, designs, and branding are trademarks and service marks of <strong>NARBE LLC</strong>. All rights reserved.</p>
+        <p>"Benny's Accessibility Hub," "NARBE," "NARBE Foundation," "NARBE House," "SwitchedGames" (also presented as "Switched Games" and "SwitchedGames.org"), and all related names, logos, designs, and branding are trademarks and service marks of <strong>NARBE LLC</strong>. All rights reserved.</p>
+        <p>SwitchedGames is a product of NARBE LLC. This branding notice does not claim ownership of third-party trademarks or contributors' work.</p>
         <p>The <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> applies to the <strong>source code only</strong> and does not grant any rights to use NARBE LLC's trademarks, trade names, logos, or branding.</p>
         <p>Unauthorized use of NARBE LLC's trademarks is strictly prohibited and may violate trademark laws.</p>
 

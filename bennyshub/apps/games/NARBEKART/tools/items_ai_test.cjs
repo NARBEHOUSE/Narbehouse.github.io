@@ -58,6 +58,27 @@ check('boost durations and coin cap follow the item contract', () => {
   for (const [id, seconds] of [['rocket', 1.3], ['rocket3', 3.6], ['goldrocket', 5.5]]) { use(R, id); assert.equal(R.racers[0].boostT, seconds); }
   R.racers[0].coins = 9; use(R, 'coins'); assert.equal(R.racers[0].coins, 10);
 });
+check('coins pull a player\'s odds toward the next band, more when behind; CPUs roll by place alone', () => {
+  const R = race(), me = R.racers[0], cpu = R.racers[1];
+  const at = (r, place, coins) => { r.place = place; r.coins = coins; return NK.items.odds(R, r); };
+  // No coins: exactly the place band's odds, as before.
+  assert.equal(at(me, 1, 0).weights, NK.items.ODDS[0].weights);
+  // Each coin nudges a little; the same coins count for more further back.
+  const lead = at(me, 1, 5).pull, mid = at(me, 2, 5).pull, last = at(me, 4, 5).pull;
+  assert(lead > 0 && lead < mid && mid < last, 'pull ' + [lead, mid, last].join(' < '));
+  assert(at(me, 1, 10).pull <= 0.35, 'in first, a full purse is only a modest nudge');
+  assert(at(me, 1, 1).pull < at(me, 1, 2).pull, 'every coin counts');
+  // Last place with a full purse reaches past the back band into the jackpot.
+  assert.equal(at(me, 4, 10).pull, 1);
+  for (let i = 0; i < 400; i++) { const id = NK.items.roll(R, me); assert(NK.items.JACKPOT[id] > 0, id + ' is a jackpot item'); }
+  // In first, a full purse sometimes brings a middle-band item but never a back-band one.
+  me.place = 1; me.coins = 10; const seen = new Set();
+  for (let i = 0; i < 2000; i++) seen.add(NK.items.roll(R, me));
+  assert(seen.has('star') || seen.has('rocket3'), 'a lucky leader sometimes gets a middle-band item');
+  assert(!seen.has('goldrocket') && !seen.has('jet'), 'the leader never reaches the back band');
+  // CPUs ignore coins.
+  assert.equal(at(cpu, 4, 10).pull, 0);
+});
 check('a fast ball sweeps the finish seam and hits exactly one kart', () => {
   const R = race(); put(R, 0, 995, 0, 24); put(R, 1, 1002); put(R, 2, 1003);
   use(R, 'ball'); NK.items.update(R, 0.2);

@@ -166,3 +166,5 @@ button { transition: background-color .15s, box-shadow .15s; }
   .calendar-month-controls h3 { font-size: 20px; }
   .calendar-month-controls .modal-btn { font-size: 14px; }
 }
+
+.journal-storage-status { margin: 0 0 12px; padding: 10px 14px; border: 1px solid currentColor; border-radius: 8px; font-size: 1rem; }

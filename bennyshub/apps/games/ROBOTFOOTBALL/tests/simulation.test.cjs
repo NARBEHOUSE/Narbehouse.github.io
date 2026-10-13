@@ -183,8 +183,8 @@ test('coverage reads match the defenders on the field and hold still long enough
   assert.ok(sim.s.targetInfo[0].catchChance < wideOpen, 'and the catch chance follows him');
 });
 test('four incompletions turn the ball over at the previous spot', () => {
-  // A roll that misses every catch without being a pick in tight coverage.
-  const sim = make({ random: () => 0.93 });
+  // A roll that misses every catch (Covered, .76) without being a pick (that starts at .95).
+  const sim = make({ random: () => 0.8 });
   for (let down = 1; down <= 4; down++) {
     assert.equal(sim.s.down, down);
     start(sim, 'verticals'); sim.throwPass(); settle(sim);
@@ -752,7 +752,7 @@ test('going for two is one run or pass from the 2-yard line', () => {
   sim.options.practice = true; start(sim, 'inside'); settle(sim, 0); sim.options.practice = false;
   assert.equal(sim.s.result.title, 'Two-point conversion!'); assert.equal(sim.s.homeScore, 8);
   continueReady(sim); assert.equal(sim.s.possession, 'away'); assert.equal(sim.s.fieldPosition, 75);
-  const stopped = make({ random: () => .93 });  // misses the catch without a pick
+  const stopped = make({ random: () => .8 });  // misses the catch without a pick
   position(stopped, 95); stopped.options.practice = true; start(stopped, 'slants'); stopped.throwPass(); settle(stopped); stopped.options.practice = false;
   continueReady(stopped); stopped.callPlay('gofortwo'); start(stopped, 'slants'); stopped.throwPass(); settle(stopped);
   assert.equal(stopped.s.result.title, 'Conversion stopped'); assert.equal(stopped.s.homeScore, 6);
@@ -1140,5 +1140,73 @@ test('robots are solid on every play, and a pass cannot fly through a defender',
   const t = .93, x = f.from.x + (f.to.x - f.from.x) * t, z = f.from.z + (f.to.z - f.from.z) * t;
   for (let i = 0; i < 400 && pass.s.phase === 'flight'; i++) { wall.x = x; wall.z = z; wall.stun = 0; pass.step(.05, 0); }
   assert.equal(pass.s.result.title, 'Knocked down');
+});
+test('a runner who goes down with the ball over the goal line scores; short of it, he is spotted where he was hit', () => {
+  const tackleAt = (z, opts = {}, possession = 'home') => {
+    const sim = make(Object.assign({ random: () => .9 }, opts));
+    const d = possession === 'home' ? 1 : -1;
+    position(sim, possession === 'home' ? 95 : 5, possession); start(sim, possession === 'home' ? 'inside' : 'contain'); controlReady(sim);
+    const runner = sim._player(sim.s.carrierId);
+    // Keep the rest of the field away so only the placed tackler can make contact.
+    sim.s.players.forEach(q => { if (q !== runner) { q.x = 22; q.z = 50; } });
+    const tackler = sim.s.players.find(q => q.team !== sim.s.possession);
+    runner.x = 0; runner.z = z; tackler.x = 0; tackler.z = z + d * .8; sim._runTime = 1;
+    sim.step(.05, 0, true);
+    assert.equal(sim.s.phase, 'tackle');
+    const contact = sim.s.tackle.spot; settle(sim);
+    return { sim, contact };
+  };
+  const over = tackleAt(99.2);
+  assert.equal(over.sim.s.result.title, 'Touchdown!'); assert.equal(over.sim.s.homeScore, 6);
+  const short = tackleAt(96.5);
+  assert.equal(short.sim.s.homeScore, 0); assert.equal(short.sim.s.fieldPosition, Math.round(short.contact * 10) / 10, 'spotted at contact, not where the fall ended');
+  const visitors = tackleAt(.8, {}, 'away');
+  assert.equal(visitors.sim.s.awayScore, 6, 'the visitors score the same way');
+  const practice = tackleAt(.8, { practice: true }, 'away');
+  assert.equal(practice.sim.s.awayScore, 0, 'in practice the visitors still never score');
+});
+test('a throw into coverage can be picked off: the defender breaks on the ball and runs it back', () => {
+  const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  const events = [], sim = make({ random: () => .97 }, events);
+  start(sim, 'slants'); sim.selectTarget(0);
+  assert.equal(sim.s.targetInfo[0].openness, 'Tight');
+  sim.throwPass();
+  const f = sim._flight, receiver = f.targetId;
+  let picker = null, startGap = null;
+  for (let i = 0; i < 400 && sim.s.phase === 'flight'; i++) {
+    sim.step(.05, 0);
+    if (sim._flight && sim._flight.pickId && !picker) { picker = sim._player(sim._flight.pickId); startGap = distance(picker, f.to); }
+  }
+  assert.ok(picker && picker.team === 'away', 'the pick is decided while the ball is still in the air');
+  assert.ok(distance(picker, f.to) < 1 && distance(picker, f.to) <= startGap, 'he meets the ball where it comes down');
+  assert.equal(sim.s.phase, 'defend'); assert.equal(sim.s.possession, 'away');
+  assert.equal(sim.s.carrierId, picker.id); assert.equal(sim.s.kickReturn.title, 'Interception return');
+  assert.ok(sim.s.controlledId && sim.s.controlledId.startsWith('home-') && sim.s.controlledId !== picker.id, 'you chase him with your nearest robot');
+  assert.ok(events.includes('catch')); assert.equal(sim.s.stats.home.turnovers, 1);
+  assert.equal(sim.s.possessionNumber, 1);
+  settle(sim); assert.equal(sim.s.phase, 'result');
+  assert.ok(['Interception return', 'Touchback', 'Pick six! Touchdown!'].includes(sim.s.result.title), sim.s.result.title);
+  assert.equal(sim.s.possession, 'away');
+  // The same roll at an Open receiver is only an incompletion.
+  const open = make({ random: () => .97 });
+  start(open, 'slants'); open.selectTarget(0); open.throwPass(); open._flight.separation = 5; settle(open);
+  assert.equal(open.s.result.title, 'Incomplete pass'); assert.equal(open.s.stats.home.turnovers, 0);
+  const practice = make({ random: () => .97, practice: true });
+  start(practice, 'slants'); practice.selectTarget(0); practice.throwPass(); settle(practice);
+  assert.equal(practice.s.stats.home.turnovers, 0, 'practice never picks your passes');
+});
+test('your robot near the catch point can pick off a visitors pass and run it back', () => {
+  // A zero roll makes the visitors pass; once the ball is up, the top roll makes it a pick.
+  const events = [], sim = make({ random: () => 0 }, events);
+  position(sim, 60, 'away'); start(sim, 'zone');
+  advanceUntil(sim, s => s.defenseStage === 'flight');
+  sim.random = () => .999;
+  const f = sim._flight, hawk = sim._player('home-FS');
+  hawk.x = f.to.x + 1; hawk.z = f.to.z + 1;
+  for (let i = 0; i < 400 && sim.s.phase === 'defend' && sim.s.defenseStage === 'flight'; i++) sim.step(.05, 0);
+  assert.equal(sim.s.phase, 'run'); assert.equal(sim.s.possession, 'home');
+  assert.ok(sim.s.carrierId.startsWith('home-')); assert.equal(sim.s.controlledId, sim.s.carrierId);
+  assert.equal(sim.s.stats.away.turnovers, 1); assert.equal(sim.s.kickReturn.title, 'Interception return');
+  settle(sim); assert.equal(sim.s.possession, 'home');
 });
 console.log('\n' + passed + ' simulation tests passed.');

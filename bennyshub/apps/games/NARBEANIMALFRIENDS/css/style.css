@@ -1496,3 +1496,7 @@ html, body {
 .naf-key-row[data-narbe-scan-paused],
 .naf-key[data-narbe-scan-paused] { outline-color: #3d2718 !important; }
 [data-name="rows-back"][hidden] { display: none !important; }
+
+/* Graphics status includes inheritance and a possible next-launch notice. */
+.naf-graphics-setting .naf-row-label { flex: 0 0 35%; }
+.naf-graphics-setting .naf-row-value { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: right; }

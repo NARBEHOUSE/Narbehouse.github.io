@@ -3964,10 +3964,11 @@ class GameScene extends BaseballScene {
         const voiceName = (vm && vm.getCurrentVoice && vm.getVoiceDisplayName)
             ? vm.getVoiceDisplayName(vm.getCurrentVoice()) : 'Default';
         this.setMenu(new ScanList(this, {
-            x: W / 2, y: H / 2, itemW: 340, itemH: 40, gap: 8,
+            x: W / 2, y: H / 2, itemW: 420, itemH: 40, gap: 8,
             audio: this.audio, title: 'Paused',
             options: [
                 { value: 'resume', label: 'Resume Game' },
+                bb2GraphicsOption(),
                 { value: 'batting', label: bb2BattingLabel(), hint: 'Change how you swing' },
                 { value: 'music', label: `Music: ${musicOn ? 'ON' : 'OFF'}` },
                 { value: 'sound', label: `Sound Effects: ${soundOn ? 'ON' : 'OFF'}` },
@@ -3979,6 +3980,7 @@ class GameScene extends BaseballScene {
             ],
             onSelect: (opt, idx) => {
                 if (opt.value === 'resume') { this.setMenu(null); resumeCb(); }
+                else if (opt.value === 'graphics-quality') { bb2Graphics.cycle(); this.audio.speak(bb2Graphics.label(), true); }
                 else if (opt.value === 'batting') { this.audio.speak(bb2ToggleBatting(), true); this.showPauseMenu(resumeCb, idx); }
                 else if (opt.value === 'sound') { this.audio.toggleSound(); this.showPauseMenu(resumeCb, idx); }
                 else if (opt.value === 'music') { this.audio.toggleMusic(); this.showPauseMenu(resumeCb, idx); }
@@ -4000,6 +4002,7 @@ class GameScene extends BaseballScene {
                 else if (opt.value === 'quit') { this.setMenu(null); this.scene.start('TitleScene'); }
             }
         }));
+        bb2GraphicsCaption(this.menu);
         // Restore the highlighted row so the selection doesn't jump after a toggle.
         if (restoreIndex >= 0 && restoreIndex < this.menu.options.length) {
             this.menu.index = restoreIndex;

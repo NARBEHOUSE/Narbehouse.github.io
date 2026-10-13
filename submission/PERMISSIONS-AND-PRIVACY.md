@@ -4,15 +4,15 @@ These statements describe the supplied package. Confirm the account declarations
 
 ## Single purpose
 
-Provide switch-accessible control of streaming playback and chosen daily-information sources launched from Benny's Hub, using the Hub's accessibility preferences.
+Provide switch-accessible streaming playback, persistent local app-data storage and chosen daily-information sources through Benny's Hub, using the Hub's accessibility preferences.
 
 ## Permissions
 
-**storage:** Store user-selected source settings and an optional private calendar URL locally; keep managed playback-tab identifiers, scan settings and recent episode links in session storage. No Chrome/Edge storage sync is used.
+**storage:** Automatically store Journal entries and drafts; Keyboard vocabulary and preferences; Streaming catalog, episodes, progress and preferences; Day Hub weather preferences; backup/migration metadata; user-selected source settings and an optional private calendar URL locally; keep managed playback-tab identifiers, scan settings and recent episode links in session storage. No Chrome/Edge storage sync is used.
 
 **scripting:** Register bundled player adapters and the switch control bar on streaming services only after the user grants access. The scripts operate only player tabs opened through the Hub; unrelated tabs exit without a toolbar.
 
-**https://narbehouse.github.io/bennyshub/* content script:** Connect the Hub's web interface to a fixed allowlist of extension actions, verify the launching Hub tab, and synchronize scan preferences. No access to other GitHub Pages sites is requested by the store manifest.
+**https://narbehouse.github.io/bennyshub/* content script:** Connect the Hub's web interface to a fixed allowlist of extension actions, verify the launching Hub tab, and synchronize scan preferences, and serve validated Journal and app-specific storage actions. App data is available only through that trusted Hub bridge; general provider tabs cannot request it. No access to other GitHub Pages sites is requested by the store manifest.
 
 **Optional streaming origins:** YouTube (www, bare and mobile); Netflix (www and bare); Disney+ (www and bare); Hulu (www and bare); Prime Video (www and bare) and www.amazon.com; play.hbomax.com, www.hbomax.com, play.max.com, www.max.com; www.paramountplus.com; app.plex.tv and watch.plex.tv; pluto.tv and www.pluto.tv. Required to find and operate the corresponding player controls when the user launches that service. Streaming and news host access is requested together through the explicit **Streaming and news** switch in Companion settings and can be revoked together. Calendar access stays separate. Amazon access supports Prime Video playback on Amazon; it is not used for shopping or purchase automation.
 
@@ -34,14 +34,18 @@ Both stores require accurate disclosure of locally processed information. Use th
 
 | Category | Relevant handling |
 | --- | --- |
-| Website content | Media elements/player controls and optional calendar/news response content. |
+| Website content | Media elements/player controls, optional calendar/news response content and Journal text, Keyboard vocabulary and the user’s Streaming library saved from the Hub. |
 | Web history | Only managed stream URLs and the verified Hub URL for returning and episode-link updates; no general browsing history API. |
 | User activity | Switch presses and playback actions, processed for controls; not uploaded or retained as an activity log. |
 | Authentication information | Optional private calendar iCal URL is an access credential, stored locally and sent to Google to retrieve that calendar. Account passwords/cookies are not read. |
-| Personal communications / personally identifiable information | Optional calendar event titles, descriptions and locations can include names or personal appointments; displayed for the user only. |
-| Location | Optional local-news place name supplied by Day Hub and sent to Google News. Website weather coordinates go directly to Open-Meteo, separately from the extension. |
+| Personal communications / personally identifiable information | Journal entries/drafts, learned Keyboard vocabulary and optional calendar event titles, descriptions and locations can include names or personal appointments. Journal records stay in extension local storage and caregiver-requested backup files; calendar information is displayed for the user only. |
+| Location | Optional local-news place name supplied by Day Hub and sent to Google News. Day Hub weather coordinates and location label are retained in Companion app storage; weather requests go directly from the website to Open-Meteo. |
 
-No financial, payment, credit, health-metric or diagnostic feature is implemented. Users can write arbitrary personal material in their calendar or the separate website journal; explain this context if a reviewer asks about incidental sensitive content.
+No financial, payment, credit, health-metric or diagnostic feature is implemented. Users can write arbitrary personal material in their calendar or Companion-stored journal; explain this context if a reviewer asks about incidental sensitive content.
+
+## App-data retention and caregiver backups
+
+The same-version 1.0.8 journal-storage candidate adds no permissions. A fixed capability (`journal-storage-v1`) enables automatic entries/draft storage behind the trusted Hub bridge. Older installed Companions leave Journal on its existing website-storage behavior. Migration merges website records into Companion and retains a legacy copy; it does not transmit journal contents. Normal extension updates preserve extension storage. Uninstalling Companion, deleting its browser profile or deliberately clearing Journal removes the relevant local records. The existing My data export/import controls save and restore a separate caregiver-controlled backup; this is not a cloud service or automatic external-folder backup. Reminders are confined to the caregiver data page. The `app-storage-v1` capability similarly provides validated storage for Keyboard, Streaming and Day Hub with exact per-app key allowlists. Existing Companion values win migration conflicts; conflicting browser-origin data is retained in local recovery archives and version 2 app exports. Journal restores merge entries and drafts; other app restores require confirmation before applying the backed-up app values. Backup files are ordinary unencrypted JSON, saved only when the caregiver requests an export.
 
 ## Limited-use certifications
 

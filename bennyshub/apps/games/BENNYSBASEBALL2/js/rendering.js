@@ -1,7 +1,27 @@
+const bb2Graphics = NarbeGraphics.openGame('baseball');
+function bb2GraphicsOption() {
+    const state = bb2Graphics.get();
+    return { value: 'graphics-quality', label: 'Graphics quality: ' + (state.choice === 'hub' ? 'Use Hub setting' : NarbeGraphics.title(state.choice)), hint: bb2Graphics.label().replace('Graphics quality: ', ''), speakText: () => bb2Graphics.label() };
+}
+
+function bb2GraphicsCaption(menu) {
+    if (!menu.graphicsCaption) {
+        menu.graphicsCaption = menu.scene.add.text(W / 2, H - 12, '', {
+            fontSize: '15px', fontFamily: 'Arial', color: '#dff5df',
+            wordWrap: { width: W - 30 }, align: 'center'
+        }).setOrigin(0.5, 1).setDepth(44);
+        menu.container.add(menu.graphicsCaption);
+    }
+    menu.graphicsCaption.setText(bb2Graphics.label());
+}
+
 // Keep gameplay in 1000x600 world units while drawing into a denser canvas.
 function bb2RenderScale() {
     const fit = Math.min(window.innerWidth / W, window.innerHeight / H);
-    return Math.min(3, Math.max(1, Math.ceil(fit * (window.devicePixelRatio || 1))));
+    const physical = fit * (window.devicePixelRatio || 1);
+    // This canvas also draws menus/text: keep at least display resolution.
+    const quality = bb2Graphics.get().quality;
+    return quality === 'high' ? 3 : Math.min(3, Math.max(1, quality === 'low' ? physical : Math.ceil(physical)));
 }
 
 class BaseballScene extends Phaser.Scene {

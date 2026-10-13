@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('robotfootball');
   const $ = id => document.getElementById(id);
   const SAVE = 'bennys-stadium-match-v1', SEASON_SAVE = 'bennys-stadium-season-match-v1', PREFS = 'bennys-stadium-settings-v1';
   const AIM_SPEEDS = [0.14, 0.24, 0.36, 0.55];
@@ -77,6 +78,8 @@
     if (/touchdown|conversion!|extra point good|field goal/i.test(title)) return ours ? 'score' : 'alert';
     // An onside kick recovered is good news for the kicking side, which is not yet the one with the ball.
     if (/onside kick recovered/i.test(title)) return ours ? 'alert' : 'good';
+    // After an interception return the ball already belongs to the side that picked it off.
+    if (/interception return/i.test(title)) return ours ? 'good' : 'alert';
     if (/intercept|turnover|safety|sack|stopped|denied|missed|wide|short|blocked|knocked down/i.test(title)) return ours ? 'alert' : 'good';
     if (/first down/i.test(title)) return ours ? 'good' : 'alert';
     return 'neutral';
@@ -299,12 +302,14 @@
   function exitGame() { saveMatch(); audio?.pause(); clearHeld(); scan?.resetInputState?.(); window.parent.postMessage({ action: 'focusBackButton' }, '*'); if (window.parent === window) location.href = '../../../index.html'; }
   // Basic lists only the essentials, in the same order as Benny's Football; Advanced lists every option.
   // Rows that wrap the hub's shared voice and scanning stay in both: a game opened outside the hub has no other way to reach them.
+  hubGraphics.subscribe(() => { if (screen === 'settings') settings(returnScreen, items[focusIndex]?.name || ''); });
   function settings(from = returnScreen, focusName = '') {
     returnScreen = from;
     const again = name => settings(from, name), refresh = name => { preferencesChanged(); again(name); };
     const tts = voice?.getSettings().ttsEnabled !== false;
     const voiceName = voice?.getVoiceDisplayName?.(voice?.getCurrentVoice?.()) || 'System voice';
     const row = {
+      graphics: { name: 'Graphics quality', value: hubGraphics.label().replace('Graphics quality: ', ''), action: () => { hubGraphics.cycle(); again('Graphics quality'); } },
       tts: { name: 'Text to speech', value: tts ? 'On' : 'Off', action: () => { voice?.toggleTTS(); again('Text to speech'); } },
       voice: { name: 'Voice', value: voiceName, action: () => { voice?.cycleVoice(); again('Voice'); } },
       difficulty: { name: 'Difficulty', value: prefs.difficulty === 'rookie' ? 'Rookie' : 'Pro', desc: 'Defender pressure and pass coverage', action: () => { prefs.difficulty = prefs.difficulty === 'rookie' ? 'pro' : 'rookie'; refresh('Difficulty'); } },
@@ -327,8 +332,8 @@
       reset: { name: 'Reset saved progress', action: () => overlay('confirm', 'RESET PROGRESS?', 'This removes your season, saved exhibition and current session. Your accessibility settings stay as they are.', [{ name: 'Keep progress', action: () => again() },{ name: 'Delete saved progress', action: () => { try { localStorage.removeItem(SAVE); localStorage.removeItem(SEASON_SAVE); } catch (_) {} season.reset(); activeGame = false; mainMenu(); toast('Saved progress removed.'); } }]) },
       back: { name: 'Back', action: () => from === 'pause' ? pauseMenu() : mainMenu() }
     };
-    const list = (basic() ? ['sound', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
-      : ['tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
+    const list = (basic() ? ['sound', 'graphics', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
+      : ['graphics', 'tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
     // Arriving opens with nothing highlighted; changing a row's value rebuilds the menu with focus kept on that row.
     overlay('settings', 'YOUR SETTINGS', 'Set the pace. Every option works with your switches.', list, { focus: focusName ? Math.max(0, list.findIndex(item => item.name === focusName)) : -1 });
   }
@@ -522,7 +527,7 @@
     const repeated = event.type === 'ready' || event.type === 'tackle' || event.type === 'score' || (event.type === 'snap' || event.type === 'throw') && ours;
     const catcher = event.type === 'catch' && !ours && event.state.players.find(p => p.id === event.state.carrierId);
     const live = ['broken', 'catch', 'throw', 'kick', 'whistle'].includes(event.type) ? event.state.phase : undefined;
-    if (!repeated) speaking(event.type === 'prepare' && /^Get set\./.test(event.text) ? 'Get set.' : catcher ? 'Caught by number ' + catcher.number + '. Make the tackle.' : event.text, true, live);
+    if (!repeated) speaking(event.type === 'prepare' && /^Get set\./.test(event.text) ? 'Get set.' : catcher ? (/^Intercepted/.test(event.text) ? 'Intercepted by number ' : 'Caught by number ') + catcher.number + '. Make the tackle.' : event.text, true, live);
     if (!['snap', 'result', 'ready', 'prepare', 'catch', 'touchdown'].includes(event.type)) toast(event.type === 'broken' ? 'BROKEN TACKLE!' : event.text, event.type === 'broken' ? (ours ? 'good' : 'alert') : '');
   }
   function keyName(e) { return e.code === 'Space' ? 'Space' : ['Enter', 'NumpadEnter'].includes(e.code) ? 'Enter' : null; }
@@ -578,7 +583,7 @@
     const pos = Math.round(s.possession === 'away' && !s.kickoff ? 100 - s.fieldPosition : s.fieldPosition); $('spot').textContent = s.toss ? 'MIDFIELD' : pos <= 50 ? 'OWN ' + pos : 'OPP ' + (100 - pos);
     const labels = { playcall: ['TACTICAL UPLINK', s.conversion ? 'CONVERSION' : s.possession === 'away' ? 'CALL YOUR DEFENSE' : 'CALL YOUR PLAY'], presnap: ['SYSTEMS CHECK', 'GET SET FOR THE SNAP'], aim: ['QB OPTICS', 'LOCK ON A RECEIVER'], flight: ['BALL TRACKING', 'MAKE THE CONNECTION'], run: ['RUNNER CAM', 'ATTACK THE OPEN FIELD'], defend: ['PURSUIT MODE', 'CLOSE IN · AUTO TACKLE'], kickaim: ['KICK CALIBRATION', s.kickoff ? (s.kickoff.kind === 'onside' ? 'ONSIDE KICK' : 'KICK IT DEEP') : s.playId === 'extrapoint' ? 'AIM THE EXTRA POINT' : 'AIM YOUR KICK'], kickflight: ['BALL TRACKING', s.kickoff ? 'KICKOFF' : 'FOLLOW THE KICK'], returnchoice: ['RETURN CAM', 'KNEE OR RETURN'], tackle: ['IMPACT CAM', 'MAKING THE STOP'], result: ['PLAY COMPLETE', s.result?.title || 'PLAY COMPLETE'], final: ['FINAL', 'FULL TIME'] };
     if (s.toss) labels.playcall = ['TACTICAL UPLINK', 'COIN TOSS']; else if (s.kickoff) { labels.playcall = ['SPECIAL TEAMS', 'KICKOFF']; labels.run = ['RETURN CAM', 'RUN IT BACK']; labels.defend = ['COVERAGE MODE', 'TACKLE THE RETURNER']; }
-    if (s.kickReturn) labels.run = ['RETURN CAM', 'RUN IT BACK'];
+    if (s.kickReturn) { labels.run = ['RETURN CAM', 'RUN IT BACK']; labels.defend = ['PURSUIT MODE', 'TACKLE THE RETURNER']; }
     const label = tossHold ? ['TACTICAL UPLINK', 'COIN TOSS'] : labels[s.phase] || labels.playcall; $('camera-label').textContent = label[0]; $('phase-label').textContent = label[1];
     if (livePhase() && fx.runControl === 'hold') {
       const one = auto(); $('steer-left').classList.toggle('armed', one && armed === -1); $('steer-right').classList.toggle('armed', one && armed === 1);
@@ -656,6 +661,7 @@
     cueKey = key; cue.className = 'tone-' + tone; void cue.offsetWidth; cue.classList.add('pop');
   }
   function frame(now) {
+    hubGraphics.frame(now);
     const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000)); lastTime = now;
     updateInput(dt, now); const fx = effective();
     let steer = pointerSteer;

@@ -96,6 +96,9 @@
    *   scale     uniform scale applied to x/z (not y)
    *   bankGain  bank (rad) per unit curvature (default 10)
    *   bankMax   clamp on |bank| in radians (default 0.22)
+   *   banks     berm zones [[from, to, max, gain?], ...] in lap fractions: the
+   *             bends inside bank up to `max` radians (gain default 45),
+   *             easing in and out over BERM_EASE metres either side
    *   ySmooth   moving-average radius, in nodes, for elevation (default 4)
    * @returns {{nodes:Array, L:number, seg:number, N:number, turns:number}}
    */
@@ -178,14 +181,45 @@
     }
     const k = smoothCyclic(kRaw, 2, 1);
     const kBank = smoothCyclic(kRaw, 4, 2);
+    const berm = bermWeights(opts.banks, N, seg);
 
     const nodes = new Array(N);
     for (let q = 0; q < N; q++) {
-      const bank = Math.max(-bankMax, Math.min(bankMax, kBank[q] * bankGain));
+      const zw = berm.w[q];
+      const gain = bankGain + (berm.gain[q] - bankGain) * zw;
+      const max = bankMax + (berm.max[q] - bankMax) * zw;
+      const bank = Math.max(-max, Math.min(max, kBank[q] * gain));
       nodes[q] = { i: q, x: xs[q], y: ySm[q], z: zs[q], h: h[q], s: q * seg, k: k[q], bank: bank };
     }
 
     return { nodes: nodes, L: N * seg, seg: seg, N: N, turns: turns, mirror: mirror };
+  }
+
+  /** Metres over which a berm zone eases its banking in and out. */
+  const BERM_EASE = 40;
+
+  /**
+   * Per-node berm weight (0 outside every zone, 1 inside, a smoothstep ease
+   * within BERM_EASE metres of a zone) with that zone's bank limit and gain.
+   * Zones are lap fractions and may wrap past the start line.
+   */
+  function bermWeights(zones, N, seg) {
+    const w = new Float64Array(N), max = new Float64Array(N), gain = new Float64Array(N).fill(45);
+    if (!zones || !zones.length) return { w, max, gain };
+    const L = N * seg;
+    for (let q = 0; q < N; q++) {
+      const s = q * seg;
+      for (let z = 0; z < zones.length; z++) {
+        const Z = zones[z], a = Z[0] * L, b = Z[1] * L;
+        const span = mod(b - a, L);
+        const into = mod(s - a, L);
+        let dist = 0;
+        if (into > span) dist = Math.min(into - span, L - into);     // metres outside the zone
+        const u = Math.max(0, 1 - dist / BERM_EASE), wt = u * u * (3 - 2 * u);
+        if (wt > w[q]) { w[q] = wt; max[q] = Z[2]; gain[q] = Z[3] || 45; }
+      }
+    }
+    return { w, max, gain };
   }
 
   /**
@@ -372,7 +406,98 @@
     };
   }
 
-  const api = { buildLoop, sample, toWorld, bounds, makeIndex, nearest, validate, wrapAngle, mod, crPoint, TAU };
+  /* ── Loop-de-loop path ───────────────────────────────────────────────────
+   * A loop occupies `length` metres of a flat straight. In the straight's own
+   * frame (f forward, y up, l sideways, + = right) the road:
+   *   entry   runs `entry` metres along the line;
+   *   circle  turns a full vertical circle of `radius`, its centre drifting
+   *           `circle` metres forward (so it is a loop, not a ring) while it
+   *           steps `shift` metres sideways — the way down passes beside the
+   *           way up;
+   *   exit    swings back across onto the line over the remaining metres.
+   * Track space keeps its own metres: `u` (0..length along the straight)
+   * maps piecewise-linearly onto arc length `sigma` along this path, so the
+   * entry and exit keep their true scale and the circle is stretched. The
+   * race scales a kart's progress by du/dsigma (warp) inside the span, so
+   * its visible speed is its real speed all the way round.
+   */
+  const smoother = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10));
+
+  function loopPath(opt) {
+    const r = opt.radius, c = opt.entry, adv = opt.circle, len = opt.length;
+    const W = opt.shift * (opt.side || 1), E = len - c - adv;
+    if (!(E > 10)) throw new Error('loop too short for its entry and circle');
+    // Dense samples: [f, y, l, nf, ny, nl] with cumulative arc length.
+    const pts = [], arc = [];
+    const push = (f, y, l, nf, ny, nl) => {
+      if (pts.length) {
+        const p = pts[pts.length - 1];
+        arc.push(arc[arc.length - 1] + Math.hypot(f - p[0], y - p[1], l - p[2]));
+      } else arc.push(0);
+      pts.push([f, y, l, nf, ny, nl]);
+    };
+    const CIRC = 360, EXIT = 80, ENTRY = 4;
+    for (let k = 0; k < ENTRY; k++) push(c * k / ENTRY, 0, 0, 0, 1, 0);
+    for (let k = 0; k <= CIRC; k++) {
+      const ph = TAU * k / CIRC;
+      push(c + adv * ph / TAU + r * Math.sin(ph), r * (1 - Math.cos(ph)), W * smoother(ph / TAU),
+        -Math.sin(ph), Math.cos(ph), 0);
+    }
+    const iCircleEnd = pts.length - 1;
+    for (let k = 1; k <= EXIT; k++) {
+      const t = k / EXIT;
+      push(c + adv + E * t, 0, W * (1 - smoother(t)), 0, 1, 0);
+    }
+    // Per-sample unit tangents (central differences), interpolated in at() so
+    // the road's cross-section turns smoothly instead of in steps.
+    const tan = pts.map((p, k) => {
+      const a = pts[Math.max(0, k - 1)], b = pts[Math.min(pts.length - 1, k + 1)];
+      const tf = b[0] - a[0], ty = b[1] - a[1], tl = b[2] - a[2], n = Math.hypot(tf, ty, tl) || 1;
+      return [tf / n, ty / n, tl / n];
+    });
+    const sigC0 = arc[ENTRY], sigC1 = arc[iCircleEnd], total = arc[arc.length - 1];
+    // Knots: base metres u ↔ arc metres sigma.
+    const U = [0, c, c + adv, len], S = [0, sigC0, sigC1, total];
+    function sigmaOf(u) {
+      if (u <= 0) return u;
+      if (u >= len) return total + (u - len);
+      const i = u < c ? 0 : u < c + adv ? 1 : 2;
+      return S[i] + (u - U[i]) * (S[i + 1] - S[i]) / (U[i + 1] - U[i]);
+    }
+    function uOf(sig) {
+      if (sig <= 0) return sig;
+      if (sig >= total) return len + (sig - total);
+      const i = sig < S[1] ? 0 : sig < S[2] ? 1 : 2;
+      return U[i] + (sig - S[i]) * (U[i + 1] - U[i]) / (S[i + 1] - S[i]);
+    }
+    /** du/dsigma at base metres u: how fast track progress runs per metre of path. */
+    function warp(u) {
+      if (u < 0 || u >= len) return 1;
+      const i = u < c ? 0 : u < c + adv ? 1 : 2;
+      return (U[i + 1] - U[i]) / (S[i + 1] - S[i]);
+    }
+    /** Path sample at arc sigma: { f, y, l, nf, ny, nl, tf, ty, tl } (t = unit tangent). */
+    function at(sig, out) {
+      const o = out || {};
+      const s = Math.max(0, Math.min(total, sig));
+      let a = 0, b = arc.length - 1;
+      while (b - a > 1) { const m = (a + b) >> 1; if (arc[m] <= s) a = m; else b = m; }
+      const span = arc[b] - arc[a] || 1, t = (s - arc[a]) / span, P = pts[a], Q = pts[b];
+      o.f = P[0] + (Q[0] - P[0]) * t; o.y = P[1] + (Q[1] - P[1]) * t; o.l = P[2] + (Q[2] - P[2]) * t;
+      let nf = P[3] + (Q[3] - P[3]) * t, ny = P[4] + (Q[4] - P[4]) * t, nl = P[5] + (Q[5] - P[5]) * t;
+      const nn = Math.hypot(nf, ny, nl) || 1;
+      o.nf = nf / nn; o.ny = ny / nn; o.nl = nl / nn;
+      const TA = tan[a], TB = tan[b];
+      const tf = TA[0] + (TB[0] - TA[0]) * t, ty = TA[1] + (TB[1] - TA[1]) * t, tl = TA[2] + (TB[2] - TA[2]) * t;
+      const tn = Math.hypot(tf, ty, tl) || 1;
+      o.tf = tf / tn; o.ty = ty / tn; o.tl = tl / tn;
+      return o;
+    }
+    return { length: len, arc: total, sigmaOf, uOf, warp, at, radius: r, shift: W, entry: c, circle: adv,
+      circleArc: sigC1 - sigC0 };
+  }
+
+  const api = { buildLoop, sample, toWorld, bounds, makeIndex, nearest, validate, wrapAngle, mod, crPoint, loopPath, TAU };
   root.NKSpline = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

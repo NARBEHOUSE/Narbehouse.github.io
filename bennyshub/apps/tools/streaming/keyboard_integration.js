@@ -111,7 +111,7 @@ class KeyboardController {
 
     choiceRows(){
       return [{id:'row:text',row:0,kind:'keyboard-row',element:this.textRow,labelElement:this.textRow,label:()=>this.inputElement.value||'Empty text'},
-      {id:'row:predictions',row:1,kind:'keyboard-row',element:this.predictionContainer,labelElement:this.predictionContainer.querySelector('button'),label:'Predictions'},
+      {id:'row:predictions',row:1,kind:'keyboard-row',element:this.predictionContainer,labelElement:this.predictionContainer.querySelector('button'),label:()=>this.choiceChildren(1).filter(item=>!item.element.disabled).map(item=>item.label).filter(Boolean).join(', ')||'No predictions'},
       ...this.rows.map((row,index)=>({id:'row:'+index,row:index+2,kind:'keyboard-row',element:document.getElementById('kb-row-'+index),labelElement:document.getElementById('kb-row-'+index)?.querySelector('.label,button'),label:index===0?'Controls':row.join(', ')}))];
     }
     choiceChildren(row){

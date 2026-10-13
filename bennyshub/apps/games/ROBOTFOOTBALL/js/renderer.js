@@ -27,14 +27,15 @@
   }
   class FootballRenderer {
     constructor(container) {
+      this.graphics = NarbeGraphics.openGame('robotfootball');
       if(!T) throw new Error('The local 3D engine is unavailable.');
       this.homeTeam={id:'blue',name:'BLUEBORGS',shortName:'BLU',color:'#1565c0',accent:'#5e92f3'};this.awayTeam={id:'red',name:'RUSTBOTS',shortName:'RST',color:'#d32f2f',accent:'#ff6659'};
       this.container=container;this.time=0;this.playerModels=new Map();this.routeSignature='';this.frame=0;
-      this.renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.65));
+      this.renderer=new T.WebGLRenderer(this.graphics.rendererOptions({antialias:true,alpha:false,powerPreference:'high-performance'}));
+      this.renderer.setPixelRatio(this.graphics.pixelRatio(Math.min(window.devicePixelRatio||1,1.65),container.clientWidth||innerWidth,container.clientHeight||innerHeight));
       this.renderer.outputColorSpace=T.SRGBColorSpace;
       this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.16;
-      this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFSoftShadowMap;
+      this.renderer.shadowMap.enabled=!this.graphics.isLightweight();this.renderer.shadowMap.type=T.PCFSoftShadowMap;
       this.renderer.domElement.setAttribute('aria-hidden','true');
       container.appendChild(this.renderer.domElement);
       this.scene=new T.Scene();this.scene.fog=new T.FogExp2(0x1b2c44,0.0032);
@@ -57,6 +58,7 @@
       };
       this.materials.homePrimary=this.materials.navy.clone();this.materials.homeAccent=this.materials.lime.clone();this.materials.awayPrimary=this.materials.orange.clone();this.materials.awayAccent=this.materials.cream.clone();
       this._lighting();this._field();this._stadium();this._equipment();this._batchRigid(this.scene);this._hero();this.resize();
+      this.stopGraphics = this.graphics.subscribe(() => this.resize());
     }
     mesh(geometry,material,parent,x=0,y=0,z=0,sx=1,sy=1,sz=1,shadow=false) {
       const m=new T.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=shadow;
@@ -832,9 +834,12 @@
     }
     resize() {
       this.width=Math.max(1,this.container.clientWidth||window.innerWidth);this.height=Math.max(1,this.container.clientHeight||window.innerHeight);
+      this.renderer.setPixelRatio(this.graphics.pixelRatio(Math.min(window.devicePixelRatio||1,1.65),this.width,this.height));
+      this.graphics.shadows(this.renderer,this.scene,true);
       this.renderer.setSize(this.width,this.height);this.camera.aspect=this.width/this.height;this.camera.updateProjectionMatrix();
     }
     dispose() {
+      this.stopGraphics?.();
       this.scene.traverse(object=>{if(object.geometry)object.geometry.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];for(const material of materials)if(material){if(material.map)material.map.dispose();material.dispose();}});
       this.renderer.dispose();this.renderer.domElement.remove();
     }

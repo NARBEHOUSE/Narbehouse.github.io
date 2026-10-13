@@ -59,7 +59,8 @@ function showConfirm(message) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if(window.BennyAppStorage)await BennyAppStorage.ready('streaming');
     fetchData();
     document.getElementById('service').innerHTML = serviceOptionsHtml('');
     setupForm();

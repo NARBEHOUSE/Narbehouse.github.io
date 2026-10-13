@@ -13,6 +13,7 @@
  */
 (function (root) {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('p3gl', { legacyPreference: window.P3.game.store.get('quality') });
 
   const P3 = root.P3 = root.P3 || {};
   const U = P3.util, C = P3.catalog, L = P3.levels, T = P3.themes;
@@ -131,6 +132,8 @@
     const it = items[index];
     if (it && it.onFocus) it.onFocus();
   }
+
+  hubGraphics.subscribe(() => { if (overlayOn) refreshValues(); });
 
   function refreshValues() {
     items.forEach((it, i) => {
@@ -447,7 +450,7 @@
           { label: 'Music', value: () => onOff(S.get('music')), action: () => { const v = !S.get('music'); setSay('music', v, 'Music ' + onOff(v)); } },
           { label: 'Board Backdrop', sub: 'Darker makes pegs stand out', value: () => BD[S.get('backdrop')], action: () => { const v = (S.get('backdrop') + 1) % 3; setSay('backdrop', v, 'Board backdrop ' + BD[v]); } },
           { label: 'Motion', value: () => (S.get('motion') === 'reduced' ? 'Reduced' : 'Full'), action: () => { const v = S.get('motion') === 'reduced' ? 'full' : 'reduced'; setSay('motion', v, 'Motion ' + (v === 'reduced' ? 'reduced. Calmer backgrounds, no shaking.' : 'full')); } },
-          { label: 'Graphics', value: () => Q[S.get('quality')], action: () => { const v = cycle(['auto', 'high', 'low'], S.get('quality')); setSay('quality', v, 'Graphics ' + Q[v]); } },
+          { id: 'graphics-quality', label: 'Graphics quality', value: () => hubGraphics.label().replace('Graphics quality: ', ''), speech: () => hubGraphics.label(), action: () => { hubGraphics.cycle(); refreshValues(); AU().say(hubGraphics.label()); } },
           { label: '← Back', action: back }
         ]
       };

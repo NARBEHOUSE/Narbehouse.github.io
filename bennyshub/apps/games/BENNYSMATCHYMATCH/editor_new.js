@@ -926,6 +926,7 @@ function autoMatchSounds() {
                     if (added) {
                         console.log(`Auto-matched sounds linked for ${card.title}:`, currentSounds);
                         card.sound = currentSounds;
+                        delete card.soundTodo;
                         changesMade = true;
                     }
                 }
@@ -1394,14 +1395,21 @@ function renderCards() {
                 const path = card.image.startsWith('assets/') ? card.image : 'assets/' + card.image;
                 img.src = path;
                 
-                // Error handling: if assets/ path fails, try direct path
+                // Where the game itself looks: the pack's folder, then the category folder
+                const packParts = (currentPackFilename || '').split('/');
+                const packBase = packParts.length >= 3 ? packParts.slice(0, -1).join('/') + '/' : 'packs/';
+                const catFolder = categoryToFolderName(currentCategory);
+                const fallbacks = [card.image, packBase + (catFolder ? catFolder + '/' : '') + card.image];
+                
+                // Error handling: if assets/ path fails, try direct path, then the pack folder
                 img.onerror = () => {
-                    console.warn(`Failed to load image at ${path}, trying fallback...`);
-                    if (path.startsWith('assets/')) {
-                        // Try without assets/ prefix
-                        img.src = card.image;
+                    console.warn(`Failed to load image at ${img.src}, trying fallback...`);
+                    const next = fallbacks.shift();
+                    if (next) {
+                        img.src = next;
+                    } else {
                         // Remove handler to prevent infinite loop
-                        img.onerror = null; 
+                        img.onerror = null;
                     }
                 };
             }
@@ -1460,6 +1468,16 @@ function renderCards() {
                 sndIcon.style.bottom = '2px';
                 sndIcon.style.right = '2px';
                 div.appendChild(sndIcon);
+            } else if (card.soundTodo) {
+                // Marked as speaking its name until a real sound is found
+                const todoIcon = document.createElement('div');
+                todoIcon.innerText = '🗣';
+                todoIcon.title = 'Needs a sound: ' + card.soundTodo;
+                todoIcon.style.fontSize = '10px';
+                todoIcon.style.position = 'absolute';
+                todoIcon.style.bottom = '2px';
+                todoIcon.style.right = '2px';
+                div.appendChild(todoIcon);
             }
             
             container.appendChild(div);
@@ -1731,6 +1749,14 @@ function renderCards() {
                 soundList.appendChild(sRow);
             });
             div.appendChild(soundList);
+        } else if (card.soundTodo) {
+            // Card speaks its name for now; soundTodo says what sound to find
+            const todoNote = document.createElement('div');
+            todoNote.innerText = 'Needs a sound: ' + card.soundTodo;
+            todoNote.style.fontSize = '10px';
+            todoNote.style.color = '#b26a00';
+            todoNote.style.marginTop = '2px';
+            div.appendChild(todoNote);
         }
 
         // TTS Fallback
@@ -1872,6 +1898,11 @@ function updateCard(index, field, value) {
     const card = manifest.categories[currentCategory][index];
     card[field] = value;
     
+    // A real sound replaces the "needs a sound" marker
+    if (field === 'sound' && value && (!Array.isArray(value) || value.length > 0)) {
+        delete card.soundTodo;
+    }
+    
     // Auto-match sound if title changes
     if (field === 'title' && value) {
         const safeTitle = value.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -1898,6 +1929,7 @@ function updateCard(index, field, value) {
             const currentSounds = card.sound ? (Array.isArray(card.sound) ? card.sound : [card.sound]) : [];
             const newSounds = [...new Set([...currentSounds, ...matches])];
             card.sound = newSounds;
+            delete card.soundTodo;
         }
     }
     
@@ -2904,6 +2936,7 @@ function syncAssets(silent = false) {
             
             if (matchingSounds.length > 0) {
                 card.sound = matchingSounds;
+                delete card.soundTodo;
             }
             
             generalCards.unshift(card);

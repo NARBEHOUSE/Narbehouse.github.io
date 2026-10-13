@@ -67,7 +67,7 @@ NK.world = (function () {
   const MAX_ANIMATED = 14;   // props that keep their own transform (and draw calls)
 
   /* ── Features ─────────────────────────────────────────────────────────── */
-  const COIN_GAP = 6;        // metres between coins in a line
+  const COIN_GAP = C.COIN_GAP;   // metres between coins in a line
   const PAD_LEN = 4.4;       // Power Pad, along the road
   const BOOST_LEN = 5.2;     // Boost Pad, along the road
   const PAD_W = C.LANE_W - 0.5;
@@ -83,11 +83,19 @@ NK.world = (function () {
   const GEYSER_ON = 0.4;     // fraction of the period a geyser is active
   const GEYSER_WARN = 0.5;   // seconds of glowing telegraph before it fires
   /** Rollers that are balls or drums and so should visibly roll as they sweep. */
-  const ROLLS = { hay_roll: 1, gumball: 1, snowball: 1, tumbleweed: 1, rolling_boulder: 1, meteor: 1 };
+  const ROLLS = { hay_roll: 1, gumball: 1, snowball: 1, tumbleweed: 1, rolling_boulder: 1, meteor: 1, coconut: 1, thunder_ball: 1,
+    pufferfish: 1, rolling_log: 1, bouncy_ball: 1, circus_ball: 1, rolling_tire: 1, oil_drum: 1 };
 
   /* ── Scenery ──────────────────────────────────────────────────────────── */
   /** Props that belong on the liquid surface, not on dry land. */
   const WATER_PROPS = { sailboat: 1, sea_rock: 1, pier: 1 };
+  /** Props that hang in the sky at their own height (a prop may also set userData.floats). */
+  const FLOATERS = { floating_island: 1, airship: 1, cloud_castle: 1, cloud_bank: 1, sky_whale: 1, sky_castle: 1,
+    fish_school: 1, giant_turtle: 1, pterodactyl_flock: 1, pterodactyl: 1, glow_jellyfish: 1, angler_light: 1 };
+  /** Height above the road for floating landmarks (metres). */
+  const FLOAT_HEIGHT = { sky_whale: 34, sky_castle: -12, giant_turtle: 22 };
+  /** Height band above the road for floating far props that keep low (default 20-110 m). */
+  const FLOAT_RANGE = { fish_school: [5, 26], pterodactyl_flock: [22, 60] };
   /** Landforms are meant to be half buried; they sink rather than settle. */
   const LANDFORMS = { hill_round: 1, candy_hill: 1, cake_mountain: 1, dune_hill: 1, mesa: 1,
     snowy_mountain: 1, spooky_hill: 1, volcano: 1, sea_rock: 1, rock_spire: 1 };
@@ -237,6 +245,29 @@ NK.world = (function () {
           for (let i = 0; i < 60; i++) {
             const x = r.range(0, w), y = r.range(0, h), l = r.range(10, 26);
             g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + l / 2, y - 4, x + l, y); g.stroke();
+          }
+        } else if (kind === 'balls') {
+          // A ball pit: a carpet of bright plastic balls with a shine each.
+          const cols = ['#e8483f', '#f4c430', '#2f8fe0', '#3fb35a', '#9a5ce0', '#ff8a1a'];
+          for (let i = 0; i < 260; i++) {
+            const x = r.range(0, w), y = r.range(0, h), rad = r.range(7, 10);
+            g.fillStyle = r.pick(cols);
+            g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill();
+            g.fillStyle = 'rgba(255,255,255,0.55)';
+            g.beginPath(); g.arc(x - rad * 0.35, y - rad * 0.35, rad * 0.3, 0, TAU); g.fill();
+          }
+        } else if (kind === 'cloud') {
+          // A sea of cloud seen from above: soft white billows, faint lilac shade.
+          for (let i = 0; i < 70; i++) {
+            const x = r.range(0, w), y = r.range(0, h), rad = r.range(14, 40);
+            for (let ox = -w; ox <= w; ox += w) for (let oy = -h; oy <= h; oy += h) {
+              const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, rad);
+              const shade = r.chance(0.3);
+              gr.addColorStop(0, shade ? 'rgba(214,206,240,0.55)' : 'rgba(255,255,255,0.85)');
+              gr.addColorStop(1, 'rgba(255,255,255,0)');
+              g.fillStyle = gr;
+              g.fillRect(x + ox - rad, y + oy - rad, rad * 2, rad * 2);
+            }
           }
         } else if (kind === 'lava') {
           // Dark crust plates over the glow: the emissive map lights the gaps.
@@ -408,11 +439,18 @@ NK.world = (function () {
       prof: [[0.02, -0.4], [0.02, 0.26], [0.5, 0.26], [0.5, -0.6]],
       roles: ['foot', 'stoneTop', 'back'], bumps: 0, jitter: 0, beam: true
     },
+    brick: {
+      prof: [[0.02, -0.4], [0.02, 0.2], [0.02, 1.3], [1.0, 1.3], [1.0, -0.6]],
+      roles: ['foot', 'side', 'top', 'back'], bumps: 0, jitter: 0.02, panels: true, studs: true
+    },
     plain: {
       prof: [[0.02, -0.4], [0.02, 0.2], [0.02, 1.1], [0.8, 1.1], [0.8, -0.6]],
       roles: ['foot', 'side', 'top', 'back'], bumps: 0, jitter: 0.04
     }
   };
+
+  /** Toy-brick wall colours (the 'brick' kit cycles them every two segments). */
+  const TOY_BRICKS = ['#e8483f', '#f4c430', '#2f8fe0', '#3fb35a'].map((c) => new THREE.Color(c));
 
   /* ── Edges ────────────────────────────────────────────────────────────── */
   const EDGE_KINDS = { wall: 1, verge: 1, drop: 1 };
@@ -514,6 +552,8 @@ NK.world = (function () {
       // like the original seen in a mirror rather than a reshuffled one.
       sideSign: mirror ? -1 : 1,
       voidWorld: !theme.ground || theme.ground.type === 'none',
+      // Sky islands: no terrain sheet, but solid ground on the islands themselves.
+      islandWorld: !!(theme.ground && theme.ground.type === 'islands'),
       liquid: theme.liquid && theme.liquid.kind !== 'void' ? theme.liquid : null
     };
 
@@ -548,17 +588,23 @@ NK.world = (function () {
     const index = SP.makeIndex(loop, 32);
     ctx.index = index;
 
+    /* Set pieces first: the terrain carves canyons and the road leaves gaps. */
+    ctx.pieces = resolvePieces(ctx);
+    ctx.look = pieceLookups(ctx);
+    ctx.canyons = resolveCanyons(ctx);
+
     const stats = {};
     const lapT = (k) => { stats[k] = +(performance.now() - t0).toFixed(1); };
 
     const sky = buildSky(ctx); lapT('sky');
-    const terrain = ctx.voidWorld ? null : buildTerrain(ctx); lapT('terrain');
+    const terrain = ctx.voidWorld ? null : ctx.islandWorld ? buildIslands(ctx) : buildTerrain(ctx); lapT('terrain');
     ctx.groundAt = terrain ? terrain.groundAt : () => -Infinity;
     const liquid = buildLiquid(ctx, terrain); lapT('liquid');
     buildRoad(ctx); lapT('road');
     buildEdges(ctx); lapT('edges');
     const start = buildStartArea(ctx); lapT('start');
     const features = buildFeatures(ctx); lapT('features');
+    const pieceArt = buildSetPieces(ctx); lapT('pieces');
     const scenery = placeScenery(ctx); lapT('scenery');
 
     /* ── Frame lookup ─────────────────────────────────────────────────────
@@ -592,13 +638,75 @@ NK.world = (function () {
       return frame;
     }
 
-    /** Road surface point at (s, x), banking included. */
+    /* Loops bend the drawn road away from the track's centreline, so every
+       position lookup goes through the loop first (DESIGN §4.8). */
+    const look = ctx.look, hasLoops = ctx.pieces.loops.length > 0;
+    const _lp = new THREE.Vector3(), _lt = new THREE.Vector3(), _ln = new THREE.Vector3(), _lr = new THREE.Vector3();
+    const _lb = new THREE.Vector3(), _basis = new THREE.Matrix4();
+
+    /** Road surface point at (s, x), banking — and loops — included. */
     function pointAt(s, x, out) {
-      const f = frameAt(s);
       const v = out || new THREE.Vector3();
+      if (hasLoops) {
+        const hit = look.loopHit(s);
+        if (hit) {
+          look.loopFrame(hit.lp, hit.lp.path.sigmaOf(hit.d), _lp, _lt, _ln, _lr);
+          return v.copy(_lp).addScaledVector(_lr, x);
+        }
+      }
+      const f = frameAt(s);
       v.copy(f.pos).addScaledVector(f.right, x);
       v.y -= x * Math.sin(f.bank);
       return v;
+    }
+
+    /**
+     * Inside a loop: the full pose of a point on the loop's road — position,
+     * an orientation whose -Z runs along the road and +Y stands off its
+     * surface, and the up/forward/right vectors. Null anywhere else (there
+     * the ordinary yaw/pitch/bank frame is exact). Reuses `out` or one object.
+     */
+    const _pose = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), up: new THREE.Vector3(),
+      forward: new THREE.Vector3(), right: new THREE.Vector3() };
+    function loopPose(s, x, out) {
+      if (!hasLoops) return null;
+      const hit = look.loopHit(s);
+      if (!hit) return null;
+      const o = out || _pose;
+      look.loopFrame(hit.lp, hit.lp.path.sigmaOf(hit.d), _lp, _lt, _ln, _lr);
+      o.pos.copy(_lp).addScaledVector(_lr, x || 0);
+      o.up.copy(_ln); o.forward.copy(_lt); o.right.copy(_lr);
+      _basis.makeBasis(_lr, _ln, _lb.copy(_lt).negate());
+      o.quat.setFromRotationMatrix(_basis);
+      return o;
+    }
+
+    /** Height above the road of a kart at progress p over a gap jump (every
+     *  kart takes a gap ramp, so its arc is known: replays use this). */
+    function gapLift(p) {
+      const gaps = ctx.pieces.gaps;
+      for (let k = 0; k < gaps.length; k++) {
+        const g = gaps[k], rl = (C.JUMPS[g.kind] || C.JUMPS.jump).rampLength, d = U.mod(p - g.rampS, L);
+        if (d > rl + g.flight) continue;
+        if (d <= rl) return g.rampHeight * d / rl;
+        const t = (d - rl) / g.flight;
+        const ty = frameAt(g.takeoff).y + g.rampHeight, ly = frameAt(g.land).y, sy = frameAt(p).y;
+        return Math.max(0, ty + (ly - ty) * t + 4 * g.peak * t * (1 - t) - sy);
+      }
+      return 0;
+    }
+
+    /** The road surface's normal at s (a loop's, or the banked road's). */
+    function upAt(s, out) {
+      const v = out || new THREE.Vector3();
+      if (hasLoops) {
+        const hit = look.loopHit(s);
+        if (hit) { look.loopFrame(hit.lp, hit.lp.path.sigmaOf(hit.d), _lp, _lt, _ln, _lr); return v.copy(_ln); }
+      }
+      const f = frameAt(s), sb = Math.sin(f.bank);
+      _lr.set(f.right.x, -sb, f.right.z);
+      _lt.set(f.forward.x, Math.tan(f.pitch), f.forward.z);
+      return v.crossVectors(_lr, _lt).normalize();
     }
 
     /* ── Edge rules (DESIGN §4.5), precomputed per node ──────────────────── */
@@ -724,6 +832,7 @@ NK.world = (function () {
       if (cameraPos) sky.follow(cameraPos);
       scenery.update(t, dt);
       features.update(t, dt, hazardState, _hs);
+      pieceArt.update(t, dt);
       if (liquid) liquid.update(t);
       sky.update(t);
     }
@@ -758,6 +867,18 @@ NK.world = (function () {
       liquidLevel: ctx.liquid ? ctx.liquid.level : null,
       roadHalf: ROAD_HALF, shoulder: C.SHOULDER,
       frameAt, pointAt, edgeAt, limits,
+      // Set pieces (DESIGN §4.8): loops warp progress and bend the road;
+      // gaps have no road; falls are curtains the karts burst through.
+      pieces: {
+        gaps: ctx.pieces.gaps.map((g) => ({ rampS: g.rampS, takeoff: g.takeoff, end: g.cut1, land: g.land, scene: g.scene, kind: g.kind })),
+        loops: ctx.pieces.loops.map((lp) => ({ s0: lp.s0, len: lp.len, arc: lp.path.arc })),
+        falls: ctx.pieces.falls.map((fl) => ({ s: fl.s, air: fl.air, style: fl.style })),
+        arches: ctx.pieces.arches.map((ar) => ({ s: ar.s, count: ar.count, spacing: ar.spacing }))
+      },
+      loopPose, upAt, gapLift,
+      inLoop: (s) => !!(hasLoops && look.loopHit(s)),
+      warpAt: look.warpAt, shiftS: look.shiftS, arcGap: look.arcGap, loopBlend: hasLoops ? look.loopBlend : () => 0,
+      inGap: (s) => !!look.gapAt(s), safeProgress: look.safeProgress,
       features: features.resolved, handles: features.handles, hazardState,
       setPadGlow, setShadowFocus, followCamera,
       startGrid, minimap,
@@ -842,7 +963,8 @@ NK.world = (function () {
     const skyDir = new THREE.Vector3(sunDir.x, 0, sunDir.z);
     if (skyDir.lengthSq() < 1e-6) skyDir.set(0, 0, -1);
     skyDir.normalize().multiplyScalar(Math.cos(0.36)).setY(Math.sin(0.36));
-    const disc = theme.night ? (ctx.voidWorld ? null : moonDisc(theme)) : sunDisc(theme);
+    const open = !theme.underwater && !theme.indoors;
+    const disc = !open ? null : theme.night ? (ctx.voidWorld ? null : moonDisc(theme)) : sunDisc(theme);
     if (disc) { owned.geos.push(disc.geometry); disc.renderOrder = -8; root.add(disc); }
 
     /* Stars on every night theme; all round the dome in space. */
@@ -862,7 +984,7 @@ NK.world = (function () {
     }
 
     /* Clouds over day themes, welded into a few meshes around the circuit. */
-    if (!theme.night) buildClouds(ctx);
+    if (!theme.night && open) buildClouds(ctx);
 
     const _p = new THREE.Vector3();
     return {
@@ -1216,8 +1338,49 @@ NK.world = (function () {
       }
     }
 
-    /** Terrain height exactly as drawn (same triangles), for placing things. */
+    /* A loop's way down passes beside its way up: the ground under its whole
+       footprint sinks to road level, easing back into the hills around it. */
+    ctx.pieces.loops.forEach((lp) => {
+      const base = lp.O.y - TUCK, sh = lp.path.shift;
+      const l0 = Math.min(0, sh) - VERGE_OUT, l1 = Math.max(0, sh) + VERGE_OUT, EASE = 24;
+      const reach = lp.len + Math.abs(sh) + VERGE_OUT + EASE + 10;
+      for (let j = 0; j < nz; j++) {
+        for (let i = 0; i < nx; i++) {
+          const dx = xs[i] - lp.O.x, dz = zs[j] - lp.O.z;
+          if (Math.abs(dx) > reach || Math.abs(dz) > reach) continue;
+          const f = dx * lp.F.x + dz * lp.F.z, l = dx * lp.R.x + dz * lp.R.z;
+          const ox = Math.max(0, -6 - f, f - lp.len - 6), ol = Math.max(0, l0 - l, l - l1);
+          const out = Math.sqrt(ox * ox + ol * ol);
+          if (out >= EASE) continue;
+          const v = j * nx + i;
+          if (H[v] > base) H[v] = base + (H[v] - base) * sstep(out / EASE);
+        }
+      }
+    });
+
+    /* Canyons: cells reaching within CANYON_HOLE of a trench are left out of
+       the sheet; the trench mesh (buildCanyon) drops its walls and rim strip
+       in exactly there. Heights stay as they were, for the rim to follow. */
+    const hole = new Uint8Array(V);
+    ctx.canyons.forEach((cyn) => {
+      const reach = Math.max(cyn.ext[0], cyn.ext[1]) + cyn.hw0 * 2 + CANYON_HOLE + 10;
+      for (let j = 0; j < nz; j++) {
+        for (let i = 0; i < nx; i++) {
+          if (Math.abs(xs[i] - cyn.cx) > reach || Math.abs(zs[j] - cyn.cz) > reach) continue;
+          if (cyn.local(xs[i], zs[j]).d > -CANYON_HOLE) hole[j * nx + i] = 1;
+        }
+      }
+    });
+
+    /** Terrain height exactly as drawn (same triangles), for placing things;
+     *  inside a canyon, the canyon's floor. */
     function groundAt(x, z) {
+      for (let c = 0; c < ctx.canyons.length; c++) {
+        if (ctx.canyons[c].local(x, z).d > 0) return ctx.canyons[c].floorY;
+      }
+      return groundRaw(x, z);
+    }
+    function groundRaw(x, z) {
       let i = lowerBound(xs, x) - 1, j = lowerBound(zs, z) - 1;
       if (i < 0) i = 0; else if (i > nx - 2) i = nx - 2;
       if (j < 0) j = 0; else if (j > nz - 2) j = nz - 2;
@@ -1269,6 +1432,8 @@ NK.world = (function () {
         const idx = [];
         for (let j = tj; j < j1; j++) {
           for (let i = ti; i < i1; i++) {
+            const v0 = j * nx + i;
+            if (hole[v0] || hole[v0 + 1] || hole[v0 + nx] || hole[v0 + nx + 1]) continue;
             const a = (j - tj) * w + (i - ti), bb = a + 1, c = a + w, d = c + 1;
             if (((i + j) & 1) === 0) idx.push(a, c, d, a, d, bb);
             else idx.push(a, c, bb, bb, c, d);
@@ -1287,7 +1452,8 @@ NK.world = (function () {
         tiles.push(mesh);
       }
     }
-    return { groundAt, verts: V, tiles, extent: { minX: xs[0], maxX: xs[nx - 1], minZ: zs[0], maxZ: zs[nz - 1] } };
+    ctx.groundRaw = groundRaw;
+    return { groundAt, groundRaw, verts: V, tiles, extent: { minX: xs[0], maxX: xs[nx - 1], minZ: zs[0], maxZ: zs[nz - 1] } };
   }
 
   /* ── Liquid: one plane at the theme's level (lakes show where ground dips) */
@@ -1297,7 +1463,7 @@ NK.world = (function () {
     const e = terrain.extent;
     const w = e.maxX - e.minX, d = e.maxZ - e.minZ;
     const geo = new THREE.PlaneGeometry(w, d, 1, 1).rotateX(-Math.PI / 2);
-    const tile = lq.kind === 'water' ? 28 : 22;
+    const tile = lq.kind === 'cloud' ? 150 : lq.kind === 'balls' ? 9 : lq.kind === 'water' ? 28 : 22;
     const uv = geo.attributes.uv;
     for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * w / tile, uv.getY(k) * d / tile);
     ctx.owned.geos.push(geo);
@@ -1317,7 +1483,7 @@ NK.world = (function () {
     mesh.receiveShadow = ctx.quality.shadows;
     mesh.name = 'liquid';
     ctx.root.add(mesh);
-    const speed = lq.kind === 'water' ? 0.012 : lq.kind === 'lava' ? 0.006 : 0.004;
+    const speed = lq.kind === 'water' ? 0.012 : lq.kind === 'lava' ? 0.006 : lq.kind === 'cloud' ? 0.0025 : lq.kind === 'balls' ? 0 : 0.004;
     return {
       update(t) { tex.offset.set(t * speed, t * speed * 0.6); }
     };
@@ -1347,6 +1513,8 @@ NK.world = (function () {
     }
     const idx = [];
     for (let r = 0; r < rows - 1; r++) {
+      // Gaps have no road; loops draw their own.
+      if (ctx.pieces.cut[r % N]) continue;
       for (let c = 0; c < nc - 1; c++) {
         const a = r * nc + c, b = a + 1, cc = a + nc, d = cc + 1;
         idx.push(a, b, cc, b, d, cc);
@@ -1405,12 +1573,17 @@ NK.world = (function () {
       }
     }
 
+    // Cut segments (gaps, loops) carry no dressing; to the ends of the walls,
+    // fences and kerbs either side they look like any other change of kind.
+    const cut = ctx.pieces.cut;
+    const drawn = kinds.map((list) => list.map((k, i) => (cut[i] ? 'cut' : k)));
     for (let side = 0; side < 2; side++) {
       const sg = side === 0 ? -1 : 1;
-      const kind = kinds[side], pr = prof[side];
+      const kind = drawn[side], pr = prof[side];
       for (let i = 0; i < N; i++) {
         const j = (i + 1) % N, B = solid[chunkOf(i)], G = glow[chunkOf(i)];
         const k = kind[i];
+        if (k === 'cut') continue;
         if (k === 'drop') dropFace(B, G, i, j, sg);
         else shoulder(B, i, j, sg, pr);
         if (railed) railParts(B, i, j, sg);
@@ -1520,7 +1693,8 @@ NK.world = (function () {
       const pts = kit.prof, roles = kit.roles;
       const hI = 1 + kit.bumps * (hash01(i * 3.1 + side * 17) - 0.5) * 2;
       const hJ = 1 + kit.bumps * (hash01(j * 3.1 + side * 17) - 0.5) * 2;
-      const wallC = shade(pal.wall, kit.panels && ((i >> 1) & 1) ? 0.9 : 1);
+      const wallC = kit.studs ? TOY_BRICKS[((i >> 1) + side) % TOY_BRICKS.length]
+        : shade(pal.wall, kit.panels && ((i >> 1) & 1) ? 0.9 : 1);
       const kOf = (role) => {
         const jj = jit(i, sg, kit.jitter);
         switch (role) {
@@ -1548,10 +1722,17 @@ NK.world = (function () {
         const last = e + 1 === pts.length - 1;
         B.quad(at(i, p0, hI, false), at(i, p1, hI, last), at(j, p0, hJ, false), at(j, p1, hJ, last), kOf(roles[e]), w);
       }
-      const kind = ctx.kinds[side];
+      const kind = drawn[side];
       const prevWall = kind[(i - 1 + ctx.N) % ctx.N] === 'wall', nextWall = kind[j] === 'wall';
       if (!prevWall) cap(B, i, hI, pts, kOf('side'), sg, -1);
       if (!nextWall) cap(B, j, hJ, pts, kOf('side'), sg, 1);
+      if (kit.studs) {
+        // Toy-brick studs along the top.
+        [0.25, 0.75].forEach((t) => {
+          const c = lerp3(P(i, sg * (ROAD_HALF + 0.5), 1.42), P(j, sg * (ROAD_HALF + 0.5), 1.42), t);
+          B.box(c, Rv(i), Fv(i), 0.24, 0.12, 0.24, shade(wallC, 1.08), shade(wallC, 1.15));
+        });
+      }
       if (kit.merlons) {
         [0.25, 0.75].forEach((t) => {
           const c = lerp3(P(i, sg * (ROAD_HALF + 0.6), 1.85 * hI + 0.3), P(j, sg * (ROAD_HALF + 0.6), 1.85 * hJ + 0.3), t);
@@ -1648,6 +1829,7 @@ NK.world = (function () {
       }
       const idx = [];
       for (let r = 0; r < N; r++) {
+        if (ctx.pieces.cut[r]) continue;
         const a = r * 2, b = a + 1, c = a + 2, d = a + 3;
         // Faces the road: the left rail faces right, the right rail left.
         if (sg > 0) idx.push(a, b, c, b, d, c); else idx.push(a, c, b, b, c, d);
@@ -1776,18 +1958,32 @@ NK.world = (function () {
     const allLanes = []; for (let l = 0; l < C.LANE_COUNT; l++) allLanes.push(l);
     const padRows = (F.padRows || []).map((r) => ({ s: sOf(r.at), lanes: railed ? allLanes.slice() : r.lanes.slice(), len: PAD_LEN }));
     const boostPads = (F.boostPads || []).map((r) => ({ s: sOf(r.at), lanes: r.lanes.slice(), len: BOOST_LEN }));
-    const ramps = (F.ramps || []).map((r) => {
+    const ramps = (F.ramps || []).map((r, k) => {
       const spec = C.JUMPS[r.kind] || C.JUMPS.jump;
-      return { s: sOf(r.at), kind: r.kind, lanes: r.lanes.slice(), len: spec.rampLength,
+      // A gap ramp's lip sits exactly where the road ends (resolvePieces),
+      // and it launches every kart whatever its lane: there is no road to miss.
+      const gap = ctx.pieces.gaps.find((g) => g.ramp === k) || null;
+      return { s: gap ? gap.rampS : sOf(r.at), kind: r.kind, lanes: r.lanes.slice(), len: spec.rampLength,
         rampHeight: spec.rampHeight, flightLength: r.flightLength || spec.flightLength,
-        peakHeight: r.peakHeight || spec.peakHeight };
+        peakHeight: r.peakHeight || spec.peakHeight, gap: gap ? gap.scene : null };
     });
     const coins = [];
     (F.coins || []).forEach((c) => {
       const s0 = c.from * L;
       const len = U.mod(c.to * L - s0, L);
-      const n = Math.max(1, Math.floor(len / COIN_GAP) + 1);
-      for (let k = 0; k < n; k++) coins.push({ s: U.mod(s0 + k * COIN_GAP, L), lane: c.lane, x: C.laneX(c.lane) });
+      const path = Array.isArray(c.lane) ? c.lane : [c.lane];
+      if (path.length < 2) {
+        const n = Math.max(1, Math.floor(len / COIN_GAP) + 1);
+        for (let k = 0; k < n; k++) coins.push({ s: U.mod(s0 + k * COIN_GAP, L), lane: path[0], x: C.laneX(path[0]) });
+        return;
+      }
+      // A hopping trail: a short run of coins in each lane of the path, the
+      // runs spread evenly along the line with room to change lane between,
+      // so collecting them all takes steering, not sitting in one lane.
+      const run = (C.COIN_RUN - 1) * COIN_GAP, hop = Math.max(0, (len - path.length * run) / (path.length - 1));
+      path.forEach((lane, g) => {
+        for (let k = 0; k < C.COIN_RUN; k++) coins.push({ s: U.mod(s0 + g * (run + hop) + k * COIN_GAP, L), lane, x: C.laneX(lane) });
+      });
     });
     const hazards = [];
     (F.hazards || []).forEach((h, row) => {
@@ -2110,8 +2306,9 @@ NK.world = (function () {
          contract, so anything that hangs in the air (balloons) stays up. */
       let y;
       const water = !!WATER_PROPS[name];
-      if (ctx.voidWorld) {
-        y = f.y + (o.floatY || 0);
+      const floats = !!(FLOATERS[name] || obj.userData.floats);
+      if (ctx.voidWorld || floats) {
+        y = f.y + (FLOAT_HEIGHT[name] !== undefined ? FLOAT_HEIGHT[name] : (o.floatY || 0));
       } else {
         let lo = Infinity, hi = -Infinity;
         const sr = rad * 0.72;
@@ -2144,7 +2341,7 @@ NK.world = (function () {
       } else {
         obj.rotation.y = rng.range(0, TAU);
       }
-      if (!water && !LANDFORMS[name] && !ctx.voidWorld) {
+      if (!water && !floats && !LANDFORMS[name] && !ctx.voidWorld) {
         // A couple of degrees of lean keeps the roadside looking hand-placed.
         obj.rotation.x = rng.range(-0.03, 0.03);
         obj.rotation.z = rng.range(-0.03, 0.03);
@@ -2156,6 +2353,9 @@ NK.world = (function () {
     }
 
     const dens = (theme.props.density || 1) * (quality.detail === 'low' ? 0.55 : 1);
+
+    /* Set pieces (loops, waterfall cliffs) reserve their ground first. */
+    (ctx.keepOut || []).forEach((k) => occAdd(k[0], k[1], k[2]));
 
     /* 1. Landmarks: exactly where the track puts them; if a draft track has
           none yet, spread the theme's landmarks round the lap. */
@@ -2185,8 +2385,11 @@ NK.world = (function () {
       for (let i = 0; i < N; i += 8) {
         [-1, 1].forEach((side) => {
           if (!rng.chance(0.55 * dens)) return;
-          tryPlace(rng.pick(far), 'far', nodes[i].s + rng.range(0, seg * 8), side, rng.range(62, 250),
-                   { floatY: rng.range(20, 110) });
+          const name = rng.pick(far), ds = rng.range(0, seg * 8), off = rng.range(62, 250);
+          let floatY = ctx.islandWorld ? rng.range(-45, 60) : rng.range(20, 110);
+          const band = !ctx.islandWorld && FLOAT_RANGE[name];
+          if (band) floatY = band[0] + (floatY - 20) / 90 * (band[1] - band[0]);
+          tryPlace(name, 'far', nodes[i].s + ds, side, off, { floatY });
         });
       }
     }
@@ -2255,6 +2458,1010 @@ NK.world = (function () {
         }
       }
     };
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+   *  Set pieces: landscape gaps, loop-de-loops, waterfalls, sky islands
+   * ════════════════════════════════════════════════════════════════════════
+   * resolvePieces() turns the track's set-piece data into metres and node
+   * spans before anything is drawn. `ctx.cut[i]` marks road segments the
+   * ordinary road and edge dressing must leave out: 1 = a gap (no road at
+   * all: the karts are airborne over it), 2 = a loop (the loop draws its own
+   * road). Everything here is placed from the same resolved numbers the
+   * race uses, so what is drawn and what is driven can never disagree.
+   */
+  const CANYON_HOLE = 4;       // terrain vertices this close to a canyon wall are cut away…
+  const CANYON_LIP = 12;       // …and a rim strip this wide covers the cut edge
+  const CANYON_STRAIGHT = 32;  // the canyon runs dead straight this far either side of the road
+  const CANYON_MAX = 420;      // then winds on at most this far,
+  const CANYON_KEEP = 48;      // stopping this far short of any other stretch of road
+
+  /** Each landscape's look: wall strata (top first), rim strip colour, bed depth under the liquid. */
+  const GAP_SCENES = {
+    creek:    { strata: ['#7d9a46', '#8a6a4a', '#a8825c', '#7b5a3c', '#9c7a52'], rim: '#6aa648', depth: 2 },
+    inlet:    { strata: ['#e8cf9e', '#d9b27c', '#c4935a', '#e3bf86', '#b88450'], rim: '#ecd8a4', depth: 3 },
+    choco:    { strata: ['#8fe3b8', '#f2c48d', '#fff1e0', '#e94f88', '#f2c48d', '#7a4423', '#ffd6e6'], rim: '#9ce6c0', depth: 3 },
+    canyon:   { strata: ['#e6b371', '#c8643a', '#e08a4f', '#a54b2c', '#f0b070', '#b95a34'], rim: '#e8bb7c', depth: 3 },
+    crevasse: { strata: ['#f2f7ff', '#bfe6ff', '#8fc9ef', '#e8f6ff', '#6aaee0', '#d4efff'], rim: '#f4f8ff', depth: 3 },
+    ravine:   { strata: ['#3f6b3a', '#4a3f5c', '#5c4f70', '#3a3048', '#56606a'], rim: '#456f3e', depth: 2 },
+    moat:     { strata: ['#4b3c3f', '#3a2a2e', '#2a1d22', '#5a2a1e', '#43302f'], rim: '#4e4043', depth: 3, glow: '#c2410c' },
+    gorge:    { strata: ['#4f9a3a', '#6f7f4e', '#8a9a5e', '#5b6b3f', '#9aa070', '#66764a'], rim: '#55a03f', depth: 3 },
+    trench:   { strata: ['#2f8c8a', '#1d5f7a', '*#1fa89c', '#163f63', '#10304f', '*#5a44c8', '#0b2440'], rim: '#e6d6a8', floor: 34, bed: '#06182c' },
+    dinoriver: { strata: ['#5aa043', '#a07a4a', '#c79a5c', '#8a6040', '#b58a56'], rim: '#6fb04a', depth: 3 },
+    tarpit:   { strata: ['#5aa043', '#6b4a32', '#4a3324', '#5a3f2c'], rim: '#7a5a3a', floor: 5, bed: '#141016' },
+    ballpit:  { strata: ['#fff4e0', '#e8483f', '#f4c430', '#2f8fe0', '#3fb35a', '#9a5ce0'], rim: '#f4e3c8', depth: 2 },
+    street:   { strata: ['#3a3355', '*#c99a2e', '#2c2645', '#3a3355', '*#2ab7d6', '#2c2645', '*#c43c9e', '#3a3355'], rim: '#8a8aa0', floor: 26, bed: '#2a2833' },
+    gearpit:  { strata: ['#9a8f86', '#8a6a4a', '#b0703a', '#6e6a70', '#c49a4a', '#5a5660'], rim: '#9a8f86', depth: 3 },
+    bumpercars: { strata: ['#e8d0a0', '#e8483f', '#fff2d6', '#2f8fe0', '#f4c430'], rim: '#e8d0a0', floor: 9, bed: '#3b3f8f' },
+    void:     { strata: null },
+    sky:      { strata: null }
+  };
+
+  function resolvePieces(ctx) {
+    const { track, nodes, N, L, seg } = ctx;
+    const F = track.features || {};
+    const cut = new Uint8Array(N);
+    const gaps = [], loops = [], falls = [], arches = [];
+    (F.ramps || []).forEach((r, k) => {
+      if (!r.gap) return;
+      const J = C.JUMPS[r.kind] || C.JUMPS.jump;
+      // The lip sits on a node, so the road ends exactly where the ramp does.
+      const i0 = Math.round(U.mod(r.at * L + J.rampLength, L) / seg) % N;
+      const takeoff = i0 * seg;
+      const span = Math.max(2, Math.floor((J.flightLength - J.apron) / seg));
+      for (let q = 0; q < span; q++) cut[(i0 + q) % N] = 1;
+      gaps.push({
+        ramp: k, kind: r.kind, scene: r.gap, i0, span, takeoff,
+        rampS: U.mod(takeoff - J.rampLength, L), cut1: U.mod(takeoff + span * seg, L),
+        land: U.mod(takeoff + J.flightLength, L), half: span * seg / 2, centre: U.mod(takeoff + span * seg / 2, L),
+        flight: J.flightLength, peak: J.peakHeight, rampHeight: J.rampHeight
+      });
+    });
+    (track.pieces || []).forEach((p) => {
+      if (p.kind === 'loop') {
+        const i0 = Math.round(U.mod(p.at * L, L) / seg) % N;
+        const n = Math.round(C.LOOP.length / seg), len = n * seg;
+        for (let q = 0; q < n; q++) cut[(i0 + q) % N] = 2;
+        const nd = nodes[i0], h = nd.h;
+        loops.push({
+          i0, n, s0: i0 * seg, len, side: p.side || 1,
+          path: SP.loopPath({ radius: C.LOOP.radius, entry: C.LOOP.entry, circle: C.LOOP.circle, length: len, shift: C.LOOP.shift, side: p.side || 1 }),
+          O: new THREE.Vector3(nd.x, nd.y, nd.z),
+          F: new THREE.Vector3(Math.sin(h), 0, -Math.cos(h)),
+          R: new THREE.Vector3(Math.cos(h), 0, Math.sin(h))
+        });
+      } else if (p.kind === 'falls') {
+        falls.push({ s: U.mod(p.at * L, L), air: !!p.air, style: p.style || 'water', gate: p.gate || null });
+      } else if (p.kind === 'arches') {
+        arches.push({ s: U.mod(p.at * L, L), prop: p.prop, count: p.count || 4, spacing: p.spacing || 14 });
+      }
+    });
+    return { cut, gaps, loops, falls, arches };
+  }
+
+  /**
+   * Lookups the race, camera, items and builders share. Every function takes
+   * track progress (any lap, negative on the grid) and wraps it itself.
+   */
+  function pieceLookups(ctx) {
+    const { L, pieces } = ctx;
+    const loops = pieces.loops, gaps = pieces.gaps;
+    const _o = {}, _t = new THREE.Vector3(), _n = new THREE.Vector3(), _r = new THREE.Vector3();
+    const _m = new THREE.Matrix4();
+
+    function loopHit(p) {
+      for (let k = 0; k < loops.length; k++) {
+        const d = U.mod(p - loops[k].s0, L);
+        if (d < loops[k].len) return { lp: loops[k], d };
+      }
+      return null;
+    }
+    /** World point, unit tangent, road normal and right vector at a loop's arc sigma. */
+    function loopFrame(lp, sig, outP, outT, outN, outR) {
+      const o = lp.path.at(sig, _o);
+      outP.copy(lp.O).addScaledVector(lp.F, o.f).addScaledVector(lp.R, o.l);
+      outP.y += o.y;
+      outT.copy(lp.F).multiplyScalar(o.tf).addScaledVector(lp.R, o.tl); outT.y += o.ty; outT.normalize();
+      outN.copy(lp.F).multiplyScalar(o.nf).addScaledVector(lp.R, o.nl); outN.y += o.ny;
+      outR.crossVectors(outT, outN).normalize();
+      outN.crossVectors(outR, outT).normalize();
+    }
+    function warpAt(p) {
+      if (!loops.length) return 1;
+      const hit = loopHit(p);
+      return hit ? hit.lp.path.warp(hit.d) : 1;
+    }
+    /** Progress `metres` of real road (arc) ahead of / behind p — differs from p + metres only around loops. */
+    function shiftS(p, metres) {
+      if (!loops.length) return p + metres;
+      let m = metres;
+      for (let guard = 0; guard < 8 && Math.abs(m) > 1e-6; guard++) {
+        const hit = loopHit(p);
+        if (hit) {
+          const path = hit.lp.path, sig2 = path.sigmaOf(hit.d) + m;
+          if (sig2 >= 0 && sig2 <= path.arc) return p - hit.d + path.uOf(sig2);
+          if (sig2 > path.arc) { m = sig2 - path.arc; p = p - hit.d + hit.lp.len; }
+          else { m = sig2; p = p - hit.d - 1e-4; }
+          continue;
+        }
+        let best = null;
+        loops.forEach((lp) => {
+          const dist = m > 0 ? U.mod(lp.s0 - p, L) : -U.mod(p - (lp.s0 + lp.len), L);
+          if (Math.abs(dist) <= Math.abs(m) && (best === null || Math.abs(dist) < Math.abs(best))) best = dist;
+        });
+        if (best === null) return p + m;
+        p += best + (m > 0 ? 1e-4 : -1e-4);
+        m -= best + (m > 0 ? 1e-4 : -1e-4);
+      }
+      return p + m;
+    }
+    /** Signed real-road distance from a to b (loop arcs measured as driven). */
+    function arcGap(a, b) {
+      if (loops.length) {
+        const ha = loopHit(a), hb = loopHit(b);
+        if (ha && hb && ha.lp === hb.lp) return hb.lp.path.sigmaOf(hb.d) - ha.lp.path.sigmaOf(ha.d);
+      }
+      return U.loopDelta(U.mod(a, L), U.mod(b, L), L);
+    }
+    /**
+     * 0..1: how far into a loop's circle p is (1 on the circle, easing to 0
+     * over `ease` metres of road either side). Cameras tighten in with it.
+     */
+    function loopBlend(p, ease) {
+      let best = 0;
+      for (let k = 0; k < loops.length; k++) {
+        const lp = loops[k], path = lp.path;
+        let d = U.mod(p - lp.s0, L);
+        if (d > L / 2) d -= L;
+        const sig = d < 0 ? d : d >= lp.len ? path.arc + (d - lp.len) : path.sigmaOf(d);
+        const c0 = path.sigmaOf(path.entry), c1 = path.sigmaOf(path.entry + path.circle);
+        const dist = sig < c0 ? c0 - sig : sig > c1 ? sig - c1 : 0;
+        const u = Math.max(0, 1 - dist / (ease || 14));
+        best = Math.max(best, u * u * (3 - 2 * u));
+      }
+      return best;
+    }
+    /** The gap whose missing road contains p, or null. */
+    function gapAt(p) {
+      for (let k = 0; k < gaps.length; k++) {
+        const g = gaps[k], d = U.mod(p - g.takeoff, L);
+        if (d < g.span * ctx.seg) return { g, d };
+      }
+      return null;
+    }
+    /** Nearest progress at or after p that has road under it (rescues never land in a gap). */
+    function safeProgress(p) {
+      const hit = gapAt(p);
+      return hit ? p - hit.d + hit.g.span * ctx.seg + 2 : p;
+    }
+    return { loopHit, loopFrame, warpAt, shiftS, arcGap, gapAt, safeProgress, loopBlend, _t, _n, _r, _m };
+  }
+
+  /** Index nodes within r of (x, z) that are NOT within `skip` metres of track position sKeep. */
+  function nearOther(ctx, x, z, r, sKeep, skip) {
+    const index = ctx.index, size = index.size, R2 = r * r;
+    const cx = Math.floor(x / size), cz = Math.floor(z / size), k = Math.ceil(r / size);
+    for (let ix = cx - k; ix <= cx + k; ix++) {
+      for (let iz = cz - k; iz <= cz + k; iz++) {
+        const b = index.map.get(index.key(ix, iz));
+        if (!b) continue;
+        for (let q = 0; q < b.length; q++) {
+          const nd = ctx.nodes[b[q]];
+          if (Math.abs(U.loopDelta(sKeep, nd.s, ctx.L)) < skip) continue;
+          const dx = nd.x - x, dz = nd.z - z;
+          if (dx * dx + dz * dz < R2) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * A canyon under each terrain gap: a trench running across the road, dead
+   * straight beside it and winding beyond, closed with rounded ends wherever
+   * it would come near another stretch of road. Described in the gap's own
+   * frame: a along the road (+ = the landing side), l across it (+ = right).
+   */
+  function resolveCanyons(ctx) {
+    const out = [];
+    if (ctx.voidWorld || ctx.islandWorld) return out;
+    installFrame(ctx);
+    ctx.pieces.gaps.forEach((g) => {
+      const sc = GAP_SCENES[g.scene];
+      if (!sc || !sc.strata) return;
+      const f = ctx.frame(g.centre);
+      const cyn = {
+        g, sc, cx: f.x, cy: f.y, cz: f.z,
+        F: [f.sin, -f.cos], R: [f.cos, f.sin],
+        hw0: g.half,
+        // A scene with its own floor (a dry trench, a street, an arena) sits that
+        // far below the road; otherwise the bed lies just under the liquid.
+        floorY: sc.floor !== undefined ? f.y - sc.floor : (ctx.liquid ? ctx.liquid.level : f.y - 10) - (sc.depth || 3),
+        ext: [CANYON_MAX, CANYON_MAX]
+      };
+      const r = U.rng((ctx.track.seed ^ 0xca17 ^ Math.imul(g.ramp + 1, 977)) >>> 0);
+      const ph1 = r.range(0, TAU), ph2 = r.range(0, TAU), A = g.half * 0.35;
+      cyn.mid = (l) => A * sstep((Math.abs(l) - CANYON_STRAIGHT) / 60) * Math.sin(l / 55 + ph1);
+      const widthBase = (l) => g.half * (1 + 0.22 * sstep((Math.abs(l) - CANYON_STRAIGHT) / 40) * Math.sin(l / 41 + ph2));
+      cyn.world = (a, l) => [cyn.cx + cyn.F[0] * a + cyn.R[0] * l, cyn.cz + cyn.F[1] * a + cyn.R[1] * l];
+      // March out each side until the trench (with its rim) would come near other road.
+      [-1, 1].forEach((sd, k) => {
+        for (let l = CANYON_STRAIGHT; l <= CANYON_MAX; l += 6) {
+          const m = cyn.mid(sd * l), w = widthBase(sd * l) + CANYON_LIP;
+          const near = [-w, 0, w].some((da) => {
+            const p = cyn.world(m + da, sd * l);
+            return nearOther(ctx, p[0], p[1], CANYON_KEEP, g.centre, g.half + 70);
+          });
+          if (near) { cyn.ext[k] = Math.max(CANYON_STRAIGHT + 8, l - 24); return; }
+        }
+      });
+      cyn.half = (l) => {
+        const e = l < 0 ? cyn.ext[0] : cyn.ext[1], al = Math.abs(l), w = widthBase(l);
+        if (al >= e) return 0;
+        const into = al - (e - w);
+        return into > 0 ? w * Math.sqrt(Math.max(0, 1 - (into / w) * (into / w))) : w;
+      };
+      /** Canyon coordinates of a world point: { a, l, d } with d > 0 inside the trench. */
+      cyn.local = (x, z) => {
+        const dx = x - cyn.cx, dz = z - cyn.cz;
+        const a = dx * cyn.F[0] + dz * cyn.F[1], l = dx * cyn.R[0] + dz * cyn.R[1];
+        const inRange = l > -cyn.ext[0] - CANYON_HOLE && l < cyn.ext[1] + CANYON_HOLE;
+        const d = inRange ? cyn.half(l) - Math.abs(a - cyn.mid(l)) : -Infinity;
+        return { a, l, d };
+      };
+      out.push(cyn);
+    });
+    return out;
+  }
+
+  /* ── Set-piece art ─────────────────────────────────────────────────────── */
+
+  /** Falling-water streaks, shared by every waterfall (one scroll drives them all). */
+  function waterfallTex() {
+    return NK.art.tex.cached('nk-world-waterfall', () => {
+      const r = U.rng(9091);
+      return NK.art.tex.canvas(64, 256, (g, w, h) => {
+        g.fillStyle = 'rgba(150,215,245,0.75)'; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 46; i++) {
+          const x = r.range(0, w), y = r.range(0, h), len = r.range(30, 110), wd = r.range(1.5, 4.5);
+          g.fillStyle = r.chance(0.6) ? 'rgba(255,255,255,0.85)' : 'rgba(205,238,255,0.8)';
+          g.fillRect(x, y, wd, len);
+          if (y + len > h) g.fillRect(x, y - h, wd, len);
+        }
+      }, { repeat: true });
+    });
+  }
+
+  /** Curtain looks: [texture, scroll speed (+ falls, - rises), opacity]. */
+  function curtainLook(style) {
+    const T = NK.art.tex;
+    if (style === 'water' || !style) return [waterfallTex(), 1.7, 0.72];
+    const r = U.rng(U.hash('curtain-' + style));
+    const tex = T.cached('nk-world-curtain|' + style, () => T.canvas(128, 256, (g, w, h) => {
+      if (style === 'bubbles') {
+        g.fillStyle = 'rgba(150,215,245,0.18)'; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 70; i++) {
+          const x = r.range(0, w), y = r.range(0, h), rad = r.range(3, 11);
+          for (let oy = -h; oy <= h; oy += h) {
+            g.beginPath(); g.arc(x, y + oy, rad, 0, TAU); g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 2; g.stroke();
+            g.fillStyle = 'rgba(200,240,255,0.25)'; g.fill();
+            g.fillStyle = 'rgba(255,255,255,0.95)'; g.fillRect(x - rad * 0.4, y + oy - rad * 0.5, 2, 2);
+          }
+        }
+      } else if (style === 'steam') {
+        g.fillStyle = 'rgba(235,235,240,0.12)'; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 34; i++) {
+          const x = r.range(0, w), y = r.range(0, h), rad = r.range(14, 34);
+          for (let oy = -h; oy <= h; oy += h) {
+            const gr = g.createRadialGradient(x, y + oy, 0, x, y + oy, rad);
+            gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+            g.fillStyle = gr; g.fillRect(x - rad, y + oy - rad, rad * 2, rad * 2);
+          }
+        }
+      } else if (style === 'hologram') {
+        g.fillStyle = 'rgba(30,200,255,0.22)'; g.fillRect(0, 0, w, h);
+        for (let y = 0; y < h; y += 8) { g.fillStyle = 'rgba(120,240,255,0.55)'; g.fillRect(0, y, w, 2); }
+        for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(255,120,240,0.45)'; g.fillRect(0, r.range(0, h), w, r.range(3, 9)); }
+        for (let x = 4; x < w; x += 16) for (let y = 4; y < h; y += 16) { g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(x, y, 2, 2); }
+      } else {
+        // confetti
+        g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(0, 0, w, h);
+        const cols = ['#ff4f6d', '#ffc21a', '#3fa9ff', '#5fd36a', '#b07cff', '#ff8a1a', '#ffffff'];
+        for (let i = 0; i < 220; i++) {
+          g.save(); g.translate(r.range(0, w), r.range(0, h)); g.rotate(r.range(0, TAU));
+          g.fillStyle = r.pick(cols); g.fillRect(-3, -1.5, 6, 3); g.restore();
+        }
+      }
+    }, { repeat: true }));
+    const look = { bubbles: [tex, -1.2, 0.95], steam: [tex, -0.7, 0.6], hologram: [tex, -0.5, 0.9], confetti: [tex, 0.9, 1] };
+    return look[style] || look.confetti;
+  }
+
+  /**
+   * Arches over the road (a fossil ribcage, a coral tunnel, carnival lights):
+   * one prop repeated `count` times `spacing` metres apart, each square to
+   * the road. The props keep a clear opening over the road (|x| < 12.5 m,
+   * 12 m high) so karts and the chase camera pass under.
+   */
+  function buildArches(ctx, ar, kit) {
+    const group = new THREE.Group();
+    for (let k = 0; k < ar.count; k++) {
+      const obj = kit.setProp(ar.prop);
+      if (!obj) return;
+      orientOnRoad(ctx, obj, ar.s + k * ar.spacing, 0, -0.05);
+      const f = frameCopy(ctx, ar.s + k * ar.spacing);
+      [-1, 1].forEach((sd) => ctx.keepOut.push([f.x + f.cos * 16 * sd, f.z + f.sin * 16 * sd, 6]));
+      if (obj.userData.anim) { ctx.root.add(obj); kit.live.push(obj); } else group.add(obj);
+    }
+    if (group.children.length) { const merged = NK.art.mergeByMaterial(group); merged.name = 'arches:' + ar.prop; ctx.root.add(merged); }
+  }
+
+  function buildSetPieces(ctx) {
+    installFrame(ctx);
+    const live = [], scroll = [];
+    ctx.keepOut = ctx.keepOut || [];
+    const setProp = (name) => {
+      const fn = NK.art.props && NK.art.props[name];
+      if (typeof fn !== 'function') { warnOnce('set-' + name, 'NK.world: no set-piece prop "' + name + '" yet'); return null; }
+      try {
+        const o = fn(U.rng((ctx.track.seed ^ U.hash(name) ^ Math.imul(live.length + 7, 2654435761)) >>> 0));
+        return o && o.isObject3D ? o : null;
+      } catch (e) { warnOnce('set-' + name, 'NK.world: set-piece prop "' + name + '" failed: ' + e.message); return null; }
+    };
+    const kit = { setProp, live, scroll };
+    ctx.canyons.forEach((cyn) => buildCanyon(ctx, cyn));
+    ctx.pieces.gaps.forEach((g) => {
+      if (ctx.voidWorld) buildGapEnds(ctx, g);
+      dressGap(ctx, g, kit);
+    });
+    ctx.pieces.loops.forEach((lp) => buildLoopArt(ctx, lp));
+    ctx.pieces.falls.forEach((fl) => buildFallsArt(ctx, fl, kit));
+    ctx.pieces.arches.forEach((ar) => buildArches(ctx, ar, kit));
+    if (ctx.islandWorld) buildBridges(ctx);
+    return {
+      update(t, dt) {
+        for (let k = 0; k < live.length; k++) {
+          const an = live[k].userData.anim;
+          if (typeof an === 'function') an(t, dt);
+          else if (an && typeof an.update === 'function') an.update(t, dt);
+        }
+        for (let k = 0; k < scroll.length; k++) scroll[k].tex.offset.y = (t * scroll[k].speed) % 1;
+      }
+    };
+  }
+
+  /** Point a prop's front (-Z) along world direction (dx, dz). */
+  function faceDir(obj, dx, dz) { obj.rotation.y = Math.atan2(-dx, -dz); }
+
+  /**
+   * The trench of a terrain gap: rock walls banded in the landscape's strata
+   * (horizontal bands, so they line up all the way round), a dark lip, a rim
+   * strip over the cut terrain edge and a bed under the liquid. One mesh.
+   */
+  function buildCanyon(ctx, cyn) {
+    const sc = cyn.sc, B = new Builder(), G = new Builder(), raw = ctx.groundRaw || ctx.groundAt;
+    // A '*' marks a glowing band: lit windows down a street, luminous coral.
+    const strata = sc.strata.map((c) => col(c.replace('*', ''))), glows = sc.strata.map((c) => c[0] === '*');
+    const rimC = col(sc.rim), ink = ctx.pal.ink;
+    const STEP = 4, BAND = 2.4, bottom = cyn.floorY - 1.5, rimRef = cyn.cy;
+    const ls = [];
+    for (let l = -cyn.ext[0]; l < cyn.ext[1]; l += STEP) ls.push(l);
+    ls.push(cyn.ext[1]);
+    const wob = (l, k) => (Math.abs(l) < VERGE_OUT + 4 ? 0 : (hash01(l * 0.37 + k * 91 + cyn.g.ramp * 13) - 0.5) * 1.6);
+    const front = ls.map((l) => { const h = cyn.half(l); return [cyn.mid(l) - h - (h > 1 ? wob(l, 1) : 0), l]; });
+    const back = ls.map((l) => { const h = cyn.half(l); return [cyn.mid(l) + h + (h > 1 ? wob(l, 2) : 0), l]; });
+    const poly = front.concat(back.slice(1, -1).reverse());
+    const n = poly.length;
+    // Orientation, then each vertex's outward normal in (a, l).
+    let area = 0;
+    for (let k = 0; k < n; k++) { const p = poly[k], q = poly[(k + 1) % n]; area += p[0] * q[1] - q[0] * p[1]; }
+    const sgn = area > 0 ? 1 : -1;
+    const W = poly.map((p) => { const w = cyn.world(p[0], p[1]); return [w[0], 0, w[1]]; });
+    const outN = poly.map((p, k) => {
+      const a = poly[(k - 1 + n) % n], b = poly[(k + 1) % n];
+      let ta = b[0] - a[0], tl = b[1] - a[1];
+      const len = Math.hypot(ta, tl) || 1; ta /= len; tl /= len;
+      // In (a, l) the outward normal of a CCW outline is (tl, -ta).
+      const na = sgn * tl, nl = -sgn * ta;
+      return [cyn.F[0] * na + cyn.R[0] * nl, cyn.F[1] * na + cyn.R[1] * nl];
+    });
+    const tops = poly.map((p, k) => {
+      const g = raw(W[k][0], W[k][2]);
+      return Math.abs(p[1]) < VERGE_OUT ? g + TUCK - 0.02 : g;
+    });
+    const at = (k, y) => [W[k][0], y, W[k][2]];
+    for (let k = 0; k < n; k++) {
+      const q = (k + 1) % n, tA = tops[k], tB = tops[q];
+      const inward = [-(outN[k][0] + outN[q][0]), 0, -(outN[k][1] + outN[q][1])];
+      // Dark lip, then the strata.
+      B.quad(at(k, tA), at(q, tB), at(k, tA - 0.35), at(q, tB - 0.35), ink, inward);
+      const yA = tA - 0.35, yB = tB - 0.35;
+      const j0 = Math.floor((rimRef - Math.max(yA, yB)) / BAND), j1 = Math.ceil((rimRef - bottom) / BAND);
+      for (let j = j0; j <= j1; j++) {
+        const hi = rimRef - j * BAND, lo = hi - BAND;
+        const aHi = Math.min(yA, hi), aLo = Math.max(bottom, lo), bHi = Math.min(yB, hi), bLo = Math.max(bottom, lo);
+        if (aHi <= aLo && bHi <= bLo) continue;
+        const si = j <= 0 || strata.length === 1 ? 0 : 1 + ((j - 1) % (strata.length - 1));
+        const kc = shade(strata[si], 1 + (hash01(k * 3.3 + j * 7.1) - 0.5) * 0.08);
+        (glows[si] && hash01(k * 1.31 + j) > 0.25 ? G : B).quad(at(k, Math.max(aHi, aLo)), at(q, Math.max(bHi, bLo)), at(k, aLo), at(q, bLo), kc, inward);
+      }
+      // Rim strip over the cut ground edge, following the ground outwards.
+      const oA = [W[k][0] + outN[k][0] * CANYON_LIP, W[k][2] + outN[k][1] * CANYON_LIP];
+      const oB = [W[q][0] + outN[q][0] * CANYON_LIP, W[q][2] + outN[q][1] * CANYON_LIP];
+      const mA = [W[k][0] + outN[k][0] * 5, W[k][2] + outN[k][1] * 5], mB = [W[q][0] + outN[q][0] * 5, W[q][2] + outN[q][1] * 5];
+      const kr = shade(rimC, 1 + (hash01(k * 1.7) - 0.5) * 0.06);
+      const pM = (p) => [p[0], raw(p[0], p[1]) + 0.05, p[1]];
+      B.quad(at(k, tA + 0.03), at(q, tB + 0.03), pM(mA), pM(mB), kr, [0, 1, 0]);
+      B.quad(pM(mA), pM(mB), pM(oA), pM(oB), kr, [0, 1, 0]);
+    }
+    // Bed: strips between the two walls at each station.
+    const bed = sc.bed ? col(sc.bed) : shade(strata[strata.length - 1], 0.6);
+    for (let i = 0; i + 1 < ls.length; i++) {
+      const p = (pt) => { const w = cyn.world(pt[0], pt[1]); return [w[0], cyn.floorY, w[1]]; };
+      B.quad(p(front[i]), p(front[i + 1]), p(back[i]), p(back[i + 1]), bed, [0, 1, 0]);
+    }
+    const geo = B.geometry();
+    ctx.owned.geos.push(geo);
+    const m = new THREE.Mesh(geo, NK.art.mat.lambertV());
+    m.name = 'canyon:' + cyn.g.scene;
+    ctx.root.add(m);
+    if (!G.empty) {
+      const gg = G.geometry(); ctx.owned.geos.push(gg);
+      const gm = new THREE.Mesh(gg, NK.art.mat.basic(0xffffff, { vertexColors: true }));
+      gm.name = 'canyonGlow:' + cyn.g.scene;
+      ctx.root.add(gm);
+    }
+  }
+
+  /** Open space has no canyon: the road just stops, so give it a lit edge at both lips. */
+  function buildGapEnds(ctx, g) {
+    const B = new Builder(), G = new Builder(), pal = ctx.pal;
+    // The near lip faces into the gap (forward), the far lip back toward it.
+    [[g.i0, 1], [(g.i0 + g.span) % ctx.N, -1]].forEach(([i, dir]) => {
+      const F = ctx.Fv(i), w = [F[0] * dir, 0, F[2] * dir];
+      const a = ctx.P(i, -ROAD_HALF - 0.05, -0.02), b = ctx.P(i, ROAD_HALF + 0.05, -0.02);
+      const a2 = ctx.P(i, -ROAD_HALF - 0.05, -0.6), b2 = ctx.P(i, ROAD_HALF + 0.05, -0.6);
+      B.quad(a, b, a2, b2, shade(pal.ink, 1.6), w);
+      G.quad(ctx.P(i, -ROAD_HALF, -0.08), ctx.P(i, ROAD_HALF, -0.08), ctx.P(i, -ROAD_HALF, -0.3), ctx.P(i, ROAD_HALF, -0.3), pal.railA, w);
+    });
+    [[B, NK.art.mat.lambertV()], [G, NK.art.mat.basic(0xffffff, { vertexColors: true })]].forEach(([b, mat]) => {
+      const geo = b.geometry(); ctx.owned.geos.push(geo);
+      ctx.root.add(new THREE.Mesh(geo, mat));
+    });
+  }
+
+  /**
+   * Landscape dressing for each gap, laid out in the gap's frame: a along
+   * the road (+ = the landing side), l across it. Positions keep to where a
+   * player looks: the far wall either side of the landing, the water just
+   * ahead, a big feature further down the canyon.
+   */
+  const GAP_DRESS = {
+    creek: [
+      ['lily_pads', 0, -22, 'water'], ['lily_pads', -4, 27, 'water'], ['lily_pads', 5, -50, 'water'],
+      ['duck_family', 3, 17, 'water', 'side'], ['stepping_stones', -1, 40, 'water', 'across'],
+      ['reed_clump', 'near', -14, 'water'], ['reed_clump', 'far', 13, 'water'], ['reed_clump', 'far', -26, 'water'],
+      ['reed_clump', 'near', 30, 'water'], ['watermill', 'far+8', -34, 'rim', 'karts']
+    ],
+    inlet: [
+      ['shipwreck', 8, -27, 'water', 'side'], ['dolphin_pod', 4, 22, 'water', 'side'], ['buoy_bell', -8, 11, 'water'],
+      ['sea_arch', 0, 64, 'water', 'side'], ['buoy_bell', 12, -46, 'water']
+    ],
+    choco: [
+      ['choco_falls', 'far', -28, 'water', 'karts', 18], ['choco_falls', 'far', 31, 'water', 'karts', 18],
+      ['marshmallow_stones', 10, -14, 'water'], ['marshmallow_stones', -16, 22, 'water'], ['candy_raft', 2, 16, 'water', 'side'],
+      ['rock_candy', 'far+6', 15, 'rim'], ['rock_candy', 'near-6', -18, 'rim'], ['rock_candy', 'far+5', -46, 'rim']
+    ],
+    canyon: [
+      ['canyon_falls', 'far', -27, 'water', 'karts', 22], ['natural_arch_red', 0, 74, 'floor', 'side'],
+      ['rope_bridge_dangling', 'far', 15, 'rim', 'karts'], ['river_rocks', 6, -10, 'water'], ['river_rocks', -18, 34, 'water']
+    ],
+    crevasse: [
+      ['frozen_falls', 'far', -27, 'water', 'karts', 20], ['frozen_falls', 'far', 29, 'water', 'karts', 20],
+      ['icicle_row', 'farlip', -16, 'lip', 'karts'], ['icicle_row', 'farlip', 15, 'lip', 'karts'],
+      ['icicle_row', 'nearlip', -14, 'lip', 'fwd'], ['icicle_row', 'nearlip', 14, 'lip', 'fwd'],
+      ['ice_floe', 6, -15, 'water'], ['ice_floe', -10, 19, 'water'], ['ice_spire', 18, 40, 'water'], ['ice_spire', -16, -42, 'water']
+    ],
+    ravine: [
+      ['broken_bridge_wood', 'near', 24, 'rim', 'fwd'], ['broken_bridge_wood', 'far', 24, 'rim', 'karts'],
+      ['wisp_lights', 0, -20, 'water+0.5'], ['wisp_lights', -3, 34, 'water+0.5'], ['lantern_boat', 3, -36, 'water', 'side'],
+      ['twisted_roots', 'far', -16, 'rim', 'karts']
+    ],
+    moat: [
+      ['lava_falls', 'far', -28, 'water', 'karts', 20], ['lava_falls', 'far', 30, 'water', 'karts', 20],
+      ['lava_plume', -10, 15, 'water'], ['lava_plume', 12, -19, 'water'], ['lava_plume', 0, 42, 'water'],
+      ['chain_bridge_broken', 'far', 12, 'rim', 'karts'], ['obsidian_spire', 20, 46, 'water'], ['obsidian_spire', -18, -44, 'water']
+    ],
+    gorge: [
+      ['canyon_falls', 'far', -30, 'water', 'karts', 22], ['canyon_falls', 'far', 31, 'water', 'karts', 22],
+      ['river_rocks', 8, -12, 'water'], ['river_rocks', -14, 26, 'water'], ['mossy_rock', 'far+5', 14, 'rim'], ['jungle_flower', 'near-5', -15, 'rim']
+    ],
+    void: [['ring_gate_big', 'apex'], ['black_hole', 0, 0, 'road-85'], ['asteroid_cluster', 14, -46, 'road+6'], ['asteroid_cluster', -6, 52, 'road-4']],
+    sky: [['floating_island', 6, -58, 'road-26'], ['floating_island', -4, 62, 'road-34']],
+    // Wonder and Dream cups. Tall pieces keep 15 m or more off the flight line.
+    trench: [
+      ['trench_coral', -12, -20, 'floor'], ['trench_coral', 14, 24, 'floor'], ['trench_coral', 28, -42, 'floor'],
+      ['bubble_column', 4, -24, 'floor'], ['bubble_column', -18, 30, 'floor'],
+      ['glow_jellyfish', -8, 20, 'road-10'], ['glow_jellyfish', 16, -18, 'road-14'], ['glow_jellyfish', 0, 44, 'road-6'],
+      ['angler_light', 6, 13, 'road-24', 'side'], ['angler_light', -14, -34, 'road-20', 'side']
+    ],
+    dinoriver: [
+      ['sauropod_wading', 10, 32, 'water', 'side'], ['sauropod_wading', -8, -48, 'water', 'side'],
+      ['canyon_falls', 'far', -30, 'water', 'karts', 22], ['river_rocks', 8, -10, 'water'], ['river_rocks', -14, 22, 'water'],
+      ['river_ferns', 'near-4', -16, 'rim'], ['river_ferns', 'far+4', 17, 'rim'], ['river_ferns', 'far+4', -22, 'rim'],
+      ['pterodactyl', 0, -22, 'road+8'], ['pterodactyl', 14, 36, 'road+14']
+    ],
+    tarpit: [
+      ['tar_bubbles', -6, -4, 'floor'], ['tar_bubbles', 8, 6, 'floor'], ['tar_bubbles', 0, 26, 'floor'], ['tar_bubbles', -4, -30, 'floor'],
+      ['tar_bones', 4, -17, 'floor', 'side'], ['tar_bones', -8, 21, 'floor', 'side'],
+      ['pterodactyl', 0, 30, 'road+10'], ['river_ferns', 'far+4', 14, 'rim'], ['river_ferns', 'near-4', -15, 'rim']
+    ],
+    ballpit: [
+      ['giant_ball', -6, -12, 'water'], ['giant_ball', 8, 16, 'water'], ['giant_ball', 0, 34, 'water'],
+      ['toy_slide', 'far', -20, 'water', 'karts'], ['beach_bucket', 4, 24, 'water', 'side'], ['beach_bucket', -10, -30, 'water']
+    ],
+    street: [
+      ['crosswalk', 0, 0, 'floor', 'across'], ['traffic_car', -9, -14, 'floor', 'across'], ['traffic_car', 7, 10, 'floor', 'back'],
+      ['traffic_car', -4, 30, 'floor', 'across'], ['bus_city', 10, -30, 'floor', 'back'], ['traffic_car', 12, -50, 'floor', 'back'],
+      ['street_light_low', 'near+3', -18, 'floor', 'fwd'], ['street_light_low', 'far-3', 20, 'floor', 'karts'], ['street_light_low', 'far-3', -40, 'floor', 'karts']
+    ],
+    gearpit: [
+      ['gear_giant', -8, -24, 'water', 'karts'], ['gear_giant', 12, 26, 'water+2', 'karts'],
+      ['molten_pour', 'far', -34, 'water', 'karts'], ['molten_pour', 'near', 36, 'water', 'fwd'],
+      ['catwalk_broken', 'nearlip', 14, 'lip', 'fwd'], ['catwalk_broken', 'farlip', -15, 'lip', 'karts']
+    ],
+    bumpercars: [
+      ['bumper_car', -6, -10, 'floor'], ['bumper_car', 4, 6, 'floor'], ['bumper_car', 10, -22, 'floor'], ['bumper_car', -12, 18, 'floor'],
+      ['bumper_car', 2, 32, 'floor'], ['arena_lights', 'near+2', -16, 'floor', 'fwd'], ['arena_lights', 'far-2', 16, 'floor', 'karts'],
+      ['arena_lights', 'far-2', -20, 'floor', 'karts']
+    ]
+  };
+
+  function dressGap(ctx, g, kit) {
+    const list = GAP_DRESS[g.scene];
+    if (!list) return;
+    const cyn = ctx.canyons.find((c) => c.g === g) || null;
+    const f = frameCopy(ctx, g.centre);
+    const F = [f.sin, -f.cos], R = [f.cos, f.sin];
+    const level = ctx.liquid ? ctx.liquid.level : f.y - 20;
+    const raw = ctx.groundRaw || ctx.groundAt;
+    const half = (l) => (cyn ? cyn.half(l) : g.half), mid = (l) => (cyn ? cyn.mid(l) : 0);
+    const group = new THREE.Group();
+    list.forEach((e) => {
+      const name = e[0];
+      let a, l = e[2] || 0;
+      if (cyn && (l < -cyn.ext[0] + 8 || l > cyn.ext[1] - 8)) return;
+      if (e[1] === 'apex') {
+        // The ring stands where the flight peaks, square to the road.
+        const obj = kit.setProp(name);
+        if (!obj) return;
+        const ty = ctx.frame(g.takeoff).y + g.rampHeight, ly = ctx.frame(g.land).y;
+        const mf = frameCopy(ctx, g.takeoff + g.flight / 2);
+        obj.position.set(mf.x, (ty + ly) / 2 + g.peak + 0.8, mf.z);
+        faceDir(obj, mf.sin, -mf.cos);
+        ctx.root.add(obj);
+        if (obj.userData.anim) kit.live.push(obj);
+        return;
+      }
+      const spec = String(e[1]);
+      const off = parseFloat(spec.replace(/^(far|near|farlip|nearlip)/, '')) || 0;
+      if (spec.startsWith('farlip')) a = mid(l) + half(l) - 0.25;
+      else if (spec.startsWith('nearlip')) a = mid(l) - half(l) + 0.25;
+      else if (spec.startsWith('far')) a = mid(l) + half(l) + (off || -0.4);
+      else if (spec.startsWith('near')) a = mid(l) - half(l) + (off || 0.4);
+      else a = +e[1];
+      const x = f.x + F[0] * a + R[0] * l, z = f.z + F[1] * a + R[1] * l;
+      const ySpec = String(e[3] || 'water');
+      let y;
+      if (ySpec.startsWith('water')) y = level + (parseFloat(ySpec.slice(5)) || 0);
+      else if (ySpec === 'floor') y = cyn ? cyn.floorY : level;
+      else if (ySpec === 'rim') y = raw(x - F[0] * Math.sign(a) * 1.5, z - F[1] * Math.sign(a) * 1.5) - 0.05;
+      else if (ySpec === 'lip') y = raw(x + F[0] * Math.sign(a) * 1.5, z + F[1] * Math.sign(a) * 1.5) - 0.3;
+      else if (ySpec.startsWith('road')) y = f.y + (parseFloat(ySpec.slice(4)) || 0);
+      else y = +ySpec;
+      const obj = kit.setProp(name);
+      if (!obj) return;
+      // Falls are scaled so their lip meets the rim exactly (measured, so a
+      // prop's own backing cliff or pool counts; e[5] is only a fallback).
+      if (e[5]) {
+        const box = new THREE.Box3().setFromObject(obj), tall = isFinite(box.max.y) ? box.max.y - Math.min(0, box.min.y) : e[5];
+        const rim = raw(x + F[0] * 3 * Math.sign(a), z + F[1] * 3 * Math.sign(a));
+        obj.scale.setScalar(Math.max(0.4, (rim - y + 0.4) / (tall || e[5])));
+      }
+      obj.position.set(x, y, z);
+      const face = e[4] || 'any';
+      if (face === 'karts') faceDir(obj, -F[0], -F[1]);
+      else if (face === 'fwd') faceDir(obj, F[0], F[1]);
+      else if (face === 'side') faceDir(obj, R[0] * (l < 0 ? 1 : -1), R[1] * (l < 0 ? 1 : -1));
+      else if (face === 'across') faceDir(obj, R[0], R[1]);
+      else if (face === 'back') faceDir(obj, -R[0], -R[1]);
+      else obj.rotation.y = hash01(l * 3.1 + a) * TAU;
+      if (obj.userData.anim) { ctx.root.add(obj); kit.live.push(obj); }
+      else group.add(obj);
+    });
+    if (group.children.length) { const merged = NK.art.mergeByMaterial(group); merged.name = 'gapDress:' + g.scene; ctx.root.add(merged); }
+  }
+
+  /**
+   * The loop's road: the theme's own road texture on a ribbon that follows
+   * the loop path, a thick underside so it reads as a solid band from
+   * outside, and striped rails with a glowing top line on both edges.
+   */
+  function buildLoopArt(ctx, lp) {
+    const look = ctx.look, path = lp.path, pal = ctx.pal;
+    const P = new THREE.Vector3(), T = new THREE.Vector3(), Nn = new THREE.Vector3(), Rr = new THREE.Vector3();
+    const rows = Math.ceil(path.arc / 1.25);
+    const rt = roadTexture(ctx.theme);
+    const cols = [-ROAD_HALF, -ROAD_HALF / 2, 0, ROAD_HALF / 2, ROAD_HALF];
+    const nc = cols.length;
+    const pos = new Float32Array((rows + 1) * nc * 3), uv = new Float32Array((rows + 1) * nc * 2);
+    const frames = [];
+    for (let r = 0; r <= rows; r++) {
+      const sig = path.arc * r / rows;
+      look.loopFrame(lp, sig, P, T, Nn, Rr);
+      frames.push({ P: P.clone(), N: Nn.clone(), R: Rr.clone(), T: T.clone() });
+      for (let c = 0; c < nc; c++) {
+        const k = r * nc + c;
+        pos[k * 3] = P.x + Rr.x * cols[c] + Nn.x * 0.01; pos[k * 3 + 1] = P.y + Rr.y * cols[c] + Nn.y * 0.01; pos[k * 3 + 2] = P.z + Rr.z * cols[c] + Nn.z * 0.01;
+        uv[k * 2] = (cols[c] + ROAD_HALF) / (2 * ROAD_HALF); uv[k * 2 + 1] = (lp.s0 + sig) / rt.tile;
+      }
+    }
+    const idx = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < nc - 1; c++) {
+      const a = r * nc + c, b = a + 1, cc = a + nc, d = cc + 1;
+      idx.push(a, b, cc, b, d, cc);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+    ctx.owned.geos.push(geo);
+    const road = new THREE.Mesh(geo, NK.art.mat.lambert(0xffffff, { map: rt.tex, smooth: true }));
+    road.name = 'loopRoad';
+    ctx.root.add(road);
+
+    const B = new Builder(), G = new Builder();
+    const E = (fr, x, n) => [fr.P.x + fr.R.x * x + fr.N.x * n, fr.P.y + fr.R.y * x + fr.N.y * n, fr.P.z + fr.R.z * x + fr.N.z * n];
+    const vec = (v, s) => [v.x * s, v.y * s, v.z * s];
+    const under = shade(pal.wall, 0.75), sideC = shade(pal.wall, 0.9), HW = ROAD_HALF + 0.45;
+    for (let r = 0; r < rows; r++) {
+      const a = frames[r], b = frames[r + 1];
+      B.quad(E(a, -HW, -0.9), E(a, HW, -0.9), E(b, -HW, -0.9), E(b, HW, -0.9), under, vec(a.N, -1));
+      const stripe = (Math.floor(r / 2) & 1) ? pal.railA : pal.railB;
+      [-1, 1].forEach((sd) => {
+        // Slab side, rail faces and cap.
+        B.quad(E(a, sd * HW, 0.02), E(a, sd * HW, -0.9), E(b, sd * HW, 0.02), E(b, sd * HW, -0.9), sideC, vec(a.R, sd));
+        const ri = sd * (ROAD_HALF + 0.05), ro = sd * HW;
+        B.quad(E(a, ri, 0), E(a, ri, 1.15), E(b, ri, 0), E(b, ri, 1.15), stripe, vec(a.R, -sd));
+        B.quad(E(a, ro, 0.02), E(a, ro, 1.15), E(b, ro, 0.02), E(b, ro, 1.15), shade(stripe, 0.85), vec(a.R, sd));
+        G.quad(E(a, ri, 1.15), E(a, ro, 1.15), E(b, ri, 1.15), E(b, ro, 1.15), pal.railA, vec(a.N, 1));
+      });
+    }
+    [[B, NK.art.mat.lambertV()], [G, NK.art.mat.basic(0xffffff, { vertexColors: true })]].forEach(([bb, mat]) => {
+      const g2 = bb.geometry(); ctx.owned.geos.push(g2);
+      const m = new THREE.Mesh(g2, mat); m.name = 'loopBand'; ctx.root.add(m);
+    });
+    // Keep scenery off the loop's footprint.
+    for (let r = 0; r <= rows; r += 6) ctx.keepOut.push([frames[r].P.x, frames[r].P.z, ROAD_HALF + 6]);
+  }
+
+  /**
+   * A waterfall curtain across the road. On the ground it pours from a mossy
+   * rock arch the road runs through; in the air (a sky gap) it falls from a
+   * floating island across the flight path down into the clouds.
+   */
+  /** A private copy of ctx.frame(s) (that one object is reused by every call). */
+  function frameCopy(ctx, s) { const o = ctx.frame(s); return { x: o.x, y: o.y, z: o.z, h: o.h, sin: o.sin, cos: o.cos, sinB: o.sinB, bank: o.bank }; }
+
+  function buildFallsArt(ctx, fl, kit) {
+    const f = frameCopy(ctx, fl.s);
+    const F = [f.sin, 0, -f.cos], R = [f.cos, 0, f.sin];
+    const at = (a, x, y) => [f.x + F[0] * a + R[0] * x, y, f.z + F[2] * a + R[2] * x];
+    const look = curtainLook(fl.style), tex = look[0];
+    if (!kit.scroll.some((s) => s.tex === tex)) kit.scroll.push({ tex, speed: look[1] });
+    let yTop, yBot, half, aFace;
+    if (!fl.air && fl.gate) {
+      // A themed gateway frames the curtain (bubble machine, holo gate…).
+      const gate = kit.setProp(fl.gate);
+      if (gate) {
+        gate.position.set(f.x, f.y - 0.05, f.z);
+        faceDir(gate, -F[0], -F[2]);
+        if (gate.userData.anim) { ctx.root.add(gate); kit.live.push(gate); }
+        else ctx.root.add(NK.art.mergeByMaterial(gate));
+      }
+      [-1, 1].forEach((sd) => ctx.keepOut.push([...at(0, sd * 17, 0).filter((_, k) => k !== 1), 9]));
+      yTop = f.y + 12; yBot = f.y + 0.04; half = 12.4; aFace = 0;
+    } else if (fl.air) {
+      const hit = ctx.look.gapAt(fl.s);
+      const g = hit ? hit.g : null;
+      let yF = f.y + 8;
+      if (g) {
+        const ty = ctx.frame(g.takeoff).y + g.rampHeight, ly = ctx.frame(g.land).y;
+        const t = clamp01(U.mod(fl.s - g.takeoff, ctx.L) / g.flight);
+        yF = ty + (ly - ty) * t + 4 * g.peak * t * (1 - t);
+      }
+      // The feeding island floats well clear of the flight: its rocky tip
+      // hangs about 25 m down, so it sits ~40 m above the karts' path.
+      yTop = yF + 40; yBot = (ctx.liquid ? ctx.liquid.level : yF - 70) - 6; half = 17; aFace = 0;
+      const isle = kit.setProp('floating_island');
+      if (isle) {
+        // This island feeds the big curtain: drop any little fall of its own,
+        // which would otherwise hang across the road beyond the gap.
+        const water = [];
+        isle.traverse((o) => { if (o.isMesh && o.material && o.material.map) water.push(o); });
+        water.forEach((o) => { if (o.parent) o.parent.remove(o); });
+        if (water.length) delete isle.userData.anim;
+        isle.scale.setScalar(1.25);
+        const p = at(5, 0, yTop + 1.5);
+        isle.position.set(p[0], p[1], p[2]);
+        faceDir(isle, -F[0], -F[2]);
+        ctx.root.add(isle);
+        if (isle.userData.anim) kit.live.push(isle);
+      }
+    } else {
+      // Rock arch: stepped crags either side, a stacked lintel high over the
+      // road, vines hanging behind the water and plants along the top.
+      const B = new Builder(), base = mixC(col(ctx.theme.wall.color), col('#7d7f86'), 0.55);
+      const stones = [shade(base, 0.95), shade(base, 0.82), shade(mixC(base, col('#a39a86'), 0.4), 1), shade(base, 0.72)];
+      const moss = col('#4d8f3a'), mossDark = col('#3a7430');
+      const ground = (x) => { const p = at(0, x, 0); const g = ctx.groundAt(p[0], p[2]); return isFinite(g) ? Math.min(g, f.y) - 1 : f.y - 6; };
+      const tops = [];
+      [-1, 1].forEach((sd) => {
+        [[ROAD_HALF + 5.4, 2.8, 16.8, 5.6], [ROAD_HALF + 10, 4.4, 20, 6.8], [ROAD_HALF + 17, 5.4, 24, 7.4],
+          [ROAD_HALF + 25, 6.2, 18.5, 6.6], [ROAD_HALF + 33, 5.8, 12.5, 6]].forEach(([off, hw, top, hd], i) => {
+          const g = ground(sd * off), y1 = f.y + top + (hash01(i * 7 + sd) - 0.5) * 2.4, ym = g + (y1 - g) * 0.6;
+          const da = (hash01(i * 3 + sd * 5) - 0.5) * 2.4;
+          B.box(at(da, sd * off, (g + ym) / 2), R, F, hw, (ym - g) / 2, hd, stones[i % 4], moss);
+          B.box(at(da * 0.5 + 0.6, sd * (off + 0.7), (ym + y1) / 2), R, F, hw * 0.76, (y1 - ym) / 2, hd * 0.78, stones[(i + 1) % 4], mossDark);
+          tops.push(at(da * 0.5 + 0.6, sd * (off + 0.7), y1));
+          ctx.keepOut.push([...at(0, sd * off, 0).filter((_, k) => k !== 1), hw + 5]);
+        });
+      });
+      B.box(at(0, 0, f.y + 13.4), R, F, ROAD_HALF + 9, 2.2, 5.6, stones[0], moss);
+      B.box(at(1.2, 0, f.y + 16.4), R, F, ROAD_HALF + 5, 1.2, 4.2, stones[2], mossDark);
+      B.box(at(-0.6, 0, f.y + 11.4), R, F, ROAD_HALF + 6, 0.35, 5.2, stones[3], stones[1]);
+      // Vines: thin green strands hanging from the lintel, just behind the water.
+      for (let k = 0; k < 14; k++) {
+        const x = -ROAD_HALF - 4 + (2 * ROAD_HALF + 8) * (k + 0.5) / 14 + (hash01(k * 1.9) - 0.5) * 1.2;
+        const len = 2 + 4.5 * hash01(k * 4.3 + 1), w = 0.18 + 0.12 * hash01(k);
+        const kc = k % 3 ? moss : col('#6fbf4a');
+        B.quad(at(-5.75, x - w, f.y + 11.1), at(-5.75, x + w, f.y + 11.1), at(-5.75, x - w * 0.6, f.y + 11.1 - len), at(-5.75, x + w * 0.6, f.y + 11.1 - len), kc, [-F[0], 0, -F[2]]);
+      }
+      const geo = B.geometry(); ctx.owned.geos.push(geo);
+      ctx.root.add(new THREE.Mesh(geo, NK.art.mat.lambertV()));
+      // Plants along the top of the arch and the crags.
+      const plants = new THREE.Group(), kinds = ['giant_fern', 'jungle_flower', 'giant_fern', 'bamboo_clump', 'banana_plant'];
+      const lintelTop = [-12, -6, 0, 5, 11].map((x) => at(0.5 + (hash01(x) - 0.5) * 3, x, f.y + 17.6));
+      tops.concat(lintelTop).forEach((p, k) => {
+        const o = kit.setProp(kinds[k % kinds.length]);
+        if (!o) return;
+        o.position.set(p[0], p[1] - 0.1, p[2]);
+        o.rotation.y = hash01(k * 2.7) * TAU;
+        plants.add(o);
+      });
+      if (plants.children.length) { const merged = NK.art.mergeByMaterial(plants); merged.name = 'fallsPlants'; ctx.root.add(merged); }
+      yTop = f.y + 15.4; yBot = f.y + 0.04; half = ROAD_HALF + 5.5; aFace = -6;
+      // Foam where the curtain hits the road.
+      const foam = new Builder();
+      foam.quad(at(aFace - 2.6, -half, f.y + 0.07), at(aFace - 2.6, half, f.y + 0.07), at(aFace + 1.2, -half, f.y + 0.07), at(aFace + 1.2, half, f.y + 0.07), col('#ffffff'), [0, 1, 0]);
+      const fg = foam.geometry(); ctx.owned.geos.push(fg);
+      ctx.root.add(new THREE.Mesh(fg, NK.art.mat.basic(0xffffff, { vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false })));
+    }
+    // The curtain: a gently bulging sheet of scrolling streaks.
+    const cols = 6, rowsN = 10, posA = [], uvA = [], idx = [];
+    for (let r = 0; r <= rowsN; r++) {
+      const v = r / rowsN, y = yTop + (yBot - yTop) * v, bulge = -1.1 * Math.sin(Math.PI * Math.min(1, v * 1.4));
+      for (let c = 0; c <= cols; c++) {
+        const x = -half + 2 * half * c / cols, p = at(aFace + bulge, x, y);
+        posA.push(p[0], p[1], p[2]);
+        uvA.push(x / 5, y / 7);
+      }
+    }
+    for (let r = 0; r < rowsN; r++) for (let c = 0; c < cols; c++) {
+      const a = r * (cols + 1) + c, b = a + 1, cc = a + cols + 1, d = cc + 1;
+      idx.push(a, cc, b, b, cc, d);
+    }
+    const cg = new THREE.BufferGeometry();
+    cg.setAttribute('position', new THREE.Float32BufferAttribute(posA, 3));
+    cg.setAttribute('uv', new THREE.Float32BufferAttribute(uvA, 2));
+    cg.setIndex(idx); cg.computeVertexNormals(); cg.computeBoundingSphere();
+    ctx.owned.geos.push(cg);
+    const curtain = new THREE.Mesh(cg, NK.art.mat.basic(0xffffff, { map: tex, transparent: true, opacity: look[2], side: 'double', depthWrite: false }));
+    curtain.name = 'falls';
+    curtain.renderOrder = 3;
+    ctx.root.add(curtain);
+  }
+
+  /**
+   * Sky islands. Islands are the authored spans minus the jump gaps; on them
+   * the ground stands just under the road and verges and spreads out into a
+   * grassy top (narrowing to the road's edge wherever the edge is a drop),
+   * over a rocky underside that hangs down to a point. Everywhere else the
+   * road is a bridge (buildBridges) over a sea of cloud.
+   */
+  function buildIslands(ctx) {
+    const { nodes, N, L, seg, track, theme, owned, root } = ctx;
+    const cut = ctx.pieces.cut;
+    const on = new Uint8Array(N);
+    (track.islands || []).forEach((span) => {
+      const a = span[0] * L, len = U.mod(span[1] * L - a, L);
+      for (let i = 0; i < N; i++) if (U.mod(nodes[i].s - a, L) <= len && cut[i] !== 1) on[i] = 1;
+    });
+    ctx.onIsland = on;
+    // Runs of island nodes, unwrapped across the seam.
+    const runs = [];
+    let first = 0;
+    while (first < N && on[first]) first++;
+    for (let q = 1; q <= N; q++) {
+      const i = (first + q) % N;
+      if (on[i] && !on[(i - 1 + N) % N]) {
+        let n = 0; while (n < N && on[(i + n) % N]) n++;
+        runs.push({ i0: i, n });
+      }
+    }
+    const hr = U.rng((track.seed ^ 0x15a1d) >>> 0);
+    const ph = [hr.range(0, TAU), hr.range(0, TAU), hr.range(0, TAU), hr.range(0, TAU)];
+    const width = [new Float32Array(N), new Float32Array(N)], depth = new Float32Array(N);
+    runs.forEach((run) => {
+      for (let q = 0; q < run.n; q++) {
+        const i = (run.i0 + q) % N;
+        const ends = Math.min(q, run.n - 1 - q) * seg;
+        for (let side = 0; side < 2; side++) {
+          const sg = side ? 1 : -1;
+          let w;
+          if (ctx.kinds[side][i] === 'drop') w = ROAD_HALF + 0.25;
+          else {
+            const target = VERGE_OUT + 10 + 26 * (0.5 + 0.5 * Math.sin(i * 0.19 + ph[side])) * (0.65 + 0.35 * Math.sin(i * 0.061 + ph[2]));
+            w = VERGE_OUT + 2;
+            for (let o = VERGE_OUT + 4; o <= target; o += 3) {
+              const p = ctx.P(i, sg * o, 0);
+              if (nearOther(ctx, p[0], p[2], 30, nodes[i].s, 80)) break;
+              w = o;
+            }
+          }
+          if (ends < 30) w = ROAD_HALF + 1.2 + (w - ROAD_HALF - 1.2) * sstep(ends / 30);
+          width[side][i] = w;
+        }
+        const u = (q + 0.5) / run.n;
+        depth[i] = 6 + 18 * Math.pow(Math.sin(Math.PI * u), 0.7) * (0.8 + 0.4 * hash01(run.i0 * 3 + 1)) + 3 * Math.sin(i * 0.37 + ph[3]);
+      }
+    });
+    // Smooth widths so edges never zigzag from node to node.
+    width.forEach((wArr) => {
+      const src = wArr.slice();
+      for (let i = 0; i < N; i++) if (on[i]) {
+        let acc = 0, cnt = 0;
+        for (let k = -2; k <= 2; k++) { const j = (i + k + N) % N; if (on[j]) { acc += src[j]; cnt++; } }
+        wArr[i] = acc / cnt;
+      }
+    });
+    for (let side = 0; side < 2; side++) for (let i = 0; i < N; i++) if (ctx.kinds[side][i] === 'drop') width[side][i] = ROAD_HALF + 0.25;
+
+    const top = (i, off) => {
+      const oc = Math.max(-VERGE_OUT, Math.min(VERGE_OUT, off)), ao = Math.abs(off);
+      const bump = ao > VERGE_OUT + 3 ? 0.9 * sstep((ao - VERGE_OUT - 3) / 8) * (0.5 + 0.5 * Math.sin(off * 0.31 + i * 0.27)) : 0;
+      return nodes[i].y - oc * ctx.sinB[i] - TUCK + bump;
+    };
+    function groundAt(x, z) {
+      const q = SP.nearest(ctx.index, x, z, 75);
+      if (!q || !on[q.i]) return -Infinity;
+      const side = q.off < 0 ? 0 : 1;
+      if (Math.abs(q.off) > width[side][q.i]) return -Infinity;
+      return top(q.i, q.off);
+    }
+
+    const B = new Builder(), Gr = new Builder();
+    const gA = col(theme.ground.colors[0]), gB = col(theme.ground.colors[1]);
+    const dirt = col('#a07a52'), rock = col('#8f8aa6'), deep = col('#6b6585');
+    const P = ctx.P;
+    const ringOf = (i) => {
+      const wl = width[0][i], wr = width[1][i], D = depth[i], ty = nodes[i].y - TUCK;
+      const jit = (k) => (hash01(i * 5.3 + k * 17) - 0.5) * 1.6;
+      const yl = ctx.kinds[0][i] === 'drop' ? nodes[i].y + wl * ctx.sinB[i] - 1.6 : top(i, -wl);
+      const yr = ctx.kinds[1][i] === 'drop' ? nodes[i].y - wr * ctx.sinB[i] - 1.6 : top(i, wr);
+      return [[-wl, yl, 0], [-wl - 0.7, yl - 1.7, 1], [-wl * 0.86 + jit(1), ty - D * 0.36, 2], [-wl * 0.5 + jit(2), ty - D * 0.78, 3], [jit(3), ty - D, 3],
+        [wr * 0.5 + jit(4), ty - D * 0.78, 3], [wr * 0.86 + jit(5), ty - D * 0.36, 2], [wr + 0.7, yr - 1.7, 1], [wr, yr, 0]];
+    };
+    const bandC = [shade(gB, 0.92), dirt, rock, deep];
+    const hang = new THREE.Group();
+    let hangCount = 0;
+    runs.forEach((run) => {
+      let prev = null;
+      for (let q = 0; q <= run.n; q++) {
+        const i = (run.i0 + q) % N;
+        const ring = ringOf(i).map((p) => ({ w: P(i, p[0], 0), y: p[1], band: p[2], off: p[0] }));
+        ring.forEach((p) => { p.w[1] = p.y; });
+        if (prev) {
+          const pi = (run.i0 + q - 1) % N;
+          for (let k = 0; k < ring.length - 1; k++) {
+            const a = prev.ring[k].w, b = prev.ring[k + 1].w, c = ring[k].w, d = ring[k + 1].w;
+            const mx = (a[0] + b[0] + c[0] + d[0]) / 4, my = (a[1] + b[1] + c[1] + d[1]) / 4, mz = (a[2] + b[2] + c[2] + d[2]) / 4;
+            const ctr = P(pi, 0, 0); ctr[1] = nodes[pi].y - depth[pi] * 0.45;
+            const kc = shade(bandC[Math.max(prev.ring[k].band, prev.ring[k + 1].band)], 1 + (hash01(i * 2.1 + k) - 0.5) * 0.1);
+            B.quad(a, b, c, d, kc, [mx - ctr[0], my - ctr[1], mz - ctr[2]]);
+          }
+          // Grass tops beyond the verge, each side.
+          [0, 1].forEach((side) => {
+            const sg = side ? 1 : -1, w0 = width[side][pi], w1 = width[side][i];
+            if (Math.min(w0, w1) < VERGE_OUT + 4.5) return;
+            const pts = (n, wv) => [VERGE_OUT - 0.5, VERGE_OUT + 4, (VERGE_OUT + 4 + wv) / 2, wv].map((o) => { const p = P(n, sg * o, 0); p[1] = top(n, sg * o); return p; });
+            const A = pts(pi, w0), Bq = pts(i, w1);
+            for (let k = 0; k < 3; k++) {
+              const m = 0.5 + 0.5 * Math.sin(A[k][0] * 0.05 + A[k][2] * 0.04);
+              Gr.quad(A[k], A[k + 1], Bq[k], Bq[k + 1], shade(mixC(gA, gB, m), 1 + (hash01(i + k * 11 + side * 5) - 0.5) * 0.06), [0, 1, 0]);
+            }
+          });
+          // Roots and crystals hanging under the island.
+          if (q % 11 === 5 && q > 2 && q < run.n - 2) {
+            const name = (hangCount++ & 1) ? 'hanging_crystals' : 'hanging_roots';
+            const fn = NK.art.props && NK.art.props[name];
+            if (typeof fn === 'function') {
+              try {
+                const o = fn(U.rng((track.seed ^ Math.imul(hangCount, 7919)) >>> 0));
+                const sd = (hangCount & 2) ? 1 : -1, off = sd * width[sd > 0 ? 1 : 0][i] * 0.42;
+                const p = P(i, off, 0);
+                o.position.set(p[0], nodes[i].y - TUCK - depth[i] * 0.7, p[2]);
+                o.rotation.y = hash01(i) * TAU;
+                hang.add(o);
+              } catch (e) { warnOnce('hang', 'NK.world: ' + name + ' failed: ' + e.message); }
+            }
+          }
+        }
+        // End caps where the island stops (a jump gap or a bridge).
+        if (q === 0 || q === run.n) {
+          const ctr = P(i, 0, 0); ctr[1] = nodes[i].y - TUCK - depth[i] * 0.45;
+          const F = ctx.Fv(i), dir = q === 0 ? -1 : 1, w = [F[0] * dir, 0, F[2] * dir];
+          for (let k = 0; k < ring.length - 1; k++) B.triW(ctr, ring[k].w, ring[k + 1].w, shade(bandC[ring[k + 1].band], 0.9), w);
+          B.triW(ctr, ring[ring.length - 1].w, ring[0].w, shade(gB, 0.85), w);
+        }
+        prev = { ring };
+      }
+    });
+    [[B, 'islandRock'], [Gr, 'islandGrass']].forEach(([bb, name]) => {
+      if (bb.empty) return;
+      const geo = bb.geometry(); owned.geos.push(geo);
+      const m = new THREE.Mesh(geo, NK.art.mat.lambertV()); m.name = name; root.add(m);
+    });
+    if (hang.children.length) { const merged = NK.art.mergeByMaterial(hang); merged.name = 'islandHang'; root.add(merged); }
+    const b = SP.bounds(ctx.loop), reach = theme.fog.far + 220;
+    return { groundAt, verts: 0, extent: { minX: b.minX - reach, maxX: b.maxX + reach, minZ: b.minZ - reach, maxZ: b.maxZ + reach } };
+  }
+
+  /** Sky bridges: a marble deck under the road and a gold-trimmed suspension arch hanging below. */
+  function buildBridges(ctx) {
+    const { N, nodes, seg } = ctx, on = ctx.onIsland, cut = ctx.pieces.cut, P = ctx.P;
+    const isBridge = (i) => !on[i] && !cut[i];
+    const B = new Builder(), marble = col(ctx.theme.wall.color), trim = col(ctx.theme.rail.a);
+    let start = 0;
+    while (start < N && isBridge(start)) start++;
+    for (let q = 1; q <= N; q++) {
+      const i0 = (start + q) % N;
+      if (!isBridge(i0) || isBridge((i0 - 1 + N) % N)) continue;
+      let n = 0; while (n < N && isBridge((i0 + n) % N)) n++;
+      const sag = Math.min(14, 1.5 + n * seg * 0.1);
+      for (let k = 0; k < n; k++) {
+        const i = (i0 + k) % N, j = (i + 1) % N, u0 = k / n, u1 = (k + 1) / n;
+        const HW = ROAD_HALF + 0.4;
+        [-1, 1].forEach((sd) => {
+          const out = [ctx.Rv(i)[0] * sd, 0, ctx.Rv(i)[2] * sd];
+          B.quad(P(i, sd * HW, -0.02), P(i, sd * HW, -1.5), P(j, sd * HW, -0.02), P(j, sd * HW, -1.5), marble, out);
+          B.quad(P(i, sd * HW, -1.3), P(i, sd * HW, -1.5), P(j, sd * HW, -1.3), P(j, sd * HW, -1.5), trim, out);
+          // Hanging arch beam under each edge.
+          const yA = -1.5 - sag * Math.sin(Math.PI * u0), yB = -1.5 - sag * Math.sin(Math.PI * u1), bx = sd * (ROAD_HALF - 1.2);
+          B.quad(P(i, bx - 0.5, yA), P(i, bx + 0.5, yA), P(j, bx - 0.5, yB), P(j, bx + 0.5, yB), shade(marble, 0.8), [0, -1, 0]);
+          B.quad(P(i, bx + sd * 0.5, yA + 0.9), P(i, bx + sd * 0.5, yA), P(j, bx + sd * 0.5, yB + 0.9), P(j, bx + sd * 0.5, yB), shade(marble, 0.9), out);
+          B.quad(P(i, bx - sd * 0.5, yA + 0.9), P(i, bx - sd * 0.5, yA), P(j, bx - sd * 0.5, yB + 0.9), P(j, bx - sd * 0.5, yB), shade(marble, 0.85), [-out[0], 0, -out[2]]);
+          if (k % 2 === 0 && k > 0) B.box(P(i, bx, (yA - 1.5) / 2), ctx.Rv(i), ctx.Fv(i), 0.18, Math.max(0.05, (-1.5 - yA) / 2), 0.18, trim);
+        });
+        B.quad(P(i, -HW, -1.5), P(i, HW, -1.5), P(j, -HW, -1.5), P(j, HW, -1.5), shade(marble, 0.7), [0, -1, 0]);
+      }
+    }
+    if (B.empty) return;
+    const geo = B.geometry(); ctx.owned.geos.push(geo);
+    const m = new THREE.Mesh(geo, NK.art.mat.lambertV()); m.name = 'bridges'; ctx.root.add(m);
+    void nodes;
   }
 
   /** Grey stand-in for a prop that is not in the catalog yet (DESIGN §9.4). */

@@ -129,3 +129,49 @@ test('platform detection uses real hostnames and platform choices have bundled f
   assert.equal(services.nameFor({service:'Other',url:'https://www.hulu.com/watch/1'}),'Hulu');
   for(const name of services.names)assert.ok(fs.existsSync('bennyshub/apps/tools/streaming/'+services.icons[name]));
 });
+
+test('a stale editor cannot overwrite a library restored in another window',async()=>{
+  const {api,stored}=adapter();
+  const draft=await api.getData();
+  const restored=[{id:'restored',title:'Restored title',url:'https://www.youtube.com/watch?v=restored'}];
+  stored.set('streaming.catalog',JSON.stringify(restored));
+  draft[0].title='Stale edit';
+  assert.throws(()=>api.saveData(draft),/Library changed in another window/);
+  assert.equal(JSON.parse(stored.get('streaming.catalog'))[0].title,'Restored title');
+  const current=await api.getData();current[0].title='New edit';api.saveData(current);
+  assert.equal(JSON.parse(stored.get('streaming.catalog'))[0].title,'New edit');
+  api.saveData(current); // An unchanged repeat of our own save remains valid.
+});
+
+test('catalog baseline tracks raw stored values instead of generated normalization IDs',async()=>{
+  const {api,stored}=adapter();
+  stored.set('streaming.catalog',JSON.stringify([{title:'Old import without ID',url:'unfinished link',year:2020}]));
+  const draft=await api.getData();assert.match(draft[0].id,/^[\w-]+$/);draft[0].title='Edited old import';
+  api.saveData(draft);assert.equal(JSON.parse(stored.get('streaming.catalog'))[0].title,'Edited old import');
+});
+
+test('successful launch waits for Companion progress writes without treating a save interruption as a player failure',async()=>{
+  const {api,env,stored,onRequest}=adapter();const events=[];let resolveFlush;
+  env.BennyAppStorage={
+    setItem:(app,key,json)=>{assert.equal(app,'streaming');stored.set(key.replace('benny-web:v1:',''),json);events.push(key);},
+    flush:async app=>{assert.equal(app,'streaming');events.push('flush');return new Promise(resolve=>{resolveFlush=resolve;});}
+  };
+  onRequest(async action=>events.push(action));
+  let completed=false;
+  const launch=api.launch({url:'https://www.youtube.com/watch?v=one',show:'Show',type:'shows'}).then(()=>{completed=true;});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(completed,false);assert.equal(events[0],'OPEN_STREAM');assert.ok(events.indexOf('benny-web:v1:streaming.activePlayback')<events.indexOf('flush'));assert.ok(events.indexOf('benny-web:v1:streaming.lastWatched')<events.indexOf('flush'));
+  resolveFlush({mode:'companion'});await launch;assert.equal(completed,true);
+  env.BennyAppStorage.flush=async()=>{throw Error('Synthetic save interruption');};
+  await assert.doesNotReject(api.launch({url:'https://www.youtube.com/watch?v=two',show:'Show',type:'shows'}));
+  assert.equal(JSON.parse(stored.get('streaming.lastWatched')).show.url,'https://www.youtube.com/watch?v=two');
+});
+
+test('catalog save guard ignores storage key ordering while retaining the raw legacy values',async()=>{
+  const {api,stored}=adapter();
+  stored.set('streaming.catalog',JSON.stringify([{title:'Unchanged',url:'unfinished',note:{b:2,a:1}}]));
+  const draft=await api.getData();
+  stored.set('streaming.catalog',JSON.stringify([{note:{a:1,b:2},url:'unfinished',title:'Unchanged'}]));
+  draft[0].title='An intentional edit';
+  assert.doesNotThrow(()=>api.saveData(draft));assert.equal(JSON.parse(stored.get('streaming.catalog'))[0].title,'An intentional edit');
+});

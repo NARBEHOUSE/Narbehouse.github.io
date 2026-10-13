@@ -1,0 +1,989 @@
+{
+    "categories": {
+        "Musical Instruments": [
+            {
+                "image": "piano.png",
+                "sound": null,
+                "soundTodo": "a piano playing a short melody",
+                "title": "piano",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "guitar.png",
+                "sound": [
+                    "guitar.mp3"
+                ],
+                "title": "guitar",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "drum.png",
+                "sound": [
+                    "drum.mp3"
+                ],
+                "title": "drum",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "violin.png",
+                "sound": [
+                    "violin.mp3"
+                ],
+                "title": "violin",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "trumpet.png",
+                "sound": [
+                    "trumpet.mp3"
+                ],
+                "title": "trumpet",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "flute.svg",
+                "sound": [
+                    "flute.mp3"
+                ],
+                "title": "flute",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "saxophone.png",
+                "sound": [
+                    "saxophone.mp3"
+                ],
+                "title": "saxophone",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "harmonica.png",
+                "sound": [
+                    "harmonica.mp3"
+                ],
+                "title": "harmonica",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "xylophone.png",
+                "sound": [
+                    "xylophone.mp3"
+                ],
+                "title": "xylophone",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "tambourine.png",
+                "sound": [
+                    "tambourine.mp3"
+                ],
+                "title": "tambourine",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "maracas.png",
+                "sound": [
+                    "maracas.mp3"
+                ],
+                "title": "maracas",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "cello.png",
+                "sound": [
+                    "cello.mp3"
+                ],
+                "title": "cello",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "harp.png",
+                "sound": [
+                    "harp.mp3"
+                ],
+                "title": "harp",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "banjo.png",
+                "sound": [
+                    "banjo.mp3"
+                ],
+                "title": "banjo",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "accordion.png",
+                "sound": [
+                    "accordion.mp3"
+                ],
+                "title": "accordion",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "clarinet.png",
+                "sound": [
+                    "clarinet.mp3"
+                ],
+                "title": "clarinet",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "trombone.png",
+                "sound": [
+                    "trombone.mp3"
+                ],
+                "title": "trombone",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "tuba.png",
+                "sound": null,
+                "soundTodo": "a tuba playing low notes",
+                "title": "tuba",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "triangle.png",
+                "sound": [
+                    "triangle.mp3"
+                ],
+                "title": "triangle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "bagpipes.png",
+                "sound": [
+                    "bagpipes.mp3"
+                ],
+                "title": "bagpipes",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "ukulele.svg",
+                "sound": [
+                    "ukulele.mp3"
+                ],
+                "title": "ukulele",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "cymbals.png",
+                "sound": [
+                    "cymbals.mp3"
+                ],
+                "title": "cymbals",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "bongo_drums.png",
+                "sound": [
+                    "bongo_drums.mp3"
+                ],
+                "title": "bongo drums",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "french_horn.png",
+                "sound": [
+                    "french_horn.mp3"
+                ],
+                "title": "french horn",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "electric_guitar.png",
+                "sound": [
+                    "electric_guitar.mp3"
+                ],
+                "title": "electric guitar",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "recorder.png",
+                "sound": [
+                    "recorder.mp3"
+                ],
+                "title": "recorder",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "bell.svg",
+                "sound": [
+                    "bell.mp3"
+                ],
+                "title": "bell",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "gong.png",
+                "sound": [
+                    "gong.mp3"
+                ],
+                "title": "gong",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "drum_set.png",
+                "sound": [
+                    "drum_set.mp3"
+                ],
+                "title": "drum set",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "organ.png",
+                "sound": [
+                    "organ.mp3"
+                ],
+                "title": "organ",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "castanets.png",
+                "sound": [
+                    "castanets.mp3"
+                ],
+                "title": "castanets",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            }
+        ],
+        "Sports": [
+            {
+                "image": "soccer.png",
+                "sound": null,
+                "soundTodo": "a soccer ball being kicked",
+                "title": "soccer",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "basketball.png",
+                "sound": [
+                    "basketball.mp3"
+                ],
+                "title": "basketball",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "football.svg",
+                "sound": [
+                    "football.mp3"
+                ],
+                "title": "football",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "baseball.png",
+                "sound": [
+                    "baseball.mp3"
+                ],
+                "title": "baseball",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "tennis.png",
+                "sound": [
+                    "tennis.mp3"
+                ],
+                "title": "tennis",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "golf.svg",
+                "sound": [
+                    "golf.mp3"
+                ],
+                "title": "golf",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "hockey.svg",
+                "sound": [
+                    "hockey.mp3"
+                ],
+                "title": "hockey",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "volleyball.png",
+                "sound": [
+                    "volleyball.mp3"
+                ],
+                "title": "volleyball",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "bowling.svg",
+                "sound": [
+                    "bowling.mp3"
+                ],
+                "title": "bowling",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "swimming.png",
+                "sound": [
+                    "swimming.mp3"
+                ],
+                "title": "swimming",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "boxing.png",
+                "sound": [
+                    "boxing.mp3"
+                ],
+                "title": "boxing",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "skiing.png",
+                "sound": [
+                    "skiing.mp3"
+                ],
+                "title": "skiing",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "skateboarding.svg",
+                "sound": [
+                    "skateboarding.mp3"
+                ],
+                "title": "skateboarding",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "surfing.svg",
+                "sound": [
+                    "surfing.mp3"
+                ],
+                "title": "surfing",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "running.png",
+                "sound": [
+                    "running.mp3"
+                ],
+                "title": "running",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "gymnastics.png",
+                "sound": null,
+                "soundTodo": "crowd applause",
+                "title": "gymnastics",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "karate.png",
+                "sound": [
+                    "karate.mp3"
+                ],
+                "title": "karate",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "badminton.png",
+                "sound": [
+                    "badminton.mp3"
+                ],
+                "title": "badminton",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "table_tennis.png",
+                "sound": [
+                    "table_tennis.mp3"
+                ],
+                "title": "table tennis",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "archery.svg",
+                "sound": [
+                    "archery.mp3"
+                ],
+                "title": "archery",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "fishing.png",
+                "sound": [
+                    "fishing.mp3"
+                ],
+                "title": "fishing",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "ice_skating.png",
+                "sound": [
+                    "ice_skating.mp3"
+                ],
+                "title": "ice skating",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "snowboarding.svg",
+                "sound": [
+                    "snowboarding.mp3"
+                ],
+                "title": "snowboarding",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "scuba_diving.png",
+                "sound": [
+                    "scuba_diving.mp3"
+                ],
+                "title": "scuba diving",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "cheerleading.png",
+                "sound": [
+                    "cheerleading.mp3"
+                ],
+                "title": "cheerleading",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "pickleball.png",
+                "sound": [
+                    "pickleball.mp3"
+                ],
+                "title": "pickleball",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "darts.png",
+                "sound": [
+                    "darts.mp3"
+                ],
+                "title": "darts",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "billiards.png",
+                "sound": [
+                    "billiards.mp3"
+                ],
+                "title": "billiards",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "trampoline.svg",
+                "sound": [
+                    "trampoline.mp3"
+                ],
+                "title": "trampoline",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "boccia.svg",
+                "sound": null,
+                "soundTodo": "ball rolling and clacking",
+                "title": "boccia",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "rugby.png",
+                "sound": [
+                    "rugby.mp3"
+                ],
+                "title": "rugby",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            },
+            {
+                "image": "fencing.svg",
+                "sound": [
+                    "fencing.mp3"
+                ],
+                "title": "fencing",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835692
+            }
+        ],
+        "Around the House": [
+            {
+                "image": "bed.png",
+                "sound": [
+                    "bed.mp3"
+                ],
+                "title": "bed",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835661
+            },
+            {
+                "image": "chair.png",
+                "sound": [
+                    "chair.mp3"
+                ],
+                "title": "chair",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835662
+            },
+            {
+                "image": "table.png",
+                "sound": null,
+                "soundTodo": "knock on wood",
+                "title": "table",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835663
+            },
+            {
+                "image": "couch.png",
+                "sound": null,
+                "soundTodo": "plopping down on cushions",
+                "title": "couch",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835664
+            },
+            {
+                "image": "lamp.png",
+                "sound": [
+                    "lamp.mp3"
+                ],
+                "title": "lamp",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835665
+            },
+            {
+                "image": "television.png",
+                "sound": [
+                    "television.mp3"
+                ],
+                "title": "television",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835666
+            },
+            {
+                "image": "door.svg",
+                "sound": [
+                    "door.mp3"
+                ],
+                "title": "door",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835667
+            },
+            {
+                "image": "window.png",
+                "sound": [
+                    "window.mp3"
+                ],
+                "title": "window",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835668
+            },
+            {
+                "image": "clock.svg",
+                "sound": [
+                    "clock.mp3"
+                ],
+                "title": "clock",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835669
+            },
+            {
+                "image": "telephone.png",
+                "sound": [
+                    "telephone.mp3"
+                ],
+                "title": "telephone",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835670
+            },
+            {
+                "image": "computer.png",
+                "sound": [
+                    "computer.mp3"
+                ],
+                "title": "computer",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835671
+            },
+            {
+                "image": "refrigerator.png",
+                "sound": [
+                    "refrigerator.mp3"
+                ],
+                "title": "refrigerator",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835672
+            },
+            {
+                "image": "microwave.png",
+                "sound": [
+                    "microwave.mp3"
+                ],
+                "title": "microwave",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835673
+            },
+            {
+                "image": "toilet.png",
+                "sound": [
+                    "toilet.mp3"
+                ],
+                "title": "toilet",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835674
+            },
+            {
+                "image": "bathtub.svg",
+                "sound": [
+                    "bathtub.mp3"
+                ],
+                "title": "bathtub",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835675
+            },
+            {
+                "image": "shower.png",
+                "sound": [
+                    "shower.mp3"
+                ],
+                "title": "shower",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835676
+            },
+            {
+                "image": "sink.svg",
+                "sound": [
+                    "sink.mp3"
+                ],
+                "title": "sink",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835677
+            },
+            {
+                "image": "toothbrush.png",
+                "sound": [
+                    "toothbrush.mp3"
+                ],
+                "title": "toothbrush",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835678
+            },
+            {
+                "image": "towel.png",
+                "sound": null,
+                "soundTodo": "towel flap",
+                "title": "towel",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835679
+            },
+            {
+                "image": "soap.png",
+                "sound": null,
+                "soundTodo": "bubbly lather",
+                "title": "soap",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835680
+            },
+            {
+                "image": "broom.png",
+                "sound": [
+                    "broom.mp3"
+                ],
+                "title": "broom",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835681
+            },
+            {
+                "image": "vacuum_cleaner.png",
+                "sound": [
+                    "vacuum_cleaner.mp3"
+                ],
+                "title": "vacuum cleaner",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835682
+            },
+            {
+                "image": "washing_machine.png",
+                "sound": [
+                    "washing_machine.mp3"
+                ],
+                "title": "washing machine",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835683
+            },
+            {
+                "image": "mirror.png",
+                "sound": null,
+                "soundTodo": "magical shimmer",
+                "title": "mirror",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835684
+            },
+            {
+                "image": "pillow.png",
+                "sound": [
+                    "pillow.mp3"
+                ],
+                "title": "pillow",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835685
+            },
+            {
+                "image": "cup.png",
+                "sound": [
+                    "cup.mp3"
+                ],
+                "title": "cup",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835686
+            },
+            {
+                "image": "fork.png",
+                "sound": [
+                    "fork.mp3"
+                ],
+                "title": "fork",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835687
+            },
+            {
+                "image": "key.png",
+                "sound": [
+                    "key.mp3"
+                ],
+                "title": "key",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835688
+            },
+            {
+                "image": "light_bulb.svg",
+                "sound": null,
+                "soundTodo": "bright 'ding' idea sound",
+                "title": "light bulb",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835689
+            },
+            {
+                "image": "fan.png",
+                "sound": [
+                    "fan.mp3"
+                ],
+                "title": "fan",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835690
+            },
+            {
+                "image": "kettle.svg",
+                "sound": [
+                    "kettle.mp3"
+                ],
+                "title": "kettle",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835691
+            },
+            {
+                "image": "alarm_clock.svg",
+                "sound": [
+                    "alarm_clock.mp3"
+                ],
+                "title": "alarm clock",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835692
+            },
+            {
+                "image": "hair_dryer.png",
+                "sound": [
+                    "hair_dryer.mp3"
+                ],
+                "title": "hair dryer",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835693
+            },
+            {
+                "image": "blender.png",
+                "sound": [
+                    "blender.mp3"
+                ],
+                "title": "blender",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835694
+            },
+            {
+                "image": "scissors.png",
+                "sound": [
+                    "scissors.mp3"
+                ],
+                "title": "scissors",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835695
+            },
+            {
+                "image": "book.png",
+                "sound": [
+                    "book.mp3"
+                ],
+                "title": "book",
+                "altTitle": "",
+                "ttsText": "",
+                "_created": 1791311835696
+            }
+        ]
+    }
+}

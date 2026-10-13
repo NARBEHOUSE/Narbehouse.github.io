@@ -47,7 +47,11 @@
     return response.json();
   })).then(([data,eps])=>({data:library(data),episodes:episodes(eps)})).catch(e=>{seedPromise=null;throw e;});
   const get = (name,fallback) => BennyData.get('streaming.'+name,fallback);
-  const set = (name,value) => BennyData.set('streaming.'+name,value);
+  const set = (name,value) => window.BennyAppStorage ? BennyAppStorage.setItem('streaming','benny-web:v1:streaming.'+name,JSON.stringify(value)) : BennyData.set('streaming.'+name,value);
+  const remove = name => window.BennyAppStorage ? BennyAppStorage.removeItem('streaming','benny-web:v1:streaming.'+name) : BennyData.remove('streaming.'+name);
+  let catalogBaseline;
+  const catalogSignature = value => JSON.stringify(value, (_name, item) => plain(item)
+    ? Object.fromEntries(Object.keys(item).sort().map(name => [name, item[name]])) : item);
   function status(message) { const el=document.getElementById('streaming-status');if(el){el.textContent=message;el.hidden=!message;} }
   function imageURL(value) { try { const u=new URL(value);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:''; } catch {return '';} }
   const starterPlaybackURL=value=>StreamingPlaybackLinks.resolve(value);
@@ -73,12 +77,21 @@
   window.WebStreaming = {
     library,episodes,status,imageURL,playbackURL,
     escapeHTML: value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
-    async getData() { const saved=get('catalog',null);return library(saved ?? (await seeds()).data); },
-    saveData(value) { const data=library(value);set('catalog',data);return data; },
+    async getData() {
+      if(window.BennyAppStorage)await BennyAppStorage.ready('streaming');
+      const saved=get('catalog',null);catalogBaseline=catalogSignature(saved);
+      return library(saved ?? (await seeds()).data);
+    },
+    saveData(value) {
+      const current=catalogSignature(get('catalog',null));
+      if(catalogBaseline!==undefined&&current!==catalogBaseline)throw Error('Library changed in another window. Reopen the editor before saving.');
+      const data=library(value);set('catalog',data);catalogBaseline=catalogSignature(data);return data;
+    },
     async addData(value) {
       const incoming=library(value),fallback=await this.getData();
       // Read again immediately before the synchronous write, including other-tab changes.
-      const result=StreamingLibraryMerge.mergeLibrary(library(get('catalog',fallback)),incoming);
+      const latest=get('catalog',null);catalogBaseline=catalogSignature(latest);
+      const result=StreamingLibraryMerge.mergeLibrary(library(latest ?? fallback),incoming);
       if(result.added)result.items=this.saveData(result.items);
       return result;
     },
@@ -116,8 +129,8 @@
     },
     getLastWatched(title) {const data=get('lastWatched',{});return title ? data[key(title)] || null : data;},
     saveProgress({show,url,season,episode}) {const data=get('lastWatched',{});Object.defineProperty(data,key(show),{value:{url,season:season??-1,episode:episode??-1,timestamp:Date.now()},enumerable:true,writable:true,configurable:true});set('lastWatched',data);},
-    resetProgress(title) {const data=get('lastWatched',{}),entry=data[key(title)];if(entry){delete entry.url;entry.season=-1;entry.episode=-1;set('lastWatched',data);}if(key(get('activePlayback',{}).show)===key(title))BennyData.remove('streaming.activePlayback');},
-    clearAllProgress() {const data=get('lastWatched',{});for(const entry of Object.values(data)){delete entry.url;entry.season=-1;entry.episode=-1;}set('lastWatched',data);BennyData.remove('streaming.activePlayback');return Object.keys(data).length;},
+    resetProgress(title) {const data=get('lastWatched',{}),entry=data[key(title)];if(entry){delete entry.url;entry.season=-1;entry.episode=-1;set('lastWatched',data);}if(key(get('activePlayback',{}).show)===key(title))remove('activePlayback');},
+    clearAllProgress() {const data=get('lastWatched',{});for(const entry of Object.values(data)){delete entry.url;entry.season=-1;entry.episode=-1;}set('lastWatched',data);remove('activePlayback');return Object.keys(data).length;},
     getSearchHistory:()=>get('searchHistory',[]),
     saveSearch(term) {set('searchHistory',[term,...get('searchHistory',[]).filter(x=>x!==term)].slice(0,100));},
     clearSearchHistory:()=>set('searchHistory',[]),
@@ -133,6 +146,12 @@
       await BennyExtension.request('OPEN_STREAM',{url:playbackURL(url),settings:prefs,playbackId,trackProgress});
       if(trackProgress)set('activePlayback',{playbackId,show,season,episode});
       if(type!=='trailer') this.saveProgress({show,url:saveUrl||url,season,episode});
+      // Playback has already opened. Finish persistence without misreporting a
+      // later storage interruption as a failed player launch.
+      if(window.BennyAppStorage){
+        try{const saved=await BennyAppStorage.flush('streaming');if(saved?.error)status(saved.error);}
+        catch(error){status('Playback opened, but progress is waiting to save. '+error.message);}
+      }
     },
     async syncProgress() {
       if(!BennyExtension.supports('streaming'))return;

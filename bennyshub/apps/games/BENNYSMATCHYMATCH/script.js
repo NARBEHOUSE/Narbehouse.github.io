@@ -730,8 +730,8 @@ const menus = {
         { text: "Back", action: () => showMainMenu() }
     ],
     editorWarning: [
-        { text: "Continue (Mouse Needed)", action: () => openEditor() },
-        { text: "Cancel", action: () => showSettingsMenu() }
+        { text: "Cancel", action: () => showSettingsMenu() },
+        { text: "Continue (Mouse Needed)", action: () => openEditor() }
     ],
     loadWarning: [
         { text: "Select Folder", action: () => promptLoadGame() },

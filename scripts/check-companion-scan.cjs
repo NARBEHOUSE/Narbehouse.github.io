@@ -63,7 +63,7 @@ async function serve(){
   // Public manager uses indices, while worker transports the normalized values.
   const set=async settings=>{
     await hub.evaluate(settings=>{NarbeVoiceManager.updateSettings({ttsEnabled:false});NarbeScanManager.updateSettings(settings)},settings);
-    const expected={...settings};if('scanSpeedIndex'in expected){expected.scanInterval=[1000,2000,3000,4000][expected.scanSpeedIndex];delete expected.scanSpeedIndex;}
+    const expected={...settings};if('scanSpeedIndex'in expected){expected.scanInterval=[1000,2000,3000,4000,5000][expected.scanSpeedIndex];delete expected.scanSpeedIndex;}
     if('inputSensitivityIndex'in expected){expected.inputSensitivity=[50,100,200,300][expected.inputSensitivityIndex];delete expected.inputSensitivityIndex;}
     await expect.poll(()=>worker.evaluate(async origin=>(await chrome.storage.session.get('scan:'+origin))['scan:'+origin],base)).toMatchObject(expected);
   };

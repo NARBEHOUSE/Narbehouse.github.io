@@ -4,7 +4,20 @@ const root=path.resolve(__dirname,'..'),base='http://127.0.0.1:4173',artifacts=p
 const executablePath=process.env.HUB_BROWSER_PATH||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const requested=process.argv.find(arg=>arg.startsWith('--tool='))?.slice(7);
 let context;const report={checks:[],errors:[],tools:{}};
-async function advance(page,ms){while(ms>0){const step=Math.min(ms,400);await page.clock.runFor(step);ms-=step;await new Promise(r=>setTimeout(r,20));}}
+async function drainCompanion(page){
+  // Page clocks accelerate the HELLO timeout, but extension IPC and storage
+  // still use wall time. Drain each real reply before advancing another slice
+  // so a busy test machine cannot spuriously open the Companion gate.
+  let timer;
+  try{
+    const state=await Promise.race([
+      page.evaluate(()=>window.BennyExtension?.check()),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Companion bridge did not settle before advancing the scan clock.')),10000);})
+    ]);
+    if(state)assert.equal(state.connected,true,'Companion must remain connected during accelerated scan checks.');
+  }finally{clearTimeout(timer);}
+}
+async function advance(page,ms){while(ms>0){const step=Math.min(ms,400);await page.clock.runFor(step);ms-=step;await drainCompanion(page);}}
 const {feedbackGeometry}=require('./check-scan-tools-feedback.cjs');
 function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+tool+': '+text)}
 (async()=>{
@@ -71,12 +84,12 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
    for(let i=0;i<3;i++)await tap('Space');assert.equal(await identity(),'row:1');await tap('Enter');assert.equal(await identity(),'key:A');
    await page.keyboard.down('Enter');await advance(page,3000);await page.keyboard.up('Enter');await advance(page,65);assert.equal(await identity(),'row:1');
    await tap('Enter');await tap('Enter');await expect(page.locator('#textBar')).toHaveText('A|');assert.equal(await identity(),'row:1');
-   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await state(),'-1');await expect(surface).toHaveAttribute('data-choice-context','keyboard');
+   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await identity(),'key:A');await expect(surface).toHaveAttribute('data-choice-context','keyboard-child:2');
    await page.locator('#keyboard .send').click();await advance(page,1000);if(await page.locator('#entriesScreen [data-action="return-today"]').isEnabled())await page.locator('#entriesScreen [data-action="return-today"]').click();await page.locator('.entry-item').first().click();assert.equal(await state(),'-1');await page.locator('[data-action="delete-entry"]').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');await page.locator('[data-action="cancel-delete"]').click();assert.equal(await state(),'-1');await page.locator('[data-action="close-entry-view"]').click();
    await page.locator('[data-action="question-entry"]').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');
    await tap('Space');assert.equal(await identity(),'action:new-question');await tap('Enter');assert.equal(await identity(),'action:new-question');
    await page.locator('#questionModal [data-action="close-modal"]').click();
-   pass(tool,'settings keep mode identity; calendar child Back restores row and month opens blank; keyboard selects/restores row, exits child loop to root blank; question, saved-entry and delete-cancel dialogs start blank');
+   pass(tool,'settings keep mode identity; calendar child Back restores row and month opens blank; keyboard selects/restores row, wraps within the selected keyboard row; question, saved-entry and delete-cancel dialogs start blank');
    report.tools[tool]={...report.tools[tool],result:'passed',checks:report.checks.filter(x=>x.startsWith(tool+':'))};await page.close();
  }
  assert.deepEqual(report.errors,[]);report.result='passed';

@@ -77,7 +77,8 @@ body[data-screen=manual] #cvWrap>canvas:not(#minimap){cursor:crosshair}
 
 #exploreView{bottom:136px}@media(max-width:700px){#exploreView{bottom:142px}}
 
-/* Keep setting values visible as the accessibility options grow. */
+/* Keep every setting reachable in the existing list, with Back first. */
+body[data-screen=settings] #panelList{overflow-y:auto;scroll-padding-block:9px 13px;overscroll-behavior-y:contain}
 body[data-screen=settings] #panelList .choice{min-height:62px}body[data-screen=settings] #panelList .choice small{display:block}
 @media(max-height:650px){body[data-screen=settings] #panelList .choice{min-height:49px;padding:5px 7px}body[data-screen=settings] #panelList .choice strong{font-size:13px}body[data-screen=settings] #panelList .choice small{font-size:10px;margin-top:3px}}
 

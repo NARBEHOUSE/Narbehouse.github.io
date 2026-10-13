@@ -19,6 +19,7 @@
  */
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('minigolf');
 
   const U = MG.util, G = MG.game, AU = MG.audio, A = MG.art;
   const $ = U.$;
@@ -140,6 +141,8 @@
     if (it && it.onFocus) it.onFocus();
     if (els[index] && els[index].scrollIntoView) els[index].scrollIntoView({ block: 'nearest' });
   }
+
+  hubGraphics.subscribe(() => { if (screen === 'settings') refreshValues(); });
 
   function refreshValues() {
     const els = $('overlayMenu').children;
@@ -407,6 +410,7 @@
                 AU.say(v ? 'Easy pause on. Before each putt, scan to your putter to putt, or to Pause.' : 'Easy pause off. Hold Enter to pause.');
               }
             },
+            { id: 'graphics-quality', label: 'Graphics quality', value: () => hubGraphics.label().replace('Graphics quality: ', ''), speech: () => hubGraphics.label(), action: () => { hubGraphics.cycle(); refreshValues(); AU.say(hubGraphics.label()); } },
             { label: 'Sound Effects', value: () => onOff(MG.settings.get('sfx')), action: () => { MG.settings.set('sfx', !MG.settings.get('sfx')); if (window.SafeAudio) SafeAudio.setEnabled(MG.settings.get('sfx')); refreshValues(); AU.say('Sound effects ' + onOff(MG.settings.get('sfx'))); } },
             { label: 'Ambience', value: () => onOff(MG.settings.get('ambience')), action: () => { MG.settings.set('ambience', !MG.settings.get('ambience')); AU.ambience(MG.settings.get('ambience')); refreshValues(); AU.say('Ambience ' + onOff(MG.settings.get('ambience'))); } },
             {

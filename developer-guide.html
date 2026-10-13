@@ -419,6 +419,7 @@
           <li><a href="#mechanics">Game Mechanics That Work</a></li>
           <li><a href="#feedback">Feedback and State</a></li>
           <li><a href="#settings">Settings to Include</a></li>
+          <li><a href="#graphics">Graphics Quality</a></li>
           <li><a href="#qa">QA Checklist</a></li>
           <li><a href="#example">Example: P3GL Game</a></li>
         </ul>
@@ -477,7 +478,7 @@
         <h3>Wait for speech</h3>
         <p>When enabled, advance after the owned label ends plus a full scan interval. Input remains available. Disabled or failed speech uses ordinary timing. The voice manager bounds completion using text length/rate with a 10-second cap; the cap releases the wait without cutting off narration. A stale completion cannot move another menu.</p>
         <h3>Focus and settings</h3>
-        <p>Fresh menus open blank. Changing an option or redrawing a live list retains stable item identity. Back within a task restores its parent row/item; a separate modal return may start fresh. A child row’s loop exits to root blank. Removed items clear safely without selecting anything.</p>
+        <p>Fresh menus open blank. Changing an option or redrawing a live list retains stable item identity. Back within a task restores its parent row/item; a separate modal return may start fresh. Keyboard rows opt into <code>enterGroup(children, {wrap:true})</code>: forward, Auto and held-Space reverse scans wrap within that row until selection or Back. These local cycles do not count toward root parking. Other child groups exit to root blank at their boundary. Removed items clear safely without selecting anything.</p>
         <p>Parking, Loops Before Parking, Space Brake and Wait for Speech appear only in Hub Settings. Keep them visible with descriptions and disabled when Auto is off; Loops also requires Auto Park. Keep the original page scrolling. Existing app Auto, voice and speed controls still use the same managers, with live updates across the Hub, frames, tabs and Companion.</p>
         <h3>Shared input and platform contract</h3>
         <p>Use <code>NarbeScanManager.createChoiceScan</code> or the explicit <code>NarbeChoiceScanAdapter</code> with stable IDs, labels, a status host and the existing native hold threshold. Suspend it when gameplay, typing or a native dialog owns input. The shared controller installs no keyboard listeners or extra debounce.</p>
@@ -611,7 +612,7 @@
           <li><strong>Voice</strong> — cycles the available voices</li>
           <li><em>Game-specific options</em> &mdash; difficulty, theme, ball style, direction help, and any timing or hold toggle the game owes (Football's <code>Easy Throw</code>)</li>
           <li><strong>Auto Scan</strong> — labelled <code>On — One Switch</code> / <code>Off — Two Switches</code>, not just On/Off. It is the control-scheme selector, and the person changing it is often a caregiver setting the game up for someone else</li>
-          <li><strong>Scan Speed</strong> — 1s / 2s / 3s / 4s</li>
+          <li><strong>Scan Speed</strong> — 1s / 2s / 3s / 4s / 5s (default 2s)</li>
           <li><strong>Sound Effects</strong> — On / Off</li>
           <li><strong>Reset Progress</strong> — must be <strong>two-step</strong>; a single mis-scan should never erase everything</li>
           <li><strong>← Back</strong></li>
@@ -624,6 +625,32 @@
           <li>Resume puts the player back in the exact frame with the previous highlight restored</li>
           <li>Access settings are global via the shared managers; game progress is the game's own</li>
         </ul>
+      </section>
+
+      <section class="section" id="graphics">
+        <h2>Graphics Quality for New Games</h2>
+        <p>Every new game must assess rendering cost. Every Three.js or other graphics-intensive game must inherit the Hub's device-local <strong>Graphics quality</strong> preference before creating its renderer. Auto measures frame timing and chooses detail; High keeps full detail; Standard preserves the game's existing rendering and automatic adaptation; Low applies meaningful visual reductions without changing rules, physics, timing, inputs or random outcomes. Inexpensive games should document why a separate profile is unnecessary.</p>
+        <p>Load <code>shared/platform.js</code>, then <code>shared/graphics-quality.js</code>. Use a stable game ID; no registry or whitelist is needed. Add <strong>Use Hub setting / Auto / High / Standard / Low</strong> to the existing settings scan with the stable ID <code>graphics-quality</code>. Render the live label and announce it through the existing owned speech ticket. Preserve the selected item when values redraw.</p>
+        <pre><code>const quality = NarbeGraphics.openGame('my-new-game');
+await quality.ready;
+const renderer = new THREE.WebGLRenderer(
+  quality.rendererOptions({ antialias: true })
+);
+function apply() {
+  renderer.setPixelRatio(quality.pixelRatio(originalRatio, width, height));
+  renderer.setSize(width, height);
+  quality.shadows(renderer, scene, originalShadows);
+  refreshSettingById('graphics-quality', quality.label());
+}
+const stop = quality.subscribe(apply);
+apply(); // repeat on resize and adaptive resolution changes
+// Once per rendered frame, after any intentional limiter:
+quality.frame(timestamp, targetFPS); // e.g. 60 in play, 30 in a capped menu
+// Run an older game-specific adaptation only in mode === standard.
+// Existing settings action: quality.cycle(); announce(quality.label());
+// Game teardown: stop(); renderer.dispose(); quality.dispose();</code></pre>
+        <p>The refresh/announce functions above stand for your game's existing adapter. Keep HTML text and controls at normal resolution; preserve aspect ratio and input coordinates. The Low Three.js cap is 921,600 internal pixels and pixel ratio at most 1. Add appropriate per-game shadow/post-processing/decorative reductions. Avoid lowering canvas text resolution in 2D games. Dispose replaced render targets and stage subscriptions. A renderer option that cannot change safely in place takes effect on reopen; <code>quality.label()</code> indicates <em>full change next launch</em>.</p>
+        <p>The shared manager owns inheritance, overrides, migration and local persistence through NarbePlatform. Browser frames/tabs receive local notifications; native adapters must expose asynchronous readiness and native window notifications. Desktop uses native key-scoped persistence, asynchronous readiness and window/frame notifications. The source repository's <code>GRAPHICS-QUALITY.md</code> contains the complete reusable example, current profiles and Pi procedure; <code>GRAPHICS-DESKTOP-PARITY.md</code> describes the implemented native boundary. No Pi performance guarantee has been measured.</p>
       </section>
 
       <section class="section" id="qa">
@@ -648,6 +675,10 @@
           <li>✓ Have timed and hold mechanics been preserved, with any proposed tap-friendly alternatives recorded for a separate optional gameplay pass? Existing hold mechanics do not fail the scan-upgrade checklist.</li>
           <li>✓ Is it readable at 100% on a tablet?</li>
           <li>✓ Does the game auto-save and resume correctly?</li>
+          <li>✓ Does the rendering assessment explain the graphics profile or why none is needed?</li>
+          <li>✓ Does a graphics-intensive game inherit Hub quality before its first frame, follow live updates, respect overrides, reset to inheritance and persist after reload/restart?</li>
+          <li>✓ Do Auto/High/Standard/Low, old preference migration, resize/split views, aiming/picking, readable text, stable settings IDs and native gameplay/pause/Back/exit pass real browser checks?</li>
+          <li>✓ Are replaced rendering resources/subscriptions disposed, and are target-device frame times documented or explicitly pending before hardware support is claimed?</li>
           <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>
           <li>✓ <strong>Has someone who is not you played it start to finish with one switch?</strong></li>
         </ul>
@@ -704,11 +735,13 @@
     <footer>
       <p>© <span id="year"></span> NARBE House · Built with accessibility in mind</p>
       <p style="margin-top: 8px;"><a href="/" style="color: var(--narbe-blue); text-decoration: none;">← Back to Home</a></p>
+    <p style="margin: 1rem 1rem 0; color: #94a9c9; font-size: 0.8rem; line-height: 1.6; text-align: center;">NARBE is not affiliated with any cryptocurrency or crypto token. <a href="/crypto-statement/" style="color: inherit; text-decoration: underline; text-underline-offset: 0.15em;">Read our official statement</a>.</p>
     </footer>
   </div>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
   </script>
+  <script src="/crypto-statement/modal.js" data-theme="house" data-auto-open="session" defer></script>
 </body>
 </html>

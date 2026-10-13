@@ -260,6 +260,7 @@ class SettingsScene extends BaseballScene {
         const voiceName = (vm && vm.getCurrentVoice && vm.getVoiceDisplayName)
             ? vm.getVoiceDisplayName(vm.getCurrentVoice()) : 'Default';
         const opts = [
+            bb2GraphicsOption(),
             { label: bb2BattingLabel(), value: 'batting', hint: 'Choose a swing without holding, or charge and time your release' },
             { label: `Sound Effects: ${sfxOn  ? 'ON' : 'OFF'}`, value: 'sfx' },
             { label: `Music: ${musicOn ? 'ON' : 'OFF'}`,        value: 'music' },
@@ -283,6 +284,7 @@ class SettingsScene extends BaseballScene {
             onSelect: (opt) => this._handle(opt.value)
         });
 
+        bb2GraphicsCaption(this.menu);
         if (restoreIndex >= 0 && restoreIndex < opts.length) {
             this.menu.index = restoreIndex;
             this.menu._draw();
@@ -295,7 +297,9 @@ class SettingsScene extends BaseballScene {
         const vm = window.NarbeVoiceManager;
         const idx = this.menu ? this.menu.index : -1;
 
-        if (value === 'batting') {
+        if (value === 'graphics-quality') {
+            bb2Graphics.cycle(); a.speak(bb2Graphics.label(), true);
+        } else if (value === 'batting') {
             a.speak(bb2ToggleBatting(), true);
             this._buildMenu(idx);
         } else if (value === 'sfx') {

@@ -94,7 +94,10 @@ function checkMirror(id, a, b, ra, rb) {
       if (JSON.stringify(want) !== JSON.stringify(b.features[k][i].lanes)) fail(id, 'mirrored ' + k + '[' + i + '] lanes wrong');
     });
   });
-  a.features.coins.forEach((c, i) => { if (ml(c.lane) !== b.features.coins[i].lane) fail(id, 'mirrored coins[' + i + '] lane wrong'); });
+  a.features.coins.forEach((c, i) => {
+    const want = Array.isArray(c.lane) ? c.lane.map(ml) : ml(c.lane);       // a hopping trail mirrors lane by lane
+    if (JSON.stringify(want) !== JSON.stringify(b.features.coins[i].lane)) fail(id, 'mirrored coins[' + i + '] lane wrong');
+  });
   a.edges.forEach((e, i) => {
     if (b.edges[i].left !== e.right || b.edges[i].right !== e.left) fail(id, 'mirrored edges[' + i + '] not swapped');
   });

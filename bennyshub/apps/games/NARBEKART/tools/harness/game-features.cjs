@@ -121,7 +121,7 @@ module.exports = async function (t) {
               if(wasAirborne && r.airT===0)landed=r.progress;
               finite=finite && Number.isFinite(r.y) && Number.isFinite(r.mesh.position.y);
             }
-            results.push({ramp:rampIndex,kind:ramp.kind,classId,boosted,lane,linked:!!obstacle,climbed,
+            results.push({ramp:rampIndex,kind:ramp.kind,gap:!!ramp.gap,classId,boosted,lane,linked:!!obstacle,climbed,
               clearance:Number.isFinite(clearance)?clearance:null,jumps,tricks,hits,finite,
               landed:landed!==null && landed>=end && landed<end+2 && r.y===0});
             R.dispose();
@@ -131,8 +131,9 @@ module.exports = async function (t) {
       return results;
     })()`);
     rampCases += arcs.length;
-    t.assert(arcs.length > 0 && arcs.every(a => a.linked && a.climbed && a.clearance > 2.1 && a.jumps === 1 && a.tricks === 1 && a.hits === 0 && a.finite && a.landed),
-      track + ': authored ramp obstacles clear safely at both speeds, boost states and outside ramp lanes', arcs);
+    // A landscape-gap ramp clears the gap itself (no linked block); every other ramp clears its obstacle.
+    t.assert(arcs.length > 0 && arcs.every(a => (a.gap ? !a.linked : a.linked && a.clearance > 2.1) && a.climbed && a.jumps === 1 && a.tricks === 1 && a.hits === 0 && a.finite && a.landed),
+      track + ': authored ramps (gap jumps and obstacle jumps) clear safely at both speeds, boost states and outside ramp lanes', arcs);
   }
   t.note('Verified ' + rampCases + ' authored jump trajectories across ' + rampTracks.length + ' tracks.');
 

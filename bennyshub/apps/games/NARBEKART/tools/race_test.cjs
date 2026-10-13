@@ -50,7 +50,7 @@ function create(options = {}) {
   const R = NK.race.create(Object.assign({ world: W, scene: new THREE.Scene(), mode: options.mode || 'nofail', classId: 'easy', laps: 3,
     humans: [{ charId: 'pip', vehicleId: 'classic' }] }, options));
   R.log = [];
-  ['go', 'countdown', 'coin', 'itemGet', 'itemUse', 'hit', 'fall', 'rescued', 'turbo', 'jump', 'trick', 'lap', 'finalLap', 'finish', 'done', 'bump'].forEach((name) => R.on(name, (...args) => R.log.push([name, ...args])));
+  ['go', 'countdown', 'coin', 'coinsSpent', 'itemGet', 'itemUse', 'hit', 'fall', 'rescued', 'turbo', 'jump', 'trick', 'lap', 'finalLap', 'finish', 'done', 'bump'].forEach((name) => R.on(name, (...args) => R.log.push([name, ...args])));
   if (!options.countdown) R.skipIntro();
   return R;
 }
@@ -85,7 +85,9 @@ check('long steering holds reach a rail once; release settles and step targets s
 check('coin and box sweeps work over a lap boundary; respawns and roulette happen once', () => {
   const R = create({ features: { coins: [{ s: 2, lane: 2 }], itemRows: [{ s: 4, lanes: [2] }] } });
   const r = put(R, 998); advance(R, 0.5);
-  assert.equal(r.coins, 1); assert(r.roulette > 0); assert.equal(R.world.handles.coins[0].visible, false);
+  // The coin was collected, then spent by the box's roll (coins buy item luck).
+  assert.equal(r.coins, 0); assert(r.roulette > 0); assert.equal(R.world.handles.coins[0].visible, false);
+  assert.equal(events(R, 'coin').length, 1); assert.deepEqual(events(R, 'coinsSpent').map((e) => e[2]), [1]);
   assert.equal(R.world.handles.boxes[0][2].visible, false); advance(R, 1.5); assert(r.item); assert.equal(events(R, 'itemGet').length, 1);
   advance(R, 9); assert.equal(R.world.handles.coins[0].visible, true); assert.equal(R.world.handles.boxes[0][2].visible, true); R.dispose();
 });

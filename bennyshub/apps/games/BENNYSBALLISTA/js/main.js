@@ -9,6 +9,8 @@
  */
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('ballista');
+  let preferredPixelRatio = 1;
 
   const U = RT.util;
 
@@ -24,12 +26,12 @@
     camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.5, 900);
     camera.position.set(0, 4, 9);
 
-    renderer = new THREE.WebGLRenderer({
+    renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({
       antialias: true,
       powerPreference: 'high-performance'
-    });
+    }));
     applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !hubGraphics.isLightweight();
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.useLegacyLights = false;
@@ -63,11 +65,20 @@
   let sampleFrames = 0, sampleTime = 0, settled = false;
 
   function applyPixelRatio(r) {
-    renderer.setPixelRatio(r);
+    preferredPixelRatio = r;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(r, window.innerWidth, window.innerHeight));
     onResize();
   }
 
+  hubGraphics.subscribe(() => {
+    if (!renderer) return;
+    prIndex = 3; sampleFrames = 0; sampleTime = 0; settled = false;
+    hubGraphics.shadows(renderer, scene, true);
+    applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+  });
+
   function adaptQuality(dt) {
+    if (hubGraphics.get().mode !== 'standard') return;
     if (settled) return;
     sampleFrames++;
     sampleTime += dt;
@@ -119,6 +130,7 @@
     if (!renderer) return;
     const wrap = U.$("cvWrap");
     const w = Math.max(1, wrap.clientWidth), h = Math.max(1, wrap.clientHeight);
+    renderer.setPixelRatio(hubGraphics.pixelRatio(preferredPixelRatio, w, h));
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
@@ -137,6 +149,7 @@
       adaptQuality(rawDt);
       RT.ui.tick(dt);
       RT.game.update(dt);
+      hubGraphics.frame(now);
       renderer.render(scene, camera);
     } catch (err) {
       console.error('Ballista frame error:', err);

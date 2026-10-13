@@ -198,14 +198,15 @@
   ]);
 
   /**
-   * Aim speeds in degrees per second, slowest first. These are the original
-   * P3GL's four presets (Super slow is the default).
+   * Aim speeds in degrees per second, slowest first (Super slow is the default).
+   * The original P3GL's four presets (21, 29, 42, 60) were all too fast, so each
+   * is 40% slower.
    */
   const AIM_SPEEDS = Object.freeze({
-    'Super slow': 21,
-    'Slow': 29,
-    'Medium': 42,
-    'Fast': 60
+    'Super slow': 12.6,
+    'Slow': 17.4,
+    'Medium': 25.2,
+    'Fast': 36
   });
   const AIM_SPEED_IDS = Object.keys(AIM_SPEEDS);
 

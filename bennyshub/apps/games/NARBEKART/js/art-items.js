@@ -1341,7 +1341,7 @@
       kind = width;
       width = (Array.isArray(lanes) ? lanes.length : (lanes || C.LANE_COUNT)) * C.LANE_W;
     }
-    kind = kind === 'glide' ? 'glide' : 'jump';
+    kind = RAMPS[kind] ? kind : 'jump';
     const L = RAMPS[kind].length, H = RAMPS[kind].height;
     const W = width || C.LANE_W * C.LANE_COUNT;
     const hw = W / 2, reps = W / C.LANE_W;

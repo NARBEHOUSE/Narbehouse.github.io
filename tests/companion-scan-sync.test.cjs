@@ -29,6 +29,8 @@ test('companion scan preferences whitelist centralized settings and migrate olde
     assert.equal(prefs.spaceBrake,true);
     assert.equal(prefs.waitForSpeech,false);
   }
+  // Companion 1.0.7 already accepts the Hub's fifth speed without a protocol change.
+  assert.equal(scanPrefs({scanInterval:5000}).scanInterval,5000);
   // The transport does not add a duration filter or a new sensitivity value.
   for(const inputSensitivity of [50,100,200,300])assert.equal(scanPrefs({inputSensitivity}).inputSensitivity,inputSensitivity);
 });
@@ -85,10 +87,10 @@ test('companion launch, live sync and polling keep scan settings within the owni
       assert.equal((await call('OPEN_STREAM',{url:'https://www.youtube.com/watch?v=example',settings},sender)).ok,true);
       return {id:'test-extension',url:tabs.get(tabId).url,tab:tabs.get(tabId),frameId:0};
     };
-    const chosen={autoScan:true,scanInterval:3000,inputSensitivity:200,parking:'chosen',loopsBeforeParking:3,spaceBrake:false,waitForSpeech:true};
+    const chosen={autoScan:true,scanInterval:5000,inputSensitivity:200,parking:'chosen',loopsBeforeParking:3,spaceBrake:false,waitForSpeech:true};
     const playerA=await launch(first,chosen);
     const initial=(await call('PLAYER_HELLO',{},playerA)).data.session.settings;
-    assert.equal(initial.parking,'chosen');assert.equal(initial.waitForSpeech,true);assert.equal(initial.spaceBrake,false);
+    assert.equal(initial.scanInterval,5000);assert.equal(initial.parking,'chosen');assert.equal(initial.waitForSpeech,true);assert.equal(initial.spaceBrake,false);
     assert.equal(session['player:20'].settings.loopsBeforeParking,3);
     const playerB=await launch(sameOrigin,chosen);
     const playerOther=await launch(other,{parking:'off'});
@@ -142,10 +144,10 @@ test('companion launch, live sync and polling keep scan settings within the owni
     // Older pages send partial settings. They must not erase the centralized
     // parking/brake/speech policy, whether they sync or launch another player.
     await call('SYNC_SCAN',{parking:'auto',loopsBeforeParking:3,spaceBrake:false,waitForSpeech:true});
-    const partial=(await call('SYNC_SCAN',{scanInterval:4000,voice:'Another voice'})).data.settings;
+    const partial=(await call('SYNC_SCAN',{scanInterval:5000,voice:'Another voice'})).data.settings;
     assert.equal(partial.parking,'auto');assert.equal(partial.loopsBeforeParking,3);
     assert.equal(partial.spaceBrake,false);assert.equal(partial.waitForSpeech,true);
-    assert.equal(partial.autoScan,true);assert.equal(partial.scanInterval,4000);
+    assert.equal(partial.autoScan,true);assert.equal(partial.scanInterval,5000);
     const omittedLaunch=await launch(first);
     assert.deepEqual((await call('PLAYER_HELLO',{},omittedLaunch)).data.session.settings,partial);
     const partialLaunch=await launch(first,{scanInterval:2000});

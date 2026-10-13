@@ -174,3 +174,16 @@ test('companion says Paused after its current label and preserves the full resum
   await h.tick(1);assert.equal(scan.getState().id,'return');
   assert.equal(h.spoken.filter(item=>item.text==='Paused').length,1);
 });
+
+
+test('existing Companion player accepts five-second Hub intervals and live changes without resetting choice', async()=>{
+  const h=fixture(),{scan}=h.create({scanInterval:5000,parking:'off'});
+  await h.tick(4999);assert.equal(scan.getState().index,-1);
+  await h.tick(1);assert.equal(scan.getState().id,'play');
+  h.platform.applyPreferences({autoScan:true,scanInterval:1000,tts:false,parking:'off'});
+  assert.equal(scan.getState().id,'play');
+  await h.tick(1000);assert.equal(scan.getState().id,'return');
+  h.platform.applyPreferences({autoScan:true,scanInterval:5000,tts:false,parking:'off'});
+  await h.tick(4999);assert.equal(scan.getState().id,'return');
+  await h.tick(1);assert.equal(scan.getState().index,-1);
+});

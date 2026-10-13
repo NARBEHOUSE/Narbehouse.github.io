@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
+const { selectCompanionLicense } = require('./companion-license.cjs');
 const root = path.resolve(__dirname, '..');
 const source = path.join(root, 'extension');
 const args = process.argv.slice(2), checkOnly = args.includes('--check');
@@ -21,8 +22,8 @@ if (revisionArgs.length && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(revision) || revi
   throw Error('Revision must be a short lowercase label containing only letters, numbers and single hyphens');
 }
 const runtime = [
-  'background.mjs', 'calendar.mjs', 'hub-content.js', 'options.html', 'options.css', 'options.mjs',
-  'player-adapters.js', 'player-platform.js', 'shared/choice-scan.js', 'shared/voice-manager.js',
+  'background.mjs', 'calendar.mjs', 'journal-store.mjs', 'app-data-store.mjs', 'hub-content.js', 'options.html', 'options.css', 'options.mjs',
+  'player-adapters.js', 'player-platform.js', 'shared/data-backup.js', 'shared/choice-scan.js', 'shared/voice-manager.js',
   'shared/scan-status-badge.js', 'shared/scan-status-badge.css', 'shared/scan-status-badge-style.js',
   'player-content.js', 'player-loading.html', 'player-registration.mjs', 'player-view.js', 'policy.mjs'
 ];
@@ -133,7 +134,9 @@ try {
   }
   runtime.push(...[16, 32, 48, 128].map(size => 'icons/icon' + size + '.png'));
   const files = new Map(runtime.map(name => [name, read(path.join(source, name))]));
-  files.set('LICENSE', read(path.join(root, 'LICENSE')));
+  files.set('LICENSE', selectCompanionLicense(
+    read(path.join(root, 'LICENSE')), read(path.join(source, 'LICENSE'))
+  ));
   manifest.content_scripts[0].matches = ['https://narbehouse.github.io/bennyshub/*'];
   delete manifest.content_scripts[0].exclude_matches;
   manifest.optional_host_permissions = manifest.optional_host_permissions.filter(origin => origin.startsWith('https://'));
@@ -165,7 +168,13 @@ try {
     if (fs.existsSync(file) && !read(file).equals(expected)) throw Error('Existing artifact differs; preserve it before preparing a new candidate: ' + path.relative(root, file));
   }
   if (!checkOnly) {
-    for (const [file, bytes] of destinations) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); }
+    // Existing destinations were verified above; preserve their bytes and timestamps.
+    for (const [file, bytes] of destinations) {
+      if (!fs.existsSync(file)) {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, bytes);
+      }
+    }
     for (const [file, expected] of destinations) assert.ok(read(file).equals(expected), 'Written artifact differs: ' + file);
     assert.ok(read(zipPath).equals(read(downloadPath)), 'ZIP and local website download must be identical');
     verifyArchive(read(zipPath), files);

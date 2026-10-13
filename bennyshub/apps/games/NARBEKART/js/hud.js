@@ -49,6 +49,22 @@ NK.hud = (function () {
   };
   /* The roulette reel: a strip of item faces scrolled by CSS alone. */
   const REEL = ['🚀', '🍌', '⭐', '🐝', '💣', '🟢', '✈️', '📯', '💪', '🔻'];
+  const REEL_IDS = ['rocket', 'peel', 'star', 'bee', 'bomb', 'ball', 'jet', 'horn', 'mega', 'shrink'];
+
+  /** A drawn item icon (js/item-icons.js), centred and the same on every
+   *  platform; null if the icon kit is missing, so the emoji stands in. */
+  const ICON_PX = 120;          // CSS px the icon is drawn for (× devicePixelRatio); CSS sizes it
+  function iconEl(id) {
+    const I = window.NK && NK.itemIcons;
+    if (!I || typeof I.canvas !== 'function') return null;
+    try {
+      const cv = I.canvas(id, ICON_PX);
+      cv.style.width = cv.style.height = '';
+      cv.className = 'nkIcon';
+      cv.setAttribute('aria-hidden', 'true');
+      return cv;
+    } catch (e) { return null; }
+  }
 
   /* How long each kind of big message stays up, and which may cut in on which. */
   const POP = {
@@ -170,6 +186,11 @@ NK.hud = (function () {
     el.style.setProperty('--pc', C.PLAYER_COLORS[i] || C.PLAYER_COLORS[0]);
     el.innerHTML = viewHTML(i, n);
     root.appendChild(el);
+    // With the icon kit loaded the roulette reel shows the drawn icons too.
+    el.querySelectorAll('.nkReelStrip span').forEach((sp, k) => {
+      const cv = iconEl(REEL_IDS[k % REEL_IDS.length]);
+      if (cv) { sp.textContent = ''; sp.appendChild(cv); sp.className = 'ic'; }
+    });
     const q = (s) => el.querySelector(s);
     const V = {
       i, el,
@@ -382,6 +403,8 @@ NK.hud = (function () {
       V.slotCount.textContent = def.count ? '×' + def.count : '';
       V.slotName.textContent = def.name;
       set(V.slotName, 'on', true);
+      const cv = iconEl(item);
+      if (cv) { V.slotIcon.textContent = ''; V.slotIcon.appendChild(cv); set(V.slotIcon, 'twin', false); }
       if (wasSpin) { V.slot.classList.remove('reveal'); void V.slot.offsetWidth; V.slot.classList.add('reveal'); }
     } else {
       V.slotIcon.textContent = '';
@@ -504,6 +527,23 @@ NK.hud = (function () {
       V.popQueued = null;
       if (q) popOne(V, q.text, q.kind);
     }, spec.ms);
+  }
+
+  /* ── Public: waterfall splash ────────────────────────────────────────────
+   * Bursting through a waterfall: a soft watery wash with droplets on the
+   * "lens" over that player's view, fading out once (never flashing). */
+  function splash(v, style) {
+    const V = views[v];
+    if (!V) return;
+    if (!V.splash) {
+      V.splash = document.createElement('div');
+      V.splash.setAttribute('aria-hidden', 'true');
+      V.el.appendChild(V.splash);
+    }
+    // Water, bubbles and steam wash the lens; a hologram or confetti curtain tints it.
+    V.splash.className = 'nkSplash' + (style === 'hologram' ? ' k-holo' : style === 'confetti' ? ' k-confetti' : '');
+    void V.splash.offsetWidth;          // restart the fade
+    V.splash.classList.add('on');
   }
 
   /* ── Public: minimap ─────────────────────────────────────────────────────
@@ -639,7 +679,7 @@ NK.hud = (function () {
   }
 
   return {
-    setup, update, control, pop, minimap, clear, visible, viewAt,
+    setup, update, control, pop, splash, minimap, clear, visible, viewAt,
     get layout() { return layout; },
     get views() { return views.length; }
   };

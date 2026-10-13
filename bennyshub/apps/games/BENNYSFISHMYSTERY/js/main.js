@@ -6,6 +6,8 @@
  */
 (function () {
   'use strict';
+  const hubGraphics = NarbeGraphics.openGame('fishmystery');
+  let preferredPixelRatio = 1;
 
   const U = RT.util;
 
@@ -46,17 +48,17 @@
     camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 6000);
     camera.position.set(0, 8, 20);
 
-    renderer = new THREE.WebGLRenderer({
+    renderer = new THREE.WebGLRenderer(hubGraphics.rendererOptions({
       antialias: true,
       powerPreference: 'high-performance'
-    });
+    }));
     // Start conservative and climb only if the machine can take it. A Surface
     // Pro reports devicePixelRatio 2 on an integrated GPU, so rendering at
     // full native resolution costs 4x the pixels for no visible gain at this
     // chunky art style — that alone is most of the difference between smooth
     // and sluggish there.
     applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !hubGraphics.isLightweight();
     // Soft shadows: hard-edged ones read as cut card sitting on a surface.
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -99,11 +101,20 @@
   let sampleFrames = 0, sampleTime = 0, settled = false;
 
   function applyPixelRatio(r) {
-    renderer.setPixelRatio(r);
+    preferredPixelRatio = r;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(r, window.innerWidth, window.innerHeight));
     renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  hubGraphics.subscribe(() => {
+    if (!renderer) return;
+    prIndex = 3; sampleFrames = 0; sampleTime = 0; settled = false;
+    hubGraphics.shadows(renderer, scene, true);
+    applyPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+  });
+
   function adaptQuality(dt) {
+    if (hubGraphics.get().mode !== 'standard') return;
     if (settled) return;
     sampleFrames++;
     sampleTime += dt;
@@ -154,6 +165,7 @@
 
   function onResize() {
     if (!renderer) return;
+    renderer.setPixelRatio(hubGraphics.pixelRatio(preferredPixelRatio, window.innerWidth, window.innerHeight));
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -175,6 +187,7 @@
       adaptQuality(rawDt);
       RT.ui.tick(dt);
       RT.game.update(dt);
+      hubGraphics.frame(now);
       renderer.render(scene, camera);
     } catch (err) {
       /* ONE BAD FRAME IS NOT THE END OF A TRIP.

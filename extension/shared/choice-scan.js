@@ -156,7 +156,7 @@ window.NarbeChoiceScan = (function () {
       return true;
     }
     function rootBoundary() {
-      // A child row has no local -1. Finish it, exit to the root, then park.
+      // Non-wrapping child groups finish at root -1, where parking belongs.
       while (parents.length) items = parents.pop().items;
       index = -1;
       if (fullLoop) loops++;
@@ -173,6 +173,12 @@ window.NarbeChoiceScan = (function () {
       if (nextDirection !== loopDirection) fullLoop = false;
       loopDirection = nextDirection;
       if (parents.length && ((forward && index === items.length - 1) || (!forward && index === 0))) {
+        if (parents[parents.length - 1].wrap) {
+          // Keyboard rows keep scanning their keys until selection or Back.
+          // Their local cycles are not completed root loops for parking.
+          land(forward ? 0 : items.length - 1);
+          return true;
+        }
         return rootBoundary();
       }
       const next = forward ? (index === items.length - 1 ? -1 : index + 1) :
@@ -256,13 +262,13 @@ window.NarbeChoiceScan = (function () {
       loopDirection = 1;
       land(index);
     }
-    function enterGroup(next, {restoreId=null} = {}) {
+    function enterGroup(next, {restoreId=null, wrap=false} = {}) {
       if (disposed || index < 0) return false;
       const children = validate(next);
       if (!children.length) return false;
       const childIndex=restoreId===null?0:children.findIndex(item=>identify(item)===restoreId);
       if(childIndex<0)return false;
-      parents.push({ items, id: identify(items[index]) });
+      parents.push({ items, id: identify(items[index]), wrap: wrap === true });
       items = children;
       fullLoop = true;
       loopDirection = 1;

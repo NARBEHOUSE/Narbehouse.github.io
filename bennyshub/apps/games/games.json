@@ -3,7 +3,7 @@
     {
       "id": "narbekart",
       "title": "NARBE Racer",
-      "description": "Pick your racer and vehicle, then race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
+      "description": "Pick your racer and vehicle, then race sixteen tracks across four cups, with loop-de-loops, banked turns, drive-through waterfalls and a big jump over a different landscape on every track. Race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
       "path": "apps/games/NARBEKART/index.html",
       "image": "images/games/narberacer.png",
       "genres": [
@@ -47,7 +47,7 @@
     {
       "id": "bennysbasketball",
       "title": "Benny's Basketball Shooter",
-      "description": "A fun basketball shooting game with special bonus mode to try to get the highest score possible.",
+      "description": "Shoot hoops in a packed arena. Chase a high score in the 12-shot Shootout (a perfect game unlocks sudden-death bonus shots), or play HORSE with a friend: pick a spot and make shots they have to match. Audio cues help you aim and time each shot.",
       "path": "apps/games/BENNYSBASKETBALLSHOOTER/index.html",
       "image": "images/games/bennysbasketball.png",
       "genres": [
@@ -226,10 +226,10 @@
     },
     {
       "id": "pickleballrally",
-      "title": "Pickleball Rally",
-      "description": "Rally against the computer by scanning to the right side of the court and returning every serve. In collaboration with SCSU, student creator: Lily Flack.",
-      "path": "apps/games/PICKLEBALLRALLY/index.html",
-      "image": "images/games/pickleballrally.png",
+      "title": "NARBE Robot Pickleball",
+      "description": "First-person robot pickleball with aimed serves and automatic returns. Play with one or two switches, tap without holding, or use mouse and touch. Choose full speed, slow motion or score-free no-fail play. In collaboration with SCSU and Lily Flack; redesigned and developed by NARBE.",
+      "path": "apps/games/NARBEPICKLEBALL/index.html",
+      "image": "images/games/narbe-pickleball-2026-10.png",
       "genres": [
         "Sports",
         "Arcade"
