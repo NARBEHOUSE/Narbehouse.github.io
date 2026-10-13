@@ -885,3 +885,109 @@ Validation (Node only; no browser, Electron or GPU on this PC): rally-model 25/2
 ### Follow-up — serve aim covers the whole legal box
 
 Owner feedback: the aim swept only a narrow band near the receiving robot. The target now sweeps the whole diagonal service box (centre line/T to sideline, still never into the other box, which would be a fault) and the serve lands deep, about a metre inside the baseline (model SERVE_DEPTH). The receiving robot waits behind its baseline instead of standing on the target, so wide and T serves make it move. While aiming, the first-person view eases up and zooms toward the far box; the target ring is smaller so it stays inside the lines. Files: model.js, scene.js, game.js, README.md, tests/rally-model.test.cjs (synchronized to the F-drive prototype). Backup of the previous versions: desktop tmp/rally-arm-rebuild-backup/before-serve-aim-wide. Validation: rally-model 25/25, rally-arm-rig 7/7 and rally-game-controls 10/10 on desktop and F-drive copies; serve-aim review renders inspected.
+
+
+## 2026-10-13 — Pet Pals and Magic Button web catalog import
+
+Owner-requested import from the existing OneDrive Benny's PC Hub into the F-drive web checkout. Copied all 76 game files and the two existing PNG thumbnails. The 74 non-entry files match the source by SHA-256. Both HTML entry points omit the desktop electron-bridge.js script and include the web usage analytics and favicon links. Shared web managers and game controls are unchanged. The original OneDrive/Electron app was only read; it was not edited, installed or launched. Electron port flag: NOT REQUIRED — source is already the desktop implementation.
+
+Added the two original source entries to bennyshub/apps/games/games.json (28 games), added first-position New Game cards to the NARBE House index, and bumped the Hub cache from v39 to v40. The separate SwitchedGames checkout has the two thumbnails, matching cards and JSON data, updated 28-game/four-cause-and-effect counts, and a Simulation category for Pet Pals. Its existing search, favorites, details and launch URL conventions are retained.
+
+Graphics assessment: Pet Pals is a fixed-design 2D pixel canvas with cached layers; Magic Button is a 2D canvas with existing resolution and particle/object bounds (including at most 3,400 sparks, 60 bubbles and 400 bubble particles). No new Three.js/WebGL renderer or graphics setting was introduced. Preserve the source's visual defaults and essential cause-and-effect feedback. These observations are not a performance guarantee; physical-switch and target-device/Raspberry Pi acceptance remain pending.
+
+Validation: website build passed; the release audit found no problems in 2,014 public files; all 1,078 checked Pages links passed; 30 JavaScript syntax checks passed; four thumbnail copies and both manifest entries match OneDrive. All 38 browser checks passed with no runtime errors or missing required assets: blank menu safety, Space/Enter navigation, all three Magic Button scenes, settings, Pet Pals adoption and nested naming, pause, saved-pet reload, search/category filters, details and thumbnails, both homepage iframe launch buttons, and mobile viewport fit. Desktop and mobile renders were visually reviewed. Browser verification details are recorded in tmp/petpals-magicbutton-20261013/browser-report.json in the websites workspace. Pet Pals deliberately probes optional recordings/music and synthesizes absent sounds, as documented in sounds/SOUNDS.md; this is retained from the source. Prepared and verified locally first. The owner subsequently authorized publication with “go ahead”; publish the game assets on NARBE House before the SwitchedGames listings. All 257 tests required by the Pages release workflow pass.
+
+Backup and copy evidence: websites workspace tmp/petpals-magicbutton-20261013/before and copy-verification.json. Prior release ZIPs were validated and retained by the existing build helper.
+
+Changed web files (scope: this import; Electron flag: not required, desktop source unchanged):
+
+- bennyshub/apps/games/games.json
+- bennyshub/images/games/narbepetpals.png
+- bennyshub/images/games/narbemagicbutton.png
+- bennyshub/service-worker.js
+- index.html
+- SCAN-UPGRADE-CHANGES.md
+- bennyshub/apps/games/NARBEPETPALS/css/style.css
+- bennyshub/apps/games/NARBEPETPALS/index.html
+- bennyshub/apps/games/NARBEPETPALS/js/anims.js
+- bennyshub/apps/games/NARBEPETPALS/js/arrange.js
+- bennyshub/apps/games/NARBEPETPALS/js/companions.js
+- bennyshub/apps/games/NARBEPETPALS/js/core.js
+- bennyshub/apps/games/NARBEPETPALS/js/game.js
+- bennyshub/apps/games/NARBEPETPALS/js/howtodemo.js
+- bennyshub/apps/games/NARBEPETPALS/js/music.js
+- bennyshub/apps/games/NARBEPETPALS/js/mypets.js
+- bennyshub/apps/games/NARBEPETPALS/js/outings.js
+- bennyshub/apps/games/NARBEPETPALS/js/pets.js
+- bennyshub/apps/games/NARBEPETPALS/js/petside.js
+- bennyshub/apps/games/NARBEPETPALS/js/pixel.js
+- bennyshub/apps/games/NARBEPETPALS/js/places.js
+- bennyshub/apps/games/NARBEPETPALS/js/props.js
+- bennyshub/apps/games/NARBEPETPALS/js/room.js
+- bennyshub/apps/games/NARBEPETPALS/js/scan-access.js
+- bennyshub/apps/games/NARBEPETPALS/js/scenes.js
+- bennyshub/apps/games/NARBEPETPALS/js/school.js
+- bennyshub/apps/games/NARBEPETPALS/js/seasons.js
+- bennyshub/apps/games/NARBEPETPALS/js/sound.js
+- bennyshub/apps/games/NARBEPETPALS/js/sprites.js
+- bennyshub/apps/games/NARBEPETPALS/js/tricks.js
+- bennyshub/apps/games/NARBEPETPALS/js/ui.js
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-1-puppy-kitten.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-2-teen.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-3-grown-up.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-4-senior.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-1-puppy-kitten.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-2-teen.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-3-grown-up.png
+- bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-4-senior.png
+- bennyshub/apps/games/NARBEPETPALS/previews/song-cozy-corner.wav
+- bennyshub/apps/games/NARBEPETPALS/previews/song-garden-breeze.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat yawn.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat-meow-sad.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat-meow.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat-purr-short.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat-purr.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/cat-yawn.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog bark.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog excited.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog friendly.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog yawn.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-adult.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-baby.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-friendly-adult.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-friendly-baby.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-friendly-senior.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-friendly-teen.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-happy-adult.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-happy-baby.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-happy-senior.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-happy-teen.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-senior.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-bark-teen.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-pant.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-panting.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/dog-yawn.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/long purr.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/meow.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/puppy bark.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/puppy excited.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/puppy happy.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/sad meow.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/short purr.wav
+- bennyshub/apps/games/NARBEPETPALS/sounds/SOUNDS.md
+- bennyshub/apps/games/NARBEMAGICBUTTON/css/style.css
+- bennyshub/apps/games/NARBEMAGICBUTTON/index.html
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/input.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/main.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/scenes.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/settings.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/sound.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/ui.js
+
+Changed files in the separate SWITCHEDGAMES checkout (web listing only; Electron flag: not applicable):
+
+- CHANGELOG.md
+- index.html
+- showcase.js
+- images/games/narbepetpals.png
+- images/games/narbemagicbutton.png

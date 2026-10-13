@@ -289,6 +289,27 @@
         "Sports",
         "Simulation"
       ]
+    },
+    {
+      "id": "narbepetpals",
+      "title": "NARBE Pet Pals",
+      "description": "Adopt a puppy or a kitten from the rescue and watch it grow up with you, from a baby to a teen, a grown-up and one day a wise senior. Feed, play, cuddle, bathe and nap, go on walks and adventures, and hear real barks, whines, meows and purrs. Care stars unlock outfits, tricks, toys and new things for your home: change the curtains, hang a photo from your album and move the furniture around. Two switches do all of it, every screen fits without scrolling, and a short pause after each choice keeps a double press from doing anything by accident.",
+      "path": "apps/games/NARBEPETPALS/index.html",
+      "image": "images/games/narbepetpals.png",
+      "genres": [
+        "Interactive",
+        "Simulation"
+      ]
+    },
+    {
+      "id": "narbemagicbutton",
+      "title": "NARBE Magic Button",
+      "description": "Press your switch and make magic! Launch fireworks over a moonlit city, blow shimmery bubbles under the sea, or grow a garden of smiley flowers that ends in a breeze of petals. Every press makes something happen right away, with lots of different sounds so it never gets old. Any switch, key, tap or game controller button works. There is no score, no timer and nothing to lose.",
+      "path": "apps/games/NARBEMAGICBUTTON/index.html",
+      "image": "images/games/narbemagicbutton.png",
+      "genres": [
+        "Interactive"
+      ]
     }
   ]
 }

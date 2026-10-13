@@ -1,0 +1,203 @@
+/* NARBE Pet Pals. The scene fills the window; choices and menus float over it. Nothing scrolls. */
+:root{
+  --paper:rgba(255,253,247,.9); --paper-solid:#FFFDF7; --paper2:#F7EFDF; --ink:#33251E; --ink-soft:#6B5A50;
+  --moss:#5FA873; --moss2:#8CCB8F; --low:#E9A24A; --track:#EFE6D3; --edge:#3B2A22; --edge-soft:rgba(59,42,34,.5);
+  --hl:#FFD700; --hl-ink:#1C130E; --gold:#C98A12;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px); --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
+  --m:clamp(8px,1.6vmin,16px);
+  box-sizing:border-box; color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#2A2320}
+body{color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:clamp(.95rem,2.3vmin,1.2rem);line-height:1.3;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+.app{position:fixed;inset:0;overflow:hidden}
+#scene{position:absolute;left:0;top:0;display:block}
+
+/* ---- Choices inside the scene ---- */
+.targets{position:absolute;inset:0;pointer-events:none}
+.target{position:absolute;pointer-events:auto;background:transparent;border:0;padding:0;margin:0;cursor:pointer;border-radius:12px}
+.target:focus{outline:none}
+.focus-tag{position:absolute;z-index:6;pointer-events:none;transform:translate(-50%,-100%);white-space:nowrap;
+  font-family:"Jersey 10","Atkinson Hyperlegible",sans-serif;font-size:clamp(1.2rem,3.6vmin,2rem);line-height:1;letter-spacing:.5px;
+  padding:.18em .6em .22em;border-radius:999px;background:var(--hl);color:var(--hl-ink);border:3px solid #1C130E;box-shadow:0 4px 0 #1C130E,0 0 18px var(--hl)}
+.focus-tag::after{content:"";position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:8px solid transparent;border-top-color:#1C130E}
+.focus-tag.below{transform:translate(-50%,0)}
+.focus-tag.below::after{bottom:auto;top:-19px;border-top-color:transparent;border-bottom-color:#1C130E}
+
+/* ---- Heads-up display ---- */
+.hud{position:absolute;z-index:4;top:calc(var(--safe-t) + var(--m));left:calc(var(--safe-l) + var(--m));right:calc(var(--safe-r) + var(--m) + var(--btns-w,clamp(96px,16vmin,150px)) + 8px);
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:6px 12px;border-radius:18px;background:rgba(255,253,247,.78);border:2px solid var(--edge-soft);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.hud-who{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
+.hud-name{font-family:"Jersey 10","Atkinson Hyperlegible",sans-serif;font-size:clamp(1.3rem,3.8vmin,2.2rem);line-height:1;max-width:32vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{flex:none;font-weight:700;font-size:clamp(.78rem,2vmin,1.05rem);white-space:nowrap;padding:.15em .6em;border-radius:999px;background:var(--paper-solid);border:2px solid var(--edge-soft)}
+.chip.stars{color:var(--gold)} .chip.paws{color:#A8743C} .stage-chip{color:var(--moss)}
+.meters{flex:1 1 300px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(6px,1.2vmin,12px);min-width:0}
+.meter{display:flex;align-items:center;gap:5px;min-width:0}
+.meter canvas{width:clamp(16px,3.2vmin,26px);height:auto;aspect-ratio:1;flex:none}
+.bar{flex:1;min-width:0;height:clamp(9px,1.7vmin,14px);border:2px solid var(--edge);border-radius:8px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;width:80%;background:linear-gradient(180deg,var(--moss2),var(--moss));transition:width .6s ease}
+.meter.low .bar i{background:var(--low) repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 4px,transparent 4px 8px)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.caption{position:absolute;z-index:4;left:50%;bottom:calc(var(--safe-b) + var(--m));transform:translateX(-50%);width:min(92vw,900px);height:2.7em;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:clamp(.95rem,2.8vmin,1.45rem);line-height:1.2;padding:0 16px;
+  border-radius:18px;background:rgba(255,253,247,.82);border:2px solid var(--edge-soft);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+
+/* ---- Buttons ---- */
+.btn,.hudbtn{position:relative;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;min-width:0;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;line-height:1.15;transition:transform .12s ease}
+.btn{font-size:var(--fs,clamp(.95rem,2.4vmin,1.25rem));background:linear-gradient(180deg,#FFFDF7 0%,#F7EFDF 100%);border:3px solid var(--edge);border-radius:14px;box-shadow:0 4px 0 var(--edge);padding:4px 10px}
+.btn.row{flex-direction:row;justify-content:space-between;text-align:left;padding:4px clamp(12px,2vw,22px)}
+.btn.row .v{font-weight:400;text-align:right}
+.btn .sub{font-weight:400;font-size:.8em;opacity:.8}
+/* Settings rows: the name with a short description under it. */
+.btn.row .kd{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0}
+.btn.row .d{font-weight:400;font-size:.68em;opacity:.78;line-height:1.15}
+#screen-settings .title.note{font-size:clamp(15px,min(3.2vw,4.2vh),26px);line-height:1.2;background:#FFF3C4;border-radius:12px;padding:.2em .6em}
+.is-scan .d{color:var(--hl-ink) !important;opacity:1}
+/* "Where should we go?": a picture of the pet at the place, then its name and what's there. */
+.btn.place{display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr 1fr;column-gap:.7em;align-items:center;justify-items:start;text-align:left;padding:4px 12px}
+.btn.place canvas{grid-row:1/3;height:calc(100% - 4px);width:auto;aspect-ratio:4/3;border-radius:8px;border:2px solid var(--edge-soft);image-rendering:pixelated}
+.btn.place .lbl{align-self:end} .btn.place .sub{align-self:start}
+/* "I Need Help" stands out so it is easy to find. */
+.btn.urgent{background:linear-gradient(180deg,#FFE9E6 0%,#FBD3CC 100%);border-color:#A8322A;box-shadow:0 4px 0 #A8322A;color:#7A1E18}
+.btn .sw{width:1.3em;height:1.3em;border-radius:50%;border:2px solid var(--edge);flex:none}
+.btn.has-sw{flex-direction:row;gap:.6em}
+.btn.soft{background:linear-gradient(180deg,#F7EFDF,#F7EFDF)}
+.hudbtn{font-size:clamp(1rem,2.8vmin,1.4rem);padding:.45em 1.1em;border-radius:999px;background:rgba(255,253,247,.86);border:3px solid var(--edge);box-shadow:0 4px 0 var(--edge),0 8px 18px rgba(0,0,0,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* The game's buttons: More to Do (dress up, decorate, photos, progress) and Pause, side by side in the
+   top bar, where nothing in the room or its name tags can cover them. Held upright, they sit in the
+   bottom corners above the caption. */
+.game-btns{position:absolute;z-index:5;top:calc(var(--safe-t) + var(--m));right:calc(var(--safe-r) + var(--m));display:flex;flex-direction:row;align-items:stretch;gap:clamp(6px,1vmin,10px);font-size:clamp(1rem,2.8vmin,1.4rem)}
+.screen > .game-btns{pointer-events:none}
+.game-btns > *{pointer-events:auto}
+.pause-btn,.more-btn{flex-direction:row;gap:.5em}
+.more-btn .spark{width:1.05em;height:1.05em;flex:none;fill:#F4C542;stroke:var(--edge);stroke-width:1.6;stroke-linejoin:round}
+.new-badge{font-size:.62em;line-height:1.3;background:#E0567D;color:#fff;border-radius:999px;padding:.1em .55em;animation:newpulse 1.6s ease-in-out infinite}
+@keyframes newpulse{50%{transform:scale(1.12)}}
+@media (prefers-reduced-motion: reduce){ .new-badge{animation:none} }
+.pause-btn .bars{display:flex;gap:4px;height:1em}
+.pause-btn .bars i{display:block;width:5px;background:currentColor;border-radius:2px}
+
+/* ---- The highlight: color and style come from Settings ---- */
+.is-scan{background:var(--hl) !important;color:var(--hl-ink) !important;transform:translateY(-2px) scale(1.03);z-index:2}
+.is-scan .sub,.is-scan .v{color:var(--hl-ink) !important;opacity:1}
+body.hl-outline .is-scan{outline:8px solid var(--hl);outline-offset:3px;box-shadow:0 0 0 13px #1C130E,0 4px 0 var(--edge)}
+body.hl-glow .is-scan{box-shadow:0 0 0 4px #1C130E,0 0 14px 5px var(--hl)}
+.target.is-scan{background:transparent !important;outline:none !important;box-shadow:none !important;transform:none}
+.nope{animation:nope .32s ease}
+@keyframes nope{0%,100%{translate:0}25%{translate:-5px}75%{translate:5px}}
+
+/* ---- Overlay screens ---- */
+.screen{position:absolute;inset:0;z-index:5;pointer-events:none}
+.screen > *{pointer-events:auto}
+.screen.dim{background:rgba(20,18,16,.42);pointer-events:auto}
+.card{position:absolute;display:flex;flex-direction:column;gap:clamp(6px,1.4vmin,14px);padding:clamp(10px,2vmin,22px);
+  background:var(--paper);border:3px solid var(--edge);border-radius:22px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 18px 40px rgba(0,0,0,.3)}
+.card.center{left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,720px);max-height:calc(100% - 2*var(--m) - var(--safe-t) - var(--safe-b));height:min(88%,720px)}
+.card.center.wide{width:min(94vw,980px)}
+.card.side{top:calc(var(--safe-t) + var(--m));bottom:calc(var(--safe-b) + var(--m));right:calc(var(--safe-r) + var(--m));width:min(40vw,500px)}
+.card.bottom{left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + var(--m));width:min(94vw,860px)}
+@media (max-aspect-ratio:1/1){
+  .card.side{left:calc(var(--safe-l) + var(--m));right:calc(var(--safe-r) + var(--m));top:auto;width:auto;height:50%}
+  .card.side.tall{height:62%}
+  .hud{right:calc(var(--safe-r) + var(--m))}
+  .game-btns{top:auto;left:calc(var(--safe-l) + var(--m));bottom:calc(var(--safe-b) + var(--m) + 3.2em);flex-direction:row;justify-content:space-between;align-items:flex-end}
+}
+.title{font-family:"Jersey 10","Atkinson Hyperlegible",system-ui,sans-serif;font-weight:400;letter-spacing:.5px;font-size:clamp(1.5rem,4.6vmin,2.6rem);text-align:center;margin:0;line-height:1.05}
+.big-title{font-size:clamp(2.2rem,8vmin,4.2rem);text-shadow:0 3px 0 rgba(255,201,74,.6)}
+.title-pill{position:absolute;left:50%;top:calc(var(--safe-t) + var(--m));transform:translateX(-50%);white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis;
+  font-family:"Jersey 10","Atkinson Hyperlegible",sans-serif;font-size:clamp(1.4rem,4.6vmin,2.6rem);padding:.15em .8em;border-radius:999px;background:rgba(255,253,247,.86);border:3px solid var(--edge);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.corner-row{position:absolute;left:calc(var(--safe-l) + var(--m));right:calc(var(--safe-r) + var(--m));bottom:calc(var(--safe-b) + var(--m));display:flex;justify-content:space-between;gap:12px;pointer-events:none}
+.corner-row > *{pointer-events:auto}
+.note{text-align:center;margin:0;color:var(--ink-soft);font-size:clamp(.85rem,2.2vmin,1.1rem)}
+.note:empty{display:none}
+.hint{margin:0;text-align:center;color:var(--ink-soft);font-size:clamp(.72rem,1.8vmin,.95rem)}
+
+/* Lists: ui.js measures the space and decides columns, row height and pages, so nothing is cut off. */
+.list-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center}
+.list-wrap.short{flex:0 1 auto}
+.list{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-auto-rows:var(--rowh,64px);gap:var(--gap,12px);width:100%;max-width:var(--maxw,760px);margin:0 auto}
+
+/* Spelling */
+.spell-name{flex:none;font-family:"Jersey 10","Atkinson Hyperlegible",sans-serif;font-size:clamp(1.6rem,5vmin,2.8rem);text-align:center;min-height:1.4em;padding:0 12px;border:3px dashed var(--ink-soft);border-radius:12px;background:#FFFDF7}
+.spell-grid{flex:1 1 auto;min-height:0;display:grid;grid-template-rows:repeat(6,minmax(0,1fr));gap:clamp(4px,1vmin,10px)}
+.spell-row{display:flex;gap:clamp(4px,.8vw,10px);padding:3px;border-radius:12px;min-height:0}
+.spell-row .key{flex:1;min-width:0;font-size:clamp(1rem,3vmin,1.4rem);padding:2px}
+.spell-row .key.small{flex:1.3;font-size:clamp(.78rem,2.1vmin,1.02rem)}
+.spell-row.is-scan{transform:none;box-shadow:none !important;outline:none !important;background:transparent !important}
+.spell-row.is-scan .key{background:var(--hl);color:var(--hl-ink)}
+
+/* Album, how to, progress */
+.album-row{flex:1 1 auto;min-height:0;display:flex;gap:clamp(8px,1.6vmin,16px)}
+.album-row .list-wrap{flex:0 0 36%}
+.polaroid{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;background:#FFFDF6;color:#2A1C12;border:3px solid var(--edge);border-radius:10px;padding:clamp(6px,1.2vmin,12px)}
+.fit{position:relative;min-height:0;min-width:0;flex:1 1 auto}
+.polaroid canvas{border:2px solid #3B2A22;border-radius:4px}
+#album-cap{flex:none;font-weight:700;font-size:clamp(.9rem,2.4vmin,1.2rem);margin:0;text-align:center}
+.album-count{flex:none;margin:0;text-align:center;color:#6B5A50;font-size:clamp(.75rem,1.9vmin,.95rem)}
+@media (max-aspect-ratio:1/1){ .album-row{flex-direction:column} .album-row .list-wrap{flex:0 0 auto} }
+.howto,.progress{flex:1 1 auto;min-height:0;overflow:hidden;font-size:clamp(1rem,2.8vmin,1.35rem);background:#FFFDF7;border:2px solid var(--edge-soft);border-radius:16px;padding:clamp(10px,2vmin,20px) clamp(12px,2.4vw,24px)}
+.howto p,.progress p{margin:0 0 .6em}
+.howto h3{font-family:"Jersey 10",sans-serif;font-weight:400;margin:0 0 .3em;font-size:1.5em}
+.progress .big{font-weight:700;text-align:center;font-size:1.1em}
+/* How to Play: the words on top, a little animated example filling the space under them. */
+#howto-body{display:flex;flex-direction:column}
+.howto-text{flex:none}
+.howto-demo{flex:1 1 0;min-height:clamp(60px,14vmin,120px);margin-top:.2em}
+#howto-demo{border:2px solid var(--edge-soft);border-radius:12px;image-rendering:pixelated;top:auto!important;bottom:0;transform:translateX(-50%)!important}
+#screen-load .card.center,.card.center.fitted{height:auto}
+/* Growing up: the old look and the new look side by side, with confetti. */
+.celebrate .cel-art{display:flex;justify-content:center;flex:none}
+#cel-canvas{width:min(70vw,440px,calc(34vh * 2));height:auto;aspect-ratio:2/1;image-rendering:pixelated;background:linear-gradient(180deg,#FFF6E0,#FDE6EE);border:2px solid var(--edge-soft);border-radius:14px}
+.howto .warn{background:#FCEBD2;border:2px solid #E9A24A;border-radius:10px;padding:.4em .7em;font-weight:700;color:#6A3A0A}
+.howto .saved{background:#E4F3E6;border:2px solid #8CCB8F;border-radius:10px;padding:.4em .7em;font-weight:700;color:#2F6B41}
+.howto .filename{font-weight:700;text-align:center;background:#F7EFDF;border:2px dashed var(--edge-soft);border-radius:10px;padding:.35em .6em;overflow-wrap:anywhere}
+/* Help card: the pet, its five needs as big friendly bars, and what to do next. */
+.helpbox{flex:1 1 auto;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(7em,26%) 1fr;grid-template-rows:auto 1fr;gap:clamp(8px,1.6vmin,16px) clamp(10px,2vw,22px);
+  font-size:clamp(.9rem,2.5vmin,1.25rem);background:#FFFDF7 radial-gradient(circle at 12% 18%,#FBE3EA 0 1.2em,transparent 1.3em);border:2px solid var(--edge-soft);border-radius:16px;padding:clamp(10px,2vmin,20px) clamp(12px,2.4vw,24px)}
+.help-pet{grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;background:#F7EFDF;border:2px dashed var(--edge-soft);border-radius:18px;padding:.4em}
+.help-pet canvas{width:100%;max-width:9em;height:auto;min-height:0;flex:0 1 auto}
+.help-who{text-align:center}
+.help-name{font-family:"Jersey 10",sans-serif;font-size:1.7em;line-height:1}
+.help-sub{color:var(--ink-soft);font-size:.85em;text-align:center}
+.help-stats{display:grid;gap:.3em;align-content:start}
+.hs{display:grid;grid-template-columns:1.6em 3.6em 1fr 7.4em;align-items:center;gap:.45em}
+.hs canvas{width:1.5em;height:auto;aspect-ratio:1}
+.hs-name{font-weight:700}
+.hs-bar{height:.9em;border:2px solid var(--edge);border-radius:9px;background:var(--track);overflow:hidden}
+.hs-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(180deg,var(--moss2),var(--moss))}
+.hs-word{font-size:.8em;font-weight:700;text-align:center;border-radius:999px;padding:.12em .4em;background:#E4F3E6;color:#2F6B41;white-space:nowrap}
+.hs-care .hs-bar i{background:linear-gradient(180deg,#F6C97A,var(--low))} .hs-care .hs-word{background:#FCEBD2;color:#8A5412}
+.hs-now .hs-bar i{background:linear-gradient(180deg,#F4A0A0,#D9595B)} .hs-now .hs-word{background:#F9DADA;color:#962E30}
+.help-tips{min-height:0;overflow:hidden;background:#FFF4D6;border:2px solid #EBCB7F;border-radius:14px;padding:.4em .7em}
+.help-tips h3{font-family:"Jersey 10",sans-serif;font-weight:400;margin:0 0 .15em;font-size:1.35em}
+.help-tips p{margin:0 0 .3em;display:flex;gap:.4em;align-items:baseline}
+.help-tips p[hidden]{display:none}
+/* Progress page 2, "right now": big, plain words for players who can't see the bars in the room. */
+.progress.now-page{display:flex;flex-direction:column;gap:.45em;font-size:clamp(1.05rem,3.1vmin,1.5rem)}
+.progress .now-title{font-family:"Jersey 10",sans-serif;font-weight:400;font-size:1.4em;margin:0;text-align:center}
+.progress.now-page .help-stats{gap:.35em}
+.progress.now-page .hs{grid-template-columns:1.7em 3.9em 1fr 7.8em}
+.progress.now-page .hs-bar{height:1.05em}
+.progress.now-page .help-tips{flex:1 1 auto}
+.tip-ic{flex:none}
+@media (min-aspect-ratio:1/1) and (max-height:560px){ .helpbox{grid-template-columns:minmax(6em,19%) 1fr} .help-name{font-size:1.4em} }
+@media (max-aspect-ratio:1/1){ .helpbox{grid-template-columns:1fr;grid-template-rows:auto auto 1fr} .help-pet{grid-row:auto;flex-direction:row;gap:.6em;padding:.2em .5em} .help-pet canvas{width:3.4em}
+  .help-who,.help-who .help-sub{text-align:left} .hs{grid-template-columns:1.5em 3.3em 1fr 6.6em} }
+.stages{display:flex;gap:.5em;justify-content:center;align-items:stretch;margin:.2em 0 .6em}
+.stages .st{flex:1;max-width:9em;text-align:center;border:2px solid var(--edge-soft);border-radius:12px;padding:.3em .2em;background:#F7EFDF;font-size:.85em}
+.stages .st.now{background:#FFF1C9;border-color:var(--gold);font-weight:700}
+.stages canvas{display:block;margin:0 auto;height:clamp(3em,11vmin,7em);width:auto;aspect-ratio:48/60}
+.goals{display:grid;grid-template-columns:repeat(auto-fit,minmax(14em,1fr));gap:.4em}
+.goals div{border:2px solid var(--edge-soft);border-radius:10px;padding:.25em .6em;background:#F7EFDF;font-size:.9em}
+
+/* Hold-to-pause ring */
+.hold-ring{position:fixed;inset:0;z-index:30;display:grid;place-items:center;pointer-events:none}
+.hold-ring .wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.dial{width:clamp(110px,22vmin,150px);aspect-ratio:1;border-radius:50%;border:5px solid var(--edge);background:conic-gradient(var(--hl) calc(var(--p,0) * 360deg),rgba(255,253,246,.85) 0);display:grid;place-items:center}
+.dial::after{content:"";width:56%;aspect-ratio:1;border-radius:50%;background:#FFFDF7;border:5px solid var(--edge)}
+.hold-ring p{margin:0;font-weight:700;font-size:1.2rem;background:#FFFDF7;color:var(--ink);border:3px solid var(--edge);border-radius:10px;padding:6px 14px}
+
+@media (prefers-reduced-motion: reduce){ .nope{animation:none} .bar i{transition:none} .is-scan{transform:none} }

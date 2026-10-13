@@ -1,0 +1,523 @@
+/* NARBE Magic Button
+   The scene fills the whole window; every menu is a frosted card over it,
+   scaled to fit (see fit() in ui.js) so nothing is cut off and nothing scrolls. */
+
+:root {
+    --ink: #ffffff;
+    --muted: #d9d2ff;
+    --card: rgba(22, 16, 56, 0.72);
+    --card-edge: rgba(255, 255, 255, 0.22);
+    --font: 'Baloo 2', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0a0f2e;
+}
+
+body {
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+}
+
+#nmb { position: fixed; inset: 0; }
+
+.nmb-stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+.nmb-btn {
+    font: inherit;
+    color: inherit;
+    border: 0;
+    cursor: pointer;
+    position: relative;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.nmb-icon { width: 30px; height: 30px; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.nmb-dot, .nmb-fill { fill: currentColor; stroke: none; }
+
+/* ------------------------------------------------------------ the screens */
+
+.nmb-screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: radial-gradient(ellipse at center, rgba(10, 6, 34, 0.15), rgba(10, 6, 34, 0.55));
+    overflow: hidden;
+}
+
+.nmb-screen.show { display: flex; }
+
+.nmb-card {
+    position: relative;
+    flex: none;
+    width: min(780px, 94vw);
+    padding: 20px 24px 24px;
+    border-radius: 32px;
+    background: var(--card);
+    border: 2px solid var(--card-edge);
+    box-shadow: 0 30px 80px rgba(6, 3, 30, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+    animation: nmb-card-in 280ms cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.nmb-card-narrow { width: min(560px, 94vw); }
+
+@keyframes nmb-card-in {
+    from { translate: 0 14px; opacity: 0; }
+    to { translate: 0 0; opacity: 1; }
+}
+
+.nmb-title {
+    margin: 0 0 14px;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.nmb-sub {
+    margin: 2px 0 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: clamp(18px, 2.4vw, 24px);
+    font-weight: 700;
+}
+
+.nmb-scan-status { min-block-size: 0; position: absolute; top: 10px; right: 14px; padding: 0; z-index: 3; }
+.nmb-hud .nmb-scan-status { top: max(14px, env(safe-area-inset-top)); left: 14px; right: auto; }
+
+/* --------------------------------------------------------------- main menu */
+
+.nmb-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+.nmb-logo {
+    width: clamp(58px, 8vw, 78px);
+    height: clamp(58px, 8vw, 78px);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: radial-gradient(circle at 35% 30%, #ffb3ec 0%, #ff5fc8 30%, #8a4dff 75%, #5b2bd6 100%);
+    box-shadow: 0 6px 0 #3a1a8f, 0 12px 24px rgba(138, 77, 255, 0.55), inset 0 -6px 12px rgba(0, 0, 0, 0.18), inset 0 6px 10px rgba(255, 255, 255, 0.45);
+    animation: nmb-logo 2.6s ease-in-out infinite;
+}
+
+.nmb-logo .nmb-icon { width: 56%; height: 56%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); }
+
+@keyframes nmb-logo {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-4px) rotate(-6deg); }
+}
+
+.nmb-brand-words { display: flex; flex-direction: column; line-height: 0.9; }
+.nmb-brand-narbe { font-size: clamp(14px, 1.8vw, 18px); font-weight: 800; letter-spacing: 0.32em; color: #ffd6f5; }
+
+.nmb-brand-title {
+    margin: 0;
+    font-size: clamp(38px, 6.4vw, 66px);
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(90deg, #ffe17a, #ff8fd6 45%, #9fd8ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 3px 0 rgba(20, 8, 60, 0.55));
+}
+
+.nmb-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(14px, 2vw, 20px);
+}
+
+.nmb-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 9px 9px 10px;
+    border-radius: 26px;
+    color: #fff;
+    box-shadow: 0 7px 0 rgba(0, 0, 0, 0.32), 0 14px 26px rgba(0, 0, 0, 0.28), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+.nmb-tile[data-magic="fireworks"] { background: linear-gradient(160deg, #7a5cff, #4325b8); }
+.nmb-tile[data-magic="bubbles"] { background: linear-gradient(160deg, #3fb6ff, #1265c4); }
+.nmb-tile[data-magic="flowers"] { background: linear-gradient(160deg, #ff8fc4, #e0407e); }
+
+.nmb-tile:active { transform: translateY(5px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.32); }
+
+.nmb-pic {
+    position: relative;
+    display: block;
+    height: clamp(84px, 17vh, 150px);
+    border-radius: 19px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.nmb-pic svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nmb-pic-fireworks { background: linear-gradient(#070b26, #2a1d68 80%, #4a2a7a); }
+.nmb-pic-bubbles { background: linear-gradient(#123a92, #3a92d8); }
+.nmb-pic-flowers { background: linear-gradient(#5fb8ff, #cdeeff); }
+
+.nmb-burst { transform-origin: 60px 34px; animation: nmb-burst 2.4s ease-out infinite; }
+.nmb-burst-2 { transform-origin: 24px 22px; animation-delay: 1.2s; }
+
+@keyframes nmb-burst {
+    0% { transform: scale(0.2); opacity: 0; }
+    15% { opacity: 1; }
+    70% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.1); opacity: 0; }
+}
+
+.nmb-pic-bubble {
+    position: absolute;
+    bottom: -20%;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.9) 0 12%, rgba(190, 240, 255, 0.2) 13% 70%, rgba(255, 170, 240, 0.5) 100%);
+    animation: nmb-rise 4s linear infinite;
+    z-index: 1;
+}
+
+.nmb-pic-bubble.b1 { left: 22%; width: 30%; aspect-ratio: 1; }
+.nmb-pic-bubble.b2 { left: 56%; width: 18%; aspect-ratio: 1; animation-delay: 1.4s; }
+.nmb-pic-bubble.b3 { left: 40%; width: 12%; aspect-ratio: 1; animation-delay: 2.6s; }
+
+@keyframes nmb-rise {
+    from { transform: translateY(0); }
+    to { transform: translateY(-190%); }
+}
+
+.nmb-fishy { animation: nmb-swim 5s ease-in-out infinite alternate; }
+@keyframes nmb-swim { from { transform: translateX(6px); } to { transform: translateX(-30px); } }
+
+.nmb-sway { transform-origin: 60px 40px; animation: nmb-sway 2.8s ease-in-out infinite; }
+@keyframes nmb-sway { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+.nmb-tile-label {
+    font-size: clamp(20px, 3vw, 30px);
+    font-weight: 800;
+    line-height: 1.1;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
+}
+
+.nmb-util {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 16px);
+}
+
+/* ------------------------------------------------------------- menu items */
+
+.nmb-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: clamp(60px, 8.6vh, 78px);
+    padding: 8px 16px;
+    border-radius: 22px;
+    color: #fff;
+    font-size: clamp(18px, 2.3vw, 24px);
+    font-weight: 800;
+    text-align: left;
+    line-height: 1.1;
+    background: #4a5568;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.25);
+}
+
+.nmb-menu-item:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+
+.nmb-menu-item[data-tone="teal"] { background: linear-gradient(160deg, #22b8a6, #0f7c73); }
+.nmb-menu-item[data-tone="plum"] { background: linear-gradient(160deg, #b45bd6, #7a2f9c); }
+.nmb-menu-item[data-tone="slate"] { background: linear-gradient(160deg, #66728a, #3c4558); }
+.nmb-menu-item[data-tone="green"] { background: linear-gradient(160deg, #3ccf6e, #1e8e46); }
+.nmb-menu-item[data-tone="blue"] { background: linear-gradient(160deg, #4f8dff, #2853c7); }
+
+.nmb-menu-label { flex: 1; }
+
+.nmb-icon-chip {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.nmb-list { display: grid; gap: 14px; }
+
+/* ----------------------------------------------------------------- settings */
+
+.nmb-card-settings { width: min(980px, 96vw); }
+
+.nmb-settings-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+}
+
+.nmb-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: clamp(54px, 7.6vh, 70px);
+    padding: 8px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+    font-size: clamp(17px, 2vw, 22px);
+    text-align: left;
+}
+
+.nmb-row-label { font-weight: 800; }
+.nmb-row-value { font-weight: 800; color: #ffe17a; text-align: right; }
+.nmb-row-nav { background: linear-gradient(160deg, #66728a, #3c4558); grid-column: 1 / -1; justify-content: center; }
+
+/* Phones held upright get one column. */
+@media (max-aspect-ratio: 1/1) {
+    .nmb-settings-list { grid-template-columns: 1fr; }
+    .nmb-row-nav { grid-column: auto; }
+}
+
+/* ----------------------------------------------------------------- sky word */
+
+.nmb-card-word { width: min(660px, 94vw); }
+
+.nmb-word-show {
+    min-height: 66px;
+    margin: 0 0 14px;
+    padding: 6px 18px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #ffe17a;
+}
+
+.nmb-word-show.empty { font-size: clamp(18px, 2.4vw, 22px); letter-spacing: 0; color: var(--muted); }
+
+.nmb-keys { display: grid; gap: 10px; margin-bottom: 14px; }
+
+.nmb-key-row {
+    display: flex;
+    gap: 8px;
+    padding: 5px;
+    border-radius: 16px;
+}
+
+.nmb-key {
+    flex: 1;
+    min-height: 54px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16), 0 4px 0 rgba(0, 0, 0, 0.3);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 800;
+}
+
+.nmb-key:active { transform: translateY(3px); }
+.nmb-key-wide { flex: 2; font-size: clamp(18px, 2.4vw, 22px); }
+
+.nmb-word-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* -------------------------------------------------------------- how to play */
+
+.nmb-help-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    border-radius: 22px;
+    background: transparent;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+}
+
+.nmb-help-body p {
+    margin: 0 0 10px;
+    font-size: clamp(18px, 2.3vw, 23px);
+    line-height: 1.35;
+    color: #f1edff;
+}
+
+.nmb-help-body b { color: #ffe17a; }
+.nmb-help-body + .nmb-menu-item { margin-top: 14px; width: 100%; }
+
+/* -------------------------------------------------------------------- play */
+
+.nmb-hud { position: fixed; inset: 0; display: none; pointer-events: none; }
+.nmb-hud.show { display: block; }
+.nmb-hud .nmb-btn { pointer-events: auto; }
+
+.nmb-prompt {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    font-size: clamp(38px, 8vw, 92px);
+    font-weight: 800;
+    white-space: nowrap;
+    color: #fff;
+    text-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 2px 18px rgba(0, 0, 0, 0.4);
+    transition: opacity 400ms;
+    animation: nmb-bob 1.6s ease-in-out infinite;
+}
+
+.nmb-prompt.hidden { opacity: 0; }
+
+@keyframes nmb-bob { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+.nmb-pause-btn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    color: #fff;
+    background: rgba(12, 8, 40, 0.42);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55), 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.nmb-pause-icon .nmb-icon { width: 28px; height: 28px; }
+.nmb-pause-label { font-size: 15px; font-weight: 800; line-height: 1; margin-top: 2px; }
+
+/* The hold-to-pause ring: fills as Enter is held. */
+.nmb-ring {
+    position: absolute;
+    inset: -9px;
+    border-radius: 50%;
+    background: conic-gradient(#ffe17a calc(var(--p, 0) * 1turn), rgba(255, 255, 255, 0.18) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    opacity: 0;
+    transition: opacity 150ms;
+    pointer-events: none;
+}
+
+.nmb-pause-btn.holding .nmb-ring { opacity: 1; }
+
+.nmb-magic-btn {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    translate: -50% 0;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+    min-height: 80px;
+    padding: 0 34px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: clamp(26px, 3.6vw, 34px);
+    font-weight: 800;
+    background: radial-gradient(circle at 35% 25%, #ffb3ec 0%, #ff5fc8 35%, #8a4dff 100%);
+    box-shadow: 0 7px 0 #3a1a8f, 0 14px 30px rgba(138, 77, 255, 0.5), inset 0 4px 8px rgba(255, 255, 255, 0.4);
+}
+
+.nmb-magic-btn .nmb-icon { width: 34px; height: 34px; }
+#nmb[data-pause-mode="scan"] .nmb-magic-btn { display: flex; }
+
+.nmb-magic-btn.bump { animation: nmb-bump 260ms ease; }
+@keyframes nmb-bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.9, 0.84); }
+    100% { transform: scale(1); }
+}
+
+/* --------------------------------------------------------------- highlight
+   Colour, then a ring of the colour's own ink outside it, so the highlight
+   has an edge on any background. Lifts with `translate`, which never fights
+   the `transform` used for pressing and fitting. */
+
+.nmb-focus {
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+}
+
+.nmb-magic-btn.nmb-focus { translate: -50% -3px; }
+
+.nmb-focus-full {
+    background: var(--focus-color, #ffd700) !important;
+    color: var(--focus-ink, #1a1008) !important;
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+    text-shadow: none;
+}
+
+.nmb-magic-btn.nmb-focus-full { translate: -50% -3px; }
+.nmb-focus-full .nmb-tile-label, .nmb-focus-full .nmb-row-value { color: var(--focus-ink, #1a1008); text-shadow: none; }
+.nmb-focus-full .nmb-icon-chip { background: transparent; box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008); }
+
+/* Auto Scan paused by the Space brake: the same highlight, dotted. */
+.nmb-focus[data-narbe-scan-paused],
+.nmb-focus-full[data-narbe-scan-paused] { outline-style: dotted !important; }
+
+/* ---------------------------------------------------------------- smaller */
+
+@media (max-width: 560px) {
+    .nmb-card { padding: 16px 14px 18px; border-radius: 26px; }
+    .nmb-util .nmb-menu-item { flex-direction: column; gap: 4px; padding: 8px 6px; text-align: center; font-size: 16px; }
+    .nmb-tile { padding: 7px 7px 8px; border-radius: 20px; }
+    .nmb-pic { border-radius: 14px; }
+    .nmb-tile-label { font-size: 18px; }
+}
+
+@media (max-height: 500px) {
+    .nmb-pic { height: 74px; }
+    .nmb-pause-btn { width: 70px; height: 70px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nmb-logo, .nmb-prompt, .nmb-burst, .nmb-pic-bubble, .nmb-fishy, .nmb-sway { animation: none; }
+    .nmb-burst { opacity: 1; }
+}

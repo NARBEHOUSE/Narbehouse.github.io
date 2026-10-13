@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NARBE Pet Pals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Jersey+10&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+</head>
+<body class="hl-glow">
+<!-- The whole game is one scene that fills the window. Choices live inside it: objects in the
+     room, pets at the rescue, and see-through cards for menus. -->
+<main class="app" id="app">
+  <canvas id="scene" aria-label="NARBE Pet Pals"></canvas>
+  <div class="targets" id="targets"></div>
+  <div class="focus-tag" id="focus-tag" hidden></div>
+
+  <div class="hud" id="hud" hidden>
+    <div class="hud-who"><span class="hud-name" id="brand"></span><span class="chip stage-chip" id="stage-chip"></span><span class="chip paws" id="hearts"></span><span class="chip stars" id="stars"></span><span class="chip wx" id="wx"></span></div>
+    <div class="meters" id="meters">
+      <div class="meter" data-stat="food"><canvas data-lw="12" data-lh="12" data-slot-icon="feed"></canvas><div class="bar"><i></i></div><span class="sr">Food</span></div>
+      <div class="meter" data-stat="fun"><canvas data-lw="12" data-lh="12" data-slot-icon="play"></canvas><div class="bar"><i></i></div><span class="sr">Fun</span></div>
+      <div class="meter" data-stat="clean"><canvas data-lw="12" data-lh="12" data-slot-icon="clean"></canvas><div class="bar"><i></i></div><span class="sr">Clean</span></div>
+      <div class="meter" data-stat="energy"><canvas data-lw="12" data-lh="12" data-slot-icon="nap"></canvas><div class="bar"><i></i></div><span class="sr">Rest</span></div>
+      <div class="meter" data-stat="love"><canvas data-lw="12" data-lh="12" data-slot-icon="cuddle"></canvas><div class="bar"><i></i></div><span class="sr">Love</span></div>
+    </div>
+  </div>
+  <div class="caption" id="caption" aria-live="polite" hidden></div>
+
+  <section class="screen" id="screen-menu" hidden>
+    <div class="card side"><h1 class="title big-title">NARBE Pet Pals</h1><div class="list-wrap"><div class="list" id="menu-list"></div></div><p class="hint" id="hint"></p></div>
+  </section>
+
+  <section class="screen" id="screen-howto" hidden>
+    <div class="card center"><h2 class="title">How to play</h2><div class="howto" id="howto-body"></div><div class="list-wrap short"><div class="list" id="howto-list"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-kind" hidden>
+    <div class="title-pill">Adopt a pet: a puppy or a kitten?</div>
+    <div class="corner-row"><button class="hudbtn scan-item" tabindex="-1" id="kind-back">Back</button></div>
+  </section>
+
+  <section class="screen" id="screen-color" hidden>
+    <div class="title-pill" id="rescue-title">NARBE Pet Pals Rescue</div>
+    <div class="corner-row"><button class="hudbtn scan-item" tabindex="-1" id="color-more">Meet more</button><button class="hudbtn scan-item" tabindex="-1" id="color-back">Back</button></div>
+  </section>
+
+  <section class="screen" id="screen-pets" hidden>
+    <div class="title-pill" id="pets-title">Choose A Different Pet</div>
+    <div class="corner-row" id="pets-btns"></div>
+  </section>
+
+  <section class="screen" id="screen-name" hidden>
+    <div class="card side"><h2 class="title" id="name-title">Name your new pet</h2><div class="list-wrap"><div class="list" id="names"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-spell" hidden>
+    <div class="card side tall"><h2 class="title">Spell a name</h2><div class="spell-name" id="spell-name" aria-live="polite"></div><div class="spell-grid" id="spell-grid"></div></div>
+  </section>
+
+  <section class="screen" id="screen-game" hidden>
+    <div class="game-btns">
+      <button class="hudbtn more-btn scan-item" tabindex="-1" id="more-btn" data-say="More to Do. Dress up, decorate, photos, and progress"><svg class="spark" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1l2.2 6.3L19 10l-6.8 2.7L10 19l-2.2-6.3L1 10l6.8-2.7z"/></svg><span>More to Do</span><span class="new-badge" id="more-new" hidden>New</span></button>
+      <button class="hudbtn pause-btn scan-item" tabindex="-1" id="pause-btn" data-say="Pause"><span class="bars" aria-hidden="true"><i></i><i></i></span><span>Pause</span></button>
+    </div>
+  </section>
+
+  <section class="screen dim" id="screen-outing" hidden>
+    <div class="card center fitted"><h2 class="title" id="outing-title">Where should we go?</h2><div class="list-wrap short"><div class="list" id="outing-list"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-tricks" hidden>
+    <div class="card side"><h2 class="title" id="tricks-title">Tricks</h2><p class="note" id="tricks-note"></p><div class="list-wrap"><div class="list" id="tricks-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-celebrate" hidden>
+    <div class="card center fitted celebrate"><h2 class="title" id="cel-title"></h2><div class="cel-art"><canvas id="cel-canvas" data-lw="120" data-lh="60"></canvas></div><div class="howto" id="cel-body"></div><div class="list-wrap short"><div class="list" id="cel-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-more" hidden>
+    <div class="card center fitted"><h2 class="title" id="more-title">More to Do</h2><div class="list-wrap short"><div class="list" id="more-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-pause" hidden>
+    <div class="card center"><h2 class="title">Paused</h2><div class="list-wrap"><div class="list" id="pause-list"></div></div><p class="hint">Warning: Save Game to This Device might not be accessible with switches.</p></div>
+  </section>
+
+  <section class="screen" id="screen-choice" hidden>
+    <div class="card side choice-card"><h2 class="title" id="choice-q"></h2><div class="list-wrap"><div class="list" id="choice-list"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-dress" hidden>
+    <div class="card side"><h2 class="title" id="dress-title">Dress Up</h2><p class="note" id="dress-note"></p><div class="list-wrap"><div class="list" id="dress-list"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-decor" hidden>
+    <div class="card side"><h2 class="title" id="decor-title">Decorate Home</h2><p class="note" id="decor-note"></p><div class="list-wrap"><div class="list" id="decor-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-album" hidden>
+    <div class="card center wide"><h2 class="title" id="album-title">Photo Album</h2>
+      <div class="album-row"><div class="polaroid"><div class="fit" data-aspect="1.3333"><canvas id="album-photo" data-lw="128" data-lh="96" aria-label="Photo"></canvas></div><p id="album-cap"></p><p class="album-count" id="album-count"></p></div>
+      <div class="list-wrap" data-short-portrait><div class="list" id="album-list"></div></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-progress" hidden>
+    <div class="card center wide"><h2 class="title">Progress</h2><div class="progress" id="progress-body"></div><div class="list-wrap short"><div class="list" id="progress-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-load" hidden>
+    <div class="card center"><h2 class="title" id="load-title">Load a Saved Game</h2><div class="howto" id="load-body"></div><div class="list-wrap short"><div class="list" id="load-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-help" hidden>
+    <div class="card center wide"><h2 class="title" id="help-title">How is your pet doing?</h2><div class="helpbox" id="help-body"></div><div class="list-wrap short"><div class="list" id="help-list"></div></div></div>
+  </section>
+
+  <section class="screen dim" id="screen-settings" hidden>
+    <div class="card center wide"><h2 class="title">Settings</h2><div class="list-wrap"><div class="list" id="settings-list"></div></div></div>
+  </section>
+</main>
+
+<div class="hold-ring" id="hold-ring" hidden><div class="wrap"><div class="dial" id="dial"></div><p>Keep holding to pause</p></div></div>
+
+<!-- Shared hub modules, in the hub's required order, before any game script.
+     Standalone (no hub), the game falls back to its own copies. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+
+<!-- Game modules. Plain scripts that share one scope, loaded in this order. -->
+<script src="js/core.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/music.js"></script>
+<script src="js/pixel.js"></script>
+<script src="js/pets.js"></script>
+<script src="js/petside.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/room.js"></script>
+<script src="js/props.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/anims.js"></script>
+<script src="js/places.js"></script>
+<script src="js/outings.js"></script>
+<script src="js/tricks.js"></script>
+<script src="js/seasons.js"></script>
+<script src="js/school.js"></script>
+<script src="js/companions.js"></script>
+<script src="js/arrange.js"></script>
+<script src="js/howtodemo.js"></script>
+<script src="js/mypets.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/scan-access.js"></script>
+</body>
+</html>
