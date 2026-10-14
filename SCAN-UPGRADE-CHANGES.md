@@ -1,5 +1,28 @@
 # Web scan implementation and Companion 1.0.8
 
+## Prediction row speech refresh — 2026-10-14
+
+The owner requested this fix in both the desktop PC Hub and the F-drive website project. Selecting a predicted word could return to row mode before the asynchronous suggestions finished, leaving the old row speech playing after the buttons changed. Prediction rows now suppress their superseded label while refreshing and announce the newly rendered suggestions through the scanner's owned speech ticket if that row still has focus. Request versions reject late results; navigation away retains speech ownership. The shared scan controller, Companion package, input guards, parking and brake policy are unchanged.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/tools/keyboard/app.js | BOTH / PORTED | Refresh current word-row speech; desktop also covers its letter predictions. |
+| bennyshub/apps/tools/journal/app.js | BOTH / PORTED | Announce the completed current prediction row and ignore older requests. |
+| bennyshub/apps/tools/streaming/keyboard_integration.js | BOTH / PORTED | Refresh after selecting a suggestion; invalidate closed/older requests. |
+| bennyshub/apps/tools/streaming/app.js | BOTH / PORTED | Own the refreshed row announcement and its speech wait. |
+| bennyshub/apps/tools/phraseboard/board-choice.js | BOTH / PORTED | Stable suggestion-row identity, live labels in grid/free layouts, and parent restoration after redraw. |
+| bennyshub/apps/tools/ytsearch/js/app.js | WEB-ONLY / NATIVE SEARCH SEPARATE | Version scheduled predictions and notify scanning after rendering. |
+| bennyshub/apps/tools/ytsearch/js/scanning.js | WEB-ONLY / NATIVE SEARCH SEPARATE | Announce the current visible prediction row through the scan adapter. |
+| Desktop: bennyshub/apps/tools/search/app.js | DESKTOP-ONLY / DONE | Refresh history/API prediction speech, reject outdated responses, and retain the prediction row during loading. |
+| Desktop: bennyshub/apps/tools/messenger/keyboard.js | DESKTOP-ONLY / DONE | Refresh word, phrase and common-word speech; independent row request ownership and immediate completed-result announcements. |
+| Desktop: bennyshub/apps/tools/rt-convo/index.html | DESKTOP-ONLY / DONE | Keep the selected word/phrase row during loading, reject stale results and announce current suggestions. |
+| Desktop: tests/prediction-row-speech.cjs | BOTH VERIFIED / TEST IN DESKTOP | Real-page/component regression runner, including unchanged Music Maker behavior. |
+| SCAN-UPGRADE-CHANGES.md | WEB DOCUMENTATION / NO PORT | Record this audit and validation. |
+
+Validation: 35 targeted Electron browser/component checks passed across the eight desktop prediction surfaces and five website surfaces. These cover word/phrase/letter/common-word rows, delayed and out-of-order replies, navigation away, empty results, Phraseboard grid/free groups, and Auto Wait for Speech ownership plus a full interval. The untouched desktop Keyboard backup fails the new regression on its old row announcement. Existing desktop scan/adapter/prediction tests passed. All 257 website unit tests, the website build, 1,078 page/link checks, and the 2,015-file release audit passed. The seven built website JavaScript files match the reviewed source hashes. The test uses controlled prediction responses and speech completion tickets; physical switches and audible voice output were not tested. No website publication was performed.
+
+Originals and reports: the desktop workspace's tmp/prediction-speech-20261014/ (before/desktop, before/web, report.json, baseline-report.json, web-manifest.json). The regression entry runs through tools/run-electron-test.cjs, which creates and disposes an absolute OS-temporary working directory. Music Maker already awaited predictions before its row return and required no change.
+
 ## SwitchedGames logo refresh — 2026-10-13
 
 Use the owner-supplied connected-halves logo with larger button circles in both NARBE House links to SwitchedGames. New references use the new filename; the legacy image URL also serves the new artwork.

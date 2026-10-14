@@ -698,8 +698,13 @@ class NARBEApp {
     }
 
     schedulePredictions() {
+        const revision = this.predictionRevision = (this.predictionRevision || 0) + 1;
+        this.predictionsPending = true;
+        window.scanningManager?.announcePredictions();
         const text = this.textInput.value;
         window.predictionsManager.schedulePredictions(text, (predictions) => {
+            if (revision !== this.predictionRevision || text !== this.textInput.value) return;
+            this.predictionsPending = false;
             this.updatePredictions(predictions);
         });
     }
@@ -717,6 +722,7 @@ class NARBEApp {
             }
         });
         window.scanningManager?.updateRows();
+        window.scanningManager?.announcePredictions();
     }
 
     showExitMessage() {

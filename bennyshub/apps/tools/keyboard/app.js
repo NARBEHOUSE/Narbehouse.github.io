@@ -329,7 +329,7 @@
   function rowChoices() {
     return [
       {id: 'row:text', kind: 'row', row: 0, element: textBar, label: 'Text. ' + (buffer || 'Empty')},
-      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: () => rowKeys(1).map(item => item.label).join(', ') || 'No predictions'},
+      {id: 'row:predictions', kind: 'row', row: 1, element: predictBar, label: () => predictionsPending ? '' : rowKeys(1).map(item => item.label).join(', ') || 'No predictions'},
       ...rows.map((keys, row) => ({id: 'row:' + row, kind: 'row', row: row + 2,
         element: kb.querySelectorAll('.key')[row * 6], label: row === 0 ? 'controls' : keys.join(' ')}))
     ];
@@ -398,15 +398,21 @@
   window.addEventListener('benny-predictions-ready', () => {
     if (currentRowIndex !== 1) renderPredictions();
   });
+  let predictionsPending = false;
+  function announcePredictionRow() {
+    const state = choiceScan?.getState();
+    if (!inSettingsMode && !state?.suspended && !state?.depth &&
+        state?.id === 'row:predictions') choiceScan.announceCurrent();
+  }
   async function renderPredictions() {
+    predictionsPending = true;
+    announcePredictionRow();
     const requestVersion = ++predictionRenderVersion;
     const requestedBuffer = buffer;
-    const predictions = await window.predictionSystem.getLocalPredictions(buffer);
+    const predictions = await window.predictionSystem.getLocalPredictions(buffer).catch(() => []);
 
     if (requestVersion !== predictionRenderVersion || requestedBuffer !== buffer) return;
-    const wasPredictiveRowHighlighted = (currentRowIndex === 1 && inRowSelectionMode);
-    const wasInButtonMode = (currentRowIndex === 1 && !inRowSelectionMode);
-    const savedButtonIndex = currentButtonIndex;
+    predictionsPending = false;
 
 
 
@@ -446,6 +452,7 @@
     }
 
     refreshChoices();
+    announcePredictionRow();
   }
 
   function currentWord() {

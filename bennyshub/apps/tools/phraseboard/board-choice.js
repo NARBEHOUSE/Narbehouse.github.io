@@ -2,6 +2,9 @@
 (() => {
   const host=document.createElement('div');host.id='phrase-scan-status';el.statusFooter.before(host);
   const pointerBound=new WeakSet();
+  let selecting=false;
+  const predictionElements=()=>[...el.mainGrid.querySelectorAll('[data-prediction]')].filter(button=>!button.disabled&&button.textContent.trim());
+  const predictionLabel=()=>predictionElements().map(cleanLabel).join(', ')||'No predictions';
   let pressed=null,holdTimer=null,repeatTimer=null,updating=false,auto=NarbeScanManager.getSettings().autoScan;
   const scopeKey=()=>state.modalActive?'warning':state.videoModalActive?'media':state.currentMenu+'|'+state.currentCategory+'|'+state.page;
   const settingMenu=()=>['settings','scan','tts','theme','highlight','gridsize'].includes(state.currentMenu);
@@ -14,9 +17,9 @@
   });}
   function rows(){
     if(state.modalActive)return [];
-    if(useGroups())return groupScanner.groups.filter(group=>group.items.length).map(group=>({id:'group:'+group.name,label:group.name,items:identities(group.items.filter(element=>element.id!=='backToGroups')),element:group.items[0],labelElement:group.label||group.items[0],group}));
+    if(useGroups())return groupScanner.groups.filter(group=>group.items.length).map(group=>({id:'group:'+group.name,label:group.name==='Suggestions'?predictionLabel:group.name,items:identities(group.items.filter(element=>element.id!=='backToGroups')),element:group.items[0],labelElement:group.label||group.items[0],group}));
     const allRows=(state.scannableRows||[]).filter(row=>row.length),allItems=identities(allRows.flat());let offset=0;
-    return allRows.map(row=>{const items=allItems.slice(offset,offset+row.length);offset+=row.length;return {id:'row:'+items[0].id,label:()=>items.map(item=>item.label()).join(', '),items,element:row[0],labelElement:row[0]};});
+    return allRows.map(row=>{const items=allItems.slice(offset,offset+row.length);offset+=row.length;const predictions=row.every(element=>element.dataset.prediction);return {id:predictions?'row:predictions':'row:'+items[0].id,label:predictions?predictionLabel:()=>items.map(item=>item.label()).join(', '),items,element:row[0],labelElement:row[0]};});
   }
   function rootContext(){
     if(state.modalActive){const modal=el.createBoardWarning.classList.contains('active')?el.createBoardWarning:el.loadBoardWarning;modal.querySelector('.warning-content').append(host);return {key:rootsKey(),scope:scopeKey(),items:identities(state.modalButtons),statusHost:host};}
@@ -45,13 +48,14 @@
       const previous=rootsKey(),depth=scanner.getState().depth;
       if(state.modalActive){state.modalScanIndex=state.modalButtons.indexOf(item.element);selectModalButton();sync(true);return;}
       if(item.element.id==='backToGroups'){scanner.back({restore:true});return;}
-      item.element.click();
+      selecting=true;
+      try { item.element.click(); } finally { selecting=false; }
       if(previous===rootsKey()&&depth&&!['settings','scan','tts','theme','highlight','gridsize'].includes(state.currentMenu))scanner.back({restore:true});
       sync();
       if(settingMenu()&&scanner.getState()?.id){const current=scanner.context.items.find(value=>value.id===scanner.getState().id);if(current)scanner.announce(current.label());}
     }});
   function sync(fresh=false){
-    if(updating)return;
+    if(updating||selecting)return;
     if(state.ttsBlockInput){scanner.sync(null);return;}
     let context=rootContext();const old=scanner.context,current=scanner.getState(),groups=rows();
     // Structural Row/Cell or grid-size edits retain the changed option by identity.
@@ -77,7 +81,14 @@
     },true);});
   }
   const update=updateScannable;
-  updateScannable=function(preserve){if(updating)return;updating=true;try{update(preserve);}finally{updating=false;}sync();};
+  updateScannable=function(preserve){
+    if(updating)return;
+    const before=scanner.getState(),label=predictionLabel();
+    updating=true;try{update(preserve);}finally{updating=false;}sync();
+    const after=scanner.getState();
+    if(!selecting&&!after?.suspended&&!after?.depth&&after?.id===before?.id&&
+        ['row:predictions','group:Suggestions'].includes(after?.id)&&label!==predictionLabel())scanner.announce();
+  };
   // Shared controller is the only forward clock. Existing rendering still calls these hooks.
   if(state.scanTimer)clearInterval(state.scanTimer);state.scanTimer=null;
   startAutoScan=()=>{state.scanning=true;};stopScanning=()=>{state.scanning=false;};

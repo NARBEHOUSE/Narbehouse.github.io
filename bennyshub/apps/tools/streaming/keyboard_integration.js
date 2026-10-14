@@ -1,6 +1,8 @@
 class KeyboardController {
     constructor(callbacks) {
         this.callbacks = callbacks || {};
+        this.predictionRevision = 0;
+        this.predictionsPending = false;
         this.isOpen = false;
         this.scanIndex = -1;
         this.inRowMode = true;
@@ -101,6 +103,7 @@ class KeyboardController {
     }
 
     close(reason) {
+        ++this.predictionRevision;
         this.isOpen = false;
         this.container.classList.add('hidden');
         this.clearHighlights();
@@ -111,7 +114,7 @@ class KeyboardController {
 
     choiceRows(){
       return [{id:'row:text',row:0,kind:'keyboard-row',element:this.textRow,labelElement:this.textRow,label:()=>this.inputElement.value||'Empty text'},
-      {id:'row:predictions',row:1,kind:'keyboard-row',element:this.predictionContainer,labelElement:this.predictionContainer.querySelector('button'),label:()=>this.choiceChildren(1).filter(item=>!item.element.disabled).map(item=>item.label).filter(Boolean).join(', ')||'No predictions'},
+      {id:'row:predictions',row:1,kind:'keyboard-row',element:this.predictionContainer,labelElement:this.predictionContainer.querySelector('button'),label:()=>this.predictionsPending?'':this.choiceChildren(1).filter(item=>!item.element.disabled).map(item=>item.label).filter(Boolean).join(', ')||'No predictions'},
       ...this.rows.map((row,index)=>({id:'row:'+index,row:index+2,kind:'keyboard-row',element:document.getElementById('kb-row-'+index),labelElement:document.getElementById('kb-row-'+index)?.querySelector('.label,button'),label:index===0?'Controls':row.join(', ')}))];
     }
     choiceChildren(row){
@@ -280,18 +283,23 @@ class KeyboardController {
     // --- Predictions ---
 
     async updatePredictions() {
+        const revision = ++this.predictionRevision;
+        this.predictionsPending = true;
+        if (this.isOpen) window.refreshStreamingChoices?.(true);
         const currentVal = this.inputElement.value;
         let preds = [];
 
         if (window.predictionSystem) {
-             preds = await window.predictionSystem.getHybridPredictions(currentVal);
+             preds = await window.predictionSystem.getHybridPredictions(currentVal).catch(() => []);
         } else {
              // Fallback
              preds = ["SEARCH", "VIDEO", "PLAY"];
         }
 
+        if (revision !== this.predictionRevision || currentVal !== this.inputElement.value || !this.isOpen) return;
+        this.predictionsPending = false;
         this.renderPredictions(preds);
-        if(this.isOpen)window.refreshStreamingChoices?.();
+        window.refreshStreamingChoices?.(true);
     }
 
     renderPredictions(words) {
@@ -348,6 +356,7 @@ class KeyboardController {
 
         this.triggerSearchUpdate();
         this.speak(this.inputElement.value); // Confirm new state
+        this.updatePredictions();
     }
 
 }

@@ -92,7 +92,11 @@ function syncStreamingChoices(fresh=false){
   if(companionGateOpen()||isLaunching){choiceScan.sync(null);return;}
   choiceScan.sync(streamingChoiceContext(fresh),{fresh});
 }
-window.refreshStreamingChoices=()=>syncStreamingChoices();
+window.refreshStreamingChoices=(predictionsChanged=false)=>{
+  syncStreamingChoices();
+  const state=choiceScan?.getState();
+  if(predictionsChanged&&choiceScan?.context?.key==='keyboard'&&!state?.suspended&&state?.id==='row:predictions')choiceScan.announce();
+};
 function initStreamingChoices(){
   choiceStatus=document.createElement('div');choiceStatus.id='streaming-scan-status';
   scanAutoMode=NarbeScanManager.getSettings().autoScan;
