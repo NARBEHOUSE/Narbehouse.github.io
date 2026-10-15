@@ -1,0 +1,53 @@
+# Chasing Rainbows: code and content licenses
+
+This folder contains open-source software and separately protected game content.
+The MIT License below applies only to NARBE LLC's original software and other
+NARBE-created material expressly listed in NOTICE.md. It does not license the
+complete Chasing Rainbows game or its third-party content as one open-source work.
+
+Chasing Rainbows ICG is a game by Inclusive Imagination LLC. Existing attribution:
+TM & © 2026 Inclusive Imagination LLC. Card art by Adam M Botsford.
+
+The MIT grant excludes the card artwork and derivatives (including thumbnails),
+REFERENCE DATA, third-party game/rules text and illustrations, and game branding.
+This includes protected expressive content embedded in source files, such as the
+RULES strings in js/cards.js and adapted rule explanations in js/app.js (HOWTO).
+It does not exclude the program logic, algorithms, or ordinary functional data
+from the MIT license. See NOTICE.md for the content locations and font license.
+
+Those content exclusions preserve existing rights; they do not create new rights
+in abstract game ideas, concepts, methods of play, or other unprotectable material.
+No trademark license or endorsement is granted by the software license. Statutory
+exceptions and permissions under separately applicable licenses remain available.
+Do not assume a downloadable repository grants permission to republish its art or
+protected text. Obtain the necessary permission or replace that content before
+redistributing a complete game. An asset-conversion tool's MIT license does not
+license the artwork it processes or the resulting copies of that artwork.
+
+Nunito is separately licensed under SIL OFL 1.1; see fonts/OFL.txt.
+These notices record attribution and licensing scope, not proof of a signed
+rightsholder agreement or a new grant of permission from that rightsholder.
+
+---
+
+MIT License (NARBE LLC software only)
+
+Copyright (c) 2026 NARBE LLC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

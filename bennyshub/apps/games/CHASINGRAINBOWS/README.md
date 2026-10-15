@@ -8,6 +8,27 @@ The design and every rules decision are in [SPEC.md](SPEC.md). How the game is a
 switch players is in [README-ACCESSIBLE.md](README-ACCESSIBLE.md). Who owns what is in
 [NOTICE.md](NOTICE.md).
 
+## Copyright and open-source license
+
+**The implementation code is open source; the original game content and artwork
+are separately protected.**
+
+| Material | Ownership and permission |
+| --- | --- |
+| NARBE's original game engine, interface, accessibility code, tests and tools | © 2026 NARBE LLC; MIT License |
+| Original Chasing Rainbows game content, protected rules text and branding | Existing attribution: TM & © 2026 Inclusive Imagination LLC; excluded from MIT |
+| Card artwork, derived images and thumbnail | Card art by Adam M Botsford; existing copyright attribution to Inclusive Imagination LLC; excluded from MIT |
+| Nunito font | The Nunito Project Authors; SIL OFL 1.1 |
+
+The original game design and concept are credited to Inclusive Imagination. This
+attribution does not assert copyright over abstract ideas or methods of play.
+Protected third-party content embedded in code, including card-rule strings and
+adapted How to Play text, is also excluded from MIT; the program logic stays MIT.
+Before redistributing a complete game, obtain the necessary content permissions
+or replace that content. The software license does not grant trademark rights or
+permission to imply endorsement. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md)
+for the full scope, file locations, credits, and permission-status explanation.
+
 ## October 14 feedback, implemented October 15, 2026
 
 New games use these four presets. House Rules remains available as a custom setup.

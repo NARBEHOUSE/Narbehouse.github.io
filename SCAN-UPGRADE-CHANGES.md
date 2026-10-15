@@ -1,5 +1,21 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows licensing clarification — 2026-10-15
+
+Scope: owner requested explicit open-source-code versus retained game/artwork rights in the README and license notices. No gameplay or scanner changes. NARBE's original implementation remains MIT; artwork, protected third-party rule wording (including embedded text), branding and reference materials are excluded, and Nunito keeps its OFL license. Existing Inclusive Imagination LLC and Adam M Botsford credits are preserved. The notices do not claim exclusive copyright in abstract concepts/methods of play or establish that a rightsholder agreement has been signed.
+
+| File | Scope / Electron status | Change |
+| --- | --- | --- |
+| bennyshub/apps/games/CHASINGRAINBOWS/README.md | BOTH / PORTED | Prominent code/content ownership table and links. |
+| bennyshub/apps/games/CHASINGRAINBOWS/NOTICE.md | BOTH / PORTED | Specific content exclusions, attribution, font and permission-status explanation. |
+| bennyshub/apps/games/CHASINGRAINBOWS/LICENSE | BOTH / PORTED | Local MIT code license with clearly separated third-party content scope. |
+| README.md | WEB-ONLY | Repository overview points to the game's separate content terms. |
+| SCAN-UPGRADE-CHANGES.md | WEB-ONLY | This record. |
+| ELECTRON-SCAN-UPGRADE.md | DESKTOP-ONLY | Matching documentation record. |
+
+Validation: reviewed local notice links and code/content boundaries; build, Pages checks and the existing Companion license guard verify the documentation packaging. The root/Companion license text, game code, manifest and private CHanges-October14 feedback are unchanged. No Electron runtime or installer work. Form drafts and backups remain outside the repository at F:/PROJECT FILES/WEBSITES/Game Submission Permission Draft/ and F:/PROJECT FILES/WEBSITES/tmp/game-permissions-20261015/.
+
+
 ## Chasing Rainbows October 14 feedback — 2026-10-15
 
 Scope: owner requested these fixes in both the website and Benny's PC Hub. This explicitly authorizes this game's desktop pass. Four named presets now show the requested complexity labels; House Rules remains a custom setup. New games win after their required combos with no Legends and at most seven cards in hand. Both Race presets draw, play combos and pass chosen cards to the next seat on the right. Passes are mandatory while holding cards, with extra passes to reach seven; empty piles skip the draw. New pass choices use the existing CHOICE scanner, hand-card highlights, row Back, optional confirmation and private handoff inbox. Help, AI, display events and the desktop catalog description follow the new rules. Existing saves keep their stored original rules and announce that on Continue.

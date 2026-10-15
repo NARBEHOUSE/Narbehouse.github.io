@@ -23,7 +23,7 @@ The Hub's **Settings** area includes Companion setup, connection checks, and dat
 
 ## Open source
 
-You can also use, modify, or host your own version under the MIT License. The source code is available here for anyone who wants to contribute or adapt the tools.
+NARBE-authored source code is available under the MIT License for anyone who wants to contribute or adapt the tools. Third-party game content, artwork, fonts and branding can have separate terms; review each game’s LICENSE and NOTICE before hosting or distributing a complete copy.
 
 ---
 
@@ -31,11 +31,11 @@ You can also use, modify, or host your own version under the MIT License. The so
 
 © 2026 NARBE LLC
 
-This project is licensed under the **MIT License**.
+The NARBE-authored software is licensed under the **MIT License**, subject to separately identified third-party content and licenses.
 
 You are free to use, modify, distribute, and use this software commercially, provided that the original copyright notice and license are included in all copies or substantial portions of the Software.
 
-See the [LICENSE](./LICENSE) file for full details.
+See the [LICENSE](./LICENSE) file for the software terms. **Chasing Rainbows has open-source implementation code and separately protected game content and artwork**; its [game LICENSE](bennyshub/apps/games/CHASINGRAINBOWS/LICENSE) and [ownership notice](bennyshub/apps/games/CHASINGRAINBOWS/NOTICE.md) identify the exclusions, credits and separate font license.
 
 Companion packaging uses the byte-preserved `extension/LICENSE` snapshot so website branding updates do not rewrite released archives. Packaging requires every part except the separate branding paragraph to match the root license. Changes to software license terms require review of the snapshot and a new immutable release candidate.
 
