@@ -121,6 +121,7 @@ window.CRTable = (function () {
     draw.style.setProperty('--depth', Math.min(3, Math.ceil(d.draw / 12)));
     const disc = $('pileDiscard'), slot = disc.querySelector('.slot');
     // The top three discards, fanned a little, so the pile has depth.
+    disc.hidden = o.rules.draw === 'pass';
     const tail = d.discard.slice(-3);
     const sig = tail.join() + '|' + d.discard.length;
     if (slot.dataset.sig !== sig) {

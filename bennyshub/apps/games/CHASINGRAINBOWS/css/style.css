@@ -766,3 +766,6 @@ body[data-motion="calm"] .showfan img, body[data-motion="calm"] .hcard > img, bo
   .callout span { font-size: calc(clamp(1.6rem, 7vw, 2.5rem) * var(--ui)); overflow-wrap: anywhere; }
   .sweep span { padding: 10px 20px; font-size: calc(1.5rem * var(--ui)); text-align: center; }
 }
+
+/* Passing modes have no discard pile. */
+.pile[hidden] { display: none; }

@@ -6,7 +6,7 @@ const E = require('../js/engine.js'), A = require('../js/ai.js'), D = require('.
 
 test('Replaying each move\'s events on the display mirror reaches the engine state, every move', () => {
   let moves = 0;
-  for (const mode of ['classic', 'race']) for (const n of [2, 3, 4, 6]) for (let seed = 1; seed <= 40; seed++) {
+  for (const mode of ['classic', 'classicLite', 'raceFull', 'race']) for (const n of [2, 3, 4, 6]) for (let seed = 1; seed <= 40; seed++) {
     const players = Array.from({ length: n }, (_, i) => ({ name: 'P' + i, kind: 'cpu', skill: ['easy', 'normal', 'hard'][(i + seed) % 3] }));
     const created = E.createGame({ players, mode }, seed);
     const s = created.state;

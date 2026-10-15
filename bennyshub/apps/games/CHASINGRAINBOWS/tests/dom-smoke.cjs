@@ -113,7 +113,7 @@ async function play(label, settings, opts) {
       if (screen && dbg().screen !== screen) throw new Error(label + ': ' + id + ' led to ' + dbg().screen + ', not ' + screen);
     };
     await must('howto', 'howto');
-    for (let k = 0; k < 5; k++) await must('next', 'howto');
+    for (let k = 0; k < 20 && dbg().ids.includes('next'); k++) await must('next', 'howto');
     await must('gallery', 'gallery');
     for (let k = 0; k < 18; k++) await must('next', 'gallery');
     await must('prev', 'gallery');
@@ -124,7 +124,7 @@ async function play(label, settings, opts) {
     for (const id of ['helper', 'blocks', 'pace', 'autodraw', 'confirm', 'captions', 'motion', 'size', 'sfx', 'wsfx', 'reset', 'reset']) await must(id, 'settings');
     await must('back', 'title');
     await must('new', 'setup');
-    for (const id of ['mode', 'mode', 'mode', 'players', 'people', 'first', 'open', 'open']) await must(id, 'setup');
+    for (const id of ['mode', 'mode', 'mode', 'mode', 'mode', 'players', 'people', 'first', 'open', 'open']) await must(id, 'setup');
   }
   /** Mid-game: Pause > Settings > Back > Main Menu, then Continue Game from the title. */
   async function saveAndResume() {
@@ -231,7 +231,9 @@ async function play(label, settings, opts) {
     ['classic, you vs 3, always asked to block, shortcut helper', Object.assign({}, base, { helper: 'shortcut', blockPrompts: 'always', confirmDiscard: true, setup: { mode: 'classic', players: 4, people: 1, skill: 'hard', first: 'random' } }), { seed: 7 }],
     ['two people + 1 computer, sharing the switch', Object.assign({}, base, { blockPrompts: 'always', setup: { mode: 'classic', players: 3, people: 2, skill: 'easy', first: 'you' } }), { seed: 11 }],
     ['three people, open hands', Object.assign({}, base, { setup: { mode: 'classic', players: 3, people: 3, skill: 'easy', first: 'you', openHands: true } }), { seed: 5 }],
-    ['rainbow race, 4 players', Object.assign({}, base, { setup: { mode: 'race', players: 4, people: 1, skill: 'normal', first: 'you' } }), { seed: 13 }],
+    ['chasing rainbows lite', Object.assign({}, base, { setup: { mode: 'classicLite', players: 2, people: 1, skill: 'normal', first: 'you' } }), { seed: 19 }],
+    ['rainbow race full', Object.assign({}, base, { setup: { mode: 'raceFull', players: 3, people: 1, skill: 'normal', first: 'you' } }), { seed: 23 }],
+    ['rainbow race lite, 4 players', Object.assign({}, base, { setup: { mode: 'race', players: 4, people: 1, skill: 'normal', first: 'you' } }), { seed: 13 }],
     ['house rules with block chains, auto scan', Object.assign({}, base, { motion: 'full', blockPrompts: 'always', setup: { mode: 'house', players: 3, people: 1, skill: 'normal', first: 'you', house } }), { seed: 17, scan: { autoScan: true, scanSpeedIndex: 0 } }],
   ];
   let failed = 0;

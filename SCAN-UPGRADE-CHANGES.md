@@ -1,5 +1,16 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows October 14 feedback — 2026-10-15
+
+Scope: owner requested these fixes in both the website and Benny's PC Hub. This explicitly authorizes this game's desktop pass. Four named presets now show the requested complexity labels; House Rules remains a custom setup. New games win after their required combos with no Legends and at most seven cards in hand. Both Race presets draw, play combos and pass chosen cards to the next seat on the right. Passes are mandatory while holding cards, with extra passes to reach seven; empty piles skip the draw. New pass choices use the existing CHOICE scanner, hand-card highlights, row Back, optional confirmation and private handoff inbox. Help, AI, display events and the desktop catalog description follow the new rules. Existing saves keep their stored original rules and announce that on Continue.
+
+Changed files in CHASINGRAINBOWS (WEB + ELECTRON, port applied): js/engine.js, js/ai.js, js/menus.js, js/words.js, js/display.js, js/table.js, js/app.js, css/style.css, README.md, README-ACCESSIBLE.md, SPEC.md, tests/rules.test.cjs, tests/menus.test.cjs, tests/display.test.cjs, tests/sim.test.cjs, tests/dom-smoke.cjs, tests/october14.test.cjs, tests/october14-dom.cjs. Desktop-only: bennyshub/apps/games/games.json (this game's description), ELECTRON-SCAN-UPGRADE.md (this entry). Web-only: SCAN-UPGRADE-CHANGES.md (this entry). The owner's CHanges-October14 feedback file is retained verbatim. Desktop/web-specific layouts and entry scripts are preserved. The web game remains direct-link only.
+
+Validation: 60 game checks pass, including 18,000 seeded games across four presets, five player counts and three CPU skills, plus 600 Hard/Easy matches (70% Hard wins). Eight focused Node DOM scenarios cover setup labels, four immediate-win flows, nested pass Back/confirmation, forced passes, save/resume, private handoffs, Auto and original saves. The 257 website tests and website build pass. No browser or Electron process was launched; real rendering, audible speech and physical switch checks remain for the target setup. Desktop source verification is recorded with the installation evidence. The owner subsequently authorized the website push on 2026-10-15, keeping Chasing Rainbows out of games.json and excluding the local CHanges-October14 feedback file from Git. .gitignore records that exclusion (WEB-ONLY). No desktop installer build is included. Optional printed-card play-along remains future work.
+
+Backups, detailed logs and installation evidence: F:/PROJECT FILES/WEBSITES/tmp/chasingrainbows-october14-20261015/.
+
+
 ## Prediction row speech refresh — 2026-10-14
 
 The owner requested this fix in both the desktop PC Hub and the F-drive website project. Selecting a predicted word could return to row mode before the asynchronous suggestions finished, leaving the old row speech playing after the buttons changed. Prediction rows now suppress their superseded label while refreshing and announce the newly rendered suggestions through the scanner's owned speech ticket if that row still has focus. Request versions reject late results; navigation away retains speech ownership. The shared scan controller, Companion package, input guards, parking and brake policy are unchanged.

@@ -26,12 +26,14 @@ const allCards = s => [...s.draw, ...s.discard, ...s.players.flatMap(P => [...P.
 
 test('Deck sizes follow the player count and mode', () => {
   const sizes = [[2, 'classic', 48], [3, 'classic', 96], [4, 'classic', 96], [5, 'classic', 144], [6, 'classic', 144],
+    [2, 'classicLite', 46], [4, 'classicLite', 92], [6, 'classicLite', 138],
+    [2, 'raceFull', 31], [4, 'raceFull', 62], [6, 'raceFull', 93],
     [2, 'race', 25], [4, 'race', 50], [6, 'race', 75]];
   for (const [n, mode, size] of sizes) {
     const s = game(n, mode);
     assert.equal(allCards(s).length, size, n + ' players ' + mode);
     s.players.forEach(P => assert.equal(P.hand.length, 7));
-    assert.equal(s.discard.length, 1);
+    assert.equal(s.discard.length, mode === 'race' || mode === 'raceFull' ? 0 : 1);
   }
   const counts = {};
   allCards(game(2)).forEach(c => { counts[c.t] = (counts[c.t] || 0) + 1; });
@@ -233,7 +235,7 @@ test('Block chains (house rule): an even number of Clouds lets the weather card 
   assert.equal(E.getDecision(no).kind, 'play', 'without the house rule a Cloud cannot be blocked');
 });
 
-test('Winning: the moment a hand empties with Rainbow and Sun & Rain played - by combo, discard, weather, or someone else\'s Storm', () => {
+test('Winning remains valid with an empty hand and Rainbow and Sun & Rain played - by combo, discard, weather, or someone else\'s Storm', () => {
   let s = table({ hands: [['sun', 'rain']], laid: [{ rainbow: true }] });
   E.applyMove(s, 'combo:core');
   assert.deepEqual(s.winner, { p: 0, how: 'combo', legend: false });
@@ -255,8 +257,9 @@ test('Winning: the moment a hand empties with Rainbow and Sun & Rain played - by
   assert.equal(s.phase, 'draw', 'no win without Sun & Rain');
 });
 
-test('Rainbow Race: steal a random card from a player, who draws a replacement; win with a Rainbow alone', () => {
+test('Legacy Rainbow Race saves retain the steal-and-replace draw option', () => {
   const s = table({ mode: 'race', phase: 'draw', hands: [['red'], ['blue', 'green']], draw: ['violet'] });
+  s.v = 1; s.rules.draw = 'player'; delete s.rules.emptyHand;
   assert.deepEqual(keys(s).sort(), ['draw', 'steal:1']);
   const ev = E.applyMove(s, 'steal:1');
   assert.equal(s.players[0].hand.length, 2);

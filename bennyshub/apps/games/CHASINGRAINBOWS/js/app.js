@@ -237,7 +237,7 @@
       // A choice about a pile or a hand card also lights that pile or card up.
       if (ref.id === 'take') its.push([T.pileEl('discard'), 'echo']);
       if (ref.id === 'draw') its.push([T.pileEl('draw'), 'echo']);
-      if (ref.card && ref.move && /^discard:/.test(ref.move) && item.element && !item.element.classList.contains('hcard')) its.push([T.handEl(ref.card), 'echo']);
+      if (ref.card && ref.move && /^(?:discard|pass):/.test(ref.move) && item.element && !item.element.classList.contains('hcard')) its.push([T.handEl(ref.card), 'echo']);
     }
     setFocus(its);
     // The phone page scrolls. Follow the actual choice, never its decorative pile/card echo.
@@ -441,7 +441,7 @@
     const m = /^(?:weather:fog:|steal:)(\d+)$/.exec(ch.move || '') || /^wind:(\d+)$/.exec(ch.id || '');
     return m ? +m[1] : null;
   };
-  const handPick = ch => !!ch.card && !!ch.move && (/^discard:/.test(ch.move) || /^weather:wind:\d+:/.test(ch.move)) && !!T.handEl(ch.card);
+  const handPick = ch => !!ch.card && !!ch.move && (/^(?:discard|pass):/.test(ch.move) || /^weather:wind:\d+:/.test(ch.move)) && !!T.handEl(ch.card);
 
   /** Where a choice lives: on a seat, on a hand card, or as a button in a list. */
   function place(ch, lvl, container) {
@@ -528,7 +528,7 @@
     }
     if (typeof ref.action === 'function') { ref.action(); return; }
     if (ref.kind === 'move') {
-      if (S.confirmDiscard && /^discard:/.test(ref.move) && !ref.confirmed) {
+      if (S.confirmDiscard && /^(?:discard|pass):/.test(ref.move) && !ref.confirmed) {
         enterRow({ id: 'confirm', label: ref.full || ref.label, say: ref.full || ref.say,
           children: [{ id: 'confirm:' + ref.move, kind: 'move', move: ref.move, confirmed: true, icon: '✔️',
             label: 'Yes, ' + (ref.full || 'discard it').replace(/^Discard/, 'discard'), say: 'Yes, ' + (ref.full || 'discard it').replace(/^Discard/, 'discard') }] });
@@ -639,7 +639,7 @@
     G.disp = D.fromState(G.st);
     const dealt = G.disp.hands.map(h => h.slice());
     G.disp.hands = G.disp.hands.map(() => []);
-    G.disp.draw += dealt.flat().length + 1;
+    G.disp.draw += dealt.flat().length + G.st.discard.length;
     G.disp.discard = [];
     G.disp.turn = -1;
     G.dealt = dealt;
@@ -732,20 +732,24 @@
     const suggest = S.helper !== 'off' && d.moves.length > 1 ? AI.suggest(view, d) : null;
     const tree = M.build(d, view, { names: G.meta.names }, { helper: S.helper, suggest: suggest && suggest.key });
     const o = { banner: turnBanner(d), intro: introFor(d, view) };
-    if (d.kind === 'draw') o.sub = view.rules.draw === 'player' ? 'Draw, or take a card from a player.' : 'Draw, or take the top discard.';
-    if (d.kind === 'play') o.sub = view.hand.length > E.HAND_LIMIT ? 'Discard down to 7.' : 'Play, discard a card, or end your turn.';
+    const passing = view.rules.draw === 'pass';
+    const recipient = G.meta.names[(d.p + 1) % view.players.length];
+    if (d.kind === 'draw') o.sub = passing ? 'Draw a card from the pile.' : view.rules.draw === 'player' ? 'Draw, or take a card from a player.' : 'Draw, or take the top discard.';
+    if (d.kind === 'play') o.sub = passing ? 'Play ready combos, then give a card to ' + recipient + ' on your right.' : view.hand.length > E.HAND_LIMIT ? 'Discard down to 7.' : 'Play, discard a card, or end your turn.';
     if (d.kind === 'discard') o.sub = 'Pick a card in your hand to discard.';
+    if (d.kind === 'pass') o.sub = 'Give cards to ' + recipient + ' on your right until you have 7.';
     if (d.kind === 'block') o.sub = 'You have a Cloud Block.';
     if (d.kind === 'draw' && isHuman(d.p)) SND.play('turn');
     openTable(tree, o);
   }
   function introFor(d, view) {
     if (d.kind === 'draw') return W.turnIntro(view, { names: G.meta.names });
+    if (d.kind === 'pass') return 'Give ' + (view.hand.length - E.HAND_LIMIT) + ' more to ' + G.meta.names[(d.p + 1) % view.players.length] + ' on your right.';
     if (d.kind === 'discard') { const k = view.hand.length - E.HAND_LIMIT; return 'Discard ' + k + ' more.'; }
     if (d.kind === 'block') return blockIntro(view, d);
     const combo = d.moves.find(m => m.type === 'combo');
     if (combo) return { rainbow: 'Your rainbow is ready!', core: 'Sun and Rain are ready!', legend: 'Day and Night are ready!' }[combo.combo];
-    if (view.hand.length > E.HAND_LIMIT) return 'You have ' + view.hand.length + ' cards. Discard down to 7.';
+    if (view.hand.length > E.HAND_LIMIT) return 'You have ' + view.hand.length + ' cards. ' + (view.rules.draw === 'pass' ? 'Play a combo, or give cards to the player on your right, down to 7.' : 'Discard down to 7.');
     return '';
   }
   function blockIntro(view, d) {
@@ -866,6 +870,14 @@
         step(ev);
         if (ev.p !== G.meta.viewer) react(ev.p, '👀');
         return;
+      case 'pass': {
+        SND.play('card');
+        const from = T.rectOf(T.cardsEl(ev.p, ty(ev.card)));
+        const see = !G.meta.hidden && (ev.p === G.meta.viewer || ev.target === G.meta.viewer) || G.meta.openHands;
+        step(ev);
+        await T.fly(from, T.cardsEl(ev.target, ty(ev.card)), see ? ty(ev.card) : null);
+        return;
+      }
       case 'steal': {
         SND.play('card');
         const from = T.rectOf(T.cardsEl(ev.from, ty(ev.card)));
@@ -1097,7 +1109,7 @@
     if (!G.st || G.st.phase === 'over') return;
     const meta = Object.assign({}, G.meta, { hidden: false, viewer: humans() > 1 ? -1 : G.meta.viewer });
     const n = G.st.players.length;
-    store(GKEY, { v: 1, cfg: G.cfg, state: G.st, meta, summary: n + ' players · turn ' + G.st.turnNo });
+    store(GKEY, { v: 1, cfg: G.cfg, state: G.st, meta, summary: (G.st.rules.emptyHand !== false ? 'Original rules · ' : '') + n + ' players · turn ' + G.st.turnNo });
   }
   function continueSaved() {
     const saved = load(GKEY);
@@ -1109,7 +1121,7 @@
     N.clearHistory();
     closeCard();
     showTable();
-    N.say('Welcome back.');
+    N.say(G.st.rules.emptyHand !== false ? 'Welcome back. This saved game uses the original rules: empty your hand to win. Start a new game for the updated modes.' : 'Welcome back.');
     setMood();
     loop();
   }
@@ -1141,10 +1153,13 @@
   /* ══ SCREENS ═════════════════════════════════════════════════════════════ */
   const back = fn => ({ id: 'back', icon: '↩', label: 'Back', speech: 'Back', action: fn, cls: 'back' });
   const cycle = (list, v) => list[(list.indexOf(v) + 1) % list.length];
-  const MODES = { classic: 'Chasing Rainbows', race: 'Rainbow Race', house: 'House Rules' };
+  const MODES = { classic: 'Chasing Rainbows Full', classicLite: 'Chasing Rainbows Lite', raceFull: 'Rainbow Race Full', race: 'Rainbow Race Lite', house: 'House Rules' };
+  const COMPLEXITY = { classic: 'Most Complex', classicLite: 'More Complex', raceFull: 'Less Complex', race: 'Least Complex', house: 'Custom game' };
   const MODES_SAY = {
-    classic: 'Mode: Chasing Rainbows. The full game, with every weather card.',
-    race: 'Mode: Rainbow Race. Colors and Wilds only, for a quick, simple game.',
+    classic: 'Mode: Chasing Rainbows Full. Most Complex. Weather cards, Sun and Rain, Day and Night.',
+    classicLite: 'Mode: Chasing Rainbows Lite. More Complex. Weather cards and Sun and Rain, without Day and Night.',
+    raceFull: 'Mode: Rainbow Race Full. Less Complex. Rainbow and Sun and Rain. Draw, play combos, then give a card to the right.',
+    race: 'Mode: Rainbow Race Lite. Least Complex. Colors and Wilds only. Draw, play a Rainbow, then give a card to the right.',
     house: 'Mode: House Rules. You choose which cards are in the deck.',
   };
   const SKILLS = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
@@ -1196,20 +1211,21 @@
   }
 
   const HOWTO = [
-    { e: '🌈', t: 'The Goal', s: '<p>Be the first to play a <b>Rainbow</b> and <b>Sun & Rain</b>, then <b>empty your hand</b>.</p>' +
+    { e: '🌈', t: 'The Goal', s: '<p>Be the first to play your required combos: a <b>Rainbow</b>, plus <b>Sun & Rain</b> in every preset except Rainbow Race Lite.</p><p>You can win with cards left! Have <b>7 or fewer</b> and <b>no Legends</b> left in your hand.</p>' +
       '<p>A Rainbow is seven cards: red, orange, yellow, green, blue, indigo and violet. A <b>Wild</b> can stand in for any color.</p>' },
-    { e: '🃏', t: 'Your Turn', s: '<p><b>1. Draw</b> a card, or take the top card of the discard pile.</p>' +
+    { e: '🃏', t: 'Your Turn', s: '<p><b>Chasing Rainbows Full & Lite:</b> draw a card, or take the top card of the discard pile.</p>' +
       '<p><b>2. Play</b> any combo you have, and up to <b>one weather card</b>.</p>' +
-      '<p><b>3. Discard</b> one card, or end your turn. You can keep at most <b>7 cards</b>.</p>' },
-    { e: '🌦️', t: 'Combos', s: '<p><b>Rainbow</b>: one of each color. <b>Sun & Rain</b>: one of each. You need both to win.</p>' +
-      '<p><b>Day & Night</b> are Legends: a bonus combo. Legends can never be discarded… except <b>Night</b>, as your very last card. That is <b>Night, Night!</b></p>' },
+      '<p><b>3. Discard</b> one card, or end your turn. If over 7, discard down to <b>7</b>.</p>' },
+    { e: '🤲', t: 'Rainbow Race Turns', s: '<p><b>Both Rainbow Race modes:</b> receive the card passed from your left, draw from the pile, play ready combos, then <b>give a card to the next player on your right</b>. Give extra cards if needed to reach 7. When the pile is empty, keep playing and passing.</p>' },
+    { e: '🌦️', t: 'Combos', s: '<p><b>Rainbow</b>: one of each color. <b>Sun & Rain</b>: one of each. Both are needed except in <b>Rainbow Race Lite</b>, which needs only a Rainbow.</p>' +
+      '<p><b>Day & Night</b> appear in Chasing Rainbows Full. A Legend in your hand blocks a win. Play them together, trade them with Wind or remove them with Storm. Night can still be discarded as your very last card after the required combos: <b>Night, Night!</b></p>' },
     { e: '⛈️', t: 'Weather Cards', s: '<p><b>Double Draw</b>: draw two. <b>Fog Skip</b>: a player misses a turn. <b>Wind Trade</b>: swap a card with a player.</p>' +
       '<p><b>Storm Shuffle</b>: name a card, and every copy goes back in the deck. <b>Cloud Block</b> stops a weather card, any time.</p>' +
       '<p>A weather card on top of the discard pile <b>freezes</b> it: nobody can take it.</p>' },
     { e: '🔘', t: 'Playing with Switches', s: '<p>Tap <b>Space</b> to move, <b>hold Space</b> to go back, <b>Enter</b> to choose. With Auto Scan, Enter is all you need.</p>' +
       '<p><b>Look</b> reads your hand, your rainbow and the table. <b>Pause</b> is always the last choice. Holding Enter for five seconds pauses too.</p>' +
       '<p>A <b>★</b> marks the Rainbow Helper\'s suggestion.</p>' },
-    { e: '👥', t: 'Ways to Play', s: '<p><b>Rainbow Race</b>: colors and Wilds only. Quick and simple.</p>' +
+    { e: '👥', t: 'Ways to Play', s: '<p><b>Chasing Rainbows Full — Most Complex:</b> all cards.</p><p><b>Chasing Rainbows Lite — More Complex:</b> no Day or Night.</p><p><b>Rainbow Race Full — Less Complex:</b> colors, Wilds, Sun and Rain.</p><p><b>Rainbow Race Lite — Least Complex:</b> colors and Wilds only.</p>' +
       '<p><b>House Rules</b>: choose which cards are in the deck.</p>' +
       '<p><b>Share the switch</b>: up to six people take turns at one screen. Your hand is hidden until you say you\'re ready.</p>' },
   ];
@@ -1235,7 +1251,7 @@
       const set = (fn, say) => { fn(); saveSettings(); refresh(); scanSpeak(say); };
       const list = [
         { id: 'start', icon: '🌈', label: 'Start Game', primary: true, note: esc(setupSummary()), speech: 'Start game. ' + setupSummary(), action: () => startNew() },
-        { id: 'mode', icon: '🎴', label: 'Mode', value: MODES[su.mode], speech: MODES_SAY[su.mode],
+        { id: 'mode', icon: '🎴', label: 'Mode', value: MODES[su.mode], note: COMPLEXITY[su.mode], speech: MODES_SAY[su.mode],
           action: () => { const n = cycle(Object.keys(MODES), su.mode); set(() => { su.mode = n; }, MODES_SAY[n]); } },
         { id: 'players', icon: '👥', label: 'Players', value: String(su.players), speech: 'Players: ' + su.players,
           action: () => { const n = su.players >= 6 ? 2 : su.players + 1; set(() => { su.players = n; su.people = Math.min(su.people, n); }, 'Players: ' + n); } },
@@ -1267,8 +1283,8 @@
         { id: 'legend', icon: '🌗', label: 'Day & Night', value: h.legend ? 'In' : 'Out', speech: 'Day and Night, ' + (h.legend ? 'in the deck' : 'left out'),
           action: () => set(() => { h.legend = !h.legend; }, 'Day and Night, ' + (h.legend ? 'left out' : 'in the deck')) },
         { id: 'draw', icon: '🤲', label: 'Draw from', value: h.draw === 'player' ? 'A player' : 'Discard pile',
-          speech: h.draw === 'player' ? 'Draw from the pile, or take a card from a player, like Rainbow Race.' : 'Draw from the pile, or take the top of the discard pile.',
-          action: () => set(() => { h.draw = h.draw === 'player' ? 'discard' : 'player'; }, h.draw === 'player' ? 'Draw from the pile, or take the top of the discard pile.' : 'Draw from the pile, or take a card from a player, like Rainbow Race.') },
+          speech: h.draw === 'player' ? 'Draw from the pile, or take a card from a player.' : 'Draw from the pile, or take the top of the discard pile.',
+          action: () => set(() => { h.draw = h.draw === 'player' ? 'discard' : 'player'; }, h.draw === 'player' ? 'Draw from the pile, or take the top of the discard pile.' : 'Draw from the pile, or take a card from a player.') },
         { id: 'chains', icon: '☁️', label: 'Block a Block', value: h.blockChains ? 'On' : 'Off',
           speech: h.blockChains ? 'Block a block on. A Cloud Block can itself be blocked by another Cloud.' : 'Block a block off.',
           action: () => set(() => { h.blockChains = !h.blockChains; }, h.blockChains ? 'Block a block off.' : 'Block a block on. A Cloud Block can itself be blocked by another Cloud.') },
@@ -1321,9 +1337,9 @@
         { id: 'autodraw', icon: '🂠', label: 'Auto-draw', value: S.autoDraw ? 'On' : 'Off',
           speech: S.autoDraw ? 'Auto draw on. When drawing is your only choice, the game draws for you.' : 'Auto draw off.',
           action: () => set('autoDraw', !S.autoDraw, S.autoDraw ? 'Auto draw off.' : 'Auto draw on. When drawing is your only choice, the game draws for you.') },
-        { id: 'confirm', icon: '✔️', label: 'Confirm discards', value: S.confirmDiscard ? 'On' : 'Off',
-          speech: S.confirmDiscard ? 'Confirm discards on. You choose a card, then confirm it.' : 'Confirm discards off.',
-          action: () => set('confirmDiscard', !S.confirmDiscard, S.confirmDiscard ? 'Confirm discards off.' : 'Confirm discards on. You choose a card, then confirm it.') },
+        { id: 'confirm', icon: '✔️', label: 'Confirm discards / passes', value: S.confirmDiscard ? 'On' : 'Off',
+          speech: S.confirmDiscard ? 'Confirm discards and passes on. You choose a card, then confirm it.' : 'Confirm discards and passes off.',
+          action: () => set('confirmDiscard', !S.confirmDiscard, S.confirmDiscard ? 'Confirm discards and passes off.' : 'Confirm discards and passes on. You choose a card, then confirm it.') },
         { id: 'captions', icon: '💬', label: 'Captions', value: S.captions ? 'On' : 'Off', speech: 'Captions, ' + (S.captions ? 'on' : 'off'),
           action: () => set('captions', !S.captions, 'Captions ' + (S.captions ? 'off' : 'on')) },
         { id: 'motion', icon: '🌦️', label: 'Animations', value: MOTIONS[S.motion], speech: MOTIONS_SAY[S.motion],

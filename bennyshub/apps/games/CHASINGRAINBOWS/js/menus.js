@@ -62,10 +62,23 @@
     return out;
   }
 
+  function passItems(d, view, ctx, asRoot) {
+    const target = ctx.names[(view.me + 1) % view.players.length];
+    return d.moves.filter(m => m.type === 'pass').map(m => {
+      const n = count(view.hand, m.card);
+      const full = 'Give ' + S(m.card) + ' to ' + target + ' on your right';
+      return leaf(m, (asRoot ? 'Give ' : '') + N(m.card) + (n > 1 ? ' ×' + n : ''),
+        full + (n > 1 ? ', you have ' + n : ''), { card: m.card, full });
+    });
+  }
+
   function discardItems(d, view, asRoot) {
     const done = view.players[view.me].done;
     return d.moves.filter(m => m.type === 'discard').map(m => {
-      const n = count(view.hand, m.card), wins = done && view.hand.length === 1;
+      const n = count(view.hand, m.card);
+      const rest = view.hand.slice(); rest.splice(rest.indexOf(m.card), 1);
+      const wins = done && (view.rules.emptyHand !== false ? rest.length === 0
+        : rest.length <= E.HAND_LIMIT && !rest.some(C.isLegend));
       if (m.card === 'night' && wins) {
         return leaf(m, 'Night, Night!', 'Night. Say Night, Night, and win!', { card: 'night', full: 'Discard Night and win. Night, Night!' });
       }
@@ -119,6 +132,14 @@
         children: targets.length === 1 ? gifts(targets[0])
           : targets.map(q => { const st = seat(view, ctx, q); return { id: 'wind:' + q, kind: 'group', label: st.name, say: st.say, note: st.note, children: gifts(q) }; }) });
     }
+    const passes = passItems(d, view, ctx, false);
+    if (passes.length) {
+      const target = ctx.names[(view.me + 1) % view.players.length];
+      const n = Math.max(1, hand.length - E.HAND_LIMIT);
+      out.push({ id: 'pass', kind: 'group', icon: '🤲', label: 'Give a card to ' + target,
+        say: 'Give ' + (n === 1 ? 'a card' : n + ' cards') + ' to ' + target + ' on your right' +
+          (hand.length > E.HAND_LIMIT ? ', down to 7.' : '.'), children: passes });
+    }
     const discards = discardItems(d, view, false);
     const forced = hand.length > E.HAND_LIMIT;
     if (discards.length) {
@@ -147,6 +168,7 @@
     if (d.kind === 'draw') items = drawMenu(d, view, ctx);
     else if (d.kind === 'play') items = playMenu(d, view, ctx);
     else if (d.kind === 'discard') items = discardItems(d, view, true);
+    else if (d.kind === 'pass') items = passItems(d, view, ctx, true);
     else if (d.kind === 'block') items = blockMenu(d);
     else items = [];
     if (opts.helper && opts.helper !== 'off' && opts.suggest) {

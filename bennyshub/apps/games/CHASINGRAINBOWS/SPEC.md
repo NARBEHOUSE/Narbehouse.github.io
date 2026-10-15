@@ -1,3 +1,41 @@
+# Chasing Rainbows: current rules
+
+## October 14 feedback, implemented October 15, 2026
+
+New games use these four presets. House Rules remains available as a custom setup.
+
+| Mode | Complexity | Cards | Required combos |
+| --- | --- | --- | --- |
+| Chasing Rainbows Full | Most Complex | All cards | Rainbow + Sun & Rain |
+| Chasing Rainbows Lite | More Complex | All except Day and Night | Rainbow + Sun & Rain |
+| Rainbow Race Full | Less Complex | Colors, Wilds, Sun and Rain | Rainbow + Sun & Rain |
+| Rainbow Race Lite | Least Complex | Colors and Wilds | Rainbow |
+
+A player wins immediately when their required combos are played, they hold no Legend,
+and their hand has at most seven cards. Emptying the hand is no longer required.
+Legends still cannot be discarded, except Night as the last card after the required
+combos (Night, Night). Wind or Storm can remove a blocking Legend and complete a win.
+
+Chasing Rainbows keeps its existing draw, weather and discard sequence. In both Race
+modes, turn order runs to the right: receive the previous player's chosen card, draw
+from the pile, play any complete combos, then give a chosen unwanted card to the next
+player on the right. The first player starts without an incoming card. Give at least
+one card when holding any, and keep giving if necessary to finish at seven. Completing
+the winning combos ends the game immediately, without a final pass. An empty hand can
+end its turn if a required combo is still missing. Race has no discard pile, stealing,
+or replacement draw. If the pile runs out, skip drawing and continue playing/passing.
+Cards given between two seats are named only to those seats; other humans receive their
+private news at the next handoff.
+
+Existing saves retain their stored rules, including the original empty-hand goal and
+old Race draw choices. Continue announces this; start a new game for the revised rules.
+The printed-card play-along idea is optional future work, not online multiplayer.
+
+## Archived October 12 design
+
+The original design below is retained as history. Its mode, win, Race turn, helper and
+simulation descriptions are superseded by the October 14 rules above for new games.
+
 # Chasing Rainbows: Switch Access Edition
 
 **Game spec. Approved 2026-10-12, with changes, and built the same day.** The site owner

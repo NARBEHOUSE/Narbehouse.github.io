@@ -5,6 +5,37 @@ This edition is for players who can't hold, sort or flip cards. They play it alo
 or two switches, against the computer or with family at the same screen. This document
 records what changed and why. The hub's rules are in `ACCESSIBILITY.md` at the hub root.
 
+## October 14 feedback, implemented October 15, 2026
+
+New games use these four presets. House Rules remains available as a custom setup.
+
+| Mode | Complexity | Cards | Required combos |
+| --- | --- | --- | --- |
+| Chasing Rainbows Full | Most Complex | All cards | Rainbow + Sun & Rain |
+| Chasing Rainbows Lite | More Complex | All except Day and Night | Rainbow + Sun & Rain |
+| Rainbow Race Full | Less Complex | Colors, Wilds, Sun and Rain | Rainbow + Sun & Rain |
+| Rainbow Race Lite | Least Complex | Colors and Wilds | Rainbow |
+
+A player wins immediately when their required combos are played, they hold no Legend,
+and their hand has at most seven cards. Emptying the hand is no longer required.
+Legends still cannot be discarded, except Night as the last card after the required
+combos (Night, Night). Wind or Storm can remove a blocking Legend and complete a win.
+
+Chasing Rainbows keeps its existing draw, weather and discard sequence. In both Race
+modes, turn order runs to the right: receive the previous player's chosen card, draw
+from the pile, play any complete combos, then give a chosen unwanted card to the next
+player on the right. The first player starts without an incoming card. Give at least
+one card when holding any, and keep giving if necessary to finish at seven. Completing
+the winning combos ends the game immediately, without a final pass. An empty hand can
+end its turn if a required combo is still missing. Race has no discard pile, stealing,
+or replacement draw. If the pile runs out, skip drawing and continue playing/passing.
+Cards given between two seats are named only to those seats; other humans receive their
+private news at the next handoff.
+
+Existing saves retain their stored rules, including the original empty-hand goal and
+old Race draw choices. Continue announces this; start a new game for the revised rules.
+The printed-card play-along idea is optional future work, not online multiplayer.
+
 ## Every state is a choice
 
 Nothing in this game moves on its own while you decide (ACCESSIBILITY.md §4). Every screen
@@ -28,11 +59,12 @@ frozen discard pile isn't offered, and the game says why.
 | --- | --- |
 | Draw | Draw a card · Take *Orange* (when the discard pile isn't frozen) · Look · Pause |
 | Play | Any combo that's ready · each weather card you hold · Discard a card ▸ · End turn · Look · Pause |
+| Rainbow Race | Draw from the pile · Play ready combos · Give a card to the next player on the right · Look · Pause |
 | Over the hand limit | "Discard down to 7 ▸". End turn appears again once you're at 7. |
 
 Choices marked ▸ open a row, and the row puts the highlight right where the action is:
 
-- **Discard a card** and **Wind Trade → Give** highlight the real cards in your hand.
+- **Discard a card**, **Give a card to the right** and **Wind Trade → Give** highlight the real cards in your hand.
   Duplicates are grouped ("Red, you have 2"), and Day is never offered.
 - **Fog Skip** and **Wind Trade** with several opponents highlight their nameplates.
 - **Storm Shuffle** and **Look** open a short list in the bar.
@@ -108,7 +140,7 @@ other seats.
 
 - **Computer skill:** Easy, Normal or Hard. Computer players see only what a person at the
   table could see.
-- **Rainbow Race:** the printed simple variant, using Colors and Wilds only.
+- **Rainbow Race Full / Lite:** draw, play combos, then pass a chosen card to the right. Full includes Sun & Rain; Lite uses only Colors and Wilds.
 - **House Rules:** choose the deck. You can add or remove each weather card, Sun & Rain, and
   Day & Night, choose where you draw from, and allow blocking a Block. All of it is set with
   the switch; no mouse is needed, so no warning dialog is needed either.
@@ -153,7 +185,7 @@ the menu's scroll position. Desktop and tablet screens retain their existing lay
 ## Settings
 
 Text to Speech · Voice · Rainbow Helper · Block prompts · Turn pace · Auto-draw ·
-Confirm discards · Captions · Animations · Text Size · **Auto Scan** · **Scan Speed** ·
+Confirm discards / passes · Captions · Animations · Text Size · **Auto Scan** · **Scan Speed** ·
 Sound Effects · Weather Sounds · Reset Progress (two-step).
 
 Text to Speech, Voice, Auto Scan and Scan Speed use the hub's shared managers. They stay

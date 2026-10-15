@@ -59,7 +59,7 @@
       return n >= 2 ? 1 : 9 + (hand.includes(partner) ? 1 : 0);
     }
     if (t === 'day') return hand.includes('night') && !L.legend ? 6 : -10;
-    if (t === 'night') return hand.includes('day') && !L.legend ? 6 : 3;
+    if (t === 'night') return hand.includes('day') && !L.legend ? 6 : view.rules.emptyHand === false ? -8 : 3;
     // Weather.
     if (t === 'cloud') return skill === 'hard' ? 7 : 5;
     if (t === 'wind') return hand.includes('day') && !hand.includes('night') ? 8 : 4;
@@ -92,7 +92,7 @@
    *  players can pass one card back and forth forever. */
   function worstDiscard(view, moves, skill) {
     let best = null, bestV = Infinity;
-    moves.filter(m => m.type === 'discard').forEach(m => {
+    moves.filter(m => m.type === 'discard' || m.type === 'pass').forEach(m => {
       const fresh = view.took === m.card && count(view.hand, m.card) === 1 ? 4 : 0;
       const v = keepValue(view, m.card, skill) - count(view.hand, m.card) * 0.01 + fresh;
       if (v < bestV) { bestV = v; best = m; }
@@ -121,7 +121,9 @@
     if (!storms.length) return null;
     const hand = view.hand, me = view.players[view.me];
     // Storm my own Day away when I can't pair it.
-    if (hand.includes('day') && !hand.includes('night') && !me.laid.legend) return storms.find(m => m.name === 'day') || null;
+    const trapped = hand.includes('day') && !hand.includes('night') ? 'day'
+      : view.rules.emptyHand === false && hand.includes('night') && !hand.includes('day') ? 'night' : null;
+    if (trapped) return storms.find(m => m.name === trapped) || null;
     // Combos all played: storm the leftover cards I hold most of - the fastest way to an empty hand.
     if (me.done) {
       let most = null, n = 0;
@@ -155,8 +157,10 @@
     if (skill === 'easy' && rnd() > 0.4) return null;
     const lead = leader(view);
     // 1. Trade away a Day I cannot pair - to the leader, so it burdens them.
-    if (hand.includes('day') && !hand.includes('night') && !me.laid.legend) {
-      const w = weather.filter(m => m.card === 'wind' && m.give === 'day');
+    const trapped = hand.includes('day') && !hand.includes('night') ? 'day'
+      : view.rules.emptyHand === false && hand.includes('night') && !hand.includes('day') ? 'night' : null;
+    if (trapped) {
+      const w = weather.filter(m => m.card === 'wind' && m.give === trapped);
       if (w.length) return w.find(m => m.target === lead) || w[0];
     }
     // 2. Fog the leader: it costs them a whole turn.
@@ -214,9 +218,9 @@
       return draw || moves[0];
     }
 
-    if (decision.kind === 'discard') {
+    if (decision.kind === 'discard' || decision.kind === 'pass') {
       const w = worstDiscard(view, moves, skill);
-      if (skill === 'easy' && rnd() < 0.25) return pick(by('discard'), rnd) || moves[0];
+      if (skill === 'easy' && rnd() < 0.25) return pick(moves.filter(m => m.type === 'discard' || m.type === 'pass'), rnd) || moves[0];
       return w ? w.move : moves[0];
     }
 

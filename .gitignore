@@ -47,3 +47,6 @@ bennyshub/apps/games/BENNYSPEGGLE/tools/tmp-*
 
 # Original partner documents and art stay local; the game ships optimized web assets.
 /bennyshub/apps/games/CHASINGRAINBOWS/REFERENCE DATA/
+
+# Local partner feedback; excluded from publication.
+/bennyshub/apps/games/CHASINGRAINBOWS/CHanges-October14

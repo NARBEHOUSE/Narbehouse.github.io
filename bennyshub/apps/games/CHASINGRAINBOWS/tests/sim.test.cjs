@@ -27,7 +27,7 @@ const pct = (list, q) => list.slice().sort((a, b) => a - b)[Math.min(list.length
 
 test('Every game ends, at every player count, mode and skill', () => {
   const rows = [];
-  for (const mode of ['classic', 'race']) for (const n of [2, 3, 4, 6]) for (const skill of ['easy', 'normal', 'hard']) {
+  for (const mode of ['classic', 'classicLite', 'raceFull', 'race']) for (const n of [2, 3, 4, 5, 6]) for (const skill of ['easy', 'normal', 'hard']) {
     const rounds = [], how = {};
     let firstRound = 0;
     for (let i = 1; i <= GAMES; i++) {

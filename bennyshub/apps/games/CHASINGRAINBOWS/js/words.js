@@ -36,6 +36,10 @@
       case 'draw': return me ? line('You drew ' + say(ev.card) + '.', true) : line(ctx.names[ev.p] + ' draws a card.');
       case 'nodraw': return line('There are no cards left to draw.');
       case 'take': return line(me ? 'You take ' + say(ev.card) + '.' : ctx.names[ev.p] + ' takes ' + say(ev.card) + ' from the discard pile.');
+      case 'pass':
+        if (me) return line('You give ' + say(ev.card) + ' to ' + ctx.names[ev.target] + ' on your right.', true);
+        if (ev.target === ctx.viewer) return line(ctx.names[ev.p] + ' on your left gives you ' + say(ev.card) + '.', true);
+        return line(ctx.names[ev.p] + ' gives a card to ' + ctx.names[ev.target] + ' on their right.');
       case 'steal':
         if (me) return line('You took ' + say(ev.card) + ' from ' + ctx.names[ev.from] + '.', true);
         if (ev.from === ctx.viewer) return line(ctx.names[ev.p] + ' took your ' + say(ev.card) + '.', true);
@@ -139,6 +143,8 @@
   }
 
   function sayPiles(view) {
+    if (view.rules.draw === 'pass') return 'Draw pile: ' + view.drawCount +
+      (view.drawCount === 1 ? ' card.' : ' cards.') + ' Give unwanted cards to the player on your right.';
     let s = view.discardTop
       ? 'Discard pile: ' + say(view.discardTop) + ' on top' + (C.TYPES[view.discardTop].cls === 'weather' ? ', so it is frozen.' : '.')
       : 'The discard pile is empty.';
@@ -148,6 +154,8 @@
 
   /** The one-line turn opener: whose turn, and what's on the discard pile. */
   function turnIntro(view, ctx) {
+    if (view.rules.draw === 'pass') return 'Your turn. Draw a card, play any ready combos, then give a card to ' +
+      ctx.names[(view.me + 1) % view.players.length] + ' on your right.';
     const top = view.discardTop;
     if (!top) return 'Your turn.';
     if (C.TYPES[top].cls === 'weather' && view.rules.draw === 'discard') return 'Your turn. The discard pile is frozen by ' + say(top) + '.';
@@ -165,13 +173,19 @@
       out.push({ id: 'night', say: 'Tip: Night can only be discarded as your very last card, to win. That is Night, Night!' });
     }
     if (view.rules.core && me.laid.core && !me.laid.rainbow) {
-      out.push({ id: 'endgame-rainbow', say: 'Tip: you played Sun and Rain. To win, your whole hand, plus one card to discard, must become a rainbow.' });
+      out.push({ id: 'endgame-rainbow', say: view.rules.emptyHand !== false
+        ? 'Tip: you played Sun and Rain. To win, your whole hand, plus one card to discard, must become a rainbow.'
+        : 'Tip: you played Sun and Rain. Play your Rainbow to finish your required combos. You do not need an empty hand.' });
     }
     if (me.laid.rainbow && view.rules.core && !me.laid.core) {
-      out.push({ id: 'endgame-core', say: 'Tip: you played your Rainbow. Now find Sun and Rain, and empty your hand.' });
+      out.push({ id: 'endgame-core', say: view.rules.emptyHand !== false
+        ? 'Tip: you played your Rainbow. Now find Sun and Rain, and empty your hand.'
+        : 'Tip: you played your Rainbow. Now play Sun and Rain. You do not need an empty hand.' });
     }
     if (me.done && view.hand.length) {
-      out.push({ id: 'endgame-empty', say: 'Tip: all your combos are played. Play weather cards and discard to empty your hand.' });
+      if (view.rules.emptyHand !== false) out.push({ id: 'endgame-empty', say: 'Tip: all your combos are played. Play weather cards and discard to empty your hand.' });
+      else if (view.hand.some(C.isLegend)) out.push({ id: 'endgame-legends', say: 'Tip: your required combos are played, but a Legend is still in your hand. Play Day and Night together, trade it with Wind, or shuffle it away with Storm.' });
+      else if (view.hand.length > E.HAND_LIMIT) out.push({ id: 'endgame-limit', say: 'Tip: your combos are played. ' + (view.rules.draw === 'pass' ? 'Give cards to the player on your right' : 'Discard') + ' down to 7 to win.' });
     }
     return out;
   }

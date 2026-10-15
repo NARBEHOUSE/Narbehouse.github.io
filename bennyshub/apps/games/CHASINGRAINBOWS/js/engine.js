@@ -15,10 +15,10 @@
  *  Rulings for situations the printed rules leave open (SPEC.md §1, R1-R12):
  *    R1 an empty draw pile reshuffles the discard pile except its top card;
  *    R2 a Cloud Block cannot itself be blocked (rules.blockChains turns chains on);
- *    R3 Fog Skips stack (rules.fogStacks); R4 the win is checked the moment a hand
- *    reaches zero, on anyone's turn; R5 Wind takes from the target's hand as it was
+ *    R3 Fog Skips stack (rules.fogStacks); October 14 wins need the required combos,
+ *    no Legends in hand and at most seven cards; R5 Wind takes from the target's hand as it was
  *    before the gift; R6 Wind needs a target holding cards; R7 drawing is required;
- *    R8 Rainbow Race steals a random card and the victim draws a replacement;
+ *    October 14 Rainbow Race draws, plays combos, then passes to the next seat on the right;
  *    R10 Cloud Block is only ever a response; R11 Storm names cards in this deck only.
  */
 (function (root, factory) {
@@ -49,10 +49,12 @@
   const ALL_WEATHER = { cloud: true, double: true, fog: true, storm: true, wind: true };
   const NO_WEATHER = { cloud: false, double: false, fog: false, storm: false, wind: false };
   const PRESETS = {
-    classic: { weather: ALL_WEATHER, core: true, legend: true, draw: 'discard' },
-    race:    { weather: NO_WEATHER, core: false, legend: false, draw: 'player' },
+    classic:     { weather: ALL_WEATHER, core: true, legend: true, draw: 'discard' },
+    classicLite: { weather: ALL_WEATHER, core: true, legend: false, draw: 'discard' },
+    raceFull:    { weather: NO_WEATHER, core: true, legend: false, draw: 'pass' },
+    race:        { weather: NO_WEATHER, core: false, legend: false, draw: 'pass' },
   };
-  /** mode 'classic' | 'race' | 'house'; house = the saved House Rules (same shape as a preset). */
+  /** Four named presets, plus 'house'; house = the saved House Rules (same shape as a preset). */
   function resolveRules(mode, house) {
     const base = PRESETS[mode] || (mode === 'house' && house) || PRESETS.classic;
     const weather = {};
@@ -61,7 +63,9 @@
       weather,
       core: base.core !== false,
       legend: base.legend !== false,
-      draw: base.draw === 'player' ? 'player' : 'discard',
+      draw: ['player', 'pass'].includes(base.draw) ? base.draw : 'discard',
+      // Missing on pre-October saves: those games keep their original empty-hand rule.
+      emptyHand: false,
       blockChains: !!(base.blockChains),
       fogStacks: base.fogStacks !== false,
     };
@@ -83,7 +87,7 @@
     const n = config.players.length;
     if (n < 2 || n > 6) throw new Error('Chasing Rainbows needs 2 to 6 players');
     const s = {
-      v: 1, rng: (seed >>> 0) || 1, rules, mode: config.mode || 'classic', sets: setsFor(n),
+      v: 2, rng: (seed >>> 0) || 1, rules, mode: config.mode || 'classic', sets: setsFor(n),
       players: config.players.map(p => ({
         name: p.name, kind: p.kind === 'cpu' ? 'cpu' : 'human', skill: p.skill || 'normal',
         hand: [], laid: { rainbow: null, core: null, legend: null }, skips: 0, known: [],
@@ -101,9 +105,11 @@
     const ev = [{ t: 'start', players: n, sets: s.sets }];
     for (let r = 0; r < DEAL; r++) s.players.forEach(P => P.hand.push(s.draw.pop()));
     ev.push({ t: 'deal', each: DEAL });
-    const flip = s.draw.pop();
-    s.discard.push(flip);
-    ev.push({ t: 'flip', card: flip });
+    if (rules.draw !== 'pass') {
+      const flip = s.draw.pop();
+      s.discard.push(flip);
+      ev.push({ t: 'flip', card: flip });
+    }
     s.turn = Number.isInteger(config.first) && config.first >= 0 && config.first < n ? config.first : 0;
     s.turnNo = 0;
     beginTurn(s, ev);
@@ -150,6 +156,7 @@
       case 'steal': return 'steal:' + m.from;
       case 'combo': return 'combo:' + m.combo;
       case 'discard': return 'discard:' + m.card;
+      case 'pass': return 'pass:' + m.card;
       case 'weather': {
         let k = 'weather:' + m.card;
         if (m.target !== undefined) k += ':' + m.target;
@@ -177,8 +184,9 @@
       return out;
     }
     const distinct = C.group(hand).map(g => g.t);
-    const discards = distinct.filter(t => discardable(s, p, t)).map(t => mv({ type: 'discard', card: t }));
-    if (s.phase === 'discard') return discards.length ? discards : [mv({ type: 'end' })];
+    const passing = s.rules.draw === 'pass';
+    const discards = distinct.filter(t => discardable(s, p, t)).map(t => mv({ type: passing ? 'pass' : 'discard', card: t }));
+    if (s.phase === 'discard' || s.phase === 'pass') return discards.length ? discards : [mv({ type: 'end' })];
     // phase 'play'
     if (!P.laid.rainbow && canRainbow(hand)) out.push(mv({ type: 'combo', combo: 'rainbow' }));
     if (s.rules.core && !P.laid.core && has(hand, 'sun') && has(hand, 'rain')) out.push(mv({ type: 'combo', combo: 'core' }));
@@ -201,11 +209,11 @@
       });
     }
     out.push(...discards);
-    if (hand.length <= HAND_LIMIT) out.push(mv({ type: 'end' }));
+    if (hand.length <= HAND_LIMIT && (!passing || !hand.length)) out.push(mv({ type: 'end' }));
     return out;
   }
 
-  /** { kind, p, moves, pending? }. kind: draw | play | discard | block | over */
+  /** { kind, p, moves, pending? }. kind: draw | play | discard | pass | block | over */
   function getDecision(s) {
     if (s.phase === 'over') return { kind: 'over', p: s.winner ? s.winner.p : -1, moves: [] };
     const moves = legalMoves(s);
@@ -230,6 +238,7 @@
       case 'combo': doCombo(s, p, legal.combo, ev); break;
       case 'weather': doWeather(s, p, legal, ev); break;
       case 'discard': doDiscard(s, p, legal.card, ev); break;
+      case 'pass': doPass(s, p, legal.card, ev); break;
       case 'end': endTurn(s, ev); break;
       case 'block': doBlock(s, p, ev); break;
       case 'allow': doAllow(s, p, ev); break;
@@ -373,7 +382,7 @@
       s.draw.push(...fromPile);
       shuffle(s, s.draw);
       ev.push({ t: 'storm', p, name: m.name, lost, fromDiscard: fromPile.length });
-      // Anyone the storm left empty-handed with their combos played has won (R4), actor first.
+      // Removing a blocking Legend or excess cards can complete a win, actor first.
       for (let q = p, k = 0; k < s.players.length; k++, q = next(s, q)) {
         if (checkWin(s, q, ev, 'storm')) break;
       }
@@ -388,6 +397,8 @@
       if (took) P.hand.push(took);
       if (gave) T.hand.push(gave);
       ev.push({ t: 'wind', p, target: m.target, gave, took });
+      // Trading away a Legend can complete either player's win.
+      if (!checkWin(s, p, ev, 'wind')) checkWin(s, m.target, ev, 'wind');
     }
   }
 
@@ -401,7 +412,18 @@
     endTurn(s, ev);
   }
 
+  function doPass(s, p, t, ev) {
+    const card = takeFromHand(s.players[p], t);
+    const target = next(s, p); // Turn order runs to the right, including last seat -> first.
+    s.players[target].hand.push(card);
+    ev.push({ t: 'pass', p, target, card });
+    if (checkWin(s, p, ev, 'pass')) return;
+    if (s.players[p].hand.length > HAND_LIMIT) { s.phase = 'pass'; return; }
+    endTurn(s, ev);
+  }
+
   function endTurn(s, ev) {
+    if (checkWin(s, s.turn, ev, 'end')) return;
     ev.push({ t: 'end', p: s.turn });
     s.turn = next(s, s.turn);
     beginTurn(s, ev);
@@ -428,7 +450,9 @@
   function checkWin(s, p, ev, how) {
     if (s.phase === 'over') return true;
     const P = s.players[p];
-    if (P.hand.length || !requiredDone(s, p)) return false;
+    if (!requiredDone(s, p)) return false;
+    if (s.rules.emptyHand !== false ? P.hand.length > 0
+      : P.hand.length > HAND_LIMIT || P.hand.some(c => C.isLegend(c))) return false;
     s.phase = 'over';
     s.pending = null;
     s.winner = { p, how, legend: !!P.laid.legend };

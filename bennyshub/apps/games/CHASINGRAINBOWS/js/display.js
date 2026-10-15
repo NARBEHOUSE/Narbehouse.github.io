@@ -41,6 +41,7 @@
     switch (ev.t) {
       case 'draw': d.draw--; d.hands[ev.p].push(ty(ev.card)); break;
       case 'take': d.discard.pop(); d.hands[ev.p].push(ty(ev.card)); break;
+      case 'pass': remove(d.hands[ev.p], ty(ev.card)); d.hands[ev.target].push(ty(ev.card)); break;
       case 'steal': remove(d.hands[ev.from], ty(ev.card)); d.hands[ev.p].push(ty(ev.card)); break;
       case 'replace': d.draw--; d.hands[ev.p].push(ty(ev.card)); break;
       case 'reshuffle': d.draw = ev.n; d.discard = d.discard.slice(-1); break;

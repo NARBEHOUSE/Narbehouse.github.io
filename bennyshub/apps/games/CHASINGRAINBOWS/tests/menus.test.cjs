@@ -22,7 +22,7 @@ function walk(items, fn, depth = 0) { items.forEach(it => { fn(it, depth, items)
 
 test('Menus offer exactly the legal moves, with stable unique ids, Look then Pause last', () => {
   let checked = 0;
-  for (const mode of ['classic', 'race']) for (const n of [2, 3, 5]) for (const { s, d } of states(25, n, mode)) {
+  for (const mode of ['classic', 'classicLite', 'raceFull', 'race']) for (const n of [2, 3, 5]) for (const { s, d } of states(25, n, mode)) {
     if (d.kind === 'over') continue;
     const view = E.viewFor(s, d.p);
     for (const helper of ['off', 'tips', 'shortcut']) {
