@@ -1,14 +1,14 @@
 'use strict';
-/* Chasing Rainbows - whole games played through the real page, headless, by switch presses.
+/* Chasing Rainbows - focused real-page switch scenarios and shared Node DOM harness.
  *
  * Loads index.html in jsdom (a Node DOM: no browser, no rendering, no GPU - safe on this PC)
  * with the hub's real shared scanner, voice manager and input guard. Only speech, canvas
  * and media are faked. A driver presses Space and Enter (keydown/keyup, like a switch
- * interface) to start games, take turns, look, pause and continue, and plays each game to
- * the results screen. Any script error fails the run.
+ * interface) through setup, wins, passes, privacy and save/resume. Any script error fails.
+ * actions-dom.cjs imports the same harness without running these scenarios.
  *
  * jsdom is not a hub dependency. Install it anywhere and point at it:
- *   npm i jsdom@24 --prefix <dir>   then   JSDOM=<dir>/node_modules/jsdom node tests/dom-smoke.cjs
+ *   npm i jsdom@24 --prefix <dir>   then   JSDOM=<dir>/node_modules/jsdom node tests/october14-dom.cjs
  */
 const path = require('path'), fs = require('fs');
 const jsdom = require(process.env.JSDOM || 'jsdom');
@@ -69,7 +69,7 @@ function stub(w, errors) {
 
 const assert=require('node:assert/strict');
 const E=require(path.join(GAME,'js/engine.js')), C=require(path.join(GAME,'js/cards.js'));
-const names=['Player 1','Player 2','Player 3'];
+const names=Array.from({length:6},(_,i)=>'Player '+(i+1));
 const cards=ts=>ts.map((t,i)=>({t,id:'fixture'+i}));
 function saved(mode, hand, laid={}, n=2) {
  const cfg={mode,players:names.slice(0,n).map(name=>({name,kind:'human'}))};
@@ -77,14 +77,14 @@ function saved(mode, hand, laid={}, n=2) {
  for(const k of Object.keys(laid))state.players[0].laid[k]=cards(['wild']);
  return {v:1,cfg,state,meta:{names:names.slice(0,n),kinds:Array(n).fill('human'),viewer:0,hidden:false,openHands:false,inbox:{},hints:{},explained:{}},summary:'Test fixture'};
 }
-async function check(label, save, auto, body) {
+async function check(label, save, auto, body, settings={}) {
  const errors=[],spoken=[],vc=new VirtualConsole();
  vc.on('jsdomError',e=>{if(!/Not implemented: (navigation|window.scrollTo)/.test(e.message))errors.push(e.message);});
  vc.on('error',(...a)=>errors.push(a.join(' ')));
  const dom=new JSDOM(fs.readFileSync(path.join(GAME,'index.html'),'utf8'),{url:ORIGIN+'apps/games/CHASINGRAINBOWS/index.html',runScripts:'dangerously',resources:new HubFiles(),pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
   stub(w,errors); const speak=w.speechSynthesis.speak;w.speechSynthesis.speak=function(u){spoken.push(u.text);return speak.call(this,u);};
   w.Element.prototype.scrollIntoView=function(){};
-  w.localStorage.setItem('chasingrainbows_settings',JSON.stringify({pace:'quick',motion:'off',autoDraw:false,confirmDiscard:true,helper:'off',textSize:1.5,setup:{mode:save?save.cfg.mode:'classic',players:save?save.cfg.players.length:2,people:save?save.cfg.players.length:1}}));
+  w.localStorage.setItem('chasingrainbows_settings',JSON.stringify({pace:'quick',motion:'off',autoDraw:false,confirmDiscard:true,helper:'off',textSize:1.5,...settings,setup:{mode:save?save.cfg.mode:'classic',players:save?save.cfg.players.length:2,people:save?save.cfg.players.length:1}}));
   w.localStorage.setItem('narbe-scan-settings',JSON.stringify(auto?{autoScan:true,scanSpeedIndex:0,parkingMode:'off',waitForSpeech:false}:{}));
   if(save)w.localStorage.setItem('chasingrainbows_save',JSON.stringify(save));
  }});
@@ -94,7 +94,8 @@ async function check(label, save, auto, body) {
  async function choose(id){for(let i=0;i<(auto?800:45);i++){if(dbg().choice&&dbg().choice.id===id){await press('Enter');return;}if(auto)await sleep(25);else await press('Space');}throw Error(label+' cannot reach '+id+' '+JSON.stringify(dbg()));}
  try {await wait(()=>w.CRApp&&w.CRApp.__dbg,'boot');await body({w,doc,dbg,wait,press,choose,spoken});assert.deepEqual(errors,[]);console.log('PASS '+label);} finally{dom.window.close();}
 }
-(async()=>{
+module.exports={check,saved,sleep};
+if(require.main===module)(async()=>{
  await check('setup: four complexity labels, stable selection and saved mode',null,false,async({w,doc,dbg,press,choose})=>{
   assert.equal(dbg().choice.index,-1);await press('Enter');assert.equal(dbg().screen,'title');
   await choose('new');assert.equal(dbg().choice.index,-1);

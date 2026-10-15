@@ -55,7 +55,7 @@
   const SKEY = 'chasingrainbows_settings', GKEY = 'chasingrainbows_save', TKEY = 'chasingrainbows_stats';
   const CLASSIC_HOUSE = { weather: { cloud: true, double: true, fog: true, storm: true, wind: true }, core: true, legend: true, draw: 'discard', blockChains: false, fogStacks: true };
   const DEFAULTS = {
-    helper: 'tips', blockPrompts: 'affects', pace: 'normal', autoDraw: true, confirmDiscard: false,
+    helper: 'tips', blockPrompts: 'always', blockPromptVersion: 1, pace: 'normal', autoDraw: true, confirmDiscard: false,
     captions: true, motion: 'auto', sfx: true, weatherSounds: true, textSize: 1,
     setup: { mode: 'classic', players: 2, people: 1, skill: 'normal', first: 'you', openHands: false, rotate: 0, house: CLASSIC_HOUSE },
   };
@@ -64,6 +64,10 @@
   const S = (() => {
     const saved = load(SKEY) || {};
     const s = Object.assign({}, DEFAULTS, saved);
+    // The old default silently passed Actions involving other players. Update it once;
+    // later deliberate "When it affects me" choices and existing "Never ask" stay intact.
+    if (saved.blockPromptVersion !== 1 && s.blockPrompts === 'affects') s.blockPrompts = 'always';
+    s.blockPromptVersion = 1;
     s.setup = Object.assign({}, DEFAULTS.setup, saved.setup || {});
     s.setup.house = Object.assign({}, CLASSIC_HOUSE, s.setup.house || {});
     s.setup.house.weather = Object.assign({}, CLASSIC_HOUSE.weather, s.setup.house.weather || {});
@@ -735,12 +739,17 @@
     const passing = view.rules.draw === 'pass';
     const recipient = G.meta.names[(d.p + 1) % view.players.length];
     if (d.kind === 'draw') o.sub = passing ? 'Draw a card from the pile.' : view.rules.draw === 'player' ? 'Draw, or take a card from a player.' : 'Draw, or take the top discard.';
-    if (d.kind === 'play') o.sub = passing ? 'Play ready combos, then give a card to ' + recipient + ' on your right.' : view.hand.length > E.HAND_LIMIT ? 'Discard down to 7.' : 'Play, discard a card, or end your turn.';
-    if (d.kind === 'discard') o.sub = 'Pick a card in your hand to discard.';
+    if (d.kind === 'play') o.sub = passing ? 'Play ready combos, then give a card to ' + recipient + ' on your right.' : view.hand.length > E.HAND_LIMIT ? discardInstruction(d) : 'Play, discard a card, or end your turn.';
+    if (d.kind === 'discard') o.sub = 'Discarding has started. Pick a card to discard.';
     if (d.kind === 'pass') o.sub = 'Give cards to ' + recipient + ' on your right until you have 7.';
     if (d.kind === 'block') o.sub = 'You have a Cloud Block.';
     if (d.kind === 'draw' && isHuman(d.p)) SND.play('turn');
     openTable(tree, o);
+  }
+  function discardInstruction(d) {
+    if (d.moves.some(m => m.type === 'weather')) return 'Play combos or an Action, then discard down to 7.';
+    if (d.moves.some(m => m.type === 'combo')) return 'Play ready combos, or discard down to 7.';
+    return 'Discard down to 7.';
   }
   function introFor(d, view) {
     if (d.kind === 'draw') return W.turnIntro(view, { names: G.meta.names });
@@ -749,7 +758,7 @@
     if (d.kind === 'block') return blockIntro(view, d);
     const combo = d.moves.find(m => m.type === 'combo');
     if (combo) return { rainbow: 'Your rainbow is ready!', core: 'Sun and Rain are ready!', legend: 'Day and Night are ready!' }[combo.combo];
-    if (view.hand.length > E.HAND_LIMIT) return 'You have ' + view.hand.length + ' cards. ' + (view.rules.draw === 'pass' ? 'Play a combo, or give cards to the player on your right, down to 7.' : 'Discard down to 7.');
+    if (view.hand.length > E.HAND_LIMIT) return 'You have ' + view.hand.length + ' cards. ' + (view.rules.draw === 'pass' ? 'Play a combo, or give cards to the player on your right, down to 7.' : discardInstruction(d));
     return '';
   }
   function blockIntro(view, d) {
@@ -1171,7 +1180,7 @@
     tips: 'Rainbow Helper: tips. A star marks a good choice, and you hear a tip when one helps.',
     shortcut: 'Rainbow Helper: tips and shortcut. The suggested move is also the first choice in your turn menu.',
   };
-  const BLOCKS = { affects: 'When it affects me', always: 'Always ask', never: 'Never ask' };
+  const BLOCKS = { always: 'Always ask', affects: 'When it affects me', never: 'Never ask' };
   const BLOCKS_SAY = {
     affects: 'Block prompts: ask when it affects me. You are asked about Cloud Block when a weather card hits you.',
     always: 'Block prompts: always ask. You are asked whenever you could block.',
@@ -1215,7 +1224,7 @@
       '<p>A Rainbow is seven cards: red, orange, yellow, green, blue, indigo and violet. A <b>Wild</b> can stand in for any color.</p>' },
     { e: '🃏', t: 'Your Turn', s: '<p><b>Chasing Rainbows Full & Lite:</b> draw a card, or take the top card of the discard pile.</p>' +
       '<p><b>2. Play</b> any combo you have, and up to <b>one weather card</b>.</p>' +
-      '<p><b>3. Discard</b> one card, or end your turn. If over 7, discard down to <b>7</b>.</p>' },
+      '<p><b>3. Discard</b> one card, or end your turn. If over 7, discard down to <b>7</b>. Play your Action before discarding; once you discard, you can only finish discarding.</p>' },
     { e: '🤲', t: 'Rainbow Race Turns', s: '<p><b>Both Rainbow Race modes:</b> receive the card passed from your left, draw from the pile, play ready combos, then <b>give a card to the next player on your right</b>. Give extra cards if needed to reach 7. When the pile is empty, keep playing and passing.</p>' },
     { e: '🌦️', t: 'Combos', s: '<p><b>Rainbow</b>: one of each color. <b>Sun & Rain</b>: one of each. Both are needed except in <b>Rainbow Race Lite</b>, which needs only a Rainbow.</p>' +
       '<p><b>Day & Night</b> appear in Chasing Rainbows Full. A Legend in your hand blocks a win. Play them together, trade them with Wind or remove them with Storm. Night can still be discarded as your very last card after the required combos: <b>Night, Night!</b></p>' },

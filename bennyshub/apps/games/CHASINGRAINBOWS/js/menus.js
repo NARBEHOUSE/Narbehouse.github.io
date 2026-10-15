@@ -146,7 +146,9 @@
       const extra = hand.length - E.HAND_LIMIT;
       out.push({ id: 'discard', kind: 'group', icon: '🗑️',
         label: forced ? 'Discard down to 7' : 'Discard a card',
-        say: forced ? 'Discard down to 7. ' + extra + (extra === 1 ? ' card to go.' : ' cards to go.') : 'Discard a card',
+        say: (forced ? 'Discard down to 7. ' + extra + (extra === 1 ? ' card to go.' : ' cards to go.') : 'Discard a card.') +
+          (of('weather').length ? ' Play Actions before discarding.' : ''),
+        note: of('weather').length ? 'Play Actions before discarding' : '',
         children: discards });
     }
     of('end').forEach(m => out.push(leaf(m, 'End turn', 'End turn, keep your cards', { icon: '✋' })));

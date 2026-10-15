@@ -1,5 +1,26 @@
 # Chasing Rainbows: current rules
 
+## October 15 action-card follow-up
+
+- Cloud Block prompts now default to **Always ask**, including Actions involving
+  computer opponents rather than you. The old default is upgraded once for saved
+  settings. A later explicit **When it affects me** choice is retained, as is an
+  existing **Never ask** choice. Block prompts still have no time limit.
+- Fog Skip remains available during the play phase, after drawing or playing a
+  combo, even above seven cards. Starting to discard commits to the discard phase;
+  an Action must be played first. The turn instructions and Discard row now make
+  that order explicit. The reported one-off failure before discarding was not
+  reproduced; the engine's turn rules have not been changed.
+- Day and Night card descriptions and first-draw helper tips now mention **Storm
+  Shuffle**, alongside playing the pair and Wind Trade. Night retains its final-card
+  winning discard exception.
+
+Regression coverage: 9 focused rules/menu/narration checks and 16 actual-page Node
+DOM scenarios, including Full/Lite, CPU-to-CPU Actions, settings migration, shared
+switch privacy, Auto Scan, canceling a discard confirmation, and narrated legend tips.
+Node DOM tests do not verify rendered pixels, real speech or physical switches.
+
+
 ## October 14 feedback, implemented October 15, 2026
 
 New games use these four presets. House Rules remains available as a custom setup.
@@ -404,12 +425,13 @@ before any choice is highlighted:
 
 - **No timeout, ever.** The game waits for the player.
 - Setting **Block prompts**:
-  - *Ask when it affects me* (default): Fog Skip or Wind Trade aimed at you, or
+  - *Always ask* (default): every legal chance, including an Action on a computer opponent.
+  - *Ask when it affects me*: Fog Skip or Wind Trade aimed at you, or
     a Storm Shuffle naming a card you hold.
-  - *Always ask*.
   - *Never ask*: never block, so no interruptions.
 
-  The default keeps interruptions to the moments that matter.
+  The default exposes every legal blocking opportunity. Legacy settings using the old
+  default migrate to Always ask once; subsequent explicit quieter choices are preserved.
 
 ### 5.5 Look ▸
 

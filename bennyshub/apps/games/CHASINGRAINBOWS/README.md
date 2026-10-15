@@ -29,6 +29,26 @@ or replace that content. The software license does not grant trademark rights or
 permission to imply endorsement. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md)
 for the full scope, file locations, credits, and permission-status explanation.
 
+## October 15 action-card follow-up
+
+- Cloud Block prompts now default to **Always ask**, including Actions involving
+  computer opponents rather than you. The old default is upgraded once for saved
+  settings. A later explicit **When it affects me** choice is retained, as is an
+  existing **Never ask** choice. Block prompts still have no time limit.
+- Fog Skip remains available during the play phase, after drawing or playing a
+  combo, even above seven cards. Starting to discard commits to the discard phase;
+  an Action must be played first. The turn instructions and Discard row now make
+  that order explicit. The reported one-off failure before discarding was not
+  reproduced; the engine's turn rules have not been changed.
+- Day and Night card descriptions and first-draw helper tips now mention **Storm
+  Shuffle**, alongside playing the pair and Wind Trade. Night retains its final-card
+  winning discard exception.
+
+Regression coverage: 9 focused rules/menu/narration checks and 16 actual-page Node
+DOM scenarios, including Full/Lite, CPU-to-CPU Actions, settings migration, shared
+switch privacy, Auto Scan, canceling a discard confirmation, and narrated legend tips.
+Node DOM tests do not verify rendered pixels, real speech or physical switches.
+
 ## October 14 feedback, implemented October 15, 2026
 
 New games use these four presets. House Rules remains available as a custom setup.
@@ -88,11 +108,13 @@ These all run in Node only. Never use a browser to test on the development PC.
 ```
 node tests/rules.test.cjs     # base rules and rulings
 node tests/october14.test.cjs # new modes, wins, passing, privacy and save compatibility
+node tests/actions.test.cjs   # Action availability, blocking eligibility and legend explanations
 node tests/menus.test.cjs     # menus offer exactly the legal moves; speech never leaks hidden cards
 node tests/display.test.cjs   # the table's mirror matches the engine after every move
 node tests/sky.test.cjs       # the weather sky: timing, caps, photosensitivity limits
 node tests/sim.test.cjs       # thousands of computer games: all finish; skill ladder; length table
 JSDOM=<path to jsdom> node tests/october14-dom.cjs # actual switch menus, passes and saves
+JSDOM=<path to jsdom> node tests/actions-dom.cjs   # actual Action prompts, preferences and spoken legend tips
 JSDOM=<path to jsdom> node tests/dom-smoke.cjs   # whole games played by switch presses, headless
 ```
 

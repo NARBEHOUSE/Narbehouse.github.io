@@ -1,5 +1,26 @@
 # How Chasing Rainbows is adapted for switch players
 
+## October 15 action-card follow-up
+
+- Cloud Block prompts now default to **Always ask**, including Actions involving
+  computer opponents rather than you. The old default is upgraded once for saved
+  settings. A later explicit **When it affects me** choice is retained, as is an
+  existing **Never ask** choice. Block prompts still have no time limit.
+- Fog Skip remains available during the play phase, after drawing or playing a
+  combo, even above seven cards. Starting to discard commits to the discard phase;
+  an Action must be played first. The turn instructions and Discard row now make
+  that order explicit. The reported one-off failure before discarding was not
+  reproduced; the engine's turn rules have not been changed.
+- Day and Night card descriptions and first-draw helper tips now mention **Storm
+  Shuffle**, alongside playing the pair and Wind Trade. Night retains its final-card
+  winning discard exception.
+
+Regression coverage: 9 focused rules/menu/narration checks and 16 actual-page Node
+DOM scenarios, including Full/Lite, CPU-to-CPU Actions, settings migration, shared
+switch privacy, Auto Scan, canceling a discard confirmation, and narrated legend tips.
+Node DOM tests do not verify rendered pixels, real speech or physical switches.
+
+
 The tabletop game was already built for everyone, with braille, tactile art and large print.
 This edition is for players who can't hold, sort or flip cards. They play it alone, with one
 or two switches, against the computer or with family at the same screen. This document
@@ -91,8 +112,8 @@ Block it?" There is **no timeout**.
 
 The **Block prompts** setting decides when you're asked:
 
-- **When it affects me** (the default): only when the weather card hits you.
-- **Always ask.**
+- **Always ask** (the default): every legal chance, including Actions on computer opponents.
+- **When it affects me:** only when the weather card hits you.
 - **Never ask:** you're never interrupted.
 
 ## Looking and listening

@@ -1,5 +1,18 @@
 # Web scan implementation and Companion 1.0.8
 
+## Chasing Rainbows Action prompts and legend explanations — 2026-10-15
+
+Scope: follow-up creator feedback for both web and Benny's PC Hub. The existing engine already offers every eligible Cloud holder a response, but the old default UI preference silently allowed Actions involving other players. Always ask is now the default; unversioned legacy affects settings migrate once. Never ask is preserved, as are quieter choices made under the new settings version. All choices remain untimed CHOICE scans; scanner behavior and the engine's turn rules are unchanged.
+
+Fog Skip was verified after draws and combos with 2–6 players in Full/Lite, including hands over seven. The one-off report before discarding was not reproduced. Once a discard is committed, only further discards are legal; the turn instructions, Discard row and How to Play now explain that Actions come first. Day/Night card descriptions and first-draw tips now include Storm Shuffle as well as Wind Trade and pairing, preserving Night's last-card winning discard exception.
+
+Changed game files (BOTH / PORTED): js/app.js, js/cards.js, js/words.js, js/menus.js, README.md, README-ACCESSIBLE.md, SPEC.md, tests/actions.test.cjs, tests/actions-dom.cjs, tests/october14-dom.cjs (shared test harness). Web-only: SCAN-UPGRADE-CHANGES.md. Desktop-only: ELECTRON-SCAN-UPGRADE.md. Desktop-specific differences are preserved by applying the web diff to the existing desktop files. No manifest, private feedback, licensing, shared scan controller or installer change.
+
+Validation: 69 game checks and 257 website tests pass. Nine new focused rules/menu/narration checks cover Full/Lite action eligibility and 3–6-player blocking. Sixteen new actual-page Node DOM scenarios cover all four Actions involving CPUs, default and migrated settings, deliberate quieter settings, shared-switch privacy and Auto Scan, canceling a discard confirmation, and spoken Day/Night tips. The eight prior October 14 switch scenarios also pass. Desktop checks and website packaging results are saved with the installation evidence. Node DOM testing does not verify pixels, real speech, or physical switches; no browser or Electron process was launched.
+
+Evidence and backups: F:/PROJECT FILES/WEBSITES/tmp/chasingrainbows-actions-20261015/.
+
+
 ## Chasing Rainbows licensing clarification — 2026-10-15
 
 Scope: owner requested explicit open-source-code versus retained game/artwork rights in the README and license notices. No gameplay or scanner changes. NARBE's original implementation remains MIT; artwork, protected third-party rule wording (including embedded text), branding and reference materials are excluded, and Nunito keeps its OFL license. Existing Inclusive Imagination LLC and Adam M Botsford credits are preserved. The notices do not claim exclusive copyright in abstract concepts/methods of play or establish that a rightsholder agreement has been signed.

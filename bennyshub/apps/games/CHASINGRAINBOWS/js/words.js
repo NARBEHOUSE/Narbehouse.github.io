@@ -167,10 +167,10 @@
   function hints(view) {
     const me = view.players[view.me], out = [];
     if (view.hand.includes('day') && !view.hand.includes('night') && !me.laid.legend && view.rules.legend) {
-      out.push({ id: 'day-trap', say: 'Tip: Day can never be discarded. Find Night to play Day and Night, or give Day away with Wind Trade.' });
+      out.push({ id: 'day-trap', say: 'Tip: Day can never be discarded. Find Night to play Day and Night, give Day away with Wind Trade, or send it back to the deck with Storm Shuffle.' });
     }
     if (view.hand.includes('night') && !me.laid.legend && view.rules.legend && !view.hand.includes('day')) {
-      out.push({ id: 'night', say: 'Tip: Night can only be discarded as your very last card, to win. That is Night, Night!' });
+      out.push({ id: 'night', say: 'Tip: play Night with Day, give it away with Wind Trade, or send it back to the deck with Storm Shuffle. Night can only be discarded as your very last card, to win. That is Night, Night!' });
     }
     if (view.rules.core && me.laid.core && !me.laid.rainbow) {
       out.push({ id: 'endgame-rainbow', say: view.rules.emptyHand !== false
