@@ -629,8 +629,8 @@
 
       <section class="section" id="graphics">
         <h2>Graphics Quality for New Games</h2>
-        <p>Every new game must assess rendering cost. Every Three.js or other graphics-intensive game must inherit the Hub's device-local <strong>Graphics quality</strong> preference before creating its renderer. Auto measures frame timing and chooses detail; High keeps full detail; Standard preserves the game's existing rendering and automatic adaptation; Low applies meaningful visual reductions without changing rules, physics, timing, inputs or random outcomes. Inexpensive games should document why a separate profile is unnecessary.</p>
-        <p>Load <code>shared/platform.js</code>, then <code>shared/graphics-quality.js</code>. Use a stable game ID; no registry or whitelist is needed. Add <strong>Use Hub setting / Auto / High / Standard / Low</strong> to the existing settings scan with the stable ID <code>graphics-quality</code>. Render the live label and announce it through the existing owned speech ticket. Preserve the selected item when values redraw.</p>
+        <p>Every new game must assess rendering cost. Every Three.js or other graphics-intensive game must inherit the Hub's device-local <strong>Graphics quality</strong> preference before creating its renderer. High is the default and keeps full detail without automatic downgrades; Standard preserves the game's existing rendering and automatic adaptation; Low applies meaningful visual reductions without changing rules, physics, timing, inputs or random outcomes. Inexpensive games should document why a separate profile is unnecessary.</p>
+        <p>Load <code>shared/platform.js</code>, then <code>shared/graphics-quality.js</code>. Use a stable game ID; no registry or whitelist is needed. Add <strong>Use Hub setting / High / Standard / Low</strong> to the existing settings scan with the stable ID <code>graphics-quality</code>. Render the live label and announce it through the existing owned speech ticket. Preserve the selected item when values redraw.</p>
         <pre><code>const quality = NarbeGraphics.openGame('my-new-game');
 await quality.ready;
 const renderer = new THREE.WebGLRenderer(
@@ -677,7 +677,7 @@ quality.frame(timestamp, targetFPS); // e.g. 60 in play, 30 in a capped menu
           <li>✓ Does the game auto-save and resume correctly?</li>
           <li>✓ Does the rendering assessment explain the graphics profile or why none is needed?</li>
           <li>✓ Does a graphics-intensive game inherit Hub quality before its first frame, follow live updates, respect overrides, reset to inheritance and persist after reload/restart?</li>
-          <li>✓ Do Auto/High/Standard/Low, old preference migration, resize/split views, aiming/picking, readable text, stable settings IDs and native gameplay/pause/Back/exit pass real browser checks?</li>
+          <li>✓ Do High/Standard/Low, saved Auto-to-High migration, resize/split views, aiming/picking, readable text, stable settings IDs and native gameplay/pause/Back/exit pass real browser checks?</li>
           <li>✓ Are replaced rendering resources/subscriptions disposed, and are target-device frame times documented or explicitly pending before hardware support is claimed?</li>
           <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>
           <li>✓ <strong>Has someone who is not you played it start to finish with one switch?</strong></li>

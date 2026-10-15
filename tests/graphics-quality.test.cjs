@@ -23,14 +23,14 @@ function browser(data = new Map(), blocked = false) {
 }
 test('a future game inherits, follows the Hub, overrides, resets, and persists without registration', async () => {
   const b = browser(), g = b.graphics.openGame('future-sample'); await g.ready;
-  assert.equal(g.get().quality, 'standard');
+  assert.equal(g.get().quality, 'high');
   b.graphics.setHub('low'); assert.equal(g.get().quality, 'low');
   g.setChoice('standard'); b.graphics.setHub('standard'); b.graphics.setHub('low');
   assert.equal(g.get().quality, 'standard');
   g.setChoice('hub'); assert.equal(g.get().quality, 'low');
   const reload = browser(b.data), restored = reload.graphics.openGame('future-sample'); await restored.ready;
   assert.equal(restored.get().choice, 'hub'); assert.equal(restored.get().quality, 'low');
-  assert.equal(browser().graphics.getHub(), 'auto');
+  assert.equal(browser().graphics.getHub(), 'high');
 });
 test('saved High and Low migrate to explicit profiles; resetting does not remigrate', async () => {
   for (const legacyPreference of ['high', 'low']) {
@@ -55,10 +55,10 @@ test('independent game keys preserve simultaneous overrides and cross-window sto
   other.setChoice('hub'); a.graphics.setHub('standard'); b.window.dispatch('focus');
   assert.equal(other.get().quality, 'standard');
 });
-test('corrupt or unavailable storage keeps usable Auto defaults and session choices', () => {
+test('corrupt or unavailable storage keeps usable High defaults and session choices', () => {
   const data = new Map([['narbe-graphics-settings', '{oops'], ['narbe-graphics-game-new', 'null']]);
   const b = browser(data), g = b.graphics.openGame('new');
-  assert.equal(g.get().quality, 'standard');
+  assert.equal(g.get().quality, 'high');
   const blocked = browser(new Map(), true), session = blocked.graphics.openGame('session');
   blocked.graphics.setHub('low'); blocked.window.dispatch('focus');
   assert.equal(session.get().quality, 'low');
@@ -107,11 +107,11 @@ test('native-ready adapter hydrates before migration, preserving authoritative o
   assert.equal(game.get().quality,'low'); assert.equal(writes,0);
 });
 
-test('Hub and game cycles expose Auto, High, Standard, Low in order', () => {
+test('Hub and game cycles expose only High, Standard, Low and inheritance', () => {
   const b = browser(), g = b.graphics.openGame('cycle');
-  assert.equal(b.graphics.getHub(), 'auto');
-  assert.deepEqual(Array.from({length:4}, () => b.graphics.cycleHub()), ['high','standard','low','auto']);
-  assert.deepEqual(Array.from({length:5}, () => g.cycle().choice), ['auto','high','standard','low','hub']);
+  assert.equal(b.graphics.getHub(), 'high');
+  assert.deepEqual(Array.from({length:3}, () => b.graphics.cycleHub()), ['standard','low','high']);
+  assert.deepEqual(Array.from({length:4}, () => g.cycle().choice), ['high','standard','low','hub']);
 });
 test('old Lightweight records and compatibility overrides upgrade without losing intent', () => {
   const b = browser(new Map([
@@ -126,27 +126,6 @@ function frames(g, ms, dt, start = 0, target = 60) {
   for (let now=start; now<start+ms; now+=dt) g.frame(now,target);
   return start+ms;
 }
-test('Auto lowers after sustained slow frames, holds a cooldown and recovers slowly without saving', () => {
-  const b = browser(), g = b.graphics.openGame('adaptive');
-  assert.equal(g.get().mode,'auto'); assert.equal(g.get().quality,'standard');
-  assert.equal(g.rendererOptions({antialias:true}).antialias,false);
-  const saved=JSON.stringify([...b.data]);
-  let now=frames(g,8000,40); assert.equal(g.get().quality,'low'); assert.equal(g.get().pendingLaunch,false);
-  now=frames(g,20000,1000/60,now); assert.equal(g.get().quality,'low');
-  now=frames(g,50000,1000/60,now); assert.equal(g.get().quality,'standard');
-  now=frames(g,24000,1000/60,now); assert.equal(g.get().quality,'high');
-  now=frames(g,9000,40,now); assert.equal(g.get().quality,'low');
-  now=frames(g,70000,1000/60,now); assert.equal(g.get().quality,'low','Repeated failed upgrades back off longer');
-  assert.equal(JSON.stringify([...b.data]),saved,'Auto decisions remain session-only');
-});
-test('Auto ignores hidden time, startup stalls, and intentional 30 FPS menu limits', () => {
-  const b=browser(), g=b.graphics.openGame('timing');
-  let now=frames(g,30000,1000/30,0,30); assert.equal(g.get().quality,'standard');
-  b.document.visibilityState='hidden'; now=frames(g,10000,100,now); assert.equal(g.get().quality,'standard');
-  b.document.visibilityState='visible'; g.frame(now+60000); now+=60000;
-  now=frames(g,3000,1000/60,now); assert.equal(g.get().quality,'standard');
-  now=frames(g,8000,40,now); assert.equal(g.get().quality,'low');
-});
 test('manual modes remain fixed and High uses the display ratio with its renderer cap', () => {
   const b=browser(), g=b.graphics.openGame('manual'); b.window.devicePixelRatio=3;
   for(const mode of ['high','standard','low']) {
@@ -154,7 +133,7 @@ test('manual modes remain fixed and High uses the display ratio with its rendere
   }
   g.setChoice('high'); assert.equal(g.pixelRatio(.6,1920,1080),2);
   g.setChoice('low'); assert.ok(1920*1080*g.pixelRatio(2,1920,1080)**2<=921601);
-  g.setChoice('auto'); assert.equal(g.get().quality,'standard');
+  g.setChoice('hub'); assert.equal(g.get().quality,'high');
 });
 
 test('Bowling High preserves its original native display density, including after Low', () => {
@@ -169,4 +148,35 @@ test('Bowling High preserves its original native display density, including afte
     g.setChoice('low');assert.ok(1920*1080*g.pixelRatio(density,1920,1080)**2<=921601);
     g.setChoice('high');assert.equal(g.pixelRatio(density,1920,1080),density);
   }
+});
+
+test('saved Auto records resolve to fixed High and no frame cadence can lower them', async () => {
+  for (const choice of ['hub','auto']) {
+    const b=browser(new Map([['narbe-graphics-settings',JSON.stringify({quality:'auto'})],['narbe-graphics-game-basketball',JSON.stringify({migrated:true,choice})]]));
+    b.window.devicePixelRatio=2;
+    const g=b.graphics.openGame('basketball');await g.ready;
+    assert.equal(b.graphics.getHub(),'high');assert.equal(g.get().mode,'high');
+    assert.equal(g.get().choice,choice==='auto'?'high':'hub');
+    assert.equal(g.rendererOptions({antialias:true}).antialias,true);
+    for(const dt of [1000/60,1000/30,40,100,500]) {
+      frames(g,120000,dt);assert.equal(g.get().quality,'high');
+      assert.equal(g.pixelRatio(.6,1920,1080),2);assert.equal(g.get().pendingLaunch,false);
+    }
+    assert.doesNotMatch(g.label(),/Auto/);
+    assert.throws(()=>g.setChoice('auto'),/Invalid/);
+    assert.throws(()=>b.graphics.setHub('auto'),/Invalid/);
+    const reload=browser(b.data);await reload.graphics.openGame('basketball').ready;
+    assert.equal(reload.graphics.openGame('basketball').get().quality,'high');
+  }
+});
+
+test('Basketball High ignores its old automatic Low cache', async () => {
+  const b=browser(new Map([['bennys_ball_autoq','low']]));
+  const graphics=b.graphics.openGame('basketball');await graphics.ready;
+  const html=fs.readFileSync(path.join(__dirname,'../bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html'),'utf8');
+  const resolver=html.match(/function resolveQuality\(\) \{[\s\S]*?\n        \}/)[0];
+  const resolve=vm.runInNewContext('('+resolver+')',{graphics,localStorage:b.window.localStorage});
+  assert.equal(resolve(),'high');frames(graphics,60000,1000/30);assert.equal(resolve(),'high');
+  graphics.setChoice('low');assert.equal(resolve(),'lightweight');
+  graphics.setChoice('hub');assert.equal(resolve(),'high');
 });

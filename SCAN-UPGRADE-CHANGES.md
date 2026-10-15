@@ -1027,3 +1027,50 @@ Changed files in the separate SWITCHEDGAMES checkout (web listing only; Electron
 - showcase.js
 - images/games/narbepetpals.png
 - images/games/narbemagicbutton.png
+
+
+## 2026-10-14 — Auto starts at full High quality
+
+Scope: requested graphics default correction for both the website and desktop Hub. Auto starts at High, preserves original antialiasing, and adjusts using measured game frame timing. Saved manual choices remain unchanged. The website service-worker cache advances from v40 to v41.
+
+Changed website files (Electron port flag):
+
+- bennyshub/shared/graphics-quality.js — YES, shared behavior applied to both editions.
+- bennyshub/index.html — YES, matching explanation in each edition.
+- tests/graphics-quality.test.cjs — YES, shared regression expectations and coverage.
+- GRAPHICS-QUALITY.md — YES, matching contract and validation limits.
+- scripts/check-graphics-games.cjs — desktop counterpart updated in tests/graphics-electron-rendering.cjs.
+- scripts/check-graphics.cjs — web only, legacy Auto now resolves to High.
+- developer-guide.html — web only, graphics integration contract.
+- bennyshub/service-worker.js — web only, cache invalidation.
+- SCAN-UPGRADE-CHANGES.md — web only, this change record.
+
+Additional desktop test file: tests/graphics-auto-browser.cjs (can validate website sources using an optional staging overlay; uses a disposable OS-temp working directory). Existing desktop rendering test accepts BENNY_GRAPHICS_TEST_OUTPUT for isolated artifacts.
+
+Validation: 25 desktop graphics/native unit checks and 16 website graphics unit checks passed. Real Chrome Auto/High equality and sustained slow-frame downshift passed in Ballista and P3GL at DPR 2. Basketball/Baseball were blocked by unavailable external THREE/Phaser assets. Electron's test GPU initialization crashed and raised the reported Windows breakpoint dialog; further GUI testing stopped. No target-device benchmark is claimed. Local source changes only; no publish or installer build.
+
+
+## 2026-10-14 — Remove unreliable Auto; fixed High by default
+
+Scope: user-authorized fallback for both Hub editions after Auto still selected Low. A deterministic reproduction showed a steady 30 FPS stream reaches Standard at about 4.0 seconds and Low at 7.6 seconds. Frame cadence alone does not establish device capacity. The previous start-at-High correction is superseded.
+
+High, Standard and Low are the only graphics profiles. Games still offer Use Hub setting. Fresh/invalid settings default to High; saved shared Auto becomes High; explicit Standard/Low remain. High ignores Basketball's old automatic Low cache. The former shared frame sampler is a no-op compatibility hook.
+
+Changed website files (Electron port flag):
+
+- bennyshub/shared/graphics-quality.js — YES, fixed modes/default and Auto migration.
+- bennyshub/index.html — YES, graphics explanation.
+- bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html — YES, legacy default inherits Hub and obsolete Auto fallback removed.
+- tests/graphics-quality.test.cjs — YES, migration, no downgrade, Basketball resolver and selector coverage.
+- GRAPHICS-QUALITY.md — YES, current contract and validation.
+- scripts/check-graphics-games.cjs — desktop equivalent updated in tests/graphics-electron-rendering.cjs.
+- scripts/check-graphics.cjs — web-only assertions updated.
+- developer-guide.html — web-only graphics contract.
+- bennyshub/service-worker.js — web-only cache v42.
+- SCAN-UPGRADE-CHANGES.md — web-only change record.
+
+Additional desktop changes: bennyshub/shared/native-settings.cjs (default and durable Auto migration), tests/graphics-native.test.cjs, tests/graphics-electron.cjs, tests/graphics-electron-rendering.cjs and tests/graphics-auto-browser.cjs (web/browser integration harness, including actual Basketball Hub iframe and optional test-only CDN assets).
+
+Validation on 2026-10-14: all 24 desktop graphics/native unit checks and 14 website graphics unit checks passed. Real Chrome checks passed for Basketball, Ballista, P3GL and Baseball at DPR 2. Checks covered saved Auto migration, inherited High, full launch antialiasing, 30/25/10 FPS synthetic cadences without downgrade, explicit Low and return to Hub. Basketball additionally passed actual Hub selector cycles and iframe Settings cycles, retained High after ten seconds, and had full post-processing and shadows. The screenshot confirms Use Hub setting (High). No Electron GUI process was launched in this follow-up.
+
+Local source update only; no publication or installer build.

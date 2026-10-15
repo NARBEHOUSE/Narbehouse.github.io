@@ -334,7 +334,7 @@
             aimerColor: 'white',
             ballTheme: 'standard',
             bgTheme: 'arena',
-            graphics: 'auto', // auto, high, low
+            graphics: 'hub', // Legacy High/Low saves migrate; new games inherit the Hub.
 
             load: function() {
                 try {
@@ -487,7 +487,6 @@
         function resolveQuality() {
             if (graphics.isLightweight()) return 'lightweight';
             if (graphics.get().quality === 'high') return 'high';
-            if (graphics.get().mode === 'auto') return 'low';
             try { return localStorage.getItem('bennys_ball_autoq') || 'high'; } catch (e) { return 'high'; }
         }
         let quality = resolveQuality();
@@ -1986,7 +1985,7 @@
                 camera.lookAt(lookCurrent);
             }
 
-            // Auto graphics: drop to low quality if the machine can't keep up
+            // Standard alone retains this game's original performance adjustment.
             if (!perfChecked && graphics.get().mode === 'standard' && quality === 'high' && (gameState === 'AIMING' || gameState === 'CHARGING' || gameState === 'SHOOTING')) {
                 perfFrames++; perfTime += dt;
                 if (perfTime > 4) {
