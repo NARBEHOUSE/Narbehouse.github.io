@@ -1696,7 +1696,8 @@
         this._finishPossession(spot, 'Turnover on downs', team + ' are stopped. Possession changes.'); return;
       }
       s.firstDownLine = clamp(spot + s.distance * d, 0, 100);
-      const gainText = gain < 0 ? 'Loss of ' + Math.abs(gain) : 'Gain of ' + gain;
+      // Round only the announcement; field position, gains and stats retain precision.
+      const gainText = gain < 0 ? 'Loss of ' + Math.round(Math.abs(gain)) : 'Gain of ' + Math.round(gain);
       this._pending = { switchPossession: false };
       s.phase = 'result'; s.resultRevealRemaining = 2.2;
       s.result = { title: firstDown ? 'First down!' : reason, detail: gainText + ' yards. ' + (firstDown ? 'A new set of downs.' : this._downText()) };
@@ -1704,7 +1705,7 @@
       this._emit('result', sentences(s.result.title, s.result.detail));
     }
     _downText() {
-      return ['','1st','2nd','3rd','4th'][this.s.down] + ' and ' + Math.ceil(this.s.distance) + '.';
+      return ['','1st','2nd','3rd','4th'][this.s.down] + ' and ' + Math.round(this.s.distance) + '.';
     }
     _finishPossession(nextSpot, title, detail) {
       this.s.conversion = null;

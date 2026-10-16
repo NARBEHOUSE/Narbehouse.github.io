@@ -1114,3 +1114,21 @@ Additional desktop changes: bennyshub/shared/native-settings.cjs (default and du
 Validation on 2026-10-14: all 24 desktop graphics/native unit checks and 14 website graphics unit checks passed. Real Chrome checks passed for Basketball, Ballista, P3GL and Baseball at DPR 2. Checks covered saved Auto migration, inherited High, full launch antialiasing, 30/25/10 FPS synthetic cadences without downgrade, explicit Low and return to Hub. Basketball additionally passed actual Hub selector cycles and iframe Settings cycles, retained High after ten seconds, and had full post-processing and shadows. The screenshot confirms Use Hub setting (High). No Electron GUI process was launched in this follow-up.
 
 Local source update only; no publication or installer build.
+
+
+## 2026-10-16 — Robot Football yardage and Show n Sound SVG textures
+
+Scope: requested whole-number yardage announcements and investigation/fix of shared images appearing as black boxes. The owner also explicitly requested the Robot Football fix in Benny's PC Hub. Field-goal distances, gains/losses and down-and-distance announcements round to the nearest whole yard; simulation precision and first-down decisions remain unchanged.
+
+Show n Sound uses WebGL textures while Matchy Match uses HTML images. Eight viewBox-only SVGs decode as browser images but fail direct WebGL texImage2D upload with INVALID_VALUE (1281): Cardinal, Hibiscus, Cherry Blossom, Crab, Pufferfish, Police Car, Speedboat and Snowflake. Show n Sound now rasterizes SVGs to a canvas before texture upload, preserving aspect ratio and transparency. Shared artwork and Matchy Match are unchanged. Both file URLs and editor data URIs are supported.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js — yardage presentation / YES, matching focused patch applied and verified in PC Hub.
+- bennyshub/apps/games/ROBOTFOOTBALL/js/simulation.js — result narration only / YES, matching focused patch applied and verified in PC Hub.
+- bennyshub/apps/games/BENNYSSHOWNSOUND/js/scenes.js — SVG decoding and texture creation / PENDING, website only in this task.
+- SCAN-UPGRADE-CHANGES.md — this record / WEB ONLY.
+
+Validation: all 265 panel images referenced by Show n Sound loaded and uploaded to WebGL without errors after the fix; the original audit reproduced exactly eight failures. Crab reveal and wheel screenshots inspected; embedded percent-encoded/base64 SVGs, query/hash URLs, non-square aspect ratio, transparency and failed-image fallback passed. Twelve home/away simulation checks verified rounded speech while preserving fractional stats and positions. Actual menu/scan/result speech passed in isolated Edge for web and staged PC Hub sources (the applied desktop files were then verified byte-for-byte), including 8.999999999, 6.4, 4.5, 48.9-yard field goals and positive/negative gains. No Electron GUI or installer build was run. The owner requested pushing the verified website fixes after validation. Game assets are outside the service worker's named cache; no cache revision needed.
+
+Backup: F:/PROJECT FILES/WEBSITES/Website Backups/Football-yardage-show-sound-20261016-1792154986166
+Evidence: artifacts/yardage-show-sound (image audits, browser speech results and screenshots).

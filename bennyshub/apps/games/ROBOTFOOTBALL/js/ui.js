@@ -371,7 +371,7 @@
   function playcall() {
     const s = sim.s, defending = s.possession === 'away', choosing = s.conversion === 'choose', two = s.conversion === 'two';
     // Each play leads with what it is for (Short pass, Inside run...); its playbook name sits above.
-    const kickYards = 100 - s.fieldPosition + 17, theirKickYards = Math.round(s.fieldPosition + 17);
+    const kickYards = Math.round(100 - s.fieldPosition + 17), theirKickYards = Math.round(s.fieldPosition + 17);
     const list = sim.playbook().map(p => {
       const label = p.label || p.name, yards = p.id === 'fieldgoal' ? kickYards : p.kick === 'fieldgoal' ? theirKickYards : 0, speech = sentences(label, yards ? yards + ' yards' : p.value, p.description);
       return { name: label, tag: label !== p.name ? p.name : '', kind: p.type, value: p.value || (yards ? yards + ' YD' : ''), desc: p.description, play: p.id,
@@ -490,7 +490,7 @@
   function situation(s) {
     const home = s.possession === 'home', goal = home ? 100 - s.fieldPosition : s.fieldPosition, spot = Math.round(s.fieldPosition);
     const down = s.toss ? 'Coin toss' : s.kickoff ? (s.kickoff.team === 'home' ? (s.kickoff.safety ? 'Free kick from your 20' : 'You kick off from your 35') : 'The visitors kick off') : s.conversion === 'choose' ? 'After the touchdown' : s.conversion === 'two' ? 'Two-point try from the 2' : s.conversion === 'kick' ? 'Extra point try'
-      : ['First', 'Second', 'Third', 'Fourth'][Math.max(0, Math.min(3, s.down - 1))] + ' and ' + (s.distance >= goal - .05 ? 'goal' : Math.ceil(s.distance)) + (spot === 50 ? ' at midfield' : spot < 50 ? ' at your ' + spot : ' at their ' + (100 - spot));
+      : ['First', 'Second', 'Third', 'Fourth'][Math.max(0, Math.min(3, s.down - 1))] + ' and ' + (s.distance >= goal - .05 ? 'goal' : Math.round(s.distance)) + (spot === 50 ? ' at midfield' : spot < 50 ? ' at your ' + spot : ' at their ' + (100 - spot));
     const lead = s.homeScore - s.awayScore, high = Math.max(s.homeScore, s.awayScore), low = Math.min(s.homeScore, s.awayScore);
     const score = lead === 0 ? 'Tied at ' + s.homeScore : (lead > 0 ? 'You lead ' : 'You trail ') + high + ' to ' + low;
     const seconds = Math.max(0, Math.ceil(s.timeRemaining ?? 120));

@@ -205,26 +205,41 @@ function resampleTexture(scene, key, targetPx) {
     return outKey;
 }
 
-/**
- * Add a data: URI as a texture.
- *
- * Phaser's file loader REFUSES data: URIs outright ("Local data URIs are not
- * supported"), and editor-authored packs are entirely data URIs — every picture
- * and sound is embedded so a pack is one self-contained, shareable file. So we
- * decode through an Image element and hand Phaser the finished element, which
- * it accepts. Doing it this way rather than via textures.addBase64 also gives a
- * direct onerror instead of event plumbing.
+/** SVGs without intrinsic dimensions display in <img>, but fail WebGL upload.
+ * Rasterize vectors at reveal resolution before handing them to Phaser. This
+ * also covers embedded SVGs from the editor, preserving aspect and alpha.
  */
-function addDataUriTexture(scene, key, dataUri) {
+function isSvgImage(url) {
+    return /\.svg(?:[?#]|$)/i.test(url) || /^data:image\/svg\+xml[;,]/i.test(url);
+}
+
+/** Decode SVGs and data URIs outside Phaser's ordinary bitmap file loader. */
+function addDecodedTexture(scene, key, url) {
     return new Promise((resolve) => {
         if (scene.textures.exists(key)) { resolve(true); return; }
         const im = new Image();
+        if (!url.startsWith('data:')) im.crossOrigin = 'anonymous';
         im.onload = () => {
-            try { scene.textures.addImage(key, im); resolve(true); }
-            catch (e) { console.warn('[ShownSound] Could not add texture', key, e); resolve(false); }
+            try {
+                if (isSvgImage(url)) {
+                    const canvas = document.createElement('canvas');
+                    const scale = 1024 / Math.max(im.width, im.height);
+                    canvas.width = Math.max(1, Math.round(im.width * scale));
+                    canvas.height = Math.max(1, Math.round(im.height * scale));
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+                    scene.textures.addCanvas(key, canvas);
+                } else {
+                    scene.textures.addImage(key, im);
+                }
+                resolve(true);
+            } catch (e) {
+                console.warn('[ShownSound] Could not add texture', key, e);
+                resolve(false);
+            }
         };
         im.onerror = () => resolve(false);
-        im.src = dataUri;
+        im.src = url;
     });
 }
 
@@ -267,9 +282,9 @@ function loadPanelImages(scene, panels, done) {
         const key = textureKeyFor(panel.image);
         if (scene.textures.exists(key)) { panel._textureKey = key; return; }
 
-        if (panel.image.startsWith('data:')) {
+        if (panel.image.startsWith('data:') || isSvgImage(panel.image)) {
             dataJobs.push(
-                addDataUriTexture(scene, key, panel.image)
+                addDecodedTexture(scene, key, panel.image)
                     .then(ok => { panel._textureKey = ok ? key : null; })
             );
         } else {
