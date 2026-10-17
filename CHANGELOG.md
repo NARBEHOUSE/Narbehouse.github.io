@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 - Sphere Splash concept classification
+
+- Label Sphere Splash as New Concept on the homepage, matching the owner's clarification and the SwitchedGames catalog classification.
+
 ## 2026-10-17 - Games, RTC Lite and clearer project documentation
 
 - Publish RTC Lite and the reusable BYOK client/service sources, plus the requested Chasing Rainbows catalog and attribution updates.

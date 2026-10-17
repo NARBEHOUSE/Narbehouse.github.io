@@ -2,6 +2,12 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - Sphere Splash is a new concept
+
+The owner clarified that Benny's Sphere Splash is a new concept. Its homepage badge now says New Concept, matching the SwitchedGames card, Details classification and New concepts filter. Game runtime and assets are unchanged.
+
+Files: `index.html`, `CHANGELOG.md` and `docs/history/DEVELOPMENT-HISTORY.md` - WEB ONLY / no desktop port. Validation checks the scoped homepage badge and preserved catalog data; publication runs the existing release checks.
+
 
 ## 2026-10-17 - New games, desktop audio sync, listings and documentation organization
 
