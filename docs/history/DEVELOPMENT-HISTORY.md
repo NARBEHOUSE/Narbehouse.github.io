@@ -2,6 +2,22 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - RTC Lite natural spoken replies
+
+The owner reported Gemini Nano returning "no replies needed yet" and "nothing specific to add" after "hello". The prompt prescribed eight fixed purposes even for greetings, and validation checked structure without rejecting task commentary. The local prompt now adapts to the exchange and asks for words the person can say aloud. AI-only validation rejects the reported placeholders and related model commentary, including during partial recovery. Saved personal phrases and natural refusals remain valid. Nano/local servers retain one bounded correction attempt; the own-key client rejects unusable output without adding paid calls. The separate Worker is not redeployed in this release.
+
+Changed files and scope (all RTC Lite web; Electron port: NO):
+
+- `bennyshub/apps/tools/rtc-lite/core.js` - conversational prompt and AI-only validation/recovery.
+- `bennyshub/apps/tools/rtc-lite/providers.js` - generated-reply validation and targeted correction instructions.
+- `tests/rtc-replies.test.cjs` - ten regressions for placeholders, natural boundaries, saved text, repair, recovery, local-server and own-key paths.
+- `bennyshub/apps/tools/rtc-lite/README.md` - behavior and validation limits.
+- `docs/history/DEVELOPMENT-HISTORY.md` - this release record.
+
+Validation: all 274 website tests and 19 isolated Chromium browser checks passed. The browser fixture injects recognized "hello" through the speech callback, exercises model setup and GET / REFRESH, verifies a corrected board and selectable speech, and checks that an entirely unusable response restores saved phrases while retaining new context. No external requests, model downloads or browser errors occurred. Fixtures simulate Nano output; this does not establish actual Nano quality or microphone performance on the target device. Existing network-first asset handling fetches the updated RTC scripts on an online reload.
+
+Release checks: public build and release audit passed (3,772 public files, no problems); all 1,142 page references passed. Publishing scope is limited to the RTC files and RTC-specific tests/documentation listed above.
+
 ## 2026-10-17 - Retire SmolLM2 and clarify mobile AI support
 
 The owner reported freezing and stuck Thinking on their device and requested reconsidering the experimental browser model. Removed SmolLM2/WebLLM from both web and desktop RTC Lite. Existing webllm selections migrate to AI Off, with the retired ready flag cleared and saved; no cloud provider is selected automatically. Saved bio, phrases, speech preferences and credentials are retained. The active provider no longer contains the WebGPU/worker load or generation path, and rejects stale direct calls. The website service worker is v47 and no longer precaches the old AI worker/helper or caches its vendor runtime. Historical experimental source and attribution files remain available, but are not loaded by the app.

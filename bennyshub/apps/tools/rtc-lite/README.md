@@ -30,7 +30,7 @@ The bottom panel uses green LISTENING, red MIC OFF and amber PAUSED/STARTING, wi
 
 While local speech recognition is working, the listening panel says "Recognizing recent speech". Already recorded speech remains eligible for context even if the app starts speaking a prompt before recognition finishes; microphone capture still pauses during app speech. Setup errors stay with the microphone and Listening settings, so a resolved setup warning does not linger in the communication board footer.
 
-Suggested replies cover different conversational purposes: agreement, disagreement or a boundary, uncertainty, clarification, a concrete answer, an alternative, a follow-up question and a related thought. The shared prompt asks local and cloud models to vary meaning across the whole board, not just reword one answer. These remain optional suggestions; the user chooses what to say.
+Suggested replies should fit the exchange and vary in meaning, rather than rewording one answer. The local prompt gives greetings natural greetings and ways to start talking. Questions, offers and opinions can have agreement, disagreement, uncertainty, alternatives, clarification and follow-up questions without forcing every exchange into the same eight roles. These remain optional suggestions; the user chooses what to say.
 
 Typing refreshes AI words and phrases using the current sentence and context. The third row and temporary AI-row fallbacks use only the existing web keyboard's web_keyboard_predictions.json. Partial words are completed; recorded ngrams supply short phrase continuations. More words/phrases refresh the selected row. Updates wait while individual choices are being scanned, and stale responses are discarded.
 
@@ -77,3 +77,25 @@ these updated assets on an online reload; no shared Hub changes are required.
 Validation: 264 existing tests passed, plus 18 focused browser checks covering
 the notice, narration, mobile/desktop layout and retained settings routes.
 Public build, release audit and 1,142 page-reference checks passed.
+
+## Natural spoken replies (2026-10-17)
+
+The Nano/local-server prompt now explicitly drafts words the person could say
+aloud, with guidance for greetings, questions, offers, news and feelings. The
+latest statement takes priority over older context. It does not ask the model
+to judge whether a response is needed.
+
+Generated choices are checked for the reported "no replies needed yet" and
+"nothing specific to add" placeholders, related task commentary and speaker
+labels. Local providers get at most one correction attempt. If needed, usable
+generated choices are combined with saved phrases; entirely unusable output
+restores saved phrases without consuming new context or committing its summary.
+Personal boundaries and explicitly saved phrases keep their existing rules.
+The own-key client also rejects these placeholders, without adding paid calls.
+The separate cloud Worker has not been redeployed with the revised prompt.
+
+Scope: RTC Lite web reply generation and its regression tests/documentation.
+Desktop port: not included. All 274 website tests and 19 browser checks passed.
+The public build, release audit and all 1,142 page-reference checks also passed.
+The browser checks use simulated Nano output and recognized speech; real Nano
+quality and microphone recognition on the user's device still need testing.

@@ -48,14 +48,14 @@ class AI{
   const result=this.queue.then(run);this.queue=result.catch(()=>{});return result;
  }
  async getSuggestions(snapshot,profile,avoid,signal){
-  if(this.prefs().ai==='cloud')return C.validateBoard(await window.RtcByok.generate({op:'board',snapshot,profile,avoid},signal),avoid);
+  if(this.prefs().ai==='cloud')return C.validateSuggestions(await window.RtcByok.generate({op:'board',snapshot,profile,avoid},signal),avoid);
   let prompt=C.boardPrompt(snapshot,profile,avoid);const candidates={general:[],specific:[]};
   for(let attempt=0;attempt<2;attempt++){
    const raw=await this.request(prompt,C.BOARD_SCHEMA,false,signal);
-   try{const result=C.validateBoard(raw,avoid);if([...result.general,...result.specific].some(s=>/\b(?:ROOM|USER)\b/.test(s)))throw Error('AI included a speaker label.');return result;}catch(e){
+   try{return C.validateSuggestions(raw,avoid);}catch(e){
     const usable=C.usableBoard(raw,avoid);for(const key of ['general','specific'])candidates[key].push(...usable[key]);
     if(attempt){const recovered=C.completeBoard(candidates,this.prefs().defaults);if(recovered)return recovered;throw e;}
-    prompt+='\nThe response below needs correction: '+JSON.stringify(raw)+'\nProblem: '+e.message+' Replace repeated or quick-answer phrases with different short choices. Do not include the labels ROOM or USER. Return the full corrected JSON object.';
+    prompt+='\nThe response below needs correction: '+JSON.stringify(raw)+'\nProblem: '+e.message+' Replace unusable choices with different short things the person could actually say aloud in this exchange. Reply naturally even to a simple greeting. Remove task commentary, missing-context notices, purpose/speaker labels and repeated or standalone quick answers. Return the full corrected JSON object.';
    }
   }
  }
