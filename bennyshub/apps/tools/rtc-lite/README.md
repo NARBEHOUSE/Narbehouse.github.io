@@ -28,6 +28,10 @@ The bio, defaults and preferences persist in browser storage. Conversation memor
 
 The bottom panel uses green LISTENING, red MIC OFF and amber PAUSED/STARTING, with words/symbols as well as color. The latest recognized words and numbered NEW CONTEXT indicator show when fresh speech is available. New speech during an older request remains marked new. Failed requests and dictionary fallback do not consume that indicator.
 
+While local speech recognition is working, the listening panel says "Recognizing recent speech". Already recorded speech remains eligible for context even if the app starts speaking a prompt before recognition finishes; microphone capture still pauses during app speech. Setup errors stay with the microphone and Listening settings, so a resolved setup warning does not linger in the communication board footer.
+
+Suggested replies cover different conversational purposes: agreement, disagreement or a boundary, uncertainty, clarification, a concrete answer, an alternative, a follow-up question and a related thought. The shared prompt asks local and cloud models to vary meaning across the whole board, not just reword one answer. These remain optional suggestions; the user chooses what to say.
+
 Typing refreshes AI words and phrases using the current sentence and context. The third row and temporary AI-row fallbacks use only the existing web keyboard's web_keyboard_predictions.json. Partial words are completed; recorded ngrams supply short phrase continuations. More words/phrases refresh the selected row. Updates wait while individual choices are being scanned, and stale responses are discarded.
 
 Select the centered text box to speak and stay on the keyboard. While editing a bio/default/announcement, the same box saves instead. Controls are below it. Color separates controls, predictions and letters. The bio editor also supports an ordinary physical keyboard without speaking or logging private profile text.

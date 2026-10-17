@@ -16,5 +16,8 @@ self.onmessage=async({data:m})=>{
    const result=await asr(new Float32Array(m.audio),{sampling_rate:16000,chunk_length_s:25,stride_length_s:0});
    postMessage({id:m.id,result:{text:result.text||''}});
   }
- }catch(e){postMessage({id:m.id,error:m.type==='load'&&!m.download?'Saved Whisper model is missing. Choose Set up in Settings to download it.':e.message||'Whisper failed.'});}finally{busy=false;}
+ }catch(e){
+  const missing=m.type==='load'&&!m.download&&/file was not found locally/.test(e.message||'');
+  postMessage({id:m.id,error:missing?'Whisper needs setup in this browser. In Settings > Listening & speech recognition, choose Load speech model.':e.message||'Whisper failed.'});
+ }finally{busy=false;}
 };

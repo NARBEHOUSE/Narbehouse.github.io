@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-17 - RTC Lite listening feedback and varied replies
+
+- Keep resolved speech-setup warnings out of the board footer and identify actual model-cache misses separately from runtime failures.
+- Preserve captured speech when app narration starts during recognition. Show when recent speech is being recognized; newer context remains available during an older suggestion refresh.
+- Request different conversational purposes across the eight suggestions, including agreement, disagreement, uncertainty, clarification, alternatives and questions, using the shared local/cloud prompt.
+- Add RTC-Convo board to the Hub Tools description and refresh the service-worker cache.
+
 ## 2026-10-17 - Sphere Splash concept classification
 
 - Label Sphere Splash as New Concept on the homepage, matching the owner's clarification and the SwitchedGames catalog classification.

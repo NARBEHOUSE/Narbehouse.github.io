@@ -2,6 +2,30 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - RTC Lite listening, context and reply variety
+
+The owner reported a Whisper warning that remained after successful loading, delayed new context while refreshing, and suggestions with similar meanings. The owner also requested RTC-Convo board in the Hub Tools description.
+
+Reproduced the stale footer with the prior published app even while the microphone was listening. Speech setup errors now stay in the microphone and Listening settings. Only an actual local model-file miss gets setup guidance, using the current Load speech model label. Runtime failures retain their actual message.
+
+Reproduced lost transcripts with delayed recognition: app narration cleared already-captured audio and caused completed results to be discarded when the speech epoch changed. Capture still pauses during app speech, but already-captured segments and valid pending results survive later narration. Stopping or changing the recognition session still invalidates results. The listening panel now shows when recognition is processing recent speech.
+
+The shared local/cloud board prompt gives all eight positions distinct conversational purposes and asks for different meanings across the whole board, including both agreement and disagreement when appropriate. It preserves optional user-selected speech, bounded JSON output, existing provider limits and the existing repair budget. The separately deployed BYOK Worker imports this shared prompt. No provider keys or real conversation were used in tests.
+
+Validation: 262 website tests, five Worker integration tests and TypeScript checks pass. Nine focused browser checks cover missing model, successful setup, reload, recognition activity, context arriving during narration and a pending refresh, and preserving that newer context when the older refresh completes. The existing Worker browser check passes with four synthetic provider calls and four layouts from 800 x 600 to 1366 x 900. Real Whisper base.en transcribed a locally synthesized 5.62-second sample twice correctly in 6.63 and 5.68 seconds on this PC; these measurements do not establish speed or microphone quality on Ben's device. The build, public audit and page-link checks pass. Evidence: local websites workspace tmp/spheresplash-sync-20261017/rtc-*.
+
+Files and scope:
+- `bennyshub/apps/tools/rtc-lite/app.js` - WEB ONLY / status display; no desktop port.
+- `bennyshub/apps/tools/rtc-lite/speech.js` - WEB ONLY / preserve captured speech and report recognition activity; no desktop port.
+- `bennyshub/apps/tools/rtc-lite/whisper-worker.js` - WEB ONLY / accurate setup errors; no desktop port.
+- `bennyshub/apps/tools/rtc-lite/core.js` - WEB AND BYOK WORKER / varied reply prompt; no desktop port.
+- `bennyshub/apps/tools/rtc-lite/README.md` - WEB documentation; no desktop port.
+- `bennyshub/index.html` - WEB ONLY / Tools description; no desktop port.
+- `bennyshub/service-worker.js` - WEB ONLY / cache v45; model caches preserved.
+- `tests/rtc-speech.test.cjs` - WEB tests / delayed transcription, narration, cancellation and worker errors.
+- `CHANGELOG.md` - WEB release summary.
+- `docs/history/DEVELOPMENT-HISTORY.md` - WEB detailed record.
+
 ## 2026-10-17 - Sphere Splash is a new concept
 
 The owner clarified that Benny's Sphere Splash is a new concept. Its homepage badge now says New Concept, matching the SwitchedGames card, Details classification and New concepts filter. Game runtime and assets are unchanged.

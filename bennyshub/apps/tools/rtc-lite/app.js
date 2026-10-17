@@ -160,7 +160,8 @@
       microphoneState=state;
       for(const el of document.querySelectorAll('.mic-status')){el.textContent=message;el.title=message;el.setAttribute('aria-label',message);el.dataset.state=state;}
       const labels={listening:['●','LISTENING','Microphone is receiving audio'],off:['■','MIC OFF','Not listening'],paused:['Ⅱ','PAUSED','App speaking / audio paused'],starting:['…','STARTING','Waiting for microphone']};
-      const [symbol,label,detail]=labels[state]||labels.off;
+      const [symbol,label,baseDetail]=labels[state]||labels.off;
+      const detail=state==='listening'&&speech.processing?'Recognizing recent speech…':baseDetail;
       for(const el of document.querySelectorAll('.listening-indicator')){
         el.dataset.state=state;el.title=message;el.setAttribute('aria-label',message);
         el.querySelector('.listening-symbol').textContent=symbol;el.querySelector('.listening-label').textContent=label;
@@ -271,7 +272,7 @@
       byId('cancelSpeech').querySelector('.setting-value').textContent=speechLoading?'Stop the current setup':speechReady?'Select to turn listening off and unload':'Microphone off · No speech model loaded';
     }
     function cycle(key,values){prefs[key]=values[(values.indexOf(prefs[key])+1)%values.length];savePrefs();updateSettings();}
-    async function startListening(){if(!consented)return;const revision=++listenRevision;try{await speech.start();}catch(e){if(revision!==listenRevision||disposed)return;speech.status(speech.errorMessage(e));report('listening',e);if(screen==='board')byId('boardStatus').textContent=e.message;}}
+    async function startListening(){if(!consented)return;const revision=++listenRevision;try{await speech.start();}catch(e){if(revision!==listenRevision||disposed)return;speech.status(speech.errorMessage(e));report('listening',e);}}
     async function continueApp(){
       consented=true;openScreen('board');
       void startListening();

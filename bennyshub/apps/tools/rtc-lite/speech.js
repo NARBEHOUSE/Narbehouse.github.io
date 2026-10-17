@@ -7,9 +7,9 @@ class Speech{
  reportListening(){
   if(!this.active||!this.captureReady)return;
   const paused=this.muted()||this.audio&&this.audio.state!=='running'||this.stream?.getAudioTracks().some(track=>track.muted);
-  this.status(paused?(this.muted()?'Listening paused · app is speaking':'Listening paused · microphone audio is unavailable'):'Listening · '+this.name(this.prefs().stt),paused?'paused':'listening');
+  this.status(paused?(this.muted()?'Listening paused · app is speaking':'Listening paused · microphone audio is unavailable'):this.processing?'Listening · recognizing recent speech…':'Listening · '+this.name(this.prefs().stt),paused?'paused':'listening');
  }
- voiceStarted(){this.voiceCount++;this.voiceEpoch++;this.resetSegment();this.queue=[];this.mutedUntil=Infinity;clearTimeout(this.resumeTimer);if(this.active)this.status('Listening paused · app is speaking','paused');}
+ voiceStarted(){this.voiceCount++;this.voiceEpoch++;this.resetSegment();this.mutedUntil=Infinity;clearTimeout(this.resumeTimer);if(this.active)this.status('Listening paused · app is speaking','paused');}
  voiceEnded(){this.voiceCount=Math.max(0,this.voiceCount-1);if(!this.voiceCount){this.mutedUntil=Date.now()+500;clearTimeout(this.resumeTimer);this.resumeTimer=setTimeout(()=>{this.reportListening();},500);}}
  muted(){return Date.now()<this.mutedUntil;}
  resetSegment(){this.frames=[];this.length=0;this.voiced=0;this.silence=0;this.preroll=[];}
@@ -73,12 +73,12 @@ class Speech{
   if(this.silence>=14400||this.length>=192000){
    if(this.voiced>=4000){const audio=new Float32Array(this.length);let pos=0;for(const f of this.frames){audio.set(f,pos);pos+=f.length;}
     if(this.queue.length>=1){void this.stop('Recognition could not keep up. Listening stopped. Try a different speech option in Settings.');return;}
-    this.queue.push({audio,at:Date.now(),epoch,voiceEpoch:this.voiceEpoch,provider});void this.drain();
+    this.queue.push({audio,at:Date.now(),epoch,provider});void this.drain();
    }this.resetSegment();
   }
  }
  async drain(){
-  if(this.processing)return;this.processing=true;
+  if(this.processing)return;this.processing=true;this.reportListening();
   try{while(this.queue.length){
    const job=this.queue.shift();if(job.epoch!==this.epoch)continue;
    const start=performance.now();let result;
@@ -91,9 +91,11 @@ class Speech{
      this.requestAbort=new AbortController();const requestTimer=setTimeout(()=>this.requestAbort?.abort(),30000);const response=await fetch('/api/rt-convo/stt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio:btoa(binary),sampleRate:16000}),signal:this.requestAbort.signal}).finally(()=>clearTimeout(requestTimer));
      if(!response.ok)throw Error(response.status===429?'Google speech quota reached. Choose a local speech option.':'Google speech unavailable. Check the Hub connection or choose a local option.');result=await response.json();if(result.error)throw Error('Google speech is not configured or available. Choose a local option.');
     }
-    if(job.epoch===this.epoch&&job.voiceEpoch===this.voiceEpoch&&!this.muted()&&result.text?.trim())this.onText(result.text.trim(),job.at,Math.round(performance.now()-start));
+    // Captured segments already exclude app speech. Later narration must not erase
+    // an earlier valid utterance just because local recognition finishes slowly.
+    if(job.epoch===this.epoch&&result.text?.trim())this.onText(result.text.trim(),job.at,Math.round(performance.now()-start));
    }catch(e){if(job.epoch===this.epoch){await this.stop(e.message);}break;}
-  }}finally{this.processing=false;}
+  }}finally{this.processing=false;this.reportListening();}
  }
  startBrowser(epoch){
   const R=window.SpeechRecognition||window.webkitSpeechRecognition,recognition=this.recognition=new R();recognition.continuous=true;recognition.interimResults=false;recognition.lang='en-US';let beganVoiceEpoch=this.voiceEpoch;
