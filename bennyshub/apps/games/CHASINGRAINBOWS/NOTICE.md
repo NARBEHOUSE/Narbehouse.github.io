@@ -5,10 +5,15 @@
 
 ## Original game, artwork and branding
 
-**Chasing Rainbows ICG** is a game by **Inclusive Imagination LLC**. The existing
-rightsholder attribution is **TM & © 2026 Inclusive Imagination LLC**. **Card art
-by Adam M Botsford.** NARBE LLC's switch-access implementation does not transfer
-ownership of the original game's artwork, protected text, or branding to NARBE.
+Chasing Rainbows ICG is a game by Inclusive Imagination®.  
+Card Art by Adam M Botsford. Chasing Rainbows, its rules and card art are TM & © 2026 Inclusive Imagination LLC.  
+Switch Access Edition by NARBE House, for Benny’s Hub.  
+
+Inclusive Imagination® Home: [https://inclusiveimagination.co/](https://inclusiveimagination.co/)  
+Inclusive Imagination® Social Handle: @inclusiveimagination
+
+NARBE LLC's switch-access implementation does not transfer ownership of the
+original game's artwork, protected text, or branding to NARBE.
 
 The original game design and concept are credited to Inclusive Imagination.
 This notice reserves existing copyright and trademark rights; it does not claim
@@ -58,14 +63,20 @@ resulting card images and thumbnail remain excluded.
 Licensed separately under the **SIL Open Font License 1.1**, reproduced in
 [fonts/OFL.txt](fonts/OFL.txt).
 
-## Permission and release status
+## Publishing permission
 
-This notice clarifies existing attribution and the scope of the software license.
-It does not establish that any particular rightsholder permission has been signed,
-replace an actual permission agreement, or retrospectively authorize distribution.
-Keep written permissions for the precise artwork, game text, versions, and channels
-being used in the publisher's private rights records.
+The signed submission dated October 16, 2026 identifies the covered edition as
+"Chasing Rainbows - All Benny's Hub Versions" and selects "No code supplied;
+NARBE may develop its own implementation." The submitted code scope is "NONE".
 
-The website edition remains a direct-link creator-review release and is absent
-from the Hub game manifest. The site owner's authorization to publish that review
-edition is separate from permission granted by a copyright or trademark owner.
+The selected distribution channels are switchedgames.org and bennyshub.com. The
+form's distribution terms also cover Benny's PC Hub, including downloadable
+offline editions, and necessary technical, compatibility, security, and
+accessibility adaptations. Publisher use is governed by the private permission
+agreement, including its acceptance and withdrawal terms; it is not a public
+license to reuse the retained artwork, protected text, or branding. No additional
+restrictions or disputes were listed in the submission.
+
+The signed form, contact details, supporting evidence, and rights schedule stay
+in private publishing records and must not be committed or deployed. The public
+credits are reproduced in [CREDITS.md](CREDITS.md).

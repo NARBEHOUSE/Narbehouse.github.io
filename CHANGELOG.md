@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-17 - Games, RTC Lite and clearer project documentation
+
+- Publish RTC Lite and the reusable BYOK client/service sources, plus the requested Chasing Rainbows catalog and attribution updates.
+- Update Pet Pals care/reminders and Rush assistance; add Magic Button's optional Simple High Contrast.
+- Add Sphere Splash with its expanded recorded commentary, new gameplay thumbnail and Bryan R./NARBE LLC credit. Update its PC Hub sources and both website catalogs/homepages.
+- Group six development documents under docs/, rename the detailed history, and add a documentation index and repository map.
+- Validation: 257 website tests, focused game/browser checks, match/audio checks, build, public-file audit and page-link checks; Companion archive preserved. Physical-switch/device and native Electron runtime checks remain outside this pass.
+
+
 ## 2026-10-10 — Approved legal-page publication and reproducible packaging (WEB-ONLY)
 
 - Owner authorized pushing the reviewed changes. Provider/form-setting and legal-applicability follow-ups remain recorded; no tracking settings change.
@@ -12,7 +21,7 @@
 - Add SwitchedGames, Switched Games and SwitchedGames.org to the maintained branding notices in index.html, bennyshub/index.html and crypto-statement/index.html, with a narrow third-party/contributor-rights clarification.
 - Add separate SwitchedGames privacy/terms links before the root page's mirrored Hub/Companion privacy text; that shared text is unchanged.
 - Update only the branding note in LICENSE and corresponding README.md branding reference. License grants are unchanged.
-- Record the exact scope in SCAN-UPGRADE-CHANGES.md. No deployment, Electron pass, extension runtime change or release-archive change.
+- Record the exact scope in docs/history/DEVELOPMENT-HISTORY.md. No deployment, Electron pass, extension runtime change or release-archive change.
 - Review evidence and verified originals: F:/PROJECT FILES/WEBSITES/Website Backups/SwitchedGames-legal-2026-10-10-1791679705308.
 - Root LICENSE is an input to immutable Companion packaging; build validation and any resulting release-workflow blocker are recorded in the external review report.
 
@@ -33,4 +42,4 @@
 - Keeps Companion controls in one compact row outside the video, with narrow-window scrolling and fullscreen support.
 - Preserves prior website backups and all earlier release candidates. The candidate at that stage was 1.0.6-web-complete; nothing has been deployed or submitted. Electron remains locked.
 
-See [the test guide](SCAN-UPGRADE-TESTING.md), [validation](submission/VALIDATION.md), and [the per-file/per-app record](SCAN-UPGRADE-CHANGES.md).
+See [the test guide](docs/testing/SWITCH-ACCESS-TESTING.md), [validation](submission/VALIDATION.md), and [the per-file/per-app record](docs/history/DEVELOPMENT-HISTORY.md).

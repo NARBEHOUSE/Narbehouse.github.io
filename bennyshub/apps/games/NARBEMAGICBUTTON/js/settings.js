@@ -41,6 +41,19 @@ NMB.Settings = (function () {
         { name: 'Black', color: '#000000', ink: '#ffffff' }
     ];
 
+    /**
+     * Colours for the Simple High Contrast look: one bright colour for
+     * everything, on plain black, so the player has one strong thing to find.
+     */
+    const SIMPLE_COLORS = [
+        { name: 'Yellow', color: '#ffe600' },
+        { name: 'Red', color: '#ff2b2b' },
+        { name: 'Green', color: '#2bff5e' },
+        { name: 'Blue', color: '#3d8bff' },
+        { name: 'White', color: '#ffffff' },
+        { name: 'Pink', color: '#ff4fd8' }
+    ];
+
     const VOLUMES = [
         { name: 'Quiet', level: 0.35 },
         { name: 'Medium', level: 0.65 },
@@ -55,6 +68,13 @@ NMB.Settings = (function () {
          *       cannot hold a switch long enough to pause.
          */
         pauseMode: 'hold',
+        /**
+         * regular: the full scenes. simple: Simple High Contrast for players
+         * with CVI - plain black, one big bold shape per press in one colour.
+         * Only the game screens change; the menus look the same either way.
+         */
+        look: 'regular',
+        simpleColorIndex: 0,
         /** A name, word or age spelled in fireworks every few launches. '' = off. */
         skyWord: '',
         sound: true,
@@ -74,6 +94,8 @@ NMB.Settings = (function () {
         if (MODES.indexOf(settings.mode) === -1) settings.mode = DEFAULTS.mode;
         if (settings.pauseMode !== 'scan') settings.pauseMode = 'hold';
         if (settings.highlightStyle !== 'full') settings.highlightStyle = 'outline';
+        if (settings.look !== 'simple') settings.look = 'regular';
+        settings.simpleColorIndex = wrapIndex(settings.simpleColorIndex, SIMPLE_COLORS.length);
         RETIRED.forEach(function (key) { delete settings[key]; });
         settings.skyWord = String(settings.skyWord || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/^ +/, '').slice(0, WORD_MAX);
         settings.sound = settings.sound !== false;
@@ -114,7 +136,10 @@ NMB.Settings = (function () {
         MODES: MODES,
         WORD_MAX: WORD_MAX,
         HIGHLIGHT_COLORS: HIGHLIGHT_COLORS,
+        SIMPLE_COLORS: SIMPLE_COLORS,
         VOLUMES: VOLUMES,
+        simpleColor: function () { return SIMPLE_COLORS[settings.simpleColorIndex].color; },
+        simpleColorName: function () { return SIMPLE_COLORS[settings.simpleColorIndex].name; },
         get: function (key) { return settings[key]; },
         set: function (key, value) { settings[key] = value; clamp(); save(); },
         toggle: function (key) { settings[key] = !settings[key]; clamp(); save(); return settings[key]; },

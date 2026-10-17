@@ -44,6 +44,6 @@ Obtain those exact files from the URLs already named in the runner before runnin
 
 ## Local evidence and historical utilities
 
-Reports, screenshots, downloaded engines, browser profiles and release archives remain under ignored local folders. `SCAN-UPGRADE-CHANGES.md` and `submission/VALIDATION.md` summarize accepted coverage and distinguish fixture boundaries from real gameplay/provider checks. The one-time historical archive/backup audit remains workstation-only because it requires preserved external backups and older ZIPs. Do not copy those trees into the repository to make that audit portable.
+Reports, screenshots, downloaded engines, browser profiles and release archives remain under ignored local folders. `docs/history/DEVELOPMENT-HISTORY.md` and `submission/VALIDATION.md` summarize accepted coverage and distinguish fixture boundaries from real gameplay/provider checks. The one-time historical archive/backup audit remains workstation-only because it requires preserved external backups and older ZIPs. Do not copy those trees into the repository to make that audit portable.
 
 Legacy full-kit or release-artwork scripts may target historical output paths. Review their input/output contract before use; they are not necessary for the current immutable package and website build. Tests/helpers are WEB-ONLY; equivalent scenarios must later be rerun through real Electron adapters after explicit authorization.

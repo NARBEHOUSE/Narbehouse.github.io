@@ -264,6 +264,7 @@ NMB.UI = (function () {
         el.hud.classList.toggle('show', name === 'play');
         el.root.dataset.screen = name;
         el.root.dataset.pauseMode = S().get('pauseMode');
+        el.root.dataset.look = S().get('look');
 
         if (name === 'settings') renderSettings();
         if (name === 'help') renderHelp();
@@ -376,6 +377,7 @@ NMB.UI = (function () {
         lines.push('*Bubbles*: the whale blows bubbles. Some carry a fish, a starfish or a duck, and sometimes a giant bubble floats up.');
         lines.push('*Flowers*: each press grows a flower. A full garden gets a surprise, and the next press clears it for a new one.');
         lines.push('In *Settings*, *Sky Word* spells a name or an age in fireworks.');
+        lines.push('*Look: Simple High Contrast* shows one big bright shape on black for each press.');
         lines.push(auto ? 'In the menus, the highlight moves by itself. *Enter* chooses.'
                         : 'In the menus, *tap Space* to move the highlight and *hold Space* to go back. *Enter* chooses.');
         lines.push('There is no score, no timer and no way to lose.');
@@ -460,6 +462,18 @@ NMB.UI = (function () {
                 id: 'skyword', label: 'Sky Word', value: () => s.get('skyWord').trim() || 'Off',
                 action: () => { wordFrom = 'settings'; show('word'); }
             },
+            {
+                id: 'look', label: 'Look', value: () => s.get('look') === 'simple' ? 'Simple High Contrast' : 'Regular',
+                action: () => s.set('look', s.get('look') === 'simple' ? 'regular' : 'simple'),
+                after: () => s.get('look') === 'simple'
+                    ? 'Look, simple high contrast. In the game, a plain black screen with one big bright shape for each press.'
+                    : 'Look, regular. The full, colourful scenes.'
+            },
+            ...(s.get('look') === 'simple' ? [{
+                id: 'simplecolor', label: 'Simple Color', value: () => s.simpleColorName(),
+                action: () => s.cycle('simpleColorIndex', s.SIMPLE_COLORS.length),
+                after: () => 'Simple color, ' + s.simpleColorName() + '.'
+            }] : []),
             {
                 id: 'hlstyle', label: 'Highlight Style', value: () => s.get('highlightStyle') === 'full' ? 'Block' : 'Bold Band',
                 action: () => s.set('highlightStyle', s.get('highlightStyle') === 'full' ? 'outline' : 'full'),

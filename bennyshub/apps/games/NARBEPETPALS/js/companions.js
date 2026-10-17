@@ -6,8 +6,8 @@
    an egg becomes a butterfly or a bird, a baby bunny a rabbit, a puppy a dog, a kitten a cat.
    Companions are not choices in the room: they just live there, sleep at night, cheer when the pet
    plays, and have little moments of their own now and then.
-   Rush, an Australian cattle dog helper (an alert dog), visits now and then to check on the player:
-   "How are you feeling?" Happy, tired, or "I need help", which calls for a helper out loud. */
+   Rush, an Australian cattle dog and a helper dog, visits now and then to lend a paw: help with what the pet
+   needs, play with the pet, help with a chore, or find something to do. */
 
 /* ---- The kinds of companion ---- */
 const COMP={
@@ -314,7 +314,7 @@ V['comp:moment']={dur:4400,
   start(a){ const c=compHere(a); if(!c) return; const s=compSpotOf(a.ci), n=state.name; a.visit=Math.random()<.6; a.fly=a.visit&&compFlyer(c);
     const off=s.x-64; a.tx=a.fly||Math.abs(off)<34?0:Math.round(clamp(off-Math.sign(off)*26,-40,40));
     const VL=VISIT_LINE[c.type], L=COMP[c.type].moment[c.stage]||COMP[c.type].moment[0];
-    setCaption(a.visit?(VL[c.stage]||VL[VL.length-1])(c.name,n):pick(L)(c.name,n),false); play(compSound(c),.4); },
+    setCaption(a.visit?(VL[c.stage]||VL[VL.length-1])(c.name,n):pick(L)(c.name,n)); play(compSound(c),.4); },
   pose(p,e,a){ if(!a.visit){ p.eyes=e%1600<800?'happy':'open'; return; } const d=a.tx||0;
     if(e<900){ if(d){ p.body='walk'; p.face=d>0?1:-1; p.frame=Math.floor(e/140)%4; } p.dx=Math.round(lerp(0,d,e/900)); return; }
     if(e<3200){ p.dx=d; if(a.fly){ p.eyes=e>1500&&e<3000?'open':'happy'; p.mouth='smile'; p.headDy=0; p.dy=0; } else { p.eyes='happy'; p.mouth=e%1400<700?'tongue':'smile'; p.headDy=Math.floor(e/350)%2; if(e>1700&&e<2300) p.dy=Math.round(arc(ph(e,1700,2300),3)); } return; }
@@ -338,43 +338,114 @@ function cleanComps(a,hearts){ if(!Array.isArray(a)) return []; return a.filter(
 STYLES.cattle={kind:'dog',label:'Australian Cattle Dog',ears:'perk',sw:'#2E2A30',pal:{fur:'#2E2A30',light:'#46404C',ear:'#2E2A30',line:'#120F14',iris:'#6A4A2A',lid:'#120F14',blush:'#C27088'},
   pattern:(x,y,t,G)=>{ if(t==='paw') return '#A8683A'; if(t==='fur'&&inC(x,y,G.eyeLX,G.eyeY-.2,3.4)) return '#9A5A30'; return null; }};
 SIDE_PAT.cattle=(x,y,t,G)=>{ if(t==='paw') return '#A8683A'; if(t==='fur'&&inE(x,y,G.head)&&x>G.head.x-.4&&y<G.head.y+.8) return '#9A5A30'; return null; };
-const RUSH_GAP=40*60000, RUSH_X=64-30, compT0=Date.now();
-const rushReady=()=>!!state&&Date.now()-(state.rushAt||0)>RUSH_GAP*paceK()&&Date.now()-compT0>6*60000;
+/* When Rush comes. Never in the first 20 minutes of play after the game is opened (or after coming back
+   from a long break), and at least an hour after his last visit. He drops by now and then as one of the
+   surprises (spaced out more on Slow pace), and he comes to help when a need has been low for 10 minutes of
+   calm time in the room (not counting scenes, trips or menus). That way a player having a slower day gets
+   one helping paw, then a long break, and is never flooded. */
+const RUSH_GAP=60*60000, RUSH_AFTER_OPEN=20*60000, RUSH_LOW=10*60000, RUSH_X=64-30, compT0=Date.now();
+let rushPlayMs=0, rushLowMs={}, rushPet=null;
+/* A new session: a different pet, or back after more than 5 minutes away. A quick trip to the main menu
+   and back keeps counting. */
+function rushSessionStart(returning){ if(!returning&&state&&rushPet===state.id) return; rushPet=state&&state.id; rushPlayMs=0; rushLowMs={}; }
+function rushClock(ms){ if(!state) return; ms=Math.min(ms,3000); rushPlayMs+=ms; const calm=!anim&&!trip;
+  KEYS.forEach(k=>{ if(state.stats[k]<LOW){ if(calm) rushLowMs[k]=(rushLowMs[k]||0)+ms; } else rushLowMs[k]=0; }); }
+const rushAllowed=gapMs=>!!state&&rushPlayMs>=RUSH_AFTER_OPEN&&Date.now()-(state.rushAt||0)>=gapMs;
+const rushReady=()=>rushAllowed(RUSH_GAP*paceK());
+/* The need that has been low for 10 minutes (the longest, if more than one), when Rush may come. */
+function rushNeedDue(){ if(!rushAllowed(RUSH_GAP)) return null; let best=null;
+  KEYS.forEach(k=>{ if((rushLowMs[k]||0)>=RUSH_LOW&&state.stats[k]<LOW&&(!best||rushLowMs[k]>rushLowMs[best])) best=k; }); return best; }
 function drawRush(cx,o){ const p=Object.assign({eyes:'open',mouth:'smile',tail:0,ear:0,headDy:0,dy:0,dx:0},o); softShadow(ctx,cx,85.5,p.body&&p.body!=='sit'?20:14,2.4,.3);
   drawPetPose(ctx,'cattle','adult',p,{neck:'bandana'},cx-22,PETY+(p.dy||0),false); }
 function runV(key,extra,done){ startAnim(key,V[key].dur,done,extra||{}); anim.idle=true; if(V[key].start) V[key].start(anim); }
 const petBeside=(p,e,t0)=>{ const k=t0==null?1:ph(e,t0,t0+800); p.dx=Math.round(lerp(0,12,k)); if(t0!=null&&k>0&&k<1){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; } };
-function startRush(){ const n=state.name, first=!(state.rushVisits>0); lockInput(2000);
+/* Rush comes to lend a paw. "How can Rush help today?" offers three of these four, picked at random each
+   visit: help with what the pet needs most, play with the pet, help with a chore, or find something to do.
+   Rush's help raises the meters about half as much as the player's own care does (caring for the pet is
+   still the player's job), and when Rush is done the meters that went up glow and are named. */
+const RUSH_BOOST={food:22,fun:22,clean:30,energy:30,love:25};
+const meterWord=k=>STAT_INFO[k][0];
+const andList=a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+/* Raise the meters, show it on the meters, and say which went up. */
+function rushBoost(add){ const s=state.stats, up=[]; Object.keys(add).forEach(k=>{ const v=clamp(s[k]+add[k],floorOf(k),100); if(v>s[k]+.5) up.push(k); s[k]=v; });
+  updateMeters(); save(); $$('.meter').forEach(m=>{ if(up.includes(m.dataset.stat)){ m.classList.remove('boost'); void m.offsetWidth; m.classList.add('boost'); later(()=>m.classList.remove('boost'),2400); } });
+  return up.length?` ${state.name}'s ${andList(up.map(meterWord))} went up!`:''; }
+/* need: Rush came because that need has been low. He asks one simple question, Yes or No thanks. */
+function startRush(need){ const n=state.name, first=!(state.rushVisits>0); lockInput(2000); rushLowMs={};
   runV('rush:in',{first},()=>{ runV('rush:wait',{},null);
-    showChoice(`Rush is checking on you. How are you feeling?`,[
-      {label:'I feel happy!',preview:{art:'feelHappy'},fn:()=>{ anim=null; runV('rush:happy',{},rushOut); }},
-      {label:'I feel tired',preview:{art:'feelTired'},fn:()=>{ anim=null; runV('rush:rest',{},rushOut); }},
-      {label:'I need help',urgent:true,preview:{art:'needHelp'},fn:()=>{ anim=null; callForHelp(); runV('rush:alert',{},rushOut); }}]); }); }
-function rushOut(){ runV('rush:out',{},()=>{ state.rushAt=Date.now(); state.rushVisits=(state.rushVisits||0)+1; save(); quietUntil=Date.now()+8000; lastWant=null; }); }
+    if(need&&RUSH_NEED[need]){ showChoice(`Rush noticed that ${RUSH_NEED[need][0](n)}. Can Rush help?`,[
+      {label:'Yes, please',preview:{art:'rushNeed'},fn:()=>{ anim=null; rushNeeds(need); }},
+      {label:'No thanks',fn:()=>{ anim=null; setCaption(`OK! Maybe next time.`); rushOut(null,true); }}]); return; }
+    const opts=pickSome([
+      {label:`Help with what ${n} needs`,preview:{art:'rushNeed'},fn:()=>{ anim=null; rushNeeds(); }},
+      {label:`Play with ${n}`,preview:{art:'rushPlay'},fn:()=>{ anim=null; runV('rush:play',{},rushOut); }},
+      {label:'Help with a chore',preview:{art:'rushChore'},fn:()=>{ anim=null; rushChore(); }},
+      {label:'Find something to do',preview:{art:'rushIdea'},fn:()=>{ anim=null; rushIdea(); }}],3);
+    showChoice(`Rush is here to lend a paw. How can Rush help today?`,opts); }); }
+function rushOut(after,declined){ runV('rush:out',{declined},()=>{ state.rushAt=Date.now(); state.rushVisits=(state.rushVisits||0)+1; save(); quietUntil=Date.now()+8000; lastWant=null; if(typeof after==='function') later(after,150); }); }
+/* The need that is lowest right now, and what Rush brings for it. */
+const lowestNeed=()=>KEYS.reduce((a,k)=>state.stats[k]<state.stats[a]?k:a,KEYS[0]);
+/* For each need: what Rush notices, and what Rush does about it. */
+const RUSH_NEED={
+  food:[n=>`${n} is hungry`,()=>`Rush brings over a tasty snack.`],
+  fun:[n=>`${n} wants to play`,()=>`Rush brings a toy from the toy basket.`],
+  clean:[n=>kind()==='dog'?`${n} could use a bath`:`${n} could use a brushing`,()=>kind()==='dog'?`Rush helps with a quick towel rub.`:`Rush brings the brush.`],
+  energy:[n=>`${n} is getting sleepy`,()=>`Rush brings a cozy blanket.`],
+  love:[n=>`${n} wants some love`,n=>`Rush gives ${n} a gentle nuzzle.`]};
+function rushNeeds(need){ const n=state.name, w=need||lowestNeed();
+  if(!need&&state.stats[w]>=80){ runV('rush:give',{icon:'cuddle',say:`${n} is doing great! Rush gives ${n} a happy nuzzle.`,add:{love:RUSH_BOOST.love}},rushOut); return; }
+  const say=need?RUSH_NEED[w][1](n):`${RUSH_NEED[w][0](n)}. ${RUSH_NEED[w][1](n)}`;
+  runV('rush:give',{icon:slotIcon(WANT_SLOT[w]),say,add:{[w]:RUSH_BOOST[w]}},rushOut); }
+/* A chore that is waiting (not the vet checkup, which is for the player), or else fresh water. */
+const RUSH_CHORE={potty:['broom','Rush helps clean up the potty pad.'],litter:['scoop','Rush helps scoop the litter box.'],water:['water',n=>`Rush brings fresh water for ${n}.`],
+  toys:['basket','Rush picks up the toys and puts them back in the basket.'],plant:['broom','Rush helps stand the plant back up.']};
+function rushChore(){ const n=state.name, id=state.task, c=RUSH_CHORE[id];
+  if(c){ const t=TASKS[id], add={}; if(t.stat) Object.keys(t.stat).forEach(k=>add[k]=Math.round(t.stat[k]/2));
+    runV('rush:give',{icon:c[0],say:typeof c[1]==='function'?c[1](n):c[1],add,chore:id,thanks:'All done! Thank you, Rush.'},rushOut); return; }
+  runV('rush:give',{icon:'water',say:`There are no chores right now, so Rush fills ${n}'s water bowl with fresh water.`,add:{food:8}},rushOut); }
+/* Rush brings something over: it floats from Rush to the pet, the meters go up, and Rush says what changed. */
+V['rush:give']={dur:5200,
+  start(a){ setCaption(a.say); play('dog:barkFriendly:adult',.35); },
+  pose(p,e){ petBeside(p); if(e>2000){ p.eyes='happy'; p.mouth='tongue'; } },
+  front(e,a){ drawRush(RUSH_X,{eyes:e>2000?'happy':'open',mouth:e>2000?'tongue':'smile',tail:Math.floor(e/160)%3});
+    const s=ICONS[a.icon]; if(s&&e>700&&e<2400){ const k=ph(e,700,1900), x=lerp(RUSH_X+6,76,k), y=lerp(58,52,k)-arc(k,10); blitSized(ctx,s,x-6,y-6,12,12); } },
+  tick(a,e,now){ if(e>1900&&(!linesWaiting()||e>a.dur-400)) once(a,'done',()=>{ if(a.chore){ if(a.chore==='potty'||a.chore==='litter'){ state.pottyN=0; state.pottyAt=0; } state.task=null; refreshGameTargets(); }
+      const said=rushBoost(a.add||{}); burst(6); play('happy',.5); setCaption((a.thanks||'Thanks, Rush!')+said); a.doneAt=e; });
+    if(a.doneAt!=null&&now>=(a.next||0)&&e<a.doneAt+1600){ spawn('heart',64+12+rand(-8,8),52,rand(-4,4),-12,1.2); a.next=now+400; } }};
+V['rush:play']={dur:6400,
+  start(){ setCaption(`Rush and ${state.name} play chase!`); play('dog:barkHappy:adult',.4); },
+  pose(p,e){ if(e<4600){ const s=Math.sin(e/480); p.dx=Math.round(s*24)+6; p.body='run'; p.face=Math.cos(e/480)>=0?1:-1; p.frame=Math.floor(e/90)%4; p.eyes='happy'; p.mouth='tongue'; } else { petBeside(p); p.eyes='happy'; p.mouth='tongue'; } },
+  front(e){ if(e<4600){ const s=Math.sin(e/480-1.3); drawRush(RUSH_X+18+Math.round(s*24),{body:'run',face:Math.cos(e/480-1.3)>=0?1:-1,frame:Math.floor(e/90+2)%4,eyes:'happy',mouth:'tongue'}); }
+    else drawRush(RUSH_X,{eyes:'happy',mouth:'tongue',tail:Math.floor(e/120)%3}); },
+  tick(a,e,now){ if(e<4600&&now>=(a.next||0)){ play('step',.22); a.next=now+200; } if(e>2000) once(a,'b',()=>play(happyNoise(),.45));
+    if(e>4600&&(!linesWaiting()||e>a.dur-400)) once(a,'done',()=>{ const said=rushBoost({fun:RUSH_BOOST.fun,love:10}); burst(6); play('happy',.5); setCaption(`What fun!`+said); }); }};
+/* Find something to do: Rush suggests one thing (a place to go, the Trick Show, or toy time), and the
+   player says Yes to do it now or No thanks. */
+function rushIdea(){ const n=state.name, ideas=[];
+  const places=openPlaces().filter(id=>PLACES[id]&&!PLACES[id].hidden);
+  if(places.length){ const id=pick(places), P=PLACES[id], sub=typeof P.sub==='function'?P.sub():P.sub;
+    ideas.push({say:`Rush has an idea: ${P.label}! ${sub}.`,yes:`Yes, go to ${P.label}`,go:()=>startTrip(id)}); }
+  if(learnedTricks().length>=2) ideas.push({say:`Rush has an idea: ${n} could put on a Trick Show!`,yes:'Yes, put on a Trick Show',go:()=>startTrip('trickshow')});
+  ideas.push({say:`Rush has an idea: toy time with the toy basket!`,yes:'Yes, play with a toy',go:()=>doAction('play')});
+  const idea=pick(ideas);
+  showChoice(`${idea.say} Do you want to?`,[
+    {label:idea.yes,preview:{art:'rushIdea'},fn:()=>{ anim=null; rushOut(idea.go); }},
+    {label:'No thanks',fn:()=>{ anim=null; setCaption(`OK! Maybe next time.`); rushOut(null,true); }}]); }
 V['rush:in']={dur:4600,start(a){ play('knock',.5); later(()=>play('knock',.5),380);
-    setCaption(a.first?`Knock, knock! Meet Rush, a helper dog. Rush is an alert dog who checks on people and can call a helper if they need one.`:`Knock, knock! It's Rush, the helper dog, here to check on you.`); },
+    setCaption(a.first?`Knock, knock! Meet Rush, a helper dog. Rush loves to lend a paw around the house.`:`Knock, knock! It's Rush, the helper dog, here to lend a paw.`); },
   pose(p,e){ petBeside(p,e,200); if(e>1000) p.eyes='happy'; },
   front(e){ const k=ph(e,700,3200), x=lerp(VIEW.x-26,RUSH_X,k); drawRush(x,e<3200?{body:'walk',face:1,frame:Math.floor(e/140)%4}:{eyes:'happy',mouth:'tongue',tail:Math.floor(e/140)%3}); },
   tick(a,e,now){ if(e>700&&e<3200&&now>=(a.next||0)){ play('step',.2); a.next=now+280; } if(e>3400) once(a,'b',()=>play('dog:barkFriendly:adult',.4)); }};
 V['rush:wait']={dur:6e5,pose(p){ petBeside(p); },front(e){ drawRush(RUSH_X,{headDy:Math.floor(e/1800)%2,eyes:e%3600<150?'closed':'open',tail:Math.floor(e/260)%3}); }};
-V['rush:happy']={dur:4600,start(){ setCaption(`Rush is so glad you feel happy! Big, happy wags.`); play('dog:barkHappy:adult',.45); },
-  pose(p,e){ petBeside(p); p.eyes='happy'; p.mouth='tongue'; },
-  front(e){ const hop=e>600&&e<2600?Math.round(arc(ph(e%700,0,700),5)):0; drawRush(RUSH_X,{eyes:'happy',mouth:'tongue',tail:Math.floor(e/90)%3,dy:hop}); },
-  tick(a,e,now){ if(now>=(a.next||0)&&e<3800){ spawn('heart',RUSH_X+rand(-8,8),50,rand(-4,4),-12,1.2); a.next=now+450; } if(e>1600) once(a,'b',()=>play('dog:barkHappy:adult',.35)); }};
-V['rush:rest']={dur:9000,start(){ setCaption(`Rush lies down next to you. It's OK to rest. Let's take a slow breath together. In... and out.`); play('lullaby',.35); },
-  pose(p,e){ petBeside(p); p.body='lie'; p.face=-1; p.frame=0; p.eyes=e>2500?'closed':'sleepy'; },
-  front(e){ const br=Math.sin(e/1300); drawRush(RUSH_X,{body:'lie',face:1,frame:0,eyes:e>2000?'closed':'sleepy',dy:br>0?-.5:0}); },
-  tick(a,e,now){ if(e>2500&&now>=(a.next||0)){ spawn('z',RUSH_X+10,58,4,-6,2.2); a.next=now+1800; } if(e>6000) once(a,'s',()=>setCaption(`Feeling a little calmer. Rush is right here with you.`)); }};
-V['rush:alert']={dur:7000,
-  pose(p,e){ petBeside(p); p.eyes='open'; p.headDy=-1; },
-  front(e){ const bark=(e>900&&e<1300)||(e>1700&&e<2100)||(e>4600&&e<5000); drawRush(RUSH_X,{mouth:bark?'open':'smile',headDy:bark?-1:0,ear:bark?1:0,tail:Math.floor(e/200)%3}); },
-  tick(a,e){ [900,1700,4600].forEach((t,i)=>{ if(e>t) once(a,'k'+i,()=>play('dog:bark:adult',.5)); }); if(e>3200) once(a,'c',()=>setCaption(`Rush barked to call a helper. A helper is on the way!`,false)); }};
-V['rush:out']={dur:3600,start(){ setCaption(`Bye, Rush! Thank you for checking in.`); },
+V['rush:out']={dur:3600,start(a){ setCaption(a.declined?`Bye, Rush! See you next time.`:`Bye, Rush! Thanks for the help.`); },
   pose(p,e){ p.dx=Math.round(lerp(12,0,ph(e,1600,2600))); if(e>1600&&e<2600){ p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; } },
   front(e){ const k=ph(e,300,2800), x=lerp(RUSH_X,VIEW.x-28,k); drawRush(x,{body:'walk',face:-1,frame:Math.floor(e/140)%4}); },
   tick(a,e,now){ if(e>300&&e<2800&&now>=(a.next||0)){ play('step',.2); a.next=now+280; } }};
+/* Pictures for Rush's choices: what the pet needs most, a toy, a broom, and a light bulb for an idea. */
+const iconArt=(k,x,y)=>{ const s=ICONS[k]; if(s) blitSized(ctx,s,x-10,y-10,20,20); };
 Object.assign(PREVIEW_ART,{
-  feelHappy:(x,y)=>{ pxEll(ctx,x,y,8,8,INK); pxEll(ctx,x,y,7.2,7.2,'#F4D24A'); pxEll(ctx,x-2.6,y-2,1,1.2,INK); pxEll(ctx,x+2.6,y-2,1,1.2,INK); for(let i=-3;i<=3;i++) rect(ctx,x+i-.5,y+2.6-Math.cos(i/3.4)*1.6+1,1,1,INK); },
-  feelTired:(x,y)=>{ pxEll(ctx,x,y,8,8,INK); pxEll(ctx,x,y,7.2,7.2,'#BFD6F0'); rect(ctx,x-4,y-1.6,3,1,INK); rect(ctx,x+1,y-1.6,3,1,INK); pxEll(ctx,x,y+3,1.6,1.2,INK); blit(ctx,SPR.z,x+5,y-11); },
-  needHelp:(x,y)=>{ pxEll(ctx,x,y-1,7,7.4,INK); pxEll(ctx,x,y-1,6.2,6.6,'#F4C542'); rect(ctx,x-8,y+4,16,2.4,INK); rect(ctx,x-7.2,y+4.4,14.4,1.6,'#E0A030'); pxEll(ctx,x,y+7.4,1.8,1.6,INK); rect(ctx,x-1,y-9.6,2,2,INK);
-    [[-11,-4,-9,-2],[11,-4,9,-2],[-11,1,-9,1],[11,1,9,1]].forEach(([a,b,c,d])=>pxLine(ctx,x+a,y+b,x+c,y+d,'#D9403E',.8)); }});
+  rushNeed:(x,y)=>{ const w=lowestNeed(); iconArt(state.stats[w]>=80?'cuddle':slotIcon(WANT_SLOT[w]),x,y); },
+  rushPlay:(x,y)=>iconArt(slotIcon('play'),x,y),
+  rushChore:(x,y)=>iconArt(RUSH_CHORE[state.task]?RUSH_CHORE[state.task][0]:'water',x,y),
+  rushIdea:(x,y)=>{ pxEll(ctx,x,y-2,6.6,6.8,INK); pxEll(ctx,x,y-2,5.8,6,'#FFE27A'); pxEll(ctx,x-2,y-4.4,1.6,1.8,'#FFF7D0'); rect(ctx,x-3.4,y+3.4,6.8,4.4,INK); rect(ctx,x-2.8,y+4,5.6,1.4,'#B8C0CC'); rect(ctx,x-2.8,y+5.8,5.6,1.4,'#9AA4AE');
+    [[-10,-2,-8,-2],[10,-2,8,-2],[-7.6,-9.6,-6.2,-8.2],[7.6,-9.6,6.2,-8.2],[0,-12.4,0,-10.6]].forEach(([a,b,c,d])=>pxLine(ctx,x+a,y+b,x+c,y+d,'#F4C542',.8)); }});

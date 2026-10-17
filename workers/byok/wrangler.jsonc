@@ -1,0 +1,62 @@
+{
+  "name": "bennys-hub-byok",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-17",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "account_id": "211b57c2201f14d8b665fd5f11f5b6e8",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "APP_ORIGINS": "https://narbehouse.github.io",
+    "DAILY_CALL_LIMIT": "2000"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "VAULTS",
+        "class_name": "UserVault"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "UserVault"
+      ]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "REQUEST_LIMITER",
+      "namespace_id": "57201",
+      "simple": {
+        "limit": 180,
+        "period": 60
+      }
+    },
+    {
+      "name": "SETUP_LIMITER",
+      "namespace_id": "57202",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": false
+  },
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.html",
+        "**/*.txt"
+      ],
+      "fallthrough": true
+    }
+  ]
+}

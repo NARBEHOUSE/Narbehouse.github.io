@@ -1,6 +1,28 @@
 {
   "games": [
     {
+      "id": "bennysspheresplash",
+      "title": "Benny's Sphere Splash",
+      "description": "An underwater team sport played inside a giant floating sphere of water. Your team of six swims on its own, and play stops every time there is a choice to make: pass, shoot or dribble with the ball, and tackle or block on defense. Every choice shows its odds, and nothing is ever on a timer. Change formation from the Huddle, pick a difficulty, and hear a full broadcast crew call the match. Created by Bryan R. (Ben’s other big brother), working in collaboration with NARBE LLC.",
+      "path": "apps/games/BENNYSSPHERESPLASH/index.html",
+      "image": "images/games/bennyspheresplash-20261017.png",
+      "genres": [
+        "Sports",
+        "Strategy"
+      ]
+    },
+    {
+      "id": "chasingrainbows",
+      "title": "Chasing Rainbows",
+      "description": "Inclusive Imagination®’s weather card game, played with one or two switches. Choose Chasing Rainbows Full or Lite, or Rainbow Race Full or Lite. Play against computer opponents or share the switch with family. Everything is spoken and nothing is timed.",
+      "path": "apps/games/CHASINGRAINBOWS/index.html",
+      "image": "images/games/chasingrainbows.png",
+      "genres": [
+        "Card",
+        "Strategy"
+      ]
+    },
+    {
       "id": "narbekart",
       "title": "NARBE Racer",
       "description": "Pick your racer and vehicle, then race sixteen tracks across four cups, with loop-de-loops, banked turns, drive-through waterfalls and a big jump over a different landscape on every track. Race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",

@@ -101,7 +101,7 @@ function openTricks(group,focusId,quiet){ unpauseClock(); if(!quiet) play('choos
 function performTrick(id,group){ const d=V['trick:'+id]; if(!d) return;
   if(anim&&!anim.idle){ nope(); return; }
   const n=state.name; unpauseClock(); anim=null; sayQ.length=0; play('choose'); show('game');
-  setCaption(d.cue?d.cue(n):`${n}, ${trickName(id).toLowerCase()}!`,false);
+  setCaption(d.cue?d.cue(n):`${n}, ${trickName(id).toLowerCase()}!`);
   startAnim('trick:'+id,d.dur,()=>{ state.stats.love=clamp(state.stats.love+4,FLOOR,100); state.stats.fun=clamp(state.stats.fun+4,FLOOR,100); updateMeters(); save(); setCaption(`Good job, ${n}!`);
     /* then the same list comes back, once the praise has been read */
     const again=()=>{ if(layer!=='game'||anim||!state) return; if(linesWaiting()){ later(again,300); return; } openTricks(group,id,true); };
@@ -130,7 +130,7 @@ V['show:intro']=tripScene('stage',{dur:2600,
   front(e){ const k=ph(e,0,1200); if(k<1){ const w=VIEW.w/2*(1-k); for(let x=0;x<w;x+=6){ rect(ctx,VIEW.x+x,VIEW.y,5,VIEW.h,'#A83A4A'); rect(ctx,VIEW.x+VIEW.w-x-5,VIEW.y,5,VIEW.h,'#A83A4A'); } } }});
 V['show:trick']={bgName:'stage',scene(){ drawShowStage(); },
   init(a){ a.inner=V['trick:'+a.trick]; if(a.inner.init) a.inner.init(a); },
-  start(a){ setCaption(`${trickName(a.trick)}!`,false); },
+  start(a){ setCaption(`${trickName(a.trick)}!`); },
   pose(p,e,a){ a.inner.pose.call(a.inner,p,e,a); }, behind(e,a,p){ if(a.inner.behind) a.inner.behind.call(a.inner,e,a,p); }, front(e,a,p){ if(a.inner.front) a.inner.front.call(a.inner,e,a,p); },
   tick(a,e,now){ if(a.inner.tick) a.inner.tick.call(a.inner,a,e,now); }};
 V['show:finale']=tripScene('stage',{dur:4000,

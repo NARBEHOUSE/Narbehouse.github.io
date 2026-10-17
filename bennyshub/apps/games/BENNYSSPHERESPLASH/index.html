@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Benny's Sphere Splash</title>
+<link rel="stylesheet" href="css/ss.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+</head>
+<body>
+<div id="canvasWrap"></div>
+<div id="hud"></div>
+<div id="worldLayer"></div>
+<div id="overlay"></div>
+<div id="caption" aria-live="polite"></div>
+<div id="scanFrame"><i></i><i></i><i></i><i></i></div>
+<div id="worldStatus"></div>
+<button id="pauseBtn" type="button" aria-label="Pause"><span class="ic">⏸️</span><span class="tx">Pause</span></button>
+<div id="perf"></div>
+<div id="loading">Filling the sphere…</div>
+
+<!-- Hub shared modules first, in the hub's order (ACCESSIBILITY.md §5): the platform and the
+     choice scanner before the managers, the adapter before ui.js. -->
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js missing')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/graphics-quality.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js missing')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js missing')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js missing')"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/three-addons.js"></script>
+<script>window.SS = window.SS || {};</script>
+<!-- The rules: pure, no DOM - the same files tools/check-sim.cjs runs in Node. -->
+<script src="js/data.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/sim.js"></script>
+<!-- The show. -->
+<script src="js/util.js"></script>
+<script src="js/save.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/audio-files.generated.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/voice-lines.generated.js"></script>
+<script src="js/voice-index.generated.js"></script>
+<script src="js/broadcast.js"></script>
+<script src="js/model-data.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/moves.js"></script>
+<script src="js/models.js"></script>
+<script src="js/replay.js"></script>
+<script src="js/world.js"></script>
+<script src="js/worldui.js"></script>
+<script src="js/director.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

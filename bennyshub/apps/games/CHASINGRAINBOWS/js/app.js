@@ -1208,7 +1208,7 @@
       '<div class="titlerow"><svg viewBox="0 0 220 150" width="220" height="150" aria-hidden="true">' + arcs +
       '<rect x="22" y="104" width="176" height="34" rx="17" fill="#fff" stroke="#111" stroke-width="6"/>' +
       '<circle cx="100" cy="98" r="5" fill="#111"/><circle cx="120" cy="98" r="5" fill="#111"/></svg>' +
-      '<h1 class="wordmark">Chasing Rainbows</h1></div><p class="by">by Inclusive Imagination</p></div>';
+      '<h1 class="wordmark">Chasing Rainbows</h1></div><p class="by">by Inclusive Imagination®</p></div>';
   }
   const art = e => '<div class="emblem"><span>' + e + '</span></div>';
   const cardArt = t => '<img class="bigcard" alt="' + esc(C.TYPES[t].name) + '" src="' + T.art(t) + '">';
@@ -1433,12 +1433,17 @@
     },
 
     credits: () => ({
-      art: art('💛'), title: 'Credits',
-      sub: '<p><b>Chasing Rainbows ICG</b> is a game by <b>Inclusive Imagination</b>.</p>' +
-        '<p>Card art by <b>Adam M Botsford</b>. Chasing Rainbows, its rules and card art are TM &amp; © 2026 Inclusive Imagination LLC.</p>' +
-        '<p>Switch access edition by <b>NARBE House</b>, for Benny\'s Hub.</p>',
-      items: [back(() => setScreen('title', { restore: true }))],
-      speech: 'Credits. Chasing Rainbows is a game by Inclusive Imagination. Card art by Adam M Botsford. Switch access edition by NARBE House.',
+      art: art('💛'), title: 'Credits', size: 'wide',
+      sub: "<p><b>Chasing Rainbows ICG</b> is a game by <b>Inclusive Imagination®</b>.</p><p>Card Art by <b>Adam M Botsford</b>. Chasing Rainbows, its rules and card art are TM &amp; © 2026 Inclusive Imagination LLC.</p><p>Switch Access Edition by <b>NARBE House</b>, for Benny’s Hub.</p><p>Inclusive Imagination® Home: https://inclusiveimagination.co/</p><p>Inclusive Imagination® Social Handle: @inclusiveimagination</p>",
+      items: [
+        { id: 'creator-website', icon: '🌐', label: 'Inclusive Imagination® website', speech: 'Open the Inclusive Imagination website in your browser', action: () => {
+          const url = 'https://inclusiveimagination.co/';
+          if (window.electronAPI && window.electronAPI.openExternal) window.electronAPI.openExternal(url);
+          else window.open(url, '_blank', 'noopener,noreferrer');
+        } },
+        back(() => setScreen('title', { restore: true })),
+      ],
+      speech: "Credits. Chasing Rainbows ICG is a game by Inclusive Imagination. Card Art by Adam M Botsford. Chasing Rainbows, its rules and card art are trademark and copyright 2026 Inclusive Imagination LLC. Switch Access Edition by NARBE House, for Benny’s Hub. Inclusive Imagination Home: inclusive imagination dot co. Inclusive Imagination Social Handle: at inclusive imagination.",
     }),
   };
   function backFromHelp() {

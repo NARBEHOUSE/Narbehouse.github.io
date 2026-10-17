@@ -399,6 +399,8 @@ body {
 }
 
 .nmb-prompt.hidden { opacity: 0; }
+/* Simple High Contrast: nothing on the game screen but the shape itself. */
+#nmb[data-look="simple"] .nmb-prompt { display: none; }
 
 @keyframes nmb-bob { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
 

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTC Lite</title>
+  <style>
+    :root {
+      --bg: #0b0f14; --card: #121822; --text: #e8f0ff; --muted: #b6c6dd;
+      --brand: #5bb0ff; --border: #526176; --focus: #ffff00; --radius: 16px; --ui-scale: 1;
+      --controls-bg: #493111; --controls-border: #d9a64a; --controls-text: #fff4df;
+      --words-bg: #193b60; --words-border: #75b9fa; --words-text: #f2f8ff;
+      --phrases-bg: #3d2c60; --phrases-border: #bba0ee; --phrases-text: #faf5ff;
+      --quick-bg: #123f3a; --quick-border: #66cbbb; --quick-text: #effff9;
+    }
+    /* The same function uses the same color on the board and keyboard.
+       Labels, fixed row positions and scan outlines remain independent cues. */
+    body.light-theme {
+      --controls-bg: #ffebc2; --controls-border: #895a13; --controls-text: #352307;
+      --words-bg: #dcecff; --words-border: #32658a; --words-text: #15334f;
+      --phrases-bg: #eee3ff; --phrases-border: #735098; --phrases-text: #3c225c;
+      --quick-bg: #d8f3e9; --quick-border: #297a68; --quick-text: #143b31;
+    }
+    :is(#controlsRow, #keyboardControls) {
+      --row-bg: var(--controls-bg); --row-border: var(--controls-border); --row-text: var(--controls-text);
+    }
+    :is(#generalRow, #predictionRow0) {
+      --row-bg: var(--words-bg); --row-border: var(--words-border); --row-text: var(--words-text);
+    }
+    :is(#startersRow, #predictionRow1) {
+      --row-bg: var(--phrases-bg); --row-border: var(--phrases-border); --row-text: var(--phrases-text);
+    }
+    :is(#quickRow, #keyboardPredictionRow) {
+      --row-bg: var(--quick-bg); --row-border: var(--quick-border); --row-text: var(--quick-text);
+    }
+    .tile:disabled, .key:disabled { color: var(--row-text, var(--muted)); border-style: dashed; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+    button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+    button:disabled { cursor: default; color: var(--muted); border-style: dashed; }
+    button:focus-visible { outline: 4px solid var(--focus); outline-offset: 2px; }
+    .screen { min-height: 100dvh; padding: clamp(12px, 2vw, 24px); }
+    .board-screen { display: flex; flex-direction: column; gap: 16px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(24px, 3vw, 34px); }
+    .mic-status { color: var(--muted); border: 1px solid var(--border); border-radius: 24px; padding: 8px 14px; }
+    .board { flex: 1; display: grid; grid-template-rows: repeat(4, minmax(max-content, 1fr)); gap: 14px; }
+    .board-row { min-height:100px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; border-radius: var(--radius); }
+    .tile, .menu-button {
+      background: var(--row-bg, var(--card)); color: var(--row-text, var(--text));
+      border: 2px solid var(--row-border, var(--border)); border-radius: var(--radius);
+      min-height: 80px; padding: 16px 12px; text-align: center; overflow-wrap: anywhere;
+    }
+    .tile { font-size: calc(clamp(19px, 2.6vw, 38px) * var(--ui-scale)); font-weight: 650; }
+    .controls .tile { font-size: calc(clamp(16px, 2vw, 27px) * var(--ui-scale)); }
+    .tile small { display: block; font-size: 0.62em; font-weight: 400; margin-top: 8px; }
+    .row-highlight > button:not(:disabled), .scan-highlight, button:focus-visible {
+      outline: 4px solid var(--focus); outline-offset: 2px;
+      box-shadow: 0 0 0 2px #080b10, 0 0 0 7px #080b10, inset 0 0 0 2px #080b10;
+    }
+    body.full-highlight .row-highlight > button:not(:disabled), body.full-highlight .scan-highlight {
+      background: var(--focus); color: #080b10;
+    }
+    footer { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; color: var(--muted); font-size: 16px; }
+    .footer-copy {flex:1;min-width:0}
+    .last-heard {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:clamp(11px,1.8dvh,15px);line-height:1.3}
+    .scan-status { min-height: 28px; }
+    .panel { width: min(850px, 100%); margin: auto; padding-block: clamp(12px, 5vh, 50px); }
+    .panel h2 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 22px; }
+    .panel p { font-size: calc(clamp(19px, 2.3vw, 24px) * var(--ui-scale)); line-height: 1.6; margin-bottom: 20px; }
+    .button-row { display: flex; gap: 18px; margin-block: 28px 18px; }
+    .button-row button { flex: 1; font-size: 24px; font-weight: 700; }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    #bioInput {min-height:220px;resize:vertical;line-height:1.4}
+    #bioInput:focus-visible {outline:3px solid var(--focus);outline-offset:2px}
+    .setting-label { display: block; font-size: calc(22px * var(--ui-scale)); font-weight: 650; }
+    .setting-value { display: block; margin-top: 8px; font-size: calc(19px * var(--ui-scale)); color: var(--muted); }
+    .full-highlight .scan-highlight .setting-value { color: inherit; }
+    .hint { color: var(--muted); }
+    @media (min-height: 650px) and (min-width: 700px) { .board-screen { height: 100dvh; } }
+    @media (max-width: 480px) {
+      .tile { font-size: calc(16px * var(--ui-scale)); }
+      .controls .tile { font-size: 12px; }
+      .controls .tile small { font-size: 10px; }
+    }
+    @media (max-width: 600px) {
+      .board, .board-row { gap: 10px; }
+      .tile { padding: 12px 5px; }
+      .settings-grid { grid-template-columns: 1fr; }
+      footer { font-size: 14px; }
+    }
+
+.keyboard-screen {
+  height:100dvh;min-height:0;display:grid;
+  grid-template-rows:auto clamp(48px,11dvh,104px) minmax(0,1fr) auto;
+  gap:clamp(4px,.8dvh,8px);padding:clamp(8px,1.3dvh,14px);overflow:hidden;
+}
+.keyboard-screen header {flex-wrap:nowrap;min-width:0;gap:8px}
+#keyboardTitle {font-size:clamp(16px,2.7dvh,24px);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.keyboard-screen .mic-status {font-size:clamp(11px,1.8dvh,15px);padding:3px 8px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#typedText {
+  min-height:0;min-width:0;overflow:auto;scrollbar-width:none;white-space:pre-wrap;overflow-wrap:anywhere;
+  display:flex;align-items:safe center;justify-content:center;text-align:center;
+  padding:4px 10px;border:2px solid var(--border);border-radius:12px;font-size:clamp(20px,4.5dvh,44px);line-height:1.15;
+}
+#typedText::-webkit-scrollbar {display:none}
+#typedText:empty::before {content:"Your message…";color:var(--muted)}
+.keyboard-grid {
+  min-height:0;display:grid;gap:clamp(4px,.8dvh,8px);
+  grid-template-rows:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.6fr) minmax(0,1.2fr) repeat(7,minmax(0,1fr));
+}
+.keyboard-row {min-height:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(4px,.8vw,9px);border-radius:10px;container-type:size}
+#keyboardControls {grid-template-columns:repeat(4,minmax(0,1fr))}
+.key {min-height:0;min-width:0;border:2px solid var(--row-border,var(--border));border-radius:8px;background:var(--row-bg,var(--card));color:var(--row-text,var(--text));font-size:min(calc(28px * var(--ui-scale)),58cqh,4vw);line-height:1.05;padding:1px 3px;overflow-wrap:anywhere}
+.prediction-row .key {font-size:min(calc(22px * var(--ui-scale)),30cqh,3.2vw);line-height:1.1}
+#keyboardControls .key {font-weight:700;font-size:min(calc(24px * var(--ui-scale)),55cqh,3.5vw)}
+.keyboard-footer {min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;line-height:1.2}
+#keyboardStatus {flex:1;min-width:0;max-height:2.4em;overflow:hidden;font-size:clamp(11px,1.8dvh,15px)}
+#keyboardScanStatus {min-height:0;min-block-size:0;padding:0;flex:none}
+#keyboardScanStatus .narbe-scan-status-badge {font-size:12px;padding:0 4px}
+.operation-status,.test-result {font-size:20px;overflow-wrap:anywhere}
+#apiKey,.config-input {display:block;width:100%;margin:16px 0;font-size:24px;padding:16px;color:var(--text);background:var(--card);border:2px solid var(--border)}
+.tile[data-say] {font-size:calc(clamp(17px,2.2vw,31px)*var(--ui-scale))}
+@media(max-width:480px){.tile[data-say]{font-size:calc(16px*var(--ui-scale))}}
+
+/* A dedicated status area within each screen; never part of switch scanning. */
+.context-bar {width:100%;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px}
+.listening-indicator {display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 8px;min-width:160px;max-width:230px;padding:8px 12px;border:3px solid #ff8d99;border-radius:12px;background:#9b1c28;color:#fff;font-weight:800;font-size:clamp(18px,2.8dvh,28px);line-height:1.1}
+.listening-indicator[data-state="listening"] {background:#77eba2;border-color:#39b86c;color:#082014}
+.listening-indicator[data-state="paused"],.listening-indicator[data-state="starting"] {background:#f2bb48;border-color:#ac7412;color:#281a03}
+.listening-detail {flex-basis:100%;text-align:center;font-size:clamp(11px,1.6dvh,15px);font-weight:600}
+.context-details {min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;border:3px solid var(--border);border-radius:12px;padding:8px 12px;background:var(--card);color:var(--text)}
+.context-bar[data-context-state="new"] .context-details,.context-bar[data-recent="true"] .context-details {background:#8de7ff;color:#071d28;border-color:#167a96}
+.context-heading {display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;line-height:1.15}
+.context-label {font-size:clamp(18px,2.8dvh,28px);font-weight:850}
+.context-hint {font-size:clamp(13px,1.9dvh,19px);font-weight:650}
+.context-details .last-heard {font-size:clamp(14px,2.3dvh,22px);color:inherit;font-weight:600}
+.keyboard-footer .context-bar {grid-column:1/-1}
+.keyboard-footer .context-details {padding:5px 9px}
+.keyboard-footer .listening-indicator {padding:5px 9px;min-width:145px}
+#keyboardMessageRow {grid-template-columns:minmax(0,1fr)}
+#typedText {position:relative;width:100%;height:100%;font-family:inherit;padding-top:22px}
+:where(#typedText) {color:var(--text);background:var(--card)}
+#typedText::after {content:attr(data-action-label);position:absolute;top:4px;right:10px;font-size:clamp(11px,1.6dvh,16px);font-weight:750;line-height:1;color:inherit}
+@media(max-width:600px){
+  .listening-indicator,.keyboard-footer .listening-indicator {min-width:100px;max-width:120px;padding:5px;gap:2px 4px;font-size:16px}
+  .context-label {font-size:16px}
+  .context-hint {font-size:12px}
+  .context-details,.keyboard-footer .context-details {padding:5px 7px}
+  .context-details .last-heard {font-size:14px}
+}
+
+/* Keep listening/context visible even when a short window or large type reduces space. */
+.board-screen {height:100dvh;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:clamp(6px,1.6dvh,16px);overflow:hidden}
+.board {min-height:0;grid-template-rows:repeat(4,minmax(0,1fr));gap:clamp(8px,1.6dvh,14px)}
+.board-row {min-height:0}
+.board .tile {min-height:0;padding-block:clamp(4px,1.8dvh,16px)}
+#boardScanStatus {min-height:0}
+#boardStatus {max-height:3.9em;overflow:hidden;line-height:1.3}
+
+    /* Setup status uses both text and color; scan highlights still take precedence. */
+    .load-control[data-load-state="needed"] {--row-bg:#f2bb48;--row-border:#ac7412;--row-text:#281a03}
+    .load-control[data-load-state="loading"] {--row-bg:#8ed9ff;--row-border:#25749d;--row-text:#092a3c}
+    .load-control[data-load-state="ready"] {--row-bg:#77eba2;--row-border:#39b86c;--row-text:#082014}
+    .load-control[data-load-state="off"] {--row-bg:var(--card);--row-border:var(--border);--row-text:var(--muted)}
+    .load-control .setting-value {color:inherit;font-weight:650}
+  </style>
+  <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+</head>
+<body>
+  <section class="screen" id="welcomeScreen" aria-labelledby="welcomeTitle">
+    <div class="panel">
+      <h1 id="welcomeTitle">RTC Lite</h1>
+      <h2>Your words. Your choice.</h2>
+      <p id="welcomeMessage">Hello everyone. This board helps this person communicate. They choose everything said. Select a phrase to speak it aloud.</p>
+      <p id="availabilityMessage">After Continue, this app can listen to the room to help you respond. You choose every message. Local options keep speech and suggestions on this device. If you select a cloud speech service, audio goes to that service; cloud AI receives conversation text and your profile. Cloud AI requests go through the Cloudflare key service, which stores your key encrypted; this app keeps a connection token. Conversation memory clears when you exit. Listening can be turned off in Settings.</p>
+      <div class="button-row">
+        <button class="menu-button" id="continueButton" type="button">CONTINUE</button>
+        <button class="menu-button" id="welcomeBackButton" type="button">BACK</button>
+      </div>
+      <div class="scan-status" id="welcomeScanStatus"></div>
+      <p class="hint">Space moves. Enter selects. Auto Scan uses Enter to select.</p>
+    </div>
+  </section>
+
+  <main class="screen board-screen" id="boardScreen" aria-labelledby="boardTitle" hidden>
+    <header>
+      <h1 id="boardTitle">RTC Lite</h1>
+      <span class="mic-status" aria-label="Microphone off">Microphone off</span>
+    </header>
+    <div class="board" id="board" aria-label="Communication board">
+      <div class="board-row controls" id="controlsRow" data-row-label="Controls" role="group" aria-label="Controls">
+        <button class="tile" id="getButton" type="button">GET / REFRESH</button>
+        <button class="tile" id="keyboardButton" type="button">KEYBOARD</button>
+        <button class="tile" id="settingsButton" type="button">SETTINGS</button>
+        <button class="tile" id="exitButton" type="button">EXIT</button>
+      </div>
+      <div class="board-row quick" id="quickRow" data-row-label="Quick answers" role="group" aria-label="Quick answers">
+        <button class="tile" id="quickYes" data-say="Yes" type="button">YES</button>
+        <button class="tile" id="quickNo" data-say="No" type="button">NO</button>
+        <button class="tile" id="quickMaybe" data-say="Maybe" type="button">MAYBE</button>
+        <button class="tile" id="quickUnknown" data-say="I don't know" type="button">I DON'T KNOW</button>
+      </div>
+      <div class="board-row" id="generalRow" data-row-label="Everyday phrases" role="group" aria-label="Everyday phrases">
+        <button class="tile" id="general0" data-say="Hi" type="button">Hi</button>
+        <button class="tile" id="general1" data-say="Thank you" type="button">Thank you</button>
+        <button class="tile" id="general2" data-say="Hold on" type="button">Hold on</button>
+        <button class="tile" id="general3" data-say="Can you say that again?" type="button">Can you say that again?</button>
+      </div>
+      <div class="board-row" id="startersRow" data-row-label="Conversation starters" role="group" aria-label="Conversation starters">
+        <button class="tile" id="starter0" data-say="Tell me more" type="button">Tell me more</button>
+        <button class="tile" id="starter1" data-say="I have a question" type="button">I have a question</button>
+        <button class="tile" id="starter2" data-say="Let's talk" type="button">Let's talk</button>
+        <button class="tile" id="starter3" data-say="I need a break" type="button">I need a break</button>
+      </div>
+    </div>
+    <footer>
+      <div class="context-bar" id="boardContext" data-context-state="empty" data-recent="false"><div class="listening-indicator" data-state="off" role="status" aria-label="Microphone off"><span class="listening-symbol" aria-hidden="true">■</span><span class="listening-label">MIC OFF</span><span class="listening-detail">Not listening</span></div><div class="context-details"><div class="context-heading" role="status" aria-live="polite" aria-atomic="true"><span class="context-label">NO CONTEXT YET</span><span class="context-hint">Latest speech will appear here</span></div><p class="last-heard" id="boardLastHeard">Last heard: nothing yet</p></div></div><div class="footer-copy"><p id="boardStatus" role="status">Choose a phrase to speak.</p></div>
+      <span id="scanHint">Space moves · Enter selects</span>
+    </footer>
+    <div class="scan-status" id="boardScanStatus"></div>
+  </main>
+
+  <section class="screen" id="settingsScreen" aria-labelledby="settingsTitle" hidden>
+    <div class="panel">
+      <h2 id="settingsTitle">Settings</h2>
+      <p class="hint">Voice and scan controls are shared with the Hub. Local models are optional; saved phrases and typing always work.</p>
+      <div class="settings-grid" id="settingsGrid">
+        <button class="menu-button" id="speechSetting" type="button"><span class="setting-label">Text to Speech</span><span class="setting-value"></span></button>
+        <button class="menu-button" id="voiceSetting" type="button"><span class="setting-label">Voice</span><span class="setting-value"></span></button>
+        <button class="menu-button" id="autoSetting" type="button"><span class="setting-label">Auto Scan</span><span class="setting-value"></span></button>
+        <button class="menu-button" id="sensitivitySetting" type="button"><span class="setting-label">Input Sensitivity</span><span class="setting-value"></span></button>
+        <button class="menu-button" id="speedSetting" type="button"><span class="setting-label">Scan Speed</span><span class="setting-value"></span></button>
+<button class="menu-button" id="listeningPage" type="button"><span class="setting-label">Listening & speech recognition</span></button><button class="menu-button" id="aiPage" type="button"><span class="setting-label">AI suggestions</span></button><button class="menu-button" id="bioPage" type="button"><span class="setting-label">Add / edit bio</span><span class="setting-value">Add personal background</span></button><button class="menu-button" id="phrasesPage" type="button"><span class="setting-label">My phrases & profile</span></button><button class="menu-button" id="appearancePage" type="button"><span class="setting-label">Appearance</span></button><button class="menu-button" id="memoryPage" type="button"><span class="setting-label">Conversation memory & help</span></button>
+        <button class="menu-button" id="settingsBackButton" type="button"><span class="setting-label">Back to board</span></button>
+      </div>
+      <div class="scan-status" id="settingsScanStatus"></div>
+    </div>
+  </section>
+
+<section class="screen" id="listeningScreen" hidden><div class="panel"><h2>Listening</h2><p class="hint">Local Whisper: about 150 MB once, runs in this browser. Browser speech uses the browser’s online service, not your RT Convo credentials, and is not an offline option. Models download only when you select Load speech model. Amber means load needed; green means loaded.</p><p class="mic-status">Microphone off</p><p id="speechTestResult" class="test-result" role="status">Recognition test results appear here. Tests stay out of conversation memory.</p><div class="settings-grid"><button class="menu-button" id="listeningSetting" type="button"><span class="setting-label">Listening</span><span class="setting-value">On</span></button><button class="menu-button" id="sttSetting" type="button"><span class="setting-label">Speech recognition</span><span class="setting-value">Local Whisper</span></button><button class="menu-button load-control" id="setupSpeech" type="button"><span class="setting-label">Set up / load selected speech model</span><span class="setting-value"></span></button><button class="menu-button" id="restartSpeech" type="button"><span class="setting-label">Start / restart microphone</span><span class="setting-value">Turn listening on with the selected source</span></button><button class="menu-button" id="testSpeech" type="button"><span class="setting-label">Test recognition</span><span class="setting-value">Read a short sentence aloud</span></button><button class="menu-button" id="stopTestSpeech" type="button"><span class="setting-label">Finish recognition test</span></button><button class="menu-button" id="cancelSpeech" type="button"><span class="setting-label">Cancel download / stop listening</span><span class="setting-value"></span></button><button class="menu-button" id="windowSetting" type="button"><span class="setting-label">“Just said” window</span><span class="setting-value">8 seconds</span></button><button class="menu-button" id="listeningBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="listeningScanStatus"></div></div></section><section class="screen" id="aiScreen" hidden><div class="panel"><h2>AI suggestions</h2><p class="hint">Choose a Cloud API key or your own local AI server for contextual suggestions. Speech recognition is separate, so Whisper can stay local. Cloud AI receives conversation text and your profile and may have costs or quotas. Local server models have no per-request API fee. SmolLM2 remains an experimental option. Chrome local AI uses Gemini Nano on this device after download, with no cloud API key or cloud quota.</p><p id="aiDetails" class="hint"></p><p id="chromeAvailability" class="hint"></p><p class="mic-status">Microphone off</p><p id="aiTestResult" class="test-result" role="status"></p><div class="settings-grid"><button class="menu-button" id="aiSetting" type="button"><span class="setting-label">AI option</span><span class="setting-value">Cloud API</span></button><button class="menu-button load-control" id="setupAI" type="button"><span class="setting-label">Set up / load selected AI</span><span class="setting-value"></span></button><button class="menu-button" id="cancelAI" type="button"><span class="setting-label">Cancel setup / unload AI</span><span class="setting-value"></span></button><button class="menu-button" id="testAI" type="button"><span class="setting-label">Test selected AI</span><span class="setting-value">Sample request and timing</span></button><button class="menu-button" id="keyPage" type="button"><span class="setting-label">Connect / manage cloud AI</span></button><button class="menu-button" id="serverPage" type="button"><span class="setting-label">Local AI server</span><span class="setting-value">Ollama or OpenAI compatible</span></button><button class="menu-button" id="aiBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="aiScanStatus"></div></div></section><section class="screen" id="serverScreen" hidden><div class="panel"><h2>Local AI server</h2><p class="hint">Run Ollama or an OpenAI-compatible server on this computer. Install a model in that server first. RTC Lite sends conversation text to the address below; your cloud API key is never sent here. For offline use, choose a downloaded local model in your server.</p><label for="serverUrl">Server address</label><input class="config-input" data-scan-exclude id="serverUrl" type="url" autocomplete="off" spellcheck="false" value="http://127.0.0.1:11434"><label for="serverModel">Installed model name</label><input class="config-input" data-scan-exclude id="serverModel" type="text" autocomplete="off" spellcheck="false" placeholder="Load models or enter a model name"><div class="settings-grid"><button class="menu-button" id="serverTypeSetting" type="button"><span class="setting-label">Server type</span><span class="setting-value">Ollama</span></button><button class="menu-button" id="loadServerModels" type="button"><span class="setting-label">Load installed models</span></button><button class="menu-button" id="serverModelSetting" type="button"><span class="setting-label">Choose model</span><span class="setting-value">Load models first</span></button><button class="menu-button" id="saveServer" type="button"><span class="setting-label">Save and use server</span></button><button class="menu-button" id="serverBack" type="button"><span class="setting-label">Back to AI settings</span></button></div><p class="hint">Ollama default: http://127.0.0.1:11434. LM Studio commonly uses http://127.0.0.1:1234. If the server blocks this page, allow this page’s origin in the server’s CORS settings.</p><p class="operation-status" role="status"></p><div class="scan-status" id="serverScanStatus"></div></div></section><section class="screen" id="keyScreen" hidden><div class="panel"><h2>Connect your own cloud AI</h2><p class="hint">Connect OpenAI, Anthropic, or Google Gemini through Benny’s Hub key service. Key setup opens a separate window and may require help typing or pasting your key. Your key is encrypted in Cloudflare storage for up to 30 days; this app keeps only a revocable connection token. The Worker and AI provider receive your bio and conversation text for suggestions. Cloud usage may cost money.</p><p class="hint">Local speech recognition remains separate. Disconnect stops this app’s access. To delete a provider key for all connected apps, open key setup and choose Remove. Existing browser keys are never uploaded automatically.</p><p class="mic-status">Microphone off</p><div class="settings-grid"><button class="menu-button" id="connectCloud" type="button"><span class="setting-label">Connect / manage cloud AI</span><span class="setting-value">Open key setup window</span></button><button class="menu-button" id="clearKey" type="button"><span class="setting-label">Disconnect RTC Lite</span></button><button class="menu-button" id="keyBack" type="button"><span class="setting-label">Back to AI settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="keyScanStatus"></div></div></section><section class="screen" id="phrasesScreen" hidden><div class="panel"><h2>My phrases & profile</h2><p class="hint">Edit phrases with the switch keyboard. About me has a bio you can type, paste, or edit with the on-screen keyboard and predictions. Your RT Convo bio is used initially when available; changes here belong to RTC Lite.</p><p class="mic-status">Microphone off</p><div class="settings-grid"><button class="menu-button" id="announcementSetting" type="button"><span class="setting-label">Keyboard announcement</span><span class="setting-value">Edit</span></button><button class="menu-button" id="bioSetting" type="button"><span class="setting-label">Add / edit bio</span><span class="setting-value">Edit</span></button><button class="menu-button" id="profanitySetting" type="button"><span class="setting-label">Profanity</span><span class="setting-value">Off</span></button><button class="menu-button" id="default0" type="button"><span class="setting-label">General phrase 1</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default1" type="button"><span class="setting-label">General phrase 2</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default2" type="button"><span class="setting-label">General phrase 3</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default3" type="button"><span class="setting-label">General phrase 4</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default4" type="button"><span class="setting-label">Specific phrase 1</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default5" type="button"><span class="setting-label">Specific phrase 2</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default6" type="button"><span class="setting-label">Specific phrase 3</span><span class="setting-value">Edit</span></button><button class="menu-button" id="default7" type="button"><span class="setting-label">Specific phrase 4</span><span class="setting-value">Edit</span></button><button class="menu-button" id="restoreDefaults" type="button"><span class="setting-label">Restore starter phrases</span></button><button class="menu-button" id="phrasesBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="phrasesScanStatus"></div></div></section><section class="screen" id="bioScreen" hidden><div class="panel"><h2>About me · Bio</h2><p class="hint">This background helps AI suggestions fit you. Add interests, routines, communication preferences, or anything you want others to know. Type or paste below, or use the on-screen keyboard with predictions. Your bio is saved on this device and included in requests to your selected AI. With cloud AI, that provider receives your bio.</p><label for="bioInput">Your background (up to 1,500 characters)</label><textarea class="config-input" data-scan-exclude id="bioInput" maxlength="1500" rows="7" placeholder="My name is… I enjoy… Please give me time to…"></textarea><div class="settings-grid"><button class="menu-button" id="saveBio" type="button"><span class="setting-label">Save bio</span></button><button class="menu-button" id="bioKeyboard" type="button"><span class="setting-label">Use on-screen keyboard</span><span class="setting-value">Words and phrase predictions</span></button><button class="menu-button" id="bioBack" type="button"><span class="setting-label">Back to my phrases &amp; profile</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="bioScanStatus"></div></div></section><section class="screen" id="appearanceScreen" hidden><div class="panel"><h2>Appearance</h2><p class="hint">Use the Hub theme, or choose an RTC Lite appearance.</p><p class="mic-status">Microphone off</p><div class="settings-grid"><button class="menu-button" id="themeSetting" type="button"><span class="setting-label">Theme</span><span class="setting-value">Hub</span></button><button class="menu-button" id="highlightSetting" type="button"><span class="setting-label">Highlight color</span><span class="setting-value">Hub</span></button><button class="menu-button" id="styleSetting" type="button"><span class="setting-label">Highlight style</span><span class="setting-value">Hub</span></button><button class="menu-button" id="sizeSetting" type="button"><span class="setting-label">Text size</span><span class="setting-value">Hub</span></button><button class="menu-button" id="appearanceBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="appearanceScanStatus"></div></div></section><section class="screen" id="memoryScreen" hidden><div class="panel"><h2>Conversation memory</h2><p class="hint">Room speech, your spoken messages and the summary stay in memory for this session. Clearing also cancels pending suggestions. Profile and settings are kept.</p><p class="mic-status">Microphone off</p><p class="hint">Help: narbefoundation.org · Parakeet model by NVIDIA, CC BY 4.0. Local recognition uses sherpa-onnx, Apache 2.0.</p><div class="settings-grid"><button class="menu-button" id="clearMemory" type="button"><span class="setting-label">Clear conversation now</span></button><button class="menu-button" id="helpButton" type="button"><span class="setting-label">Help from NARBE Foundation</span></button><button class="menu-button" id="memoryBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="memoryScanStatus"></div></div></section><section class="screen" id="helpScreen" hidden><div class="panel"><h2>Help with setup</h2><p class="hint">For help choosing a local option or getting your own cloud key, visit narbefoundation.org. Opening the website may require touch or a helper to return here.</p><p class="mic-status">Microphone off</p><div class="settings-grid"><button class="menu-button" id="openHelp" type="button"><span class="setting-label">Open NARBE website</span></button><button class="menu-button" id="helpBack" type="button"><span class="setting-label">Back to settings</span></button></div><p class="operation-status" role="status"></p><div class="scan-status" id="helpScanStatus"></div></div></section><section class="screen keyboard-screen" id="keyboardScreen" hidden><header><h2 id="keyboardTitle">Keyboard</h2><span class="mic-status">Microphone off</span></header><div class="keyboard-row" id="keyboardMessageRow" data-row-label="Speak message"><button id="typedText" type="button" data-action-label="SELECT TO SPEAK" aria-label="Speak typed message"></button></div><div class="keyboard-grid"><div class="keyboard-row" id="keyboardControls" data-row-label="Space. Delete. Clear. Back."><button class="key" id="spaceKey">SPACE</button><button class="key" id="deleteKey">DELETE</button><button class="key" id="clearTyping">CLEAR</button><button class="key" id="keyboardBack">BACK</button></div><div class="keyboard-row prediction-row ai-prediction-row" id="predictionRow0" data-row-label="AI words"><button class="key" id="prediction0" disabled>—</button><button class="key" id="prediction1" disabled>—</button><button class="key" id="prediction2" disabled>—</button><button class="key" id="prediction3" disabled>—</button><button class="key" id="prediction4" disabled>—</button><button class="key" id="morePredictions0">More words</button></div><div class="keyboard-row prediction-row ai-prediction-row" id="predictionRow1" data-row-label="AI phrases"><button class="key" id="prediction5" disabled>—</button><button class="key" id="prediction6" disabled>—</button><button class="key" id="prediction7" disabled>—</button><button class="key" id="prediction8" disabled>—</button><button class="key" id="prediction9" disabled>—</button><button class="key" id="morePredictions1">More phrases</button></div><div class="keyboard-row prediction-row" id="keyboardPredictionRow" data-row-label="Keyboard words"><button class="key" id="keyboardPrediction0" disabled>—</button><button class="key" id="keyboardPrediction1" disabled>—</button><button class="key" id="keyboardPrediction2" disabled>—</button><button class="key" id="keyboardPrediction3" disabled>—</button><button class="key" id="keyboardPrediction4" disabled>—</button><button class="key" id="keyboardPrediction5" disabled>—</button></div><div class="keyboard-row" id="letters0" data-row-label="A B C D E F"><button class="key" id="letter0_0" data-key="A">A</button><button class="key" id="letter0_1" data-key="B">B</button><button class="key" id="letter0_2" data-key="C">C</button><button class="key" id="letter0_3" data-key="D">D</button><button class="key" id="letter0_4" data-key="E">E</button><button class="key" id="letter0_5" data-key="F">F</button></div><div class="keyboard-row" id="letters1" data-row-label="G H I J K L"><button class="key" id="letter1_0" data-key="G">G</button><button class="key" id="letter1_1" data-key="H">H</button><button class="key" id="letter1_2" data-key="I">I</button><button class="key" id="letter1_3" data-key="J">J</button><button class="key" id="letter1_4" data-key="K">K</button><button class="key" id="letter1_5" data-key="L">L</button></div><div class="keyboard-row" id="letters2" data-row-label="M N O P Q R"><button class="key" id="letter2_0" data-key="M">M</button><button class="key" id="letter2_1" data-key="N">N</button><button class="key" id="letter2_2" data-key="O">O</button><button class="key" id="letter2_3" data-key="P">P</button><button class="key" id="letter2_4" data-key="Q">Q</button><button class="key" id="letter2_5" data-key="R">R</button></div><div class="keyboard-row" id="letters3" data-row-label="S T U V W X"><button class="key" id="letter3_0" data-key="S">S</button><button class="key" id="letter3_1" data-key="T">T</button><button class="key" id="letter3_2" data-key="U">U</button><button class="key" id="letter3_3" data-key="V">V</button><button class="key" id="letter3_4" data-key="W">W</button><button class="key" id="letter3_5" data-key="X">X</button></div><div class="keyboard-row" id="letters4" data-row-label="Y Z 0 1 2 3"><button class="key" id="letter4_0" data-key="Y">Y</button><button class="key" id="letter4_1" data-key="Z">Z</button><button class="key" id="letter4_2" data-key="0">0</button><button class="key" id="letter4_3" data-key="1">1</button><button class="key" id="letter4_4" data-key="2">2</button><button class="key" id="letter4_5" data-key="3">3</button></div><div class="keyboard-row" id="letters5" data-row-label="4 5 6 7 8 9"><button class="key" id="letter5_0" data-key="4">4</button><button class="key" id="letter5_1" data-key="5">5</button><button class="key" id="letter5_2" data-key="6">6</button><button class="key" id="letter5_3" data-key="7">7</button><button class="key" id="letter5_4" data-key="8">8</button><button class="key" id="letter5_5" data-key="9">9</button></div><div class="keyboard-row" id="letters6" data-row-label="' . , ? ! -"><button class="key" id="letter6_0" data-key="&#39;">'</button><button class="key" id="letter6_1" data-key=".">.</button><button class="key" id="letter6_2" data-key=",">,</button><button class="key" id="letter6_3" data-key="?">?</button><button class="key" id="letter6_4" data-key="!">!</button><button class="key" id="letter6_5" data-key="-">-</button></div></div><div class="keyboard-footer"><div class="context-bar" id="keyboardContext" data-context-state="empty" data-recent="false"><div class="listening-indicator" data-state="off" role="status" aria-label="Microphone off"><span class="listening-symbol" aria-hidden="true">■</span><span class="listening-label">MIC OFF</span><span class="listening-detail">Not listening</span></div><div class="context-details"><div class="context-heading" role="status" aria-live="polite" aria-atomic="true"><span class="context-label">NO CONTEXT YET</span><span class="context-hint">Latest speech will appear here</span></div><p class="last-heard" id="keyboardLastHeard">Last heard: nothing yet</p></div></div><div class="footer-copy"><p id="keyboardStatus" role="status">Choose letters or predictions.</p></div><div class="scan-status" id="keyboardScanStatus"></div></div></section>
+  <script src="../../../shared/platform.js"></script>
+  <script src="../../../shared/scan-status-badge.js"></script>
+  <script src="../../../shared/choice-scan.js"></script>
+  <script src="../../../shared/voice-manager.js"></script>
+  <script src="../../../shared/ios-audio-fix.js"></script>
+  <script src="../../../shared/scan-manager.js"></script>
+  <script src="../../../shared/choice-scan-adapter.js"></script>
+  <script src="dictionary.js"></script>
+  <script src="core.js"></script>
+  <script src="api-server.js"></script>
+  <script src="../../../shared/byok-client.js"></script>
+  <script src="web-config.js"></script>
+  <script src="providers.js"></script>
+  <script src="speech.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

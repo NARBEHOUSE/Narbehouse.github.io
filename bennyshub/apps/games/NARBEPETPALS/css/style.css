@@ -38,6 +38,10 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges}
 .meter canvas{width:clamp(16px,3.2vmin,26px);height:auto;aspect-ratio:1;flex:none}
 .bar{flex:1;min-width:0;height:clamp(9px,1.7vmin,14px);border:2px solid var(--edge);border-radius:8px;background:var(--track);overflow:hidden}
 .bar i{display:block;height:100%;width:80%;background:linear-gradient(180deg,var(--moss2),var(--moss));transition:width .6s ease}
+/* A meter that just went up (Rush helped) glows for a moment. */
+.meter.boost .bar{animation:meterBoost .8s ease-in-out 3}
+@keyframes meterBoost{50%{box-shadow:0 0 0 3px var(--hl,#ffd54f),0 0 10px var(--hl,#ffd54f)}}
+@media (prefers-reduced-motion:reduce){.meter.boost .bar{animation:none;box-shadow:0 0 0 3px var(--hl,#ffd54f)}}
 .meter.low .bar i{background:var(--low) repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 4px,transparent 4px 8px)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .caption{position:absolute;z-index:4;left:50%;bottom:calc(var(--safe-b) + var(--m));transform:translateX(-50%);width:min(92vw,900px);height:2.7em;overflow:hidden;

@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Benny's Hub · Connect your AI</title><style>
+:root{color-scheme:dark;font:18px/1.5 system-ui;background:#0b1220;color:#f0f5ff}body{max-width:700px;margin:auto;padding:24px}h1{font-size:1.8rem}label{display:block;margin-top:16px;font-weight:650}input,select,button{box-sizing:border-box;width:100%;font:inherit;padding:14px;border:2px solid #8394ab;border-radius:10px;background:#17233a;color:inherit}button{margin-top:16px;cursor:pointer;background:#185237}button.secondary{background:#29344d}button.danger{background:#642b33}button:disabled{opacity:.55;cursor:wait}a{color:#acd5ff}:focus-visible{outline:4px solid #ffff00;outline-offset:3px}.note{color:#c5d2e5}#status{min-height:3em;padding:12px;border:2px solid #7187a5;border-radius:8px}#status[data-error=true]{border-color:#ff8294}small{display:block}.identity{background:#17233a;padding:12px;border-radius:8px;overflow-wrap:anywhere}</style></head><body>
+<h1>Connect your own AI</h1><p class="identity" id="app">Benny's Hub key settings</p>
+<p>Your provider key is encrypted in Cloudflare storage for this browser's 30-day session. The app receives a connection token, never the key. Cloudflare and the selected AI provider process your requests, including the bio and conversation text you choose to use. The Worker does not save those texts.</p>
+<p class="note">Your provider may charge for suggestions. Keyboard predictions can send requests as you type; an invalid AI response can cause one correction request. Use your provider's spending controls. Clearing browser cookies does not immediately delete stored keys; remove them here first. Platform backups may retain deleted data temporarily.</p>
+<form id="form"><label for="provider">Provider</label><select id="provider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="google">Google Gemini</option></select>
+<label for="model">Model</label><select id="model"></select>
+<label for="key">Provider API key</label><input id="key" type="password" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Paste your key, or leave blank to use a saved key">
+<small id="saved">Checking saved keys…</small><button id="connect" type="submit">Save key &amp; connect RTC Lite</button></form>
+<p id="status" role="status" aria-live="polite">Preparing key settings…</p>
+<button class="secondary" id="remove">Remove this provider's key and connections</button>
+<button class="danger" id="deleteAll">Delete all keys for this browser session</button>
+<button class="secondary" id="close">Close and return to the app</button>
+<p class="note">This setup page uses ordinary typing and paste. RTC Lite stays open in the original window. No provider request is made just by saving a key.</p>
+<script src="/setup.js"></script></body></html>

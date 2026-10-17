@@ -26,7 +26,7 @@ Version 0.1.9 removes Skip Intro from the control bar and fits YouTube's nested 
 
 Version 0.1.5 reapplies browser-window fullscreen when the streaming page finishes loading. The bar's Fullscreen button now activates the service's player fullscreen control (the equivalent of YouTube's F shortcut), with a native video fullscreen fallback. It no longer toggles the browser window back to a windowed state. Space/Enter stay owned by the bar, including after entering or leaving player fullscreen. Browser-window fullscreen happens at launch; native player fullscreen requires selecting Fullscreen because the browser requires a user gesture. Provider layouts can change; the adapters still need live-account validation on paid services and do not control inaccessible cross-origin iframe players.
 
-See ../WEB-EXTENSION-MIGRATION.md for setup, permissions, validation and known limitations. All allowed production Hub URLs currently use the /bennyshub/ path; update policy.mjs, hub-content.js and manifest.json if deploying at another path/origin.
+See ../docs/development/WEB-COMPANION.md for setup, permissions, validation and known limitations. All allowed production Hub URLs currently use the /bennyshub/ path; update policy.mjs, hub-content.js and manifest.json if deploying at another path/origin.
 
 Bundled ical.js 2.2.1 uses the MPL-2.0 license; see vendor/ICAL-LICENSE.
 

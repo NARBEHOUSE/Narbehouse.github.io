@@ -1,0 +1,6 @@
+# Creator files - kept on this machine, off the site.
+# The authoring source for the broadcast script. `node tools/build-voice-lines.cjs`
+# writes js/voice-lines.generated.js from it, and that bundle carries the same JSON
+# byte for byte, so content/ can be rebuilt from what ships. Edit these, run the
+# build, commit the bundle.
+content/

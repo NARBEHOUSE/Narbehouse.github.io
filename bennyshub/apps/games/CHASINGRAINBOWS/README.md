@@ -1,12 +1,21 @@
 # Chasing Rainbows: Switch Access Edition
 
-This is Inclusive Imagination's weather card game, played with one or two switches. It uses
+This is Inclusive Imagination®’s weather card game, played with one or two switches. It uses
 the real card art and opponents, with the October 14 partner feedback below applied to the rules. Everything is spoken and nothing is
 timed. One to six people can share the switch, with or without computer players.
 
 The design and every rules decision are in [SPEC.md](SPEC.md). How the game is adapted for
 switch players is in [README-ACCESSIBLE.md](README-ACCESSIBLE.md). Who owns what is in
 [NOTICE.md](NOTICE.md).
+
+## Credits
+
+Chasing Rainbows ICG is a game by Inclusive Imagination®.  
+Card Art by Adam M Botsford. Chasing Rainbows, its rules and card art are TM & © 2026 Inclusive Imagination LLC.  
+Switch Access Edition by NARBE House, for Benny’s Hub.  
+
+Inclusive Imagination® Home: [https://inclusiveimagination.co/](https://inclusiveimagination.co/)  
+Inclusive Imagination® Social Handle: @inclusiveimagination
 
 ## Copyright and open-source license
 
@@ -16,8 +25,8 @@ are separately protected.**
 | Material | Ownership and permission |
 | --- | --- |
 | NARBE's original game engine, interface, accessibility code, tests and tools | © 2026 NARBE LLC; MIT License |
-| Original Chasing Rainbows game content, protected rules text and branding | Existing attribution: TM & © 2026 Inclusive Imagination LLC; excluded from MIT |
-| Card artwork, derived images and thumbnail | Card art by Adam M Botsford; existing copyright attribution to Inclusive Imagination LLC; excluded from MIT |
+| Original Chasing Rainbows game content, protected rules text and branding | TM & © 2026 Inclusive Imagination LLC; excluded from MIT |
+| Card artwork, derived images and thumbnail | Card Art by Adam M Botsford; TM & © 2026 Inclusive Imagination LLC; excluded from MIT |
 | Nunito font | The Nunito Project Authors; SIL OFL 1.1 |
 
 The original game design and concept are credited to Inclusive Imagination. This
@@ -27,7 +36,7 @@ adapted How to Play text, is also excluded from MIT; the program logic stays MIT
 Before redistributing a complete game, obtain the necessary content permissions
 or replace that content. The software license does not grant trademark rights or
 permission to imply endorsement. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md)
-for the full scope, file locations, credits, and permission-status explanation.
+for the full scope, file locations, credits, and publishing-permission summary.
 
 ## October 15 action-card follow-up
 

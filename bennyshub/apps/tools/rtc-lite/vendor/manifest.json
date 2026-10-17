@@ -1,0 +1,71 @@
+{
+  "versions": {
+    "webllm": "0.2.85",
+    "transformers": "2.17.2",
+    "onnxruntimeWeb": "1.14.0",
+    "koffi": "3.3.0",
+    "mlcWebRuntime": "0.27.0-dev0"
+  },
+  "files": {
+    "KOFFI-LICENSE": {
+      "bytes": 1117,
+      "sha256": "22bcbbbacd739b026a8dc484f62a31484ce4c4e31f3408b60b29b4e41d62b290"
+    },
+    "LOGLEVEL-LICENSE": {
+      "bytes": 1075,
+      "sha256": "18e8cf5f0dbaf13d9562e93b9bef79aff2acff18fab698c2d589d2159375a1f9"
+    },
+    "ONNX-LICENSE": {
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    "ort-wasm-simd.wasm": {
+      "bytes": 10014674,
+      "sha256": "9bd07bababc65f53d061f457233eeae501be7ceb8a2adb9eef52d87fe776d865"
+    },
+    "ort-wasm.wasm": {
+      "bytes": 9223228,
+      "sha256": "bbdcb6b3c7d294577d806077630460be4e13ca35a345acb5e81188e9649fa74a"
+    },
+    "PARAKEET-LICENSE": {
+      "bytes": 18657,
+      "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+    },
+    "SHERPA-LICENSE": {
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "TRANSFORMERS-LICENSE": {
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "transformers.js": {
+      "bytes": 897938,
+      "sha256": "bcf7cf304e51f470ed59409622b9d6ffbad80dfcf5baf6a40c919e4b9c4ff812"
+    },
+    "WEBLLM-LICENSE": {
+      "bytes": 11737,
+      "sha256": "d412ab9d5ac17e6931705aac01e5a0d323da5acd2e89a2c19aa8fc05becc59ad"
+    },
+    "webllm.js": {
+      "bytes": 6586947,
+      "sha256": "341bae95822bfee1d0fd6a0e6cd2db8613bb8edf809390ac142fba36ec17792c"
+    },
+    "WHISPER-LICENSE": {
+      "bytes": 1063,
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d"
+    },
+    "APACHE-2.0-LICENSE": {
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "TVM-LICENSE": {
+      "bytes": 12079,
+      "sha256": "e62264b483aca7a9f8c1ac69388b476971b43975ced90ac11dbd9e9c530edb46"
+    },
+    "TVM-NOTICE": {
+      "bytes": 164,
+      "sha256": "967cd2fb97712c43271e2b1c4f636c4d8823898869f0f76f65bf8a3232584f0f"
+    }
+  }
+}

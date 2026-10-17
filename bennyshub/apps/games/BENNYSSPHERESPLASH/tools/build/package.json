@@ -1,0 +1,15 @@
+{
+  "name": "sphere-splash-build-tools",
+  "private": true,
+  "description": "Offline build tools for Benny's Sphere Splash. Not part of the published site (games/*/tools/ is excluded by scripts/build.cjs).",
+  "scripts": {
+    "addons": "node bundle-addons.mjs",
+    "models": "node prep-models.mjs"
+  },
+  "devDependencies": {
+    "three": "0.155.0",
+    "esbuild": "0.25.10",
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/functions": "4.2.1"
+  }
+}

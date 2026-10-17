@@ -1,0 +1,23 @@
+'use strict';
+const params=new URLSearchParams(location.search),app=params.get('app'),origin=params.get('origin'),challenge=params.get('challenge'),state=params.get('state');
+const $=id=>document.getElementById(id),models={openai:['gpt-4o-mini','gpt-4.1-mini'],anthropic:['claude-haiku-4-5-20251001'],google:['gemini-2.5-flash-lite','gemini-2.5-flash']};
+let saved=[],busy=false;
+const connecting=app==='rtc-lite'&&/^https?:\/\//.test(origin||'')&&/^[a-f0-9]{64}$/.test(challenge||'')&&/^[a-f0-9]{64}$/.test(state||'')&&!!window.opener;
+function say(message,error=false){$('status').textContent=message;$('status').dataset.error=String(error);}
+function paint(){ $('saved').textContent=saved.includes($('provider').value)?'A key is saved for this provider. Leave the field blank to use it.':'No saved key for this provider.';$('connect').textContent=connecting?'Save / connect RTC Lite':'Save key';}
+function modelOptions(){ $('model').replaceChildren(...models[$('provider').value].map(name=>{const o=document.createElement('option');o.value=o.textContent=name;return o;}));paint();}
+async function call(action,data){const r=await fetch('/api/byok/v1/manage/'+action,{method:action==='status'?'GET':'POST',credentials:'same-origin',headers:{'X-Benny-Setup':'1','Content-Type':'application/json'},...(action==='status'?{}:{body:JSON.stringify(data||{})})});const d=await r.json();if(!r.ok)throw Error(d.error||'Could not complete setup.');return d;}
+async function work(action){if(busy)return;busy=true;document.querySelectorAll('button:not(#close)').forEach(b=>b.disabled=true);try{await action();}catch(e){say(e.message,true);}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);paint();}}
+$('app').textContent=connecting?'Connect RTC Lite at '+origin:'Benny’s Hub key settings';
+$('provider').addEventListener('change',modelOptions);modelOptions();
+$('form').addEventListener('submit',e=>{e.preventDefault();void work(async()=>{
+ const provider=$('provider').value,key=$('key').value.trim();
+ if(key){const d=await call('save',{provider,key});saved=d.providers;$('key').value='';}
+ if(!saved.includes(provider))throw Error('Paste a key for this provider first.');
+ if(connecting){const d=await call('connect',{provider,model:$('model').value,app,origin,challenge});window.opener.postMessage({type:'benny-byok-code',state,code:d.session+'.'+d.code},origin);say('Connection sent. Return to RTC Lite.');setTimeout(()=>window.close(),600);}
+ else say('Key saved. Open Connect AI in RTC Lite to authorize it.');
+});});
+$('remove').addEventListener('click',()=>void work(async()=>{const d=await call('remove',{provider:$('provider').value});saved=d.providers;$('key').value='';say('Provider key removed. Its app connections are revoked.');}));
+$('deleteAll').addEventListener('click',()=>void work(async()=>{await call('delete-all',{});saved=[];$('key').value='';say('All keys and connections for this browser session were deleted.');}));
+$('close').addEventListener('click',()=>window.close());
+void work(async()=>{const d=await call('status');saved=d.providers;say(d.expiresAt?'Keys expire '+new Date(d.expiresAt).toLocaleDateString()+'. You can remove them sooner here.':'Paste your provider key to get started.');});

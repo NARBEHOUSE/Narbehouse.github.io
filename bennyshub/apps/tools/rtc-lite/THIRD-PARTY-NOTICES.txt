@@ -1,0 +1,55 @@
+RTC Lite web edition: local model and runtime notices
+
+NARBE application and Worker code use the repository MIT license. Third-party
+components keep their own licenses. The following native components belong
+to the desktop edition; no Parakeet, sherpa-onnx or Koffi runtime is shipped
+or offered by this website. Their notices are retained for provenance.
+
+NVIDIA Parakeet TDT 0.6B v3, copyright NVIDIA; model weights: Creative Commons Attribution 4.0.
+Original: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+ONNX/int8 conversion: csukuangfj, https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8
+Pinned model revision: 2bda32ec70b097a55adaa07d9a7173915b43cc78. Converted and quantized model; not the original precision.
+No NVIDIA endorsement is implied. See vendor/PARAKEET-LICENSE.
+
+sherpa-onnx 1.13.8, Apache 2.0: https://github.com/k2-fsa/sherpa-onnx
+sherpa-abi.json contains adapted field declarations from this version’s C API header.
+In the desktop edition, runtime archives and model files are downloaded after explicit setup, verified against its artifacts.json.
+See vendor/SHERPA-LICENSE. The downloaded runtime includes ONNX Runtime (MIT); see vendor/ONNX-LICENSE and runtime license files.
+
+Koffi 3.3.0 by Niels Martignène, MIT: https://koffi.dev/
+See vendor/KOFFI-LICENSE. Native Windows x64 and ARM64 bindings are optional package dependencies.
+
+Web edition dependencies
+
+WebLLM 0.2.85, MLC contributors, Apache 2.0: https://github.com/mlc-ai/web-llm
+The bundled library includes MLC/TVM code and loglevel (MIT). See vendor/WEBLLM-LICENSE, vendor/LOGLEVEL-LICENSE, vendor/TVM-LICENSE and vendor/TVM-NOTICE.
+Its MLC Web Runtime 0.27.0-dev0 includes Apache TVM. MLC web-tokenizers 0.1.6
+and web-xgrammar 0.1.27 are Apache 2.0; see vendor/APACHE-2.0-LICENSE.
+https://github.com/mlc-ai/tokenizers-cpp
+https://github.com/mlc-ai/xgrammar
+Local suggestion weights: HuggingFaceTB SmolLM2 1.7B Instruct, Apache 2.0.
+See vendor/APACHE-2.0-LICENSE. The MLC artifact is an upstream quantized conversion, not the original precision.
+https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct
+MLC quantization: https://huggingface.co/mlc-ai/SmolLM2-1.7B-Instruct-q4f32_1-MLC
+Weights and the versioned WebGPU WASM library are downloaded during setup and cached by WebLLM.
+
+Transformers.js 2.17.2, Hugging Face, Apache 2.0: https://github.com/huggingface/transformers.js
+See vendor/TRANSFORMERS-LICENSE. ONNX Runtime Web 1.14.0 WASM files are MIT; see vendor/ONNX-LICENSE.
+Whisper base.en original code and weights, OpenAI (MIT): https://github.com/openai/whisper
+See vendor/WHISPER-LICENSE.
+The ONNX/quantized conversion actually downloaded by RTC Lite is Xenova/whisper-base.en.
+Its model card declares Apache 2.0, separately from the original OpenAI MIT license:
+https://huggingface.co/Xenova/whisper-base.en/blob/main/README.md
+See vendor/APACHE-2.0-LICENSE. Preserve both the original attribution and the conversion notice.
+The conversion and quantization are upstream changes, not the original precision.
+No cloud transcription or generation service is used by these local options. Initial downloads need the network.
+
+The browser’s optional built-in AI and speech services are separate products with their own terms and availability.
+
+Browser model repository revisions follow the vendored libraries/upstream model
+configuration. They are not pinned or integrity-verified by this application.
+The vendor manifest verifies bundled JS, WASM and notice files, not downloaded
+weights. Review upstream notices when updating libraries or model selections.
+Cloudflare, Chrome built-in AI, browser speech and optional cloud AI providers
+are separate services/products. Their terms, availability and charges apply;
+open-source application code does not make those services open source or free.

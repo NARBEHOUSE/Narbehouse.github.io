@@ -3,9 +3,17 @@
    The pace is gentle on purpose: needs drift down slowly, surprises come every few minutes, and
    there is always time to explore. */
 const KEYS=['food','fun','clean','energy','love'];
-const RATES={food:.1,fun:.13,clean:.07,energy:.085,love:.095};
+/* How fast each need goes down, per second, slow on purpose so a switch player has time for each one and
+   few things ask for attention at once. From full, a need starts asking (below 55) and gets low (below 33)
+   after about: food 24 and 35 minutes, play 19 and 28, bath or brushing 31 and 47, nap 40 and 60,
+   cuddles 29 and 43. */
+const RATES={food:.0315,fun:.0394,clean:.0238,energy:.0185,love:.0261};
 const AWAY=.25, FLOOR=25, WANT=55, LOW=33;
-const EVENT_GAP=[180000,600000], TASK_GAP=[360000,720000], IDLE_GAP=[45000,90000], ASK_AGAIN=90000, NAG_AGAIN=180000, CELEBRATE_GAP=120000;
+/* The pet's little moments (a yawn, a sneeze) come every 1.5 to 3 minutes and are read aloud, but never
+   within a minute of other reading (IDLE_QUIET). A need is said once when it starts and once more when it gets
+   low; only a low need is said again, every 15 minutes (ASK_AGAIN), so a switch player is never nagged. A chore
+   that is waiting is mentioned again every 6 minutes (NAG_AGAIN). On Slow pace both are twice as far apart. */
+const EVENT_GAP=[180000,600000], TASK_GAP=[360000,720000], IDLE_GAP=[90000,180000], IDLE_QUIET=60000, ASK_AGAIN=15*60000, NAG_AGAIN=6*60000, CELEBRATE_GAP=120000;
 /* Event Pace (Settings): Slow spaces surprises and chores 2.5 times as far apart (about 3 or 4 an hour),
    the pet's little idle moments 4 times as far apart with less chatter, repeats need reminders half as
    often, and changes the sky quietly, for players who find the busier pace too much. Surprise timers only count calm time in the
@@ -206,6 +214,11 @@ const WANT_SLOT={food:'feed',fun:'play',clean:'clean',energy:'nap',love:'cuddle'
 const SLOT_WANT={feed:'food',play:'fun',clean:'clean',nap:'energy',cuddle:'love'};
 const ACT_WANT={cuddle:'love',feed:'food',play:'fun',out:'fun',walk:'fun',explore:'fun',bath:'clean',brush:'clean',nap:'energy'};
 const slotIcon=slot=>SLOTS[kind()][slot][2];
+/* Said once when a need gets low: how the pet feels, and which thing in the room helps. */
+const LOW_MSG={ food:n=>`${n} is very hungry. Try the food bowl.`, fun:n=>`${n} really wants to play. Try the toy basket.`,
+  clean:n=>kind()==='dog'?`${n} really needs a bath. Try the bath caddy.`:`${n} really needs a brushing. Try the brush.`,
+  energy:n=>`${n} is very sleepy. Try the bed.`, love:n=>`${n} really wants a cuddle. Choose ${n} to cuddle.` };
+let lowSaid=null, lastReadAt=0;
 const WANT_MSG={ love:n=>kind()==='cat'?`${n} wants some love and cuddles.`:`${n} is giving you big puppy eyes. Cuddle time?`, food:n=>`${n} is hungry.`, fun:n=>`${n} wants to play.`, clean:n=>kind()==='dog'?`${n} could use a bath.`:`${n} could use a brushing.`, energy:n=>`${n} is getting sleepy.` };
 /* What the pet sounds like when it asks: gentle sounds, never a long whine. */
 function wantVoice(w){ const low=state.stats[w]<LOW;
@@ -634,7 +647,7 @@ let lastSay=null, nextIdle=Date.now()+30000;
 function startIdle(){
   const list=IDLE_W[kind()].filter(([id])=>!idleHist.includes(id)&&idleFits(id)), v=weightedPick(list), key='idle:'+v; idleHist.push(v); if(idleHist.length>4) idleHist.shift();
   startAnim(key,V[key].dur,()=>{ quietUntil=Date.now()+4000; }); anim.idle=true;
-  setCaption(IDLE_MSG[v](state.name,anim),false);
+  setCaption(IDLE_MSG[v](state.name,anim));
 }
 const SAY={
   all:[n=>`${n} thinks you're the best.`, n=>`${n} is so happy to be home with you.`, n=>`${n} gives you a big happy look.`, ()=>`Every rescue pet deserves a friend like you.`,
@@ -861,6 +874,8 @@ function tick(){
   if(!state||layer!=='game'){ const t=Date.now(); if(state) holdTimers(t-lastTick); lastTick=t; return; }
   const now=Date.now(), raw=now-lastTick, dt=Math.min(3,raw/1000); lastTick=now;
   if(anim||now<quietUntil||linesWaiting()) holdTimers(raw);
+  if(linesWaiting()) lastReadAt=now;
+  rushClock(raw);
   KEYS.forEach(k=>{ if(anim&&anim.type==='nap'&&k==='energy') return; state.stats[k]=Math.max(Math.min(floorOf(k),state.stats[k]),state.stats[k]-RATES[k]*dt); });
   updateMeters();
   /* Only one thing at a time: nothing new starts while a scene plays or a line is being read or waiting. */
@@ -876,11 +891,16 @@ function tick(){
     if(checkUnlocks()){ quietUntil=now+6000; return; }
     if(pottyTick(now)) return;
     if(!state.task&&now>=nextTask){ spawnTask(); return; }
+    { const rn=rushNeedDue(); if(rn){ startRush(rn); return; } }
     const w=currentWant();
-    if(w!==lastWant){ lastWant=w; if(w){ announce(WANT_MSG[w](state.name)); play(wantVoice(w),.35); lastAsk=now; } else setCaption(happyLine(),false); }
-    else if(w&&now-lastAsk>ASK_AGAIN*remindK()){ announce(WANT_MSG[w](state.name)); play(wantVoice(w),.3); lastAsk=now; }
+    const isLow=!!w&&state.stats[w]<LOW, wantSay=()=>(isLow?LOW_MSG:WANT_MSG)[w](state.name);
+    if(lowSaid&&(lowSaid!==w||!isLow)) lowSaid=null;
+    if(w!==lastWant){ lastWant=w; if(w){ announce(wantSay()); play(wantVoice(w),.35); lastAsk=now; if(isLow) lowSaid=w; } else setCaption(happyLine()); }
+    else if(isLow&&lowSaid!==w){ lowSaid=w; announce(wantSay()); play(wantVoice(w),.3); lastAsk=now; }
+    else if(isLow&&now-lastAsk>ASK_AGAIN*remindK()){ announce(wantSay()); play(wantVoice(w),.3); lastAsk=now; }
     else if(state.task&&(!isPotty()||pottyCount()>=2)&&now-lastTaskNag>NAG_AGAIN*remindK()){ announce(TASKS[state.task].nag(state.name)); play('ding',.35); lastTaskNag=now; }
     else if(now>=nextEvent){ nextEvent=now+gap(EVENT_GAP); startEvent(); }
+    else if(now>=nextIdle&&now-lastReadAt<IDLE_QUIET) nextIdle=lastReadAt+IDLE_QUIET;
     else if(now>=nextIdle){ nextIdle=now+rand(IDLE_GAP[0],IDLE_GAP[1])*idleK(); if(!w&&Math.random()<(gs.events==='slow'?.2:.4)) sayRandom(); else if(compMomentReady()) startCompMoment(); else startIdle(); }
   }
   if(now-lastSave>5000) save();
@@ -890,7 +910,7 @@ setInterval(tick,1000);
 function enterGame(returning,fresh){
   trip=null; sayQ.length=0;
   if(paused){ pauseOffset+=performance.now()-pausedAt; paused=false; }
-  configureActions(); warmVoices(kind(),stageName()); bgKey=null;
+  configureActions(); warmVoices(kind(),stageName()); bgKey=null; rushSessionStart(returning);
   { const t0=Date.now(), k=paceK(); nextEvent=t0+rand(EVENT_GAP[0],EVENT_GAP[0]*1.6)*k; if(!state.task) nextTask=t0+rand(TASK_GAP[0]*.6,TASK_GAP[0])*k; lastTaskNag=t0; }
   const n=state.name, msg=fresh?`Welcome home, ${n}!`:returning?`${n} missed you!`:`${n} is happy to see you.`;
   setCaption(msg,false); show('game',msg); updateMeters(); lastTick=Date.now(); nextIdle=Date.now()+rand(20000,35000)*idleK(); lastWant=currentWant(); quietUntil=Date.now()+8000;

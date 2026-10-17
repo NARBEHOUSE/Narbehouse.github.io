@@ -1689,11 +1689,176 @@ NMB.Scene = (function () {
         }
     }
 
+    // --- the Simple High Contrast look ------------------------------------------
+    //
+    // For players with CVI. Kept completely separate from the regular scenes
+    // above, which it never changes: plain black, and ONE big bold thing per
+    // press in the colour chosen in Settings, slow enough to find and follow.
+    // A new press replaces what is there (it fades or pops quickly). Only the
+    // game screens use it; the menu backdrop stays the regular scene.
+
+    let simple = null, simpleOld = [], simpleDrops = [], simpleCount = 0;
+
+    function simpleOn() {
+        return NMB.Settings.get('look') === 'simple' && !!(NMB.Game && NMB.Game.started());
+    }
+
+    const SIMPLE_FIREWORKS = ['burst', 'star', 'heart'];
+    const SIMPLE_FLOWERS = ['round', 'pointy', 'tulip'];
+
+    function simplePoints(shape) {
+        const pts = [];
+        if (shape === 'star') {
+            const v = [];
+            for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.42 : 1; v.push([Math.cos(a) * r, Math.sin(a) * r]); }
+            for (let i = 0; i < 10; i++) {
+                const [x0, y0] = v[i], [x1, y1] = v[(i + 1) % 10];
+                for (let k = 0; k < 3; k++) pts.push([x0 + (x1 - x0) * k / 3, y0 + (y1 - y0) * k / 3]);
+            }
+        } else if (shape === 'heart') {
+            for (let i = 0; i < 28; i++) {
+                const t = i / 28 * TAU;
+                pts.push([16 * Math.pow(Math.sin(t), 3) / 17, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17]);
+            }
+        } else {
+            for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; pts.push([Math.cos(a), Math.sin(a)]); }
+            for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + 0.2; pts.push([Math.cos(a) * 0.5, Math.sin(a) * 0.5]); }
+        }
+        return pts;
+    }
+
+    function simplePress(silent) {
+        // What is already there makes way: a bubble pops, anything else fades quickly.
+        if (simple) {
+            if (simple.type === 'bubble') { if (!simple.popped) simplePop(simple, silent); }
+            else { simple.fade = 0; simpleOld.push(simple); }
+        }
+        const n = simpleCount++;
+        if (mode === 'fireworks') {
+            const shape = SIMPLE_FIREWORKS[n % SIMPLE_FIREWORKS.length];
+            simple = { type: 'firework', shape, pts: simplePoints(shape), t: 0, silent, burst: false };
+            if (!silent) Sound().launch('peony');
+        } else if (mode === 'bubbles') {
+            simple = { type: 'bubble', t: 0, silent, ph: Math.random() * TAU };
+            if (!silent) Sound().blow();
+        } else {
+            const shape = SIMPLE_FLOWERS[n % SIMPLE_FLOWERS.length];
+            simple = { type: 'flower', shape, t: 0 };
+            if (!silent) Sound().plant(shape === 'tulip' ? 'tulip' : shape === 'pointy' ? 'daisy' : 'classic', n % 9);
+        }
+    }
+
+    function bubbleAt(b) {
+        return { x: W / 2 + Math.sin(b.t * 1.1 + b.ph) * S * 0.05, y: H * 0.86 - b.t * S * 0.1, r: S * 0.17 * easeOut(clamp(b.t / 0.5, 0, 1)) };
+    }
+
+    function simplePop(b, silent) {
+        b.popped = true;
+        const p = bubbleAt(b);
+        for (let i = 0; i < 10; i++) {
+            const a = i / 10 * TAU;
+            simpleDrops.push({ x: p.x + Math.cos(a) * p.r, y: p.y + Math.sin(a) * p.r, vx: Math.cos(a) * S * 0.25, vy: Math.sin(a) * S * 0.25, life: 0.9 });
+        }
+        if (!silent) Sound().pop(1);
+    }
+
+    function updateSimple(dt) {
+        if (simple) {
+            simple.t += dt;
+            if (simple.type === 'firework' && !simple.burst && simple.t >= 0.9) {
+                simple.burst = true;
+                if (!simple.silent) Sound().burst(simple.shape === 'burst' ? 'peony' : simple.shape);
+            }
+            if (simple.type === 'firework' && simple.t > 5) simple = null;
+            else if (simple && simple.type === 'bubble' && !simple.popped && (simple.t > 4.2 || bubbleAt(simple).y < H * 0.3)) {
+                simplePop(simple, simple.silent); simple = null;
+            }
+        }
+        for (const o of simpleOld) o.fade += dt;
+        simpleOld = simpleOld.filter(o => o.fade < 0.45);
+        for (const d of simpleDrops) { d.life -= dt; d.vx *= Math.pow(0.4, dt); d.vy = d.vy * Math.pow(0.4, dt) + S * 0.15 * dt; d.x += d.vx * dt; d.y += d.vy * dt; }
+        simpleDrops = simpleDrops.filter(d => d.life > 0);
+    }
+
+    function boldDot(x, y, r, color, a) {
+        ctx.globalAlpha = a * 0.35;
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r * 2, 0, TAU); ctx.fill();
+        ctx.globalAlpha = a;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    function drawSimpleThing(o, fadeOut) {
+        fadeOut = fadeOut || 0;
+        const C = NMB.Settings.simpleColor(), a = 1 - clamp(fadeOut / 0.45, 0, 1);
+        if (a <= 0) return;
+        if (o.type === 'firework') {
+            const cx = W / 2, cy = H * 0.42, dot = S * 0.022;
+            if (o.t < 0.9) {
+                const y = H * 0.95 + (cy - H * 0.95) * easeOut(o.t / 0.9);
+                for (let i = 3; i >= 0; i--) boldDot(cx, y + i * S * 0.035, dot * (1 - i * 0.18), C, a * (1 - i * 0.22));
+                return;
+            }
+            const k = easeOut(clamp((o.t - 0.9) / 0.6, 0, 1)), hold = o.t < 3.8 ? 1 : 1 - clamp((o.t - 3.8) / 1.2, 0, 1);
+            const R = S * 0.3;
+            for (const [px, py] of o.pts) boldDot(cx + px * R * k, cy + py * R * k + (o.t - 0.9) * S * 0.01, dot, C, a * hold);
+        } else if (o.type === 'bubble') {
+            if (o.popped) return;
+            const p = bubbleAt(o);
+            if (p.r < 1) return;
+            ctx.globalAlpha = a;
+            ctx.fillStyle = C; ctx.globalAlpha = a * 0.14; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
+            ctx.globalAlpha = a; ctx.strokeStyle = C; ctx.lineWidth = S * 0.024; ctx.stroke();
+            ctx.beginPath(); ctx.arc(p.x - p.r * 0.38, p.y - p.r * 0.38, p.r * 0.13, 0, TAU); ctx.fill();
+            ctx.globalAlpha = 1;
+        } else {
+            const grow = easeOut(clamp(o.t / 0.6, 0, 1)) * (1 - easeOut(clamp(fadeOut / 0.45, 0, 1)));
+            const bx = W / 2, by = H * 0.95, h = Math.min(H * 0.45, S * 0.55) * grow;
+            const sway = Math.sin(time * 1.2) * 0.04;
+            const hx = bx + Math.sin(sway) * h, hy = by - Math.cos(sway) * h;
+            ctx.strokeStyle = C; ctx.lineWidth = S * 0.028; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(hx, hy); ctx.stroke();
+            const R = S * 0.16 * easeOutBack(clamp((o.t - 0.35) / 0.6, 0, 1)) * (1 - easeOut(clamp(fadeOut / 0.45, 0, 1)));
+            if (R <= 1) return;
+            ctx.save(); ctx.translate(hx, hy); ctx.rotate(sway); ctx.fillStyle = C;
+            if (o.shape === 'tulip') {
+                ctx.beginPath(); ctx.moveTo(-R * 0.8, -R * 0.9); ctx.lineTo(-R * 0.4, -R * 0.4); ctx.lineTo(0, -R * 1.0);
+                ctx.lineTo(R * 0.4, -R * 0.4); ctx.lineTo(R * 0.8, -R * 0.9); ctx.quadraticCurveTo(R * 0.9, R * 0.4, 0, R * 0.45);
+                ctx.quadraticCurveTo(-R * 0.9, R * 0.4, -R * 0.8, -R * 0.9); ctx.fill();
+            } else {
+                const n = o.shape === 'round' ? 6 : 8;
+                for (let i = 0; i < n; i++) {
+                    ctx.save(); ctx.rotate(i / n * TAU); ctx.beginPath();
+                    if (o.shape === 'round') ctx.arc(R * 0.62, 0, R * 0.4, 0, TAU);
+                    else ctx.ellipse(R * 0.6, 0, R * 0.55, R * 0.2, 0, 0, TAU);
+                    ctx.fill(); ctx.restore();
+                }
+                // A black centre inside a ring of the colour keeps the shape crisp.
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, R * 0.32, 0, TAU); ctx.fill();
+                ctx.strokeStyle = C; ctx.lineWidth = S * 0.012; ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+
+    function drawSimple() {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+        for (const o of simpleOld) drawSimpleThing(o, o.fade);
+        if (simple) drawSimpleThing(simple);
+        const C = NMB.Settings.simpleColor();
+        for (const d of simpleDrops) boldDot(d.x, d.y, S * 0.016, C, clamp(d.life / 0.9, 0, 1));
+    }
+
+    function resetSimple() { simple = null; simpleOld = []; simpleDrops = []; simpleCount = 0; }
+
     // --- loop ----------------------------------------------------------------------
 
-    let last = 0;
+    let last = 0, wasSimple = false;
     function frame(now) {
         const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; time += dt;
+        const useSimple = simpleOn();
+        if (useSimple !== wasSimple) { wasSimple = useSimple; resetSimple(); }
+        if (useSimple) { updateSimple(dt); drawSimple(); requestAnimationFrame(frame); return; }
         if (mode === 'fireworks') { updateFireworks(dt); updateParts(dt); drawFireworks(dt); }
         else if (mode === 'bubbles') { updateBubbles(dt); updateParts(dt); drawBubbleScene(); }
         else { updateFlowers(dt); updateParts(dt); drawFlowerScene(); }
@@ -1720,6 +1885,7 @@ NMB.Scene = (function () {
 
     function press(opts) {
         const silent = !!(opts && opts.silent);
+        if (simpleOn()) { simplePress(silent); return; }
         if (mode === 'fireworks') launchFirework(silent);
         else if (mode === 'bubbles') blowBubbles(silent);
         else plantOrReset(silent);
@@ -1728,6 +1894,7 @@ NMB.Scene = (function () {
     /** What is on screen right now (used by the automated test). */
     function stats() {
         return {
+            simpleLook: wasSimple, simpleThing: simple ? simple.type + ':' + (simple.shape || '') : null,
             rockets: rockets.length, sparks: sparks.length, bubbles: bubbles.length, flowers: flowers.length, butterflies: butterflies.length, planted, slotN,
             parts: parts.length, critters: critters.length, bubblePresses, whalePuff: whale.puff, whaleX: whale.x, whaleDir: whale.dir, whaleTurning: whale.turning,
             finish: finish ? finish.kind : null, gardenReset: lastReset, gardenNumber, nightMix, bunny: !!bunny, rain: !!rain,

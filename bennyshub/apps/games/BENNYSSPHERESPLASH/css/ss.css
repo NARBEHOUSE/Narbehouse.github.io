@@ -1,0 +1,434 @@
+/* Benny's Sphere Splash - everything drawn over the 3D canvas.
+   The card, its items and the focus style are NARBE Racer's (NARBEKART/css/nk.css):
+   a paper card with a thick ink outline and chunky chips, and a focus you cannot miss
+   (fill + white-and-ink double ring + lift + glow + Fish Mystery's corner brackets),
+   so focus is never shown by colour alone. Sizes are rem off a root clamp, times the
+   Text Size setting (--ui), so one layout serves the hub window, a tablet and 1024x768. */
+:root {
+  --ink: #14161f; --ink2: #4d5266; --paper: #fff8ec; --paper2: #dff4f7; --chip: #fffdf7;
+  --focus: #ffd400; --focus2: #ffb400; --sea: #0e6f86; --sea-d: #08475a; --coral: #ff6a4d;
+  --good: #22b35e; --fair: #ffb020; --risky: #ff4d6d;
+  /* Roles, so a colour profile can recolour by meaning (theme.js): */
+  --hi: #fff;              /* light pills and bars on the card */
+  --dark: #14161f;         /* panels that are always dark: the cluster head, score, captions */
+  --stroke: #14161f;       /* the outline round big display text (GOAL!, titles) */
+  --on-focus: #14161f;     /* text on the yellow highlight */
+  --hover: #fff1d2;
+  /* The 3D world's colours (theme.js reads these). Standard: the teal pool, Bryan's picks. */
+  --w-sky: #0e6f86; --w-fog: #0e6f86; --w-fog-density: .011;
+  --w-water-top: #b8f3f0; --w-water-mid: #4fc4c8; --w-water-deep: #2a8fa8; --w-haze: .55; --w-surface: .5;
+  --w-glass: #1fb3c9; --w-rim: #dff9ff; --w-stadium: 1; --w-crowd: 1;
+  --w-outline: #14161f; --w-outline-add: 0;
+  --w-goal-ink: #10202a; --w-net: .7; --w-trail: #ffc21a; --w-trail-core: #fffbe6; --w-ball: #fff6c9; --w-lane: #ffffff;
+  --head: "Segoe UI Black", "Arial Black", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Trebuchet MS", "Segoe UI", Verdana, system-ui, sans-serif;
+  --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  --ui: 1;
+}
+/* ── High Contrast (Settings > Colour Profile; theme.js) ─────────────────────────
+   Fish Mystery's way: black behind everything, white lines and text, one pure yellow for
+   the highlight with black text on it, no gradients, glows or soft shadows. The 3D world
+   goes dark and plain too: no stadium or crowd behind the water, swimmers in their usual
+   cartoon shading inside a thicker white outline, a white ball on a yellow trail. Bryan's
+   pick (D) of four, 2026-10-03: flat swimmers merged into one shape where bodies overlapped. */
+body[data-theme="contrast"] {
+  --ink: #fff; --ink2: #fff; --paper: #000; --paper2: #000; --chip: #000; --hi: #000; --dark: #000;
+  --stroke: #000; --on-focus: #000; --focus: #ffe600; --focus2: #ffe600; --sea: #000; --hover: #262626;
+  --good: #00d26a; --fair: #ffc400; --risky: #ff3d5e; --coral: #ff7a3d;
+  --w-sky: #000; --w-fog: #000; --w-fog-density: .002;
+  --w-water-top: #262626; --w-water-mid: #0d0d0d; --w-water-deep: #000; --w-haze: 1; --w-surface: 0;
+  --w-glass: #333; --w-rim: #555; --w-stadium: 0; --w-crowd: 0;
+  --w-outline: #fff; --w-outline-add: 1;
+  --w-goal-ink: #fff; --w-net: .9; --w-trail: #ffe600; --w-trail-core: #fff; --w-ball: #fff; --w-lane: #ffe600;
+}
+body[data-theme="contrast"] .card { background: var(--paper); box-shadow: none; }
+body[data-theme="contrast"] .card .band { display: none; }
+body[data-theme="contrast"] .emblem { background: var(--paper); box-shadow: none; }
+body[data-theme="contrast"] #overlay, body[data-theme="contrast"] #overlay.scrim { background: rgba(0,0,0,.6); }
+body[data-theme="contrast"] .item, body[data-theme="contrast"] .plate, body[data-theme="contrast"] .bug,
+body[data-theme="contrast"] .carrier, body[data-theme="contrast"] #pauseBtn, body[data-theme="contrast"] .goalbanner .line,
+body[data-theme="contrast"] .cluster .head, body[data-theme="contrast"] .badge.round, body[data-theme="contrast"] .replaytag b { box-shadow: none; }
+body[data-theme="contrast"] .badge.diamond::before { box-shadow: none; }
+body[data-theme="contrast"] .item.primary:not(.focused):not(.locked) { background: var(--chip); }
+body[data-theme="contrast"] .item.locked, body[data-theme="contrast"] .plate.tech, body[data-theme="contrast"] .plate.back { background: var(--paper); }
+/* The highlight: solid yellow, black text, a black edge and a ring in the line colour. */
+body[data-theme="contrast"] .item.focused, body[data-theme="contrast"] .plate.focused, body[data-theme="contrast"] #pauseBtn.focused {
+  background: var(--focus); border-color: #000; box-shadow: 0 0 0 .4rem var(--ink); }
+body[data-theme="contrast"] #pauseBtn:hover { background: var(--focus); }
+body[data-theme="contrast"] .plate.focused .odds em { box-shadow: none; }
+/* Odds words and marks: black on their colour, always. */
+body[data-theme="contrast"] .plate .odds em, body[data-theme="contrast"] .badge[data-odds] .mk { color: #000; }
+body[data-theme="contrast"] .carrier .hp i { background: var(--good); }
+body[data-theme="contrast"] .carrier.low .hp i { background: var(--risky); }
+body[data-theme="contrast"] .carrier .st { color: #ff7a8e; }
+body[data-theme="contrast"] .card.howto #cardSub b { color: #7fe0ee; }
+body[data-theme="contrast"] .cluster .head, body[data-theme="contrast"] .info span, body[data-theme="contrast"] #caption,
+body[data-theme="contrast"] .replaytag span { background: #000; border: 3px solid #fff; }
+body[data-theme="contrast"] .pop, body[data-theme="contrast"] .techfx .nm, body[data-theme="contrast"] .goalbanner .word { text-shadow: none; }
+
+html { font-size: calc(clamp(14px, min(1.22vw, 2.05vh), 22px) * var(--ui)); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sea); color: var(--ink); font-family: var(--body);
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+#canvasWrap { position: fixed; inset: 0; z-index: 0; touch-action: none; }
+#canvasWrap canvas { display: block; }
+kbd { display: inline-block; padding: 0 .35em; border: 2px solid var(--ink); border-radius: .35em; background: var(--hi); font: 800 .9em var(--body); }
+
+/* ── the world layer: badges and the choice cluster ─────────────────────────── */
+#worldLayer { position: fixed; inset: 0; z-index: 13; pointer-events: none; }
+
+/* Number badge over every swimmer: the biggest, simplest shape on screen. Teams
+   differ in colour AND shape (round vs diamond). */
+.badge { position: absolute; left: 0; top: 0; min-width: 2.6rem; height: 2.6rem; padding: 0 .35rem;
+  display: flex; align-items: center; justify-content: center; font: 900 1.55rem/1 var(--head);
+  will-change: transform; isolation: isolate; }
+.badge .n { position: relative; z-index: 1; }
+.badge.round { background: var(--bg); border: .22rem solid var(--ink); border-radius: 50%; box-shadow: 0 .25rem 0 rgba(0,0,0,.35); }
+/* The diamond is a rotated square behind an unrotated number, so the digits stay upright. */
+.badge.diamond::before { content: ''; position: absolute; inset: .2rem; background: var(--bg); border: .22rem solid var(--ink);
+  border-radius: .3rem; transform: rotate(45deg); z-index: -1; box-shadow: .18rem .18rem 0 rgba(0,0,0,.35); }
+/* The ball carrier: a bright halo, and a ball icon under the number. */
+.badge.has-ball { filter: drop-shadow(0 0 .45rem #fff6a0) drop-shadow(0 0 .2rem #fff6a0); }
+.badge.has-ball::after { content: ''; position: absolute; bottom: -1.05rem; left: 50%; width: .9rem; height: .9rem; margin-left: -.45rem;
+  border-radius: 50%; background: #fff6c9; border: .18rem solid var(--ink); }
+/* A pass candidate carries its odds as a shape AND a word-coloured tag. */
+.badge .mk { display: none; position: absolute; top: -1.2rem; left: 50%; transform: translateX(-50%); min-width: 1.5rem; height: 1.5rem;
+  border-radius: .5rem; border: .18rem solid var(--ink); font: 900 .95rem/1.2rem var(--body); text-align: center; color: var(--ink); background: var(--hi); }
+.badge.candidate .mk { display: block; }
+.badge.candidate { cursor: pointer; }
+.badge[data-odds="good-chance"] .mk { background: var(--good); color: #fff; }
+.badge[data-odds="fair"] .mk { background: var(--fair); }
+.badge[data-odds="risky"] .mk { background: var(--risky); color: #fff; }
+/* A defender standing in the lane: an outline AND a cross. */
+.badge.blocker::after { content: '✕'; position: absolute; right: -1rem; top: -.9rem; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--risky); color: #fff; border: .18rem solid var(--ink); font: 900 1rem/1.15rem var(--body); text-align: center; }
+.badge.blocker.round { box-shadow: 0 0 0 .22rem var(--risky), 0 .25rem 0 rgba(0,0,0,.35); }
+
+/* The choice cluster: one element, laid out by CSS, so its plates never overlap. */
+.cluster { position: absolute; left: 0; top: 0; pointer-events: auto; will-change: transform;
+  display: flex; flex-direction: column; align-items: center; gap: .45rem; max-width: calc(100vw - 20px); }
+.cluster .head { padding: .3rem 1rem .35rem; border-radius: .8rem; background: var(--dark); color: #fff; text-align: center;
+  box-shadow: 0 .3rem 0 rgba(0,0,0,.3); max-width: 100%; }
+.cluster .head b { display: block; font: italic 900 1.35rem/1.15 var(--head); }
+.cluster .head span { display: block; font: 700 .95rem/1.2 var(--body); opacity: .9; }
+.cluster .head span:empty { display: none; }
+.cluster .row { display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem; }
+.cluster .row:empty { display: none; }
+/* The tail: a triangle from the cluster to the swimmer it belongs to. */
+.cluster::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -1.1rem; width: 0; height: 0; margin-left: -.9rem;
+  border: .9rem solid transparent; border-top: 1.1rem solid var(--dark); border-bottom: 0; }
+.cluster.below::after { bottom: auto; top: -1.1rem; border-top: 0; border-bottom: 1.1rem solid var(--dark); }
+
+.plate { min-width: 8.2rem; max-width: 13rem; padding: .5rem .8rem .55rem; border-radius: .9rem; cursor: pointer;
+  background: var(--paper); border: .25rem solid var(--ink); box-shadow: 0 .35rem 0 rgba(0,0,0,.3);
+  text-align: center; transition: transform .12s, background .12s, box-shadow .12s; }
+.plate b { display: block; font: 900 1.55rem/1.1 var(--head); }
+.plate .sub { display: block; font: 700 .9rem/1.2 var(--body); color: var(--ink2); margin-top: .1rem; }
+.plate .sub:empty { display: none; }
+/* the Tech card names its moves: as big and dark as the odds, not the small grey detail line (Bryan, for Ben) */
+.plate.techs .sub { font: 900 1.2rem/1.15 var(--head); color: var(--ink); margin-top: .3rem; }
+/* The odds bar is the card's big visual (Bryan's playtest: the bar read best, make it
+   bigger): the full plate width and tall, with the word under it. */
+.plate { position: relative; }
+.plate .odds { display: flex; flex-direction: column; align-items: stretch; gap: .3rem; margin-top: .45rem; font: 900 1.15rem/1 var(--body); }
+.plate .odds i { display: block; width: 100%; height: 1.5rem; border-radius: .6rem; border: .22rem solid var(--ink); background: var(--hi);
+  background-image: linear-gradient(90deg, var(--tone, var(--fair)) calc(var(--p) * 100%), transparent 0); }
+/* The word sits on a pill of the bar's colour (Bryan: colour-code the words too). Dark ink on
+   the colour reads far better than coloured letters on the cream card, and the ▲●▼ shape stays. */
+.plate .odds em { align-self: center; font-style: normal; white-space: nowrap; color: var(--ink); background: var(--tone, var(--fair));
+  padding: .2rem .65rem .25rem; border-radius: 99rem; border: .18rem solid var(--ink); }
+/* The Best bet card also wears a star tab on its top edge and a green ring, so the pick
+   stands out by shape as well as colour even while the highlight is elsewhere. */
+.plate[data-odds="best-bet"] { box-shadow: 0 0 0 .3rem var(--good), 0 .35rem 0 rgba(0,0,0,.3); }
+.plate[data-odds="best-bet"]::before { content: '★'; position: absolute; top: -1.05rem; left: 50%; transform: translateX(-50%);
+  width: 2rem; height: 2rem; border-radius: 50%; background: var(--good); color: #fff; border: .2rem solid var(--ink);
+  font: 900 1.2rem/1.6rem var(--head); text-align: center; }
+.plate[data-odds="good-chance"], .plate[data-odds="best-bet"] { --tone: var(--good); }
+.plate[data-odds="risky"], .plate[data-odds="weaker"] { --tone: var(--risky); }
+.plate[data-odds="good-chance"] .odds em::before, .plate[data-odds="best-bet"] .odds em::before { content: '▲ '; }
+.plate[data-odds="fair"] .odds em::before, .plate[data-odds="close"] .odds em::before, .plate[data-odds="even"] .odds em::before { content: '● '; }
+.plate[data-odds="risky"] .odds em::before, .plate[data-odds="weaker"] .odds em::before { content: '▼ '; }
+.plate.tech { background: #efe6ff; }
+.plate.back { min-width: 6rem; background: #e9eef2; }
+.plate.focused { background: linear-gradient(180deg, #ffe46b 0%, var(--focus2) 100%); transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 0 .25rem #fff, 0 0 0 .55rem var(--ink), 0 .8rem 0 rgba(0,0,0,.35), 0 0 2.2rem .7rem rgba(255,212,0,.7); }
+.plate.focused, .plate.focused .sub { color: var(--on-focus); }
+/* A white ring keeps the amber Fair pill from melting into the yellow highlight. */
+.plate.focused .odds em { box-shadow: 0 0 0 .2rem #fff; }
+
+/* One focus marker for everything: four corner brackets that glide between targets. */
+#scanFrame { position: fixed; z-index: 45; display: none; pointer-events: none;
+  transition: left .16s ease, top .16s ease, width .16s ease, height .16s ease; }
+#scanFrame.on { display: block; }
+#scanFrame i { position: absolute; width: 1.6rem; height: 1.6rem; border: .42rem solid var(--focus);
+  filter: drop-shadow(0 0 0 var(--ink)) drop-shadow(2px 2px 0 rgba(0,0,0,.6)); }
+#scanFrame i:nth-child(1) { left: -.42rem; top: -.42rem; border-right: none; border-bottom: none; border-radius: .6rem 0 0 0; }
+#scanFrame i:nth-child(2) { right: -.42rem; top: -.42rem; border-left: none; border-bottom: none; border-radius: 0 .6rem 0 0; }
+#scanFrame i:nth-child(3) { left: -.42rem; bottom: -.42rem; border-right: none; border-top: none; border-radius: 0 0 0 .6rem; }
+#scanFrame i:nth-child(4) { right: -.42rem; bottom: -.42rem; border-left: none; border-top: none; border-radius: 0 0 .6rem 0; }
+@keyframes scanBreathe { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+#scanFrame.on i { animation: scanBreathe 1.5s ease-in-out infinite; }
+
+/* The hub's shared scanner (ACCESSIBILITY.md §4). Space Brake pauses the scan: a dotted
+   outline on the lit choice and nothing else - inside cards, plates and the Pause button
+   (dark dots on the yellow focus), round the bracket frame for a teammate in the water,
+   and the brackets stop breathing. "Parked" sits in a corner, clear of every choice. */
+.item[data-narbe-scan-paused], .plate[data-narbe-scan-paused], #pauseBtn[data-narbe-scan-paused] { outline-offset: -8px !important; }
+#scanFrame { color: var(--focus); }
+#scanFrame[data-narbe-scan-paused] { outline-width: .3rem !important; outline-offset: .2rem; }
+#scanFrame.paused i { animation: none; }
+#cardStatus { position: absolute; top: .7rem; right: 1rem; min-block-size: 0; padding: 0; }
+#worldStatus { position: fixed; right: 18px; bottom: 18px; z-index: 46; min-block-size: 0; padding: 0; pointer-events: none; }
+#cardStatus .narbe-scan-status-badge, #worldStatus .narbe-scan-status-badge { font: 900 1.5rem/1.2 var(--head); padding: .25rem .9rem;
+  border: 4px solid var(--ink); border-radius: .8rem; background: var(--focus); color: var(--on-focus); }
+
+/* ── the card ───────────────────────────────────────────────────────────────── */
+#overlay { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; padding: 2.4vh 3vw;
+  background: radial-gradient(circle at 50% 46%, rgba(8,30,40,.05), rgba(8,30,40,.45)); }
+#overlay.on { display: flex; }
+#overlay.scrim { background: radial-gradient(circle at 50% 46%, rgba(8,30,40,.35), rgba(8,30,40,.7)); }
+.card { position: relative; width: min(44rem, 92vw); max-height: 100%; padding: 2.6rem 2rem 1.15rem; text-align: center;
+  background: linear-gradient(172deg, var(--paper) 0%, var(--paper2) 100%); border: 5px solid var(--ink); border-radius: 30px;
+  box-shadow: 0 10px 0 rgba(8,30,40,.45), 0 28px 56px rgba(0,0,0,.45); }
+.card.enter { animation: cardIn .15s ease-out; }
+@keyframes cardIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+.card.size-wide { width: min(64rem, 95vw); }
+.card.title { padding-top: 1.8rem; }
+/* A band of waves across the top of every card. */
+.card .band { position: absolute; left: 0; right: 0; top: 0; height: 1.35rem; border-radius: 25px 25px 0 0; border-bottom: 4px solid var(--ink);
+  background: radial-gradient(circle at 50% 120%, var(--sea) 55%, transparent 57%) 0 0 / 1.6rem 1.35rem, linear-gradient(#7fe0ee, #7fe0ee); }
+.art:empty { display: none; }
+.emblem { width: 4.6rem; height: 4.6rem; margin: -.4rem auto .45rem; border-radius: 50%; border: 4px solid var(--ink);
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #9ee9f3 55%, #2fb3c8 100%); box-shadow: 0 5px 0 rgba(8,30,40,.3);
+  display: flex; align-items: center; justify-content: center; }
+.emblem span { font: 2.4rem/1 var(--emoji); }
+.logo { display: flex; flex-direction: column; align-items: center; margin: .3rem 0 .6rem; }
+.logo .top { font: italic 900 1.5rem/1 var(--head); color: var(--ink); letter-spacing: .08em; text-transform: uppercase; }
+.logo .main { font: italic 900 3.9rem/1 var(--head); color: #3fd6ec; -webkit-text-stroke: .42rem var(--stroke); paint-order: stroke fill;
+  text-shadow: 0 .38rem 0 var(--stroke); transform: skewX(-6deg); margin-top: .2rem; }
+.logo .drops { width: 60%; height: .5rem; margin-top: .6rem; border-radius: 1rem; background: repeating-linear-gradient(90deg, var(--coral) 0 1.2rem, var(--focus) 0 2.4rem); border: 3px solid var(--ink); }
+.card h1 { margin: 0 0 .45rem; font: italic 900 2.45rem/1.08 var(--head); color: #3fd6ec; -webkit-text-stroke: .3rem var(--stroke);
+  paint-order: stroke fill; text-shadow: 0 .28rem 0 var(--stroke); transform: skewX(-6deg); }
+.card h1:empty { display: none; }
+.card h1 small { font-size: .6em; color: #fff; }
+.card h1 .kicker { display: block; margin-bottom: .3rem; font: 900 .9rem/1 var(--body); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink2); -webkit-text-stroke: 0; text-shadow: none; }
+#cardSub { margin: 0 auto .35rem; max-width: 40rem; font: 700 1.1rem/1.45 var(--body); color: var(--ink2); }
+#cardSub:empty { display: none; }
+#cardSub b { color: var(--ink); }
+#cardSub p { margin: 0 0 .55rem; }
+.card.howto #cardSub { font-size: 1.25rem; line-height: 1.5; color: var(--ink); text-align: left; max-width: 38rem; }
+.card.howto #cardSub b { color: #b0263f; }
+#cardStats:empty { display: none; }
+
+.menu { display: flex; flex-direction: column; gap: .72rem; margin-top: .85rem; text-align: left; }
+.menu.grid2, .menu.cols2 { display: grid; gap: .65rem .8rem; }
+.menu.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.menu.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column; gap: .55rem 1.1rem; }
+.menu.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.6rem, 1fr)); gap: .6rem; }
+.menu.grid2 .wide { grid-column: 1 / -1; }
+.item { position: relative; display: flex; align-items: center; gap: .65rem; min-height: max(64px, 3.35rem); padding: .5rem 1rem .5rem .8rem;
+  background: var(--chip); border: 4px solid var(--ink); border-radius: 18px; font: 800 1.3rem/1.12 var(--body); color: var(--ink);
+  cursor: pointer; box-shadow: 0 5px 0 rgba(8,30,40,.28); transition: transform .12s ease, background .12s ease, box-shadow .12s ease; }
+.item .ic { flex: none; width: 2.4rem; text-align: center; font: 1.95rem/1 var(--emoji); }
+.item .ic .kit { display: inline-block; width: 1.9rem; height: 1.9rem; border-radius: 50%; border: .35rem solid; box-shadow: 0 0 0 3px var(--ink); vertical-align: middle; }
+.item .lb { display: flex; flex-direction: column; min-width: 0; }
+.item .nm { overflow: hidden; text-overflow: ellipsis; }
+.item .lb small { font: 700 .8rem/1.25 var(--body); color: var(--ink2); margin-top: .14rem; }
+.item .val { margin-left: auto; flex: none; padding: .22rem .75rem; border: 3px solid var(--ink); border-radius: 999px; background: var(--hi);
+  font: 800 1rem/1.1 var(--body); white-space: nowrap; }
+.item:hover { background: var(--hover); }
+.item.back { justify-content: center; }
+.item.back .ic { width: auto; }
+.item.primary:not(.focused):not(.locked) { background: linear-gradient(180deg, #fff9e3, #ffefbf); }
+.item.primary::after { content: ''; position: absolute; top: -1px; right: -1px; width: 1.35rem; height: 1.35rem; background: var(--coral);
+  border-top-right-radius: 14px; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.item.focused { z-index: 2; background: linear-gradient(180deg, #ffe46b 0%, var(--focus2) 100%); transform: translateY(-3px) scale(1.045);
+  box-shadow: 0 0 0 4px #fff, 0 0 0 9px var(--ink), 0 13px 0 rgba(8,30,40,.4), 0 0 38px 12px rgba(255,212,0,.7); }
+.item.focused, .item.focused .lb small { color: var(--on-focus); }
+.item.focused .val { background: var(--on-focus); color: var(--focus); border-color: var(--on-focus); }
+.item.armed .val { background: var(--risky); color: #fff; }
+.item.locked { cursor: not-allowed; opacity: .55; background: #e4e9ec; border-style: dashed; box-shadow: none; }
+.menu.row .item { justify-content: center; font-size: 1.15rem; gap: .4rem; }
+.menu.row .item .ic { width: auto; font-size: 1.5rem; }
+#hint { margin: 1.05rem 0 0; font: 700 .98rem/1.3 var(--body); color: var(--ink2); }
+.card.tight { padding-top: 2.1rem; padding-bottom: .7rem; }
+.card.tight .emblem { width: 3.4rem; height: 3.4rem; }
+.card.tight .emblem span { font-size: 1.8rem; }
+.card.tight h1 { font-size: 2rem; }
+.card.tight .menu { gap: .45rem .6rem; margin-top: .55rem; }
+.card.tight .item { min-height: 64px; padding-top: .3rem; padding-bottom: .3rem; }
+.card.tight .logo .main { font-size: 3rem; }
+
+/* Results and halftime. */
+.bigScore { display: inline-flex; align-items: center; gap: .8rem; margin: .2rem 0 .3rem; font: 900 1.4rem/1 var(--head); color: var(--ink); }
+.bigScore b { font: italic 900 3.2rem/1 var(--head); color: #fff; -webkit-text-stroke: .28rem var(--stroke); paint-order: stroke fill; }
+.bigScore em { font-style: normal; font-size: 2.2rem; }
+.board { margin: .5rem auto .2rem; border-collapse: separate; border-spacing: 0 .25rem; font: 800 1.05rem/1.2 var(--body); min-width: 60%; }
+.board th { font: 900 1.05rem var(--head); padding: 0 1.2rem; }
+.board td { padding: .3rem 1.2rem; background: var(--hi); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+.board td:first-child { text-align: left; border-left: 3px solid var(--ink); border-radius: .7rem 0 0 .7rem; }
+.board td:last-child { border-right: 3px solid var(--ink); border-radius: 0 .7rem .7rem 0; }
+.board td + td { font: italic 900 1.2rem var(--head); text-align: center; }
+
+/* ── HUD ────────────────────────────────────────────────────────────────────── */
+#hud { position: fixed; inset: 0; z-index: 12; pointer-events: none; display: none; }
+#hud.on { display: block; }
+.bug { position: absolute; top: .8rem; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch;
+  background: var(--paper); border: 4px solid var(--ink); border-radius: 1.2rem; box-shadow: 0 .4rem 0 rgba(0,0,0,.35); overflow: hidden; }
+.bug .side { display: flex; align-items: center; gap: .55rem; padding: .35rem .9rem; font: italic 900 1.35rem/1 var(--head); }
+.bug .crest { width: 1.6rem; height: 1.6rem; border: .2rem solid var(--ink); display: block; }
+.bug .crest.round { border-radius: 50%; }
+.bug .crest.diamond { transform: rotate(45deg) scale(.82); border-radius: .2rem; }
+.bug .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: .2rem 1rem .3rem;
+  background: var(--dark); color: #fff; min-width: 9rem; }
+.bug .score { display: flex; align-items: center; gap: .5rem; font: italic 900 2.2rem/1 var(--head); }
+.bug .score em { font-style: normal; font-size: 1.6rem; opacity: .7; }
+.bug .clock { display: flex; gap: .5rem; font: 800 .95rem/1.1 var(--body); }
+.bug .clock .time { font-variant-numeric: tabular-nums; }
+.bug .stopped { display: none; margin-top: .15rem; padding: .05rem .5rem; border-radius: .4rem; background: var(--focus); color: var(--on-focus);
+  font: 900 .8rem/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; }
+.bug.frozen .stopped { display: block; }
+.info { position: absolute; top: .9rem; left: .9rem; display: flex; flex-direction: column; gap: .3rem; align-items: flex-start; }
+.info span { padding: .25rem .7rem; border-radius: .7rem; background: rgba(20,22,31,.78); color: #fff; font: 800 1rem/1.2 var(--body); }
+.carrier { position: absolute; top: .9rem; right: .9rem; display: none; min-width: 13rem; padding: .5rem .8rem .6rem;
+  background: var(--paper); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 0 .35rem 0 rgba(0,0,0,.3); }
+.carrier.on { display: block; }
+.carrier .who { display: flex; align-items: center; gap: .55rem; font: 900 1.2rem/1.1 var(--body); }
+.carrier .num { position: relative; min-width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; font: 900 1.05rem var(--head); isolation: isolate; }
+.carrier .num.round { background: var(--bg); border: .18rem solid var(--ink); border-radius: 50%; }
+.carrier .num.diamond::before { content: ''; position: absolute; inset: .2rem; background: var(--bg); border: .18rem solid var(--ink); transform: rotate(45deg); z-index: -1; }
+.carrier .hp { position: relative; height: 1.3rem; margin-top: .4rem; border: 3px solid var(--ink); border-radius: .7rem; background: var(--hi); overflow: hidden; }
+.carrier .hp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--good), #7fe07f); transition: width .2s; }
+.carrier.low .hp i { background: linear-gradient(90deg, var(--risky), #ff9a7a); }
+.carrier .hp span { position: relative; display: block; text-align: center; font: 900 .85rem/1.05rem var(--body); }
+.carrier .st { font: 800 .9rem/1.2 var(--body); color: #b0263f; margin-top: .25rem; }
+.carrier .st:empty { display: none; }
+.pop { position: absolute; left: 50%; top: 24%; display: none; transform: translate(-50%, -50%); white-space: nowrap;
+  font: italic 900 6rem/1 var(--head); color: #fff; -webkit-text-stroke: .55rem var(--stroke); paint-order: stroke fill;
+  text-shadow: 0 .5rem 0 var(--stroke), 0 .9rem .8rem rgba(0,0,0,.35); }
+.pop.on { display: block; animation: popIn .5s cubic-bezier(.2,1.7,.4,1); }
+@keyframes popIn { from { transform: translate(-50%, -50%) scale(.3) rotate(-10deg); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+.pop.k-goal { color: var(--focus); font-size: 8.5rem; }
+.pop.k-good { color: #7df0a0; font-size: 4.2rem; }
+.pop.k-bad { color: #ffb0bf; font-size: 4.2rem; }
+.pop.k-tech { color: #d9c2ff; font-size: 3.8rem; }
+.pop.k-info { font-size: 4.6rem; }
+/* The goal banner: a band across the whole screen in the scorers' kit, edged in ink and
+   their accent, so it reads as THEIR goal at a glance; GOAL! is white with a heavy ink
+   stroke, which reads on any kit colour. */
+.goalbanner { position: absolute; left: 0; right: 0; top: 8%; display: none; pointer-events: none; text-align: center; }
+.goalbanner.on { display: block; }
+.goalbanner .band { position: relative; padding: .4rem 0 .9rem; background: var(--kit);
+  border-top: .55rem solid var(--ink); border-bottom: .55rem solid var(--ink);
+  box-shadow: 0 -.55rem 0 var(--accent), 0 .55rem 0 var(--accent), 0 1.1rem 1.4rem rgba(0,0,0,.35); transform: skewY(-3deg); }
+.goalbanner .word { display: inline-block; font: italic 900 8rem/1 var(--head); color: #fff; letter-spacing: .02em;
+  -webkit-text-stroke: .7rem var(--stroke); paint-order: stroke fill; text-shadow: 0 .6rem 0 var(--stroke); transform: skewY(3deg); }
+.goalbanner .line { display: inline-flex; gap: .8rem; margin-top: 1.1rem; padding: .45rem 1.3rem .5rem; border: 4px solid var(--ink); border-radius: 1rem;
+  background: var(--paper); color: var(--ink); font: 900 2rem/1.1 var(--body); box-shadow: 0 .35rem 0 rgba(0,0,0,.3); }
+.goalbanner .sc { padding-left: .8rem; border-left: 4px solid var(--ink); }
+.goalbanner.on .band { animation: bandIn .35s cubic-bezier(.2,.9,.3,1) both; }
+.goalbanner.on .word { animation: goalSlam .55s .12s cubic-bezier(.2,1.6,.4,1) both; }
+.goalbanner.on .line { animation: lineUp .4s .35s ease-out both; }
+.goalbanner.out { animation: bannerOut .45s ease-in forwards; }
+@keyframes bandIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes goalSlam { from { transform: skewY(3deg) scale(2.2); opacity: 0; } to { transform: skewY(3deg) scale(1); opacity: 1; } }
+@keyframes lineUp { from { transform: translateY(1.2rem); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bannerOut { to { transform: translateX(105%); } }
+/* The kickoff sweep's plates: the team the camera is passing, in their kit, with their
+   badge shape (ours round, theirs a diamond, as on the swimmers). */
+.teamplate { position: absolute; bottom: 5.2rem; display: none; align-items: center; gap: 1rem; padding: .7rem 1.6rem .8rem 1.1rem;
+  background: var(--kit); border: .4rem solid var(--ink); border-radius: 1.2rem; box-shadow: 0 0 0 .35rem var(--accent), 0 .7rem 1rem rgba(0,0,0,.35); pointer-events: none; }
+.teamplate.on { display: flex; }
+.teamplate.s-left { left: 2.2rem; } .teamplate.s-right { right: 2.2rem; }
+.teamplate.s-centre { left: 50%; transform: translateX(-50%); bottom: auto; top: 14%; text-align: center; }
+.teamplate .crest { width: 3.4rem; height: 3.4rem; flex: none; background: #fff; border: .3rem solid var(--ink); }
+.teamplate .crest.round { border-radius: 50%; } .teamplate .crest.diamond { transform: rotate(45deg) scale(.8); border-radius: .4rem; }
+.teamplate b { display: block; font: italic 900 3.4rem/1 var(--head); color: #fff; -webkit-text-stroke: .35rem var(--stroke); paint-order: stroke fill; }
+.teamplate .sub { display: inline-block; margin-top: .45rem; padding: .15rem .7rem; border-radius: .6rem; background: var(--paper); color: var(--ink); font: 900 1.3rem/1.2 var(--body); }
+.teamplate .sub:empty { display: none; }
+.teamplate.on.s-left { animation: plateL .45s cubic-bezier(.2,1.3,.4,1) both; }
+.teamplate.on.s-right { animation: plateR .45s cubic-bezier(.2,1.3,.4,1) both; }
+.teamplate.on.s-centre { animation: plateC .5s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes plateL { from { transform: translateX(-130%); } to { transform: none; } }
+@keyframes plateR { from { transform: translateX(130%); } to { transform: none; } }
+@keyframes plateC { from { transform: translateX(-50%) scale(.4); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+/* A technique: its name, huge, on a slowly turning burst of its colour; who did it under. */
+.techfx { position: absolute; left: 50%; top: 25%; display: none; flex-direction: column; align-items: center; transform: translate(-50%, -50%); pointer-events: none; }
+.techfx.on { display: flex; animation: techIn .5s cubic-bezier(.2,1.6,.4,1) both, techOut .35s 1.55s ease-in forwards; }
+.techfx .burst { position: absolute; left: 50%; top: 45%; width: 22rem; height: 22rem; margin: -11rem 0 0 -11rem; border-radius: 50%; z-index: -1;
+  background: repeating-conic-gradient(var(--fx) 0 10deg, transparent 10deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 0 22%, rgba(0,0,0,.85) 35%, transparent 70%); mask: radial-gradient(circle, #000 0 22%, rgba(0,0,0,.85) 35%, transparent 70%);
+  animation: techSpin 4s linear infinite; }
+.techfx .nm { font: italic 900 6.2rem/1 var(--head); font-size: min(6.2rem, 9.3vw); /* the longest, "Super Beamin' Blast!", fits an 800 px window */ color: #fff; white-space: nowrap; -webkit-text-stroke: .55rem var(--stroke); paint-order: stroke fill; text-shadow: 0 .5rem 0 var(--stroke); }
+.techfx .who { margin-top: .6rem; padding: .2rem .9rem; border: 4px solid var(--ink); border-radius: .8rem; background: var(--kit); color: #fff;
+  font: 900 1.6rem/1.2 var(--body); -webkit-text-stroke: .2rem var(--stroke); paint-order: stroke fill; }
+@keyframes techIn { from { transform: translate(-50%, -50%) scale(.3) rotate(-8deg); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@keyframes techOut { to { transform: translate(-50%, -50%) scale(1.15); opacity: 0; } }
+@keyframes techSpin { to { transform: rotate(360deg); } }
+/* A goal replay: a big tag where the info row was, so it is never mistaken for live play. */
+.replaytag { position: absolute; left: .9rem; top: .9rem; display: none; flex-direction: column; align-items: flex-start; gap: .35rem; pointer-events: none; }
+.replaytag.on { display: flex; }
+.replaytag b { display: flex; align-items: center; gap: .6rem; padding: .35rem 1.1rem .45rem .8rem; border: 4px solid #fff; border-radius: 1rem;
+  background: var(--dark); color: #fff; font: italic 900 2.6rem/1 var(--head); letter-spacing: .04em; text-transform: uppercase; box-shadow: 0 .35rem 0 rgba(0,0,0,.35); }
+.replaytag b i { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: #ff3b4f; box-shadow: 0 0 0 .2rem #fff; animation: recPulse 1s ease-in-out infinite alternate; }
+@keyframes recPulse { to { opacity: .45; } }
+.replaytag span { padding: .2rem .7rem; border-radius: .6rem; background: rgba(20,22,31,.78); color: #fff; font: 800 1.15rem/1.2 var(--body); }
+#hud.replaying .info, #hud.replaying .carrier { display: none; }
+.wipe { position: fixed; inset: 0; display: none; overflow: hidden; pointer-events: none; z-index: 13; }   /* over #worldLayer (later in the page), under captions */
+.wipe.on { display: block; }
+.wipe .band { position: absolute; top: -10%; bottom: -10%; left: 0; width: 200vw; background: var(--kit);
+  border-left: 3vw solid var(--accent); border-right: 3vw solid var(--accent); box-shadow: inset 1.2vw 0 0 var(--ink), inset -1.2vw 0 0 var(--ink); }
+.ring { position: absolute; right: 2.2rem; bottom: 9rem; width: 7.4rem; height: 7.4rem; display: none; border-radius: 50%;
+  background: radial-gradient(circle, rgba(20,22,31,.8) 0 56%, transparent 57%); }
+.ring.on { display: block; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 15; }
+.ring .track { stroke: rgba(255,248,236,.35); }
+.ring .fill { stroke: var(--focus); stroke-linecap: round; transition: stroke-dashoffset .08s linear; }
+.ring .lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+  font: italic 900 1rem/1.1 var(--head); color: #fff; }
+
+/* Captions: who is speaking, by name as well as colour. */
+#caption { position: fixed; left: 50%; bottom: 1.2rem; z-index: 14; transform: translateX(-50%); display: none; max-width: min(46rem, 70vw);
+  padding: .45rem 1rem .5rem; border-radius: 1rem; background: rgba(20,22,31,.86); color: #fff; text-align: center;
+  font: 800 1.2rem/1.3 var(--body); pointer-events: none; }
+#caption.on { display: block; }
+#caption .who { display: inline-block; margin-right: .55rem; padding: .05rem .5rem; border-radius: .4rem; font: 900 .85rem/1.3 var(--body);
+  letter-spacing: .06em; text-transform: uppercase; vertical-align: .1rem; color: var(--dark); background: #fff; }
+#caption .sp-pa { background: var(--focus); }
+#caption .sp-pbp { background: #7fe0ee; }
+#caption .sp-color { background: #ffb9a6; }
+#overlay.on ~ #caption { display: none; }
+
+/* On-screen Pause, bottom-left, as in Racer and Fish Mystery. */
+#pauseBtn { position: fixed; left: 18px; bottom: 18px; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: max(76px, 4.9rem); height: max(76px, 4.9rem); border: 5px solid var(--ink); border-radius: 22px; background: var(--paper);
+  box-shadow: 0 6px 0 rgba(0,0,0,.45); font: 800 1rem/1 var(--body); color: var(--ink); cursor: pointer; }
+#pauseBtn.on { display: flex; }
+#pauseBtn .ic { font: 1.9rem/1 var(--emoji); }
+#pauseBtn:hover, #pauseBtn.focused { background: linear-gradient(180deg, #ffe46b 0%, var(--focus2) 100%); color: var(--on-focus); }
+#pauseBtn.focused { box-shadow: 0 0 0 4px #fff, 0 0 0 9px var(--ink), 0 0 38px 12px rgba(255,212,0,.7); }
+
+#perf { position: fixed; right: 12px; bottom: 12px; z-index: 50; padding: .3rem .6rem; border-radius: .5rem; display: none;
+  background: rgba(0,0,0,.55); color: #fff; font: 700 .9rem/1.2 ui-monospace, Consolas, monospace; }
+#perf.on { display: block; }
+#loading { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center;
+  background: var(--sea); color: #fff; font: 800 1.6rem var(--body); }
+#loading button { font: inherit; min-height: 64px; padding: 16px 32px; border-radius: 16px; border: 4px solid var(--ink); }
+
+/* Reduced motion (Settings > Motion; follows the device's reduce-motion setting until the
+   player picks): nothing slides, bounces, spins or pulses. ui.js sets data-motion. */
+body[data-motion="reduced"] #scanFrame { transition: none; } body[data-motion="reduced"] #scanFrame.on i { animation: none; }
+body[data-motion="reduced"] .card.enter, body[data-motion="reduced"] .pop.on, body[data-motion="reduced"] .goalbanner.on .band, body[data-motion="reduced"] .goalbanner.on .word, body[data-motion="reduced"] .goalbanner.on .line { animation: none; }
+body[data-motion="reduced"] .goalbanner.out { animation: none; opacity: 0; }
+body[data-motion="reduced"] .replaytag b i { animation: none; }
+body[data-motion="reduced"] .teamplate.on.s-left, body[data-motion="reduced"] .teamplate.on.s-right, body[data-motion="reduced"] .teamplate.on.s-centre, body[data-motion="reduced"] .techfx .burst { animation: none; }
+body[data-motion="reduced"] .techfx.on { animation: techOut .35s 1.55s ease-in forwards; }
+body[data-motion="reduced"] .cluster .plate { animation: none !important; }
+
+/* The resolved Hub preference can include a relaunch notice. Keep it readable. */
+.menu.cols2 .graphics-setting { grid-column: 1 / -1; min-width: 0; }
+.item.graphics-setting .lb { flex: 0 1 30%; min-width: 0; }
+.item.graphics-setting .nm { white-space: normal; overflow: visible; text-overflow: clip; }
+.item.graphics-setting .val { flex: 1 1 0; min-width: 0; white-space: normal; text-align: center; overflow-wrap: anywhere; }

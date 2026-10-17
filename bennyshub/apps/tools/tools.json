@@ -12,6 +12,17 @@
       ]
     },
     {
+      "id": "rtc-lite",
+      "title": "RTC Lite",
+      "description": "Short communication choices, a predictive keyboard, and optional local or bring-your-own-key AI.",
+      "path": "apps/tools/rtc-lite/index.html",
+      "image": "images/tools/rtc-lite.png",
+      "genres": [
+        "Communication",
+        "Accessibility"
+      ]
+    },
+    {
       "id": "phraseboard",
       "title": "Phrase & Media Board",
       "description": "Editable phrase & media tiles with scanning and speak-out.",
