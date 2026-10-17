@@ -2,6 +2,32 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - RTC Lite desktop parity completed
+
+The owner explicitly requested bringing missed shared RTC Lite changes into Benny's PC Hub. This authorizes this desktop pass and supersedes the earlier WEB ONLY / no desktop port status for these shared fixes. Compared the published website through 3397318 with the desktop source and selectively applied the common behavior.
+
+Speaking from the keyboard now keeps the message and predictions for repetition, including repeated Enter selections and returning from the board. Clear and Delete remain explicit. Completed room-speech segments and delayed Whisper/Parakeet results survive subsequent app narration; capture still excludes app speech, and stopping a session rejects stale results. Recognition activity is visible. Missing Whisper files point to Load speech model; runtime failures retain their cause, and successful setup leaves no stale board warning. The board prompt asks for distinct conversational intentions, including agreement, disagreement/boundaries, uncertainty, clarification, and topic-specific alternatives. The desktop Tools description includes RTC-Convo board.
+
+Desktop file scope / port status:
+
+- `bennyshub/apps/tools/rtc-lite/app.js` - SHARED BEHAVIOR / DONE; retention and listening status only, keeping native provider choices and desktop credentials/profile loading.
+- `bennyshub/apps/tools/rtc-lite/speech.js` - SHARED BEHAVIOR / DONE; queued audio, delayed recognition and activity display, with native Parakeet and Google speech paths retained.
+- `bennyshub/apps/tools/rtc-lite/core.js` - SHARED PROMPT / DONE; distinct reply intentions.
+- `bennyshub/apps/tools/rtc-lite/whisper-worker.js` - SHARED ERROR FIX / DONE; setup guidance uses desktop wording.
+- `bennyshub/index.html` - DESKTOP COPY / DONE; Tools description.
+- `bennyshub/apps/tools/rtc-lite/README.md` and `RTC-LITE-CONTEXT.md` - DESKTOP DOCUMENTATION / DONE; current repeat, listening and prompt behavior.
+- `tests/electron-rtc-lite.cjs` - DESKTOP TEST / DONE; retained drafts, repeated Enter, held Enter, and Clear.
+- `tests/electron-rtc-lite-load-state.cjs` - DESKTOP TEST / DONE; failed cached load followed by successful setup and accurate recognition status.
+- `tests/rtc-lite-core.cjs` - DESKTOP TEST / DONE; replace superseded expectation that valid delayed room speech should be lost.
+- `tests/rtc-lite-speech.test.cjs` - DESKTOP TEST / DONE; shared speech regressions plus native Parakeet delivery and cancellation.
+- `package.json` - DESKTOP TEST COMMAND / DONE; include speech regressions in test:rtc-lite.
+- `ELECTRON-SCAN-UPGRADE.md` - DESKTOP HISTORY / DONE; this record.
+- Website `docs/history/DEVELOPMENT-HISTORY.md` - DOCUMENTATION ONLY; this record, no website runtime change.
+
+Validation: 46 desktop logic/speech tests pass. Isolated Electron checks pass: 19 general UI checks using the production preload, 8 model/setup-state checks, and 4 API integration checks. The UI suite covers real switch key input, row behavior, saved settings, bio editing, native exit and six screen sizes. Model recovery uses controlled worker messages and a synthetic microphone lifecycle; API responses and speech tickets are fixtures. No real microphone audio, paid provider requests, downloads or Surface performance measurements were used in this pass. The recovered listening screenshot was visually reviewed. Hash checks confirm main.js, preload.js, RTC entry/providers/server, and the shared platform/bridge/scan/voice files remain unchanged. No installer was rebuilt; start_hub.bat launches the updated source.
+
+Per-file backups, hashes, review diff and reports are in the local websites workspace `tmp/rtc-desktop-parity-20261017`. Desktop source is not a Git checkout. Website publication of this history is documentation only.
+
 ## 2026-10-17 - Keep RTC Lite text available for repetition
 
 The owner requested that speaking the keyboard message retain its text so the same message can be repeated. The speak action now preserves the draft and current predictions, records each selected utterance, and explains that selecting the message again repeats it. Edit/save modes and the explicit Clear action keep their existing behavior.
