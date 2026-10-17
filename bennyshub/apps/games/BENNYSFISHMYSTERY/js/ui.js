@@ -2833,7 +2833,7 @@ RT.ui = (function () {
         rows.push({ label: '' + ic('home') + ' Main Menu', speech: 'Main menu',
                     action: () => { pausedWorld = null; G.quitToMenu(); setScreen('title'); } });
         rows.push({ label: '' + ic('lifering') + ' Help', speech: 'Help',
-                    action: () => U.speak('I need help') });
+                    action: () => NarbeCommunicationSpeech.help(() => U.speak('I need help')) });
         return rows;
       })(),
       speech: 'Options. ' + (G.run ? 'Continue' : 'Back') +

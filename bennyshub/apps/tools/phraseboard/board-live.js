@@ -10,7 +10,7 @@ function rememberMessage(text) {
   if (!state.rememberMessages ||  new URLSearchParams(location.search).has('preview')) return;
   try { predictionEngine.setHistory(PhrasePredictions.remember(localStorage, text)); } catch { notifyBoard('Message spoken. Personal suggestions could not be saved in this browser.'); }
 }
-function speakMessage(blockInput = false) { const text = messageText(); if (!text) return; rememberMessage(text); speak(text, false, null, null, blockInput); }
+function speakMessage(blockInput = false) { const text = messageText(); if (!text) return; rememberMessage(text); return NarbeCommunicationSpeech.speak(text, () => speak(text, false, null, null, blockInput)); }
 function button(text, action, extra = '') { return createButton(text, '', action, extra); }
 function notifyBoard(text) { el.statusFooter.textContent = text; }
 function messageActive() { return state.sentenceMode && (state.currentMenu === 'category' || state.currentMenu === 'categories'); }

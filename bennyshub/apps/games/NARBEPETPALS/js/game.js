@@ -929,7 +929,7 @@ function buildPause(){ renderList('pause-list',[
 /* "I Need Help": a way for the player to call a caregiver. A chime, then the words out loud twice. It
    speaks even when text to speech is off, and it works even while the game is reading something. */
 function callForHelp(btn){ play('dingdong',.9); const msg='I need help, please! I need help, please!';
-  later(()=>{ if(voice.enabled()) voice.speak(msg); else { try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(msg); u.rate=.9; speechSynthesis.speak(u); }catch(e){} } },600);
+  NarbeCommunicationSpeech.help(() => later(()=>{ if(voice.enabled()) voice.speak(msg); else { try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(msg); u.rate=.9; speechSynthesis.speak(u); }catch(e){} } },600),msg);
   if(btn){ const s=$('.sub',btn)||btn.appendChild(Object.assign(document.createElement('span'),{className:'sub'})); s.textContent='Calling for help…'; later(()=>{ if(s.isConnected) s.textContent=''; },6000); } }
 function openPause(){ if(!state) return; if(!paused){ paused=true; pausedAt=performance.now(); } stopPauseHold(); play('choose'); buildPause(); show('pause','Paused'); }
 

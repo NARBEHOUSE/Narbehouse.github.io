@@ -2,6 +2,197 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 — Authorized desktop port and website/Companion 1.0.9 release
+
+The owner explicitly authorized adding the speaker features to the Electron app, including Python control-bar Help/Suction, then pushing the website repository. This supersedes the earlier local-only/Electron-read-only scope for this task. The desktop port is implemented in its separate workspace; the website push does not publish an Electron installer. All prior release ZIPs remain unchanged. The owner will upload Companion 1.0.9 to the Chrome dashboard; no store submission was performed here.
+
+Desktop general TTS and communication speech are independent. The native settings store, preload/platform/frame synchronization and authenticated loopback Help/Suction bridge preserve original mode-off SAPI behavior. Streaming Help/Suction and Messenger video Help use the Hub player without bringing the Hub in front of video. Requests have owned completion, cancellation, sequence checks and a 45-second deadline. The general TTS pill was repaired to follow native state. Desktop source backups and a 72-file manifest remain in `tmp/communication-desktop-backup-20261017/`; desktop integration documentation is `COMMUNICATION-SPEAKER.md`.
+
+Companion manifest is 1.0.9. The production ZIP has 30 members and 113,808 bytes, SHA-256 `34afd049789f41159061ec9df9c63b6844f59eae38f61c8912f3240ecc203e90`. The public download link and tracked CI checksum point to that exact package. Reviewer, privacy and release documentation describe the fixed Help action and local voice generation. Service worker is v50.
+
+Validation after preserving upstream RTC Lite commits 2b8511a and 63ab316: 288 website unit tests, 1,186 page/asset references and production audit (3,787 files, no problems); the previously completed actual browser app/Companion fixtures and all-14-voice synthesis remain passing. Desktop: 57 Node and 25 Python checks; actual isolated Electron Hub/iframe/dedicated-RTC actions, switch-selected game Help, native Python client with minimized-Hub Help/Suction, disconnect/no fallback, cancellation, native settings persistence and TTS-label assertions all pass. Real Electron generated 76,800 samples and completed muted playback on two distinct outputs (eight enumerated). First generation including setup took 7,635 ms, cached repeat 4 ms. Physical Bluetooth listening, Raspberry Pi testing and signed-in provider checks remain manual. Every GUI fixture used an isolated OS-temp cwd/profile; the production app/profile was not launched for tests.
+
+Changed website files for this release (Electron flags reflect the separately completed port):
+
+- `.gitattributes` — BUILD; Electron NOT APPLICABLE. Preserve upstream runtime bytes and hashes; the upstream ONNX module retains its original blank-line whitespace.
+- `bennyshub/apps/games/BENNYSBASEBALL2/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSBASEBALL2/js/game.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSBOWLING/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSBOWLING/js/bowlchallenge.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSDICE/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSDICE/js/game.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSFOOTBALL/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSFOOTBALL/js/game.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSMATCHYMATCH/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSMATCHYMATCH/script.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSPEGGLE/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSPEGGLE/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSRACETRACKS/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSRACETRACKS/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSSPHERESPLASH/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/BENNYSSPHERESPLASH/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/CHASINGRAINBOWS/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/CHASINGRAINBOWS/js/app.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEKART/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEKART/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEMINIGOLF/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEMINIGOLF/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEPETPALS/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/NARBEPETPALS/js/game.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/PICKLEBALLRALLY/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/ROBOTFOOTBALL/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/TRIVIAMASTER/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/games/TRIVIAMASTER/script.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/keyboard/app.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/keyboard/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/phraseboard/board-live.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/phraseboard/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/rtc-lite/app.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/apps/tools/rtc-lite/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/companion-privacy.html` — WEB; Electron NOT APPLICABLE / website-specific
+- `bennyshub/extension-setup.html` — WEB; Electron NOT APPLICABLE / website-specific
+- `bennyshub/index.html` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/service-worker.js` — WEB; Electron NOT APPLICABLE / website-specific
+- `bennyshub/shared/communication-channel.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-companion.js` — WEB; Electron NOT APPLICABLE / website-specific
+- `bennyshub/shared/communication-settings.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-speech.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/ESPEAK-COPYING.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/KOKORO-LICENSE.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/ONNX-LICENSE.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/PHONEMIZER-LICENSE.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/SOURCES.json` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/THIRD-PARTY-NOTICES.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/TRANSFORMERS-LICENSE.txt` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/kokoro.web.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/ort-wasm-simd-threaded.jsep.mjs` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-vendor/ort-wasm-simd-threaded.jsep.wasm` — WEB; Electron PORTED (desktop adaptations where needed)
+- `bennyshub/shared/communication-worker.js` — WEB; Electron PORTED (desktop adaptations where needed)
+- `developer-guide.html` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `docs/development/COMMUNICATION-SPEAKER.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `docs/history/DEVELOPMENT-HISTORY.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `extension/README.md` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `extension/background.mjs` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `extension/hub-content.js` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `extension/manifest.json` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `extension/player-content.js` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `extension/player-help.mjs` — COMPANION; Electron NOT APPLICABLE / website-specific
+- `scripts/check-communication-speaker.cjs` — TEST/BUILD; Electron NOT APPLICABLE / website-specific
+- `scripts/check-companion-toolbar-speech.cjs` — TEST/BUILD; Electron NOT APPLICABLE / website-specific
+- `scripts/package-companion.cjs` — TEST/BUILD; Electron NOT APPLICABLE / website-specific
+- `submission/COMPANION-SHA256SUMS.txt` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `submission/PERMISSIONS-AND-PRIVACY.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `submission/REVIEWER-INSTRUCTIONS.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `submission/START-HERE.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `submission/STORE-LISTING.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `submission/VALIDATION.md` — DOCUMENTATION; Electron NOT APPLICABLE / website-specific
+- `tests/communication-channel.test.cjs` — TEST/BUILD; Electron PORTED (desktop adaptations where needed)
+- `tests/communication-help.test.cjs` — TEST/BUILD; Electron NOT APPLICABLE / website-specific
+- `tests/communication-worker.test.cjs` — TEST/BUILD; Electron PORTED (desktop adaptations where needed)
+- `tests/dice-input.test.cjs` — TEST/BUILD; Electron NOT APPLICABLE / website-specific
+
+## 2026-10-17 - Speaker Help and independent TTS (local candidate)
+
+The owner requested caregiver Help on the chosen speaker and communication with general TTS off. Speaker Mode now independently controls deliberate messages; general TTS controls ordinary scanning/system narration. Turning general TTS off does not stop an active public message. Three Phrase Board message-box gates and the RTC Lite status were updated.
+
+Routed 19 existing Help actions across 17 games. Each index loads the shared channel/service; each action preserves its original fallback and text. Pet Pals keeps its chime and repeated request. Help focus labels and instructions remain private. A transient noninteractive status reports preparation/completion/failure without adding scan stops.
+
+Companion forwards only fixed Help through its managed-player route to the same original Hub. Device IDs remain on the Hub origin. General TTS and Toolbar Speech can both be off. New requests, leaving Help, return, page exit and player close cancel work. Wrong/missing Hub and speaker failures report without default fallback; requests expire after 45 seconds. A responding Hub with Speaker Mode off preserves forced native Help. Reload the updated Companion, refresh the Hub and open a new stream for this local test. No new permissions, published release, push or Electron pass; historical release ZIPs are untouched.
+
+Changed files (WEB/COMPANION/TEST/DOCUMENTATION only; Electron NOT PORTED):
+
+- `bennyshub/apps/games/BENNYSBASEBALL2/index.html`
+- `bennyshub/apps/games/BENNYSBASEBALL2/js/game.js`
+- `bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html`
+- `bennyshub/apps/games/BENNYSBOWLING/index.html`
+- `bennyshub/apps/games/BENNYSBOWLING/js/bowlchallenge.js`
+- `bennyshub/apps/games/BENNYSDICE/index.html`
+- `bennyshub/apps/games/BENNYSDICE/js/game.js`
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/index.html`
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/js/ui.js`
+- `bennyshub/apps/games/BENNYSFOOTBALL/index.html`
+- `bennyshub/apps/games/BENNYSFOOTBALL/js/game.js`
+- `bennyshub/apps/games/BENNYSMATCHYMATCH/index.html`
+- `bennyshub/apps/games/BENNYSMATCHYMATCH/script.js`
+- `bennyshub/apps/games/BENNYSPEGGLE/index.html`
+- `bennyshub/apps/games/BENNYSPEGGLE/js/ui.js`
+- `bennyshub/apps/games/BENNYSRACETRACKS/index.html`
+- `bennyshub/apps/games/BENNYSRACETRACKS/js/ui.js`
+- `bennyshub/apps/games/BENNYSSPHERESPLASH/index.html`
+- `bennyshub/apps/games/BENNYSSPHERESPLASH/js/ui.js`
+- `bennyshub/apps/games/CHASINGRAINBOWS/index.html`
+- `bennyshub/apps/games/CHASINGRAINBOWS/js/app.js`
+- `bennyshub/apps/games/NARBEKART/index.html`
+- `bennyshub/apps/games/NARBEKART/js/ui.js`
+- `bennyshub/apps/games/NARBEMINIGOLF/index.html`
+- `bennyshub/apps/games/NARBEMINIGOLF/js/ui.js`
+- `bennyshub/apps/games/NARBEPETPALS/index.html`
+- `bennyshub/apps/games/NARBEPETPALS/js/game.js`
+- `bennyshub/apps/games/PICKLEBALLRALLY/index.html`
+- `bennyshub/apps/games/ROBOTFOOTBALL/index.html`
+- `bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js`
+- `bennyshub/apps/games/TRIVIAMASTER/index.html`
+- `bennyshub/apps/games/TRIVIAMASTER/script.js`
+- `bennyshub/apps/tools/phraseboard/index.html`
+- `bennyshub/apps/tools/rtc-lite/app.js`
+- `bennyshub/index.html`
+- `bennyshub/service-worker.js`
+- `bennyshub/shared/communication-companion.js`
+- `bennyshub/shared/communication-speech.js`
+- `developer-guide.html`
+- `docs/development/COMMUNICATION-SPEAKER.md`
+- `docs/history/DEVELOPMENT-HISTORY.md`
+- `extension/README.md`
+- `extension/background.mjs`
+- `extension/hub-content.js`
+- `extension/player-content.js`
+- `extension/player-help.mjs`
+- `scripts/check-communication-speaker.cjs`
+- `scripts/check-companion-toolbar-speech.cjs`
+- `scripts/package-companion.cjs`
+- `tests/communication-help.test.cjs`
+- `tests/dice-input.test.cjs`
+
+Validation: all 278 website unit tests passed; all 1,142 page/asset checks passed; 27 changed JavaScript files passed syntax checks. The communication runner passed all five message actions with general TTS off, changing TTS during playback, Spacebar/Return game Help selection, Pet Pals' repeated Help, mode-off restoration, sink failure and existing Settings/scan behavior. The real-extension provider fixture passed selected-speaker Help with both TTS preferences off, disconnected output, rapid replacement, leaving Help, native restoration and the existing toolbar scan/persistence/layout checks. The 30-file Companion candidate passed package validation without writing production releases. Physical speaker listening and Raspberry Pi testing remain user checks. Source backups: desktop workspace tmp/communication-help-backup-20261017. A separate local-development Companion ZIP (including localhost support) is at tmp/bennys-hub-companion-speaker-help-local.zip; SHA-256 CDA5EAFAA169F3394A0BE76061D60492A8F96AF5DB8C18136D5F517E3E25462F. It has not been installed into the user's browser or published.
+
+## 2026-10-17 - Local communication speaker candidate (not pushed)
+
+Added an optional, default-off Speakers section between general settings and Scan. Graphics Quality stays in general settings. Speaker, Speaker voice, Find speakers and Test speaker remain visible but disabled/skipped while off; on uses the same Spacebar/Return and Auto Scan controller. A Cancel-first spoken guard protects the one-time native browser permission prompt. Browser-only operation was explicitly chosen; native Windows/Chrome voices stay in the original default-output path.
+
+Added ten Kokoro voices (14 total). Cycling Speaker or Speaker voice auditions the
+selection on that output; Test speaker repeats the same warmed/cacheable sample.
+Scan feedback remains private. Obsolete voice preparations are skipped, rapid
+changes cancel pending samples, and leaving Settings stops its preview. Turning
+mode off terminates the worker/model. All 14 real voices generated successfully;
+new preview generation measured 286–550 ms on this PC after setup, before the
+Bluetooth lead-in. No extra voice installation or full model per voice is needed.
+
+Only deliberate communication is routed: Keyboard message, Phrase Board tile when the box is closed and message Speak when open, RTC Lite selections and typed messages. RTC Lite's explicit keyboard-entry announcement also follows the public route. Private scan speech remains native. Each generated message includes the verified 750 ms silent PCM prefix. New messages, output changes and exit cancel stale work; missing speakers fail visibly with text retained and no default fallback/replay. RTC listening remains paused until real public playback completes.
+
+Kokoro runs in a shared same-origin worker/player, warms when enabled, and uses hardware WebGPU where usable (q8 WASM otherwise). The bounded message cache is memory-only. Runtime code is pinned and vendored with notices and hashes; model downloads use the upstream revision selected by that runtime. CPU latency is materially slower. Local Chrome measurement: setup 10.1 s, new short sentence 881 ms, repeat 5 ms, before the 750 ms lead-in. No other-hardware performance claim.
+
+Changed files (scope / Electron port):
+
+- `bennyshub/index.html` — WEB UI / NOT PORTED: independent Speakers section, disabled-off controls, scan refresh, permission guard, app-close cancellation.
+- `bennyshub/shared/communication-channel.js` — WEB SHARED / NOT PORTED: owned audio tickets, sink verification, silent prefix, cancellation and cleanup.
+- `bennyshub/shared/communication-speech.js` — WEB SHARED / NOT PORTED: platform settings, parent/iframe service, devices, worker preparation and lifecycle.
+- `bennyshub/shared/communication-settings.js` — WEB UI / NOT PORTED: existing-scan controls, voice readiness and permission setup.
+- `bennyshub/shared/communication-worker.js` — WEB RUNTIME / NOT PORTED: local synthesis, chunking, hardware acceleration, cache and warm-up.
+- `bennyshub/apps/tools/keyboard/app.js` and `index.html` — WEB APP / NOT PORTED: message-only routing and visible status.
+- `bennyshub/apps/tools/phraseboard/index.html` and `board-live.js` — WEB APP / NOT PORTED: message/closed-box tile routing; open-box composition retained.
+- `bennyshub/apps/tools/rtc-lite/index.html` and `app.js` — WEB APP / NOT PORTED: public routing, actual completion for listening, existing footer status and cleanup.
+- `bennyshub/service-worker.js` — WEB ONLY / NOT PORTED: v48 shell scripts; optional voice runtime caches only on use.
+- `bennyshub/shared/communication-vendor/kokoro.web.js`, `ort-wasm-simd-threaded.jsep.mjs`, `ort-wasm-simd-threaded.jsep.wasm` — WEB VENDOR / NOT PORTED: unmodified pinned runtime.
+- Vendor `KOKORO-LICENSE.txt`, `TRANSFORMERS-LICENSE.txt`, `ONNX-LICENSE.txt`, `PHONEMIZER-LICENSE.txt`, `ESPEAK-COPYING.txt`, `THIRD-PARTY-NOTICES.txt`, `SOURCES.json` — WEB ATTRIBUTION / NOT PORTED.
+- `tests/communication-channel.test.cjs`, `tests/communication-worker.test.cjs` and `scripts/check-communication-speaker.cjs` — WEB TESTS / NOT PORTED: lifecycle and real app/switch checks; OS-temp browser cwd.
+- `developer-guide.html`, `docs/development/COMMUNICATION-SPEAKER.md`, `docs/history/DEVELOPMENT-HISTORY.md` — DOCUMENTATION / NOT PORTED: contract, measured limitations and handoff.
+
+Verification: the final preview changes passed all 12 focused channel/worker tests and the browser integration check, including all 14 switch-selectable voices, output samples, rapid changes and cancellation on exit/off. Real synthesis passed for all 14 voices with no network failures. Earlier full validation: all 273 website unit tests passed (including nine new channel tests); all 1,142 page/asset checks passed. Real installed-Chrome model generation and latency checks passed. Browser integration passed all five communication actions, default-off restoration, device failure, Spacebar/Return and Auto Scan reachability, disabled-off scanning, and the Cancel-first permission guard. Real Chrome output enumeration found nine outputs, and explicit sink assignment plus muted playback passed for the Anker SoundCore Bluetooth output and a second output. All 11 desktop source hashes in the archived proof-of-concept manifest still match. Physical Bluetooth/headphone listening with the new browser voice remains a user check. No commit, push or deployment. Ben's live desktop app is unchanged. At the owner's request, the old desktop `tests/audio-routing-poc` was archived under `tmp/communication-speaker-backup-20261017/audio-routing-poc.zip` and removed; baseline website source backup and HEAD 8380df20d34b12867acb78dc73e8f53d453f6e0e are recorded alongside it.
+
 ## 2026-10-17 - RTC Lite natural spoken replies
 
 The owner reported Gemini Nano returning "no replies needed yet" and "nothing specific to add" after "hello". The prompt prescribed eight fixed purposes even for greetings, and validation checked structure without rejecting task commentary. The local prompt now adapts to the exchange and asks for words the person can say aloud. AI-only validation rejects the reported placeholders and related model commentary, including during partial recovery. Saved personal phrases and natural refusals remain valid. Nano/local servers retain one bounded correction attempt; the own-key client rejects unusable output without adding paid calls. The separate Worker is not redeployed in this release.

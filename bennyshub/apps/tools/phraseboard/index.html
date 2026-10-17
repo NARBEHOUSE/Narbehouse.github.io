@@ -493,6 +493,7 @@
       </div>
     </main>
 
+    <p id="communication-status" role="status" aria-live="polite" hidden style="margin:4px 8px;font-size:16px;line-height:1.3;overflow-wrap:anywhere"></p>
     <footer id="statusFooter" role="status">Ready - Load CSV to begin</footer>
   </div>
 
@@ -551,6 +552,8 @@
   <script src="../../../shared/choice-scan-adapter.js"></script>
   <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
   <script src="../../../shared/voice-manager.js"></script>
+  <script src="../../../shared/communication-channel.js"></script>
+  <script src="../../../shared/communication-speech.js"></script>
   <script src="../../../shared/scan-manager.js"></script>
   <script src="board-core.js"></script>
   <script src="prediction-data.js"></script>
@@ -1800,7 +1803,7 @@ function updateHeaderForCurrentView(){
              if (!state.videoModalActive) {
                 if (element === el.sentenceDisplay && state.sentenceMode) {
                   const displayText = messageText();
-                  if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
+                  if (displayText) { if (NarbeCommunicationSpeech.isEnabled() || window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
                   else { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty'); }
                 } else if (element === el.deleteWordBtn && state.sentenceMode) {
                   selectionText = 'Deleting';
@@ -1846,7 +1849,7 @@ function updateHeaderForCurrentView(){
           if (!state.videoModalActive) {
             if (element === el.sentenceDisplay && state.sentenceMode) {
               const displayText = messageText();
-              if (displayText) { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
+              if (displayText) { if (NarbeCommunicationSpeech.isEnabled() || window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage(true); } // blockInput=true
               else { if (window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty'); }
             } else if (element === el.deleteWordBtn && state.sentenceMode) {
               selectionText = 'Deleting';
@@ -1959,7 +1962,7 @@ function updateHeaderForCurrentView(){
 
     el.sentenceDisplay.addEventListener('click', () => {
       const text = messageText();
-      if (text && window.NarbeVoiceManager.getSettings().ttsEnabled) speakMessage();
+      if (text && (NarbeCommunicationSpeech.isEnabled() || window.NarbeVoiceManager.getSettings().ttsEnabled)) speakMessage();
       else if (!text && window.NarbeVoiceManager.getSettings().ttsEnabled) speak('sentence is empty');
     });
 
@@ -2107,12 +2110,12 @@ function updateHeaderForCurrentView(){
 
       // Handle regular phrases (non-URLs) - keep same TTS function
       // Pass blockInput=true to prevent accidental scan interruption
-      if (state.sentenceMode && !item.immediate) {
+      if (state.sentenceMode && (!item.immediate || NarbeCommunicationSpeech.isEnabled())) {
         state.sentence.push({ text, display: item.display || text, image: item.image || '' });
         updateSentenceDisplay();
       } else {
         const cleanText = cleanTextForTTS(text);
-        if (cleanText) { rememberMessage(text); speak(cleanText, false, null, null, true); } // blockInput=true for phrases
+        if (cleanText) { rememberMessage(text); NarbeCommunicationSpeech.speak(cleanText, () => speak(cleanText, false, null, null, true)); } // blockInput=true for phrases
       }
     }
 
@@ -2684,5 +2687,6 @@ function updateHeaderForCurrentView(){
   <link rel="stylesheet" href="board-enhancements.css" />
   <script src="board-live.js"></script>
   <script src="board-choice.js"></script>
+  <script>NarbeCommunicationSpeech.bindStatus(document.getElementById("communication-status"));</script>
 </body>
 </html>

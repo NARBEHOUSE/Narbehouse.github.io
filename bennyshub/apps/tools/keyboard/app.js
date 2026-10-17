@@ -921,7 +921,7 @@
   textBar.addEventListener("click", () => {
     const text = buffer.replace(/\|/g, "").trim();
     if (text) {
-      speak(text);
+      NarbeCommunicationSpeech.speak(text, () => speak(text));
       trackTTSAndLearn(text); // Use the unified tracking function
     }
   });

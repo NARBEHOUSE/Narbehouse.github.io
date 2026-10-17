@@ -48,6 +48,7 @@ function harness() {
       throw new Error('Unexpected selector: ' + selector);
     } },
     NarbeScanManager: { getSettings: () => ({ autoScan: true, scanInterval: 1000 }), getScanInterval: () => 1000 },
+    NarbeCommunicationSpeech: { help: fallback => fallback() },
     SoundFX: { play() {} }, speak: text => spoken.push(text), announceElement() {}, updateDiceGlows() {},
     focusedDieIndex: -1,
     setAppState(state) { navigation.push(state); sandbox.appState.state = state; }

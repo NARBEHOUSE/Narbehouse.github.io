@@ -317,6 +317,8 @@
 <script src="../../../shared/choice-scan-adapter.js"></script>
     <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
     <script src="../../../shared/voice-manager.js"></script>
+<script src="../../../shared/communication-channel.js"></script>
+<script src="../../../shared/communication-speech.js"></script>
     <script src="../../../shared/ios-audio-fix.js"></script>
     <script src="../../../shared/scan-manager.js"></script>
     <script>
@@ -1563,7 +1565,7 @@
                     case 'help':
                         // Speak only. Do not change gameState, close, or navigate -
                         // pause menu stays open exactly as-is.
-                        audio.speak("I need help");
+                        NarbeCommunicationSpeech.help(() => audio.speak("I need help"));
                         break;
 
                     case 'back':

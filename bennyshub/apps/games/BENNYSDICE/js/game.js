@@ -1393,7 +1393,7 @@ function handleMenuAction(action) {
     }
     if (action === 'request-help') {
         // Pause menu "Help" item - just speak the request, do not change state
-        speak("I need help");
+        NarbeCommunicationSpeech.help(() => speak("I need help"));
     }
 }
 

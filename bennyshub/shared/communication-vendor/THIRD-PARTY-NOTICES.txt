@@ -1,0 +1,30 @@
+Communication speaker runtime (optional browser-local speech)
+
+kokoro.web.js is the unmodified kokoro-js 1.2.1 browser bundle:
+https://www.npmjs.com/package/kokoro-js/v/1.2.1
+https://github.com/hexgrad/kokoro/tree/main/kokoro.js
+Kokoro authors and contributors; Apache 2.0. See KOKORO-LICENSE.txt.
+
+The bundle includes Transformers.js 3.5.1 (Hugging Face, Apache 2.0),
+ONNX Runtime Web (Microsoft, MIT) and phonemizer 1.2.1 (Apache 2.0 wrapper).
+See TRANSFORMERS-LICENSE.txt, ONNX-LICENSE.txt and PHONEMIZER-LICENSE.txt.
+The ONNX .mjs and .wasm files are the unmodified files distributed with
+@huggingface/transformers 3.5.1. See SOURCES.json for exact source URLs and hashes.
+
+The phonemizer includes compiled eSpeak NG (GPL v3); this supplies phonemes,
+not the audible voice. See ESPEAK-COPYING.txt. Upstream source and build material:
+https://github.com/espeak-ng/espeak-ng
+https://github.com/xenova/phonemizer.js
+https://registry.npmjs.org/phonemizer/-/phonemizer-1.2.1.tgz
+The browser bundle and WASM are supplied without modifications.
+
+Optional model and voice files are downloaded by Kokoro after Speaker Mode is
+enabled, and cached by its browser libraries. They are not included in this tree.
+Original model: https://huggingface.co/hexgrad/Kokoro-82M (Apache 2.0).
+Browser conversion: https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX
+The conversion and q8 quantization are upstream changes. Runtime code is pinned;
+the upstream model/voice repository revision follows the library's main revision.
+No model integrity or permanent offline-availability guarantee is made.
+
+Messages are synthesized on the device. The application sends no message text
+to a voice service and requires no provider account or API key.

@@ -726,7 +726,7 @@ function setupEventListeners() {
             togglePause(); // Unpause first
             showScreen('main-menu');        } else if (action === 'help') {
             // Pause-menu Help item: just speak for the caregiver, do NOT close the pause overlay or change any other state
-            speak("I need help");
+            NarbeCommunicationSpeech.help(() => speak("I need help"));
         } else if (action === 'settings') {
             // Check if coming from pause menu
             if (state.isPaused) {

@@ -1379,7 +1379,7 @@
       art: art('⏸️'), title: 'Paused', sub: 'The game is saved.',
       items: [
         { id: 'continue', icon: '▶️', label: 'Continue', primary: true, speech: 'Continue', action: resume },
-        { id: 'help', icon: '🆘', label: 'Help', speech: 'Help', action: () => scanSpeak('I need help') },
+        { id: 'help', icon: '🆘', label: 'Help', speech: 'Help', action: () => NarbeCommunicationSpeech.help(() => scanSpeak('I need help')) },
         { id: 'howto', icon: '❓', label: 'How to Play', speech: 'How to play', action: () => setScreen('howto', { page: 0, from: 'pause' }) },
         { id: 'settings', icon: '⚙️', label: 'Settings', speech: 'Settings', action: openSettings },
         { id: 'restart', icon: '🔄', label: 'Restart', speech: 'Restart', action: () => setScreen('confirmRestart') },

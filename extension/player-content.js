@@ -14,6 +14,18 @@
     if(!toolbarSpeechEnabled&&!force)return {started:Promise.resolve(false),finished:Promise.resolve({reason:'disabled',started:false}),cancel(){}};
     return window.NarbeVoiceManager.speak(text,{force:true});
   }
+  let helpRequest;
+  function cancelHelp(){const id=helpRequest;helpRequest=null;if(id)void send('PLAYER_CANCEL_HELP',{id}).catch(()=>{});}
+  async function sayHelp(){
+    cancelHelp();const id=crypto.randomUUID();helpRequest=id;adapter.pause();status.textContent='Calling for help…';
+    try{
+      const result=await send('PLAYER_SAY_HELP',{id});if(removed||helpRequest!==id)return;
+      if(!result.enabled){status.textContent='I need help';speak('I need help',true);}
+      else if(result.reason==='error')announce(result.error||'Help was not spoken. Check Speakers in the Hub.');
+      else status.textContent=result.reason==='ended'?'Help message spoken.':'Help message stopped.';
+    }catch(e){if(!removed&&helpRequest===id)announce(e.message||'Return to the Hub to check speaker Help.');}
+    finally{if(helpRequest===id)helpRequest=null;}
+  }
   function applyToolbarSpeech(enabled){
     const next=enabled!==false,changed=next!==toolbarSpeechEnabled;toolbarSpeechEnabled=next;
     if(changed&&!toolbarSpeechEnabled)window.NarbeVoiceManager.cancel();
@@ -109,6 +121,7 @@
     scanner?.setItems(controls());
   }
   function helpMenu(open){
+    if(!open)cancelHelp();
     helpOpen=open;clearPress();
     nav.hidden=open;helpNav.hidden=!open;helpNotice.hidden=!open;host.dataset.menu=open?'help':'player';
     resetScan();
@@ -127,7 +140,7 @@
         toolbarSpeechSave=toolbarSpeechSave.catch(()=>{}).then(()=>send('PLAYER_TOOLBAR_SPEECH',{enabled})).finally(()=>{toolbarSpeechPending--;});
         toolbarSpeechSave.catch(()=>{if(!removed)status.textContent='Toolbar speech changed for this window. Could not save preference.';});return;
       }
-      if(command==='say-help'){adapter.pause();status.textContent='I need help';speak('I need help',true);return;}
+      if(command==='say-help'){void sayHelp();return;}
       if(command==='back-player'){helpMenu(false);announce('Playback controls. Choose Play when ready.');return;}
       if(command==='keyboard'||command==='phraseboard'||command==='home'){
         adapter.pause();await send('RETURN_TO_HUB',{destination:command});return;
@@ -276,6 +289,7 @@
     if(host.parentElement!==parent)parent.append(host);
     if(host.matches(':popover-open'))host.hidePopover();host.showPopover();updateFrame();focusBar();
   }
+  function leavePage(){cancelHelp();capturePosition();}
   function capturePosition(){send('PLAYER_HELLO').catch(()=>{});}
   function visibility(){clearPress();if(document.hidden)capturePosition();else focusBar();}
   async function playerReady(){
@@ -285,10 +299,10 @@
     try{await send('ENSURE_PLAYER_FULLSCREEN');}catch(e){announce(e.message||'Could not make the playback window fullscreen.');}
   }
   function cleanup(){
-    removed=true;layoutObserver?.disconnect();window.removeEventListener('resize',updateFrame);clearTimeout(domTimer);clearTimeout(focusRequest);clearInterval(aliveTimer);if(scanner){scanner.dispose();window.NarbeVoiceManager.cancel();}clearInterval(startupTimer);clearInterval(focusTimer);clearPress();observer?.disconnect();adapter?.clearView();releaseFrames();host?.remove();
+    cancelHelp();removed=true;layoutObserver?.disconnect();window.removeEventListener('resize',updateFrame);clearTimeout(domTimer);clearTimeout(focusRequest);clearInterval(aliveTimer);if(scanner){scanner.dispose();window.NarbeVoiceManager.cancel();}clearInterval(startupTimer);clearInterval(focusTimer);clearPress();observer?.disconnect();adapter?.clearView();releaseFrames();host?.remove();
     stopKeys();chrome.runtime.onMessage.removeListener(receiveSettings);chrome.runtime.onMessage.removeListener(receiveToolbarSpeech);window.removeEventListener('blur',clearPress);window.removeEventListener('focus',focusBar);
     document.removeEventListener('focusin',keepFocus,true);document.removeEventListener('visibilitychange',visibility);document.removeEventListener('fullscreenchange',mount);window.__bennyPlayer=false;
-    window.removeEventListener('load',playerReady);window.removeEventListener('pagehide',capturePosition);
+    window.removeEventListener('load',playerReady);window.removeEventListener('pagehide',leavePage);
     for(const type of ['pointerdown','mousedown','click','dblclick'])window.removeEventListener(type,protectBar,true);
   }
   const stopKeys=window.NarbePlatform.input.capture({keydown,keyup});
@@ -360,7 +374,7 @@
     layoutObserver=new ResizeObserver(updateFrame);for(const element of [host,nav,helpNav])layoutObserver.observe(element);window.addEventListener('resize',updateFrame);
     if(document.readyState==='complete')playerReady();else window.addEventListener('load',playerReady,{once:true});
     document.addEventListener('fullscreenchange',mount);window.addEventListener('blur',clearPress);window.addEventListener('focus',focusBar);document.addEventListener('focusin',keepFocus,true);document.addEventListener('visibilitychange',visibility);
-    window.addEventListener('pagehide',capturePosition);
+    window.addEventListener('pagehide',leavePage);
     observer=new MutationObserver(schedulePageSync);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-label','aria-disabled','disabled']});
     // Reclaim programmatic page focus, never another browser window or native application.
     focusTimer=setInterval(()=>{syncProfiles();if(!paused)adapter.syncView();if(document.hasFocus()&&document.activeElement!==host)focusBar();},300);

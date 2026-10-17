@@ -350,9 +350,9 @@
     #scan-settings { grid-column: 1 / -1; min-width: 0; }
     #scan-settings h2 { margin: 8px 0 14px; }
     #scan-settings > .grid { margin-bottom: 14px; }
-    #scan-settings button:disabled { cursor: default; transform: none; box-shadow: none; background: rgba(128,128,128,.08); }
-    #scan-settings button:disabled .btn-title { background: none; color: var(--muted); }
-    #scan-settings button:disabled .pill { background: rgba(128,128,128,.2); color: var(--muted); }
+    #scan-settings button:disabled, #speaker-settings button:disabled { cursor: default; transform: none; box-shadow: none; background: rgba(128,128,128,.08); }
+    #scan-settings button:disabled .btn-title, #speaker-settings button:disabled .btn-title { background: none; color: var(--muted); }
+    #scan-settings button:disabled .pill, #speaker-settings button:disabled .pill { background: rgba(128,128,128,.2); color: var(--muted); }
     #screen-settings:focus { outline: none; }
     #settings-scan-status { margin-left: auto; }
     #screen-settings .grid{
@@ -791,6 +791,7 @@
     .connection-status { display: inline-block; border: 1px solid currentColor; border-radius: 20px; padding: 6px 12px; font-weight: 700; color: #ffdf83; background: #302816; }
     .connection-status[data-connection="connected"] { color: #9aefb4; background: #123421; }
     .connection-status[data-connection="disconnected"] { color: #ffb4b4; background: #421f25; }
+    #screen-settings [hidden] { display: none !important; }
   </style>
 </head>
 <body>
@@ -1055,6 +1056,44 @@
             </div>
           </button>
 
+          <section id="speaker-settings" aria-labelledby="speaker-settings-heading" style="grid-column:1 / -1">
+            <h2 id="speaker-settings-heading">Speakers</h2>
+            <div class="grid" role="group" aria-label="Speaker settings">
+          <button class="card-btn" id="speaker-mode-toggle" aria-pressed="false">
+            <span class="kicker">Setting</span><div class="btn-title">Communication Speaker Mode</div>
+            <div class="row"><p class="desc">Send messages and Help requests to a separate speaker, even with TTS off. Scanning uses the default output when TTS is on.</p><span class="pill" id="speaker-mode-status">Off</span></div>
+          </button>
+
+          <button class="card-btn" id="speaker-output-toggle" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Speaker</div>
+            <div class="row"><p class="desc">Cycle through available speakers and hear a sample on each.</p><span class="pill" id="speaker-output-status">Not selected</span></div>
+          </button>
+          <button class="card-btn" id="speaker-voice-toggle" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Speaker voice</div>
+            <div class="row"><p class="desc">Cycle through 14 voices and hear a sample. The Voice setting above controls scanning.</p><span class="pill" id="speaker-voice-status">Michael</span></div>
+          </button>
+          <button class="card-btn" id="speaker-find" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Find speakers</div>
+            <div class="row"><p class="desc">Refresh connected speakers. Browser access may need caregiver help.</p></div>
+          </button>
+          <button class="card-btn" id="speaker-test" disabled>
+            <span class="kicker">Setting</span><div class="btn-title" id="speaker-test-title">Test speaker</div>
+            <div class="row"><p class="desc">Say Hello on the chosen speaker. Select again to stop.</p></div>
+          </button>
+
+            </div>
+          <p id="speaker-details" role="status" aria-live="polite" hidden></p>
+          </section>
+
+          <div id="speaker-permission-dialog" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="speaker-permission-heading" hidden>
+            <div class="modal-content">
+              <h2 id="speaker-permission-heading">Allow speaker access</h2>
+              <p>The browser may ask for permission. Your switches may not work in that prompt, so a caregiver may need to help once. Some browsers ask for microphone access to list speakers; it is stopped immediately without recording.</p>
+              <button class="card-btn" id="speaker-permission-cancel">Cancel</button>
+              <button class="card-btn" id="speaker-permission-allow">Continue to browser prompt</button>
+            </div>
+          </div>
+
           <section id="scan-settings" aria-labelledby="scan-settings-heading"></section>
         </div>
         <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Press <span class="kbd">return</span> to change the highlighted setting. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
@@ -1090,6 +1129,10 @@
   <script src="shared/choice-scan.js"></script>
   <link rel="stylesheet" href="shared/scan-status-badge.css">
   <script src="shared/voice-manager.js"></script>
+  <script src="shared/communication-channel.js"></script>
+  <script src="shared/communication-speech.js"></script>
+  <script src="shared/communication-companion.js"></script>
+  <script src="shared/communication-settings.js"></script>
   <!-- Shared Scan Manager -->
   <script src="shared/scan-manager.js"></script>
   <script src="shared/scan-settings.js"></script>
@@ -1740,6 +1783,7 @@
     function closeIframe() {
       window.BennyUsage?.home();
       clearTimeout(iframeFocusTimer);
+      NarbeCommunicationSpeech._service.stop();
       iframeContainer.classList.remove('active');
       appIframe.src = 'about:blank';
       resetMenuFocus();
@@ -1775,6 +1819,7 @@
     // Screen management
     function showScreen(name) {
       closeCompanionTutorial();
+      if(currentScreen==='settings'&&name!=='settings')window.NarbeCommunicationSpeech?.stop();
       isTransitioning = true;
       currentScreen = name;
 
@@ -2006,6 +2051,8 @@
         !document.getElementById('hub-settings').open;
     }
     function settingsItems() {
+      const permission = document.getElementById('speaker-permission-dialog');
+      if (permission && !permission.hidden) return Array.from(permission.querySelectorAll('button'));
       return Array.from(settingsScreen.querySelectorAll('button:not([disabled])'))
         .filter(el => !el.closest('[hidden], [data-scan-exclude]'));
     }
@@ -2127,6 +2174,10 @@
     }, true);
     settingsScreen.addEventListener('focusin', event => {
       if (event.target.matches('button')) alignSettingsFocus(event.target);
+    });
+    NarbeCommunicationSettings.mount({
+      refreshScan: ({restoreId, fresh} = {}) => { if (settingsScanner) { if (restoreId || fresh) settingsScanner.open(settingsItems(), {restoreId: restoreId || null}); else settingsScanner.setItems(settingsItems()); } },
+      announce: text => announceSetting(text)
     });
     const scanSettingsUI = window.NarbeScanSettings.mount(document.getElementById('scan-settings'), {
       manager: window.NarbeScanManager,

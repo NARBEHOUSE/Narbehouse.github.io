@@ -68,6 +68,7 @@
     }
     function openScreen(next) {
       cancelInput();
+      NarbeCommunicationSpeech.stop();
       voice.cancel();
       if(screen==='keyboard'&&next!=='keyboard'){++predictionRevision;predictionAbort?.abort();clearTimeout(predictionTimer);pendingPredictions={};pendingPredictionContext={};contextState.keyboardRequest=null;refreshPredictionRow=null;}
       screen = next;
@@ -87,13 +88,21 @@
       byId('scanHint').textContent = prefs.autoScan ? 'Auto Scan · Enter selects' : 'Space moves · Enter selects';
       updateExtraSettings();
     }
+    function communicate(text) {
+      if (!NarbeCommunicationSpeech.isEnabled()) return choice.announce(text);
+      // Keep listening paused until actual public playback ends (not a scan timeout).
+      speech.voiceStarted();
+      const ticket = NarbeCommunicationSpeech.speak(text);
+      Promise.resolve(ticket.finished).then(() => speech.voiceEnded(), () => speech.voiceEnded());
+      return ticket;
+    }
     function speakTile(tile) {
       restoreRow();
       const text = tile.dataset.say;
       memory.add('user','board',text);
-      byId('boardStatus').textContent = voice.getSettings().ttsEnabled ? 'Selected: ' + text : 'Speech is off. Turn it on in Settings.';
+      byId('boardStatus').textContent = (NarbeCommunicationSpeech.isEnabled() || voice.getSettings().ttsEnabled) ? 'Selected: ' + text : 'Speech is off. Turn it on in Settings.';
       // Owned speech lets Wait for Speech protect the selected phrase from the next scan label.
-      choice.announce(text);
+      communicate(text);
     }
     async function exitApp() {
       if (disposed) return;
@@ -156,6 +165,11 @@
     });
     // Observe the platform's actual completion, not the voice manager's bounded scan-wait ticket.
     // This also covers scan narration, voice previews, and announcements longer than ten seconds.
+    const stopSpeakerStatus=NarbeCommunicationSpeech.subscribe(status=>{
+      if(!status.enabled||!status.detail||(status.owner&&status.owner!==window))return;
+      if(screen==='board')byId('boardStatus').textContent=status.detail;
+      if(screen==='keyboard')setKeyboardStatus(status.detail);
+    });
     const platformSpeech=window.NarbePlatform.speech,originalSpeak=platformSpeech.speak;
     platformSpeech.speak=function(...args){speech.voiceStarted();let ticket;try{ticket=originalSpeak.apply(this,args);}catch(e){speech.voiceEnded();throw e;}
       Promise.resolve(ticket.finished).then(()=>speech.voiceEnded(),()=>speech.voiceEnded());return ticket;};
@@ -315,7 +329,7 @@
       bioDraft=prefs.bio;byId('bioInput').value=bioDraft;updateSettings();operation('bio','Bio saved. AI suggestions will use this background.');return true;
     }
     async function startKeyboard(target=null){
-      if(!target){restoreRow();const ticket=choice.announce(prefs.announcement);memory.add('user','keyboard',prefs.announcement);const finished=await ticket?.finished;if(disposed||screen!=='board'||finished?.reason==='cancelled')return;}
+      if(!target){restoreRow();const ticket=communicate(prefs.announcement);memory.add('user','keyboard',prefs.announcement);const finished=await ticket?.finished;if(disposed||screen!=='board'||finished?.reason==='cancelled')return;}
       editTarget=target;typed=target?target.value:messageDraft;predictionShown=[];
       openScreen('keyboard');byId('keyboardTitle').textContent=target?target.label:'Keyboard';byId('typedText').dataset.actionLabel=target?'SELECT TO SAVE':'SELECT TO SPEAK';byId('typedText').setAttribute('aria-label',target?'Save edited text':'Speak typed message');byId('keyboardMessageRow').dataset.rowLabel=target?'Save edited text':'Speak message';changedTyping();
     }
@@ -422,7 +436,7 @@
         savePrefs();editTarget=null;typed='';openScreen('phrases');choice.announce('Saved.');return;
       }
       const text=typed.trim();if(!text){choice.announce('Type a message first.');return;}
-      restoreRow();memory.add('user','keyboard',text);messageDraft=typed;setKeyboardStatus('Spoken. Select the message again to repeat it.');choice.announce(text);
+      restoreRow();memory.add('user','keyboard',text);messageDraft=typed;setKeyboardStatus(NarbeCommunicationSpeech.isEnabled()?'Select the message again to repeat it.':'Spoken. Select the message again to repeat it.');communicate(text);
     }
     function leaveKeyboard(){if(editTarget?.key==='bio'){bioDraft=typed;editTarget=null;typed='';showBioEditor();operation('bio','Draft kept. Choose Save bio when ready.');choice.announce('About me. Draft kept.');return;}if(!editTarget)messageDraft=typed;const destination=editTarget?'phrases':'board';editTarget=null;openScreen(destination);choice.announce(destination==='board'?'Communication board.':'My phrases and profile.');}
     async function extendedAction(button){
@@ -583,7 +597,7 @@
     }
     function dispose() {
       if (disposed) return;
-      cancelInput(); disposed = true;keyboardResize.disconnect(); cancelRequests();clearTimeout(testTimer);++setupEpoch;++aiSetupEpoch;speech.dispose();ai.stop();memory.clear();showLastHeard();bioDraft=null;byId('bioInput').value='';typed=messageDraft='';choice.dispose();voice.cancel();platformSpeech.speak=originalSpeak;
+      cancelInput(); NarbeCommunicationSpeech.stop(); stopSpeakerStatus(); disposed = true;keyboardResize.disconnect(); cancelRequests();clearTimeout(testTimer);++setupEpoch;++aiSetupEpoch;speech.dispose();ai.stop();memory.clear();showLastHeard();bioDraft=null;byId('bioInput').value='';typed=messageDraft='';choice.dispose();voice.cancel();platformSpeech.speak=originalSpeak;
       scan.unsubscribe(onScanSettings); voice.offSettingsChange(updateSettings);
     }
     const keyboardResize=new ResizeObserver(()=>{fitKeyboardPredictions();fitBoardText();});keyboardResize.observe(byId('keyboardScreen'));keyboardResize.observe(byId('board'));

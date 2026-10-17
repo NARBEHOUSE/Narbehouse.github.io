@@ -505,6 +505,8 @@
           <li>Keep spoken labels short — they are read at every scan step, and at a 1-second scan speed a long label becomes a drone</li>
           <li><strong>TTS should never block input</strong></li>
         </ul>
+      <div class="card"><h4>Communication speaker routing</h4><p>The Hub has a device-local Speakers section for deliberate messages in Keyboard, Phrase Board and RTC Lite, game Help requests and Companion Say I need help. Speaker Mode works independently of general TTS: turning off scanning/system speech does not silence communication messages. Keep scan labels on NarbeVoiceManager. Route only intentional messages through NarbeCommunicationSpeech.speak(text, originalSpeechCallback); off calls the original path. Speaker Mode uses a local downloadable voice because native browser speech cannot select a separate output. All speaker controls remain visible and disabled when off, and join the existing scan when on. Preserve the Cancel-first guard before any browser permission prompt. See docs/development/COMMUNICATION-SPEAKER.md in the source repository for routing, cancellation, voice preparation and test details. Electron integration remains a separate pass.</p></div>
+
 
         <h3>Sound Effects</h3>
         <ul>

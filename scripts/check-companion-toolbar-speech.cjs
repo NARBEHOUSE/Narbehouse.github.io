@@ -1,18 +1,33 @@
 // Actual unpacked Companion; only its native speech endpoint and shadow visibility are instrumented.
 const {chromium,expect}=require('@playwright/test');
+const os=require('node:os');
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {expectPlayerLayout}=require('./player-layout-checks.cjs');
 const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http://127.0.0.1:4173',artifacts=path.join(root,'artifacts/companion-toolbar-speech');
 const browser=process.env.HUB_BROWSER_PATH||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-let context,hub,worker;const report={checks:[],errors:[],layouts:[],fixture:'Real extension transport/storage and key input; routed Netflix canvas-video fixture. The copied shadow root is open for test access and only the native speech call is replaced with deterministic start/end records.'};
+let context,hub,worker,runtime;const report={checks:[],errors:[],layouts:[],fixture:'Real extension transport/storage and key input; routed Netflix canvas-video fixture. The copied shadow root is open for test access and only the native speech call is replaced with deterministic start/end records.'};
 const pass=text=>{report.checks.push(text);console.log('PASS '+text)};
+function mocks(){
+ if(!location.pathname.startsWith('/bennyshub/'))return;
+ window.__speech=[],window.__public=[],window.__stoppedTracks=0;window.__outputs=[{kind:'audiooutput',deviceId:'headphones',label:'Headphones'},{kind:'audiooutput',deviceId:'speaker',label:'Bluetooth speaker'}];
+ Object.defineProperty(navigator.mediaDevices,'enumerateDevices',{value:async()=>window.__outputs});
+ Object.defineProperty(navigator.mediaDevices,'selectAudioOutput',{value:undefined});
+ Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>({getTracks:()=>[{stop:()=>window.__stoppedTracks++}]})});
+ window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+ Object.defineProperty(window,'speechSynthesis',{value:{speaking:false,cancel(){},getVoices:()=>[{name:'Test voice',lang:'en-US',default:true,voiceURI:'test'}],addEventListener(){},removeEventListener(){},speak(u){window.__speech.push(u.text);queueMicrotask(()=>{u.onstart?.();u.onend?.();});}}});
+ const OriginalWorker=window.Worker;
+ window.Worker=class {constructor(url,options){if(!String(url).includes('communication-worker'))return new OriginalWorker(url,options);}postMessage(m){if(m.type==='cancel')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({text:m.text,voice:m.voice});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),window.__workerDelay||5);}terminate(){}};
+ window.__players=[];
+ window.Audio=class{constructor(){this.sinkId='';window.__players.push(this);}async setSinkId(id){this.sinkId=id;}async play(){this.onplaying?.();setTimeout(()=>this.onended?.(),window.__holdPlayback?250:20);}pause(){}removeAttribute(){}load(){}};
+}
 (async()=>{
- await fs.mkdir(artifacts,{recursive:true});const stamp=Date.now(),dir=path.join(artifacts,'extension-'+stamp),profile=path.join(artifacts,'profile-'+stamp);report.testedExtension=dir;
+ runtime=await fs.mkdtemp(path.join(os.tmpdir(),'benny-help-companion-'));process.chdir(runtime);
+ await fs.mkdir(artifacts,{recursive:true});const dir=path.join(runtime,'extension'),profile=path.join(runtime,'profile');report.testedExtension=dir;
  await fs.cp(path.join(root,'extension'),dir,{recursive:true});const manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json')));manifest.host_permissions=['https://www.netflix.com/*'];await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest));
  const content=await fs.readFile(path.join(dir,'player-content.js'),'utf8');await fs.writeFile(path.join(dir,'player-content.js'),content.replace("mode:'closed'","mode:'open'"));
  const platform=await fs.readFile(path.join(dir,'player-platform.js'),'utf8');await fs.writeFile(path.join(dir,'player-platform.js'),platform.replace('window.speechSynthesis.speak(utterance);',"const el=document.documentElement;el.dataset.speechLog=JSON.stringify([...JSON.parse(el.dataset.speechLog||'[]'),{text:utterance.text,rate:utterance.rate,at:Date.now()}]);utterance.onstart?.();if(el.dataset.speechMode!=='hang')setTimeout(()=>utterance.onend?.(),100);"));
  const start=async()=>{
-  context=await chromium.launchPersistentContext(profile,{executablePath:browser,headless:true,viewport:{width:1280,height:900},args:['--disable-extensions-except='+dir,'--load-extension='+dir]});context.setDefaultTimeout(10000);
+  context=await chromium.launchPersistentContext(profile,{executablePath:browser,headless:true,viewport:{width:1280,height:900},args:['--disable-extensions-except='+dir,'--load-extension='+dir]});context.setDefaultTimeout(10000);await context.addInitScript(mocks);
   context.on('page',p=>p.on('pageerror',e=>report.errors.push({url:p.url(),error:e.message})));
   await context.route('**/fonts.googleapis.com/**',r=>r.abort());await context.route('**/fonts.gstatic.com/**',r=>r.abort());
   await context.route('https://www.netflix.com/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html><body style="margin:0;background:black"><video muted style="width:640px;height:360px"></video><script>const c=document.createElement("canvas");c.width=640;c.height=360;const x=c.getContext("2d");x.fillStyle="navy";x.fillRect(0,0,640,360);x.fillStyle="white";x.font="30px sans-serif";x.fillText("Companion speech fixture",80,180);const v=document.querySelector("video");v.srcObject=c.captureStream(10);v.play().catch(()=>{});</script></body></html>'}));
@@ -39,6 +54,17 @@ const pass=text=>{report.checks.push(text);console.log('PASS '+text)};
  await setHub(true);await player.waitForTimeout(1200);await expect(bar).toHaveAttribute('data-toolbar-speech','off');await clear(player);await stepTo(player,'down');await tap(player,'Enter');await player.waitForTimeout(250);assert.deepEqual(await log(player),[]);
  await bar.getByRole('button',{name:'Help & shortcuts',exact:true}).click();await expect(bar).toHaveAttribute('data-selected','park');await stepTo(player,'say-help');await tap(player,'Enter');await expect.poll(async()=>(await log(player)).map(x=>x.text)).toEqual(['I need help']);await expect(bar).toHaveAttribute('data-toolbar-speech','off');
  pass('Hub TTS On cannot re-enable local narration; deliberate Say I need help still speaks while local Off');
+ // The actual Companion bridge asks the background Hub to use its selected speaker.
+ await setHub(false,{autoScan:false});await hub.evaluate(async()=>{NarbeCommunicationSpeech.toggle();await NarbeCommunicationSpeech.refresh();NarbeCommunicationSpeech.cycleSpeaker();NarbeCommunicationSpeech.cycleSpeaker();});await player.bringToFront();await clear(player);
+ await tap(player,'Enter');await expect.poll(()=>hub.evaluate(()=>__public.at(-1)?.text)).toBe('I need help');await expect(bar).toContainText('Help message spoken.');
+ assert.equal(await hub.evaluate(()=>__players.at(-1).sinkId),'speaker');assert.deepEqual(await log(player),[]);assert.equal(await hub.evaluate(()=>NarbeVoiceManager.getSettings().ttsEnabled),false);
+ const sent=await hub.evaluate(()=>__public.length);await hub.evaluate(async()=>{__outputs=[];await NarbeCommunicationSpeech.refresh();});await tap(player,'Enter');await expect(bar).toContainText('Help was not spoken');assert.equal(await hub.evaluate(()=>__public.length),sent);assert.deepEqual(await log(player),[]);
+ await hub.evaluate(async()=>{__outputs=[{kind:'audiooutput',deviceId:'headphones',label:'Headphones'},{kind:'audiooutput',deviceId:'speaker',label:'Bluetooth speaker'}];await NarbeCommunicationSpeech.refresh();window.__workerDelay=500;});
+ const playersBefore=await hub.evaluate(()=>__players.length);await tap(player,'Enter',0);await expect.poll(()=>hub.evaluate(()=>__public.length)).toBe(sent+1);await bar.getByRole('button',{name:'Back to video',exact:true}).click();await player.waitForTimeout(650);assert.equal(await hub.evaluate(()=>__players.length),playersBefore);
+ await bar.getByRole('button',{name:'Help & shortcuts',exact:true}).click();await stepTo(player,'say-help');await tap(player,'Enter',0);await expect.poll(()=>hub.evaluate(()=>__public.length)).toBe(sent+2);await tap(player,'Enter');await expect(bar).toContainText('Help message spoken.');assert.equal(await hub.evaluate(()=>__players.length),playersBefore+1);
+ await hub.evaluate(()=>{window.__workerDelay=5;NarbeCommunicationSpeech.toggle();});await clear(player);await tap(player,'Enter');await expect.poll(async()=>(await log(player)).map(x=>x.text)).toEqual(['I need help']);
+ pass('Companion Help uses the selected Hub speaker with both TTS preferences off, reports disconnect without fallback, cancels stale/closed-menu requests, and restores native speech when Speaker Mode is off');
+
  await clear(player);await setHub(true,{autoScan:true,scanSpeedIndex:0,waitForSpeech:true,parking:'chosen'});await player.bringToFront();await bar.getByRole('button',{name:'Back to video',exact:true}).click();await expect(bar).toHaveAttribute('data-selected','park');await tap(player,'Enter');await expect(bar).toHaveAttribute('data-selected','parked');await player.screenshot({path:path.join(artifacts,'parked-speech-off.png')});await tap(player,'Enter');await expect(bar).toHaveAttribute('data-selected','play');await expect.poll(()=>bar.getAttribute('data-selected'),{intervals:[50],timeout:1400}).toBe('back');
  await tap(player,'Space');await expect(bar).toHaveAttribute('data-scan-state','paused');await expect(bar.locator('[data-narbe-scan-paused]')).toHaveCSS('outline-style','dotted');await expect(bar.locator('.narbe-scan-status-badge')).toHaveText('');const paused=await bar.getAttribute('data-selected');await player.waitForTimeout(1100);await expect(bar).toHaveAttribute('data-selected',paused);assert.deepEqual(await log(player),[]);await tap(player,'Space',0);await player.waitForTimeout(800);await expect(bar).toHaveAttribute('data-selected',paused);await expect.poll(()=>bar.getAttribute('data-selected'),{intervals:[50],timeout:600}).not.toBe(paused);
  pass('Wait for Speech advances normally when local Off; Help blank/parking and dotted brake/full-interval resume remain intact');
@@ -53,4 +79,4 @@ const pass=text=>{report.checks.push(text);console.log('PASS '+text)};
  pass('Local Off survives a complete browser restart; Help remains readable with scrolling at desktop and narrow widths');
  report.sourceHashes={};for(const rel of ['extension/background.mjs','extension/player-content.js','extension/player-platform.js','extension/shared/choice-scan.js','extension/shared/voice-manager.js','extension/shared/scan-status-badge.js','extension/shared/scan-status-badge-style.js'])report.sourceHashes[rel]=crypto.createHash('sha256').update(await fs.readFile(path.join(root,rel))).digest('hex');
  assert.deepEqual(report.errors,[]);report.result='passed';
-})().catch(error=>{report.result='failed';report.failure=error.stack;console.error(error);process.exitCode=1}).finally(async()=>{await context?.close();await fs.writeFile(path.join(artifacts,'browser-report.json'),JSON.stringify(report,null,2));});
+})().catch(error=>{report.result='failed';report.failure=error.stack;console.error(error);process.exitCode=1}).finally(async()=>{await context?.close();await fs.writeFile(path.join(artifacts,'browser-report.json'),JSON.stringify(report,null,2));if(runtime){process.chdir(os.tmpdir());await fs.rm(runtime,{recursive:true,force:true});}});

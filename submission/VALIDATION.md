@@ -1,10 +1,23 @@
-# Validation — web scan upgrade and Companion 1.0.8
+# Validation — communication speaker and Companion 1.0.9
+
+The owner requested the website repository push and will upload Companion separately. This task has not submitted it to a store.
+
+- Package: `releases/1.0.9/bennys-hub-companion-1.0.9.zip`; 30 members, 113,808 bytes.
+- SHA-256: `34afd049789f41159061ec9df9c63b6844f59eae38f61c8912f3240ecc203e90`.
+- Package validation checks root manifest, CRCs, exact member bytes, production-only origin and unchanged permissions. All prior archives remain immutable.
+- 288 website unit tests passed after integrating the two newer upstream RTC Lite fixes; 1,186 page/asset references passed. The actual communication browser suite was rerun on the merged code and passed. The production audit checked 3,787 files with no problems.
+- Actual browser app and Companion fixtures passed TTS-off message/Help routing, switches, cancellation, disconnect, default-off behavior and settings persistence. Real Chrome synthesis covered all 14 voices.
+- Separately authorized Electron port passed an isolated app fixture, native IPC/HTTP/Python client completion, all communication apps, switch-selected game Help, minimized-Hub Help/Suction, cancellation, disconnect and native settings synchronization. Real Electron generated speech and completed muted playback on two distinct output devices.
+- Physical Bluetooth listening, Raspberry Pi performance and signed-in provider checks remain manual. The personally installed Companion was not changed.
+
+## Earlier release evidence (historical)
+
 
 Companion 1.0.8 is the prepared update for the Netflix-style video clipping defect and Companion-managed app storage. The current candidate uses the `keyboard-wrap` filename revision while keeping manifest version 1.0.8. It has not been submitted to or approved by the store. On October 4, 2026, the owner previously reported 1.0.7 submitted/pending while 1.0.5 remained public; the publisher dashboard has not been independently checked. Website deployment and store approval are separate.
 
 ## Current keyboard compatibility candidate
 
-Current package: `releases/1.0.8-keyboard-wrap/bennys-hub-companion-1.0.8-keyboard-wrap.zip`.
+Historical package: `releases/1.0.8-keyboard-wrap/bennys-hub-companion-1.0.8-keyboard-wrap.zip`.
 
 - **112,120 bytes; 29 members; SHA-256 `4db777db1037e3ff9fd7469211ab385302cdebf25acb116cd73d433b0bbf3eab`.**
 - The canonical shared scanner adds an opt-in keyboard-row wrap. Companion playback groups retain their default behavior. Manifest version, permissions, storage and provider code are unchanged from the journal-storage candidate.

@@ -66,3 +66,7 @@ Chrome policy explicitly requires disclosure even for local processing: https://
 Chrome fields: https://developer.chrome.com/docs/webstore/cws-dashboard-privacy
 
 Edge fields: https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/publish-extension
+
+## Communication Speaker Mode (1.0.9)
+
+The selected speaker and local voice are device/browser preferences in the Hub. The Companion forwards a fixed Help action to its originating Hub; it does not receive device identifiers or arbitrary message text. The Hub downloads model/voice assets on demand and synthesizes communication on the device. Message audio is kept only in a bounded memory cache by this feature. Find speakers may briefly request microphone access to reveal outputs and immediately stops its tracks without recording. General native voice services retain their own privacy behavior. No extension permissions were added.

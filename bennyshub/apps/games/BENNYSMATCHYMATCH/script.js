@@ -747,7 +747,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Settings", action: () => showPauseSettings() },
         { text: "Return to Menu", action: () => showMainMenu() },
-        { text: "Help", action: () => speak("I need help") },
+        { text: "Help", action: () => NarbeCommunicationSpeech.help(() => speak("I need help")) },
         { text: "Exit", action: () => {
              speak("Exiting to Hub");
              setTimeout(() => {

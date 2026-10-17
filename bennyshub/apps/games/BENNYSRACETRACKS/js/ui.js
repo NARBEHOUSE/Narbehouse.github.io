@@ -450,7 +450,7 @@ RT.ui = (function () {
         { label: '▶ Continue', speech: 'Continue', action: resumeRace },
         { label: '🔄 Restart', speech: 'Restart', action: startRun },
         { label: '🏠 Main Menu', speech: 'Main Menu', action: () => { G.quitToMenu(); setScreen('title'); } },
-        { label: '🆘 Help', speech: 'Help', action: () => U.speak('I need help') }
+        { label: '🆘 Help', speech: 'Help', action: () => NarbeCommunicationSpeech.help(() => U.speak('I need help')) }
       ],
       speech: 'Paused. Continue, Restart, Main Menu, or Help.'
     }),

@@ -5,6 +5,18 @@
   chrome.runtime.onMessage.addListener((message,sender,reply)=>{
     if(sender.id!==chrome.runtime.id||message?.protocol!==1)return;
     if(message.action==='HUB_PING'){reply({url:location.href});return;}
+    if(window===window.top&&['COMMUNICATION_HELP','COMMUNICATION_HELP_CANCEL'].includes(message.action)){
+      const p=message.payload;
+      if(typeof p?.id!=='string'||!/^[-\w]{1,80}$/.test(p.id))return;
+      const post=action=>window.postMessage({channel:'benny-companion-help-request',id:p.id,action,deadline:p.deadline},location.origin);
+      if(message.action==='COMMUNICATION_HELP_CANCEL'){post('cancel');reply({cancelled:true});return;}
+      let timer;
+      const cleanup=()=>{clearTimeout(timer);window.removeEventListener('message',receive);};
+      const receive=event=>{if(event.source===window&&event.origin===location.origin&&event.data?.channel==='benny-companion-help-response'&&event.data.id===p.id){cleanup();reply(event.data.data);}};
+      window.addEventListener('message',receive);
+      timer=setTimeout(()=>{cleanup();post('cancel');reply({enabled:true,reason:'error',error:'The Hub did not finish the Help request. Return to the Hub and check Speakers.'});},46000);
+      post('help');return true;
+    }
     if(message.action==='STREAM_POSITION'&&window===window.top){
       try{
         const progress=message.progress,active=JSON.parse(localStorage.getItem('benny-web:v1:streaming.activePlayback')||'null');

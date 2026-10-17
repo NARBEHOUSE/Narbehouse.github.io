@@ -1,3 +1,4 @@
+import {createPlayerHelp} from './player-help.mjs';
 import {updatePlayerScripts} from './player-registration.mjs';
 import {PROTOCOL,isHub,playerURL,scanPrefs,SERVICES} from './policy.mjs';
 import {calendarWeek} from './calendar.mjs';
@@ -8,6 +9,7 @@ const journalStore=createJournalStore(chrome.storage.local);
 const appDataStore=createAppDataStore(chrome.storage.local);
 const toolbarSpeechKey='playerToolbarSpeechEnabled';
 let toolbarSpeechQueue=Promise.resolve();
+const playerHelp=createPlayerHelp({managed,hubLocation,sameHub});
 const launchBusy=new Set();
 const returning=new Map();let returnQueue=Promise.resolve();
 async function hubLocation(tabId) {
@@ -152,6 +154,8 @@ async function handle(m,sender){
   await trustedStorage;
   if(sender.id!==chrome.runtime.id||m?.protocol!==PROTOCOL)throw Error('Unsupported request.');
   if(m.action==='SETTINGS_RETURN')return returnFromSettings(sender,m.payload);
+  if(m.action==='PLAYER_SAY_HELP')return playerHelp.speak(sender,m.payload);
+  if(m.action==='PLAYER_CANCEL_HELP'){await managed(sender);await playerHelp.cancel(sender.tab.id,m.payload?.id);return {};}
   if(m.action==='PLAYER_HELLO'){
     const session=await managed(sender);await rememberPosition(sender,session,m.payload?.url);
     const synced=(await chrome.storage.session.get('scan:'+session.hubOrigin))['scan:'+session.hubOrigin];
@@ -188,6 +192,7 @@ async function handle(m,sender){
     return {};
   }
   if(m.action==='RETURN_TO_HUB'){
+    await managed(sender);await playerHelp.cancel(sender.tab.id);
     return returnToHub(sender,m.payload?.destination,m.payload?.url);
   }
   if(!sender.tab||!isHub(sender.url))throw Error('Only Benny’s Hub can use this action.');
@@ -265,7 +270,7 @@ async function handle(m,sender){
 chrome.runtime.onMessage.addListener((message,sender,reply)=>{
   handle(message,sender).then(data=>reply({ok:true,data}),e=>reply({ok:false,error:e.message||'Request failed.',...(e.code?{code:e.code}:{})}));return true;
 });
-chrome.tabs.onRemoved.addListener(id=>{chrome.storage.session.remove(['player:'+id,'resume:'+id]);});
+chrome.tabs.onRemoved.addListener(id=>{void playerHelp.cancel(id);chrome.storage.session.remove(['player:'+id,'resume:'+id]);});
 chrome.action.onClicked.addListener(()=>chrome.runtime.openOptionsPage());
 
 chrome.runtime.onInstalled.addListener(()=>{updatePlayerScripts().catch(()=>{});});

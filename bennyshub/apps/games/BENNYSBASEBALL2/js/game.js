@@ -3998,7 +3998,7 @@ class GameScene extends BaseballScene {
                     this.showPauseMenu(resumeCb, idx);
                 }
                 else if (opt.value === 'nexttrack') { this.audio.nextTrack(); this.showPauseMenu(resumeCb, idx); }
-                else if (opt.value === 'help') { this.audio.speak('I need help', true); }
+                else if (opt.value === 'help') { NarbeCommunicationSpeech.help(() => this.audio.speak('I need help', true)); }
                 else if (opt.value === 'quit') { this.setMenu(null); this.scene.start('TitleScene'); }
             }
         }));

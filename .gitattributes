@@ -7,3 +7,6 @@
 /bennyshub/shared/scan-status-badge.css -text
 
 /bennyshub/shared/data-backup.js -text
+
+# Keep pinned speech runtime bytes identical to SOURCES.json on every checkout.
+/bennyshub/shared/communication-vendor/** -text

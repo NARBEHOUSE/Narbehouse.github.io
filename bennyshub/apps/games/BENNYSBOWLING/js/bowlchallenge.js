@@ -2173,7 +2173,7 @@ function handlePauseMenuEnter() {
 		hidePauseMenu();
 		returnToMenu();
 	} else if (idx === 3) { // Help
-		speakText('I need help');
+		NarbeCommunicationSpeech.help(() => speakText('I need help'));
 	}
 }
 
@@ -2580,7 +2580,7 @@ function buildMenus() {
 	var continueBtn = document.createElement('button'); continueBtn.textContent = 'CONTINUE GAME'; continueBtn.style = pbtnStyle; continueBtn.onclick = ()=> resumeGame();
 	var psettingsBtn = document.createElement('button'); psettingsBtn.textContent = 'SETTINGS'; psettingsBtn.style = pbtnStyle; psettingsBtn.onclick = ()=> { showSettings(); };
 	var pmenuBtn = document.createElement('button'); pmenuBtn.textContent = 'MAIN MENU'; pmenuBtn.style = pbtnStyle; pmenuBtn.onclick = ()=> { hidePauseMenu(); returnToMenu(); };
-	var phelpBtn = document.createElement('button'); phelpBtn.textContent = 'HELP'; phelpBtn.style = pbtnStyle; phelpBtn.onclick = ()=> { speakText('I need help'); };
+	var phelpBtn = document.createElement('button'); phelpBtn.textContent = 'HELP'; phelpBtn.style = pbtnStyle; phelpBtn.onclick = ()=> { NarbeCommunicationSpeech.help(() => speakText('I need help')); };
 	pbox.appendChild(ptitle); pbox.appendChild(continueBtn); pbox.appendChild(psettingsBtn); pbox.appendChild(pmenuBtn); pbox.appendChild(phelpBtn);
 	pauseMenuDiv.appendChild(pbox);
 	document.body.appendChild(pauseMenuDiv);

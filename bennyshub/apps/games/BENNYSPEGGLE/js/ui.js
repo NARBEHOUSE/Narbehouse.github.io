@@ -463,7 +463,7 @@
         { label: 'Restart Level', icon: '↺', action: () => { closePause(); g.restartLevel(); } },
         { label: 'Settings', icon: '⚙', action: () => setScreen('settings', { push: true }) },
         { label: 'How to Play', icon: '❓', action: () => setScreen('howto', { push: true }) },
-        { label: 'Help', icon: '🙋', speech: 'Help', action: () => AU().say('I need help') }
+        { label: 'Help', icon: '🙋', speech: 'Help', action: () => NarbeCommunicationSpeech.help(() => AU().say('I need help')) }
       ];
       if (g.test) list.push({ label: 'Back to Editor', icon: '✏', action: leaveTest });
       else list.push({ label: 'Main Menu', icon: '🏠', sub: 'Your level is saved', action: () => { closePause(true); g.quitToMenu(); toTitle(); } });

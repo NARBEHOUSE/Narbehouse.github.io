@@ -290,7 +290,7 @@
   function pause() {
     if (!activeGame || screen === 'pause' || sim.s.phase === 'final') return; clearHeld();
     const row = {
-      continue: { name: 'Continue', action: resume }, help: { name: 'Help', desc: 'Say “I need help”', action: () => speaking('I need help') },
+      continue: { name: 'Continue', action: resume }, help: { name: 'Help', desc: 'Say “I need help”', action: () => NarbeCommunicationSpeech.help(() => speaking('I need help')) },
       status: { name: 'Game status', desc: 'Hear the score, down and last play', action: () => speaking(sentences(situation(sim.s), lastResult && 'Last play: ' + lastResult.title, lastResult?.detail)) },
       restart: { name: 'Restart game', action: () => overlay('confirm', 'RESTART GAME?', 'The current game will start again from kickoff.', [{ name: 'Keep playing', action: pauseMenu }, { name: 'Restart', action: restartCurrent }]) },
       settings: { name: 'Settings', action: () => settings('pause') }, howTo: { name: 'How to play', action: () => help('pause') }, menu: { name: 'Main menu', action: () => { saveMatch(); mainMenu(); } }, exit: { name: 'Exit game', action: exitGame }

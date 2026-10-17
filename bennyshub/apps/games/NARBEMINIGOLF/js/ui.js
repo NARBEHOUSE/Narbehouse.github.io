@@ -478,7 +478,7 @@
             { label: 'Continue', icon: '▶', action: resumeGame },
             { label: 'Restart Hole', icon: '↺', action: () => { closePause(); G.restartHole(); } },
             { label: 'Settings', icon: '⚙', action: () => setScreen('settings', { push: true }) },
-            { label: 'Help', icon: '🙋', speech: 'Help', action: () => AU.say('I need help') },
+            { label: 'Help', icon: '🙋', speech: 'Help', action: () => NarbeCommunicationSpeech.help(() => AU.say('I need help')) },
             { label: 'Main Menu', icon: '🏠', sub: 'Your round is saved after each hole', action: () => { closePause(); G.quitToMenu(); toTitle(); } },
             { label: 'Exit Game', icon: '🚪', action: goToHub }
           ]

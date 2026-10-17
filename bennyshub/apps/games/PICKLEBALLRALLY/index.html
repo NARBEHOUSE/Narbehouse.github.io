@@ -628,6 +628,8 @@
 <script src="../../../shared/choice-scan-adapter.js"></script>
 <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
 <script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/communication-channel.js"></script>
+<script src="../../../shared/communication-speech.js"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 <script src="../../../shared/scan-manager.js"  onerror="console.warn('scan-manager.js not loaded')"></script>
 
@@ -862,7 +864,7 @@ function onEnter(fromChoice=false) {
     if (pauseMenuIndex < 0) return; // nothing highlighted yet
     if (pauseMenuIndex === 0) closePause();
     else if (pauseMenuIndex === 1) pauseGoMainMenu();
-    else speak('I need help');
+    else NarbeCommunicationSpeech.help(() => speak('I need help'));
     return;
   }
   if (currentMenu === 'start') {
@@ -1636,7 +1638,7 @@ document.querySelectorAll('#pauseMenu .menuItem').forEach((el, i) => {
     updatePauseMenuFocus();
     if (i === 0) closePause();
     else if (i === 1) pauseGoMainMenu();
-    else speak('I need help');
+    else NarbeCommunicationSpeech.help(() => speak('I need help'));
   });
 });
 

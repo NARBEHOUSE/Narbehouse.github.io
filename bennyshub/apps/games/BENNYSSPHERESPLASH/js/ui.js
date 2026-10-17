@@ -571,7 +571,7 @@ SS.ui = (function () {
         { icon: '⚙️', label: 'Settings', speech: 'Settings', action: openSettings },
         { icon: '🏠', label: 'Main Menu', note: 'The match is saved', speech: 'Main menu. The match is saved.', action: () => G().quitToMenu() },
         { icon: '🚪', label: 'Exit Game', speech: 'Exit Game', action: () => setScreen('confirmExit', { from: 'pause' }) },
-        { icon: '🆘', label: 'Help', speech: 'Help', action: () => U.speak('I need help') },
+        { icon: '🆘', label: 'Help', speech: 'Help', action: () => NarbeCommunicationSpeech.help(() => U.speak('I need help')) },
       ],
       layout: 'grid2', speech: 'Paused. Continue, Restart Match, Settings, Main Menu, Exit Game, or Help.',
     }),

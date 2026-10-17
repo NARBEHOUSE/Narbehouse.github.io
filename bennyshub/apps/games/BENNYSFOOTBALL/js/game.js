@@ -3280,7 +3280,7 @@ class GameScene extends Phaser.Scene {
         else if (value === 'settings') { this.pauseView = 'settings'; this.showPauseMenu(); }
         else if (value === 'back') { this.pauseView = 'main'; this.showPauseMenu(); }
         else if (value === 'menu') { this.closePause(); this.scene.start('TitleScene'); }
-        else if (value === 'help') { a.speak('I need help', true); }
+        else if (value === 'help') { NarbeCommunicationSpeech.help(() => a.speak('I need help', true)); }
         else if (value === 'music') { a.toggleMusic(); this.showPauseMenu(idx); }
         else if (value === 'sfx') {
             a.settings.soundEnabled = !a.settings.soundEnabled;
