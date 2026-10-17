@@ -54,3 +54,26 @@ Application/Worker code follows the repository MIT license. Bundled components r
 SmolLM2/WebLLM is no longer offered after reports of freezing and stalled suggestions. Previously saved selections move to AI Off and clear the retired load flag. This does not select cloud AI or change a saved bio, phrases, speech source, or provider key. The active provider code cannot launch its inference worker. Old experimental worker files and third-party notices remain as historical source; the web app no longer precaches or loads them.
 
 Chrome mobile support reference: https://developer.chrome.com/docs/ai/prompt-api#hardware-requirements
+
+
+## Desktop Chrome recommendation (2026-10-17)
+
+AI settings now displays and announces a recommendation to use supported desktop
+Google Chrome for free local Gemini Nano suggestions: select **Chrome local AI ·
+Gemini Nano**, then **Load AI model**. The model requires a download and compatible
+hardware. Android, iPhone and iPad cannot use this website API, including with
+Chrome's Desktop site option. Current requirements:
+https://developer.chrome.com/docs/ai/get-started#hardware
+
+Own-key cloud AI, Ollama/OpenAI-compatible local servers and AI Off remain
+available. Provider behavior, stored settings and speech recognition are unchanged.
+The tested smaller experimental models are not included because their replies
+were not useful enough. No model or runtime downloads were added.
+
+Release scope: web RTC Lite only (`index.html`, `app.js`, and this README).
+Desktop port: not included. The existing network-first service worker fetches
+these updated assets on an online reload; no shared Hub changes are required.
+
+Validation: 264 existing tests passed, plus 18 focused browser checks covering
+the notice, narration, mobile/desktop layout and retained settings routes.
+Public build, release audit and 1,142 page-reference checks passed.
