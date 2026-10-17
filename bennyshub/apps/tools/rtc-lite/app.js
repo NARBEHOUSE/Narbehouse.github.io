@@ -419,7 +419,7 @@
         savePrefs();editTarget=null;typed='';openScreen('phrases');choice.announce('Saved.');return;
       }
       const text=typed.trim();if(!text){choice.announce('Type a message first.');return;}
-      restoreRow();memory.add('user','keyboard',text);typed=messageDraft='';changedTyping();setKeyboardStatus('Spoken: '+text);choice.announce(text);
+      restoreRow();memory.add('user','keyboard',text);messageDraft=typed;setKeyboardStatus('Spoken. Select the message again to repeat it.');choice.announce(text);
     }
     function leaveKeyboard(){if(editTarget?.key==='bio'){bioDraft=typed;editTarget=null;typed='';showBioEditor();operation('bio','Draft kept. Choose Save bio when ready.');choice.announce('About me. Draft kept.');return;}if(!editTarget)messageDraft=typed;const destination=editTarget?'phrases':'board';editTarget=null;openScreen(destination);choice.announce(destination==='board'?'Communication board.':'My phrases and profile.');}
     async function extendedAction(button){

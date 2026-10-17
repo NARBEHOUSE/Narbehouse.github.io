@@ -34,7 +34,7 @@ Suggested replies cover different conversational purposes: agreement, disagreeme
 
 Typing refreshes AI words and phrases using the current sentence and context. The third row and temporary AI-row fallbacks use only the existing web keyboard's web_keyboard_predictions.json. Partial words are completed; recorded ngrams supply short phrase continuations. More words/phrases refresh the selected row. Updates wait while individual choices are being scanned, and stale responses are discarded.
 
-Select the centered text box to speak and stay on the keyboard. While editing a bio/default/announcement, the same box saves instead. Controls are below it. Color separates controls, predictions and letters. The bio editor also supports an ordinary physical keyboard without speaking or logging private profile text.
+Select the centered text box to speak and stay on the keyboard. The message stays in the box so it can be spoken again; edit it or choose Clear when ready for a new message. While editing a bio/default/announcement, the same box saves instead. Controls are below it. Color separates controls, predictions and letters. The bio editor also supports an ordinary physical keyboard without speaking or logging private profile text.
 
 ## Source and checks
 

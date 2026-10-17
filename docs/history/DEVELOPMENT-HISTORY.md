@@ -2,6 +2,12 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - Keep RTC Lite text available for repetition
+
+The owner requested that speaking the keyboard message retain its text so the same message can be repeated. The speak action now preserves the draft and current predictions, records each selected utterance, and explains that selecting the message again repeats it. Edit/save modes and the explicit Clear action keep their existing behavior.
+
+Files: `bennyshub/apps/tools/rtc-lite/app.js`, `bennyshub/apps/tools/rtc-lite/README.md`, `bennyshub/service-worker.js` (cache v46), `CHANGELOG.md` and `docs/history/DEVELOPMENT-HISTORY.md` - WEB ONLY / no desktop port. Verification covers repeated speech, keyboard return, editing and Clear; publication runs the normal website release checks.
+
 ## 2026-10-17 - RTC Lite listening, context and reply variety
 
 The owner reported a Whisper warning that remained after successful loading, delayed new context while refreshing, and suggestions with similar meanings. The owner also requested RTC-Convo board in the Hub Tools description.

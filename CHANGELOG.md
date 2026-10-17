@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 - Repeat typed RTC Lite messages
+
+- Keep the typed message after speaking so selecting the text box again repeats it. Edit or Clear starts a different message; speaking alone does not regenerate predictions.
+
 ## 2026-10-17 - RTC Lite listening feedback and varied replies
 
 - Keep resolved speech-setup warnings out of the board footer and identify actual model-cache misses separately from runtime failures.
