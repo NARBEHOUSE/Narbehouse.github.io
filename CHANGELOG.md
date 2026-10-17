@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-17 - Remove the freezing experimental RTC Lite model
+
+- Remove SmolLM2 from web and desktop AI choices and block its model startup/generation. Previous selections move to AI Off while saved phrases, profile and speech settings remain.
+- Explain desktop-only Chrome Gemini Nano support, including its absence on Chrome for Android and iPhone/iPad.
+- Keep Cloud API, local server and supported desktop Chrome AI; update the website cache to v47.
+
 ## 2026-10-17 - Repeat typed RTC Lite messages
 
 - Keep the typed message after speaking so selecting the text box again repeats it. Edit or Clear starts a different message; speaking alone does not regenerate predictions.

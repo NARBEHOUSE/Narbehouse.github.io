@@ -2,6 +2,25 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-17 - Retire SmolLM2 and clarify mobile AI support
+
+The owner reported freezing and stuck Thinking on their device and requested reconsidering the experimental browser model. Removed SmolLM2/WebLLM from both web and desktop RTC Lite. Existing webllm selections migrate to AI Off, with the retired ready flag cleared and saved; no cloud provider is selected automatically. Saved bio, phrases, speech preferences and credentials are retained. The active provider no longer contains the WebGPU/worker load or generation path, and rejects stale direct calls. The website service worker is v47 and no longer precaches the old AI worker/helper or caches its vendor runtime. Historical experimental source and attribution files remain available, but are not loaded by the app.
+
+Settings now explicitly explain that Chrome Gemini Nano for websites requires supported desktop Chrome and is unavailable on Android and iPhone/iPad. Existing cloud, local server and desktop Chrome providers remain. No replacement mobile model is shipped: hardware, latency and useful varied replies need target-device evaluation. Google documents Gemma 3 270M as a candidate for narrow tasks and task-specific tuning, not complex conversation: https://developers.googleblog.com/en/introducing-gemma-3-270m/. A separate phrase-ranking design using a small sentence encoder is also a possible prototype; no performance or reply-quality claim is made.
+
+Changed files and scope:
+
+- Web and desktop `bennyshub/apps/tools/rtc-lite/app.js` - SHARED / DESKTOP DONE; retire picker option, migrate saved settings and clarify availability.
+- Web and desktop `bennyshub/apps/tools/rtc-lite/providers.js` - SHARED / DESKTOP DONE; remove worker execution and refuse the retired provider, preserving their distinct credential paths.
+- Web and desktop `bennyshub/apps/tools/rtc-lite/index.html` - COPY / DESKTOP DONE; remove the offer and explain mobile support.
+- Web and desktop `bennyshub/apps/tools/rtc-lite/README.md` and `RTC-LITE-CONTEXT.md` - DOCUMENTATION / DESKTOP DONE; current provider scope and historical evidence.
+- Web `bennyshub/service-worker.js` - WEB ONLY; cache v47 and retired runtime cache entries removed.
+- Web `tests/rtc-provider-retirement.test.cjs` - WEB TEST; reject stale load/generation and retain Chrome setup/generation/disposal.
+- Desktop `tests/rtc-lite-core.cjs` and `tests/electron-rtc-lite-load-state.cjs` - DESKTOP TESTS; retirement guard, saved-state migration and supported options.
+- Web `CHANGELOG.md`, `docs/history/DEVELOPMENT-HISTORY.md` and desktop `ELECTRON-SCAN-UPGRADE.md` - HISTORY; release and parity record.
+
+Validation: 264 website tests and 46 desktop RTC tests pass. Eleven focused browser checks cover migration, preserved preferences, reload, no external model/provider request, available choices, mobile support text and message repetition. The 390 x 844 settings capture was visually reviewed; this is a desktop browser viewport check, not real mobile hardware. Desktop isolated Electron checks pass: 9 setup/migration cases and 4 API cases. The website BYOK browser fixture passes with three synthetic provider calls and four layouts from 800 x 600 to 1366 x 900. Native Parakeet/Whisper speech files, shared scanning and native main/preload remain unchanged. No private microphone audio, new model download or paid provider request was used. Evidence and per-file backups: local workspace `tmp/rtc-retire-smollm-20261017`. Desktop source is updated; no installer rebuild is included.
+
 ## 2026-10-17 - RTC Lite desktop parity completed
 
 The owner explicitly requested bringing missed shared RTC Lite changes into Benny's PC Hub. This authorizes this desktop pass and supersedes the earlier WEB ONLY / no desktop port status for these shared fixes. Compared the published website through 3397318 with the desktop source and selectively applied the common behavior.

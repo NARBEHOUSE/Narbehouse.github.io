@@ -3,21 +3,16 @@
 'use strict';
 const C=window.RtcCore;
 class AI{
- constructor(getPrefs,onProgress,onStateChange=()=>{}){this.onStateChange=onStateChange;this.loading=false;this.prefs=getPrefs;this.progress=onProgress;this.worker=null;this.pending=new Map();this.seq=0;this.ready='';this.queue=Promise.resolve();this.chrome=null;this.generation=0;}
- isAvailable(){const p=this.prefs();return p.ai==='cloud'?!!window.RtcByok.connection():p.ai==='server'?!!String(p.serverModel||'').trim():p.ai!=='off'&&this.ready===p.ai;}
+ constructor(getPrefs,onProgress,onStateChange=()=>{}){this.onStateChange=onStateChange;this.loading=false;this.prefs=getPrefs;this.progress=onProgress;this.ready='';this.queue=Promise.resolve();this.chrome=null;this.generation=0;}
+ isAvailable(){const p=this.prefs();return p.ai==='cloud'?!!window.RtcByok.connection():p.ai==='server'?!!String(p.serverModel||'').trim():p.ai==='chrome'&&this.ready==='chrome';}
  cloudName(){return ({openai:'OpenAI',anthropic:'Anthropic',google:'Google Gemini'})[window.RtcByok.connection()?.provider]||'Connect AI';}
  model(){return window.RtcByok.connection()?.model||'';}
  async setup(download=true){
   const provider=this.prefs().ai;this.stop();const generation=this.generation;this.loading=true;this.onStateChange();
   try{
-  if(provider==='webllm'){
-   if(!navigator.gpu||!await navigator.gpu.requestAdapter())throw Error('Local AI needs WebGPU. Try an updated Edge or Chrome, or use an optional cloud key.');
-   if(generation!==this.generation)throw Error('Setup cancelled.');this.worker=new Worker('./ai-worker.js',{type:'module'});
-   this.worker.onmessage=({data:m})=>{if(m.progress){this.progress(m.progress);return;}const p=this.pending.get(m.id);if(!p)return;clearTimeout(p.timer);this.pending.delete(m.id);m.error?p.reject(Error(m.error)):p.resolve(m.result);};
-   this.worker.onerror=()=>this.stop('Local AI worker stopped. Set it up again.');
-   await this.workerCall({type:'load',download},600000);
-  }else if(provider==='chrome'){
-   if(!window.LanguageModel)throw Error('Chrome built-in AI is unavailable in this browser. Choose Local AI instead.');
+  if(provider==='webllm')throw Error('The experimental browser model is no longer offered. Choose another AI option in Settings.');
+  if(provider==='chrome'){
+   if(!window.LanguageModel)throw Error('Gemini Nano needs supported desktop Chrome; websites cannot use it in Chrome on Android or iPhone/iPad. Choose another AI option in Settings.');
    const options={expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}]};
    const state=await LanguageModel.availability(options);
    if(state==='unavailable'||!download&&state!=='available')throw Error('Chrome AI needs a supported device and setup in Settings.');
@@ -31,23 +26,21 @@ class AI{
   this.ready=provider;return true;
   }finally{if(generation===this.generation){this.loading=false;this.onStateChange();}}
  }
- workerCall(message,timeout=90000){return new Promise((resolve,reject)=>{const id=++this.seq;const timer=setTimeout(()=>{this.stop('Local AI took too long. The regular board and keyboard still work.');},timeout);this.pending.set(id,{resolve,reject,timer});try{this.worker.postMessage({...message,id});}catch(e){clearTimeout(timer);this.pending.delete(id);reject(e);}});}
- stop(message='Local AI stopped.'){++this.generation;this.ready='';this.loading=false;this.worker?.terminate();this.worker=null;this.chrome?.destroy();this.chrome=null;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(Error(message));}this.pending.clear();this.onStateChange();}
+ stop(){++this.generation;this.ready='';this.loading=false;this.chrome?.destroy();this.chrome=null;this.onStateChange();}
  request(prompt,schema,prediction,signal){
   const provider=this.prefs().ai;
   const run=async()=>{
    if(signal?.aborted)throw new DOMException('Cancelled','AbortError');
    if(provider!==this.prefs().ai||!this.isAvailable())throw Error('Set up your selected AI option in Settings. The saved phrases still work.');
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000),abort=()=>{controller.abort();this.worker?.postMessage({type:'interrupt'});};
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000),abort=()=>controller.abort();
    signal?.addEventListener('abort',abort,{once:true});
    try{
     let raw;if(provider==='cloud')throw Error('Use the RTC Lite Worker operation.');
     else if(provider==='server')raw=await window.RtcServer.generate(this.prefs(),prompt,schema,prediction,controller.signal);
-    else if(provider==='webllm')raw=await this.workerCall({type:'generate',prompt,schema,prediction});
-    else{
+    else if(provider==='chrome'){
      const session=this.chrome||await LanguageModel.create({expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}]});this.chrome=null;
      try{raw=await session.prompt(prompt,{responseConstraint:schema,signal:controller.signal});}finally{session.destroy();}
-    }
+    }else throw Error('Choose an available AI option in Settings.');
     if(controller.signal.aborted)throw new DOMException(signal?.aborted?'Cancelled':'AI request timed out. Try again or check your AI server.','AbortError');
     if(signal?.aborted||provider!==this.prefs().ai)throw new DOMException('Cancelled','AbortError');return raw;
    }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}

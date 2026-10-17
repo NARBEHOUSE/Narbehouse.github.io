@@ -134,7 +134,10 @@
     const keyboardRows=[...document.querySelectorAll('.keyboard-row')];
     const sttOptions=['whisper','off'];
     if(window.SpeechRecognition||window.webkitSpeechRecognition)sttOptions.splice(-1,0,'browser');
-    const aiOptions=['cloud','server','webllm',...(window.LanguageModel?['chrome']:[]),'off'];
+    const retiredAI=prefs.ai==='webllm',retiredReady=prefs.aiReady==='webllm';
+    if(retiredAI)prefs.ai='off';
+    if(retiredReady)prefs.aiReady='';
+    const aiOptions=['cloud','server',...(window.LanguageModel?['chrome']:[]),'off'];
     if(!sttOptions.includes(prefs.stt))prefs.stt=sttOptions[0];
     if(!aiOptions.includes(prefs.ai))prefs.ai='cloud';
     if(![6,8,10,12].includes(prefs.justSaid))prefs.justSaid=8;
@@ -236,14 +239,14 @@
       finally{if(revision===boardRevision){boardBusy=false;contextState.boardRequest=null;byId('getButton').textContent='GET / REFRESH';commitPending();}}
     }
     function updateExtraSettings(){
-      const values={listeningSetting:prefs.listening?'On':'Off',sttSetting:speech.name(prefs.stt),aiSetting:({webllm:'Browser model · SmolLM2 (experimental)',chrome:'Chrome local AI · Gemini Nano',cloud:'Cloud API · '+ai.cloudName(),server:'Local server API · '+(prefs.serverType==='openai'?'OpenAI compatible':'Ollama'),off:'Off'})[prefs.ai],serverTypeSetting:prefs.serverType==='openai'?'OpenAI compatible (LM Studio, etc.)':'Ollama',serverModelSetting:prefs.serverModel||'Load models, then choose one',
+      const values={listeningSetting:prefs.listening?'On':'Off',sttSetting:speech.name(prefs.stt),aiSetting:({chrome:'Chrome local AI · Gemini Nano',cloud:'Cloud API · '+ai.cloudName(),server:'Local server API · '+(prefs.serverType==='openai'?'OpenAI compatible':'Ollama'),off:'Off'})[prefs.ai],serverTypeSetting:prefs.serverType==='openai'?'OpenAI compatible (LM Studio, etc.)':'Ollama',serverModelSetting:prefs.serverModel||'Load models, then choose one',
         windowSetting:prefs.justSaid+' seconds',profanitySetting:prefs.profanity?'Allowed':'Off',
         bioPage:effectiveBio()?'Bio saved':'Add personal background',announcementSetting:prefs.announcement,bioSetting:effectiveBio()?effectiveBio().slice(0,100)+(effectiveBio().length>100?'…':''):'Add personal background',
         themeSetting:prefs.theme,highlightSetting:prefs.highlight,styleSetting:prefs.style,sizeSetting:prefs.size};
       if(defaults)for(let i=0;i<8;i++)values['default'+i]=defaults[i<4?'general':'specific'][i%4];
       for(const [id,value] of Object.entries(values)){const el=byId(id)?.querySelector('.setting-value');if(el)el.textContent=String(value);}
-      byId('aiDetails').textContent=prefs.ai==='cloud'?'Cloud API model: '+(ai.model()||'connect your own AI to get started')+'. Conversation text and profile are sent to this provider.':prefs.ai==='server'?'Server: '+prefs.serverUrl+' · Model: '+(prefs.serverModel||'choose a model')+'. Speech recognition stays separate.':prefs.ai==='off'?'AI predictions are off. Dictionary words still work.':prefs.ai==='chrome'?'Gemini Nano runs locally in Chrome after download. No cloud API key or cloud quota is used. Availability depends on your browser and device.':'Experimental browser model. For better context, choose Cloud API or Local server API.';
-      byId('chromeAvailability').textContent=window.LanguageModel?'This browser exposes the local AI interface. Choose Load AI model to check model availability.':window.electronAPI?'Chrome’s Gemini Nano is not included in the Windows Hub (Electron). Open RTC Lite in Google Chrome to check its availability, or choose another AI option here.':'Chrome local AI is unavailable in this browser. Its availability depends on Google Chrome, browser settings, and supported hardware.';
+      byId('aiDetails').textContent=prefs.ai==='cloud'?'Cloud API model: '+(ai.model()||'connect your own AI to get started')+'. Conversation text and profile are sent to this provider.':prefs.ai==='server'?'Server: '+prefs.serverUrl+' · Model: '+(prefs.serverModel||'choose a model')+'. Speech recognition stays separate.':prefs.ai==='off'?'AI predictions are off. Dictionary words still work.':prefs.ai==='chrome'?'Gemini Nano runs locally in supported desktop Chrome after download. It is not available to websites in Chrome on Android or iPhone/iPad. No cloud API key or cloud quota is used.':'Choose Cloud API, a local AI server, or supported desktop Chrome AI.';
+      byId('chromeAvailability').textContent=window.LanguageModel?'This browser exposes the local AI interface. Choose Load AI model to check model availability.':window.electronAPI?'Chrome’s Gemini Nano is not included in the Windows Hub (Electron). Open RTC Lite in Google Chrome to check its availability, or choose another AI option here.':'Chrome local AI requires supported desktop Chrome. Chrome on Android and iPhone/iPad cannot use Gemini Nano for this website. Choose Cloud API for mobile AI suggestions.';
       updateLoadControls();
     }
 
@@ -255,7 +258,7 @@
         button.querySelector('.setting-label').textContent=label;
         button.querySelector('.setting-value').textContent=detail;
       };
-      const aiLocal=['webllm','chrome'].includes(prefs.ai),aiLoading=setupAIBusy||ai.loading;
+      const aiLocal=prefs.ai==='chrome',aiLoading=setupAIBusy||ai.loading;
       if(prefs.ai==='off')paint('setupAI','off','AI is off','Choose an AI option above');
       else if(aiLoading)paint('setupAI','loading','Loading / preparing AI…','… Please wait · Cancel is available below');
       else if(aiLocal)paint('setupAI',ai.ready===prefs.ai?'ready':'needed',ai.ready===prefs.ai?'Reload AI model':'Load AI model',ai.ready===prefs.ai?'✓ Loaded · Ready to use':'○ Not loaded · Select here to load');
@@ -276,7 +279,7 @@
     async function continueApp(){
       consented=true;openScreen('board');
       void startListening();
-      if(prefs.aiReady===prefs.ai&&['webllm','chrome'].includes(prefs.ai))ai.setup(false).catch(e=>report('ai',e));
+      if(prefs.aiReady===prefs.ai&&prefs.ai==='chrome')ai.setup(false).catch(e=>report('ai',e));
     }
     async function setupSpeechModel(){
       if(setupSpeechBusy||speech.loading)return;const revision=++setupEpoch;setupSpeechBusy=true;updateSettings();operation('listening','Preparing selected speech model…');
@@ -592,6 +595,8 @@
     document.addEventListener('visibilitychange', () => { if (document.hidden) cancelInput(); });
     window.addEventListener('pagehide', dispose, { once:true });
     loadStarters(); initDefaults(); applyTheme(); updateSettings();
+    if(retiredAI||retiredReady)savePrefs();
+    if(retiredAI)operation('ai','The previous browser model is no longer offered. AI is off; choose another option above. Saved phrases and keyboard words still work.');
 
     byId('bioInput').addEventListener('input',()=>{bioDraft=byId('bioInput').value;operation('bio','Unsaved changes. Choose Save bio when ready.');});
     byId('bioInput').addEventListener('focus',()=>{cancelInput();scan.resetInputState();choice.sync(null);voice.cancel();});

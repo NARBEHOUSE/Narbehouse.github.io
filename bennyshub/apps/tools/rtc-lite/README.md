@@ -12,7 +12,7 @@ A simple communication board in Benny's Hub. The user chooses every spoken messa
 
 Speech and suggestions are independent choices. For local operation, choose Local Whisper plus a downloaded local AI model or a genuinely local server model. Browser speech is labeled an online service; it does not use RT Convo's Google Cloud account or this Worker. Native Parakeet and Google service-account recognition are not offered by the website.
 
-Local AI options are experimental SmolLM2/WebLLM, Chrome's built-in AI when its interface is available, and a separately installed Ollama/OpenAI-compatible loopback server. Chrome's availability depends on browser and hardware support; the app checks it rather than promising availability on every Surface. First downloads need internet; caches can be evicted. ARM Surface performance, recognition quality and battery use still need testing on Ben's device.
+Local AI options are Chrome's built-in AI on supported desktop Chrome and a separately installed Ollama/OpenAI-compatible loopback server. Chrome's Gemini Nano website API is unavailable on Android and iPhone/iPad. Cloud API is the mobile option for generated suggestions; saved phrases and dictionary predictions work with AI Off. First downloads need internet; caches can be evicted. ARM Surface performance, recognition quality and battery use still need testing on Ben's device.
 
 For a local server, install/download a model yourself, set the exact Hub origin in the server's allowed origins, and choose the installed model in Settings. Browser local-network permission/security rules may apply. Do not disable browser security. The app accepts loopback addresses only and sends no cloud key to that server. See the server's own documentation for configuration.
 
@@ -48,3 +48,9 @@ Select the centered text box to speak and stay on the keyboard. The message stay
 The website integration has workerd security tests and a real Chrome test covering popup authorization with third-party cookies blocked, bio, context suggestions, keyboard completion, dictionary loading, Space/Enter scanning, Hub iframe launch/exit and layouts from 800×600 to 1366×900. They use synthetic provider responses, not real paid calls. They do not establish real model accuracy, microphone quality or Surface performance. The Electron app is unchanged by this web integration.
 
 Application/Worker code follows the repository MIT license. Bundled components retain their own licenses and THIRD-PARTY-NOTICES.txt. vendor/manifest.json records bundled file hashes. Model downloads follow upstream revisions rather than an application-level integrity manifest; review changes before upgrading. Chrome, browser speech, Cloudflare and cloud providers have separate terms and availability. Keeping the application free/open source does not make all optional services free or open source.
+
+## Retired browser model (2026-10-17)
+
+SmolLM2/WebLLM is no longer offered after reports of freezing and stalled suggestions. Previously saved selections move to AI Off and clear the retired load flag. This does not select cloud AI or change a saved bio, phrases, speech source, or provider key. The active provider code cannot launch its inference worker. Old experimental worker files and third-party notices remain as historical source; the web app no longer precaches or loads them.
+
+Chrome mobile support reference: https://developer.chrome.com/docs/ai/prompt-api#hardware-requirements
