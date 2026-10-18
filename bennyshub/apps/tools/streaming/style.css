@@ -512,6 +512,9 @@ body.highlight-outline .setting-toggle.highlighted {
 /* Hide Scrollbars in keyboard view */
 #keyboard-container { overflow: hidden; }
 
+/* Native keyboard buttons must inherit the theme's light foreground. */
+.kb-key, .prediction-chip { color: inherit; }
+
 /* --- Themes --- */
 
 /* Theme: Default (Dark Gray) */

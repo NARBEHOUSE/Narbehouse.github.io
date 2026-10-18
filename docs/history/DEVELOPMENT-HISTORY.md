@@ -2,6 +2,19 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Readable Streaming search keyboard text
+
+The owner reported dark text on the dark default search keyboard. Native letter/control buttons and prediction chips were using the browser's black button text instead of inheriting the page's light foreground. A scoped CSS inheritance rule now gives them white text in Default and the theme's light foreground in Slate, while existing theme colors and bright scan-selection foregrounds still take precedence. Search input, keyboard layout and switch behavior are unchanged. This is a website-only follow-up; Companion 1.1.0 remains byte-identical and no Electron files were changed.
+
+Verification: an isolated Edge renderer measured black on rgb(42,42,42) before the change and white on the same background afterward. Control labels, letters and numbers were visually checked. The prediction-row highlight remains black on yellow; Slate keys/predictions use rgb(245,246,250). Typing and the existing scan selection worked. The cache migration check passes with shell v53, and the Companion package check retains SHA-256 25da9ff5bbfb7050f6f516450be861d601a6101b46255b402b053f033e411b58. Local screenshots and computed-color evidence: artifacts/streaming-fixes/search-keyboard-*. Source backup: Website Backups/Streaming-keyboard-contrast-20261018-1792335443169.
+
+Changed-file manifest (scope / Electron port flag):
+
+- bennyshub/apps/tools/streaming/style.css — WEB search keyboard contrast / CANDIDATE for a separately authorized desktop pass; not ported here.
+- bennyshub/service-worker.js — WEB shell cache refresh / NOT APPLICABLE to Electron.
+- tests/communication-cache.test.cjs — WEB existing cache-migration check / NOT APPLICABLE to Electron.
+- docs/history/DEVELOPMENT-HISTORY.md — WEB implementation record / NOT APPLICABLE to Electron.
+
 ## 2026-10-18 — Streaming save recovery, confirmed clearing and Companion 1.1.0
 
 The owner reported a false other-window conflict whenever a movie/show opened, requested confirmation before clearing progress/search history and a separate Clear Watch History action for Recently Watched, and reported Plex Previous/Next failing while Netflix worked. The installed Companion is 1.0.8; the owner reports 1.0.9 pending Chrome Web Store approval. At the owner's direction the next candidate is **1.1.0**. After local verification, the owner authorized pushing this release to the website repository. The owner will install Companion 1.1.0 locally and submit it to Google only if that test succeeds. This task does not install in the owner's profile or submit to a store. Electron stays untouched.
