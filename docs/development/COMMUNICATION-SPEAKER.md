@@ -164,3 +164,23 @@ The capture hold supplies an absolute notBefore timestamp 2.2 seconds after rele
 References: [WirePlumber profile policy](https://github.com/PipeWire/wireplumber/blob/master/src/scripts/device/autoswitch-bluetooth-profile.lua), [silent AudioContext support](https://developer.chrome.com/blog/audiocontext-setsinkid), [Bluetooth profile behavior](https://learn.microsoft.com/en-us/windows-hardware/drivers/bluetooth/bluetooth-classic-audio).
 
 Validation: 328 unit tests, existing full speaker UI integration, and the new real Chromium capture/playback fixture pass. Its synthetic microphone processes through a none sink; every muted public playback starts with all capture tracks ended; the same recognition worker remains loaded through repeats and cancellations; post-playback capture resumes; exit leaves zero live tracks. The final build, public audit and 1,186 references pass. Physical Pi Bluetooth audio remains an owner check.
+
+### Confirmed Pi Bluetooth setting (2026-10-18)
+
+On the owner's Raspberry Pi 5 with Chromium, a USB camera microphone and WirePlumber 0.5.8, the microphone-release workaround still produced low quality at the beginning of messages before switching to high quality. The owner then confirmed consistently high quality across several messages after disabling WirePlumber's automatic Bluetooth headset-profile switching. This test used the existing deployed website; the additional website handoff experiment was not pushed.
+
+For this setup, turn RTC Listening off and let normal speaker quality return, then test:
+
+```bash
+wpctl settings bluetooth.autoswitch-to-headset-profile false
+```
+
+Turn Listening back on and verify both USB microphone recognition and speaker quality. Once successful, retain the setting across restarts:
+
+```bash
+wpctl settings --save bluetooth.autoswitch-to-headset-profile false
+```
+
+This changes the Pi user's audio policy, not the website or voice model. It prevents automatic switching to the lower-quality Bluetooth microphone/headset mode; the separate USB microphone remains the intended input. If Bluetooth-headset microphone auto-switching is wanted later, restore it with wpctl settings --save bluetooth.autoswitch-to-headset-profile true. The website cannot change this OS setting itself. Saving across reboot has been recommended but not yet confirmed by the owner.
+
+References: [WirePlumber settings](https://pipewire.pages.freedesktop.org/wireplumber/daemon/configuration/settings.html), [wpctl settings](https://pipewire.pages.freedesktop.org/wireplumber/man/wpctl.html#settings), [0.5.8 setting definition](https://github.com/PipeWire/wireplumber/blob/0.5.8/src/config/wireplumber.conf).

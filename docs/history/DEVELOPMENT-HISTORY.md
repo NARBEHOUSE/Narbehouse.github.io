@@ -2,6 +2,18 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Pi Bluetooth quality fixed through WirePlumber configuration
+
+The owner reported that the deployed RTC microphone-release workaround still started messages with muffled audio and switched to higher quality mid-message. They confirmed WirePlumber 0.5.8 on their Raspberry Pi 5 with Chromium and a USB camera microphone. After turning Listening off to restore quality, running wpctl settings bluetooth.autoswitch-to-headset-profile false, and turning Listening back on, they confirmed consistently high quality across several messages. The command with --save was then supplied to retain the working policy after reboot; persistence/reboot validation has not yet been reported. Upstream 0.5.8 configuration and WirePlumber's settings/wpctl documentation confirm this setting is supported.
+
+No additional website playback change was released. A local experiment to wait for asynchronous capture cleanup before opening output passed 332 unit tests, shared speaker UI integration, real Chromium capture/playback checks, build and release checks. Once the owner confirmed the Pi setting alone solved the issue, that experiment was set aside and all ten touched files were restored from backups verified against HEAD. Its patch is retained locally under ignored artifacts/rtc-handoff-order-unshipped.patch. Existing deployed runtime behavior, shell v56, voices, models, Companion and Electron remain unchanged. This entry and the troubleshooting notes document the confirmed device-specific result; they do not claim a new website fix or automatic Bluetooth profile detection.
+
+Changed-file manifest (scope / Electron port flag):
+
+- bennyshub/apps/tools/rtc-lite/README.md — WEB support notes for the confirmed Pi/WirePlumber setup, temporary test, persistence and reversal / NOT APPLICABLE to Electron runtime.
+- docs/development/COMMUNICATION-SPEAKER.md — WEB speaker troubleshooting and owner validation / NOT APPLICABLE to Electron runtime.
+- docs/history/DEVELOPMENT-HISTORY.md — WEB evidence, unshipped experiment disposition and scope / NOT APPLICABLE to Electron runtime.
+
 ## 2026-10-18 — Release RTC microphone during communication speaker playback
 
 The owner reports muffled, phone-like output from a Bluetooth speaker while RTC listening is on, using a USB camera microphone on a Raspberry Pi 5 with Chromium/Chrome. Turning Listening off restores quality; Phrase Board and Keyboard sound normal. All three already share the same synthesis/output path. RTC previously suppressed input samples during speech while keeping the microphone endpoint and a zero-gain 16 kHz playback graph open. The behavior is consistent with a Bluetooth headset/capture profile, but browser APIs cannot inspect the actual OS profile. The owner explicitly suggested turning the mic off during speech and back on afterward. There is only one mic; no microphone picker was added. Short-word voice pronunciation was explicitly left aside, with no voice/model/text changes.
