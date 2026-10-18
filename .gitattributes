@@ -10,3 +10,4 @@
 
 # Keep pinned speech runtime bytes identical to SOURCES.json on every checkout.
 /bennyshub/shared/communication-vendor/** -text
+/bennyshub/shared/communication-fast-vendor/** -text

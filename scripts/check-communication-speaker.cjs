@@ -10,7 +10,7 @@ function mocks(){
  window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
  Object.defineProperty(window,'speechSynthesis',{value:{speaking:false,cancel(){},getVoices:()=>[{name:'Test voice',lang:'en-US',default:true,voiceURI:'test'}],addEventListener(){},removeEventListener(){},speak(u){window.__speech.push(u.text);queueMicrotask(()=>{u.onstart?.();u.onend?.();});}}});
  const OriginalWorker=window.Worker;
- window.Worker=class {constructor(url,options){if(!String(url).includes('communication-worker'))return new OriginalWorker(url,options);}postMessage(m){if(m.type==='cancel'||m.type==='prefetch')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({text:m.text,voice:m.voice});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),window.__workerDelay||5);}terminate(){}};
+ window.Worker=class {constructor(url,options){if(!/communication-(?:fast-)?worker/.test(String(url)))return new OriginalWorker(url,options);}postMessage(m){if(m.type==='cancel'||m.type==='prefetch')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({text:m.text,voice:m.voice});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),window.__workerDelay||5);}terminate(){}};
  window.__players=[];
  window.Audio=class extends EventTarget{constructor(src=''){super();this.src=src;this.sinkId='';window.__players.push(this);}getAttribute(name){return this[name]??null;}setAttribute(name,value){this[name]=value;}async setSinkId(id){this.sinkId=id;}async play(){this.onplaying?.();setTimeout(()=>this.onended?.(),window.__holdPlayback?250:20);}pause(){}removeAttribute(){}load(){}};
 }
@@ -86,7 +86,10 @@ function mocks(){
  assert.equal(await page.evaluate(()=>__players.length),playersBefore);
  await page.locator('#speaker-mode-toggle').click();await page.evaluate(()=>{window.__workerDelay=5;});
  await page.locator('#speaker-voice-toggle').click();
- await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-find');await press('Enter');assert.equal(await page.evaluate(()=>__stoppedTracks),0);
+ await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-quality-toggle');
+  await press('Enter');await expect(page.locator('#speaker-quality-status')).toHaveText('Faster');await expect(page.locator('#speaker-voice-toggle')).toBeDisabled();
+  await press('Enter');await expect(page.locator('#speaker-quality-status')).toHaveText('Natural');await expect(page.locator('#speaker-voice-toggle')).toBeEnabled();
+  await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-find');await press('Enter');assert.equal(await page.evaluate(()=>__stoppedTracks),0);
  await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-test');const samplesBeforeTest=await page.evaluate(()=>__public.length);await press('Enter');await expect.poll(()=>page.evaluate(()=>__public.length)).toBe(samplesBeforeTest+1);
  await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().phase)).toBe('ended');
  assert.equal(await page.evaluate(()=>__players.at(-1).sinkId),'speaker');
@@ -94,7 +97,7 @@ function mocks(){
  await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'autoscan-toggle');
  await page.locator('#speaker-mode-toggle').click();
  await page.evaluate(()=>NarbeScanManager.updateSettings({autoScan:true,scanSpeedIndex:0,parking:'off',waitForSpeech:false}));
- for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-find','speaker-test']){
+ for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-quality-toggle','speaker-find','speaker-test']){
   await expect.poll(()=>page.locator('#screen-settings').getAttribute('data-selected'),{timeout:15000}).toBe(id);
  }
  await page.evaluate(()=>NarbeScanManager.updateSettings({autoScan:false}));

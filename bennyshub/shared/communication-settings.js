@@ -3,7 +3,10 @@ window.NarbeCommunicationSettings={mount({refreshScan,announce}){
   const manager=NarbeCommunicationSpeech,byId=id=>document.getElementById(id);
   function draw(){
     const s=manager.get();byId('speaker-mode-status').textContent=s.enabled?'On':'Off';byId('speaker-mode-toggle').setAttribute('aria-pressed',String(s.enabled));
-    for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-find','speaker-test'])byId(id).disabled=!s.enabled||!s.supported;
+    for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-quality-toggle','speaker-find','speaker-test'])byId(id).disabled=!s.enabled||!s.supported;
+    byId('speaker-quality-status').textContent=s.speechMode==='fast'?'Faster':'Natural';
+    byId('speaker-voice-toggle').disabled=!s.enabled||!s.supported||s.speechMode==='fast';
+    byId('speaker-voice-help').textContent=s.speechMode==='fast'?'Faster mode uses LJ, an English voice. Choose Natural for the original 14 voices.':'Cycle through 14 voices and hear a sample. The Voice setting above controls scanning.';
     const connected=s.outputs.some(d=>d.deviceId===s.sinkId);
     byId('speaker-output-status').textContent=s.sinkId?(s.sinkLabel||'Selected speaker')+(s.enabled&&!connected?' (unavailable)':''):'Not selected';
     byId('speaker-voice-status').textContent=s.voices.find(v=>v.id===s.voice).name+(s.enabled&&!s.voiceReady?(s.voicePreparing?' (preparing)':' (not ready)'):'');
@@ -16,6 +19,7 @@ window.NarbeCommunicationSettings={mount({refreshScan,announce}){
   byId('speaker-mode-toggle').onclick=()=>{manager.toggle();changed();};
   byId('speaker-output-toggle').onclick=()=>{manager.cycleSpeaker();draw();if(manager.get().outputs.length){manager.preview();announce('Speaker: '+byId('speaker-output-status').textContent);}else announce(manager.get().detail);};
   byId('speaker-voice-toggle').onclick=()=>{manager.cycleVoice();draw();if(manager.get().sinkId)manager.preview();announce('Speaker voice: '+byId('speaker-voice-status').textContent);};
+  byId('speaker-quality-toggle').onclick=()=>{manager.cycleMode();draw();if(manager.get().sinkId)manager.preview();announce('Speaker voice mode: '+byId('speaker-quality-status').textContent);};
   function closePermission(){byId('speaker-permission-dialog').hidden=true;refreshScan({restoreId:'speaker-find'});}
   byId('speaker-permission-cancel').onclick=()=>{closePermission();announce('Speaker setup cancelled.');};
   byId('speaker-permission-allow').onclick=()=>{closePermission();void manager.findSpeakers().then(changed);};

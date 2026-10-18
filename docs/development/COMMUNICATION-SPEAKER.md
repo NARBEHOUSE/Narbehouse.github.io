@@ -2,7 +2,7 @@
 
 Speaker Mode defaults off. Hub Settings has a separate **Speakers** section between
 general settings and Scan. Graphics Quality remains in general settings. Speaker,
-Speaker voice, Find speakers and Test speaker stay visible but disabled when off;
+Speaker voice, Speaker voice mode, Find speakers and Test speaker stay visible but disabled when off;
 the existing choice scanner skips disabled buttons. When on, every control is in
 the same Spacebar/Return and Auto Scan paths, with stable IDs and ordinary parking,
 brake and speech-wait behavior. No additional input debounce or input lock was added.
@@ -14,7 +14,7 @@ choice on the default output. Samples use the same cached text as voice warm-up;
 quick changes discard obsolete preparation and playback rather than queueing previews.
 Leaving Settings cancels its sample, and disabled mode never auditions.
 
-There are 14 voices: Michael, Heart, Emma, George, Bella, Nicole, Kore, Sarah, Nova,
+Natural is the default Speaker voice mode, including for existing settings. It has 14 voices: Michael, Heart, Emma, George, Bella, Nicole, Kore, Sarah, Nova,
 Aoede, Fenrir, Puck, Isabella and Fable. The added voices share the same Kokoro model;
 individual voice files download/cache on demand without a separate installation.
 The local voice downloads and warms in the background when enabled. Find speakers refreshes already
@@ -45,7 +45,7 @@ all returned tracks are stopped immediately, and nothing is recorded.
   off retains legacy immediate-tile behavior. Scan labels and other feedback remain native.
 - Native Windows/Chrome voices remain available in normal mode. Browser native
   speech has no per-utterance output selection or audio-export API, so separate
-  speaker playback uses local Kokoro voices. No Windows helper is installed.
+  speaker playback uses local Kokoro (Natural) or Piper (Faster) voices. No Windows helper is installed.
 - Output must be a concrete device, never `default` or `communications`. Errors and
   disconnects keep the text and display failure; there is no native/default fallback
   and no automatic replay. New messages replace old ones; output/voice changes,
@@ -85,8 +85,9 @@ the worker and releases its model and message cache. Each playback prepends exac
 750 ms of silent PCM, preserving all original speech samples. This is the Bluetooth
 fix verified in the earlier Windows test, not a delay before opening the audio stream.
 
-Service worker v50 caches the small routing scripts with the shell. The bundled
-speech runtime is cached only when used; model/voice caching belongs to Kokoro.
+Service worker v54 caches the small routing scripts with the shell. The bundled
+speech runtimes are cached only when used; Natural model/voice caching belongs to Kokoro.
+Faster caches only its pinned public model/config in benny-communication-fast-model-v1.
 Browser cache eviction, offline first setup and slower hardware remain limitations.
 
 ## Verification and handoff
@@ -131,3 +132,17 @@ The app hooks preserve website-specific Companion storage, browser AI setup, pre
 Verification: 298 unit tests passed; the existing full browser integration passed voice selection, switching, cancellation, output errors, all communication actions, real nested apps and game Help. The real Chrome reuse check generated a new sentence in 256 ms and served its repeat in 0 ms. Phrase Board, Keyboard and RTC Lite each served prepared selections from cache in 0 ms, with one shared WebGPU worker and zero additional model/voice requests after setup. Muted playback-start events were 24–27 ms; the existing 750 ms Bluetooth lead-in follows those events, so these are not click-to-audible measurements. Surface performance and physical audibility are not established by this PC's test.
 
 Run node scripts/serve.cjs, then node scripts/check-communication-reuse.cjs to reproduce the real-worker check. Its browser executable, working directory and artifacts use absolute paths; the browser profile and working directory are disposable OS-temp directories. Results are in artifacts/communication-reuse.json. The public build, release audit and 1,186 link/asset checks passed; Companion 1.0.9's archive checksum is unchanged. No Electron runtime, extension release, driver or global Windows setting is changed by this website repair.
+
+## Optional Faster voice — October 18, 2026
+
+The owner reports later messages taking up to ten seconds on a Raspberry Pi 5 (8 GB), while the PC remains responsive. Natural is unchanged and remains the default. The CPU-only Kokoro path is expensive, and an active speculative inference can delay a selected message. ONNX Web CPU threading requires cross-origin isolation, which this GitHub Pages site does not enable. There is no hardware detection that changes the user's voice or quality automatically.
+
+Settings → Speakers → Speaker voice mode cycles Natural / Faster. The choice stays in the existing device-local speaker settings and does not sync to another device. Natural retains its previous selected voice when the user tries Faster and returns. Changing mode stops the current owned ticket and terminates the old worker; only one model is retained. The shared selected-output channel, native scan voice, general-TTS independence and 750 ms Bluetooth lead-in are unchanged. The mode button is a stable item in the existing CHOICE scanner, disabled while Speaker Mode is off.
+
+Faster uses Piper's en_US-ljspeech-medium (LJ, English female), trained from scratch on the public-domain LJ Speech dataset. It initially offers one voice; the voice-cycling button remains visible but disabled in Faster. It does not change audio playback speed. The new communication-fast-worker.js uses a pinned, vendored single-thread SIMD ONNX Runtime Web 1.18.0 and @diffusionstudio/piper-wasm 1.0.0. Runtime hashes, source links and license notices are in shared/communication-fast-vendor. The roughly 63 MB model/config downloads from rhasspy/piper-voices revision c10ece1aade47bb51c153c893d14e5bf8e5b7117; runtime assets add roughly 30 MB on first use. Natural users do not load those large assets. Build explicitly allows the phonemizer's .data file without publishing arbitrary .data files.
+
+Faster deliberately ignores speculative phrase/draft prefetch messages so a slower CPU works on selected messages only. It reuses its loaded model and up to 32 completed messages / 16 MiB of PCM in memory. Long text is chunked without dropping words and assembled before playback. Cancelled or superseded jobs cannot play late. Model cache survives shell updates; private text and generated audio do not persist. A first setup still needs internet, and browser storage eviction can require another download.
+
+Verification: 313 unit tests pass, including legacy Natural defaults, selected-voice restoration, mode changes during setup, stale cancellation, complete long messages and model-only cache reuse. The existing real-page integration passes all 14 Natural voices, switch/Auto access, sample cancellation, routing and app actions. scripts/check-communication-fast.cjs tests the real Faster worker through Keyboard, Phrase Board and RTC Lite with muted selected-output playback, shared worker ownership, repeat-cache hits, cancellation, persistence across reload, no Kokoro download in Faster, and a new message spoken offline. Start scripts/serve.cjs first; CHROME_PATH can select a browser executable. Evidence: artifacts/communication-fast.json and communication-fast-settings.png.
+
+On this Windows PC in Chrome, forced single-thread CPU comparison generated the same three new texts in 304/323/431 ms with Piper versus 3661/3699/5754 ms with Kokoro q8 (roughly 11–13 times faster). The integrated Faster check generated a new sentence in 287 ms and a cached repeat in 0 ms; playback-start events were 318/26 ms before the unchanged 750 ms silent lead-in. These are PC measurements, not Pi timings or click-to-audible guarantees. Pi 5 latency and the owner's acceptance of the LJ voice still require testing on that device. No Companion release, Electron runtime, operating-system voice or device setting was changed.

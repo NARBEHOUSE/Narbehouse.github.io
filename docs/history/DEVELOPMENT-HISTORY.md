@@ -2,6 +2,33 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Optional Faster speaker voice for Raspberry Pi
+
+The owner reported later communication messages taking up to ten seconds on a Raspberry Pi 5 (8 GB), while the PC is fast, and explicitly asked to preserve current PC behavior. Added a manual, device-local Speaker voice mode setting: Natural (existing default, all 14 Kokoro voices) / Faster (Piper LJ English female). Returning to Natural restores the previously selected Natural voice. No automatic quality change or playback-rate change occurs. Speaker Mode's selected output, native scanning, general-TTS independence and 750 ms Bluetooth lead-in are retained. Companion and Electron remain untouched.
+
+Faster loads a separate single-thread SIMD CPU worker only when selected. It shares the existing owned-ticket channel and Hub/iframe service. Changing mode cancels playback and terminates the previous worker. It keeps completed messages in a bounded memory-only cache and deliberately does not run speculative phrase/draft generation on the slow CPU. Its pinned public model/config are cached separately from the app shell; speech text/audio are not persisted. The runtime assets and notices are pinned in communication-fast-vendor, with exact-byte Git attributes. The build permits only the specific phonemizer .data asset. Shell cache v54 preserves downloaded voice models.
+
+Verification: all 313 unit tests pass; existing real-page speaker integration covers 14 Natural voices, switch/Auto controls, the new mode toggle, permission guards, cancellation, app actions, game Help and output isolation. The new real-model browser check passes Keyboard, Phrase Board and RTC Lite, one shared worker, selected-sink muted playback, cancellation, settings persistence, cached model reuse after reload, and a new message offline. Forced CPU comparisons on this Windows PC generated three new texts in 304/323/431 ms with Piper versus 3661/3699/5754 ms with Kokoro q8 (roughly 11–13 times faster). Integrated Faster generation was 287 ms for a fresh sentence and 0 ms for its repeat; started events 318/26 ms exclude the unchanged silent lead-in. Actual Pi timing and physical voice-quality acceptance remain pending; PC numbers are not a Pi guarantee. Initial integration testing exposed a fixture that read a previous ended state; the fixture now waits for the selected text's generation and completion, and the full rerun passes.
+
+Build passed; release audit: 3,799 public files, 508,053,669 bytes, no problems. All 1,186 page/asset references pass. Every new pinned runtime file has matching source and dist hashes, including the required .data file. Natural's communication-worker.js is unchanged. Companion 1.1.0 is unchanged at SHA-256 25da9ff5bbfb7050f6f516450be861d601a6101b46255b402b053f033e411b58. Evidence: artifacts/communication-fast.json, communication-fast-settings.png and speaker-latency/benchmark.json. Source backup: Website Backups/Speaker-fast-mode-20261018-1792338275150.
+
+Changed-file manifest (scope / Electron port flag):
+
+- .gitattributes — WEB pinned runtime byte preservation / NOT APPLICABLE to Electron.
+- bennyshub/index.html — WEB opt-in voice-mode setting / CANDIDATE for a separately authorized Electron pass; not ported here.
+- bennyshub/shared/communication-settings.js — WEB spoken setting and disabled-state rendering / CANDIDATE; not ported here.
+- bennyshub/shared/communication-speech.js — WEB per-device mode, worker ownership and original voice restoration / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-worker.js — WEB optional local CPU speech generation / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-vendor/piper.js, piper_phonemize.wasm, piper_phonemize.data — WEB pinned optional phonemizer runtime / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-vendor/ort.wasm.min.js, ort-wasm-simd.wasm — WEB pinned optional inference runtime / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-vendor/PIPER-LICENSE.txt, ONNX-LICENSE.txt, ESPEAK-COPYING.txt, VOICE-MODEL-CARD.txt, THIRD-PARTY-NOTICES.txt, SOURCES.json — WEB licenses, upstream sources and hashes / CANDIDATE only with a separately authorized runtime port; not ported here.
+- bennyshub/service-worker.js — WEB shell refresh and on-demand runtime caching / NOT APPLICABLE to Electron.
+- scripts/build.cjs — WEB explicit public phonemizer-data inclusion / NOT APPLICABLE to Electron.
+- scripts/check-communication-speaker.cjs — WEB real-page switch and existing-voice regression coverage / NOT APPLICABLE to Electron.
+- scripts/check-communication-fast.cjs — WEB real Faster-model and app acceptance check / NOT APPLICABLE to Electron.
+- tests/communication-speech.test.cjs, tests/communication-fast-worker.test.cjs, tests/communication-cache.test.cjs — WEB mode migration, worker cancellation, complete messages and cache regression coverage / NOT APPLICABLE to Electron.
+- docs/development/COMMUNICATION-SPEAKER.md, docs/history/DEVELOPMENT-HISTORY.md — WEB usage, implementation, measurements and scope records / NOT APPLICABLE to Electron.
+
 ## 2026-10-18 — Readable Streaming search keyboard text
 
 The owner reported dark text on the dark default search keyboard. Native letter/control buttons and prediction chips were using the browser's black button text instead of inheriting the page's light foreground. A scoped CSS inheritance rule now gives them white text in Default and the theme's light foreground in Slate, while existing theme colors and bright scan-selection foregrounds still take precedence. Search input, keyboard layout and switch behavior are unchanged. This is a website-only follow-up; Companion 1.1.0 remains byte-identical and no Electron files were changed.

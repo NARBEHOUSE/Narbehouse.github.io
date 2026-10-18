@@ -35,6 +35,8 @@ async function build(){
     if(/^bennyshub\/apps\/games\/CHASINGRAINBOWS\/REFERENCE DATA(?:\/|$)/.test(rel))return false;
     // Local Fish Mystery authoring sources are ignored by Git and are not runtime assets.
     if(/^bennyshub\/apps\/games\/BENNYSFISHMYSTERY\/(?:content(?:\/|$)|editor\.html$)/.test(rel))return false;
+    // The Faster voice phonemizer needs this pinned public data package.
+    if(rel === 'bennyshub/shared/communication-fast-vendor/piper_phonemize.data')return true;
     return (await fs.stat(source)).isDirectory()||/(?:^|[-_.])(?:LICENSE|COPYING|NOTICE|CREDITS)(?:\.(?:md|txt))?$/i.test(name)||extensions.has(path.extname(name).toLowerCase());
   }});
   // Only the production-scoped ZIP linked by the setup page is public.

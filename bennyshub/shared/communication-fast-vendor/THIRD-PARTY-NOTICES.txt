@@ -1,0 +1,24 @@
+Optional Faster communication voice (website only)
+
+Piper phonemizer, Michael Hansen / Rhasspy: MIT, see PIPER-LICENSE.txt.
+Browser build: @diffusionstudio/piper-wasm 1.0.0. Files are unmodified;
+piper_phonemize.js is stored as piper.js. Build recipe and corresponding source:
+https://github.com/diffusionstudio/piper-wasm
+https://github.com/wide-video/piper-phonemize
+https://github.com/rhasspy/espeak-ng
+The included eSpeak NG code/data is GPL v3 or later; see ESPEAK-COPYING.txt.
+
+ONNX Runtime Web 1.18.0, Microsoft: MIT, see ONNX-LICENSE.txt.
+https://github.com/microsoft/onnxruntime/tree/v1.18.0
+
+The optional voice downloads from rhasspy/piper-voices at revision
+c10ece1aade47bb51c153c893d14e5bf8e5b7117. Model: en_US-ljspeech-medium.
+English female voice trained by Bryce Beattie on the public-domain LJ Speech
+dataset (Keith Ito and Linda Johnson). See VOICE-MODEL-CARD.txt.
+https://keithito.com/LJ-Speech-Dataset/
+https://huggingface.co/rhasspy/piper-voices
+
+Runtime assets are downloaded only when Faster is chosen. Messages are processed
+on this device. Only public runtime/model assets are cached persistently; speech
+text and generated audio stay in memory. No cloud speech service or analytics
+is added by this voice engine.

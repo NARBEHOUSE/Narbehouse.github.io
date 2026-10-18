@@ -1,14 +1,14 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {Channel}=require('../bennyshub/shared/communication-channel.js');
-function harness(parentService){
+function harness(parentService,initial={enabled:false}){
  const workers=[],elements=new Map(),window={};let settings,change;
- class Worker{constructor(){this.sent=[];workers.push(this);}postMessage(m){this.sent.push(m);}terminate(){}reply(data){this.onmessage({data});}}
+ class Worker{constructor(url,options){this.url=String(url);this.options=options;this.sent=[];workers.push(this);}postMessage(m){this.sent.push(m);}terminate(){this.terminated=true;}reply(data){this.onmessage({data});}}
  const element=id=>{if(!elements.has(id))elements.set(id,{textContent:'',setAttribute(){}});return elements.get(id);};
  const context={window,parent:parentService?{location:{origin:'http://localhost:8000'},NarbeCommunicationSpeech:{_service:parentService}}:window,location:{origin:'http://localhost:8000'},isSecureContext:true,URL,Worker,setTimeout,clearTimeout,
   document:{currentScript:{src:'http://localhost:8000/shared/communication-speech.js'},addEventListener(){},getElementById:element},
   navigator:{mediaDevices:{enumerateDevices:async()=>[],addEventListener(){}}},HTMLMediaElement:{prototype:{setSinkId(){}}},NarbeCommunicationChannel:{Channel},
-  NarbePlatform:{lifecycle:{onClose(){}},settings:{open({normalize,onChange}){settings=normalize({enabled:false});change=onChange;return {readCached:()=>settings,save(value){settings=normalize(value);change();},dispose(){}};}}}};
+  NarbePlatform:{lifecycle:{onClose(){}},settings:{open({normalize,onChange}){settings=normalize(initial);change=onChange;return {readCached:()=>settings,save(value){settings=normalize(value);change();},dispose(){}};}}}};
  vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../bennyshub/shared/communication-speech.js'),'utf8'),context);
  context.NarbeCommunicationSpeech=window.NarbeCommunicationSpeech;
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../bennyshub/shared/communication-settings.js'),'utf8'),context);
@@ -44,4 +44,25 @@ test('a newly loaded tool can share an older open Hub service without a prefetch
  const oldService={...hub.api._service,prefetch:undefined,snapshot:()=>({...hub.api.get(),enabled:true}),speak:(text,owner)=>{spoken.push({text,owner});return ticket;}};
  const tool=harness(oldService);assert.equal(tool.api._service,oldService);assert.equal(tool.workers.length,0);
  assert.doesNotThrow(()=>tool.api.prefetch(['Hello']));assert.equal(tool.api.speak('Hello'),ticket);assert.equal(spoken[0].text,'Hello');
+});
+
+test('Natural is the default for existing preferences and Faster preserves the chosen Natural voice',async t=>{
+ const h=harness(undefined,{enabled:false,voice:'bm_george'});t.after(()=>h.api._service.dispose());
+ assert.equal(h.api.get().speechMode,'natural');assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,14);
+ h.api.toggle();const natural=h.workers.at(-1);assert(natural.url.endsWith('/communication-worker.js'));assert.equal(natural.options.type,'module');
+ natural.reply({id:natural.sent[0].id,ready:true});await h.flush();h.api.cycleMode();
+ assert.equal(natural.terminated,true);assert.equal(h.api.get().speechMode,'fast');assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);
+ const fast=h.workers.at(-1);assert(fast.url.endsWith('/communication-fast-worker.js'));assert.equal(fast.options.type,'classic');
+ fast.reply({id:fast.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+ assert.equal(h.element('speaker-quality-status').textContent,'Faster');assert.equal(h.element('speaker-voice-toggle').disabled,true);
+ h.api.cycleVoice();assert.equal(h.workers.length,2);h.api.cycleMode();
+ assert.equal(fast.terminated,true);assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,14);assert.equal(h.element('speaker-voice-toggle').disabled,false);
+});
+test('Faster persists locally and obsolete setup cannot make a different mode ready',async t=>{
+ const h=harness(undefined,{enabled:true,speechMode:'fast',voice:'af_heart'});t.after(()=>h.api._service.dispose());
+ const fast=h.workers.at(-1),oldId=fast.sent[0].id;assert.equal(h.api.get().speechMode,'fast');
+ h.api.cycleMode();const natural=h.workers.at(-1);fast.reply({id:oldId,ready:true});await h.flush();
+ assert.equal(h.api.get().voice,'af_heart');assert.equal(h.api.get().voiceReady,false);
+ natural.reply({id:natural.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+ h.api.cycleMode();h.api.toggle();await h.flush();assert.equal(h.api.get().enabled,false);assert.equal(h.api.get().voicePreparing,false);assert.equal(h.workers.at(-1).terminated,true);
 });
