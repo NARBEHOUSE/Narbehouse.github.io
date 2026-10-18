@@ -14,18 +14,19 @@
   try{if(parent!==window&&parent.location.origin===location.origin)service=parent.NarbeCommunicationSpeech?._service;}catch(_){/* standalone */}
   if(!service){
     let channel,worker,outputs=[],phase='idle',detail='',eventOwner,revision=0,permissionPending=false,readyVoice='',setupSeq=0;
-    let preparing;
+    let preparing,prefetchOwner;
     const listeners=new Set(),pending=new Map();
     const normalize=v=>({version:1,enabled:v?.enabled===true,sinkId:typeof v?.sinkId==='string'&&!['default','communications'].includes(v.sinkId)?v.sinkId:'',sinkLabel:typeof v?.sinkLabel==='string'?v.sinkLabel:'',voice:voices.some(x=>x.id===v?.voice)?v.voice:'am_michael'});
     const store=NarbePlatform.settings.open({key:'narbe-communication-speaker',normalize,onChange:()=>{
+      worker?.postMessage({type:'prefetch',voice:store.readCached().voice,texts:[]});
       revision++;channel?.stop();channel?.selectSink(store.readCached().sinkId);phase='idle';detail='';notify();
       if(store.readCached().enabled)void prepareVoice();
       else{failWorker('Speaker Mode off.');preparing=null;readyVoice='';}
     }});
-    function snapshot(){return {...store.readCached(),supported:supported(),outputs:[...outputs],phase,detail,owner:eventOwner,permissionPending,voices,voiceReady:readyVoice===store.readCached().voice};}
+    function snapshot(){return {...store.readCached(),supported:supported(),outputs:[...outputs],phase,detail,owner:eventOwner,permissionPending,voices,voiceReady:readyVoice===store.readCached().voice,voicePreparing:preparing?.voice===store.readCached().voice};}
     function notify(){for(const fn of [...listeners])fn(snapshot());}
     function report(value){phase=value.phase;detail=value.detail||'';eventOwner=value.owner;notify();}
-    function failWorker(message){worker?.terminate();worker=null;readyVoice='';for(const p of pending.values())p.reject(Error(message));pending.clear();}
+    function failWorker(message){worker?.terminate();worker=null;readyVoice='';prefetchOwner=undefined;for(const p of pending.values())p.reject(Error(message));pending.clear();}
     function request(message){
       if(!worker){
         worker=new Worker(new URL('communication-worker.js',scriptURL),{type:'module'});
@@ -42,13 +43,13 @@
       const voice=store.readCached().voice,setupRevision=revision;if(!supported())return;
       if(preparing&&preparing.voice!==voice){worker?.postMessage({type:'cancel',id:preparing.id});pending.get(preparing.id)?.reject(Error('Voice changed.'));pending.delete(preparing.id);preparing=null;}
       if(readyVoice===voice)return;
-      if(!channel.active)report({phase:'loading',detail:'Preparing local voice. First setup downloads the voice; keep this page open.'});
       try{
         if(preparing?.voice!==voice){
           const id='prepare-'+(++setupSeq);let timer;
           const work=Promise.race([request({type:'prepare',id,voice,text:previewText}),new Promise((_,reject)=>{timer=setTimeout(()=>{failWorker('Voice setup took too long. Toggle Speaker Mode off and on to retry.');reject(Error('Voice setup took too long.'));},600000);})]).finally(()=>{clearTimeout(timer);if(preparing?.work===work)preparing=null;});
           preparing={voice,id,work};
         }
+        if(!channel.active)report({phase:'loading',detail:'Loading selected voice. First setup may download voice files.'});
         const result=await preparing.work;
         if(result.ready&&revision===setupRevision&&store.readCached().enabled&&store.readCached().voice===voice){readyVoice=voice;if(!channel.active&&phase!=='error')report({phase:'ready',detail:'Voice ready. Changing the speaker or voice plays a sample.'});else notify();}
       }catch(e){if(revision===setupRevision&&store.readCached().enabled&&!channel.active)report({phase:'error',detail:'Voice setup failed. Check your connection, then toggle Speaker Mode off and on to retry.'});}
@@ -82,12 +83,19 @@
       }catch(e){report({phase:'error',detail:e.name==='NotAllowedError'?'Speaker access was not allowed. Use Find speakers to try again.':'Speakers could not be found. Connect an audio output and try again.'});}
       finally{permissionPending=false;notify();}
     }
-    service={snapshot,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},refresh,findSpeakers,
+    function prefetch(texts,who){
+      if(!worker||!store.readCached().enabled||!Array.isArray(texts))return;
+      if(texts.length&&readyVoice!==store.readCached().voice)return;
+      if(!texts.length&&prefetchOwner!==who)return;
+      prefetchOwner=texts.length?who:undefined;
+      worker.postMessage({type:'prefetch',voice:store.readCached().voice,texts});
+    }
+    service={snapshot,prefetch,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},refresh,findSpeakers,
       toggle(){if(!supported()&&!store.readCached().enabled){report({phase:'error',detail:'Speaker Mode needs a desktop browser with audio output selection, on HTTPS or localhost.'});return;}store.save({...store.readCached(),enabled:!store.readCached().enabled});if(store.readCached().enabled)void refresh();},
       cycle(){if(!outputs.length){report({phase:'error',detail:'Choose Find speakers first, then allow the browser prompt.'});return;}const d=outputs[(outputs.findIndex(d=>d.deviceId===store.readCached().sinkId)+1)%outputs.length];store.save({...store.readCached(),sinkId:d.deviceId,sinkLabel:d.label||'Speaker'});},
       cycleVoice(){const prefs=store.readCached();store.save({...prefs,voice:voices[(voices.findIndex(v=>v.id===prefs.voice)+1)%voices.length].id});},
       speak(text,who){if(!supported()){report({phase:'error',detail:'Speaker selection is unavailable in this browser.',owner:who});return ended('error');}return channel.speak(text,{voice:store.readCached().voice,owner:who});},
-      stop:who=>channel.stop(who),releaseOwner(who){channel.stop(who);if(eventOwner===who){eventOwner=undefined;phase='idle';detail='';notify();}},dispose(){channel.stop();failWorker('Closed.');store.dispose();listeners.clear();}
+      stop:who=>channel.stop(who),releaseOwner(who){prefetch([],who);channel.stop(who);if(eventOwner===who){eventOwner=undefined;phase='idle';detail='';notify();}},dispose(){channel.stop();failWorker('Closed.');store.dispose();listeners.clear();}
     };
     navigator.mediaDevices?.addEventListener('devicechange',()=>{if(store.readCached().enabled)void refresh();});
     NarbePlatform.lifecycle.onClose(()=>service.dispose());
@@ -98,6 +106,8 @@
   const api=window.NarbeCommunicationSpeech={
     _service:service,get:service.snapshot,subscribe:service.subscribe,isEnabled:()=>service.snapshot().enabled,
     toggle:service.toggle,cycleSpeaker:service.cycle,cycleVoice:service.cycleVoice,findSpeakers:service.findSpeakers,refresh:service.refresh,
+    // A tool may update before its already-open Hub tab. Keep that old service usable until refresh.
+    prefetch:texts=>service.prefetch?.(texts,owner),
     speak(text,fallback){
       if(!api.isEnabled())return fallback?.();
       // Communication is intentional output, independent of general/scan TTS.

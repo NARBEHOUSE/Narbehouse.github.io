@@ -2,6 +2,24 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Reuse downloaded communication voices on the website
+
+Ported the desktop speech latency fix into the website after the owner reported the repeated “preparing / first download” message there. Preserve a single ready Hub worker across tools, cache repeated messages, and silently prepare short visible/settled communication text. Status text distinguishes actual setup from message generation. The service-worker shell version is v51; model caches are preserved. Newly updated iframes tolerate an already-open older Hub service until refresh.
+
+Validation: 298 unit tests; existing browser speaker integration; real WebGPU worker with Phrase Board, Keyboard and RTC Lite; one worker and zero additional model/voice requests after setup; cached selections returned in 0 ms. The first test sentence generated in 256 ms. Muted playback and completion passed. The public build, release audit and 1,186 links passed. Companion archive remains SHA-256 34afd049789f41159061ec9df9c63b6844f59eae38f61c8912f3240ecc203e90. Details and limitations are in docs/development/COMMUNICATION-SPEAKER.md. The original desktop runtime was only read for comparison; this pass does not alter or launch Electron.
+
+Changed-file manifest (scope / Electron port flag):
+
+- bennyshub/shared/communication-channel.js, communication-worker.js, communication-settings.js — WEB shared runtime / FROM DESKTOP (no new desktop port needed).
+- bennyshub/shared/communication-speech.js — WEB shared service / FROM DESKTOP plus old-web-Hub compatibility; desktop follow-up unnecessary.
+- bennyshub/apps/tools/phraseboard/board-live.js, rtc-lite/app.js, keyboard/app.js — WEB app hooks / FROM DESKTOP, adapted to preserve browser-only behavior.
+- bennyshub/service-worker.js — WEB cache version / NOT APPLICABLE to Electron.
+- tests/communication-channel.test.cjs, communication-worker.test.cjs, communication-speech.test.cjs — WEB tests / FROM DESKTOP plus old-tab regression.
+- tests/communication-cache.test.cjs — WEB cache migration regression / NOT APPLICABLE to Electron.
+- scripts/check-communication-speaker.cjs — WEB existing integration fixture support / NOT APPLICABLE to Electron.
+- scripts/check-communication-reuse.cjs — WEB real-worker and cross-app reuse verification / NOT APPLICABLE to Electron.
+- docs/development/COMMUNICATION-SPEAKER.md, docs/history/DEVELOPMENT-HISTORY.md — WEB documentation / NOT APPLICABLE to Electron.
+
 ## 2026-10-17 — Authorized desktop port and website/Companion 1.0.9 release
 
 The owner explicitly authorized adding the speaker features to the Electron app, including Python control-bar Help/Suction, then pushing the website repository. This supersedes the earlier local-only/Electron-read-only scope for this task. The desktop port is implemented in its separate workspace; the website push does not publish an Electron installer. All prior release ZIPs remain unchanged. The owner will upload Companion 1.0.9 to the Chrome dashboard; no store submission was performed here.

@@ -157,6 +157,18 @@
   let buffer = "";
   let ttsUseCount = 0;
 
+  let speakerWarmupTimer,speakerWarmupKey='';
+  function prepareDraftSpeech(){
+    clearTimeout(speakerWarmupTimer);
+    const speaker=NarbeCommunicationSpeech.get(),text=buffer.replace(/\|/g,'').trim();
+    const texts=speaker.enabled&&speaker.voiceReady&&!document.hidden&&text&&text.length<=120?[text]:[];
+    const key=JSON.stringify([speaker.voice,texts]);if(key===speakerWarmupKey)return;
+    speakerWarmupKey=key;NarbeCommunicationSpeech.prefetch(texts);
+  }
+  const stopSpeakerWarmupListener=NarbeCommunicationSpeech.subscribe(prepareDraftSpeech);
+  NarbePlatform.lifecycle.onClose(()=>{clearTimeout(speakerWarmupTimer);stopSpeakerWarmupListener();NarbeCommunicationSpeech.prefetch([]);});
+  document.addEventListener('visibilitychange',prepareDraftSpeech);
+
   function setBuffer(txt) {
     buffer = txt;
     const displayText = buffer + "|";
@@ -166,6 +178,7 @@
     adjustTextSize(displayText);
 
     ttsUseCount = 0;
+    clearTimeout(speakerWarmupTimer);speakerWarmupTimer=setTimeout(prepareDraftSpeech,300);
     renderPredictions();
   }
 

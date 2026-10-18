@@ -6,6 +6,21 @@ try { predictionEngine.setHistory(PhrasePredictions.readHistory(localStorage)); 
 let groupScanner = null, groupElements = [], currentRevision = null;
 const original = {clearGrid, renderCategory, updateScannable, scanForward, scanBackward, selectCurrent, highlightCurrentRow, renderSettingsMenu, stopScanning, buildIndex};
 buildIndex = function(rows) { predictionEngine.setBoard(rows); original.buildIndex(rows); };
+let speakerWarmupKey='';
+function prepareVisibleSpeech(){
+  const speaker=NarbeCommunicationSpeech.get();
+  let texts=[];
+  if(speaker.enabled&&speaker.voiceReady&&state.currentMenu==='category'&&!state.videoModalActive&&document.visibilityState!=='hidden'){
+    texts=state.sentenceMode?[messageText()]:[...el.mainGrid.querySelectorAll('[data-speak-text]:not([data-prediction])')]
+      .map(btn=>btn.dataset.speakText).filter(text=>!isLikelyUrl(text)).map(cleanTextForTTS);
+  }
+  texts=[...new Set(texts.map(text=>text.trim()).filter(text=>text&&text.length<=120))].slice(0,24);
+  const key=JSON.stringify([speaker.voice,texts]);if(key===speakerWarmupKey)return;
+  speakerWarmupKey=key;NarbeCommunicationSpeech.prefetch(texts);
+}
+const stopSpeakerWarmupListener=NarbeCommunicationSpeech.subscribe(prepareVisibleSpeech);
+NarbePlatform.lifecycle.onClose(stopSpeakerWarmupListener);
+document.addEventListener('visibilitychange',prepareVisibleSpeech);
 function rememberMessage(text) {
   if (!state.rememberMessages ||  new URLSearchParams(location.search).has('preview')) return;
   try { predictionEngine.setHistory(PhrasePredictions.remember(localStorage, text)); } catch { notifyBoard('Message spoken. Personal suggestions could not be saved in this browser.'); }
@@ -29,9 +44,11 @@ function renderMessage() {
   else el.sentenceDisplay.textContent = messageText();
   el.sentenceDisplay.setAttribute('aria-label', messageText() ? 'Speak message: ' + messageText() : 'Speak message. Message is empty');
   syncSentence();
+  prepareVisibleSpeech();
   if (state.predictionsEnabled) { renderPredictions(); updateScannable(); }
 }
 clearGrid = function () {
+  NarbeCommunicationSpeech.prefetch([]);speakerWarmupKey='';
   el.mainGrid.querySelectorAll('.group-active,.group-dim').forEach(n => n.classList.remove('group-active','group-dim'));
   original.clearGrid();
   el.mainGrid.classList.remove('settings-active');
@@ -98,6 +115,7 @@ updateScannable = function (preserve) {
   syncSentence();
   if (state.videoModalActive) { original.updateScannable(preserve); return; }
   renderPredictions();
+  prepareVisibleSpeech();
   if (el.mainGrid.classList.contains('free-active')) {
     const groups = [];
     if (messageActive()) groups.push({name:'Message',items:[el.sentenceDisplay,el.deleteWordBtn,el.clearSentenceBtn]});

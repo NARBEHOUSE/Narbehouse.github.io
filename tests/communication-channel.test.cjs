@@ -49,3 +49,9 @@ test('voice failure and oversize text do not reach the audio player',async()=>{
  const h=harness();h.setGenerate(async()=>{throw Error('Download failed');});assert.equal((await h.channel.speak('Hello').finished).reason,'error');
  assert.equal((await h.channel.speak('x'.repeat(5001)).finished).reason,'error');assert.equal(h.audios.length,0);
 });
+
+test('ordinary message generation never claims to download a voice',async()=>{
+ const h=harness(),ticket=h.channel.speak('Hello');await tick();
+ assert.equal(h.events.find(e=>e.phase==='generating').detail,'Preparing message…');
+ assert(h.events.every(e=>!/download|first use/i.test(e.detail)));h.audios[0].onended();await ticket.finished;
+});

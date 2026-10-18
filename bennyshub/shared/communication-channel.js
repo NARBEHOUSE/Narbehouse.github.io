@@ -43,7 +43,7 @@
         try{
           if(typeof text!=='string'||!text.trim()||text.length>5000)throw Error('Use a message of 1 to 5000 characters.');
           const sink=this.sink;await this.checkSink(sink);if(!current())return;
-          this.state('generating','Preparing speech. First use downloads the local voice; this can take a few minutes.',owner);
+          this.state('generating','Preparing message…',owner);
           job.timer=setTimeout(()=>fail(Error('Voice preparation took too long. Please try again.')),600000);
           const audioData=await this.synthesize(job.id,text,voice);if(!current())return;
           await this.checkSink(sink);if(!current())return;

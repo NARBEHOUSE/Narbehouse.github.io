@@ -6,7 +6,7 @@ window.NarbeCommunicationSettings={mount({refreshScan,announce}){
     for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-find','speaker-test'])byId(id).disabled=!s.enabled||!s.supported;
     const connected=s.outputs.some(d=>d.deviceId===s.sinkId);
     byId('speaker-output-status').textContent=s.sinkId?(s.sinkLabel||'Selected speaker')+(s.enabled&&!connected?' (unavailable)':''):'Not selected';
-    byId('speaker-voice-status').textContent=s.voices.find(v=>v.id===s.voice).name+(s.enabled&&!s.voiceReady?' (preparing)':'');
+    byId('speaker-voice-status').textContent=s.voices.find(v=>v.id===s.voice).name+(s.enabled&&!s.voiceReady?(s.voicePreparing?' (preparing)':' (not ready)'):'');
     byId('speaker-test-title').textContent=['generating','playing'].includes(s.phase)?'Stop speaker':'Test speaker';
     byId('speaker-details').textContent=s.detail||(!s.supported?'Speaker selection is unavailable in this browser.':s.enabled?'Scanning uses the default output. Choose your communication speaker below.':'');
     byId('speaker-details').hidden=!byId('speaker-details').textContent;
