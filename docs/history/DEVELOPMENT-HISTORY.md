@@ -2,6 +2,37 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Streaming save recovery, confirmed clearing and Companion 1.1.0
+
+The owner reported a false other-window conflict whenever a movie/show opened, requested confirmation before clearing progress/search history and a separate Clear Watch History action for Recently Watched, and reported Plex Previous/Next failing while Netflix worked. The installed Companion is 1.0.8; the owner reports 1.0.9 pending Chrome Web Store approval. At the owner's direction the next candidate is **1.1.0**. After local verification, the owner authorized pushing this release to the website repository. The owner will install Companion 1.1.0 locally and submit it to Google only if that test succeeds. This task does not install in the owner's profile or submit to a store. Electron stays untouched.
+
+The save warning came from comparing a cached app snapshot with playback feedback that the Companion had already written into browser and Companion storage. The website now takes the current playback map as its baseline, merges independent titles and newer ordinary playback records, preserves queued changes during in-flight acknowledgements, and retries bounded revision races. Concurrent resets/deletions and catalog edits retain conflict protection instead of silently resurrecting or replacing records. This repair is website code and works with the existing storage-capable Companion protocol.
+
+All three clear actions now open a spoken CHOICE dialog: fresh/recurring blank stop, Cancel first, dialog-only scan and Tab focus, Escape/long-Enter cancellation, with native hold thresholds unchanged. Progress clearing preserves Recently Watched entries while removing resume links. Watch-history clearing removes the entries and saved resume links, including active playback tracking, while preserving the library. Search clearing only removes saved searches. Desktop/mobile layouts were inspected.
+
+Plex's native Previous/Next buttons were present and enabled, but its Link handler ignored click-only activation while focus stayed on the switch toolbar. Its public client source confirms Shift+Left/Right map to the same item actions. The Plex adapter now supplies mousedown/mouseup before click, keeping focus on the toolbar and letting Plex consume the trailing click. Previous retains Plex's native restart/previous semantics. Netflix and other provider handlers remain unchanged. Ten-second seeking continues to change the media currentTime directly; it does not send keyboard shortcuts.
+
+Validation: 307 unit tests pass; eleven real-browser provider fixtures pass, including Plex's press-dependent single activation, Netflix unchanged, disabled controls, fullscreen and focus capture; six Streaming scan groups pass, including every confirmation type, speech, cancellation, blank Enter, Tab trapping and Auto. The Streaming scan fixture now awaits real app-storage initialization before advancing its fake clock and checks the existing keyboard row Back stop before wrapping. The real Companion bridge verifies player feedback followed by new movie/show launches in the same frame saves without a false conflict or pending queue. The full real-bridge progress suite also passes YouTube, Netflix, Disney+, Prime Video and Hulu capture/Continue/reset checks. An initial return assertion exceeded its five-second fixture timeout during the concurrent build; a clean full rerun passed without a runtime change. Build passed; public audit checked 3,787 files with no problems; 1,186 page/asset references passed. Cache v52 preserves downloaded communication model caches.
+
+Package: releases/1.1.0/bennys-hub-companion-1.1.0.zip, 30 members, 114,031 bytes, SHA-256 25da9ff5bbfb7050f6f516450be861d601a6101b46255b402b053f033e411b58. Only manifest.json (version) and player-adapters.js differ from 1.0.9; permissions and shared helper bytes are unchanged. The original 1.0.9 release and download remain SHA-256 34afd049789f41159061ec9df9c63b6844f59eae38f61c8912f3240ecc203e90. An intermediate local 1.0.10 candidate is preserved but superseded by the owner's 1.1.0 choice; only 1.1.0 is linked and included in dist. The corrected package still needs live signed-in Plex acceptance after installation. Test fixtures use isolated profiles and synthetic data; inspecting the owner's old live player did not update their installed extension.
+
+Source backup: Website Backups/Streaming-sync-confirmations-20261018-1792333138918. Local evidence: artifacts/streaming-fixes/ and artifacts/scan-completion-tools/streaming.json plus desktop/mobile confirmation screenshots.
+
+Changed-file manifest (scope / Electron port flag):
+
+- bennyshub/shared/app-storage.js — WEB storage / NOT APPLICABLE to Electron's native storage.
+- bennyshub/apps/tools/streaming/app.js, index.html, style.css, web-streaming.js — WEB confirmations/history / CANDIDATE for a separately authorized desktop pass; not ported here.
+- bennyshub/service-worker.js, bennyshub/extension-setup.html — WEB cache/download / NOT APPLICABLE to Electron.
+- extension/player-adapters.js, extension/manifest.json — COMPANION Plex fix/version / NOT APPLICABLE to Electron's native playback controls.
+- extension/README.md — COMPANION documentation / NOT APPLICABLE to Electron.
+- tests/companion-data-client.test.cjs, tests/communication-cache.test.cjs — WEB regressions / NOT APPLICABLE to Electron.
+- tests/player-adapters.test.cjs, scripts/check-player-fullscreen.cjs — COMPANION regression fixtures / NOT APPLICABLE to Electron.
+- scripts/check-player-progress.cjs — WEB/COMPANION real-bridge regression / NOT APPLICABLE to Electron.
+- scripts/check-scan-tools-streaming.cjs — WEB scan/dialog regression / NOT APPLICABLE to Electron.
+- submission/START-HERE.md, submission/STORE-LISTING.md, submission/REVIEWER-INSTRUCTIONS.md, submission/VALIDATION.md, submission/COMPANION-SHA256SUMS.txt — WEB/COMPANION release records / NOT APPLICABLE to Electron.
+- docs/history/DEVELOPMENT-HISTORY.md — WEB/COMPANION implementation record / NOT APPLICABLE to Electron.
+- Generated local releases/1.1.0/**, bennyshub/downloads/bennys-hub-companion-1.1.0.zip and dist/** — WEB/COMPANION candidate/build artifacts / NOT APPLICABLE to Electron; prior artifacts remain immutable.
+
 ## 2026-10-18 — Reuse downloaded communication voices on the website
 
 Ported the desktop speech latency fix into the website after the owner reported the repeated “preparing / first download” message there. Preserve a single ready Hub worker across tools, cache repeated messages, and silently prepare short visible/settled communication text. Status text distinguishes actual setup from message generation. The service-worker shell version is v51; model caches are preserved. Newly updated iframes tolerate an already-open older Hub service until refresh.

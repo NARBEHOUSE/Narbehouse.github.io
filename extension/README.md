@@ -1,17 +1,12 @@
-# Benny’s Hub Companion 1.0.9 — upload candidate
+# Benny’s Hub Companion 1.1.0 — test candidate
 
-The **1.0.9** candidate routes **Say I need help** through
-the original Hub's selected speaker and voice when Speaker Mode is on, even with
-Hub TTS and Toolbar Speech off. Keep that Hub tab open. The extension forwards only
-the fixed Help action; speaker device identifiers stay with the Hub. Missing outputs
-or a missing Hub report an error without switching to the default output. Speaker
-Mode off preserves native Help. New requests and leaving Help/closing the player
-cancel pending speech. This adds no permissions. Reload the updated extension,
-refresh the Hub and open a new stream to test it. Validate this candidate with
-`node scripts/package-companion.cjs --check`.
-Previous release ZIPs are unchanged. Version 1.0.9 is prepared for owner upload; it has not been submitted or approved by this task.
+Version **1.1.0** fixes Plex Previous/Next when focus stays on the switch toolbar. Plex ignores an unfocused click by itself; the adapter supplies a mouse press/release before the click, invoking the same item actions as Shift+Left/Right. Netflix and other providers retain their existing handlers. Ten-second seeking still changes the media playback position directly. No permissions or storage formats change.
 
-Load this directory via Chrome/Edge Extensions → Developer mode → Load unpacked. The source directory needs no build step. Maintainers changing the canonical shared scan, voice, badge or backup-validation helpers must run `node scripts/sync-companion-shared.cjs` before reloading. Prepare the production upload ZIP with `node scripts/package-companion.cjs`, or add `--check` to validate without writing. The package is `releases/1.0.9/bennys-hub-companion-1.0.9.zip`; its manifest is at the ZIP root, development/localhost access is removed, and no new permissions are added. All previous release artifacts are preserved. Version 1.0.9 also includes the previously tested video framing, Companion app storage and continuous keyboard-row wrapping changes.
+The related website update fixes false progress-save conflicts, adds confirmation to clearing progress/search history, and adds a confirmed Clear Watch History action for Recently Watched. Those website changes are separate from the extension package.
+
+On October 18, 2026, the owner reported installed version 1.0.8 and version 1.0.9 pending Chrome Web Store approval. The 1.0.9 archive remains unchanged. The owner authorized the website repository push and will install this 1.1.0 candidate locally, then submit it to Google only if testing succeeds. This task does not install it in the owner's profile or submit it to a store. Live signed-in Plex validation with the new package remains pending; isolated real-browser provider fixtures pass. The 1.0.9 communication speaker features are retained, including Help through the original Hub's selected output.
+
+Load this directory via Chrome/Edge Extensions → Developer mode → Load unpacked. The source directory needs no build step. Maintainers changing the canonical shared scan, voice, badge or backup-validation helpers must run `node scripts/sync-companion-shared.cjs` before reloading. Prepare the production upload ZIP with `node scripts/package-companion.cjs`, or add `--check` to validate without writing. The package is `releases/1.1.0/bennys-hub-companion-1.1.0.zip`; its manifest is at the ZIP root, development/localhost access is removed, and no new permissions are added. All previous release artifacts are preserved. Version 1.0.9 also includes the previously tested video framing, Companion app storage and continuous keyboard-row wrapping changes.
 
 Use the Hub at http://127.0.0.1:4173/bennyshub/index.html during development, or your IDE preview at http://127.0.0.1:3000/bennyshub/index.html. Both ports also support localhost. Reload the Hub after loading or reloading the extension. Open this extension’s settings and turn on **Streaming and news** to grant access to every listed streaming service and the Day Hub news feeds together. The same switch turns that access off; Calendar connects separately. No AI credential or calendar address is bundled.
 
@@ -43,7 +38,7 @@ Bundled ical.js 2.2.1 uses the MPL-2.0 license; see vendor/ICAL-LICENSE.
 
 Version 0.1.7 matches the Hub Scan Manager's anti-tremor timing after both accepted and filtered key releases. Scan intervals (1/2/3/4 seconds), input sensitivity (50/100/200/300 milliseconds), and one-switch mode sync from the Hub while a stream is open. The three-second hold before reverse scanning stays fixed, matching the Hub.
 
-The current 1.0.9 candidate retains one **Streaming and news** switch and a plain supported-platform list. The On label requires all listed host permissions plus news enabled. Existing partial grants show Incomplete; the switch remains checked while any access remains, so it can revoke that access immediately. Turn it off, then on to request the complete set. Browser permission approval is still required, and Calendar setup stays separate.
+The current 1.1.0 candidate retains one **Streaming and news** switch and a plain supported-platform list. The On label requires all listed host permissions plus news enabled. Existing partial grants show Incomplete; the switch remains checked while any access remains, so it can revoke that access immediately. Turn it off, then on to request the complete set. Browser permission approval is still required, and Calendar setup stays separate.
 
 Player startup now fits a sourced video and its player container into the already-fullscreen browser window automatically, including Plex after Play/Resume. This CSS player view does not need the native Fullscreen API's user gesture. The Fullscreen control can turn that view off; selecting it again requests the provider/native fullscreen view. Accidental clicks outside the bar cannot activate the provider or divert Space/Enter. No OS-level helper or debugger permission is used.
 

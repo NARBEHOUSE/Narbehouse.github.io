@@ -131,6 +131,7 @@
     saveProgress({show,url,season,episode}) {const data=get('lastWatched',{});Object.defineProperty(data,key(show),{value:{url,season:season??-1,episode:episode??-1,timestamp:Date.now()},enumerable:true,writable:true,configurable:true});set('lastWatched',data);},
     resetProgress(title) {const data=get('lastWatched',{}),entry=data[key(title)];if(entry){delete entry.url;entry.season=-1;entry.episode=-1;set('lastWatched',data);}if(key(get('activePlayback',{}).show)===key(title))remove('activePlayback');},
     clearAllProgress() {const data=get('lastWatched',{});for(const entry of Object.values(data)){delete entry.url;entry.season=-1;entry.episode=-1;}set('lastWatched',data);remove('activePlayback');return Object.keys(data).length;},
+    clearWatchHistory() {set('lastWatched',{});remove('activePlayback');},
     getSearchHistory:()=>get('searchHistory',[]),
     saveSearch(term) {set('searchHistory',[term,...get('searchHistory',[]).filter(x=>x!==term)].slice(0,100));},
     clearSearchHistory:()=>set('searchHistory',[]),

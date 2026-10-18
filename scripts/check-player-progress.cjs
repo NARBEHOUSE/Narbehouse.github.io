@@ -21,6 +21,28 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   await hub.locator('[data-target="tools"]').first().click();await hub.locator('#tools-grid [data-title="Streaming"]').click();
   await expect.poll(()=>hub.frames().some(f=>f.url().includes('/tools/streaming/'))).toBe(true);const frame=hub.frames().find(f=>f.url().includes('/tools/streaming/'));await frame.waitForFunction(()=>window.WebStreaming&&BennyExtension.supports('streaming'));return frame;
  }
+ // The same live Streaming frame must accept feedback and launch another title
+ // without treating its own Companion as a conflicting window.
+ {
+   const frame=await streaming();await frame.evaluate(()=>BennyAppStorage.ready('streaming'));
+   const first={show:'Feedback series',url:'https://www.netflix.com/watch/2001',type:'shows'};
+   let opened=context.waitForEvent('page');await frame.evaluate(item=>WebStreaming.launch(item),first);const firstPlayer=await opened;
+   await firstPlayer.locator('#benny-player-controls').waitFor();
+   await firstPlayer.evaluate(()=>history.replaceState({},'','https://www.netflix.com/watch/2002'));
+   await expect.poll(()=>frame.evaluate(()=>WebStreaming.getLastWatched('Feedback series')?.url),{timeout:15000}).toBe('https://www.netflix.com/watch/2002');
+   opened=context.waitForEvent('page');await frame.evaluate(()=>WebStreaming.launch({show:'Feedback movie',url:'https://www.netflix.com/watch/3001',type:'movies'}));const moviePlayer=await opened;
+   let state=await frame.evaluate(()=>BennyAppStorage.flush('streaming'));assert.equal(state.mode,'companion');assert.ok(!state.error);
+   assert.equal(await frame.evaluate(()=>localStorage.getItem('benny-web:v1:companion.pending.streaming')),null);
+   assert.equal(state.values['benny-web:v1:streaming.lastWatched']['feedback series'].url,'https://www.netflix.com/watch/2002');
+   assert.equal(state.values['benny-web:v1:streaming.lastWatched']['feedback movie'].url,'https://www.netflix.com/watch/3001');
+   opened=context.waitForEvent('page');await frame.evaluate(item=>WebStreaming.launch(item),{...first,url:'https://www.netflix.com/watch/2003'});const nextPlayer=await opened;
+   state=await frame.evaluate(()=>BennyAppStorage.flush('streaming'));assert.equal(state.mode,'companion');assert.ok(!state.error);
+   await expect(frame.locator('#streaming-status')).not.toContainText('changed in another window');
+   assert.equal(state.values['benny-web:v1:streaming.lastWatched']['feedback series'].url,'https://www.netflix.com/watch/2003');
+   await firstPlayer.close();await moviePlayer.close();await nextPlayer.close();
+   await hub.goto(base+'/bennyshub/index.html#companion=home');await hub.waitForFunction(()=>BennyExtension.supports('streaming'));
+   console.log('Same-frame player feedback followed by movie and show launches: progress saved, no conflict or pending queue.');
+ }
  for(const c of cases){
   let frame=await streaming();const item={id:'fixture',title:'Example series',url:c.start,type:c.type||'shows'};
   await frame.evaluate(item=>WebStreaming.saveData([item]),item);
@@ -44,4 +66,10 @@ const root=path.resolve(__dirname,'..'),base=process.env.HUB_TEST_ORIGIN||'http:
   await hub.goto(base+'/bennyshub/index.html#companion=home');await hub.waitForFunction(()=>BennyExtension.supports('streaming'));
   console.log(new URL(c.start).hostname+': latest episode persisted through keyboard shortcut/reload, Continue used it, catalog unchanged, reset respected.');
  }
-})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>context?.close());
+})().catch(async e=>{
+ console.error(e);process.exitCode=1;
+ for(const [index,page] of (context?.pages()||[]).entries()){
+   console.error('Failure page',index,page.url(),await page.locator('#benny-player-controls').textContent().catch(()=>''));
+   await page.screenshot({path:path.join(root,'artifacts/streaming-fixes/progress-failure-'+index+'.png')}).catch(()=>{});
+ }
+}).finally(async()=>context?.close());

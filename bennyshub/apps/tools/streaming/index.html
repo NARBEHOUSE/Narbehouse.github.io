@@ -73,6 +73,10 @@
                 <span>Watch Progress</span>
                 <button class="setting-toggle" onclick="clearAllProgress()">Clear All</button>
             </div>
+            <div class="setting-row">
+                <span>Watch History</span>
+                <button class="setting-toggle" onclick="clearWatchHistory()">Clear Watch History</button>
+            </div>
         </div>
         <button class="back-btn-large" onclick="openMainMenu()">Back to Main Menu</button>
     </div>
@@ -148,6 +152,18 @@
                     <button class="modal-action-btn danger" onclick="closeEditorModal()" style="min-width: 150px;">Cancel</button>
                     <button class="modal-action-btn primary" onclick="startEditor()" style="min-width: 150px;">Proceed</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Destructive actions require a separate, switch-accessible choice. -->
+    <div id="clear-data-modal" class="modal-overlay hidden">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="clear-data-title" aria-describedby="clear-data-description" tabindex="-1">
+            <h2 id="clear-data-title"></h2>
+            <p id="clear-data-description"></p>
+            <div class="modal-actions">
+                <button class="modal-action-btn" id="clear-data-cancel" onclick="closeClearConfirmation()">Cancel</button>
+                <button class="modal-action-btn danger" id="clear-data-confirm" onclick="confirmClearData()">Clear</button>
             </div>
         </div>
     </div>

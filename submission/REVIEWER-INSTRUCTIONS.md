@@ -1,6 +1,6 @@
 # Reviewer instructions
 
-Prepared instructions for the Companion 1.0.9 upload candidate; it has not been submitted or approved. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 public; that historical publisher-dashboard status has not been independently verified. These steps describe the 1.0.9 package. The update fixes Netflix framing where provider centering transforms could leave only a quarter of the fitted picture visible and now provides local Companion storage for Journal, Keyboard, Streaming and Day Hub. It adds no permissions, and previous release archives remain unchanged. Parking, Space brake and speech-wait settings are centralized in Hub Settings.
+Prepared instructions for Companion 1.1.0, a test candidate that has not been submitted or approved. On October 18, 2026, the owner reported 1.0.8 installed and 1.0.9 pending Chrome Web Store approval. Version 1.1.0 fixes Plex Previous/Next while toolbar focus is protected and retains 1.0.9's features. It adds no permissions; prior archives are unchanged. Related website changes fix progress-save conflicts and add confirmed clearing controls.
 
 Website: https://narbehouse.github.io/bennyshub/
 Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html
@@ -22,7 +22,7 @@ No Hub account, Python helper or Electron app is needed. Streaming provider acco
 
 Screenshots use the real Companion UI with clearly labeled demonstration playback and no personal movie catalog, sign-in information, calendar or journal entries. Provider-specific previous/next actions are available only where the provider exposes suitable controls.
 
-Publisher follow-up: after the website update deploys, check that the reviewer URLs serve these controls. Confirm the actual dashboard status before any store follow-up; the reported 1.0.7 submission does not include this 1.0.9 candidate, and these notes do not establish deployment, submission or approval.
+Publisher follow-up: these instructions do not establish deployment, submission or approval. The owner reports 1.0.9 pending review; this separate 1.1.0 candidate awaits the owner’s local acceptance test. Verify deployed URLs and dashboard state before store follow-up.
 
 Open **Help & shortcuts** during playback: the video should pause. **Say I need help** uses browser speech even with spoken scan labels disabled. **Back to video** leaves playback paused. **Open keyboard**, **Open phrase board**, and **Hub main menu** close the managed streaming window and navigate the original Hub tab directly without adding another Hub. No Messenger or personal care phrases are included.
 
@@ -31,3 +31,10 @@ In Help, **Toolbar Speech On/Off** controls automatic Companion narration, persi
 ## Communication speaker check
 
 In Hub Settings, enable Communication Speaker Mode, choose a connected output and a speaker voice, and use Test speaker. General TTS may stay off. Keyboard messages, both Phrase Board communication modes, RTC Lite messages and deliberate game Help use that output. With the original Hub tab kept open, launch a stream and choose Help → Say I need help; it uses the same speaker even with Toolbar Speech off. A missing speaker or closed Hub shows failure without replaying through the default output. Speaker Mode off restores the original speech route.
+
+
+## Plex navigation and Streaming clearing
+
+In an own-library Plex episode at app.plex.tv, select Next and Previous using the Companion toolbar with controls locked. Each selection should invoke the corresponding native item action once without moving focus off the toolbar. Plex's Shift+Right/Left shortcuts invoke the same actions. Previous retains Plex's native behavior, which may return to the beginning of the current item before going to the previous item. Check first/last items with unavailable controls. Confirm Netflix episode navigation still behaves normally.
+
+In Streaming Settings, Clear All watch progress, Clear search history and Clear Watch History each open a spoken confirmation with a blank scan start and Cancel first. Cancel/Escape must preserve data. Clear progress keeps Recently Watched entries but removes saved resume links; Clear Watch History empties Recently Watched and removes those links. The library stays intact. Opening another movie/show after ordinary player feedback should save without the false other-window conflict warning. Use synthetic records for destructive checks.

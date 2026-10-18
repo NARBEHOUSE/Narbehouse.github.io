@@ -23,7 +23,7 @@ function client(remote,{local=new Map(),capabilities=['journal','journal-storage
   });
   context.window=context;
   for(const file of ['data-backup.js','journal-storage.js','app-storage.js'])vm.runInContext(fs.readFileSync(path.join(root,'bennyshub/shared',file),'utf8'),context,{filename:file});
-  return {local,calls,events,journal:context.BennyJournalStorage,apps:context.BennyAppStorage,parseBackup:value=>vm.runInContext('JSON.parse('+JSON.stringify(JSON.stringify(value))+')',context),capabilities(value){currentCapabilities=value;}};
+  return {context,local,calls,events,journal:context.BennyJournalStorage,apps:context.BennyAppStorage,parseBackup:value=>vm.runInContext('JSON.parse('+JSON.stringify(JSON.stringify(value))+')',context),capabilities(value){currentCapabilities=value;}};
 }
 
 test('Journal client migrates once and retrieves Companion entries after website data is cleared',async()=>{
@@ -195,4 +195,90 @@ test('Journal browser fallback refuses a merged restore beyond its readable entr
   await h.journal.read();const before=[...local];
   await assert.rejects(h.journal.restore({version:2,app:'journal',entries:[sampleEntry('extra','One more entry')],draft:null}),/Invalid journal entries/);
   assert.deepEqual([...local],before);assert.equal((await h.journal.read()).entries.length,10000);
+});
+
+
+const streamingPrefix='benny-web:v1:streaming.',progressKey=streamingPrefix+'lastWatched',pendingStreaming='benny-web:v1:companion.pending.streaming';
+const progress=(id,timestamp)=>({url:'https://www.youtube.com/watch?v='+id,season:1,episode:1,timestamp});
+function streamingClient(remote,options={}){
+  const h=client(remote,{...options,intercept:(action,payload,go)=>action==='OPEN_STREAM'?{}:options.intercept?options.intercept(action,payload,go):go()});
+  const status={textContent:''};h.context.document.currentScript={src:origin+'/bennyshub/apps/tools/streaming/web-streaming.js'};h.context.document.getElementById=()=>status;
+  h.context.BennyData={get:(key,fallback)=>h.local.has('benny-web:v1:'+key)?JSON.parse(h.local.get('benny-web:v1:'+key)):fallback};
+  for(const file of ['playback-links.js','web-streaming.js'])vm.runInContext(fs.readFileSync(path.join(root,'bennyshub/apps/tools/streaming',file),'utf8'),h.context);
+  return {...h,api:h.context.WebStreaming,status};
+}
+test('streaming launches after Companion feedback without a false other-window conflict',async()=>{
+  const remote=await backend(),h=streamingClient(remote,{local:new Map([
+    [progressKey,JSON.stringify({show:progress('first',1)})],
+    [streamingPrefix+'activePlayback',JSON.stringify({playbackId:'session',show:'Show',season:1,episode:1})]
+  ])});await h.apps.ready('streaming');
+  const saved=await remote.apps.rememberPlayback('session','https://www.youtube.com/watch?v=second');
+  h.local.set(progressKey,JSON.stringify({show:saved})); // Real content-script feedback bypasses the cached state.
+  await h.api.launch({show:'Movie',url:'https://www.youtube.com/watch?v=movie',type:'movies'});
+  assert.equal(h.status.textContent,'');assert.equal(h.local.has(pendingStreaming),false);
+  h.context.Date={now:()=>saved.timestamp+10};
+  await h.api.launch({show:'Show',url:'https://www.youtube.com/watch?v=third',type:'shows'});
+  assert.equal(h.status.textContent,'');assert.equal(h.local.has(pendingStreaming),false);
+  const final=(await remote.request('APP_DATA_READ',{app:'streaming'})).data[progressKey];
+  assert.ok(final.movie);assert.equal(final.show.url,'https://www.youtube.com/watch?v=third');
+});
+test('streaming recovers an already stuck progress queue and keeps other Companion titles',async()=>{
+  const remote=await backend(),base={show:progress('first',1)},remoteValues={show:progress('second',2),remote:progress('remote',3)};
+  await remote.request('APP_DATA_MIGRATE',{app:'streaming',data:{[progressKey]:remoteValues}});
+  const desired={show:progress('third',4),local:progress('local',5)};
+  const local=new Map([[progressKey,JSON.stringify(desired)],[pendingStreaming,JSON.stringify({base:{[progressKey]:base},patch:{[progressKey]:desired}})]]);
+  const h=streamingClient(remote,{local}),state=await h.apps.ready('streaming');
+  assert.equal(state.mode,'companion');assert.equal(local.has(pendingStreaming),false);
+  assert.deepEqual(JSON.parse(local.get(progressKey)),{...desired,remote:remoteValues.remote});
+  assert.deepEqual((await remote.request('APP_DATA_READ',{app:'streaming'})).data[progressKey],JSON.parse(local.get(progressKey)));
+});
+test('streaming retries a player update between reading and writing its revision',async()=>{
+  const remote=await backend();let race=true;
+  const h=streamingClient(remote,{local:new Map([[progressKey,JSON.stringify({show:progress('first',1)})],[streamingPrefix+'activePlayback',JSON.stringify({playbackId:'session',show:'Show'})]]),intercept:async(action,payload,go)=>{
+    if(action==='APP_DATA_WRITE'&&race){race=false;await remote.apps.rememberPlayback('session','https://www.youtube.com/watch?v=next');}return go();
+  }});await h.apps.ready('streaming');
+  await h.api.launch({show:'Movie',url:'https://www.youtube.com/watch?v=movie',type:'movies'});
+  assert.equal(h.status.textContent,'');assert.equal(h.local.has(pendingStreaming),false);
+  const final=JSON.parse(h.local.get(progressKey));assert.ok(final.movie);assert.equal(final.show.url,'https://www.youtube.com/watch?v=next');
+  assert.equal(h.calls.filter(c=>c.action==='APP_DATA_WRITE').length,2);
+});
+test('streaming retains a newer local edit while acknowledging a merged progress save',async()=>{
+  const remote=await backend();let entered,release,first=true;const waiting=new Promise(r=>entered=r);
+  const h=streamingClient(remote,{local:new Map([[progressKey,JSON.stringify({show:progress('one',1)})]]),intercept:async(action,payload,go)=>{
+    if(action==='APP_DATA_WRITE'&&first){first=false;entered();await new Promise(r=>release=r);}return go();
+  }});await h.apps.ready('streaming');
+  let state=await remote.request('APP_DATA_READ',{app:'streaming'});await remote.request('APP_DATA_WRITE',{app:'streaming',expectedRevision:state.revision,patch:{[progressKey]:{show:progress('two',2),other:progress('other',2)}}});
+  h.apps.setItem('streaming',progressKey,JSON.stringify({show:progress('three',3)}));await waiting;
+  h.apps.setItem('streaming',progressKey,JSON.stringify({show:progress('four',4)}));release();await h.apps.flush('streaming');
+  const final=(await remote.request('APP_DATA_READ',{app:'streaming'})).data[progressKey];assert.equal(final.show.url,progress('four',4).url);assert.ok(final.other);
+  assert.deepEqual(JSON.parse(h.local.get(progressKey)),final);assert.equal(h.local.has(pendingStreaming),false);
+});
+test('streaming cannot merge stale playback over a remote reset or deleted history',async()=>{
+  for(const cleared of [{show:{season:-1,episode:-1,timestamp:1}},{}]){
+    const remote=await backend(),before={show:progress('before',1)};
+    await remote.request('APP_DATA_MIGRATE',{app:'streaming',data:{[progressKey]:cleared}});
+    const local=new Map([[progressKey,JSON.stringify({show:progress('after',2)})],[pendingStreaming,JSON.stringify({base:{[progressKey]:before},patch:{[progressKey]:{show:progress('after',2)}}})]]);
+    const h=streamingClient(remote,{local});assert.match((await h.apps.ready('streaming')).error,/another window/);assert.ok(local.has(pendingStreaming));
+    assert.deepEqual((await remote.request('APP_DATA_READ',{app:'streaming'})).data[progressKey],cleared);
+  }
+});
+test('progress clear preserves Recently Watched while watch-history clear removes it and disables old feedback',async()=>{
+  const remote=await backend(),h=streamingClient(remote);await h.apps.ready('streaming');
+  await h.api.launch({show:'Show',url:'https://www.youtube.com/watch?v=one',type:'shows'});
+  h.api.saveSearch('keep search');await h.apps.flush('streaming');
+  h.api.clearAllProgress();await h.apps.flush('streaming');
+  assert.deepEqual(Object.keys(h.api.getLastWatched()),['show']);assert.equal(h.api.getLastWatched('Show').url,undefined);
+  await h.api.launch({show:'Show',url:'https://www.youtube.com/watch?v=one',type:'shows'});
+  const active=JSON.parse(h.local.get(streamingPrefix+'activePlayback'));
+  h.api.clearWatchHistory();await h.apps.flush('streaming');
+  assert.deepEqual(Object.keys(h.api.getLastWatched()),[]);assert.equal(h.local.has(streamingPrefix+'activePlayback'),false);assert.equal(await remote.apps.rememberPlayback(active.playbackId,'https://www.youtube.com/watch?v=late'),null);
+  assert.deepEqual(Array.from(h.api.getSearchHistory()),['keep search']);
+  assert.deepEqual((await remote.request('APP_DATA_READ',{app:'streaming'})).data[progressKey],{});
+});
+test('streaming progress reconciliation does not relax catalog conflicts',async()=>{
+  const remote=await backend(),key=streamingPrefix+'catalog',before=[{title:'Original',url:'https://www.youtube.com/watch?v=one'}],other=[{title:'Remote edit',url:'https://www.youtube.com/watch?v=two'}];
+  const h=streamingClient(remote,{local:new Map([[key,JSON.stringify(before)]])});await h.apps.ready('streaming');
+  const state=await remote.request('APP_DATA_READ',{app:'streaming'});await remote.request('APP_DATA_WRITE',{app:'streaming',expectedRevision:state.revision,patch:{[key]:other}});
+  h.apps.setItem('streaming',key,JSON.stringify([{...before[0],title:'Local edit'}]));await assert.rejects(h.apps.flush('streaming'),/another window/);
+  assert.deepEqual((await remote.request('APP_DATA_READ',{app:'streaming'})).data[key],other);
 });

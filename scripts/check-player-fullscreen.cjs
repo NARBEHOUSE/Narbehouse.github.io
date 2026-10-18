@@ -36,7 +36,17 @@ const cases=[
     if(${youtube})startVideo();
     if(${youtube}){const related=document.createElement('aside');related.id='related';related.textContent='Related videos';related.style.cssText='position:fixed;right:0;top:0;width:240px;height:100vh;background:white;z-index:2147483647';document.body.append(related);}
     document.querySelector('#provider-toggle').onclick=()=>{playPauseClicks++;if(video.paused)video.play().catch(()=>{});else video.pause();};
-    document.querySelector('#provider-next').onclick=()=>{episode++;};document.querySelector('#provider-previous').onclick=()=>{episode--;};
+    window.itemEvents=[];
+    for(const [id,delta] of [['provider-next',1],['provider-previous',-1]]){
+      const control=document.getElementById(id);let active=false,consumeClick=false;
+      // Model Plex's focus-sensitive Link: bare click from the toolbar is ignored.
+      if(nameIsPlex()){
+        control.onmousedown=e=>{itemEvents.push(e.type);if(e.button===0)active=true;};
+        control.onmouseup=e=>{itemEvents.push(e.type);if(active&&!control.disabled){episode+=delta;consumeClick=true;}active=false;};
+        control.onclick=e=>{itemEvents.push(e.type);if(!consumeClick&&document.activeElement===control)episode+=delta;consumeClick=false;};
+      }else control.onclick=()=>{episode+=delta;};
+    }
+    function nameIsPlex(){return ${name==='plex'};}
     </script></body></html>`});
   });
   const hub=await context.newPage();await hub.goto(base+'/bennyshub/index.html');await hub.locator('#modal-cancel').click();await hub.waitForFunction(()=>BennyExtension.supports('streaming'));
@@ -98,6 +108,10 @@ const cases=[
     await player.waitForTimeout(250);await scan(6);await expect(bar).toHaveAttribute('data-selected','previous');await select();assert.equal(await player.evaluate(()=>episode),1);
     await scan(1);await expect(bar).toHaveAttribute('data-selected','next');await select();assert.equal(await player.evaluate(()=>episode),2);
     await player.locator('#provider-next').evaluate(b=>b.disabled=true);await select();assert.equal(await player.evaluate(()=>episode),2);
+    if(service==='plex'){
+      assert.deepEqual(await player.evaluate(()=>itemEvents),['mousedown','mouseup','click','mousedown','mouseup','click']);
+      assert.equal(await player.evaluate(()=>document.activeElement?.id),'benny-player-controls');
+    }
     await scan(1);await expect(bar).toHaveAttribute('data-selected','fullscreen');
     await player.waitForTimeout(70);await player.keyboard.press('Enter');await expect.poll(()=>player.evaluate(()=>!!document.fullscreenElement)).toBe(false);
     if(!attrs)assert.equal(await player.locator('video').getAttribute('style'),'width:640px;height:360px');

@@ -224,7 +224,15 @@
           ...(itemControls[service]?.[command]||[]),`[data-testid="${command}-episode-button"]`,`[data-testid="${command}-button"]`,
           ...[direction,direction+' episode',direction+' video',direction+' item'].flatMap(text=>[`button[aria-label="${text}" i]`,`button[title="${text}" i]`,`[role="button"][aria-label="${text}" i]`])
         ];
-        const target=playerControl(selectors);if(!target)throw Error(command==='skip'?'No intro skip is available right now.':direction+' item is not available in this player right now.');target.click();
+        const target=playerControl(selectors);if(!target)throw Error(command==='skip'?'No intro skip is available right now.':direction+' item is not available in this player right now.');
+        if(service==='plex'&&command!=='skip'){
+          // Plex Link buttons ignore click() while unfocused. Their onPress
+          // fires on mouseup after mousedown, then consumes the trailing click.
+          // Keep keyboard focus on the accessible bar throughout the sequence.
+          const view=target.ownerDocument.defaultView;
+          for(const type of ['mousedown','mouseup'])target.dispatchEvent(new view.MouseEvent(type,{bubbles:true,cancelable:true,composed:true,view,button:0,buttons:type==='mousedown'?1:0,detail:1}));
+        }
+        target.click();
       }
     };
   }

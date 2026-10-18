@@ -24,7 +24,7 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
  for(const tool of ['streaming'].filter(name=>!requested||name===requested)){
    const page=await context.newPage(); page.on('pageerror',e=>report.errors.push({tool,message:e.message}));await page.clock.install({time:new Date('2026-10-03T12:00:00Z')});await page.clock.pauseAt(new Date('2026-10-03T12:10:00Z'));
    await page.goto(base+'/bennyshub/apps/tools/'+tool+'/index.html');
-   if(tool==='streaming')await page.waitForFunction(()=>BennyExtension.supports(document.documentElement.dataset.extensionTool)&&!document.querySelector('#companion-required')?.open);
+   if(tool==='streaming'){await page.waitForFunction(()=>BennyExtension.supports(document.documentElement.dataset.extensionTool)&&!document.querySelector('#companion-required')?.open);await page.evaluate(()=>BennyAppStorage.ready('streaming'));}
    if(tool==='keyboard')await page.waitForFunction(()=>window.predictionSystem?.dataLoaded);
    await advance(page,500);
    const surface=page.locator('body');await expect(surface).toHaveAttribute('data-choice-index','-1');await advance(page,500);
@@ -63,6 +63,47 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
    pass(tool,'automatic parking counts exactly 1, 2 and 3 complete loops');
    await page.locator('#btn-settings').click();assert.equal(await state(),'-1');await page.locator('#toggle-autoscan').click();assert.equal(await identity(),'setting:Auto Scan');await set({autoScan:false});assert.equal(await identity(),'setting:Auto Scan');
    await page.locator('button[onclick="openEditorConfirm()"]').click();assert.equal(await state(),'-1');await tap('Enter');assert.equal(await state(),'-1');await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(await state(),'-1');
+   const seedClearData=()=>page.evaluate(async()=>{
+     WebStreaming.saveProgress({show:'Show 00',url:'https://www.youtube.com/watch?v=resume',season:1,episode:2});
+     BennyAppStorage.setItem('streaming','benny-web:v1:streaming.searchHistory',JSON.stringify(['saved search']));
+     await BennyAppStorage.flush('streaming');
+   });
+   const savedData=()=>page.evaluate(()=>({progress:WebStreaming.getLastWatched(),search:WebStreaming.getSearchHistory()}));
+   for(const [handler,kind] of [['clearAllProgress','progress'],['clearSearchHistory','search'],['clearWatchHistory','watch']]){
+     await seedClearData();const original=await savedData();
+     const trigger=page.locator('button[onclick="'+handler+'()"]');
+     await trigger.click();await expect(surface).toHaveAttribute('data-choice-context','clear_confirm');assert.equal(await state(),'-1');
+     assert.equal(await page.locator('#settings-menu').evaluate(el=>el.inert),true);
+     await tap('Enter');assert.deepEqual(await savedData(),original);
+     await tap('Space');assert.equal(await identity(),'clear-data-cancel');await tap('Enter');
+     await expect(page.locator('#clear-data-modal')).toBeHidden();assert.deepEqual(await savedData(),original);assert.equal(await state(),'-1');
+     assert.equal(await page.locator('#settings-menu').evaluate(el=>el.inert),false);
+     await trigger.click();await page.keyboard.press('Tab');await expect(page.locator('#clear-data-cancel')).toBeFocused();
+     await page.keyboard.press('Shift+Tab');await expect(page.locator('#clear-data-confirm')).toBeFocused();
+     await page.keyboard.press('Tab');await expect(page.locator('#clear-data-cancel')).toBeFocused();
+     await page.keyboard.press('Escape');assert.deepEqual(await savedData(),original);
+     await trigger.click();await tap('Space');await tap('Space');await tap('Space');assert.equal(await state(),'-1');
+     await page.keyboard.down('Enter');await advance(page,5000);await page.keyboard.up('Enter');await advance(page,65);
+     await expect(surface).toHaveAttribute('data-choice-context','settings');assert.deepEqual(await savedData(),original);
+     await trigger.click();await tap('Space');await tap('Space');assert.equal(await identity(),'clear-data-confirm');await tap('Enter');
+     await page.evaluate(()=>BennyAppStorage.flush('streaming'));await expect(page.locator('#clear-data-modal')).toBeHidden();
+     const cleared=await savedData();
+     if(kind==='progress'){assert.equal(cleared.progress['show 00'].url,undefined);assert.ok(cleared.progress['show 00'].timestamp);assert.deepEqual(cleared.search,original.search);}
+     if(kind==='search'){assert.deepEqual(cleared.search,[]);assert.deepEqual(cleared.progress,original.progress);}
+     if(kind==='watch'){assert.deepEqual(cleared.progress,{});assert.deepEqual(cleared.search,original.search);}
+   }
+   await seedClearData();await page.evaluate(()=>NarbeVoiceManager.updateSettings({ttsEnabled:true}));
+   await page.locator('button[onclick="clearWatchHistory()"]').click();await advance(page,500);
+   assert.ok(await page.evaluate(()=>testSpeech.some(x=>x.text.includes('This empties Recently Watched'))));
+   await page.screenshot({path:path.join(artifacts,'streaming-clear-watch-history.png')});
+   await page.setViewportSize({width:360,height:640});
+   for(const id of ['clear-data-cancel','clear-data-confirm']){const box=await page.locator('#'+id).boundingBox();assert.ok(box.x>=0&&box.y>=0&&box.x+box.width<=360&&box.y+box.height<=640);}
+   await page.screenshot({path:path.join(artifacts,'streaming-clear-watch-history-mobile.png')});
+   await page.setViewportSize({width:1280,height:900});
+   await set({autoScan:true,parking:'off',waitForSpeech:false});await advance(page,1000);assert.equal(await identity(),'clear-data-cancel');
+   await advance(page,1000);assert.equal(await identity(),'clear-data-confirm');await advance(page,1000);assert.equal(await state(),'-1');
+   await set({autoScan:false});await page.keyboard.press('Escape');await page.evaluate(()=>NarbeVoiceManager.updateSettings({ttsEnabled:false}));
+   pass(tool,'progress, search and watch-history confirmations start blank, cancel safely, trap Tab, preserve hold-to-return, announce consequences and limit Auto to dialog choices; confirmed clears keep their intended data');
    await page.locator('#settings-menu .back-btn-large').click();await page.locator('#btn-shows').click();assert.equal(await state(),'-1');await tap('Space');assert.equal(await identity(),'header:back');
    await page.locator('#genre-8').click();assert.equal(await state(),'-1');await page.locator('#genre-0').click();await page.locator('#genre-1').click();assert.equal(await state(),'-1');await tap('Space');assert.equal(await identity(),'header:back');
    await page.locator('#item-0').click();await expect(surface).toHaveAttribute('data-choice-context','modal');assert.equal(await state(),'-1');await page.getByRole('button',{name:'Pick Episode',exact:true}).click();await expect(surface).toHaveAttribute('data-choice-context','seasons');assert.equal(await state(),'-1');
@@ -72,7 +113,7 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
    await page.locator('#btn-pause-settings').click();await expect(page.locator('#pause-menu')).toBeHidden();await expect(surface).toHaveAttribute('data-choice-context','settings');await page.locator('#settings-menu .back-btn-large').click();await expect(surface).toHaveAttribute('data-choice-context','pause');assert.equal(await state(),'-1');
    await page.locator('#btn-main-menu').click();await page.locator('#btn-search').click();assert.equal(await state(),'-1');for(let i=0;i<4;i++)await tap('Space');assert.equal(await identity(),'row:1');await tap('Enter');assert.equal(await identity(),'key:A');
    await page.keyboard.down('Enter');await advance(page,3000);await page.keyboard.up('Enter');await advance(page,65);assert.equal(await identity(),'row:1');await tap('Enter');await tap('Enter');await expect(page.locator('#search-input')).toHaveValue('A');assert.equal(await identity(),'row:1');
-   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await identity(),'key:A');await expect(surface).toHaveAttribute('data-choice-context','keyboard-child:3');await page.locator('.action-exit').click();await expect(surface).toHaveAttribute('data-choice-context','main');
+   await tap('Enter');for(let i=0;i<6;i++)await tap('Space');assert.equal(await identity(),'narbe:row-back');assert.equal(await page.locator('#keyboard-container .highlighted').count(),0);await tap('Space');assert.equal(await identity(),'key:A');await expect(surface).toHaveAttribute('data-choice-context','keyboard-child:3');await page.locator('.action-exit').click();await expect(surface).toHaveAttribute('data-choice-context','main');
    pass(tool,'settings preserve identity; editor warning, header Back, genre paging, title actions, seasons/episodes/paging, pause/settings return, and search keyboard share fresh blank/row restore policy');
    report.tools[tool]={...report.tools[tool],result:'passed',checks:report.checks.filter(x=>x.startsWith(tool+':'))};await page.close();
  }

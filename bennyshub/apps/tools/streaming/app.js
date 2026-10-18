@@ -8,7 +8,8 @@ const STATE = {
     SEASONS: 'seasons',
     EPISODES: 'episodes',
     KEYBOARD: 'keyboard',
-    PAUSE: 'pause'
+    PAUSE: 'pause',
+    CLEAR_CONFIRM: 'clear_confirm'
 };
 
 // Global Data
@@ -71,7 +72,7 @@ const PAUSE_THRESHOLD = 5000; // 5s for pause menu
 let choiceScan=null,choiceStatus=null,choicePress=null,scanAutoMode=false;
 const companionGateOpen=()=>!!document.querySelector('#companion-required')?.open;
 function streamingChoiceContext(fresh=false){
-  const selectors={main:['#main-menu','#main-menu .menu-btn'],settings:['#settings-menu','#settings-menu .setting-row button,#settings-menu .back-btn-large'],genres:['#app-container','#global-back-btn,#genre-grid .genre-card'],items:['#app-container','#global-back-btn,#items-grid .card'],modal:['#item-modal .modal-content','#item-modal .modal-action-btn'],seasons:['#app-container','#global-back-btn,#season-grid > div'],episodes:['#app-container','#global-back-btn,#episode-grid > div'],pause:['#pause-menu .pause-menu-content','#pause-menu .pause-btn'],editor_confirm:['#editor-modal .modal-content','#editor-modal .modal-action-btn']};
+  const selectors={main:['#main-menu','#main-menu .menu-btn'],settings:['#settings-menu','#settings-menu .setting-row button,#settings-menu .back-btn-large'],genres:['#app-container','#global-back-btn,#genre-grid .genre-card'],items:['#app-container','#global-back-btn,#items-grid .card'],modal:['#item-modal .modal-content','#item-modal .modal-action-btn'],seasons:['#app-container','#global-back-btn,#season-grid > div'],episodes:['#app-container','#global-back-btn,#episode-grid > div'],pause:['#pause-menu .pause-menu-content','#pause-menu .pause-btn'],editor_confirm:['#editor-modal .modal-content','#editor-modal .modal-action-btn'],clear_confirm:['#clear-data-modal .modal-content','#clear-data-modal .modal-action-btn']};
   if(currentState===STATE.KEYBOARD&&window.keyboardController?.isOpen){
     const keyboard=window.keyboardController,old=choiceScan?.context;
     const host=document.querySelector('#keyboard-container .keyboard-content');host.append(choiceStatus);
@@ -1895,6 +1896,7 @@ window.clearSearchHistory = clearSearchHistory;
 
 // --- PAUSE MENU LOGIC ---
 function openPauseMenu() {
+    if (currentState === STATE.CLEAR_CONFIRM) { closeClearConfirmation(); return; }
     if (currentState === STATE.PAUSE) return;
 
     // Save state
@@ -1990,33 +1992,86 @@ function selectEditorModal() {
     if(btns[editorModalIndex]) btns[editorModalIndex].click();
 }
 
-function clearSearchHistory() {
-    const doClear = async () => {
-        try {
-            WebStreaming.clearSearchHistory();
-            speak("Search History Cleared");
-        } catch(e) {
-            speak("Failed to clear history");
-        }
-    };
-    doClear();
+// Confirmation is a CHOICE context: blank start, Cancel first, dialog-only scan.
+let clearConfirmation = null;
+function openClearConfirmation(kind) {
+    if (currentState !== STATE.SETTINGS || clearConfirmation) return;
+    const progress = kind === 'progress', watchHistory = kind === 'watch-history';
+    const title = progress ? 'Clear all watch progress?' : watchHistory ? 'Clear watch history?' : 'Clear search history?';
+    const description = progress
+        ? 'This removes saved resume links for all shows and movies. Your library and Recently Watched list will stay. This cannot be undone.'
+        : watchHistory ? 'This empties Recently Watched and removes its saved resume links. Your library will stay. This cannot be undone.'
+        : 'This removes all saved searches. This cannot be undone.';
+    clearConfirmation = {kind, returnFocus: document.activeElement};
+    document.getElementById('clear-data-title').textContent = title;
+    document.getElementById('clear-data-description').textContent = description;
+    const action = progress ? 'Clear all progress' : watchHistory ? 'Clear watch history' : 'Clear search history';
+    document.getElementById('clear-data-confirm').textContent = action;
+    document.getElementById('clear-data-modal').classList.remove('hidden');
+    document.getElementById('settings-menu').inert = true;
+    cancelChoiceInput();
+    currentState = STATE.CLEAR_CONFIRM;
+    resetMenuFocus();
+    document.querySelector('#clear-data-modal [role="dialog"]').focus({preventScroll:true});
+    speak(title + ' ' + description + ' Cancel, or ' + action.toLowerCase() + '.');
 }
-
-// Strips the saved resume URL from every show at once. Shows stay in Recently Watched -
-// they just go back to playing their base link instead of a saved position.
-function clearAllProgress() {
-    const doClear = async () => {
-        try {
+function closeClearConfirmation(announce = true) {
+    if (!clearConfirmation) return;
+    const {returnFocus} = clearConfirmation;
+    clearConfirmation = null;
+    cancelChoiceInput();
+    document.getElementById('clear-data-modal').classList.add('hidden');
+    document.getElementById('settings-menu').inert = false;
+    currentState = STATE.SETTINGS;
+    resetMenuFocus();
+    returnFocus?.focus({preventScroll:true});
+    if (announce) speak('Cancelled.');
+}
+async function confirmClearData() {
+    if (!clearConfirmation || currentState !== STATE.CLEAR_CONFIRM) return;
+    const {kind} = clearConfirmation;
+    closeClearConfirmation(false);
+    try {
+        let message;
+        if (kind === 'progress') {
             const count = WebStreaming.clearAllProgress();
-            speak(count === 1 ? "Watch progress cleared for 1 show"
-                              : `Watch progress cleared for ${count} shows`);
-        } catch(e) {
-            console.error('Error clearing progress:', e);
-            speak("Failed to clear watch progress");
+            message = count === 1 ? 'Watch progress cleared for 1 title' : 'Watch progress cleared for ' + count + ' titles';
+        } else if (kind === 'watch-history') {
+            WebStreaming.clearWatchHistory();
+            message = 'Watch history cleared';
+        } else {
+            WebStreaming.clearSearchHistory();
+            message = 'Search history cleared';
         }
-    };
-    doClear();
+        WebStreaming.status('');
+        speak(message);
+        if (window.BennyAppStorage) {
+            try { const saved = await BennyAppStorage.flush('streaming'); if (saved?.error) throw Error(saved.error); }
+            catch (error) { WebStreaming.status('Cleared on this device, but waiting to sync. ' + error.message); }
+        }
+    } catch (error) {
+        WebStreaming.status(error.message);
+        speak(kind === 'progress' ? 'Failed to clear watch progress' : 'Failed to clear history');
+    }
 }
+function clearSearchHistory() { openClearConfirmation('history'); }
+function clearAllProgress() { openClearConfirmation('progress'); }
+function clearWatchHistory() { openClearConfirmation('watch-history'); }
+
+// Ordinary keyboard navigation stays inside the same dialog as switch scanning.
+document.addEventListener('keydown', event => {
+    if (currentState !== STATE.CLEAR_CONFIRM) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeClearConfirmation(); }
+    else if (event.key === 'Tab') {
+        event.preventDefault();
+        const buttons = [...document.querySelectorAll('#clear-data-modal button')];
+        const current = buttons.indexOf(document.activeElement);
+        const next = current < 0 ? (event.shiftKey ? buttons.length - 1 : 0)
+            : (current + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+        buttons[next].focus();
+        choiceScan?.align(buttons[next].id);
+    }
+});
 
 let keyboardEnterTimer = null;
 

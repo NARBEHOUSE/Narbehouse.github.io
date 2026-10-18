@@ -159,3 +159,37 @@ test('Unlock invalidates an awaiting provider fullscreen button before fallback 
   assert.equal(video.parentElement,wrapper);assert.equal(video.currentSrc,'fixture.mp4');assert.equal(video.paused,false);
   adapter.syncView();assert.equal(syncs,1);
 });
+
+
+test('Plex episode controls receive a complete press while toolbar focus stays put; one press changes one episode',()=>{
+  for(const command of ['next','previous']){
+    let changes=0,active=false,consumeClick=false;
+    const events=[],toolbar={},view={MouseEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}}};
+    const button=element(command,{
+      ownerDocument:{defaultView:view},
+      dispatchEvent(event){
+        events.push(event.type);assert.equal(event.button,0);assert.equal(event.bubbles,true);
+        if(event.type==='mousedown'){assert.equal(event.buttons,1);active=true;}
+        if(event.type==='mouseup'&&active){assert.equal(event.buttons,0);changes++;active=false;consumeClick=true;}
+      },
+      click(){events.push('click');if(!consumeClick&&this.ownerDocument.activeElement===this)changes++;consumeClick=false;},
+      focus(){throw Error('Must not move focus away from the switch toolbar');}
+    });
+    button.ownerDocument.activeElement=toolbar;
+    // Reproduce the old silent failure before testing the adapter.
+    button.click();assert.equal(changes,0);events.length=0;
+    const {adapter,document}=setup('plex',{buttons:[button]});
+    const query=document.querySelectorAll;document.querySelectorAll=s=>s==='[data-testid="'+command+'Button"]'?[button]:query(s);
+    adapter.action(command);assert.equal(changes,1);assert.deepEqual(events,['mousedown','mouseup','click']);
+    assert.equal(button.ownerDocument.activeElement,toolbar);
+    button.disabled=true;assert.throws(()=>adapter.action(command),/not available/);assert.equal(changes,1);
+  }
+});
+test('Netflix keeps its existing click-only episode action',()=>{
+  for(const command of ['next','previous']){
+    let clicks=0;const button=element(command,{click(){clicks++;},dispatchEvent(){throw Error('Netflix must not receive Plex mouse events');}});
+    const {adapter,document}=setup('netflix',{buttons:[button]});
+    const query=document.querySelectorAll;document.querySelectorAll=s=>s==='[data-uia="control-'+command+'"]'?[button]:query(s);
+    adapter.action(command);assert.equal(clicks,1);
+  }
+});

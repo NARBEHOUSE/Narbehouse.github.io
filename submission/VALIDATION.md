@@ -1,4 +1,19 @@
-# Validation — communication speaker and Companion 1.0.9
+# Validation — Streaming fixes and Companion 1.1.0
+
+October 18, 2026. The owner reports 1.0.8 installed and 1.0.9 pending Chrome Web Store approval. The owner authorized the website repository push after local verification. Companion 1.1.0 remains a test candidate; the owner will install it locally and submit it to Google only if that test succeeds. This task does not install in the owner's profile or submit to a store.
+
+- Package: releases/1.1.0/bennys-hub-companion-1.1.0.zip; 30 members, 114,031 bytes.
+- SHA-256: 25da9ff5bbfb7050f6f516450be861d601a6101b46255b402b053f033e411b58.
+- Only manifest.json (version) and player-adapters.js differ from 1.0.9. Permissions are unchanged. The original 1.0.9 release/download hashes remain 34afd049789f41159061ec9df9c63b6844f59eae38f61c8912f3240ecc203e90.
+- All 307 unit tests pass. Added checks cover stale playback snapshots, merging independent titles, newer playback updates, bounded revision-race retries, queued edits during acknowledgements, protection against resurrecting cleared/reset records, and unchanged catalog conflicts.
+- Eleven real-browser provider fixtures pass fullscreen, previous/next, disabled controls, switch capture and focus. The Plex fixture reproduces its focus-sensitive button behavior: a bare click does nothing; press/release/click invokes one native action. Netflix remains click-only. Signed-in Plex was inspected and the old failure reproduced, but the corrected package still needs live signed-in acceptance after installation.
+- Six Streaming scan groups pass, including all three confirmation types, blank Enter, Cancel, Escape, Tab containment, native long-Enter return, spoken consequences and dialog-only Auto scanning. Desktop and 360-pixel mobile screenshots were inspected. Clearing progress preserves Recently Watched titles; clearing watch history empties it and its resume links; clearing search history preserves playback data.
+- A real loaded Companion with synthetic Netflix pages passes same-frame feedback followed by movie and show launches, with no conflict or queued saves. YouTube, Netflix, Disney+, Prime Video and Hulu return/resume/reset checks also pass.
+- Public website build and 1,186 page/asset references pass. The public audit checked 3,787 files with no problems. The website cache advances to v52 while downloaded communication model caches stay intact.
+
+Local evidence: artifacts/streaming-fixes/ (unit, build, provider, progress, audit and link logs) and artifacts/scan-completion-tools/ (Streaming scan report and confirmation screenshots). Fixtures use isolated profiles and synthetic media/library data. No Electron app was edited or launched.
+
+## Historical 1.0.9 validation
 
 The owner requested the website repository push and will upload Companion separately. This task has not submitted it to a store.
 

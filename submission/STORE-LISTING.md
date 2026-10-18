@@ -1,6 +1,6 @@
 # Benny's Hub Companion — store copy
 
-Copy for the Companion 1.0.9 upload candidate, which has not been submitted or approved. On October 4, 2026, the owner reported 1.0.7 submitted and awaiting approval, with 1.0.5 public. That historical status has not been independently checked in the publisher dashboard. Version 1.0.9 includes the fix for Netflix framing where provider centering transforms could leave only a quarter of the picture visible. This 1.0.9 candidate also provides Companion-managed storage for Journal, Keyboard, Streaming and Day Hub using the existing storage permission; it adds no permissions. Previous release archives remain unchanged. Signed-in provider checks remain separate.
+Copy for the Companion 1.1.0 test candidate, which has not been submitted or approved. On October 18, 2026, the owner reported installed version 1.0.8 and version 1.0.9 pending Chrome Web Store approval. This package fixes Plex Previous/Next activation while the switch toolbar holds focus. It retains Netflix framing, Companion-managed storage and communication speaker features, adds no permissions and preserves prior release archives. Signed-in validation with the new package remains pending.
 
 The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/bennys-hub-companion/mgebpldbnicoldgheklaaocloplgmmkc). This copy supports future Chrome updates and a separate Microsoft Edge Add-ons submission; it does not establish Edge approval or approval of the pending update.
 
@@ -8,7 +8,7 @@ The [Chrome Web Store listing is live](https://chromewebstore.google.com/detail/
 
 - Name: Benny's Hub Companion
 - Publisher: NARBE LLC (must match the verified developer account)
-- Version: 1.0.9 (local candidate; not submitted or approved)
+- Version: 1.1.0 (test candidate; not submitted or approved)
 - Language: English (United States)
 - Website: https://narbehouse.github.io/bennyshub/
 - Privacy: https://narbehouse.github.io/bennyshub/companion-privacy.html
@@ -60,7 +60,7 @@ Developed by NARBE LLC. Support: narbehousellc@gmail.com
 - Both stores' small promotional tile: assets/promo440x280.png.
 - Optional marquee / large tile: assets/promo1400x560.png.
 - Screenshots: assets/01-player-controls.png through assets/05-journal.png, each 1280 × 800.
-- Existing images are historical assets; verify or refresh them against the current 1.0.9 controls and settings before reuse. No new artwork is claimed by this documentation update.
+- Existing images are historical assets; verify or refresh them against the current 1.1.0 controls and settings before reuse. No new artwork is claimed by this documentation update.
 - Demonstration playback must not contain a customer library, sign-in details or provider account.
 - Remaining screenshots show actual settings and Hub screens with synthetic or empty data.
 
@@ -73,3 +73,8 @@ Developed by NARBE LLC. Support: narbehousellc@gmail.com
 ## 1.0.9 communication addition
 
 Say I need help can use the communication speaker and voice selected in Hub Settings, independently of Hub TTS and Toolbar Speech. The original Hub tab must remain open. No new permissions are required.
+
+
+## 1.1.0 release note
+
+Fixes Plex Previous/Next item controls when the Companion toolbar holds keyboard focus. Existing Netflix controls and ten-second seeking are unchanged. No new permissions.

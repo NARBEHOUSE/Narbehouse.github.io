@@ -21,26 +21,70 @@
   }
   function applyPatch(values,patch){const result=copy(values);for(const [key,value]of Object.entries(patch)){if(value===null)delete result[key];else Object.defineProperty(result,key,{value,enumerable:true,writable:true,configurable:true});}return result;}
   async function connected(){const state=await BennyExtension.check();return state.connected&&state.capabilities.includes('app-storage-v1');}
-  async function syncPending(app,remote){
+  const progressKey='benny-web:v1:streaming.lastWatched';
+  // Player feedback and the page both save this map. Merge independent titles,
+  // and order ordinary playback updates by their saved time. Resets/deletions
+  // remain conflicts when both copies changed: never resurrect cleared history.
+  function mergeProgress(base,desired,actual){
+    const record=value=>value&&typeof value==='object'&&!Array.isArray(value);
+    if(!record(desired)||(!record(actual)&&actual!==null)||(!record(base)&&base!==null))return null;
+    if(actual===null&&base!==null)return null;
+    const result=Object.create(null),entry=(values,title)=>values&&Object.hasOwn(values,title)?values[title]:undefined;
+    for(const title of new Set([...Object.keys(base||{}),...Object.keys(desired),...Object.keys(actual||{})])){
+      const before=entry(base,title),local=entry(desired,title),remote=entry(actual,title);let value;
+      if(same(local,before))value=remote;
+      else if(same(remote,before)||same(local,remote))value=local;
+      else if(local?.url&&remote?.url&&Number.isFinite(local.timestamp)&&Number.isFinite(remote.timestamp)&&local.timestamp!==remote.timestamp){
+        value=local.timestamp>remote.timestamp?local:remote;
+      }else return null;
+      if(value!==undefined)Object.defineProperty(result,title,{value,enumerable:true,writable:true,configurable:true});
+    }
+    return result;
+  }
+  async function syncPending(app,remote,attempt=0){
     const pending=object(pendingKey(app),null);if(!pending)return remote;
-    // Rebase only if none of the changed fields differs from its captured original.
+    const patch=copy(pending.patch);
+    // Keep strict conflict checks except for mergeable playback records.
     for(const key of Object.keys(pending.patch)){
       const actual=remote.values[key]??null,original=pending.base[key]??null,desired=pending.patch[key];
-      if(!same(actual,original)&&!same(actual,desired))throw Error('This app changed in another window. Your device copy is kept; export it in My data before restoring another copy.');
+      if(!same(actual,original)&&!same(actual,desired)){
+        const merged=app==='streaming'&&key===progressKey?mergeProgress(original,desired,actual):null;
+        if(merged===null)throw Error('This app changed in another window. Your device copy is kept; export it in My data before restoring another copy.');
+        patch[key]=merged;
+      }
     }
     const sent=JSON.stringify(pending);
-    const result=normalize(await BennyExtension.request('APP_DATA_WRITE',{app,patch:pending.patch,expectedRevision:remote.revision}));
+    let result;
+    try{result=normalize(await BennyExtension.request('APP_DATA_WRITE',{app,patch,expectedRevision:remote.revision}));}
+    catch(error){
+      // A player heartbeat can advance the revision between read and write.
+      if(app==='streaming'&&error.code==='CONFLICT'&&attempt<2)return syncPending(app,await remoteSnapshot(app),attempt+1);
+      throw error;
+    }
     if(localStorage.getItem(pendingKey(app))===sent)localStorage.removeItem(pendingKey(app));
     else {
       const latest=object(pendingKey(app),null);
       if(latest){
         for(const key of Object.keys(pending.patch)){
           if(!Object.hasOwn(latest.patch,key))continue;
-          if(same(latest.base[key]??null,pending.base[key]??null))latest.base[key]=result.values[key]??null;
+          if(same(latest.base[key]??null,pending.base[key]??null)){
+            if(app==='streaming'&&key===progressKey){
+              const merged=mergeProgress(pending.patch[key],latest.patch[key],result.values[key]??null);
+              if(merged===null)continue;
+              latest.patch[key]=merged;
+            }
+            latest.base[key]=result.values[key]??null;
+          }
           if(same(latest.patch[key],result.values[key]??null)){delete latest.patch[key];delete latest.base[key];}
         }
         if(Object.keys(latest.patch).length)localStorage.setItem(pendingKey(app),JSON.stringify(latest));else localStorage.removeItem(pendingKey(app));
       }
+    }
+    if(app==='streaming'&&Object.hasOwn(patch,progressKey)){
+      // Do not replace a newer local edit or newer content-script feedback.
+      const current=object(progressKey,null);
+      const merged=mergeProgress(pending.patch[progressKey],current,result.values[progressKey]??null);
+      if(merged!==null)localStorage.setItem(progressKey,JSON.stringify(merged));
     }
     localStorage.setItem(revisionKey(app),String(result.revision));return result;
   }
@@ -65,7 +109,9 @@
   function change(app,key,value){
     checkApp(app);if(!groups[app].includes(key))throw Error('Unexpected app data key.');
     if(value!==null)BennyBackup.validate({version:1,app,data:{[key]:value}},app);
-    const previous=states.has(app)?(states.get(app).values[key]??null):object(key,null),existing=object(pendingKey(app),null),pending=existing||{base:{},patch:{}};
+    // Companion's content script writes playback feedback directly to the browser.
+    // Its current progress is a newer baseline than this page's cached snapshot.
+    const previous=app==='streaming'&&key===progressKey?object(key,null):states.has(app)?(states.get(app).values[key]??null):object(key,null),existing=object(pendingKey(app),null),pending=existing||{base:{},patch:{}};
     if(!Object.hasOwn(pending.base,key))pending.base[key]=previous;
     pending.patch[key]=value;
     const previousPending=localStorage.getItem(pendingKey(app));
