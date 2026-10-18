@@ -54,8 +54,8 @@ test('Natural is the default for existing preferences and Faster preserves the c
  assert.equal(natural.terminated,true);assert.equal(h.api.get().speechMode,'fast');assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);
  const fast=h.workers.at(-1);assert(fast.url.endsWith('/communication-fast-worker.js'));assert.equal(fast.options.type,'classic');
  fast.reply({id:fast.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
- assert.equal(h.element('speaker-quality-status').textContent,'Faster');assert.equal(h.element('speaker-voice-toggle').disabled,true);
- h.api.cycleVoice();assert.equal(h.workers.length,2);h.api.cycleMode();
+ assert.equal(h.element('speaker-quality-status').textContent,'Faster');assert.equal(h.element('speaker-voice-toggle').disabled,false);
+ h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_bryce');assert.equal(h.workers.length,2);h.api.cycleMode();
  assert.equal(fast.terminated,true);assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,14);assert.equal(h.element('speaker-voice-toggle').disabled,false);
 });
 test('Faster persists locally and obsolete setup cannot make a different mode ready',async t=>{
@@ -65,4 +65,20 @@ test('Faster persists locally and obsolete setup cannot make a different mode re
  assert.equal(h.api.get().voice,'af_heart');assert.equal(h.api.get().voiceReady,false);
  natural.reply({id:natural.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
  h.api.cycleMode();h.api.toggle();await h.flush();assert.equal(h.api.get().enabled,false);assert.equal(h.api.get().voicePreparing,false);assert.equal(h.workers.at(-1).terminated,true);
+});
+
+test('six Faster voices cycle and persist independently of the original Natural voice',async t=>{
+ const h=harness(undefined,{enabled:false,speechMode:'fast',voice:'bm_george',fastVoice:'piper_norman'});t.after(()=>h.api._service.dispose());
+ assert.equal(h.api.get().voice,'piper_norman');assert.equal(h.api.get().voices.length,6);const visited=[];
+ for(let i=0;i<6;i++){visited.push(h.api.get().voice);h.api.cycleVoice();}assert.equal(new Set(visited).size,6);assert.equal(h.api.get().voice,'piper_norman');
+ h.api.cycleMode();assert.equal(h.api.get().voice,'bm_george');h.api.cycleMode();assert.equal(h.api.get().voice,'piper_norman');
+});
+test('existing Faster users keep LJ and invalid saved choices fall back to LJ',t=>{
+ for(const fastVoice of [undefined,'obsolete']){const h=harness(undefined,{enabled:false,speechMode:'fast',fastVoice});t.after(()=>h.api._service.dispose());assert.equal(h.api.get().voice,'piper_lj');}
+});
+
+test('returning to the previous Faster voice during setup warms its model again',async t=>{
+ const h=harness(undefined,{enabled:true,speechMode:'fast'});t.after(()=>h.api._service.dispose());const worker=h.workers[0];worker.reply({id:worker.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+ h.api.cycleVoice();for(let i=0;i<5;i++)h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);assert.equal(h.api.get().voicePreparing,true);
+ const prepare=worker.sent.filter(m=>m.type==='prepare').at(-1);assert.equal(prepare.voice,'piper_lj');worker.reply({id:prepare.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
 });

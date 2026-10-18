@@ -5,8 +5,7 @@ window.NarbeCommunicationSettings={mount({refreshScan,announce}){
     const s=manager.get();byId('speaker-mode-status').textContent=s.enabled?'On':'Off';byId('speaker-mode-toggle').setAttribute('aria-pressed',String(s.enabled));
     for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-quality-toggle','speaker-find','speaker-test'])byId(id).disabled=!s.enabled||!s.supported;
     byId('speaker-quality-status').textContent=s.speechMode==='fast'?'Faster':'Natural';
-    byId('speaker-voice-toggle').disabled=!s.enabled||!s.supported||s.speechMode==='fast';
-    byId('speaker-voice-help').textContent=s.speechMode==='fast'?'Faster mode uses LJ, an English voice. Choose Natural for the original 14 voices.':'Cycle through 14 voices and hear a sample. The Voice setting above controls scanning.';
+    byId('speaker-voice-help').textContent=s.speechMode==='fast'?'Cycle through six Faster voices: three male and three female. Hear a sample on your selected speaker.':'Cycle through 14 voices and hear a sample. The Voice setting above controls scanning.';
     const connected=s.outputs.some(d=>d.deviceId===s.sinkId);
     byId('speaker-output-status').textContent=s.sinkId?(s.sinkLabel||'Selected speaker')+(s.enabled&&!connected?' (unavailable)':''):'Not selected';
     byId('speaker-voice-status').textContent=s.voices.find(v=>v.id===s.voice).name+(s.enabled&&!s.voiceReady?(s.voicePreparing?' (preparing)':' (not ready)'):'');

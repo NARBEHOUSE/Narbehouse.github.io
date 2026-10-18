@@ -10,17 +10,22 @@
     {id:'af_nova',name:'Nova'},{id:'af_aoede',name:'Aoede'},{id:'am_fenrir',name:'Fenrir'},{id:'am_puck',name:'Puck'},
     {id:'bf_isabella',name:'Isabella'},{id:'bm_fable',name:'Fable'}
   ];
-  const fastVoices=[{id:'piper_lj',name:'LJ (English)'}];
+  const fastVoices=[
+    {id:'piper_lj',name:'LJ (female)'},{id:'piper_bryce',name:'Bryce (male)'},
+    {id:'piper_kristin',name:'Kristin (female)'},{id:'piper_norman',name:'Norman (male)'},
+    {id:'piper_cori',name:'Cori (female, UK)'},{id:'piper_john',name:'John (male)'}
+  ];
   let service;
   try{if(parent!==window&&parent.location.origin===location.origin)service=parent.NarbeCommunicationSpeech?._service;}catch(_){/* standalone */}
   if(!service){
     let channel,worker,workerMode,outputs=[],phase='idle',detail='',eventOwner,revision=0,permissionPending=false,readyVoice='',setupSeq=0;
     let preparing,prefetchOwner;
     const listeners=new Set(),pending=new Map();
-    const normalize=v=>({version:1,enabled:v?.enabled===true,speechMode:v?.speechMode==='fast'?'fast':'natural',sinkId:typeof v?.sinkId==='string'&&!['default','communications'].includes(v.sinkId)?v.sinkId:'',sinkLabel:typeof v?.sinkLabel==='string'?v.sinkLabel:'',voice:voices.some(x=>x.id===v?.voice)?v.voice:'am_michael'});
-    const selectedVoice=()=>store.readCached().speechMode==='fast'?'piper_lj':store.readCached().voice;
+    const normalize=v=>({version:1,enabled:v?.enabled===true,speechMode:v?.speechMode==='fast'?'fast':'natural',fastVoice:fastVoices.some(x=>x.id===v?.fastVoice)?v.fastVoice:'piper_lj',sinkId:typeof v?.sinkId==='string'&&!['default','communications'].includes(v.sinkId)?v.sinkId:'',sinkLabel:typeof v?.sinkLabel==='string'?v.sinkLabel:'',voice:voices.some(x=>x.id===v?.voice)?v.voice:'am_michael'});
+    const selectedVoice=()=>store.readCached().speechMode==='fast'?store.readCached().fastVoice:store.readCached().voice;
     const store=NarbePlatform.settings.open({key:'narbe-communication-speaker',normalize,onChange:()=>{
       worker?.postMessage({type:'prefetch',voice:selectedVoice(),texts:[]});
+      if(workerMode==='fast'&&readyVoice!==selectedVoice())readyVoice='';
       revision++;channel?.stop();channel?.selectSink(store.readCached().sinkId);phase='idle';detail='';notify();
       if(worker&&workerMode!==store.readCached().speechMode){failWorker('Voice mode changed.');preparing=null;}
       if(store.readCached().enabled)void prepareVoice();
@@ -98,7 +103,7 @@
       toggle(){if(!supported()&&!store.readCached().enabled){report({phase:'error',detail:'Speaker Mode needs a desktop browser with audio output selection, on HTTPS or localhost.'});return;}store.save({...store.readCached(),enabled:!store.readCached().enabled});if(store.readCached().enabled)void refresh();},
       cycle(){if(!outputs.length){report({phase:'error',detail:'Choose Find speakers first, then allow the browser prompt.'});return;}const d=outputs[(outputs.findIndex(d=>d.deviceId===store.readCached().sinkId)+1)%outputs.length];store.save({...store.readCached(),sinkId:d.deviceId,sinkLabel:d.label||'Speaker'});},
       cycleMode(){const prefs=store.readCached();store.save({...prefs,speechMode:prefs.speechMode==='fast'?'natural':'fast'});},
-      cycleVoice(){const prefs=store.readCached();if(prefs.speechMode==='fast')return;store.save({...prefs,voice:voices[(voices.findIndex(v=>v.id===prefs.voice)+1)%voices.length].id});},
+      cycleVoice(){const prefs=store.readCached(),list=prefs.speechMode==='fast'?fastVoices:voices,key=prefs.speechMode==='fast'?'fastVoice':'voice';store.save({...prefs,[key]:list[(list.findIndex(v=>v.id===prefs[key])+1)%list.length].id});},
       speak(text,who){if(!supported()){report({phase:'error',detail:'Speaker selection is unavailable in this browser.',owner:who});return ended('error');}return channel.speak(text,{voice:selectedVoice(),owner:who});},
       stop:who=>channel.stop(who),releaseOwner(who){prefetch([],who);channel.stop(who);if(eventOwner===who){eventOwner=undefined;phase='idle';detail='';notify();}},dispose(){channel.stop();failWorker('Closed.');store.dispose();listeners.clear();}
     };

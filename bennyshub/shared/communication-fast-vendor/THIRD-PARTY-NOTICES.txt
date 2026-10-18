@@ -12,9 +12,19 @@ ONNX Runtime Web 1.18.0, Microsoft: MIT, see ONNX-LICENSE.txt.
 https://github.com/microsoft/onnxruntime/tree/v1.18.0
 
 The optional voice downloads from rhasspy/piper-voices at revision
-c10ece1aade47bb51c153c893d14e5bf8e5b7117. Model: en_US-ljspeech-medium.
-English female voice trained by Bryce Beattie on the public-domain LJ Speech
-dataset (Keith Ito and Linda Johnson). See VOICE-MODEL-CARD.txt.
+c10ece1aade47bb51c153c893d14e5bf8e5b7117. Six medium-quality English models:
+- en_US-ljspeech-medium: LJ, female; public-domain LJ Speech dataset
+  (Keith Ito and Linda Johnson). See VOICE-MODEL-CARD.txt.
+- en_US-bryce-medium: Bryce, male; the contributor's own public-domain recordings.
+- en_US-kristin-medium: Kristin, female; public-domain LibriVox recordings.
+- en_US-norman-medium: Norman, male; public-domain LibriVox recordings.
+- en_GB-cori-medium: Cori, female, UK; public-domain LibriVox recordings.
+- en_US-john-medium: John, male; public-domain LibriVox recordings, fine-tuned
+  from the Kristin voice.
+These voice models were contributed by Bryce Beattie. See the corresponding
+VOICE-<NAME>-MODEL-CARD.txt files for their complete training/provenance notices.
+https://brycebeattie.com/files/tts/
+https://librivox.org
 https://keithito.com/LJ-Speech-Dataset/
 https://huggingface.co/rhasspy/piper-voices
 

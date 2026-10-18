@@ -52,5 +52,35 @@
     "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/ljspeech/medium/MODEL_CARD",
     "bytes": 517,
     "sha256": "fbee1529c89d36b3fe76d7e9f3f832dce17f44900a52d76a9bda735654766b4d"
+  },
+  {
+    "file": "VOICE-BRYCE-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/bryce/medium/MODEL_CARD",
+    "bytes": 405,
+    "sha256": "96042c4ddbd405f6e40e2938b069987f4016a35832114bbefed1ed04242ee532"
+  },
+  {
+    "file": "VOICE-KRISTIN-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/kristin/medium/MODEL_CARD",
+    "bytes": 479,
+    "sha256": "8c181b1d5f7d8152b914faab941fcbe6b8f0495e63e5189d6f27b8c68c8393fc"
+  },
+  {
+    "file": "VOICE-NORMAN-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/norman/medium/MODEL_CARD",
+    "bytes": 528,
+    "sha256": "60eaf4d10009d1bd4a1aa555d337dae00f60421d72fee415b9139a021e7cb5d0"
+  },
+  {
+    "file": "VOICE-CORI-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_GB/cori/medium/MODEL_CARD",
+    "bytes": 474,
+    "sha256": "38d76dfde845837b184668f8bab1c6426ad740b1af0fcebc349037822739e536"
+  },
+  {
+    "file": "VOICE-JOHN-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/john/medium/MODEL_CARD",
+    "bytes": 498,
+    "sha256": "a056da65cd70dcbda96fc3420fe8d3442dbf3c8b75f49cdf800a715b42e299d1"
   }
 ]

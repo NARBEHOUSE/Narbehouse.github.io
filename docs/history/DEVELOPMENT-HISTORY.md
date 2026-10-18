@@ -2,6 +2,28 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-18 — Six Faster speaker voices
+
+After confirming Faster is much better and faster on the Raspberry Pi 5, the owner requested three male and three female voices. Faster now offers LJ, Kristin and Cori (female), and Bryce, Norman and John (male). Cori is UK English; the other five are US English. The existing Speaker voice control cycles and auditions the six choices. Its selection is saved independently from Natural, and existing Faster users retain LJ. Natural remains the default and keeps its original voices and runtime. This is a website-only update; Companion and Electron are untouched.
+
+All six use pinned medium Piper models with public-domain source recordings documented by their upstream cards. Each selected voice downloads on demand and remains cached for offline use. Only one inference session stays in memory; changing voices releases it, reuses the phonemizer and aborts obsolete downloads. Completed audio is cached by voice and text with its sample rate. Rapidly cycling back to a previous voice rewarms its model before reporting ready. Shell cache v55 preserves model downloads. No private message/audio persistence was added.
+
+Verification: all 319 unit tests pass. The real-page speaker integration passes all 14 Natural and six Faster previews, rapid changes, exit cancellation, keyboard/Auto selection, persistence, Hub iframe routing, all five message actions, game Help with general TTS off, output isolation, default-off and disconnect behavior. The fixture now polls at 50 ms while waiting for an Auto selection; its former default one-second polling could miss the selected item. No scanner runtime or timing changed. The real-model browser check passes all six voices, correct/non-silent audio, selected-sink muted playback, rapid cycling, one shared worker across Keyboard/Phrase Board/RTC Lite, cached repeats, cancellation, independent preferences, and a new Norman message offline after reload. Final same-sentence CPU synthesis times on this Windows PC: LJ 413 ms, Bryce 535 ms, Kristin 371 ms, Norman 344 ms, Cori 408 ms and John 426 ms. These exclude first download/model setup and the unchanged 750 ms Bluetooth lead-in. The owner's Pi confirmation applies to original LJ; listening and timing acceptance for the five new voices on the Pi remains pending.
+
+Build passed; release audit checked 3,804 public files / 508,059,829 bytes with no problems, and all 1,186 page/asset references passed. All 14 pinned vendor files match their recorded source and dist hashes. Settings layout was visually inspected. Companion 1.1.0 remains SHA-256 25da9ff5bbfb7050f6f516450be861d601a6101b46255b402b053f033e411b58. Evidence: artifacts/communication-fast.json, communication-fast-settings.png and streaming-fixes/six-voices-*.log. Source backup: Website Backups/Six-fast-voices-20261018-1792341039033.
+
+Changed-file manifest (scope / Electron port flag):
+
+- bennyshub/shared/communication-speech.js — WEB six choices, separate saved preference and warm-up ownership / CANDIDATE for a separately authorized Electron pass; not ported here.
+- bennyshub/shared/communication-settings.js — WEB enabled Faster voice control and spoken labels / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-worker.js — WEB per-voice models, cache isolation, session release and superseded-download cancellation / CANDIDATE; not ported here.
+- bennyshub/shared/communication-fast-vendor/VOICE-BRYCE-MODEL-CARD.txt, VOICE-KRISTIN-MODEL-CARD.txt, VOICE-NORMAN-MODEL-CARD.txt, VOICE-CORI-MODEL-CARD.txt, VOICE-JOHN-MODEL-CARD.txt — WEB pinned upstream model cards / CANDIDATE only with a separately authorized runtime port; not ported here.
+- bennyshub/shared/communication-fast-vendor/SOURCES.json, THIRD-PARTY-NOTICES.txt — WEB voice provenance and hashes / CANDIDATE only with a separately authorized runtime port; not ported here.
+- bennyshub/service-worker.js — WEB shell cache refresh / NOT APPLICABLE to Electron.
+- tests/communication-speech.test.cjs, tests/communication-fast-worker.test.cjs, tests/communication-cache.test.cjs — WEB voice selection, migration, race/cancellation and model-cache coverage / NOT APPLICABLE to Electron.
+- scripts/check-communication-speaker.cjs, scripts/check-communication-fast.cjs — WEB real-page switch and six-model acceptance coverage / NOT APPLICABLE to Electron.
+- docs/development/COMMUNICATION-SPEAKER.md, docs/history/DEVELOPMENT-HISTORY.md — WEB usage, measurements and scope records / NOT APPLICABLE to Electron.
+
 ## 2026-10-18 — Optional Faster speaker voice for Raspberry Pi
 
 The owner reported later communication messages taking up to ten seconds on a Raspberry Pi 5 (8 GB), while the PC is fast, and explicitly asked to preserve current PC behavior. Added a manual, device-local Speaker voice mode setting: Natural (existing default, all 14 Kokoro voices) / Faster (Piper LJ English female). Returning to Natural restores the previously selected Natural voice. No automatic quality change or playback-rate change occurs. Speaker Mode's selected output, native scanning, general-TTS independence and 750 ms Bluetooth lead-in are retained. Companion and Electron remain untouched.

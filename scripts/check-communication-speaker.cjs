@@ -70,6 +70,11 @@ function mocks(){
  for(let i=0;i<14;i++){visited.push(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice));await press('Enter');await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().voiceReady)).toBe(true);}
  assert.equal(new Set(visited).size,14);assert.equal(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice),'af_heart');
  assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-voice-toggle');
+ // The existing selected Voice item also cycles all six Faster choices by switch.
+ await page.evaluate(()=>NarbeCommunicationSpeech.cycleMode());const fastVisited=[];
+ for(let i=0;i<6;i++){fastVisited.push(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice));await press('Enter');await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().voiceReady)).toBe(true);assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-voice-toggle');}
+ assert.equal(new Set(fastVisited).size,6);assert.equal(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_lj');
+ await page.evaluate(()=>{NarbeCommunicationSpeech.cycleMode();return NarbeCommunicationSpeech.preview().finished;});assert.equal(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice),'af_heart');
  // A pending sample cannot play after a later choice, settings exit, or mode-off.
  await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().phase)).toBe('ended');
  let playersBefore=await page.evaluate(()=>{window.__workerDelay=500;return __players.length;});
@@ -87,7 +92,7 @@ function mocks(){
  await page.locator('#speaker-mode-toggle').click();await page.evaluate(()=>{window.__workerDelay=5;});
  await page.locator('#speaker-voice-toggle').click();
  await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-quality-toggle');
-  await press('Enter');await expect(page.locator('#speaker-quality-status')).toHaveText('Faster');await expect(page.locator('#speaker-voice-toggle')).toBeDisabled();
+  await press('Enter');await expect(page.locator('#speaker-quality-status')).toHaveText('Faster');await expect(page.locator('#speaker-voice-toggle')).toBeEnabled();
   await press('Enter');await expect(page.locator('#speaker-quality-status')).toHaveText('Natural');await expect(page.locator('#speaker-voice-toggle')).toBeEnabled();
   await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-find');await press('Enter');assert.equal(await page.evaluate(()=>__stoppedTracks),0);
  await press('Space');assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-test');const samplesBeforeTest=await page.evaluate(()=>__public.length);await press('Enter');await expect.poll(()=>page.evaluate(()=>__public.length)).toBe(samplesBeforeTest+1);
@@ -98,7 +103,7 @@ function mocks(){
  await page.locator('#speaker-mode-toggle').click();
  await page.evaluate(()=>NarbeScanManager.updateSettings({autoScan:true,scanSpeedIndex:0,parking:'off',waitForSpeech:false}));
  for(const id of ['speaker-output-toggle','speaker-voice-toggle','speaker-quality-toggle','speaker-find','speaker-test']){
-  await expect.poll(()=>page.locator('#screen-settings').getAttribute('data-selected'),{timeout:15000}).toBe(id);
+  await expect.poll(()=>page.locator('#screen-settings').getAttribute('data-selected'),{timeout:15000,intervals:[50]}).toBe(id);
  }
  await page.evaluate(()=>NarbeScanManager.updateSettings({autoScan:false}));
  // One-time browser permission is guarded by a spoken, switch-operable Cancel-first dialog.
@@ -151,7 +156,7 @@ function mocks(){
  await page.evaluate(()=>NarbeVoiceManager.updateSettings({ttsEnabled:true}));await press('Enter');await expect.poll(()=>page.evaluate(()=>__speech.includes('I need help'))).toBe(true);
  await page.goto(base+'apps/games/NARBEPETPALS/index.html');await page.waitForFunction(()=>typeof buildPause==='function');await page.evaluate(()=>{NarbeVoiceManager.updateSettings({ttsEnabled:false});NarbeCommunicationSpeech.toggle();buildPause();show('pause','Paused');});
  await page.locator('#pause-list').getByRole('button',{name:/I Need Help/}).click();await expect.poll(()=>page.evaluate(()=>__public.at(-1)?.text)).toBe('I need help, please! I need help, please!');
- assert.deepEqual(errors,[]);console.log('Speaker UI, 14 voice previews, rapid changes, exit cancellation, switch selection, persistence, Hub iframe, private scan speech, all five message actions and real game Help with general TTS off, default-off and disconnect checks passed.');
+ assert.deepEqual(errors,[]);console.log('Speaker UI, 14 Natural and 6 Faster voice previews, rapid changes, exit cancellation, switch selection, persistence, Hub iframe, private scan speech, all five message actions and real game Help with general TTS off, default-off and disconnect checks passed.');
  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
  await page.goto(base);if(await page.locator('#modal-cancel').isVisible())await page.locator('#modal-cancel').click();await page.evaluate(()=>showScreen('settings'));await page.waitForFunction(()=>!isTransitioning);await page.locator('#speaker-settings').scrollIntoViewIfNeeded();await page.locator('#speaker-settings').screenshot({path:path.join(root,'artifacts/communication-speakers.png')});
  await page.setViewportSize({width:768,height:1024});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#speaker-settings').screenshot({path:path.join(root,'artifacts/communication-speakers-tablet.png')});

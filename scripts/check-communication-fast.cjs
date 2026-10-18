@@ -8,8 +8,8 @@ function instrument(){
  window.Audio=class extends AudioClass{constructor(...args){super(...args);this.muted=true;}};
  window.Worker=class extends WorkerClass{constructor(url,options){super(url,options);this.sent=new Map();if(/communication-(?:fast-)?worker/.test(String(url))){__workers++;this.addEventListener('message',({data:m})=>{
  if(m.ready)__engines.push({backend:m.backend,engine:m.voiceEngine});
- if(m.samples)__generated.push({text:this.sent.get(m.id)?.text,cached:!!m.cached,ms:Math.round(performance.now()-this.sent.get(m.id)?.at),sampleRate:m.sampleRate,samples:m.samples.length});
- });}}postMessage(m,...args){if(m.id)this.sent.set(m.id,{text:m.text,at:performance.now()});super.postMessage(m,...args);}};
+ if(m.samples)__generated.push({text:this.sent.get(m.id)?.text,voice:this.sent.get(m.id)?.voice,cached:!!m.cached,ms:Math.round(performance.now()-this.sent.get(m.id)?.at),sampleRate:m.sampleRate,samples:m.samples.length,peak:m.samples.reduce((peak,n)=>Math.max(peak,Math.abs(n)),0)});
+ });}}postMessage(m,...args){if(m.id)this.sent.set(m.id,{text:m.text,voice:m.voice,at:performance.now()});super.postMessage(m,...args);}};
  if(location.pathname.includes('/rtc-lite/'))localStorage.setItem('rtcLite_settings',JSON.stringify({listening:false,stt:'off',ai:'off'}));
 }
 (async()=>{
@@ -23,11 +23,21 @@ function instrument(){
  await hub.evaluate(()=>{NarbeVoiceManager.updateSettings({ttsEnabled:false});NarbeScanManager.updateSettings({autoScan:false});NarbeCommunicationSpeech.cycleMode();NarbeCommunicationSpeech.toggle();showScreen('settings');});
  await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:180000});
  await hub.evaluate(async()=>{await NarbeCommunicationSpeech.refresh();NarbeCommunicationSpeech.cycleSpeaker();});
- await expect(hub.locator('#speaker-quality-status')).toHaveText('Faster');await expect(hub.locator('#speaker-voice-toggle')).toBeDisabled();
+ await expect(hub.locator('#speaker-quality-status')).toHaveText('Faster');await expect(hub.locator('#speaker-voice-toggle')).toBeEnabled();
+ await hub.evaluate(()=>{for(let i=0;i<6;i++)NarbeCommunicationSpeech.cycleVoice();});await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_lj');
  await hub.locator('#speaker-settings').screenshot({path:path.join(root,'artifacts/communication-fast-settings.png')});
  async function speak(frame,text){return frame.evaluate(async text=>{const at=performance.now(),ticket=NarbeCommunicationSpeech.speak(text);const started=await ticket.started;const startMs=Math.round(performance.now()-at);const result=await ticket.finished;return {started,startMs,...result};},text);}
  report.newMessage={ticket:await speak(hub,'Could I have a glass of water please?'),generation:await hub.evaluate(()=>__generated.at(-1))};
  report.repeat={ticket:await speak(hub,'Could I have a glass of water please?'),generation:await hub.evaluate(()=>__generated.at(-1))};assert.equal(report.repeat.generation.cached,true);assert.equal(report.newMessage.generation.sampleRate,22050);
+ report.voices=[];const voices=await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices);assert.equal(voices.length,6);
+ for(let i=0;i<voices.length;i++){
+   if(i){await hub.locator('#speaker-voice-toggle').click();await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady&&NarbeCommunicationSpeech.get().phase==='ended',null,{timeout:180000});}
+   const chosen=await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice);assert.equal(chosen,voices[i].id);
+   const ticket=await speak(hub,'I would like to spend some time outside today.'),generation=await hub.evaluate(()=>__generated.at(-1));
+   assert.equal(ticket.reason,'ended');assert.equal(generation.voice,chosen);assert.equal(generation.cached,false);assert.ok(generation.peak>.01);report.voices.push({name:voices[i].name,ticket,generation});
+ }
+ const beforeReturn=requests.filter(u=>u.includes('huggingface.co/rhasspy')).length;
+ await hub.locator('#speaker-voice-toggle').click();await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady&&NarbeCommunicationSpeech.get().phase==='ended',null,{timeout:60000});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_lj');assert.equal(requests.filter(u=>u.includes('huggingface.co/rhasspy')).length,beforeReturn);
  async function openTool(name,selector){await hub.evaluate(name=>{showScreen('home');document.getElementById('iframe-container').classList.add('active');document.getElementById('app-iframe').src='apps/tools/'+name+'/index.html';},name);
  await expect.poll(()=>hub.frames().some(f=>f.url().includes('/'+name+'/index.html'))).toBe(true);const frame=hub.frames().find(f=>f.url().includes('/'+name+'/index.html'));await frame.locator(selector).first().waitFor();assert.equal(await frame.evaluate(()=>NarbeCommunicationSpeech._service===parent.NarbeCommunicationSpeech._service),true);return frame;}
  const keyboard=await openTool('keyboard','#keyboard button');for(const letter of 'HELLO')await keyboard.locator('#keyboard').getByRole('button',{name:letter,exact:true}).click();await keyboard.locator('#textBar').click();await hub.waitForFunction(()=>__generated.at(-1)?.text==='HELLO'&&NarbeCommunicationSpeech.get().phase==='ended');report.keyboard=await hub.evaluate(()=>__generated.at(-1));assert.equal(report.keyboard.text,'HELLO');
@@ -35,9 +45,10 @@ function instrument(){
  const rtc=await openTool('rtc-lite','#continueButton');await rtc.locator('#continueButton').click();const tile=rtc.locator('[data-say]').first(),text=await tile.getAttribute('data-say');await tile.click();await hub.waitForFunction(text=>__generated.at(-1)?.text===text&&NarbeCommunicationSpeech.get().phase==='ended',text);report.rtcLite=await hub.evaluate(()=>__generated.at(-1));assert.equal(report.rtcLite.text,text);
  report.cancelled=await hub.evaluate(async()=>{const ticket=NarbeCommunicationSpeech.speak('This new message will be cancelled before playback.');ticket.cancel();return ticket.finished;});assert.equal(report.cancelled.reason,'cancelled');assert.equal(report.cancelled.started,false);
  report.workerCount=await hub.evaluate(()=>__workers);assert.equal(report.workerCount,1);assert.equal(requests.some(url=>url.includes('kokoro')||url.includes('Kokoro')),false);
+ await hub.evaluate(()=>{NarbeCommunicationSpeech.cycleVoice();NarbeCommunicationSpeech.cycleVoice();NarbeCommunicationSpeech.cycleVoice();});await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_norman');
  await hub.evaluate(()=>navigator.serviceWorker.ready);const downloadsBefore=requests.filter(u=>u.includes('huggingface.co/rhasspy')).length;
  await hub.reload();if(await hub.locator('#modal-cancel').isVisible())await hub.locator('#modal-cancel').click();await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});
- assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().speechMode),'fast');assert.equal(requests.filter(u=>u.includes('huggingface.co/rhasspy')).length,downloadsBefore);
+ assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().speechMode),'fast');assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_norman');assert.equal(requests.filter(u=>u.includes('huggingface.co/rhasspy')).length,downloadsBefore);
  await context.setOffline(true);report.offline=await speak(hub,'This is a new offline message.');assert.equal(report.offline.reason,'ended');await context.setOffline(false);
  await hub.evaluate(()=>{NarbeCommunicationSpeech.toggle();NarbeCommunicationSpeech.cycleMode();});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'am_michael');assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices.length),14);
  await hub.reload();assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().speechMode),'natural');report.cache=await hub.evaluate(()=>caches.keys());assert.ok(report.cache.includes('benny-communication-fast-model-v1'));assert.deepEqual(report.errors,[]);report.passed=true;
