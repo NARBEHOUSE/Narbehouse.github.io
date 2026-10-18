@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 class Speech{
- constructor({getPrefs,onStatus,onText,onProgress,onStateChange=()=>{}}){this.onStateChange=onStateChange;this.loading=false;Object.assign(this,{prefs:getPrefs,onStatus,onText,progress:onProgress});this.epoch=0;this.voiceEpoch=0;this.mutedUntil=0;this.pending=new Map();this.seq=0;this.queue=[];this.active=false;this.captureReady=false;this.state="off";this.ready=false;this.voiceCount=0;this.unsubscribe=window.electronAPI?.rtcLite?.onProgress(p=>this.progress(p.file+': '+Math.round(p.received/p.total*100)+'%'));}
+ constructor({getPrefs,onStatus,onText,onProgress,onStateChange=()=>{}}){this.onStateChange=onStateChange;this.loading=false;Object.assign(this,{prefs:getPrefs,onStatus,onText,progress:onProgress});this.epoch=0;this.voiceEpoch=0;this.mutedUntil=0;this.pending=new Map();this.seq=0;this.queue=[];this.active=false;this.captureReady=false;this.state="off";this.ready=false;this.voiceCount=0;this.captureRevision=0;this.playbackHolds=new Set();this.unsubscribe=window.electronAPI?.rtcLite?.onProgress(p=>this.progress(p.file+': '+Math.round(p.received/p.total*100)+'%'));}
  status(message,state='off'){this.state=state;this.onStatus(message,state);}
  reportListening(){
   if(!this.active||!this.captureReady)return;
@@ -11,6 +11,32 @@ class Speech{
  }
  voiceStarted(){this.voiceCount++;this.voiceEpoch++;this.resetSegment();this.mutedUntil=Infinity;clearTimeout(this.resumeTimer);if(this.active)this.status('Listening paused · app is speaking','paused');}
  voiceEnded(){this.voiceCount=Math.max(0,this.voiceCount-1);if(!this.voiceCount){this.mutedUntil=Date.now()+500;clearTimeout(this.resumeTimer);this.resumeTimer=setTimeout(()=>{this.reportListening();},500);}}
+ holdCaptureForPlayback(){
+  if(!this.playbackHolds.size)this.playbackNotBefore=this.active?Date.now()+2200:0;
+  const hold={};this.playbackHolds.add(hold);this.voiceStarted();clearTimeout(this.captureResumeTimer);
+  // Release the actual recording endpoint, not only its samples. Keep the model
+  // and already captured recognition jobs alive while Bluetooth returns to playback.
+  void this.closeCapture();
+  let released=false;
+  const release=()=>{if(released)return;released=true;this.playbackHolds.delete(hold);this.voiceEnded();
+   if(this.playbackHolds.size||!this.active)return;
+   const run=this.epoch;clearTimeout(this.captureResumeTimer);
+   this.captureResumeTimer=setTimeout(()=>{if(run!==this.epoch||!this.active||this.playbackHolds.size)return;
+    void this.startCapture(run).catch(e=>{if(run===this.epoch)void this.stop(this.errorMessage(e));});
+   },500);
+  };
+  release.notBefore=this.playbackNotBefore;return release;
+ }
+ async closeCapture(){
+  ++this.captureRevision;this.captureReady=false;clearTimeout(this.restartTimer);
+  if(this.recognition){this.recognition.onend=null;this.recognition.abort();this.recognition=null;}
+  if(this.processor){this.processor.onaudioprocess=null;this.processor.disconnect();this.processor=null;}
+  this.source?.disconnect();this.source=null;this.gain?.disconnect();this.gain=null;
+  this.stream?.getTracks().forEach(t=>{t.onended=t.onmute=t.onunmute=null;t.stop();});this.stream=null;
+  const ac=this.audio;this.audio=null;
+  this.captureClosing=Promise.all([this.captureClosing,ac&&ac.state!=='closed'?ac.close().catch(()=>{}):null]).then(()=>{});
+  await this.captureClosing;
+ }
  muted(){return Date.now()<this.mutedUntil;}
  resetSegment(){this.frames=[];this.length=0;this.voiced=0;this.silence=0;this.preroll=[];}
  async setup(download=true){
@@ -43,25 +69,45 @@ class Speech{
   if(this.active)return;const provider=this.prefs().stt;if(provider==='off'||!this.prefs().listening){this.status(provider==='off'?'Microphone off · choose a speech source in Settings':'Microphone off · Listening is off in Settings');return;}
   const epoch=++this.epoch;
   if(this.ready!==provider){this.status('Preparing '+provider+'…','starting');await this.setup(false);if(epoch!==this.epoch-1)return;}
-  const run=++this.epoch;this.active=true;this.captureReady=false;this.resetSegment();this.status('Starting microphone · '+this.name(provider)+'…','starting');
-  try{
-   if(provider==='browser'){this.startBrowser(run);return;}
-   const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-   if(run!==this.epoch){stream.getTracks().forEach(t=>t.stop());return;}
-   this.stream=stream;stream.getAudioTracks().forEach(t=>{t.onended=()=>{if(this.active&&run===this.epoch){void this.stop('Microphone disconnected. Use Restart microphone in Settings.');}};t.onmute=t.onunmute=()=>{if(run===this.epoch)this.reportListening();};});
-   const ac=this.audio=new AudioContext({sampleRate:16000});await ac.resume();
-   if(run!==this.epoch){await ac.close();return;}
-   if(ac.state!=='running')throw Error('Microphone audio is suspended. Restart listening in Settings.');
-   this.source=ac.createMediaStreamSource(stream);this.processor=ac.createScriptProcessor(4096,1,1);this.gain=ac.createGain();this.gain.gain.value=0;
-   this.source.connect(this.processor);this.processor.connect(this.gain);this.gain.connect(ac.destination);
-   this.processor.onaudioprocess=e=>{if(run!==this.epoch||!this.active)return;if(this.muted()){this.resetSegment();return;}const input=e.inputBuffer.getChannelData(0),rate=ac.sampleRate;
-    const out=new Float32Array(Math.floor(input.length*16000/rate));
-    for(let i=0;i<out.length;i++){const lo=Math.floor(i*rate/16000),hi=Math.min(input.length,Math.ceil((i+1)*rate/16000));let s=0;for(let j=lo;j<hi;j++)s+=input[j];out[i]=Math.max(-1,Math.min(1,s/(hi-lo)));}
-    this.capture(out,run,provider);
-   };
-   this.captureReady=true;ac.onstatechange=()=>{if(run===this.epoch)this.reportListening();};this.reportListening();
-  }catch(e){if(run===this.epoch)await this.stop(this.errorMessage(e));throw e;}
+  const run=++this.epoch;this.active=true;this.captureDeviceId='';this.captureReady=false;this.resetSegment();this.status('Starting microphone · '+this.name(provider)+'…','starting');
+  try{await this.startCapture(run);}catch(e){if(run===this.epoch)await this.stop(this.errorMessage(e));throw e;}
  }
+ async startCapture(run){
+  const capture=++this.captureRevision,provider=this.prefs().stt;
+  const current=()=>run===this.epoch&&capture===this.captureRevision&&this.active&&!this.playbackHolds.size;
+  await this.captureClosing;
+  if(!current()){if(run===this.epoch&&this.active&&this.playbackHolds.size)this.status('Listening paused · app is speaking','paused');return;}
+  if(provider==='browser'){this.startBrowser(run,capture);return;}
+  const audio={channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true};
+  // Reopen the same input after speaking, even if the browser default changes.
+  if(this.captureDeviceId)audio.deviceId={exact:this.captureDeviceId};
+  const stream=await navigator.mediaDevices.getUserMedia({audio});
+  if(!current()){stream.getTracks().forEach(t=>t.stop());return;}
+  this.stream=stream;
+  const input=stream.getAudioTracks()[0]?.getSettings?.()||{};let inputId=input.deviceId;
+  if(['default','communications'].includes(inputId)&&input.groupId&&navigator.mediaDevices.enumerateDevices){
+   const devices=await navigator.mediaDevices.enumerateDevices().catch(()=>[]);
+   inputId=devices.find(d=>d.kind==='audioinput'&&!['default','communications'].includes(d.deviceId)&&d.groupId===input.groupId)?.deviceId;
+   if(!current()){stream.getTracks().forEach(t=>t.stop());return;}
+  }
+  this.captureDeviceId=inputId&&!['default','communications'].includes(inputId)?inputId:'';
+  stream.getAudioTracks().forEach(t=>{t.onended=()=>{if(current())void this.stop('Microphone disconnected. Use Restart microphone in Settings.');};t.onmute=t.onunmute=()=>{if(current())this.reportListening();};});
+  // Recognition has no sound to play. Keep its graph off physical output devices.
+  const audioOptions={sampleRate:16000};
+  if(typeof AudioContext.prototype.setSinkId==='function')audioOptions.sinkId={type:'none'};
+  const ac=this.audio=new AudioContext(audioOptions);await ac.resume();
+  if(!current()){if(ac.state!=='closed')await ac.close().catch(()=>{});return;}
+  if(ac.state!=='running')throw Error('Microphone audio is suspended. Restart listening in Settings.');
+  this.source=ac.createMediaStreamSource(stream);this.processor=ac.createScriptProcessor(4096,1,1);this.gain=ac.createGain();this.gain.gain.value=0;
+  this.source.connect(this.processor);this.processor.connect(this.gain);this.gain.connect(ac.destination);
+  this.processor.onaudioprocess=e=>{if(!current())return;if(this.muted()){this.resetSegment();return;}const input=e.inputBuffer.getChannelData(0),rate=ac.sampleRate;
+   const out=new Float32Array(Math.floor(input.length*16000/rate));
+   for(let i=0;i<out.length;i++){const lo=Math.floor(i*rate/16000),hi=Math.min(input.length,Math.ceil((i+1)*rate/16000));let s=0;for(let j=lo;j<hi;j++)s+=input[j];out[i]=Math.max(-1,Math.min(1,s/(hi-lo)));}
+   this.capture(out,run,provider);
+  };
+  this.captureReady=true;ac.onstatechange=()=>{if(current())this.reportListening();};this.reportListening();
+ }
+
  name(provider){return ({parakeet:'Local Parakeet · on device',whisper:'Local Whisper · on device',google:'Google Cloud · RT Convo account',browser:'Browser speech · online service',off:'Off'})[provider]||provider;}
  errorMessage(e){return e.name==='NotAllowedError'?'Microphone permission needed. Allow it, then choose Restart microphone.':e.message||'Listening failed. Choose Restart microphone in Settings.';}
  capture(samples,epoch,provider){
@@ -97,20 +143,19 @@ class Speech{
    }catch(e){if(job.epoch===this.epoch){await this.stop(e.message);}break;}
   }}finally{this.processing=false;this.reportListening();}
  }
- startBrowser(epoch){
+ startBrowser(epoch,capture=this.captureRevision){
+  const current=()=>epoch===this.epoch&&capture===this.captureRevision&&this.active&&!this.playbackHolds.size;
   const R=window.SpeechRecognition||window.webkitSpeechRecognition,recognition=this.recognition=new R();recognition.continuous=true;recognition.interimResults=false;recognition.lang='en-US';let beganVoiceEpoch=this.voiceEpoch;
   recognition.onspeechstart=()=>{beganVoiceEpoch=this.voiceEpoch;};
-  recognition.onstart=()=>{if(epoch===this.epoch&&this.active){this.captureReady=true;this.reportListening();}};
-  recognition.onresult=e=>{if(epoch!==this.epoch||this.muted()||beganVoiceEpoch!==this.voiceEpoch)return;for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)this.onText(e.results[i][0].transcript,Date.now(),null);};
-  recognition.onerror=e=>{if(['no-speech','aborted'].includes(e.error))return;if(epoch===this.epoch)void this.stop('Browser online speech failed ('+e.error+'). Choose Local Whisper or restart the microphone.');};
-  recognition.onend=()=>{if(this.active&&epoch===this.epoch){this.captureReady=false;this.status('Reconnecting · Browser online speech','starting');this.restartTimer=setTimeout(()=>{if(this.active&&epoch===this.epoch)try{recognition.start();}catch(e){void this.stop(this.errorMessage(e));}},600);}};
+  recognition.onstart=()=>{if(current()){this.captureReady=true;this.reportListening();}};
+  recognition.onresult=e=>{if(!current()||this.muted()||beganVoiceEpoch!==this.voiceEpoch)return;for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)this.onText(e.results[i][0].transcript,Date.now(),null);};
+  recognition.onerror=e=>{if(['no-speech','aborted'].includes(e.error))return;if(current())void this.stop('Browser online speech failed ('+e.error+'). Choose Local Whisper or restart the microphone.');};
+  recognition.onend=()=>{if(current()){this.captureReady=false;this.status('Reconnecting · Browser online speech','starting');this.restartTimer=setTimeout(()=>{if(current())try{recognition.start();}catch(e){void this.stop(this.errorMessage(e));}},600);}};
   recognition.start();
  }
  async stop(message='Microphone off'){
   ++this.epoch;this.startPromise=null;this.active=false;this.captureReady=false;this.ready=false;this.loading=false;this.onStateChange();this.status(message,'off');this.requestAbort?.abort();this.queue=[];clearTimeout(this.restartTimer);clearTimeout(this.resumeTimer);
-  if(this.recognition){this.recognition.onend=null;this.recognition.abort();this.recognition=null;}
-  if(this.processor){this.processor.onaudioprocess=null;this.processor.disconnect();this.processor=null;}this.source?.disconnect();this.gain?.disconnect();
-  this.stream?.getTracks().forEach(t=>t.stop());this.stream=null;const ac=this.audio;this.audio=null;if(ac&&ac.state!=='closed')await ac.close().catch(()=>{});
+  clearTimeout(this.captureResumeTimer);await this.closeCapture();
   this.resetSegment();this.failWorker('Listening stopped.');await window.electronAPI?.rtcLite?.stop();
  }
  async cancelSetup(){await window.electronAPI?.rtcLite?.cancelInstall();await this.stop();}

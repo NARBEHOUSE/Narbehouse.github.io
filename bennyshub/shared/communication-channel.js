@@ -33,7 +33,7 @@
       if(!(await this.enumerateOutputs()).some(d=>d.deviceId===sink))throw Error('Selected speaker is unavailable. Reconnect it and choose it in Hub Settings.');
     }
     async devicesChanged(){const sink=this.sink;try{if(sink)await this.checkSink(sink);}catch(e){if(sink!==this.sink)return;const job=this.active;if(job){this.cancelSynthesis?.(job.id);this.finish(job,'error',e.message+' Message was not completed.');}else this.state('error',e.message);}}
-    speak(text,{voice='am_michael',owner}={}) {
+    speak(text,{voice='am_michael',owner,notBefore=0}={}) {
       this.stop();const job={id:++this.epoch,owner,done:false,didStart:false};this.active=job;
       const started=new Promise(r=>{job.resolveStart=r;}),finished=new Promise(r=>{job.resolveFinish=r;});
       const current=()=>this.active===job&&!job.done;
@@ -51,7 +51,10 @@
           if(typeof audio.setSinkId!=='function')throw Error('Choosing a speaker is unavailable in this browser.');
           await audio.setSinkId(sink);if(!current())return;
           if(audio.sinkId!==sink)throw Error('The chosen speaker could not be connected.');
-          job.url=this.createUrl(wave(new Float32Array(audioData.samples),audioData.sampleRate));audio.src=job.url;
+          // RTC can release microphone capture while synthesis runs, then allow
+          // Bluetooth to restore playback quality before the first spoken sample.
+          const leadInMs=Number.isFinite(notBefore)?Math.max(750,Math.min(5000,notBefore-Date.now())):750;
+          job.url=this.createUrl(wave(new Float32Array(audioData.samples),audioData.sampleRate,leadInMs));audio.src=job.url;
           audio.onerror=()=>fail(Error('Speaker playback failed. Reconnect it and try again.'));
           audio.onended=()=>{if(current())this.finish(job,'ended','Message finished.');};
           clearTimeout(job.timer);job.timer=setTimeout(()=>fail(Error('Speaker playback did not start. Try Test Speaker in Hub Settings.')),15000);

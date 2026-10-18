@@ -104,7 +104,7 @@
       cycle(){if(!outputs.length){report({phase:'error',detail:'Choose Find speakers first, then allow the browser prompt.'});return;}const d=outputs[(outputs.findIndex(d=>d.deviceId===store.readCached().sinkId)+1)%outputs.length];store.save({...store.readCached(),sinkId:d.deviceId,sinkLabel:d.label||'Speaker'});},
       cycleMode(){const prefs=store.readCached();store.save({...prefs,speechMode:prefs.speechMode==='fast'?'natural':'fast'});},
       cycleVoice(){const prefs=store.readCached(),list=prefs.speechMode==='fast'?fastVoices:voices,key=prefs.speechMode==='fast'?'fastVoice':'voice';store.save({...prefs,[key]:list[(list.findIndex(v=>v.id===prefs[key])+1)%list.length].id});},
-      speak(text,who){if(!supported()){report({phase:'error',detail:'Speaker selection is unavailable in this browser.',owner:who});return ended('error');}return channel.speak(text,{voice:selectedVoice(),owner:who});},
+      speak(text,who,notBefore=0){if(!supported()){report({phase:'error',detail:'Speaker selection is unavailable in this browser.',owner:who});return ended('error');}return channel.speak(text,{voice:selectedVoice(),owner:who,notBefore});},
       stop:who=>channel.stop(who),releaseOwner(who){prefetch([],who);channel.stop(who);if(eventOwner===who){eventOwner=undefined;phase='idle';detail='';notify();}},dispose(){channel.stop();failWorker('Closed.');store.dispose();listeners.clear();}
     };
     navigator.mediaDevices?.addEventListener('devicechange',()=>{if(store.readCached().enabled)void refresh();});
@@ -118,11 +118,11 @@
     toggle:service.toggle,cycleSpeaker:service.cycle,cycleVoice:service.cycleVoice,cycleMode:service.cycleMode,findSpeakers:service.findSpeakers,refresh:service.refresh,
     // A tool may update before its already-open Hub tab. Keep that old service usable until refresh.
     prefetch:texts=>service.prefetch?.(texts,owner),
-    speak(text,fallback){
+    speak(text,fallback,{notBefore=0}={}){
       if(!api.isEnabled())return fallback?.();
       // Communication is intentional output, independent of general/scan TTS.
       // Cancels only this page's previous private label, not future scanning.
-      window.NarbeVoiceManager?.cancel();return service.speak(String(text),owner);
+      window.NarbeVoiceManager?.cancel();return service.speak(String(text),owner,notBefore);
     },
     help(fallback,text='I need help'){
       if(!api.isEnabled())return fallback?.();

@@ -99,3 +99,11 @@ Desktop port: not included. All 274 website tests and 19 browser checks passed.
 The public build, release audit and all 1,142 page-reference checks also passed.
 The browser checks use simulated Nano output and recognized speech; real Nano
 quality and microphone recognition on the user's device still need testing.
+
+## Communication speaker quality while listening
+
+Deliberate Speaker Mode messages release the microphone endpoint for the duration of playback, then reopen the same input after the existing 500 ms echo tail. The recognition worker/model and already captured transcription jobs remain alive. Cancelling, replacing messages, leaving RTC or turning listening off cannot reopen stale captures. Scan narration retains its existing sample suppression behavior.
+
+On browsers with a silent AudioContext output, microphone processing uses that output instead of opening a zero-gain stream on the system speaker. When listening is active, RTC also requests a 2.2-second handoff window from microphone release to the first speech sample. Voice generation overlaps this window; the selected-output channel adds only the remaining silence, with its normal 750 ms minimum. This allows Bluetooth stacks with a delayed return to A2DP to leave the lower-quality capture mode. Keyboard, Phrase Board and RTC with listening already off retain their normal timing. Browser Bluetooth profile changes cannot be confirmed by website APIs, so physical listening on the target Pi remains part of acceptance.
+
+Run node scripts/check-rtc-speaker-capture.cjs with the local preview server running to check real Chromium capture, muted playback, resume and teardown using synthetic microphone audio and an isolated profile.

@@ -55,3 +55,11 @@ test('ordinary message generation never claims to download a voice',async()=>{
  assert.equal(h.events.find(e=>e.phase==='generating').detail,'Preparing message…');
  assert(h.events.every(e=>!/download|first use/i.test(e.detail)));h.audios[0].onended();await ticket.finished;
 });
+
+test('RTC handoff padding overlaps synthesis and leaves other messages at 750 ms',async()=>{
+ const h=harness(),buffers=[];h.channel.createUrl=buffer=>{buffers.push(new DataView(buffer));return 'blob:test';};
+ let resolve;h.setGenerate(()=>new Promise(r=>resolve=r));const ticket=h.channel.speak('RTC',{notBefore:Date.now()+2200});await tick();assert.equal(h.audios.length,0);
+ resolve({samples:new Float32Array([.5]),sampleRate:24000});await tick();const pad=buffers[0].getUint32(40,true)/2-1;assert.ok(pad>24000*1.9&&pad<=24000*2.2);assert.equal(buffers[0].getInt16(44+pad*2,true),16383);ticket.cancel();
+ h.setGenerate(async()=>({samples:new Float32Array([.5]),sampleRate:24000}));const normal=h.channel.speak('Keyboard');await tick();assert.equal(buffers[1].getUint32(40,true)/2-1,18000);normal.cancel();
+ const elapsed=h.channel.speak('Already ready',{notBefore:Date.now()-100});await tick();assert.equal(buffers[2].getUint32(40,true)/2-1,18000);elapsed.cancel();
+});

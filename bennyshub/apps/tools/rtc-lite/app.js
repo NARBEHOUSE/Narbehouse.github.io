@@ -104,9 +104,11 @@
     function communicate(text) {
       if (!NarbeCommunicationSpeech.isEnabled()) return choice.announce(text);
       // Keep listening paused until actual public playback ends (not a scan timeout).
-      speech.voiceStarted();
-      const ticket = NarbeCommunicationSpeech.speak(text);
-      Promise.resolve(ticket.finished).then(() => speech.voiceEnded(), () => speech.voiceEnded());
+      const releaseMicrophone = speech.holdCaptureForPlayback();
+      let ticket;
+      try { ticket = NarbeCommunicationSpeech.speak(text, undefined, {notBefore:releaseMicrophone.notBefore}); }
+      catch (error) { releaseMicrophone(); throw error; }
+      Promise.resolve(ticket.finished).then(releaseMicrophone, releaseMicrophone);
       return ticket;
     }
     function speakTile(tile) {
