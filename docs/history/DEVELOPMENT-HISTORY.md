@@ -2,6 +2,105 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-19 — Bug Blaster thumbnail and PC Hub update; shared catalog images
+
+At the owner's request, replaced bennyshub/images/games/bennysbugblaster.png in place with a 1280×720 capture of active upgraded gameplay. The previous title-screen image is gone from the active source/build; its backup is outside the website. New SHA-256: 6caa0a4d56ea863264e3a0ebc5835956382cace371fe96db39b92b8dab77e041. NARBE House and the web Hub already reference this canonical file.
+
+The owner explicitly requested updating Benny's PC Hub. Applied and hash-verified the full Bug Blaster remaster, all subsequent fixes and this thumbnail there. Desktop index.html retains electron-bridge.js; game.js preserves the existing five-row pause menu and Help action while incorporating the web blank-store/dialog fixes. Native scan-access.js, style.css, all seven existing WAV files, shared managers and other apps are unchanged. This supersedes earlier NOT PORTED status for these Bug Blaster runtime/assets changes.
+
+The owner also reaffirmed Benny's Hub as the source of truth for the two showcase indexes. SwitchedGames now references the Hub's catalog image URLs for every game card and Details image, plus the Racer hero poster. All 28 duplicated local game thumbnails and the empty images/games directory are removed; branding and switch-kit photos remain local. Its README records the shared-image policy. Audited all 33 NARBE House game/tool cards: each launch path and thumbnail file matches the appropriate Hub catalog. The showcase copy/layout remains maintained by each website.
+
+Changed files (scope / Electron port flag):
+- bennyshub/images/games/bennysbugblaster.png — new canonical gameplay capture / SHARED, APPLIED TO PC HUB.
+- PC Hub bennyshub/apps/games/BENNYSBUGBLASTER/{game.js,index.html,crowd.js,presentation.js,shop.js,sounds/remastered/garden-theme.mp3} — remaster and accumulated fixes; preserve native integration / APPLIED TO PC HUB.
+- PC Hub ELECTRON-SCAN-UPGRADE.md — desktop implementation/verification ledger / DESKTOP ONLY.
+- ../SWITCHEDGAMES/index.html, README.md, CHANGELOG.md and all 28 removed images/games/*.png — canonical image URLs and no duplicate thumbnails / WEB ONLY, NO ELECTRON PORT NEEDED.
+- tests/communication-cache.test.cjs — update the migration fixture for shell v59, asserting v58 is retired and v59/model caches survive / WEB ONLY, NO ELECTRON PORT NEEDED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: eight staged desktop browser checks and sixteen actual Electron checks pass, including launch from the native catalog/iframe, 288 sprite frames, thumbnail hash/display, blank Enter, all store cards, scan eligibility, start, five-second pause, Help, settings/Back/resume, salt priority/muzzle, charged-only marker, damage/repair pixels and decoded original squish/salt plus new music. Zero renderer errors. Canvas readback is warmed before exact repair comparison. The hidden native fixture used a disposable OS-temp working directory/profile and cleaned it after closing. Website build, 3,817-file release audit and all 1,191 page references pass. SwitchedGames local candidate checks verify all 30 cards and Details images/links against Hub files, the shared hero poster, removal of the duplicate folder and zero browser exceptions; its card/Details screenshots were inspected. Both catalogs use the new canonical Bug Blaster image, and all 33 NARBE House cards match Hub paths. Publication authorized by the owner’s subsequent “push it” instruction. All 370 publication unit tests pass; build, release audit and page-reference checks also pass. No installer rebuilt. Raspberry Pi and physical switch acceptance remain pending.
+
+Backups, guarded copy manifests, native/browser reports and screenshots: ../tmp/bug-blaster-pc-20261019/. Prior release archives and personal profiles are unchanged.
+
+## 2026-10-19 — Bug Blaster targeting marker only when charged
+
+At the owner's request, the boot's pulsing ring and crosshair are now drawn only when its cooldown is complete and no stomp animation is active. The marker disappears immediately on stomp activation and returns at full charge. The presentation renderer and native fallback apply the same rule. Selected targets, switch scanning, cooldown values, sounds and damage are unchanged.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — gate the remastered reticle on boot readiness / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/game.js — apply the same visibility rule to the native fallback reticle / WEB ONLY, NOT PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: both JavaScript syntax checks pass. Live-browser pixel checks cover empty, just-before-full and full charge for 4/3/2-second cooldowns: all nine visibility results match readiness and retain the selected enemy. Actual stomp activation starts its animation with no target-marker pixels; dead targets have no marker. No browser page errors. Website build passed. Evidence and narrow backups: ../tmp/bug-blaster-rebuild/charge-only-target-qa.json and before-charge-only-target-*.js. No publication or Electron work.
+
+## 2026-10-19 — Bug Blaster damage feedback, salt priorities and matching boots
+
+Restored clearly visible health-driven deterioration at the owner's request. The continuous lawn blends from the existing healthy green through yellow-green, straw-yellow and brown as health falls. House walls and roof weather, cracks accumulate, damaged plaster exposes brick, roof tiles chip over opaque backing, and windows crack and break. Garden flowers retain their original health-dependent wilting/death, with gradual bending and fallen petals; window-box flowers droop and lose their blooms. Healing reverses the appearance using the same health value. The field and house garden still share one texture, and both main and wing roofs remain opaque.
+
+Salt Shot now reevaluates living enemies before every volley: highest current HP first, with proximity to the fence breaking ties. Previously it retained its initial highest-HP target until removal, including the death-animation interval. Dead and zero-HP enemies no longer absorb shots. Other living enemies can still intercept a shot normally. Purchase rules, damage, firing cadence, muzzle coordinates, projectile speed and sounds are preserved.
+
+The title demonstration now calls the same boot-art renderer as the playable stomp, including its leather shading, laces, sole, treads and green trouser leg. The menu's descent, impact, retreat and target defeat remain native; gameplay stomp damage, targeting pulse and timing remain native.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — health palettes and wear, gradual flower detail, bounded two-surface lawn cache and shared boot renderer / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/game.js — living-target selection per volley, dead-enemy collision exclusion and title boot hook / WEB ONLY, NOT PORTED.
+- tests/bug-blaster-targeting.test.cjs — six targeting/cadence/power/collision regression cases / WEB ONLY, NOT PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: syntax checks and all six targeting tests pass. Browser screenshots at 100/75/50/25 HP were inspected; a native healing purchase restores 50 to 100 HP and returns the fixed-time yard/house image to exactly the healthy pixels. The joined field/garden matches a full-screen lawn draw at 100/88/75/62/50/37/25 HP, including intermediate blends. Whole-frame readback after warmup confirms 431 roof-interior samples for each 150px/105px house at all four damage stages are opaque and independent of the background. Live salt firing picks the highest-health, nearest tied living enemy, replaces that target when another becomes stronger, and matches the barrel-tip origin and aim exactly (damage 1, base speed 15). The title screenshot was inspected, its impact invokes the shared boot at the target coordinates and defeats the demonstration bug; gameplay and shared upper-boot pixels match. No browser page errors. Website build, release audit (3,817 public files, zero problems) and page-reference check (1,191 references, zero issues) pass.
+
+The two cached lawn surfaces use about 10.5 MiB at 1440×960; existing articulated atlases remain unchanged. Raspberry Pi and physical-switch hardware acceptance remain pending. Backups and browser evidence: ../tmp/bug-blaster-rebuild/ (before-salt-targeting-game.js, before-restored-deterioration.js, before-shared-boot-*, damage-targeting-qa.json, health-*.png, shared-title-boot.png). No publication or Electron work.
+
+## 2026-10-19 — Bug Blaster opaque roof fix
+
+Fixed the house roof's hollow chevron polygon: it now fills the complete tiled roof silhouette, including the center above the wall, with an opaque roof surface and a defined eave edge. Main house and both expansion wings use the same corrected geometry. Cannon mounting, projectiles and gameplay remain unchanged.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — fill the entire roof silhouette / WEB ONLY, NOT PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: syntax check passed; the three-house gameplay screenshot was inspected with the rear-mounted cannons. Whole-frame comparisons against magenta and cyan backgrounds found zero differences at 582 interior roof samples for each of the 150px main house and 105px wing; all samples are fully opaque. No browser page errors. The website build passed. Backup: ../tmp/bug-blaster-rebuild/before-solid-roof-presentation.js. No publication or Electron work.
+
+## 2026-10-19 — Bug Blaster lawn continuity and cannon mounting
+
+At the owner's request, brightened the healthy lawn to a clearer green and reduced the dark vignette. The battlefield, fence gaps and house garden now crop a single full-height cached texture, eliminating the separate muted field and flat pale-green house yard. Existing health-related grass decay remains synchronized across both sections; flowers and fence details are retained.
+
+Moved salt cannons from the front eaves to the battlefield-facing rear roof ridge. The drawn mount and aim calculation also define the projectile origin at the extended barrel tip; recoil follows firing. This applies to the main house and both smaller wings. Salt purchase requirements, targeting, cooldown, damage, projectile speed and original sounds remain unchanged.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — brighter continuous lawn, rear roof cannon geometry and muzzle position / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/game.js — shared house-garden background hook and salt-shot muzzle origin hook / WEB ONLY, NOT PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: JavaScript syntax checks pass. Browser pixel comparison finds zero differing channels between the joined lawn sections and one uninterrupted full-screen draw at 100, 70, 40 and 20 HP. Nine cannon firing checks cover all three house sections against left, center and right targets: origins match barrel tips and projectile directions point to the targets, retaining damage 1 and speed 15. The 1440×960 screenshot was inspected; no page errors. Backup: ../tmp/bug-blaster-rebuild/before-unified-lawn/. Website build, release audit (3,817 files) and page-reference check (1,191 references) pass. No publication or Electron work.
+
+## 2026-10-19 — Original Bug Blaster restored with articulated sprites
+
+Restored the original game after the owner rejected the replacement. The original 20-wave progression, 150-second rounds, 14 upgrades, shop/undo behavior, damage rules, and two-switch controls remain. The previous replacement is archived outside the website under ../tmp/bug-blaster-rebuild/replacement-prototype; the original checkpoint is ../Website Backups/BugBlaster-replacement-20261019-1792448251216.
+
+The presentation layer builds 288 transparent atlas frames from articulated body parts: 16 walk, 8 idle, 10 attack, 4 hit, and 10 death frames for each of six enemy/defender types. Jointed legs, beetle shells, mandibles, antennae, claws, and the segmented scorpion tail have distinct poses; no static character-image transforms are used. Cached lawn texture, cottage details, salt/venom projectiles, boot impact, glue, bomb and zapper effects improve the original view. The original blue pulsing target and red open crosshair are retained with outlined edges; the OS reduced-motion preference suppresses the pulse and decorative burst particles.
+
+Owner-requested movement changes prevent same-side bugs from stacking: free spawn positions, sidestepping, and waiting behind crowded edges. Glued bugs stay anchored; enemy/defender combat contact remains native. Scorpions are 25% larger than the initial remaster, have a curved sharp barb, and fire from the same attack-pose tip coordinates in gameplay and the menu demonstration. Original projectile damage, speed, cadence and target selection remain.
+
+The owner also requested a full store catalogue. All 14 upgrades remain visible in stable positions from level one, with custom illustrated icons, prices, and gray unavailable states. Eligibility still uses the original budget, prerequisite, healing and purchase-limit rules. Unavailable upgrades reject pointer and switch activation; empty Undo is skipped. This store is CHOICE: if Ben stops pressing, gameplay does not advance. Root scanning retains its recurring silent -1 stop and the original shared scan owner.
+
+At the owner's follow-up, all original gameplay sound effects are retained, including squish, shell defeat, impacts, salt, bomb, zapper and ready cue. The six WAV files are byte-identical to the checkpoint. Newly generated unused effects were moved outside the website. A new instrumental garden music track uses the existing Music setting and volume. Provenance: ElevenLabs Music v2, flow 07gwHx5Wbb5D1Tui12DF, generation 3YJcXcUzY3h1de85UlKM, created 2026-10-19; warm instrumental strings/woodwinds/marimba garden-defense score, no vocals. File SHA-256: 5516e428daa28a79dd90f7c4c79fc5ce1ec74bcffe168174f566753c2189b0f3.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/game.js — restored original, with narrow lawn, crowd, and stinger-origin hooks / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/index.html — loads crowd, presentation and store layers / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — articulated atlases, environmental art, effects, pulse and music selection / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/shop.js — full illustrated catalogue, eligible-only input and empty-Undo filtering / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/crowd.js — spawn spacing and movement separation / WEB ONLY, NOT PORTED.
+- bennyshub/apps/games/BENNYSBUGBLASTER/sounds/remastered/garden-theme.mp3 — generated instrumental music / WEB ONLY, NOT PORTED.
+- tests/bug-blaster-crowd.test.cjs — six crowd regression cases / WEB ONLY, NOT PORTED.
+- bennyshub/service-worker.js — cache version v59 / WEB ONLY, NOT PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: six crowd tests pass, covering 80 mixed bugs at 360/768/1440 widths, overtaking for 500 updates, fixed glue anchors, defender spawning and dead-enemy exclusion. Browser checks verify all 288 frames differ within their animation state, exact scorpion attack-tip/projectile coordinate equality, original WAV URLs returning HTTP 200, and original scan-access.js/style.css byte identity. Stomp/bomb/laser damage, one-hit tracking, friendly fire and RNG consumption match the original renderer. Real Space/Enter navigation passes menu → shop → level intro → gameplay → native five-second Enter-hold pause → settings → Back → resume, with fresh blank selections. Chrome gameplay screenshots inspected at 1440×960 and 768×640, and store screenshots at 1440×960, 360×640 and 320×568; no page errors. Store checks verify 14 visible cards at zero points, scan cycle Start Level → Main Menu → -1, inert blank Enter and disabled pointer clicks, earning 150 points enabling Salt Shot, purchase enabling Undo, Undo refunding the purchase, and locked prerequisites remaining inert even when affordable. Syntax checks, website build, release audit (3,817 public files), and 1,191 page references pass.
+
+Rendering remains cached 2D at the original canvas resolution; no new quality selector is needed for this measured workload. On this Windows headless Chrome session, 80-bug spacing averaged 0.215 ms/update, and cached lawn plus 80 sprite draw submissions averaged 0.137 ms/iteration (CPU submission timing, not end-to-end FPS). The six prebuilt atlases occupy about 46.4 MiB. Raspberry Pi and physical-switch hardware acceptance remain pending. No publication, Electron changes, or installer build performed.
+
 ## 2026-10-19 — One current Mini Golf thumbnail (web + PC Hub)
 
 Removed the unreferenced legacy bennysminigolf.png at the owner’s request. narbeminigolf.png remains the sole active Mini Golf thumbnail; the homepage, Hub catalog, and SwitchedGames card and Details view use that canonical artwork. SwitchedGames now references the published Benny’s Hub image directly and removes its obsolete local duplicate. The PC Hub keeps the matching image locally for offline use.

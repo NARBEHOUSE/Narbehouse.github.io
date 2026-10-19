@@ -539,7 +539,8 @@ class Enemy {
             } else {
                 target = {x: TOWER_X + TOWER_SIZE/2, y: TOWER_Y};
             }
-            enemy_projectiles.push(new EnemyProjectile(this.x, this.y, target.x, target.y, 2));
+            const muzzle = window.BugBlasterPresentation?.getStingerOrigin(this) || this;
+            enemy_projectiles.push(new EnemyProjectile(muzzle.x, muzzle.y, target.x, target.y, 2));
         }
     }
 
@@ -1029,7 +1030,7 @@ function trigger_player_stomp() {
 
 function draw_stomp_effect() {
      // Reticle
-     if (stomp_target && !stomp_target.isDead) {
+     if (!stomp_anim_active && Date.now()/1000 - last_stomp_time >= stomp_cooldown_max && stomp_target && !stomp_target.isDead) {
         ctx.save();
         ctx.translate(stomp_target.x, stomp_target.y);
         let now = Date.now() / 1000;
@@ -1197,7 +1198,9 @@ function spawn_enemies() {
                 else if (etype === "extra_large") { hp=50; speed=4; damage=10; }
                 else if (etype === "boss") { hp=100; speed=10; damage=100; } // Increased/Matched to 1hp ant speed (was 4)
                 
-                enemies.push(new Enemy(etype, hp, speed, damage));
+                const enemy = new Enemy(etype, hp, speed, damage);
+                window.BugBlasterCrowd?.placeSpawn(enemy, enemies, 80, SCREEN_WIDTH);
+                enemies.push(enemy);
             }
             last_spawn_time[etype] = current_time;
         }
@@ -1217,6 +1220,20 @@ function heal_tower() {
     return last_heal_time;
 }
 
+// Re-evaluate living targets for every volley. The fence spans the yard,
+// so the largest y is the closest to the base when health is tied.
+function select_salt_shot_target() {
+    let target = null;
+    for (const enemy of enemies) {
+        if (enemy.isDead || enemy.hp <= 0) continue;
+        if (!target || enemy.hp > target.hp ||
+            (enemy.hp === target.hp && enemy.y > target.y)) {
+            target = enemy;
+        }
+    }
+    return target;
+}
+
 function fire_tower_projectile() {
     let upgrade = buy_menu_options[0]["purchased"];
     let cooldown = (upgrade >= 1) ? Math.max(1, 10 - 2 * (upgrade - 1)) : null;
@@ -1225,17 +1242,16 @@ function fire_tower_projectile() {
 
     let current_time = Date.now() / 1000;
     if (current_time - tower_last_projectile_time >= cooldown) {
-        if (enemies.length > 0) {
-           if (!focused_enemy || !enemies.includes(focused_enemy)) {
-               focused_enemy = enemies.reduce((prev, curr) => (prev.hp > curr.hp) ? prev : curr);
-           }
+        focused_enemy = select_salt_shot_target();
+        if (focused_enemy) {
            
            for (let tower of towers) {
                let tc_x = tower.x + tower.size / 2;
                let tc_y = tower.y + tower.size / 2;
                let power = buy_menu_options[1]["purchased"];
                let damage = 1 + power;
-               tower_projectiles.push(new TowerProjectile(tc_x, tc_y, focused_enemy.x, focused_enemy.y, damage));
+               const muzzle = window.BugBlasterPresentation?.getSaltShotOrigin(tower, focused_enemy) || {x: tc_x, y: tc_y};
+               tower_projectiles.push(new TowerProjectile(muzzle.x, muzzle.y, focused_enemy.x, focused_enemy.y, damage));
            }
            tower_last_projectile_time = current_time;
            playSound('towerShoot');
@@ -1256,6 +1272,7 @@ function update_tower_projectiles() {
 
         for (let j = enemies.length - 1; j >= 0; j--) {
              let enemy = enemies[j];
+             if (enemy.isDead || enemy.hp <= 0) continue;
              let size_map = {"small": 10, "medium": 15, "large": 20, "extra_large": 25, "boss": 90};
              let enemy_radius = size_map[enemy.etype];
              let dx = enemy.x - proj.x;
@@ -1341,8 +1358,9 @@ function update_tower_units() {
     });
 
     // 2. Update Actions
+    tower_units.forEach(unit => unit.move());
+    window.BugBlasterCrowd?.resolve(tower_units, SCREEN_WIDTH);
     tower_units.forEach(unit => {
-        unit.move();
         unit.draw();
         
         if (unit.target) {
@@ -1745,7 +1763,9 @@ function draw_damage_zone() {
 
     // Garden Zone (Green with details)
     ctx.fillStyle = groundColor; 
-    ctx.fillRect(0, TOWER_Y, SCREEN_WIDTH, SCREEN_HEIGHT - TOWER_Y);
+    if (!window.BugBlasterPresentation?.drawGardenLawn()) {
+        ctx.fillRect(0, TOWER_Y, SCREEN_WIDTH, SCREEN_HEIGHT - TOWER_Y);
+    }
     
     // Draw Flowers (sorted by Y so lower ones cover higher ones)
     // Actually standard sort might be flickering if y is generated random. 
@@ -2614,6 +2634,7 @@ function draw_main_menu() {
              e.x = 40 + Math.random() * (SCREEN_WIDTH - 80);
              e.baseX = e.x; // Update baseX for zigzag
              // if (t === 'boss') e.speed *= 2.0; // REMOVED speed boost
+             window.BugBlasterCrowd?.placeSpawn(e, menu_enemies, -50, SCREEN_WIDTH);
              menu_enemies.push(e);
         }
         last_menu_spawn = now;
@@ -2638,6 +2659,13 @@ function draw_main_menu() {
             e.angle = Math.atan2(dy, dx) - Math.PI/2;
         }
 
+        if (e.y > SCREEN_HEIGHT + 50) {
+            menu_enemies.splice(i, 1);
+        }
+    }
+
+    window.BugBlasterCrowd?.resolve(menu_enemies, SCREEN_WIDTH);
+    for (const e of menu_enemies) {
         // Shoot (Scorpion/Extra Large)
         if (e.etype === 'extra_large' && !e.isDead) {
              // Init shot time if needed (should be in constructor, but menu spawning might skip if not careful, though constructor handles it)
@@ -2645,15 +2673,13 @@ function draw_main_menu() {
                  e.last_shot_time = now;
                  let targetX = e.x + (Math.random() - 0.5) * 600; 
                  let targetY = SCREEN_HEIGHT + 200;
-                 menu_projectiles.push(new EnemyProjectile(e.x, e.y, targetX, targetY, 0));
+                 const muzzle = window.BugBlasterPresentation?.getStingerOrigin(e) || e;
+                 menu_projectiles.push(new EnemyProjectile(muzzle.x, muzzle.y, targetX, targetY, 0));
              }
         }
 
-        if (e.y > SCREEN_HEIGHT + 50) {
-            menu_enemies.splice(i, 1);
-        }
     }
-    
+
     // Update Menu Projectiles
     for (let i = menu_projectiles.length - 1; i >= 0; i--) {
         let p = menu_projectiles[i];
@@ -2728,6 +2754,8 @@ function draw_main_menu() {
     ctx.fillStyle = "#4caf50"; // Base Green
     ctx.fillRect(0,0, SCREEN_WIDTH, SCREEN_HEIGHT);
     
+    window.BugBlasterPresentation?.drawLawn(true);
+
     // Draw Menu Grass
     ctx.strokeStyle = "#388e3c"; 
     ctx.lineWidth = 1;
@@ -2744,36 +2772,9 @@ function draw_main_menu() {
     // Draw Menu Projectiles
     menu_projectiles.forEach(p => p.draw());
 
-    // Draw Boot
+    // Draw the same boot used by the gameplay stomp.
     if (menu_boot.active) {
-        ctx.save();
-        ctx.translate(menu_boot.x, menu_boot.displayY - 20); 
-        
-        // Leg
-        ctx.fillStyle = "#5D4037"; // Brown Pants/Leg
-        ctx.fillRect(-15, -100, 30, 100);
-        
-        // Boot
-        ctx.fillStyle = "#3E2723"; // Dark Brown Boot
-        ctx.beginPath();
-        ctx.rect(-20, -20, 40, 40); // Heel/Ankle
-        // Toe
-        ctx.moveTo(20, 0);
-        ctx.quadraticCurveTo(50, 0, 50, 20); // Toe tip
-        ctx.lineTo(20, 20);
-        ctx.lineTo(-20, 20); // Sole line
-        ctx.lineTo(-20, -20);
-        ctx.fill();
-        
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // Treads
-        ctx.fillStyle = "#111"; // Sole
-        ctx.fillRect(-20, 20, 70, 5); 
-
-        ctx.restore();
+        window.BugBlasterPresentation?.drawBoot(menu_boot.x, menu_boot.displayY);
     }
     
     // Overlay if needed for contrast, but user wants it to look like level
@@ -3314,8 +3315,9 @@ function loop() {
             }
         }
 
+        for (const e of enemies) e.move();
+        window.BugBlasterCrowd?.resolve(enemies, SCREEN_WIDTH);
         for (let e of enemies) {
-            e.move();
             e.shoot();
             e.draw();
         }
@@ -3342,7 +3344,9 @@ function loop() {
                      if (tcy > TOWER_Y - 30) tcy = TOWER_Y - 20; 
                      
                      // Slight time/distance stagger or just spawn together
-                     tower_units.push(new TowerUnit(tcx, tcy));
+                     const unit = new TowerUnit(tcx, tcy);
+                     window.BugBlasterCrowd?.placeSpawn(unit, tower_units, tcy, SCREEN_WIDTH);
+                     tower_units.push(unit);
                  }
              }
              tower_last_unit_spawn_time = Date.now()/1000;
