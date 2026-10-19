@@ -26,6 +26,20 @@ test('missing or invalid model steers do not discard a board or cause paid repai
   }finally{await f.mf.dispose();}
  }
 });
+test('Different forwards bounded steering history and drops repeats without another provider call',async()=>{
+ const labels=['My opinion','Ask why','Tell you'],f=await fixture({board:{...board,steers:labels}});
+ try{
+  const a=await f.connect(await f.enroll()),send=body=>f.call('/apps/rtc-lite/generate',{token:a.token,body});
+  const r=await send({...sample(),avoidSteers:labels});assert.equal(r.status,200);
+  const data=await r.json();assert.equal(data.steers,undefined);assert.equal(data.general.length+data.specific.length,8);assert.equal(f.calls().length,1);
+  const prompt=f.calls()[0].data.messages[0].content;
+  assert.match(prompt,/Replace ALL THREE/);assert(prompt.includes(JSON.stringify(labels)));
+  for(const label of ['Stay home','Watch something','Tired'])assert(!prompt.includes(label));
+  for(const avoidSteers of [Array(13).fill('Old'),['x'.repeat(33)],[''],[42],'bad'])assert.equal((await send({...sample(),avoidSteers})).status,400);
+  assert.equal(f.calls().length,1);
+  assert.equal((await send({...sample(),avoidSteers:Array.from({length:12},(_,i)=>'Old '+i)})).status,200);assert.equal(f.calls().length,2);
+ }finally{await f.mf.dispose();}
+});
 test('real Worker: isolated encrypted keys, one-time proof-bound app grants and fixed RTC operations',async()=>{
  const store=await fs.mkdtemp(path.join(os.tmpdir(),'benny-byok-store-')),f=await fixture({persist:store});
  try{

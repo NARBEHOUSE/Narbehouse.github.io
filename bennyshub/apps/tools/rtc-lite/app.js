@@ -166,7 +166,7 @@
     if(!sttOptions.includes(prefs.stt))prefs.stt=sttOptions[0];
     if(!aiOptions.includes(prefs.ai))prefs.ai='cloud';
     if(![6,8,10,12].includes(prefs.justSaid))prefs.justSaid=8;
-    let defaults,consented=false,boardBusy=false,boardRevision=0,boardAbort,pendingBoard,pendingBoardJump=false,resumeAtSuggestions=false,shown=[],lastRoomId=0;
+    let defaults,consented=false,boardBusy=false,boardRevision=0,boardAbort,pendingBoard,pendingBoardJump=false,resumeAtSuggestions=false,shown=[],shownSteers=[],lastRoomId=0;
     let dictionaryFailed=false,keyboardStatusText='';
     let bioDraft=null,bioReturnPage='phrases',typed='',messageDraft='',editTarget=null,predictionRevision=0,predictionTimer,predictionAbort,pendingPredictions={},predictionShown=[],refreshPredictionRow=null;
     let testingSpeech=false,testTimer,setupSpeechBusy=false,setupAIBusy=false,setupEpoch=0,aiSetupEpoch=0,listenRevision=0,serverModels=[];
@@ -267,7 +267,7 @@
     function commitPending(keepRefresh=false){
       if(pendingBoard&&!boardFrozen()){
         const data=pendingBoard,jump=pendingBoardJump;pendingBoard=null;pendingBoardJump=false;
-        renderBoard(data);shown.push(...data.general,...data.specific);
+        renderBoard(data);shown.push(...data.general,...data.specific);rememberSteers();
         contextState.boardUsed=Math.max(contextState.boardUsed,pendingBoardContext);pendingBoardContext=0;
         if(jump)jumpToSuggestions();
       }
@@ -279,12 +279,19 @@
       renderContextStatus();
     }
     function cancelRequests(){boardAbort?.abort();predictionAbort?.abort();clearTimeout(predictionTimer);++boardRevision;++predictionRevision;boardBusy=false;pendingBoard=null;pendingBoardJump=false;resumeAtSuggestions=false;setBoardBusy(false);pendingPredictions={};pendingBoardContext=0;pendingPredictionContext={};contextState.boardRequest=contextState.keyboardRequest=null;refreshPredictionRow=null;byId('getButton').textContent='GET / REFRESH';renderContextStatus();}
-    async function getSuggestions(steer=''){
+    function rememberSteers(){
+      for(const label of steerButtons().slice(0,3).map(el=>el.textContent.trim())){
+        shownSteers=shownSteers.filter(old=>C.normalize(old)!==C.normalize(label));shownSteers.push(label);
+      }
+      shownSteers=shownSteers.slice(-C.STEER_HISTORY_LIMIT);
+    }
+    async function getSuggestions(steer='',different=false){
       if(boardBusy||pendingBoard){choice.announce('Suggestions are still loading. You can use quick answers or the keyboard.');return;}
       restoreRow();if(steer)choice.announce('Steering: '+steer);
       predictionAbort?.abort();const revision=++boardRevision,snapshot=memory.snapshot(prefs.justSaid),contextVersion=contextState.latest;contextState.boardRequest=contextVersion;
       const newest=memory.segments.filter(s=>s.speaker==='room').at(-1)?.id||lastRoomId;
-      if(newest!==lastRoomId){shown=[];lastRoomId=newest;}
+      if(newest!==lastRoomId){shown=[];shownSteers=[];lastRoomId=newest;}
+      rememberSteers();const avoidSteers=different?[...shownSteers]:[];
       shown.push(...[...document.querySelectorAll('#generalRow [data-say],#startersRow [data-say]')].map(el=>el.dataset.say));
       shown=[...new Set(shown)];
       const avoid=[...shown,...snapshot.recent.filter(s=>s.speaker==='user').map(s=>s.text)];
@@ -292,11 +299,11 @@
       renderContextStatus();
       for(const el of [...byId('generalRow').children,...byId('startersRow').children]){el.disabled=true;el.textContent='Thinking…';}
       try{
-        const result=await ai.getSuggestions(snapshot,profile(),avoid,boardAbort.signal,steer);
+        const result=await ai.getSuggestions(snapshot,profile(),avoid,boardAbort.signal,steer,avoidSteers);
         if(revision!==boardRevision||disposed)return;
         if(result.summaryValid!==false)memory.commit(result.summary,snapshot);
-        pendingBoard=result;pendingBoardContext=result.savedCount===8?0:contextVersion;byId('boardStatus').textContent=result.savedCount?'Suggestions ready, including '+result.savedCount+' saved phrases. Choose what you want to say.':'Suggestions ready. Choose what you want to say.';
-      }catch(e){if(revision!==boardRevision||disposed)return;pendingBoard=defaults;pendingBoardContext=0;byId('boardStatus').textContent=e.message+' Saved phrases are ready.';if(screen==='board'&&choice.getState()?.id==='controlsRow')choice.announce(byId('boardStatus').textContent);}
+        pendingBoard={...result,steers:C.boardSteers(result.steers,defaults.steers,avoidSteers)};pendingBoardContext=result.savedCount===8?0:contextVersion;byId('boardStatus').textContent=result.savedCount?'Suggestions ready, including '+result.savedCount+' saved phrases. Choose what you want to say.':'Suggestions ready. Choose what you want to say.';
+      }catch(e){if(revision!==boardRevision||disposed)return;pendingBoard={...defaults,steers:C.boardSteers(undefined,defaults.steers,avoidSteers)};pendingBoardContext=0;byId('boardStatus').textContent=e.message+' Saved phrases are ready.';if(screen==='board'&&choice.getState()?.id==='controlsRow')choice.announce(byId('boardStatus').textContent);}
       finally{if(revision===boardRevision){boardBusy=false;setBoardBusy(false);contextState.boardRequest=null;byId('getButton').textContent='GET / REFRESH';pendingBoardJump=!boardFrozen();commitPending();}}
     }
     function updateExtraSettings(){
@@ -495,7 +502,7 @@
       const id=button.id;
       if(button.dataset.key){restoreRow();const key=button.dataset.key;typed+=/^[A-Z]$/.test(key)?(!typed||/[.!?]\s*$/.test(typed)?key:key.toLowerCase()):key;changedTyping();return;}
       if(button.dataset.prediction){const rowId=button.parentElement.id;restoreRow();typed=C.insertPrediction(typed,button.dataset.prediction);changedTyping(rowId);return;}
-      if(/^steer[0-3]$/.test(id)){void getSuggestions(id==='steer3'?'':button.textContent.trim());return;}
+      if(/^steer[0-3]$/.test(id)){void getSuggestions(id==='steer3'?'':button.textContent.trim(),id==='steer3');return;}
       if(/^steerDefault[0-2]$/.test(id)){const index=Number(id.slice(-1));startKeyboard({key:'steer',index,label:'Steer '+(index+1),value:defaults.steers[index]});return;}
       if(/^default\d$/.test(id)){const index=Number(id.slice(7));startKeyboard({key:'default',index,label:buttonLabel(button),value:defaults[index<4?'general':'specific'][index%4]});return;}
       const pages={listeningPage:'listening',aiPage:'ai',phrasesPage:'phrases',appearancePage:'appearance',memoryPage:'memory',keyPage:'key',serverPage:'server',helpButton:'help',
@@ -558,7 +565,7 @@
         case 'highlightSetting':cycle('highlight',['hub','yellow','blue','green','purple','red','white']);applyTheme();break;
         case 'styleSetting':cycle('style',['hub','outline','full']);applyTheme();break;
         case 'sizeSetting':cycle('size',['hub','normal','large','larger']);applyTheme();break;
-        case 'clearMemory':cancelRequests();memory.clear();shown=[];lastRoomId=0;messageDraft=typed='';showLastHeard();renderBoard(defaults);
+        case 'clearMemory':cancelRequests();memory.clear();shown=[];shownSteers=[];lastRoomId=0;messageDraft=typed='';showLastHeard();renderBoard(defaults);
           await speech.stop();if(prefs.listening)void startListening();operation('memory','Conversation cleared.');choice.announce('Conversation cleared.');return;
         case 'openHelp':if(window.electronAPI?.openExternal)window.electronAPI.openExternal('https://narbefoundation.org');else window.open('https://narbefoundation.org','_blank','noopener,noreferrer');return;
         default:return false;

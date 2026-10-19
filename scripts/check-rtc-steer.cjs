@@ -12,7 +12,7 @@ window.__scanSpeech=[];window.__publicSpeech=[];window.__tickets=[];window.__hol
 voice.speak=text=>{__scanSpeech.push(String(text));let finish;const finished=new Promise(resolve=>finish=reason=>resolve({started:true,reason}));if(__holdSpeech)__tickets.push(finish);else finish('end');return {started:Promise.resolve(true),finished,cancel:()=>finish('cancelled')};};
 NarbeCommunicationSpeech.isEnabled=()=>true;NarbeCommunicationSpeech.prefetch=()=>{};
 NarbeCommunicationSpeech.speak=text=>{__publicSpeech.push(text);return {finished:Promise.resolve({reason:'end'})};};
-const originalGet=ai.getSuggestions.bind(ai);ai.getSuggestions=(snapshot,profile,avoid,signal,steer)=>{__requests.push({snapshot,avoid,steer});return originalGet(snapshot,profile,avoid,signal,steer);};
+const originalGet=ai.getSuggestions.bind(ai);ai.getSuggestions=(snapshot,profile,avoid,signal,steer,avoidSteers)=>{__requests.push({snapshot,avoid,steer,avoidSteers});return originalGet(snapshot,profile,avoid,signal,steer,avoidSteers);};
 ai.request=(prompt,schema)=>new Promise((resolve,reject)=>{__rtc.response={resolve:data=>resolve(JSON.stringify(data)),reject:message=>reject(Error(message)),prompt,schema};});
 ai.isAvailable=()=>false;prefs.listening=false;prefs.ai='server';
 `;
@@ -62,6 +62,16 @@ const board=(n,steers=['Stay home','Watch something','Tired'])=>({general:[`A ne
   await reply(board(i+2));assert.equal((await state()).id,'generalRow');
  }
  assert((await run(()=>__requests.at(-1).avoid)).includes('A new plan 1'));checks.push('Three dynamic steers and Different request once, avoid prior boards, never speak or log a steer');
+ for(let i=0;i<6;i++){
+  const before=(await page.locator('#steerRow button').allTextContents()).slice(0,3),count=await run(()=>__requests.length);
+  await start('steer3');const request=await run(()=>__requests.at(-1));assert.equal(request.steer,'');assert(request.avoidSteers.length<=12);assert(before.every(label=>request.avoidSteers.includes(label)));
+  await reply(board(100+i,before));const after=(await page.locator('#steerRow button').allTextContents()).slice(0,3);
+  assert.equal(after.length,3);assert(after.every(label=>!request.avoidSteers.includes(label)));assert.equal(await run(()=>__requests.length),count+1);assert.equal(await page.locator('#general0').textContent(),'A new plan '+(100+i));
+ }
+ const beforeFailure=(await page.locator('#steerRow button').allTextContents()).slice(0,3);
+ await start('steer3');await run(()=>__rtc.response.reject('Fixture AI unavailable'));await page.waitForFunction(()=>document.getElementById('getButton').getAttribute('aria-busy')==='false');
+ assert((await page.locator('#steerRow button').allTextContents()).slice(0,3).every(label=>!beforeFailure.includes(label)));
+ assert.deepEqual(await run(()=>__publicSpeech),[]);checks.push('Different replaces all three steers across repeated model output and provider failure without extra calls');
  await start();await run(()=>{__rtc.choice.align('quickRow');__rtc.choice.select();});assert.equal((await state()).id,'quickYes');
  await reply(board(6));assert.equal((await state()).id,'quickYes');assert.equal(await page.locator('#general0').textContent(),'Thinking…');
  for(let i=0;i<4;i++)await key('Space');assert((await state()).backStop);await key('Enter');
@@ -96,8 +106,11 @@ const board=(n,steers=['Stay home','Watch something','Tired'])=>({general:[`A ne
  checks.push('Steer row live narration, forward/reverse Back stop, and recurring root blank');
  await key('Enter');await run(()=>{__rtc.response=null;});await key('Enter');await page.waitForFunction(()=>!!__rtc.response);
  assert.equal(await run(()=>__requests.at(-1).steer),'How I feel');await reply(board(10));assert.equal((await state()).id,'generalRow');
- await start();await run(()=>{__rtc.choice.align('steerRow');__rtc.choice.select();});await reply(board(11));assert.equal((await state()).id,'steer0');assert.equal(await page.locator('#general0').textContent(),'Thinking…');
+ const beforeDeferred=(await page.locator('#steerRow button').allTextContents()).slice(0,3);
+ await start('steer3');await run(()=>{__rtc.choice.align('steerRow');__rtc.choice.select();});await reply(board(11,beforeDeferred));assert.equal((await state()).id,'steer0');assert.equal(await page.locator('#general0').textContent(),'Thinking…');
+ assert.deepEqual((await page.locator('#steerRow button').allTextContents()).slice(0,3),beforeDeferred);
  for(let i=0;i<4;i++)await key('Space');await key('Enter');assert.equal((await state()).id,'steerRow');assert.equal(await page.locator('#general0').textContent(),'A new plan 11');
+ assert((await page.locator('#steerRow button').allTextContents()).slice(0,3).every(label=>!beforeDeferred.includes(label)));
  checks.push('Switch-selected steer and deferred completion inside the Steer row');
  await start();await run(()=>{NarbeScanManager.updateSettings({autoScan:true,waitForSpeech:true,scanInterval:1000});__holdSpeech=true;});await reply(board(12));
  assert.equal((await state()).id,'generalRow');await page.waitForTimeout(1100);assert.equal((await state()).id,'generalRow');
@@ -106,6 +119,9 @@ const board=(n,steers=['Stay home','Watch something','Tired'])=>({general:[`A ne
  await run(()=>NarbeScanManager.updateSettings({autoScan:false,waitForSpeech:false}));checks.push('Auto jump owns full row narration and waits for completion plus a full interval');
  await start();await open('memory');await page.locator('#clearMemory').click();await page.evaluate(data=>__rtc.response.resolve(data),board(13));await open('board');
  assert.equal(await page.locator('#general0').textContent(),'Hello friend');assert.equal((await state()).index,-1);checks.push('Clear cancels stale boards without a later jump');
+ await run(()=>__rtc.speech.onText('I had a frustrating day.',Date.now(),10));await start('steer3');
+ assert.deepEqual(await run(()=>__requests.at(-1).avoidSteers),['How I feel','I want','Ask you']);await reply(board(200,['My opinion','Ask why','Tell you']));
+ checks.push('New room speech resets old steering history while excluding the currently displayed three');
  const layouts=[];
  for(const [width,height] of [[800,600],[1024,768],[1280,800],[1366,900]]){
   if(native)await electron.evaluate(({BrowserWindow},{width,height})=>BrowserWindow.getAllWindows()[0].setContentSize(width,height),{width,height});else await page.setViewportSize({width,height});

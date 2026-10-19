@@ -47,12 +47,12 @@ class AI{
   };
   const result=this.queue.then(run);this.queue=result.catch(()=>{});return result;
  }
- async getSuggestions(snapshot,profile,avoid,signal,steer=''){
-  if(this.prefs().ai==='cloud')return C.validateSuggestions(await window.RtcByok.generate({op:'board',snapshot,profile,avoid:avoid.slice(-80),...(steer?{steer}:{})},signal),avoid);
-  let prompt=C.boardPrompt(snapshot,profile,avoid,steer);const candidates={general:[],specific:[]};
+ async getSuggestions(snapshot,profile,avoid,signal,steer='',avoidSteers=[]){
+  if(this.prefs().ai==='cloud')return C.validateSuggestions(await window.RtcByok.generate({op:'board',snapshot,profile,avoid:avoid.slice(-80),...(steer?{steer}:{}),...(avoidSteers.length?{avoidSteers:avoidSteers.slice(-C.STEER_HISTORY_LIMIT)}:{})},signal),avoid,avoidSteers);
+  let prompt=C.boardPrompt(snapshot,profile,avoid,steer,avoidSteers);const candidates={general:[],specific:[]};
   for(let attempt=0;attempt<2;attempt++){
    const raw=await this.request(prompt,C.BOARD_SCHEMA,false,signal);
-   try{return C.validateSuggestions(raw,avoid);}catch(e){
+   try{return C.validateSuggestions(raw,avoid,avoidSteers);}catch(e){
     const usable=C.usableBoard(raw,avoid);for(const key of ['general','specific'])candidates[key].push(...usable[key]);
     if(attempt){const recovered=C.completeBoard(candidates,this.prefs().defaults);if(recovered)return recovered;throw e;}
     prompt+='\nThe response below needs correction: '+JSON.stringify(raw)+'\nProblem: '+e.message+' Replace unusable choices with different short things the person could actually say aloud in this exchange. Reply naturally even to a simple greeting. Remove task commentary, missing-context notices, purpose/speaker labels and repeated or standalone quick answers. Return the full corrected JSON object.';

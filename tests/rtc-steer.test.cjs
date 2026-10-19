@@ -9,6 +9,29 @@ test('steer schema, prompt direction, context, and bounded history',()=>{
  assert.match(prompt,/CURRENT eight suggestions do not cover/);assert(!prompt.includes('"Previous 0"'));assert(prompt.includes('"Previous 99"'));
  assert(!C.boardPrompt(snapshot(),{},[]).includes('USER wants replies about:'));
 });
+test('steering instructions ask for broad purposes without priming the old example set',()=>{
+ for(const room of ['What do you want to do today?','I had a frustrating day.','That movie was hilarious.']){
+  const memory=new C.Memory();memory.add('room','speech',room);
+  const prompt=C.boardPrompt(memory.snapshot(),{},[],'',['My opinion','Ask why','Tell you']);
+  assert(prompt.includes(JSON.stringify(room)));assert.match(prompt,/broad conversational directions/);
+  assert.match(prompt,/Replace ALL THREE/);assert.match(prompt,/"My opinion","Ask why","Tell you"/);
+  for(const label of ['Stay home','Watch something','Tired'])assert(!prompt.includes(label));
+ }
+ const prompt=C.boardPrompt(snapshot(),{},[],'',Array.from({length:20},(_,i)=>'Old '+i));
+ assert(!prompt.includes('"Old 7"'));assert(prompt.includes('"Old 8"'));
+});
+test('Different replaces all three recent labels even with repeated, invalid, or unavailable AI',()=>{
+ let history=[...C.DEFAULTS.steers];
+ for(let i=0;i<30;i++){
+  const before=history.slice(-C.STEER_HISTORY_LIMIT);
+  const next=C.boardSteers(i%2?before.slice(-3):undefined,C.DEFAULTS.steers,before);
+  assert.equal(next.length,3);assert.deepEqual(C.validateSteers(next,before),next);
+  history.push(...next);
+ }
+ assert.deepEqual(C.boardSteers(undefined,['Music','Food','Rest']),['Music','Food','Rest']);
+ const repeated=C.validateBoard(board(),[],board().steers);
+ assert.equal(repeated.steers,undefined);assert.equal(repeated.general.length+repeated.specific.length,8);
+});
 test('invalid steers preserve eight valid suggestions and fall back to personal defaults',()=>{
  const fallback=['Music','Family','Rest'];
  for(const steers of [undefined,null,[],['Short'],['Same','same!','Rest'],['Different','Food','Rest'],['one two three four','Food','Rest'],['x'.repeat(33),'Food','Rest'],['line\nbreak','Food','Rest'],['A different plan','Food','Rest'],[{},'Food','Rest']]){
@@ -24,7 +47,7 @@ test('editable steer defaults normalize spacing and reject blank, long, duplicat
  assert.deepEqual(C.boardSteers(['bad'],['also bad']),['How I feel','I want','Ask you']);
 });
 for(const provider of ['cloud','chrome','server'])test(provider+' preserves steers in the same request, tolerates invalid steers, and passes the direction',async()=>{
- const prefs={ai:provider,serverModel:'fixture',defaults:{...C.DEFAULTS,steers:['Music','Food','Rest']}},calls=[],responses=[board(),{...board(),steers:['invalid']}];
+ const prefs={ai:provider,serverModel:'fixture',defaults:{...C.DEFAULTS,steers:['Music','Food','Rest']}},calls=[],responses=[board(),{...board(),steers:['invalid']},board()];
  const respond=async(prompt,options)=>{calls.push({prompt,options});return JSON.stringify(responses.shift());};
  const LanguageModel={availability:async()=> 'available',create:async()=>({prompt:respond,destroy(){}})};
  const window={RtcCore:C,LanguageModel,RtcByok:{connection:()=>({provider:'openai'}),generate:respond},RtcServer:{generate:async(p,prompt,schema,prediction,signal)=>respond(prompt,{schema,prediction,signal})}};
@@ -39,4 +62,8 @@ for(const provider of ['cloud','chrome','server'])test(provider+' preserves stee
  else assert.match(calls[0].prompt,/USER wants replies about: "Stay home"/);
  const fallback=await ai.getSuggestions(snapshot(),{},[],new AbortController().signal);
  assert.equal(calls.length,2,'Bad steers must not trigger a repair request');assert.equal(fallback.general.length,4);assert.equal(fallback.steers,undefined);
+ const repeated=await ai.getSuggestions(snapshot(),{},[],new AbortController().signal,'',board().steers);
+ assert.equal(calls.length,3,'Repeated steers must not trigger a repair request');assert.equal(repeated.steers,undefined);assert.equal(repeated.specific.length,4);
+ if(provider==='cloud'&&!desktop)assert.deepEqual(Array.from(calls[2].prompt.avoidSteers),board().steers);
+ else {assert.match(calls[2].prompt,/Replace ALL THREE/);assert(calls[2].prompt.includes(JSON.stringify(board().steers)));}
 });

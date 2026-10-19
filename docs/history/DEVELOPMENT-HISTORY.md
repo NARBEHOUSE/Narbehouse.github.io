@@ -2,6 +2,28 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-19 — General steering and fresh Different options (web + PC Hub)
+
+The owner reported the model repeatedly returning the prompt example labels, then clarified that steers should be general and Different should replace all three options. Removed the concrete steering example from both prompt instructions and output shape. The model now chooses broad communication purposes. Different sends up to 12 recently displayed labels; normalized repeats are omitted without another provider call and the client rotates general fallback directions if necessary, including on provider failure. Current labels are included even after an exchange reset. History records committed rows, resets for new room speech/Clear, and remains separate from conversation memory. Saved personal defaults remain the regular fallback. Existing scan commit/parking/Back behavior is retained.
+
+Scan classification: **“If Ben stops pressing, does anything in the game keep happening?” No = CHOICE.** No scan-controller changes.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/tools/rtc-lite/core.js — broad prompt, bounded steer avoidance and fallback rotation / BOTH, PORTED.
+- bennyshub/apps/tools/rtc-lite/app.js — displayed steer history and Different request/fallback / BOTH, PORTED.
+- bennyshub/apps/tools/rtc-lite/providers.js — optional steering history through cloud/local calls / BOTH, PORTED with native key bridge preserved.
+- bennyshub/apps/tools/rtc-lite/README.md — steering behavior / BOTH, PORTED.
+- tests/rtc-steer.test.cjs — prompt regression, repeated/failing AI rotation and provider forwarding / BOTH, PORTED.
+- scripts/check-rtc-steer.cjs — actual Different rotation, deferred row and history reset checks / WEB harness also exercises PC Hub Electron.
+- workers/byok/src/rtc.ts — optional bounded avoidSteers contract / WEB ONLY.
+- workers/byok/tests/worker.test.mjs — real Worker forwarding, validation and no repair for repeats / WEB ONLY.
+- workers/byok/README.md — protocol and deployment notes / WEB ONLY.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY; native record is ELECTRON-SCAN-UPGRADE.md.
+
+Verification: 336/336 website tests; TypeScript check and 8/8 real workerd tests; the existing browser-to-Worker/Hub launch suite; 15 browser scenarios and the same 15 in native Electron with actual switch controls; 54/54 applied PC Hub logic/speech/steer checks. The new scenarios force repeated model labels for six Different requests, provider failure, a deferred update inside the Steer row, and new-room history reset. All four viewport sizes fit. Website build, release audit and 1,186 Pages links pass. Model responses in tests are fixtures, so generality/relevance is prompt-guided and still depends on the selected model; exact normalized repeat avoidance and fallback rotation are enforced by code. No paid provider call or installer rebuild. Backups/reports: ../tmp/rtc-steer-general-20261019.
+
+Rollout: the owner’s existing website/Worker publication authorization continues for this correction. PC Hub source was applied and verified against the tested staged bytes. Worker version 15bc240d-52b3-435e-9738-d5fdefe0f23a is deployed with existing variables/secrets preserved; health reports ready and website CORS preflight returns 204. This source revision is the matching GitHub Pages release.
+
 ## 2026-10-19 — RTC Lite Steer row, editable defaults, and suggestion focus (web + PC Hub)
 
 Scope: owner-supplied Steer requirements, explicitly extended by “make sure works on PC hub too.” Initial brief status: **Electron port: pending**. That status is superseded for this feature by the authorized PC Hub implementation. The PC Hub cloud-key/native speech integrations are preserved; the web Worker remains independent. After local verification, the owner explicitly requested website publication and the Cloudflare Worker update. No installer rebuild is included.
