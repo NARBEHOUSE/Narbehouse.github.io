@@ -2,6 +2,16 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-19 — One current Mini Golf thumbnail (web + PC Hub)
+
+Removed the unreferenced legacy bennysminigolf.png at the owner’s request. narbeminigolf.png remains the sole active Mini Golf thumbnail; the homepage, Hub catalog, and SwitchedGames card and Details view use that canonical artwork. SwitchedGames now references the published Benny’s Hub image directly and removes its obsolete local duplicate. The PC Hub keeps the matching image locally for offline use.
+
+Changed files (scope / Electron port flag):
+- bennyshub/images/games/bennysminigolf.png — remove unused old thumbnail / BOTH, PORTED.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY; desktop record is ELECTRON-SCAN-UPGRADE.md.
+
+Verification: no active source references to the deleted legacy thumbnail; canonical web and PC images have identical SHA-256 hashes. SwitchedGames card and Details render the 1366 × 768 canonical image, all 30 catalog entries retain their launch URLs and feature flags, and no page errors occur. Website build, release audit (3,813 files) and 1,188 page-reference checks pass. The SwitchedGames files and publication are logged in that repository’s CHANGELOG.md. Previous release archives remain unchanged; no installer rebuilt. Backup: ../tmp/minigolf-18-20261019/switchedgames-thumbnail/before/.
+
 ## 2026-10-19 — General steering and fresh Different options (web + PC Hub)
 
 The owner reported the model repeatedly returning the prompt example labels, then clarified that steers should be general and Different should replace all three options. Removed the concrete steering example from both prompt instructions and output shape. The model now chooses broad communication purposes. Different sends up to 12 recently displayed labels; normalized repeats are omitted without another provider call and the client rotates general fallback directions if necessary, including on provider failure. Current labels are included even after an exchange reset. History records committed rows, resets for new room speech/Clear, and remains separate from conversation memory. Saved personal defaults remain the regular fallback. Existing scan commit/parking/Back behavior is retained.
