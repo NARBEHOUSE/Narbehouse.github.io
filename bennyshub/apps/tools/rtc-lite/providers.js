@@ -47,9 +47,9 @@ class AI{
   };
   const result=this.queue.then(run);this.queue=result.catch(()=>{});return result;
  }
- async getSuggestions(snapshot,profile,avoid,signal){
-  if(this.prefs().ai==='cloud')return C.validateSuggestions(await window.RtcByok.generate({op:'board',snapshot,profile,avoid},signal),avoid);
-  let prompt=C.boardPrompt(snapshot,profile,avoid);const candidates={general:[],specific:[]};
+ async getSuggestions(snapshot,profile,avoid,signal,steer=''){
+  if(this.prefs().ai==='cloud')return C.validateSuggestions(await window.RtcByok.generate({op:'board',snapshot,profile,avoid:avoid.slice(-80),...(steer?{steer}:{})},signal),avoid);
+  let prompt=C.boardPrompt(snapshot,profile,avoid,steer);const candidates={general:[],specific:[]};
   for(let attempt=0;attempt<2;attempt++){
    const raw=await this.request(prompt,C.BOARD_SCHEMA,false,signal);
    try{return C.validateSuggestions(raw,avoid);}catch(e){

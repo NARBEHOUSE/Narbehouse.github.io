@@ -3,7 +3,29 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fixture,key,random,hash,sample } from './fixture.mjs';
+import { fixture,key,random,hash,sample,board } from './fixture.mjs';
+test('steered boards keep one provider call, bounded input, and backward-compatible optional steers',async()=>{
+ const f=await fixture({board:{...board,steers:['Stay home','Watch something','Tired']}});try{
+  const a=await f.connect(await f.enroll());
+  const send=body=>f.call('/apps/rtc-lite/generate',{token:a.token,body});
+  const r=await send({...sample(),steer:'  Stay home  ',avoid:Array.from({length:80},(_,i)=>'Earlier '+i)});
+  assert.equal(r.status,200);assert.deepEqual((await r.json()).steers,['Stay home','Watch something','Tired']);assert.equal(f.calls().length,1);
+  assert.match(f.calls()[0].data.messages[0].content,/USER wants replies about: "Stay home"/);
+  assert.match(f.calls()[0].data.messages[0].content,/Would you like lunch in the park/);
+  assert.equal((await send(sample())).status,200);assert.equal(f.calls().length,2);
+  assert(!f.calls()[1].data.messages[0].content.includes('USER wants replies about:'));
+  for(const steer of ['x'.repeat(33),[],null,42])assert.equal((await send({...sample(),steer})).status,400);
+  assert.equal((await send({...sample(),avoid:Array(81).fill('Earlier')})).status,400);assert.equal(f.calls().length,2);
+ }finally{await f.mf.dispose();}
+});
+test('missing or invalid model steers do not discard a board or cause paid repairs',async()=>{
+ for(const steers of [undefined,['too many words in this steer','Music','Rest'],['Different','Food','Rest']]){
+  const f=await fixture({board:{...board,steers}});try{
+   const a=await f.connect(await f.enroll()),r=await f.call('/apps/rtc-lite/generate',{token:a.token,body:sample()});
+   assert.equal(r.status,200);const data=await r.json();assert.equal(data.general.length+data.specific.length,8);assert.equal(data.steers,undefined);assert.equal(f.calls().length,1);
+  }finally{await f.mf.dispose();}
+ }
+});
 test('real Worker: isolated encrypted keys, one-time proof-bound app grants and fixed RTC operations',async()=>{
  const store=await fs.mkdtemp(path.join(os.tmpdir(),'benny-byok-store-')),f=await fixture({persist:store});
  try{

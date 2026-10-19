@@ -2,7 +2,7 @@ import C from '../../../bennyshub/apps/tools/rtc-lite/core.js';
 import { fail, record, text, readJson, type Provider } from './util';
 type Segment={speaker:'room'|'user';source:string;text:string};
 type Snapshot={summary:string;recent:Segment[];justSaid:Segment[];unsummarized:Segment[]};
-export type Input={id:string;op:'board'|'predictions';snapshot:Snapshot;profile:{bio:string;personality:object;interests:object;profanity:boolean};typed:string;avoid:string[];target:'both'|'words'|'phrases';purpose:'conversation'|'bio'|'announcement'|'default'};
+export type Input={id:string;op:'board'|'predictions';steer?:string;snapshot:Snapshot;profile:{bio:string;personality:object;interests:object;profanity:boolean};typed:string;avoid:string[];target:'both'|'words'|'phrases';purpose:'conversation'|'bio'|'announcement'|'default'};
 function segments(value:unknown):Segment[]{if(!Array.isArray(value)||value.length>40)fail(400,'Too much conversation context.');return value.map(raw=>{const s=record(raw);if(s.speaker!=='room'&&s.speaker!=='user')fail(400,'Invalid speaker.');return {speaker:s.speaker,source:text(s.source??'speech',30),text:text(s.text,600)};});}
 export function input(value:unknown):Input{
  const d=record(value),s=record(d.snapshot),p=record(d.profile),id=text(d.id,36,true);
@@ -13,12 +13,12 @@ export function input(value:unknown):Input{
  const target=d.target??'both',purpose=d.purpose??'conversation';
  if(target!=='both'&&target!=='words'&&target!=='phrases')fail(400,'Invalid prediction row.');
  if(!['conversation','bio','announcement','default'].includes(String(purpose)))fail(400,'Invalid editing mode.');
- return {id,op:d.op,snapshot:{summary:text(s.summary??'',800),recent:segments(s.recent??[]),justSaid:segments(s.justSaid??[]),unsummarized:segments(s.unsummarized??[])},
+ return {id,op:d.op,...(d.op==='board'&&d.steer!==undefined?{steer:text(d.steer,C.STEER_MAX_LENGTH).trim()}:{}),snapshot:{summary:text(s.summary??'',800),recent:segments(s.recent??[]),justSaid:segments(s.justSaid??[]),unsummarized:segments(s.unsummarized??[])},
  profile:{bio:text(p.bio??'',1500),personality:smallObject(p.personality,500),interests:smallObject(p.interests,400),profanity:p.profanity===true},
  typed:text(d.typed??'',1500),avoid:avoid.map(v=>text(v,100)),target,purpose:purpose as Input['purpose']};
 }
 export async function generate(d:Input,p:Provider,key:string,model:string,beforeCall:()=>Promise<void>){
- let prompt=d.op==='board'?C.boardPrompt(d.snapshot,d.profile,d.avoid):C.predictionPrompt(d.snapshot,d.profile,d.typed,d.avoid,d.purpose);
+ let prompt=d.op==='board'?C.boardPrompt(d.snapshot,d.profile,d.avoid,d.steer):C.predictionPrompt(d.snapshot,d.profile,d.typed,d.avoid,d.purpose);
  if(prompt.length>20000)fail(413,'Conversation context is too large. Clear older conversation and try again.');
  const schema=d.op==='board'?C.BOARD_SCHEMA:C.PREDICT_SCHEMA, maxTokens=d.op==='board'?900:400;
  for(let attempt=0;attempt<2;attempt++){

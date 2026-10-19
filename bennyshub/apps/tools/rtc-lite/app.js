@@ -84,6 +84,7 @@
       NarbeCommunicationSpeech.stop();
       voice.cancel();
       if(screen==='keyboard'&&next!=='keyboard'){++predictionRevision;predictionAbort?.abort();clearTimeout(predictionTimer);pendingPredictions={};pendingPredictionContext={};contextState.keyboardRequest=null;refreshPredictionRow=null;}
+      resumeAtSuggestions = false;
       screen = next;
       document.querySelectorAll('.screen').forEach(el=>el.hidden=el.id!==screen+'Screen');
       updateSettings();
@@ -165,7 +166,7 @@
     if(!sttOptions.includes(prefs.stt))prefs.stt=sttOptions[0];
     if(!aiOptions.includes(prefs.ai))prefs.ai='cloud';
     if(![6,8,10,12].includes(prefs.justSaid))prefs.justSaid=8;
-    let defaults,consented=false,boardBusy=false,boardRevision=0,boardAbort,pendingBoard,shown=[],lastRoomId=0;
+    let defaults,consented=false,boardBusy=false,boardRevision=0,boardAbort,pendingBoard,pendingBoardJump=false,resumeAtSuggestions=false,shown=[],lastRoomId=0;
     let dictionaryFailed=false,keyboardStatusText='';
     let bioDraft=null,bioReturnPage='phrases',typed='',messageDraft='',editTarget=null,predictionRevision=0,predictionTimer,predictionAbort,pendingPredictions={},predictionShown=[],refreshPredictionRow=null;
     let testingSpeech=false,testTimer,setupSpeechBusy=false,setupAIBusy=false,setupEpoch=0,aiSetupEpoch=0,listenRevision=0,serverModels=[];
@@ -236,13 +237,40 @@
     function initDefaults(){
       const initial={general:[0,1,2,3].map(i=>byId('general'+i).dataset.say),specific:[0,1,2,3].map(i=>byId('starter'+i).dataset.say)};
       try{defaults=C.validateBoard({...prefs.defaults,summary:''});}catch{defaults=initial;}
-      defaults={general:[...defaults.general],specific:[...defaults.specific]};renderBoard(defaults);
+      defaults={general:[...defaults.general],specific:[...defaults.specific],steers:C.boardSteers(prefs.defaults?.steers)};renderBoard(defaults);
     }
-    function renderBoard(data){for(const [key,prefix] of [['general','general'],['specific','starter']])data[key].forEach((text,i)=>{const el=byId(prefix+i);el.textContent=el.dataset.say=text;el.disabled=false;});fitBoardText();prepareVisibleSpeech();}
+    function renderBoard(data){for(const [key,prefix] of [['general','general'],['specific','starter']])data[key].forEach((text,i)=>{const el=byId(prefix+i);el.textContent=el.dataset.say=text;el.disabled=false;});
+      C.boardSteers(data.steers,defaults?.steers).forEach((text,i)=>{byId('steer'+i).textContent=text;});
+      setBoardBusy(false);fitBoardText();prepareVisibleSpeech();
+    }
+    function setBoardBusy(busy){
+      for(const el of [byId('getButton'),...steerButtons()])el.setAttribute('aria-busy',String(busy));
+    }
+    function steerButtons(){return [...byId('steerRow').querySelectorAll('button')];}
+    // Keep parking intact; the next Enter resumes at the new suggestions only.
+    function jumpToSuggestions(){
+      if(screen!=='board'||choice.getState().depth)return;
+      if(choice.getState().parked){resumeAtSuggestions=true;return;}
+      if(choice.getState().id==='generalRow')choice.announce();else choice.align('generalRow');
+    }
+    function selectChoice(){
+      if(screen==='board'&&resumeAtSuggestions&&choice.getState().parked){
+        resumeAtSuggestions=false;silentRestore=true;
+        try{choice.select();}finally{silentRestore=false;}
+        jumpToSuggestions();return;
+      }
+      choice.select();
+    }
     function predictionFrozen(rowId){if(screen!=='keyboard')return true;const state=choice?.getState(),row=choice?.context?.rowId||state?.id;return row===rowId&&(state?.depth>0||state?.parked);}
-    function boardFrozen(){if(screen!=='board')return true;const row=choice?.context?.rowId||choice?.getState()?.id;return ['generalRow','startersRow'].includes(row);}
+    // Every entered row owns its choices until the user selects or returns via Back.
+    function boardFrozen(){return screen!=='board'||choice?.getState()?.depth>0;}
     function commitPending(keepRefresh=false){
-      if(pendingBoard&&!boardFrozen()){const data=pendingBoard;pendingBoard=null;renderBoard(data);contextState.boardUsed=Math.max(contextState.boardUsed,pendingBoardContext);pendingBoardContext=0;}
+      if(pendingBoard&&!boardFrozen()){
+        const data=pendingBoard,jump=pendingBoardJump;pendingBoard=null;pendingBoardJump=false;
+        renderBoard(data);shown.push(...data.general,...data.specific);
+        contextState.boardUsed=Math.max(contextState.boardUsed,pendingBoardContext);pendingBoardContext=0;
+        if(jump)jumpToSuggestions();
+      }
       for(const [rowId,words] of Object.entries(pendingPredictions)){
         if(predictionFrozen(rowId))continue;
         delete pendingPredictions[rowId];renderPredictionRow(rowId,words);contextState.keyboardUsed=Math.max(contextState.keyboardUsed,pendingPredictionContext[rowId]||0);delete pendingPredictionContext[rowId];
@@ -250,30 +278,33 @@
       }
       renderContextStatus();
     }
-    function cancelRequests(){boardAbort?.abort();predictionAbort?.abort();clearTimeout(predictionTimer);++boardRevision;++predictionRevision;boardBusy=false;pendingBoard=null;pendingPredictions={};pendingBoardContext=0;pendingPredictionContext={};contextState.boardRequest=contextState.keyboardRequest=null;refreshPredictionRow=null;byId('getButton').textContent='GET / REFRESH';renderContextStatus();}
-    async function getSuggestions(){
-      restoreRow();if(boardBusy){choice.announce('Suggestions are still loading. You can use quick answers or the keyboard.');return;}
+    function cancelRequests(){boardAbort?.abort();predictionAbort?.abort();clearTimeout(predictionTimer);++boardRevision;++predictionRevision;boardBusy=false;pendingBoard=null;pendingBoardJump=false;resumeAtSuggestions=false;setBoardBusy(false);pendingPredictions={};pendingBoardContext=0;pendingPredictionContext={};contextState.boardRequest=contextState.keyboardRequest=null;refreshPredictionRow=null;byId('getButton').textContent='GET / REFRESH';renderContextStatus();}
+    async function getSuggestions(steer=''){
+      if(boardBusy||pendingBoard){choice.announce('Suggestions are still loading. You can use quick answers or the keyboard.');return;}
+      restoreRow();if(steer)choice.announce('Steering: '+steer);
       predictionAbort?.abort();const revision=++boardRevision,snapshot=memory.snapshot(prefs.justSaid),contextVersion=contextState.latest;contextState.boardRequest=contextVersion;
-      const newest=snapshot.recent.filter(s=>s.speaker==='room').at(-1)?.id||0;
+      const newest=memory.segments.filter(s=>s.speaker==='room').at(-1)?.id||lastRoomId;
       if(newest!==lastRoomId){shown=[];lastRoomId=newest;}
+      shown.push(...[...document.querySelectorAll('#generalRow [data-say],#startersRow [data-say]')].map(el=>el.dataset.say));
+      shown=[...new Set(shown)];
       const avoid=[...shown,...snapshot.recent.filter(s=>s.speaker==='user').map(s=>s.text)];
-      boardBusy=true;boardAbort=new AbortController();byId('getButton').textContent='GET · THINKING…';byId('boardStatus').textContent='Thinking… Quick answers and keyboard are ready.';
+      boardBusy=true;setBoardBusy(true);boardAbort=new AbortController();byId('getButton').textContent='GET · THINKING…';byId('boardStatus').textContent='Thinking… Quick answers and keyboard are ready.';
       renderContextStatus();
       for(const el of [...byId('generalRow').children,...byId('startersRow').children]){el.disabled=true;el.textContent='Thinking…';}
       try{
-        const result=await ai.getSuggestions(snapshot,profile(),avoid,boardAbort.signal);
+        const result=await ai.getSuggestions(snapshot,profile(),avoid,boardAbort.signal,steer);
         if(revision!==boardRevision||disposed)return;
-        if(result.summaryValid!==false)memory.commit(result.summary,snapshot);shown.push(...result.general,...result.specific);shown=shown.slice(-160);
+        if(result.summaryValid!==false)memory.commit(result.summary,snapshot);
         pendingBoard=result;pendingBoardContext=result.savedCount===8?0:contextVersion;byId('boardStatus').textContent=result.savedCount?'Suggestions ready, including '+result.savedCount+' saved phrases. Choose what you want to say.':'Suggestions ready. Choose what you want to say.';
       }catch(e){if(revision!==boardRevision||disposed)return;pendingBoard=defaults;pendingBoardContext=0;byId('boardStatus').textContent=e.message+' Saved phrases are ready.';if(screen==='board'&&choice.getState()?.id==='controlsRow')choice.announce(byId('boardStatus').textContent);}
-      finally{if(revision===boardRevision){boardBusy=false;contextState.boardRequest=null;byId('getButton').textContent='GET / REFRESH';commitPending();}}
+      finally{if(revision===boardRevision){boardBusy=false;setBoardBusy(false);contextState.boardRequest=null;byId('getButton').textContent='GET / REFRESH';pendingBoardJump=!boardFrozen();commitPending();}}
     }
     function updateExtraSettings(){
       const values={listeningSetting:prefs.listening?'On':'Off',sttSetting:speech.name(prefs.stt),aiSetting:({chrome:'Chrome local AI · Gemini Nano',cloud:'Cloud API · '+ai.cloudName(),server:'Local server API · '+(prefs.serverType==='openai'?'OpenAI compatible':'Ollama'),off:'Off'})[prefs.ai],serverTypeSetting:prefs.serverType==='openai'?'OpenAI compatible (LM Studio, etc.)':'Ollama',serverModelSetting:prefs.serverModel||'Load models, then choose one',
         windowSetting:prefs.justSaid+' seconds',profanitySetting:prefs.profanity?'Allowed':'Off',
         bioPage:effectiveBio()?'Bio saved':'Add personal background',announcementSetting:prefs.announcement,bioSetting:effectiveBio()?effectiveBio().slice(0,100)+(effectiveBio().length>100?'…':''):'Add personal background',
         themeSetting:prefs.theme,highlightSetting:prefs.highlight,styleSetting:prefs.style,sizeSetting:prefs.size};
-      if(defaults)for(let i=0;i<8;i++)values['default'+i]=defaults[i<4?'general':'specific'][i%4];
+      if(defaults){for(let i=0;i<8;i++)values['default'+i]=defaults[i<4?'general':'specific'][i%4];for(let i=0;i<3;i++)values['steerDefault'+i]=defaults.steers[i];}
       for(const [id,value] of Object.entries(values)){const el=byId(id)?.querySelector('.setting-value');if(el)el.textContent=String(value);}
       byId('aiDetails').textContent=prefs.ai==='cloud'?'Cloud API model: '+(ai.model()||'connect your own AI to get started')+'. Conversation text and profile are sent to this provider.':prefs.ai==='server'?'Server: '+prefs.serverUrl+' · Model: '+(prefs.serverModel||'choose a model')+'. Speech recognition stays separate.':prefs.ai==='off'?'AI predictions are off. Dictionary words still work.':prefs.ai==='chrome'?'Gemini Nano runs locally in supported desktop Chrome after download. It is not available to websites in Chrome on Android or iPhone/iPad. No cloud API key or cloud quota is used.':'Choose Cloud API, a local AI server, or supported desktop Chrome AI.';
       byId('chromeAvailability').textContent=window.LanguageModel?'This browser exposes Chrome local AI. Select Chrome local AI · Gemini Nano, then Load AI model to check this computer’s availability.':window.electronAPI?'Chrome’s Gemini Nano is not included in the Windows Hub (Electron). Open RTC Lite in Google Chrome to check its availability, or choose another AI option here.':'This browser does not expose Gemini Nano. Cloud API and local server options are available below.';
@@ -421,7 +452,7 @@
         for(const id of ['morePredictions0','morePredictions1'])byId(id).setAttribute('aria-busy','true');
         try{
           request.contextVersion=editTarget?0:contextState.latest;contextState.keyboardRequest=request.contextVersion;renderContextStatus();
-          const raw=await ai.predictWords(memory.snapshot(prefs.justSaid),profile(),text,avoid,predictionAbort.signal,moreRow==='predictionRow0'?'words':moreRow==='predictionRow1'?'phrases':'both',editTarget?.key||'conversation');
+          const raw=await ai.predictWords(memory.snapshot(prefs.justSaid),profile(),text,avoid,predictionAbort.signal,moreRow==='predictionRow0'?'words':moreRow==='predictionRow1'?'phrases':'both',editTarget?.key==='steer'?'default':editTarget?.key||'conversation');
           if(revision!==predictionRevision||screen!=='keyboard')return;
           request.model=C.predictions(raw,text,avoid);request.complete=true;
           publishPredictions(request);
@@ -445,9 +476,13 @@
           if(!saveBio(value)){setKeyboardStatus('Bio could not be saved. Your draft is still here.');return;}
           editTarget=null;typed='';showBioEditor();choice.announce('Bio saved.');return;
         }
-        if(target.key==='default'){
+        if(target.key==='steer'){
+          const values=[...defaults.steers];values[target.index]=value;
+          try{const steers=C.validateSteers(values);defaults={...defaults,steers};prefs.defaults=defaults;renderBoard(defaults);}
+          catch(e){setKeyboardStatus(e.message);operation('phrases',e.message);choice.announce(e.message);return;}
+        }else if(target.key==='default'){
           const candidate={general:[...defaults.general],specific:[...defaults.specific],summary:''};candidate[target.index<4?'general':'specific'][target.index%4]=value;
-          try{const checked=C.validateBoard(candidate);defaults={general:checked.general,specific:checked.specific};prefs.defaults=defaults;renderBoard(defaults);}
+          try{const checked=C.validateBoard(candidate);defaults={general:checked.general,specific:checked.specific,steers:[...defaults.steers]};prefs.defaults=defaults;renderBoard(defaults);}
           catch{setKeyboardStatus('Use a different short phrase, up to 10 words. Keep Yes, No, Maybe and I don’t know on the quick-answer row.');choice.announce('Please use a different short phrase.');return;}
         }else{if(target.key==='announcement'&&!value){choice.announce('Please enter an announcement.');return;}prefs[target.key]=value;}
         savePrefs();editTarget=null;typed='';openScreen('phrases');choice.announce('Saved.');return;
@@ -460,6 +495,8 @@
       const id=button.id;
       if(button.dataset.key){restoreRow();const key=button.dataset.key;typed+=/^[A-Z]$/.test(key)?(!typed||/[.!?]\s*$/.test(typed)?key:key.toLowerCase()):key;changedTyping();return;}
       if(button.dataset.prediction){const rowId=button.parentElement.id;restoreRow();typed=C.insertPrediction(typed,button.dataset.prediction);changedTyping(rowId);return;}
+      if(/^steer[0-3]$/.test(id)){void getSuggestions(id==='steer3'?'':button.textContent.trim());return;}
+      if(/^steerDefault[0-2]$/.test(id)){const index=Number(id.slice(-1));startKeyboard({key:'steer',index,label:'Steer '+(index+1),value:defaults.steers[index]});return;}
       if(/^default\d$/.test(id)){const index=Number(id.slice(7));startKeyboard({key:'default',index,label:buttonLabel(button),value:defaults[index<4?'general':'specific'][index%4]});return;}
       const pages={listeningPage:'listening',aiPage:'ai',phrasesPage:'phrases',appearancePage:'appearance',memoryPage:'memory',keyPage:'key',serverPage:'server',helpButton:'help',
         listeningBack:'settings',aiBack:'settings',phrasesBack:'settings',appearanceBack:'settings',memoryBack:'settings',helpBack:'settings',keyBack:'ai',serverBack:'ai'};
@@ -546,7 +583,7 @@
     });
     document.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
       if (button.disabled || button.closest('[hidden]') || disposed) return;
-      cancelInput();
+      cancelInput();resumeAtSuggestions=false;
       // A pointer is direct navigation. Align the parent silently, then perform the same action.
       silentRestore = true;
       try {
@@ -599,7 +636,7 @@
         choice.setInputHeld(enterHeld);
       } else if (code === 'Enter' && enterHeld) {
         enterHeld = false; clearTimeout(enterTimer);
-        if (!enterLong) choice.select();
+        if (!enterLong) selectChoice();
         choice.setInputHeld(spaceHeld && !brakeOwned);
       }
     });

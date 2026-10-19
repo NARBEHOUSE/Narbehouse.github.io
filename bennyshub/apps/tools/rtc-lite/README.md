@@ -24,6 +24,16 @@ Cloud AI receives the saved bio, recent conversation text and draft through Clou
 
 The bio, defaults and preferences persist in browser storage. Conversation memory stays in memory and clears on exit/reload or Clear conversation. Audio is handled by the selected speech option. Local Whisper does not upload it. This app cannot guarantee the privacy of another extension or compromised code running on the same browser origin.
 
+## Steer row and suggestion focus (2026-10-19)
+
+The board now has five rows of four buttons. The new **Steer** row follows the conversation starters. Its first three choices suggest different directions for the current exchange; **Different** is fixed and requests another board without a direction. Selecting a steer announces it through scan speech only. It never goes to public speech or conversation memory as a message from the user.
+
+The eight replies and three steers come from the same AI request. Steers use plain, short labels (1–3 words, at most 32 characters). Invalid or absent model steers leave the replies intact and use the saved steer defaults. The defaults start as **How I feel**, **I want**, and **Ask you**. Edit **Steer 1–3** in **My phrases & profile**, after Specific phrase 4, with the existing switch keyboard and predictions. Blank, long, duplicate, and reserved Different labels are rejected with an explanation while retaining the previous value. Restore starter phrases resets both phrases and steers. Older saved data loads without migration; saved steers appear on startup, after Clear conversation, and on fallback.
+
+When GET / REFRESH or a steer finishes, the committed board moves the root scan to Everyday phrases (generalRow) and narrates its current choices through the normal owned speech ticket. Wait for Speech still waits for that narration plus a full interval. A parked scan stays parked and Enter resumes at generalRow without selecting. If any row is entered, the update waits for that row to finish and preserves its return row. Requests completed on another screen do not move that screen. Failed requests restore saved phrases and use the same jump rules.
+
+Quick answers and the keyboard remain usable during loading. Repeated GET/steer selections cannot start overlapping requests. Shown suggestions are tracked for the current exchange; provider prompts and the web Worker receive the latest 80 avoid items, while the client validates against the complete exchange history. New room speech begins a new exchange. Steer rows retain stable IDs, the recurring root blank, and the row-local Back stop in both directions. Five-row layout checks cover 800×600 through 1366×900.
+
 ## Interaction
 
 The bottom panel uses green LISTENING, red MIC OFF and amber PAUSED/STARTING, with words/symbols as well as color. The latest recognized words and numbered NEW CONTEXT indicator show when fresh speech is available. New speech during an older request remains marked new. Failed requests and dictionary fallback do not consume that indicator.
@@ -45,7 +55,7 @@ Select the centered text box to speak and stay on the keyboard. The message stay
 - speech.js / whisper-worker.js, ai-worker.js / ai-generation.js, api-server.js: local/browser integrations.
 - ../../../../workers/byok: separate reusable service, tests and deployment instructions.
 
-The website integration has workerd security tests and a real Chrome test covering popup authorization with third-party cookies blocked, bio, context suggestions, keyboard completion, dictionary loading, Space/Enter scanning, Hub iframe launch/exit and layouts from 800×600 to 1366×900. They use synthetic provider responses, not real paid calls. They do not establish real model accuracy, microphone quality or Surface performance. The Electron app is unchanged by this web integration.
+The website integration has workerd security tests and a real Chrome test covering popup authorization with third-party cookies blocked, bio, context suggestions, keyboard completion, dictionary loading, Space/Enter scanning, Hub iframe launch/exit and layouts from 800×600 to 1366×900. They use synthetic provider responses, not real paid calls. They do not establish real model accuracy, microphone quality or Surface performance. The original web integration left Electron unchanged. The separately authorized 2026-10-19 Steer pass also updates PC Hub while preserving its native providers and speech.
 
 Application/Worker code follows the repository MIT license. Bundled components retain their own licenses and THIRD-PARTY-NOTICES.txt. vendor/manifest.json records bundled file hashes. Model downloads follow upstream revisions rather than an application-level integrity manifest; review changes before upgrading. Chrome, browser speech, Cloudflare and cloud providers have separate terms and availability. Keeping the application free/open source does not make all optional services free or open source.
 
@@ -127,3 +137,7 @@ wpctl settings --save bluetooth.autoswitch-to-headset-profile false
 This changes the Pi user's audio policy, not the website or voice model. It prevents automatic switching to the lower-quality Bluetooth microphone/headset mode; the separate USB microphone remains the intended input. If Bluetooth-headset microphone auto-switching is wanted later, restore it with wpctl settings --save bluetooth.autoswitch-to-headset-profile true. The website cannot change this OS setting itself. Saving across reboot has been recommended but not yet confirmed by the owner.
 
 References: [WirePlumber settings](https://pipewire.pages.freedesktop.org/wireplumber/daemon/configuration/settings.html), [wpctl settings](https://pipewire.pages.freedesktop.org/wireplumber/man/wpctl.html#settings), [0.5.8 setting definition](https://github.com/PipeWire/wireplumber/blob/0.5.8/src/config/wireplumber.conf).
+
+Cloud rollout: **redeploy workers/byok for steered cloud requests**. Publishing the static website alone does not update its server-owned prompt/schema. Older clients without a steer remain supported.
+
+Steer checks: `node --test tests/rtc-steer.test.cjs`, `node scripts/check-rtc-steer.cjs`, and the Worker test suite. The browser harness accepts `--root <PC Hub checkout> --electron` to exercise the native PC Hub preload and scanner using its disposable test-runtime wrapper. No real provider calls are made.

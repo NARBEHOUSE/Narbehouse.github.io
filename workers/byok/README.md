@@ -48,3 +48,9 @@ For local development, an ignored .dev.vars can contain a disposable 64-hex VAUL
 GET /connect and /setup.js serve first-party key setup. /api/byok/v1/manage handles status, save, remove, connect and delete-all with management authentication. POST /api/byok/v1/exchange trades a one-time code for a connection. GET/DELETE /api/byok/v1/connection checks/revokes it. POST /api/byok/v1/apps/rtc-lite/generate accepts structured board/predictions inputs. The reusable browser implementation is ../../bennyshub/shared/byok-client.js.
 
 Adding an app requires an explicit route, app allowlist entry, bounded input schema, server-owned prompts, output validator and tests, plus setup consent wording. Reuse vault encryption/auth and the client. Do not enable a generic public proxy or accept caller-selected upstream URLs. Current grants deliberately recognize only rtc-lite; existing Music Maker/TMDB Workers are unchanged.
+
+## RTC Lite steers (2026-10-19)
+
+The board operation accepts an optional `steer` string, up to 32 characters, using the same bounded text validation as other fields. It is added to the server-owned board prompt, grounded in the latest room statement. The prompt/schema requests eight suggestions and three steer labels in one response. Invalid or missing model steers are omitted while the eight replies remain usable, so the client can apply its personal saved defaults without a repair call. Existing clients may omit steer; the avoid list remains capped at 80.
+
+**Redeploy this Worker for steered cloud AI.** A static website release alone cannot update its prompt or schema. No vault migration or key rotation is needed. The PC Hub native own-key path is independent of this Worker.

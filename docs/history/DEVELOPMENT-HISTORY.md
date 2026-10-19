@@ -2,6 +2,35 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-19 — RTC Lite Steer row, editable defaults, and suggestion focus (web + PC Hub)
+
+Scope: owner-supplied Steer requirements, explicitly extended by “make sure works on PC hub too.” Initial brief status: **Electron port: pending**. That status is superseded for this feature by the authorized PC Hub implementation. The PC Hub cloud-key/native speech integrations are preserved; the web Worker remains independent. After local verification, the owner explicitly requested website publication and the Cloudflare Worker update. No installer rebuild is included.
+
+Cloud rollout: on 2026-10-19 the existing bennys-hub-byok Worker was deployed with preserved variables, secrets and Durable Object migration history. Version e609c425-04f9-4150-993e-63e4da3a0026 replaced 01f7abef-a2ad-49d7-b37c-d748255c4ee7 and serves 100% of traffic. Live health reports ready; the connection page returns 200, the website-origin generate preflight returns 204, and unauthenticated generation returns 401 with the expected CORS origin. These checks made no provider calls. This source revision is the corresponding authorized GitHub Pages release; the release workflow validates tests, build, immutable Companion checksums, release audit and Pages links before deployment.
+
+Scan classification: **“If Ben stops pressing, does anything in the game keep happening?” No = CHOICE.** Five board rows retain stable IDs, recurring root -1, bidirectional row-local Back, live row narration, and owned Wait for Speech. Successful and saved-phrase fallback boards jump to generalRow only when on the board outside an entered row. Parked completion stays parked and the next Enter resumes at generalRow without selecting. Entered rows defer replacement and keep their parent return. Keyboard/other screens are not moved.
+
+The first three steer labels accompany eight replies in one AI response; Different stays fixed. Controls never speak publicly or enter user conversation memory. Steer defaults use the existing predictive edit/save flow, validate 1–3 words/32 characters and normalized uniqueness, and persist with defaults. Missing/invalid AI labels fall back without rejecting the eight replies or spending another call. Older stored defaults load cleanly. Restore and Clear use the personal/built-in steer defaults. Avoid requests honor the Worker's 80-item cap; local validation retains the complete current exchange history.
+
+Changed web files (scope; Electron port flag):
+- bennyshub/apps/tools/rtc-lite/app.js — commit/jump, parked resume, steering, history, busy state and default editing; Electron port: implemented in PC Hub.
+- bennyshub/apps/tools/rtc-lite/core.js — steer defaults/validation, output schema and prompt direction; Electron port: implemented as matching focused changes, preserving desktop reply behavior.
+- bennyshub/apps/tools/rtc-lite/providers.js — steer forwarding and bounded web Worker avoid payload; Electron port: implemented with native own-key route preserved.
+- bennyshub/apps/tools/rtc-lite/index.html — fifth row, stable steer/edit IDs and five-row layout; Electron port: implemented.
+- bennyshub/apps/tools/rtc-lite/README.md — behavior, editing, checks, and separate cloud rollout; Electron port: matching PC Hub documentation updated.
+- bennyshub/apps/tools/rtc-lite/RTC-LITE-CONTEXT.md — maintained behavior and owner-authorized desktop scope; Electron port: matching PC Hub context updated.
+- workers/byok/src/rtc.ts — optional bounded steer input and server prompt forwarding; Electron port: not applicable (native PC Hub uses its own provider path).
+- workers/byok/README.md — explicit Worker redeployment requirement and older-client support; Electron port: not applicable.
+- workers/byok/tests/fixture.mjs — configurable board fixture and avoidance-safe phrase; Electron port: not applicable.
+- workers/byok/tests/worker.test.mjs — input bounds, missing/invalid model steers, one-call behavior and old clients; Electron port: not applicable.
+- tests/rtc-steer.test.cjs — shared schema/validation/provider regressions; Electron port: copied to PC Hub tests.
+- scripts/check-rtc-steer.cjs — actual switch keys, row/park/deferred update, editing/persistence, Wait for Speech, cancellation and four viewport checks; Electron port: same harness exercises PC Hub native preload with its runtime wrapper.
+- docs/history/DEVELOPMENT-HISTORY.md — this file-level scope and verification record; Electron port: corresponding ELECTRON-SCAN-UPGRADE.md entry.
+
+Additional PC Hub files: tests/electron-rtc-lite.cjs (20 tiles, five-row loop, entered-row deferral expectations, and current communication-settings IPC fixture); tests/rtc-steer.test.cjs; ELECTRON-SCAN-UPGRADE.md. The six RTC Lite app/docs files listed above also changed in PC Hub. Desktop originals were checked against backup before replacement and staged/applied bytes verified. Backups and local reports: ../tmp/rtc-steer-20261019.
+
+Verification: website 334/334 tests; Worker TypeScript check, dry-run build and 7/7 workerd integration tests; existing browser-to-Worker authorization/Hub launch/exit suite; 13 Steer browser scenarios and the same 13 in real Electron with native preload; PC Hub 46/46 existing logic/speech tests plus 6/6 new steer tests; existing Electron API 4 checks and load/setup 9 checks. Five-row screenshots at 800×600 were inspected in Chrome and Electron; all four sizes through 1366×900 fit with normal/larger type. Website build and release audit passed with zero problems. Providers and speech in feature tests are fixtures; real AI quality and Ben's Surface acceptance remain device checks. The existing Electron UI suite passes all 19 checks with zero errors on its isolated rerun. Its first run under the concurrent build hit a held-key timing assertion; the isolated rerun required no application change. The legacy fixture first needed communication:getSettings/saveSettings handlers for the already-present native bridge.
+
 ## 2026-10-18 — Pi Bluetooth quality fixed through WirePlumber configuration
 
 The owner reported that the deployed RTC microphone-release workaround still started messages with muffled audio and switched to higher quality mid-message. They confirmed WirePlumber 0.5.8 on their Raspberry Pi 5 with Chromium and a USB camera microphone. After turning Listening off to restore quality, running wpctl settings bluetooth.autoswitch-to-headset-profile false, and turning Listening back on, they confirmed consistently high quality across several messages. The command with --save was then supplied to retain the working policy after reboot; persistence/reboot validation has not yet been reported. Upstream 0.5.8 configuration and WirePlumber's settings/wpctl documentation confirm this setting is supported.

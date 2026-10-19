@@ -8,7 +8,7 @@ export const key='sk-proj-'+randomBytes(32).toString('hex');
 export const random=()=>randomBytes(32).toString('hex');
 export const hash=v=>createHash('sha256').update(v).digest('hex');
 export const sample=()=>({id:crypto.randomUUID(),op:'board',snapshot:{summary:'',recent:[{speaker:'room',source:'speech',text:'Would you like lunch in the park?'}],justSaid:[],unsummarized:[]},profile:{bio:'I like music and parks.',profanity:false},avoid:[]});
-export const board={general:['That sounds good','Maybe a bit later','Tell me more','I would like that'],specific:['Let us go outside','I would prefer soup','Which park do you mean','Can we eat together'],summary:'The other person offered lunch in the park.'};
+export const board={general:['That sounds good','Maybe a bit later','Could you tell me more','I would like that'],specific:['Let us go outside','I would prefer soup','Which park do you mean','Can we eat together'],summary:'The other person offered lunch in the park.'};
 export async function fixture(options={}){
  let calls=[],responseMode='ok',hold=null;
  const mf=new Miniflare(convertV4MiniflareOptions({modules:[{type:'ESModule',path:path.join(workerRoot,'dist/worker.js')},...(await fs.readdir(path.join(workerRoot,'dist'))).filter(n=>/\.(txt|html)$/.test(n)).map(n=>({type:'Text',path:path.join(workerRoot,'dist',n)}))],modulesRoot:path.join(workerRoot,'dist'),compatibilityDate:'2026-10-17',compatibilityFlags:['nodejs_compat'],
@@ -24,7 +24,7 @@ export async function fixture(options={}){
   const prompt=data.messages?.[0]?.content||data.contents?.[0]?.parts?.[0]?.text||'';
   const draft=JSON.parse(prompt.match(/ACTUAL TEXT BEFORE THE CURSOR: (.+)\n/)?.[1]||'""');
   const predictions=draft==='that sounds good '?{words:['thanks','to'],phrases:['to me','thanks for asking']}:{words:['sounds','sound'],phrases:['sounds good','sounds interesting']};
-  const result=responseMode==='invalid'?'not valid JSON':JSON.stringify(prompt.includes('ACTUAL TEXT BEFORE THE CURSOR')?predictions:board);
+  const result=responseMode==='invalid'?'not valid JSON':JSON.stringify(prompt.includes('ACTUAL TEXT BEFORE THE CURSOR')?predictions:(options.board||board));
   if(req.url.includes('anthropic'))return Response.json({content:[{type:'text',text:result}]});
   if(req.url.includes('googleapis'))return Response.json({candidates:[{content:{parts:[{text:result}]}}]});
   return Response.json({choices:[{message:{content:result}}]});
