@@ -1070,12 +1070,25 @@
           </button>
           <button class="card-btn" id="speaker-voice-toggle" disabled>
             <span class="kicker">Setting</span><div class="btn-title">Speaker voice</div>
-            <div class="row"><p class="desc" id="speaker-voice-help">Cycle through 14 voices and hear a sample. The Voice setting above controls scanning.</p><span class="pill" id="speaker-voice-status">Michael</span></div>
+            <div class="row"><p class="desc" id="speaker-voice-help">Cycle through the voices and hear a sample. Custom voices come last. The Voice setting above controls scanning.</p><span class="pill" id="speaker-voice-status">Michael</span></div>
           </button>
           <button class="card-btn" id="speaker-quality-toggle" disabled aria-describedby="speaker-quality-help">
             <span class="kicker">Setting</span><div class="btn-title">Speaker voice mode</div>
             <div class="row"><p class="desc" id="speaker-quality-help">Natural keeps the original voices. Faster uses a lighter voice for less waiting on slower devices. Saved on this device.</p><span class="pill" id="speaker-quality-status">Natural</span></div>
           </button>
+          <button class="card-btn" id="speaker-voice-add" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Add custom voice</div>
+            <div class="row"><p class="desc">Choose a voice file exported from Voice Studio (.pocketvoice.json). Choosing a file may need caregiver help.</p></div>
+          </button>
+          <button class="card-btn" id="speaker-voice-remove" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Remove custom voice</div>
+            <div class="row"><p class="desc">Remove the selected added voice from this device. Keep the voice file to add it again later.</p><span class="pill" id="speaker-voice-remove-status">None selected</span></div>
+          </button>
+          <button class="card-btn" id="speaker-names" disabled>
+            <span class="kicker">Setting</span><div class="btn-title">Names to say</div>
+            <div class="row"><p class="desc">Names Custom voices should say correctly, like family and friends. Typing them needs a caregiver.</p><span class="pill" id="speaker-names-status">None</span></div>
+          </button>
+          <input type="file" id="speaker-voice-file" accept=".json,application/json" hidden data-scan-exclude>
           <button class="card-btn" id="speaker-find" disabled>
             <span class="kicker">Setting</span><div class="btn-title">Find speakers</div>
             <div class="row"><p class="desc">Refresh connected speakers. Browser access may need caregiver help.</p></div>
@@ -1086,8 +1099,37 @@
           </button>
 
             </div>
+          <p id="speaker-voice-note" role="status" aria-live="polite" hidden></p>
           <p id="speaker-details" role="status" aria-live="polite" hidden></p>
           </section>
+
+          <div id="speaker-voice-add-dialog" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="speaker-voice-add-heading" hidden>
+            <div class="modal-content">
+              <h2 id="speaker-voice-add-heading">Add custom voice</h2>
+              <p>Choose a Voice Studio export (.pocketvoice.json). Your switches may not work in the file picker, so a caregiver may need to help. The voice stays on this device. Keep the original file to add it on another device.</p>
+              <button class="card-btn" id="speaker-voice-add-cancel">Cancel</button>
+              <button class="card-btn" id="speaker-voice-add-continue">Continue to file picker</button>
+            </div>
+          </div>
+
+          <div id="speaker-voice-remove-dialog" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="speaker-voice-remove-heading" hidden>
+            <div class="modal-content">
+              <h2 id="speaker-voice-remove-heading">Remove custom voice?</h2>
+              <p id="speaker-voice-remove-text">This voice will be removed from this device.</p>
+              <button class="card-btn" id="speaker-voice-remove-cancel">Cancel</button>
+              <button class="card-btn" id="speaker-voice-remove-confirm">Remove voice</button>
+            </div>
+          </div>
+
+          <div id="speaker-names-dialog" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="speaker-names-heading" hidden>
+            <div class="modal-content">
+              <h2 id="speaker-names-heading">Names to say</h2>
+              <p id="speaker-names-help">The keyboard types in capitals, so Custom voices can't tell a name from a word. Type one name per line, spelled the usual way (Ari, McKenna). Kokoro voices don't need this.</p>
+              <textarea id="speaker-names-text" rows="8" aria-labelledby="speaker-names-heading" aria-describedby="speaker-names-help" data-scan-exclude spellcheck="false" style="width:100%;box-sizing:border-box;font:inherit;margin:8px 0 12px"></textarea>
+              <button class="card-btn" id="speaker-names-cancel">Cancel</button>
+              <button class="card-btn" id="speaker-names-save">Save names</button>
+            </div>
+          </div>
 
           <div id="speaker-permission-dialog" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="speaker-permission-heading" hidden>
             <div class="modal-content">
@@ -1100,7 +1142,7 @@
 
           <section id="scan-settings" aria-labelledby="scan-settings-heading"></section>
         </div>
-        <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Press <span class="kbd">return</span> to change the highlighted setting. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
+        <p class="footer-note">In Step mode, tap <span class="kbd">spacebar</span> to move; hold it for 3 seconds to move backward. Tap <span class="kbd">return</span> to change the highlighted setting. Hold Return on a setting with multiple values to cycle backward; release to stop. In Auto Scan, Space pauses or resumes when Space brake is on. The blank park step is part of every loop.</p>
 
       </section>
 
@@ -1136,6 +1178,8 @@
   <script src="shared/communication-channel.js"></script>
   <script src="shared/communication-speech.js"></script>
   <script src="shared/communication-companion.js"></script>
+  <script src="shared/communication-voices.js"></script>
+  <script src="shared/hub-toggle-cycle.js"></script>
   <script src="shared/communication-settings.js"></script>
   <!-- Shared Scan Manager -->
   <script src="shared/scan-manager.js"></script>
@@ -1637,19 +1681,19 @@
       settingsScanner?.setItems(settingsItems());
     }
     NarbeGraphics.subscribeHub(refreshGraphicsSetting);
-    document.getElementById('graphics-toggle').onclick = () => {
-      NarbeGraphics.cycleHub();
-      announceSetting('Graphics quality: ' + NarbeGraphics.title(NarbeGraphics.getHub()));
-    };
+    NarbeHubToggles.bind(document.getElementById('graphics-toggle'), direction => {
+      NarbeGraphics.cycleHub(direction);
+      return announceSetting('Graphics quality: ' + NarbeGraphics.title(NarbeGraphics.getHub()));
+    });
 
     // Settings toggles
-    document.getElementById('highlight-toggle').addEventListener('click', () => {
+    NarbeHubToggles.bind(document.getElementById('highlight-toggle'), direction => {
       const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'white'];
       const currentIndex = colors.indexOf(settings.highlightColor);
-      settings.highlightColor = colors[(currentIndex + 1) % colors.length];
+      settings.highlightColor = colors[(currentIndex + direction + colors.length) % colors.length];
       applySettings();
       saveSettings();
-      announceSetting(`Highlight color changed to ${settings.highlightColor}`);
+      return announceSetting(`Highlight color changed to ${settings.highlightColor}`);
     });
 
     document.getElementById('highlight-style-toggle').addEventListener('click', () => {
@@ -1659,22 +1703,22 @@
       announceSetting(`Highlight style changed to ${settings.highlightStyle === 'full' ? 'Full Cell' : 'Outline'}`);
     });
 
-    document.getElementById('textcolor-toggle').addEventListener('click', () => {
+    NarbeHubToggles.bind(document.getElementById('textcolor-toggle'), direction => {
       const textColors = ['default', 'green', 'purple', 'red', 'gold', 'black', 'white'];
       const currentIndex = textColors.indexOf(settings.textColor);
-      settings.textColor = textColors[(currentIndex + 1) % textColors.length];
+      settings.textColor = textColors[(currentIndex + direction + textColors.length) % textColors.length];
       applySettings();
       saveSettings();
-      announceSetting(`Text color changed to ${settings.textColor}`);
+      return announceSetting(`Text color changed to ${settings.textColor}`);
     });
 
-    document.getElementById('bgtheme-toggle').addEventListener('click', () => {
+    NarbeHubToggles.bind(document.getElementById('bgtheme-toggle'), direction => {
       const bgThemes = ['default', 'ocean', 'forest', 'sunset', 'midnight', 'rose', 'sky', 'cream', 'mint', 'lavender', 'peach'];
       const currentIndex = bgThemes.indexOf(settings.bgTheme);
-      settings.bgTheme = bgThemes[(currentIndex + 1) % bgThemes.length];
+      settings.bgTheme = bgThemes[(currentIndex + direction + bgThemes.length) % bgThemes.length];
       applySettings();
       saveSettings();
-      announceSetting(`Background theme changed to ${settings.bgTheme}`);
+      return announceSetting(`Background theme changed to ${settings.bgTheme}`);
     });
 
     document.getElementById('tts-toggle').addEventListener('click', () => {
@@ -1685,22 +1729,23 @@
       }
     });
 
-    document.getElementById('voice-toggle').addEventListener('click', () => {
-      const voiceChanged = window.NarbeVoiceManager.cycleVoice();
+    NarbeHubToggles.bind(document.getElementById('voice-toggle'), direction => {
+      const manager=window.NarbeVoiceManager,voices=manager.getEnglishVoices();
+      if(voices.length)manager.updateSettings({voiceIndex:(manager.getSettings().voiceIndex+direction+voices.length)%voices.length});
       applySettings();
       // Announce the new voice using the new voice
       const currentVoice = window.NarbeVoiceManager.getCurrentVoice();
       const displayName = window.NarbeVoiceManager.getVoiceDisplayName(currentVoice);
-      announceSetting(`Voice ${displayName}`);
+      return announceSetting(`Voice ${displayName}`);
     });
 
-    document.getElementById('uisize-toggle').addEventListener('click', () => {
+    NarbeHubToggles.bind(document.getElementById('uisize-toggle'), direction => {
       const sizes = ['default', 'large', 'larger', 'largest'];
       const currentIndex = sizes.indexOf(settings.uiSize || 'default');
-      settings.uiSize = sizes[(currentIndex + 1) % sizes.length];
+      settings.uiSize = sizes[(currentIndex + direction + sizes.length) % sizes.length];
       applySettings();
       saveSettings();
-      announceSetting(`Size changed to ${settings.uiSize}`);
+      return announceSetting(`Size changed to ${settings.uiSize}`);
     });
 
     // Fullscreen management
@@ -1972,7 +2017,7 @@
     });
 
     // Filter button event listeners and toggle logic
-    function toggleGenre(category) {
+    function toggleGenre(category, direction=1) {
       const genres = getGenres(category);
       const allOptions = ['all', ...genres];
       const currentGenre = filterState[category].genre;
@@ -1980,7 +2025,7 @@
       let currentIndex = allOptions.indexOf(currentGenre);
       if (currentIndex === -1) currentIndex = 0;
 
-      const nextIndex = (currentIndex + 1) % allOptions.length;
+      const nextIndex = (currentIndex + direction + allOptions.length) % allOptions.length;
       const nextGenre = allOptions[nextIndex];
 
       filterState[category].genre = nextGenre;
@@ -1992,7 +2037,7 @@
       if(btn) btn.textContent = `Genre: ${displayGenre}`;
 
       renderAppsGrid(category);
-      announceHubMenu(`Genre ${displayGenre}`);
+      return announceHubMenu(`Genre ${displayGenre}`);
     }
 
     function resetGenre(category) {
@@ -2010,9 +2055,7 @@
     ['games', 'tools'].forEach(category => {
       const filterBtn = document.getElementById(`${category}-filter-btn`);
       if (filterBtn) {
-        filterBtn.addEventListener('click', () => {
-          toggleGenre(category);
-        });
+        NarbeHubToggles.bind(filterBtn, direction => toggleGenre(category,direction));
       }
 
       const resetBtn = document.getElementById(`${category}-reset-btn`);
@@ -2047,6 +2090,7 @@
     let settingsAutoMode = window.NarbeScanManager.getSettings().autoScan;
     let settingsReverseTimer = null, settingsReverseInterval = null;
     const settingsScreen = SCREENS.settings;
+    const settingsCycle=NarbeHubToggles.create({current:()=>settingsItems().find(el=>el.id===settingsScanner?.getState().id),owns:settingsOwnsScan,settings:()=>NarbeScanManager.getSettings(),holdThreshold:BACKWARDS_SCAN_THRESHOLD});
 
     function settingsOwnsScan() {
       return currentScreen === 'settings' && !isTransitioning &&
@@ -2055,8 +2099,10 @@
         !document.getElementById('hub-settings').open;
     }
     function settingsItems() {
-      const permission = document.getElementById('speaker-permission-dialog');
-      if (permission && !permission.hidden) return Array.from(permission.querySelectorAll('button'));
+      for(const id of ['speaker-permission-dialog','speaker-voice-add-dialog','speaker-voice-remove-dialog','speaker-names-dialog']){
+        const dialog=document.getElementById(id);
+        if(dialog&&!dialog.hidden)return Array.from(dialog.querySelectorAll('button:not([disabled])'));
+      }
       return Array.from(settingsScreen.querySelectorAll('button:not([disabled])'))
         .filter(el => !el.closest('[hidden], [data-scan-exclude]'));
     }
@@ -2067,6 +2113,7 @@
       return [title, value, description].filter(Boolean).join('. ');
     }
     function clearSettingsInput() {
+      settingsCycle.cancel();
       settingsSpaceDown = settingsEnterDown = settingsSpaceBraking = settingsSpaceCancelled = false;
       clearTimeout(settingsReverseTimer);
       clearInterval(settingsReverseInterval);
@@ -2134,6 +2181,7 @@
       settingsScreen.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : window.NarbeScanManager.getSettings().autoScan ? 'running' : 'step';
       if (!settingsOwnsScan()) return;
       focusIndex = state.index;
+      if(settingsScreen.contains(document.activeElement)&&document.activeElement.matches('textarea'))return;
       if (item) {
         item.focus({preventScroll: true});
         revealHubChoice(item);
@@ -2180,10 +2228,12 @@
       if (event.target.matches('button')) alignSettingsFocus(event.target);
     });
     NarbeCommunicationSettings.mount({
+      bindCycle:NarbeHubToggles.bind,
       refreshScan: ({restoreId, fresh} = {}) => { if (settingsScanner) { if (restoreId || fresh) settingsScanner.open(settingsItems(), {restoreId: restoreId || null}); else settingsScanner.setItems(settingsItems()); } },
       announce: text => announceSetting(text)
     });
     const scanSettingsUI = window.NarbeScanSettings.mount(document.getElementById('scan-settings'), {
+      bindCycle:NarbeHubToggles.bind,
       manager: window.NarbeScanManager,
       onChange(next) {
         if (settingsAutoMode !== next.autoScan && settingsSpaceDown && !settingsSpaceBraking) {
@@ -2236,6 +2286,7 @@
           }
         } else if (isEnter && !settingsEnterDown) {
           settingsEnterDown = true;
+          settingsCycle.begin();
           suppressEnterClick = true;
           scanner.setInputHeld(true);
         }
@@ -2251,7 +2302,7 @@
       } else if (isEnter && settingsEnterDown) {
         settingsEnterDown = false;
         suppressEnterClick = false;
-        scanner.select();
+        if(!settingsCycle.release())scanner.select();
         scanner.setInputHeld(settingsSpaceDown && !settingsSpaceBraking);
       }
     });
@@ -2264,6 +2315,7 @@
     let menuSpaceDown = false, menuEnterDown = false, menuBraking = false;
     let menuCancelled = false, menuSpaceAt = 0, menuReverseTimer = null, menuReverseInterval = null;
     let menuAutoMode = window.NarbeScanManager.getSettings().autoScan;
+    const menuCycle=NarbeHubToggles.create({current:()=>menuItems().find(el=>menuId(el)===hubMenuScanner?.getState().id),owns:hubMenuOwnsScan,settings:()=>NarbeScanManager.getSettings(),holdThreshold:BACKWARDS_SCAN_THRESHOLD});
     function menuContext() { return fullscreenModal.classList.contains('hidden') ? currentScreen : 'fullscreen'; }
     function menuRoot() { return menuContext() === 'fullscreen' ? fullscreenModal.querySelector('.modal-content') : SCREENS[currentScreen]; }
     function hubMenuOwnsScan() {
@@ -2292,6 +2344,7 @@
       root.setAttribute('tabindex', '-1');return host;
     }
     function clearHubMenuInput() {
+      menuCycle.cancel();
       menuSpaceDown = menuEnterDown = menuBraking = menuCancelled = false;
       clearTimeout(menuReverseTimer);clearInterval(menuReverseInterval);
       menuReverseTimer = menuReverseInterval = null;suppressEnterClick = false;
@@ -2381,13 +2434,13 @@
               scanner.step(-1);menuReverseInterval=setInterval(()=>{if(menuSpaceDown&&hubMenuOwnsScan())scanner.step(-1);},getScanDelay());
             },BACKWARDS_SCAN_THRESHOLD);
           }
-        } else if(enter&&!menuEnterDown) {menuEnterDown=true;suppressEnterClick=true;scanner.setInputHeld(true);}
+        } else if(enter&&!menuEnterDown) {menuEnterDown=true;menuCycle.begin();suppressEnterClick=true;scanner.setInputHeld(true);}
       } else if(space&&menuSpaceDown) {
         menuSpaceDown=false;clearTimeout(menuReverseTimer);clearInterval(menuReverseInterval);menuReverseTimer=menuReverseInterval=null;
         if(menuBraking)scanner.brakeRelease();else if(!menuCancelled&&Date.now()-menuSpaceAt<BACKWARDS_SCAN_THRESHOLD)scanner.step(1);
         menuBraking=menuCancelled=false;scanner.setInputHeld(menuEnterDown);
       } else if(enter&&menuEnterDown) {
-        menuEnterDown=false;suppressEnterClick=false;scanner.select();scanner.setInputHeld(menuSpaceDown&&!menuBraking);
+        menuEnterDown=false;suppressEnterClick=false;if(!menuCycle.release())scanner.select();scanner.setInputHeld(menuSpaceDown&&!menuBraking);
       }
     });
 

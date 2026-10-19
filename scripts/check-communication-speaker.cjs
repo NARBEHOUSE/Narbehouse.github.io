@@ -10,7 +10,7 @@ function mocks(){
  window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
  Object.defineProperty(window,'speechSynthesis',{value:{speaking:false,cancel(){},getVoices:()=>[{name:'Test voice',lang:'en-US',default:true,voiceURI:'test'}],addEventListener(){},removeEventListener(){},speak(u){window.__speech.push(u.text);queueMicrotask(()=>{u.onstart?.();u.onend?.();});}}});
  const OriginalWorker=window.Worker;
- window.Worker=class {constructor(url,options){if(!/communication-(?:fast-)?worker/.test(String(url)))return new OriginalWorker(url,options);}postMessage(m){if(m.type==='cancel'||m.type==='prefetch')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({text:m.text,voice:m.voice});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),window.__workerDelay||5);}terminate(){}};
+ window.Worker=class {constructor(url,options){if(!/communication-(?:pocket-|fast-)?worker/.test(String(url)))return new OriginalWorker(url,options);}postMessage(m){if(m.type==='cancel'||m.type==='prefetch')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({text:m.text,voice:m.voice});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),window.__workerDelay||5);}terminate(){}};
  window.__players=[];
  window.Audio=class extends EventTarget{constructor(src=''){super();this.src=src;this.sinkId='';window.__players.push(this);}getAttribute(name){return this[name]??null;}setAttribute(name,value){this[name]=value;}async setSinkId(id){this.sinkId=id;}async play(){this.onplaying?.();setTimeout(()=>this.onended?.(),window.__holdPlayback?250:20);}pause(){}removeAttribute(){}load(){}};
 }
@@ -42,7 +42,7 @@ function mocks(){
    });
    try{const setup=await run({id:'prepare-1',type:'prepare',voice:'am_michael'}),message={text:'Hello. This is your communication speaker.',voice:'am_michael'};
     const result={setup,first:await run({...message,id:1}),repeat:await run({...message,id:2})};
-    if(allVoices){result.voices=[];let id=3;for(const voice of NarbeCommunicationSpeech.get().voices){const audio=await run({id:id++,text:'Hello from your communication speaker.',voice:voice.id});result.voices.push({voice:voice.id,...audio});}}return result;
+    if(allVoices){result.voices=[];let id=3;for(const voice of NarbeCommunicationSpeech.get().voices.filter(v=>!v.id.startsWith('pocket:'))){const audio=await run({id:id++,text:'Hello from your communication speaker.',voice:voice.id});result.voices.push({voice:voice.id,...audio});}}return result;
    }finally{worker.terminate();}
   },process.argv.includes('--all-voices'));
   if(result.voices){assert.equal(result.voices.length,14);for(const voice of result.voices){assert.ok(voice.samples>24000,voice.voice);assert.ok(voice.peak>.01,voice.voice);}}
@@ -67,8 +67,8 @@ function mocks(){
  await expect.poll(()=>page.evaluate(()=>__public.at(-1)?.voice)).toBe('af_heart');
  assert.equal(await page.evaluate(()=>__public.at(-1).text),'Hello from your communication speaker.');
  const visited=[];
- for(let i=0;i<14;i++){visited.push(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice));await press('Enter');await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().voiceReady)).toBe(true);}
- assert.equal(new Set(visited).size,14);assert.equal(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice),'af_heart');
+ for(let i=0;i<18;i++){visited.push(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice));await press('Enter');await expect.poll(()=>page.evaluate(()=>NarbeCommunicationSpeech.get().voiceReady)).toBe(true);}
+ assert.equal(new Set(visited).size,18);assert.equal(await page.evaluate(()=>NarbeCommunicationSpeech.get().voice),'af_heart');
  assert.equal(await page.locator('#screen-settings').getAttribute('data-selected'),'speaker-voice-toggle');
  // The existing selected Voice item also cycles all six Faster choices by switch.
  await page.evaluate(()=>NarbeCommunicationSpeech.cycleMode());const fastVisited=[];

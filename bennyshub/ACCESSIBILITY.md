@@ -962,3 +962,8 @@ Dedicated to [@BEAMINBENNY](https://github.com/narbehouse).
 Hub Settings has a switch-accessible **Graphics quality** default for supported games: Auto / High / Standard / Low. Auto adjusts detail for smoother play. Each covered game offers Use Hub setting / Auto / High / Standard / Low in its own settings; this preference stays on the current device. Keep text, scan highlights and gameplay cues readable, retain stable IDs on value changes, and announce the resolved value through the existing speech owner. Renderer changes requiring a reopen say **full change next launch** without restarting play.
 
 Future graphics-intensive games must follow the public integration, profile audit and release checklist in `../docs/development/GRAPHICS-QUALITY.md` and `../developer-guide.html#graphics`. Desktop source parity is implemented; Raspberry Pi hardware and user acceptance remain pending; see `../docs/development/GRAPHICS-DESKTOP-PARITY.md` and `../docs/testing/GRAPHICS-VALIDATION.md`.
+
+
+### Hub-only value cycling
+
+Hub multi-value controls may opt into shared/hub-toggle-cycle.js. A short Enter release advances the value; after the existing Hub hold threshold, a held Enter cycles backward on the same control at the saved scan interval. Release after reversing is consumed. Wait for Speech uses the owned bounded announcement ticket plus a full interval. Cancel on focus/ownership/target loss. This exception is opt-in in the Hub entry point and does not change game holds, keyboard selection, boolean toggles or action buttons.

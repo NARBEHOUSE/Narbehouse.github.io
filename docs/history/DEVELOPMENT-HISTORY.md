@@ -3555,3 +3555,44 @@ Validation: all 257 existing website unit tests and five workerd BYOK integratio
 The Pages build, release audit (2,046 public files; no problems), link check (1,096 references; no issues), source credential scan and all 15 vendor-manifest checks passed. Prior Companion release ZIP checksums were preserved. Browser evidence is in artifacts/rtc-lite.
 
 Deployment: bennys-hub-byok is live at https://bennys-hub-byok.narbehousellc.workers.dev. The encryption secret was generated in memory into Cloudflare, not saved locally. Live health, security headers, denied requests, preflight and a disposable synthetic-key vault/connect/delete round trip passed; that test vault was deleted and no upstream provider call was made. No other Worker was modified, no plan was changed, and the website changes have not been committed or pushed to GitHub.
+
+
+## 2026-10-19 — Custom communication voices and Hub-only reverse toggles
+
+Scope: owner approved custom communication voices in the website and Benny's PC Hub, with held Enter backward cycling confined to multi-value Hub menu controls. This explicitly authorizes the focused desktop pass. Imported the brother's pocket-keyboard-voice work at 76e777034392c25175eb4ef58ecb9c2b2b19f499 selectively, preserving newer web Faster voices, phrase caching and timing. Added a switch-accessible file-picker warning; custom voices/names stay local. The separate Pocket worker reuses its model across Custom voices and cancels obsolete requests. No game controls, shared scanner, Companion speech code, release ZIP contents, or installed executables changed.
+
+Changed web files (Electron port flag in parentheses):
+- `bennyshub/ACCESSIBILITY.md` — DOC / mirrored in desktop ACCESSIBILITY.md.
+- `bennyshub/index.html` — HUB / selectively adapted in PC Hub source.
+- `bennyshub/service-worker.js` — WEB ONLY / no desktop copy needed.
+- `bennyshub/shared/communication-settings.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-speech.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-vendor/THIRD-PARTY-NOTICES.txt` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/graphics-quality.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/scan-settings.js` — SHARED / implemented in PC Hub source.
+- `docs/development/COMMUNICATION-SPEAKER.md` — WEB ONLY / no desktop copy needed.
+- `scripts/audit-release.cjs` — WEB ONLY / no desktop copy needed.
+- `scripts/check-communication-speaker.cjs` — WEB ONLY / no desktop copy needed.
+- `tests/communication-cache.test.cjs` — WEB ONLY / no desktop copy needed.
+- `tests/communication-speech.test.cjs` — WEB ONLY / no desktop copy needed.
+- `bennyshub/shared/communication-pocket-worker.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-pocket.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-vendor/POCKET-WEB-DEMO-LICENSE.txt` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-vendor/sentencepiece.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-voices.js` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-voices/a2.bin` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-voices/a5.bin` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-voices/b2.bin` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/communication-voices/b4.bin` — SHARED / implemented in PC Hub source.
+- `bennyshub/shared/hub-toggle-cycle.js` — SHARED / implemented in PC Hub source.
+- `scripts/check-hub-custom-voices.cjs` — WEB ONLY / no desktop copy needed.
+- `tests/communication-pocket-case.test.cjs` — TEST / copied to PC Hub.
+- `tests/communication-voices.test.cjs` — TEST / copied to PC Hub.
+- `tests/hub-toggle-cycle.test.cjs` — TEST / copied to PC Hub.
+- `docs/history/DEVELOPMENT-HISTORY.md` — change ledger / desktop counterpart updated.
+
+Additional desktop files: `ACCESSIBILITY.md`, `ELECTRON-SCAN-UPGRADE.md`, `bennyshub/shared/communication-native.cjs`, `bennyshub/shared/content-security-policy.cjs`, `tests/communication-native.test.cjs`, `tests/communication-policy.test.cjs`, `tests/communication-electron.cjs`. Native persistence accepts validated custom voice metadata and names; the existing model redirect allowance is extended only to the local Pocket worker. Tests cover native restart, bad metadata, removal and the scoped worker policy.
+
+Validation: 355/355 web unit tests; 15 focused desktop unit tests plus 7 native persistence/policy tests; 14 real Chromium UI checks for each final source tree; 2 focused actual Electron CPU fixture flows using real preload/IPC and disposable settings (audio hardware mocked). The unmocked browser Pocket worker produced bundled audio (46,080 samples at 24 kHz) and imported-voice audio (26,880 samples) with nonzero peaks and an identical cached repeat. Desktop/narrow screenshots inspected. Build and public audit passed (3,814 files; 513,092,788 bytes; no problems). All 1,188 page references passed. The broader existing Electron suite stopped on a detached Hello tile in its Phrase Board fixture, before the new custom flow; the focused new-feature mode passes. Physical switch/speaker listening and a packaged installer were not tested/built. Website changes are local and not pushed.
+
+Backups and review evidence: task folder `../tmp/hub-custom-voices-20261019/` (original files, staged native changes, SHA-256 manifests, renderer reports and real-audio report). Every applied desktop file was checked against its reviewed original and verified by hash after copying.

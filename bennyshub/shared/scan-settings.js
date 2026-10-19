@@ -8,7 +8,7 @@ window.NarbeScanSettings = (function () {
   const parkingModes = ['off', 'chosen', 'auto'];
   const parkingLabels = { off: 'Off', chosen: 'Park when chosen', auto: 'Auto park' };
 
-  function mount(host, { manager = window.NarbeScanManager, onChange, onAnnounce } = {}) {
+  function mount(host, { manager = window.NarbeScanManager, onChange, onAnnounce, bindCycle } = {}) {
     if (!host?.ownerDocument || !manager?.getSettings || !manager?.updateSettings) {
       throw new Error('Scan settings require a DOM host and Scan Manager');
     }
@@ -43,18 +43,19 @@ window.NarbeScanSettings = (function () {
       value.id = id + '-status';
       row.append(detail, value);
       button.append(kicker, heading, row);
-      const click = () => {
+      const change = (direction=1) => {
         if (disposed || button.disabled) return;
         const before = revision;
-        manager.updateSettings(mutate(manager.getSettings()));
+        manager.updateSettings(mutate(manager.getSettings(),direction));
         // Scan Manager normally notifies synchronously. Rendering here also
         // supports compatible adapters which notify on a later task.
         if (revision === before) render();
         const entry = cards.get(id);
-        onAnnounce?.(entry.announcement, button, manager.getSettings());
+        return onAnnounce?.(entry.announcement, button, manager.getSettings());
       };
-      button.addEventListener('click', click);
-      listeners.push(() => button.removeEventListener('click', click));
+      const click=()=>change(1);
+      if(bindCycle&&['parking','parking-loops','sensitivity','scanspeed'].includes(id))listeners.push(bindCycle(button,change));
+      else {button.addEventListener('click',click);listeners.push(()=>button.removeEventListener('click',click));}
       cards.set(id, { button, value, title, description, announcement: '' });
       return button;
     }
@@ -78,9 +79,9 @@ window.NarbeScanSettings = (function () {
     modeGroup.append(mode);
     autoOptions.append(
       card('parking', 'Parking', 'Keep scanning, park when chosen, or park after complete loops.',
-        settings => ({ parking: parkingModes[(parkingModes.indexOf(settings.parking) + 1) % parkingModes.length] })),
+        (settings,direction) => ({ parking: parkingModes[(parkingModes.indexOf(settings.parking) + direction + parkingModes.length) % parkingModes.length] })),
       card('parking-loops', 'Loops before parking', 'Park after this many complete scans.',
-        settings => ({ loopsBeforeParking: settings.loopsBeforeParking % 3 + 1 })),
+        (settings,direction) => ({ loopsBeforeParking: (settings.loopsBeforeParking - 1 + direction + 3) % 3 + 1 })),
       card('spacebrake', 'Space brake', 'Tap Space to pause or resume the scan. Hold Space to pause while held.',
         settings => ({ spaceBrake: !settings.spaceBrake })),
       card('waitspeech', 'Wait for speech', 'Wait for each item to finish speaking before starting its scan timer.',
@@ -88,9 +89,9 @@ window.NarbeScanSettings = (function () {
     );
     modeGroup.append(card('sensitivity', 'Input Sensitivity',
       'Ignore switch bounce and very rapid repeat presses.',
-      settings => ({ inputSensitivityIndex: (settings.inputSensitivityIndex + 1) % sensitivities.length })));
+      (settings,direction) => ({ inputSensitivityIndex: (settings.inputSensitivityIndex + direction + sensitivities.length) % sensitivities.length })));
     modeGroup.append(card('scanspeed', 'Scan Speed', 'Time between automatic or backward scan steps.',
-      settings => ({ scanSpeedIndex: (settings.scanSpeedIndex + 1) % speeds.length })));
+      (settings,direction) => ({ scanSpeedIndex: (settings.scanSpeedIndex + direction + speeds.length) % speeds.length })));
     const owned = [heading, modeGroup, autoOptions];
     host.replaceChildren(...owned);
 

@@ -28,3 +28,18 @@ No model integrity or permanent offline-availability guarantee is made.
 
 Messages are synthesized on the device. The application sends no message text
 to a voice service and requires no provider account or API key.
+
+Custom voices (Pocket TTS, ../communication-pocket.js)
+
+Pocket TTS by Kyutai (CC BY 4.0): https://github.com/kyutai-labs/pocket-tts
+ONNX export and int8 quantization by KevinAHM (CC BY 4.0), downloaded when a custom voice is
+first chosen, pinned to revision d0c0c79b7712256a32d691c67f20b8ae2e020d00 of
+https://huggingface.co/spaces/KevinAHM/pocket-tts-web and cached in the browser (narbe-pocket-v1).
+communication-pocket.js follows the browser pipeline of KevinAHM's pocket-tts-web demo
+(Apache 2.0, see POCKET-WEB-DEMO-LICENSE.txt); sentencepiece.js is that demo's unmodified
+tokenizer bundle. ONNX Runtime Web 1.20.0 (Microsoft, MIT) is loaded from jsDelivr.
+The four voice prints in ../communication-voices are Pocket's encoding of voices invented
+in Voice Studio from a written description; they are not copies of a real person's voice.
+Kyutai's terms forbid copying a person's voice without their consent.
+
+Integration changes: the Hub runs Pocket in a separate worker, preserves its other speech backends, and guards custom voice file selection with a switch-accessible confirmation.

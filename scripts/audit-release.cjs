@@ -2,12 +2,17 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.resolve(__dirname,'..'),dist=path.join(root,'dist');
 function files(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>{const p=path.join(dir,e.name);if(e.isSymbolicLink())throw Error('Symlink in release');return e.isDirectory()?files(p):[p];});}
 const problems=[],findings=[];let bytes=0;
+// Exact upstream tokenizer bytes verified against Git blob d4de960dfb4ca97f957d5ce8b5d60ee761bfbdb2.
+// Only this known base64 substring is skipped, so a real key
+// elsewhere in the same file still fails. sentencepiece.js embeds a base64 tokenizer model that happens to contain "AIza".
+const knownFalsePositives={'bennyshub/shared/communication-vendor/sentencepiece.js':['AIzaxgoPCgjiloFCdWRkaBUAjtrGChEKCuKWgXBlbmRpbmcVAJDaxgoPCgjiloFFbnRyeRUAktrGCg4KB']};
 for(const file of files(dist)){
   const rel=path.relative(dist,file).replaceAll('\\','/');bytes+=fs.statSync(file).size;
   if(/(?:^|\/)(?:TO BE ADDED|artifacts|node_modules|workers|extension|__pycache__|rt-convo[^/]*)(?:\/|$)|(?:\.pem|\.key|\.py|\.exe|\.log)$|test-player\./i.test(rel))problems.push({file:rel,kind:'private/development file'});
   if(fs.statSync(file).size>100_000_000)problems.push({file:rel,kind:'file exceeds GitHub repository 100 MB limit'});
   if(!/\.(?:html|js|mjs|json|txt|css|csv|svg|webmanifest)$/.test(file))continue;
-  const text=fs.readFileSync(file,'utf8');
+  let text=fs.readFileSync(file,'utf8');
+  for(const s of knownFalsePositives[rel]||[])if(text.includes(s)){text=text.replaceAll(s,'');findings.push({file:rel,kind:'known false-positive secret pattern skipped (base64 data); review exemption'});}
   const patterns={credential:/AIza[\w-]{25,}|sk-(?:proj-|ant-)[\w-]{20,}|gh[pousr]_[\w]{25,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,private_calendar:/calendar\/ical\/[^\s"<>]*private[^\s"<>]*/,plex_server:/plex\.tv\/[^\s"<>]*server\/[a-f0-9]{20,}/,personal_path:/(?:[A-Za-z]:[\\/]{1,2}Users[\\/]{1,2}|\/Users\/)[^\s"<>]+|[A-Za-z]:[\\/]PROJECT FILES[\\/]/i,api_literal:/(?:api[_-]?key|token|secret)\s*[=:]\s*["'][A-Za-z0-9_\-]{24,}["']/i};
   for(const [kind,pattern]of Object.entries(patterns))if(pattern.test(text))problems.push({file:rel,kind});
   if(text.includes('/home/web_user'))findings.push({file:rel,kind:'generic build-container path; not personal data'});

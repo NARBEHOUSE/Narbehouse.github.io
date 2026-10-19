@@ -20,7 +20,7 @@ window.NarbeGraphics = (function () {
     if (!modes.includes(value)) throw new Error('Invalid graphics quality');
     hub.save({ version: 1, quality: value });
   }
-  function cycleHub() { setHub(modes[(modes.indexOf(getHub()) + 1) % modes.length]); return getHub(); }
+  function cycleHub(direction=1) { setHub(modes[(modes.indexOf(getHub()) + (direction<0?-1:1) + modes.length) % modes.length]); return getHub(); }
   function subscribeHub(fn) { hubListeners.add(fn); return () => hubListeners.delete(fn); }
   function normalizeGame(value) {
     let choice = canonical(value?.choice);

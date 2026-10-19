@@ -48,7 +48,7 @@ test('a newly loaded tool can share an older open Hub service without a prefetch
 
 test('Natural is the default for existing preferences and Faster preserves the chosen Natural voice',async t=>{
  const h=harness(undefined,{enabled:false,voice:'bm_george'});t.after(()=>h.api._service.dispose());
- assert.equal(h.api.get().speechMode,'natural');assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,14);
+ assert.equal(h.api.get().speechMode,'natural');assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,18);
  h.api.toggle();const natural=h.workers.at(-1);assert(natural.url.endsWith('/communication-worker.js'));assert.equal(natural.options.type,'module');
  natural.reply({id:natural.sent[0].id,ready:true});await h.flush();h.api.cycleMode();
  assert.equal(natural.terminated,true);assert.equal(h.api.get().speechMode,'fast');assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);
@@ -56,7 +56,7 @@ test('Natural is the default for existing preferences and Faster preserves the c
  fast.reply({id:fast.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
  assert.equal(h.element('speaker-quality-status').textContent,'Faster');assert.equal(h.element('speaker-voice-toggle').disabled,false);
  h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_bryce');assert.equal(h.workers.length,2);h.api.cycleMode();
- assert.equal(fast.terminated,true);assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,14);assert.equal(h.element('speaker-voice-toggle').disabled,false);
+ assert.equal(fast.terminated,true);assert.equal(h.api.get().voice,'bm_george');assert.equal(h.api.get().voices.length,18);assert.equal(h.element('speaker-voice-toggle').disabled,false);
 });
 test('Faster persists locally and obsolete setup cannot make a different mode ready',async t=>{
  const h=harness(undefined,{enabled:true,speechMode:'fast',voice:'af_heart'});t.after(()=>h.api._service.dispose());
@@ -81,4 +81,36 @@ test('returning to the previous Faster voice during setup warms its model again'
  const h=harness(undefined,{enabled:true,speechMode:'fast'});t.after(()=>h.api._service.dispose());const worker=h.workers[0];worker.reply({id:worker.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
  h.api.cycleVoice();for(let i=0;i<5;i++)h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);assert.equal(h.api.get().voicePreparing,true);
  const prepare=worker.sent.filter(m=>m.type==='prepare').at(-1);assert.equal(prepare.voice,'piper_lj');worker.reply({id:prepare.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+});
+
+test('custom voices persist, wrap backward, use their own worker and return to the standard backend',async t=>{
+ const h=harness();t.after(()=>h.api._service.dispose());
+ const id='pocket:user-012345abcdef';assert.equal(h.api.addVoice({id,name:'My voice',recorded:true}),true);
+ assert.equal(h.api.get().voice,id);assert.equal(h.api.get().custom[0].recorded,true);assert.equal(h.workers.length,0);
+ h.api.toggle();const custom=h.workers.at(-1);assert(custom.url.endsWith('/communication-pocket-worker.js'));assert.equal(custom.sent[0].voice,id);
+ custom.reply({id:custom.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+ h.api.cycleVoice();assert.equal(h.api.get().voice,'am_michael');assert.equal(custom.terminated,true);assert(h.workers.at(-1).url.endsWith('/communication-worker.js'));
+ h.api.cycleVoice(-1);assert.equal(h.api.get().voice,id);assert(h.workers.at(-1).url.endsWith('/communication-pocket-worker.js'));
+ h.api.removeVoice(id);assert.equal(h.api.get().voice,'am_michael');assert.equal(h.api.get().custom.length,0);
+});
+test('import selects Natural without losing Faster preferences; names invalidate only custom generation',async t=>{
+ const h=harness(undefined,{enabled:true,speechMode:'fast',fastVoice:'piper_norman'});t.after(()=>h.api._service.dispose());
+ const fast=h.workers.at(-1);h.api.addVoice({id:'pocket:user-abcdef012345',name:'Custom'});
+ assert.equal(fast.terminated,true);assert.equal(h.api.get().speechMode,'natural');assert.equal(h.api.get().fastVoice,'piper_norman');
+ const custom=h.workers.at(-1);h.api.setNames(['McKenna','McKenna','Ari','<invalid>']);assert.equal(custom.terminated,true);
+ assert.deepEqual(Array.from(h.api.get().names),['McKenna','Ari','invalid']);assert.deepEqual(Array.from(h.workers.at(-1).sent[0].names),['McKenna','Ari','invalid']);
+ h.api.cycleMode();assert.equal(h.api.get().voice,'piper_norman');
+});
+test('malformed or duplicate custom voice metadata is rejected',t=>{
+ const h=harness();t.after(()=>h.api._service.dispose());
+ assert.equal(h.api.addVoice({id:'pocket:../../outside',name:'Bad'}),false);
+ assert.equal(h.api.addVoice({id:'pocket:user-012345abcdef',name:'Good'}),true);
+ assert.equal(h.api.addVoice({id:'pocket:user-012345abcdef',name:'Duplicate'}),false);
+});
+
+test('cycling Custom voices reuses the model worker and cancels obsolete preparation',async t=>{
+ const h=harness(undefined,{enabled:true,voice:'pocket:b4'});t.after(()=>h.api._service.dispose());
+ const worker=h.workers[0],old=worker.sent[0];h.api.cycleVoice(-1);assert.equal(h.api.get().voice,'pocket:b2');assert.equal(h.workers.length,1);assert(worker.sent.some(m=>m.type==='cancel'&&m.id===old.id));
+ worker.reply({id:old.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,false);
+ const current=worker.sent.filter(m=>m.type==='prepare').at(-1);worker.reply({id:current.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
 });
