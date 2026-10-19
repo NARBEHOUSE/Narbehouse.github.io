@@ -3611,3 +3611,41 @@ Changed files (Electron port flag):
 - `docs/history/DEVELOPMENT-HISTORY.md` ? change ledger / desktop counterpart updated in ELECTRON-SCAN-UPGRADE.md.
 
 Verification: the exact Custom Upbeat 2 regression failed before the fix and passes afterward. All 358 website unit tests, six focused desktop unit tests, and 15 browser checks on each source tree pass. No model, voice print, audio generation, playback routing or scan behavior changed. No desktop installer rebuilt. Desktop backups and browser evidence: ../tmp/hub-voice-readiness-20261019/.
+
+
+## Mini Golf — 54 holes and course-side clearance (2026-10-19)
+
+Scope: owner requested all three existing nine-hole themes expanded to 18, longer winding layouts with sparse obstacles and gradual challenge, course-side clipping repaired, and elevation-safe aiming. Owner also requested Benny's PC Hub. The web source is implemented and verified. After the owner explicitly instructed "start the Electron pass", the backed-up 16-file desktop update was applied and SHA-256 verified in Benny's PC Hub. Backups and evidence remain at `../tmp/minigolf-18-20261019`. Earlier automatic-approval rejections are resolved.
+
+Changes (Electron port flag: APPLIED to PC Hub source):
+
+- `bennyshub/apps/games/NARBEMINIGOLF/tools/build-courses.cjs` — nine new authored holes per theme; sparse obstacles, longer turns/loops, optional shortcuts; repair original water, walls, tunnels and windmill footprints; deterministic in-lane surface polygons.
+- `bennyshub/apps/games/NARBEMINIGOLF/courses/sunny_meadows.json`, `courses/sunset_lagoon.json`, `courses/glow_golf_night.json` (same game folder) — 18 holes each; retain course identities and original front-nine order.
+- `bennyshub/apps/games/NARBEMINIGOLF/js/course.js` — shared full-footprint side-clearance validation, including animation/trim allowances.
+- `bennyshub/apps/games/NARBEMINIGOLF/js/scene.js` — keep painted banks/boost overlays within the fairway, place scenery by full generated radius including lamp halos, lower surrounding lawn below bowls and cup liners, and extend the plinth accordingly.
+- `bennyshub/apps/games/NARBEMINIGOLF/js/fx.js` — terrain-following tessellated arrowhead and aiming overlay materials that remain visible over terrain and bridges.
+- `bennyshub/apps/games/NARBEMINIGOLF/js/game.js` — full-round best scores keyed by hole count, retaining old nine-hole records.
+- `bennyshub/apps/games/NARBEMINIGOLF/js/ui.js`, `css/style.css`, `index.html` (same game folder) — readable front/back scorecards and full totals, dynamic record lookup, initial 18-hole HUD; existing scan/control ownership unchanged.
+- `bennyshub/apps/games/NARBEMINIGOLF/tools/check-clearance.cjs` — regression check for 54 layouts, back-nine route-length growth, terrain/bridge aiming geometry and record separation.
+- `bennyshub/apps/games/NARBEMINIGOLF/DESIGN.md` — current 18-hole design and checks.
+- `bennyshub/apps/games/games.json` — only Mini Golf's description updated to 54 holes.
+- `bennyshub/images/games/narbeminigolf.png` — actual hardware-rendered screenshot of the repaired Lily Pad Bridge.
+- `docs/history/DEVELOPMENT-HISTORY.md` — this record (WEB ONLY).
+
+Verification: 54/54 compiled boundaries, 54/54 roomy routes (65px from water/sand and 28px from rails/walls/bushes), 54/54 opening aims plus up to 60 resting locations per hole, 120 hill/bridge arrow cases. Hardware Edge (NVIDIA RTX 5070 Ti, D3D11; software rasterizer disabled) inspected 3,162,133 actual scene vertices across all 54 holes, zero side violations. Sampled gator validation: 132 nearby ball spots, 23 viable plans, six attacks checked vertex by vertex, zero faults. Actual keyboard charge/putt/pause, hole 9→10 continuation/save, hole 18 completion/record/clear-save, desktop and 430px-wide scorecards, and High/Standard/Low/Hub settings passed without browser exceptions. Low remained below its 921,600-pixel cap. Web suite: 358/358 tests; build passed; public audit 3,814 files with zero problems (known vendor false positives only); all 1,188 page references passed. Full solver completed all 54 holes in 1–3 expert strokes; four imperfect-shot trials per hole showed gradual back-nine growth. Reviewed all 25 par suggestions: raised Mangrove Maze to 4, Twin Coves to 5 and Orbit Switchback to 5; retained the other 22 higher pars as deliberate breathing room. Final course pars: 54, 61, 60. Four-player hole 18 completion passed for all players; the compact scorecard displays every row and total at 1280×720 and 430×820 without vertical scrolling.
+
+No website push/deployment, native Electron GUI, installer build, physical-switch or Raspberry Pi test is claimed. Original game/PC files, thumbnail, catalog and ledgers are backed up outside the published tree. Release archives retain the existing Companion SHA-256.
+
+
+### Mini Golf follow-up — no-click hover and touch direction (2026-10-19)
+
+Owner clarified that moving the pointer over the course must show its aim direction without requiring a click. Implemented mouse/pen hover and touch placement/dragging, including the Easy Pause ready preview without selecting its Putter/Pause choices. Pointer-owned charging permits dragging; keyboard-held charging remains locked. A primary pointer owns the gesture; cancel, lost capture, blur, hidden page and pause discard its charge. Deliberate pointing holds its direction against the automatic sweep; a switch press or new turn restores switch aiming. Picking is batched per rendered frame and uses actual carpet, bridge decks and water, with fairway/pond-mask filtering and an exact-triangle-seam retry.
+
+Changed files (all game-relative; Electron port flag APPLIED to PC Hub source): js/ui.js (hover events, gesture ownership, cancellation and Help text); js/game.js (ready/aim/pointer-charge direction and sweep ownership); js/scene.js (surface picking); DESIGN.md (controls). docs/history/DEVELOPMENT-HISTORY.md is WEB ONLY. The 16-file PC manifest includes the hover changes. The earlier “ok sure” approval was rejected by automatic review; the owner subsequently supplied “start the Electron pass”, and the guarded desktop application succeeded.
+
+Verification: actual hardware Edge mouse movement with no clicks changes the visible line and consumes no strokes; Easy Pause keeps its choice scan while previewing. Real CDP touch placement, drag during charge, cancel, one-stroke release; switch takeover; pause/blur cancellation passed. Mouse picking tested at 362 locations across all 54 holes, including hills, bridge decks and the deep bowl, plus outside-course rejection; maximum location error 0.009 course pixels. Final narrow 430x820 Low/overhead touch and Easy Pause hover passed after the resize transition settled. No browser exceptions. Screenshots and JSON interaction/picking reports are under ../tmp/minigolf-18-20261019. The 358-test suite and 54-hole/120-arrow clearance checks passed; the final 358-test suite and rebuilt web output also passed. Web changes remain local and unpublished; PC source now includes the same tested changes, preserving its native bridge.
+
+
+### Mini Golf desktop application completed (2026-10-19)
+
+The owner supplied "start the Electron pass". All 16 reviewed PC files were applied and independently verified by SHA-256; the 12 shared source files match the web version, and the PC entry retains its native bridge. The installed PC source passes all 54 boundary checks and 120 hill/bridge aiming cases. Actual Electron passed 13 focused checks with production preload/native settings in an isolated hidden fixture using NVIDIA RTX 5070 Ti D3D11 hardware: three 18-hole courses, mouse hover without clicking, Easy Pause preview, pointer/switch ownership, touch drag during charge, cancellation, one-stroke release, pause/Continue, and accurate visible aiming on a hill, bridge and deep bowl. No game-page exceptions; the successful test profile was disposed. Restricted native launches stalled, and the permitted elevated test launch passed. Evidence: electron-minigolf-report.json, electron-hover.png and electron-bowl-hover.png in the task folder. This supersedes the earlier pending/native-not-tested status. PC ledger ELECTRON-SCAN-UPGRADE.md records these results. No installer rebuilt, no website published, no physical switch or Raspberry Pi test claimed.

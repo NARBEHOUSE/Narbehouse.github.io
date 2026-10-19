@@ -345,3 +345,40 @@ body.cinema #barTop, body.cinema #barBottom { transform: translateY(0); }
   #bannerName { font-size: 1.5rem; }
   .pItem { min-width: 90px; font-size: 1.05rem; padding: 10px; }
 }
+
+/* Full-round cards: shared by the score overlay and results menu. */
+#scorecard { width: min(980px,96vw); max-height: 94vh; overflow: auto; }
+.scoreCards { color: var(--ink); }
+.scoreNine { overflow-x: auto; padding: 4px 6px 10px; }
+.scoreNine table { width: 100%; border-collapse: separate; border-spacing: 4px; font-weight: bold; }
+.scoreNine caption { text-align: left; font-size: 1.2rem; padding: 4px 0 8px; color: var(--green); }
+.scoreNine th, .scoreNine td { min-width: 36px; height: 38px; text-align: center; border-radius: 6px; background: #fff; }
+.scoreNine th { color: var(--cream); background: var(--green); }
+.scoreNine .name { text-align: left; white-space: nowrap; padding: 0 8px; }
+.scoreNine .tot { background: var(--green2); color: var(--cream); padding: 0 8px; }
+.scoreTotals { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; padding: 8px; font-weight: bold; }
+@media (max-width: 760px) {
+  #scorecard { padding: 10px 6px; border-width: 4px; }
+  #scoreTitle { font-size: 1.3rem; }
+  #scoreTable th, #scoreTable td, .scoreNine th, .scoreNine td { min-width: 22px; height: 30px; font-size: .85rem; padding: 0 2px; }
+  #scoreTable th.name, #scoreTable td.name { padding: 0 3px; }
+  #scoreTable .mk { width: 24px; height: 24px; }
+  .scoreNine table, #scoreTable table { border-spacing: 2px; }
+  .scoreNine .rowDot { display: none; }
+}
+
+/* Keep all four players and their full-round totals on the screen together. */
+#scoreTable .manyPlayers th, #scoreTable .manyPlayers td { height: 30px; font-size: 1.05rem; }
+#scoreTable .manyPlayers .mk { width: 25px; height: 25px; }
+.manyPlayers .scoreNine { padding-bottom: 5px; }
+.manyPlayers .scoreNine caption { font-size: 1rem; padding-bottom: 4px; }
+.manyPlayers .scoreTotals { font-size: 1rem; padding: 4px; }
+@media (max-height: 760px) {
+  #scorecard:has(.manyPlayers) { padding: 10px 14px; }
+  #scorecard:has(.manyPlayers) #scoreTitle { font-size: 1.5rem; margin-bottom: 6px; }
+  #scoreTable .manyPlayers th, #scoreTable .manyPlayers td { height: 26px; font-size: .95rem; }
+  #scoreTable .manyPlayers .mk { width: 22px; height: 22px; }
+}
+@media (max-width: 760px) {
+  #scoreTable .manyPlayers th, #scoreTable .manyPlayers td { font-size: .85rem; }
+}

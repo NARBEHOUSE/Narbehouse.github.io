@@ -525,6 +525,33 @@
     return ((d1 > 1e-6 && d2 < -1e-6) || (d1 < -1e-6 && d2 > 1e-6)) && ((d3 > 1e-6 && d4 < -1e-6) || (d3 < -1e-6 && d4 > 1e-6));
   }
 
+
+  /** Conservative full-footprint clearance, including trim and animation travel. */
+  function boundaryIssues(ch) {
+    const errors = [], fw = ch.fairway.poly;
+    const inside = (x,y,pad) => pointInPolygon(x,y,fw) && closestOnPolygon(x,y,fw).d >= pad - 0.01;
+    const polygon = (pts,pad,label) => {
+      for(let i=0;i<pts.length;i++) {
+        const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/5));
+        for(let j=0;j<=n;j++) if(!inside(a.x+(b.x-a.x)*j/n,a.y+(b.y-a.y)*j/n,pad)) {
+          errors.push(label+' is too close to the course side.'); return;
+        }
+      }
+    };
+    for(const key of ['waters','sands','ice','boosts']) ch[key].forEach((r,i)=>polygon(r.poly,8,key+' '+(i+1)));
+    ch.walls.forEach((b,i)=>polygon(boxCorners(b),3,'Wall '+(i+1)));
+    ch.bridges.forEach((b,i)=>polygon(boxCorners(b),6,'Bridge '+(i+1)));
+    ch.windmills.forEach((w,i)=>polygon(boxCorners(makeBox(w.box.cx,w.box.cy,w.box.hw+16,Math.max(w.box.hh+6,120),w.box.angle)),6,'Windmill '+(i+1)));
+    ch.bumpers.forEach((b,i)=>{if(!inside(b.x,b.y,b.radius*1.5+6)) errors.push('Bumper '+(i+1)+' is too close to the course side.');});
+    ch.bushes.forEach((b,i)=>{if(!inside(b.x,b.y,b.radius*1.8+8)) errors.push('Bush '+(i+1)+' is too close to the course side.');});
+    ch.tunnels.forEach((t,i)=>{
+      if(!inside(t.x1,t.y1,t.radius*1.22+6)) errors.push('Tunnel '+(i+1)+' entrance is too close to the course side.');
+      const a=t.exitAngle*Math.PI/180,box=makeBox(t.x2-Math.cos(a)*t.radius*0.8,t.y2-Math.sin(a)*t.radius*0.8,t.radius*1.15,t.radius*1.22,t.exitAngle);
+      polygon(boxCorners(box),6,'Tunnel '+(i+1)+' exit');
+    });
+    return errors;
+  }
+
   /**
    * Everything that would make a hole unplayable or confusing, in plain words.
    * Needs MG.physics (for what's underfoot), which every user of this loads.
@@ -533,7 +560,7 @@
     const h = normaliseHole(raw);
     const ch = compileHole(h);
     const P = MG.physics;
-    const errs = [];
+    const errs = boundaryIssues(ch);
     const poly = ch.fairway.poly, n = poly.length;
     let crosses = 0;
     for (let a = 0; a < n; a++) for (let b = a + 2; b < n; b++) {
@@ -568,7 +595,7 @@
     makeBox, boxFromRect, toLocal, inBox, boxCorners,
     hillHeight, hillGradient, terrainHeight, surfaceHeight, bridgeDeck,
     windmillSailAngle, windmillGateClosed,
-    normaliseCourse, normaliseHole, compileHole, validateHole,
+    normaliseCourse, normaliseHole, compileHole, validateHole, boundaryIssues,
     WINDMILL_DEFAULTS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

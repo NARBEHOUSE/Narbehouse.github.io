@@ -25,6 +25,11 @@
   const WATER_DROP = 0.6;     // water surface below the carpet
   const CUP_DEPTH = 1.6;
 
+  // Deep bowls and cup liners must stay above the surrounding lawn.
+  function courseBaseY(ch) {
+    return Math.min(GROUND_Y, ch.hills.reduce((h,k)=>h+Math.min(0,k.height),0)*S - CUP_DEPTH - 0.25);
+  }
+
   /* ── Environment ──────────────────────────────────────────────────────── */
 
   const env = {
@@ -345,6 +350,8 @@
     g.lineWidth = 16 * k; g.strokeStyle = 'rgba(0,0,0,0.16)'; g.stroke();
     g.restore();
 
+    // Keep bank shading inside the course as well as the carpet itself.
+    g.save(); tracePoly(g, ch.fairway.poly, map); g.clip();
     // Wet edges around ponds, then cut the ponds out.
     for (const reg of ch.waters) {
       tracePoly(g, reg.poly, map);
@@ -368,6 +375,7 @@
       g.globalCompositeOperation = 'source-over';
     }
 
+    g.restore();
     return { color: c, rough };
   }
 
@@ -378,6 +386,7 @@
     const k = frame.k * 0.5;
     const c = A.canvas(Math.ceil(frame.cw / 2), Math.ceil(frame.chh / 2)), g = c.getContext('2d');
     const map = (x, y) => [(x - x0) * k, (y - y0) * k];
+    g.save(); tracePoly(g, ch.fairway.poly, map); g.clip();
     for (const reg of ch.boosts) {
       const r = reg.directional ? Math.round((reg.dirX * 0.5 + 0.5) * 255) : 128;
       const gg = reg.directional ? Math.round((reg.dirY * 0.5 + 0.5) * 255) : 128;
@@ -385,6 +394,9 @@
       g.fillStyle = `rgb(${r},${gg},255)`;
       g.fill();
     }
+    g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
+    for (const reg of ch.waters) { tracePoly(g, reg.poly, map); g.fill(); }
+    g.restore();
     const t = A.tex(c, { srgb: false });
     t.minFilter = THREE.LinearFilter;
     t.generateMipmaps = false;
@@ -404,7 +416,7 @@
     varying vec2 vUv; varying vec2 vXZ;
     void main() {
       vec4 m = texture2D(mask, vUv);
-      if (m.b < 0.5) discard;
+      if (m.b < 0.5 || m.a < 0.5) discard;
       vec2 d = m.rg * 2.0 - 1.0;
       float pat;
       if (length(d) < 0.3) {
@@ -513,7 +525,7 @@
       // Profile points (x,y,z), with an outward-ish normal for each.
       const prof = [
         [a.x, h - 0.12, a.z], [a.x, top - 0.12, a.z], [b.x, top, b.z],
-        [c.x, top, c.z], [d.x, top - 0.12, d.z], [d.x, GROUND_Y - 0.05, d.z]
+        [c.x, top, c.z], [d.x, top - 0.12, d.z], [d.x, courseBaseY(ch) - 0.05, d.z]
       ];
       rings.push({ prof, u: dist * S * 0.5, nx: v.x, nz: v.y });
     }
@@ -657,6 +669,7 @@
       const surf = new THREE.Mesh(sg, waterMat);
       surf.position.y = level;
       surf.receiveShadow = true;
+      surf.name = 'water-surface';
       group.add(surf);
       const bed = new THREE.Mesh(sg.clone(), bedMat);
       bed.position.y = level - 0.9;
@@ -773,6 +786,7 @@
     const wood = A.woodTexture(th.glow ? '#5a4a8a' : '#c08a52');
     const deck = new THREE.Mesh(A.merge(deckParts), new THREE.MeshStandardMaterial({ map: wood, roughness: 0.8, side: THREE.DoubleSide }));
     deck.receiveShadow = true; deck.castShadow = true;
+    deck.name = 'bridge-deck';
     const rails = new THREE.Mesh(A.merge(railParts), new THREE.MeshStandardMaterial({ map: A.woodTexture(th.glow ? '#3df5ff' : '#8a5a34'), roughness: 0.8 }));
     rails.castShadow = true; rails.receiveShadow = true;
     group.add(deck, rails);
@@ -809,6 +823,13 @@
     const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
     const rx = (bb.x1 - bb.x0) / 2, ry = (bb.y1 - bb.y0) / 2;
     const parts = [], glowSpots = [];
+    const groundY = courseBaseY(ch);
+    const placeOutside = (geo,x,y,rotation=0,reservedRadius=0) => {
+      const p=geo.attributes.position; let radius=reservedRadius;
+      for(let i=0;i<p.count;i++) radius=Math.max(radius,Math.hypot(p.getX(i),p.getZ(i))/S);
+      if(insideAny(ch,x,y,RAIL_W+radius+8)) { geo.dispose(); return false; }
+      parts.push(A.place(geo,x*S,groundY,y*S,rotation)); return true;
+    };
     const taken = [];
     const free = (x, y, r) => {
       if (signSpot && Math.hypot(x - signSpot.x, y - signSpot.y) < r + 60) return false;
@@ -827,7 +848,7 @@
       if (insideAny(ch, x, y, 120) || !free(x, y, 70)) continue;
       const s = 0.9 + rnd() * 0.7;
       const geo = (th.trees !== 'palm' && rnd() < 0.3) ? A.treePine(th, rnd, s) : tree(th, rnd, s);
-      parts.push(A.place(geo, x * S, GROUND_Y, y * S, rnd() * 6.28));
+      if (!placeOutside(geo, x, y, rnd() * 6.28)) continue;
       taken.push({ x, y, r: 60 * s });
       trees++;
     }
@@ -839,7 +860,7 @@
       const off = RAIL_W + 34 + rnd() * 40;
       const x = fw.poly[i].x - e.nx * off, y = fw.poly[i].y - e.ny * off;
       if (insideAny(ch, x, y, RAIL_W + 20) || !free(x, y, 30) || rnd() < 0.35) continue;
-      parts.push(A.place(A.flowerPatch(th, rnd, 0.9 + rnd() * 0.6), x * S, GROUND_Y, y * S));
+      if (!placeOutside(A.flowerPatch(th, rnd, 0.9 + rnd() * 0.6), x, y)) continue;
       taken.push({ x, y, r: 30 });
     }
     // Rocks.
@@ -847,7 +868,7 @@
       const a = rnd() * Math.PI * 2;
       const x = cx + Math.cos(a) * (rx + 90 + rnd() * 260), y = cy + Math.sin(a) * (ry + 90 + rnd() * 260);
       if (insideAny(ch, x, y, RAIL_W + 30) || !free(x, y, 25)) continue;
-      parts.push(A.place(A.rock(th, rnd, 0.5 + rnd() * 1.1), x * S, GROUND_Y, y * S, rnd() * 6));
+      if (!placeOutside(A.rock(th, rnd, 0.5 + rnd() * 1.1), x, y, rnd() * 6)) continue;
       taken.push({ x, y, r: 25 });
     }
     // Lamp posts at night, and in the evening.
@@ -856,10 +877,10 @@
       for (let i = 0; i < n; i++) {
         const k = Math.floor(i * fw.poly.length / n);
         const e = fw.edges[k];
-        const x = fw.poly[k].x - e.nx * (RAIL_W + 46), y = fw.poly[k].y - e.ny * (RAIL_W + 46);
+        const x = fw.poly[k].x - e.nx * (RAIL_W + 80), y = fw.poly[k].y - e.ny * (RAIL_W + 80);
         if (insideAny(ch, x, y, RAIL_W + 30) || !free(x, y, 20)) continue;
-        parts.push(A.place(A.lampPost(th, rnd), x * S, GROUND_Y, y * S));
-        glowSpots.push(new THREE.Vector3(x * S, GROUND_Y + 3.6, y * S));
+        if (!placeOutside(A.lampPost(th, rnd), x, y, 0, 36)) continue;
+        glowSpots.push(new THREE.Vector3(x * S, groundY + 3.6, y * S));
         taken.push({ x, y, r: 20 });
       }
     }
@@ -874,11 +895,12 @@
         const x1 = cx + Math.cos(a1) * fx, y1 = cy + Math.sin(a1) * fy;
         const len = Math.hypot(x1 - x0, y1 - y0) * S;
         const ang = Math.atan2(y1 - y0, x1 - x0);
-        parts.push(A.place(A.fencePanel(th, rnd, len), (x0 + x1) / 2 * S, GROUND_Y, (y0 + y1) / 2 * S, -ang));
+        placeOutside(A.fencePanel(th, rnd, len), (x0+x1)/2, (y0+y1)/2, -ang);
       }
     }
 
     const group = new THREE.Group();
+    group.name = 'surroundings';
     if (parts.length) {
       const mesh = new THREE.Mesh(A.merge(parts), A.vcMaterial());
       mesh.castShadow = true; mesh.receiveShadow = true;
@@ -919,13 +941,13 @@
       const px = -Math.sin(ang) * side, py = Math.cos(ang) * side;
       for (let d = 40; d < 600; d += 15) {
         const x = ch.start.x + px * d - Math.cos(ang) * 30, y = ch.start.y + py * d - Math.sin(ang) * 30;
-        if (!insideAny(ch, x, y, RAIL_W + 26)) return { x, y, face: Math.atan2(ch.start.y - y, ch.start.x - x) };
+        if (!insideAny(ch, x, y, RAIL_W + 34)) return { x, y, face: Math.atan2(ch.start.y - y, ch.start.x - x) };
       }
     }
     // Fall back to behind the tee.
     for (let d = 40; d < 800; d += 15) {
       const x = ch.start.x - Math.cos(ang) * d, y = ch.start.y - Math.sin(ang) * d;
-      if (!insideAny(ch, x, y, RAIL_W + 26)) return { x, y, face: ang };
+      if (!insideAny(ch, x, y, RAIL_W + 34)) return { x, y, face: ang };
     }
     return { x: ch.start.x, y: ch.start.y - 200, face: 0 };
   }
@@ -940,6 +962,7 @@
   function buildHole(ch, holeNumber, themeName, opts) {
     opts = opts || {};
     const th = A.theme(themeName);
+    if (env.ground) env.ground.position.y = courseBaseY(ch);
     const group = new THREE.Group();
     group.name = 'hole';
 
@@ -1018,7 +1041,7 @@
 
     const ss = signSpot(ch);
     const sign = A.makeSign(holeNumber, ch.par, ch.name, th);
-    sign.position.set(ss.x * S, GROUND_Y, ss.y * S);
+    sign.position.set(ss.x * S, courseBaseY(ch), ss.y * S);
     sign.rotation.y = -ss.face + Math.PI / 2;
     group.add(sign);
 
@@ -1038,8 +1061,34 @@
 
     let flagLift = 0, flagLiftTarget = 0;
 
+    // Pick only playing surfaces. Scenery, rails and aiming overlays must not
+    // steal the pointer, and the carpet's transparent pond cutouts are ignored.
+    const aimSurfaces = [carpet], seamRay = new THREE.Raycaster();
+    if (water) aimSurfaces.push(...water.children.filter(m => m.name === 'water-surface'));
+    if (bridges) aimSurfaces.push(...bridges.children.filter(m => m.name === 'bridge-deck'));
+
     const view = {
       group, ch, th, holeNumber,
+      pickCoursePoint(raycaster) {
+        group.updateWorldMatrix(true, true);
+        for (let pass = 0; pass < 2; pass++) {
+          const picker = pass ? seamRay : raycaster;
+          if (pass) {
+            // A ray exactly on a shared triangle edge can miss both faces due
+            // to rounding. Retry a microscopic parallel offset on that seam.
+            seamRay.ray.copy(raycaster.ray);
+            seamRay.ray.origin.x += 1e-6; seamRay.ray.origin.z += 1.37e-6;
+            seamRay.near = raycaster.near; seamRay.far = raycaster.far;
+          }
+          for (const hit of picker.intersectObjects(aimSurfaces, false)) {
+            const x = hit.point.x / S, y = hit.point.z / S;
+            if (!C.pointInPolygon(x, y, ch.fairway.poly)) continue;
+            if (hit.object === carpet && ch.waters.some(w => C.pointInPolygon(x, y, w.poly))) continue;
+            return { x, y };
+          }
+        }
+        return null;
+      },
       cupWorld: cup.position.clone(),
       flag, sign, signSpot: ss,
       centre, radius,

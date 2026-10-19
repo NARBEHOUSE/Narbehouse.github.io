@@ -113,9 +113,9 @@ built-in courses.
 - `node tools/check-courses.cjs [file …]` — a perfect bot and a "decent
   human" bot play every hole; suggests pars. Run at low priority; ~1 min/course.
 - `node tools/check-aim.cjs` — every hole opens facing the right way (and from
-  anywhere the ball might stop). Must report 27/27.
+  anywhere the ball might stop). Must report 54/54.
 - `node tools/check-paths.cjs` — every hole has a clear way to the cup. Must
-  report 27/27.
+  report 54/54.
 - `node tools/check-gator.cjs [--every N] [--plots DIR]` — plans the alligator
   for ball spots near every pond and plays each attack vertex by vertex on
   the real three.js meshes (in Node — no browser); `--plots` draws top and
@@ -129,9 +129,9 @@ to enable) because software WebGL froze the family PC. Don't run them there.
 
 | Course | Theme | Par | Idea |
 | --- | --- | --- | --- |
-| Sunny Meadows | sunny | 20 | One new thing per hole: dogleg, sand, bumpers, hill, bridge, windmill, boost + ice, tunnel |
-| Sunset Lagoon | sunset | 24 | Water: pier bridge, sandbar, shipwreck tunnel shortcut, spiral, mangrove walls |
-| Glow Golf Night | night | 24 | Neon arcade: laser gates, ice rink, boost loop, pinball, black-hole bowl, warp tunnels |
+| Sunny Meadows | sunny | 54 | One new thing per hole: dogleg, sand, bumpers, hill, bridge, windmill, boost + ice, tunnel |
+| Sunset Lagoon | sunset | 61 | Water: pier bridge, sandbar, shipwreck tunnel shortcut, spiral, mangrove walls |
+| Glow Golf Night | night | 60 | Neon arcade: laser gates, ice rink, boost loop, pinball, black-hole bowl, warp tunnels |
 
 ## Course Creator
 
@@ -194,3 +194,18 @@ The entry, for reference:
 
 `main.js` changes (the editor registration) take effect after the hub
 restarts. The thumbnail is a screenshot of Sunny Meadows hole 6 from 2026-10-01.
+
+## 18-hole expansion — 2026-10-19
+
+All three themes retain their original front nine and now have a distinct back nine (54 holes total). Later holes use longer, wider bends and return routes, with sparse hazards and optional shortcuts. Pars deliberately allow breathing room beyond the solver's best routes. The course builder contains the layouts and refuses objects whose full footprints cross the sides. Old nine-hole best scores remain stored separately from 18-hole records; unfinished rounds can continue through the back nine.
+
+Ponds and surface patches are contained in the fairway in the actual course data, so physics, bank meshes and painted surfaces agree. Scenery clearance uses the full generated mesh footprint, including lamp halos; windmills, tunnel mouths, bushes and bumper animation have clearance allowances. The lawn drops below deep bowls and cup liners. Aiming ribbons and tessellated arrowheads follow terrain and bridges and render as visible aiming overlays. Scorecards show front and back nine separately, including totals. The thumbnail is a fresh in-game capture of the repaired Lily Pad Bridge.
+
+Regression check: `node tools/check-clearance.cjs` checks all 54 layouts, route-length growth, 120 hill/bridge arrow cases and score-record separation. Continue to run check-paths, check-aim and the solver after layout edits. Browser testing must use an isolated runtime and hardware graphics; the old software-WebGL warning still applies.
+
+
+### Mouse hover and touch aiming
+
+Moving a mouse or hovering a pen over the course updates the aim line without a click, including the Easy Pause pre-shot preview (which keeps its Putter/Pause scan). Touch placement/dragging sets the direction; holding starts the existing charge-and-release putt, and dragging can adjust the direction during that pointer charge. A short tap only aims. Keyboard-held charge remains locked. Pointer cancellation, lost capture, lost focus, hidden pages and pause cancel an unfinished pointer charge. The primary pointer owns the gesture.
+
+Picking uses the rendered carpet, bridge decks and water surfaces with fairway and transparent-pond filtering, plus a microscopic retry at triangle seams. It runs at most once per game frame for hover/drag. A deliberate pointer aim stops the automatic sweep until a switch resumes it or a new turn starts; switch holds retain priority. Existing keyboard/switch power choices and camera behavior are preserved.

@@ -304,7 +304,7 @@
     {
       "id": "narbeminigolf",
       "title": "NARBE Mini Golf",
-      "description": "3D mini golf you play with one or two switches. Hold Space to turn your aim and Enter to putt, or pick how hard to hit from a list. Three courses full of bridges, windmills, bumpers, ice, tunnels and a sneaky alligator, with cinematic replays, up to four players, and a Course Creator for building your own holes.",
+      "description": "3D mini golf you play with one or two switches. Three themed 18-hole courses (54 holes) grow from friendly greens into longer winding routes, with roomy bridges, gentle hills and optional shortcuts. Includes up to four players, cinematic replays and a Course Creator.",
       "path": "apps/games/NARBEMINIGOLF/index.html",
       "image": "images/games/narbeminigolf.png",
       "genres": [

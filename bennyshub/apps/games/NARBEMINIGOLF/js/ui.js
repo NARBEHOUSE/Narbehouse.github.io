@@ -83,7 +83,7 @@
     ov.classList.toggle('on', on);
     ov.classList.toggle('center', !!opts.center);
     ov.classList.toggle('wide', !!opts.wide);
-    if (on) { clearKeysKeepIgnores(); hideHoldRing(); }
+    if (on) { finishPointer(true); clearKeysKeepIgnores(); hideHoldRing(); }
     refreshChrome();
     restartAutoScan();
   }
@@ -343,7 +343,7 @@
     course: {
       build() {
         const list = courses.map((c, i) => {
-          const best = MG.progress.best(c.file, sel.mode === 'challenge' ? 'challenge' : 'casual');
+          const best = MG.progress.best(c.file, c.course.holes.length, sel.mode === 'challenge' ? 'challenge' : 'casual');
           const par = c.course.holes.reduce((a, h) => a + h.par, 0);
           const th = A.theme(c.course.theme);
           return {
@@ -369,7 +369,7 @@
           : pm === 'choose' ? 'Press Enter, then pick how hard to hit from the list.'
             : 'Press Enter to putt. The game picks the power.';
         const pauseLine = MG.settings.get('easyPause') ? 'Before each putt, scan to your putter to putt, or to Pause.' : 'Hold Enter to pause.';
-        const lines = [aimLine, powerLine, pauseLine, 'Fewest strokes wins. Watch out for water, sand, ice, and the alligator!'];
+        const lines = [aimLine, powerLine, 'Mouse: move over the course to aim without clicking. Touch: place or drag a finger to aim. Hold to charge, then release to putt.', pauseLine, 'Fewest strokes wins. Watch out for water, sand, ice, and the alligator!'];
         return {
           title: 'How to Play',
           items: lines.map(t => ({ label: t, info: true })).concat([{ label: '← Back', action: back }]),
@@ -886,23 +886,28 @@
   }
 
   function scoreTableHtml(d) {
-    const n = d.pars.length;
-    let h = '<table><tr><th class="name">Hole</th>';
-    for (let i = 0; i < n; i++) h += '<th>' + (i + 1) + '</th>';
-    h += '<th>Tot</th></tr><tr class="par"><td class="name">Par</td>';
-    let pt = 0;
-    for (let i = 0; i < n; i++) { h += '<td>' + d.pars[i] + '</td>'; pt += d.pars[i]; }
-    h += '<td class="tot">' + pt + '</td></tr>';
-    for (const p of d.players) {
-      h += '<tr><td class="name"><span class="rowDot" style="background:' + p.color + ';vertical-align:middle;margin-right:8px"></span>' + U.escapeHtml(p.name) + '</td>';
-      for (let i = 0; i < n; i++) {
-        const v = p.strokes[i];
-        const cls = markClass(v, d.pars[i]);
-        h += '<td' + (i === d.current ? ' class="cur"' : '') + '>' + (v ? '<span class="mk ' + cls + '">' + v + '</span>' : '') + '</td>';
+    // Nine columns per card keeps hole 18 legible in the in-play and final views.
+    let html = '<div class="scoreCards' + (d.players.length > 2 ? ' manyPlayers' : '') + '">';
+    for (let start = 0; start < d.pars.length; start += 9) {
+      const end = Math.min(start + 9, d.pars.length);
+      let h = '<section class="scoreNine"><table><caption>Holes ' + (start+1) + '–' + end + '</caption><tr><th class="name">Hole</th>';
+      for(let i=start;i<end;i++) h += '<th>'+(i+1)+'</th>';
+      h += '<th>Total</th></tr><tr class="par"><td class="name">Par</td>';
+      for(let i=start;i<end;i++) h += '<td>'+d.pars[i]+'</td>';
+      h += '<td class="tot">'+d.pars.slice(start,end).reduce((a,b)=>a+b,0)+'</td></tr>';
+      for(const p of d.players) {
+        h += '<tr><td class="name"><span class="rowDot" style="background:'+p.color+';vertical-align:middle;margin-right:8px"></span>'+U.escapeHtml(p.name)+'</td>';
+        for(let i=start;i<end;i++) {
+          const v=p.strokes[i],cls=markClass(v,d.pars[i]);
+          h += '<td'+(i===d.current?' class="cur"':'')+'>'+(v?'<span class="mk '+cls+'">'+v+'</span>':'')+'</td>';
+        }
+        h += '<td class="tot">'+p.strokes.slice(start,end).reduce((a,b)=>a+(b||0),0)+'</td></tr>';
       }
-      h += '<td class="tot">' + p.total + ' <small>(' + U.toPar(p.toPar) + ')</small></td></tr>';
+      html += h+'</table></section>';
     }
-    return h + '</table>';
+    html += '<div class="scoreTotals">';
+    for(const p of d.players) html += '<span>'+U.escapeHtml(p.name)+': '+p.total+' ('+U.toPar(p.toPar)+')</span>';
+    return html+'</div></div>';
   }
 
   function onScorecard(d, o) {
@@ -942,50 +947,79 @@
 
   /* ── Pointer play (mouse, touch) ──────────────────────────────────────── */
 
-  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
-  let pointerDown = false, pointerChargeTimer = null, pointerCharging = false;
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let pointerId = null, pointerChargeTimer = null, pointerCharging = false, pendingPointer = null;
 
   function pointerToCourse(e) {
-    const r = e.target.getBoundingClientRect();
+    const canvas = MG.main.renderer.domElement;
+    const r = canvas.getBoundingClientRect();
+    if (!G.view || !r.width || !r.height || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
     ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    MG.main.camera.updateMatrixWorld();
     ray.setFromCamera(ndc, MG.main.camera);
-    const b = G.currentBall();
-    plane.constant = -(b && G.view ? G.view.surfaceY(b.x, b.y) : 0);
-    if (!ray.ray.intersectPlane(plane, hit)) return null;
-    return { x: hit.x / MG.course.S, y: hit.z / MG.course.S };
+    return G.view.pickCoursePoint(ray);
+  }
+
+  function applyPointerAim(e) {
+    const readyPreview = G.state === 'ready' && !overlayOn && !G.paused;
+    if ((!readyPreview && ctx() !== 'play') || keyDown.Space || keyDown.Enter) return;
+    if (pointerId !== null ? e.pointerId !== pointerId : (e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    const c = pointerToCourse(e);
+    if (c) G.pointerAim(c.x, c.y, pointerCharging);
   }
 
   function onPointerMove(e) {
-    if (ctx() !== 'play') return;
-    if (e.pointerType === 'mouse' || pointerDown) {
-      const c = pointerToCourse(e);
-      if (c) G.pointerAim(c.x, c.y);
-    }
+    // Pick once per rendered frame, even with a high-rate mouse on a long hole.
+    pendingPointer = e;
   }
 
   function onPointerDown(e) {
-    if (G.state === 'ready' && !overlayOn && !G.paused) { closePowerMenu(); G.choosePutt(); }
+    if (!e.isPrimary || e.button !== 0 || pointerId !== null || keyDown.Space || keyDown.Enter) return;
+    if (overlayOn || G.paused || (G.state !== 'ready' && G.state !== 'aim')) return;
+    const c = pointerToCourse(e);
+    if (!c) return;
+    if (G.state === 'ready') { closePowerMenu(); G.choosePutt(); }
     if (ctx() !== 'play') return;
     if (e.cancelable) e.preventDefault();
     AU.ambience(true);
-    pointerDown = true;
-    const c = pointerToCourse(e);
-    if (c) G.pointerAim(c.x, c.y);
+    pendingPointer = null;
+    pointerId = e.pointerId;
+    $('canvasWrap').setPointerCapture(e.pointerId);
+    G.pointerAim(c.x, c.y);
     clearTimeout(pointerChargeTimer);
     pointerChargeTimer = setTimeout(() => {
-      if (!pointerDown || G.state !== 'aim') return;
+      if (pointerId === null || ctx() !== 'play' || G.state !== 'aim') return;
       const saved = MG.settings.get('power');
       // Mouse and touch always charge-and-release, whatever the switch setting.
-      if (saved !== 'hold') { MG.settings.set('power', 'hold'); G.enterDown(); MG.settings.set('power', saved); }
-      else G.enterDown();
-      pointerCharging = true;
+      try {
+        if (saved !== 'hold') MG.settings.set('power', 'hold');
+        pointerCharging = G.enterDown() === 'charge';
+      } finally {
+        if (saved !== 'hold') MG.settings.set('power', saved);
+      }
     }, 350);
   }
 
-  function onPointerUp() {
-    clearTimeout(pointerChargeTimer);
-    pointerDown = false;
-    if (pointerCharging) { pointerCharging = false; G.enterUp(); }
+  function finishPointer(cancelled) {
+    clearTimeout(pointerChargeTimer); pointerChargeTimer = null;
+    const id = pointerId, charged = pointerCharging;
+    pointerId = null; pointerCharging = false; pendingPointer = null;
+    const surface = $('canvasWrap');
+    if (id !== null && surface.hasPointerCapture(id)) surface.releasePointerCapture(id);
+    if (charged) {
+      if (cancelled || ctx() !== 'play') G.cancelCharge();
+      else G.enterUp();
+    }
+  }
+
+  function onPointerUp(e) {
+    if (e.pointerId !== pointerId) return;
+    applyPointerAim(e); // use the final placement when a finger lifts
+    finishPointer(false);
+  }
+
+  function onPointerCancel(e) {
+    if (e.pointerId === pointerId) finishPointer(true);
   }
 
   /* ── Switch input ─────────────────────────────────────────────────────── */
@@ -1007,6 +1041,7 @@
     if (!isSwitchKey(e.code)) return;
     e.preventDefault();
     const k = normKey(e.code);
+    if (pointerId !== null) finishPointer(true); // switches take over without releasing a pointer shot
     if (e.repeat) return;
     if (ignoreUntilRelease[k]) return;
     if (keyDown[k]) return;
@@ -1107,6 +1142,7 @@
   /* ── Per-frame ────────────────────────────────────────────────────────── */
 
   function tick() {
+    if (pendingPointer) { const e = pendingPointer; pendingPointer = null; applyPointerAim(e); }
     updatePutterScanOutline();
     const c = ctx();
     if (c === 'menu' || c === 'idle') { if (!keyDown.Enter) hideHoldRing(); return; }
@@ -1151,12 +1187,15 @@
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('narbe-input-cancelled', onInputCancelled);
-    window.addEventListener('blur', () => { clearKeysKeepIgnores(); hideHoldRing(); });
+    window.addEventListener('blur', () => { finishPointer(true); clearKeysKeepIgnores(); hideHoldRing(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) finishPointer(true); });
 
     const surface = $('canvasWrap');
     surface.addEventListener('pointermove', onPointerMove, { passive: false });
     surface.addEventListener('pointerdown', onPointerDown, { passive: false });
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
+    surface.addEventListener('lostpointercapture', onPointerCancel);
     U.addTap($('pauseBtn'), () => openPause());
     U.addTap($('scorecard'), () => G.skip());
 

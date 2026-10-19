@@ -272,6 +272,34 @@
     return m;
   }
 
+  // Tessellate the arrowhead as well as the ribbon. Sampling only the tip
+  // leaves the broad, flat triangle buried in an uphill or side-slope.
+  function makeArrowMesh(mat) {
+    const points=[], indices=[], rows=[], n=16;
+    for(let i=0;i<=n;i++) {
+      rows[i]=points.length/3;
+      for(let j=0;j<=i;j++) points.push(-i/n,0,(2*j-i)*0.62/n);
+    }
+    for(let i=0;i<n;i++) for(let j=0;j<=i;j++) {
+      indices.push(rows[i]+j,rows[i+1]+j,rows[i+1]+j+1);
+      if(j<i) indices.push(rows[i]+j,rows[i+1]+j+1,rows[i]+j+1);
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(points,3).setUsage(THREE.DynamicDrawUsage)); g.setIndex(indices);
+    const m=new THREE.Mesh(g,mat); m.frustumCulled=false; m.userData.localPoints=points; return m;
+  }
+
+  function fitArrow(mesh,end,dir,length,lift,tipOffset=0) {
+    const p=mesh.geometry.attributes.position, local=mesh.userData.localPoints;
+    const c=Math.cos(dir),s=Math.sin(dir);
+    for(let i=0;i<p.count;i++) {
+      const x=end.x+c*(local[i*3]*length+tipOffset)-s*local[i*3+2]*length;
+      const y=end.y+s*(local[i*3]*length+tipOffset)+c*local[i*3+2]*length;
+      p.setXYZ(i,x*S,view.surfaceY(x,y)+lift,y*S);
+    }
+    p.needsUpdate=true;
+  }
+
   function initAim() {
     dashTex = A.dashTexture().clone();
     dashTex.needsUpdate = true;
@@ -279,17 +307,19 @@
     ribbon = makeRibbonMesh(new THREE.MeshBasicMaterial({ map: dashTex, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
     outline = makeRibbonMesh(new THREE.MeshBasicMaterial({ color: '#0b1d14', transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
     outline.renderOrder = 4;
-    const tri = new THREE.BufferGeometry();
-    tri.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, -1, 0, -0.62, -1, 0, 0.62], 3));
-    tri.setIndex([0, 1, 2]);
-    arrow = new THREE.Mesh(tri, new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
-    arrow.renderOrder = 6;
-    arrowOut = new THREE.Mesh(tri, new THREE.MeshBasicMaterial({ color: '#0b1d14', side: THREE.DoubleSide, depthWrite: false, transparent: true, opacity: 0.6 }));
-    arrowOut.renderOrder = 4;
+    arrow = makeArrowMesh(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
+    arrow.renderOrder = 16;
+    arrowOut = makeArrowMesh(new THREE.MeshBasicMaterial({ color: '#0b1d14', side: THREE.DoubleSide, depthWrite: false, transparent: true, opacity: 0.6 }));
+    arrowOut.renderOrder = 14;
     ghost = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.35, depthWrite: false }));
     ghostRing = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 32), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
     ghostRing.rotation.x = -Math.PI / 2;
-    for (const m of [ribbon, outline, arrow, arrowOut, ghost, ghostRing]) { m.visible = false; scene.add(m); }
+    for (const m of [ribbon, outline, arrow, arrowOut, ghost, ghostRing]) {
+      // Aiming is a HUD cue: terrain, rails and bridge edges must not hide it.
+      m.material.depthTest = false; m.material.transparent = true;
+      if (m !== arrow && m !== arrowOut) m.renderOrder += 10;
+      m.visible = false; scene.add(m);
+    }
   }
 
   /**
@@ -397,16 +427,9 @@
     ribbon.visible = outline.visible = true;
 
     const dir = Math.atan2(end.y - prev.y, end.x - prev.x);
-    const ay = view.surfaceY(end.x, end.y) + 0.075;
-    const sc = arrowLen * S;
-    arrow.position.set(end.x * S, ay, end.y * S);
-    arrow.rotation.set(0, -dir, 0);
-    arrow.scale.set(sc, 1, sc);
+    fitArrow(arrow,end,dir,arrowLen,0.10);
+    fitArrow(arrowOut,end,dir,arrowLen*1.35,0.08,arrowLen*0.18);
     arrow.material.color.set(o.color || '#ffffff');
-    arrowOut.position.set(end.x * S, ay - 0.012, end.y * S);
-    arrowOut.rotation.set(0, -dir, 0);
-    arrowOut.scale.set(sc * 1.35, 1, sc * 1.35);
-    arrowOut.position.x += Math.cos(dir) * sc * 0.18; arrowOut.position.z += Math.sin(dir) * sc * 0.18;
     arrow.visible = arrowOut.visible = !o.noArrow;
 
     if (o.ghostR && o.ghostAt) {

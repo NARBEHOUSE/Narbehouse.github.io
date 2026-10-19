@@ -65,8 +65,9 @@
   /* ── Progress ─────────────────────────────────────────────────────────── */
 
   const progress = {
-    best(file, mode) { const b = U.load('best', {}); return b[file] && b[file][mode]; },
-    record(file, mode, total) {
+    best(file, holes, mode) { const b = U.load('best', {}); const key = file + ':' + holes; return b[key] && b[key][mode]; },
+    record(file, holes, mode, total) {
+      file += ':' + holes; // Nine-hole records remain stored, separate from full rounds.
       const b = U.load('best', {});
       b[file] = b[file] || {};
       const prev = b[file][mode];
@@ -95,7 +96,7 @@
   let testMode = false;
 
   // Aim / power
-  let aimAngle = 0, aimDir = 1, aimHeld = false;
+  let aimAngle = 0, aimDir = 1, aimHeld = false, pointerControlled = false;
   let charging = false, power = 0, chargeBeep = 0;
   let previewPower = null;           // Choose-from-list highlight
   let autoPower = 0.3, autoDirty = true, autoAt = 0;
@@ -354,7 +355,7 @@
     p.prevX = p.ball.x; p.prevY = p.ball.y;
     if (!first || roundMode === 'multi') aimAngle = smartAim(p.ball);
     turnViewYaw = smartAim(p.ball);
-    aimHeld = false; charging = false; power = 0; previewPower = null;
+    aimHeld = false; pointerControlled = false; charging = false; power = 0; previewPower = null;
     autoDirty = true; predictCache.key = '';
     gatorTimer = 0; gatorJob = null;
     // Easy Pause, for a player who can't hold a switch: every turn starts with a
@@ -414,19 +415,25 @@
 
   function aimPress() {
     if (state !== 'aim' || charging) return;
+    pointerControlled = false;       // a switch press returns control to the normal sweep
     if (oneSwitch) return;            // one switch: Space is inert while aiming, as before
     aimDir = -aimDir;                 // each new press reverses, as the original did
     aimHeld = true;
   }
   function aimRelease() { aimHeld = false; }
 
-  function setOneSwitch(v) { oneSwitch = !!v; }
+  function setOneSwitch(v) { oneSwitch = !!v; pointerControlled = false; }
 
   /** Mouse / touch: point at a spot on the course. */
-  function pointerAim(x, y) {
-    if (state !== 'aim') return;
+  function pointerAim(x, y, duringPointerCharge) {
+    if (paused || aimHeld || (state !== 'ready' && state !== 'aim' && !(duringPointerCharge && state === 'charge'))) return false;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
     const b = cur().ball;
+    if (Math.hypot(x - b.x, y - b.y) < ch.ballR) return false;
     aimAngle = Math.atan2(y - b.y, x - b.x);
+    pointerControlled = true;
+    autoDirty = true; predictCache.key = '';
+    return true;
   }
 
   /* ── Power ────────────────────────────────────────────────────────────── */
@@ -1100,7 +1107,7 @@
       pars: course.holes.map(h => h.par),
       players: players.map(p => ({ name: p.name, color: p.color, strokes: p.strokes.slice(), total: totalOf(p), toPar: totalOf(p) - parSoFar(p) }))
     };
-    if (!testMode && roundMode !== 'multi') summary.newBest = progress.record(courseFile, roundMode, summary.players[0].total);
+    if (!testMode && roundMode !== 'multi') summary.newBest = progress.record(courseFile, course.holes.length, roundMode, summary.players[0].total);
     const cup = view.cupWorld.clone();
     for (let i = 0; i < 5; i++) later(i * 0.42, () => MG.fx.firework(cup.clone().add(new THREE.Vector3((Math.random() - 0.5) * 16, 0, (Math.random() - 0.5) * 16))));
     AU.play('fanfare', 0.5);
@@ -1346,7 +1353,7 @@
 
     if (state === 'ready' || state === 'aim' || state === 'charge' || state === 'powerMenu') {
       if (state === 'aim') {
-        const rotating = aimHeld || oneSwitch;
+        const rotating = aimHeld || (oneSwitch && !pointerControlled);
         if (rotating) { aimAngle += aimDir * aimSpeed() * rawDt; autoDirty = true; }
         if (settings.get('power') === 'auto' && autoDirty && performance.now() - autoAt > (rotating ? 250 : 0)) {
           autoAt = performance.now(); autoPower = computeAutoPower(); autoDirty = false;
