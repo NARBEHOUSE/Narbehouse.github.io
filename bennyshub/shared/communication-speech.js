@@ -57,7 +57,14 @@
       }
       return new Promise((resolve,reject)=>{pending.set(message.id,{resolve,reject});try{worker.postMessage(message);}catch(e){pending.delete(message.id);reject(e);}});
     }
-    function synthesize(id,text,voice){return request({id,text,voice,names:store.readCached().names});}
+    async function synthesize(id,text,voice){
+      const speechRevision=revision;
+      const result=await request({id,text,voice,names:store.readCached().names});
+      // A preview can supersede Pocket's setup request. Generated audio also
+      // proves readiness, but an obsolete request must not update a new voice.
+      if(result.samples?.length&&revision===speechRevision&&store.readCached().enabled&&selectedVoice()===voice){readyVoice=voice;notify();}
+      return result;
+    }
     async function prepareVoice(){
       const voice=selectedVoice(),setupRevision=revision;if(!supported())return;
       if(preparing&&preparing.voice!==voice){worker?.postMessage({type:'cancel',id:preparing.id});pending.get(preparing.id)?.reject(Error('Voice changed.'));pending.delete(preparing.id);preparing=null;}

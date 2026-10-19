@@ -3596,3 +3596,18 @@ Additional desktop files: `ACCESSIBILITY.md`, `ELECTRON-SCAN-UPGRADE.md`, `benny
 Validation: 355/355 web unit tests; 15 focused desktop unit tests plus 7 native persistence/policy tests; 14 real Chromium UI checks for each final source tree; 2 focused actual Electron CPU fixture flows using real preload/IPC and disposable settings (audio hardware mocked). The unmocked browser Pocket worker produced bundled audio (46,080 samples at 24 kHz) and imported-voice audio (26,880 samples) with nonzero peaks and an identical cached repeat. Desktop/narrow screenshots inspected. Build and public audit passed (3,814 files; 513,092,788 bytes; no problems). All 1,188 page references passed. The broader existing Electron suite stopped on a detached Hello tile in its Phrase Board fixture, before the new custom flow; the focused new-feature mode passes. Physical switch/speaker listening and a packaged installer were not tested/built. Website changes are local and not pushed.
 
 Backups and review evidence: task folder `../tmp/hub-custom-voices-20261019/` (original files, staged native changes, SHA-256 manifests, renderer reports and real-audio report). Every applied desktop file was checked against its reviewed original and verified by hash after copying.
+
+
+## 2026-10-19 ? Custom voice readiness after automatic preview
+
+The Pocket worker cancels background preparation when a voice preview supersedes it. The sample could play successfully while Settings still showed Custom Upbeat 2 (not ready), because only preparation responses marked the voice ready. Successful synthesis now also marks the current voice ready, guarded by the settings revision and selected voice. Failed, cancelled and obsolete requests cannot make a different voice ready.
+
+Changed files (Electron port flag):
+- `bennyshub/shared/communication-speech.js` ? SHARED / same focused correction applied to PC Hub source.
+- `bennyshub/service-worker.js` ? WEB ONLY / v58 refreshes the shell while retaining downloaded voice models.
+- `tests/communication-readiness.test.cjs` ? TEST / copied to PC Hub; exercises the real Pocket worker queue, service, playback channel and Settings renderer with substituted inference and audio hardware.
+- `tests/communication-cache.test.cjs` ? WEB TEST / verifies v57 retirement and model-cache preservation.
+- `scripts/check-hub-custom-voices.cjs` ? WEB TEST TOOL / models preview cancellation and verifies the visible ready label on both source trees.
+- `docs/history/DEVELOPMENT-HISTORY.md` ? change ledger / desktop counterpart updated in ELECTRON-SCAN-UPGRADE.md.
+
+Verification: the exact Custom Upbeat 2 regression failed before the fix and passes afterward. All 358 website unit tests, six focused desktop unit tests, and 15 browser checks on each source tree pass. No model, voice print, audio generation, playback routing or scan behavior changed. No desktop installer rebuilt. Desktop backups and browser evidence: ../tmp/hub-voice-readiness-20261019/.

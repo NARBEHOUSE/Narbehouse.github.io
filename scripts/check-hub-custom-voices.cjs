@@ -14,7 +14,15 @@ function mocks(){
  let active;
  Object.defineProperty(window,'speechSynthesis',{value:{speaking:false,getVoices:()=>['One','Two','Three'].map(name=>({name,lang:'en-US',voiceURI:name})),addEventListener(){},removeEventListener(){},cancel(){active=null;},speak(u){active=u;window.__speech.push(u.text);u.onstart?.();setTimeout(()=>{if(active===u)u.onend?.();},250);}}});
  const Worker=window.Worker;
- window.Worker=class {constructor(url,options){if(!/communication-(?:pocket-|fast-)?worker/.test(String(url)))return new Worker(url,options);this.url=String(url);this.sent=[];window.__workers.push(this);}postMessage(m){this.sent.push(m);if(m.type==='cancel'||m.type==='prefetch')return;if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,ready:true}}),5);return;}window.__public.push({voice:m.voice,text:m.text,names:m.names});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),5);}terminate(){this.terminated=true;}};
+ window.Worker=class {
+  constructor(url,options){if(!/communication-(?:pocket-|fast-)?worker/.test(String(url)))return new Worker(url,options);this.url=String(url);this.pocket=this.url.includes('communication-pocket-worker.js');this.sent=[];window.__workers.push(this);}
+  postMessage(m){
+   this.sent.push(m);if(m.type==='prefetch')return;if(m.type==='cancel'){if(this.activeId===m.id)this.activeId=null;return;}this.activeId=m.id;
+   if(m.type==='prepare'){setTimeout(()=>this.onmessage?.({data:{id:m.id,...(this.pocket&&this.activeId!==m.id?{cancelled:true}:{ready:true})}}),5);return;}
+   window.__public.push({voice:m.voice,text:m.text,names:m.names});setTimeout(()=>this.onmessage?.({data:{id:m.id,samples:new Float32Array(2400),sampleRate:24000}}),5);
+  }
+  terminate(){this.terminated=true;}
+ };
  window.Audio=class extends EventTarget {async setSinkId(id){this.sinkId=id;}async play(){this.onplaying?.();setTimeout(()=>this.onended?.(),30);}pause(){}removeAttribute(){}load(){}};
 }
 (async()=>{
@@ -75,6 +83,7 @@ function mocks(){
  await focus('voice-toggle');await page.keyboard.down('Enter');await tick(2000);await page.evaluate(()=>dispatchEvent(new Event('blur')));await tick(5000);await page.keyboard.up('Enter');await tick(60);assert.equal(await page.evaluate(()=>NarbeVoiceManager.getSettings().voiceIndex),(start+2)%3);await page.evaluate(()=>dispatchEvent(new Event('focus')));pass('Blur cancels the hold without a late action');
  await page.locator('#speaker-mode-toggle').click();await tick(60);await page.locator('#speaker-output-toggle').click();await tick(60);
  await focus('speaker-voice-toggle');await page.keyboard.down('Enter');await tick(3000);assert.equal((await prefs()).voice,'pocket:b4');await page.keyboard.up('Enter');await tick(60);assert.equal((await prefs()).voice,'pocket:b4');assert((await page.evaluate(()=>__workers.at(-1).url)).endsWith('/communication-pocket-worker.js'));
+ assert.equal((await prefs()).voiceReady,true);await expect(page.locator('#speaker-voice-status')).toHaveText('Custom Bright 2');pass('Custom preview supersedes setup and clears the not-ready label after playback');
  await tap('Enter');assert.equal((await prefs()).voice,'am_michael');assert((await page.evaluate(()=>__workers.at(-1).url)).endsWith('/communication-worker.js'));pass('Speaker voice cycles backward across Custom and standard engines');
  await page.locator('#speaker-voice-add').click();await tick(60);await expect(page.locator('#speaker-voice-add-dialog')).toBeVisible();
  assert.deepEqual(await page.evaluate(()=>settingsItems().map(x=>x.id)),['speaker-voice-add-cancel','speaker-voice-add-continue']);
