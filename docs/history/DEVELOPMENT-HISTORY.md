@@ -2,6 +2,42 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-20 — Twelve-voice web publication
+
+The owner authorized publication with “push web.” All 370 web unit tests pass. The tested runtime is unchanged from the passing 12-model browser check, public build, 3,824-file audit and 1,191-reference check. Publication uses the existing main-branch GitHub Pages workflow; local evidence stays outside the repository. Changed file for this release record: docs/history/DEVELOPMENT-HISTORY.md (WEB documentation only).
+
+## 2026-10-20 — PC Hub Faster mode and twelve-voice port
+
+At the owner's explicit request to put the same choices in the PC Hub, ported the website Faster engine and all 12 voices (six male/six female). The PC source had Natural and Custom voices only, so this also adds the existing Speaker voice mode control, validated native speechMode/fastVoice persistence and the same narrow model-CDN permission for the local Faster worker. Natural remains the default and its saved voice stays independent. The existing desktop audio channel, Bluetooth lead-in, native bridge, Python assistance broker and scan controller are preserved. No installer rebuilt.
+
+Desktop scope and every changed file are recorded in the PC Hub's ELECTRON-SCAN-UPGRADE.md and COMMUNICATION-SPEAKER.md. This supersedes the previous NOT PORTED status for the Faster runtime/catalogue. The website runtime is unchanged in this follow-up. Backups, hash-guarded apply manifest and verification evidence: ../tmp/pc-fast-voices-20261020/.
+
+Verification: 58 desktop communication unit tests pass; the existing Custom Voice native fixture passes settings navigation, imports, pronunciation-name persistence, reload, held-Enter cycling and removal. The real Electron fixture passes all 12 voices with nonzero generated audio and muted selected-output playback, forward/backward switch cycling, native persistence through a full restart, cached/reloaded/offline Northern English speech, a separate Keyboard window, mode switching by Enter and native Help while minimized. No renderer errors; the narrow Settings screenshot was inspected. All 21 runtime/provenance hashes and changed JavaScript syntax checks pass. Physical listening remains an owner check.
+
+Changed website files: docs/history/DEVELOPMENT-HISTORY.md and docs/development/COMMUNICATION-SPEAKER.md — documentation only, recording the completed source port and test status.
+
+## 2026-10-20 — Twelve Faster voices, including British choices
+
+Expanded the website's Faster catalogue from six to exactly 12 voices, with six male and six female choices. The original six retain their order and identifiers. Added Alba (female, Scottish English), Northern English (male, UK), Jenny (Dioco) (female, Irish), Joe (male, US), Southern English (female, UK) and Mike (male, US). Existing Cori remains labelled UK. George remains a Natural/Kokoro voice. Selected voice downloads remain lazy and use the existing pinned Piper revision and model cache. Southern English uses 16 kHz; the other 11 voices use 22,050 Hz. The worker already handles each model's sample rate. Existing defaults, saved preferences, scanning behavior and playback timing are unchanged.
+
+Preserved upstream model cards and Jenny's required attribution, with byte lengths/hashes in SOURCES.json and dataset/license links in THIRD-PARTY-NOTICES.txt. Alan was considered but not added because its linked upstream dataset notice states All Rights Reserved without a clear grant. No model binaries are added to the website source; only the chosen model downloads on first use.
+
+Changed files (scope / Electron port flag):
+- bennyshub/shared/communication-speech.js — append six choices to the Faster catalogue / WEB ONLY, NOT PORTED.
+- bennyshub/shared/communication-fast-worker.js — map the added IDs to pinned public models / WEB ONLY, NOT PORTED.
+- bennyshub/shared/communication-settings.js — describe 12 voices, six male/six female and British options / WEB ONLY, NOT PORTED.
+- bennyshub/shared/communication-fast-vendor/SOURCES.json, THIRD-PARTY-NOTICES.txt — provenance, hashes and dataset terms / WEB ONLY, NOT PORTED.
+- bennyshub/shared/communication-fast-vendor/VOICE-ALBA-MODEL-CARD.txt, VOICE-NORTHERN-MODEL-CARD.txt, VOICE-JENNY-MODEL-CARD.txt, VOICE-JOE-MODEL-CARD.txt, VOICE-SOUTHERN-MODEL-CARD.txt, VOICE-MIKE-MODEL-CARD.txt, VOICE-JENNY-DATASET-NOTICE.txt — unchanged upstream notices / WEB ONLY, NOT PORTED.
+- tests/communication-speech.test.cjs, tests/communication-fast-worker.test.cjs — full-cycle size, gender balance, persistence of every added ID, rapid selection of the final added model / WEB ONLY, NO ELECTRON PORT NEEDED.
+- scripts/check-communication-fast.cjs — all 12 real models and current 18-voice Natural catalogue / WEB ONLY, NO ELECTRON PORT NEEDED.
+- scripts/check-communication-speaker.cjs — 12 switch-operated Faster previews and existing Custom-voice controls in menu traversal / WEB ONLY, NO ELECTRON PORT NEEDED.
+- docs/development/COMMUNICATION-SPEAKER.md — current catalogue, attribution and verification / WEB ONLY.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY.
+
+Verification: all communication unit tests pass. The existing real-page speaker integration passes all 18 Natural and 12 Faster previews, switch/Auto access, cancellation, routing and app actions. The unmocked Chrome single-thread CPU check generates nonzero audio with every Faster model and completes muted selected-output playback. Added-voice generation for the same new sentence measured 343 ms (Alba), 895 ms (Northern English), 382 ms (Jenny), 362 ms (Joe), 263 ms (Southern English), and 357 ms (Mike). These are PC observations, excluding first download/setup and the existing Bluetooth silent lead-in; Pi performance and listening quality remain owner checks. The real worker test also passes shared ownership through Keyboard/Phrase Board/RTC, repeat caching, cancellation, reload persistence and new offline speech, with no page errors. All 21 vendored-source hashes match. Build, release audit (3,824 files, zero problems), and all 1,191 page/asset references pass. No publication or Electron work.
+
+Evidence: artifacts/communication-fast.json and communication-fast-settings.png; narrow pre-change backups in ../tmp/british-fast-voices-20261020/.
+
 ## 2026-10-19 — Bug Blaster thumbnail and PC Hub update; shared catalog images
 
 At the owner's request, replaced bennyshub/images/games/bennysbugblaster.png in place with a 1280×720 capture of active upgraded gameplay. The previous title-screen image is gone from the active source/build; its backup is outside the website. New SHA-256: 6caa0a4d56ea863264e3a0ebc5835956382cace371fe96db39b92b8dab77e041. NARBE House and the web Hub already reference this canonical file.

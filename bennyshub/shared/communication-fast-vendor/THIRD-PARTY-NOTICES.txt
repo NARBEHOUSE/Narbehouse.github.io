@@ -12,7 +12,8 @@ ONNX Runtime Web 1.18.0, Microsoft: MIT, see ONNX-LICENSE.txt.
 https://github.com/microsoft/onnxruntime/tree/v1.18.0
 
 The optional voice downloads from rhasspy/piper-voices at revision
-c10ece1aade47bb51c153c893d14e5bf8e5b7117. Six medium-quality English models:
+c10ece1aade47bb51c153c893d14e5bf8e5b7117. Twelve English voices: eleven medium-quality models and one low-quality model.
+The original six models:
 - en_US-ljspeech-medium: LJ, female; public-domain LJ Speech dataset
   (Keith Ito and Linda Johnson). See VOICE-MODEL-CARD.txt.
 - en_US-bryce-medium: Bryce, male; the contributor's own public-domain recordings.
@@ -27,6 +28,26 @@ https://brycebeattie.com/files/tts/
 https://librivox.org
 https://keithito.com/LJ-Speech-Dataset/
 https://huggingface.co/rhasspy/piper-voices
+
+Additional models (downloaded unmodified from the same pinned revision):
+- en_GB-alba-medium: Alba, female, Scottish English. University of Edinburgh
+  Alba speech corpus: https://datashare.ed.ac.uk/handle/10283/3270
+  Creative Commons Attribution 4.0: https://creativecommons.org/licenses/by/4.0/
+- en_GB-northern_english_male-medium: Northern English, male, UK.
+- en_GB-southern_english_female-low: Southern English, female, UK (16 kHz).
+  Both use the Google UK and Ireland English dialects corpus, OpenSLR 83:
+  https://www.openslr.org/83/ — CC BY-SA 4.0 International:
+  https://creativecommons.org/licenses/by-sa/4.0/
+- en_GB-jenny_dioco-medium: Jenny (Dioco), female, Irish. Recorded by Jenny.
+  https://github.com/dioco-group/jenny-tts-dataset
+  Custom attribution terms permit commercial use; the interface credits
+  Jenny (Dioco). See VOICE-JENNY-DATASET-NOTICE.txt for the complete terms.
+- en_US-joe-medium and en_US-mike-medium: Joe and Mike, male, US English.
+  Open Home Foundation Voice datasets: https://github.com/OHF-Voice/voice-datasets
+  CC0: https://creativecommons.org/publicdomain/zero/1.0/
+See the corresponding VOICE-<NAME>-MODEL-CARD.txt files for training/provenance.
+All six additional model cards state fine-tuning from the U.S. English Lessac
+medium voice. These notices do not replace the upstream licenses.
 
 Runtime assets are downloaded only when Faster is chosen. Messages are processed
 on this device. Only public runtime/model assets are cached persistently; speech

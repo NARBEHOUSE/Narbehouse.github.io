@@ -15,7 +15,10 @@
   const fastVoices=[
     {id:'piper_lj',name:'LJ (female)'},{id:'piper_bryce',name:'Bryce (male)'},
     {id:'piper_kristin',name:'Kristin (female)'},{id:'piper_norman',name:'Norman (male)'},
-    {id:'piper_cori',name:'Cori (female, UK)'},{id:'piper_john',name:'John (male)'}
+    {id:'piper_cori',name:'Cori (female, UK)'},{id:'piper_john',name:'John (male)'},
+    {id:'piper_alba',name:'Alba (female, Scotland)'},{id:'piper_northern',name:'Northern English (male, UK)'},
+    {id:'piper_jenny',name:'Jenny (Dioco) (female, Irish)'},{id:'piper_joe',name:'Joe (male, US)'},
+    {id:'piper_southern',name:'Southern English (female, UK)'},{id:'piper_mike',name:'Mike (male, US)'}
   ];
   // Voices added in Settings from a Voice Studio file (communication-voices.js keeps the voice print on this device).
   const addedVoices=list=>(Array.isArray(list)?list:[]).filter(v=>/^pocket:user-[a-f0-9]{12}$/.test(v?.id)&&typeof v.name==='string'&&v.name.length<=40).slice(0,20).map(v=>({id:v.id,name:v.name,recorded:v.recorded===true}));

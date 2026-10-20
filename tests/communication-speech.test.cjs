@@ -67,10 +67,12 @@ test('Faster persists locally and obsolete setup cannot make a different mode re
  h.api.cycleMode();h.api.toggle();await h.flush();assert.equal(h.api.get().enabled,false);assert.equal(h.api.get().voicePreparing,false);assert.equal(h.workers.at(-1).terminated,true);
 });
 
-test('six Faster voices cycle and persist independently of the original Natural voice',async t=>{
+test('12 Faster voices cycle and persist independently of the original Natural voice',async t=>{
  const h=harness(undefined,{enabled:false,speechMode:'fast',voice:'bm_george',fastVoice:'piper_norman'});t.after(()=>h.api._service.dispose());
- assert.equal(h.api.get().voice,'piper_norman');assert.equal(h.api.get().voices.length,6);const visited=[];
- for(let i=0;i<6;i++){visited.push(h.api.get().voice);h.api.cycleVoice();}assert.equal(new Set(visited).size,6);assert.equal(h.api.get().voice,'piper_norman');
+ assert.equal(h.api.get().voice,'piper_norman');assert.equal(h.api.get().voices.length,12);const visited=[];
+ for(let i=0;i<12;i++){visited.push(h.api.get().voice);h.api.cycleVoice();}assert.equal(new Set(visited).size,12);assert.equal(h.api.get().voice,'piper_norman');
+ const catalogue=h.api.get().voices;assert.equal(catalogue.filter(v=>/\(male[,)]/.test(v.name)).length,6);assert.equal(catalogue.filter(v=>/\(female[,)]/.test(v.name)).length,6);
+ for(const fastVoice of ['piper_alba','piper_northern','piper_jenny','piper_joe','piper_southern','piper_mike']){assert(visited.includes(fastVoice));const restored=harness(undefined,{enabled:false,speechMode:'fast',fastVoice});t.after(()=>restored.api._service.dispose());assert.equal(restored.api.get().voice,fastVoice);}
  h.api.cycleMode();assert.equal(h.api.get().voice,'bm_george');h.api.cycleMode();assert.equal(h.api.get().voice,'piper_norman');
 });
 test('existing Faster users keep LJ and invalid saved choices fall back to LJ',t=>{
@@ -79,7 +81,7 @@ test('existing Faster users keep LJ and invalid saved choices fall back to LJ',t
 
 test('returning to the previous Faster voice during setup warms its model again',async t=>{
  const h=harness(undefined,{enabled:true,speechMode:'fast'});t.after(()=>h.api._service.dispose());const worker=h.workers[0];worker.reply({id:worker.sent[0].id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
- h.api.cycleVoice();for(let i=0;i<5;i++)h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);assert.equal(h.api.get().voicePreparing,true);
+ h.api.cycleVoice();for(let i=1;i<h.api.get().voices.length;i++)h.api.cycleVoice();assert.equal(h.api.get().voice,'piper_lj');assert.equal(h.api.get().voiceReady,false);assert.equal(h.api.get().voicePreparing,true);
  const prepare=worker.sent.filter(m=>m.type==='prepare').at(-1);assert.equal(prepare.voice,'piper_lj');worker.reply({id:prepare.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
 });
 

@@ -5,7 +5,10 @@ const modelRoot='https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade
 const voices={
   piper_lj:'en_US/ljspeech/medium/en_US-ljspeech-medium',piper_bryce:'en_US/bryce/medium/en_US-bryce-medium',
   piper_kristin:'en_US/kristin/medium/en_US-kristin-medium',piper_norman:'en_US/norman/medium/en_US-norman-medium',
-  piper_cori:'en_GB/cori/medium/en_GB-cori-medium',piper_john:'en_US/john/medium/en_US-john-medium'
+  piper_cori:'en_GB/cori/medium/en_GB-cori-medium',piper_john:'en_US/john/medium/en_US-john-medium',
+  piper_alba:'en_GB/alba/medium/en_GB-alba-medium',piper_northern:'en_GB/northern_english_male/medium/en_GB-northern_english_male-medium',
+  piper_jenny:'en_GB/jenny_dioco/medium/en_GB-jenny_dioco-medium',piper_joe:'en_US/joe/medium/en_US-joe-medium',
+  piper_southern:'en_GB/southern_english_female/low/en_GB-southern_english_female-low',piper_mike:'en_US/mike/medium/en_US-mike-medium'
 };
 const modelCache='benny-communication-fast-model-v1';
 let engine,phonemizerReady,phonemeIds,loadingJob,latest=0,latestPreparation,queue=Promise.resolve();

@@ -82,5 +82,47 @@
     "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/john/medium/MODEL_CARD",
     "bytes": 498,
     "sha256": "a056da65cd70dcbda96fc3420fe8d3442dbf3c8b75f49cdf800a715b42e299d1"
+  },
+  {
+    "file": "VOICE-ALBA-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_GB/alba/medium/MODEL_CARD",
+    "bytes": 324,
+    "sha256": "fa166b1779404c470b0b6b4ba0238bc4a35bf89d2cd130c6788f697188b737d6"
+  },
+  {
+    "file": "VOICE-NORTHERN-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_GB/northern_english_male/medium/MODEL_CARD",
+    "bytes": 305,
+    "sha256": "75661c3a50c0ba82b32b3a438e54103d8dfe5bbe8fbb864ac687a040e79948bb"
+  },
+  {
+    "file": "VOICE-JENNY-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_GB/jenny_dioco/medium/MODEL_CARD",
+    "bytes": 298,
+    "sha256": "bc8aec32196ab14f46260ab6e002cf004b0793ddd7886011145fe00106e20d45"
+  },
+  {
+    "file": "VOICE-JOE-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/joe/medium/MODEL_CARD",
+    "bytes": 281,
+    "sha256": "d2caa63aca0fccb155105e959e393e5c0c0f03a1f388ef5ba217b83ef860c760"
+  },
+  {
+    "file": "VOICE-SOUTHERN-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_GB/southern_english_female/low/MODEL_CARD",
+    "bytes": 296,
+    "sha256": "41a64585a49d46362042b1a01b0a4b54127518eb50063c45846e2703e5790260"
+  },
+  {
+    "file": "VOICE-MIKE-MODEL-CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/mike/medium/MODEL_CARD",
+    "bytes": 282,
+    "sha256": "c67ea6767edcfd28684b6414a2311a74c4d72e6ad7414316d5d8d6faa067f2ab"
+  },
+  {
+    "file": "VOICE-JENNY-DATASET-NOTICE.txt",
+    "url": "https://raw.githubusercontent.com/dioco-group/jenny-tts-dataset/master/README.md",
+    "bytes": 1957,
+    "sha256": "0812e329e383c5a0559aad41df1eb6c5c3a779381357228bd5052f128ce680c4"
   }
 ]

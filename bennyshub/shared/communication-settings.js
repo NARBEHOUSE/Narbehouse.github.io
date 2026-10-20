@@ -11,7 +11,7 @@ window.NarbeCommunicationSettings={mount({refreshScan,announce,bindCycle}){
     byId('speaker-voice-remove').disabled=!s.enabled||!s.supported||!added;byId('speaker-voice-remove-status').textContent=added?added.name:'None selected';
     if(byId('speaker-quality-toggle'))byId('speaker-quality-toggle').disabled=!s.enabled||!s.supported;
     if(byId('speaker-quality-status'))byId('speaker-quality-status').textContent=s.speechMode==='fast'?'Faster':'Natural';
-    if(byId('speaker-voice-help'))byId('speaker-voice-help').textContent=s.speechMode==='fast'?'Cycle through six Faster voices. Custom voices are available in Natural mode.':'Cycle through the voices and hear a sample. Custom voices come last. The Voice setting above controls scanning.';
+    if(byId('speaker-voice-help'))byId('speaker-voice-help').textContent=s.speechMode==='fast'?'Cycle through 12 Faster voices: six male and six female, including British voices. Custom voices are available in Natural mode.':'Cycle through the voices and hear a sample. Custom voices come last. The Voice setting above controls scanning.';
     byId('speaker-voice-add').disabled=byId('speaker-voice-add').disabled||importing;
     const connected=s.outputs.some(d=>d.deviceId===s.sinkId);
     byId('speaker-output-status').textContent=s.sinkId?(s.sinkLabel||'Selected speaker')+(s.enabled&&!connected?' (unavailable)':''):'Not selected';

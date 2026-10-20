@@ -24,12 +24,12 @@ function instrument(){
  await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:180000});
  await hub.evaluate(async()=>{await NarbeCommunicationSpeech.refresh();NarbeCommunicationSpeech.cycleSpeaker();});
  await expect(hub.locator('#speaker-quality-status')).toHaveText('Faster');await expect(hub.locator('#speaker-voice-toggle')).toBeEnabled();
- await hub.evaluate(()=>{for(let i=0;i<6;i++)NarbeCommunicationSpeech.cycleVoice();});await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_lj');
+ await hub.evaluate(()=>{for(let i=0;i<NarbeCommunicationSpeech.get().voices.length;i++)NarbeCommunicationSpeech.cycleVoice();});await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_lj');
  await hub.locator('#speaker-settings').screenshot({path:path.join(root,'artifacts/communication-fast-settings.png')});
  async function speak(frame,text){return frame.evaluate(async text=>{const at=performance.now(),ticket=NarbeCommunicationSpeech.speak(text);const started=await ticket.started;const startMs=Math.round(performance.now()-at);const result=await ticket.finished;return {started,startMs,...result};},text);}
  report.newMessage={ticket:await speak(hub,'Could I have a glass of water please?'),generation:await hub.evaluate(()=>__generated.at(-1))};
  report.repeat={ticket:await speak(hub,'Could I have a glass of water please?'),generation:await hub.evaluate(()=>__generated.at(-1))};assert.equal(report.repeat.generation.cached,true);assert.equal(report.newMessage.generation.sampleRate,22050);
- report.voices=[];const voices=await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices);assert.equal(voices.length,6);
+ report.voices=[];const voices=await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices);assert.equal(voices.length,12);
  for(let i=0;i<voices.length;i++){
    if(i){await hub.locator('#speaker-voice-toggle').click();await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady&&NarbeCommunicationSpeech.get().phase==='ended',null,{timeout:180000});}
    const chosen=await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice);assert.equal(chosen,voices[i].id);
@@ -50,7 +50,7 @@ function instrument(){
  await hub.reload();if(await hub.locator('#modal-cancel').isVisible())await hub.locator('#modal-cancel').click();await hub.waitForFunction(()=>NarbeCommunicationSpeech.get().voiceReady,null,{timeout:60000});
  assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().speechMode),'fast');assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'piper_norman');assert.equal(requests.filter(u=>u.includes('huggingface.co/rhasspy')).length,downloadsBefore);
  await context.setOffline(true);report.offline=await speak(hub,'This is a new offline message.');assert.equal(report.offline.reason,'ended');await context.setOffline(false);
- await hub.evaluate(()=>{NarbeCommunicationSpeech.toggle();NarbeCommunicationSpeech.cycleMode();});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'am_michael');assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices.length),14);
+ await hub.evaluate(()=>{NarbeCommunicationSpeech.toggle();NarbeCommunicationSpeech.cycleMode();});assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voice),'am_michael');assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().voices.length),18);
  await hub.reload();assert.equal(await hub.evaluate(()=>NarbeCommunicationSpeech.get().speechMode),'natural');report.cache=await hub.evaluate(()=>caches.keys());assert.ok(report.cache.includes('benny-communication-fast-model-v1'));assert.deepEqual(report.errors,[]);report.passed=true;
  }catch(e){report.failure=e.stack;process.exitCode=1;}
  finally{await browser?.close();process.chdir(tempBase);const actual=await fs.realpath(runtime);assert.equal(path.dirname(actual),tempBase);assert.ok(path.basename(actual).startsWith('benny-fast-voice-'));await fs.rm(actual,{recursive:true,force:true,maxRetries:5,retryDelay:200});await fs.writeFile(path.join(root,'artifacts/communication-fast.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}

@@ -43,8 +43,8 @@ test('Faster keeps cache entries per voice and releases the previous model befor
  h.send({type:'prepare',id:'return-lj',voice:'piper_lj'});await h.drain();assert.equal(h.sessions.length,3);assert.equal(h.sessions[1].released,true);assert.equal(h.fetches.length,4);assert.equal(h.texts.filter(t=>t==='Hello from your communication speaker.').length,2);
 });
 test('rapid Faster voice choices initialize only the final queued voice',async()=>{
- const h=harness();for(const voice of ['piper_bryce','piper_kristin','piper_norman','piper_cori','piper_john'])h.send({type:'prepare',id:voice,voice});await h.drain();
- assert.equal(h.sessions.length,1);assert.equal(h.fetches.length,2);assert.ok(h.fetches.every(url=>url.includes('en_US-john-medium')));assert.deepEqual(h.messages.filter(m=>m.ready).map(m=>m.id),['piper_john']);
+ const h=harness();for(const voice of ['piper_bryce','piper_kristin','piper_norman','piper_cori','piper_john','piper_alba','piper_northern','piper_jenny','piper_joe','piper_southern','piper_mike'])h.send({type:'prepare',id:voice,voice});await h.drain();
+ assert.equal(h.sessions.length,1);assert.equal(h.fetches.length,2);assert.ok(h.fetches.every(url=>url.includes('en_US-mike-medium')));assert.deepEqual(h.messages.filter(m=>m.ready).map(m=>m.id),['piper_mike']);
 });
 
 test('changing voice aborts an obsolete model download so the selected voice can load',async()=>{
