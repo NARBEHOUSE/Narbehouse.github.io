@@ -2,6 +2,23 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-21 — Bug Blaster leg proportions and articulated gait; PC parity
+
+Corrected all six creature rigs after the owner reported overlong, awkward ant and defender legs. Ants and defenders now have compact leg segments with six roots clustered on the thorax; beetles, scorpions and the boss spider have separate joint sites, bone lengths and foot spreads. Knees keep a consistent bend and neighboring legs do not cross throughout the walking cycle. The alternating support/swing gait uses a straight planted stance, lifted return and stride distance scaled to the rendered body, replacing the former shared sine sweep and mismatched cadence. Walking persists while approaching the fence; stopped attackers brace instead of stepping in place. Ant/defender/medium antennae are shorter and elbowed, with a seamless looping twitch. Idle, attack, hit and death poses use the same rigs.
+
+Presentation scope only: gameplay size/collisions, enemy separation, campaign balance, controls, sounds, boot targeting and lawn/house damage rendering are unchanged. Scorpions retain the requested 25% size increase and shared stinger/projectile origin. The store defender icon automatically uses the corrected atlas. The existing inexpensive 2D rendering profile remains appropriate under the graphics contract.
+
+Verification: 394 website unit tests and 30 desktop Bug Blaster tests passed. Eight new animation regressions sample 320 phases per creature, checking fixed bone lengths, planted foot displacement, mirrored support groups, noncrossing limbs, bounded poses and walk/idle/attack selection. Chrome rendered all 288 atlas frames without cell-edge clipping and ran ten simulated seconds through the actual game loop with all enemy types and two defenders. Walk/idle/attack/hit/death contact sheets and browser/native gameplay screenshots inspected. Six real Electron checks passed: native iframe/bridge, new atlas, movement, two-switch hold-to-pause, five-row Help scan and no renderer errors; isolated runtime disposed. Public build, 3,825-file release audit and 1,192-reference link check passed. Physical Raspberry Pi and switch-device acceptance were not measured.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/presentation.js — per-creature articulated geometry, stance/swing motion and animation state selection / APPLIED TO PC HUB, identical shared renderer.
+- tests/bug-blaster-animation.test.cjs — geometry and motion regressions / APPLIED TO PC HUB.
+- bennyshub/service-worker.js — v61 runtime cache refresh / WEB ONLY.
+- tests/communication-cache.test.cjs — v60 retirement and model-cache retention / WEB ONLY.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY; PC record in ELECTRON-SCAN-UPGRADE.md.
+
+Backups, hash-guarded port manifest, visual comparisons and verification reports: ../tmp/bug-blaster-legs-20261021/. This continues the owner's authorized web and PC update scope. Native bridge and Help files were not replaced. No installer rebuild. Hub remains the canonical game source; no SwitchedGames duplicate required.
+
 ## 2026-10-21 — Bug Blaster level unlocks and campaign economy; PC port
 
 Owner explicitly authorized applying the reviewed progression to the website and PC Hub, then pushing. Added one shared progression catalogue used by rendering, spoken scan labels, eligibility and purchase validation. All 14 cards stay visible; level-locked cards show a padlock and the level to finish, and locked, unaffordable, completed and already-prepared items are neither scanned nor purchasable. Salt Shot starts at level 3. First-rank costs/unlocks: Defender 150 at 2; Salt 200 at 3; Boot 400 and Glue 100 at 4; Net 350 at 5; Healing 600 at 6; Zapper 900 at 7; House 1500 at 9; Bomb 1500 at 11. Later ranks have separate prices and gates through level 19. A budget regression reserves 50 for repairs each store, excludes perfect-health bonuses and confirms first-rank purchases are possible at unlock or one reward later on that baseline path. Spending on other ranks remains a choice.

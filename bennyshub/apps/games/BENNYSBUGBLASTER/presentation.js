@@ -16,30 +16,62 @@ function shine(c,x,y,rx,ry,light,mid,dark){const g=c.createRadialGradient(x-rx*.
 function rr(c,x,y,w,h,r,fill,stroke=null){c.beginPath();c.roundRect(x,y,w,h,r);c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=1;c.stroke();}}
 const palettes={small:['#ef9a63','#b94727','#4c2018'],medium:['#ffd98d','#d58925','#663d17'],large:['#fa8b69','#aa3328','#42211b'],extra_large:['#bf91d8','#754c9d','#30213e'],boss:['#a77c65','#503e36','#211f22'],defender:['#9cd4ed','#317ea3','#16374b']};
 const dimensions={small:48,medium:65,large:80,extra_large:112.5,boss:190,defender:40};
-// Each gait has alternating stance and swing phases. Two-bone legs solve an
-// actual knee position; the foot lifts during swing and stays down in stance.
-function leg(c,side,row,count,phase,state,death,type){
-  const spider=type==='boss',scorpion=type==='extra_large';
-  const hip={x:side*(spider?7:5),y:(row-(count-1)/2)*(spider?6:5)};
-  const cycle=phase+(row%2)*PI+(side<0?PI:0),s=Math.sin(cycle),lift=Math.max(0,Math.cos(cycle));
-  let foot={x:side*((spider?24:scorpion?20:18)-lift*3),y:hip.y+(row-(count-1)/2)*5+s*5};
-  if(state==='idle'){foot.x=side*(spider?24:19);foot.y=hip.y+(row-(count-1)/2)*5;}
-  if(state==='attack'&&row===count-1){foot.y+=Math.sin(phase)*7;foot.x*=.85;}
-  if(state==='death'){foot.x=side*(20-14*death);foot.y=hip.y-8*death;}
-  const dx=foot.x-hip.x,dy=foot.y-hip.y,d=Math.max(1,Math.hypot(dx,dy)),upper=14,lower=15;
-  const a=(upper*upper-lower*lower+d*d)/(2*d),h=Math.sqrt(Math.max(0,upper*upper-a*a));
-  const knee={x:hip.x+dx*a/d-dy*h/d*side,y:hip.y+dy*a/d+dx*h/d*side};
-  const p=palettes[type];line(c,[[hip.x,hip.y],[knee.x,knee.y],[foot.x,foot.y]],p[2],spider?2.3:1.8);
-  line(c,[[hip.x-.4,hip.y-.7],[knee.x-.4,knee.y-.7]],p[1],spider?1.25:.8);
-  oval(c,knee.x,knee.y,spider?1.5:1.1,spider?1.5:1.1,p[1]);
-  if(spider){for(let k=0;k<3;k++){const t=(k+1)/4,x=knee.x+(foot.x-knee.x)*t,y=knee.y+(foot.y-knee.y)*t;line(c,[[x,y],[x+side*1.6,y-1.4]],'#b49a8060',.5);}}
+// Joint roots, reach and stride belong to each body, in atlas-local units.
+// Rows run rear-to-front. Insects use alternating tripods; eight-legged bugs
+// alternate four supporting feet. A stance foot moves straight backwards
+// relative to the body, then lifts and returns forward during swing.
+const gaitRigs={
+  small:{hips:[[-2.5,3.4],[0,4],[2.5,3.5]],feet:[[-8.5,12.5],[0,13.5],[9,12.5]],bones:[[6.6,7.3],[4.8,5.2],[6.6,7.3]],stride:4.8,lift:1.4,width:1.55},
+  defender:{hips:[[-2.4,3.5],[0,4],[2.4,3.5]],feet:[[-8,11.8],[0,12.8],[8.5,11.8]],bones:[[6.2,6.9],[4.6,4.9],[6.2,6.9]],stride:4.6,lift:1.2,width:1.65},
+  medium:{hips:[[-3,8],[1,8.5],[5,7]],feet:[[-11,16],[1,17],[13,15.5]],bones:[[6.4,7.3],[5.3,5.7],[6.5,7.6]],stride:4.8,lift:1.1,width:1.9},
+  large:{hips:[[-3,8.5],[1,9],[5,7.5]],feet:[[-11,16.5],[1,17.5],[12.5,16]],bones:[[6.6,7.5],[5.4,5.8],[6.6,7.6]],stride:4.8,lift:1.1,width:2.05},
+  extra_large:{hips:[[-4,5.5],[0,6],[4,6],[7,5.5]],feet:[[-13,16],[-5,19],[4,20],[12,18]],bones:[[8.3,8.8],[7.5,8],[7.6,8],[8,8.7]],stride:5.2,lift:1.1,width:1.8},
+  boss:{hips:[[1,6],[4,8],[7,8],[10,6.5]],feet:[[-17,19],[-5,25],[11,26],[24,20]],bones:[[12.8,13.2],[11,11.5],[10.5,11.5],[11.7,12.5]],stride:6.8,lift:1.8,width:2.3}
+};
+const stanceFraction=.62;
+function walkCycleDistance(type){
+  return gaitRigs[type].stride*dimensions[type]/(type==='extra_large'?90:76)/stanceFraction;
+}
+function legPose(type,side,row,phase,state='walk',death=0){
+  const rig=gaitRigs[type],hip={x:side*rig.hips[row][1],y:rig.hips[row][0]};
+  const offset=(row%2)*.5+(side<0?.5:0);
+  const cycle=((phase/TAU+offset)%1+1)%1;
+  let sweep=0,lift=0;
+  if(state==='walk'){
+    if(cycle<stanceFraction){sweep=rig.stride*(.5-cycle/stanceFraction);}
+    else {const t=(cycle-stanceFraction)/(1-stanceFraction),ease=t*t*(3-2*t);sweep=rig.stride*(ease-.5);lift=Math.sin(t*PI);}
+  }
+  let foot={x:side*(rig.feet[row][1]-lift*rig.lift),y:rig.feet[row][0]+sweep};
+  if(state==='attack'&&row===rig.hips.length-1){foot.y+=Math.sin(phase)*.7;}
+  if(state==='death'){
+    foot.x=side*(rig.feet[row][1]*(1-death*.65));
+    foot.y=hip.y+(foot.y-hip.y)*(1-death*.8);
+  }
+  const [upper,lower]=rig.bones[row],dx=foot.x-hip.x,dy=foot.y-hip.y;
+  const reach=Math.hypot(dx,dy),d=clamp(reach,Math.abs(upper-lower)+.001,upper+lower-.001);
+  const ux=dx/Math.max(.001,reach),uy=dy/Math.max(.001,reach);
+  // Rear knees point back/out, front knees forward/out; they never flip
+  // branch during a stride. Clamp unreachable endpoints before solving.
+  foot={x:hip.x+ux*d,y:hip.y+uy*d};
+  const along=(upper*upper-lower*lower+d*d)/(2*d),across=Math.sqrt(Math.max(0,upper*upper-along*along));
+  const bend=(row<(rig.hips.length-1)/2?-1:1)*side;
+  const knee={x:hip.x+ux*along-uy*across*bend,y:hip.y+uy*along+ux*across*bend};
+  return {hip,knee,foot,lift,planted:state!=='walk'||cycle<stanceFraction};
+}
+function leg(c,side,row,phase,state,death,type){
+  const {hip,knee,foot}=legPose(type,side,row,phase,state,death),p=palettes[type],rig=gaitRigs[type];
+  // A lifting foot tucks inward; its articulated lower leg clears the ground.
+  line(c,[[hip.x,hip.y],[knee.x,knee.y],[foot.x,foot.y]],p[2],rig.width);
+  line(c,[[hip.x-.3,hip.y-.4],[knee.x-.3,knee.y-.4]],p[1],rig.width*.5);
+  oval(c,knee.x,knee.y,rig.width*.55,rig.width*.55,p[1]);
+  if(type==='boss'){for(let k=0;k<3;k++){const t=(k+1)/4,x=knee.x+(foot.x-knee.x)*t,y=knee.y+(foot.y-knee.y)*t;line(c,[[x,y],[x+side*1.3,y-1.1]],'#b49a8060',.5);}}
 }
 function eyes(c,type,phase,dead){
   const big=type==='boss',y=type==='small'||type==='defender'?9:11;
   for(const side of [-1,1]){const x=side*(big?4.2:3.5);shine(c,x,y,2.2,dead?.45:2.7,'#ffe7a6','#f4d49c','#473724');if(!dead){oval(c,x+side*.2,y+.8,1.15,1.7,'#161b1b');oval(c,x-.45,y-.45,.65,.7,'#fff');}}
   if(big){for(const x of [-7,0,7])oval(c,x,7,1.2,1.4,'#d6aa61','#332922',.4);}
 }
-function antenna(c,type,phase,state){const p=palettes[type];for(const side of [-1,1]){const twitch=Math.sin(phase*.5+side)*1.2;const x=side*4,y=12;line(c,[[x,y],[side*(8+twitch),18],[side*(10+twitch),22]],p[2],1.1);oval(c,side*(10+twitch),22,1,1.3,p[1]);}}
+function antenna(c,type,phase,state){const p=palettes[type];for(const side of [-1,1]){const twitch=state==='death'?0:Math.sin(phase+side)*.65;const x=side*4,y=11;line(c,[[x,y],[side*(6.5+twitch),15],[side*(9+twitch),17.5]],p[2],1);oval(c,side*(9+twitch),17.5,.7,.9,p[1]);}}
 function mandibles(c,type,phase,state){const bite=state==='attack'?(Math.sin(phase)+1)*.45:.18+Math.sin(phase*.3)*.04;for(const side of [-1,1]){c.save();c.translate(side*4,14);c.rotate(side*bite);c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(side*9,7,side*2,13);c.lineTo(side*2,8);c.quadraticCurveTo(side*4,4,0,2);c.closePath();c.fillStyle=palettes[type][2];c.fill();line(c,[[0,1],[side*4,5]],palettes[type][1],.8);c.restore();}}
 
 // Shared pose geometry: the last point is both the drawn barb and the muzzle.
@@ -87,8 +119,8 @@ function pose(c,type,state,frame,count){
   c.save();
   if(state==='hit'){c.translate(Math.sin(phase)*1.5,Math.cos(phase)*1.1);}
   if(state==='death'){c.scale(1+death*.22,1-death*.6);}
-  const legs=type==='boss'||type==='extra_large'?4:3;
-  for(const side of [-1,1])for(let row=0;row<legs;row++)leg(c,side,row,legs,phase,state,death,type);
+  const legs=gaitRigs[type].hips.length;
+  for(const side of [-1,1])for(let row=0;row<legs;row++)leg(c,side,row,phase,state,death,type);
   const breath=state==='walk'?Math.cos(phase*2)*.3:Math.sin(phase)*.35;
   if(type==='small'||type==='defender'){
     shine(c,0,-10+breath,7,9,p[0],p[1],p[2]);
@@ -131,8 +163,8 @@ function animatedBug(e,type,rotation=0){
   if(Number.isFinite(e.hp)&&e.hp<a.hp&&!e.isDead)a.hit=now;a.hp=e.hp;
   if(e.last_shot_time>a.shot){a.attack=now;}a.shot=e.last_shot_time;
   const near=type==='defender'?e.target&&Math.hypot(e.target.x-e.x,e.target.y-e.y)<35:e.y>TOWER_Y-65;
-  let state=e.isDead?'death':type==='extra_large'&&now-a.attack<.45?'attack':now-a.hit<.18?'hit':now-a.attack<.45||near?'attack':e.stuckToGlue||distance<.001?'idle':'walk';
-  const frames=stateFrames[state];let phase=state==='walk'?a.distance/(type==='boss'?32:12):state==='death'?(Date.now()-e.deathTime)/500:state==='hit'?(now-a.hit)/.18:state==='attack'&&now-a.attack<.45?(now-a.attack)/.45:now*.6+(e.id||.2);
+  let state=e.isDead?'death':type==='extra_large'&&now-a.attack<.45?'attack':now-a.hit<.18?'hit':e.stuckToGlue||distance<.001?(near?'attack':'idle'):'walk';
+  const frames=stateFrames[state];let phase=state==='walk'?a.distance/walkCycleDistance(type):state==='death'?(Date.now()-e.deathTime)/500:state==='hit'?(now-a.hit)/.18:state==='attack'&&now-a.attack<.45?(now-a.attack)/.45:now*.6+(e.id||.2);
   const frame=Math.min(frames-1,Math.floor((state==='death'||state==='hit'?clamp(phase,0,.999):phase%1)*frames));
   const sprite=sprites[type],index=sprite.starts[state]+frame,size=dimensions[type];
   ctx.save();ctx.translate(e.x,e.y);ctx.rotate(rotation);
@@ -340,5 +372,5 @@ function getStingerOrigin(e) {
   const scale=dimensions.extra_large/90;
   return {x:e.x+tip.x*scale,y:e.y+tip.y*scale};
 }
-window.BugBlasterPresentation={drawBoot,drawLawn,drawGardenLawn,saltCannonPose,getSaltShotOrigin,getStingerOrigin,scorpionTail,stats,sprites,animation,version:'original-graphics-1',getSnapshot(){return {wave:wave_number,duration:ROUND_DURATION,upgrades:buy_menu_options.map(i=>({name:i.name,cost:i.cost,max:i.max})),stats:{...stats},style:'articulated-atlas'};}};
+window.BugBlasterPresentation={drawBoot,drawLawn,drawGardenLawn,saltCannonPose,getSaltShotOrigin,getStingerOrigin,scorpionTail,stats,sprites,animation,locomotion:{rigs:gaitRigs,legPose,walkCycleDistance,stanceFraction},version:'original-graphics-2',getSnapshot(){return {wave:wave_number,duration:ROUND_DURATION,upgrades:buy_menu_options.map(i=>({name:i.name,cost:i.cost,max:i.max})),stats:{...stats},style:'articulated-atlas'};}};
 })();
