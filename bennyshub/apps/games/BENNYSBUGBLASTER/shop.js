@@ -1,4 +1,4 @@
-/* Full garden catalogue; eligibility still comes from the original purchase rules. */
+/* Full garden catalogue; locks and eligibility share the purchase rules. */
 (function(){
 'use strict';
 const TAU=Math.PI*2,PI=Math.PI;
@@ -29,19 +29,12 @@ function drawIcon(c,index){
  c.restore();
 }
 const icons=buy_menu_options.map((_,i)=>{const c=document.createElement('canvas');c.width=c.height=128;drawIcon(c.getContext('2d'),i);return c;});
-const originalVisible=getVisibleBuyOptions;
-getVisibleBuyOptions=function(){return originalVisible().filter(i=>i!==buy_menu_options.length+1||purchaseHistory.length>0);};
-const originalPurchase=tryBuyItem;
-tryBuyItem=function(index){if(getVisibleBuyOptions().includes(index))return originalPurchase(index);};
-const prerequisites={1:[0,'Salt Shot'],4:[3,'Defender Bugs'],7:[6,'Bug Bomb'],11:[10,'Bug Net']};
-function stateFor(index,available){
- const item=buy_menu_options[index];
- let note='';
- if(item.purchased>=item.max)note='Fully upgraded';
- else if(prerequisites[index]&&buy_menu_options[prerequisites[index][0]].purchased<1)note='Needs '+prerequisites[index][1];
- else if(index===2&&tower_hp>=max_tower_hp&&(!shield_active||shield_hp>=max_shield_hp))note='Health is full';
- else if(points<item.cost)note='Save '+(item.cost-points)+' more';
- return{index,name:item.name,cost:item.cost,purchased:item.purchased,enabled:available.has(index),note};
+function stateFor(index){return getBuyItemState(index);}
+function drawLock(c,x,y,size){
+ c.save();c.translate(x,y);c.scale(size/20,size/20);
+ box(c,-10,-10,20,23,5,'#f1e6c8','#616b56');
+ c.beginPath();c.arc(0,-2,5,Math.PI,0);c.strokeStyle='#4b5945';c.lineWidth=2.5;c.stroke();
+ box(c,-6,-2,12,10,2,'#4b5945');oval(c,0,2,1.5,1.5,'#f8eac5');c.restore();
 }
 function wrap(text,maxWidth,font){
  ctx.font=font;const lines=[];let line='';
@@ -63,9 +56,9 @@ draw_buy_menu=function(){
  const budgetLabel=points+' pts';ctx.font='700 '+(compact?20:28)+'px "Segoe UI",sans-serif';const bw=ctx.measureText(budgetLabel).width+40,bx=W-margin-bw,by=compact?19:short?14:24;
  box(ctx,bx,by,bw,compact?36:45,12,'#283b2b','#879b6c');oval(ctx,bx+18,by+(compact?18:22.5),8,8,'#e4ba66','#b18b49');ctx.fillStyle='#f4e4aa';ctx.fillText(budgetLabel,bx+32,by+(compact?25:32));
  ctx.fillStyle='#e6e8d4';ctx.font=(compact?11:13)+'px "Segoe UI",sans-serif';
- const help=points===0?'Start Level to earn points for these upgrades.':'Choose an upgrade, or start the next level.';
+ const help=points===0?'Play to earn points. Locks show when upgrades open.':'Choose an upgrade, or start the next level. Glue lasts one level.';
  ctx.fillText(help,margin,top-14);
- const available=new Set(getVisibleBuyOptions());cards=buy_menu_options.map((_,i)=>stateFor(i,available));buy_rects=[];
+ const available=new Set(getVisibleBuyOptions());cards=buy_menu_options.map((_,i)=>stateFor(i));buy_rects=[];
  for(const card of cards){
   const col=card.index%columns,row=Math.floor(card.index/columns),x=margin+col*(cw+gap),y=top+row*(ch+gap),selected=card.enabled&&menu_selected_index===card.index;
   card.rect={x,y,w:cw,h:ch};
@@ -75,19 +68,24 @@ draw_buy_menu=function(){
   if(selected){ctx.save();ctx.strokeStyle='#263f29';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(x+3,y+3,cw-6,ch-6,8);ctx.stroke();ctx.restore();}
   const iconSize=Math.min(compact?41:ch>=110?112:65,ch-12,cw*(ch>=110?.34:.27)),ix=x+7,iy=y+Math.max(4,(ch-iconSize)/2);
   ctx.save();if(!card.enabled){ctx.filter='grayscale(1)';ctx.globalAlpha=.65;}ctx.drawImage(icons[card.index],ix,iy,iconSize,iconSize);ctx.restore();
+  if(card.locked)drawLock(ctx,ix+iconSize*.75,iy+iconSize*.75,Math.min(23,iconSize*.48));
   const textX=ix+iconSize+5,textW=x+cw-9-textX;
-  const size=Math.max(10,Math.min(compact?12:17,ch*.19,textW/9));
+  const size=Math.max(9,Math.min(compact?12:17,ch*.17,textW/9));
   const font='700 '+size+'px "Segoe UI",sans-serif',lines=wrap(card.name,textW,font);
-  ctx.fillStyle=card.enabled?'#2f4637':'#555f54';ctx.font=font;
-  const lineH=size*1.12,nameY=y+(ch>=110?ch*.32:ch>70?18:15);
+  ctx.fillStyle=card.enabled?'#2f4637':'#465242';ctx.font=font;
+  const lineH=size*1.1,nameY=y+(ch>=110?ch*.27:14);
   lines.forEach((line,i)=>ctx.fillText(line,textX,nameY+i*lineH));
-  const priceSize=Math.max(10,Math.min(14,ch*.18));ctx.font='700 '+priceSize+'px "Segoe UI",sans-serif';ctx.fillStyle=card.enabled?'#8c622e':'#5c6659';
-  const priceY=ch>=110?y+ch*.69:y+ch-(ch>=85?27:10);ctx.fillText(card.cost+' pts',textX,priceY);
-  if(ch>=85){ctx.font='11px "Segoe UI",sans-serif';ctx.fillStyle=card.enabled?'#6b7d57':'#606b5e';
-   let note=card.enabled?(card.purchased?'Owned: '+card.purchased:'Available'):card.note;
-   while(ctx.measureText(note).width>textW&&note.length>3)note=note.slice(0,-2)+'…';
-   ctx.fillText(note,textX,ch>=110?y+ch*.83:y+ch-11);
-  }
+  const priceSize=Math.max(9,Math.min(14,ch*.16));ctx.font='700 '+priceSize+'px "Segoe UI",sans-serif';ctx.fillStyle=card.enabled?'#8c622e':'#515e4c';
+  const priceY=ch>=110?y+ch*.67:y+ch-23;
+  let price=card.maxed?'Complete':card.cost+' pts'+(card.index===13?' / level':'');
+  while(ctx.measureText(price).width>textW&&price.length>3)price=price.slice(0,-2)+'…';
+  ctx.fillText(price,textX,priceY);
+  ctx.font=Math.max(9,Math.min(11,ch*.16))+'px "Segoe UI",sans-serif';ctx.fillStyle=card.enabled?'#52683d':'#465441';
+  let note=card.note;
+  if(card.enabled&&card.kind==='Permanent'&&card.max>1)note='Permanent · '+card.rank+'/'+card.max;
+  while(ctx.measureText(note).width>textW&&note.length>3)note=note.slice(0,-2)+'…';
+  ctx.fillText(note,textX,ch>=110?y+ch*.85:y+ch-8);
+
  }
  const labels=['Start Level','Undo','Main Menu'],buttonY=H-footer+5,buttonH=footer-17,buttonW=(W-margin*2-gap*2)/3;
  buy_buttons_rects=[];

@@ -196,38 +196,28 @@ let restart_requested = false;
 
 // --- Config Data ---
 const spawn_intervals = {
-    "small":       [4,3,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    "small":       [4,3,2,1,1,1,1,0.75,0.65,1.2,1,1,1,1,1,1,1,1,1,1],
     "medium":      [0,0,15,10,8,6,4,3,3,3,2,2,2,2,2,2,2,2,2,1],
     "large":       [0,0,0,0,60,45,30,25,20,15,15,15,15,15,15,15,12,10,9,8],
     "extra_large": [0,0,0,0,0,0,0,0,90,60,45,30,30,25,25,25,25,25,20,20],
     "boss":        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,60,40,30]
 };
 const quantities = {
-    "small":       [1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3],
+    "small":       [1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3],
     "medium":      [0,0,1,1,1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,3],
     "large":       [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3],
     "extra_large": [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,2],
     "boss":        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1]
 };
 
-const initial_buy_menu_options = [
-    {name: "Add Salt Shot", cost: 150, max: 6, purchased: 0},
-    {name: "Increase Shot Power", cost: 250, max: 3, purchased: 0},
-    {name: "Repair Net / Recover Health", cost: 50, max: 100, purchased: 0},
-    {name: "Train Defender Bugs", cost: 200, max: 3, purchased: 0},
-    {name: "Increase Defender Frequency", cost: 300, max: 2, purchased: 0},
-    {name: "Expand House", cost: 2000, max: 2, purchased: 0},
-    {name: "Buy Bug Bomb", cost: 3000, max: 1, purchased: 0},
-    {name: "Upgrade Bomb Frequency", cost: 3000, max: 1, purchased: 0},
-    {name: "Bug Zapper Beam", cost: 1750, max: 1, purchased: 0},
-    {name: "Add Healing", cost: 1000, max: 3, purchased: 0},  
-    {name: "Add Bug Net", cost: 1250, max: 1, purchased: 0},
-    {name: "Upgrade Net", cost: 750, max: 3, purchased: 0},
-    {name: "Upgrade Boot Stomp", cost: 500, max: 2, purchased: 0},
-    {name: "Glue Traps", cost: 400, max: 999, purchased: 0}
-];
-
-let buy_menu_options = JSON.parse(JSON.stringify(initial_buy_menu_options));
+let buy_menu_options = window.BugBlasterProgression.createOptions();
+function getBuyState() {
+    return {options:buy_menu_options,level:wave_number,points,health:tower_hp,maxHealth:max_tower_hp,
+        shield:shield_hp,maxShield:max_shield_hp,shieldActive:shield_active,glue:glue_trap_active};
+}
+function getBuyItemState(index) { return window.BugBlasterProgression.offer(index,getBuyState()); }
+function getBuyLabel(index) { return window.BugBlasterProgression.label(index,getBuyState()); }
+function refreshBuyCosts() { buy_menu_options.forEach((item,i)=>{item.cost=getBuyItemState(i).cost;}); }
 
 // --- Classes ---
 
@@ -1210,7 +1200,7 @@ function spawn_enemies() {
 function heal_tower() {
     let healing_level = buy_menu_options[9]["purchased"];
     if (healing_level > 0) {
-        const healing_intervals = {1: 10, 2: 5, 3: 2};
+        const healing_intervals = window.BugBlasterProgression.healingIntervals;
         let interval = healing_intervals[healing_level];
         if (Date.now() / 1000 - last_heal_time >= interval) {
             tower_hp = Math.min(max_tower_hp, tower_hp + 10);
@@ -1236,7 +1226,7 @@ function select_salt_shot_target() {
 
 function fire_tower_projectile() {
     let upgrade = buy_menu_options[0]["purchased"];
-    let cooldown = (upgrade >= 1) ? Math.max(1, 10 - 2 * (upgrade - 1)) : null;
+    let cooldown = window.BugBlasterProgression.saltCooldowns[upgrade] ?? null;
     
     if (cooldown === null) return;
 
@@ -1304,9 +1294,7 @@ function update_enemy_projectiles() {
                 if (shield_hp === 0) {
                     shield_active = false;
                     speak("Shield broken");
-                    // Reset Net Purchases
-                    buy_menu_options[10].purchased = 0; 
-                    buy_menu_options[11].purchased = 0;
+                    // The permanent net refills at the start of the next level.
                 }
                 enemy_projectiles.splice(i, 1);
             } else {
@@ -1550,9 +1538,7 @@ function check_shield_damage() {
                     shield_hp = 0;
                     shield_active = false;
                     speak("Net broken");
-                    // Reset Net Purchases so it can be bought again
-                    buy_menu_options[10].purchased = 0; // Add Bug Net
-                    buy_menu_options[11].purchased = 0; // Upgrade Net
+                    // The permanent net refills at the start of the next level.
                 }
                 removeEnemy(enemy);
                 playSound('hitTower');
@@ -1982,38 +1968,23 @@ let purchaseHistory = [];
 // New: Store State Backup
 let store_backup_state = null;
 
-function save_store_state() {
-    store_backup_state = {
-        points: points,
-        tower_hp: tower_hp,
-        max_tower_hp: max_tower_hp,
-        shield_hp: shield_hp,
-        max_shield_hp: max_shield_hp,
-        shield_active: shield_active,
-        stomp_cooldown_max: stomp_cooldown_max,
-        // Deep copy buy menu options
-        buy_menu_options: JSON.parse(JSON.stringify(buy_menu_options))
-    };
-    console.log("Store state saved. Points:", points);
+function capture_store_state() {
+    return {points,tower_hp,max_tower_hp,shield_hp,max_shield_hp,shield_active,stomp_cooldown_max,
+        glue_trap_active,buy_menu_options:buy_menu_options.map(item=>({...item}))};
 }
-
+function apply_store_state(state) {
+    ({points,tower_hp,max_tower_hp,shield_hp,max_shield_hp,shield_active,stomp_cooldown_max}=state);
+    buy_menu_options=state.buy_menu_options.map(item=>({...item}));
+    glue_trap_active=!!state.glue_trap_active;
+    glue_traps=[];
+    if(glue_trap_active)calculate_glue_trap_positions();
+    refreshBuyCosts();
+}
+function save_store_state() { store_backup_state=capture_store_state(); }
 function restore_store_state() {
-    if (!store_backup_state) return;
-    
-    points = store_backup_state.points;
-    tower_hp = store_backup_state.tower_hp;
-    max_tower_hp = store_backup_state.max_tower_hp;
-    shield_hp = store_backup_state.shield_hp;
-    max_shield_hp = store_backup_state.max_shield_hp;
-    shield_active = store_backup_state.shield_active;
-    stomp_cooldown_max = store_backup_state.stomp_cooldown_max;
-    
-    // Deep copy back
-    buy_menu_options = JSON.parse(JSON.stringify(store_backup_state.buy_menu_options));
-    
-    purchaseHistory = []; // Clear current session history
-    
-    console.log("Store state restored. Points:", points);
+    if(!store_backup_state)return;
+    apply_store_state(store_backup_state);
+    purchaseHistory=[];
 }
 
 function enter_store(save_state=true) {
@@ -2084,7 +2055,12 @@ function reset_game_state() {
 
     towers = [new Tower(TOWER_X, TOWER_Y)];
     
-    buy_menu_options = JSON.parse(JSON.stringify(initial_buy_menu_options));
+    buy_menu_options = window.BugBlasterProgression.createOptions();
+    stomp_cooldown_max = 4;
+    glue_trap_active = false;
+    glue_traps = [];
+    enemy_projectiles = [];
+    store_backup_state = null;
     
     // Generate Grass
     grass_blades = [];
@@ -2116,12 +2092,13 @@ function start_level() {
     
     enemies = [];
     tower_projectiles = [];
+    enemy_projectiles = [];
     tower_units = [];
     
     // Shield Reset logic
     if (buy_menu_options[10].purchased >= 1) {
         shield_active = true;
-        max_shield_hp = 50 + 25 * buy_menu_options[11].purchased;
+        max_shield_hp = 50 + 50 * buy_menu_options[11].purchased;
         shield_hp = max_shield_hp;
     } else {
         shield_active = false;
@@ -2458,147 +2435,35 @@ function handleBuyMenuClick(x, y) {
 }
 
 function undoLastPurchase() {
-    if (purchaseHistory.length === 0) return;
-    
-    let last = purchaseHistory.pop();
-    let item = buy_menu_options[last.index];
-    
-    // Refund
-    points += last.cost;
-    item.purchased -= 1;
-    
-    // Reverse special effects
-    if (last.extra) {
-        if (last.extra.type === 'hp' || last.extra.type === 'heal_hp') {
-            tower_hp -= last.extra.amount;
-            speak("Undoing health restore");
-        }
-        if (last.extra.type === 'heal_shield') {
-            shield_hp -= last.extra.amount;
-            speak("Undoing net repair");
-        }
-        if (last.extra.type === 'shield') {
-             // Reset to prev values
-             shield_hp = last.extra.prevHp;
-             max_shield_hp = last.extra.prevMax;
-             shield_active = last.extra.prevActive;
-             speak("Undoing net upgrade");
-        }
-        if (last.extra.type === 'stomp_cost_bump') {
-             item.cost = last.extra.prevCost; // Revert cost
-             // Also revert cooldown change
-             stomp_cooldown_max += 1.0; 
-             speak("Undoing stomp upgrade");
-        }
-        if (last.extra.type === 'house_expand') {
-            max_tower_hp -= 50;
-            tower_hp -= 50;
-            speak("Undoing house expansion");
-        }
-    } else {
-        // If it was a simple stomp upgrade (no cost bump), revert cooldown
-        if (item.name === "Upgrade Boot Stomp") {
-             stomp_cooldown_max += 1.0; 
-        }
-        speak("Undoing " + item.name);
-    }
+    const last=purchaseHistory.pop();
+    if(!last)return;
+    apply_store_state(last.before);
+    speak('Undid '+last.name);
 }
 
 function tryBuyItem(index) {
-     if (index >= buy_menu_options.length) { // Bottom buttons
-         let j = index - buy_menu_options.length;
-         if (j == 0) start_level();
-         else if (j == 1) undoLastPurchase();
-         else {
-             show_confirm_exit_dialog();
-         }
-         return;
-     }
-
-     let item = buy_menu_options[index];
-     
-     if (points >= item.cost && item.purchased < item.max) {
-         // Special Logic
-         // Prerequisites
-         if (index === 1 && buy_menu_options[0].purchased < 1) { speak("Buy Salt Shot first"); return; }
-         if (index === 11 && buy_menu_options[10].purchased < 1) { speak("Buy Net first"); return; }
-
-         // Deduct cost and mark purchased ahead of time? No, validation first?
-         // We do it here assuming valid
-         
-         let historyItem = {index: index, cost: item.cost, extra: null};
-         let is_healing_item = (index === 2);
-         let purchase_successful = true;
-
-         // Effects
-         if (is_healing_item) {
-             let healed = false;
-             // Shield Heal First
-             if (shield_active && shield_hp < max_shield_hp) {
-                 let needed = max_shield_hp - shield_hp;
-                 let actual = Math.min(needed, 50);
-                 shield_hp += actual;
-                 historyItem.extra = {type: 'heal_shield', amount: actual};
-                 healed = true;
-             } else if (tower_hp < max_tower_hp) {
-                 let needed = max_tower_hp - tower_hp;
-                 let actual = Math.min(needed, 50);
-                 tower_hp += actual;
-                 historyItem.extra = {type: 'heal_hp', amount: actual};
-                 healed = true;
-             }
-             
-             if (!healed) {
-                 speak("Health full");
-                 purchase_successful = false;
-             }
-         }
-         else if (index === 0) { max_tower_hp += 0; /* Just unlock */ } 
-         else if (index === 1) { tower_hp += 0; /* Just power */ }
-         
-         else if (index === 5) {
-             max_tower_hp += 50; // Expand house
-             tower_hp += 50;
-             historyItem.extra = {type: 'house_expand', amount: 50};
-         }
-         else if (index === 10) { // Net
-             shield_active = true;
-             max_shield_hp = 50;
-             shield_hp = 50;
-         }
-         else if (index === 11) { // Upgrade Net
-             historyItem.extra = {type: 'shield', prevHp: shield_hp, prevMax: max_shield_hp, prevActive: shield_active};
-             max_shield_hp += 50;
-             shield_hp = max_shield_hp;
-         }
-         
-         else if (item.name === "Upgrade Boot Stomp") {
-             // Decrease cooldown by 1s (min 2s)
-             stomp_cooldown_max -= 1.0;
-             if (stomp_cooldown_max < 2.0) stomp_cooldown_max = 2.0;
-             
-             // Cost bump after first purchase
-             if (item.purchased === 1) {
-                 historyItem.extra = {type: 'stomp_cost_bump', prevCost: item.cost};
-                 item.cost += 200; // Increase cost for lvl 2
-             }
-         }
-         else if (item.name === "Glue Traps") {
-             // Activate glue trap for the next level
-             glue_trap_active = true;
-             calculate_glue_trap_positions();
-         }
-
-         if (purchase_successful) {
-            points -= item.cost;
-            // Only increment persistent upgrades, not consumables like Heal
-            if (index !== 2) { 
-                item.purchased++;
-            }
-            speak("Bought " + item.name);
-            purchaseHistory.push(historyItem);
-         }
-     }
+    if(index===buy_menu_options.length){start_level();return;}
+    if(index===buy_menu_options.length+1){undoLastPurchase();return;}
+    if(index===buy_menu_options.length+2){show_confirm_exit_dialog();return;}
+    if(!Number.isInteger(index)||index<0||index>=buy_menu_options.length)return;
+    const offer=getBuyItemState(index);
+    if(!offer.enabled)return;
+    const item=buy_menu_options[index],before=capture_store_state();
+    points-=offer.cost;
+    if(index===2){
+        tower_hp=Math.min(max_tower_hp,tower_hp+50);
+    }else if(index===13){
+        glue_trap_active=true;
+        calculate_glue_trap_positions();
+    }else{
+        item.purchased++;
+        if(index===5){max_tower_hp+=50;tower_hp+=50;}
+        if(index===10||index===11){shield_active=true;max_shield_hp=50+50*buy_menu_options[11].purchased;shield_hp=max_shield_hp;}
+        if(index===12)stomp_cooldown_max=Math.max(2,4-item.purchased);
+    }
+    purchaseHistory.push({index,name:item.name,before});
+    refreshBuyCosts();
+    speak(index===13?'Glue Traps ready for the next level only':'Bought '+item.name);
 }
 
 // MAIN MENU
@@ -3401,8 +3266,9 @@ function loop() {
                     menu_selected_index = -1;
                 }, 5000);
             } else {
-                save_store_state(); // Save before entering store loop
-                glue_trap_active = false; // Reset glue trap for next level purchase
+                glue_trap_active = false;
+                glue_traps = [];
+                save_store_state(); // The next level starts with no consumable purchased.
                 gameState = 'BUY'; window.classicChoice?.sync();
                 menu_selected_index = -1;
                 speak(`Level complete. You earned ${earned} points. Garden store: ${storeMsg}`);
@@ -3563,38 +3429,16 @@ window.addEventListener('resize', () => {
 
 // Helper to cycle buy menu
 function getVisibleBuyOptions() {
-     let visible_indices = [];
-     for (let i = 0; i < buy_menu_options.length; i++) {
-            let item = buy_menu_options[i];
-            let show = true;
-            if (points < item.cost) show = false;
-            // Removed max purchase logic hidding to check if user can select refund? 
-            // Undo button handles refund.
-            // Items are hidden if max purchased.
-            if (item.purchased >= item.max) show = false;
-            if (i === 1 && buy_menu_options[0].purchased < 1) show = false;
-            
-            // Fix Heal Visibility for Scan
-            if (i === 2) {
-                let needsHeal = (tower_hp < max_tower_hp);
-                if (shield_active && shield_hp < max_shield_hp) needsHeal = true;
-                if (!needsHeal) show = false;
-            }
-            
-            if (i === 4 && buy_menu_options[3].purchased < 1) show = false;
-            if (i === 7 && buy_menu_options[6].purchased < 1) show = false;
-            if (i === 11 && buy_menu_options[10].purchased < 1) show = false;
-            if (show) visible_indices.push(i);
-     }
-     visible_indices.push(buy_menu_options.length); // Start
-     visible_indices.push(buy_menu_options.length + 1); // Undo
-     visible_indices.push(buy_menu_options.length + 2); // Menu
-     return visible_indices;
+    const visible=buy_menu_options.map((_,i)=>i).filter(i=>getBuyItemState(i).enabled);
+    visible.push(buy_menu_options.length);
+    if(purchaseHistory.length)visible.push(buy_menu_options.length+1);
+    visible.push(buy_menu_options.length+2);
+    return visible;
 }
 
 function speakSelection() {
     let name = "";
-    if (menu_selected_index < buy_menu_options.length) name = buy_menu_options[menu_selected_index].name;
+    if (menu_selected_index < buy_menu_options.length) name = getBuyLabel(menu_selected_index);
     else {
         let j = menu_selected_index - buy_menu_options.length;
         if (j === 0) name = "Start Level";

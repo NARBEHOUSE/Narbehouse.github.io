@@ -7,7 +7,7 @@ function setup(){
  let time=100;
  const box={enemies:[],focused_enemy:null,tower_projectiles:[],tower_last_projectile_time:0,
   buy_menu_options:[{purchased:1},{purchased:0}],towers:[{x:100,y:500,size:150}],
-  SCREEN_WIDTH:1440,SCREEN_HEIGHT:960,window:{},Math,Date:{now:()=>time*1000},sounds:[],
+  SCREEN_WIDTH:1440,SCREEN_HEIGHT:960,window:{BugBlasterProgression:require('../bennyshub/apps/games/BENNYSBUGBLASTER/progression.js')},Math,Date:{now:()=>time*1000},sounds:[],
   TowerProjectile:class{constructor(x,y,tx,ty,damage){Object.assign(this,{x,y,tx,ty,damage,radius:5});}move(){}draw(){}},
   playSound(name){box.sounds.push(name);},removeEnemy(e){e.isDead=true;}};
  vm.createContext(box);vm.runInContext(functions,box);

@@ -2,6 +2,26 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-21 — Bug Blaster level unlocks and campaign economy; PC port
+
+Owner explicitly authorized applying the reviewed progression to the website and PC Hub, then pushing. Added one shared progression catalogue used by rendering, spoken scan labels, eligibility and purchase validation. All 14 cards stay visible; level-locked cards show a padlock and the level to finish, and locked, unaffordable, completed and already-prepared items are neither scanned nor purchasable. Salt Shot starts at level 3. First-rank costs/unlocks: Defender 150 at 2; Salt 200 at 3; Boot 400 and Glue 100 at 4; Net 350 at 5; Healing 600 at 6; Zapper 900 at 7; House 1500 at 9; Bomb 1500 at 11. Later ranks have separate prices and gates through level 19. A budget regression reserves 50 for repairs each store, excludes perfect-health bonuses and confirms first-rank purchases are possible at unlock or one reward later on that baseline path. Spending on other ranks remains a choice.
+
+Glue is explicitly a one-level consumable, auto-placed once purchased, disabled once ready, cleared on level completion and fully reversed by Undo/restart/reset. Purchase Undo now restores a complete pre-purchase snapshot, fixing retained glue/net effects, negative repair counts and the boot price/refund mismatch. The net is now permanent, refills each level and retains upgrades after breaking; its 50 HP per rank is consistent in-store and in-game. Repair House restores only house health so points are not spent repairing a net that will refill free. New-game reset also clears upgraded boot cadence and leftover venom.
+
+Balance adjustments preserve 20 rounds of 150 seconds and existing enemy damage, HP, targeting, controls, art and sounds. The abrupt ant doubling at level 8 is spread across 8–10. Salt cadence is 10/8/6/4/2.5/1.75 seconds; healing restores 10 HP every 12/6/5 seconds. Final cannon rank opens at 16, second house at 17, bomb frequency and last net rank at 18, and last healing rank at 19. This bounds the former one-second cannon and two-second healing combinations.
+
+Verification: 386 website unit tests (including 16 progression/economy tests), 17 real Chrome interaction checks and 19 real Electron fixture checks; desktop combat/purchase tests pass. Browser screenshots at 1280×720 and 390×844 inspected. Native bridge, five-row pause menu and Help retained. Full deterministic 60 FPS/1280×720 campaign models exercise attack, balanced and defensive purchase priorities, saving and repairs, with one modeled action every 6 or 8 seconds; each action may choose the current or next two scan targets. Balanced and defensive routes finish all 20 levels at both intervals. Attack without glue fails (20 at 6 seconds; 9 at 8 seconds); glue on the difficult waves provides a viable attack route. The no-stomp whole-campaign control fails at level 4. Individual well-equipped late checkpoints can survive without stomping; these are bounded simulations, not claims of human/hardware difficulty validation. The reproducible script is scripts/check-bug-blaster-balance.cjs.
+
+Changed files (scope / Electron port flag):
+- bennyshub/apps/games/BENNYSBUGBLASTER/{game.js,index.html,progression.js,shop.js,scan-access.js} — gameplay economy and accessible store / APPLIED TO PC HUB, preserving native index/Help differences.
+- tests/bug-blaster-progression.test.cjs, tests/bug-blaster-targeting.test.cjs, tests/helpers/bug-blaster-runtime.cjs — transaction, eligibility, budget and combat tests / APPLIED TO PC HUB.
+- bennyshub/service-worker.js — v60 invalidates old runtime caches / WEB ONLY.
+- tests/communication-cache.test.cjs — cache retirement check / WEB ONLY.
+- scripts/check-bug-blaster-balance.cjs — optional full native-loop tuning model / WEB DEVELOPMENT ONLY.
+- docs/history/DEVELOPMENT-HISTORY.md — this record / WEB ONLY; PC port recorded in its ELECTRON-SCAN-UPGRADE.md.
+
+Backups, staged files, hash-guarded manifests, simulations and browser/native reports are outside the repository at ../tmp/bug-blaster-progression-20261021/. No installer rebuild. Physical switch acceptance remains an owner check. The existing Hub game URL and shared thumbnail remain canonical, so SwitchedGames needs no duplicate update.
+
 ## 2026-10-20 — Twelve-voice web publication
 
 The owner authorized publication with “push web.” All 370 web unit tests pass. The tested runtime is unchanged from the passing 12-model browser check, public build, 3,824-file audit and 1,191-reference check. Publication uses the existing main-branch GitHub Pages workflow; local evidence stays outside the repository. Changed file for this release record: docs/history/DEVELOPMENT-HISTORY.md (WEB documentation only).
