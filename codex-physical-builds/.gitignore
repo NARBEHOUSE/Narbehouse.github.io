@@ -1,0 +1,4 @@
+# Local source material; the website uses the reviewed text and JPEG assets.
+/*.docx
+/VS Code Handoff.md
+/images/*.png

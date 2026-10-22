@@ -3884,3 +3884,42 @@ Changed files and Electron port flags (all WEB ONLY / NO ELECTRON PORT):
 Scope: retain tests, dependencies, local profiles, artifacts, backups, historical release ZIPs and all other media. No Electron files changed.
 
 Validation: 394/394 unit tests passed. Rebuilt public output contains 4,048 files and 583,041,849 bytes; the release audit reports zero problems and all 1,245 exact-case page references pass. Every approved file is absent from both source and dist. All 22 historical release ZIPs retain their pre-cleanup SHA-256 hashes. In an isolated Chrome browser, Bowling progressed through Play Game > setup > Start Game with zero page errors or missing resources and ambience still disabled. Pet Pals progressed through Play > Puppy > Labrador > Rocky to gameplay; generated music played, eight music tracks were ready, and no removed preview assets were requested. Its existing optional audio probes remain, as documented. Gameplay renders were inspected. The later interactive pause probe exceeded the tool timeout; pause controls were not changed and are not claimed as regression-tested here. Browser evidence, checks and release hashes are saved outside the website under ../tmp/narbe-cleanup-assessment-20261022/.
+
+
+## 2026-10-22 — Codex physical build project page
+
+Scope: standalone project story for Benny’s Hub Mobile, linked only from the NARBE homepage. No Hub/Companion/SwitchedGames behavior changes. Electron port: **No** for every file below.
+
+- `codex-physical-builds/index.html`, `styles.css`, `script.js`, `favicon.svg`: responsive project story, real photographs/UI captures, hardware and source links, two-switch illustration, image dialog, accessible setup disclosures and copyable commands.
+- `codex-physical-builds/README.md`, `trinkey/README.md`: current setup documentation and explicit pending firmware/runtime validation.
+- `codex-physical-builds/images/*.jpg`: compressed derivatives of six supplied photos and four genuine Hub captures (graphics, speakers, keyboard, personal streaming library). Original PNGs and supplied documents remain unchanged.
+- `index.html`: one project feature linking to the standalone page.
+- `scripts/build.cjs`: include the project in the reviewed public build, publish JPEGs while excluding original PNG source copies. Existing rules exclude supplied DOCX/Markdown handoff files.
+- `scripts/serve.cjs`: serve the new project under the existing local preview.
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record.
+
+Validation: 394/394 repository tests passed; public build passed; release audit found no problems; all 1,271 local page/asset references passed. Real Chrome review covered desktop and 390/320 px phone widths with no horizontal overflow, loaded project imagery, the homepage-to-project link, mouse/Space/Enter switch illustration, image-dialog Escape and focus return, setup disclosures/deep links and copy-button success feedback. Browser error log was empty. Six photo JPEGs plus four Hub screenshots total approximately 1.15 MB. No Pi runtime, battery benchmark or new hardware acceptance is claimed.
+
+
+### 2026-10-22 — Physical build relationship and entertainment notices
+
+User-requested clarification. Electron port: **No** for every file. `codex-physical-builds/index.html` adds visible bottom-of-page notices describing the limited OpenAI relationship, no implied endorsement, entertainment-only intended use, no AAC/medical marketing claims, and limits on relying on speech/Help features. `codex-physical-builds/styles.css` provides readable responsive notice styling that also prints. `codex-physical-builds/README.md` repeats the same notice. Generated `dist/codex-physical-builds/index.html` and `styles.css` are synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records this change. This wording describes intended use; it does not purport to determine regulatory classification.
+
+Verification: all 1,271 local page/asset references pass; git diff whitespace check passes. Browser review confirms readable two-column desktop and single-column 390 px layouts with no horizontal overflow. Existing application behavior is unchanged.
+
+
+### 2026-10-22 — Personal context for Ben’s build
+
+User-supplied background added to `codex-physical-builds/index.html` and `codex-physical-builds/README.md`: Ben is nonspeaking and quadriplegic due to a rare condition, uses right/left head movements for yes/no, and spent years without suitable computer access. The story connects AI-assisted development to more choice in his day while preserving the screen/switch explanation. Generated `dist/codex-physical-builds/index.html` synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records the edit. Electron port: **No** for every file. No diagnosis name, clinical outcome, direction-to-answer mapping or new medical claim added.
+
+
+### 2026-10-22 — Correct physical-build Hub screenshots
+
+Replaced captures that incorrectly showed the outer Hub or top of Settings instead of the intended screen. Changed `codex-physical-builds/images/hub-library.jpg`, `hub-graphics.jpg`, `hub-speakers.jpg` and `hub-keyboard.jpg` to verified viewport captures of the real Streaming library, Graphics quality control, Speakers section and complete keyboard. Updated `codex-physical-builds/index.html` with the actual 914 × 814 image dimensions and a caption explaining the visible Speaker Mode off state. Synced the same five generated files under `dist/codex-physical-builds/`. `docs/history/DEVELOPMENT-HISTORY.md` records the correction. Scope: project presentation only; Electron port: **No** for every file. No Hub preferences were changed.
+
+Verification: inspected saved image files, confirmed all four load at their declared dimensions on the project page, visually reviewed the gallery and enlarged Speakers image, confirmed no browser errors, and checked all 1,271 local references without issues. Source/build image bytes match. Prior captures and verification evidence are preserved outside the repository under ../tmp/codex-physical-builds-20261022/.
+
+
+### 2026-10-22 — Publish the physical-build project
+
+Owner authorized publication of the reviewed project page and homepage entry. Added `codex-physical-builds/.gitignore` to preserve the supplied write-up, handoff notes and original PNG photos locally while committing the finished page, setup README and compressed website images. `docs/history/DEVELOPMENT-HISTORY.md` records the publication scope. Electron port: **No** for every file. Publication uses the existing main-branch GitHub Pages workflow, including its tests, release audit and page-reference checks.
