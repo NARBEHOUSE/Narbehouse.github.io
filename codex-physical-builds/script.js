@@ -17,13 +17,7 @@
   }
   document.querySelector('#demo-move').addEventListener('click', move);
   document.querySelector('#demo-select').addEventListener('click', select);
-  demo.addEventListener('keydown', event => {
-    if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
-    if (event.code === 'Space' || event.key === 'Enter') {
-      event.preventDefault();
-      if (event.code === 'Space') move(); else select();
-    }
-  });
+  options.forEach((option, index) => option.addEventListener('click', () => { current = index; select(); document.dispatchEvent(new CustomEvent('project:announce', {detail: status.textContent})); }));
   const dialog = document.querySelector('#lightbox');
   const image = dialog.querySelector('img');
   const caption = dialog.querySelector('p');
@@ -36,6 +30,7 @@
     image.alt = link.querySelector('img').alt;
     caption.textContent = image.alt;
     dialog.showModal();
+    document.dispatchEvent(new CustomEvent('project:lightbox-open', {detail: {trigger: link}}));
   }));
   dialog.querySelector('button').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
@@ -46,11 +41,13 @@
       await navigator.clipboard.writeText(code.textContent);
       button.textContent = 'Copied';
       document.querySelector('#copy-status').textContent = 'Command copied.';
+      document.dispatchEvent(new CustomEvent('project:announce', {detail: 'Command copied.'}));
       setTimeout(() => { button.textContent = 'Copy'; }, 1800);
     } catch {
       const range = document.createRange(); range.selectNodeContents(code);
       const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
-      document.querySelector('#copy-status').textContent = 'Command selected. Use your device’s copy command.';
+      document.querySelector('#copy-status').textContent = 'Copy is unavailable in this browser. The command is selected for ordinary keyboard copying.';
+      document.dispatchEvent(new CustomEvent('project:announce', {detail: 'Copy is unavailable in this browser. The command is selected for ordinary keyboard copying.'}));
     }
   }));
   function openHashDetails() { const id = decodeURIComponent(location.hash.slice(1)); if (!id) return; const target = document.getElementById(id); if (target?.tagName === 'DETAILS') target.open = true; }

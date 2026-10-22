@@ -121,9 +121,24 @@ Speech quality was confirmed across several messages; persistence after reboot s
 
 This is a standalone, buildless HTML/CSS/JavaScript page. The repository’s npm start preview serves /codex-physical-builds/. The main website links here as a project; no navigation link is added to Benny’s Hub or SwitchedGames.
 
-The source photographs remain unchanged. The page uses compressed JPEG derivatives and real screenshots of the current Hub. The “Hi everyone” photograph shows the display mirrored to a TV during testing; TV mirroring is not enabled by default or included in the standard portable setup. The personal-library screenshot is illustrative; it is not a shipped starter collection. The two-switch demo is a small menu illustration, not the Hub’s actual scanner.
+The source photographs remain unchanged. The page uses compressed JPEG derivatives and real screenshots of the current Hub. The “Hi everyone” photograph shows the display mirrored to a TV during testing; TV mirroring is not enabled by default or included in the standard portable setup. The personal-library screenshot is illustrative; it is not a shipped starter collection. The small Play / Watch / Speak example remains an illustration. The page itself now uses the Hub’s shared choice scanner for navigation.
 
 Source inputs: the supplied write-up and VS Code handoff, labeled project photographs, current Hub UI, maintained graphics/speech implementation notes, and official vendor documentation. The original write-up is preserved; this page uses current labels and qualifies estimates.
+
+## Explore the project with switches
+
+The page is designed for Space and Enter switch inputs. Choose **Try switch browsing**, or press Space outside an ordinary button or link. Space moves between sections; Enter opens a section’s choices. The first choice reads that section aloud, followed by its links, photos and smaller groups. A silent blank separates the last and first sections. Each entered group loops through its choices and a spoken **Back** stop, which restores the previous selection.
+
+- During narration, Enter stops speech; Space stops it and moves on. The current passage is highlighted and scrolled into view. Browser speech is chunked through the shared voice manager and remains interruptible.
+- Photos have scannable description and close controls. Setup steps can be opened, read, copied and closed with the switches.
+- **Controls & help** includes spoken instructions, speech on/off, voice selection, Auto Scan and scan speed. The page uses the same-origin Hub’s saved scan and voice preferences. Parking, Space Brake and Wait for Speech remain configured in Hub Settings.
+- Auto Scan offers Enter-only selection after it is enabled. Held Space scans backwards in manual mode using the existing three-second Hub convention; no hold is needed to go forward or return.
+- Links selected with switches show a cancel-first handoff. The Benny’s Hub links use the same-origin web app, preserving preferences. Other pages and external sites may need ordinary controls. Browser Back returns to the project; this page does not add its own controls to another site.
+- Mouse, touch and ordinary keyboard navigation remain available. Tab or **End switch browsing** exits switch mode. No speech or automatic scanning starts before the visitor opts in.
+
+Implementation: `switch-access.js` supplies explicit section/group identities and input ownership to `NarbeChoiceScanAdapter`; shared platform, scan, voice and status modules are loaded from `../bennyshub/shared/`. All contexts on this page are CHOICE scans. Shared modules, gameplay and the Electron app are unchanged. The page requires JavaScript for scanning and a working browser voice for narration; its text and native links remain readable without speech.
+
+Validation covers keyboard and browser behavior. The complete experience still needs testing with Ben’s physical switches, preferred voice and display before calling it hardware-verified.
 
 ## Independence and intended use
 
