@@ -3937,3 +3937,8 @@ User clarified that Ben continues using his main Electron app on Surface Pro. `c
 Layout follow-up in `codex-physical-builds/styles.css`: add space below the current-limits heading before the new introductory paragraphs; generated CSS synchronized. Electron port: **No**.
 
 Verification: all 1,271 page/asset references and whitespace checks pass. Reviewed desktop and 390 px phone layouts; no horizontal overflow, and the new search/messenger limitations remain readable.
+
+
+### 2026-10-22 — Identify TV mirroring as a testing setup
+
+User clarified the TV display in the “Hi everyone” photograph was used for testing. Updated `codex-physical-builds/index.html` caption, image alt text and enlargement label to distinguish that test from the default portable setup. `codex-physical-builds/README.md` documents the same distinction; generated `dist/codex-physical-builds/index.html` synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records the change. Scope: factual photo context only; Electron port: **No** for every file.

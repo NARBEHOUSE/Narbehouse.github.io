@@ -121,7 +121,7 @@ Speech quality was confirmed across several messages; persistence after reboot s
 
 This is a standalone, buildless HTML/CSS/JavaScript page. The repository’s npm start preview serves /codex-physical-builds/. The main website links here as a project; no navigation link is added to Benny’s Hub or SwitchedGames.
 
-The source photographs remain unchanged. The page uses compressed JPEG derivatives and real screenshots of the current Hub. The personal-library screenshot is illustrative; it is not a shipped starter collection. The two-switch demo is a small menu illustration, not the Hub’s actual scanner.
+The source photographs remain unchanged. The page uses compressed JPEG derivatives and real screenshots of the current Hub. The “Hi everyone” photograph shows the display mirrored to a TV during testing; TV mirroring is not enabled by default or included in the standard portable setup. The personal-library screenshot is illustrative; it is not a shipped starter collection. The two-switch demo is a small menu illustration, not the Hub’s actual scanner.
 
 Source inputs: the supplied write-up and VS Code handoff, labeled project photographs, current Hub UI, maintained graphics/speech implementation notes, and official vendor documentation. The original write-up is preserved; this page uses current labels and qualifies estimates.
 
