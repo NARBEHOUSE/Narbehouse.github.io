@@ -1,0 +1,745 @@
+/* Switch Stories
+   The story fills the whole window: the picture on a canvas, the words in a
+   big box along the bottom. Every menu is a plain, dark card scaled to fit
+   (see fit() in ui.js) so nothing is cut off and nothing scrolls. Plain and
+   calm on purpose, as in Glow Pop: big white text, few colours and no busy
+   animation, for players with CVI. */
+
+:root {
+    --display-scale: 1;
+    --ink: #ffffff;
+    --muted: #c9cde6;
+    --value: #ffd60a;
+    --card: rgba(8, 10, 26, 0.94);
+    --card-edge: rgba(255, 255, 255, 0.3);
+    --btn: #1d2247;
+    --btn-edge: rgba(255, 255, 255, 0.38);
+    --font: 'Baloo 2', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #05060f;
+}
+
+body {
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+}
+
+#nss { position: fixed; inset: 0; background: #05060f; }
+
+/* The story picture shows only while a story is open (and behind its pause menu). */
+.nss-stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; visibility: hidden; }
+#nss.story-open .nss-stage { visibility: visible; }
+
+.nss-btn {
+    font: inherit;
+    color: inherit;
+    border: 0;
+    cursor: pointer;
+    position: relative;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.nss-icon { width: 30px; height: 30px; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.nss-dot, .nss-fill { fill: currentColor; stroke: none; }
+
+/* ------------------------------------------------------------ the screens */
+
+.nss-screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+}
+
+.nss-screen.show { display: flex; }
+
+.nss-card {
+    position: relative;
+    flex: none;
+    width: min(760px, 94vw);
+    padding: 20px 24px 24px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 3px solid var(--card-edge);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+}
+
+.nss-card-narrow { width: min(560px, 94vw); }
+
+.nss-title {
+    margin: 0 0 14px;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+}
+
+.nss-sub {
+    margin: 2px 0 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: clamp(18px, 2.4vw, 24px);
+    font-weight: 700;
+}
+
+.nss-scan-status { min-block-size: 0; position: absolute; top: 10px; right: 14px; padding: 0; z-index: 3; }
+.nss-story .nss-scan-status { top: max(14px, env(safe-area-inset-top)); left: 14px; right: auto; }
+
+/* ----------------------------------------------------------------- library */
+
+.nss-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+/* The menus' picture (Picture Book look only), behind the library, Settings
+   and How to Play. The picture holds still; only a few fireflies rise and
+   fade, gently, never flashing. Simple High Contrast menus are plain black. */
+.nss-menu-bg { position: fixed; inset: 0; overflow: hidden; display: none; pointer-events: none; }
+#nss:not(.cvi)[data-screen="library"] .nss-menu-bg.ready,
+#nss:not(.cvi)[data-screen="filters"] .nss-menu-bg.ready,
+#nss:not(.cvi)[data-screen="lengths"] .nss-menu-bg.ready,
+#nss:not(.cvi)[data-screen="settings"] .nss-menu-bg.ready,
+#nss:not(.cvi)[data-screen="help"] .nss-menu-bg.ready { display: block; }
+.nss-menu-pic {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* A soft shade in the middle, so the card's words stay easy to read. */
+.nss-menu-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(5, 6, 15, 0.35) 0%, rgba(5, 6, 15, 0.1) 60%, rgba(5, 6, 15, 0) 100%);
+}
+/* The fireflies: only behind the main menu (the story library). */
+.nss-firefly { display: none; }
+#nss[data-screen="library"] .nss-firefly { display: block; }
+.nss-firefly {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #fff2a8 40%, rgba(255, 214, 10, 0) 72%);
+    box-shadow: 0 0 18px 8px rgba(255, 225, 110, 0.55);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: nss-firefly var(--d, 11s) ease-in-out var(--delay, 0s) infinite;
+}
+@keyframes nss-firefly {
+    0%   { opacity: 0;    transform: translate(0, 0); }
+    25%  { opacity: 0.85; }
+    75%  { opacity: 0.85; }
+    100% { opacity: 0;    transform: translate(var(--dx, 2vw), -16vh); }
+}
+/* Over the picture, these menus have only a light wash, and their cards let a
+   little of the forest show through. The tiles, rows and buttons on them stay
+   solid, so their words read just as clearly. */
+#nss:not(.cvi)[data-screen="library"] .nss-screen.show,
+#nss:not(.cvi)[data-screen="filters"] .nss-screen.show,
+#nss:not(.cvi)[data-screen="lengths"] .nss-screen.show,
+#nss:not(.cvi)[data-screen="settings"] .nss-screen.show,
+#nss:not(.cvi)[data-screen="help"] .nss-screen.show { background: rgba(5, 6, 15, 0.15); }
+#nss:not(.cvi)[data-screen="library"] .nss-card,
+#nss:not(.cvi)[data-screen="filters"] .nss-card,
+#nss:not(.cvi)[data-screen="lengths"] .nss-card,
+#nss:not(.cvi)[data-screen="settings"] .nss-card,
+#nss:not(.cvi)[data-screen="help"] .nss-card { background: rgba(8, 10, 26, 0.76); }
+#nss:not(.cvi) .nss-card .nss-sub,
+#nss:not(.cvi) .nss-card .nss-title,
+#nss:not(.cvi) .nss-help-body p { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+#nss:not(.cvi) .nss-card .nss-sub { color: #e4e7fb; }
+/* Simple High Contrast: these menus are plain black, even over a paused story. */
+#nss.cvi[data-screen="library"] .nss-screen.show,
+#nss.cvi[data-screen="filters"] .nss-screen.show,
+#nss.cvi[data-screen="lengths"] .nss-screen.show,
+#nss.cvi[data-screen="settings"] .nss-screen.show,
+#nss.cvi[data-screen="help"] .nss-screen.show { background: #000000; }
+
+/* An open book on a warm yellow circle. */
+.nss-logo {
+    flex: none;
+    width: clamp(54px, 7.4vw, 72px);
+    height: clamp(54px, 7.4vw, 72px);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #3a2410;
+    background: radial-gradient(circle at 35% 30%, #fff6c2 0%, #ffd60a 50%, #e0b400 100%);
+}
+.nss-logo .nss-icon { width: 62%; height: 62%; stroke-width: 3.4; }
+
+.nss-brand-title {
+    margin: 0;
+    font-size: clamp(38px, 6vw, 62px);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--value);
+}
+
+.nss-tiles {
+    display: grid;
+    grid-template-columns: repeat(var(--tiles, 3), minmax(0, 380px));
+    justify-content: center;
+    gap: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(14px, 2vw, 20px);
+}
+
+.nss-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 8px 10px;
+    border-radius: 24px;
+    color: #fff;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 3px var(--btn-edge);
+}
+
+.nss-tile:active { transform: translateY(4px); }
+
+.nss-card-library { width: min(1200px, 94vw); }
+
+.nss-pic {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    height: auto;
+    max-height: clamp(130px, 32vh, 290px);
+    border-radius: 17px;
+}
+
+.nss-tile-label {
+    font-size: clamp(21px, 2.8vw, 28px);
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+/* One scan choice per book; its description and topic badges are plain text. */
+.nss-tile { text-align: left; padding: 10px; gap: 12px; }
+.nss-tile .nss-pic { height: clamp(160px, 24vh, 220px); aspect-ratio: auto; max-height: none; }
+.nss-tile-copy { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 2px 6px 6px; min-width: 0; }
+.nss-tile-label { font-size: 26px; }
+.nss-tile-description { display: block; font: 500 18px/1.4 'Segoe UI', system-ui, sans-serif; color: #f3f4ff; }
+.nss-story-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; }
+.nss-story-tag { display: inline-block; padding: 3px 9px; border-radius: 10px; background: #333b63; color: #eef2ff; font: 600 15px/1.4 'Segoe UI', system-ui, sans-serif; }
+.nss-page-count { color: #ffe999; background: #493e28; }
+.nss-reading-tag { color: #dbfff0; background: #254b46; }
+.nss-tile-description:empty { display: none; }
+.nss-library-intro { max-width: 780px; margin: 10px auto 12px; color: #f3f4ff; text-align: center; font: 400 17px/1.4 'Segoe UI', system-ui, sans-serif; }
+.nss-library-browse { display: flex; justify-content: center; gap: 14px; }
+.nss-library-filters { margin-bottom: 14px; }
+.nss-library-paging[hidden] { display: none; }
+.nss-library-browse .nss-menu-item { flex: 1; max-width: 380px; min-height: 58px; font-size: 21px; }
+.nss-library-browse .nss-icon-chip { width: 34px; height: 34px; }
+.nss-library-browse .nss-more { width: auto; margin: 0; }
+.nss-library-note { color: #e2e6f6; text-align: center; font: 400 14px/1.4 'Segoe UI', system-ui, sans-serif; margin: 12px 0; }
+.nss-filter-status { text-align: center; color: #e2e6f6; font-size: 18px; margin: 0 0 16px; }
+.nss-filter-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.nss-filter-choice[aria-pressed="true"] { box-shadow: inset 0 0 0 3px #ffe999; }
+.nss-filter-count { flex: none; font: 600 16px/1.3 'Segoe UI', system-ui, sans-serif; }
+.nss-filter-selected { display: block; margin-top: 4px; color: #ffe999; font: 600 14px/1.3 'Segoe UI', system-ui, sans-serif; }
+.nss-filter-navigation { display: flex; gap: 14px; }
+.nss-filter-navigation .nss-menu-item { flex: 1; }
+#nss.cvi .nss-tile, #nss.cvi .nss-card-filters { background: #000; }
+#nss.cvi .nss-story-tag { background: #000; color: #fff; box-shadow: inset 0 0 0 1px #bcbcbc; }
+#nss.cvi .nss-page-count { color: #ffe999; }
+#nss.cvi .nss-tile-description, #nss.cvi .nss-library-intro, #nss.cvi .nss-library-note { color: #fff; }
+
+/* A single detailed card keeps smaller windows readable without scrolling. */
+.nss-library-single .nss-tiles { grid-template-columns: minmax(0, 760px); }
+.nss-library-single .nss-tile { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: center; gap: 16px; }
+.nss-library-single .nss-tile .nss-pic { width: 180px; height: 180px; }
+.nss-library-single .nss-card-library { max-width: 820px; }
+
+/* Up to six books in two rows on larger windows, with full descriptions. */
+.nss-library-grid .nss-card-library { padding: 16px 20px; }
+.nss-library-grid .nss-brand-title { font-size: 46px; }
+.nss-library-grid .nss-logo { width: 54px; height: 54px; }
+.nss-library-grid .nss-library-intro { font-size: 16px; margin: 6px auto 8px; }
+.nss-library-grid .nss-library-filters { margin-bottom: 8px; }
+.nss-library-grid .nss-sub { font-size: 20px; margin: 4px 0 12px; }
+.nss-library-grid .nss-tiles { gap: 14px; margin-bottom: 14px; }
+.nss-library-grid .nss-tile { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-content: start; align-items: center; gap: 8px 12px; }
+.nss-library-grid .nss-tile .nss-pic { width: 72px; height: 72px; }
+.nss-library-grid .nss-tile-copy { display: contents; }
+.nss-library-grid .nss-tile-label { font-size: 22px; }
+.nss-library-grid .nss-tile-description, .nss-library-grid .nss-story-tags { grid-column: 1 / -1; }
+.nss-library-grid .nss-tile-description { font-size: 16px; }
+.nss-library-grid .nss-story-tag { font-size: 14px; }
+.nss-library-grid .nss-library-browse .nss-menu-item { min-height: 50px; font-size: 20px; }
+.nss-library-grid .nss-library-note { margin: 8px 0; }
+.nss-library-grid .nss-util .nss-menu-item { min-height: 54px; font-size: 20px; }
+.nss-library-grid .nss-util .nss-icon-chip { width: 34px; height: 34px; }
+
+/* Share natural content heights across each row of books. Tag rows start
+   together and grow downward, even when descriptions or badges wrap. */
+@supports (grid-template-rows: subgrid) {
+    .nss-screen-library:not(.nss-library-single) .nss-tile {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: subgrid;
+        grid-row: span 4;
+    }
+    .nss-screen-library:not(.nss-library-single):not(.nss-library-grid) .nss-tile-copy {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: subgrid;
+        grid-row: span 3;
+    }
+    .nss-screen-library:not(.nss-library-single) .nss-tile-description { grid-row: 2; }
+    .nss-screen-library:not(.nss-library-single) .nss-story-tags {
+        grid-row: 3;
+        margin-top: 0;
+        align-self: start;
+        align-content: start;
+    }
+    .nss-screen-library.nss-library-grid .nss-tile {
+        grid-template-columns: 72px minmax(0, 1fr);
+        grid-row: span 3;
+    }
+}
+
+.nss-more { width: 100%; margin-bottom: clamp(10px, 1.6vw, 16px); justify-content: center; }
+.nss-more .nss-menu-label { flex: none; }
+
+.nss-util {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 16px);
+}
+
+/* ------------------------------------------------------------- menu items */
+
+.nss-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: clamp(60px, 8.6vh, 78px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: clamp(18px, 2.3vw, 24px);
+    font-weight: 800;
+    text-align: left;
+    line-height: 1.1;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 3px var(--btn-edge);
+}
+
+.nss-menu-item:active { transform: translateY(3px); }
+
+.nss-menu-label { flex: 1; }
+
+.nss-icon-chip {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.nss-list { display: grid; gap: 12px; }
+
+/* ----------------------------------------------------------------- settings */
+
+.nss-card-settings { width: min(640px, 94vw); }
+.nss-card-settings.nss-card-top { width: min(760px, 94vw); }
+.nss-card-settings.with-preview { width: auto; max-width: 96vw; }
+
+.nss-settings-body { display: flex; gap: 20px; align-items: center; }
+.nss-settings-list { display: grid; gap: 12px; flex: 1; min-width: min(460px, 80vw); }
+
+/* The top page: five big page buttons and Back, three by two. */
+.nss-card-top .nss-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nss-card-top [data-setting="back"] { grid-column: 1 / -1; justify-content: center; }
+.nss-card-top [data-setting="back"] .nss-menu-label { flex: none; }
+
+.nss-preview { display: none; flex: none; }
+.with-preview .nss-preview { display: block; }
+.nss-preview-pic {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    box-shadow: 0 0 0 3px var(--btn-edge);
+}
+
+.nss-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: clamp(54px, 7.4vh, 68px);
+    padding: 8px 18px;
+    border-radius: 18px;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22);
+    font-size: clamp(18px, 2.1vw, 23px);
+    text-align: left;
+}
+
+.nss-row-label { font-weight: 800; }
+.nss-row-value { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; color: var(--value); text-align: right; }
+.nss-row-nav { justify-content: center; background: #2b3157; box-shadow: inset 0 0 0 3px var(--btn-edge); }
+
+.nss-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+/* Phones held upright: one column, and the preview above the rows. */
+@media (max-aspect-ratio: 1/1) {
+    .nss-settings-body { flex-direction: column; }
+    .nss-preview { order: -1; }
+    .nss-settings-list { width: 100%; min-width: 0; }
+    .nss-card-top .nss-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Short, wide windows (a phone on its side): two columns of rows, so they
+   stay big instead of shrinking to fit one tall column. */
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+    .nss-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nss-row-nav { grid-column: 1 / -1; }
+    .nss-card-top .nss-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* -------------------------------------------------------------- how to play */
+
+.nss-help-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    border-radius: 20px;
+    background: transparent;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+}
+
+.nss-help-body p {
+    margin: 0 0 10px;
+    font-size: clamp(18px, 2.3vw, 23px);
+    line-height: 1.35;
+    color: #f2f3ff;
+}
+
+.nss-help-body b { color: var(--value); }
+.nss-help-body + .nss-menu-item { margin-top: 14px; width: 100%; }
+
+/* ---------------------------------------------------------------- the story */
+
+.nss-story { position: fixed; inset: 0; display: none; }
+.nss-story.show { display: block; }
+
+/* Captions sit over the scene. Their measured height reserves clear floor
+   above the words for every character and action. */
+.nss-textbox {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: calc(20px * var(--display-scale)) max(24px, 5vw) max(calc(18px * var(--display-scale)), env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    color: #ffffff;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: opacity 0.22s ease;
+}
+
+.nss-textbox::before {
+    content: '';
+    position: absolute;
+    inset: calc(-64px * var(--display-scale)) 0 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.66) calc(64px * var(--display-scale)), rgba(0, 0, 0, 0.8));
+}
+
+.nss-textbox.fade { opacity: 0; }
+
+.nss-credits { max-width: 108ch; margin-top: 10px; font: 400 clamp(11px, 1.05vw, calc(15px * var(--display-scale)))/1.35 Arial, sans-serif; color: #fff; }
+.nss-credits[hidden], .nss-textbox.choosing .nss-credits { display: none; }
+.nss-credits a { color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+.nss-words { margin: 0; font-weight: 800; line-height: 1.22; font-size: clamp(28px, 4.8vw, calc(58px * var(--display-scale))); max-width: 32ch; }
+#nss.xl .nss-words { font-size: clamp(34px, 6.4vw, calc(78px * var(--display-scale))); }
+
+/* Leave a pixel for fractional line-box rounding so hiding the hint during
+   an action cannot move the room and its grounded characters up or down. */
+.nss-hint { margin: calc(6px * var(--display-scale)) 0 0; min-height: calc(1.3em + 1px); line-height: 1.3; font-size: clamp(17px, 2.3vw, calc(24px * var(--display-scale))); font-weight: 700; color: #eeeeee; }
+/* Small page numbers ("1 of 7") inside the words box, in both looks. */
+.nss-pageno { position: absolute; top: calc(10px * var(--display-scale)); right: max(20px, 5vw); font-size: clamp(15px, 1.5vw, calc(19px * var(--display-scale))); line-height: 1.2; font-weight: 800; color: #eeeeee; }
+.nss-textbox.numbered { padding-top: calc(36px * var(--display-scale)); }
+
+/* The CVI look: black, white words, nothing extra. */
+#nss.cvi .nss-textbox { color: #ffffff; text-shadow: none; }
+#nss.cvi .nss-textbox::before { display: none; }
+#nss.cvi .nss-hint { color: #c8c8c8; }
+#nss.cvi .nss-pageno { color: #bdbdbd; }
+
+/* After The End: Read Again and Pick a Different Story, in place of the hint. */
+.nss-end-choices { display: none; }
+.nss-textbox.choosing .nss-hint { display: none; }
+.nss-textbox.choosing .nss-end-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 18px);
+    width: min(calc(760px * var(--display-scale)), 100%);
+    margin-top: 12px;
+}
+.nss-end-choices .nss-menu-item { justify-content: center; }
+.nss-end-choices .nss-menu-label { flex: none; }
+.nss-end-choices .nss-menu-item { font-size: calc(24px * var(--display-scale)); padding: calc(14px * var(--display-scale)); }
+.nss-end-choices .nss-icon-chip { scale: var(--display-scale); margin-inline: calc(16px * (var(--display-scale) - 1)); }
+
+/* Kept dim so it never competes with the story. */
+.nss-pause-btn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    width: calc(80px * var(--display-scale));
+    height: calc(80px * var(--display-scale));
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(0, 0, 0, 0.16);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+#nss.cvi .nss-pause-btn { color: rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+
+.nss-pause-icon .nss-icon { width: calc(26px * var(--display-scale)); height: calc(26px * var(--display-scale)); }
+.nss-pause-label { font-size: calc(15px * var(--display-scale)); font-weight: 800; line-height: 1; margin-top: 2px; }
+
+/* The hold-to-pause ring: fills as Enter is held. */
+.nss-ring {
+    position: absolute;
+    inset: -9px;
+    border-radius: 50%;
+    background: conic-gradient(#ffffff calc(var(--p, 0) * 1turn), rgba(255, 255, 255, 0.18) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    opacity: 0;
+    transition: opacity 150ms;
+    pointer-events: none;
+}
+
+.nss-pause-btn.holding { color: #fff; }
+
+/* Small words beside Pause: the two ways to bring up the menu. */
+.nss-pause-tip {
+    position: absolute;
+    top: calc(max(14px, env(safe-area-inset-top)) + 40px * var(--display-scale));
+    right: calc(max(14px, env(safe-area-inset-right)) + 94px * var(--display-scale));
+    transform: translateY(-50%);
+    max-width: calc(220px * var(--display-scale));
+    padding: 6px 12px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.38);
+    color: #ffffff;
+    font-size: calc(15px * var(--display-scale));
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: right;
+    pointer-events: none;
+    opacity: 0.85;
+    transition: opacity 0.4s ease, background-color 0.4s ease;
+}
+#nss[data-pause-mode="scan"] .nss-pause-tip { display: none; }
+/* Simple High Contrast: the same directions, white on black. */
+#nss.cvi .nss-pause-tip { background: #000000; color: #ffffff; box-shadow: inset 0 0 0 2px #8a8a8a; opacity: 1; }
+.nss-pause-btn.holding .nss-ring { opacity: 1; }
+
+/* Scan to Pause: the page itself is a choice. It is an invisible box over
+   the picture; the scan highlight draws a band around it. */
+.nss-page-btn {
+    display: none;
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: calc(max(14px, env(safe-area-inset-right)) + 96px * var(--display-scale));
+    border-radius: 26px;
+    background: transparent;
+}
+
+#nss[data-pause-mode="scan"] .nss-page-btn { display: block; }
+#nss .nss-story.choosing .nss-page-btn { display: none; }
+
+/* --------------------------------------------------------------- highlight
+   Colour, then a ring of the colour's own ink outside it, so the highlight
+   has an edge on any background. Lifts with `translate`, which never fights
+   the `transform` used for pressing and fitting. */
+
+.nss-focus {
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+}
+
+.nss-focus-full {
+    background: var(--focus-color, #ffd700) !important;
+    color: var(--focus-ink, #1a1008) !important;
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+}
+
+.nss-focus-full .nss-tile-label, .nss-focus-full .nss-row-value { color: var(--focus-ink, #1a1008); }
+.nss-focus-full .nss-tile-description, #nss.cvi .nss-focus-full .nss-tile-description,
+.nss-focus-full .nss-filter-selected { color: var(--focus-ink, #1a1008); }
+.nss-focus-full .nss-icon-chip { background: transparent; box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008); }
+
+/* The page and the Pause button are never filled: a band is drawn instead. */
+.nss-page-btn.nss-focus, .nss-page-btn.nss-focus-full { background: transparent !important; translate: none; outline-width: 10px !important; outline-offset: -10px; }
+.nss-pause-btn.nss-focus-full { color: var(--focus-ink, #1a1008) !important; }
+
+/* Auto Scan paused by the Space brake: the same highlight, dotted. */
+.nss-focus[data-narbe-scan-paused],
+.nss-focus-full[data-narbe-scan-paused] { outline-style: dotted !important; }
+
+/* ---------------------------------------------------------------- smaller */
+
+@media (max-width: 560px) {
+    .nss-card { padding: 16px 14px 18px; border-radius: 24px; }
+    .nss-tiles { grid-template-columns: 1fr; gap: 10px; }
+    .nss-tiles .nss-tile { flex-direction: row; align-items: center; gap: 14px; }
+    .nss-tiles .nss-pic { flex: none; width: clamp(84px, 24vw, 108px); height: clamp(84px, 24vw, 108px); max-height: none; }
+    .nss-tiles .nss-tile-label { flex: 1; text-align: left; }
+    .nss-util .nss-menu-item { flex-direction: column; gap: 4px; padding: 8px 6px; text-align: center; font-size: 16px; }
+    .nss-card-top .nss-menu-item { flex-direction: column; gap: 4px; padding: 8px 6px; text-align: center; font-size: 17px; }
+    .nss-tile { padding: 6px 6px 8px; border-radius: 18px; }
+    .nss-pic { border-radius: 13px; }
+    .nss-tile-label { font-size: 19px; }
+    .nss-textbox { padding: 14px 16px max(14px, env(safe-area-inset-bottom, 0px)); }
+    .nss-end-choices .nss-menu-item { font-size: 17px; padding: 8px 10px; }
+}
+
+@media (max-width: 620px) {
+    .nss-library-single .nss-tile { grid-template-columns: 98px minmax(0, 1fr); gap: 12px; padding: 12px; }
+    .nss-library-single .nss-tile .nss-pic { width: 98px; height: 98px; }
+    .nss-library-single .nss-tile-copy { display: contents; }
+    .nss-library-single .nss-tile-label { font-size: 23px; }
+    .nss-library-single .nss-tile-description, .nss-library-single .nss-story-tags { grid-column: 1 / -1; }
+    .nss-tile-description { font-size: 17px; }
+    .nss-story-tag { font-size: 14px; }
+    .nss-library-intro { font-size: 15px; }
+    .nss-library-browse { gap: 12px; }
+    .nss-library-browse .nss-menu-item { font-size: 17px; padding: 8px 12px; gap: 6px; }
+    .nss-library-browse .nss-icon-chip { display: none; }
+    .nss-library-note { font-size: 13px; }
+    .nss-card-filters { padding: 20px 14px; }
+    .nss-filter-choices { gap: 12px; }
+    .nss-filter-choice { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; font-size: 20px; }
+    .nss-filter-navigation .nss-icon-chip { display: none; }
+}
+
+@media (max-height: 680px) {
+    .nss-card-library { padding: 14px; }
+    .nss-card-library .nss-brand-title { font-size: 36px; }
+    .nss-card-library .nss-logo { width: 46px; height: 46px; }
+    .nss-card-library .nss-sub { margin: 4px 0 12px; font-size: 17px; }
+    .nss-card-library .nss-util .nss-menu-item { min-height: 48px; padding: 8px; font-size: 16px; }
+    .nss-card-library .nss-util .nss-icon-chip { display: none; }
+    .nss-library-browse .nss-menu-item { min-height: 48px; }
+    .nss-card-library .nss-library-note { margin: 10px 0; }
+}
+
+@media (max-height: 500px) and (min-width: 621px) {
+    .nss-library-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .nss-card-library .nss-library-header .nss-library-filters { flex: 1.2; margin: 0; }
+    .nss-card-library .nss-library-header .nss-sub { flex: 1; margin: 0; }
+    .nss-library-header .nss-icon-chip { display: none; }
+    .nss-card-filters { padding: 14px 20px; }
+    .nss-card-filters .nss-title { font-size: 30px; margin-bottom: 6px; }
+    .nss-card-filters .nss-sub { font-size: 18px; margin-bottom: 6px; }
+    .nss-card-filters .nss-filter-status { font-size: 16px; margin-bottom: 10px; }
+    .nss-card-filters .nss-menu-item { min-height: 52px; font-size: 20px; }
+    .nss-card-filters .nss-icon-chip { width: 30px; height: 30px; }
+    .nss-filter-choices { gap: 12px; margin-bottom: 12px; }
+    .nss-library-single .nss-card-library { max-width: 1000px; }
+    .nss-library-single .nss-tile { grid-template-columns: 120px minmax(0, 1fr); padding: 8px; gap: 12px; }
+    .nss-library-single .nss-tile .nss-pic { width: 120px; height: 120px; }
+    .nss-card-library .nss-library-browse .nss-menu-item,
+    .nss-card-library .nss-util .nss-menu-item { min-height: 54px; }
+    .nss-tile-copy { gap: 6px; }
+    .nss-tile-label { font-size: 22px; }
+    .nss-tile-description { font-size: 16px; }
+    .nss-library-intro { font-size: 14px; margin: 0 0 8px; }
+    .nss-story-tag { font-size: 13px; padding: 2px 8px; }
+    .nss-card-library .nss-brand { display: none; }
+    .nss-card-library .nss-tiles { margin-bottom: 12px; }
+    .nss-card-library .nss-library-note { margin: 7px 0; }
+}
+
+@media (max-height: 620px) and (max-width: 620px) {
+    .nss-card-library .nss-brand { display: none; }
+    .nss-card-library .nss-library-filters { margin-bottom: 8px; }
+    .nss-card-library .nss-tiles { margin-bottom: 8px; }
+    .nss-card-library .nss-library-note { margin: 6px 0; }
+    .nss-library-single .nss-tile { grid-template-columns: 82px minmax(0, 1fr); gap: 8px; padding: 10px; }
+    .nss-library-single .nss-tile .nss-pic { width: 82px; height: 82px; }
+    .nss-library-single .nss-tile-label { font-size: 21px; }
+    .nss-tile-description { font-size: 16px; }
+    .nss-library-intro { font-size: 14px; margin: 0 0 8px; }
+    .nss-card-library .nss-library-browse .nss-menu-item,
+    .nss-card-library .nss-util .nss-menu-item { min-height: 54px; }
+}
+
+@media (max-height: 500px) {
+    .nss-pic { height: 84px; }
+    .nss-pause-btn { width: 68px; height: 68px; }
+    .nss-textbox { padding-top: 10px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+    .nss-words { font-size: clamp(28px, 7.2vh, 36px); max-width: none; }
+    #nss.xl .nss-words { font-size: clamp(32px, 9vh, 46px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nss-textbox, .nss-btn { transition: none; }
+    .nss-firefly { display: none; }
+}

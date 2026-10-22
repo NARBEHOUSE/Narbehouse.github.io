@@ -1,0 +1,438 @@
+/* NARBE Glow Pop
+   The scene fills the whole window; every menu is a plain, dark card over
+   the dimmed scene, scaled to fit (see fit() in ui.js) so nothing is cut off
+   and nothing scrolls. Plain and calm on purpose: big white text, few
+   colours and no busy animation, for players with CVI. */
+
+:root {
+    --ink: #ffffff;
+    --muted: #c9cde6;
+    --value: #ffd60a;
+    --card: rgba(8, 10, 26, 0.94);
+    --card-edge: rgba(255, 255, 255, 0.3);
+    --btn: #1d2247;
+    --btn-edge: rgba(255, 255, 255, 0.38);
+    --font: 'Baloo 2', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+body {
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+}
+
+#ngp { position: fixed; inset: 0; }
+
+.ngp-stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+.ngp-btn {
+    font: inherit;
+    color: inherit;
+    border: 0;
+    cursor: pointer;
+    position: relative;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.ngp-icon { width: 30px; height: 30px; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.ngp-dot, .ngp-fill { fill: currentColor; stroke: none; }
+
+/* ------------------------------------------------------------ the screens */
+
+.ngp-screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+}
+
+.ngp-screen.show { display: flex; }
+
+.ngp-card {
+    position: relative;
+    flex: none;
+    width: min(760px, 94vw);
+    padding: 20px 24px 24px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 3px solid var(--card-edge);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+}
+
+.ngp-card-narrow { width: min(560px, 94vw); }
+
+.ngp-title {
+    margin: 0 0 14px;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+}
+
+.ngp-sub {
+    margin: 2px 0 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: clamp(18px, 2.4vw, 24px);
+    font-weight: 700;
+}
+
+.ngp-scan-status { min-block-size: 0; position: absolute; top: 10px; right: 14px; padding: 0; z-index: 3; }
+.ngp-hud .ngp-scan-status { top: max(14px, env(safe-area-inset-top)); left: 14px; right: auto; }
+
+/* --------------------------------------------------------------- main menu */
+
+.ngp-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+/* A glowing yellow ball, like the one in the game. */
+.ngp-logo {
+    flex: none;
+    width: clamp(54px, 7.4vw, 72px);
+    height: clamp(54px, 7.4vw, 72px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff6c2 0%, #ffd60a 45%, #d1a800 100%);
+    box-shadow: 0 0 26px 8px rgba(255, 214, 10, 0.45);
+}
+
+.ngp-brand-words { display: flex; flex-direction: column; line-height: 0.9; }
+.ngp-brand-narbe { font-size: clamp(14px, 1.8vw, 18px); font-weight: 800; letter-spacing: 0.32em; color: var(--muted); }
+
+.ngp-brand-title {
+    margin: 0;
+    font-size: clamp(40px, 6.4vw, 66px);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--value);
+    text-shadow: 0 0 22px rgba(255, 214, 10, 0.35);
+}
+
+.ngp-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(14px, 2vw, 20px);
+}
+
+.ngp-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 8px 10px;
+    border-radius: 24px;
+    color: #fff;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 3px var(--btn-edge);
+}
+
+.ngp-tile:active { transform: translateY(4px); }
+
+.ngp-pic {
+    display: block;
+    width: 100%;
+    height: clamp(96px, 20vh, 170px);
+    border-radius: 17px;
+}
+
+.ngp-tile-label {
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.ngp-util {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 16px);
+}
+
+.ngp-settings-note {
+    margin: 14px auto 0;
+    max-width: 590px;
+    color: var(--muted);
+    text-align: center;
+    font: 500 16px/1.4 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------- menu items */
+
+.ngp-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: clamp(60px, 8.6vh, 78px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: clamp(18px, 2.3vw, 24px);
+    font-weight: 800;
+    text-align: left;
+    line-height: 1.1;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 3px var(--btn-edge);
+}
+
+.ngp-menu-item:active { transform: translateY(3px); }
+
+.ngp-menu-label { flex: 1; }
+
+.ngp-icon-chip {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.ngp-list { display: grid; gap: 14px; }
+
+/* ----------------------------------------------------------------- settings */
+
+.ngp-card-settings { width: min(640px, 94vw); }
+.ngp-card-settings.ngp-card-top { width: min(720px, 94vw); }
+.ngp-card-settings.with-preview { width: auto; max-width: 96vw; }
+
+.ngp-settings-body { display: flex; gap: 20px; align-items: center; }
+.ngp-settings-list { display: grid; gap: 12px; flex: 1; min-width: min(460px, 80vw); }
+
+/* The top page: four big page buttons, two by two, then Back. */
+.ngp-card-top .ngp-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ngp-card-top .ngp-row-nav { grid-column: 1 / -1; }
+
+.ngp-preview { display: none; flex: none; }
+.with-preview .ngp-preview { display: block; }
+.ngp-preview-pic {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    box-shadow: 0 0 0 3px var(--btn-edge);
+}
+
+.ngp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: clamp(54px, 7.4vh, 68px);
+    padding: 8px 18px;
+    border-radius: 18px;
+    background: var(--btn);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22);
+    font-size: clamp(18px, 2.1vw, 23px);
+    text-align: left;
+}
+
+.ngp-row-label { font-weight: 800; }
+.ngp-row-value { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; color: var(--value); text-align: right; }
+.ngp-row-nav { justify-content: center; background: #2b3157; box-shadow: inset 0 0 0 3px var(--btn-edge); }
+
+.ngp-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+.ngp-swatch.turns { background: conic-gradient(#ffd60a, #ff2b2b, #ff4fd8, #2f8bff, #2bea6a, #ffd60a); }
+.ngp-swatch.none { background: linear-gradient(135deg, transparent 44%, #fff 44% 56%, transparent 56%); }
+
+/* Phones held upright: one column, and the preview above the rows. */
+@media (max-aspect-ratio: 1/1) {
+    .ngp-settings-body { flex-direction: column; }
+    .ngp-preview { order: -1; }
+    .ngp-settings-list { width: 100%; min-width: 0; }
+}
+
+@media (max-width: 560px) {
+    .ngp-card-top .ngp-settings-list { grid-template-columns: 1fr; }
+}
+
+/* Short, wide windows (a phone on its side): two columns of rows, so they
+   stay big instead of shrinking to fit one tall column. */
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+    .ngp-settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ngp-row-nav { grid-column: 1 / -1; }
+}
+
+/* -------------------------------------------------------------- how to play */
+
+.ngp-help-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    border-radius: 20px;
+    background: transparent;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 800;
+}
+
+.ngp-help-body p {
+    margin: 0 0 10px;
+    font-size: clamp(18px, 2.3vw, 23px);
+    line-height: 1.35;
+    color: #f2f3ff;
+}
+
+.ngp-help-body b { color: var(--value); }
+.ngp-help-step { margin: 0 0 14px; text-align: center; color: var(--muted); font-size: 17px; }
+.ngp-help-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.ngp-help-nav .ngp-menu-item { justify-content: center; font-size: 20px; }
+.ngp-help-nav .ngp-icon-chip { display: none; }
+
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+    .ngp-card-help { width: min(820px, 94vw); padding: 12px 20px; }
+    .ngp-help-title { font-size: 28px; padding: 0; }
+    .ngp-help-step { margin-bottom: 8px; }
+    .ngp-help-body { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
+    .ngp-help-body p { font-size: 18px; }
+    .ngp-help-nav { margin-top: 6px; }
+    .ngp-help-nav .ngp-menu-item { min-height: 50px; }
+}
+
+/* -------------------------------------------------------------------- play */
+
+.ngp-hud { position: fixed; inset: 0; display: none; pointer-events: none; }
+.ngp-hud.show { display: block; }
+.ngp-hud .ngp-btn { pointer-events: auto; }
+
+.ngp-pause-tip {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    right: calc(max(14px, env(safe-area-inset-right)) + 96px);
+    width: min(220px, calc(100vw - 128px));
+    padding: 6px 8px;
+    border-radius: 10px;
+    color: #c9cde6;
+    background: rgba(0, 0, 0, 0.65);
+    font: 500 14px/1.4 'Segoe UI', system-ui, sans-serif;
+    text-align: right;
+}
+
+/* Kept dim so it never competes with the shape. */
+.ngp-pause-btn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28);
+}
+
+.ngp-pause-icon .ngp-icon { width: 26px; height: 26px; }
+.ngp-pause-label { font-size: 15px; font-weight: 800; line-height: 1; margin-top: 2px; }
+
+/* The hold-to-pause ring: fills as Enter is held. */
+.ngp-ring {
+    position: absolute;
+    inset: -9px;
+    border-radius: 50%;
+    background: conic-gradient(#ffffff calc(var(--p, 0) * 1turn), rgba(255, 255, 255, 0.18) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+    opacity: 0;
+    transition: opacity 150ms;
+    pointer-events: none;
+}
+
+.ngp-pause-btn.holding { color: #fff; }
+.ngp-pause-btn.holding .ngp-ring { opacity: 1; }
+
+/* Scan to Pause: Pop is an invisible circle over the shape; Object Ring
+   optionally draws a selection ring around it. */
+.ngp-pop-btn {
+    display: none;
+    position: absolute;
+    border-radius: 50%;
+    background: transparent;
+    outline: none;
+}
+
+#ngp[data-pause-mode="scan"] .ngp-pop-btn { display: block; }
+
+/* --------------------------------------------------------------- highlight
+   Colour, then a ring of the colour's own ink outside it, so the highlight
+   has an edge on any background. Lifts with `translate`, which never fights
+   the `transform` used for pressing and fitting. */
+
+.ngp-focus {
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+}
+
+.ngp-focus-full {
+    background: var(--focus-color, #ffd700) !important;
+    color: var(--focus-ink, #1a1008) !important;
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 11px var(--focus-ink, #1a1008), 0 10px 26px rgba(0, 0, 0, 0.4) !important;
+    translate: 0 -3px;
+    z-index: 2;
+}
+
+.ngp-focus-full .ngp-tile-label, .ngp-focus-full .ngp-row-value { color: var(--focus-ink, #1a1008); }
+.ngp-focus-full .ngp-icon-chip { background: transparent; box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008); }
+
+/* The shape and the Pause button are never filled: a ring is drawn instead. */
+.ngp-pop-btn.ngp-focus, .ngp-pop-btn.ngp-focus-full { background: transparent !important; translate: none; outline-width: 10px !important; }
+.ngp-pause-btn.ngp-focus-full { color: var(--focus-ink, #1a1008) !important; }
+
+/* Auto Scan paused by the Space brake: the same highlight, dotted. */
+.ngp-focus[data-narbe-scan-paused],
+.ngp-focus-full[data-narbe-scan-paused] { outline-style: dotted !important; }
+
+/* ---------------------------------------------------------------- smaller */
+
+@media (max-width: 560px) {
+    .ngp-card { padding: 16px 14px 18px; border-radius: 24px; }
+    .ngp-util .ngp-menu-item { flex-direction: column; gap: 4px; padding: 8px 6px; text-align: center; font-size: 16px; }
+    .ngp-tile { padding: 6px 6px 8px; border-radius: 18px; }
+    .ngp-pic { border-radius: 13px; }
+    .ngp-tile-label { font-size: 19px; }
+}
+
+@media (max-height: 500px) {
+    .ngp-pic { height: 80px; }
+    .ngp-pause-btn { width: 68px; height: 68px; }
+    .ngp-pause-tip { right: calc(max(14px, env(safe-area-inset-right)) + 84px); }
+}

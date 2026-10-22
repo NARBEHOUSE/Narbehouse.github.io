@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Switch Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+</head>
+<body>
+
+<div id="nss" data-screen="library"></div>
+
+<!-- Remove faint detached pixels before drawing clean high-contrast outlines. -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute;pointer-events:none">
+  <defs>
+    <filter id="nss-cvi-silhouette" color-interpolation-filters="sRGB">
+      <feComponentTransfer in="SourceAlpha" result="solid"><feFuncA type="discrete" tableValues="0 1"/></feComponentTransfer>
+      <feMorphology in="solid" operator="erode" radius="1" result="core"/>
+      <feMorphology in="core" operator="dilate" radius="1" result="clean"/>
+      <feComposite in="SourceGraphic" in2="clean" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- Shared hub modules, in the hub's required order, before any game script. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+
+<!-- Game modules. config.js holds every easy-to-change number, word and option. -->
+<script src="js/config.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/library.js"></script>
+<script src="stories/lily-loves-books/contact-shadows.js"></script>
+<script src="stories/rocky-says-hello/contact-shadows.js"></script>
+<!-- The list of stories. Each story's own story.js is loaded from it. -->
+<script src="stories/list.js"></script>
+<script src="js/illustration.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/reader.js"></script>
+<script src="js/story.js"></script>
+<script src="js/input.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

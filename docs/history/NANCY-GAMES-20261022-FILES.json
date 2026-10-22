@@ -1,0 +1,1487 @@
+{
+  "date": "2026-10-22",
+  "scope": "Glow Pop and optimized Switch Stories web publication; desktop Glow Pop catalog and screenshot",
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 1785,
+      "sha256": "d71920e0e532647e1108b355b3b80678d436daf4e20df50e4a090f64fa9c9904",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "bennyshub/apps/games/games.json",
+      "bytes": 15604,
+      "sha256": "c1771d2854e5c289498f40466c419a2f54c86706c053bb5c1d9a8bd44b82d04a",
+      "electronPort": "APPLIED: desktop catalog adds Glow Pop; web catalog adds both"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/CREDITS.md",
+      "bytes": 30,
+      "sha256": "03f151bd462802dda718b4ed08daa455ebbac06cd175fbaf760b37f75278cecf",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/css/style.css",
+      "bytes": 13713,
+      "sha256": "743a72b1e12a715eadf0d69027eadd851f395a67c0036dbe3b1ab23b49e44318",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/index.html",
+      "bytes": 1936,
+      "sha256": "acefd7ffe92d41bd155acc2ec0d6aea05547f7acb3519322566a784ed077b6ab",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/config.js",
+      "bytes": 5462,
+      "sha256": "3795ce5ea6f67d89831147ca62e396ca69e0f74e4832431ddab167849ff3ac64",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/input.js",
+      "bytes": 15425,
+      "sha256": "605b122245d0643b225d6f1e91c1539e356a724e3adf7c0da246fb9ccfaf475e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/main.js",
+      "bytes": 2388,
+      "sha256": "037d7090ac3a922915999bf40153f3328160c5b8b585b1ae8d60db90e104058d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/scene.js",
+      "bytes": 22063,
+      "sha256": "834152eceaa465e61266441aa878257aab4cf59a1b67d653ca9bbb30cc8a2c02",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/settings.js",
+      "bytes": 5529,
+      "sha256": "9afecd9a015dd364d2058825205b55f5698c30a427a038a7ab415305d722ef3b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/sound.js",
+      "bytes": 14273,
+      "sha256": "123e8fcdaa9c95480d7a74a25eab103f3c01bba38a0995dc3a59a5fe20cc7368",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBEGLOWPOP/js/ui.js",
+      "bytes": 32727,
+      "sha256": "b80c813e42826861962b5b3155e9a7c568a21cdc1fba34f055123c14275faee1",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/ASSET-OPTIMIZATION.md",
+      "bytes": 1927,
+      "sha256": "e4c47445a86249a8dd6be3ba396781225036e7f188774cfdb9f89287086d9be5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/CREDITS.md",
+      "bytes": 322,
+      "sha256": "ead2a14f9af7652433576945b4d2a15844dd5bdffb19e0493d5d00eb20862054",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/css/style.css",
+      "bytes": 31088,
+      "sha256": "cd940e01a71ccc9a4ec73e47a006e30ddfa6ef1ef9eb39ae9ceb9bf7947459cd",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/images/library-background.jpg",
+      "bytes": 527695,
+      "sha256": "dfc24d13a9ad8700a6781ac7a7de85d59c60028435eb0349030a874d54f10b51",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/index.html",
+      "bytes": 2974,
+      "sha256": "031da4a0e3286d5488314551d794489308d80cf890a8ea866484a64ad3ea324e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/config.js",
+      "bytes": 6996,
+      "sha256": "5b46aab59ab8716d312b3a0dce705ca0a3cf60327a8039641edf38f3efc47331",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/illustration.js",
+      "bytes": 20023,
+      "sha256": "30f0c6508b4ef518563ac60d76a031c1a4cde9b4316ce2ba9348927dce0ad625",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/input.js",
+      "bytes": 15775,
+      "sha256": "04a53d6fee08ec755d68c03895935f6f4d636ca6a479749e51a1fb87619a8ab3",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/library.js",
+      "bytes": 23043,
+      "sha256": "abcff4261d8eade4db2c8ed4cff790c2735bf73750a40977c9eb4b0962ea2b75",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/main.js",
+      "bytes": 2462,
+      "sha256": "ba0f1a204978042697e63e5039ad37557ba36d493be7bee2c0f9d30d0c12b87e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/reader.js",
+      "bytes": 3001,
+      "sha256": "6319e285fc2f0be0d1e32c7ad889a9affa4d732fda99ca51e9c943707bade9b8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/scene.js",
+      "bytes": 82379,
+      "sha256": "98669c0faf50b8b4e17d8412031361b717feb6a4a1b41cfac8bf7a738c6fce2a",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/settings.js",
+      "bytes": 4892,
+      "sha256": "233e4fba4f98a49181837581c64ca0c7055657b2b8e068a4434d90df576d6523",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/sound.js",
+      "bytes": 12194,
+      "sha256": "f1aa1738cd682ad14057f2d19f7c22438400171d8e4848d3b8c670afbf7b262d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/story.js",
+      "bytes": 9001,
+      "sha256": "d32814fc303958ae857ea422a30e9c9848abe838e2880d7e5cb9105b8a7bc93b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/js/ui.js",
+      "bytes": 50949,
+      "sha256": "06f014ac5422539e8286c905856668c5d8eb323d83ce1c7f09bd057795cfb56b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/beach-panorama.webp",
+      "bytes": 380766,
+      "sha256": "7d1fb23f052cb7ab3cab711ba206dc906fdedd74e878b7f35b9d9c327126c021",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/beach.webp",
+      "bytes": 265698,
+      "sha256": "49e836f8bff978666d2609cc9f1e94258d35ddb1d6dd35847ca6d9c20362af54",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/castle-beach.webp",
+      "bytes": 358404,
+      "sha256": "59112c31bd9e104ce038c2c1ed1affeea192fdd1cc3f11905cfc0373149b81d5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/castle-stage-panorama.webp",
+      "bytes": 424700,
+      "sha256": "a7ab02051ecd4ff2a00c135a561834746df62c6e1585a94800fd407dea9a82e5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/castle-stage.webp",
+      "bytes": 285792,
+      "sha256": "4676050191e5edc712f914794f863ab0415891d3addebe3a6e7e15d185ecc57d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/coast-extension.webp",
+      "bytes": 263038,
+      "sha256": "7feefe4e699641347f19ab2494d3743d47a7b558cd8162dab56f83382718604f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/digging-action.webp",
+      "bytes": 230608,
+      "sha256": "dd29c27e74dd443ed9677fcd2e1c085ef409921234f51ad99359f35f879a4a12",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/digging-stage-panorama.webp",
+      "bytes": 382910,
+      "sha256": "08d81961e4c7083f6aada15db1f7696b8eca919883e3f95db804d340bb440d75",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/digging-stage.webp",
+      "bytes": 255764,
+      "sha256": "62c8a7dea36dcb0726a8877898c8526d142bdd82065ee3ce8a23fac95aa03283",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/digging.webp",
+      "bytes": 243988,
+      "sha256": "539780e36c16012b82ac72ade35ae7ae9225df17be377c65d15ee734bbdf2f39",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/friends-panorama.webp",
+      "bytes": 282316,
+      "sha256": "9ab7d980eaf2d52df346bb55b690580588a3a4a387540cdb84e4543feec10466",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/friends.webp",
+      "bytes": 250486,
+      "sha256": "757f82724a8da582e973df096141c5738f3a9c8615159f9a12d01e7a9a90f874",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/picnic-panorama.webp",
+      "bytes": 411960,
+      "sha256": "e4a8713c481727b7492e9aa895f17975638cc09e139ca51838621bda398ab741",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/picnic.webp",
+      "bytes": 304052,
+      "sha256": "422fd659c72b221c1d88909a0d9fa0123b2b80993b370ff2ef30f7d8008e137c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/shoreline-break-panorama.webp",
+      "bytes": 410714,
+      "sha256": "104887b402e22718e3be2bcb4787cf12f2bb3f08079aca9067c0024d38f259e2",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/shoreline-break.webp",
+      "bytes": 317028,
+      "sha256": "e36639687713027fa9150a237aa415a675a553b92aae53e4b9b911d9ac07378d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/shoreline-rise-panorama.webp",
+      "bytes": 440752,
+      "sha256": "583fc82f1eeec1d60c111484a75b73981408b55fe313b8e9bc1699ba66e74682",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/shoreline-rise.webp",
+      "bytes": 325212,
+      "sha256": "cc20a19b3cc64a4b8c7673caa8ff12da2cd56c19002f27a8ef988c28da379271",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/sunset-extension.webp",
+      "bytes": 344596,
+      "sha256": "07550fe214c169abbd7271a3cda642dd73db6ec9c5bdd4454d35272aba906b24",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/sunset-panorama.webp",
+      "bytes": 424776,
+      "sha256": "88971f8a1e6367f193c719d728bf00c56c0df29631da2f625d3190b770d4784f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/sunset.webp",
+      "bytes": 368158,
+      "sha256": "220d5b4c076012a23ab4dc7ecc69cba3473fc043127303b74605181669f1d15e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/town-extension.webp",
+      "bytes": 524476,
+      "sha256": "a3efc84b4b30210c831b3433bb41214d697d9f89f5af950d8d5789edbdec9d64",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/town-panorama.webp",
+      "bytes": 612358,
+      "sha256": "75c534560ad320280307a46ae9cedc406eb92464ef830905375531134cc948c8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/town.webp",
+      "bytes": 535612,
+      "sha256": "7d309087dd6a33b290c80c7adfa578ce2b3f3cc552bc176244c4fe1c32f57b30",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/underwater-extension.webp",
+      "bytes": 327706,
+      "sha256": "2494d1744a6b46d3a5ff3c95019bcd9ba325f49b120defe29f1a9154f34e8a50",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/underwater-panorama.webp",
+      "bytes": 437030,
+      "sha256": "ed98084775bec0951e8f17e844ead74b4c6ad5abf2e026ca9bdc6ebf182c690f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/underwater.webp",
+      "bytes": 393476,
+      "sha256": "087519a1d9f2215324050e69393cc55052773fda6b2baedfee2f25c8a5dfa5c0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/wave-beach.webp",
+      "bytes": 326276,
+      "sha256": "1d46add1e70b0e17f9e7156e5c0c49759923af519b0558759f19545d3de78c0b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/CREDITS.md",
+      "bytes": 2371,
+      "sha256": "1e7571df153e2dbc9aab6014a37b5090bde047933ce3d31bdfabd33c3a32cd64",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/castle-surf.webp",
+      "bytes": 1293604,
+      "sha256": "4057559ffbb56e8999becd6f732248fafa739b59b95a3677a5441c15b8d1cc15",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/cover-car.webp",
+      "bytes": 1145664,
+      "sha256": "54ea916bcbac2be093cb54a75412f97be4a35f1a3beaf3a693cd7a4401581cf2",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/crab-airborne.webp",
+      "bytes": 927840,
+      "sha256": "c70bb99f8a796500c555ee68a60924b94d61328ea40b15293186c2d4bcace4a1",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/crab-ready.webp",
+      "bytes": 1052542,
+      "sha256": "89807340cf4a44e0eda7eebdd2467ec2fa440ebb54eacc06f2fdf31d6dca0fe9",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/frog-afloat.webp",
+      "bytes": 1502958,
+      "sha256": "f29c9d5c4a4851de6f6957a5decd459716f0b87839a0f4656522b7c06f2e9a53",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/frog-cheer.webp",
+      "bytes": 824254,
+      "sha256": "0317740cbadc897583cedb56aa3c1fac051df5262f8b82135e5c4fb851880d3c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/frog-dig-down.webp",
+      "bytes": 816212,
+      "sha256": "8995802b496fb2779c7b6fcfa4093453e02842a98a8a3547745a4afcc686ea0b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/frog-dig-lift.webp",
+      "bytes": 731506,
+      "sha256": "447b7c47a3faae5e04a4a9c6d09961ef383742bbcbf20bebdc690650b070d491",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/frog-idea.webp",
+      "bytes": 765474,
+      "sha256": "d636c950062a5a0760906899ddcd33eb0e2a9233b7bf77b8faafb8382f1c6b0d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/gull-down.webp",
+      "bytes": 559476,
+      "sha256": "4cc4b475045797913dae13ee8a9d51d03d7ccc435800392c80c7fc9d69c9f977",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/gull-up.webp",
+      "bytes": 809094,
+      "sha256": "63a5c852e2d389e9d10a2eadb60045fd536c496476abb01cc9f785908f3e7b77",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/little-frog.webp",
+      "bytes": 807550,
+      "sha256": "eb92185c3b5b46af4445d49431dcef4713d64c0383e345c3f271719e45f084cd",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/octopus-wave.webp",
+      "bytes": 1073820,
+      "sha256": "503df9f85359dd025ca60771f3adeb0564645d2afb04479fb6b792802c723d3f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/octopus.webp",
+      "bytes": 1227474,
+      "sha256": "741be72bf4e10272a47b13850e5ad4797658c372def3b9c0b5e4471f0032a253",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit-calm.webp",
+      "bytes": 711660,
+      "sha256": "71ecc70dd63e12fa7589f39146cb0cf060f8c3c2586e12215b36a8189deecbf5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit-cheer.webp",
+      "bytes": 711040,
+      "sha256": "b8ddf72535344f548e7379c92fd6f8c076b6358ba05c9b74b984177e194c9759",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit-pat-down.webp",
+      "bytes": 715712,
+      "sha256": "842de65338e28ceb7b7b4428706bc7692c0cd7cec3e3bc7f9a15f2149d54be61",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit-pat-ready.webp",
+      "bytes": 827632,
+      "sha256": "7575a475bea8dbfea1d0f96cbe61d7243306b0ac9e810af86bf7c85f095e14d1",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit-wipe.webp",
+      "bytes": 679560,
+      "sha256": "8e30ee4eaf459431cd71bcb81ab8ad0e76d79b1422fb7fc704825f61b1136686",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rabbit.webp",
+      "bytes": 816762,
+      "sha256": "012e3f72e737310029f8d800d4138d9f33c5f1bc211076342ce3dcad3463730e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/rear-car.webp",
+      "bytes": 1233890,
+      "sha256": "0068bb86f62780c4bac1c2520edc2a41d4312f0629a57522759aca95dcd17f57",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/sandcastle.webp",
+      "bytes": 1351548,
+      "sha256": "9093c9c454de4464f18a3db26d326e92267cd9841314275c5ad35ce34ea468ea",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/shovel.webp",
+      "bytes": 761432,
+      "sha256": "18bc7ea2d0ffc1f269ff6b563e832e4da88bbca85f1e503d653f96448b0d4e24",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/snack-bite.webp",
+      "bytes": 586548,
+      "sha256": "b6a13689a058b2bf33608f83d10db92b9aaf7380486edbceba078452e3f20702",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/snack-frog.webp",
+      "bytes": 632982,
+      "sha256": "31e87a3a58ac574cd28d018e449c26d4da1a5acc95431f5f8473e3cba371e140",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/sun.webp",
+      "bytes": 1449250,
+      "sha256": "850c5379039703598f4f93e40b174afb326bef2f0b25aa07649fef5f7a16bffd",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/swimming-frog.webp",
+      "bytes": 1061846,
+      "sha256": "03cdcc5eea2cc5fa6aecb254a1cc83330e3ab0bd73b4f488c9ad36262f548652",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wave-break.webp",
+      "bytes": 1020428,
+      "sha256": "5488e47479b8f1aa7130389972ed9de249e4fdb25e055d24f3b9c43be6664eee",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wave.webp",
+      "bytes": 1094580,
+      "sha256": "67f1fb53b8f6d482c973e86ebc0c18640852c3b02beba16ec5ee24852e6d3a93",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wind-green-cheer.webp",
+      "bytes": 1118996,
+      "sha256": "0d94d760befc8518fc450c22eddb550865173dc37976fa72e5f192b97a3de504",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wind-green-ready.webp",
+      "bytes": 1083252,
+      "sha256": "bca66a345f88945b48d2f81a24a541a526d483b688b30bd6713414e3562c0aba",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wind-reach.webp",
+      "bytes": 1107620,
+      "sha256": "75384bb733cfa727519f3690083d0b43a4059b754564e1fc465af927b0f7c0d8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/sprites/wind-wave.webp",
+      "bytes": 1170060,
+      "sha256": "49a919fa4b90555827564986bfc1c42a74a3f5a18ca8b0956e8d6f47e94e4617",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/story.js",
+      "bytes": 11456,
+      "sha256": "5fdf81653a183cbe4d584f933ac6640846c2e1f9d0fcda7bbd5a2d5e27a3ed25",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/bedroom.webp",
+      "bytes": 172984,
+      "sha256": "96b78087334e9ad984f1dbf3ea74ebc24b84161ed88c47989a451b91cf6a3cd4",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/classroom.webp",
+      "bytes": 224068,
+      "sha256": "3048ece22fad5f56dd495711144300f5ec319c5a0f4f0f8c9ac8c49df1c57f34",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/living-room.webp",
+      "bytes": 234184,
+      "sha256": "2257d8c32e28c47342bfa51f723e6ad469ce5336bddc5883227f964ba1b8da3e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/bedroom.webp",
+      "bytes": 1288188,
+      "sha256": "00dd8154cea1e55838e99c1f11071ef7bfeb7c439f1ed8c669aa7300be2d15f7",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/classroom.webp",
+      "bytes": 1430066,
+      "sha256": "25a61a3d6957278fa3df80b25c29efd3624f32b543c3b65aac8f8f22f6f8d9b9",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/living-room.webp",
+      "bytes": 1434652,
+      "sha256": "376a51ebb0166fcf4a94d106a1b0bf4f300e41aec6147ba49b634bfcb23605f2",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/school-doors-closed.webp",
+      "bytes": 1803618,
+      "sha256": "44904f2d916b326b77a87a22ed165e572e6c104c5d9bf0b4bd325c77d8321ea6",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/school-doors-open.webp",
+      "bytes": 1712808,
+      "sha256": "4e7a88de2dabbd75354d7fcc59e53befcce0da1ecad9cf66e314d0b4f116f1db",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/panoramas/school-wings.webp",
+      "bytes": 1838336,
+      "sha256": "53d3e9acbd96625a1c1252b826fec14e671bcd37be24061977a5c0473168f8d8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/school-doors-closed.webp",
+      "bytes": 277228,
+      "sha256": "d75e90d795e7c5bf77d9e464c328392fe6634fcc29e2b80806cdd8790dd211c1",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/school-doors-open.webp",
+      "bytes": 275808,
+      "sha256": "44b992efb226311d8e81d57668b3b6e6652093361873d4c0ec9af3a45d95118b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/tablet-australia.webp",
+      "bytes": 280924,
+      "sha256": "660b1c4d07e45df35332ad6077473b220e2a919a27914ae0a6a24bbf53a14117",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/tablet-egypt.webp",
+      "bytes": 197938,
+      "sha256": "65df38ae6d0155eef4f2d9376aa58c3574b40af3a3df6ed8023eee259e689289",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/tablet-france.webp",
+      "bytes": 231612,
+      "sha256": "54c7ae5a0441aa9771273437f794ad41691326ec3844ebc94af148122fe8ed0a",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/contact-shadows.js",
+      "bytes": 2528,
+      "sha256": "796bcd738321bf2e050b3824c6bf2a4c80c0623f3126f1bcc70c2ebdb7e8bb4b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/eiffel-tower-cvi-outline.webp",
+      "bytes": 13422,
+      "sha256": "79b3c89d16e46ae46162e150846eed954b0398b647cead586db228e3b62868e9",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/eiffel-tower-cvi.webp",
+      "bytes": 242088,
+      "sha256": "d0b9f859dc22f3d379b6a177fad36f324583426a30bbf644f8265942545f1c59",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/eiffel-tower.webp",
+      "bytes": 256308,
+      "sha256": "30c9ddcf20109844d0b4fed5ae9858b21db73ad0570bbdcfd9d9730dd5c826c3",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-cheering-cvi-outline.webp",
+      "bytes": 78780,
+      "sha256": "425147be50ba4fb058d8c84b72ba294b948ef50f18832ff4826bd7416c21c464",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-cheering-cvi.webp",
+      "bytes": 1063536,
+      "sha256": "22fbe5dcf5f001e99be5ded96ca839d49420759ae212b0569264c376688897c1",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-cheering.webp",
+      "bytes": 1125900,
+      "sha256": "b06e7bdb492413697a6f8099705074ebdcd59d0d07fe1aeb620650ff225896fb",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-holding-cvi-outline.webp",
+      "bytes": 84460,
+      "sha256": "0e5639e3beeae458b11a1921341ff4cb381d51460b3d448ca58ef5e33c302098",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-holding-cvi.webp",
+      "bytes": 1072458,
+      "sha256": "a3729fb49e5c1eeb7da217f91a60a3b6df50837354b16b27fd96f8c2791d0366",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/friends-holding.webp",
+      "bytes": 1136144,
+      "sha256": "e6afd4769d6dee1e1ae45e39c919b3a478216a3cd848391954098fcd5d7b50b9",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo-cvi-outline.webp",
+      "bytes": 14090,
+      "sha256": "48bfb799f8671f6383e502d0019d8498d7de3ffaf4ec360edbe30e856962042c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo-cvi.webp",
+      "bytes": 274218,
+      "sha256": "cf79d42a85a7dce644f04765a2115c97f67910421f253bffe9e3c583942655a8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo-jump-cvi-outline.webp",
+      "bytes": 14658,
+      "sha256": "12d46dd1c8403d94ee0cb3fda082c16fa70eb94649463fedbb58bc1b9cf38bba",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo-jump-cvi.webp",
+      "bytes": 259558,
+      "sha256": "13fecbd490667cd3fd5de26ffe0b51cde1e4f2063c5d0c1954befe1d4c060894",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo-jump.webp",
+      "bytes": 266216,
+      "sha256": "8a4b033a6f06a7ba648ae59d8693d6c787f0007f2ddce21ecd6f6111934f14fb",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/kangaroo.webp",
+      "bytes": 279594,
+      "sha256": "43dae15c961c1fa5010c37000870c2a4b892402ec18f3745f0194889a9c5d229",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-cheering-cvi-outline.webp",
+      "bytes": 18728,
+      "sha256": "4ba513982c666d97f7b2cd315a721fe93fc60b8931b57ac1fc36807f72ddb10e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-cheering-cvi.webp",
+      "bytes": 494926,
+      "sha256": "5316aaa34c5cd24780fee145f05829522143dc9e1615217fff0695a6bdd63b5d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-cheering.webp",
+      "bytes": 505640,
+      "sha256": "af989f601035ce24bb18daacce90e8fc6681d306f82d693989e70da8bc289564",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-reading-cvi-outline.webp",
+      "bytes": 13918,
+      "sha256": "eb979ba6195ca1fd58c4383ada8598018c7c43ea6581180554e2cff66ade73aa",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-reading-cvi.webp",
+      "bytes": 457550,
+      "sha256": "64f6f16690bbcb8869e56a3de199bbd6d16f0f04ba481b008911020378d3d068",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-reading.webp",
+      "bytes": 461566,
+      "sha256": "26cab63d9ac2828dac730b6f533c74071030e8b8a1a86e92253a80cfd738ca43",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling-cvi-outline.webp",
+      "bytes": 13716,
+      "sha256": "a78f4b11da0ded791c90a0facb7c68ddd4ba3b23bd62c065f09329184ea48fb0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling-cvi.webp",
+      "bytes": 463248,
+      "sha256": "7cdb3c71c7e9e7a9a670d6cf4504defa170770e50f97e8f53c6b494d47f0d022",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling-release-cvi-outline.webp",
+      "bytes": 31946,
+      "sha256": "c50cdac82249d5c25ef36524b0f6a84677edf2a85236dcb61a8baef269fd612e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling-release-cvi.webp",
+      "bytes": 485020,
+      "sha256": "aa706fda7af0aebd102cfd51512ff2a61f440bedee614ecb6d3bfd781527d652",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling-release.webp",
+      "bytes": 511384,
+      "sha256": "aebcf94b875b5f9750f814a2baa76eaec7ed6dd7730eac198b62177598f319af",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-rolling.webp",
+      "bytes": 468072,
+      "sha256": "26a6a42ba8a1e43a9a7eb11b7109f28a96d9bd34579d781c84b635274dad7d26",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-seated-cvi-outline.webp",
+      "bytes": 15012,
+      "sha256": "81210959cabe9a52f78842bcf43c700d51aef80f7092676205748fa885dbdaf7",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-seated-cvi.webp",
+      "bytes": 449922,
+      "sha256": "f217fb6baddb8c03d3df4abe02e9c36ecfa33a2d52215a6d4a2b7db603b0803d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-seated.webp",
+      "bytes": 450598,
+      "sha256": "b9cc8209bf7136c9585f0d23c673b66f88fe8a85b07fa75b92bb94a6dcfab436",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet-cvi-outline.webp",
+      "bytes": 25550,
+      "sha256": "020fcab6d8d4ad1d0c5ed9563a7cec3395363dcf6bb2e909795f3b1bf30ad153",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet-cvi.webp",
+      "bytes": 620220,
+      "sha256": "90b826325a0d8956da4f988866cbf6a2695b31e8d66ad2c6e5600fe9edf2b871",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet-press-cvi-outline.webp",
+      "bytes": 25414,
+      "sha256": "2593de1c8f3eabd21dd0a507906a833bf4671b4aed0d97685f253a93bb0aae39",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet-press-cvi.webp",
+      "bytes": 626792,
+      "sha256": "f57e08bb7e9ddb865a538847a9ce4a6e55160f8dbcc48cf1ed00c74b7ea8b710",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet-press.webp",
+      "bytes": 632222,
+      "sha256": "87f9701c9b1fe70ac128f583e01d1ab656e3a51e5f775a060fcf9c475c1b04aa",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-tablet.webp",
+      "bytes": 622354,
+      "sha256": "818f2500f837865ba9a12976051d8435d25d584423b377cdcf90188fa0de7b56",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-waving-cvi-outline.webp",
+      "bytes": 17304,
+      "sha256": "9db91e236620befbea73d858b21dd4ac399efc2af6464ec0bedde63ebdaf0f54",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-waving-cvi.webp",
+      "bytes": 472904,
+      "sha256": "d03da802ce47ba2da1d2f2696a829d9b30059719956d754db9b5f615a48a297b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/lily-waving.webp",
+      "bytes": 478018,
+      "sha256": "b4b8b11470ef9e6eb240a6477497a83b658c10177e396118ec54220c3c4a5e96",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-cheering-cvi-outline.webp",
+      "bytes": 20970,
+      "sha256": "7906b40b50351793bc4433860e4c4aea5cab1d513f827f710e95a384b288c513",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-cheering-cvi.webp",
+      "bytes": 463610,
+      "sha256": "8ceda4d5e7fcaa1d0db1ff2c91cd07d21da80ff451f112333305812b1b325b7f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-cheering.webp",
+      "bytes": 467676,
+      "sha256": "c247109debb27337181e6a1f4ef5b696fbd26bea1a0971e5c0f827debb510509",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-press-cvi-outline.webp",
+      "bytes": 18832,
+      "sha256": "c08496b287ed9b49efd06f59e3d4613cdde54f4bb39ffb1bc2717a3a6be84f88",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-press-cvi.webp",
+      "bytes": 440210,
+      "sha256": "2475247c6e9a2fd80a48796df0eaadbe13ffc33faa8a420ee78d0a87202122c5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-press.webp",
+      "bytes": 443622,
+      "sha256": "5a7acef7c0149a742beb40f25a63369f0e465d45eff8537f2c65d25d8d2aaeb0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-reading-cvi-outline.webp",
+      "bytes": 18534,
+      "sha256": "7246cceee38b2306139910942e1c71218324ce8e4d2079de333ff90c8d3eea87",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-reading-cvi.webp",
+      "bytes": 449682,
+      "sha256": "de088f772ab1f07a3650291c34692ca63e37985dbee7cc825c7aea74b3140320",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-reading.webp",
+      "bytes": 452690,
+      "sha256": "3e70d1626f6bc53412fc82327402505471b10262f61980d4be9c02dc82e58c40",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-cvi-outline.webp",
+      "bytes": 18612,
+      "sha256": "1c0bda92faf032a2855ad9a9caf60625c8a7e9ac6035d850afd858920eff2073",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-cvi.webp",
+      "bytes": 416114,
+      "sha256": "fc50843f553452a4156930479b81b19a69ea74e8ab5749f806a61e716bc44743",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-lit-cvi-outline.webp",
+      "bytes": 24056,
+      "sha256": "1d5d17c6c2090c0207dd37d5479334c2a0eb9364890092b5c145ea44f583d4f4",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-lit-cvi.webp",
+      "bytes": 702768,
+      "sha256": "be4af140a674958e8701f8171dc71af32106bde0dcb28739561f3442efa4e6ae",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-lit.webp",
+      "bytes": 703444,
+      "sha256": "c2c834ca26e100d857125fd103b3f6bd1941ce794078a348e377ae6d7528697f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-only-cvi-outline.webp",
+      "bytes": 23672,
+      "sha256": "5dfea538c7af24b0d310953ef3e64a3e143299f13a076e7c28b9672906fcc01b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-only-cvi.webp",
+      "bytes": 553334,
+      "sha256": "d39d9c22b9dd0a6fe70dfb57f1efd10dcf6360071868d903a6c412fc86b24c6b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet-only.webp",
+      "bytes": 507004,
+      "sha256": "8f253b94eda99a043233720f03105f3e9ece80fa43a5752915adf0d03e10aa0f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/mia-tablet.webp",
+      "bytes": 416502,
+      "sha256": "ac263ab4f465a7f84facecb10eaf8adf297bc09266ecadc65a3c9853cfcd7710",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/pyramid-cvi-outline.webp",
+      "bytes": 10642,
+      "sha256": "4b7b8186c18929b3ff717a1a40bf0c1509b064d7874775c81101244868105708",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/pyramid-cvi.webp",
+      "bytes": 603390,
+      "sha256": "9f64b8591d55c162d63f09da4456a651f16848e39b7f3a232a2715627d7b7bf0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/pyramid.webp",
+      "bytes": 631638,
+      "sha256": "01c4ce5ca709fe1b902c93ce3351caf89d159856c26a872774c75492315a9462",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-cheering-cvi-outline.webp",
+      "bytes": 14256,
+      "sha256": "fd24942f2795e69c139d2b6e6315dd7ffd1c9bc15f0f165df6d4f95ef9cd5997",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-cheering-cvi.webp",
+      "bytes": 260502,
+      "sha256": "d67c59684c34b054d6eccc8bd8578c12b85e4431a3829fb1ec7ee2c7239072d7",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-cheering.webp",
+      "bytes": 267518,
+      "sha256": "61e5e88a79a1b8281d770eaf78971ddc88a73c906e574c4fae3692eac2b77a7e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-reading-cvi-outline.webp",
+      "bytes": 11104,
+      "sha256": "a01708c8764c0e2bcb7fb0a29b4e83b49d920dc6aedaf2583b7d7b701046eff9",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-reading-cvi.webp",
+      "bytes": 238820,
+      "sha256": "dfb502b926e85e8ddb892503df7304e92f5f126b0a3ddd1c1a90b36a98e98ef6",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-reading.webp",
+      "bytes": 243244,
+      "sha256": "576c9319cd7890db5e05e1513e7f953968df23e8529c8e1c6697fe427c96e75d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-standing-cvi-outline.webp",
+      "bytes": 12492,
+      "sha256": "b574556ca415ca31ff8f167a8378d31938921f65180fb0cc2a032ea4f1100cbd",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-standing-cvi.webp",
+      "bytes": 240130,
+      "sha256": "266252790e761273301182fd98d554053269e256260fdc882c515d74341e06bb",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-standing.webp",
+      "bytes": 245138,
+      "sha256": "46d3ac6ad2b041c5ce8ff44b2dfe27db19e994da135d6880bc1f908533a8f402",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-waving-cvi-outline.webp",
+      "bytes": 13146,
+      "sha256": "6674e541c65e4c6824e862cd5d2e686992ccb37485bb1742d6fdeed6b80401e0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-waving-cvi.webp",
+      "bytes": 248274,
+      "sha256": "5e53d32231915f54ec7286f8ce2b5e23fe3b0e7d8391cbe754a760d8b55062e4",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/sam-waving.webp",
+      "bytes": 252728,
+      "sha256": "de887680898183412bc603d1b36bdbd3327f48b917ac4d97e391879cb154ce89",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch-cvi-outline.webp",
+      "bytes": 15486,
+      "sha256": "aad10bacc63b13ccaebc6501d7f359fd234082185a1ef921ac26b635370b522e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch-cvi.webp",
+      "bytes": 220710,
+      "sha256": "d5e86c39865f26424afa4c47c00524843acdc0dbb1fda20cac0528f38f04d16e",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch-turned-cvi-outline.webp",
+      "bytes": 15528,
+      "sha256": "f70388bf9845a3e7d8c1efbea364a72edf41473c7a799d184028a448e8deac80",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch-turned-cvi.webp",
+      "bytes": 225850,
+      "sha256": "3dfb605dafedc7fe4912295b4b816910f521be7b72a0fb0af3dea2b9d0b7583a",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch-turned.webp",
+      "bytes": 225734,
+      "sha256": "d750e157a33723e8259f6ec2c630694ccde0f3cc68e5b7e2c73918963e9a78f2",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/sprites/tablet-switch.webp",
+      "bytes": 224280,
+      "sha256": "811f1c1cc1deeb704d749c83b01e49e1c6d2c2511cd2f6913be1b39afc8bb46d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/story.js",
+      "bytes": 10124,
+      "sha256": "c3fe4b792accd062fbb25a05a72376daad99485c34c7893cb086dcbe8464d090",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/list.js",
+      "bytes": 2007,
+      "sha256": "9fe51176995d3aef13e062075f815060e27683cd80260537ce07d8d5cdf9e09b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/audio/README.txt",
+      "bytes": 1242,
+      "sha256": "1b8404bba8e81bb4d94560abc95a0b2e68646173dfb672970f4f800deb31f47c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/contact-shadows.js",
+      "bytes": 1101,
+      "sha256": "4f61304ba65b44301d8cd7ea430f101ec77745ebe2811d5afd494da0c19ece41",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sounds/bark-happy.wav",
+      "bytes": 121608,
+      "sha256": "87c95148f35a9b6a75414568f5998cd249c97518e01f7b148d3c62372c13d196",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sounds/bark-hello.wav",
+      "bytes": 26554,
+      "sha256": "3c6f89b337af13d371744ac94b2d2e99090d78a5d835a93068e12039f48558b0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/ball-cvi-outline.webp",
+      "bytes": 6712,
+      "sha256": "814b94769440cc14efaa77211af40219decd2cd6ae281ff26e69c1a3403a8492",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/ball-cvi.webp",
+      "bytes": 530908,
+      "sha256": "0f1480ef0d0b8d3ee45fa9b413b3809ab252c9d9ac4ace418d6ce165d82e05b3",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/ball.webp",
+      "bytes": 186954,
+      "sha256": "5e45ccb00b8deb2d02fa71b2e4a326fc5f1810d6014970e844e3ff729af32a71",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird-cvi-outline.webp",
+      "bytes": 8488,
+      "sha256": "9eaf9867c8726674d61bec43e15fa35bcf00202c7b9aa02a475b07bb99c1218f",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird-cvi.webp",
+      "bytes": 359652,
+      "sha256": "cc19d1cda85ea7dda51737ab56435dbf1d3e5f943be5eb0f2a26f26ec1106d0c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird-flying-cvi-outline.webp",
+      "bytes": 10922,
+      "sha256": "8e1928967d00c176a5981f01d8457db5ac19a594911ce12a1ae8239d2c177980",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird-flying-cvi.webp",
+      "bytes": 427604,
+      "sha256": "6b3360d453bc0d6ed481addebc5452ace3d6bdbebbd9b3ef7cd1438b2d396ad5",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird-flying.webp",
+      "bytes": 201328,
+      "sha256": "c6b710997af70383c4051490e0731e906ab015f86d52b48fd4c761989b73f7f6",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/bird.webp",
+      "bytes": 160196,
+      "sha256": "cc4b348976480d118cf9a3c3bc28fcc5b65767144e92d140a046f91579054127",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/moon-cvi-outline.webp",
+      "bytes": 7708,
+      "sha256": "65de3866a71a7ea43a8d9dee7b3e0dacb95fc22ace22b46f86119d5b253a6166",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/moon-cvi.webp",
+      "bytes": 518874,
+      "sha256": "b5917387878ac51e0c09bac22fb6f909e40048ca6b5eda6f329179d5e16dcb93",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/moon.webp",
+      "bytes": 166646,
+      "sha256": "593de20e4a7f768b60fcd256d491c3e15c1e1fd9aae5e83d2d43211e25905846",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/puddle-cvi-outline.webp",
+      "bytes": 7094,
+      "sha256": "1db31434c21f1e7ac2b0607c0c4d44d89b1c9560c01d59950d89ae95af9d5948",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/puddle-cvi.webp",
+      "bytes": 209656,
+      "sha256": "29343cd46b68907df5d5823e509b5b00b84d1c8d7c81ebebbdfe40efe913f690",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/puddle.webp",
+      "bytes": 198828,
+      "sha256": "52585eadf0f23aa5f3a49b5d7f6edb7007027755aec82798b0ad9081c5333323",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-celebrate-cvi-outline.webp",
+      "bytes": 10376,
+      "sha256": "efee915bc54517a55db1f3064713753056ccc1ad24e22756096a49f12b94ae0b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-celebrate-cvi.webp",
+      "bytes": 428938,
+      "sha256": "ab06a0d8762838d9c3aef81adfd297b56f8c8245531e19040b7324672f59bbf0",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-celebrate.webp",
+      "bytes": 162814,
+      "sha256": "f2611de809edae65f224131b2e78b86625752f9864de5f01046332bf675cb638",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-jump-cvi-outline.webp",
+      "bytes": 10026,
+      "sha256": "ef913fe4046fa030660afc558cfe1bbeb77e107b361d7d6fd0bb5063ff5fe1b3",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-jump-cvi.webp",
+      "bytes": 396712,
+      "sha256": "9731b510391a75eb8b88fb36a6e82c18a1970864291d80779bca088b5e7cd795",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-jump.webp",
+      "bytes": 159008,
+      "sha256": "fc61692a0b8393e93952b34c1c7f069453ed4d666c9ed35d17b28caacf686600",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-look-up-cvi-outline.webp",
+      "bytes": 8274,
+      "sha256": "2ff078e2254ce39801dc0edc6aa3747723904a7bd3ccf85ed12922bfcbb33041",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-look-up-cvi.webp",
+      "bytes": 368870,
+      "sha256": "860a0e71cd10c9b207b1b73b408122def8322fd888e5e32bec7988f200b141c4",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-look-up.webp",
+      "bytes": 140590,
+      "sha256": "0ce9a7d44ce8072da3922dbf258390a3bfb32dd8211501ce2baa02d6e63a3259",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sit-cvi-outline.webp",
+      "bytes": 9372,
+      "sha256": "ea0e74dcf8ecce97fe74e520ac781e052354fcacca6b61c7fa23bbef88d8be6d",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sit-cvi.webp",
+      "bytes": 478472,
+      "sha256": "6073d9b92357ebcb8ea65d27e833b0d307714509ae13493825e93c821f38ad41",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sit.webp",
+      "bytes": 182942,
+      "sha256": "36f6f68fdb54169db18fabb83682af0255b770d35da3d1f81766e117e18684c8",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sleep-cvi-outline.webp",
+      "bytes": 60,
+      "sha256": "bb1e40b2fce4fff30e5578e20178a50a503456695be841ca07b82aeda9e55c2b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sleep-cvi.webp",
+      "bytes": 380820,
+      "sha256": "2bb7b44734867fe14a6975299417bd2150b5472b61b164860d845fa3ddf0eb00",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-sleep.webp",
+      "bytes": 144118,
+      "sha256": "1e7933a65ac919c1d4611b08b2b2323c0dbdf6d501bd92a237d013a75057df73",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-stand-cvi-outline.webp",
+      "bytes": 60,
+      "sha256": "bb1e40b2fce4fff30e5578e20178a50a503456695be841ca07b82aeda9e55c2b",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-stand-cvi.webp",
+      "bytes": 392306,
+      "sha256": "efa7ceebfed3f3980c204be1eb69119a6c7fbac251c1a76980931a6041ddcb28",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-stand.webp",
+      "bytes": 156062,
+      "sha256": "cfd77f0164f12f19f98529432a559a8fb04daf5cd39bef00247b5892aab26b16",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wag-cvi-outline.webp",
+      "bytes": 10964,
+      "sha256": "a09f7f731036a87d32025998d62efc597bf786edf049e0a40b253065a90f3990",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wag-cvi.webp",
+      "bytes": 516764,
+      "sha256": "b70dc247b2a79f61ad2986de81dcff4831c6451a0d19bedf39fcd08ca1e9b94a",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wag.webp",
+      "bytes": 191526,
+      "sha256": "8a103c60bb66fba4ea089ebec6dca7841244d8738417e8b9e8e7f046c82720f7",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wave-cvi-outline.webp",
+      "bytes": 9804,
+      "sha256": "e75be1c4253e005cbe07673f1bd01861fd4bcafa8c270c24e6e19ecc8838c420",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wave-cvi.webp",
+      "bytes": 479540,
+      "sha256": "6da5295ad70d7b63c8d3f52ccc7a82458b7bcd84c0f1d22c8b92492be08c3957",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-wave.webp",
+      "bytes": 181220,
+      "sha256": "3b07d473dddd75d82900ec1c6bab0904598aaae971f1a010e181d238216201bf",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-yawn-cvi-outline.webp",
+      "bytes": 8648,
+      "sha256": "1290e05c77f485762a97bc55bbc36209a5935efbfa2be6210ca35a56a4715a0c",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-yawn-cvi.webp",
+      "bytes": 402166,
+      "sha256": "1f23a45908e129e6a16cfdbdf6987aa46c5f0dd38f4ab637b12f9cd835578492",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/rocky-yawn.webp",
+      "bytes": 151942,
+      "sha256": "17cf84478f60ab5ddc537e4a6339563c49df6311a6d578b64304dd6541f04326",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/star-cvi-outline.webp",
+      "bytes": 7160,
+      "sha256": "7a6d15601b26ad6d5a1b7046e9d434e34090b3bcabba184449831f9431fdef25",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/star-cvi.webp",
+      "bytes": 338328,
+      "sha256": "b22a5eadb3f22a33e343075a456796dfe98de5d6b6b91f352c555fa25295cffb",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/sprites/star.webp",
+      "bytes": 95450,
+      "sha256": "49ac0f2935e81763b86468e58e979226319be58acdf83abb0045be8e4898ecde",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/story.js",
+      "bytes": 4553,
+      "sha256": "2e3232736fcc9ec38721983ae6b76fba83a3a75cfb637269877761b051477886",
+      "electronPort": "WEB import from existing desktop game; browser entry, selected-book preload and credit documentation are web-only"
+    },
+    {
+      "path": "bennyshub/images/games/glowpop.png",
+      "bytes": 148921,
+      "sha256": "8b3db84040fe8ec2291ab562a848051c5021565b4824fe0ed641ec331cfa0ec9",
+      "electronPort": "APPLIED: actual desktop screenshot"
+    },
+    {
+      "path": "bennyshub/images/games/switchstories.png",
+      "bytes": 1229926,
+      "sha256": "d34d9195dc9522783bdb046f8f92dab83d8fe8026f33d481c97b7fc66d0b5e2f",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "bennyshub/service-worker.js",
+      "bytes": 4870,
+      "sha256": "dd03247db08636e7943ebec85c89962e4436d531e6a8caa87273e3cdb8738ab6",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "docs/history/DEVELOPMENT-HISTORY.md",
+      "bytes": 530839,
+      "sha256": "5ccf4e6a35f6b4119b72c3191ee497f868da8db58c7e513be1aed66e416fe12c",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "index.html",
+      "bytes": 84888,
+      "sha256": "8e578e039682bbd4cc0fa76ce7fa2fcb5e65e89f6c56f7f2cfd9045217c8d948",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "scripts/build.cjs",
+      "bytes": 5061,
+      "sha256": "1f8e70d5b9c46b6364867c6d638ff9fcb2c396ef25c4a22eb3622750e45dec93",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "scripts/check-nancy-games.cjs",
+      "bytes": 12458,
+      "sha256": "682ce439f6e87c8869a706bfb73124e924406202d08b9cabbd7d9675d0a340a7",
+      "electronPort": "WEB ONLY"
+    },
+    {
+      "path": "tests/communication-cache.test.cjs",
+      "bytes": 1586,
+      "sha256": "7c31f077d61ba8886969c5a923d5a55dd8bd1fc5f4091c1c6fb262dd042fa8ee",
+      "electronPort": "WEB ONLY"
+    }
+  ],
+  "additionalFiles": [
+    "docs/history/NANCY-GAMES-20261022-FILES.json"
+  ],
+  "external": {
+    "repository": "narbefoundation/SwitchedGames",
+    "files": [
+      "index.html"
+    ]
+  },
+  "desktop": {
+    "files": [
+      "bennyshub/apps/games/games.json",
+      "bennyshub/images/games/glowpop.png",
+      "tests/glowpop-thumbnail-electron.cjs"
+    ],
+    "installerRebuilt": false
+  }
+}

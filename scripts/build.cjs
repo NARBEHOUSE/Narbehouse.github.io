@@ -27,6 +27,8 @@ async function build(){
     if(name.startsWith('.')||/(?:^|\/)(node_modules|__pycache__|chrome_profile|tests|artifacts|playwright-report|test-results)(?:\/|$)/.test(rel)||/\/games\/[^/]+\/tools(?:\/|$)/.test(rel)||/\/(?:BENNYSFOOTBALL|BENNYSBASEBALL2)\/art(?:\/|$)/.test(rel)||/test-player\.(html|js)$|^rt-convo|^package(?:-lock)?\.json$|^playwright\.config\.|^DESKTOP_PROMPT\.txt$/.test(name))return false;
     // Retired prediction experiment stays in the source tree, not the public app.
     if(/^bennyshub\/apps\/tools\/keyboard\/kenlm(?:\/|-(?:client|worker)\.js$)/.test(rel))return false;
+    // Switch Stories production references never ship with the playable books.
+    if(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\/(?:.*\/)?(?:source|incoming|reference|art|prototype)(?:\/|$)/i.test(rel)||(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\//.test(rel)&&/\.pdf$/i.test(name)))return false;
     // Private publishing records never enter a website build, regardless of file type.
     if (/(?:^|\/)rights and publishing[^/]*(?:\/|$)/i.test(rel)) return false;
     // Publish the game's README alongside its license, notice and credits.
