@@ -127,14 +127,17 @@ Source inputs: the supplied write-up and VS Code handoff, labeled project photog
 
 ## Explore the project with switches
 
-The page is designed for Space and Enter switch inputs. Choose **Try switch browsing**, or press Space outside an ordinary button or link. Space moves between sections; Enter opens a section’s choices. The first choice reads that section aloud, followed by its links, photos and smaller groups. A silent blank separates the last and first sections. Each entered group loops through its choices and a spoken **Back** stop, which restores the previous selection.
+The page is a demonstration of Ben’s two-button navigation and text-to-speech. Benny’s Hub builds these controls directly into the specific apps he wants to use, with simpler layouts tailored to his needs. The introduction itself is scannable and readable aloud.
+
+The page is designed for Space and Enter switch inputs. Choose **Try switch browsing**, or press Space outside an ordinary button or link. Space moves between sections; Enter opens a section’s choices. The first choice reads that section aloud, followed by its links, photos and smaller groups. A silent blank separates the last and first sections. Each entered group loops through its choices and a spoken **Back** stop, which restores the previous selection. The dashed Back cue stays in the control bar or current dialog and names its destination; it does not outline unrelated page content.
 
 - During narration, Enter stops speech; Space stops it and moves on. The current passage is highlighted and scrolled into view. Browser speech is chunked through the shared voice manager and remains interruptible.
 - Photos have scannable description and close controls. Setup steps can be opened, read, copied and closed with the switches.
+- Every content group includes scannable **Sections** and **Controls & help** buttons. Sections restores the containing section in the root list; closing help restores the exact choice that opened it. The Sections button is disabled when already in the section list. Mouse/touch Next and Choose buttons mirror the two switch inputs and do not add recursive scan stops.
 - **Controls & help** includes spoken instructions, speech on/off, voice selection, Auto Scan and scan speed. The page uses the same-origin Hub’s saved scan and voice preferences. Parking, Space Brake and Wait for Speech remain configured in Hub Settings.
 - Auto Scan offers Enter-only selection after it is enabled. Held Space scans backwards in manual mode using the existing three-second Hub convention; no hold is needed to go forward or return.
 - Links selected with switches show a cancel-first handoff. The Benny’s Hub links use the same-origin web app, preserving preferences. Other pages and external sites may need ordinary controls. Browser Back returns to the project; this page does not add its own controls to another site.
-- Mouse, touch and ordinary keyboard navigation remain available. Tab or **End switch browsing** exits switch mode. No speech or automatic scanning starts before the visitor opts in.
+- Mouse, touch and ordinary keyboard navigation remain available. Tab, Shift+Tab or **End switch browsing** exits switch mode without removing native links and buttons from the tab order. No speech or automatic scanning starts before the visitor opts in.
 
 Implementation: `switch-access.js` supplies explicit section/group identities and input ownership to `NarbeChoiceScanAdapter`; shared platform, scan, voice and status modules are loaded from `../bennyshub/shared/`. All contexts on this page are CHOICE scans. Shared modules, gameplay and the Electron app are unchanged. The page requires JavaScript for scanning and a working browser voice for narration; its text and native links remain readable without speech.
 

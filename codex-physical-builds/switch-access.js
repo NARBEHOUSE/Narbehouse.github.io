@@ -16,12 +16,13 @@
   let enabled = false, scanner, focused = null, reading = null, readSerial = 0, feedback = null;
   let space = false, enter = false, braking = false, reversed = false;
   let reverseTimer = 0, reverseRepeat = 0, ignoreRelease = false;
-  let modalReturn = false, linkDestination = null, scanAction = false;
+  let modalReturn = false, linkDestination = null, scanAction = false, settingsReturnTitle = 'Sections';
+  const temporaryFocusTargets = new Set();
   const sections = [...document.querySelectorAll('[data-switch-section]')];
   const groups = [...document.querySelectorAll('[data-switch-group]')];
   const clean = text => String(text || '').replace(/[↗↘↓↑✳▷◉◌]/g, '').replace(/\s+/g, ' ').trim();
   const label = element => clean(element.getAttribute('aria-label') || element.textContent);
-  const heading = element => element.querySelector('h1,h2,h3,summary') || element;
+  const heading = element => element.querySelector('h1,h2,h3,summary,[data-switch-heading]') || element.querySelector('figcaption') || element;
   const rootItem = element => ({
     id: element.id,
     label: element.dataset.switchSection,
@@ -68,14 +69,35 @@
   }
   function scrollToChoice(element) {
     if (!element) return;
+    if (element.closest('#switch-dock')) return;
     const rect = element.getBoundingClientRect();
-    const bottom = dock.hidden ? innerHeight - 20 : dock.getBoundingClientRect().top - 20;
+    const modal = element.closest('dialog[open]');
+    if (modal) {
+      const bounds = modal.getBoundingClientRect();
+      if (rect.top < bounds.top + 20 || rect.bottom > bounds.bottom - 20) {
+        element.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'instant'});
+      }
+      return;
+    }
+    const bottom = dock.getBoundingClientRect().top - 20;
     if (rect.top < 28 || rect.bottom > bottom) {
       element.scrollIntoView({block: rect.height > bottom - 50 ? 'start' : 'center', behavior: 'instant'});
     }
   }
   function clearHighlight() {
     document.querySelectorAll('.switch-highlight').forEach(el => el.classList.remove('switch-highlight'));
+    document.querySelectorAll('.switch-back-highlight').forEach(el => el.classList.remove('switch-back-highlight'));
+  }
+  function focusChoice(element) {
+    if (!element.matches('a[href],button,summary,input,select,textarea,[tabindex]')) {
+      element.setAttribute('tabindex', '-1');
+      temporaryFocusTargets.add(element);
+    }
+    element.focus({preventScroll: true});
+    scrollToChoice(element);
+  }
+  function backLabel(context) {
+    return 'Back to ' + (context.returnTitle || 'the previous choices') + ' — Enter returns.';
   }
   function setStatus(text) {
     status.textContent = text;
@@ -99,7 +121,7 @@
     }
     feedback = null;
     setStatus(state.parked ? 'Parked — Enter resumes browsing.' :
-      state.backStop || state.id === 'narbe:row-back' ? 'Back — Enter returns to the previous choices.' :
+      state.backStop || state.id === 'narbe:row-back' ? backLabel(context) :
       item ? (typeof item.label === 'function' ? item.label() : item.label) :
       'No selection — Space moves to the first choice.');
     $('#switch-count').textContent = item ? (state.index + 1) + ' / ' + context.items.length : '';
@@ -109,10 +131,15 @@
     if (settingsDialog.open && context.key !== 'settings') closeNative(settingsDialog);
     if (linkDialog.open && context.key !== 'destination') closeNative(linkDialog);
     if (lightbox.open && context.key !== 'photo') closeNative(lightbox);
+    const openDialog = [settingsDialog, linkDialog, lightbox].find(dialog => dialog.open);
+    document.body.classList.toggle('switch-modal-open', !!openDialog);
+    dock.inert = !!openDialog;
     [settingsDialog, linkDialog, lightbox].forEach(dialog => {
       const back = dialog.open && state.id === 'narbe:row-back';
-      dialog.classList.toggle('switch-modal-back', back);
-      dialog.querySelector('.switch-modal-back-label').hidden = !back;
+      const message = dialog.querySelector('.switch-modal-back-label');
+      message.hidden = !back;
+      dialog.querySelector('.switch-modal-status').hidden = back;
+      if (back) message.textContent = backLabel(context);
     });
     refreshDock(context, state, item);
     if (reading) return;
@@ -120,10 +147,12 @@
     if (item?.element) {
       item.element.classList.add('switch-highlight');
       if (focused !== item.element) {
-        item.element.setAttribute('tabindex', item.element.getAttribute('tabindex') || '-1');
-        item.element.focus({preventScroll: true});
-        scrollToChoice(item.element);
+        focusChoice(item.element);
       }
+    } else if (state.id === 'narbe:row-back') {
+      const target = openDialog?.querySelector('.switch-modal-back-label') || status;
+      target.classList.add('switch-back-highlight');
+      focusChoice(target);
     } else if (document.activeElement !== document.body) {
       document.activeElement?.blur?.();
     }
@@ -145,6 +174,7 @@
     dock.hidden = false;
     document.body.classList.add('switch-enabled');
     $('#switch-start').textContent = 'Switch browsing is on';
+    $('#switch-start').disabled = true;
     scanner.sync(rootContext(), {fresh: true});
     updateDockSize();
     if (advance) scanner.step(1);
@@ -163,8 +193,14 @@
     clearHighlight();
     dock.hidden = true;
     document.body.classList.remove('switch-enabled');
+    document.body.classList.remove('switch-modal-open');
+    dock.inert = false;
+    temporaryFocusTargets.forEach(element => element.removeAttribute('tabindex'));
+    temporaryFocusTargets.clear();
+    focused = null;
     document.body.style.removeProperty('--switch-dock-height');
     $('#switch-start').textContent = 'Try switch browsing';
+    $('#switch-start').disabled = false;
     $('#switch-start').focus({preventScroll: true});
   }
   function groupContext(scope) {
@@ -195,7 +231,11 @@
       element: scope.querySelector('summary'),
       action: () => { scope.open = false; scanner.back({restore: true}); }
     });
-    return {key: 'content:' + scope.id, scope, title, items, statusHost: $('#switch-badge')};
+    items.push(
+      {id: scope.id + ':sections', label: 'Sections. Return to the section list.', element: $('#switch-back'), action: returnToSections},
+      {id: scope.id + ':settings', label: 'Controls and help', element: $('#switch-help'), action: openSettings}
+    );
+    return {key: 'content:' + scope.id, scope, title, items, returnTitle: scanner.context?.title || 'Sections', statusHost: $('#switch-badge')};
   }
   function openGroup(scope) {
     stopReading(false);
@@ -254,14 +294,16 @@
   function openSettings() {
     stopReading(false);
     if (!enabled) start();
-    scanner.sync(rootContext(), {fresh: true, restoreId: 'project:settings'});
+    if (settingsDialog.open) return;
+    if (scanner.getState().index < 0) scanner.sync(rootContext(), {fresh: true, restoreId: 'project:settings'});
+    settingsReturnTitle = scanner.context.title;
     settingsDialog.showModal();
     syncSettings();
     scanner.enterGroup(settingsContext(), {wrap: true, backStop: true});
   }
   function settingsContext() {
     return {
-      key: 'settings', title: 'Switch controls', statusHost: $('#settings-badge'),
+      key: 'settings', title: 'Switch controls', returnTitle: settingsReturnTitle, statusHost: $('#settings-badge'),
       items: [
         {id: 'settings:help', element: $('#switch-read-help'), label: 'Read the switch instructions aloud', action: () => readScope($('#switch-help-copy'))},
         {id: 'settings:tts', element: $('#switch-tts'), label: () => label($('#switch-tts')), action: () => {
@@ -285,7 +327,8 @@
     $('#switch-tts').textContent = 'Spoken feedback: ' + (VM.getSettings().ttsEnabled ? 'On' : 'Off');
     $('#switch-voice').textContent = 'Voice: ' + VM.getVoiceDisplayName(VM.getCurrentVoice());
     $('#switch-auto').textContent = 'Auto scan: ' + (SM.getSettings().autoScan ? 'On — one switch' : 'Off — two switches');
-    $('#switch-speed').textContent = 'Scan speed: ' + SM.getScanInterval() / 1000 + ' seconds';
+    const seconds = SM.getScanInterval() / 1000;
+    $('#switch-speed').textContent = 'Scan speed: ' + seconds + (seconds === 1 ? ' second' : ' seconds');
     if (enabled && scanner.context?.key === 'settings') scanner.sync(settingsContext());
   }
   function confirmLink(link) {
@@ -298,7 +341,7 @@
       'This opens ' + linkDestination.hostname + ' in this tab. Other websites may need a mouse, touch or ordinary keyboard controls.';
     linkDialog.showModal();
     scanner.enterGroup({
-      key: 'destination', title: 'Open a link', statusHost: $('#destination-badge'),
+      key: 'destination', title: 'Open a link', returnTitle: scanner.context.title, statusHost: $('#destination-badge'),
       items: [
         {id: 'destination:cancel', label: 'Stay on the project page', element: $('#switch-link-cancel'), action: goBack},
         {id: 'destination:open', label: isHub ? 'Open Benny’s Hub. Space moves and Enter selects there too.' : 'Continue to ' + linkDestination.hostname,
@@ -328,7 +371,7 @@
     stopReading(false);
     if (!scanAction) focusPath(event.detail.trigger);
     scanner.enterGroup({
-      key: 'photo', title: 'Enlarged photo', statusHost: $('#photo-badge'),
+      key: 'photo', title: 'Enlarged photo', returnTitle: scanner.context.title, statusHost: $('#photo-badge'),
       items: [
         {id: 'photo:describe', label: 'Read the photo description', element: $('#photo-read'),
           action: () => readScope($('#lightbox-caption'))},
@@ -406,8 +449,8 @@
   }
   const isSwitch = event => ['Space','Enter','NumpadEnter'].includes(event.code);
   function keyDown(event) {
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     if (event.key === 'Tab' && enabled) { stop(); return; }
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     if (!isSwitch(event)) return;
     if (!enabled) {
       if (event.target.closest('a,button,input,select,textarea,summary,[contenteditable="true"]')) return;

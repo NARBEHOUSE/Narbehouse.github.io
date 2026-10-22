@@ -53,8 +53,13 @@ body.switch-enabled { padding-bottom:calc(var(--switch-dock-height,150px) + 28px
   box-shadow:0 0 0 8px #202923!important; border-radius:3px;
 }
 [data-narbe-scan-paused].switch-highlight { outline-style:dotted!important; }
-.switch-modal-back { outline:4px dashed #b64e25; outline-offset:-8px; }
-.switch-modal-back-label { padding:12px; border:2px dashed #b64e25; font-weight:bold; }
+/* This page's choices span the article and fixed dock. A union of their bounds
+   is not a useful Back target; keep the shared stop and mark its local cue. */
+.switch-enabled .narbe-row-back-outline { display:none!important; }
+.switch-back-highlight { outline:4px dashed #ffd54f!important; outline-offset:4px; border-radius:3px; }
+#switch-current.switch-back-highlight { padding:8px 10px; margin:4px 6px; }
+.switch-modal-back-label { padding:12px; margin:14px 6px 6px!important; background:#202b24; color:#fffdf7; font-weight:bold; }
+.switch-modal-open .switch-dock { visibility:hidden; }
 .switch-modal-status { padding-top:12px; font-weight:600; }
 .switch-modal-status:empty { display:none; }
 .switch-reading { outline:3px solid #b64e25; outline-offset:5px; }

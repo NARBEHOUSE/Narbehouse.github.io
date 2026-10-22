@@ -12,7 +12,10 @@
   }
   function select() {
     if (current < 0) { status.textContent = 'First press Move to highlight a choice.'; return; }
-    options[current].classList.add('selected');
+    options.forEach((option, index) => {
+      option.classList.toggle('active', index === current);
+      option.classList.toggle('selected', index === current);
+    });
     status.textContent = responses[options[current].dataset.choice];
   }
   document.querySelector('#demo-move').addEventListener('click', move);
@@ -34,7 +37,7 @@
   }));
   dialog.querySelector('button').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
-  dialog.addEventListener('close', () => { image.removeAttribute('src'); if(trigger) trigger.focus(); });
+  dialog.addEventListener('close', () => { image.removeAttribute('src'); if(trigger && !document.body.classList.contains('switch-enabled')) trigger.focus(); });
   document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
     const code = document.getElementById(button.dataset.copy);
     try {
