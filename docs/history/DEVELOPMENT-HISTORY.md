@@ -3842,3 +3842,18 @@ The web editions use the existing browser shared platform, usage analytics and f
 Changed-file scope and Electron port flag: the accompanying [complete file inventory](NANCY-GAMES-20261022-FILES.json) lists every added or changed web file, its size/hash and desktop scope, plus the separately maintained SwitchedGames index and PC Hub files. Desktop changes are the Glow Pop manifest entry, screenshot and reproducible screenshot fixture; no installer was rebuilt. Browser-only entry integration, selected-book loading and new credit documents were not ported back to desktop. Original changed catalogs and build/test files were backed up before edits. Existing Companion release ZIP remains byte-for-byte unchanged.
 
 Validation: 394/394 website unit checks passed; the build passed with 4,060 public files totaling 604,459,135 bytes; the release audit found no problems; all 1,245 public references passed exact-case checks. The required-artwork browser check decodes every explicit image from all three books. All 50 Chrome gameplay/settings/layout/catalog checks passed, with no JavaScript exceptions; evidence is recorded in artifacts/nancy-games/report.json. The preserved 320px Lily floor-seam assertion documented in ASSET-OPTIMIZATION.md predates the image conversion and is outside this catalog/port change.
+
+
+### Gameplay thumbnail replacements — 2026-10-22
+
+Replaced the existing Glow Pop, Switch Stories and Magic Button menu thumbnails with real 1280×720 gameplay captures: a ladybug pop, Lily using her tablet and switch, and fireworks over the city. The three existing filenames are overwritten in both PC and web folders. No alternate thumbnail files or copies of the old images were created. Catalog image URLs use a content version to refresh previously cached images.
+
+Changed files and Electron port flags:
+
+- bennyshub/images/games/glowpop.png, switchstories.png and narbemagicbutton.png — APPLIED to PC Hub and web with identical bytes.
+- bennyshub/apps/games/games.json and index.html — WEB ONLY image URL versions; existing filenames, game paths and descriptions retained.
+- docs/history/DEVELOPMENT-HISTORY.md — WEB ONLY, this record.
+- SwitchedGames index.html — static cards and Details image URLs use the same new content versions.
+- PC tests/glowpop-thumbnail-electron.cjs — updated the existing capture helper to take gameplay frames in an isolated temporary runtime.
+
+Validation: actual gameplay/story states asserted before capture; all images inspected; SHA-256 compared across PC and web; all three hashes differ from the former images. No gameplay or access behavior changed. Publication uses the existing reviewed Pages workflow.
