@@ -3923,3 +3923,8 @@ Verification: inspected saved image files, confirmed all four load at their decl
 ### 2026-10-22 — Publish the physical-build project
 
 Owner authorized publication of the reviewed project page and homepage entry. Added `codex-physical-builds/.gitignore` to preserve the supplied write-up, handoff notes and original PNG photos locally while committing the finished page, setup README and compressed website images. `docs/history/DEVELOPMENT-HISTORY.md` records the publication scope. Electron port: **No** for every file. Publication uses the existing main-branch GitHub Pages workflow, including its tests, release audit and page-reference checks.
+
+
+### 2026-10-22 — Credit OpenAI’s Raspberry Pi contribution
+
+Owner confirmed that OpenAI’s Codex Physical Builds project supplied the Raspberry Pi. `codex-physical-builds/index.html` now credits the hardware contribution beside the Pi and explicitly includes it in the relationship notice. `codex-physical-builds/README.md` repeats the credit and updated notice. The endorsement clarification includes hardware support. Generated `dist/codex-physical-builds/index.html` synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records the edit. Scope: factual attribution only; Electron port: **No** for every file. The copy does not assert cash sponsorship, an employment relationship or clinical validation.

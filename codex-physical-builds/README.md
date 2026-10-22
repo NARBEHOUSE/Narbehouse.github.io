@@ -118,9 +118,9 @@ Source inputs: the supplied write-up and VS Code handoff, labeled project photog
 
 ### Our relationship with OpenAI
 
-Benny’s Hub Mobile is a personal, experimental project built with Codex. NARBE House is independent of OpenAI. Our relationship with OpenAI is limited to participation in the Codex Physical Builds project and occasional sharing of social-media posts.
+Benny’s Hub Mobile is a personal, experimental project built with Codex. NARBE House is independent of OpenAI. Our relationship with OpenAI is limited to participation in the Codex Physical Builds project, which supplied the Raspberry Pi used in this build, and occasional sharing of social-media posts.
 
-This is not an official OpenAI product. Project participation or social-media sharing should not be taken as OpenAI endorsement, certification, or validation of this build.
+This is not an official OpenAI product. Hardware support, project participation or social-media sharing should not be taken as OpenAI endorsement, certification, or validation of this build.
 
 ### Entertainment only. No AAC or medical claims.
 
@@ -131,6 +131,8 @@ Its keyboard, phrase board, speech output, and Help features are experimental re
 Personal experiences described here are not clinical evidence or guarantees of suitability or reliability.
 
 ## Credits and licenses
+
+The Raspberry Pi used in this build was supplied by OpenAI through the Codex Physical Builds project.
 
 Ben: purpose, direction and testing. Bryan: custom voice support. SwitchedToys: switch designs. Adafruit: TRRS Trinkey. Raspberry Pi and VITURE: hardware. Open-source contributors: browser speech and game technology. NARBE House: development and integration with Codex.
 
