@@ -3857,3 +3857,30 @@ Changed files and Electron port flags:
 - PC tests/glowpop-thumbnail-electron.cjs — updated the existing capture helper to take gameplay frames in an isolated temporary runtime.
 
 Validation: actual gameplay/story states asserted before capture; all images inspected; SHA-256 compared across PC and web; all three hashes differ from the former images. No gameplay or access behavior changed. Publication uses the existing reviewed Pages workflow.
+
+
+### Approved unused-media cleanup - 2026-10-22
+
+Owner approved removal of exactly the Bowling background recording, Pet Pals preview media and the old Pickleball Rally thumbnail. Removed 12 tracked media files totaling 21,166,507 bytes (20.19 MiB). Bowling ambient playback was already disabled; Pet Pals uses generated music or optional sounds/music-<id>.mp3, and the catalog already uses narbe-pickleball-2026-10.png. No runtime code or control behavior changed. Deleted content remains recoverable from parent commit 7e96bc0abe470fdfc43e5051c3cac340b79405be.
+
+Changed files and Electron port flags (all WEB ONLY / NO ELECTRON PORT):
+
+- `bennyshub/apps/games/BENNYSBOWLING/sound/bowling-bg.wav` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-1-puppy-kitten.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-2-teen.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-3-grown-up.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-cats-4-senior.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-1-puppy-kitten.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-2-teen.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-3-grown-up.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/legs-before-after-dogs-4-senior.png` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/song-cozy-corner.wav` - removed unused media.
+- `bennyshub/apps/games/NARBEPETPALS/previews/song-garden-breeze.wav` - removed unused media.
+- `bennyshub/images/games/pickleballrally.png` - removed unused media.
+- `bennyshub/apps/games/BENNYSBOWLING/README-ACCESSIBLE.md` - document disabled ambience and remove the obsolete required-file entry.
+- `bennyshub/apps/games/BENNYSBOWLING/CREDITS.md` - retain the historical ambient-file credit while identifying it as removed.
+- `docs/history/DEVELOPMENT-HISTORY.md` - this cleanup record.
+
+Scope: retain tests, dependencies, local profiles, artifacts, backups, historical release ZIPs and all other media. No Electron files changed.
+
+Validation: 394/394 unit tests passed. Rebuilt public output contains 4,048 files and 583,041,849 bytes; the release audit reports zero problems and all 1,245 exact-case page references pass. Every approved file is absent from both source and dist. All 22 historical release ZIPs retain their pre-cleanup SHA-256 hashes. In an isolated Chrome browser, Bowling progressed through Play Game > setup > Start Game with zero page errors or missing resources and ambience still disabled. Pet Pals progressed through Play > Puppy > Labrador > Rocky to gameplay; generated music played, eight music tracks were ready, and no removed preview assets were requested. Its existing optional audio probes remain, as documented. Gameplay renders were inspected. The later interactive pause probe exceeded the tool timeout; pause controls were not changed and are not claimed as regression-tested here. Browser evidence, checks and release hashes are saved outside the website under ../tmp/narbe-cleanup-assessment-20261022/.

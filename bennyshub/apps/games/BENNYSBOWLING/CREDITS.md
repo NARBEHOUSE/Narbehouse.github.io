@@ -16,7 +16,7 @@
   - We appreciate the work done on the physics engine and all open‑source libraries used.
 
 - Sounds and music (by filename)
-  - Ambient: `sound/bowling-bg.wav`
+  - Former ambient recording: `sound/bowling-bg.wav` (removed from the web edition while ambient playback is disabled)
   - Rolling: `sound/rolling-ball.wav`
   - Pin drop: `sound/single-pin.mp3`
   - Music: `music/music (1).mp3`

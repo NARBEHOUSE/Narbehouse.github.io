@@ -21,7 +21,7 @@ A community modification of the original “Benny’s Bowling” by iliagrigorev
 - Environment: gutter‑aware floor (center + recessed gutters), aligned side/back walls and scenic backdrop; original alley mesh hidden.
 - Pins readability: pins stay bright white with very subtle lighting effects.
 - Audio:
-  - Ambient loop during gameplay: sound/bowling‑bg.wav (~30% volume).
+  - Ambient background playback is disabled; the unused recording is no longer shipped.
   - Rolling SFX on throw: sound/rolling‑ball.wav, looped for the length of the roll and tracking the ball's speed, at 70% volume so it sits under the pin hits.
   - Aim cues (Settings → Aim Sound): soft sine blips that speed up, rise in pitch and pan towards centre as the aim converges, with a chime the moment the line will strike a pin. Tracks the pins still standing, so on a spare it rewards aiming at what's left rather than at the centre of the lane.
   - Charge cues (Settings → Charge Sound): a rising five‑note ladder, one note per 20% of power, plus a repeating chirp at full charge.
@@ -39,7 +39,6 @@ Open http://localhost:8000/ in your browser.
 
 Ensure the following files exist:
 - `music/music (1).mp3`
-- `sound/bowling-bg.wav`
 - `sound/rolling-ball.wav`
 - `sound/single-pin.mp3`
 
