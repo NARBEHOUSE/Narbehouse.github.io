@@ -782,7 +782,8 @@ code {
   border-block:1px solid var(--line)}
 .status-section h2 {
   font-size:36px;
-  margin-top:20px}
+  margin-top:20px;
+  margin-bottom:20px}
 .status-section>div+div {
   color:var(--muted);
   font-size:15px}

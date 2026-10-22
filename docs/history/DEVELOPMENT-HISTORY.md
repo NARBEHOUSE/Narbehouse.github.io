@@ -3928,3 +3928,12 @@ Owner authorized publication of the reviewed project page and homepage entry. Ad
 ### 2026-10-22 — Credit OpenAI’s Raspberry Pi contribution
 
 Owner confirmed that OpenAI’s Codex Physical Builds project supplied the Raspberry Pi. `codex-physical-builds/index.html` now credits the hardware contribution beside the Pi and explicitly includes it in the relationship notice. `codex-physical-builds/README.md` repeats the credit and updated notice. The endorsement clarification includes hardware support. Generated `dist/codex-physical-builds/index.html` synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records the edit. Scope: factual attribution only; Electron port: **No** for every file. The copy does not assert cash sponsorship, an employment relationship or clinical validation.
+
+
+### 2026-10-22 — Clarify the Pi as a supplement to Ben’s Surface
+
+User clarified that Ben continues using his main Electron app on Surface Pro. `codex-physical-builds/index.html` updates the introduction, description, upgrades transition and current-limits section to present the Raspberry Pi as a portable supplement running the web Hub. It distinguishes YouTube-only web search from his broader desktop search app and states that his Discord-mirroring messenger has no implemented web version. Future web support is exploratory, with feasibility unresolved and no delivery commitment. `codex-physical-builds/README.md` carries the same scope and limitations; its project URL is now labeled as published. Generated `dist/codex-physical-builds/index.html` synchronized. `docs/history/DEVELOPMENT-HISTORY.md` records the edit. Scope: project copy only; Electron port: **No** for every file.
+
+Layout follow-up in `codex-physical-builds/styles.css`: add space below the current-limits heading before the new introductory paragraphs; generated CSS synchronized. Electron port: **No**.
+
+Verification: all 1,271 page/asset references and whitespace checks pass. Reviewed desktop and 390 px phone layouts; no horizontal overflow, and the new search/messenger limitations remain readable.

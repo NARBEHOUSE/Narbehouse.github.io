@@ -1,8 +1,8 @@
 # Benny’s Hub Mobile
 
-A Codex Physical Builds project by NARBE House: two switches, a Raspberry Pi and a personal display, built around Ben.
+A Codex Physical Builds project by NARBE House: two switches, a Raspberry Pi and a personal display, built around Ben as a portable supplement to his main Surface setup.
 
-- Project page (after publication): https://narbehouse.github.io/codex-physical-builds/
+- Project page: https://narbehouse.github.io/codex-physical-builds/
 - Benny’s Hub: https://bennyshub.com
 - Hub source: https://github.com/NARBEHOUSE/Narbehouse.github.io
 - Companion source: https://github.com/NARBEHOUSE/Narbehouse.github.io/tree/main/extension
@@ -16,6 +16,17 @@ For years, Ben went without access to a computer system that worked for him. Usi
 Ben is also low vision. Those same head movements operate his switches, but with a conventional monitor each turn takes his eyes away from the screen. The glasses keep the display in front of his eyes while he makes selections.
 
 Ben has tested the complete kit with games, streaming and communication, both in his chair and in bed. Our family’s experience has been encouraging; the setup is still being fine-tuned. Build for one, extend to many.
+
+## Alongside Ben’s main Surface setup
+
+Ben still uses his main Electron app on his Surface Pro. The Raspberry Pi kit supplements it for on-the-go use and currently runs the web version of Benny’s Hub, with a substantial collection of games, streaming and other tools.
+
+Two tools Ben uses on the Surface are not available in this setup:
+
+- **Broader web search:** Ben’s desktop search app gives him access to more of the web. The web Hub currently offers YouTube-only search.
+- **Messenger:** Ben’s desktop messenger mirrors Discord. We have not implemented a web-based version.
+
+Bringing either tool to the web Hub would need further exploration. Feasibility is still an open question, and there is no commitment or timeline to add them. The Pi is already a useful portable supplement with its current web apps.
 
 ## Hardware
 
