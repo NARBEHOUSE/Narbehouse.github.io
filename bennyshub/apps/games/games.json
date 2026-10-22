@@ -336,7 +336,7 @@
     {
       "id": "narbeglowpop",
       "title": "Glow Pop",
-      "description": "Pop a glowing ball, ladybug or bee into colorful sparkles with a switch, key or tap. Choose colors, sizes, sounds and three ways to play. No score, no timer and nothing to lose. Created by Nancy.",
+      "description": "Pop a glowing ball, ladybug or bee into colorful sparkles with a switch, key or tap. Choose colors, sizes, sounds and three ways to play. No score, no timer and nothing to lose.",
       "path": "apps/games/NARBEGLOWPOP/index.html",
       "image": "images/games/glowpop.png?v=ab6c0e738f46",
       "genres": [
@@ -346,7 +346,7 @@
     {
       "id": "narbeswitchstories",
       "title": "Switch Stories",
-      "description": "Explore illustrated stories created and adapted for switch users. Read at your own pace and press your switch to bring each page to life with a cause-and-effect animation. Includes read-aloud, adjustable text sizes, and a simple high-contrast view. Created by Nancy.",
+      "description": "Explore illustrated stories created and adapted for switch users. Read at your own pace and press your switch to bring each page to life with a cause-and-effect animation. Includes read-aloud, adjustable text sizes, and a simple high-contrast view.",
       "path": "apps/games/NARBESWITCHSTORIES/index.html",
       "image": "images/games/switchstories.png?v=0dcf06e09e0e",
       "genres": [
