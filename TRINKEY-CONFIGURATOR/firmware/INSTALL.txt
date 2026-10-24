@@ -1,7 +1,0 @@
-NARBE Trinkey Configurator 0.2.0
-
-Customers: use First-time setup on the website. No downloads or manual copies are needed.
-
-Developer recovery: use a TRRS Trinkey M0 running CircuitPython 10.x in safe mode. Copy narbe_settings.mpy and narbe_device.mpy first, then boot.py and code.py. Eject and unplug/reconnect. Use Connect to verify the device responds. A BOOT drive needs the website base-firmware preparation before these files can be installed.
-
-Keep the original full-firmware recovery image from the website before replacing existing software. The site can restore it through the BOOT drive.

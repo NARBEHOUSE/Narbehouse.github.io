@@ -27,10 +27,6 @@ jobs:
           python-version: '3.x'
       - run: npm ci
       - run: npm test
-      - name: Check Trinkey browser and firmware behavior
-        run: |
-          node --test TRINKEY-CONFIGURATOR/tests/*.test.mjs
-          python -B TRINKEY-CONFIGURATOR/tests/test_firmware.py
       - run: npm run build
       - name: Verify submitted Companion ZIP
         run: sha256sum --check submission/COMPANION-SHA256SUMS.txt

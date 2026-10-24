@@ -4038,3 +4038,14 @@ Changed files:
 Verification: 396 root tests, 20 configurator JavaScript tests and 14 simulated firmware tests passed. The full build succeeded; the release audit passed with 4,081 public files and no problems; all 1,294 page/asset references passed. Browser review confirmed the optional Foundation card, homepage newsletter card, lowercase configurator route and its setup-guide navigation. This publication pass makes no new claim of physical-device testing.
 
 `TRINKEY-CONFIGURATOR/.gitattributes` preserves firmware and release archive bytes on Windows and Linux so Git line-ending conversion cannot invalidate the pinned installation hashes.
+
+
+### 2026-10-24 — Keep only website files in the Trinkey folder
+
+Owner requested removal of the launcher and all non-website material from the public repository, with local preservation outside it. Scope: configurator repository cleanup and Foundation wording only. Electron port: **No** for every file. A complete 45-file archive was copied and verified byte-for-byte before removal at ../tmp/trinkey-cleanup-20261024/TRINKEY-CONFIGURATOR/. Historical ZIPs, firmware source, compiler provenance, tests, reference art and device backups remain available locally.
+
+Deleted from `TRINKEY-CONFIGURATOR/`: `START-LOCAL.bat`, `server.cjs`, `package.json`, `README.md`, `ASSET-NOTES.md`, `.gitattributes`, `.gitignore`, `.nojekyll`, `assets/narbe-foundation.png`, `downloads/narbe-trinkey-0.1.0.zip`, `downloads/narbe-trinkey-0.2.0.zip`, `scripts/package.mjs`, `tests/bindings.test.mjs`, `tests/uf2.test.mjs`, `tests/test_firmware.py`, `firmware/narbe_config.py`, `firmware/narbe_runtime.py`, `firmware/compiled.json`, and `firmware/INSTALL.txt`. The ignored local `image.png` and `artifacts/` were also archived and removed from this folder. The 18 runtime files listed in scripts/trinkey-public.cjs remain byte-identical.
+
+`.gitattributes` now preserves the required runtime firmware bytes from the repository root. `.github/workflows/pages.yml` removes references to the archived development tests; the normal website tests, exact-runtime publication checks, firmware hash verification, build and release audit remain active. `../NARBE FOUNDATION/WEBSITE PROD/switchkit.html` replaces "our switch games" with the games on SwitchedGames and Benny's Hub, without explaining the organizations. `docs/history/DEVELOPMENT-HISTORY.md` records the changes.
+
+Verification before push: the folder contains exactly the 18 public-runtime files; every one is byte-identical to the verified archive/deployed version. All three focused publication/build tests and both repository whitespace checks pass. The existing Pages workflow will run the full website tests, build, firmware verification and release/page audits for publication.
