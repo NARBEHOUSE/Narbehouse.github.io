@@ -1,0 +1,3 @@
+# Firmware hashes and compiler provenance depend on exact bytes.
+/firmware/** -text
+/downloads/*.zip -text

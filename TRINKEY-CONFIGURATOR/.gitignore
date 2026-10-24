@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+artifacts/
+!downloads/
+!downloads/*.zip
+
+# Original reference photograph stays local.
+/image.png

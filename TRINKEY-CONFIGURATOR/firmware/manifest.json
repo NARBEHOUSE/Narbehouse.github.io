@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "board": "adafruit_trrs_trinkey_m0",
+  "circuitpython": "10.x",
+  "files": {
+    "narbe_settings.mpy": "93273882108fdeb6465773ad1e18b673b9eb02c5037e0f24209bfb65fec132de",
+    "narbe_device.mpy": "c629064e0e3ee190b5c75ff897b8f6ba23ee01d34ab2158884062f9bf45560ce",
+    "boot.py": "d7d8c38f0e1c0165065b9412261eabd5868e7a3378098cbe363b4b772969b576",
+    "code.py": "277e1ade0843a35222725128407c3a383e52bb8aef6741d48ef71ea2b3a2ff26"
+  },
+  "base": {
+    "file": "circuitpython-10.0.3.uf2",
+    "sha256": "a1ebabdf3af67518262851ec3f05780fd7b99348dce4d438c1f4b6c68ec021f3",
+    "source": "https://circuitpython.org/board/adafruit_trrs_trinkey_m0/",
+    "version": "10.0.3"
+  }
+}

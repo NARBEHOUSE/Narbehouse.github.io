@@ -1,0 +1,14 @@
+{
+  "compiler": "CircuitPython 10.0.3 on 2025-10-18; mpy-cross emitting mpy v6.3",
+  "source": "https://adafruit-circuit-python.s3.amazonaws.com/bin/mpy-cross/windows/mpy-cross-windows-10.0.3.static.exe",
+  "modules": {
+    "narbe_config.py": {
+      "source": "17f1b2b97a418234a7e09bd246fa960b84fd0573294ee03e21b262467ac5ff9a",
+      "output": "93273882108fdeb6465773ad1e18b673b9eb02c5037e0f24209bfb65fec132de"
+    },
+    "narbe_runtime.py": {
+      "source": "3ecd50236947d39d11d7f64a38db5868f85f91ccb7d5b64530a22cd828fd00de",
+      "output": "c629064e0e3ee190b5c75ff897b8f6ba23ee01d34ab2158884062f9bf45560ce"
+    }
+  }
+}

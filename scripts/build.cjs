@@ -43,6 +43,7 @@ async function build(){
     if(rel === 'bennyshub/shared/communication-fast-vendor/piper_phonemize.data')return true;
     return (await fs.stat(source)).isDirectory()||/(?:^|[-_.])(?:LICENSE|COPYING|NOTICE|CREDITS)(?:\.(?:md|txt))?$/i.test(name)||extensions.has(path.extname(name).toLowerCase());
   }});
+  await require('./trinkey-public.cjs').publishTrinkey(root,dest);
   // Only the production-scoped ZIP linked by the setup page is public.
   runPackage([]);
   await fs.mkdir(path.join(dest,'bennyshub/downloads'),{recursive:true});
