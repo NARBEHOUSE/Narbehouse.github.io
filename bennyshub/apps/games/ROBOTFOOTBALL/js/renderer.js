@@ -588,6 +588,13 @@
       const expected=arm.parent.localToWorld(reachable.clone());
       return actual.distanceTo(expected);
     }
+    _orientFootball(ball,axis,outward) {
+      // The long axis is local +Z and the lace panel is local +Y.
+      // Face the laces out along the field, independent of the camera.
+      const laces=outward.clone().addScaledVector(axis,-outward.dot(axis)).normalize();
+      const side=new T.Vector3().crossVectors(laces,axis).normalize();
+      ball.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(side,laces,axis));
+    }
     _poseFootball(model,p,s,mode,dt) {
       const center=new T.Vector3(),axis=new T.Vector3();
       const ready=mode==='ready'||mode==='handoff',throwing=mode==='throw';
@@ -616,9 +623,7 @@
         if(t===1)model.handoffGripStart=null;
       }
       const ball=model.gripBall;ball.visible=true;ball.position.copy(center);
-      ball.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),axis);
-      // Put the lace panel outside the chest, so the grip reads from the chase camera.
-      ball.quaternion.multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),ready?-.4:.5));
+      this._orientFootball(ball,axis,new T.Vector3(0,0,1));
       let error=0;
       if(both){
         const outward=new T.Vector3(0,0,1).addScaledVector(axis,-axis.z).normalize();
@@ -665,7 +670,7 @@
       if(tee){
         // Up on its point, leaning a touch back toward the kicker, a fingertip on top.
         const d=k.dir||(s.possession==='away'?-1:1),axis=new T.Vector3(0,1,-.12*d).normalize(),holderModel=this.playerModels.get(k.holderId);
-        position.set(k.spot.x,k.tee?.36:.24,k.spot.z);this.ball.position.copy(position);this.ball.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),axis);
+        position.set(k.spot.x,k.tee?.36:.24,k.spot.z);this.ball.position.copy(position);this._orientFootball(this.ball,axis,new T.Vector3(0,0,d));
         if(holderModel&&holderModel.kneel>.05){
           const arm=holderModel.arms[0],hand=arm.userData.hand;holderModel.group.updateMatrixWorld(true);
           const top=arm.parent.worldToLocal(position.clone().addScaledVector(axis,.245+.1)),centre=arm.parent.worldToLocal(position.clone());

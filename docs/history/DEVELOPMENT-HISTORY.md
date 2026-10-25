@@ -2,6 +2,12 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-25 — Face Robot Football laces outward
+
+Scope: football appearance only, as requested for PC Hub and web. Changed files: bennyshub/apps/games/ROBOTFOOTBALL/js/renderer.js (Electron port: YES, matching desktop edit) and docs/history/DEVELOPMENT-HISTORY.md (Electron port: NO, web development record). Align the lace panel with the outward direction perpendicular to the football's long axis. Place kicks face downfield for either team; held balls face away from the carrier's chest, including punts and returns. Preserve ball position, grip, flight spin and gameplay.
+
+Verification: both renderer files pass JavaScript syntax checks; all 69 existing simulation checks and 14 season checks pass. The bundled Three.js engine verifies 16 orientation cases across both editions and field directions, plus 168 held-pose animation frames. GUI verification was stopped after the isolated Electron launch failed and the user reported an exception-breakpoint popup; no visual pass is claimed. The owner authorized website publication on October 25; the Pages workflow runs the website checks before deploying this change. No installer rebuild.
+
 ## 2026-10-24 — Make Save & test navigable and show completion
 
 Scope: configurator website UI only; Electron port: **NO** for every changed file. No firmware, device bindings, Hub files or deployment changed. Prior copies of the three UI files are in WEBSITES/tmp/trinkey-completion-before-20261024.
