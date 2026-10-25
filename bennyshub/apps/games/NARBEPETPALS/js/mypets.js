@@ -7,9 +7,9 @@
 const PETS_KEY='narbepetpals:pets:v1', MAX_PETS=5;
 const newPetId=()=>'p'+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36);
 /* The pets kept safe (not the one being played). Each is checked like any save. */
-function otherPets(){ const raw=readJSON(PETS_KEY); if(!Array.isArray(raw)) return []; let fix=false;
-  const list=raw.map(p=>{ let c=null; try{ c=cleanSave(p); }catch(e){} if(c&&!(p&&p.id)) fix=true; return c; }).filter(Boolean);
-  if(fix) writeJSON(PETS_KEY,list); return list; }
+function otherPets(){ const raw=readJSON(PETS_KEY); if(!Array.isArray(raw)) return [];
+  const list=raw.map(p=>{ try{ return cleanSave(p); }catch(e){ return null; } }).filter(Boolean);
+  persistSaveUpgrade(PETS_KEY,raw,list); return list; }
 const allPets=()=>(state?[state]:[]).concat(otherPets().filter(p=>!state||p.id!==state.id));
 const petCount=()=>allPets().length;
 function keepSafe(pet){ const list=otherPets().filter(p=>p.id!==pet.id); list.unshift(JSON.parse(JSON.stringify(pet))); writeJSON(PETS_KEY,list.slice(0,MAX_PETS)); }

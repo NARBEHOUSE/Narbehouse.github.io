@@ -1,0 +1,148 @@
+/* Individual piano choices and their musical-symbol feedback. */
+.nss-free.show { display: flex; flex-direction: column; gap: 16px; }
+.nss-free > * { flex-shrink: 0; }
+.nss-free .nss-bar { min-height: 58px; }
+.nss-free-stage {
+    position: relative; isolation: isolate; overflow: hidden; flex: 1 0 340px;
+    min-height: 340px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 14px 16px 130px; border: 2px solid #41516c;
+    border-radius: 24px;
+    background: radial-gradient(ellipse at 20% 30%, #17374e, transparent 65%),
+                radial-gradient(ellipse at 85% 70%, #30214b, transparent 65%), #0c172c;
+}
+.nss-free-staff { position: absolute; left: 5%; right: 5%; top: 25%; height: 42%; display: flex; flex-direction: column; justify-content: space-between; z-index: -1; }
+.nss-free-staff i { display: block; height: 2px; background: #6d8aa32b; }
+.nss-free-symbol { width: clamp(110px, 17vh, 170px); height: clamp(110px, 17vh, 170px); flex: none; }
+.nss-free-symbol svg { width: 100%; height: 100%; filter: drop-shadow(0 5px 0 #070c1e) drop-shadow(0 0 12px #759aef60); }
+.nss-free-symbol.playing { animation: nss-music-play .65s ease-out; }
+.nss-free-note-name { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.15; }
+.nss-free-history { position: absolute; bottom: 14px; left: 16px; right: 16px; }
+.nss-free-history-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.nss-free-trail { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; gap: clamp(5px, 1vw, 12px); min-height: 80px; }
+.nss-free-history-key { position: relative; width: 88px; min-width: 0; flex: 0 1 88px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #263d52; border-top: 6px solid var(--note-color); border-radius: 4px 4px 12px 12px; background: #fffaf0; color: #18334a; box-shadow: inset 0 -4px #d3cbb8; }
+.nss-free-history-key.black { background: #203446; color: #fff; box-shadow: inset 0 -4px #0b1d2a; }
+.nss-free-history-key[aria-current] { outline: 3px solid currentColor; outline-offset: 2px; }
+.nss-free-history-number { font-size: 15px; line-height: 1; }
+.nss-free-history-note { font-size: clamp(20px, 3vw, 28px); line-height: 1; font-weight: 700; text-align: center; min-height: 44px; display: grid; align-items: center; }
+.nss-free-history-key.arriving { animation: nss-music-arrive .4s ease-out; }
+.nss-free-history-pick {
+    position: absolute; inset: 0; width: 100%; height: 100%; padding: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    border: 0; border-radius: inherit; background: transparent; color: inherit;
+    font: inherit; cursor: pointer; touch-action: manipulation;
+}
+.nss-free-history-pick.nss-focus, .nss-free-history-pick.nss-focus-full {
+    outline: none !important; translate: none;
+    box-shadow: inset 0 0 0 5px var(--focus-color), inset 0 0 0 8px var(--focus-ink) !important;
+}
+.nss-free-history-pick[data-narbe-scan-paused]::after { content: ''; position: absolute; inset: 5px; border: 3px dotted var(--focus-ink); pointer-events: none; }
+.nss-free-stage.deleting .nss-free-symbol { display: none; }
+.nss-free-scroll { overflow-y: hidden; }
+.nss-free-scroll.nss-focus, .nss-free-scroll.nss-focus-full { translate: none; }
+.nss-free-scroll.nss-focus-full .nss-key.white { background: var(--focus-color) !important; }
+.nss-free-scroll.nss-focus-full .nss-key.white .nss-key-label { color: var(--focus-ink); }
+.nss-free-piano { position: relative; width: 100%; min-width: 896px; height: clamp(180px, 25vh, 260px); }
+.nss-free-key { padding: 0; margin: 0; min-height: 0; min-width: 0; width: calc(100% / 8); transition: none; z-index: 1; touch-action: manipulation; }
+.nss-free-key.black { width: calc(100% / 8 * .62); z-index: 2; }
+.nss-free-key .nss-key-label { display: block; pointer-events: none; bottom: 16px; }
+.nss-free-key.nss-focus, .nss-free-key.nss-focus-full {
+    outline: none !important; translate: none; z-index: 1;
+    box-shadow: inset 0 0 0 6px var(--focus-color), inset 0 0 0 10px var(--focus-ink) !important;
+}
+.nss-free-key.black.nss-focus, .nss-free-key.black.nss-focus-full { z-index: 3; }
+.nss-free-key.nss-focus-full .nss-key-label { color: var(--focus-ink) !important; }
+.nss-free-key[data-narbe-scan-paused]::after { content: ''; position: absolute; inset: 8px; border: 4px dotted var(--focus-ink); border-radius: 4px; pointer-events: none; }
+.nss-free .nss-song-foot { margin-top: auto; }
+.nss-free .nss-song-actions .nss-ctrl { min-width: 0; }
+.nss-free .nss-song-actions button:disabled { opacity: .55; cursor: default; }
+
+[data-look="contrast"] .nss-free-stage { background: #000; border-color: #fff; border-radius: 0; }
+[data-look="contrast"] .nss-free-symbol { --free-main: white; --free-deep: white; --free-light: white; }
+[data-look="contrast"] .nss-free-symbol svg { filter: none; }
+[data-look="contrast"] .nss-free-staff { display: none; }
+[data-look="contrast"] .nss-free-history-key { border-color: #fff; background: #fff; color: #000; box-shadow: none; }
+[data-look="contrast"] .nss-free-history-key.black { background: #000; color: #fff; }
+[data-look="contrast"] .nss-free-history-key[aria-current] { outline-color: #fff; }
+@keyframes nss-music-play { 0% { transform: translateY(8px) scale(.94); } 45% { transform: translateY(-4px) scale(1.06); } 100% { transform: none; } }
+@keyframes nss-music-arrive { from { transform: translateY(8px); opacity: .25; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .nss-free-symbol.playing, .nss-free-history-key.arriving { animation: none; } }
+@media (max-width: 600px) {
+    .nss-free.show { gap: 12px; }
+    .nss-free-stage { min-height: 340px; flex-basis: 340px; }
+}
+@media (max-width: 900px) {
+    .nss-free-trail { display: grid; grid-template-columns: repeat(5, minmax(0, 88px)); }
+    .nss-free-history-key { width: 100%; }
+    .nss-free-stage { min-height: 425px; flex-basis: 425px; padding-bottom: 220px; }
+    .nss-free .nss-song-foot { flex-direction: column; align-items: stretch; }
+    .nss-free .nss-song-foot .nss-hint { max-width: none; }
+    .nss-free .nss-song-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    [data-look] .nss-free { padding: 8px 16px; gap: 8px; }
+    .nss-free .nss-bar { min-height: 48px; }
+    .nss-free-stage {
+        min-height: 0; flex: 1 0 auto; padding: 8px;
+        display: grid; grid-template-columns: 60px minmax(0, 1fr);
+        align-content: center; justify-items: center; gap: 8px;
+    }
+    .nss-free-symbol { width: 60px; height: 60px; }
+    .nss-free-note-name { font-size: 28px; }
+    .nss-free-history { position: static; grid-column: 1 / -1; width: 100%; }
+    .nss-free-history-title { font-size: 16px; margin-bottom: 8px; }
+    .nss-free-trail { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; min-height: 72px; }
+    .nss-free-history-key { height: 72px; }
+    .nss-free-history-note { font-size: 20px; }
+    .nss-free-scroll { padding: 10px; }
+    .nss-free-piano { height: clamp(130px, 20vh, 180px); }
+    .nss-free .nss-song-actions { gap: 10px; }
+    .nss-free-stage.deleting { padding: 10px; }
+    .nss-free-stage.deleting .nss-free-note-name { grid-column: 1 / -1; }
+    /* Include the card border: each actual button is at least 64px wide. */
+    .nss-free-stage.deleting .nss-free-trail { grid-template-columns: repeat(4, minmax(68px, 1fr)); }
+    .nss-free-stage.deleting .nss-free-history-key { height: 80px; }
+}
+@media (max-width: 360px) {
+    .nss-free-stage.deleting .nss-free-trail { grid-template-columns: repeat(3, minmax(68px, 1fr)); }
+}
+@media (orientation: landscape) {
+    [data-look="studio"] .nss-free { padding-block: 12px; gap: 12px; }
+}
+/* On a sideways phone, spend the height on keys and controls. History keeps
+   its order and the page can still scroll when text or the editor needs room. */
+@media (orientation: landscape) and (max-height: 500px) {
+    [data-look] .nss-free { padding: 8px 20px; gap: 6px; }
+    [data-look] .nss-free .nss-bar { min-height: 40px; padding-block: 4px; }
+    .nss-free .nss-bar-title { font-size: 24px; }
+    .nss-free-stage, .nss-free-stage.deleting {
+        min-height: 0; flex: 1 0 auto; padding: 8px;
+        display: grid; grid-template-columns: 96px minmax(0, 1fr);
+        align-content: center; align-items: center; gap: 10px;
+    }
+    .nss-free-symbol { display: none; }
+    .nss-free-note-name { font-size: 26px; text-align: center; }
+    .nss-free-stage.deleting .nss-free-note-name { grid-column: auto; }
+    .nss-free-history { position: static; grid-column: auto; width: 100%; }
+    .nss-free-history-title { font-size: 16px; margin-bottom: 6px; }
+    .nss-free-trail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; min-height: 64px; }
+    .nss-free-history-key { width: 100%; height: 64px; }
+    .nss-free-history-note { font-size: 20px; min-height: 40px; }
+    .nss-free-stage.deleting .nss-free-trail { grid-template-columns: repeat(5, minmax(68px, 1fr)); }
+    .nss-free-stage.deleting .nss-free-history-key { height: 80px; }
+    .nss-free-scroll { padding: 10px; }
+    .nss-free-piano { height: 104px; }
+    .nss-free-scroll { padding-block: 9px; }
+    .nss-free .nss-song-foot { flex-direction: row; align-items: center; }
+    .nss-free .nss-song-foot .nss-hint { max-width: 40%; font-size: 15px; }
+    .nss-free .nss-song-actions { display: flex; gap: 10px; flex: 1; min-width: 0; }
+    .nss-free .nss-song-actions .nss-ctrl { flex: 1; min-height: 64px; padding: 8px 10px; font-size: 18px; }
+}
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 800px) {
+    .nss-free-stage:not(.deleting) .nss-free-trail { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 650px) {
+    .nss-free .nss-song-foot { flex-direction: column; align-items: stretch; }
+    .nss-free .nss-song-foot .nss-hint { max-width: none; }
+    .nss-free .nss-song-actions { display: grid; }
+    .nss-free-stage.deleting .nss-free-trail { grid-template-columns: repeat(4, minmax(68px, 1fr)); }
+}

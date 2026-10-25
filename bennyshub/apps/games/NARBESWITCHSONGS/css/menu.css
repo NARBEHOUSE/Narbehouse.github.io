@@ -1,0 +1,67 @@
+/* A full-width piano above two independent, large switch choices. */
+.nss-menu { padding: 12px; align-items: flex-start; }
+.nss-menu .nss-card-menu { width: 100%; min-height: 100%; height: auto; margin: 0; padding: 12px 24px 22px; gap: 14px; }
+.nss-card-menu > * { flex-shrink: 0; }
+.nss-menu-piano { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: contain; object-position: center top; border-radius: 20px; }
+.nss-card-menu .nss-tiles { flex: 1 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.nss-card-menu .nss-tile { min-height: 128px; padding: 14px; align-items: center; text-align: center; gap: 8px; }
+.nss-card-menu .nss-tile-label { font-size: clamp(34px, 4vw, 54px); }
+.nss-card-menu .nss-tile-description { font-size: clamp(20px, 2vw, 28px); line-height: 1.25; }
+.nss-card-menu .nss-util { gap: 24px; }
+.nss-card-menu .nss-util .nss-btn { min-height: 80px; font-size: clamp(24px, 2.5vw, 34px); font-weight: 700; }
+.nss-card-menu .nss-sub { font-size: clamp(24px, 2.5vw, 32px); line-height: 1.2; }
+
+/* Warm storybook colours; the shared scan ring keeps its own contrast. */
+[data-look="studio"] .nss-menu { background: #b6e8ee; padding: 12px; color-scheme: light; }
+[data-look="studio"] .nss-menu .nss-card-menu {
+    --text: #18334a;
+    --muted: #314a5a;
+    background: #fff6df;
+    border: 3px solid #14798a;
+    border-radius: 32px;
+    box-shadow: none;
+    color: var(--text);
+}
+[data-look="studio"] .nss-card-menu .nss-brand-title {
+    color: #146779;
+    font-size: clamp(44px, 6vw, 80px);
+    letter-spacing: -.025em;
+    margin-top: 4px;
+}
+[data-look="studio"] .nss-card-menu .nss-brand-narbe { color: #315b63; font-size: 16px; letter-spacing: .12em; }
+[data-look="studio"] .nss-card-menu .nss-sub { color: #314a5a; }
+[data-look="studio"] .nss-card-menu .nss-ready { color: #236451; font-size: 18px; }
+[data-look="studio"] .nss-card-menu .nss-ready i { background: #236451; width: 12px; height: 12px; }
+[data-look="studio"] .nss-card-menu .nss-btn {
+    border: 3px solid #254d5e;
+    border-radius: 24px;
+    box-shadow: 0 5px 0 #254d5e;
+    background: #d5eff4;
+    color: var(--text);
+}
+[data-look="studio"] .nss-card-menu .nss-tile-song { background: #ffd15c; }
+[data-look="studio"] .nss-card-menu .nss-tile-free { background: #ffb6a1; }
+[data-look="studio"] .nss-card-menu .nss-tile-label { font-size: clamp(34px, 4vw, 54px); }
+[data-look="studio"] .nss-card-menu .nss-btn:hover { border-color: #0b566b; }
+[data-look="studio"] .nss-card-menu .nss-util .nss-btn { font-size: clamp(24px, 2.5vw, 34px); font-weight: 700; }
+.nss-card-menu .nss-focus-full .nss-tile-description { color: var(--focus-ink, #1a1008); }
+
+@media (orientation: portrait) {
+    .nss-card-menu .nss-util { grid-template-columns: 1fr; gap: 18px; }
+    .nss-menu .nss-card-menu { gap: 20px; }
+}
+@media (max-width: 600px) {
+    .nss-menu .nss-card-menu { padding: 18px 16px 22px; gap: 20px; }
+    .nss-card-menu .nss-tiles { grid-template-columns: 1fr; }
+    .nss-card-menu .nss-card-top { flex-wrap: wrap; }
+    .nss-card-menu .nss-status-slot { min-width: 0; }
+}
+@media (max-height: 600px) and (min-width: 601px) {
+    .nss-menu .nss-card-menu { gap: 12px; padding-block: 12px 18px; }
+    [data-look="studio"] .nss-card-menu .nss-brand-title,
+    .nss-card-menu .nss-brand-title { font-size: 42px; }
+    .nss-card-menu .nss-tile { min-height: 96px; }
+    [data-look="studio"] .nss-card-menu .nss-tile-label,
+    .nss-card-menu .nss-tile-label { font-size: 34px; }
+    .nss-card-menu .nss-util .nss-btn { min-height: 64px; }
+}

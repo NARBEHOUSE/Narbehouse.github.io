@@ -135,13 +135,22 @@ function framedPicture(g,x,y,w,h,frame){ frame=frame||'#8A6234';
   rect(g,ix+iw*.24,iy+ih*.42,.8,ih*.2,'#6A4428'); pxEll(g,ix+iw*.24+.4,iy+ih*.38,1.8,2,'#3E7A4A'); g.restore(); }
 
 /* ---- A leafy potted plant in a clay pot with a rim, and a little round café table ---- */
-function pottedPlant(g,x,base,s){ s=s||1; const ph=8*s, top=base-ph, tw=5*s, bw=3.6*s;
-  const leaves=[[-.2,-1.9,-.5],[.2,-1.9,.5],[-.6,-1.2,-1],[.6,-1.2,1],[0,-2.2,0],[-.9,-.6,-1.3],[.9,-.6,1.3]];
-  leaves.forEach(([dx,dy])=>pxEll(g,x+dx*7*s,top+dy*6*s,3.2*s+.6,1.9*s+.6,INK));
-  leaves.forEach(([dx,dy],i)=>{ const c=i%2?'#5E9E5A':'#7FB86E'; pxEll(g,x+dx*7*s,top+dy*6*s,3.2*s,1.9*s,c); pxEll(g,x+dx*7*s-.6*s,top+dy*6*s-.5*s,1.4*s,.6*s,shade(c,.18)); });
-  g.fillStyle=INK; g.beginPath(); g.moveTo(x-tw-.6,top-.4); g.lineTo(x+tw+.6,top-.4); g.lineTo(x+bw+.6,base+.5); g.lineTo(x-bw-.6,base+.5); g.fill();
-  g.fillStyle='#D8765A'; g.beginPath(); g.moveTo(x-tw,top); g.lineTo(x+tw,top); g.lineTo(x+bw,base); g.lineTo(x-bw,base); g.fill();
-  rect(g,x-tw-.8,top-.6,tw*2+1.6,2.6*s,INK); rect(g,x-tw-.2,top,tw*2+.4,1.8*s,'#E8906E'); rect(g,x-tw-.2,top+1.8*s-.5,tw*2+.4,.5,'#B85E45'); rect(g,x-tw*.6,top+2.4*s,1,ph-3*s,'#E8906E'); }
+function pottedPlant(g,x,base,s=1){ g.save(); g.translate(x,base); g.scale(s,s);
+  softShadow(g,0,.5,6.4,1.1,.24);
+  pxEll(g,0,0,5,.9,INK); pxEll(g,0,-.2,4.5,.6,'#BD654C');
+  g.beginPath(); g.moveTo(-5,-8); g.lineTo(5,-8); g.lineTo(3.6,-.6); g.quadraticCurveTo(0,.5,-3.6,-.6); g.closePath();
+  const clay=g.createLinearGradient(-5,0,5,0); clay.addColorStop(0,'#F0A17D'); clay.addColorStop(.45,'#D87C5B'); clay.addColorStop(1,'#B85B44');
+  g.fillStyle=clay; g.fill(); g.strokeStyle=INK; g.lineWidth=.6; g.stroke();
+  pxEll(g,0,-8,5.5,1.8,INK); pxEll(g,0,-8.2,5,1.4,'#EA9A74'); pxEll(g,0,-8.4,4.3,1,'#5A3D2A');
+  [[-2,-8.6],[1.8,-8.4],[.6,-7.9]].forEach(([xx,yy])=>pxEll(g,xx,yy,.45,.25,'#9A7046'));
+  // The stalk enters the soil. Every pointed leaf grows from that same connected stem.
+  g.lineCap='round'; g.strokeStyle='#3E6C40'; g.lineWidth=1.3; g.beginPath(); g.moveTo(.4,-8.2); g.bezierCurveTo(.5,-14,-1.7,-21,-.8,-26); g.stroke();
+  const leaf=(bx,by,tx,ty,w,c)=>{ const dx=tx-bx,dy=ty-by,len=Math.hypot(dx,dy), nx=-dy/len*w,ny=dx/len*w;
+    g.beginPath(); g.moveTo(bx,by); g.bezierCurveTo(bx+dx*.25+nx,by+dy*.25+ny,tx-dx*.25+nx,ty-dy*.25+ny,tx,ty);
+    g.bezierCurveTo(tx-dx*.3-nx,ty-dy*.3-ny,bx+dx*.15-nx,by+dy*.15-ny,bx,by); g.fillStyle=c; g.fill(); g.strokeStyle='#315B38'; g.lineWidth=.5; g.stroke();
+    g.strokeStyle='#A3CD7D'; g.lineWidth=.45; g.beginPath(); g.moveTo(bx,by); g.quadraticCurveTo(bx+dx*.55+nx*.2,by+dy*.55+ny*.2,tx-dx*.13,ty-dy*.13); g.stroke(); };
+  [[0,-11,-8.5,-15.5,2.1,'#548C50'],[0,-13,8.5,-19,2.3,'#76AD60'],[-.5,-17,-8,-22,2.2,'#689F55'],[-.9,-20,6.7,-25,2,'#82B76A'],[-1,-23,-5.4,-28,1.7,'#4E874A'],[-.9,-25,1.6,-30,1.6,'#8DBE70'],[.3,-9.5,6.6,-12,1.7,'#639A51']].forEach(a=>leaf(...a));
+  g.strokeStyle='#F6B58C'; g.lineWidth=.8; g.beginPath(); g.moveTo(-4.8,-7.8); g.quadraticCurveTo(0,-5.5,4.8,-7.8); g.stroke(); g.restore(); }
 function cafeTable(g,x,y){ rect(g,x-.9,y,1.8,14,INK); rect(g,x-.4,y,.8,14,'#5A4A3A'); pxEll(g,x,y+14,5,1.4,INK); pxEll(g,x,y+13.8,4.2,.9,'#5A4A3A');
   pxEll(g,x,y,9.6,2.6,INK); pxEll(g,x,y-.2,8.8,1.9,'#F4ECD8'); pxEll(g,x-2,y-.6,4,.6,'#FFFFFF');
   rect(g,x+1.4,y-4,3.2,3.4,INK); rect(g,x+1.8,y-3.6,2.4,2.8,'#FFFFFF'); pxRing(g,x+4.8,y-2.4,1.2,1,.5,INK); rect(g,x+1.8,y-3.6,2.4,.6,'#8A5A34'); pxEll(g,x+3,y-.6,2.6,.6,INK); }

@@ -19,22 +19,22 @@ const EVENT_GAP=[180000,600000], TASK_GAP=[360000,720000], IDLE_GAP=[90000,18000
    often, and changes the sky quietly, for players who find the busier pace too much. Surprise timers only count calm time in the
    room: they wait while a scene, a trip, a menu or reading is going on. */
 const PACE_K={medium:1,slow:2.5}, paceK=()=>PACE_K[gs.events]||1, gap=g=>rand(g[0]*paceK(),g[1]*paceK()), remindK=()=>gs.events==='slow'?2:1, idleK=()=>gs.events==='slow'?4:1;
-function holdTimers(ms){ if(!(ms>0)||ms>60000) return; nextEvent+=ms; nextIdle+=ms; nextPotty+=ms; if(state&&!state.task) nextTask+=ms; if(state&&state.pottyAt) state.pottyAt+=ms; }
-/* The potty: about once an hour of play the pet leaves one nugget on the potty pad or in the litter
-   box. If nobody cleans it up, a second one comes about 20 minutes of play later. It gets stinky after
-   a while, and only with two nuggets does the game ask for a clean-up. Only calm time in the room
-   counts, like the other timers. */
-const POTTY_GAP=[50*60000,70*60000], POTTY_SECOND=20*60000, POTTY_STINK=10*60000;
-let nextPotty=Date.now()+rand(POTTY_GAP[0]*.5,POTTY_GAP[1]*.7);
+function holdTimers(ms){ if(!(ms>0)||ms>60000) return; nextEvent+=ms; nextIdle+=ms; if(state&&!state.task) nextTask+=ms; }
+/* A saved wall-clock deadline: about two hours, including activities and time away. A due visit
+   waits for a calm moment at home. Missed visits never accumulate while the game is closed. */
+const POTTY_GAP=[100*60000,140*60000], POTTY_STINK=10*60000;
+function ensurePottyDue(now=Date.now()){ if(!Number.isFinite(state.pottyDue)||state.pottyDue<=0){ state.pottyDue=now+rand(POTTY_GAP[0],POTTY_GAP[1]); save(); } return state.pottyDue; }
 const pottyTask=()=>kind()==='cat'?'litter':'potty', isPotty=()=>state&&(state.task==='potty'||state.task==='litter');
 const pottyCount=()=>isPotty()?clamp(state.pottyN||1,1,2):0, pottyStinky=()=>isPotty()&&(pottyCount()>=2||Date.now()-(state.pottyAt||Date.now())>POTTY_STINK);
 function pottyTick(now){
-  if(isPotty()&&pottyCount()<2&&state.pottyAt&&now-state.pottyAt>POTTY_SECOND*paceK()){ state.pottyN=2; save(); play('pop',.3);
-    announce(kind()==='cat'?`Another one! ${state.name}'s litter box is getting stinky. Please scoop it.`:`Another one! ${state.name}'s potty pad is getting stinky. Please clean it up.`); lastTaskNag=now; quietUntil=now+6000; return true; }
-  if(now<nextPotty) return false; nextPotty=now+rand(POTTY_GAP[0],POTTY_GAP[1])*(gs.events==='slow'?1.3:1);
-  if(state.task){ if(!isPotty()) nextPotty=now+5*60000; return false; }
-  state.task=pottyTask(); state.pottyN=1; state.pottyAt=now; save(); refreshGameTargets(); play('pop',.3);
-  announce(kind()==='cat'?`${state.name} used the litter box. You can scoop it when you're ready.`:`${state.name} used the potty pad. You can clean it up when you're ready.`); lastTaskNag=now; quietUntil=now+6000; return true; }
+  if(now<ensurePottyDue(now)||anim||(state.task&&(!isPotty()||pottyCount()>=2))) return false;
+  const pet=state; state.pottyDue=now+rand(POTTY_GAP[0],POTTY_GAP[1]); save();
+  setCaption(`${state.name} heads to the ${kind()==='cat'?'litter box':'potty pad'}.`);
+  startAnim('need:potty',V['need:potty'].dur,()=>{ if(state!==pet) return;
+    state.pottyN=Math.min(2,pottyCount()+1); state.task=pottyTask(); state.pottyAt=Date.now(); save(); refreshGameTargets();
+    setCaption(kind()==='cat'?`${state.name} used the litter box. You can scoop it when you're ready.`:`${state.name} used the potty pad. You can clean it up when you're ready.`);
+    lastTaskNag=Date.now(); quietUntil=Date.now()+6000;
+  }); return true; }
 function setEventPace(p){ const k0=paceK(); gs.events=p; saveGS(); const r=paceK()/k0, now=Date.now(), stretch=t=>t>now?now+(t-now)*r:t;
   nextEvent=stretch(nextEvent); nextTask=stretch(nextTask); nextIdle=stretch(nextIdle); }
 const floorOf=k=>(k==='clean'&&state&&state.muddy)?0:FLOOR;
@@ -176,14 +176,24 @@ function doTask(){
 /* ---- Save and load ---- */
 function cleanOutfit(o,bow){ const out={}; if(o&&typeof o==='object') OUT_CATS.forEach(c=>{ if(OUTFITS[c].some(i=>i[0]===o[c])) out[c]=o[c]; }); if(bow&&!out.hat) out.hat='bow'; return out; }
 function migrateRoom(got){ const r=defaultRoom(), saved=state; state={room:r,msGot:got,stars:0}; try{ got.forEach(id=>{ if(DECOR_MS[id]||id==='wallpaper'||id==='photo') applyDecorMs(id); }); } finally { state=saved; } return r; }
-/* Save upgrades: a save from any older version of the game loads through cleanSave. It keeps only the
-   parts it knows, checks each one, and fills in anything new with a fresh start (a new feature simply
-   begins as "not started yet"), so an old save never breaks and the pet keeps its name, look, paw
-   prints, stage, stars, tricks, photos and home. Each save records SAVE_VER, the version that wrote it. */
-const SAVE_VER=4;
+/* All local pets and imported files pass through the same upgrade. Saves contain progress, never
+   artwork or animation code, so old pets immediately use the current scenes. Version 5 records the
+   bathroom deadline and removes retired tricks. Keep the existing storage keys to find older pets. */
+const SAVE_VER=5;
 function cleanSchool(o){ if(!o||typeof o!=='object'||Array.isArray(o)) return undefined; const cur=CLASSES[o.cur]?o.cur:null;
   return {cur,lesson:cur?clamp(Math.floor(Number(o.lesson)||0),0,2):0,done:Array.isArray(o.done)?o.done.filter((x,i,a)=>CLASSES[x]&&a.indexOf(x)===i):[]}; }
-function load(){ return cleanSave(readJSON(SAVE_KEY)||readJSON(OLD_SAVE_KEY)); }
+function persistSaveUpgrade(key,raw,updated){
+  if(JSON.stringify(raw)===JSON.stringify(updated)) return;
+  const older=p=>p&&typeof p==='object'&&(!Number.isInteger(p.ver)||p.ver<SAVE_VER);
+  // Keep one original copy before upgrading local data; never replace it on subsequent loads.
+  if((Array.isArray(raw)?raw.some(older):older(raw))){ const backup=key+':before-v'+SAVE_VER; if(readJSON(backup)===null) writeJSON(backup,raw); }
+  writeJSON(key,updated);
+}
+function load(){
+  for(const key of [SAVE_KEY,OLD_SAVE_KEY]){ const raw=readJSON(key); let pet=null; try{ pet=cleanSave(raw); }catch(e){}
+    if(pet){ persistSaveUpgrade(SAVE_KEY,key===SAVE_KEY?raw:readJSON(SAVE_KEY),pet); return pet; } }
+  return null;
+}
 function cleanSave(s){
   if(!s||typeof s!=='object'||typeof s.name!=='string') return null;
   let style=s.style;
@@ -192,13 +202,14 @@ function cleanSave(s){
   const hearts=Math.max(0,Math.floor(Number(s.hearts)||0)), msDone=Math.max(0,Math.floor(Number(s.msDone)||0));
   const got=Array.isArray(s.msGot)?s.msGot.filter(x=>typeof x==='string'):OLD_MS.slice(0,msDone);
   const stage=Number.isInteger(s.stage)?clamp(s.stage,0,3):((typeof s.grown==='boolean'?s.grown:hearts>=30)?2:0);
-  const album=Array.isArray(s.album)?s.album.filter(x=>x&&typeof x.t==='string'&&STYLES[x.st]).slice(-40):[];
+  const album=Array.isArray(s.album)?s.album.filter(x=>x&&typeof x.t==='string'&&STYLES[x.st]).slice(-40).map(p=>({...p})):[];
   album.forEach((p,i)=>{ if(typeof p.d!=='number') p.d=Date.now()-(album.length-i)*1000; });
-  return {id:(typeof s.id==='string'&&/^[\w-]{1,32}$/.test(s.id))?s.id:newPetId(),style,name:(s.name.trim().slice(0,12)||'Pal'),stats:st,hearts,stage,bowUnlocked:!!(s.bowUnlocked||s.bow),outfit:cleanOutfit(s.outfit,s.bow),album,
+  const pottyDue=Number.isFinite(s.pottyDue)&&s.pottyDue>0?s.pottyDue:Date.now()+rand(POTTY_GAP[0],POTTY_GAP[1]);
+  return {ver:SAVE_VER,id:(typeof s.id==='string'&&/^[\w-]{1,32}$/.test(s.id))?s.id:newPetId(),style,name:(s.name.trim().slice(0,12)||'Pal'),stats:st,hearts,stage,bowUnlocked:!!(s.bowUnlocked||s.bow),outfit:cleanOutfit(s.outfit,s.bow),album,
     friends:Array.isArray(s.friends)?s.friends.filter(f=>f&&typeof f.name==='string'&&STYLES[f.style]).slice(-6):[],firsts:(s.firsts&&typeof s.firsts==='object')?s.firsts:{},
     seen:Array.isArray(s.seen)?s.seen:null,stars:Math.max(0,Math.floor(Number(s.stars)||0)),msDone:got.length,msGot:got,msToys:(s.msToys&&typeof s.msToys==='object')?s.msToys:{},
-    school:cleanSchool(s.school),companions:cleanComps(s.companions,hearts),compAskAt:Number(s.compAskAt)||0,rushAt:Number(s.rushAt)||0,rushVisits:Math.max(0,Math.floor(Number(s.rushVisits)||0)),noCompOffer:!!s.noCompOffer,task:TASKS[s.task]?s.task:null,pottyN:clamp(Math.floor(Number(s.pottyN)||0),0,2),toyPlays:(s.toyPlays&&typeof s.toyPlays==='object'&&!Array.isArray(s.toyPlays))?Object.fromEntries(Object.entries(s.toyPlays).filter(([k,v])=>toyInfo(k)&&isFinite(v)).map(([k,v])=>[k,Math.max(0,Math.floor(v))])):{},pottyAt:Number(s.pottyAt)||0,muddy:!!s.muddy,seasonal:(s.seasonal&&typeof s.seasonal==='object')?s.seasonal:{},tricks:Array.isArray(s.tricks)?s.tricks.filter(t=>typeof t==='string'):[],treats:Array.isArray(s.treats)?s.treats.filter(t=>typeof t==='string'):[],gifted:Array.isArray(s.gifted)?s.gifted.filter(t=>typeof t==='string'):[],
-    lastPlace:typeof s.lastPlace==='string'?s.lastPlace:null,lastGroom:typeof s.lastGroom==='string'?s.lastGroom:null,visits:(s.visits&&typeof s.visits==='object')?s.visits:{},moreNew:s.moreNew===false?false:undefined,toys:Array.isArray(s.toys)?s.toys.filter(t=>typeof t==='string'&&toyInfo(t)):null,
+    school:cleanSchool(s.school),companions:cleanComps(s.companions,hearts),compAskAt:Number(s.compAskAt)||0,rushAt:Number(s.rushAt)||0,rushVisits:Math.max(0,Math.floor(Number(s.rushVisits)||0)),noCompOffer:!!s.noCompOffer,task:TASKS[s.task]?s.task:null,pottyN:clamp(Math.floor(Number(s.pottyN)||0),0,2),toyPlays:(s.toyPlays&&typeof s.toyPlays==='object'&&!Array.isArray(s.toyPlays))?Object.fromEntries(Object.entries(s.toyPlays).filter(([k,v])=>toyInfo(k)&&isFinite(v)).map(([k,v])=>[k,Math.max(0,Math.floor(v))])):{},pottyAt:Number(s.pottyAt)||0,pottyDue,muddy:!!s.muddy,seasonal:(s.seasonal&&typeof s.seasonal==='object')?s.seasonal:{},tricks:Array.isArray(s.tricks)?s.tricks.filter(t=>typeof t==='string'&&V['trick:'+t]):[],treats:Array.isArray(s.treats)?s.treats.filter(t=>typeof t==='string'):[],gifted:Array.isArray(s.gifted)?s.gifted.filter(t=>typeof t==='string'):[],
+    welcome:cleanWelcome(s.welcome),lastPlace:typeof s.lastPlace==='string'?s.lastPlace:null,lastGroom:typeof s.lastGroom==='string'?s.lastGroom:null,visits:(s.visits&&typeof s.visits==='object')?s.visits:{},moreNew:s.moreNew===false?false:undefined,toys:Array.isArray(s.toys)?s.toys.filter(t=>typeof t==='string'&&toyInfo(t)):null,
     room:cleanRoom(s.room)||migrateRoom(got),born:Number(s.born)||Date.now(),lastSeen:Number(s.lastSeen)||Date.now()};
 }
 let lastSave=0;
@@ -393,11 +404,35 @@ function askRain(){ showChoice(`It's raining outside. What should you and ${stat
 function runEvent(id,extra){ const key='event:'+id, d=V[key], ref={}; lockInput(2000);
   startAnim(key,d.dur,()=>{ if(d.end) d.end(ref.a); quietUntil=Date.now()+6000; lastWant=null; updateMeters(); },extra); const a=anim; ref.a=a; a.idle=true; if(d.start) d.start(a); }
 const WELCOME_AWAY=20*60*1000;
-function askWelcome(){ showChoice(`Welcome back! ${state.name} has a surprise for you. Pick a paw!`,[{label:'Left paw',fn:startWelcome},{label:'Right paw',fn:startWelcome}]); }
-function startWelcome(){ setCaption(`${state.name} has something for you...`); const t=weightedPick([['drawing',3],['postcard',3],['toy',2],['flower',2]]);
+const WELCOME_EVENTS={
+  drawing:{scene:'welcome:drawing',q:n=>`${n} has been busy with the paints! Want to see the picture?`,button:'Show me the picture',start:n=>`${n} brings over a brand-new painting.`,done:n=>`${n} painted this just for you.`},
+  postcard:{scene:'welcome:postcard',q:n=>`There is mail for ${n}! Shall we read it together?`,button:'Read the postcard',start:n=>`${n} brings you a postcard from a friend.`,done:(n,f)=>`A postcard from ${f}: I hope ${n} can play again soon!`},
+  toy:{scene:'welcome:toy',q:n=>`${n} saved a favorite toy to show you. Want to take a look?`,button:'Show me your toy',start:n=>`${n} goes to fetch the toy.`,done:n=>`${n} is happy to share a favorite toy with you.`},
+  flower:{scene:'welcome:flower',q:n=>`${n} found something colorful for you. Want to see?`,button:'See what you found',start:n=>`${n} carefully brings you a little flower.`,done:n=>`${n} picked a flower just for you.`},
+  dance:{scene:'trick:dance',q:n=>`You are back! ${n} is ready for a little dance party. Want to join in?`,button:'Have a dance party',start:n=>`${n} starts a welcome-back dance!`,done:n=>`What a happy dance! ${n} loves having you here.`},
+  cuddle:{scene:'cuddle:hearts',q:n=>`${n} would love a cozy hello. How about a cuddle?`,button:'Have a cuddle',start:n=>`Time for a welcome-back cuddle with ${n}.`,done:n=>`A quiet, happy moment together. ${n} feels loved.`},
+  stretch:{scene:'idle:stretch',q:n=>`${n} just woke up from a nap. Shall we have a big stretch together?`,button:'Stretch together',start:n=>`${n} stretches from nose to toes.`,done:n=>`That feels good! ${n} is ready to spend time with you.`},
+  zoom:{scene:'idle:zoom',q:n=>`${n} is so happy you are here! Want to watch a silly welcome-back run?`,button:'Watch the happy run',start:n=>`Here comes ${n} with the welcome-back zoomies!`,done:n=>`${n} finishes with a happy wiggle. It is good to be together.`}
+};
+const WELCOME_GREETINGS=[n=>`${n} is happy you are back!`,n=>`Hello again! ${n} is ready for some time together.`,n=>`${n} perks up when you come in. Welcome back!`,n=>`There you are! It is a good day to be with ${n}.`,n=>`${n} comes over to say hello.`,n=>`Welcome back to your cozy home with ${n}.`];
+function cleanWelcome(value){ return {
+  seen:Array.isArray(value?.seen)?value.seen.filter((id,i,a)=>typeof id==='string'&&Object.hasOwn(WELCOME_EVENTS,id)&&a.indexOf(id)===i).slice(-Object.keys(WELCOME_EVENTS).length):[],
+  greeting:Number.isInteger(value?.greeting)&&value.greeting>=0&&value.greeting<WELCOME_GREETINGS.length?value.greeting:-1
+}; }
+function welcomeGreeting(){ const memory=state.welcome=cleanWelcome(state.welcome);
+  memory.greeting=pick(WELCOME_GREETINGS.map((_,i)=>i).filter(i=>i!==memory.greeting)); save();
+  return WELCOME_GREETINGS[memory.greeting](state.name); }
+/* Each pet remembers the whole rotation across restarts. A new rotation also avoids
+   repeating the last activity, including when the player chooses to skip it. */
+function askWelcome(){ const memory=state.welcome=cleanWelcome(state.welcome), ids=Object.keys(WELCOME_EVENTS);
+  let remaining=ids.filter(id=>!memory.seen.includes(id));
+  if(!remaining.length){ const last=memory.seen[memory.seen.length-1]; remaining=ids.filter(id=>id!==last); memory.seen=[]; }
+  const id=pick(remaining), event=WELCOME_EVENTS[id]; memory.seen.push(id); save();
+  showChoice(event.q(state.name),[{label:event.button,fn:()=>startWelcome(id)},
+    {label:'Just hang out',fn:()=>{ quietUntil=Date.now()+6000; lastWant=null; setCaption(`It is good to be together, ${state.name}.`); }}]); }
+function startWelcome(t){ const event=WELCOME_EVENTS[t]; if(!event) return; setCaption(event.start(state.name));
   const f=(state.friends||[])[Math.floor(Math.random()*((state.friends||[]).length||1))]||newFriend();
-  startAnim('welcome:'+t,V['welcome:'+t].dur,()=>{ addStars(1); setCaption(`${WELCOME_DONE[t](state.name,f.name)} You earned a care star.`); quietUntil=Date.now()+6000; lastWant=null; },{fname:f.name,fstyle:f.style}); }
-const WELCOME_DONE={drawing:n=>`${n} painted you a picture while you were away.`,postcard:(n,f)=>`A postcard from ${f}: I hope ${n} can play again soon!`,toy:n=>`${n} found a toy and saved it for you.`,flower:n=>`${n} picked a flower just for you.`};
+  startAnim(event.scene,V[event.scene].dur,()=>{ addStars(1); setCaption(`${event.done(state.name,f.name)} You earned a care star.`); quietUntil=Date.now()+6000; lastWant=null; },{fname:f.name,fstyle:f.style}); }
 
 /* ================= Photo album ================= */
 let flashAt=0;
@@ -604,7 +639,7 @@ function openProgress(page){ play('choose'); progPage=page===1?1:0; const n=stat
 let settingsReturn='menu';
 const SETTINGS=[
   {id:'s-tts',k:'Text to Speech',d:'Reads the game out loud.',v:()=>voice.enabled()?'On':'Off',act:()=>{ voice.toggle(); if(voice.enabled()) voice.speak('Text to speech on'); }},
-  {id:'s-wait',k:'Wait for Reading',d:'Scanning and selections wait until the reading is finished.',v:()=>gs.waitRead?'On':'Off',act:()=>{ gs.waitRead=!gs.waitRead; saveGS(); refreshSettings(); voice.speak(gs.waitRead?'Wait for reading on. Scanning and selections wait until the reading is finished.':'Wait for reading off. You can scan while it reads.'); }},
+  {id:'s-wait',k:'Wait for Reading',d:'Auto Scan and selections wait for reading. Manual scanning can interrupt.',v:()=>gs.waitRead?'On':'Off',act:()=>{ gs.waitRead=!gs.waitRead; saveGS(); refreshSettings(); voice.speak(gs.waitRead?'Wait for reading on. Auto Scan and selections wait for reading. Manual scanning can interrupt.':'Wait for reading off. You can scan while it reads.'); }},
   {id:'s-pace',k:'Event Pace',d:'How often surprises, chores, and little moments happen.',v:()=>gs.events==='slow'?'Slow':'Medium',act:()=>{ setEventPace(gs.events==='slow'?'medium':'slow'); refreshSettings(); voice.speak(gs.events==='slow'?'Event pace slow. Surprises, chores, and little moments happen less than half as often, and reminders repeat less.':'Event pace medium. Surprises happen at the usual pace.'); }},
   {id:'s-grow',k:'Growing Up Speed',d:()=>{ const g=growGoals(); return `Baby 0 · Teen ${g[0]} · Grown-up ${g[1]} · Senior ${g[2]} paw prints`; },v:()=>({slow:'Slow',medium:'Medium',quick:'Quick'})[gs.grow]||'Medium',act:()=>{ const order=['slow','medium','quick'], i=order.indexOf(gs.grow); gs.grow=order[(i+1)%3]; saveGS(); refreshSettings(); if(state) updateHeader(); const g=growGoals(); voice.speak(`Growing up speed ${({slow:'slow',medium:'medium',quick:'quick'})[gs.grow]}. Teen at ${g[0]}, grown-up at ${g[1]}, and senior at ${g[2]} paw prints. `+(state?growChangeSay():'')); if(state) settingsNote(growNote()); }},
   {id:'s-voice',k:'Voice',d:'The voice that reads the game.',v:()=>voice.name(),act:()=>{ voice.cycle(); refreshSettings(); voice.speak('Voice, '+voice.name()); }},
@@ -770,6 +805,8 @@ function renderRoom(real){
   if(!reduceMotion) p.dy=Math.floor(now/800)%2;
   if(now%4300<150) p.eyes='closed';
   if(def){ p.wag=kind()==='cat'?300:120; if(def.pose) def.pose(p,e,a); } else if(inGame) applyMood(p,now);
+  // Water and grooming scenes change the drawn outfit only; saved clothes stay ready to put back on.
+  p.bare=layer!=='dress'&&!!(def&&(typeof def.undressed==='function'?def.undressed(e,a):def.undressed));
   if(layer==='dress'){ p.eyes=Math.floor(real/2600)%4===0?'happy':'open'; p.mouth='tongue'; }
   p.dull=state.stats.clean<WANT; p.mud=state.muddy&&kind()==='dog';
   p.tail=p.wag?[0,1,0,2][Math.floor(now/p.wag)%4]:0;
@@ -783,9 +820,12 @@ function renderRoom(real){
   if(!(def&&def.noShadow)) softShadow(ctx,64+p.dx,85.5,isSide(p)?(G().bodyRx+6):(p.dy<0?G().bodyRx:G().bodyRx+2.5),2.4,.32);
   const cy=def&&def.clipY!=null?(typeof def.clipY==='function'?def.clipY(e,a):def.clipY):null;
   if(cy!=null){ ctx.save(); ctx.beginPath(); ctx.rect(VIEW.x,VIEW.y,VIEW.w,cy-VIEW.y); ctx.clip(); }
-  const fit=layer==='dress'?dressOutfit():(layer==='choice'&&choicePreview&&choicePreview.outfit)?Object.assign({},state.outfit,choicePreview.outfit):(def&&def.fit)?Object.assign({},state.outfit,def.fit):state.outfit;
-  drawPetPose(ctx,state.style,stageName(),p,fit,PETX+p.dx,PETY+p.dy,hlOn('cuddle'));
-  if(p.mud&&!isSide(p)) drawMud(p);
+  if(def&&def.clipPet){ ctx.save(); def.clipPet(e,a,p); }
+  const fit=p.bare?null:layer==='dress'?dressOutfit():(layer==='choice'&&choicePreview&&choicePreview.outfit)?Object.assign({},state.outfit,choicePreview.outfit):(def&&def.fit)?Object.assign({},state.outfit,def.fit):state.outfit;
+  if(def&&def.drawPet) def.drawPet(e,a,p,fit);
+  else { drawPetPose(ctx,state.style,stageName(),p,fit,PETX+p.dx,PETY+p.dy,hlOn('cuddle'));
+    if(p.mud&&!isSide(p)) drawMud(p); }
+  if(def&&def.clipPet) ctx.restore();
   if(cy!=null) ctx.restore();
   if(!def&&!paused&&inGame) drawMoodFx(p,now);
   if(def&&def.front) def.front(e,a,p);
@@ -909,10 +949,11 @@ setInterval(tick,1000);
 
 function enterGame(returning,fresh){
   trip=null; sayQ.length=0;
+  ensurePottyDue();
   if(paused){ pauseOffset+=performance.now()-pausedAt; paused=false; }
   configureActions(); warmVoices(kind(),stageName()); bgKey=null; rushSessionStart(returning);
   { const t0=Date.now(), k=paceK(); nextEvent=t0+rand(EVENT_GAP[0],EVENT_GAP[0]*1.6)*k; if(!state.task) nextTask=t0+rand(TASK_GAP[0]*.6,TASK_GAP[0])*k; lastTaskNag=t0; }
-  const n=state.name, msg=fresh?`Welcome home, ${n}!`:returning?`${n} missed you!`:`${n} is happy to see you.`;
+  const n=state.name, msg=fresh?`Welcome home, ${n}!`:returning?welcomeGreeting():`${n} is happy to see you.`;
   setCaption(msg,false); show('game',msg); updateMeters(); lastTick=Date.now(); nextIdle=Date.now()+rand(20000,35000)*idleK(); lastWant=currentWant(); quietUntil=Date.now()+8000;
   anim=null; startAnim('hello:0',V['hello:0'].dur,()=>{ lastWant=null; if(welcomeDue&&!fresh){ welcomeDue=false; askWelcome(); } });
   later(()=>play(friendlyNoise(),.45),120);
@@ -978,7 +1019,7 @@ function openSaveWarn(){ play('choose'); $('#load-title').textContent='Before yo
 /* Download every pet in one save file; returns the file's name. "pet" is the pet being played (so older
    versions of the game can still load it), "pets" is all of them, and "playing" says who was out. */
 function downloadSave(){ save(); const pets=allPets();
-  const data={app:'NARBE Pet Pals',format:2,savedAt:new Date().toISOString(),pet:state,pets,playing:state.id,settings:settingsForFile()};
+  const data={app:'NARBE Pet Pals',format:2,gameBuild:GAME_BUILD,savedAt:new Date().toISOString(),pet:state,pets,playing:state.id,settings:settingsForFile()};
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'}), url=URL.createObjectURL(blob), a=document.createElement('a'), d=new Date();
   const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   a.href=url; a.download='NARBE-Pet-Pals-'+(pets.length>1?pets.length+'-Pets':(kind()==='cat'?'Cat':'Dog')+'-'+(state.name.replace(/[^A-Za-z0-9]/g,'')||'Pet'))+'-'+stamp+'.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },2000);

@@ -11,6 +11,8 @@ const later=(fn,ms)=>setTimeout(fn,ms);
 const weightedPick=list=>{ const tot=list.reduce((s,[,w])=>s+w,0); let r=Math.random()*tot; for(const [id,w] of list){ r-=w; if(r<=0) return id; } return list[list.length-1][0]; };
 
 /* ================= Storage ================= */
+// Match the release query on game scripts/styles in index.html when publishing an update.
+const GAME_BUILD='2026.10.25.4';
 /* Pocket Pets saves (pocketpup:*) are read once and carried over, so nobody loses their pet. */
 const SAVE_KEY='narbepetpals:v2', OLD_SAVE_KEY='pocketpup:v1', GAME_SET_KEY='narbepetpals:settings:v1', OLD_SET_KEY='pocketpup:settings:v2',
   SCAN_FALLBACK_KEY='narbepetpals:scan-fallback', TTS_FALLBACK_KEY='narbepetpals:tts-fallback';
@@ -48,9 +50,14 @@ function localVoice(){ const vs=voiceList(); return vs.find(v=>v.name===ttsLocal
    the hub's voice manager, so this watches speechSynthesis.speaking, with a time cap in case speech
    never starts or never reports that it ended. */
 const narr={on:false,t0:0,seen:false,max:0};
-/* With Wait for Reading on, scanning (by hand or Auto Scan) and selections wait for narration, so a
-   misclick or a burst of presses never cuts off what is being read. */
+/* Auto Scan and selections wait for narration. A deliberate manual scan can interrupt it,
+   including a speech engine that remains stuck in its speaking/pending state. */
 const readingHold=()=>gs.waitRead&&narrating();
+function interruptReading(){
+  narr.on=false;
+  try{ const m=VM(); if(m&&m.cancel) m.cancel(); else speechSynthesis.cancel(); }catch(e){}
+  window.petChoice?.updateClock();
+}
 function markNarr(text){ if(!voice.enabled()){ narr.on=false; return; }
   const t0=performance.now(); Object.assign(narr,{on:true,t0,seen:false,max:t0+Math.min(30000,1500+String(text).length*95)}); }
 function narrating(){ if(!narr.on) return false;

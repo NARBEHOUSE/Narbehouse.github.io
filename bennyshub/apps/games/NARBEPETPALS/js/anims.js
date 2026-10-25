@@ -20,6 +20,48 @@ const collarAt=p=>PETY+p.dy+G().collar;
 const chestAt=p=>PETY+p.dy+G().chest;
 const arc=(t,h)=>-Math.sin(clamp(t,0,1)*Math.PI)*h;
 const ph=(e,a,b)=>clamp((e-a)/(b-a),0,1);
+const ease=t=>{ t=clamp(t,0,1); return t*t*(3-2*t); };
+const motionHold=(e,a,b,c,d)=>ease(ph(e,a,b))*(1-ease(ph(e,c,d)));
+const poseStep=t=>Math.round(t*8)/8;
+function reachPaw(p,side,amount,gesture='high',sway=0){ if(amount<=0) return;
+  const S=STYLES[state.style], P=breedP(PARAMS[S.kind][stageName()],S,state.style+':'+stageName()), W=P.paw, r=frontLegRig(P,S,side);
+  const k=clamp(amount,0,1), high=gesture==='high', tucked=gesture==='tuck';
+  const ex=r.sx+side*W.rx*.18, ey=r.sy+r.upper*.82;
+  const tx=ex+side*(high?W.rx*.65+clamp(sway,-2,2)*.15:tucked?.2:Math.min(r.lower*.55,W.rx*.95));
+  const ty=ey+r.lower*(high?-.65:tucked?-.35:.2)+(high?clamp(sway,-2,2)*.12:0);
+  const q={x:snap(lerp(r.sx,tx,k)),y:snap(lerp(W.cy+.45,ty,k)),ex:snap(lerp(r.sx,ex,k)),ey:snap(lerp(r.sy+r.upper,ey,k)),lift:poseStep(k),pad:high&&k>.85?1:0};
+  const j=forelegJoints(P,S,side,q); Object.assign(q,{x:j.x,y:j.y,ex:j.ex,ey:j.ey}); (p.paws||(p.paws={}))[side]=q;
+}
+function pawPoint(p,side=1){ const q=p.paws&&p.paws[side]; return q?{x:PETX+p.dx+q.x,y:PETY+p.dy+q.y}:null; }
+function trickHand(p,e,mode,start,end){ const q=pawPoint(p); if(!q||e<start||e>end) return;
+  // Arrive at a comfortable, stationary target; the pet never has to follow a retreating hand.
+  const target={dx:p.dx,dy:p.dy}; reachPaw(target,1,1,mode==='high'?'high':'offer'); const at=pawPoint(target);
+  const k=motionHold(e,start,start+350,end-300,end), S=STYLES[state.style], W=breedP(PARAMS[S.kind][stageName()],S,state.style+':'+stageName()).paw;
+  const x=at.x+(mode==='gentle'?-1.4:W.rx*.8)+(1-k)*30, y=at.y+(mode==='gentle'?W.ry+1.2:0);
+  const people=peopleNow(), skin=people?SKIN_TONES[people[0][0]][0]:'#F2C9A5', sleeve=people?SLEEVES[people[0][1]]:'#6E9B7B';
+  // An open palm for high-five, knuckles for a bump, or a supporting hand under a gentle paw.
+  if(mode==='high'){ blit(ctx,SPR.highFiveHand,x-3.5,y-11.3);
+  } else { const yy=y; pxEll(ctx,x+2,yy,4,mode==='gentle'?1.8:3,INK); pxEll(ctx,x+2,yy,3.5,mode==='gentle'?1.2:2.5,skin);
+    if(mode!=='gentle') for(let i=0;i<3;i++) pxLine(ctx,x+i*1.4,yy-1.6,x+i*1.4,yy-.2,'#B98065',.5);
+    rect(ctx,x+5,yy-1,9,3,skin); rect(ctx,x+11,yy-2,7,5,sleeve); }
+}
+function leapPose(p,e,start,end,height){ const moving=p.body==='run'||p.body==='walk'; if(!moving){p.body='stand';p.frame=0;}
+  if(e<start){ p.crouch=poseStep(ease(ph(e,start-240,start))); }
+  else if(e<=end){ const k=ph(e,start,end); p.body='jump'; p.dy=arc(k,height); p.tuck=poseStep(Math.sin(k*Math.PI)); }
+  else p.crouch=poseStep(motionHold(e,end,end+90,end+90,end+330)*.65);
+}
+function sitTrickPose(p,e,start=350){ p.dy=0; p.eyes=e<start?'open':'happy';
+  if(e<start+400){ p.body='stand'; p.crouch=poseStep(ease(ph(e,start,start+400))); p.face=1; p.frame=0; }
+  else { p.headDy=-1; p.wag=200; } }
+function dancePose(p,e,end){ const k=motionHold(e,0,350,end-350,end), t=e/240;
+  p.dx=Math.sin(t)*3*k; p.dy=0; p.headDy=Math.round(Math.sin(t)*k); p.eyes='happy'; p.mouth='open'; p.wag=120;
+  reachPaw(p,-1,k*(.55+.25*Math.sin(t)),'tuck'); reachPaw(p,1,k*(.55-.25*Math.sin(t)),'tuck'); }
+function walkBetween(p,e,start,end,from,to){ const k=ease(ph(e,start,end)); p.dx=lerp(from,to,k); p.dy=0; p.face=to>=from?1:-1;
+  p.body=e>start&&e<end?'walk':'stand'; p.frame=p.body==='walk'?Math.floor(e/140)%4:0; }
+function playBounds(p,e,period,range,speed,height,end){ const t=Math.min(e,end), local=t%period, fade=1-ease(ph(e,end-400,end));
+  p.dx=Math.sin(t/speed)*range*fade; p.face=Math.cos(t/speed)>0?1:-1; p.body='run'; p.frame=Math.floor(e/110)%4; p.dy=0; p.eyes='happy'; p.mouth='open';
+  if(local<650&&e<end-500) leapPose(p,local,180,520,height);
+  if(e>=end){ p.dx=0; p.body=null; p.mouth='tongue'; } }
 const slide=(e,dur,inMs,outMs,off)=>e<inMs?lerp(off,0,e/inMs):e>dur-outMs?lerp(0,off,ph(e,dur-outMs,dur)):0;
 const petNoise=()=>kind()==='dog'?'pet:bark':'pet:meow';
 const happyNoise=()=>kind()==='dog'?'pet:barkHappy':'pet:trill';
@@ -276,10 +318,10 @@ V['explore:bag']={dur:4600,noShadow:true,clipY:88,
 V['explore:garden']={dur:6000,
   fly(e){ if(e<2000) return {x:78+Math.sin(e/300)*16,y:48+Math.sin(e/190)*6}; if(e<3000){ const k=ph(e,2000,3000); return {x:lerp(78,110,k),y:lerp(48,14,k)+Math.sin(e/120)*3}; } return null; },
   scene(){ drawGarden(); },
-  pose(p,e){ if(e<1900){ const f=this.fly(e); p.dy=2; p.eyes='open'; p.dx=Math.round(clamp((f.x-64)/5,-5,5)); p.ear=1; }
-    else if(e<2400){ const k=ph(e,1900,2400); p.dy=Math.round(arc(k,9)); p.dx=Math.round(lerp(3,10,k)); p.eyes='happy'; p.mouth='open'; }
-    else if(e<4200){ p.dx=Math.round(lerp(10,14,ph(e,2400,2800))); p.headDy=e>2800?1:0; p.eyes=e>2800?'closed':'open'; if(e>3700&&e<3900){ p.headDy=2; p.mouth='open'; } }
-    else { p.dx=Math.round(lerp(14,0,ph(e,4200,4700))); p.eyes='happy'; p.mouth='smile'; } },
+  pose(p,e){ p.face=1; if(e<1900){ walkBetween(p,e,0,1700,0,3); p.headDy=-1; p.eyes='open'; p.ear=1; }
+    else if(e<2400){ leapPose(p,e,1900,2400,9); p.dx=lerp(3,10,ph(e,1900,2400)); p.eyes='happy'; p.mouth='open'; }
+    else if(e<4200){ walkBetween(p,e,2400,2800,10,14); p.headDy=e>2800?2:0; p.eyes=e>2800?'closed':'open'; if(e>3700&&e<3900){ p.headDy=3; p.mouth='open'; } }
+    else { walkBetween(p,e,4200,4900,14,0); p.eyes='happy'; p.mouth='smile'; } },
   front(e){ const f=this.fly(e); if(f) blit(ctx,Math.floor(e/110)%2?SPR.fly1:SPR.fly2,f.x-3,f.y-3); if(e>2400){ rect(ctx,92,74,.8,12,'#4F7A5D'); rect(ctx,93,79,3,.8,'#6E9B7B'); pxEll(ctx,92.5,72,4.6,4.2,INK); pxEll(ctx,92.5,72,3.8,3.4,'#F07A8E'); pxEll(ctx,92.5,72,1.4,1.4,'#F4C542'); } },
   overlay(e,a){ fadeOverlay(e,a.dur); },
   tick(a,e,now){ if(e>400) once(a,'s',()=>{ setCaption(`${state.name} is stalking a butterfly...`); play('pet:chatter',.4); }); if(e>1950) once(a,'p',()=>{ play('bounce',.5); setCaption('Pounce! The butterfly floats away.'); });
@@ -302,30 +344,30 @@ V['cuddle:blanket']={dur:3000,
   tick(a,e,now){ if(e>500&&e<2600&&now>=a.next){ spawn('heart',64+rand(-12,12),PETY+10,rand(-5,5),-14,1.4); a.next=now+420; } }};
 
 /* ---- Bath (dogs) and Brush (cats) ---- */
-V['bath:bubbles']={dur:2900,
+V['bath:bubbles']={dur:2900,undressed:true,
   pose(p,e){ p.eyes=e<2200?'closed':'happy'; p.mouth=e<2200?'smile':'tongue'; },
   tick(a,e,now){ if(e<2200&&now>=a.next){ spawn(Math.random()<.5?'bubble2':'bubble3',rand(46,82),rand(58,84),rand(-4,4),rand(-14,-7),rand(1,1.8)); if(Math.random()<.35) play('pop',.4); a.next=now+110; } }};
-V['bath:tub']={dur:3200,noShadow:true,
+V['bath:tub']={dur:3200,undressed:true,noShadow:true,
   ty(e){ return Math.round(70+slide(e,3200,350,350,30)); },
   pose(p,e){ const inTub=e>350&&e<2850; p.dy=inTub?(big()?3:1):0; p.eyes='happy'; p.mouth=Math.floor(e/500)%2?'tongue':'open'; },
   clipY(e){ return this.ty(e)+2; },
   front(e){ drawTub(this.ty(e),e); },
   tick(a,e,now){ if(e>400&&e<2800&&now>=a.next){ spawn('drop',rand(46,82),this.ty(e),rand(-20,20),rand(-40,-20),.7); if(Math.random()<.4) play('pop',.35); a.next=now+180; } if(e>1200) once(a,'sq',()=>play('squeak',.5)); if(e>2000) once(a,'sq2',()=>play('squeak',.5)); }};
-V['bath:shake']={dur:3000,
+V['bath:shake']={dur:3000,undressed:true,
   pose(p,e){ if(e<1400){ p.eyes='closed'; p.headDy=1; } else if(e<2400){ p.dx=(Math.floor(e/60)%2)?2:-2; p.ear=Math.floor(e/60)%2; p.eyes='closed'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
   front(e){ if(e<1400){ rect(ctx,58,0,12,3,'#9AA4AE'); rect(ctx,62,0,4,1,'#6A7A8A'); rect(ctx,58,2.5,12,.5,'#C8D0D8'); } },
   tick(a,e,now){
     if(e<1400&&now>=a.next){ for(let i=0;i<3;i++) spawn('drop',rand(50,78),rand(2,8),0,rand(60,90),1.1); a.next=now+60; }
     if(e>=1400&&e<2400&&now>=a.next){ for(let i=0;i<4;i++){ const g=rand(0,Math.PI*2); spawn('drop',64+Math.cos(g)*10,68+Math.sin(g)*10,Math.cos(g)*60,Math.sin(g)*40-20,.6); } a.next=now+70; }
     if(e>1400) once(a,'sh',()=>{ play('rustle',.7); setCaption('Shake shake shake!'); }); if(e>2400) once(a,'sp',()=>{ burst(6); play('pet:sneeze',.4); }); }};
-V['brush:brush']={dur:2900,
+V['brush:brush']={dur:2900,undressed:true,
   pose(p,e){ p.eyes=e>2300?'happy':'closed'; p.ear=Math.floor(e/500)%2; },
   front(e){ if(e<2300) blit(ctx,ICONS.brush,58+Math.sin(e/170)*10,PETY+G().chest-4+Math.cos(e/340)*3); },
   tick(a,e,now){ if(now>=a.next){ if(e<2300){ spawn('tuft',rand(54,74),rand(66,80),rand(-14,14),rand(-18,-8),.8,STYLES[state.style].pal.fur); a.next=now+140; } else { spawn('sparkleSmall',rand(50,78),rand(58,80),0,-6,.8); a.next=now+160; } } }};
-V['brush:groom']={dur:3000,
+V['brush:groom']={dur:3000,undressed:true,
   pose(p,e){ if(e<2400){ const b=Math.floor(e/300)%2; p.headDy=1+b; p.eyes='closed'; p.mouth='tongue'; p.ear=b; } else p.eyes='happy'; },
   tick(a,e,now){ if(e<2400&&now>=a.next){ spawn('sparkleSmall',64+rand(-14,14),rand(56,80),0,-6,.7); a.next=now+220; } }};
-V['brush:bow']={dur:3200,
+V['brush:bow']={dur:3200,undressed:(e,a)=>!a.flags.bow,
   pose(p,e){ p.eyes=e<1900?'closed':'happy'; p.mouth=e>1900?'open':'smile'; },
   front(e){ if(e<1800) blit(ctx,ICONS.brush,58+Math.sin(e/170)*10,PETY+G().chest-10+Math.cos(e/340)*3); },
   tick(a,e,now){ if(e<1800&&now>=a.next){ spawn('tuft',rand(54,74),rand(62,78),rand(-14,14),rand(-18,-8),.8,STYLES[state.style].pal.fur); a.next=now+140; }
@@ -388,7 +430,7 @@ const IDLE_MSG={
 };
 const zoomDx=e=>Math.round(Math.sin(e/2600*Math.PI*3)*32);
 const toWin=()=>clamp(WIN().cx-64,-16,16);
-V['idle:tail']={dur:2200,pose(p,e){ p.dx=Math.round(Math.sin(e/90)*4); p.ear=Math.floor(e/90)%2; p.eyes='happy'; p.mouth='open'; p.wag=60; p.dy=0; },
+V['idle:tail']={dur:3000,pose(p,e){ const t=ease(ph(e,150,2650))*TAU*2; p.body='walk'; p.turn=t; p.dx=Math.sin(t)*5; p.dy=(Math.cos(t)-1)*1.5; p.frame=Math.floor(e/100)%4; p.eyes='happy'; p.mouth='open'; p.wag=100; if(e>2800){ p.turn=null; p.body=null; p.dx=0; p.dy=0; } },
   tick(a,e){ if(e>300) once(a,'b',()=>play(happyNoise(),.5)); if(e>2000) once(a,'s',()=>burst(4)); }};
 V['idle:sneeze']={dur:1700,pose(p,e){ if(e<700){ p.headDy=-1; p.eyes=e>350?'closed':'open'; p.mouth='open'; } else if(e<1000){ p.headDy=2; p.dy=1; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='tongue'; } },
   tick(a,e){ if(e>420) once(a,'a',()=>{ play('pet:sneeze',.7); later(()=>{ for(let i=0;i<7;i++) spawn('sparkleSmall',64+rand(-8,8),PETY+G().mouth,rand(-34,34),rand(-24,10),.5); },280); }); }};
@@ -445,25 +487,25 @@ V['idle:bat']={dur:3000,sy(e){ return 50+Math.sin(e/160)*5; },
   tick(a,e){ if(e>950) once(a,'b1',()=>play('bounce',.4)); if(e>2050) once(a,'b2',()=>play('bounce',.4)); if(e>2500) once(a,'t',()=>play('pet:trill',.4)); }};
 
 /* ---- Tricks (learned from care stars) ---- */
-V['trick:sit']={dur:2800,pose(p,e){ if(e<500) p.eyes='open'; else if(e<2200){ p.dy=2; p.headDy=-1; p.eyes='happy'; p.wag=200; } else { p.eyes='happy'; p.mouth='tongue'; } },
+V['trick:sit']={dur:2800,pose(p,e){ sitTrickPose(p,e); if(e>2200) p.mouth='tongue'; },
   tick(a,e){ if(e>500) once(a,'s',()=>{ play('choose'); spawn('sparkle',64,PETY+10,0,-8,.8); setCaption('Sit!'); }); if(e>2200) once(a,'c',()=>{ play('happy',.6); burst(6); }); }};
-V['trick:spin']={dur:2800,pose(p,e){ if(e<2200){ const t=e/2200*Math.PI*4; p.dx=Math.round(Math.sin(t)*5); p.ear=Math.cos(t)>0?1:0; p.eyes=Math.cos(t)>0?'happy':'closed'; p.wag=60; p.dy=-(Math.floor(e/120)%2); } else { p.eyes='happy'; p.mouth='tongue'; } },
+V['trick:spin']={dur:2800,pose(p,e){ const t=ease(ph(e,250,2200))*TAU; p.turn=t; p.dx=Math.sin(t)*4; p.dy=(Math.cos(t)-1)*1.5;
+    p.eyes='happy'; p.mouth='tongue'; p.frame=e>250&&e<2200?Math.floor((e-250)/150)%4:0; p.wag=100; },
   tick(a,e,now){ if(e<2200&&now>=a.next){ const g=e/150; spawn('sparkleSmall',64+Math.cos(g)*20,64+Math.sin(g)*10,0,-4,.5); a.next=now+80; } if(e>200) once(a,'s',()=>setCaption('Spin!')); if(e>2200) once(a,'c',()=>{ play('happy',.6); burst(6); }); }};
-V['trick:paw']={dur:2800,pose(p,e){ p.eyes=e>900?'happy':'open'; p.mouth=e>900?'tongue':'smile'; if(e>600&&e<2200) p.dx=-1; },
-  front(e,a,p){ if(e>600&&e<2200){ const up=e<900?ph(e,600,900):1, x=PETX+22+G().pawDx+6+p.dx, y=chestAt(p)-up*(big()?12:9);
-    pxEll(ctx,x,y,3.8,3.4,INK); pxEll(ctx,x,y,3.1,2.7,STYLES[state.style].pal.light); pxEll(ctx,x-1,y+1,.6,.6,'#F2A9B4'); pxEll(ctx,x+1,y+1,.6,.6,'#F2A9B4'); pxEll(ctx,x,y-.6,.9,.7,'#F2A9B4'); } },
+V['trick:paw']={dur:2800,pose(p,e){ p.dy=0; p.eyes=e>900?'happy':'open'; p.mouth=e>900?'tongue':'smile'; reachPaw(p,1,motionHold(e,400,950,1900,2400)); },
+  front(e,a,p){ trickHand(p,e,'high',650,2100); },
   tick(a,e){ if(e>1000) once(a,'h',()=>{ play('choose'); burst(5); setCaption('High five!'); }); if(e>2200) once(a,'c',()=>play('happy',.6)); }};
-V['trick:dance']={dur:3200,pose(p,e){ if(e<2700){ const s=Math.floor(e/300)%2; p.dx=s?4:-4; p.dy=-(Math.floor(e/150)%2)*3; p.ear=s; p.eyes='happy'; p.mouth='open'; p.wag=80; } else { p.eyes='happy'; p.mouth='tongue'; } },
+V['trick:dance']={dur:3200,pose(p,e){ dancePose(p,e,2700); if(e>2700) p.mouth='tongue'; },
   tick(a,e,now){ if(e<2700&&now>=a.next){ spawn('note',64+rand(-18,18),56,rand(-6,6),-14,1.4); play('beep'+(1+Math.floor(rand(0,4))),.35); a.next=now+300; } if(e>200) once(a,'s',()=>setCaption('Dance party!')); if(e>2700) once(a,'c',()=>{ play('happy',.6); burst(6); }); }};
-V['trick:speak']={dur:2800,pose(p,e){ const t=e%700, on=e<2100&&t<220; p.mouth=on?'open':'smile'; p.headDy=on?-1:0; p.eyes='happy'; },
+V['trick:speak']={dur:2800,pose(p,e){ const t=e%700, on=e<2100&&t<220; p.dy=0; p.mouth=on?'open':'smile'; p.headDy=on?-1:0; p.ear=on?1:0; p.eyes='happy'; },
   tick(a,e){ [0,700,1400].forEach((t,i)=>{ if(e>t+50) once(a,'v'+i,()=>{ play(petNoise(),.6); spawn('exclaim',80,PETY+8,4,-10,.7); }); }); if(e>2200) once(a,'c',()=>{ play('happy',.6); burst(6); }); }};
 V['decor:0']={dur:2400,pose(p,e){ p.eyes='happy'; p.mouth='tongue'; p.dy=e<1400?-Math.round(Math.abs(Math.sin(e/160))*3):0; },
   tick(a,e,now){ if(e>100) once(a,'f',()=>{ play('fanfare',.6); burst(12); }); if(e>900) once(a,'n',()=>play(happyNoise(),.5)); if(now>=a.next&&e<1800){ spawn('star',rand(10,118),rand(10,60),0,-6,1); a.next=now+150; } }};
 
 /* ---- Events that happen on their own ---- */
-V['event:showoff']={dur:3200,init(a){ a.trick=pick(learnedTricks()); a.inner=V['trick:'+a.trick]; },
+V['event:showoff']={dur:3200,init(a){ a.trick=a.trick||pick(learnedTricks()); a.inner=V['trick:'+a.trick]; a.dur=a.inner.dur; if(a.inner.init) a.inner.init(a); },
   start(a){ setCaption(`${state.name} wants to show off a trick: ${trickName(a.trick)}!`); },
-  pose(p,e,a){ a.inner.pose.call(a.inner,p,e,a); }, front(e,a,p){ if(a.inner.front) a.inner.front.call(a.inner,e,a,p); }, tick(a,e,now){ a.inner.tick.call(a.inner,a,e,now); }};
+  pose(p,e,a){ a.inner.pose.call(a.inner,p,e,a); }, behind(e,a,p){ if(a.inner.behind) a.inner.behind.call(a.inner,e,a,p); }, front(e,a,p){ if(a.inner.front) a.inner.front.call(a.inner,e,a,p); }, tick(a,e,now){ if(a.inner.tick) a.inner.tick.call(a.inner,a,e,now); }};
 V['event:playdate']={dur:7200,
   init(a){ const k=kind(); a.friend=a.friend||pick(KIND_STYLES[k].filter(s=>s!==state.style)); a.fname=a.fname||pick(PRESET_NAMES[k].filter(x=>x!==state.name)); a.fkind=a.fkind||STYLES[a.friend].kind; a.fsg=a.fsg||stageName(); },
   start(a){ setCaption(a.neighbor?`Play date! ${a.fname} the ${friendWord({kind:a.fkind,sg:a.fsg})} came over from down the street.`:`Play date! ${a.fname} the ${stageWord()} came over to play.`); play(a.fkind==='dog'?'dog:barkFriendly:'+a.fsg:'cat:meow:'+a.fsg); },
@@ -529,6 +571,14 @@ V['event:rain']={dur:5600,
   end(){ state.stats.energy=clamp(state.stats.energy+15,FLOOR,100); }};
 
 /* ---- Chores: a button appears until the player takes care of it ---- */
+V['need:potty']={dur:6200,
+  init(a){ a.pottyX=16+FIX.dx+G().bodyRx-64; a.pottyY=FIX.dy; },
+  pose(p,e,a){ p.dy=0; p.eyes='open'; p.mouth='smile'; p.wag=0;
+    if(e<1500){ walkBetween(p,e,0,1500,0,a.pottyX); p.dy=lerp(0,a.pottyY,ease(ph(e,0,1500))); }
+    else if(e<4300){ p.dx=a.pottyX; p.dy=a.pottyY; p.body='stand'; p.face=1; p.frame=0; p.crouch=poseStep(motionHold(e,1600,2200,3500,4100)); p.eyes=e<3700?'closed':'happy'; }
+    else { walkBetween(p,e,4300,5900,a.pottyX,0); p.dy=lerp(a.pottyY,0,ease(ph(e,4300,5900))); p.eyes='happy'; if(e>5900) p.body=null; } },
+  tick(a,e){ if(e>2300) once(a,'privacy',()=>setCaption(`${state.name} takes a little bathroom break.`)); }
+};
 V['task:potty']={dur:2800,
   start(){ setCaption('Bag it up and toss it out.'); },
   hand(e){ const x=10+FIX.dx, y0=76+FIX.dy; if(e<900) return {x,y:lerp(-16,y0,e/900)}; if(e<1200) return {x,y:y0}; return {x,y:lerp(y0,-18,ph(e,1200,2000))}; },
@@ -606,8 +656,8 @@ V['play:toybox']={dur:3800,
     if(e<900){ const k=e/900; return {x:lerp(130,98,k),y:lerp(30,86,k)+arc(k,18)}; }
     if(e<1500) return {x:98,y:86+(Math.floor(e/100)%2)}; if(e<3200) return {held:true}; return {x:72,y:86}; },
   pose(p,e,a){ p.eyes='open'; p.wag=80;
-    if(a.disc){ if(e<1100) p.headDy=-1; else if(e<1500){ const k=ph(e,1100,1500); p.dy=Math.round(arc(k,10)); p.dx=Math.round(lerp(0,8,k)); p.mouth='open'; }
-      else if(e<3400){ p.dx=Math.round(lerp(8,0,ph(e,1500,2200))); p.eyes='happy'; } else { p.eyes='happy'; p.mouth='tongue'; } return; }
+    if(a.disc){ p.face=1; p.dy=0; if(e<1500){ leapPose(p,e,1100,1500,10); p.dx=lerp(0,8,ph(e,1100,1500)); p.headDy=-1; p.mouth=e>1100?'open':'smile'; }
+      else if(e<2400){ walkBetween(p,e,1500,2400,8,0); p.eyes='happy'; } else { p.eyes='happy'; p.mouth='tongue'; } return; }
     if(e<900) p.headDy=-1;
     else if(e<1500){ const k=ph(e,900,1300); p.dx=Math.round(lerp(0,30,k)); p.dy=e>1300?Math.round(arc(ph(e,1300,1500),5)):0; p.eyes='happy'; if(e<1300){ p.body='run'; p.face=1; p.frame=Math.floor(e/90)%4; } }
     else if(e<2200){ p.dx=Math.round(lerp(30,0,ph(e,1500,2200))); p.eyes='happy'; p.dy=0; p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; }
@@ -624,39 +674,51 @@ V['play:toybox']={dur:3800,
 function pickToy(ok){ const own=ownedToys().filter(ok||(()=>true)), all=own.length?own:ownedToys(), pl=state.toyPlays||{}, min=Math.min(...all.map(t=>pl[t]||0)); return pick(all.filter(t=>(pl[t]||0)===min)); }
 function playedToy(t){ state.toyPlays=Object.assign({},state.toyPlays||{}); state.toyPlays[t]=(state.toyPlays[t]||0)+1; }
 const hasNewToy=()=>!!state&&ownedToys().some(t=>!(state.toyPlays||{})[t]);
-const throwHand=(e,hx,t0,t1)=>{ if(e<0||e>t1) return null; let x=hx, y; if(e<600) y=lerp(-24,30,e/600); else if(e<t0){ const k=ph(e,600,t0); x=hx+k*6; y=30-k*4; } else if(e<t0+250){ const k=ph(e,t0,t0+250); x=hx+6-k*16; y=26+k*2; } else { x=hx-10; y=lerp(28,-26,ph(e,t1-500,t1)); } blit(ctx,SPR.hand,x,y); return {x,y}; };
+const throwHandPos=(e,hx,t0,t1)=>{ if(e<0||e>t1) return null; let x=hx, y; if(e<600) y=lerp(-24,30,e/600); else if(e<t0){ const k=ph(e,600,t0); x=hx+k*6; y=30-k*4; } else if(e<t0+250){ const k=ph(e,t0,t0+250); x=hx+6-k*16; y=26+k*2; } else { x=hx-10; y=lerp(28,-26,ph(e,t1-500,t1)); } return {x,y}; };
+/* One hand owns the entire throw/receive sequence. The toy stays at the same grip
+   point when held, including the instant it leaves the pet's mouth. */
+function toyHandPos(e,hx,away,returnAt,takeAt,end,m,s){
+  if(e<=away){ const h=throwHandPos(e,hx,900,away); return h?{...h,holding:e<900}:null; }
+  if(!m||e<returnAt||e>end) return null;
+  const x=m.x-10, y=m.y-2+s.lh/2-14;
+  const k=e<takeAt?ease(ph(e,returnAt,takeAt)):1-ease(ph(e,takeAt,end));
+  return {x:lerp(hx-10,x,k),y:lerp(-26,y,k),holding:e>=takeAt};
+}
 V['play:fetch']={dur:5800,
   init(a){ a.toy=pickToy(t=>t!=='frisbee'); playedToy(a.toy); a.cat=kind()==='cat'; },
   land:6,
   pose(p,e,a){ p.eyes='open'; p.wag=80; const L=-50;
     if(e<1100){ p.headDy=-1; if(e>900) p.eyes='happy'; return; }
     if(e<2300){ p.body='run'; p.face=-1; p.frame=Math.floor(e/90)%4; p.dx=Math.round(lerp(0,L,ph(e,1100,2300))); p.eyes='happy'; return; }
-    if(a.cat){ if(e<2900){ p.dx=L; p.dy=Math.round(arc(ph(e,2300,2700),6)); p.eyes='happy'; p.mouth='open'; return; }
+    if(a.cat){ if(e<2900){ p.dx=L; p.face=-1; leapPose(p,e,2300,2700,6); p.eyes='happy'; p.mouth='open'; return; }
       if(e<4200){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(L,0,ph(e,2900,4200))); return; } p.eyes='happy'; p.mouth='smile'; return; }
     if(e<2600){ p.dx=L; p.headDy=2; p.body='stand'; p.face=-1; return; }
     if(e<3800){ p.body='run'; p.face=1; p.frame=Math.floor(e/90)%4; p.dx=Math.round(lerp(L,14,ph(e,2600,3800))); p.mouth='open'; return; }
-    p.dx=14; p.eyes='happy'; p.mouth=e<4600?'open':'tongue'; },
-  front(e,a,p){ const s=SPR[a.toy]; if(!s) return; const hand=throwHand(e,94,900,a.cat?2600:(e<3900?2000:5600));
-    if(e<900&&hand){ blit(ctx,s,hand.x+4-s.lw/2+6,hand.y+14-s.lh/2); return; }
-    if(e<1900){ const k=ph(e,900,1900); blit(ctx,s,lerp(96,this.land,k)-s.lw/2,lerp(44,86,k)+arc(k,28)-s.lh); return; }
+    if(e<4700){ p.body='stand'; p.face=1; p.frame=0; p.dx=14; } else walkBetween(p,e,4700,5500,14,0);
+    p.eyes='happy'; p.mouth=e<4400?'open':'tongue'; },
+  front(e,a,p){ const s=SPR[a.toy]; if(!s) return;
+    const receive=a.cat?null:mouthAt({...p,body:'stand',face:1,frame:0,dx:14,dy:0,headDy:0});
+    const hand=toyHandPos(e,94,a.cat?2600:2000,3700,4400,5500,receive,s);
+    if(hand) blit(ctx,SPR.hand,hand.x,hand.y);
+    if(hand?.holding){ blit(ctx,s,hand.x+10-s.lw/2,hand.y+14-s.lh/2); return; }
+    if(e<1900){ const k=ph(e,900,1900); blit(ctx,s,lerp(110,this.land,k)-s.lw/2,lerp(40,86-s.lh/2,k)+arc(k,28)-s.lh/2); return; }
     if(a.cat){ const bx=e<2700?this.land:this.land+Math.round(arc(ph(e,2700,3200),0))-Math.min(10,ph(e,2700,3200)*10); blit(ctx,s,bx-s.lw/2,86-s.lh+(e>2700&&e<3200?Math.round(arc(ph(e,2700,3200),6)):0)); return; }
     if(e<2600){ blit(ctx,s,this.land-s.lw/2,86-s.lh); return; }
-    if(e<4400){ const m=mouthAt(p); blit(ctx,s,m.x-s.lw/2,m.y-2); if(e>3900){ const k=ph(e,3900,4400); blit(ctx,SPR.hand,lerp(110,m.x-4,k),lerp(-20,m.y-18,k)); } return; }
-    const k=ph(e,4400,5400); blit(ctx,SPR.hand,lerp(78-4,110,k),lerp(64+14-18-18,-26,k)); blit(ctx,s,lerp(78,114,k)-s.lw/2,lerp(64+14-16,-10,k)); },
+    if(e<4400){ const m=mouthAt(p); blit(ctx,s,m.x-s.lw/2,m.y-2); } },
   tick(a,e){ if(e>300) once(a,'c',()=>setCaption(a.cat?`Ready? Throw! ${state.name} chases the ${toyName(a.toy)}!`:`Ready? Throw! Go get the ${toyName(a.toy)}, ${state.name}!`));
     if(e>900) once(a,'w',()=>play('whoosh',.45)); if(e>1900) once(a,'l',()=>play('bounce',.45));
     if(a.cat){ if(e>2500) once(a,'p',()=>{ play(toySound(a.toy),.55); spawn('sparkle',this.land,76,0,-8,.7); setCaption(`Pounce! ${state.name} got the ${toyName(a.toy)}!`); }); if(e>4300) once(a,'h',()=>play(happyNoise(),.45)); return; }
     if(e>2400) once(a,'g',()=>play(toySound(a.toy),.55));
     if(e>3900) once(a,'b',()=>{ setCaption(`${state.name} brought back the ${toyName(a.toy)}! Good dog!`); play(happyNoise(),.5); burst(5); }); }};
 V['play:frisbee']={dur:4800,
-  pose(p,e){ p.eyes='open'; p.wag=80; if(e<1200){ p.headDy=-1; return; }
-    if(e<2000){ const k=ph(e,1200,2000); p.dy=Math.round(arc(k,18)); p.dx=Math.round(lerp(0,-6,k)); p.mouth='open'; p.eyes='happy'; return; }
-    p.dx=Math.round(lerp(-6,0,ph(e,2000,2600))); p.eyes='happy'; p.mouth='open'; if(e>2200&&e<3200){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; } },
-  front(e,a,p){ const hand=throwHand(e,96,900,2400), s=SPR.frisbee;
-    if(e<900&&hand){ blit(ctx,s,hand.x+3,hand.y+15); return; }
-    if(e<1600){ const k=ph(e,900,1600), m=mouthAt(p); blit(ctx,s,lerp(100,m.x,k)-s.lw/2,lerp(44,m.y,k)-arc(k,10)*-1-8*Math.sin(k*Math.PI)-3); return; }
-    const m=mouthAt(p); blit(ctx,s,m.x-s.lw/2,m.y-2);
-    if(e>3400){ const k=ph(e,3400,3900); blit(ctx,SPR.hand,lerp(110,m.x+2,k),lerp(-22,m.y-20,k)+(e>3900?Math.sin(e/120)*1.5:0)); } },
+  pose(p,e){ p.eyes='open'; p.wag=80; p.face=-1; p.dy=0; if(e<1200){ leapPose(p,e,1200,2000,18); p.headDy=-1; return; }
+    if(e<2000){ leapPose(p,e,1200,2000,18); p.dx=lerp(0,-6,ph(e,1200,2000)); p.mouth='open'; p.eyes='happy'; return; }
+    walkBetween(p,e,2000,2800,-6,0); p.eyes='happy'; p.mouth='open'; },
+  front(e,a,p){ const s=SPR.frisbee, m=mouthAt(p), hand=toyHandPos(e,96,2400,3400,3900,4700,m,s);
+    if(hand) blit(ctx,SPR.hand,hand.x,hand.y);
+    if(hand?.holding){ blit(ctx,s,hand.x+10-s.lw/2,hand.y+14-s.lh/2); return; }
+    if(e<1600){ const k=ph(e,900,1600); blit(ctx,s,lerp(112,m.x,k)-s.lw/2,lerp(40,m.y+1,k)+arc(k,18)-s.lh/2); return; }
+    if(e<3900) blit(ctx,s,m.x-s.lw/2,m.y-2); },
   tick(a,e){ if(e>300) once(a,'c',()=>setCaption(`Here comes the frisbee! Jump, ${state.name}!`)); if(e>900) once(a,'w',()=>play('whoosh',.5));
     if(e>1600) once(a,'k',()=>{ play('pop',.6); burst(6); setCaption(`Great catch, ${state.name}!`); later(()=>play(happyNoise(),.45),300); }); if(e>3900) once(a,'p',()=>play('pet:sigh',.35)); }};
 

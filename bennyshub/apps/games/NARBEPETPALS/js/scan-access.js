@@ -6,7 +6,7 @@
  let painting=false,selecting=false,braking=false,cancelSpace=false,lastAuto=SM().getSettings().autoScan;
  const nativeHighlight=setHighlight;
  function owns(){return !!layer}
-  // Wait for Reading holds the automatic clock and manual steps until narration ends; pause stays available.
+  // Wait for Reading holds the automatic clock; deliberate manual steps can interrupt narration.
   function updateClock(keyHeld=!!enterDown||!!spaceDown&&!braking){
    adapter.setInputHeld(keyHeld||readingHold());
   }
@@ -31,7 +31,7 @@
  window.petChoice={owns,updateClock,get painting(){return painting},getState:()=>adapter.getState(),getItems:()=>adapter.context?.items.map(i=>({id:i.id,label:i.label()}))||[],sync,
   open(){return sync({fresh:true})},
   announce(intro){if(!adapter.active||layer==='game')return false;const s=SM().getSettings(),park=adapter.getState().index<0&&s.autoScan&&s.parking!=='off';if(intro){introNext=true;adapter.announce(intro+(park?'. Park':''),{parkingLabel:park});introNext=false}return true},
-  step(d){if(!sync())return false;if(readingHold())return true;adapter.step(d);return true},
+  step(d){if(!sync())return false;if(readingHold())interruptReading();adapter.step(d);return true},
   activate(){if(selecting||!sync())return false;adapter.select();return true},
   pointer(el){sync();const item=adapter.context?.items.find(i=>i.element===el);if(item)adapter.align(item.id)},
   down(e){if(!owns())return false;if(isSpace(e)){braking=!!adapter.brakePress();if(braking){updateClock(!!enterDown);return true}}updateClock(true);return false},

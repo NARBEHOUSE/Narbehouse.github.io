@@ -13,7 +13,7 @@ SPR.catnip=sprite(11,10,b=>{ part(b,T=>R(T,.6,2,9.8,7.4,'#8CC98A',SH,1.4)); part
 SPR.bee=sprite(12,10,b=>{ part(b,T=>{ E(T,4,2.6,2.4,2,'#EAF6FF',SHL); E(T,8,2.6,2.4,2,'#EAF6FF',SHL); }); part(b,T=>E(T,6,6,5,3.4,(x,y)=>(Math.floor(x*1.1)%2)?'#F4C542':'#3A2E28',SH)); E(b,9.6,5.4,.6,.6,'#1C130E'); });
 SPR.cookie=sprite(9,9,b=>{ part(b,T=>E(T,4.5,4.5,3.9,3.9,'#D8A060',SH)); [[3,3.2],[5.8,3.6],[4.2,5.8],[6.2,6]].forEach(([x,y])=>E(b,x,y,.55,.55,'#8A5A2A')); });
 SPR.shrimp=sprite(11,9,b=>{ part(b,T=>{ for(let i=0;i<6;i++){ const a=Math.PI*(.15+i*.14); E(T,5.5+Math.cos(a)*3.4,5+Math.sin(a)*3,1.5,1.5,'#F29A80',SH); } }); E(b,8.4,6.6,.5,.5,'#1C130E'); });
-const STORE_TREATS={dog:[['cookie','peanut butter cookies']],cat:[['shrimp','shrimp treats']]};
+const STORE_TREATS={dog:[['cookie','peanut butter cookies'],['bone','bone biscuits']],cat:[['shrimp','shrimp treats'],['fish','fish treats']]};
 const ownedTreats=()=>state?(state.treats||[]).filter(t=>V['feed:'+t]):[];
 V['feed:cookie']=catchDef('cookie'); V['feed:shrimp']=catchDef('shrimp');
 
@@ -147,6 +147,8 @@ V['trip:car']={dur:4200,noShadow:true,bgName:'car',
   start(a){ const P=PLACES[a.trip.place]; setCaption(kind()==='dog'?`Road trip! ${nm()} rides to the ${P.label.toLowerCase()} with the window down.`:`${nm()} rides to the ${P.label.toLowerCase()}, safe in the car.`); play('honk',.4); },
   scene(e){ drawCarScene(e); drawCarBack(e); },
   pose(p,e){ const b=carBob(e); p.dy=(kind()==='dog'?-12:-8)+b; if(kind()==='dog'){ p.eyes=Math.floor(e/1400)%2?'happy':'closed'; p.mouth='tongue'; p.ear=Math.floor(e/90)%2; p.wag=90; } else { p.eyes='open'; p.mouth='smile'; blink(p,e); p.ear=Math.floor(e/1600)%2; } },
+  clipPet(e){ carWindowPath(ctx,carBob(e)); ctx.clip(); },
+  drawPet(e,a,p,fit){ drawCarPet(e,p,fit); },
   front(e,a,p){ drawCarFront(e,kind()==='cat'); if(kind()==='dog'&&Math.floor(e/120)%2){ const m=mouthAt(p); for(let i=0;i<3;i++) rect(ctx,m.x-26-i*6-((e/30)%8),m.y-8+i*4,5,.6,'rgba(255,255,255,.85)'); } },
   overlay(e,a){ if(a.fadeIn&&e<350){ ctx.fillStyle=`rgba(255,247,230,${(1-e/350).toFixed(3)})`; fillView(ctx); } fadeOverlay(Math.max(e,a.dur/2),a.dur); },
   tick(a,e,now){ if(now>=a.next){ play('rumble',.12); a.next=now+900; } if(e>1500&&kind()==='dog') once(a,'b',()=>play('pet:barkHappy',.4)); if(e>1800&&kind()==='cat') once(a,'m',()=>play('pet:trill',.4)); }};
@@ -160,7 +162,7 @@ V['yard:sun']=tripScene('yard',{dur:4600,
 V['yard:dig']=tripScene('yard',{dur:5200,
   init(a){ const un=unownedToys(); a.toy=un.length?pick(un):pick(ownedToys()); a.isNew=un.includes(a.toy); },
   start(){ setCaption(kind()==='dog'?`${nm()} starts digging. Is something buried here?`:`${nm()} peeks under the bushes. Something is hiding there!`); },
-  pose(p,e){ if(e<2600){ const b=Math.floor(e/140)%2; p.headDy=2+b; p.eyes='happy'; p.mouth='open'; p.dy=0; if(kind()==='cat'&&e>2100){ p.dy=Math.round(arc(ph(e,2100,2600),6)); } } else { p.eyes='happy'; p.mouth='tongue'; if(e<3400) p.dy=-Math.round(Math.abs(Math.sin(e/140))*3); } },
+  pose(p,e){ p.dy=0; p.face=1; if(e<2600){ p.body=kind()==='dog'?'dig':'stand'; p.bow=.75; p.frame=Math.floor(e/140)%4; p.eyes='happy'; p.mouth='open'; if(kind()==='cat'&&e>2100) leapPose(p,e,2100,2600,6); } else { p.eyes='happy'; p.mouth='tongue'; p.wag=130; } },
   front(e,a){ if(e>2500){ const k=ph(e,2500,3000), s=SPR[a.toy]; blit(ctx,s,80-s.lw/2,lerp(90,74,k)+arc(k,10)); } },
   tick(a,e,now){ if(e<2500&&now>=a.next){ if(kind()==='dog') for(let i=0;i<2;i++) spawn('crumb',64+rand(-6,6),86,rand(-30,30),rand(-40,-20),.6,'#7E5A36'); play(kind()==='dog'?'rustle':'sniff',.3); a.next=now+260; }
     if(e>2600) once(a,'f',()=>{ play('sparkle',.6); burst(6); if(a.isNew){ state.toys=ownedToys().concat([a.toy]); save(); setCaption(`${nm()} found a brand new ${toyName(a.toy)}! It goes in the toy box.`); } else setCaption(`${nm()} found the ${toyName(a.toy)} it lost! Hooray!`); });
@@ -181,9 +183,12 @@ V['garden:sniff']=tripScene('garden',{dur:4600,
     if(e>2900) once(a,'n',()=>{ if(a.sneeze){ play('pet:sneeze',.6); setCaption('Achoo! A flower sneeze.'); for(let i=0;i<6;i++) spawn('sparkleSmall',84,64,rand(-20,20),rand(-16,0),.6); } else { play(happyNoise(),.45); setCaption(`${nm()} loves the way the roses smell.`); } }); }});
 
 /* ---- Pet store ---- */
-function storeStory(t){ const k=kind(), un=unownedToys(), treats=STORE_TREATS[k].filter(([id])=>!(state.treats||[]).includes(id));
-  const offer=pickSome(un,2).map(id=>({type:'toy',id,label:`The ${toyName(id)}`})); if(treats.length&&offer.length<2) offer.push({type:'treat',id:treats[0][0],label:`A bag of ${treats[0][1]}`});
-  if(!offer.length) offer.push({type:'treat',id:k==='dog'?'cookie':'shrimp',label:k==='dog'?'A bag of peanut butter cookies':'A bag of shrimp treats'});
+function storeStory(t){ const k=kind(), un=unownedToys(), treats=STORE_TREATS[k], owned=state.treats||[];
+  const offer=pickSome(un,2).map(id=>({type:'toy',id,label:`The ${toyName(id)}`}));
+  // Prefer new treats, then offer refills. Even a fully stocked pet gets two distinct choices.
+  const bags=pickSome(treats.filter(([id])=>!owned.includes(id)),treats.length)
+    .concat(pickSome(treats.filter(([id])=>owned.includes(id)),treats.length));
+  for(const [id,label] of bags){ if(offer.length>=2) break; offer.push({type:'treat',id,label:`A bag of ${label}`}); }
   t.offer=offer;
   const beats=['store:browse',{bg:'store',choice:()=>({q:`Which one should ${nm()} take home?`,opts:t.offer.map(o=>({label:o.label,preview:{sprite:o.id},fn:tt=>{ tt.picks.item=o; }}))})}];
   if(Math.random()<.5) beats.push('store:sample'); beats.push('store:checkout'); return beats; }
@@ -223,34 +228,34 @@ V['groom:desk']=tripScene('groomdesk',{dur:3400,
   pose(p,e){ p.eyes='open'; blink(p,e); if(e>1600){ p.eyes='happy'; p.mouth='tongue'; } },
   front(e){ if(e>900&&e<2800){ const hy=e<1300?lerp(-24,30,ph(e,900,1300)):e<2400?30:lerp(30,-24,ph(e,2400,2800)); blit(ctx,SPR.hand,40,hy+Math.sin(e/120)*1.5); } },
   tick(a,e){ if(e>1700) once(a,'h',()=>play(happyNoise(),.45)); }});
-V['groom:bath']=tripScene('groom',{dur:4800,clipY:78,noShadow:true,
+V['groom:bath']=tripScene('groom',{dur:4800,undressed:true,clipY:78,noShadow:true,
   start(a){ const sc=SCENTS[a.trip.picks.scent||'lavender']; setCaption(`Bubble bath time! It smells ${sc.smell}.`); play('pour',.35); },
   pose(p,e){ p.dy=2; p.eyes=Math.floor(e/1500)%2?'happy':'closed'; p.mouth='tongue'; p.ear=Math.floor(e/400)%2; },
   front(e,a){ drawGroomTub(76,e,a.trip.picks.scent||'lavender'); },
   tick(a,e,now){ if(now>=a.next){ play(Math.random()<.5?'pop':'splat',.25); spawn('bubble3',64+rand(-18,18),70,rand(-4,4),-10,1.4); a.next=now+420; } if(e>2600) once(a,'d',()=>{ play('squeak',.45); setCaption('Squeak! The rubber duck joins in.'); }); }});
-V['groom:shake']=tripScene('groom',{dur:3800,
+V['groom:shake']=tripScene('groom',{dur:3800,undressed:true,
   start(){ setCaption(`Towel dry... and then the big shake-off!`); },
   pose(p,e){ if(e<1800){ p.eyes='closed'; p.mouth='smile'; } else if(e<3000){ p.dx=Math.round(Math.sin(e/35)*3); p.eyes='closed'; p.mouth='open'; p.ear=Math.floor(e/60)%2; } else { p.eyes='happy'; p.mouth='tongue'; } },
   front(e,a,p){ if(e<1800){ const x=48+Math.sin(e/140)*6; drawTowel(x,headTopOf(p)-2,'#F2A7B5'); } },
   tick(a,e,now){ if(e<1800&&now>=a.next){ play('rustle',.3); a.next=now+380; } if(e>1800) once(a,'s',()=>{ play('whoosh',.5); play('splat',.4); }); if(e>1800&&e<3000&&now>=a.next2){ for(let i=0;i<3;i++) spawn('drop',64+rand(-14,14),64+rand(-8,8),rand(-40,40),rand(-40,-10),.6); a.next2=now+90; } if(e>3100) once(a,'h',()=>play(happyNoise(),.45)); }});
 /* The blow dry puffs the pet up: fluffy fur-colored clouds all around it. */
-V['groom:dry']=tripScene('groom',{dur:4200,
+V['groom:dry']=tripScene('groom',{dur:4200,undressed:true,
   start(){ setCaption(`Blow dry time... ${nm()} turns into a fluffy puffball!`); play('dryer',.35); },
   pose(p,e){ p.eyes='closed'; p.mouth=e>2600?'tongue':'smile'; p.ear=Math.floor(e/90)%2; if(e>3000) p.eyes='happy'; },
   behind(e){ const k=ph(e,500,2800), g=G(), c=furC(); if(k<=0) return; for(let i=0;i<12;i++){ const a=i/12*TAU, r=(g.bodyRx+3)*(.9+k*.35); pxEll(ctx,64+Math.cos(a)*r,PETY+g.chest+Math.sin(a)*r*.8,3.6*k+1,3.2*k+1,shade(c,.08)); } },
   front(e){ drawDryer(104,40,e<3000,e); },
   tick(a,e){ if(e>1400) once(a,'d2',()=>play('dryer',.3)); if(e>3000) once(a,'g',()=>{ play('pop',.5); play(happyNoise(),.45); setCaption(`So fluffy! ${nm()} looks like a cloud.`); }); }});
-V['groom:brush']=tripScene('groom',{dur:3600,
+V['groom:brush']=tripScene('groom',{dur:3600,undressed:true,
   start(){ setCaption(`Brush, brush... so soft and shiny.`); },
   pose(p,e){ p.eyes='closed'; p.mouth='smile'; if(e>2600){ p.eyes='happy'; p.mouth='tongue'; } },
   front(e,a,p){ if(e<2600){ const x=54+Math.sin(e/200)*12, y=chestAt(p)-4+Math.cos(e/200)*3; blit(ctx,ICONS.brush,x,y); } },
   tick(a,e,now){ if(e<2600&&now>=a.next){ play('rustle',.25); a.next=now+400; } if(e>2600) once(a,'s',()=>{ burst(10); play('twinkle',.6); }); if(e>1200&&kind()==='cat') once(a,'p',()=>play('pet:purr',.45)); }});
-V['groom:cut']=tripScene('groom',{dur:4000,
+V['groom:cut']=tripScene('groom',{dur:4000,undressed:true,
   start(){ setCaption(`Snip, snip! Time for a fresh new haircut.`); },
   pose(p,e){ p.eyes=e<3000?'open':'happy'; blink(p,e); if(e>3000) p.mouth='tongue'; },
   front(e,a,p){ if(e<3000){ const t=e/420, x=64+Math.cos(t)*16, y=headTopOf(p)+8+Math.sin(t*1.3)*6; drawScissors(x,y,Math.floor(e/160)%2); } },
   tick(a,e,now){ if(e<3000&&now>=a.next){ play('snip',.4); spawn('crumb',64+rand(-12,12),headTopOf({dy:0})+6,rand(-10,10),rand(-4,4),.9,furC()); a.next=now+320; } if(e>3000) once(a,'s',()=>{ burst(6); setCaption(`All done! ${nm()} looks so neat.`); play(happyNoise(),.45); }); }});
-V['groom:nails']=tripScene('groom',{dur:4000,
+V['groom:nails']=tripScene('groom',{dur:4000,undressed:true,
   start(){ setCaption(`Nail trim time. ${nm()} holds very still.`); },
   pose(p,e){ p.eyes=e<2400?'open':'happy'; blink(p,e); if(e>2600&&e<3200){ p.mouth='open'; p.headDy=-1; } else if(e>3200){ const b=Math.floor(e/170)%2; p.headDy=b; p.mouth=b?'open':'smile'; } },
   front(e,a,p){ if(e<2400){ const x=Math.floor(e/800)%2?70:56; rect(ctx,x-1,PETY+G().pawY+1,6,2,INK); rect(ctx,x,PETY+G().pawY+1.4,4,1.2,'#9AA4AE'); rect(ctx,x+4,PETY+G().pawY+.6,3,3,'#E0567D'); }
@@ -406,7 +411,7 @@ V['vet:sticker']=tripScene('vet',{dur:3600,noShadow:true,
 /* ---- Rainy day: watch the rain, then splash in puddles when it stops ---- */
 V['rain:puddles']=tripScene('rainyard',{dur:5000,
   start(){ setCaption(`The rain stopped! ${nm()} splashes in the puddles.`); },
-  pose(p,e){ const t=e%1000; p.eyes='happy'; p.mouth='tongue'; if(e<4000){ p.dx=Math.round(Math.sin(e/700)*20); p.dy=t<350?Math.round(arc(t/350,7)):0; } },
+  pose(p,e){ playBounds(p,e,1000,20,700,7,4000); },
   tick(a,e,now){ const t=e%1000; if(e<4000&&t>350&&now>=a.next){ play('splat',.4); for(let i=0;i<5;i++) spawn('drop',64+rand(-10,10)+Math.sin(e/700)*20,88,rand(-30,30),rand(-40,-20),.6); a.next=now+900; }
     if(e>3900) once(a,'r',()=>{ setCaption(`Look, a rainbow!`); play('twinkle',.6); }); }});
 /* ---- Photo booth: four flashes, four silly poses, a photo strip for the album ---- */

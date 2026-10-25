@@ -30,6 +30,21 @@ function makeHand(S,N,sleeve){ return sprite(20,21,b=>{
     part(b,T=>R(T,4.6,0,10.8,3.4,sleeve,SH,.6)); part(b,T=>R(T,4.6,3,10.8,1.2,'#F4E4C8',true));
     part(b,T=>{ R(T,5.6,4,8.8,3,S,SH); E(T,10,9.6,5.7,4.4,S,SH); E(T,4.4,9.6,1.8,2.3,S,SH); [[6.4,14.2,4],[9.2,15.4,4.5],[12,15.2,4.3],[14.6,13.6,3.3]].forEach(([x,y,h])=>E(T,x,y,1.75,h,S,SH)); });
     [[7.8,12.6,17.6],[10.6,12.6,19.2],[13.4,12.6,17]].forEach(([x,y0,y1])=>Ln(b,x,y0,x,y1,S+'!',1)); [[6.4,17.8],[9.2,19.6],[12,19.2],[14.6,16.6]].forEach(([x,y])=>E(b,x,y,.9,.5,N)); }); }
+/* The same person, with the palm upright: rounded fingers, a distinct thumb,
+   and the same shaded skin, cream cuff and sleeve as the reaching hand. */
+function makeHighFiveHand(S,sleeve){ return sprite(26,24,b=>{
+  part(b,T=>{ capsule(T,10.3,14.1,19,19.3,2.5,S,SH); });
+  part(b,T=>R(T,18.3,16.2,7.7,7,sleeve,SH,.7));
+  part(b,T=>R(T,17.4,16.1,2.2,7.1,'#F4E4C8',SH,.5));
+  part(b,T=>{
+    [[5.2,5.2],[7.4,3.8],[9.6,4.4],[11.8,6]].forEach(([x,y])=>capsule(T,x,y,x,10,1.15,S,SH));
+    E(T,8.5,11.3,4.5,4.5,S,SH);
+    capsule(T,4.7,13.4,2.6,9.7,1.4,S,SH);
+  });
+  [[6.3,6.2],[8.5,5.8],[10.7,6.6]].forEach(([x,y])=>Ln(b,x,y,x,8.7,S+'!',1));
+  Arc(b,7.3,11.6,2.2,1.5,S+'_',false,1);
+  Ln(b,10.1,13,11,11.5,S+'_',1);
+}); }
 const SPR={
   heart:sprite(7,6,b=>{ part(b,T=>heartShape(T,3.5,1.9,1.5,'#F07A8E',SH)); D(b,2,1.4,'*#FFD6DE'); }),
   heartO:sprite(7,6,b=>{ heartShape(b,3.5,1.9,1.5,(x,y)=>null); const s=1.5; for(let a=0;a<TAU;a+=.06){ D(b,3.5-s*.95+Math.cos(a)*s*1.05,1.9+Math.sin(a)*s,a>.3&&a<2.8?null:'#F07A8E'); D(b,3.5+s*.95+Math.cos(a)*s*1.05,1.9+Math.sin(a)*s,a>.3&&a<2.8?null:'#F07A8E'); } Ln(b,.6,2.6,3.5,5.6,'#F07A8E',2); Ln(b,6.4,2.6,3.5,5.6,'#F07A8E',2); },noInk),
@@ -83,14 +98,16 @@ const SPR={
    people shows two different people. At home, your own hand is the one it always was. */
 const SKIN_TONES=[['#5C3A24','#9A6E56'],['#8A5636','#BD8C72'],['#B97E50','#E0B08E'],['#DFA982','#F4D2BE'],['#F2C9A5','#FBE6D6']];
 const SLEEVES=['#6E9B7B','#5A8FC4','#D9577A','#E0A030','#8A6AB0','#4A5A70'];
-const PEOPLE_HANDS=[];
+const PEOPLE_HANDS=[], HIGH_FIVE_HANDS=[];
 const personHand=(skin,sleeve)=>{ const k=skin*10+sleeve; return PEOPLE_HANDS[k]||(PEOPLE_HANDS[k]=makeHand(SKIN_TONES[skin][0],SKIN_TONES[skin][1],SLEEVES[sleeve])); };
+const personHighFive=(skin,sleeve)=>{ const k=skin*10+sleeve; return HIGH_FIVE_HANDS[k]||(HIGH_FIVE_HANDS[k]=makeHighFiveHand(SKIN_TONES[skin][0],SLEEVES[sleeve])); };
 const newPerson=avoid=>{ let s; do s=Math.floor(Math.random()*SKIN_TONES.length); while(avoid&&s===avoid[0]); return [s,Math.floor(Math.random()*SLEEVES.length)]; };
 const HOME_HAND=SPR.hand;
 function peopleNow(){ const t=typeof trip!=='undefined'?trip:null, a=typeof anim!=='undefined'?anim:null, away=t||(a&&/^(event|welcome|season):/.test(a.key));
   if(!away) return null; const o=t||a; if(!o.people){ const p1=newPerson(); o.people=[p1,newPerson(p1)]; } return o.people; }
 Object.defineProperty(SPR,'hand',{get(){ const p=peopleNow(); return p?personHand(p[0][0],p[0][1]):HOME_HAND; },configurable:true});
 Object.defineProperty(SPR,'hand2',{get(){ const p=peopleNow(); return p?personHand(p[1][0],p[1][1]):HOME_HAND; },configurable:true});
+Object.defineProperty(SPR,'highFiveHand',{get(){ const p=peopleNow(); return p?personHighFive(p[0][0],p[0][1]):personHighFive(4,0); }});
 /* Food and water bowls: three fill levels, plain and fancy. */
 function bowlSprite(fill,rim,food,fancy){ return sprite(14,8,b=>{ part(b,T=>{ E(T,7,4.6,6.4,3.3,rim,SH,4.6); R(T,.6,3.8,12.8,1.5,shade(rim,.08),true,.7); });
   if(fancy) for(let x=2;x<13;x+=2.5) D(b,x,6,'#F4C542');

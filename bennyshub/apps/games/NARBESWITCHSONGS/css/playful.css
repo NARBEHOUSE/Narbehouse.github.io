@@ -1,0 +1,76 @@
+/* One storybook palette for every screen. The saved "studio" value is retained. */
+:root[data-look="studio"] {
+    --bg: #b6e8ee;
+    --surface: #fff6df;
+    --line: #254d5e;
+    --text: #18334a;
+    --muted: #314a5a;
+    --radius: 24px;
+    color-scheme: light;
+}
+[data-look="studio"] body,
+[data-look="studio"] .nss-songend { background: var(--bg); }
+[data-look="studio"] .nss-card,
+[data-look="studio"] .nss-songend .nss-card {
+    background: var(--surface);
+    border: 3px solid #14798a;
+    border-radius: 32px;
+    box-shadow: 0 5px 0 #80c9d2;
+}
+[data-look="studio"] .nss-title,
+[data-look="studio"] .nss-bar-title { color: #146779; letter-spacing: -.025em; }
+[data-look="studio"] .nss-sub { color: var(--muted); }
+[data-look="studio"] .nss-btn {
+    background: #d5eff4;
+    border: 3px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 5px 0 var(--line);
+    color: var(--text);
+}
+[data-look="studio"] .nss-btn:hover { border-color: #0b566b; }
+[data-look="studio"] .nss-btn-value,
+[data-look="studio"] .nss-set-value { color: var(--muted); }
+[data-look="studio"] .nss-item-nav { border-style: dashed; }
+[data-look="studio"] .nss-list .nss-btn:first-child,
+[data-look="studio"] .nss-listen { background: #ffd15c; }
+[data-look="studio"] .nss-options { background: #ffb6a1; }
+[data-look="studio"] .nss-set { background: #d5eff4; }
+[data-look="studio"] .nss-song-choice { background: #fffaf0; }
+[data-look="studio"] .nss-song-choice:nth-child(3n + 2) { background: #fff0bd; }
+[data-look="studio"] .nss-song-choice:nth-child(3n) { background: #ffe0d5; }
+[data-look="studio"] .nss-choice-art { border-radius: 16px; }
+[data-look="studio"] .nss-ready { color: #236451; font-size: 18px; }
+[data-look="studio"] .nss-ready i { background: #236451; width: 12px; height: 12px; }
+[data-look="studio"] .nss-song .nss-bar,
+[data-look="studio"] .nss-free .nss-bar {
+    padding: 8px 16px; background: var(--surface);
+    border: 2px solid #14798a; border-radius: 20px;
+}
+[data-look="studio"] .nss-scene-picture img { outline-color: #14798a; }
+[data-look="studio"] .nss-progress,
+[data-look="studio"] .nss-progress::-webkit-progress-bar { background: #8ac5cd; }
+[data-look="studio"] .nss-progress { accent-color: #146779; }
+[data-look="studio"] .nss-progress::-webkit-progress-value { background: #146779; }
+[data-look="studio"] .nss-progress::-moz-progress-bar { background: #146779; }
+[data-look="studio"] .nss-piano-scroll {
+    background: #127f90; box-shadow: inset 0 -5px #0e5866;
+    scrollbar-color: #fff6df #127f90;
+}
+[data-look="studio"] .nss-piano,
+[data-look="studio"] .nss-free-piano { background: #254d5e; }
+[data-look="studio"] .nss-piano { border: 0; border-radius: 8px; box-shadow: none; }
+[data-look="studio"] .nss-key { border: 2px solid #254d5e; border-radius: 0 0 10px 10px; }
+[data-look="studio"] .nss-key.white { background: #fffaf0; box-shadow: inset 0 -6px #d9cdb4; }
+[data-look="studio"] .nss-key.black { background: #203446; box-shadow: inset 0 -6px #0b1d2a; }
+[data-look="studio"] .nss-key.pressed { background: var(--note-color); box-shadow: inset 0 -3px #254d5e; }
+[data-look="studio"] .nss-piano.nss-focus-full .white:not(.pressed) { background: var(--focus-color); }
+[data-look="studio"] .nss-hold { background: linear-gradient(90deg, #146779 calc(var(--p, 0) * 100%), transparent 0); }
+[data-look="studio"] .nss-free-stage { background: var(--surface); border-color: #14798a; }
+[data-look="studio"] .nss-free-staff i { background: #14798a26; }
+[data-look="studio"] .nss-free-history-key[aria-current] { outline-color: #146779; }
+[data-look="studio"] .nss-free-symbol svg { filter: drop-shadow(0 4px 0 #254d5e); }
+[data-look="studio"] .nss-free-symbol path { fill: var(--free-main, #14798a); stroke: #254d5e; stroke-width: 2; }
+[data-look="studio"] .nss-achievement { background: #ffd15c; border: 3px solid #254d5e; color: #18334a; box-shadow: 0 5px 0 #254d5e; }
+[data-look="studio"] .nss-end-message { color: var(--text); }
+/* Pale celebration pieces keep a clear edge against the light card. */
+[data-look="studio"] .nss-celebration-piece { filter: drop-shadow(0 1px 0 #254d5e); }

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Jersey+10&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=2026.10.25.4">
 <script src="../../../shared/usage-analytics.js" defer></script>
 <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
@@ -141,29 +141,30 @@
 <script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
 <script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
 
-<!-- Game modules. Plain scripts that share one scope, loaded in this order. -->
-<script src="js/core.js"></script>
-<script src="js/sound.js"></script>
-<script src="js/music.js"></script>
-<script src="js/pixel.js"></script>
-<script src="js/pets.js"></script>
-<script src="js/petside.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/room.js"></script>
-<script src="js/props.js"></script>
-<script src="js/scenes.js"></script>
-<script src="js/anims.js"></script>
-<script src="js/places.js"></script>
-<script src="js/outings.js"></script>
-<script src="js/tricks.js"></script>
-<script src="js/seasons.js"></script>
-<script src="js/school.js"></script>
-<script src="js/companions.js"></script>
-<script src="js/arrange.js"></script>
-<script src="js/howtodemo.js"></script>
-<script src="js/mypets.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/game.js"></script>
-<script src="js/scan-access.js"></script>
+<!-- Game modules share one scope and load in this order. Bump every release query together with
+     GAME_BUILD in core.js so returning players cannot mix old cached scripts with new ones. -->
+<script src="js/core.js?v=2026.10.25.4"></script>
+<script src="js/sound.js?v=2026.10.25.4"></script>
+<script src="js/music.js?v=2026.10.25.4"></script>
+<script src="js/pixel.js?v=2026.10.25.4"></script>
+<script src="js/pets.js?v=2026.10.25.4"></script>
+<script src="js/petside.js?v=2026.10.25.4"></script>
+<script src="js/sprites.js?v=2026.10.25.4"></script>
+<script src="js/room.js?v=2026.10.25.4"></script>
+<script src="js/props.js?v=2026.10.25.4"></script>
+<script src="js/scenes.js?v=2026.10.25.4"></script>
+<script src="js/anims.js?v=2026.10.25.4"></script>
+<script src="js/places.js?v=2026.10.25.4"></script>
+<script src="js/outings.js?v=2026.10.25.4"></script>
+<script src="js/tricks.js?v=2026.10.25.4"></script>
+<script src="js/seasons.js?v=2026.10.25.4"></script>
+<script src="js/school.js?v=2026.10.25.4"></script>
+<script src="js/companions.js?v=2026.10.25.4"></script>
+<script src="js/arrange.js?v=2026.10.25.4"></script>
+<script src="js/howtodemo.js?v=2026.10.25.4"></script>
+<script src="js/mypets.js?v=2026.10.25.4"></script>
+<script src="js/ui.js?v=2026.10.25.4"></script>
+<script src="js/game.js?v=2026.10.25.4"></script>
+<script src="js/scan-access.js?v=2026.10.25.4"></script>
 </body>
 </html>

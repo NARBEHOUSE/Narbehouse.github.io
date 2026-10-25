@@ -249,11 +249,16 @@ V['pumpkin:carry']=tripScene('pumpkin',{dur:3800,outdoor:true,
   tick(a,e){ if(e>700) once(a,'b',()=>{ burst(6); play(happyNoise(),.45); }); if(e>1600) once(a,'p',()=>addPhoto('place',`${sayN()} at the pumpkin patch.`,{place:'pumpkinpatch'})); }});
 PREVIEW_ART.pumpkin_round=(x,y)=>pumpkinAt(ctx,x,y+1,1.6,'round'); PREVIEW_ART.pumpkin_tall=(x,y)=>pumpkinAt(ctx,x,y+1,1.6,'tall'); PREVIEW_ART.pumpkin_bumpy=(x,y)=>pumpkinAt(ctx,x,y+1,1.6,'bumpy');
 V['orchard:apples']=tripScene('orchard',{dur:4400,outdoor:true,start(){ setCaption(`Apple picking! Apples drop from the trees.`); },
-  pose(p,e){ const k=Math.floor(e/1100); p.eyes='open'; p.headDy=-1; if(e>900) { p.dx=Math.round(Math.sin(e/500)*8); p.eyes='happy'; } if(k>=3){ p.mouth='tongue'; } },
+  pose(p,e){ p.eyes='happy'; p.headDy=-1; p.mouth=e>3300?'tongue':'smile';
+    if(e<800){ p.body='stand'; p.face=-1; p.frame=0; p.dy=0; }
+    else if(e<1900) walkBetween(p,e,800,1550,0,-18);
+    else if(e<3000) walkBetween(p,e,1900,2650,-18,0);
+    else walkBetween(p,e,3000,3850,0,16);
+    if((e>1550&&e<1900)||(e>2650&&e<3000)||e>3850){ p.headDy=3; p.eyes='closed'; } },
   front(e){ for(let i=0;i<3;i++){ const t0=500+i*1100, k=ph(e,t0,t0+700); if(e>t0){ const x=46+i*18, y=k<1?lerp(24,86,k*k):86-Math.abs(Math.sin((e-t0-700)/140))*Math.max(0,3-(e-t0-700)/300); pxEll(ctx,x,y,1.8,1.8,INK); pxEll(ctx,x,y,1.4,1.4,'#D9403E'); rect(ctx,x-.2,y-2.6,.5,1,'#6A4428'); } } },
   tick(a,e){ [1200,2300,3400].forEach((t,i)=>{ if(e>t) once(a,'b'+i,()=>play('bounce',.45)); }); if(e>3500) once(a,'h',()=>play(happyNoise(),.45)); }});
 V['orchard:basket']=tripScene('orchard',{dur:3600,outdoor:true,start(){ setCaption(`${sayN()} helps fill the basket with shiny red apples.`); },
-  pose(p,e){ p.dx=16; p.eyes='happy'; p.mouth='tongue'; if(e>1400&&e<2400) p.dy=-Math.round(Math.abs(Math.sin(e/150))*3); },
+  pose(p,e){ walkBetween(p,e,0,900,16,26); p.eyes='happy'; p.mouth='tongue'; if(e>900){ p.headDy=2; p.wag=180; } },
   tick(a,e){ if(e>1400) once(a,'s',()=>{ burst(6); play('sparkle',.5); addPhoto('place',`${sayN()} at the apple orchard.`,{place:'orchard'}); }); }});
 V['fest:flowers']=tripScene('fest',{dur:4200,outdoor:true,start(){ setCaption(`The flower festival! Flowers everywhere, ${sayN()}.`); },
   pose(p,e){ if(e<1500){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(-30,0,e/1500)); } else if(e<3000){ p.headDy=1; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='tongue'; } },
@@ -263,7 +268,7 @@ V['fest:crown']=tripScene('fest',{dur:3600,outdoor:true,start(){ wearGift('flowe
   pose(p,e){ p.eyes='happy'; p.mouth='tongue'; if(e>700&&e<1800) p.dy=-Math.round(Math.abs(Math.sin(e/150))*3); },
   tick(a,e){ if(e>500) once(a,'b',()=>burst(8)); if(e>1600) once(a,'p',()=>addPhoto('place',`${sayN()} at the flower festival.`,{place:'flowerfest'})); }});
 V['splash:jets']=tripScene('splash',{dur:4800,outdoor:true,start(){ setCaption(`The splash pad! ${sayN()} jumps through the water.`); },
-  pose(p,e){ const t=e%1200; p.eyes='happy'; p.mouth='open'; p.dx=Math.round(Math.sin(e/800)*18); p.dy=t<400?Math.round(arc(t/400,8)):0; },
+  pose(p,e){ playBounds(p,e,1200,18,800,8,4600); },
   front(e){ [[34,78],[64,70],[94,78]].forEach(([x,y],i)=>{ const h=Math.max(0,Math.sin(e/350+i*2))*22; for(let k=0;k<h;k+=1.5) rect(ctx,x-.6+Math.sin(k+e/60)*.6,y-k,1.2,1.2,'rgba(160,210,240,.85)'); if(h>2) pxEll(ctx,x,y-h,2.4,1.4,'#DDF4FF'); }); },
   tick(a,e,now){ if(now>=a.next){ play('splat',.3); for(let i=0;i<4;i++) spawn('drop',64+rand(-20,20),70,rand(-30,30),rand(-40,-20),.6); a.next=now+700; } }});
 V['splash:shake']=tripScene('splash',{dur:3000,outdoor:true,start(){ setCaption(`Shake, shake! ${sayN()} is dripping wet and happy.`); },
@@ -272,7 +277,7 @@ V['splash:shake']=tripScene('splash',{dur:3000,outdoor:true,start(){ setCaption(
 function drawUmbrella(){ rect(ctx,92,40,1.2,48,'#8A6A4A'); for(let i=0;i<8;i++){ ctx.fillStyle=i%2?'#FFFFFF':'#E0604A'; ctx.beginPath(); ctx.moveTo(92.6,38); ctx.lineTo(76+i*4,46); ctx.lineTo(80+i*4,46); ctx.fill(); } rect(ctx,70,84,36,6,'#7FA8D8'); for(let x=70;x<106;x+=6) rect(ctx,x,84,3,6,'#F4D27A'); }
 V['beach:dig']=tripScene('beach',{dur:4400,outdoor:true,start(){ setCaption(`Beach day! ${sayN()} digs in the warm sand.`); },
   behind(){ drawUmbrella(); },
-  pose(p,e){ if(e<2600){ p.headDy=2+(Math.floor(e/140)%2); p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
+  pose(p,e){ p.dy=0; if(e<2600){ p.body='dig'; p.face=1; p.bow=.75; p.frame=Math.floor(e/140)%4; p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
   front(e){ if(e>2600){ const k=ph(e,2600,3000); pxEll(ctx,72,lerp(90,80,k),2.6,2,INK); pxEll(ctx,72,lerp(90,80,k),2,1.5,'#F7C4CF'); } },
   tick(a,e,now){ if(e<2600&&now>=a.next){ for(let i=0;i<2;i++) spawn('crumb',64+rand(-6,6),86,rand(-30,30),rand(-40,-20),.6,'#E8C88A'); play('rustle',.25); a.next=now+260; } if(e>2600) once(a,'f',()=>{ setCaption(`${sayN()} found a pretty pink shell!`); play('sparkle',.5); burst(5); }); }});
 V['beach:rest']=tripScene('beach',{dur:4000,outdoor:true,start(){ setCaption(`A nap in the shade of the beach umbrella.`); },
@@ -283,25 +288,25 @@ V['sled:ride']=tripScene('sled',{dur:4200,outdoor:true,noShadow:true,start(){ se
   front(e,a,p){ const x=64+p.dx, y=PETY+p.dy+42; rect(ctx,x-12,y-1,24,3,INK); rect(ctx,x-11,y-.4,22,1.8,'#D9403E'); pxLine(ctx,x-12,y+2.4,x+12,y+2.4,'#6A4428',.6); pxLine(ctx,x+12,y+2.4,x+14,y,'#6A4428',.6); },
   tick(a,e,now){ if(e<3200&&now>=a.next){ spawn('puff',64+rand(-6,6),80,rand(-20,-6),rand(-10,-4),.8,'#FFFFFF'); a.next=now+80; } if(e>3300) once(a,'h',()=>{ play(happyNoise(),.5); burst(6); }); }});
 V['snow:angel']=tripScene('snowyard',{dur:4000,outdoor:true,start(){ setCaption(`${sayN()} makes a snow angel!`); },
-  pose(p,e){ if(e<2800){ p.body='lie'; p.face=Math.floor(e/300)%2?1:-1; p.frame=0; p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
+  pose(p,e){ p.dy=0; if(e<2800){ p.body='curl'; p.face=1; p.roll=Math.PI+Math.sin(e/260)*.7; p.frame=0; p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
   behind(e){ if(e>2800){ pxEll(ctx,64,88,18,4,'rgba(200,215,235,.8)'); pxEll(ctx,50,84,6,3,'rgba(200,215,235,.8)'); pxEll(ctx,78,84,6,3,'rgba(200,215,235,.8)'); } },
   tick(a,e,now){ if(e<2800&&now>=a.next){ spawn('puff',64+rand(-12,12),84,rand(-10,10),rand(-10,-4),.8,'#FFFFFF'); a.next=now+200; } if(e>2800) once(a,'p',()=>{ burst(6); addPhoto('place',`${sayN()} made a snow angel.`,{place:'snowday'}); }); }});
 V['snow:play']=tripScene('snowyard',{dur:4400,outdoor:true,start(){ setCaption(`Snow day! ${sayN()} pounces in the fluffy snow.`); },
-  pose(p,e){ const t=e%1100; p.eyes='happy'; p.mouth='open'; p.dx=Math.round(Math.sin(e/700)*16); p.dy=t<450?Math.round(arc(t/450,9)):0; },
+  pose(p,e){ playBounds(p,e,1100,16,700,9,4200); },
   tick(a,e,now){ const t=e%1100; if(t>450&&now>=a.next){ play('rustle',.3); for(let i=0;i<5;i++) spawn('puff',64+Math.sin(e/700)*16+rand(-6,6),86,rand(-20,20),rand(-16,-6),.8,'#FFFFFF'); a.next=now+1000; } }});
 V['lights:walk']=tripScene('lights',{dur:6400,outdoor:true,scroll:1,start(){ setCaption(`A walk past the holiday lights. So twinkly, ${sayN()}!`); play('twinkle',.5); },
   pose(p,e){ p.body='walk'; p.face=1; p.frame=Math.floor(e/150)%4; p.eyes='happy'; p.mouth='smile'; },
   front(e,a,p){ const nk=neckAt(p); drawLeash(nk.x,nk.y,VIEW.x+VIEW.w+3,nk.y-28,'#D9403E','#8E2A48',13); },
   tick(a,e,now){ if(now>=a.next){ play('step',.18); a.next=now+300; } if(e>3200) once(a,'w',()=>{ setCaption(`${sayN()} loves the lights. Happy holidays!`); play(happyNoise(),.45); addPhoto('place',`${sayN()} on a holiday lights walk.`,{place:'lightswalk'}); }); }});
 V['rainwalk:puddles']=tripScene('rainwalk',{dur:5600,outdoor:true,scroll:1,start(){ setCaption(`Rain boots on! ${sayN()} splashes through the puddles.`); },
-  pose(p,e){ const t=e%1200; p.body='walk'; p.face=1; p.frame=Math.floor(e/150)%4; p.eyes='happy'; p.mouth='open'; p.dy=t<380?Math.round(arc(t/380,6)):0; },
+  pose(p,e){ const t=e%1200; p.body='walk'; p.face=1; p.frame=Math.floor(e/150)%4; p.eyes='happy'; p.mouth='open'; p.dy=0; if(t<650) leapPose(p,t,180,500,6); },
   front(e,a,p){ const nk=neckAt(p); drawLeash(nk.x,nk.y,VIEW.x+VIEW.w+3,nk.y-28,'#F4C542','#B8902A',13); },
   tick(a,e,now){ const t=e%1200; if(t>380&&now>=a.next){ play('splat',.4); for(let i=0;i<5;i++) spawn('drop',64+rand(-8,8),88,rand(-30,30),rand(-40,-20),.6); a.next=now+1100; } }});
 V['leaves:jump']=tripScene('leafyard',{dur:4600,outdoor:true,start(){ setCaption(`Crunchy leaves! ${sayN()} jumps into the leaf pile.`); },
-  pose(p,e){ if(e<800){ p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(0,-26,e/800)); } else if(e<1500){ p.dx=-26-Math.round(ph(e,800,1500)*8); p.dy=Math.round(arc(ph(e,800,1500),14)); p.eyes='happy'; p.mouth='open'; } else { p.dx=-34; p.eyes='happy'; p.mouth='tongue'; p.dy=2; } },
+  pose(p,e){ p.face=-1; if(e<800){ walkBetween(p,e,0,800,0,-26); } else if(e<1800){ p.dx=lerp(-26,-34,ph(e,800,1500)); leapPose(p,e,800,1500,14); p.eyes='happy'; p.mouth='open'; } else { p.dx=-34; p.body='stand'; p.headDy=2; p.eyes='happy'; p.mouth='tongue'; p.dy=0; } },
   tick(a,e){ if(e>1450) once(a,'b',()=>{ play('rustle',.6); for(let i=0;i<18;i++) spawn('leaf',30+rand(-10,10),82,rand(-30,30),rand(-50,-20),2.4,['#E08A3C','#C9502E','#E8B54A'][i%3]); }); if(e>2600) once(a,'p',()=>{ play(happyNoise(),.45); addPhoto('place',`${sayN()} jumped in the leaves.`,{place:'leafpile'}); }); }});
 V['sprinkler:jump']=tripScene('yard',{dur:5000,outdoor:true,start(){ setCaption(`The sprinkler is on! ${sayN()} leaps through the spray.`); },
-  pose(p,e){ const t=e%1300; p.eyes='happy'; p.mouth='open'; p.dx=Math.round(Math.sin(e/900)*20); p.dy=t<420?Math.round(arc(t/420,9)):0; },
+  pose(p,e){ playBounds(p,e,1300,20,900,9,4800); },
   front(e){ const a=Math.sin(e/500)*.8; for(let i=0;i<14;i++){ const k=i/14; rect(ctx,94-Math.sin(a)*k*50-k*10,86-Math.sin(k*Math.PI)*26,1.2,1.2,'rgba(160,210,240,.9)'); } rect(ctx,92,86,5,2,'#5FA873'); },
   tick(a,e,now){ const t=e%1300; if(t>420&&now>=a.next){ play('splat',.35); a.next=now+1200; } if(e>4200) once(a,'p',()=>addPhoto('place',`${sayN()} and the summer sprinkler.`,{place:'sprinkler'})); }});
 V['egg:hunt']=tripScene('eggyard',{dur:6400,outdoor:true,start(){ setCaption(`An Easter egg hunt! Can ${sayN()} find the eggs?`); },
@@ -319,13 +324,22 @@ V['fireworks:cozy']={dur:6000,start(){ setCaption(`Fireworks! ${sayN()} feels sa
   front(e,a,p){ drawBlanket(Math.round(PETY+G().collar+(big()?1:0))); },
   overlay(e){ ctx.fillStyle='rgba(20,24,70,.35)'; fillView(ctx); const w=WIN(); ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip(); ctx.fillStyle='#1A2050'; ctx.fillRect(w.x,w.y,w.w,w.h); fireworksIn(w.x,w.y,w.w,w.h,performance.now(),1); ctx.restore(); },
   tick(a,e,now){ if(now>=a.next){ play('pop',.2); a.next=now+1400; } if(e>3000) once(a,'s',()=>setCaption(`Boom, crackle, sparkle! ${sayN()} peeks out to watch.`)); }};
+function drawPumpkinBucket(g,x,y,k=1){ g.save(); g.translate(x,y); g.scale(k,k);
+  // Raised handle, hollow opening, three pumpkin lobes, and a carved jack-o'-lantern face.
+  g.strokeStyle='#493E45'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-4,-7); g.bezierCurveTo(-5,-17,5,-17,4,-7); g.stroke();
+  pxEll(g,0,-5,6,5.2,INK); pxEll(g,-2.6,-5,2.8,4.5,'#DD672A'); pxEll(g,2.6,-5,2.8,4.5,'#D85E24'); pxEll(g,0,-5,3.1,4.6,'#F68B32');
+  g.strokeStyle='#C75320'; g.lineWidth=.5; [-1,1].forEach(s=>{ g.beginPath(); g.moveTo(s*2.4,-8); g.quadraticCurveTo(s*4,-4,s*2.3,-.8); g.stroke(); });
+  pxEll(g,0,-8.7,4.9,1.6,'#9C471E'); pxEll(g,0,-9,4.1,1,'#41353A'); pxLine(g,-3,-8,3,-8,'#FFB64E',.5);
+  g.fillStyle='#49312B'; [[-3.4,-5.4,-1.1,-5.4,-2.2,-7],[1.1,-5.4,3.4,-5.4,2.2,-7],[-.7,-4,.7,-4,0,-5.1]].forEach(t=>{g.beginPath();g.moveTo(t[0],t[1]);g.lineTo(t[2],t[3]);g.lineTo(t[4],t[5]);g.closePath();g.fill();});
+  g.beginPath(); g.moveTo(-3.2,-3.8); g.lineTo(-1.4,-3); g.lineTo(-.7,-3.6); g.lineTo(.5,-2.9); g.lineTo(1.5,-3.5); g.lineTo(3.2,-3.8); g.quadraticCurveTo(0,.3,-3.2,-3.8); g.fill();
+  pxEll(g,-4,-6.7,.55,1.1,'#FFC16B'); g.restore(); }
 V['tot:walk']=tripScene('tot',{dur:4200,outdoor:true,scroll:1,start(){ setCaption(`Trick or treat! ${sayN()} heads out in costume.`); play('twinkle',.4); },
   pose(p,e){ p.body='walk'; p.face=1; p.frame=Math.floor(e/150)%4; p.eyes='happy'; p.mouth='smile'; },
-  front(e,a,p){ const m=mouthAt(p); pxEll(ctx,m.x+2,m.y+4,3.4,3,INK); pxEll(ctx,m.x+2,m.y+4,2.8,2.4,'#F08A2A'); pxLine(ctx,m.x,m.y+1,m.x+4,m.y+1,'#2F2B35',.6); },
+  front(e,a,p){ const m=mouthAt(p); drawPumpkinBucket(ctx,m.x,m.y+13,.9); },
   tick(a,e,now){ if(now>=a.next){ play('step',.18); a.next=now+300; } }});
 function totDoor(n){ return tripScene('tot',{dur:3800,start(){ setCaption(n?`Knock knock! Another treat for ${sayN()}!`:`Knock knock! "Trick or treat!"`); play('knock',.5); },
   pose(p,e){ p.eyes='happy'; p.mouth=e>1800?'tongue':'smile'; if(e>1800&&e<2800) p.dy=-Math.round(Math.abs(Math.sin(e/150))*3); },
-  front(e,a,p){ rect(ctx,88,44,20,42,INK); rect(ctx,89,45,18,41,e>700?'#FFD89A':'#8A5A34'); if(e>900&&e<1900){ const hy=lerp(40,56,ph(e,900,1300)); blit(ctx,SPR.hand,86,hy); blit(ctx,SPR.cookie,86,hy+14); } pxEll(ctx,78,86,3.4,3,INK); pxEll(ctx,78,86,2.8,2.4,'#F08A2A'); },
+  front(e,a,p){ rect(ctx,88,44,20,42,INK); rect(ctx,89,45,18,41,e>700?'#FFD89A':'#8A5A34'); if(e>900&&e<1900){ const hy=lerp(40,56,ph(e,900,1300)); blit(ctx,SPR.hand,86,hy); blit(ctx,SPR.cookie,86,hy+14); } drawPumpkinBucket(ctx,78,87); },
   tick(a,e){ if(e>1500) once(a,'t',()=>{ play('sparkle',.5); spawn('sparkle',78,80,0,-8,.8); setCaption(`A yummy pet treat goes in the bucket. "Great costume, ${sayN()}!"`); }); if(n&&e>2800) once(a,'p',()=>addPhoto('place',`${sayN()} went trick or treating.`,{place:'trickortreat'})); }}); }
 V['tot:door']=totDoor(0); V['tot:door2']=totDoor(1);
 function treeX(){ const t=treeSpot(); return t?t:{x:30,y:61.5}; }
@@ -334,7 +348,11 @@ V['tree:hang']={dur:5200,start(){ setCaption(`${sayN()} helps hang an ornament o
   front(e,a,p){ if(e<2200){ const m=mouthAt(p); pxEll(ctx,m.x,m.y+2,1.8,1.8,INK); pxEll(ctx,m.x,m.y+2,1.4,1.4,'#D9403E'); } },
   tick(a,e){ if(e>2200) once(a,'h',()=>{ markSeasonal('tree:'+calToday().getFullYear(),treeDeco()+2); bgKey=null; play('twinkle',.6); burst(6); setCaption(treeDeco()>=6?`The star goes on top! The tree is beautiful.`:`Two new ornaments on the tree!`); }); if(e>3000) once(a,'p',()=>play(happyNoise(),.45)); }};
 V['tree:climb']={dur:5000,start(){ setCaption(`Uh oh! ${sayN()} is climbing the holiday tree!`); },
-  pose(p,e){ const t=treeX(), tx=t.x-64; if(e<900){ p.body='walk'; p.face=tx<0?-1:1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(0,tx,e/900)); } else if(e<3200){ p.dx=tx; p.dy=-Math.round(lerp(0,18,ph(e,900,1600))); p.eyes='happy'; p.mouth='open'; } else { p.dx=Math.round(lerp(tx,0,ph(e,3400,4400))); p.dy=-Math.round(lerp(18,0,ph(e,3200,3500))); p.eyes='happy'; } },
+  pose(p,e){ const t=treeX(), tx=t.x-64; p.dy=0; p.eyes='happy';
+    if(e<900) walkBetween(p,e,0,900,0,tx);
+    else if(e<3200){ p.dx=tx; p.body=e<1700?'walk':'stand'; p.face=tx<0?-1:1; p.frame=Math.floor(e/150)%4; p.climb=ease(ph(e,900,1300)); p.dy=-lerp(0,18,ease(ph(e,900,1700))); p.mouth='open'; }
+    else if(e<3650){ p.dx=tx; p.face=tx<0?-1:1; p.body='jump'; p.tuck=.65; p.climb=1-ease(ph(e,3200,3650)); p.dy=lerp(-18,0,ease(ph(e,3200,3650))); }
+    else walkBetween(p,e,3650,4650,tx,0); },
   front(e){ if(e>2400&&e<3400){ const t=treeX(), k=ph(e,2400,2900); pxEll(ctx,t.x+6,lerp(t.y-24,t.y-2,k*k),1.8,1.8,INK); pxEll(ctx,t.x+6,lerp(t.y-24,t.y-2,k*k),1.4,1.4,'#F4C542'); } },
   tick(a,e){ if(e>1600) once(a,'r',()=>play('rustle',.5)); if(e>2800) once(a,'o',()=>{ play('bounce',.5); setCaption(`Oops! An ornament fell. ${sayN()} hops down. Silly kitty!`); }); if(e>4200) once(a,'h',()=>{ markSeasonal('tree:'+calToday().getFullYear(),treeDeco()+1); bgKey=null; play('twinkle',.5); }); }};
 V['present:sweater']={dur:3600,start(){ wearGift('holiday','body'); setCaption(`And a cozy holiday sweater for ${sayN()}! Happy holidays!`); play('twinkle',.6); },

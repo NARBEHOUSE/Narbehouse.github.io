@@ -137,35 +137,65 @@ function dogFlopEar(b,type,s,cx,hy,H,P,ed){
    the front legs are drawn with leg lines that start at the chest (where the shoulders are) and run down
    to the front paws. The light chest comes down to where the legs begin. The back legs sit behind the
    body, so only a slim curve of each shows at the sides, with the back paws peeking out on the outside. */
-function sitBody(b,P,cx,BD,sh,cat,clothes){ const H=P.haunch, W=P.paw;
+function sitBody(b,P,cx,BD,sh,cat,clothes,o={}){ const H=P.haunch, W=P.paw;
+  const grounded=[-1,1].filter(s=>!o.paws||!o.paws[s]);
+  // Walking toward the camera uses the same short leg on both sides. Lift a foot by
+  // bending that leg; never replace it with the shoulder-to-paw reaching gesture.
+  const lift=s=>o.upright?frontStepLift(o.frame||0,s):0;
   const legDx=W.dx*(cat?.6:.64), legTop=BD.cy-BD.ry*.1, legBot=W.cy, legRx=W.rx*(cat?.56:.6), legH=(legBot-legTop)/2, legCy=(legTop+legBot)/2, chestEnd=legTop+(legBot-legTop)*.38;
   const thX=BD.rx*(cat?.66:.7), thY=H.cy+.3, thRx=H.rx*(cat?.8:.86), thRy=H.ry*1.02;
   const toes=(x,y,ry,tag)=>{ Ln(b,x-.6,y+.1,x-.6,y+ry-.35,tag,1); Ln(b,x+.6,y+.1,x+.6,y+ry-.35,tag,1); };
   /* back legs, behind the body: a slim curve at each side and the back paw on the outside */
-  part(b,T=>[-1,1].forEach(s=>E(T,cx+s*thX,thY,thRx,thRy,'fur',SH)));
-  [-1,1].forEach(s=>{ const px=cx+s*(thX+thRx*.3), py=W.cy-.2; part(b,T=>E(T,px,py,W.rx*.88,W.ry*.8,'paw',SHL)); toes(px+s*.25,py,W.ry*.8,'paw!'); });
+  if(!o.upright) part(b,T=>[-1,1].forEach(s=>E(T,cx+s*thX,thY,thRx,thRy,'fur',SH)));
+  [-1,1].forEach(s=>{ const px=cx+s*(o.upright?thX*.85:thX+thRx*.3), py=W.cy-(o.upright?2:.2); part(b,T=>E(T,px,py,W.rx*.88,W.ry*.8,'paw',SHL)); toes(px+s*.25,py,W.ry*.8,'paw!'); });
   /* the body and the front legs as one shape (lower legs in the paw color, like socks) */
   const sock=(x,y)=>y>legTop+(legBot-legTop)*.64?'paw':'fur';
-  part(b,T=>{ E(T,cx,BD.cy,BD.rx*.8,BD.ry,'fur',SH); E(T,cx,BD.cy+BD.ry*.42,BD.rx*.86,BD.ry*.56,'fur',SH); [-1,1].forEach(s=>E(T,cx+s*legDx,legCy,legRx,legH,sock,SH)); });
+  part(b,T=>{ E(T,cx,BD.cy,BD.rx*.8,BD.ry,'fur',SH); E(T,cx,BD.cy+BD.ry*.42,BD.rx*.86,BD.ry*.56,'fur',SH); grounded.forEach(s=>E(T,cx+s*legDx,legCy-lift(s)/2,legRx,legH-lift(s)/2,sock,SH)); });
   /* the light chest, down to the top of the front legs */
   E(b,cx,BD.cy+BD.ry*.02,BD.rx*.42,BD.ry*.8,'light',null,null,chestEnd);
   /* leg lines: from the chest down to the paws, on both sides of each front leg */
-  [-1,1].forEach(s=>{ const xi=cx+s*(legDx-legRx)+s*.2, xo=cx+s*(legDx+legRx)-s*.2;
-    Ln(b,xi,chestEnd-.4,xi,legBot-.5,'fur!',1); Ln(b,xo,chestEnd+(legBot-chestEnd)*.3,xo,legBot-.5,'fur!',1); });
+  grounded.forEach(s=>{ const xi=cx+s*(legDx-legRx)+s*.2, xo=cx+s*(legDx+legRx)-s*.2;
+    Ln(b,xi,chestEnd-.4,xi,legBot-.5-lift(s),'fur!',1); Ln(b,xo,chestEnd+(legBot-chestEnd)*.3,xo,legBot-.5-lift(s),'fur!',1); });
   clothes();
-  if(sh.cuffs) part(b,T=>[-1,1].forEach(s=>E(T,cx+s*legDx,W.cy-.8,W.rx*1.2,W.ry*1.4,'fur',SH)));
-  part(b,T=>[-1,1].forEach(s=>E(T,cx+s*legDx,W.cy+.45,W.rx*(sh.cuffs?.78:.92),W.ry*(sh.cuffs?.75:.98),'paw',SHL)));
-  [-1,1].forEach(s=>toes(cx+s*legDx,W.cy+.45,W.ry*.98,'paw!')); }
+  if(sh.cuffs) part(b,T=>grounded.forEach(s=>E(T,cx+s*legDx,W.cy-.8-lift(s),W.rx*1.2,W.ry*1.4,'fur',SH)));
+  part(b,T=>grounded.forEach(s=>E(T,cx+s*legDx,W.cy+.45-lift(s),W.rx*(sh.cuffs?.78:.92),W.ry*(sh.cuffs?.75:.98),'paw',SHL)));
+  grounded.forEach(s=>toes(cx+s*legDx,W.cy+.45-lift(s),W.ry*.98,'paw!')); }
+function frontStepLift(frame,side){ return frame===1&&side<0||frame===3&&side>0?1.2:0; }
+/* The raised leg uses exactly the same shoulder and total length as the resting front leg.
+   Its upper leg stays close to the chest; a foreshortened forearm folds toward the viewer. */
+function frontLegRig(P,S,side){ const W=P.paw, BD=P.body, sx=22+side*W.dx*(S.kind==='cat'?.6:.64), sy=BD.cy-BD.ry*.1, length=W.cy+.45-sy;
+  return {sx,sy,upper:length*.48,lower:length*.52}; }
+function forelegJoints(P,S,side,q){ const r=frontLegRig(P,S,side);
+  const limit=(x,y,ax,ay,len)=>{ const d=Math.hypot(x-ax,y-ay), k=d>len?len/d:1; return {x:ax+(x-ax)*k,y:ay+(y-ay)*k}; };
+  const elbow=limit(q.ex??r.sx,q.ey??r.sy+r.upper,r.sx,r.sy,r.upper), paw=limit(q.x,q.y,elbow.x,elbow.y,r.lower);
+  return {sx:r.sx,sy:r.sy,ex:elbow.x,ey:elbow.y,x:paw.x,y:paw.y}; }
+/* Moving forelegs replace the resting leg, including its foot. Never lengthen a segment to reach
+   a prop. The hand or bell comes to the paw instead. */
+function drawForelegs(b,o,P,S,layer){ if(!o.paws) return; const W=P.paw;
+  [-1,1].forEach(s=>{ const q=o.paws[s]; if(!q) return;
+    const {sx,sy,ex,ey,x,y}=forelegJoints(P,S,s,q), lift=q.lift||0, rx=W.rx*lerp(.92,.8,lift), ry=W.ry*(q.pad?1.1:1);
+    // The shoulder stays inside the shirt. Only the folded forearm and paw pass
+    // in front of it, emerging at the sleeve/hem instead of cutting through the chest.
+    if(layer==='upper'){ part(b,T=>capsule(T,sx,sy,ex,ey,W.rx*(S.kind==='cat'?.56:.6),'*fur',SH)); return; }
+    part(b,T=>{ capsule(T,ex,ey,x,y,W.rx*.48,'fur',SH);
+      if(shapeOf(S).cuffs) E(T,x,y+.7,W.rx*.95,W.ry*1.1,'fur',SH);
+      E(T,x,y,rx,ry,'paw',SHL);
+      if(q.pad) for(let i=-1;i<=1;i++) E(T,x+i*rx*.58,y-ry*.62,rx*.36,ry*.48,'paw',SHL); });
+    if(q.pad){ E(b,x,y+.35,rx*.43,ry*.42,'#D58D9B',SHS);
+      for(let i=-1;i<=1;i++) E(b,x+i*rx*.58,y-ry*.65,rx*.16,ry*.19,'#EBA6B2'); }
+    else [-.5,.5].forEach(dx=>Ln(b,x+dx,y+.1,x+dx,y+ry*.65,'paw!',1));
+  }); }
 function buildDog(b,o,P,S,fit){
   const cx=22, H=P.head, BD=P.body, hy=H.cy+(o.headDy||0), ed=o.ear?1:0, G=geoFor(P,o), sh=shapeOf(S), ears=S.ears||'flop';
   const ta=[-.55,-1.15,-.1][o.tail||0], tx=cx+BD.rx*.78, ty=BD.cy+BD.ry*.05, tr=P.tail.r*(sh.tail==='otter'?1.3:1);
   part(b,T=>{ const n=sh.tail==='pom'?2:3; for(let i=0;i<n;i++){ const r=tr*(1-i*.14), d=i*P.tail.len*.42; E(T,tx+Math.cos(ta)*d+1,ty+Math.sin(ta)*d,r*1.25,r,'tail',SH); }
     if(sh.tail==='pom'){ const d=2*P.tail.len*.42; E(T,tx+Math.cos(ta)*d+1.4,ty+Math.sin(ta)*d-.6,tr*1.6,tr*1.5,'tail',SH); } });
   wearBehind(b,G,fit);
-  sitBody(b,P,cx,BD,sh,false,()=>wearBody(b,G,fit));
+  sitBody(b,P,cx,BD,sh,false,()=>{ drawForelegs(b,o,P,S,'upper'); wearBody(b,G,fit); },o);
+  drawForelegs(b,o,P,S);
   const colY=H.cy+H.ry-.8;
   if(sh.chest) part(b,T=>{ for(let i=-2;i<=2;i++) Tr(T,cx+i*1.9-1.3,colY+.4,cx+i*1.9+1.3,colY+.4,cx+i*1.9,colY+3.6-Math.abs(i)*.4,'light',SHS); });
-  if(!fit||!fit.neck){ part(b,T=>E(T,cx,colY,BD.rx*.64,1.15,'collar',SHS)); part(b,T=>E(T,cx,colY+1.7,1.05,1.05,'tag',SH)); }
+  if(!o.bare&&(!fit||!fit.neck)){ part(b,T=>E(T,cx,colY,BD.rx*.64,1.15,'collar',SHS)); part(b,T=>E(T,cx,colY+1.7,1.05,1.05,'tag',SH)); }
   wearNeck(b,G,fit);
   const earL=ears, earR=ears, F=G.fx, EX=[G.eyeLX,G.eyeRX], ecx=cx;
   const upL=dogEar(b,earL,-1,ecx,hy,H,P,ed), upR=dogEar(b,earR,1,ecx,hy,H,P,ed);
@@ -189,7 +219,8 @@ function buildCat(b,o,P,S,fit){
   part(b,T=>{ const L=P.tail.len, x0=cx+BD.rx*.5, y0=BD.cy+BD.ry*.78;
     for(let i=0;i<=steps;i++){ const s=sh.tail==='bob'?i/14:i/14, x=x0+Math.sin(s*Math.PI*.9)*L*.44+s*s*sw*2.4, y=y0-s*L*.95+Math.sin(s*Math.PI)*.8, r=tr*(1-(sh.tail==='bob'?0:.22)*s)*(sh.tail==='plume'?1+.35*s:1); E(T,x,y,r,r,'tail',SH); } });
   wearBehind(b,G,fit);
-  sitBody(b,P,cx,BD,sh,true,()=>wearBody(b,G,fit));
+  sitBody(b,P,cx,BD,sh,true,()=>{ drawForelegs(b,o,P,S,'upper'); wearBody(b,G,fit); },o);
+  drawForelegs(b,o,P,S);
   if(sh.ruff) part(b,T=>{ const y=H.cy+H.ry-.4; for(let i=-3;i<=3;i++) E(T,cx+i*H.rx*.3,y+Math.abs(i)*-.35+1,2.2,2.6,Math.abs(i)<2?'light':'fur',SH); });
   wearNeck(b,G,fit);
   const eh=P.ear.h*(ears==='small'?.6:1), F=G.fx, EX=[G.eyeLX,G.eyeRX], ecx=cx;
@@ -319,11 +350,26 @@ function wearBody(b,G,fit){ if(!fit||!fit.body) return; const C=CLOTHES[fit.body
 const petCache=new Map();
 const POSE0={eyes:'open',mouth:'smile',tail:1,ear:0,headDy:0};
 const fitKey=f=>f?OUT_CATS.map(c=>f[c]||'').join('.'):'';
+const pawsKey=p=>p?[-1,1].map(s=>p[s]?[p[s].x,p[s].y,p[s].ex,p[s].ey,p[s].lift||0,p[s].pad||0].join(','):'').join(';'):'';
+function buildRear(b,o,P,S,fit){ const G=geoFor(P,o), cat=S.kind==='cat', H=P.head, hy=G.hy, sh=shapeOf(S);
+  wearBehind(b,G,fit);
+  part(b,T=>{ [-1,1].forEach(s=>{ const footY=P.paw.cy-frontStepLift(o.frame||0,s); capsule(T,22+s*P.paw.dx,P.body.cy,22+s*P.paw.dx,footY,P.paw.rx*.65,'fur',SH); E(T,22+s*P.paw.dx,footY,P.paw.rx,P.paw.ry,'paw',SHL); });
+    E(T,22,P.body.cy,P.body.rx*.86,P.body.ry,'fur',SH); });
+  wearBody(b,G,fit); wearNeck(b,G,fit);
+  if(cat) part(b,T=>[-1,1].forEach(s=>Tr(T,22+s*H.rx*.9,hy-H.ry*.25,22+s*H.rx*.25,hy-H.ry*.8,22+s*H.rx*.65,hy-H.ry-P.ear.h*.8,'fur',SH)));
+  else [-1,1].forEach(s=>dogEar(b,S.ears,s,22,hy,H,P,0));
+  part(b,T=>E(T,22,hy,H.rx,H.ry,'fur',SH));
+  if(!cat) [-1,1].forEach(s=>{ if(!['perk','bat'].includes(S.ears)) dogFlopEar(b,S.ears,s,22,hy,H,P,0); });
+  if(sh.topknot) part(b,T=>E(T,22,hy-H.ry*.8,H.rx*.7,H.ry*.4,'fur',SH));
+  part(b,T=>{ const sway=[0,1,-1][o.tail||0]; capsule(T,22,P.body.cy+P.body.ry*.55,22+sway*3,P.body.cy+(cat?-P.tail.len*.4:2),P.tail.r,'tail',SH); });
+  wearHat(b,G,fit);
+}
 function getPet(style,sg,o,fit){
   o=Object.assign({},POSE0,o||{}); if(!STAGES.includes(sg)) sg=sg==='adult'?'adult':'baby';
-  const S=STYLES[style]||STYLES.cream, key=[style,sg,o.eyes,o.mouth,o.tail,o.ear,o.headDy,o.dull?1:0,fitKey(fit)].join('|'); let c=petCache.get(key); if(c) return c;
-  const P=breedP(PARAMS[S.kind][sg],S,style+':'+sg), b=B(PET_W,PET_H,PET_OX,PET_OY);
-  (S.kind==='dog'?buildDog:buildCat)(b,o,P,S,fit);
+  const S=STYLES[style]||STYLES.cream, key=[style,sg,o.eyes,o.mouth,o.tail,o.ear,o.headDy,o.rear?1:0,o.upright?1:0,o.upright?o.frame||0:0,pawsKey(o.paws),o.dull?1:0,o.bare?1:0,fitKey(fit)].join('|'); let c=petCache.get(key); if(c) return c;
+  let P=breedP(PARAMS[S.kind][sg],S,style+':'+sg); const b=B(PET_W,PET_H,PET_OX,PET_OY);
+  if(o.upright) P={...P,body:{...P.body,ry:P.body.ry*.78}};
+  (o.rear?buildRear:S.kind==='dog'?buildDog:buildCat)(b,o,P,S,fit);
   const G=geoFor(P,o);
   c=finish(b,S.pal,{pattern:S.pattern,geo:G,dull:o.dull});
   if(petCache.size>900) petCache.clear(); petCache.set(key,c); return c;

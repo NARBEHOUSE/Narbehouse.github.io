@@ -353,6 +353,28 @@
         "Interactive",
         "Educational"
       ]
+    },
+    {
+      "id": "narbeloops",
+      "title": "NARBE Loops",
+      "description": "Build a colorful beat one spot at a time. Add sound lines, change each line’s sound, and save loop templates to reopen. Play with switches, a mouse or touch.",
+      "path": "apps/games/NARBELOOPS/index.html",
+      "image": "images/games/narbeloops-gameplay.webp",
+      "genres": [
+        "Interactive",
+        "Simulation"
+      ]
+    },
+    {
+      "id": "narbeswitchsongs",
+      "title": "NARBE Switch Songs",
+      "description": "Play familiar songs one press at a time on a big piano with matching illustrations. Listen to a song or explore Free Play, with no score or timer.",
+      "path": "apps/games/NARBESWITCHSONGS/index.html",
+      "image": "images/games/narbeswitchsongs-gameplay.webp",
+      "genres": [
+        "Interactive",
+        "Educational"
+      ]
     }
   ]
 }

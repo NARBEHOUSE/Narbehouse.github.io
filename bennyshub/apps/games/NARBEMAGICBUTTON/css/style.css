@@ -404,6 +404,19 @@ body {
 
 @keyframes nmb-bob { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
 
+.nmb-pause-tip {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    right: calc(max(14px, env(safe-area-inset-right)) + 100px);
+    width: min(220px, calc(100vw - 132px));
+    padding: 6px 8px;
+    border-radius: 10px;
+    color: #c9cde6;
+    background: rgba(0, 0, 0, 0.65);
+    font: 500 14px/1.4 'Segoe UI', system-ui, sans-serif;
+    text-align: right;
+}
+
 .nmb-pause-btn {
     position: absolute;
     top: max(14px, env(safe-area-inset-top));
@@ -517,6 +530,7 @@ body {
 @media (max-height: 500px) {
     .nmb-pic { height: 74px; }
     .nmb-pause-btn { width: 70px; height: 70px; }
+    .nmb-pause-tip { right: calc(max(14px, env(safe-area-inset-right)) + 86px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

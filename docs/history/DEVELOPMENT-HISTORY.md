@@ -2,6 +2,162 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-25 — Publish Loops and Switch Songs; refresh Pet Pals and Magic Button
+
+Scope: publish the current PC game runtimes to the web, add gameplay thumbnails and both music games to the Hub catalog and home page. Electron port: **NO** for every file below; the PC versions are the source, and this publication does not rebuild or launch Electron. The owner explicitly authorized both website pushes.
+
+Loops retains inline row scanning, whole-line sounds, loop templates, the five-second hold-to-return indicator, and in-memory WAV playback. Switch Songs includes its song library, responsive scene art and Free Play. Pet Pals uses build 2026.10.25.4, and Magic Button includes the current pause guidance. Web entrypoints retain usage analytics, web favicons and web shared modules; Electron bridge imports are omitted. Local game scripts/styles have a release query to avoid mixing cached editions.
+
+Gameplay images are compressed WebP captures stored only in Benny’s Hub; SwitchedGames references those canonical URLs. Preview WAVs, comparison screenshots, generation prompts, design notes and the unused Switch Songs menu illustration are excluded. Existing runtime assets are retained. Pre-change copies and the SHA-256 transfer manifest are in the PC workspace’s tmp/publish-games-20261025 folder, outside the published site.
+
+Changed files (all Electron port: NO):
+- bennyshub/apps/games/NARBELOOPS/css/style.css
+- bennyshub/apps/games/NARBELOOPS/index.html
+- bennyshub/apps/games/NARBELOOPS/js/beat.js
+- bennyshub/apps/games/NARBELOOPS/js/input.js
+- bennyshub/apps/games/NARBELOOPS/js/loops.js
+- bennyshub/apps/games/NARBELOOPS/js/main.js
+- bennyshub/apps/games/NARBELOOPS/js/music.js
+- bennyshub/apps/games/NARBELOOPS/js/settings.js
+- bennyshub/apps/games/NARBELOOPS/js/sound.js
+- bennyshub/apps/games/NARBELOOPS/js/synth.js
+- bennyshub/apps/games/NARBELOOPS/js/ui.js
+- bennyshub/apps/games/NARBESWITCHSONGS/css/freeplay.css
+- bennyshub/apps/games/NARBESWITCHSONGS/css/menu.css
+- bennyshub/apps/games/NARBESWITCHSONGS/css/piano.css
+- bennyshub/apps/games/NARBESWITCHSONGS/css/playful.css
+- bennyshub/apps/games/NARBESWITCHSONGS/css/style.css
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/calm.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/classics.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/holidays.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/nursery.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/playtime.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/collections/singalongs.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/menu/piano-playful.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/abc.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/ants.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/baabaa.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/ballgame.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/bingo.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/birthday.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/bonnie.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/cancan.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/deck.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/elise.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/entertainer.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/farmer.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/frere.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/funiculi.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/grace.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/greensleeves.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/hotcross.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/housetop.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/jingle.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/littledog.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/london.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/lullaby.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/macdonald.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/mary.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/merry.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/mountain.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/mountainking.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/muffin.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/ode.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/oldman.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/range.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/rowboat.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/saints.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/skip.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/spider.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/starsstripes.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/toreador.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/twinkle.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/weasel.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/williamtell.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes/yankee.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/abc.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/ants.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/baabaa.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/ballgame.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/bingo.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/birthday.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/bonnie.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/cancan.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/deck.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/elise.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/entertainer.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/farmer.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/frere.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/funiculi.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/grace.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/greensleeves.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/hotcross.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/housetop.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/jingle.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/littledog.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/london.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/lullaby.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/macdonald.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/mary.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/merry.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/mountain.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/mountainking.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/muffin.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/ode.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/oldman.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/range.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/rowboat.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/saints.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/skip.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/spider.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/starsstripes.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/toreador.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/twinkle.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/weasel.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/williamtell.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/images/scenes-wide/yankee.webp
+- bennyshub/apps/games/NARBESWITCHSONGS/index.html
+- bennyshub/apps/games/NARBESWITCHSONGS/js/celebration.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/freeplay.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/input.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/main.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/music.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/scenes.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/settings.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/song-library.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/song.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/sound.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/synth.js
+- bennyshub/apps/games/NARBESWITCHSONGS/js/ui.js
+- bennyshub/apps/games/NARBEPETPALS/index.html
+- bennyshub/apps/games/NARBEPETPALS/js/anims.js
+- bennyshub/apps/games/NARBEPETPALS/js/core.js
+- bennyshub/apps/games/NARBEPETPALS/js/game.js
+- bennyshub/apps/games/NARBEPETPALS/js/mypets.js
+- bennyshub/apps/games/NARBEPETPALS/js/outings.js
+- bennyshub/apps/games/NARBEPETPALS/js/pets.js
+- bennyshub/apps/games/NARBEPETPALS/js/petside.js
+- bennyshub/apps/games/NARBEPETPALS/js/places.js
+- bennyshub/apps/games/NARBEPETPALS/js/props.js
+- bennyshub/apps/games/NARBEPETPALS/js/scan-access.js
+- bennyshub/apps/games/NARBEPETPALS/js/school.js
+- bennyshub/apps/games/NARBEPETPALS/js/seasons.js
+- bennyshub/apps/games/NARBEPETPALS/js/sprites.js
+- bennyshub/apps/games/NARBEPETPALS/js/tricks.js
+- bennyshub/apps/games/NARBEPETPALS/js/ui.js
+- bennyshub/apps/games/NARBEMAGICBUTTON/css/style.css
+- bennyshub/apps/games/NARBEMAGICBUTTON/index.html
+- bennyshub/apps/games/NARBEMAGICBUTTON/js/ui.js
+- bennyshub/images/games/narbeloops-gameplay.webp
+- bennyshub/images/games/narbeswitchsongs-gameplay.webp
+- bennyshub/apps/games/games.json
+- index.html
+- tests/narbeloops-lines.test.cjs
+- tests/narbeloops-pattern.test.cjs
+- docs/history/DEVELOPMENT-HISTORY.md
+
+Verification: all 408 Node tests pass, including the imported loop model regressions. The production build, release audit and 1,351 Pages link checks pass. Muted Chrome on the built output verifies Loops row scanning, five-second return progress, modal/live sounds, mouse/touch, saved templates, migration, seamless long-buffer transitions, both looks and all nine screens at four test sizes. Switch Songs taps, listening interruption, Free Play and all 82 responsive song images pass. Pet Pals build 2026.10.25.4 adopts a pet and reaches care/Pause; Magic Button exposes the updated pause guidance. Both home-page launches and SwitchedGames search/Details pass. No browser exceptions, console errors or AudioContexts were observed. Pet Pals intentionally probes optional recordings and uses synthesis when they are absent; required assets resolve. Gameplay thumbnails and the home-page cards were visually reviewed.
+
 ## 2026-10-25 — Face Robot Football laces outward
 
 Scope: football appearance only, as requested for PC Hub and web. Changed files: bennyshub/apps/games/ROBOTFOOTBALL/js/renderer.js (Electron port: YES, matching desktop edit) and docs/history/DEVELOPMENT-HISTORY.md (Electron port: NO, web development record). Align the lace panel with the outward direction perpendicular to the football's long axis. Place kicks face downfield for either team; held balls face away from the carrier's chest, including punts and returns. Preserve ball position, grip, flight spin and gameplay.

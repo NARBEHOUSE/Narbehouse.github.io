@@ -54,10 +54,10 @@ function setHighlight(i,announce){
   if(FOCUS[layer]) FOCUS[layer](el);
   if(announce!==false) voice.speak(sayOf(el),{label:true});
 }
-/* With Wait for Reading on, scanning waits until the reading is finished (see readingHold). */
+/* Manual scanning always responds; the automatic clock separately waits for narration. */
 /* From nothing highlighted, forward goes to the first choice and back to the last. (+n keeps a step back
    from the first choice wrapping to the last, never to -1.) */
-function stepScan(d){ if(window.petChoice?.step(d))return; if(readingHold()) return; const n=getScannables().length; if(!n) return; setHighlight(scanIndex<0?(d>0?0:n-1):scanIndex+d+n); play('blip',.35); }
+function stepScan(d){ if(window.petChoice?.step(d))return; if(readingHold()) interruptReading(); const n=getScannables().length; if(!n) return; setHighlight(scanIndex<0?(d>0?0:n-1):scanIndex+d+n); play('blip',.35); }
 
 /* ---- The selection pause ----
    Only while something happens by itself in the scene (a surprise, a new toy, the game reading

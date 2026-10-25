@@ -6,7 +6,6 @@
    them, any time, and the Trick Show performs them all on a little stage. Each time the pet grows up,
    a celebration card shows the new look and what's new. */
 const NEW_TRICKS=[
-  {id:'rollover',name:'Roll over',kinds:['dog','cat'],stage:1,stars:20},
   {id:'bell',name:'Ring the dinner bell',kinds:['cat'],stage:1,stars:28},
   {id:'bow',name:'Take a bow',kinds:['dog'],stage:1,stars:30},
   {id:'wave',name:'Wave hello',kinds:['dog','cat'],stage:1,stars:35},
@@ -27,49 +26,56 @@ function teachTrick(t){ const n=state.name; lastCelebrate=Date.now(); nextEvent=
   startAnim('trick:'+t.id,V['trick:'+t.id].dur,()=>{ setCaption(`${n} learned ${t.name}. Ask for it any time in Tricks, in More to Do.`); addPhoto('trick',`${n} learned a new trick: ${t.name}.`); state.moreNew=true; updateMoreBadge(); quietUntil=Date.now()+6000; }); }
 
 /* ---- The new tricks ---- */
-const pawAt=(p,side,up)=>{ const x=PETX+22+side*(G().pawDx+5)+p.dx, y=chestAt(p)-up*(big()?11:8); pxEll(ctx,x,y,3.6,3.2,INK); pxEll(ctx,x,y,2.9,2.5,STYLES[state.style].pal.light); pxEll(ctx,x-1,y+.9,.6,.6,'#F2A9B4'); pxEll(ctx,x+1,y+.9,.6,.6,'#F2A9B4'); pxEll(ctx,x,y-.6,.9,.7,'#F2A9B4'); };
 const cheer=(a,e,at)=>{ if(e>at) once(a,'c',()=>{ play('happy',.6); burst(6); later(()=>play(happyNoise(),.45),300); }); };
-V['trick:rollover']={dur:3200,
-  pose(p,e){ if(e<500){ p.eyes='open'; } else if(e<2300){ const k=Math.floor((e-500)/300); p.body='lie'; p.frame=0; p.face=k%2?-1:1; p.eyes=k%2?'closed':'happy'; p.mouth='open'; p.dy=(k%2)?-2:0; p.dx=Math.round(Math.sin((e-500)/600)*4); } else { p.eyes='happy'; p.mouth='tongue'; } },
-  tick(a,e,now){ if(e>500) once(a,'s',()=>setCaption('Roll over!')); if(e>500&&e<2300&&now>=a.next){ play('rustle',.25); spawn('sparkleSmall',64+rand(-16,16),80,0,-6,.5); a.next=now+300; } cheer(a,e,2300); }};
+function drawTrickHoop(front){ ctx.save(); ctx.beginPath(); ctx.rect(front?78:0,20,front?50:78,70); ctx.clip();
+  pxRing(ctx,78,59,8,25,2,INK); pxRing(ctx,78,59,7.3,24.3,1.3,'#E9768B'); ctx.restore();
+  if(!front){ rect(ctx,77,84,2,3,'#9AA4AE'); pxEll(ctx,78,87,6,1.2,'#687888'); } }
 V['trick:bow']={dur:3000,
-  pose(p,e){ if(e<500) p.eyes='open'; else if(e<2200){ p.body='stand'; p.face=1; p.frame=0; p.headDy=4; p.eyes='happy'; p.mouth='tongue'; p.wag=70; } else { p.eyes='happy'; p.mouth='tongue'; } },
+  pose(p,e){ p.dy=0; p.body='stand'; p.face=1; p.frame=0; p.bow=poseStep(motionHold(e,350,900,1900,2550)); p.eyes='happy'; p.mouth='tongue'; p.wag=160; if(e>2700) p.body=null; },
   tick(a,e){ if(e>500) once(a,'s',()=>{ setCaption('Take a bow!'); play('twinkle',.5); }); cheer(a,e,2200); }};
 V['trick:wave']={dur:3000,
-  pose(p,e){ p.eyes=e>600?'happy':'open'; p.mouth=e>600?'tongue':'smile'; if(e>500&&e<2300) p.dx=-1; },
-  front(e,a,p){ if(e>500&&e<2300) pawAt(p,1,.85+Math.sin(e/110)*.35); },
+  pose(p,e){ p.dy=0; p.eyes=e>600?'happy':'open'; p.mouth=e>600?'tongue':'smile'; reachPaw(p,1,motionHold(e,300,800,2200,2700),'high',Math.sin((e-800)/160)*1.6); },
   tick(a,e){ if(e>500) once(a,'s',()=>{ setCaption('Wave hello!'); play('choose'); }); cheer(a,e,2300); }};
 V['trick:beg']={dur:3000,
-  pose(p,e){ if(e<500) p.eyes='open'; else if(e<2300){ p.dy=-4; p.headDy=-1; p.eyes=Math.floor(e/800)%2?'puppy':'happy'; p.wag=90; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  front(e,a,p){ if(e>500&&e<2300){ pawAt(p,-1,.55); pawAt(p,1,.55); } },
+  pose(p,e){ const k=motionHold(e,300,850,2200,2700); p.dy=0; p.headDy=-Math.round(k); p.eyes=k>.5?'puppy':'happy'; p.wag=180; reachPaw(p,-1,k,'tuck'); reachPaw(p,1,k,'tuck'); },
   tick(a,e){ if(e>500) once(a,'s',()=>{ setCaption('Sit pretty!'); play('twinkle',.5); }); cheer(a,e,2300); }};
 V['trick:playdead']={dur:3600,
-  pose(p,e){ if(e<500){ p.eyes='open'; } else if(e<2600){ p.body='lie'; p.face=1; p.frame=0; p.eyes='closed'; p.mouth='tongue'; p.dy=1; } else if(e<3000){ p.dy=-Math.round(arc(ph(e,2600,3000),6)); p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
+  pose(p,e){ p.dy=0; p.face=1; p.frame=0; p.wag=0;
+    if(e<700){ p.body='stand'; p.crouch=poseStep(ease(ph(e,400,700))); p.eyes='open'; }
+    else if(e<2600){ p.body='curl'; p.roll=motionHold(e,700,1100,2300,2600)*2.35; p.eyes='closed'; p.mouth='tongue'; }
+    else if(e<3150){ leapPose(p,e,2750,3050,5); p.eyes='happy'; p.mouth='open'; }
+    else { p.eyes='happy'; p.mouth='tongue'; } },
   tick(a,e){ if(e>450) once(a,'b',()=>{ setCaption('Bang! Play dead...'); play('pop',.5); }); if(e>600) once(a,'t',()=>play('thump',.35)); if(e>2600) once(a,'u',()=>{ setCaption('Surprise! Just kidding!'); play('bounce',.5); }); cheer(a,e,3000); }};
-V['trick:hoop']={dur:3600,noShadow:true,
-  pose(p,e){ if(e<600){ p.eyes='open'; p.dx=Math.round(lerp(0,-34,e/600)); p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; }
-    else if(e<2200){ const k=ph(e,600,2200); p.body='run'; p.face=1; p.frame=Math.floor(e/90)%4; p.dx=Math.round(lerp(-34,40,k)); const near=Math.abs(p.dx-14); p.dy=near<16?-Math.round(Math.cos(near/16*Math.PI/2)*12):0; p.eyes='happy'; p.mouth='open'; }
-    else if(e<3000){ p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(40,0,ph(e,2200,3000))); p.eyes='happy'; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  behind(e){ pxRing(ctx,78,64,10,13,2.2,INK); pxRing(ctx,78,64,9.2,12.2,1.4,(Math.floor(e/100)%2)?'#F07A8E':'#F4C542'); rect(ctx,77,77,2,10,'#9AA4AE'); },
+V['trick:hoop']={dur:4200,
+  pose(p,e){ p.dy=0; p.eyes='happy'; p.mouth='open';
+    if(e<650){ p.dx=lerp(0,-32,ease(e/650)); p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; }
+    else if(e<2600){ p.dx=lerp(-32,38,ph(e,650,2600)); p.face=1; p.body='run'; p.frame=Math.floor(e/100)%4; if(e>1150&&e<2450) leapPose(p,e,1400,2150,19); }
+    else if(e<3750){ p.dx=lerp(38,0,ease(ph(e,2600,3750))); p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; } else p.mouth='tongue'; },
+  behind(e,a,p){ drawTrickHoop(false); },
+  front(e,a,p){ drawTrickHoop(true); },
   tick(a,e){ if(e>600) once(a,'s',()=>setCaption('Jump through the hoop!')); if(e>1300) once(a,'w',()=>{ play('whoosh',.5); spawn('sparkle',78,50,0,-8,.8); }); cheer(a,e,2300); }};
 V['trick:fistbump']={dur:2800,
-  pose(p,e){ p.eyes=e>1100?'happy':'open'; p.mouth=e>1100?'tongue':'smile'; },
-  front(e,a,p){ if(e>300&&e<2200){ const up=Math.min(1,ph(e,300,700)); pawAt(p,1,up*.7); const hx=e<900?lerp(140,PETX+22+G().pawDx+9,ph(e,300,900)):PETX+22+G().pawDx+9; blit(ctx,SPR.hand,hx,chestAt(p)-up*(big()?11:8)-12); } },
+  pose(p,e){ p.dy=0; p.eyes=e>900?'happy':'open'; p.mouth=e>900?'tongue':'smile'; reachPaw(p,1,motionHold(e,300,850,1800,2350),'offer'); },
+  front(e,a,p){ trickHand(p,e,'bump',550,2050); },
   tick(a,e){ if(e>900) once(a,'f',()=>{ play('pop',.6); burst(5); setCaption('Fist bump!'); }); cheer(a,e,2200); }};
 V['trick:bell']={dur:3800,
-  pose(p,e){ if(e<600) p.eyes='open'; else if(e<1400){ p.dx=6; p.eyes='happy'; p.headDy=Math.floor(e/200)%2; } else if(e<3000){ p.dx=6; const b=Math.floor(e/200)%2; p.headDy=1+b; p.eyes='closed'; p.mouth=b?'open':'smile'; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  front(e,a,p){ pxEll(ctx,92,86,6,1.6,INK); pxEll(ctx,92,85.4,5.2,1.1,'#C9A04A'); pxEll(ctx,92,82,4.2,3.6,INK); pxEll(ctx,92,82,3.5,3,'#F4C542'); rect(ctx,91.4,77.4,1.2,1.6,'#C9A04A'); if(e>700&&e<1400) pawAt(p,1,.2+Math.abs(Math.sin(e/100))*.3);
-    if(e>1300) blit(ctx,BOWLS[e<2200?0:1],50,83); },
+  pose(p,e){ p.dy=0; p.eyes=e>700?'happy':'open'; const k=motionHold(e,350,700,1350,1750); reachPaw(p,1,k,'offer');
+    if(p.paws){ const q=p.paws[1], down=Math.max(0,1-Math.abs(e-800)/120,1-Math.abs(e-1100)/120); q.y+=down*.8*k;
+      const S=STYLES[state.style], P=breedP(PARAMS[S.kind][stageName()],S,state.style+':'+stageName()), j=forelegJoints(P,S,1,q); q.x=j.x; q.y=j.y; }
+    if(e>1900&&e<3200){ p.body='lie'; p.face=-1; p.frame=0; p.headDy=2; p.mouth=Math.floor(e/180)%2?'open':'smile'; } },
+  front(e,a,p){ const q={dx:0,dy:0}; reachPaw(q,1,1,'offer'); const at=pawPoint(q), x=at.x, button=at.y+1.6, dome=button+1.4, h=(85-dome)/2, down=Math.max(0,1-Math.abs(e-800)/120,1-Math.abs(e-1100)/120);
+    pxEll(ctx,x,86,6,1.6,INK); pxEll(ctx,x,85.4,5.2,1.1,'#C9A04A'); pxEll(ctx,x,dome+h,4.2,h+.5,INK); pxEll(ctx,x,dome+h,3.5,h,'#F4C542'); rect(ctx,x-.6,button+down*.8,1.2,1.8-down*.8,'#C9A04A');
+    if(e>1400) blit(ctx,BOWLS[e<2500?0:1],36,83); },
   tick(a,e){ if(e>600) once(a,'s',()=>setCaption('Ring the dinner bell!')); [800,1100].forEach((t,i)=>{ if(e>t) once(a,'d'+i,()=>{ play('ding',.55); spawn('note',92,74,2,-10,1); }); }); if(e>1400) once(a,'f',()=>setCaption('Ding ding! Dinner is served.')); cheer(a,e,3000); }};
 V['trick:nose']={dur:3800,
-  pose(p,e){ if(e<2200){ p.eyes='open'; p.headDy=-1; } else if(e<2700){ p.headDy=-2; p.mouth='open'; p.eyes='happy'; if(e>2450) p.dy=-3; } else if(e<3200){ const b=Math.floor(e/170)%2; p.headDy=b; p.mouth=b?'open':'smile'; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  front(e,a,p){ const m=mouthAt(p), s=SPR.cookie; if(e<2200) blit(ctx,s,m.x-4.5,m.y-9+Math.sin(e/300)*.4); else if(e<2600){ const k=ph(e,2200,2600); blit(ctx,s,m.x-4.5,m.y-9+arc(k,14)+k*6); } },
+  pose(p,e){ p.dy=0; p.body='stand'; p.face=1; p.frame=0; if(e<2200){ p.eyes='open'; p.headDy=-1; } else if(e<2700){ p.headDy=-2; p.mouth='open'; p.eyes='happy'; } else if(e<3200){ const b=Math.floor(e/170)%2; p.headDy=b; p.mouth=b?'open':'smile'; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='tongue'; } },
+  front(e,a,p){ const m=mouthAt(p), s=SPR.cookie; if(e<2200) blitSized(ctx,s,m.x-2.5,m.y-5,5,3); else if(e<2600){ const k=ph(e,2200,2600); blitSized(ctx,s,m.x-2.5,m.y-5+arc(k,12)+k*4,5,3); } },
   tick(a,e){ if(e>300) once(a,'s',()=>setCaption('Steady... steady...')); if(e>2200) once(a,'t',()=>{ play('whoosh',.4); setCaption('Toss and catch!'); }); if(e>2600) once(a,'c2',()=>{ play('crunch',.6); crumbs(64,70); }); cheer(a,e,3200); }};
 /* The big routine: sit, spin, a bow (or a wave), and a happy jump, all in a row. */
 V['trick:combo']={dur:6400,
   parts(){ return kind()==='dog'?['sit','spin','bow']:['sit','spin','wave']; },
-  pose(p,e,a){ const P=this.parts(), seg=Math.floor(e/1800); if(seg<3){ const d=V['trick:'+P[seg]]; d.pose.call(d,p,e%1800+500,a); } else { p.eyes='happy'; p.mouth='tongue'; p.dy=-Math.round(arc(ph(e,5400,6000),10)); } },
-  front(e,a,p){ const P=this.parts(), seg=Math.floor(e/1800); if(seg<3){ const d=V['trick:'+P[seg]]; if(d.front) d.front.call(d,e%1800+500,a,p); } },
+  pose(p,e,a){ const P=this.parts(), seg=Math.floor(e/1800); if(seg<3){ const d=V['trick:'+P[seg]]; d.pose.call(d,p,(e%1800)/1800*d.dur,a); } else { p.eyes='happy'; p.mouth='tongue'; leapPose(p,e,5600,6050,10); if(e>6300) p.body=null; } },
+  front(e,a,p){ const P=this.parts(), seg=Math.floor(e/1800); if(seg<3){ const d=V['trick:'+P[seg]]; if(d.front) d.front.call(d,(e%1800)/1800*d.dur,a,p); } },
   tick(a,e){ const P=this.parts(); P.forEach((id,i)=>{ if(e>i*1800+50) once(a,'n'+i,()=>{ setCaption(trickName(id)+'!'); play('choose'); spawn('sparkle',64,54,0,-8,.8); }); }); if(e>5400) once(a,'j',()=>{ setCaption('Ta-da! The big routine!'); play('fanfare',.6); burst(12); }); }};
 
 /* ---- Tricks: pick any trick the pet knows, and watch it right there ----
@@ -78,7 +84,7 @@ V['trick:combo']={dur:6400,
    list comes back so another trick is one choice away. */
 const TRICK_GROUPS=[
   {id:'paw',label:'Paw Tricks',tricks:['paw','wave','fistbump','gentle','beg','bell']},
-  {id:'move',label:'Moving Tricks',tricks:['spin','rollover','dance','steps','hoop','jump','weave','paddle']},
+  {id:'move',label:'Moving Tricks',tricks:['spin','dance','steps','hoop','jump','weave','paddle']},
   {id:'listen',label:'Listening Tricks',tricks:['sit','stay','come','speak','bow','playdead']},
   {id:'show',label:'Show-Off Tricks',tricks:['nose','catch','find','combo']}];
 const TRICKS_FLAT=6;
@@ -135,7 +141,7 @@ V['show:trick']={bgName:'stage',scene(){ drawShowStage(); },
   tick(a,e,now){ if(a.inner.tick) a.inner.tick.call(a.inner,a,e,now); }};
 V['show:finale']=tripScene('stage',{dur:4000,
   start(){ setCaption(`Take a bow, ${state.name}! The crowd loves you!`); play('cheer',.6); later(()=>play('fanfare',.5),500); },
-  pose(p,e){ p.eyes='happy'; p.mouth='tongue'; if(e<1400){ p.body='stand'; p.face=1; p.frame=0; p.headDy=4; } else p.dy=-Math.round(Math.abs(Math.sin(e/160))*3); },
+  pose(p,e){ p.dy=0; p.eyes='happy'; p.mouth='tongue'; if(e<1800){ p.body='stand'; p.face=1; p.frame=0; p.bow=poseStep(motionHold(e,0,500,1100,1750)); } },
   front(e,a,p){ if(e>1400) drawRibbon(neckAt(p).x,neckAt(p).y+2); },
   tick(a,e,now){ if(now>=a.next){ spawn('confetti',rand(VIEW.x,VIEW.x+VIEW.w),VIEW.y-2,rand(-6,6),rand(14,24),4,pick(['#F07A8E','#F4C542','#7FB08C','#7FA8D8','#B89AD8'])); a.next=now+70; }
     if(e>1400) once(a,'p',()=>{ addPhoto('place',`${state.name} starred in a trick show!`,{place:'trickshow'}); burst(10); }); }});

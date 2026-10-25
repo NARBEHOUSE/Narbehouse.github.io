@@ -152,6 +152,9 @@ NMB.UI = (function () {
         el.ring = node('span', 'nmb-ring', el.pauseBtn);
         node('span', 'nmb-pause-icon', el.pauseBtn).innerHTML = ICON.pause;
         node('span', 'nmb-pause-label', el.pauseBtn, 'Pause');
+        el.pauseTip = node('span', 'nmb-pause-tip', el.hud);
+        el.pauseTip.id = 'nmb-pause-tip';
+        el.pauseBtn.setAttribute('aria-describedby', el.pauseTip.id);
 
         // Main menu.
         el.menu = node('section', 'nmb-screen nmb-screen-menu', el.root);
@@ -264,6 +267,9 @@ NMB.UI = (function () {
         el.hud.classList.toggle('show', name === 'play');
         el.root.dataset.screen = name;
         el.root.dataset.pauseMode = S().get('pauseMode');
+        el.pauseTip.textContent = scanMode()
+            ? 'Choose Pause, hold Enter for 5 seconds, or click or tap Pause to open the menu.'
+            : 'Hold Enter for 5 seconds or click or tap Pause to open the menu.';
         el.root.dataset.look = S().get('look');
 
         if (name === 'settings') renderSettings();

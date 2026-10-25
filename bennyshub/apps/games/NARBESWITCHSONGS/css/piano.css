@@ -1,0 +1,68 @@
+/* The piano is one switch target. Its keys never require aiming. */
+.nss-tiles { grid-template-columns: 1fr; }
+.nss-tile { min-height: 170px; }
+.nss-song.show { display: grid; grid-template-rows: auto minmax(80px, 1fr) 8px auto auto; }
+.nss-song { padding: 12px; gap: 10px; }
+.nss-song > * { flex-shrink: 0; }
+[data-look="studio"] .nss-song::before { display: none; }
+.nss-song .nss-bar { min-height: 54px; }
+[data-look="studio"] .nss-song .nss-bar { padding: 8px 16px; }
+.nss-scene { position: relative; min-width: 0; min-height: 0; overflow: hidden; touch-action: manipulation; }
+/* Portrait uses the original artwork; landscape uses its painted extensions.
+   The scene gets the space left after the controls. Resize the whole picture,
+   keeping its frame on the image itself so there are no cropped subjects. */
+.nss-scene-picture { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.nss-scene-picture img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: 24px; outline: 2px solid #fff; outline-offset: -2px; }
+.nss-progress { display: block; width: 100%; height: 8px; border: 0; border-radius: 10px; overflow: hidden; background: #253453; accent-color: #7ee6ce; }
+.nss-progress::-webkit-progress-bar { background: #253453; }
+.nss-progress::-webkit-progress-value { background: linear-gradient(90deg,#78e3ed,#b09aff,#ffb3d1); }
+.nss-piano-scroll { background: #000; padding: 12px; border-radius: 20px; overflow-x: auto; scrollbar-color: #7587a9 #000; }
+.nss-piano { display: block; position: relative; width: 100%; min-width: 896px; height: clamp(150px,23vh,235px); border: 0; border-radius: 8px; background: #000; padding: 0; touch-action: manipulation; }
+.nss-key { position: absolute; top: 0; left: var(--key-left); height: 100%; width: calc(100% / 14); border: 2px solid #000; border-radius: 0 0 10px 10px; box-shadow: inset 0 -8px 0 #c3cada; }
+.nss-key.white { background: linear-gradient(#e4e9f4,#fff 34%,#f4f7ff); }
+.nss-key.black { z-index: 2; width: calc(100% / 14 * .6); height: 63%; background: linear-gradient(100deg,#303c52,#0c1120 75%); box-shadow: inset 0 -8px 0 #03050c; }
+.nss-key-label { position: absolute; bottom: 18px; left: 0; right: 0; color: #172143; text-align: center; font-size: 26px; font-weight: 800; display: none; }
+.black .nss-key-label { color: white; font-size: 19px; }
+.nss-piano[data-labels="true"] .nss-key-label { display: block; }
+.nss-key.next::after { content: ''; position: absolute; inset: 4px; border: 4px solid #7149cb; border-radius: 0 0 8px 8px; animation: nss-next-key 2s ease-in-out infinite; }
+.nss-key.black.next::after { border-color: #fff0ad; }
+.nss-key.pressed { transform: translateY(5px); background: var(--note-color); box-shadow: inset 0 -3px 0 #0006, 0 0 22px var(--note-color); }
+[data-look="studio"] .nss-key.pressed { background: linear-gradient(145deg,#ffffffaa,var(--note-color) 40%,#ffffff44); background-color: var(--note-color); }
+.nss-piano.nss-focus { outline: 6px solid var(--focus-color); outline-offset: 3px; }
+.nss-piano.nss-focus-full { outline: 8px solid var(--focus-color); background: var(--focus-color); box-shadow: 0 0 0 5px var(--focus-ink); }
+.nss-piano.nss-focus-full .white:not(.pressed) { background: var(--focus-color); }
+.nss-song-foot { gap: 10px; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.nss-song-foot .nss-options { min-width: 160px; min-height: 72px; }
+.nss-song-foot .nss-hint { max-width: 65%; font-size: 18px; }
+.nss-song-actions { display: flex; gap: 12px; flex: none; }
+.nss-song-actions .nss-ctrl { min-height: 72px; font-size: clamp(18px, 2vw, 24px); }
+.nss-song-actions .nss-listen { min-width: 180px; }
+[data-look="contrast"] .nss-scene-picture img { border-radius: 0; }
+[data-look="contrast"] .nss-key.white { background: white; }
+[data-look="contrast"] .nss-key.black { background: #000; border-color: #fff; }
+[data-look="contrast"] .nss-key.pressed { background: var(--note-color); }
+@keyframes nss-next-key { 50% { opacity: .4; } }
+@media (max-width: 720px) {
+    .nss-song-foot { flex-direction: column; align-items: stretch; }
+    .nss-song-foot .nss-hint { max-width: none; font-size: 15px; }
+    .nss-song-actions { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+    .nss-song-actions .nss-ctrl { min-width: 0; padding: 10px 8px; }
+}
+@media (orientation: landscape) {
+    [data-look="studio"] .nss-song { padding-block: 12px; gap: 8px; }
+    [data-look="contrast"] .nss-song { padding: 12px clamp(22px, 3vw, 38px); gap: 8px; }
+    .nss-piano { height: clamp(150px, 18vh, 235px); }
+}
+@media (orientation: landscape) and (max-height: 450px) {
+    [data-look="studio"] .nss-song, [data-look="contrast"] .nss-song { padding-block: 8px; gap: 6px; }
+    .nss-song .nss-bar { min-height: 44px; }
+    [data-look="studio"] .nss-song .nss-bar { padding-block: 4px; }
+    .nss-song .nss-bar-title { font-size: 24px; }
+    .nss-song .nss-piano { height: 100px; }
+    .nss-song .nss-hint { display: none; }
+    .nss-song-actions { margin-left: auto; }
+    .nss-song .nss-song-actions .nss-ctrl { min-height: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nss-key.next::after { animation: none; }
+}
