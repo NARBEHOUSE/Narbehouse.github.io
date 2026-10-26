@@ -10,11 +10,13 @@
  * Every screen starts on the blank park step, so a stray press lands on
  * nothing.
  *
- * PLAY A SONG scans: blank, Play, Listen to Song, Options. With Play highlighted, Enter
+ * PLAY A SONG scans: blank, Play Each Note, Keyboard, Listen to Song, Options.
+ * Choosing Play Each Note highlights the keyboard without playing. With Keyboard highlighted, Enter
  * plays the note on the PRESS (a note that waits for release drags behind
  * the beat), and the release does not choose anything. Each note holds the
  * auto scan clock, so the highlight stays on Play while the player keeps
  * playing. Holding Enter for five seconds pauses from anywhere in the song.
+ * FREE PLAY uses the same pause hold; shorter presses still choose on release.
  *
  * The shared scan manager filters switch bounce and too-quick repeats
  * before any of this sees a key. When it swallows a press it sends
@@ -27,7 +29,7 @@ NSS.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
-    const PAUSE_HOLD = 5000;       // hold Enter this long in a song to pause (as in Magic Button)
+    const PAUSE_HOLD = 5000;       // song and Free Play pause hold (as in Magic Button)
     const RING_SHOW = 1000;        // the hold bar appears after this much of the hold
 
     let provider = function () { return []; };
@@ -219,7 +221,7 @@ NSS.Input = (function () {
         cancelSpaceRelease = false;
     }
 
-    // --- hold Enter in a song: pause -------------------------------------------------
+    // --- hold Enter during song or Free Play: pause ---------------------------------
 
     function startPauseHold() {
         stopPauseHold();
@@ -258,7 +260,7 @@ NSS.Input = (function () {
             swallowEnter = false;
             enterPlayed = false;
             if (choice) choice.setInputHeld(true);
-            if (NSS.UI.current() === 'song') {
+            if (NSS.UI.current() === 'song' || NSS.UI.current() === 'free') {
                 startPauseHold();
                 if (onPlay()) { enterPlayed = true; NSS.Game.note(); }
             }
@@ -331,6 +333,8 @@ NSS.Input = (function () {
         document.addEventListener('keyup', onKeyUp);
         document.addEventListener('narbe-input-cancelled', onCancelled);
         window.addEventListener('blur', clearAll);
+        window.addEventListener('pagehide', clearAll);
+        document.addEventListener('visibilitychange', function () { if (document.hidden) clearAll(); });
         if (SM() && SM().subscribe) {
             SM().subscribe(function (next) {
                 if (next.autoScan !== previousAuto && spaceHeld) {

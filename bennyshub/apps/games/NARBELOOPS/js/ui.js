@@ -372,6 +372,16 @@ NL.UI = (function () {
         list.push(
             { id: 'save', label: 'Save Loop', action: saveLoop },
             { id: 'loops', label: 'Saved Loops', action: () => { loopsFrom = 'pause'; show('loops'); } },
+            {
+                id: 'need-help', label: 'I Need Help', cls: 'nl-need-help', quiet: true,
+                speak: 'I need help. Choose this to call a helper.',
+                action: function () {
+                    const message = 'I need help, please! I need help, please!';
+                    const fallback = function () { return NL.Voice.speak(message, { force: true }); };
+                    if (window.NarbeCommunicationSpeech) window.NarbeCommunicationSpeech.help(fallback, message);
+                    else fallback();
+                }
+            },
             { id: 'settings', label: 'Settings', action: function () { settingsFrom = 'pause'; show('settings'); } },
             { id: 'help', label: 'How to Play', action: function () { helpFrom = 'pause'; show('help'); } }
         );
@@ -381,8 +391,8 @@ NL.UI = (function () {
         );
         el.pauseList.innerHTML = '';
         pauseItems = list.map(function (it) {
-            const b = button('nl-item', el.pauseList, it.label);
-            return { id: 'pause:' + it.id, el: b, speak: it.label, action: it.action };
+            const b = button('nl-item ' + (it.cls || ''), el.pauseList, it.label);
+            return { id: 'pause:' + it.id, el: b, speak: it.speak || it.label, quiet: it.quiet, action: it.action };
         });
     }
 
@@ -433,6 +443,7 @@ NL.UI = (function () {
             'Your loop saves automatically, including sounds and added lines. *Clear My Loop* in Settings returns to the starting loop after two selections.',
             '*Save Loop* in Options keeps a numbered template. *Saved Loops* on the main menu or in Options shows pictures of your templates. Choose one to reopen it. Editing your loop keeps saved templates unchanged.',
             '*Play or Stop*, *Speed* and *Options* are in the transport bar. Options opens Pause, with Settings and a way back to the main menu.',
+            'In Pause, choose *I Need Help* to call a helper out loud. The game stays paused.',
             auto ? 'The highlight moves by itself. *Enter* chooses on release.' : '*Tap Space* to move on release. *Hold Space* to scan backward. *Enter* chooses on release.',
             'Pips wrap when needed to stay easy to touch. There is no score, timer or way to lose.'
         ];

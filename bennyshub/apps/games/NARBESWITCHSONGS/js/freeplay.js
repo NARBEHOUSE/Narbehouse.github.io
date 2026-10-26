@@ -5,20 +5,33 @@ window.NSS = window.NSS || {};
 NSS.FreePlay = (function () {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg';
-    const NAMES = ['Low C', 'C sharp', 'D', 'D sharp', 'E', 'F', 'F sharp', 'G', 'G sharp', 'A', 'A sharp', 'B', 'High C'];
-    const LABELS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B', 'C'];
-    const NOTES = NAMES.map((name, i) => ({ midi: 60 + i, name: name, label: LABELS[i], black: [1, 3, 6, 8, 10].includes(i) }));
+    const FIRST_NOTE = 60, LAST_NOTE = 84;
+    const NAMES = ['C', 'C sharp', 'D', 'D sharp', 'E', 'F', 'F sharp', 'G', 'G sharp', 'A', 'A sharp', 'B'];
+    const LABELS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+    const NOTES = Array.from({ length: LAST_NOTE - FIRST_NOTE + 1 }, function (_, i) {
+        const midi = FIRST_NOTE + i, pitch = midi % 12, octave = Math.floor(midi / 12) - 1;
+        return {
+            midi: midi,
+            name: midi === FIRST_NOTE ? 'Low C' : midi === LAST_NOTE ? 'High C' : NAMES[pitch] + ' ' + octave,
+            label: LABELS[pitch] + octave,
+            black: [1, 3, 6, 8, 10].includes(pitch)
+        };
+    });
+    const WHITE_KEYS = NOTES.filter(note => !note.black).length;
     const NOTE_SHAPE = 'M65 22h10v91c0 17-38 25-42 7-3-16 18-25 32-20z';
     const HISTORY_LIMIT = 10, STORAGE_KEY = 'nss-freeplay-v1';
     let sequence = 0, savedNotes = [], noteIds = [], symbolCount = 0, keys = [], stage, hero, trail, historyTitle, caption, keyboard, options, replayButton, deleteButton, hint;
     let keyTimer = null, motionTimer = null, replayFrame = null, replaying = false, replayIndex = -1;
-    let deleting = false, noteChoices = [];
-    const DEFAULT_HINT = 'Choose a key. Hold down the space bar to go back. Your last 10 notes are saved.';
+    let deleting = false, noteChoices = [], choosingKeys = false, openingKeys = false;
+    let holdBar;
+    const KEY_HINT = 'Choose a key. Hold down the space bar to go back. Your last 10 notes are saved.';
+    const DEFAULT_HINT = 'Choose the keyboard, then press Enter to choose individual keys. Or scan to the buttons below.';
+    function idleHint() { return choosingKeys ? KEY_HINT : DEFAULT_HINT; }
 
     function loadNotes() {
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            if (!saved || !Array.isArray(saved.notes) || !saved.notes.every(m => Number.isInteger(m) && m >= 60 && m <= 72)) return;
+            if (!saved || !Array.isArray(saved.notes) || !saved.notes.every(m => Number.isInteger(m) && m >= FIRST_NOTE && m <= LAST_NOTE)) return;
             savedNotes = saved.notes.slice(-HISTORY_LIMIT);
             sequence = Number.isSafeInteger(saved.sequence) && saved.sequence >= savedNotes.length ? saved.sequence : savedNotes.length;
             // Older saves only have pitches. Keep each occurrence distinct, even
@@ -73,10 +86,11 @@ NSS.FreePlay = (function () {
         const staff = node('div', 'nss-free-staff', stage);
         staff.setAttribute('aria-hidden', 'true');
         for (let i = 0; i < 5; i++) node('i', '', staff);
-        hero = node('div', 'nss-free-symbol', stage);
+        const currentNote = node('div', 'nss-free-current', stage);
+        hero = node('div', 'nss-free-symbol', currentNote);
         hero.setAttribute('aria-hidden', 'true');
         hero.appendChild(symbol());
-        caption = node('div', 'nss-free-note-name', stage, 'Your music');
+        caption = node('div', 'nss-free-note-name', currentNote, 'Your music');
         const history = node('div', 'nss-free-history', stage);
         historyTitle = node('div', 'nss-free-history-title', history, 'Your notes, in order');
         historyTitle.id = 'nss-free-history-title';
@@ -84,16 +98,33 @@ NSS.FreePlay = (function () {
         trail.setAttribute('aria-labelledby', historyTitle.id);
 
         keyboard = node('div', 'nss-piano-scroll nss-free-scroll', parent);
-        keyboard.setAttribute('role', 'group'); keyboard.setAttribute('aria-label', 'Keyboard. Start at first key');
+        keyboard.setAttribute('role', 'group'); keyboard.setAttribute('aria-label', 'Keyboard. Choose individual keys');
         const piano = node('div', 'nss-free-piano', keyboard);
+        piano.style.setProperty('--white-keys', WHITE_KEYS);
         let white = 0;
         keys = NOTES.map(function (note) {
             const key = node('button', 'nss-btn nss-key nss-free-key ' + (note.black ? 'black' : 'white'), piano);
             key.type = 'button'; key.dataset.midi = note.midi;
             key.setAttribute('aria-label', note.name);
-            key.style.setProperty('--key-left', (note.black ? white - .31 : white) * 100 / 8 + '%');
+            key.style.setProperty('--key-left', (note.black ? white - .31 : white) * 100 / WHITE_KEYS + '%');
+            // Narrow portrait screens show both octaves as two complete rows.
+            const secondRow = note.midi >= 72, rowWhites = secondRow ? 8 : 7;
+            const rowWhite = white - (secondRow ? 7 : 0);
+            key.style.setProperty('--row-left', (note.black ? rowWhite - .31 : rowWhite) * 100 / rowWhites + '%');
+            key.style.setProperty('--row-width', (note.black ? .62 : 1) * 100 / rowWhites + '%');
+            key.style.setProperty('--row-top', secondRow ? 'calc(50% + 5px)' : '0px');
             key.style.setProperty('--note-color', 'hsl(' + ((note.midi - 60) * 27 + 170) % 360 + ' 90% 62%)');
             node('span', 'nss-key-label', key, note.label);
+            // Pointer users can play any visible key even while the switch scan
+            // treats the keyboard as one choice. Own this click exactly once.
+            key.dataset.nssWired = '1';
+            key.addEventListener('click', function (event) {
+                event.preventDefault(); event.stopPropagation();
+                if (NSS.UI.current() !== 'free') return;
+                NSS.Input.leaveGroups();
+                chooseKeys(note.midi);
+                play(note.midi);
+            });
             if (!note.black) white++;
             return key;
         });
@@ -108,10 +139,18 @@ NSS.FreePlay = (function () {
         deleteButton.type = 'button'; deleteButton.disabled = !savedNotes.length;
         options = node('button', 'nss-btn nss-ctrl nss-options', actions, 'Options');
         options.type = 'button';
+        holdBar = node('span', 'nss-hold', options);
+        holdBar.setAttribute('aria-hidden', 'true');
         window.addEventListener('blur', stop);
         window.addEventListener('pagehide', stop);
         document.addEventListener('narbe-input-cancelled', stop);
         document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); });
+    }
+
+    function holdRing(p) {
+        if (!holdBar) return;
+        holdBar.style.setProperty('--p', p.toFixed(3));
+        options.classList.toggle('holding', p > 0);
     }
 
     function stop() {
@@ -128,11 +167,11 @@ NSS.FreePlay = (function () {
             renderHistory();
             if (savedNotes.length) showNote(savedNotes[savedNotes.length - 1]);
             updateReplayButton();
-            hint.textContent = DEFAULT_HINT;
+            hint.textContent = idleHint();
         }
     }
 
-    function leave() { stop(); if (deleting) endDelete(); }
+    function leave() { choosingKeys = false; stop(); if (deleting) endDelete(); }
 
     function reset() {
         leave();
@@ -141,7 +180,7 @@ NSS.FreePlay = (function () {
         renderHistory();
         stage.removeAttribute('style');
         if (savedNotes.length) showNote(savedNotes[savedNotes.length - 1]);
-        hint.textContent = DEFAULT_HINT;
+        hint.textContent = idleHint();
         keyboard.scrollLeft = 0;
     }
 
@@ -170,7 +209,7 @@ NSS.FreePlay = (function () {
                 });
             }
             node('span', 'nss-free-history-number', target, String(number));
-            node('span', 'nss-free-history-note', target, index === 0 || index === 12 ? note.name : note.label);
+            node('span', 'nss-free-history-note', target, midi === FIRST_NOTE || midi === LAST_NOTE ? note.name : note.label);
         });
         historyTitle.textContent = deleting ? 'Choose a note to delete' : sequence > HISTORY_LIMIT ? 'Your last 10 notes, in order' : 'Your notes, in order';
     }
@@ -206,8 +245,24 @@ NSS.FreePlay = (function () {
 
     function onScan(state) {
         if (deleting && state.depth === 0) endDelete();
-        if (!deleting && !replaying) hint.textContent = state.id === 'free:restart'
-            ? 'Choose the keyboard to start at Low C, or scan to the buttons below.' : DEFAULT_HINT;
+        // Finish a pass through the keys at the whole-keyboard stop. Outside
+        // that pass, keys never enter the scan until the player chooses them.
+        // Keep this in the existing root loop so passing the keyboard reaches
+        // Replay/Delete/Options in both manual and Auto Scan.
+        if (choosingKeys && !openingKeys && !String(state.id || '').startsWith('free:key:')) {
+            choosingKeys = false;
+            NSS.Input.refresh(false); // retain this choice, brake and root parking state
+        }
+        if (!deleting && !replaying) hint.textContent = idleHint();
+    }
+
+    function chooseKeys(midi) {
+        choosingKeys = true;
+        openingKeys = true;
+        try {
+            NSS.Input.refresh(false);
+            NSS.Input.align('free:key:' + (midi === undefined ? FIRST_NOTE : midi));
+        } finally { openingKeys = false; }
     }
 
     function showNote(midi) {
@@ -289,9 +344,10 @@ NSS.FreePlay = (function () {
     }
 
     function scannables() {
-        return NOTES.map(function (note, i) {
+        const individualKeys = choosingKeys ? NOTES.map(function (note, i) {
             return { id: 'free:key:' + note.midi, el: keys[i], speak: note.name, quiet: true, action: function () { play(note.midi); } };
-        }).concat([{ id: 'free:restart', el: keyboard, speak: 'Keyboard. Start at first key', quiet: true, action: function () { NSS.Input.align('free:key:60'); } }])
+        }) : [];
+        return individualKeys.concat([{ id: 'free:restart', el: keyboard, speak: 'Keyboard. Choose individual keys', quiet: true, action: function () { chooseKeys(); } }])
           .concat(savedNotes.length ? [
               { id: 'free:replay', el: replayButton, speak: function () { return replaying ? 'Stop Replay' : 'Replay My Song'; }, quiet: true, action: toggleReplay },
               { id: 'free:delete', el: deleteButton, speak: 'Delete Note', action: beginDelete }
@@ -299,5 +355,5 @@ NSS.FreePlay = (function () {
           .concat([{ id: 'free:options', el: options, speak: 'Options', action: function () { NSS.Game.pause(); } }]);
     }
 
-    return { build: build, reset: reset, stop: stop, leave: leave, onScan: onScan, play: play, scannables: scannables, symbol: symbol };
+    return { build: build, reset: reset, stop: stop, leave: leave, onScan: onScan, play: play, scannables: scannables, symbol: symbol, holdRing: holdRing };
 })();

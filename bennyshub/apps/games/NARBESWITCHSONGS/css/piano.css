@@ -1,42 +1,81 @@
 /* The piano is one switch target. Its keys never require aiming. */
 .nss-tiles { grid-template-columns: 1fr; }
 .nss-tile { min-height: 170px; }
-.nss-song.show { display: grid; grid-template-rows: auto minmax(80px, 1fr) 8px auto auto; }
-.nss-song { padding: 12px; gap: 10px; }
+.nss-song.show { display: grid; grid-template-rows: auto minmax(0, 1fr) 8px auto auto; }
+/* Leave the scene open between the header and the bottom playing controls. */
+.nss-song > .nss-bar { grid-row: 1; }
+.nss-song > .nss-progress { grid-row: 3; }
+.nss-song > .nss-song-stage { grid-row: 4; }
+.nss-song > .nss-song-foot { grid-row: 5; }
+[data-look] .nss-song { isolation: isolate; padding: clamp(16px, 1.6vw, 32px); gap: clamp(8px, 1vh, 14px); }
 .nss-song > * { flex-shrink: 0; }
 [data-look="studio"] .nss-song::before { display: none; }
 .nss-song .nss-bar { min-height: 54px; }
 [data-look="studio"] .nss-song .nss-bar { padding: 8px 16px; }
 .nss-scene { position: relative; min-width: 0; min-height: 0; overflow: hidden; touch-action: manipulation; }
 /* Portrait uses the original artwork; landscape uses its painted extensions.
-   The scene gets the space left after the controls. Resize the whole picture,
-   keeping its frame on the image itself so there are no cropped subjects. */
-.nss-scene-picture { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.nss-scene-picture img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: 24px; outline: 2px solid #fff; outline-offset: -2px; }
+   The picture covers the viewport, including safe areas, while the controls
+   stay inside the safe game frame. No image-sized card or letterboxing. */
+.nss-song > .nss-scene, .nss-pause > .nss-scene, .nss-songend > .nss-scene { position: fixed; inset: 0; z-index: -2; }
+.nss-pause { isolation: isolate; }
+.nss-pause.has-song::after, .nss-songend.has-song::after { content: ''; position: fixed; inset: 0; z-index: -1; background: #0003; pointer-events: none; }
+[data-look] .nss-pause .nss-card { padding: 20px; gap: 14px; }
+.nss-pause .nss-list { gap: 10px; }
+.nss-pause-song { font-weight: 700; }
+.nss-scene-picture { display: block; width: 100%; height: 100%; }
+.nss-scene-picture img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: var(--scene-position, 50% 35%); }
+@media (orientation: portrait) {
+    .nss-scene-picture img { object-position: var(--scene-portrait-position, 50% 35%); }
+}
+/* A quiet lower shade separates the keys and controls from busy scenery. */
+.nss-song::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(to bottom, #0002, transparent 25%, transparent 50%, #0009); }
+.nss-song-stage { min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+[data-look] .nss-song.show > .nss-bar { padding: 0; border: 0; background: transparent; align-items: flex-start; }
+.nss-song-directions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; width: min(46%, 440px); flex: none; min-width: 0; }
+.nss-song .nss-bar-title,
+.nss-song .nss-status-slot { padding: 10px 14px; border: 2px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 3px 12px #0003; }
+.nss-song .nss-status-slot { min-width: 0; flex: none; }
+.nss-song .nss-bar-title { min-width: 0; overflow-wrap: anywhere; }
 .nss-progress { display: block; width: 100%; height: 8px; border: 0; border-radius: 10px; overflow: hidden; background: #253453; accent-color: #7ee6ce; }
 .nss-progress::-webkit-progress-bar { background: #253453; }
 .nss-progress::-webkit-progress-value { background: linear-gradient(90deg,#78e3ed,#b09aff,#ffb3d1); }
 .nss-piano-scroll { background: #000; padding: 12px; border-radius: 20px; overflow-x: auto; scrollbar-color: #7587a9 #000; }
-.nss-piano { display: block; position: relative; width: 100%; min-width: 896px; height: clamp(150px,23vh,235px); border: 0; border-radius: 8px; background: #000; padding: 0; touch-action: manipulation; }
+.nss-song-stage .nss-piano-scroll {
+    position: relative; width: min(100%, 980px, 140vh); pointer-events: auto;
+    padding: 10px; border-radius: 14px; overflow: visible;
+    box-shadow: 0 5px 16px #0005;
+}
+.nss-piano { display: block; position: relative; width: 100%; min-width: 0; min-height: 84px; aspect-ratio: 4.8; border: 0; border-radius: 8px; background: #000; padding: 0; touch-action: manipulation; }
 .nss-key { position: absolute; top: 0; left: var(--key-left); height: 100%; width: calc(100% / 14); border: 2px solid #000; border-radius: 0 0 10px 10px; box-shadow: inset 0 -8px 0 #c3cada; }
 .nss-key.white { background: linear-gradient(#e4e9f4,#fff 34%,#f4f7ff); }
 .nss-key.black { z-index: 2; width: calc(100% / 14 * .6); height: 63%; background: linear-gradient(100deg,#303c52,#0c1120 75%); box-shadow: inset 0 -8px 0 #03050c; }
 .nss-key-label { position: absolute; bottom: 18px; left: 0; right: 0; color: #172143; text-align: center; font-size: 26px; font-weight: 800; display: none; }
 .black .nss-key-label { color: white; font-size: 19px; }
+.nss-song .nss-key-label { bottom: 8%; font-size: clamp(12px, 1.5vw, 26px); }
+.nss-song .black .nss-key-label { font-size: clamp(9px, 1.1vw, 19px); }
 .nss-piano[data-labels="true"] .nss-key-label { display: block; }
 .nss-key.next::after { content: ''; position: absolute; inset: 4px; border: 4px solid #7149cb; border-radius: 0 0 8px 8px; animation: nss-next-key 2s ease-in-out infinite; }
 .nss-key.black.next::after { border-color: #fff0ad; }
 .nss-key.pressed { transform: translateY(5px); background: var(--note-color); box-shadow: inset 0 -3px 0 #0006, 0 0 22px var(--note-color); }
 [data-look="studio"] .nss-key.pressed { background: linear-gradient(145deg,#ffffffaa,var(--note-color) 40%,#ffffff44); background-color: var(--note-color); }
+/* Transparent layers must have no opaque tray behind them. Keep the pressed
+   key, label and scan ring strong so the interaction remains easy to see. */
+[data-look] .nss-song .nss-piano-scroll { background: transparent; box-shadow: 0 0 0 2px #254d5e99, 0 5px 16px #0003; }
+[data-look] .nss-song .nss-piano { background: transparent; }
+[data-look] .nss-song .nss-key.white:where(:not(.pressed)) { background: #fffaf0d1; box-shadow: inset 0 -5px #b5ac9a66; }
+[data-look] .nss-song .nss-key.black:where(:not(.pressed)) { background: #142638d1; box-shadow: inset 0 -5px #05101e66; }
 .nss-piano.nss-focus { outline: 6px solid var(--focus-color); outline-offset: 3px; }
 .nss-piano.nss-focus-full { outline: 8px solid var(--focus-color); background: var(--focus-color); box-shadow: 0 0 0 5px var(--focus-ink); }
 .nss-piano.nss-focus-full .white:not(.pressed) { background: var(--focus-color); }
 .nss-song-foot { gap: 10px; padding: 0 !important; border: 0 !important; background: transparent !important; }
 .nss-song-foot .nss-options { min-width: 160px; min-height: 72px; }
 .nss-song-foot .nss-hint { max-width: 65%; font-size: 18px; }
+.nss-song .nss-song-foot { flex-direction: column; align-items: stretch; gap: 8px; }
+.nss-song .nss-hint { max-width: 100%; align-self: stretch; padding: 5px 12px; border-radius: 12px; background: #000e; color: #fff; text-align: right; font-size: clamp(16px, 1.5vw, 24px); }
 .nss-song-actions { display: flex; gap: 12px; flex: none; }
 .nss-song-actions .nss-ctrl { min-height: 72px; font-size: clamp(18px, 2vw, 24px); }
-.nss-song-actions .nss-listen { min-width: 180px; }
+.nss-song .nss-song-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 1.2vw, 20px); }
+.nss-song .nss-song-actions .nss-ctrl { min-width: 0; min-height: clamp(72px, 7vh, 100px); font-size: clamp(18px, 2vw, 30px); padding: 10px 8px; }
 [data-look="contrast"] .nss-scene-picture img { border-radius: 0; }
 [data-look="contrast"] .nss-key.white { background: white; }
 [data-look="contrast"] .nss-key.black { background: #000; border-color: #fff; }
@@ -47,22 +86,20 @@
     .nss-song-foot .nss-hint { max-width: none; font-size: 15px; }
     .nss-song-actions { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
     .nss-song-actions .nss-ctrl { min-width: 0; padding: 10px 8px; }
-}
-@media (orientation: landscape) {
-    [data-look="studio"] .nss-song { padding-block: 12px; gap: 8px; }
-    [data-look="contrast"] .nss-song { padding: 12px clamp(22px, 3vw, 38px); gap: 8px; }
-    .nss-piano { height: clamp(150px, 18vh, 235px); }
+    .nss-song .nss-song-actions .nss-ctrl { font-size: clamp(17px, 3vw, 22px); min-height: 64px; padding: 8px 4px; }
+    .nss-song-stage .nss-piano-scroll { padding: 6px; }
+    .nss-song .nss-key { border-width: 1px; border-radius: 0 0 5px 5px; }
+    .nss-song .nss-key.next::after { inset: 2px; border-width: 2px; }
 }
 @media (orientation: landscape) and (max-height: 450px) {
     [data-look="studio"] .nss-song, [data-look="contrast"] .nss-song { padding-block: 8px; gap: 6px; }
     .nss-song .nss-bar { min-height: 44px; }
     [data-look="studio"] .nss-song .nss-bar { padding-block: 4px; }
     .nss-song .nss-bar-title { font-size: 24px; }
-    .nss-song .nss-piano { height: 100px; }
-    .nss-song .nss-hint { display: none; }
-    .nss-song-actions { margin-left: auto; }
+    .nss-song .nss-bar-title, .nss-song .nss-status-slot { padding: 5px 10px; }
     .nss-song .nss-song-actions .nss-ctrl { min-height: 64px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .nss-key.next::after { animation: none; }
 }
+

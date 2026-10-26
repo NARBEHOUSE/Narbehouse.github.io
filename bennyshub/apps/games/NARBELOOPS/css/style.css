@@ -240,6 +240,7 @@ body {
     box-shadow: inset 0 1px #ffffff0b, 0 3px 0 #060d18;
 }
 [data-look="studio"] .nl-btn:hover { border-color: #a6c7e8; }
+[data-look="studio"] .nl-need-help { background: #ffe0d5; border-color: #a8322a; color: #7a1e18; }
 [data-look="studio"] .nl-tile {
     min-height: 250px;
     padding: 24px;

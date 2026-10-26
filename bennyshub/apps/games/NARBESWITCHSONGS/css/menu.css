@@ -30,8 +30,6 @@
 }
 [data-look="studio"] .nss-card-menu .nss-brand-narbe { color: #315b63; font-size: 16px; letter-spacing: .12em; }
 [data-look="studio"] .nss-card-menu .nss-sub { color: #314a5a; }
-[data-look="studio"] .nss-card-menu .nss-ready { color: #236451; font-size: 18px; }
-[data-look="studio"] .nss-card-menu .nss-ready i { background: #236451; width: 12px; height: 12px; }
 [data-look="studio"] .nss-card-menu .nss-btn {
     border: 3px solid #254d5e;
     border-radius: 24px;

@@ -10,6 +10,25 @@ NSS.Celebration = (function () {
     ];
     const colors = ['#99ead4', '#ffce7a', '#b8a5ff', '#ff9fbf', '#9cdbff'];
     let bag = [], last = null, host = null, cleanup = null;
+    let menu = null, menuObserver = null;
+
+    // The translucent menu reveals the picture, never moving celebration pieces.
+    function maskMenu() {
+        if (!host || !menu) return;
+        const r = menu.getBoundingClientRect();
+        const left = r.left - 6, right = r.right + 6, top = r.top - 6, bottom = r.bottom + 6;
+        host.style.clipPath = 'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ' +
+            left + 'px ' + top + 'px, ' + left + 'px ' + bottom + 'px, ' +
+            right + 'px ' + bottom + 'px, ' + right + 'px ' + top + 'px, ' + left + 'px ' + top + 'px)';
+    }
+
+    function stopMask() {
+        if (menuObserver) menuObserver.disconnect();
+        menuObserver = null; menu = null;
+        window.removeEventListener('resize', maskMenu);
+        document.removeEventListener('scroll', maskMenu, true);
+        if (host) host.style.removeProperty('clip-path');
+    }
 
     function next() {
         if (!bag.length) {
@@ -25,6 +44,7 @@ NSS.Celebration = (function () {
 
     function stop() {
         clearTimeout(cleanup); cleanup = null;
+        stopMask();
         if (host) { host.replaceChildren(); delete host.dataset.celebration; }
         host = null;
     }
@@ -36,6 +56,14 @@ NSS.Celebration = (function () {
         badge.textContent = theme.icon;
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!reduced) {
+            menu = badge.closest('.nss-card');
+            maskMenu();
+            if (menu) {
+                menuObserver = new ResizeObserver(maskMenu);
+                menuObserver.observe(menu);
+                window.addEventListener('resize', maskMenu);
+                document.addEventListener('scroll', maskMenu, true);
+            }
             const count = NSS.Settings.get('look') === 'contrast' ? 24 : 60;
             for (let i = 0; i < count; i++) {
                 const piece = document.createElement('span');
@@ -52,6 +80,7 @@ NSS.Celebration = (function () {
             const ownHost = host;
             cleanup = setTimeout(function () {
                 ownHost.querySelectorAll('.nss-celebration-piece').forEach(function (piece) { piece.remove(); });
+                stopMask();
                 cleanup = null;
             }, 6000);
         }

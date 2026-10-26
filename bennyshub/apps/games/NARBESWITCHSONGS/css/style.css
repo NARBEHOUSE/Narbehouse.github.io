@@ -143,27 +143,11 @@ body {
 .nss-focus[data-narbe-scan-paused],
 .nss-focus-full[data-narbe-scan-paused] { outline-style: dotted !important; }
 
-/* ---------- status slot: Parked badge and the Ready light ---------- */
+/* ---------- status slot: visible only when Auto Scan is parked ---------- */
 
-.nss-status-slot { display: flex; align-items: center; justify-content: flex-end; min-width: 120px; }
+.nss-status-slot { display: none; align-items: center; justify-content: flex-end; min-width: 120px; }
+#nss[data-choice-state="parked"] .nss-screen.show .nss-status-slot { display: flex; }
 .nss-scan-status { display: flex; align-items: center; gap: 10px; }
-.nss-ready {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--muted);
-}
-.nss-ready i {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #ffffff;
-    animation: nss-ready 1.6s ease-in-out infinite;
-}
-#nss[data-choice-selected="park"] .nss-ready { display: inline-flex; }
-@keyframes nss-ready { 50% { opacity: .25; transform: scale(.7); } }
 
 /* ---------- main menu ---------- */
 
@@ -296,8 +280,6 @@ body {
     .nss-brand-title { font-size: 38px; }
     .nss-brand-narbe { font-size: 12px; }
     .nss-status-slot { min-width: 0; flex-shrink: 0; }
-    .nss-ready { font-size: 14px; gap: 5px; }
-    .nss-ready i { width: 10px; height: 10px; }
     .nss-controls, .nss-layer-bar { gap: 12px; }
     .nss-ctrl { padding: 10px 6px; font-size: 18px; overflow-wrap: anywhere; }
     .nss-pattern-grid { gap: 14px; }
@@ -314,7 +296,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .nss-ready i, .nss-orb.pop, .nss-burst { animation: none; }
+    .nss-orb.pop, .nss-burst { animation: none; }
     .nss-btn, .nss-cell, .nss-row { transition: none; }
 }
 
@@ -368,8 +350,6 @@ body {
 [data-look="studio"] .nss-art-orb { width: 90px; height: 90px; margin: 4px 0 12px 16px; background: radial-gradient(circle at 35% 30%, #edebff, #ab9bfa 30%, #6551c4 65%, #2c2856); box-shadow: 0 0 40px #b4a2ff40; }
 [data-look="studio"] .nss-tile-label { font-size: clamp(24px, 3vw, 32px); }
 [data-look="studio"] .nss-util .nss-btn { font-size: 19px; font-weight: 400; background: #152033; border-color: #344760; }
-[data-look="studio"] .nss-ready { color: #aee9d6; font-size: 15px; }
-[data-look="studio"] .nss-ready i { width: 9px; height: 9px; background: #8ce4cf; animation: none; }
 [data-look="studio"] .nss-bar-title { letter-spacing: -.025em; }
 [data-look="studio"] .nss-grid { gap: 12px; min-height: 438px; grid-template-rows: repeat(5, minmax(78px, 1fr)); }
 [data-look="studio"] .nss-row { padding: 6px; background: #111c2c; border: 1px solid #2b3a50; border-radius: 20px; }
@@ -419,8 +399,6 @@ body {
 [data-look="studio"] .nss-burst { border-width: 3px; border-color: var(--orb-light); }
 .nss-focus-full .nss-pad-number, .nss-focus-full .nss-pad-state { color: var(--focus-ink, #1a1008) !important; }
 
-/* Results use a plain background so artwork is never obscured by the menu. */
-[data-look="studio"] .nss-songend { background: #0b101c; }
 [data-look="studio"] .nss-song .nss-bar,
 [data-look="studio"] .nss-song-foot { padding: 14px 20px; border: 1px solid #ffffff22; border-radius: 20px; background: #0b152bd9; }
 .nss-song-choice {
@@ -438,10 +416,9 @@ body {
 .nss-song-choice .nss-btn-value { padding-inline: 4px; }
 [data-look="studio"] .nss-songend .nss-card { background: #101a2aeb; }
 
-/* Effects fill the background. The opaque results card covers them completely. */
+/* Effects sit over the song picture; celebration.js clips them outside the card. */
 .nss-songend { isolation: isolate; }
 .nss-songend .nss-card { position: relative; z-index: 1; }
-.nss-songend .nss-ready i { animation: none; }
 .nss-celebration {
     position: fixed;
     inset: 0;

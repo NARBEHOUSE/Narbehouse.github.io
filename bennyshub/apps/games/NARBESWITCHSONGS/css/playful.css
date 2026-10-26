@@ -8,8 +8,7 @@
     --radius: 24px;
     color-scheme: light;
 }
-[data-look="studio"] body,
-[data-look="studio"] .nss-songend { background: var(--bg); }
+[data-look="studio"] body { background: var(--bg); }
 [data-look="studio"] .nss-card,
 [data-look="studio"] .nss-songend .nss-card {
     background: var(--surface);
@@ -17,6 +16,11 @@
     border-radius: 32px;
     box-shadow: 0 5px 0 #80c9d2;
 }
+/* Let the scene show through the panels, keeping controls and text solid. */
+[data-look="studio"] .nss-pause .nss-card,
+[data-look="studio"] .nss-songend .nss-card { background: #fff6dfd6; }
+[data-look="contrast"] .nss-pause .nss-card,
+[data-look="contrast"] .nss-songend .nss-card { background: #0b0b0be0; }
 [data-look="studio"] .nss-title,
 [data-look="studio"] .nss-bar-title { color: #146779; letter-spacing: -.025em; }
 [data-look="studio"] .nss-sub { color: var(--muted); }
@@ -34,13 +38,13 @@
 [data-look="studio"] .nss-list .nss-btn:first-child,
 [data-look="studio"] .nss-listen { background: #ffd15c; }
 [data-look="studio"] .nss-options { background: #ffb6a1; }
+[data-look="studio"] .nss-each-note { background: #b9e6ce; }
+[data-look="studio"] .nss-need-help { background: #ffe0d5; border-color: #a8322a; color: #7a1e18; }
 [data-look="studio"] .nss-set { background: #d5eff4; }
 [data-look="studio"] .nss-song-choice { background: #fffaf0; }
 [data-look="studio"] .nss-song-choice:nth-child(3n + 2) { background: #fff0bd; }
 [data-look="studio"] .nss-song-choice:nth-child(3n) { background: #ffe0d5; }
 [data-look="studio"] .nss-choice-art { border-radius: 16px; }
-[data-look="studio"] .nss-ready { color: #236451; font-size: 18px; }
-[data-look="studio"] .nss-ready i { background: #236451; width: 12px; height: 12px; }
 [data-look="studio"] .nss-song .nss-bar,
 [data-look="studio"] .nss-free .nss-bar {
     padding: 8px 16px; background: var(--surface);

@@ -152,21 +152,27 @@ NL.Sound = (function () {
 
 NL.Voice = (function () {
     'use strict';
-    let latest = null;
+    let latest = null, priority = null;
     function vm() { return window.NarbeVoiceManager; }
-    function release(ticket) { if (latest === ticket) { latest = null; NL.Sound.setDuck(1); } }
+    function release(ticket) {
+        if (priority === ticket) priority = null;
+        if (latest === ticket) { latest = null; NL.Sound.setDuck(1); }
+    }
     return {
-        speak: function (text) {
+        speak: function (text, options) {
+            // Let a deliberate help call finish even with Auto Scan or narration off.
+            if (priority && !options?.force) return null;
             let ticket = null;
-            try { ticket = text && vm() ? vm().speak(text) : null; } catch (e) { ticket = null; }
+            try { ticket = text && vm() ? vm().speak(text, options) : null; } catch (e) { ticket = null; }
             if (ticket && ticket.finished) {
                 latest = ticket;
+                if (options?.force) priority = ticket;
                 NL.Sound.setDuck(0.35);
                 Promise.resolve(ticket.finished).then(function () { release(ticket); }, function () { release(ticket); });
             }
             return ticket;
         },
-        cancel: function () { try { vm() && vm().cancel(); } catch (e) { /* no voice manager */ } },
+        cancel: function () { priority = null; try { vm() && vm().cancel(); } catch (e) { /* no voice manager */ } },
         on: function () { try { return !!vm().getSettings().ttsEnabled; } catch (e) { return false; } }
     };
 })();

@@ -4,8 +4,7 @@
  * Screens: menu, categories, songs, song, free, songend, pause, settings, help.
  * The scan list for whichever screen is up comes from scannables().
  * Every screen keeps a status slot outside its choices for the hub's
- * "Parked" badge and the Ready light that shows on the blank park step,
- * so a player can see the scan is still running when nothing is lit.
+ * "Parked" badge. The ordinary blank step has no visible indicator.
  */
 
 window.NSS = window.NSS || {};
@@ -140,12 +139,17 @@ NSS.UI = (function () {
 
         // Playing a song.
         el.song = node('section', 'nss-screen nss-song', el.root);
-        el.songTitle = bar(el.song, '');
         el.scene = node('div', 'nss-scene', el.song);
         el.scene.setAttribute('aria-hidden', 'true');
+        el.songTitle = bar(el.song, '');
+        const songHeader = el.songTitle.parentElement;
+        const songDirections = node('div', 'nss-song-directions', songHeader);
+        el.songHint = node('p', 'nss-hint', songDirections, '');
+        songDirections.appendChild(songHeader.querySelector('.nss-status-slot'));
         el.progress = node('progress', 'nss-progress', el.song);
         el.progress.setAttribute('aria-label', 'Song progress');
-        el.pianoScroll = node('div', 'nss-piano-scroll', el.song);
+        el.songStage = node('div', 'nss-song-stage', el.song);
+        el.pianoScroll = node('div', 'nss-piano-scroll', el.songStage);
         el.piano = button('nss-piano', el.pianoScroll);
         el.piano.setAttribute('aria-label', 'Play the next note');
         el.keys = {};
@@ -162,8 +166,8 @@ NSS.UI = (function () {
             if (!black) white++;
         }
         const foot = node('div', 'nss-song-foot', el.song);
-        el.songHint = node('p', 'nss-hint', foot, '');
         const songActions = node('div', 'nss-song-actions', foot);
+        el.songEachNote = valueButton('nss-ctrl nss-each-note', songActions, 'Play Each Note');
         el.songListen = valueButton('nss-ctrl nss-listen', songActions, 'Listen to Song');
         el.songListen.setAttribute('aria-pressed', 'false');
         el.songOptions = valueButton('nss-ctrl nss-options', songActions, 'Options');
@@ -176,6 +180,9 @@ NSS.UI = (function () {
 
         // Song finished.
         el.songend = node('section', 'nss-screen nss-center nss-songend', el.root);
+        el.endScene = node('div', 'nss-scene', el.songend);
+        el.endScene.setAttribute('aria-hidden', 'true');
+        el.endScene.hidden = true;
         el.endCelebration = node('div', 'nss-celebration', el.songend);
         el.endCelebration.setAttribute('aria-hidden', 'true');
         const ec = card(el.songend, '');
@@ -190,9 +197,13 @@ NSS.UI = (function () {
         el.endMenu = button('nss-item', el.endList, 'Main Menu');
 
         // Pause.
-        el.pause = node('section', 'nss-screen nss-center', el.root);
+        el.pause = node('section', 'nss-screen nss-center nss-pause', el.root);
+        el.pauseScene = node('div', 'nss-scene', el.pause);
+        el.pauseScene.setAttribute('aria-hidden', 'true');
+        el.pauseScene.hidden = true;
         const pc = card(el.pause, 'Paused');
         pc.classList.add('nss-card-narrow');
+        el.pauseSongName = node('p', 'nss-sub nss-pause-song', pc);
         el.pauseList = node('div', 'nss-list', pc);
 
         // Settings.
@@ -274,8 +285,8 @@ NSS.UI = (function () {
             menu: 'NARBE Switch Songs. Play Songs or Free Play.',
             categories: 'Familiar favorites. Choose a collection.',
             songs: el.songsTitle.textContent + '. Choose a song.',
-            song: song ? song.song.name + '. Press to play each note.' : '',
-            free: 'Free Play. Choose any piano key. After the last key, choose the whole keyboard to start again, or scan to Replay My Song, Delete Note and Options. Your last ten notes are saved.',
+            song: song ? song.song.name + '. Choose Play Each Note, then press Enter to play.' : '',
+            free: 'Free Play. Choose the whole keyboard to scan individual keys. After the last key, choose the keyboard to start again, or scan to Replay My Song, Delete Note and Options. Auto Scan enters the keys only when you choose the keyboard. Hold Enter to pause. Your last ten notes are saved.',
             songend: song ? 'You played ' + song.song.name + '. ' + el.endMessage.textContent : '',
             pause: 'Paused.',
             settings: 'Settings.',
@@ -289,7 +300,10 @@ NSS.UI = (function () {
     function applyLook() { document.documentElement.dataset.look = S().get('look'); }
 
     /** From the scanner: which row is open, and whether the park step is showing. */
-    function onScan(state) { if (screen === 'free') NSS.FreePlay.onScan(state); }
+    function onScan(state) {
+        if (screen === 'free') NSS.FreePlay.onScan(state);
+        if (screen === 'song') updateSongHint();
+    }
 
     // --- main menu --------------------------------------------------------------------
 
@@ -366,7 +380,7 @@ NSS.UI = (function () {
         const listening = NSS.Sound.isListening();
         setValue(el.songListen, listening ? 'Stop Listening' : 'Listen to Song');
         el.songListen.setAttribute('aria-pressed', String(listening));
-        el.songHint.textContent = message || (listening ? 'Listening to the song. Your place is saved.' : 'Press to play the next note. Hold Enter to pause.');
+        updateSongHint(message);
         if (listening && listeningFrame === null) {
             clearTimeout(keyTimer);
             listeningIndex = -1;
@@ -378,6 +392,20 @@ NSS.UI = (function () {
             if (NSS.Song.current()) updatePiano();
         }
         if (screen === 'song') NSS.Input.refresh(false);
+    }
+
+    function updateSongHint(message) {
+        const playing = NSS.Input.state()?.id === 'song:play';
+        el.songHint.textContent = message || (NSS.Sound.isListening()
+            ? 'Listening to the song. Your place is saved.'
+            : playing ? 'Press Enter to play each note. Hold Enter to pause.'
+                : 'Choose Play Each Note, then press Enter to play.');
+    }
+
+    function chooseEachNote() {
+        NSS.Song.stopListening();
+        NSS.Input.align('song:play');
+        NSS.Input.announce('Keyboard. Press Enter to play each note. Hold Enter to pause.');
     }
 
     function updatePiano() {
@@ -420,7 +448,7 @@ NSS.UI = (function () {
         Object.values(el.keys).forEach(k => k.classList.remove('pressed'));
         void key.offsetWidth;
         key.classList.add('pressed');
-        // Keep the active key visible without shrinking tablet keys below 64px.
+        // The whole song keyboard is one large target; all its keys fit onscreen.
         showKey(key);
         keyTimer = setTimeout(() => key.classList.remove('pressed'), 400);
         updatePiano();
@@ -428,13 +456,16 @@ NSS.UI = (function () {
 
     function holdRing(p) {
         p = Math.max(0, Math.min(1, p || 0));
-        el.hold.style.setProperty('--p', p.toFixed(3));
-        el.songOptions.classList.toggle('holding', p > 0);
+        const songProgress = screen === 'song' ? p : 0;
+        el.hold.style.setProperty('--p', songProgress.toFixed(3));
+        el.songOptions.classList.toggle('holding', songProgress > 0);
+        NSS.FreePlay.holdRing(screen === 'free' ? p : 0);
     }
 
     function songScannables() {
         return [
-            { id: 'song:play', el: el.piano, speak: 'Play', quiet: true, action: function () { NSS.Game.note(); } },
+            { id: 'song:each-note', el: el.songEachNote, speak: 'Play Each Note. Choose to highlight the keyboard.', action: chooseEachNote },
+            { id: 'song:play', el: el.piano, speak: 'Keyboard. Press Enter to play each note.', quiet: true, action: function () { NSS.Game.note(); } },
             { id: 'song:listen', el: el.songListen, speak: function () { return NSS.Sound.isListening() ? 'Stop Listening' : 'Listen to Song'; }, action: function () { NSS.Song.toggleListening(); } },
             { id: 'song:options', el: el.songOptions, speak: 'Options', action: function () { NSS.Game.pause(); } }
         ];
@@ -442,6 +473,9 @@ NSS.UI = (function () {
 
     function renderSongEnd() {
         const cur = NSS.Song.current();
+        el.songend.classList.toggle('has-song', !!cur);
+        el.endScene.hidden = !cur;
+        if (cur) NSS.Scenes.mount(el.endScene, cur.song);
         el.endTitle.textContent = cur ? 'You played ' + cur.song.name : 'Song finished';
         el.endMessage.textContent = NSS.Celebration.start(el.endCelebration, el.endBadge);
     }
@@ -461,21 +495,36 @@ NSS.UI = (function () {
 
     function renderPause() {
         pauseFrom = NSS.Game.pausedFrom();
+        const song = pauseFrom === 'song' && NSS.Song.current()?.song;
+        el.pause.classList.toggle('has-song', !!song);
+        el.pauseScene.hidden = !song;
+        el.pauseSongName.hidden = !song;
+        el.pauseSongName.textContent = song ? song.name : '';
+        if (song) NSS.Scenes.mount(el.pauseScene, song);
         const list = [{ id: 'continue', label: 'Continue', action: function () { NSS.Game.resume(); } }];
-        if (pauseFrom === 'song') list.push({ id: 'restart', label: 'Restart Song', action: function () { NSS.Game.restartSong(); } });
-        list.push(
-            { id: 'settings', label: 'Settings', action: function () { settingsFrom = 'pause'; show('settings'); } },
-            { id: 'help', label: 'How to Play', action: function () { helpFrom = 'pause'; show('help'); } }
+        if (pauseFrom === 'song') list.push(
+            { id: 'restart', label: 'Restart Song', action: function () { NSS.Game.restartSong(); } },
+            { id: 'songs', label: 'Another Song', action: function () { show('songs'); } }
         );
-        if (pauseFrom === 'song') list.push({ id: 'songs', label: 'Another Song', action: function () { show('songs'); } });
         list.push(
+            {
+                id: 'need-help', label: 'I Need Help', cls: 'nss-need-help', quiet: true,
+                speak: 'I need help. Choose this to call a helper.',
+                action: function () {
+                    const message = 'I need help, please! I need help, please!';
+                    const fallback = function () { return NSS.Voice.speak(message, { force: true }); };
+                    if (window.NarbeCommunicationSpeech) window.NarbeCommunicationSpeech.help(fallback, message);
+                    else fallback();
+                }
+            },
+            { id: 'settings', label: 'Settings', action: function () { settingsFrom = 'pause'; show('settings'); } },
             { id: 'menu', label: 'Main Menu', action: function () { show('menu'); } },
             { id: 'exit', label: 'Exit Game', action: function () { NSS.Game.exit(); } }
         );
         el.pauseList.innerHTML = '';
         pauseItems = list.map(function (it) {
-            const b = button('nss-item', el.pauseList, it.label);
-            return { id: 'pause:' + it.id, el: b, speak: it.label, action: it.action };
+            const b = button('nss-item ' + (it.cls || ''), el.pauseList, it.label);
+            return { id: 'pause:' + it.id, el: b, speak: it.speak || it.label, quiet: it.quiet, action: it.action };
         });
     }
 
@@ -486,15 +535,13 @@ NSS.UI = (function () {
         let auto = false;
         try { auto = !!window.NarbeScanManager.getSettings().autoScan; } catch (e) { /* no scan manager */ }
         return [
-            'Choose a collection, then a song.',
-            'Or choose *Free Play*. Scan to any piano key and select it, or click a key, to make your own music. Your last ten notes are saved. After the last key, the whole keyboard highlights. Select it to return to Low C, or scan on to the buttons below. *Replay My Song* plays your notes once at an even pace. *Stop Replay* ends playback. Choose *Delete Note*, then scan to a saved note and select it to remove it. The *Back* stop keeps your notes and returns to Delete Note. *Options* comes next.',
-            'Press to play each note. The piano key lights up.',
-            'Play as fast or as slow as you like.',
-            'Choose *Listen to Song* to hear it once. *Stop Listening* ends playback. Your place is saved.',
-            'In a song, *hold Enter* to pause, or choose *Options*.',
-            auto ? 'In the menus, the highlight moves by itself. *Enter* chooses.'
-                 : 'In the menus, *tap Space* to move the highlight and *hold Space* to go back. *Enter* chooses.',
-            'There is no score, no timer and no way to lose.'
+            auto ? 'The highlight moves by itself. *Enter* chooses.'
+                 : '*Tap Space* to move. *Hold Space* to go back. *Enter* chooses.',
+            '*Play Songs:* Choose a song, then *Play Each Note*. Press *Enter* for each note, at your own pace.',
+            '*Listen to Song:* Hear the song play for you.',
+            '*Free Play:* Choose the keyboard, then choose keys to make music. You can also tap or click keys.',
+            '*Replay My Song* plays your last 10 notes. *Delete Note* lets you choose one to remove.',
+            'To pause, choose *Options* or *hold Enter*. *I Need Help* calls a helper.'
         ];
     }
 
@@ -664,13 +711,10 @@ NSS.UI = (function () {
     }
 
     let scanHost = null;
-    /** Where the shared "Parked" badge and the Ready light live, outside the choices. */
+    /** The shared "Parked" badge stays outside the choices. */
     function scanContext() {
         if (!scanHost) {
             scanHost = node('div', 'nss-scan-status');
-            const ready = node('span', 'nss-ready', scanHost);
-            node('i', '', ready);
-            node('span', '', ready, 'Ready');
         }
         const slot = el[screen] && el[screen].querySelector('.nss-status-slot');
         if (slot && scanHost.parentElement !== slot) slot.appendChild(scanHost);
