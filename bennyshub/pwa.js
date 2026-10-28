@@ -81,12 +81,15 @@
       else requestStatus();
     }
   });
+  // A running installed app already has a worker. A registration/update request
+  // can stall during a phone network change; it must not gate offline readiness.
+  if(standalone()){installButton.hidden=true;help.textContent='Benny’s Hub is installed. Its offline library downloads automatically while this window is open.';}
+  if(navigator.serviceWorker.controller)ready();
   navigator.serviceWorker.register('./service-worker.js').then(async value=>{
     registration=value;
     await navigator.serviceWorker.ready;
-    if(standalone()){installButton.hidden=true;help.textContent='Benny’s Hub is installed. Its offline library downloads automatically while this window is open.';}
     if(!started)ready();
   }).catch(()=>{
-    status.textContent='Offline setup could not start. Reopen the Hub while connected and try again.';
+    if(!worker())status.textContent='Offline setup could not start. Reopen the Hub while connected and try again.';
   });
 })();

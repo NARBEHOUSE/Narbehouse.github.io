@@ -9,10 +9,15 @@ function manifestFor(files){
 }
 function harness(files,stores=new Map()){
   const events={},routes=new Map(),requests=[],messages=[];
-  const h={offline:false,failUrls:new Set(),quotaUrls:new Set(),events,stores,requests,messages};
+  const h={offline:false,stall:false,stallUrls:new Set(),failUrls:new Set(),quotaUrls:new Set(),events,stores,requests,messages,background:[],backgroundErrors:[]};
   const keyOf=value=>url(typeof value==='string'?value:value.url);
-  const fetcher=async(input)=>{
+  const fetcher=async(input,options={})=>{
     const key=keyOf(input);requests.push(key);
+    if(h.stall||h.stallUrls.has(key))return new Promise((resolve,reject)=>{
+      const signal=options.signal||input.signal;
+      const abort=()=>reject(new DOMException('Request timed out','AbortError'));
+      if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
+    });
     if(h.offline||h.failUrls.has(key))throw new TypeError('Network interrupted');
     const route=routes.get(key);return route?route.clone():new Response('Public shell',{headers:{'Content-Type':'text/html'}});
   };
@@ -20,7 +25,7 @@ function harness(files,stores=new Map()){
     async open(name){
       if(!stores.has(name))stores.set(name,new Map());const store=stores.get(name);
       return {
-        async match(key){return store.get(keyOf(key))?.clone();},
+        async match(key){const response=store.get(keyOf(key))?.clone();if(name==='benny-offline-meta-v1'&&h.waitForMetaRead)await h.waitForMetaRead();return response;},
         async put(key,response){if(name===LIBRARY&&h.quotaUrls.has(keyOf(key)))throw new DOMException('Quota exceeded','QuotaExceededError');store.set(keyOf(key),response.clone());},
         async delete(key){return store.delete(keyOf(key));},
         async keys(){return [...store.keys()].map(key=>new Request(key));},
@@ -30,7 +35,9 @@ function harness(files,stores=new Map()){
     async keys(){return [...stores.keys()];},async delete(name){return stores.delete(name);}
   };
   const client={url:SCOPE,postMessage:message=>messages.push(JSON.parse(JSON.stringify(message)))};
-  const context={URL,Request,Response,Headers,AbortController,Uint8Array,crypto:crypto.webcrypto,caches,fetch:fetcher,setTimeout,clearTimeout,
+  // Keep network timeout behavior real without making tests wait production seconds.
+  const workerTimer=(callback,delay)=>setTimeout(callback,Math.min(delay,40)).unref();
+  const context={URL,Request,Response,Headers,AbortController,Uint8Array,crypto:crypto.webcrypto,caches,fetch:fetcher,setTimeout:workerTimer,clearTimeout,
     self:{registration:{scope:SCOPE},addEventListener:(name,fn)=>{events[name]=fn;},clients:{matchAll:async()=>[client],claim:async()=>{}},skipWaiting:async()=>{}}};
   vm.runInNewContext(source,context);
   h.update=next=>{const manifest=manifestFor(next);routes.set(url('offline-manifest.json'),new Response(JSON.stringify(manifest),{headers:{'Content-Type':'application/json'}}));for(const [relative,body]of Object.entries(next))routes.set(url(relative),new Response(body,{headers:{'Content-Type':relative.endsWith('.html')?'text/html':'application/octet-stream'}}));return manifest;};
@@ -38,7 +45,7 @@ function harness(files,stores=new Map()){
   h.respond=(relative,body,status=200)=>routes.set(url(relative),new Response(body,{status}));
   h.message=async(type,from=client)=>{let completion;events.message({data:{type},source:from,waitUntil:promise=>{completion=promise;}});await completion;};
   h.download=()=>h.message('HUB_DOWNLOAD_OFFLINE');
-  h.get=async(relative,options={})=>{let response;events.fetch({request:new Request(url(relative),options),respondWith:promise=>{response=promise;}});return response===undefined?undefined:await response;};
+  h.get=async(relative,options={})=>{let response;events.fetch({request:new Request(url(relative),options),respondWith:promise=>{response=promise;},waitUntil:promise=>{h.background.push(Promise.resolve(promise).catch(error=>{h.backgroundErrors.push(error);}));}});return response===undefined?undefined:await response;};
   h.cached=async relative=>(await caches.open(LIBRARY)).match(url(relative));
   h.phase=()=>messages.at(-1)?.phase;
   h.count=relative=>requests.filter(request=>request===url(relative)).length;
@@ -122,5 +129,61 @@ test('a completed library survives worker restart and remains ready during an of
   assert.equal((await restarted.status()).phase,'ready');
   await restarted.download();assert.equal(restarted.phase(),'ready');assert.equal(restarted.messages.at(-1).completed,2);assert.equal(restarted.messages.at(-1).error,undefined);
   assert.equal(await (await restarted.get('./apps/games/UNVISITED/index.html')).text(),'Game');
-  assert.equal(restarted.count('./apps/games/UNVISITED/index.html'),1,'only the normal offline page request should try the network');
+  assert.equal(restarted.count('./apps/games/UNVISITED/index.html'),0,'downloaded games must not wait for any network request');
+});
+
+async function withoutNetworkWait(promise,label){
+  let timer;
+  try{return await Promise.race([promise,new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(Error(label+' waited for an unresponsive network instead of the saved cache')),250);})]);}
+  finally{clearTimeout(timer);}
+}
+
+test('saved game documents and subresources load even when the network never responds',async()=>{
+  const page='./apps/games/UNVISITED/index.html',script='./apps/games/UNVISITED/game.js';
+  const h=harness({[page]:'Saved game',[script]:'Saved script'});await h.download();
+  const downloads=[h.count(page),h.count(script)];h.stall=true;
+  assert.equal(await (await withoutNetworkWait(h.get(page),'Game navigation')).text(),'Saved game');
+  assert.equal(await (await withoutNetworkWait(h.get(script+'?build=1'),'Game script')).text(),'Saved script');
+  assert.deepEqual([h.count(page),h.count(script)],downloads,'the manifest updater owns game downloads; launches use their saved copies');
+});
+
+test('current shell cache outranks older full-library copies without waiting for revalidation',async()=>{
+  const h=harness({'./index.html':'Old library Hub','./shared/platform.js':'Old library platform'});await h.download();
+  h.respond('./index.html','Current shell Hub');h.respond('./shared/platform.js','Current shell platform');
+  let installed;h.events.install({waitUntil:promise=>{installed=promise;}});await installed;
+  h.stall=true;
+  assert.equal(await (await withoutNetworkWait(h.get('./index.html'),'Hub navigation')).text(),'Current shell Hub');
+  assert.equal(await (await withoutNetworkWait(h.get('./shared/platform.js'),'Shell script')).text(),'Current shell platform');
+  await withoutNetworkWait(Promise.all(h.background),'Background shell refresh');
+});
+
+test('a stalled update check cannot hide an already complete library behind Checking forever',async()=>{
+  const h=harness({'./index.html':'Hub','./apps/games/UNVISITED/index.html':'Game'});await h.download();
+  h.stallUrls.add(url('./offline-manifest.json'));
+  await withoutNetworkWait(h.download(),'Manifest update check');
+  assert.equal(h.phase(),'ready');assert.equal(h.messages.at(-1).completed,2);assert.equal(h.messages.at(-1).error,undefined);
+});
+
+test('a manifest whose headers arrive but whose body stalls still restores offline readiness',async()=>{
+  const h=harness({'./index.html':'Hub','./apps/games/UNVISITED/index.html':'Game'});await h.download();
+  let body;
+  const partialJSON=new ReadableStream({start(controller){body=controller;controller.enqueue(new TextEncoder().encode('{"schema":'));}});
+  h.respond('./offline-manifest.json',partialJSON);
+  try{
+    await withoutNetworkWait(h.download(),'Manifest response body');
+    assert.equal(h.phase(),'ready');assert.equal(h.messages.at(-1).completed,2);assert.equal(h.messages.at(-1).error,undefined);
+  }finally{body.error(new Error('End stalled response fixture'));}
+});
+
+test('an old empty metadata read cannot replace the URL index after a download completes',async()=>{
+  const page='./apps/games/UNVISITED/index.html',h=harness({[page]:'Saved game'});
+  let entered,release;
+  const started=new Promise(resolve=>{entered=resolve;}),lateRead=new Promise(resolve=>{release=resolve;});
+  h.waitForMetaRead=async()=>{entered();await lateRead;};
+  // A page asset starts before the first manifest exists, while the user begins
+  // downloading. Its slow empty metadata lookup resumes after download completion.
+  const earlierRequest=h.get('./shared/platform.js');await started;
+  await h.download();assert.equal(h.phase(),'ready');
+  release();await earlierRequest;h.waitForMetaRead=null;h.offline=true;
+  assert.equal(await (await h.get(page)).text(),'Saved game');
 });

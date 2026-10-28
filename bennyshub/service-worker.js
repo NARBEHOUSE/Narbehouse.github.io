@@ -1,4 +1,4 @@
-const CACHE='benny-web-experiment-v63';
+const CACHE='benny-web-experiment-v64';
 const SHELL=['./','./index.html','./apps/tools/tools.json','./apps/games/games.json','./shared/usage-analytics.js','./shared/extension-client.js','./shared/tool-gate.js','./shared/web-data.js','./shared/web-tool.css','./shared/web-tool-ui.js','./shared/scan-manager.js','./shared/voice-manager.js','./shared/ios-audio-fix.js','./extension-setup.html','./setup.js','./data-settings.html','./data-settings.js','./pwa.js','./manifest.webmanifest','./images/BeaminBenny.png','./images/narbefoundation.png','./images/pwa-192.png','./images/pwa-512.png','./images/favicon-16.png','./images/favicon-32.png','./images/apple-touch-icon.png',...['dayhub','journal','streaming'].map(x=>'./images/tools/'+x+'.png'),...['dayhub/index.html','dayhub/app.js','dayhub/style.css','dayhub/day-services.js','journal/index.html','journal/app.js','journal/style.css','journal/predictions.js','journal/questions.json','streaming/index.html','streaming/app.js','streaming/style.css','streaming/web-streaming.js','streaming/keyboard_integration.js','streaming/predictions.js','streaming/editor.html','streaming/editor.js','streaming/editor-files.js','streaming/metadata-config.js','streaming/tmdb-logo.svg','streaming/data.json','streaming/episodes.json'].map(x=>'./apps/tools/'+x)];
 SHELL.push('./companion-setup.css','./companion-privacy.html','./apps/tools/journal/journal-look.css','./apps/tools/journal/calendar-view.js',...['index.html','style.css','app.js','predictions.js','web_keyboard_predictions.json'].map(x=>'./apps/tools/keyboard/'+x));
 SHELL.push(...['playback-links.js','library-merge.js','quick-add.js','quick-add.css','collections/index.json',...['netflix','disney','hulu','prime','tubi','youtube'].map(s=>'collections/'+s+'-starter.json')].map(x=>'./apps/tools/streaming/'+x));
@@ -18,8 +18,20 @@ SHELL.push('./shared/hub-library.js');
 const LIBRARY='benny-offline-library-v1', META='benny-offline-meta-v1';
 const MANIFEST_URL=new URL('./offline-manifest.json',self.registration.scope).href;
 const REVISION_HEADER='X-Benny-Revision';
+const NETWORK_TIMEOUT_MS=5000;
 const allowed=new Set([...SHELL,...RTC_RUNTIME,...SPEAKER_RUNTIME,...FAST_SPEAKER_RUNTIME].map(p=>new URL(p,self.registration.scope).href));
-let manifestPromise=null, downloading=null, progress=null, urlSet=null;
+let manifestPromise=null, downloading=null, progress=null, urlSet=null, urlSetManifest=null;
+
+function fetchWithTimeout(request,options={},consume=response=>response){
+  const controller=new AbortController();let timer;
+  const deadline=new Promise((resolve,reject)=>{
+    timer=setTimeout(()=>{
+      controller.abort();
+      const error=new Error('The connection is not responding.');error.name='AbortError';reject(error);
+    },NETWORK_TIMEOUT_MS);
+  });
+  return Promise.race([fetch(request,{...options,signal:controller.signal}).then(consume),deadline]).finally(()=>clearTimeout(timer));
+}
 
 function validateManifest(value){
   if(value?.schema!==1||!Array.isArray(value.assets)||!value.assets.length||!value.version)throw Error('The offline library list is unavailable.');
@@ -40,12 +52,13 @@ async function storedManifest(){
   return manifestPromise;
 }
 async function latestManifest(){
-  const response=await fetch(MANIFEST_URL,{cache:'no-store'});
-  if(!response.ok)throw Error('The offline library list could not be downloaded.');
-  const value=validateManifest(await response.json());
+  const value=await fetchWithTimeout(MANIFEST_URL,{cache:'no-store'},async response=>{
+    if(!response.ok)throw Error('The offline library list could not be downloaded.');
+    return validateManifest(await response.json());
+  });
   await (await caches.open(META)).put(MANIFEST_URL,new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json'}}));
   manifestPromise=Promise.resolve(value);
-  urlSet=null;
+  urlSet=null;urlSetManifest=null;
   return value;
 }
 async function notify(status){
@@ -163,7 +176,13 @@ async function staticURL(request){
   if(!url.href.startsWith(self.registration.scope))return null;
   url.search='';url.hash='';
   const manifest=await storedManifest();
-  const urls=urlSet||(urlSet=new Set(manifest?.assets.map(item=>new URL(item.url,self.registration.scope).href)||[]));
+  // An earlier cache lookup may finish after a download publishes a new list.
+  // Never let that stale/empty lookup hide the newer library's URLs.
+  if(!urlSet||urlSetManifest!==manifest){
+    urlSet=new Set(manifest?.assets.map(item=>new URL(item.url,self.registration.scope).href)||[]);
+    urlSetManifest=manifest;
+  }
+  const urls=urlSet;
   let key=url.href;
   if(!allowed.has(key)&&!urls.has(key)){
     key=new URL(url.pathname.endsWith('/')?'index.html':url.pathname.split('/').pop()+'/index.html',url).href;
@@ -172,21 +191,38 @@ async function staticURL(request){
 }
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET'||!e.request.url.startsWith(self.registration.scope))return;
-  e.respondWith((async()=>{
+  const background=[];
+  const response=(async()=>{
     const asset=await staticURL(e.request);
     // Never store API/feed/user media responses or unlisted URLs.
     if(!asset)return fetch(e.request);
-    try{
-      const response=await fetch(e.request);
-      if(response.ok&&response.status===200&&allowed.has(asset.key)){
-        await (await caches.open(CACHE)).put(asset.key,response.clone()).catch(()=>{});
+    const shellAsset=allowed.has(asset.key);
+    const shell=await caches.open(CACHE),library=await caches.open(LIBRARY);
+    // A newly installed shell outranks an older full-library copy of that file.
+    // Downloaded games/tools never wait for a mobile connection to fail first.
+    const saved=shellAsset
+      ? await shell.match(asset.key)||await library.match(asset.key)
+      : await library.match(asset.key)||await shell.match(asset.key);
+    async function network(){
+      const fetched=await fetchWithTimeout(e.request);
+      if(fetched.ok&&fetched.status===200&&shellAsset){
+        await shell.put(asset.key,fetched.clone()).catch(()=>{});
       }
-      if(response.ok)return response;
-      const saved=await (await caches.open(LIBRARY)).match(asset.key)||await (await caches.open(CACHE)).match(asset.key);
-      return saved?partialResponse(e.request,saved):response;
-    }catch{
-      const saved=await (await caches.open(LIBRARY)).match(asset.key)||await (await caches.open(CACHE)).match(asset.key);
-      return saved?partialResponse(e.request,saved):new Response('This file is not saved offline yet. Return to the Hub while connected and finish the offline download.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+      return fetched;
     }
-  })());
+    if(saved){
+      // Shell updates can refresh in the background; the manifest downloader
+      // owns revision-checked updates to the complete game/tool library.
+      if(shellAsset)background.push(network().catch(()=>{}));
+      return partialResponse(e.request,saved);
+    }
+    try{
+      return await network();
+    }catch{
+      return new Response('This file is not saved offline yet. Return to the Hub while connected and finish the offline download.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+    }
+  })();
+  e.respondWith(response);
+  // Register lifetime extension synchronously; refreshing must not delay the frame.
+  e.waitUntil(response.catch(()=>{}).then(()=>Promise.all(background)));
 });
