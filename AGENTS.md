@@ -17,3 +17,5 @@ Read `bennyshub/ACCESSIBILITY.md` and `developer-guide.html` before changing sca
 - Ben’s Electron app is read-only until web verification, user confirmation, and the explicit instruction **"start the Electron pass."** Do not edit, install, launch, or port it as a side effect.
 
 - Every future graphics-intensive game must follow `docs/development/GRAPHICS-QUALITY.md` and the Graphics quality section/release checklist in `developer-guide.html`: inherit the Hub before rendering, preserve Standard and access behavior, and record target-device results or pending status.
+
+- Every new or updated game/tool must follow `docs/development/OFFLINE-LIBRARY.md`. The build automatically inventories public Hub assets; do not maintain a manual per-game service-worker list. Keep required engines, modules, fonts, images and bundled media local, with pinned vendor versions/licenses. Verify a fresh library download followed by the first game launch offline; document explicitly online-only features. Use stable catalog IDs so recent/most-used ordering continues to work.

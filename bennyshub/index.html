@@ -821,8 +821,20 @@
   <a class="sr-only" href="#main">Skip to main content</a>
   <div class="container">
     <details id="hub-settings" class="hub-settings" data-scan-exclude>
-      <summary>Companion &amp; data</summary>
+      <summary>Install, offline, Companion &amp; data</summary>
       <div class="settings-panel">
+        <section id="offline-settings" aria-labelledby="offline-heading">
+          <h2 id="offline-heading">Install &amp; play offline</h2>
+          <p>Installing the app starts a one-time download of all built-in games and tool files. Keep the Hub open and connected until it says Ready offline. You can also download them here without installing.</p>
+          <div class="settings-actions">
+            <button type="button" id="pwa-install" hidden>Install Benny's Hub</button>
+            <button type="button" id="offline-download" disabled>Download all games &amp; tools</button>
+          </div>
+          <p id="pwa-install-help">Use your browser's Install app or Add to Home Screen option, then open the installed app to finish its offline download.</p>
+          <p id="offline-status" role="status" aria-live="polite">Checking offline availability…</p>
+          <progress id="offline-progress" aria-label="Offline library download" hidden style="width:100%;max-width:32rem"></progress>
+          <p>Allow about 500 MB of storage. Streaming, YouTube, live feeds and online AI still need internet. Optional downloaded voices and AI models are managed separately in their settings.</p>
+        </section>
         <p>Companion connection: <span id="extension-status" class="connection-status" role="status" aria-live="polite" data-connection="checking">Checking…</span></p>
         <div class="settings-actions">
           <div>
@@ -880,6 +892,7 @@
         <div class="developer-credit">Developed by <a href="https://narbehouse.github.io/" target="_blank" rel="noopener">NARBE LLC</a></div>
       </div>
     </header>
+    <p id="offline-summary" hidden></p>
 
     <main id="main" tabindex="-1">
       <!-- HOME SCREEN -->
@@ -921,6 +934,7 @@
           <div class="controls-left">
             <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
             <button class="nav-btn" id="tools-filter-btn">Genre: All</button>
+            <button class="nav-btn" id="tools-sort-btn" title="Order this list alphabetically, by recent use, or by number of opens on this device">Sort: A–Z</button>
             <button class="nav-btn" id="tools-reset-btn">Reset</button>
           </div>
           <div class="controls-right">
@@ -942,6 +956,7 @@
           <div class="controls-left">
             <button class="backbtn" data-target="home" aria-label="Back to main menu">← Back</button>
             <button class="nav-btn" id="games-filter-btn">Genre: All</button>
+            <button class="nav-btn" id="games-sort-btn" title="Order this list alphabetically, by recent use, or by number of opens on this device">Sort: A–Z</button>
             <button class="nav-btn" id="games-reset-btn">Reset</button>
           </div>
           <div class="controls-right">
@@ -1170,6 +1185,7 @@
 
   <!-- Include shared voice manager -->
   <script src="shared/platform.js"></script>
+  <script src="shared/hub-library.js"></script>
   <script src="shared/graphics-quality.js"></script>
   <script src="shared/scan-status-badge.js"></script>
   <script src="shared/choice-scan.js"></script>
@@ -1213,8 +1229,8 @@
     let allTools = [];
     let currentScreen = 'home';
     let filterState = {
-      tools: { genre: 'all', page: 0 },
-      games: { genre: 'all', page: 0 }
+      tools: { genre: 'all', page: 0, sort: BennyLibrary.getSort('tools') },
+      games: { genre: 'all', page: 0, sort: BennyLibrary.getSort('games') }
     };
     const ITEMS_PER_PAGE = 9;
 
@@ -1399,11 +1415,9 @@
     function filterItemsByGenre(category, genre) {
       const items = appsData[category] || [];
 
-      if (genre === 'all' || !genre) {
-        return items.sort((a, b) => a.title.localeCompare(b.title));
-      }
-      return items.filter(item => item.genres && item.genres.includes(genre))
-                  .sort((a, b) => a.title.localeCompare(b.title));
+      const matches = genre === 'all' || !genre ? items :
+        items.filter(item => item.genres && item.genres.includes(genre));
+      return BennyLibrary.order(matches, category, filterState[category].sort);
     }
 
     // Paginate items
@@ -1481,6 +1495,7 @@
       const nextBtn = document.getElementById(`${category}-next`);
 
       const state = filterState[category];
+      document.getElementById(category + '-sort-btn').textContent = 'Sort: ' + sortLabel(category, state.sort);
       const filteredItems = filterItemsByGenre(category, state.genre);
       const paginatedData = paginateItems(filteredItems, state.page);
 
@@ -1802,6 +1817,8 @@
         return;
       }
       closeCompanionTutorial();
+      const game = appsData.games.find(item => item.path === src);
+      if (tool || game) BennyLibrary.recordOpen(tool ? 'tools' : 'games', tool || game);
       window.BennyUsage?.open(src);
       iframeTitle.textContent = title;
       appIframe.src = src;
@@ -1835,6 +1852,11 @@
       NarbeCommunicationSpeech._service.stop();
       iframeContainer.classList.remove('active');
       appIframe.src = 'about:blank';
+      // Usage sorting is applied before pagination when returning from an app.
+      if (filterState[currentScreen]?.sort !== 'alphabetical' && filterState[currentScreen]) {
+        filterState[currentScreen].page = 0;
+        renderAppsGrid(currentScreen);
+      }
       resetMenuFocus();
 
       // Sync scan settings in case they changed in the app
@@ -2040,7 +2062,24 @@
       return announceHubMenu(`Genre ${displayGenre}`);
     }
 
+    function sortLabel(category, sort) {
+      if (sort === 'recent') return 'Recently used';
+      if (sort === 'most-used') return category === 'games' ? 'Most played' : 'Most used';
+      return 'A–Z';
+    }
+
+    function toggleSort(category, direction = 1) {
+      const state = filterState[category], options = BennyLibrary.sorts;
+      state.sort = options[(options.indexOf(state.sort) + direction + options.length) % options.length];
+      state.page = 0;
+      BennyLibrary.setSort(category, state.sort);
+      renderAppsGrid(category);
+      return announceHubMenu('Sort: ' + sortLabel(category, state.sort));
+    }
+
     function resetGenre(category) {
+      filterState[category].sort = 'alphabetical';
+      BennyLibrary.setSort(category, 'alphabetical');
       filterState[category].genre = 'all';
       filterState[category].page = 0;
 
@@ -2048,7 +2087,7 @@
       if(btn) btn.textContent = 'Genre: All';
 
       renderAppsGrid(category);
-      announceHubMenu('Filter reset to All');
+      announceHubMenu('Filters reset. All genres, sorted A to Z.');
     }
 
     // Attach listeners
@@ -2057,6 +2096,8 @@
       if (filterBtn) {
         NarbeHubToggles.bind(filterBtn, direction => toggleGenre(category,direction));
       }
+
+      NarbeHubToggles.bind(document.getElementById(category + '-sort-btn'), direction => toggleSort(category, direction));
 
       const resetBtn = document.getElementById(`${category}-reset-btn`);
       if (resetBtn) {

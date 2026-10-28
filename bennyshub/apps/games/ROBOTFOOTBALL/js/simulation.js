@@ -31,7 +31,8 @@
   // A pass let go early can still be caught, diving, only if it lands this close to him.
   const SHORT_CATCH_YARDS = 1.1;
   // A tackled robot goes down forward and lands with the ball this far past his feet (the
-  // renderer tips him 1.48 rad, ball at chest height). Landing over the goal line is a touchdown.
+  // renderer tips him 1.48 rad, ball at chest height). Use the same landing reach
+  // when he breaks the goal-line plane or crosses the line to gain during a tackle.
   const FALL_REACH = 1.3;
   // Interceptions are seen coming: a pass is judged PICK_LOOK seconds before it lands, and the
   // defender who will pick it off breaks on the ball from up to PICK_REACH yards away. Your
@@ -493,12 +494,19 @@
         } else { other.anim = 'ready'; other.heading = Math.atan2(p.x - other.x, p.z - other.z); }
       });
       this._followBall();
-      // Forward progress: the ball is spotted where he was hit, not where the fall shoved him.
-      // But a runner who goes down with the ball over the goal line has broken the plane: touchdown.
+      // Keep the contact spot unless the visible fall carries the ball across a
+      // scoring/first-down plane. Both lines use the same body reach, so a robot
+      // falling across the line to gain cannot be ruled short (or lose on downs).
       if (t.elapsed >= t.duration - 1e-7) {
         const d = this._direction(), reach = p.z + Math.cos(p.heading) * FALL_REACH;
         const over = (d === 1 ? reach >= 100 : reach <= 0) && !(this.options.practice && s.possession === 'away');
-        this._finishPlay(over ? reach : t.spot, t.reason);
+        const crossesFirstDown = !s.kickoff && !s.kickReturn && !s.conversion
+          && s.firstDownLine > 0 && s.firstDownLine < 100
+          && (t.spot - s.firstDownLine) * d < 0 && (reach - s.firstDownLine) * d >= -1e-7;
+        // Practice still prevents visiting touchdowns, even if a fall gains a
+        // first down immediately before the goal line.
+        const firstDownSpot = this.options.practice && s.possession === 'away' && reach <= 0 ? s.firstDownLine : reach;
+        this._finishPlay(over ? reach : crossesFirstDown ? firstDownSpot : t.spot, t.reason);
       }
     }
     _armControl() {

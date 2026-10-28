@@ -1,0 +1,18 @@
+Offline copies of existing Benny's Hub dependencies
+
+Three.js 0.128.0 and 0.150.1 (including OBJLoader): MIT; see licenses/three-LICENSE.txt.
+Cannon.js 0.6.2 and cannon-es 0.20.0: MIT; see their licenses/ files.
+Phaser 3.60.0: MIT; see licenses/phaser-LICENSE.txt.
+ES Module Shims 1.6.3: MIT; see licenses/es-module-shims-LICENSE.txt.
+Color Thief 2.3.0: MIT; see licenses/color-thief-LICENSE.txt.
+Font Awesome Free 6.0.0: code MIT, fonts SIL OFL, icons CC BY 4.0; see licenses/font-awesome-LICENSE.txt.
+Google Fonts: Baloo 2, Atkinson Hyperlegible, Jersey 10, Bebas Neue, Barlow Condensed, Orbitron and Rajdhani: SIL OFL; see individual licenses/*-OFL.txt.
+
+Wood Pattern by Alexey Usoltsev, originally at Subtle Patterns.
+The existing transparent version is copied unchanged from https://www.transparenttextures.com/patterns/wood-pattern.png.
+Credit: https://www.transparenttextures.com/wood-pattern.html and https://subtlepatterns.com/wood-pattern/
+CC BY-SA 3.0: https://creativecommons.org/licenses/by-sa/3.0/
+Original collection license: https://github.com/atlemo/SubtlePatterns
+The texture retains that license; no ownership of third-party artwork is claimed.
+
+SOURCES.json records download URLs and SHA-256 checksums. Required runtime code is not modified.

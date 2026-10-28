@@ -1141,6 +1141,85 @@ test('robots are solid on every play, and a pass cannot fly through a defender',
   for (let i = 0; i < 400 && pass.s.phase === 'flight'; i++) { wall.x = x; wall.z = z; wall.stun = 0; pass.step(.05, 0); }
   assert.equal(pass.s.result.title, 'Knocked down');
 });
+function firstDownTackle({ possession = 'home', down = 4, role = 'RB', reachPast = 0, heading, practice = false, startYard } = {}) {
+  const sim = make({ random: () => .9, practice }), d = possession === 'home' ? 1 : -1;
+  position(sim, startYard === undefined ? (d === 1 ? 25 : 75) : startYard, possession);
+  sim.s.down = down;
+  const line = sim.s.firstDownLine, runner = sim._player(possession + '-' + role);
+  const tackler = sim.s.players.find(p => p.team !== possession);
+  sim.s.players.forEach(p => { p.x = 22; p.z = 50; });
+  // The fall moves the feet .7 yards and the forward body another 1.3 yards.
+  runner.x = 0; runner.z = line - d * (2 - reachPast);
+  runner.heading = heading === undefined ? (d === 1 ? 0 : Math.PI) : heading;
+  tackler.x = 0; tackler.z = runner.z + d * .8;
+  sim.s.carrierId = runner.id;
+  sim._beginTackle(runner, tackler, possession === 'home' ? 'Tackled' : 'Tackle!');
+  const contact = sim.s.tackle.spot;
+  for (let i = 0; i < 13; i++) sim.step(.1, 0);
+  assert.equal(sim.s.phase, 'tackle', 'do not resolve the result before the tackle finishes');
+  sim.step(.1, 0);
+  assert.equal(sim.s.phase, 'result');
+  return { sim, contact, line };
+}
+test('falling over the first-down line earns a fresh set of downs for runs and catches by either team, including fourth down', () => {
+  for (const possession of ['home', 'away']) for (const down of [1, 4]) for (const role of ['RB', 'WR1']) {
+    const { sim, contact, line } = firstDownTackle({ possession, down, role, reachPast: .2 });
+    const d = possession === 'home' ? 1 : -1;
+    assert.ok((contact - line) * d < 0, 'the contact center was still short');
+    assert.equal(sim.s.result.title, 'First down!');
+    assert.equal(sim.s.down, 1);
+    assert.equal(sim.s.fieldPosition, line + d * .2, 'spot at the same visible body reach used for touchdowns');
+    assert.equal(sim.s.distance, 10);
+    assert.equal(sim.s.firstDownLine, sim.s.fieldPosition + d * 10);
+    assert.equal(sim.s.stats[possession].yards, 10.2, 'stats use the credited reach');
+    assert.equal(sim._pending.switchPossession, false, 'crossing on fourth down must retain possession');
+    const restored = make();
+    assert.equal(restored.restore(sim.snapshot()), true);
+    assert.equal(restored.s.down, 1); assert.equal(restored.s.fieldPosition, sim.s.fieldPosition);
+  }
+});
+test('first-down body reach counts exactly at the line, but an untouched line still produces the next down or a turnover', () => {
+  for (const possession of ['home', 'away']) for (const down of [1, 4]) {
+    const exact = firstDownTackle({ possession, down });
+    assert.equal(exact.sim.s.result.title, 'First down!');
+    assert.equal(exact.sim.s.fieldPosition, exact.line);
+    const short = firstDownTackle({ possession, down, reachPast: -.02 });
+    assert.equal(short.sim.s.fieldPosition, Math.round(short.contact * 10) / 10, 'no automatic two-yard bonus if the body stays short');
+    if (down === 4) {
+      assert.equal(short.sim.s.result.title, 'Turnover on downs');
+      assert.equal(short.sim._pending.switchPossession, true);
+    } else {
+      assert.equal(short.sim.s.down, 2); assert.equal(short.sim.s.distance, 2);
+    }
+  }
+});
+test('sideways or backward falls that do not reach the line keep the original contact spot', () => {
+  for (const possession of ['home', 'away']) {
+    const d = possession === 'home' ? 1 : -1;
+    for (const heading of [Math.PI / 2, d === 1 ? Math.PI : 0]) {
+      const { sim, contact } = firstDownTackle({ possession, down: 1, heading, reachPast: .4 });
+      assert.equal(sim.s.down, 2);
+      assert.equal(sim.s.fieldPosition, Math.round(contact * 10) / 10);
+      assert.notEqual(sim.s.result.title, 'First down!');
+    }
+  }
+});
+test('a practice visitor falling across a first down near the goal cannot bypass the no-score rule', () => {
+  const { sim } = firstDownTackle({ possession: 'away', practice: true, startYard: 10.5, reachPast: .6 });
+  assert.equal(sim.s.result.title, 'First down!');
+  assert.equal(sim.s.awayScore, 0); assert.equal(sim.s.fieldPosition, .5);
+  assert.equal(sim.s.down, 1); assert.equal(sim.s.distance, .5);
+});
+test('a first-down line just inside either goal is credited without clamping away a crossing or awarding a touchdown', () => {
+  for (const possession of ['home', 'away']) {
+    const d = possession === 'home' ? 1 : -1;
+    const { sim } = firstDownTackle({ possession, startYard: d === 1 ? 89.9 : 10.1, reachPast: .02 });
+    assert.equal(sim.s.result.title, 'First down!'); assert.equal(sim.s.down, 1);
+    assert.equal(sim.s.homeScore, 0); assert.equal(sim.s.awayScore, 0);
+    assert.equal(sim.s.fieldPosition, d === 1 ? 99.9 : .1);
+    assert.ok(Math.abs(sim.s.distance - .1) < 1e-7);
+  }
+});
 test('a runner who goes down with the ball over the goal line scores; short of it, he is spotted where he was hit', () => {
   const tackleAt = (z, opts = {}, possession = 'home') => {
     const sim = make(Object.assign({ random: () => .9 }, opts));

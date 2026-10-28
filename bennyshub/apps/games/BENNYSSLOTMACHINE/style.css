@@ -2,7 +2,7 @@
    BENNY'S MEGA SLOTS - Ultra Modern Casino
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+@import url('../../../shared/offline-vendor/fonts/slotmachine.css');
 
 * {
     box-sizing: border-box;

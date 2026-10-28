@@ -657,6 +657,7 @@ quality.frame(timestamp, targetFPS); // e.g. 60 in play, 30 in a capped menu
 
       <section class="section" id="qa">
         <h2>QA Checklist Before You Ship</h2>
+        <p>Offline library: the website build automatically inventories public Hub files. Keep game engines, imports, fonts and bundled media local, with pinned versions and licenses. Follow <code>docs/development/OFFLINE-LIBRARY.md</code> in the source repository. Before shipping a game, download the library in a fresh browser without opening that game, disconnect, and test its first launch plus gameplay and dynamically loaded content. Identify online-only features explicitly. Keep catalog IDs stable so recent and most-played history survives updates.</p>
         <ul>
           <li>✓ Can every action be performed with only Spacebar and Return?</li>
           <li>✓ Can every action be performed with <strong>Return alone</strong>, with Auto Scan on?</li>

@@ -10,6 +10,7 @@ Start here when developing, testing or publishing Benny’s Hub. Runtime pages s
 | [Game developer guide](../developer-guide.html) | Public overview and release checklist. |
 | [Web Companion setup and migration notes](development/WEB-COMPANION.md) | Local setup, architecture and migration context; dated release claims are historical. |
 | [Graphics quality contract](development/GRAPHICS-QUALITY.md) | Hub inheritance, renderer integration and device acceptance. |
+| [Offline library and personal sorting](development/OFFLINE-LIBRARY.md) | Automatic PWA asset inventory, local dependencies, offline acceptance and stable catalog IDs. |
 | [Desktop graphics integration](development/GRAPHICS-DESKTOP-PARITY.md) | Native boundary and desktop/web differences. |
 
 ## Testing and releases

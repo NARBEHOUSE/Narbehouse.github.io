@@ -1,0 +1,386 @@
+{
+  "retrieved": "2026-10-28",
+  "note": "Unmodified pinned runtime libraries and font files. Google Fonts stylesheets only change font URLs to local sibling files. Fonts are original families/weights used by the games.",
+  "googleFontStylesheets": [
+    {
+      "file": "fonts/baloo2.css",
+      "source": "https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap"
+    },
+    {
+      "file": "fonts/atkinson-jersey.css",
+      "source": "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Jersey+10&display=swap"
+    },
+    {
+      "file": "fonts/atkinson.css",
+      "source": "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+    },
+    {
+      "file": "fonts/basketball.css",
+      "source": "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@600;700;800&display=swap"
+    },
+    {
+      "file": "fonts/slotmachine.css",
+      "source": "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+    }
+  ],
+  "files": [
+    {
+      "file": "cannon-0.6.2.min.js",
+      "sha256": "54e8b646e97daef2cff3c7af99fcd0fe768dc74e7d46498f68a869c7dc9dc906",
+      "bytes": 132199,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"
+    },
+    {
+      "file": "cannon-es-0.20.0.js",
+      "sha256": "f0700cbd3a482954949b9d58c1b0f76dcc74767750297647a39d8c40dd63d37c",
+      "bytes": 346256,
+      "source": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+    },
+    {
+      "file": "color-thief-2.3.0.umd.js",
+      "sha256": "4fd5c6dc5fa8656dc82046f9e0c5f3f52826c7bdcd10b4824319dd69637d008d",
+      "bytes": 6548,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"
+    },
+    {
+      "file": "es-module-shims-1.6.3.js",
+      "sha256": "b6f6e400a37224a164181b596838dd43b0b2797a8480d4f7b61f710ebe4ab22e",
+      "bytes": 54312,
+      "source": "https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+    },
+    {
+      "file": "fontawesome/css/all.min.css",
+      "sha256": "8d321d88cb97fdedc3189506c25de9292c6e73a60ebaab496243346c6404480e",
+      "bytes": 89220,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-brands-400.ttf",
+      "sha256": "9e122861bc5f7d6190d580b22acc5b1c3f8cdba9f495593cccd3b47d2cbfa2fd",
+      "bytes": 180148,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-brands-400.ttf"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-brands-400.woff2",
+      "sha256": "29bc44694c394921d1f00271128a2e4cd8293516216e24eac07a73fa821fc1f5",
+      "bytes": 104544,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-brands-400.woff2"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-regular-400.ttf",
+      "sha256": "709034805d10429d24862ad685d561808328329debdbca4f70487b508320a3ff",
+      "bytes": 60380,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-regular-400.ttf"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-regular-400.woff2",
+      "sha256": "fa79fc4f2559112ff3dd27cf5be216d9b5f88066ceef728264f5a3a1a195fc1e",
+      "bytes": 23900,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-regular-400.woff2"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-solid-900.ttf",
+      "sha256": "1782156bfa2054db429277b42f143298a1ce03437c05e2779ca7875112b19d3c",
+      "bytes": 303480,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.ttf"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-solid-900.woff2",
+      "sha256": "1b099f88c06ed0869872561c157f0ec9cbe133a0939d9ece4ee1e1f54bd4683d",
+      "bytes": 126828,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2"
+    },
+    {
+      "file": "fonts/9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5Q.ttf",
+      "sha256": "daa4fc7275d21266748afad0563d8f57e075933686ca6995f06ed8619e99e9e4",
+      "bytes": 52476,
+      "source": "https://fonts.gstatic.com/s/atkinsonhyperlegible/v12/9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5Q.ttf"
+    },
+    {
+      "file": "fonts/9Bt73C1KxNDXMspQ1lPyU89-1h6ONRlW45G8WbcNcw.ttf",
+      "sha256": "b5d9490cf95d925a28ab7b1560e76385134c9bca6cd2d83eee1e51d8c7b1295f",
+      "bytes": 53416,
+      "source": "https://fonts.gstatic.com/s/atkinsonhyperlegible/v12/9Bt73C1KxNDXMspQ1lPyU89-1h6ONRlW45G8WbcNcw.ttf"
+    },
+    {
+      "file": "fonts/atkinson-jersey.css",
+      "sha256": "3dd7ca9e584be899ad969a98440cb249646f15741f5efc7c849584ece07981b2",
+      "bytes": 558,
+      "source": [
+        "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Jersey+10&display=swap"
+      ]
+    },
+    {
+      "file": "fonts/atkinson.css",
+      "sha256": "d3c93f9443d96ecd4b46f96d89de9c380ef9c51e61709d84c65835a079686d77",
+      "bytes": 392,
+      "source": [
+        "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+      ]
+    },
+    {
+      "file": "fonts/baloo2.css",
+      "sha256": "cfe137cf0bf5568e5b243d33fe638da534138646cef39056d324ffdbf04ea312",
+      "bytes": 534,
+      "source": [
+        "https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap"
+      ]
+    },
+    {
+      "file": "fonts/basketball.css",
+      "sha256": "4be43438546d4b2d4714cd5c89fd5f2bc5a88b460f7574ce9143d61e57305a22",
+      "bytes": 726,
+      "source": [
+        "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@600;700;800&display=swap"
+      ]
+    },
+    {
+      "file": "fonts/GftH7vZKsggXMf9n_J5X-A.ttf",
+      "sha256": "47405193f6ef4e993e60078dd6f70c3b83e685b59ce2be07956f5119aa2d7ef6",
+      "bytes": 75864,
+      "source": "https://fonts.gstatic.com/s/jersey10/v4/GftH7vZKsggXMf9n_J5X-A.ttf"
+    },
+    {
+      "file": "fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B46r2_3E.ttf",
+      "sha256": "7dde307fa887fc65ff5830cfada77a7decc5dae8d3c816c9d39ba3f1af1c4ed7",
+      "bytes": 87120,
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B46r2_3E.ttf"
+    },
+    {
+      "file": "fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B47b1_3E.ttf",
+      "sha256": "73bc9e17231e9073780d3c81574c7253cecd5645c93544df1a935054b39a364f",
+      "bytes": 87556,
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B47b1_3E.ttf"
+    },
+    {
+      "file": "fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B4873_3E.ttf",
+      "sha256": "0d85af813fc3ed87db0c6265515689b2eef5cbaf7aab17922528dfc95a2cd73f",
+      "bytes": 86636,
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B4873_3E.ttf"
+    },
+    {
+      "file": "fonts/JTUSjIg69CK48gW7PXooxW4.ttf",
+      "sha256": "939fea723dad24504f40faadc34eeffadfbbee558754f70c3c736e13786b0ab6",
+      "bytes": 56136,
+      "source": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXooxW4.ttf"
+    },
+    {
+      "file": "fonts/LDI2apCSOBg7S-QT7pa8FsOs.ttf",
+      "sha256": "8b2fbb04ed3af38ea941d7351fc5bcf917d239d0bfb64c9bb8916510d8774495",
+      "bytes": 372568,
+      "source": "https://fonts.gstatic.com/s/rajdhani/v17/LDI2apCSOBg7S-QT7pa8FsOs.ttf"
+    },
+    {
+      "file": "fonts/LDI2apCSOBg7S-QT7pasEcOs.ttf",
+      "sha256": "b6b2b19ad724f2d88330cfe83bbe7a2c88f81f9d937dd94ec5c9942c87b96fd6",
+      "bytes": 356844,
+      "source": "https://fonts.gstatic.com/s/rajdhani/v17/LDI2apCSOBg7S-QT7pasEcOs.ttf"
+    },
+    {
+      "file": "fonts/LDI2apCSOBg7S-QT7pb0EMOs.ttf",
+      "sha256": "7377b0a3421b01dae185fc1262ea34a45f6ba226155f531e9e72f5262b56d802",
+      "bytes": 357212,
+      "source": "https://fonts.gstatic.com/s/rajdhani/v17/LDI2apCSOBg7S-QT7pb0EMOs.ttf"
+    },
+    {
+      "file": "fonts/LDI2apCSOBg7S-QT7pbYF8Os.ttf",
+      "sha256": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144",
+      "bytes": 362824,
+      "source": "https://fonts.gstatic.com/s/rajdhani/v17/LDI2apCSOBg7S-QT7pbYF8Os.ttf"
+    },
+    {
+      "file": "fonts/LDIxapCSOBg7S-QT7q4A.ttf",
+      "sha256": "fd30002d951c14f9ca6322601720b73ef4a9877167a241ab9498cc9039c596e9",
+      "bytes": 351464,
+      "source": "https://fonts.gstatic.com/s/rajdhani/v17/LDIxapCSOBg7S-QT7q4A.ttf"
+    },
+    {
+      "file": "fonts/slotmachine.css",
+      "sha256": "4144831ba321dcdf2e021283d94dc054156de2160d695b7d3c66b03c486a27bf",
+      "bytes": 1917,
+      "source": [
+        "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+      ]
+    },
+    {
+      "file": "fonts/wXK0E3kTposypRydzVT08TS3JnAmtdiayqpv.ttf",
+      "sha256": "db932b3668b6188413fcde58993f7667371033579f131d524cfed3f83c62d7e2",
+      "bytes": 417564,
+      "source": "https://fonts.gstatic.com/s/baloo2/v23/wXK0E3kTposypRydzVT08TS3JnAmtdiayqpv.ttf"
+    },
+    {
+      "file": "fonts/wXK0E3kTposypRydzVT08TS3JnAmtdj9yqpv.ttf",
+      "sha256": "99a6754d6cc35c0dd6935077d20e569cfd73c7ecd210765c43fd67819eb6f62a",
+      "bytes": 417960,
+      "source": "https://fonts.gstatic.com/s/baloo2/v23/wXK0E3kTposypRydzVT08TS3JnAmtdj9yqpv.ttf"
+    },
+    {
+      "file": "fonts/wXK0E3kTposypRydzVT08TS3JnAmtdjEyqpv.ttf",
+      "sha256": "393259b936ba314be8a928c37a7bbfde9fc09b442b6b6de5e610f093daf5ad53",
+      "bytes": 418088,
+      "source": "https://fonts.gstatic.com/s/baloo2/v23/wXK0E3kTposypRydzVT08TS3JnAmtdjEyqpv.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpg.ttf",
+      "sha256": "59c2bc6487139f1b8c5754e0cc98ea431ab4c1c1ee142d9d2433ecabe444b59a",
+      "bytes": 17752,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpg.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyKS6xpg.ttf",
+      "sha256": "e1dd2875a4cf1711615b7bc7eb2ae8d05bef3861f87a7fdd847a78199169b458",
+      "bytes": 17800,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyKS6xpg.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nymymxpg.ttf",
+      "sha256": "d900c29674397e73c06d533fbf740c9c1c6d209d49b7cd00364e7ec0b1fac278",
+      "bytes": 17768,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nymymxpg.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nysimxpg.ttf",
+      "sha256": "27cd313045d12280384256b4fba922366a4883e32ffb866b9acd62c5a859de61",
+      "bytes": 16884,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nysimxpg.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyxSmxpg.ttf",
+      "sha256": "35733d7ccbd96f55d5efef560d2a234cb1c398aa51d3bc2eea03a51689b4f0eb",
+      "bytes": 17796,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyxSmxpg.ttf"
+    },
+    {
+      "file": "fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1ny_Cmxpg.ttf",
+      "sha256": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
+      "bytes": 17708,
+      "source": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1ny_Cmxpg.ttf"
+    },
+    {
+      "file": "licenses/atkinsonhyperlegible-OFL.txt",
+      "sha256": "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143",
+      "bytes": 4352,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/atkinsonhyperlegible/OFL.txt"
+    },
+    {
+      "file": "licenses/baloo2-OFL.txt",
+      "sha256": "ad09b05dc8bc678c9daf7c4c5f7ef1f55e5726127f4330b2e98e40b9dffcb860",
+      "bytes": 4384,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/baloo2/OFL.txt"
+    },
+    {
+      "file": "licenses/barlowcondensed-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/barlowcondensed/OFL.txt"
+    },
+    {
+      "file": "licenses/bebasneue-OFL.txt",
+      "sha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341",
+      "bytes": 4337,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/OFL.txt"
+    },
+    {
+      "file": "licenses/cannon-es-LICENSE.txt",
+      "sha256": "4714d0272f50cb21fe46fe29333c7c600d3c85b5ebd2a80f4db07e8cfccbf5b2",
+      "bytes": 1125,
+      "source": "https://unpkg.com/cannon-es@0.20.0/LICENSE"
+    },
+    {
+      "file": "licenses/cannon-LICENSE.txt",
+      "sha256": "4714d0272f50cb21fe46fe29333c7c600d3c85b5ebd2a80f4db07e8cfccbf5b2",
+      "bytes": 1125,
+      "source": "https://unpkg.com/cannon@0.6.2/LICENSE"
+    },
+    {
+      "file": "licenses/color-thief-LICENSE.txt",
+      "sha256": "4468f5c71227b4b4797f0f4785c8c551ea3c8a643bc6a8738a5aff7baee28b83",
+      "bytes": 1080,
+      "source": "https://unpkg.com/colorthief@2.3.0/LICENSE"
+    },
+    {
+      "file": "licenses/es-module-shims-LICENSE.txt",
+      "sha256": "1fdec1aac505eee4dc4ea920432c66d2af22dbd718cdc2d4c0dd2742b8659db2",
+      "bytes": 1095,
+      "source": "https://unpkg.com/es-module-shims@1.6.3/LICENSE"
+    },
+    {
+      "file": "licenses/font-awesome-LICENSE.txt",
+      "sha256": "e779748dfe75e84f974df3c7bc07f842011a100159158b0f1f49b2f2a5a515cb",
+      "bytes": 1548,
+      "source": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.0.0/LICENSE.txt"
+    },
+    {
+      "file": "licenses/jersey10-OFL.txt",
+      "sha256": "436d5836064cec796c7ddde6fb4faeabdb6f2f17443a24a30d0c38b75d13f922",
+      "bytes": 4395,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/jersey10/OFL.txt"
+    },
+    {
+      "file": "licenses/orbitron-OFL.txt",
+      "sha256": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+      "bytes": 4426,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/orbitron/OFL.txt"
+    },
+    {
+      "file": "licenses/phaser-LICENSE.txt",
+      "sha256": "7daf539dfe294d96c756418f4206aca95a282a7040137662ba4b72840eaf1e08",
+      "bytes": 1099,
+      "source": "https://unpkg.com/phaser@3.60.0/LICENSE.md"
+    },
+    {
+      "file": "licenses/rajdhani-OFL.txt",
+      "sha256": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+      "bytes": 4373,
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/rajdhani/OFL.txt"
+    },
+    {
+      "file": "licenses/three-LICENSE.txt",
+      "sha256": "852e0e8699169bf9f6fdc6bda3e682d078dcbc738b5d33e74df594721bff271d",
+      "bytes": 1081,
+      "source": "https://unpkg.com/three@0.150.1/LICENSE"
+    },
+    {
+      "file": "OBJLoader-r128.js",
+      "sha256": "e3c4cf3a6b061b6956e8e8d5cc360cf95da456dcced32961f859c8be6849a579",
+      "bytes": 21560,
+      "source": "https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"
+    },
+    {
+      "file": "phaser-3.60.0.min.js",
+      "sha256": "d16aca3f36470e2d1eac3a37ba708261e2a496bfad896f8c0172597df42f3455",
+      "bytes": 1158769,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"
+    },
+    {
+      "file": "three-0.150.1.module.js",
+      "sha256": "02c8e18af8a24a7e55aa0d1899e68ab5923a9c5dc49964793c4bc06a0b051388",
+      "bytes": 1178963,
+      "source": "https://unpkg.com/three@0.150.1/build/three.module.js"
+    },
+    {
+      "file": "three-r128.min.js",
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
+      "bytes": 603445,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+    },
+    {
+      "file": "wood-pattern.png",
+      "sha256": "acb9fe949393af7b8a14b810e25fe787f2e19613775262dbddfe1ae0db6dedeb",
+      "bytes": 113602,
+      "source": "https://www.transparenttextures.com/patterns/wood-pattern.png"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-v4compatibility.woff2",
+      "sha256": "b3abfccce275536beaaeba990e900a0c08ed2fefbabf4a8bcbb2e2ffe3f2431f",
+      "bytes": 4956,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-v4compatibility.woff2"
+    },
+    {
+      "file": "fontawesome/webfonts/fa-v4compatibility.ttf",
+      "sha256": "fde941c0964fab984f6af0697b3fec92e7df384eec9941babfd3e4cbbd6211c2",
+      "bytes": 10556,
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-v4compatibility.ttf"
+    }
+  ]
+}

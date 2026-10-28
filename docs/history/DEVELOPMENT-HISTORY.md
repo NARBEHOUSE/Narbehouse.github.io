@@ -4211,3 +4211,139 @@ Deleted from `TRINKEY-CONFIGURATOR/`: `START-LOCAL.bat`, `server.cjs`, `package.
 `.gitattributes` now preserves the required runtime firmware bytes from the repository root. `.github/workflows/pages.yml` removes references to the archived development tests; the normal website tests, exact-runtime publication checks, firmware hash verification, build and release audit remain active. `../NARBE FOUNDATION/WEBSITE PROD/switchkit.html` replaces "our switch games" with the games on SwitchedGames and Benny's Hub, without explaining the organizations. `docs/history/DEVELOPMENT-HISTORY.md` records the changes.
 
 Verification before push: the folder contains exactly the 18 public-runtime files; every one is byte-identical to the verified archive/deployed version. All three focused publication/build tests and both repository whitespace checks pass. The existing Pages workflow will run the full website tests, build, firmware verification and release/page audits for publication.
+
+
+### 2026-10-28 — Full offline PWA library and personal catalog sorting
+
+Scope: web Hub installation/offline delivery, catalog sorting and future-build guidance. Electron port: **No** for every file below; a later desktop port requires the separate explicit Electron pass. New Sort controls are CHOICE; the existing shared toggle and scan behavior, stable focus and held reverse selection are preserved. Installation controls remain in the ordinary mouse/keyboard settings disclosure, outside switch scanning.
+
+The build now inventories every reviewed public Hub asset with its URL, byte count and content hash. The complete library is 4,155 files / 502,700,665 bytes (about 503 MB). PWA installation/standalone launch and the manual download button request the complete library without first opening games. Downloads expose progress, resume matching files after interruption, check revisions before saving, update changed files on later online launches, preserve the complete offline library during shell upgrades, handle static directory/query aliases and media ranges, and leave API/user/media/model caches outside the full-library inventory. Optional voice/AI downloads retain their existing flows. Third-party engines/fonts/icons/texture are pinned locally with licenses and provenance; game mechanics and asset versions are unchanged. Streaming, live feeds, cloud AI and Trivia YouTube rewards still require internet.
+
+Games and Tools each save A–Z, Recently used, or Most played/Most used ordering. Device-local opening counts and timestamps are recorded after the existing Hub access gate, independently of analytics; genre filtering and sorting precede pagination. Reset returns to all genres/A–Z without deleting usage. History starts with this update and is not imported from the PC Hub.
+
+Future maintenance is documented in AGENTS.md and docs/development/OFFLINE-LIBRARY.md, linked from the documentation index, script guide and public developer checklist. New local runtime files are discovered at build time; no manual per-game cache entry or service-worker version bump is needed. Source previews regenerate their checked-in manifest after source changes.
+
+Backups: ../tmp/hub-offline-before-20261028/, ../tmp/hub-library-sort-20261028/, ../tmp/hub-offline-manifest-20261028/, ../tmp/hub-offline-dependencies-before-20261028/. Historical release ZIPs remain byte-identical.
+
+Verification: all 431 unit tests pass. Final production build, release audit (4,263 public files; zero problems), 1,417 local page/asset references and CRLF-aware whitespace checks pass. The final integrated library includes the subsequent Robot Football correction; source/dist manifest verification is recorded below. Sorting browser tests cover first-page ordering, genre combination, independent saved preferences, history after reload, offline launch recording, Reset, held-Enter reverse cycling and a 390px layout. All 14 existing Hub choice-menu checks pass. Real browser offline verification passes for all 34 cold game entries plus Keyboard and Phraseboard. The test server actually rejects origin connections, in addition to browser offline emulation, because Chromium service workers could still reach localhost under emulation alone. A fresh download was interrupted, resumed without redownloading completed files, and all 4,155 revision headers were checked before games opened. Final manifest 11a31507f6a9d2506b8ed32fb11657d42c1c776ad0ec7c655d815378f1110d0c matches the production build. Offline Hub reload remains Ready. Gameplay checks include Phaser Baseball, Three.js Basketball, an Animal Friends Barn reveal, Pet Pals adoption/room and synthesized sound fallback, and a built-in Mini Golf course. Missing optional sound-recording probes in Animal Friends/Pet Pals use existing fallback behavior; no required asset failure or uncaught startup error remains. Synthetic appinstalled verifies the automatic download hook; native OS installation dialogs and target-device storage limits were not automated. Reports/screenshots are under artifacts/hub-offline/.
+
+Changed files (all web-only, Electron port **No**):
+
+- `.gitattributes`
+- `AGENTS.md`
+- `README.md`
+- `bennyshub/apps/games/BENNYSBASEBALL2/index.html`
+- `bennyshub/apps/games/BENNYSBASKETBALLSHOOTER/index.html`
+- `bennyshub/apps/games/BENNYSCHESSCHECKERS/script.js`
+- `bennyshub/apps/games/BENNYSDICE/index.html`
+- `bennyshub/apps/games/BENNYSFOOTBALL/index.html`
+- `bennyshub/apps/games/BENNYSSHOWNSOUND/index.html`
+- `bennyshub/apps/games/BENNYSSLOTMACHINE/style.css`
+- `bennyshub/apps/games/NARBEGLOWPOP/index.html`
+- `bennyshub/apps/games/NARBELOOPS/index.html`
+- `bennyshub/apps/games/NARBEMAGICBUTTON/index.html`
+- `bennyshub/apps/games/NARBEPETPALS/index.html`
+- `bennyshub/apps/games/NARBESWITCHSONGS/index.html`
+- `bennyshub/apps/games/NARBESWITCHSTORIES/index.html`
+- `bennyshub/apps/games/TRIVIAMASTER/index.html`
+- `bennyshub/apps/games/TRIVIAMASTER/trivia editor/index.html`
+- `bennyshub/index.html`
+- `bennyshub/offline-manifest.json`
+- `bennyshub/pwa.js`
+- `bennyshub/service-worker.js`
+- `bennyshub/shared/hub-library.js`
+- `bennyshub/shared/offline-vendor/OBJLoader-r128.js`
+- `bennyshub/shared/offline-vendor/SOURCES.json`
+- `bennyshub/shared/offline-vendor/THIRD-PARTY-NOTICES.txt`
+- `bennyshub/shared/offline-vendor/cannon-0.6.2.min.js`
+- `bennyshub/shared/offline-vendor/cannon-es-0.20.0.js`
+- `bennyshub/shared/offline-vendor/color-thief-2.3.0.umd.js`
+- `bennyshub/shared/offline-vendor/es-module-shims-1.6.3.js`
+- `bennyshub/shared/offline-vendor/fontawesome/css/all.min.css`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-brands-400.ttf`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-brands-400.woff2`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-regular-400.ttf`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-regular-400.woff2`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-solid-900.ttf`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-solid-900.woff2`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-v4compatibility.ttf`
+- `bennyshub/shared/offline-vendor/fontawesome/webfonts/fa-v4compatibility.woff2`
+- `bennyshub/shared/offline-vendor/fonts/9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5Q.ttf`
+- `bennyshub/shared/offline-vendor/fonts/9Bt73C1KxNDXMspQ1lPyU89-1h6ONRlW45G8WbcNcw.ttf`
+- `bennyshub/shared/offline-vendor/fonts/GftH7vZKsggXMf9n_J5X-A.ttf`
+- `bennyshub/shared/offline-vendor/fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B46r2_3E.ttf`
+- `bennyshub/shared/offline-vendor/fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B47b1_3E.ttf`
+- `bennyshub/shared/offline-vendor/fonts/HTxwL3I-JCGChYJ8VI-L6OO_au7B4873_3E.ttf`
+- `bennyshub/shared/offline-vendor/fonts/JTUSjIg69CK48gW7PXooxW4.ttf`
+- `bennyshub/shared/offline-vendor/fonts/LDI2apCSOBg7S-QT7pa8FsOs.ttf`
+- `bennyshub/shared/offline-vendor/fonts/LDI2apCSOBg7S-QT7pasEcOs.ttf`
+- `bennyshub/shared/offline-vendor/fonts/LDI2apCSOBg7S-QT7pb0EMOs.ttf`
+- `bennyshub/shared/offline-vendor/fonts/LDI2apCSOBg7S-QT7pbYF8Os.ttf`
+- `bennyshub/shared/offline-vendor/fonts/LDIxapCSOBg7S-QT7q4A.ttf`
+- `bennyshub/shared/offline-vendor/fonts/atkinson-jersey.css`
+- `bennyshub/shared/offline-vendor/fonts/atkinson.css`
+- `bennyshub/shared/offline-vendor/fonts/baloo2.css`
+- `bennyshub/shared/offline-vendor/fonts/basketball.css`
+- `bennyshub/shared/offline-vendor/fonts/slotmachine.css`
+- `bennyshub/shared/offline-vendor/fonts/wXK0E3kTposypRydzVT08TS3JnAmtdiayqpv.ttf`
+- `bennyshub/shared/offline-vendor/fonts/wXK0E3kTposypRydzVT08TS3JnAmtdj9yqpv.ttf`
+- `bennyshub/shared/offline-vendor/fonts/wXK0E3kTposypRydzVT08TS3JnAmtdjEyqpv.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpg.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyKS6xpg.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1ny_Cmxpg.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nymymxpg.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nysimxpg.ttf`
+- `bennyshub/shared/offline-vendor/fonts/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyxSmxpg.ttf`
+- `bennyshub/shared/offline-vendor/licenses/atkinsonhyperlegible-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/baloo2-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/barlowcondensed-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/bebasneue-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/cannon-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/cannon-es-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/color-thief-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/es-module-shims-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/font-awesome-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/jersey10-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/orbitron-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/phaser-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/licenses/rajdhani-OFL.txt`
+- `bennyshub/shared/offline-vendor/licenses/three-LICENSE.txt`
+- `bennyshub/shared/offline-vendor/phaser-3.60.0.min.js`
+- `bennyshub/shared/offline-vendor/three-0.150.1.module.js`
+- `bennyshub/shared/offline-vendor/three-r128.min.js`
+- `bennyshub/shared/offline-vendor/wood-pattern.png`
+- `developer-guide.html`
+- `docs/README.md`
+- `docs/development/OFFLINE-LIBRARY.md`
+- `docs/history/DEVELOPMENT-HISTORY.md`
+- `scripts/README.md`
+- `scripts/build.cjs`
+- `scripts/check-hub-library.cjs`
+- `scripts/check-hub-offline.cjs`
+- `scripts/offline-manifest.cjs`
+- `scripts/public-files.cjs`
+- `tests/communication-cache.test.cjs`
+- `tests/hub-library.test.cjs`
+- `tests/offline-dependencies.test.cjs`
+- `tests/offline-library.test.cjs`
+- `tests/offline-manifest.test.cjs`
+
+Generated `dist/` mirrors the changed public Hub files and developer guide, including the generated offline manifest and all listed vendor files; generated output and test evidence remain ignored. The initial verification pass was local. The owner subsequently authorized pushing these web changes through the existing main-branch GitHub Pages workflow.
+
+
+### 2026-10-28 — Credit Robot Football tackle body reach at the first-down line
+
+The owner explicitly requested this gameplay fix in both the web app and PC Hub. The tackle animation advances the robot beyond its initial contact spot, but previously only touchdowns used that visible falling-body reach; ordinary first-down decisions used the frozen contact spot. The tackle resolver now uses the existing FALL_REACH calculation when that fall crosses an in-field line to gain, in either possession direction. It sends the resolved spot through the existing first-down/down/turnover/stat/announcement path. Noncrossing tackles, kick returns, conversions, touchdown rules, and practice visiting-team scoring suppression retain their behavior. No scanning, controls, rendering or unrelated gameplay changed.
+
+Changed files and port scope:
+
+- `bennyshub/apps/games/ROBOTFOOTBALL/js/simulation.js`: first-down tackle resolution; Electron port **YES**, matching PC source.
+- `bennyshub/apps/games/ROBOTFOOTBALL/tests/simulation.test.cjs`: five regression groups covering both teams, run/catch, downs one/four, actual full tackle resolution, exact/short/sideways/backward/near-goal boundaries, practice suppression, statistics and saved state; Electron port **YES**.
+- `bennyshub/apps/games/ROBOTFOOTBALL/README.md`: documented first-down/body-reach rule; Electron port **YES**.
+- `scripts/check-robotfootball-first-down.cjs`: browser animation/result/HUD regression; Electron port **NO**, web harness.
+- `bennyshub/offline-manifest.json`: automatic revised simulation digest; Electron port **NO**, web offline delivery.
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record; Electron port **NO**.
+
+The three matching PC files are under `C:/Users/ass/OneDrive/BEN'S SOFTWARE/Documents/Python Projects/Benny's PC Hub/bennyshub/apps/games/ROBOTFOOTBALL/`; PC `ELECTRON-SCAN-UPGRADE.md` records the authorized change. PC originals were backed up with hash guards in ../tmp/robotfootball-first-down-20261028/pc; the web backup is ../tmp/robotfootball-first-down-web-20261028/. Desktop CRLF and edition-specific surroundings were preserved. No Electron process was launched and no installer was rebuilt.
+
+Verification: updated web and installed PC sources each pass all 74 simulation checks and 14 season checks. Headless Edge exercised four complete RAF tackle animations: both directions with center still short/body over the line show First down!, 1st-and-10 HUD and no pending possession switch; corresponding short falls correctly show turnover on downs. No JavaScript errors. The four screenshots were reviewed; evidence is in artifacts/robotfootball-first-down/. Final regenerated offline library includes the corrected simulation automatically. The owner subsequently authorized web publication alongside the offline-library and catalog-sorting changes, through the existing main-branch GitHub Pages workflow.

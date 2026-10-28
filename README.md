@@ -8,6 +8,10 @@ Benny's Hub is a free, open-source collection of accessible games and everyday t
 
 Use the Hub online in your browser and choose a game or tool to get started.
 
+Install the Hub as an app to download its built-in games and tool files for offline use, or open **Install, offline, Companion & data → Download all games & tools**. Keep it open and connected until **Ready offline** appears; the full library needs about 500 MB. Interrupted downloads resume without downloading completed files again. Streaming, YouTube, live feeds and online AI still need internet; optional voices and AI models have separate downloads.
+
+On the Games and Tools pages, **Sort** cycles through **A–Z**, **Recently used**, and **Most played / Most used**. The Hub saves each list's choice and ranks the full list before dividing it into pages. Counts are based on openings through the Hub on this device and begin with this feature; they are independent of analytics.
+
 ## Games and tools
 
 - Play accessible arcade, sports, puzzle, and board games.

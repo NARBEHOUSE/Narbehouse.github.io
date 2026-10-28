@@ -18,7 +18,7 @@ const themes = [
     { name: 'Forest', bg: 'linear-gradient(135deg, #134e5e, #71b280)' },
     { name: 'Sunset', bg: 'linear-gradient(135deg, #f12711, #f5af19)' },
     { name: 'Lavender', bg: 'linear-gradient(135deg, #834d9b, #d04ed6)' },
-    { name: 'Classic Wood', bg: 'url("https://www.transparenttextures.com/patterns/wood-pattern.png"), linear-gradient(135deg, #8b5a2b, #4e342e)' }
+    { name: 'Classic Wood', bg: 'url("../../../shared/offline-vendor/wood-pattern.png"), linear-gradient(135deg, #8b5a2b, #4e342e)' }
 ];
 
 const highlightColors = [

@@ -20,30 +20,11 @@ async function build(){
   const existing=await fs.lstat(dest).catch(()=>null);if(existing){if(existing.isSymbolicLink()||(await fs.realpath(dest))!==dest)throw Error('Refusing unsafe build destination');await fs.rm(dest,{recursive:true});}
   await fs.mkdir(dest);
   const publicRoots=['codex-physical-builds','crypto-statement','bennyshub','logos','videos','steviesmusic','index.html','ai-workflow.html','developer-guide.html','the-dream.html','LICENSE'];
-  const extensions=new Set(['.html','.js','.mjs','.css','.json','.webmanifest','.svg','.png','.jpg','.jpeg','.gif','.webp','.ico','.wav','.mp3','.mp4','.webm','.ogg','.wasm','.gz','.csv','.txt','.woff','.woff2','.ttf','.glb','.gltf','.bin','.obj','.mtl']);
-  for(const item of publicRoots)await fs.cp(path.join(root,item),path.join(dest,item),{recursive:true,filter:async source=>{
-    const rel=path.relative(root,source).replaceAll('\\','/');const name=path.basename(source);
-    if((await fs.lstat(source)).isSymbolicLink())throw Error('Symlink in public files');
-    if(name.startsWith('.')||/(?:^|\/)(node_modules|__pycache__|chrome_profile|tests|artifacts|playwright-report|test-results)(?:\/|$)/.test(rel)||/\/games\/[^/]+\/tools(?:\/|$)/.test(rel)||/\/(?:BENNYSFOOTBALL|BENNYSBASEBALL2)\/art(?:\/|$)/.test(rel)||/test-player\.(html|js)$|^rt-convo|^package(?:-lock)?\.json$|^playwright\.config\.|^DESKTOP_PROMPT\.txt$/.test(name))return false;
-    // Keep original project photographs as source; publish the compressed JPEG derivatives.
-    if(/^codex-physical-builds\/images\/.*\.png$/i.test(rel))return false;
-    // Retired prediction experiment stays in the source tree, not the public app.
-    if(/^bennyshub\/apps\/tools\/keyboard\/kenlm(?:\/|-(?:client|worker)\.js$)/.test(rel))return false;
-    // Switch Stories production references never ship with the playable books.
-    if(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\/(?:.*\/)?(?:source|incoming|reference|art|prototype)(?:\/|$)/i.test(rel)||(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\//.test(rel)&&/\.pdf$/i.test(name)))return false;
-    // Private publishing records never enter a website build, regardless of file type.
-    if (/(?:^|\/)rights and publishing[^/]*(?:\/|$)/i.test(rel)) return false;
-    // Publish the game's README alongside its license, notice and credits.
-    if (rel === 'bennyshub/apps/games/CHASINGRAINBOWS/README.md') return true;
-    // Chasing Rainbows partner source documents/art are local references, not web assets.
-    if(/^bennyshub\/apps\/games\/CHASINGRAINBOWS\/REFERENCE DATA(?:\/|$)/.test(rel))return false;
-    // Local Fish Mystery authoring sources are ignored by Git and are not runtime assets.
-    if(/^bennyshub\/apps\/games\/BENNYSFISHMYSTERY\/(?:content(?:\/|$)|editor\.html$)/.test(rel))return false;
-    // The Faster voice phonemizer needs this pinned public data package.
-    if(rel === 'bennyshub/shared/communication-fast-vendor/piper_phonemize.data')return true;
-    return (await fs.stat(source)).isDirectory()||/(?:^|[-_.])(?:LICENSE|COPYING|NOTICE|CREDITS)(?:\.(?:md|txt))?$/i.test(name)||extensions.has(path.extname(name).toLowerCase());
-  }});
+  const {isPublicFile}=require('./public-files.cjs');
+  for(const item of publicRoots)await fs.cp(path.join(root,item),path.join(dest,item),{recursive:true,filter:source=>isPublicFile(root,source)});
   await require('./trinkey-public.cjs').publishTrinkey(root,dest);
+  // Inventory the actual public output so newly added games are ready for offline download.
+  await require('./offline-manifest.cjs').writeOfflineManifest(dest);
   // Only the production-scoped ZIP linked by the setup page is public.
   runPackage([]);
   await fs.mkdir(path.join(dest,'bennyshub/downloads'),{recursive:true});

@@ -14,3 +14,6 @@
 
 # Preserve the exact firmware bytes verified by the Trinkey website installer.
 /TRINKEY-CONFIGURATOR/firmware/** -text
+
+# Preserve offline engine and font bytes verified by their source manifest.
+/bennyshub/shared/offline-vendor/** -text
