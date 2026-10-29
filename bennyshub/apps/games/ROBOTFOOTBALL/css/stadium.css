@@ -329,3 +329,16 @@ body.reduced-motion *{transition:none!important;animation:none!important}
 
 /* Keep the shared paused dash inside the native clipped menu button. */
 .menu-button[data-narbe-scan-paused] { outline-offset: -6px !important; }
+
+/* Postseason progress remains readable and still with reduced motion. */
+.season-road{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;list-style:none;padding:0;margin:12px 0 18px}
+.season-road li{padding:10px 12px;border:1px solid var(--line-2);background:#ffffff06;min-width:0}
+.season-road span{display:block;font-size:15px;font-weight:700}
+.season-road b{display:block;font:11px var(--mono);letter-spacing:.06em;color:var(--muted);margin-top:4px}
+.season-road .current{border-color:var(--volt);background:#ffc55714}
+.season-road .current b{color:var(--volt)}
+.season-road .won b{color:var(--arc)}
+body[data-match-theme="championship"] #menu-eyebrow,body[data-match-theme="championship"] .broadcast-mark small{color:var(--volt)}
+@media(max-width:600px){.season-road li{padding:8px}.season-road span{font-size:12px}.season-road b{font-size:9px}.season-record{gap:16px}}
+
+#menu-after:not(:empty){margin-top:22px;line-height:1.6;color:#cfdde7}

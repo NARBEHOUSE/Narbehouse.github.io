@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "6e8fd0b31cd4e1b88a5afc68befe129760a9f937687077678b2dbecff36a3e45",
-  "totalBytes": 502700888,
+  "version": "3e06ab1283a3ea2e3a19ee8bc01d16e954119e1c48dbe2586a3e87e12bdac29c",
+  "totalBytes": 502713373,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -19365,13 +19365,13 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/css/stadium.css",
-      "revision": "400953d0c2cc9b7f2cfff2d44c38b2e218f77a2d79f1fe18e31bac52682ea80d",
-      "bytes": 29407
+      "revision": "6155b2f9215e47c5ace4441afed666e9c9eb3a386675875ea275a946e550ae1c",
+      "bytes": 30371
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/index.html",
-      "revision": "c8b96e5318ee9d6265eaea68cb81a7203c433bae06316e6852ae86ced60b58ce",
-      "bytes": 4967
+      "revision": "ec69d7b36d0b2c3ae34e51cf94af5cb00dffe9bdb71dbf13a3d701f5361f15e7",
+      "bytes": 5098
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/audio.js",
@@ -19380,8 +19380,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/renderer.js",
-      "revision": "e518b5ed5896428da4ec21f2ebe6a7f5a05820527c7af3aa35064c8670ed83de",
-      "bytes": 75984
+      "revision": "391907ecd7e776479773bc9974ccdb0744727815b42c0ab157b193acfdccad7c",
+      "bytes": 82053
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/robots.js",
@@ -19390,8 +19390,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/season.js",
-      "revision": "3d2f46183e2a323932efc080ea0ebe04c032043791f35aab0ae68535c44cd78d",
-      "bytes": 12240
+      "revision": "e2eb3fbcf48dfee3a0a6d33bd55f7fc8b20d58805d93c34baba0afacffaac185",
+      "bytes": 14060
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/simulation.js",
@@ -19405,8 +19405,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/ui.js",
-      "revision": "88a5d5d578cc2c0c5d51bfc50dcb209cd58a5b2bd53b3d0cbd25d48bf6ac8c78",
-      "bytes": 84491
+      "revision": "832697d44a1152471e162fd39956b2962dd87eaffd5601e2b368f605ca3f111d",
+      "bytes": 87992
     },
     {
       "url": "./apps/games/TRIVIAMASTER/games_manifest.json",

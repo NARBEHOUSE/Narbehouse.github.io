@@ -140,13 +140,48 @@
         if (!raw) { this.data = null; return false; }
         if (raw.length > 1000000) throw new Error('Invalid season size');
         const candidate = JSON.parse(raw);
-        if (!this._valid(candidate)) throw new Error('Invalid season');
-        this.data = clone(candidate); return true;
+        const valid = this._valid(candidate);
+        const recovered = valid ? null : this._recoverPostseason(candidate);
+        if (!valid && !recovered) throw new Error('Invalid season');
+        this.data = clone(recovered || candidate);
+        if (recovered) this.save();
+        return true;
       } catch (_) {
         this.data = null;
         try { if (this.storage) this.storage.removeItem(STORAGE_KEY); } catch (_) {}
         return false;
       }
+    }
+    // Recover only a qualifying regular season that was marked complete before
+    // its first postseason game. The full history still has to pass _valid;
+    // a playoff loss, changed score, or inconsistent record is never reopened.
+    _recoverPostseason(d) {
+      if (!d || d.version !== 1 || d.gamesPlayed !== 16 || d.wins < 10 ||
+          !Array.isArray(d.results) || d.results.length !== 16 ||
+          !d.results.every(r => r && r.stage === 'regular' && scoreOK(r.home) && scoreOK(r.away)) ||
+          !['regular', 'playoffs', 'championship'].concat(FINISHED).includes(d.stage) ||
+          typeof d.active !== 'boolean' ||
+          (d.active && d.stage !== 'regular' && !FINISHED.includes(d.stage))) return null;
+      const replay = { wins: 0, losses: 0, ties: 0, gamesPlayed: 0,
+        stage: 'regular', playoffRound: 0, active: true };
+      for (const r of d.results) advance(replay, r.home, r.away);
+      if (!replay.active || !['playoffs', 'championship'].includes(replay.stage)) return null;
+      const nextMatchId = matchIdFor(d);
+      if (d.matchId !== null && d.matchId !== nextMatchId) return null;
+      const recovered = clone(d);
+      recovered.stage = replay.stage;
+      recovered.playoffRound = replay.playoffRound;
+      recovered.active = true;
+      recovered.matchId = nextMatchId;
+      return this._valid(recovered) ? recovered : null;
+    }
+    recoverPostseason() {
+      if (!this.data || this._valid(this.data)) return false;
+      const recovered = this._recoverPostseason(this.data);
+      if (!recovered) return false;
+      this.data = recovered;
+      this.save();
+      return true;
     }
     _reply(outcome, recorded, duplicate, result) {
       return {

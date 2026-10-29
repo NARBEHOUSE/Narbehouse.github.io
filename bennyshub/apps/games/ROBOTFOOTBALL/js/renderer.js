@@ -30,7 +30,7 @@
       this.graphics = NarbeGraphics.openGame('robotfootball');
       if(!T) throw new Error('The local 3D engine is unavailable.');
       this.homeTeam={id:'blue',name:'BLUEBORGS',shortName:'BLU',color:'#1565c0',accent:'#5e92f3'};this.awayTeam={id:'red',name:'RUSTBOTS',shortName:'RST',color:'#d32f2f',accent:'#ff6659'};
-      this.container=container;this.time=0;this.playerModels=new Map();this.routeSignature='';this.frame=0;
+      this.matchTheme='regular';this.container=container;this.time=0;this.playerModels=new Map();this.routeSignature='';this.frame=0;
       this.renderer=new T.WebGLRenderer(this.graphics.rendererOptions({antialias:true,alpha:false,powerPreference:'high-performance'}));
       this.renderer.setPixelRatio(this.graphics.pixelRatio(Math.min(window.devicePixelRatio||1,1.65),container.clientWidth||innerWidth,container.clientHeight||innerHeight));
       this.renderer.outputColorSpace=T.SRGBColorSpace;
@@ -57,7 +57,7 @@
         seat:new T.MeshStandardMaterial({color:0x38576b,roughness:1,side:T.DoubleSide})
       };
       this.materials.homePrimary=this.materials.navy.clone();this.materials.homeAccent=this.materials.lime.clone();this.materials.awayPrimary=this.materials.orange.clone();this.materials.awayAccent=this.materials.cream.clone();
-      this._lighting();this._field();this._stadium();this._equipment();this._batchRigid(this.scene);this._hero();this.resize();
+      this._lighting();this._field();this._stadium();this._championshipDecor();this._equipment();this._batchRigid(this.scene);this._hero();this.resize();
       this.stopGraphics = this.graphics.subscribe(() => this.resize());
     }
     mesh(geometry,material,parent,x=0,y=0,z=0,sx=1,sy=1,sz=1,shadow=false) {
@@ -93,6 +93,11 @@
           for(let row=0,y=Z(z0)-r;y<Z(z1)+r;row++,y+=r*1.5)for(let x=X(-26.65)-dx+(row%2?dx/2:0);x<X(26.65)+dx;x+=dx){ctx.beginPath();for(let k=0;k<6;k++){const a=PI/6+k*PI/3;ctx.lineTo(x+Math.cos(a)*r*.92,y+Math.sin(a)*r*.92);}ctx.closePath();ctx.stroke();}
           ctx.restore();
         }
+        if(this.matchTheme==='championship'){
+          // Gold paint and settled confetti stay outside the playing boundaries.
+          ctx.strokeStyle='#f5cf69';ctx.lineWidth=11;ctx.strokeRect(X(-27.5),Z(-10.8),X(27.5)-X(-27.5),Z(110.8)-Z(-10.8));
+          for(let i=0;i<150;i++){const side=i%2?-1:1,x=side*(28+(i*7%13)/20),z=-11+(i*47%123);ctx.fillStyle=i%3?'#e9c660':'#f5f0db';ctx.save();ctx.translate(X(x),Z(z));ctx.rotate(i*.7);ctx.fillRect(-3,-7,6,14);ctx.restore();}
+        }
         ctx.strokeStyle='#e9efd9';ctx.lineWidth=7;ctx.strokeRect(X(-26.65),Z(-10),X(26.65)-X(-26.65),Z(110)-Z(-10));
         for(let z=0;z<=100;z+=5){ctx.beginPath();ctx.moveTo(X(-26.65),Z(z));ctx.lineTo(X(26.65),Z(z));ctx.lineWidth=z%10===0?6:4;ctx.stroke();}
         ctx.lineWidth=3;for(let z=1;z<100;z++){if(z%5===0)continue;for(const x of [-26,-3.1,3.1,26]){ctx.beginPath();ctx.moveTo(X(x-.35),Z(z));ctx.lineTo(X(x+.35),Z(z));ctx.stroke();}}
@@ -100,12 +105,19 @@
         for(let z=10;z<100;z+=10){const n=String(Math.min(z,100-z));for(const x of [-19,19]){ctx.save();ctx.translate(X(x),Z(z));ctx.rotate(x<0?PI/2:-PI/2);ctx.fillText(n,0,0);ctx.restore();} }
         // Directional chevrons add a broadcast-field finish without obscuring the lines.
         ctx.fillStyle='#eaf1dd';for(let z=10;z<=90;z+=10){if(z===50)continue;for(const x of [-19,19]){const zz=z+(z<50?2.8:-2.8);ctx.beginPath();ctx.moveTo(X(x-.7),Z(zz));ctx.lineTo(X(x+.7),Z(zz));ctx.lineTo(X(x),Z(zz+(z<50?.8:-.8)));ctx.fill();}}
-        ctx.save();ctx.translate(X(0),Z(50));ctx.fillStyle=home.color;ctx.strokeStyle=home.accent;ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(-185,-112);ctx.lineTo(186,-112);ctx.lineTo(151,79);ctx.lineTo(0,153);ctx.lineTo(-151,79);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.save();ctx.translate(X(0),Z(50));ctx.fillStyle=this.matchTheme==='championship'?'#192d3f':home.color;ctx.strokeStyle=this.matchTheme==='championship'?'#f5cf69':home.accent;ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(-185,-112);ctx.lineTo(186,-112);ctx.lineTo(151,79);ctx.lineTo(0,153);ctx.lineTo(-151,79);ctx.closePath();ctx.fill();ctx.stroke();
+        // Championship trophy replaces the regular robot crest without covering yard numbers.
+        if(this.matchTheme==='championship'){
+          ctx.fillStyle='#f5cf69';ctx.beginPath();ctx.moveTo(-60,-72);ctx.lineTo(60,-72);ctx.lineTo(42,2);ctx.quadraticCurveTo(0,49,-42,2);ctx.closePath();ctx.fill();
+          ctx.strokeStyle='#f5cf69';ctx.lineWidth=13;for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*61,-59);ctx.lineTo(side*94,-59);ctx.quadraticCurveTo(side*96,-7,side*43,5);ctx.stroke();}
+          ctx.fillRect(-9,25,18,36);ctx.fillRect(-43,59,86,12);ctx.fillStyle='#19394b';ctx.fillRect(-37,-47,74,17);
+        }else{
         // A robot helmet crest at midfield ties every team to the machine league.
-        ctx.strokeStyle='#d9eef5';ctx.lineWidth=9;ctx.strokeRect(-98,-68,196,132);ctx.fillStyle=home.accent;ctx.fillRect(-79,-39,158,31);ctx.fillStyle='#d9eef5';for(let tooth=-48;tooth<=48;tooth+=24)ctx.fillRect(tooth,25,12,22);ctx.fillRect(-124,-34,21,50);ctx.fillRect(103,-34,21,50);ctx.fillRect(-7,-92,14,21);ctx.restore();
+        ctx.strokeStyle='#d9eef5';ctx.lineWidth=9;ctx.strokeRect(-98,-68,196,132);ctx.fillStyle=home.accent;ctx.fillRect(-79,-39,158,31);ctx.fillStyle='#d9eef5';for(let tooth=-48;tooth<=48;tooth+=24)ctx.fillRect(tooth,25,12,22);ctx.fillRect(-124,-34,21,50);ctx.fillRect(103,-34,21,50);ctx.fillRect(-7,-92,14,21);}
+        ctx.restore();
         ctx.font='900 150px Arial, sans-serif';ctx.strokeStyle='#142631';ctx.lineWidth=8;ctx.strokeText(home.name.toUpperCase(),X(0),Z(-5),w*.84);ctx.fillStyle='#f7f5ea';ctx.fillText(home.name.toUpperCase(),X(0),Z(-5),w*.84);
         ctx.save();ctx.translate(X(0),Z(105));ctx.rotate(PI);ctx.strokeStyle='#142631';ctx.lineWidth=8;ctx.strokeText(away.name.toUpperCase(),0,0,w*.84);ctx.fillStyle='#f7f5ea';ctx.fillText(away.name.toUpperCase(),0,0,w*.84);ctx.restore();
-        ctx.font='700 29px Arial, sans-serif';ctx.fillStyle='#dbe7d9';ctx.save();ctx.translate(X(-28.1),Z(50));ctx.rotate(-PI/2);ctx.fillText('ROBOT FOOTBALL  /  MECH LEAGUE',0,0);ctx.restore();
+        ctx.font='700 29px Arial, sans-serif';ctx.fillStyle='#dbe7d9';ctx.save();ctx.translate(X(-28.1),Z(50));ctx.rotate(-PI/2);ctx.fillText(this.matchTheme==='championship'?'MECH LEAGUE  /  CHAMPIONSHIP':this.matchTheme==='playoff'?'MECH LEAGUE  /  PLAYOFFS':'ROBOT FOOTBALL  /  MECH LEAGUE',0,0);ctx.restore();
       });
       texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());
       return texture;
@@ -134,7 +146,7 @@
         for(let row=0;row<9;row++){const offset=row*.82;this.scene.add(stadiumRing(rx+offset,rz+offset,.08,y+offset*.8+.12,0,m.dark));}
       }
       // Robot spectators keep the mechanical league theme in three instanced draws.
-      const count=6200,torso=new T.InstancedMesh(new T.BoxGeometry(.41,.5,.3),new T.MeshLambertMaterial({color:0xffffff}),count);
+      const count=9300,torso=new T.InstancedMesh(new T.BoxGeometry(.41,.5,.3),new T.MeshLambertMaterial({color:0xffffff}),count);
       const heads=new T.InstancedMesh(new T.BoxGeometry(.27,.25,.24),new T.MeshLambertMaterial({color:0xffffff}),count);
       const visors=new T.InstancedMesh(new T.BoxGeometry(.21,.05,.018),new T.MeshBasicMaterial({color:0x70e3ff}),count);
       const dummy=new T.Object3D(),color=new T.Color(),shirt=[0xd4e6dd,0x244759,0x9fbd6d,0xc5d2ce,0x185365,0xe59468,0x486276,0x94a49b];
@@ -147,10 +159,8 @@
         dummy.position.set(rx*Math.cos(a),y+.34,50+rz*Math.sin(a));dummy.rotation.set(0,-a-PI/2,0);dummy.scale.setScalar(aisle?.01:1);dummy.updateMatrix();torso.setMatrixAt(i,dummy.matrix);torso.setColorAt(i,color.setHex(shirt[Math.floor(rand()*shirt.length)]));
         dummy.position.y+=.39;dummy.updateMatrix();heads.setMatrixAt(i,dummy.matrix);heads.setColorAt(i,color.setHex([0x799098,0x425564,0xb4bdc0][Math.floor(rand()*3)]));dummy.translateZ(.13);dummy.updateMatrix();visors.setMatrixAt(i,dummy.matrix);
       }
-      torso.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;visors.instanceMatrix.needsUpdate=true;this.scene.add(torso,heads,visors);
-      const ribbonTexture=canvasTexture(2048,128,(ctx,w,h)=>{ctx.fillStyle='#04111d';ctx.fillRect(0,0,w,h);ctx.fillStyle='#3de7ff';ctx.fillRect(0,0,w,4);ctx.fillRect(0,h-6,w,6);ctx.font='700 50px Bahnschrift, Arial';ctx.textBaseline='middle';ctx.textAlign='center';ctx.fillText('ROBOT FOOTBALL   \u25C6   MECH LEAGUE   \u25C6   ALL SYSTEMS GO   \u25C6   POWERED BY SWITCHES',w/2,62);});
-      ribbonTexture.wrapS=T.RepeatWrapping;
-      const ribbonMat=new T.MeshBasicMaterial({map:ribbonTexture,side:T.DoubleSide});
+      torso.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;visors.instanceMatrix.needsUpdate=true;this.crowdMeshes=[torso,heads,visors];for(const mesh of this.crowdMeshes)mesh.count=6200;this.scene.add(torso,heads,visors);
+      const ribbonMat=new T.MeshBasicMaterial({map:this._makeRibbonTexture(),side:T.DoubleSide});this.ribbonMaterial=ribbonMat;
       this.scene.add(stadiumRing(50,86,.01,8.05,-1.5,ribbonMat));this.scene.add(stadiumRing(58,94,.01,15.25,-1.5,ribbonMat));
       // Open trussed roof, keeping an unobstructed dusk sky and floodlight silhouette.
       this.scene.add(stadiumRing(65,101,10,24.7,-1.2,new T.MeshStandardMaterial({color:0x142b3c,roughness:.62,metalness:.38,side:T.DoubleSide})));
@@ -172,7 +182,7 @@
       const board=document.createElement('canvas');board.width=1536;board.height=512;this.boardCtx=board.getContext('2d');
       this.boardTexture=new T.CanvasTexture(board);this.boardTexture.colorSpace=T.SRGBColorSpace;this.boardKey='';
       const boardMaterial=new T.MeshBasicMaterial({map:this.boardTexture,toneMapped:false});
-      const frameGlow=new T.MeshBasicMaterial({color:0x3de7ff,toneMapped:false});
+      const frameGlow=new T.MeshBasicMaterial({color:0x3de7ff,toneMapped:false});this.boardFrameMaterial=frameGlow;
       for(const end of [-1,1]) {
         const screen=new T.Group();screen.position.set(0,17,50+end*88);if(end>0)screen.rotation.y=PI;
         this.mesh(this.geometries.box,m.dark,screen,0,0,0,28,11,.65);
@@ -181,7 +191,7 @@
       }
       this._drawBoard(null,true);
       // Neon runs along the stands and sideline walls; the walls take each team's colour.
-      const neon=new T.MeshBasicMaterial({color:0x3de7ff,toneMapped:false});
+      const neon=new T.MeshBasicMaterial({color:0x3de7ff,toneMapped:false});this.stadiumNeonMaterial=neon;
       for(let tier=0;tier<3;tier++)this.scene.add(stadiumRing(41.9+tier*8,77.9+tier*8,.02,1.9+tier*7.2,-.16,neon));
       this.materials.neonHome=new T.MeshBasicMaterial({color:0x3d8bff,toneMapped:false});this.materials.neonAway=new T.MeshBasicMaterial({color:0xff5a67,toneMapped:false});
       this.materials.beacon=new T.MeshBasicMaterial({color:0x3de7ff,toneMapped:false});this.materials.pylon=new T.MeshBasicMaterial({color:0xff9a3c,toneMapped:false});
@@ -199,6 +209,57 @@
       // Energy pylons at every corner of both end zones.
       const pylonGlow=new T.SpriteMaterial({map:this.glowTexture,color:0xff9a3c,transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending});
       for(const z of [-10,0,100,110])for(const x of [-26.65,26.65]){this.mesh(this.geometries.box,this.materials.pylon,this.scene,x,.3,z,.2,.6,.2);const halo=new T.Sprite(pylonGlow);halo.position.set(x,.45,z);halo.scale.set(1.6,1.6,1);this.scene.add(halo);}
+    }
+    _makeRibbonTexture() {
+      const championship=this.matchTheme==='championship',playoff=this.matchTheme==='playoff';
+      const texture=canvasTexture(2048,128,(ctx,w,h)=>{
+        ctx.fillStyle=championship?'#201b10':'#04111d';ctx.fillRect(0,0,w,h);ctx.fillStyle=championship?'#f5cf69':playoff?'#eaf6ff':'#3de7ff';
+        ctx.fillRect(0,0,w,4);ctx.fillRect(0,h-6,w,6);ctx.font='700 50px Bahnschrift, Arial';ctx.textBaseline='middle';ctx.textAlign='center';
+        ctx.fillText(championship?'MECH LEAGUE CHAMPIONSHIP   ◆   ONE GAME. ONE CHAMPION.':playoff?'MECH LEAGUE PLAYOFFS   ◆   THE ROAD TO THE CHAMPIONSHIP':'ROBOT FOOTBALL   ◆   MECH LEAGUE   ◆   ALL SYSTEMS GO   ◆   POWERED BY SWITCHES',w/2,62,w-70);
+      });
+      texture.wrapS=T.RepeatWrapping;return texture;
+    }
+    _championshipDecor() {
+      const group=new T.Group();group.name='championship-decor';group.visible=false;this.championshipDecor=group;this.scene.add(group);
+      const gold=new T.MeshStandardMaterial({color:0xf5cf69,metalness:.65,roughness:.3}),trim=new T.MeshBasicMaterial({color:0xf5cf69,toneMapped:false});
+      const bannerTexture=canvasTexture(384,640,(ctx,w,h)=>{
+        ctx.fillStyle='#142c40';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#f5cf69';ctx.lineWidth=18;ctx.strokeRect(12,12,w-24,h-24);
+        ctx.fillStyle='#f5cf69';ctx.beginPath();ctx.moveTo(118,115);ctx.lineTo(266,115);ctx.lineTo(247,217);ctx.quadraticCurveTo(192,280,137,217);ctx.closePath();ctx.fill();
+        ctx.lineWidth=16;for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(192+side*73,137);ctx.lineTo(192+side*107,137);ctx.quadraticCurveTo(192+side*110,214,192+side*58,218);ctx.stroke();}
+        ctx.fillRect(183,253,18,49);ctx.fillRect(148,300,88,14);ctx.fillStyle='#19394b';ctx.fillRect(151,161,82,22);
+        ctx.textAlign='center';ctx.fillStyle='#fff4cc';ctx.font='700 36px Bahnschrift, Arial';ctx.fillText('MECH LEAGUE',w/2,397,w-45);ctx.font='800 32px Bahnschrift, Arial';ctx.fillText('CHAMPIONSHIP',w/2,449,w-42);ctx.font='700 21px Bahnschrift, Arial';ctx.fillText('ONE GAME. ONE CHAMPION.',w/2,512,w-50);
+      });
+      const banner=new T.MeshBasicMaterial({map:bannerTexture,side:T.DoubleSide});
+      // Pennants hang behind the end zones and along the stands, clear of players and markers.
+      for(const z of [-17,117])for(const x of [-22,-13,13,22]){
+        const stand=new T.Group();stand.position.set(x,0,z);if(z>50)stand.rotation.y=PI;
+        this.mesh(this.geometries.limb,gold,stand,0,6,0,.09,12,.09);
+        this.mesh(this.geometries.box,trim,stand,0,11.4,0,3.5,.16,.16);
+        this.mesh(this.geometries.plane,banner,stand,0,8.6,.1,3.3,5.5,1);group.add(stand);
+      }
+      // A pair of permanent trophy plinths makes the final distinct even with motion reduced.
+      for(const x of [-30,30])for(const z of [-13,113]){
+        this.mesh(this.geometries.box,this.materials.dark,group,x,.6,z,2.2,1.2,2.2);
+        this.mesh(this.geometries.box,trim,group,x,1.24,z,2.3,.12,2.3);
+        this.mesh(this.geometries.limb,gold,group,x,1.8,z,.16,1,.16);
+        this.mesh(new T.CylinderGeometry(.8,.35,1.15,12),gold,group,x,2.7,z);
+        for(const side of [-1,1]){const handle=this.mesh(new T.TorusGeometry(.45,.07,5,12),gold,group,x+side*.68,2.75,z);handle.scale.y=1.2;}
+      }
+    }
+    setMatchTheme(theme='regular') {
+      theme=['playoff','championship'].includes(theme)?theme:'regular';
+      if(this.matchTheme===theme)return;
+      this.matchTheme=theme;this.boardKey='';this._seenChampionshipFinal=false;
+      this._fireworks=(this._fireworks||[]).filter(show=>!show.championship);
+      const gold=theme==='championship';this.championshipDecor.visible=gold;
+      this.boardFrameMaterial.color.setHex(gold?0xf5cf69:0x3de7ff);this.stadiumNeonMaterial.color.setHex(gold?0xf5cf69:0x3de7ff);
+      const oldField=this.fieldMesh.material.map;this.fieldMesh.material.map=this._makeFieldTexture(this.homeTeam,this.awayTeam);this.fieldMesh.material.needsUpdate=true;oldField?.dispose();
+      const oldRibbon=this.ribbonMaterial.map;this.ribbonMaterial.map=this._makeRibbonTexture();this.ribbonMaterial.needsUpdate=true;oldRibbon?.dispose();
+      this._applyThemeQuality();
+    }
+    _applyThemeQuality() {
+      // Extra spectators stay in the same three instanced draws. Low keeps the usual crowd budget.
+      for(const mesh of this.crowdMeshes||[])mesh.count=this.matchTheme==='championship'&&!this.graphics.isLightweight()?9300:6200;
     }
     _equipment() {
       const goalmat=new T.MeshStandardMaterial({color:0xffd23f,emissive:0xffb000,emissiveIntensity:.6,metalness:.3,roughness:.4});this.goalMaterial=goalmat;
@@ -287,13 +348,14 @@
       this._fireworks=this._fireworks.filter(show=>show.delay>0);
     }
     _celebrate(s) {
+      if(this.matchTheme==='championship'&&!this.reducedMotion&&!this.graphics.isLightweight())for(const x of [-30,30])this._fireworks.push({delay:.45,x,y:10,z:s.possession==='home'?114:-14,color:0xf5cf69,championship:true});
       const home=s.possession==='home',team=home?this.homeTeam:this.awayTeam,color=new T.Color(team.accent||team.color).getHex(),z=home?103:-3;
       for(let k=0;k<(this.reducedMotion?2:5);k++)this._fireworks.push({delay:k*.32,x:(Math.random()*2-1)*11,y:4.5+Math.random()*3.5,z:z+(Math.random()*2-1)*3,color:k%2?0xffd23f:color});
     }
     _drawBoard(s,menu) {
       const home=this.homeTeam,away=this.awayTeam;
       const period=s?(s.format==='regulation'?(s.overtime?'OT':'Q'+s.quarter):'DRIVE '+s.drive):'';
-      const key=menu?'menu':[home.name,home.color,away.name,away.color,s.homeScore,s.awayScore,period,s.possession].join('|');
+      const key=menu?'menu|'+this.matchTheme:[this.matchTheme,home.name,home.color,away.name,away.color,s.homeScore,s.awayScore,period,s.possession].join('|');
       if(key===this.boardKey)return;
       this.boardKey=key;
       const ctx=this.boardCtx,w=1536,h=512;
@@ -304,7 +366,7 @@
         ctx.fillStyle='#3de7ff';ctx.fillRect(0,0,w,10);ctx.fillRect(0,h-10,w,10);
         ctx.font='700 120px Bahnschrift, Arial';ctx.fillStyle='#eaf6ff';ctx.fillText('ROBOT FOOTBALL',w/2,190);
         ctx.font='600 52px Bahnschrift, Arial';ctx.fillStyle='#3de7ff';ctx.fillText('M E C H   L E A G U E',w/2,300);
-        ctx.font='600 30px Consolas, monospace';ctx.fillStyle='#8fb3c8';ctx.fillText('ALL SYSTEMS GO',w/2,400);
+        ctx.font='600 30px Consolas, monospace';ctx.fillStyle='#8fb3c8';ctx.fillText(this.matchTheme==='championship'?'MECH LEAGUE CHAMPIONSHIP':this.matchTheme==='playoff'?'THE ROAD TO THE CHAMPIONSHIP':'ALL SYSTEMS GO',w/2,400);
       }else{
         for(const [team,x,score] of [[home,0,s.homeScore],[away,w/2+120,s.awayScore]]){
           ctx.fillStyle=team.color;ctx.fillRect(x,0,w/2-120,h);
@@ -315,7 +377,8 @@
         ctx.fillStyle='#040b14';ctx.fillRect(w/2-120,0,240,h);
         ctx.fillStyle='#3de7ff';ctx.font='700 58px Consolas, monospace';ctx.fillText(period,w/2,150,220);
         ctx.font='600 30px Bahnschrift, Arial';ctx.fillStyle='#ffd23f';ctx.fillText((s.possession==='home'?home:away).shortName+' BALL',w/2,260,220);
-        ctx.fillStyle='#3de7ff';ctx.fillRect(w/2-120,h-12,240,12);
+        if(this.matchTheme!=='regular'){ctx.fillStyle=this.matchTheme==='championship'?'#f5cf69':'#eaf6ff';ctx.font='700 26px Bahnschrift, Arial';ctx.fillText(this.matchTheme==='championship'?'CHAMPIONSHIP':'PLAYOFFS',w/2,355,220);}
+        ctx.fillStyle=this.matchTheme==='championship'?'#f5cf69':'#3de7ff';ctx.fillRect(w/2-120,h-12,240,12);
       }
       this.boardTexture.needsUpdate=true;
     }
@@ -754,7 +817,7 @@
       this.lastPhase=phase;this.lastMenu=menu;this.hasRendered=true;
     }
     render(s,dt,options={}) {
-      if(!s)return;this._applyTeams(options);this.reducedMotion=!!options.reducedMotion;dt=clamp(Number.isFinite(dt)?dt:.016,0,.08);this.time+=dt;this.frame++;
+      if(!s)return;if(options.matchTheme!==undefined)this.setMatchTheme(options.matchTheme);this._applyTeams(options);this.reducedMotion=!!options.reducedMotion;dt=clamp(Number.isFinite(dt)?dt:.016,0,.08);this.time+=dt;this.frame++;
       const players=s.players||[],lookup=new Map(players.map(p=>[p.id,p])),menu=!!options.menu;
       this.heroGroup.visible=menu;this.heroLight.visible=menu;
       for(const [id,model] of this.playerModels)model.group.visible=!menu&&lookup.has(id);
@@ -774,6 +837,13 @@
       if(s.result!==this._seenResult){this._seenResult=s.result;if(!menu&&s.phase==='result'&&s.result&&/touchdown|conversion!|extra point good|field goal/i.test(s.result.title||''))this._celebrate(s);}
       const runner=(s.phase==='run'||s.phase==='defend')&&!s.controlGrace&&lookup.get(s.carrierId),runnerModel=runner&&this.playerModels.get(runner.id);
       if(runnerModel&&runnerModel.velocity>4&&dt>0&&(this._trailClock-=dt)<=0){const team=runner.team==='home'?this.homeTeam:this.awayTeam;this._trailClock=.035;this.burst(runner.x-Math.sin(runner.heading)*.35,.3,runner.z-Math.cos(runner.heading)*.35,1,'trail',new T.Color(team.accent||team.color).getHex());}
+      if(this.matchTheme==='championship'&&!menu&&s.phase==='final'){
+        if(!this._seenChampionshipFinal&&!this.reducedMotion&&!this.graphics.isLightweight()){
+          for(let i=0;i<8;i++)this._fireworks.push({delay:i*.4,x:(i%2?1:-1)*31,y:11+(i%3)*2,z:8+Math.floor(i/2)*28,color:i%3?0xf5cf69:0xffffff,championship:true});
+        }
+        this._seenChampionshipFinal=true;
+      }else this._seenChampionshipFinal=false;
+      if(this.reducedMotion||this.graphics.isLightweight())this._fireworks=this._fireworks.filter(show=>!show.championship);
       this._stepEffects(dt);
       this._routes(s);if(menu)this.routeGroup.visible=false;
       const targetId=typeof s.selectedTarget==='number'?(s.targets||[])[s.selectedTarget]:s.selectedTarget;
@@ -840,7 +910,7 @@
     resize() {
       this.width=Math.max(1,this.container.clientWidth||window.innerWidth);this.height=Math.max(1,this.container.clientHeight||window.innerHeight);
       this.renderer.setPixelRatio(this.graphics.pixelRatio(Math.min(window.devicePixelRatio||1,1.65),this.width,this.height));
-      this.graphics.shadows(this.renderer,this.scene,true);
+      this.graphics.shadows(this.renderer,this.scene,true);this._applyThemeQuality();
       this.renderer.setSize(this.width,this.height);this.camera.aspect=this.width/this.height;this.camera.updateProjectionMatrix();
     }
     dispose() {

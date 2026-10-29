@@ -2,6 +2,35 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-29 — Robot Football postseason continuation and championship stadium
+
+Scope: update Robot Football in the explicitly requested PC app and local website copy. The existing rules are retained: 16 regular-season games, 10 wins to qualify for Wild Card then Conference then Championship, and a perfect 16–0 advances directly to Championship. After validation, the owner explicitly authorized committing and pushing this update to GitHub for the normal Pages publication workflow. Prior web game files and a SHA-256 transfer manifest are preserved in the PC workspace's tmp/robotfootball-web folder.
+
+The main menu and game-final actions now say Continue playoffs or Continue championship. The dashboard names the next playable round, shows the road to the trophy, distinguishes the regular record from postseason results and explains elimination. Schedule speech includes scores and the pending playoff matchup. Qualification and advancement are spoken and shown prominently. New menus reset their scroll position, and final-game statistics follow the continuation buttons, keeping the next action visible on a tablet.
+
+A narrowly validated recovery reopens a qualifying season marked complete before any postseason game. It retains every score, result ID, team and schedule, requires a valid replayed history, and never reopens an actual postseason loss. The reported tablet save was not accessible here; no on-device save was modified and its original failure cause is unconfirmed.
+
+Championship games use gold boundary trim, a trophy midfield crest, banners, trophy plinths, championship ribbons and scoreboard labels. The crowd increases from 6,200 to 9,300 in High/Standard, while Low retains the usual crowd budget. Extra championship fireworks respect Low and reduced motion. Exhibition and practice restore the regular field. Web analytics, favicons, shared modules and native-versus-web startup differences are retained. Local game script/style release URLs prevent mixed cached editions; the generated offline inventory updates the five changed runtime assets without a manual worker asset list.
+
+Changed files and Electron port flags:
+
+| File | Scope | Electron port |
+| --- | --- | --- |
+| bennyshub/apps/games/ROBOTFOOTBALL/js/season.js | Validated stalled-postseason recovery | YES — paired PC source |
+| bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js | Explicit continuation, progress, speech and visible next action | YES — native startup retained in PC source |
+| bennyshub/apps/games/ROBOTFOOTBALL/js/renderer.js | Championship stadium and quality-aware celebrations | YES — paired PC source |
+| bennyshub/apps/games/ROBOTFOOTBALL/css/stadium.css | Postseason route and final-stat layout | YES — paired PC source |
+| bennyshub/apps/games/ROBOTFOOTBALL/index.html | Final-stat slot and web release URLs | YES for slot; NO for web cache URLs |
+| bennyshub/apps/games/ROBOTFOOTBALL/README.md | Rules, presentation and verification guidance | YES for feature docs; platform test commands differ |
+| tests/robotfootball-season.test.cjs | 19 model and recovery regression checks | YES — equivalent PC game test |
+| scripts/check-robotfootball-postseason.cjs | Real web Hub, tablet and offline regression | NO — separate PC Electron harness |
+| bennyshub/offline-manifest.json | Generated source asset revisions | NO — web only |
+| docs/history/DEVELOPMENT-HISTORY.md | Scope and validation record | NO — web only |
+
+Verification: 74 PC simulation checks, 19 season checks and 39 isolated Electron browser checks passed. The website's 437 existing tests passed; the new 19 season checks passed separately. Build, release audit (4,263 public files, no problems) and 1,417 page checks passed. The five built Robot Football runtime files match source byte-for-byte. The existing Companion 1.1.0 ZIP checksum is unchanged.
+
+The real Chrome web test passed 42 checks with zero browser errors at a 1024×768 tablet viewport (1024×698 game iframe). A fresh scoped offline inventory of 187 normal Hub/shared/catalog/Robot Football assets (32,813,143 bytes) downloaded before the game was opened. Its first launch through the actual Hub card and the entire postseason test ran offline, including 14–2 qualification, both playoff wins, Championship, saved-round resume, safe recovery, 16–0 bye, 10–6 boundary, 9–7 miss, elimination, Low/reduced-motion themes, visible continuation and return/reopen through the Hub. This is focused game offline coverage, not a new full-library or physical-device acceptance run. Ben's tablet hardware performance and physical switch comfort remain device checks. Reports/screenshots are in the PC workspace's tmp/robotfootball-postseason and tmp/robotfootball-web/browser folders.
+
 ## 2026-10-25 — Publish Loops and Switch Songs; refresh Pet Pals and Magic Button
 
 Scope: publish the current PC game runtimes to the web, add gameplay thumbnails and both music games to the Hub catalog and home page. Electron port: **NO** for every file below; the PC versions are the source, and this publication does not rebuild or launch Electron. The owner explicitly authorized both website pushes.

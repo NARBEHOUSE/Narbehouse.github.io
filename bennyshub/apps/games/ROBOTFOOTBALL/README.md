@@ -66,6 +66,8 @@ On-screen controls also support mouse and touch. `Choose direction` freezes move
 
 The football robots have original beveled armor, integrated helmets and facemasks, visors and joint lights that glow in each team's accent colour, exposed metal joints, mechanical hands and cleated boots. The mech-league stadium has a starry night sky, neon strips along the stands, glowing pylons, beacons and goalposts, laser scrimmage and first-down lines, and hex-plated end zones. Live jumbotrons show the score. Tackles throw orange sparks, broken tackles cyan sparks, the ball carrier leaves a speed trail, and scores set off fireworks over the end zone. Chest and back numbers stay readable, and team colors carry through the armor, stadium endzones and midfield markings.
 
+The Championship changes the stadium to gold trim, a midfield trophy crest, championship banners, trophy plinths and dedicated scoreboard ribbons. More robot fans fill the stands, and scoring and the final whistle bring extra celebrations. Reduced motion keeps the static decorations and skips the extra fireworks; Low graphics keeps the usual crowd budget. Exhibition and practice use the regular field.
+
 The ball grip uses articulated shoulders, elbows, wrists and fingers. The football follows the carrying hand through quarterback preparation, running and celebrations. Passes spin around the football's long axis for a spiral. Running strides, catches, throws, kicks, the holder's kneel, tackles and falling poses use the same articulated rig.
 
 Every play has a pre-snap setup, a protected control handoff and gradual acceleration. A tackle has a 1.4-second animation phase, followed by a 2.2-second unobstructed outcome hold before the result controls appear. These presentation delays use real time independently of movement speed.
@@ -87,7 +89,7 @@ Every play has a pre-snap setup, a protected control handoff and gradual acceler
 
 Player labels combine the singular robot name with the jersey number, such as `BLUEBORG #12`. Receiver speech reads the robot name and number once.
 
-A season contains sixteen games. Ten wins qualify for the Wild Card, Conference and Championship rounds; a perfect regular season advances directly to the championship. Schedules and results save automatically. Stable team IDs and the existing save keys preserve progress when the game and teams are renamed.
+The regular season contains sixteen games. A 10–6 record or better qualifies for single-elimination Wild Card and Conference games, then the Championship; a perfect 16–0 regular season advances directly to the Championship. The main menu says **Continue playoffs** or **Continue championship**, and the season screen shows the current round and route to the trophy. Final-game screens announce qualification and the next round. Regular-season records stay separate from postseason results in Schedule & results. Schedules and results save automatically. Stable team IDs and the existing save keys preserve progress when the game and teams are renamed.
 
 Season matches have four two-minute quarters and overtime until an untied result. Choosing a play, scanning receivers, lining up, protected reaction windows and pauses do not consume game time. Exhibition uses four possessions per team. Practice has no dropped passes or interceptions and the visitors cannot score, but its defenders tackle for real. Rookie/Pro difficulty, three movement speeds, reduced camera motion, speech, sound and crowd settings are available.
 
@@ -97,9 +99,9 @@ Separate exhibition and season checkpoints save at play boundaries. Reloading du
 
 ## Verification
 
-Run `node tests/simulation.test.cjs` and `node tests/season.test.cjs` from this directory for deterministic football rules, timing, season progression and persistence checks. From the repository root, run `node_modules/electron/dist/electron.exe bennyshub/apps/games/ROBOTFOOTBALL/tools/test-ui.cjs` for the hidden-window browser smoke test. `--tablet-only`, `--season-only`, `--conversion-only` and `--basic-only` run shorter subsets. The full run plays Advanced, then finishes with the Basic checks. The robot presentation harness is `tools/test-robots.cjs` and captures robot poses and ball grips.
+From the website root, run `node --test tests/robotfootball-season.test.cjs` and `node scripts/check-robotfootball-postseason.cjs`. The browser check uses an isolated disposable Chrome profile and working directory, verifies the 14–2 final-game handoff, all postseason rounds, saved-game recovery/resume, qualifying thresholds and championship presentation at tablet size. It also checks a fresh offline-library download followed by the game's first launch from the Hub card. Reports and screenshots are written under `artifacts/robotfootball-postseason`.
 
-Browser checks exercise actual page input, on-field selection, kick-aim reversal, protected handoff, pause/settings, one-switch controls, team selection and season save/result flows. Reports and screenshots are written under `tools/test-output`; isolated browser profiles are under the repository's `tmp` directory. Playtesting with the intended switch user remains useful for physical-switch comfort, speech intelligibility and sustained-session performance.
+The website's normal release checks are `npm test`, `npm run build`, `npm run audit:release` and `npm run check:pages`. Build regenerates the offline inventory from the public files. Physical tablet switch comfort and hardware performance still require playtesting on that device.
 
 ## Code and assets
 

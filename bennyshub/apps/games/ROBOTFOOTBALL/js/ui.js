@@ -27,6 +27,7 @@
   let toastTimer, activeGame = false, menuHeading = '', inputLocks = new Set(), resultHeld = false;
   let aimDirection = 1, lastAimRegion = '', lastAimSpeech = 0, pointerAim = false;
   let season, seasonMatchId = null, gameMode = 'exhibition', seasonOutcome = null, homeTeam, awayTeam;
+  let matchTheme = 'regular', matchLabel = 'Exhibition';
   let lastResult = null, cueKey = '', lastSwitchSpeech = 0, openSpoken = 0, charge = null, guideOn = null;
   // Basic's automatic coin toss holds the field until it has been heard; a kick with no charge goes by itself.
   let tossHold = null, tossing = false, autoKickAt = 0;
@@ -206,17 +207,46 @@
     screen = kind; changeContext(); $('overlay').hidden = false; $('overlay').className = options.style ?? 'centered';
     $('menu-eyebrow').textContent = options.eyebrow || 'ROBOTFOOTBALL / MECH LEAGUE';
     $('menu-title').textContent = title; $('menu-description').textContent = description;
-    $('menu-content').innerHTML = options.content || ''; $('menu-note').textContent = options.note || '';
+    $('menu-content').innerHTML = options.content || ''; $('menu-after').innerHTML = options.afterContent || ''; $('menu-note').textContent = options.note || '';
+    $('menu-shell').scrollTop = 0;
     $('hero-copy').hidden = !['main', 'teams'].includes(kind); $('action-panel').hidden = true; $('steer-panel').hidden = true; $('kick-readout').hidden = true; $('kick-controls').hidden = true; $('ready-cue').hidden = true; $('target-labels').replaceChildren();
     $('pause-button').hidden = !activeGame || kind !== 'game'; $('scoreboard').hidden = !activeGame; $('situation').hidden = !activeGame;
     // Every menu opens with nothing highlighted, the playbook included: a stray Enter picks nothing.
     menuHeading = title; makeItems(list, $('menu-items'), options.focus ?? -1); updateHint(); syncAudio();
     speaking(sentences(title, options.speech || description, list[focusIndex]?.intro || list[focusIndex]?.name), options.polite);
   }
+  function seasonContinueLabel() {
+    if (!season.isActive()) return 'Season results';
+    return season.data.stage === 'championship' ? 'Continue championship' : season.data.stage === 'playoffs' ? 'Continue playoffs' : 'Continue season';
+  }
+  function seasonTheme() {
+    const d = season.data;
+    if (!d) return 'regular';
+    return d.stage === 'championship' || d.stage === 'champions' || d.results.some(r => r.stage === 'championship') ? 'championship' : d.stage === 'playoffs' || d.results.some(r => r.stage === 'playoffs') ? 'playoff' : 'regular';
+  }
+  function seasonDescription() {
+    const d = season.data;
+    if (d.stage === 'playoffs') return (d.playoffRound === 0 ? 'You qualified! Win the Wild Card and Conference games to reach the championship.' : 'Wild Card won! Win the Conference game to reach the championship.') + ' A loss ends your playoff run.';
+    if (d.stage === 'championship') return (d.wins === 16 ? 'Perfect 16–0 season! You earned a direct championship berth. ' : 'You won both playoff rounds! ') + 'One game for the Mech League trophy.';
+    if (d.stage === 'champions') return 'Mech League champions! Your championship win and every season result are saved.';
+    if (d.stage === 'failed') return 'Regular season complete. You need at least 10 wins in 16 games to qualify for the playoffs.';
+    if (d.stage === 'done') return (d.results.at(-1)?.stage === 'championship' ? 'Championship complete.' : 'Eliminated in the ' + FootballSeason.PLAYOFF_ROUNDS[d.playoffRound] + ' round.') + ' Your regular-season record and postseason results are saved below.';
+    return 'Win at least 10 of 16 games to reach the playoffs. Go 16–0 to advance straight to the championship.';
+  }
+  function seasonRoad() {
+    const d = season.data;
+    return '<ol class="season-road" aria-label="Road to the championship">' + FootballSeason.PLAYOFF_ROUNDS.map((name, i) => {
+      const result = d.results.filter(r => r.stage !== 'regular' && r.playoffRound === i && !r.tie).at(-1);
+      const current = season.isActive() && d.stage !== 'regular' && d.playoffRound === i;
+      const status = result ? result.win ? 'WON' : 'LOST' : d.wins === 16 && i < 2 ? 'BYE · 16–0' : current ? 'UP NEXT' : season.isSeasonOver() ? 'NOT REACHED' : 'TO COME';
+      return '<li class="' + (current ? 'current' : result?.win ? 'won' : '') + '"' + (current ? ' aria-current="step"' : '') + '><span>' + name + '</span><b>' + status + '</b></li>';
+    }).join('') + '</ol>';
+  }
   function mainMenu() {
-    activeGame = false; phaseSeen = ''; clearHeld();
+    season.recoverPostseason();
+    activeGame = false; phaseSeen = ''; clearHeld(); matchTheme = seasonTheme();
     const list = [];
-    if (season.data) list.push({ name: season.isActive() ? 'Continue season' : 'Season results', desc: season.getTeam(season.data.teamId).name + ' · ' + season.data.wins + '–' + season.data.losses + (season.data.ties ? '–' + season.data.ties : ''), action: seasonDashboard });
+    if (season.data) list.push({ name: seasonContinueLabel(), desc: season.getTeam(season.data.teamId).name + ' · ' + season.currentMatchupLabel() + ' · ' + season.data.wins + '–' + season.data.losses + (season.data.ties ? '–' + season.data.ties : ''), action: seasonDashboard });
     list.push({ name: 'New season', desc: 'Pick your team. Chase the championship.', action: newSeason });
     if (read(SAVE)) list.push({ name: 'Continue exhibition', desc: 'Return to your saved game', action: () => resumeSaved(SAVE) });
     list.push({ name: 'Exhibition', desc: 'Choose both teams. Play a quick game.', action: () => chooseTeam('exhibition') });
@@ -239,7 +269,7 @@
     chooseTeam('season');
   }
   function chooseTeam(mode, opponent = false) {
-    activeGame = false;
+    activeGame = false; matchTheme = 'regular';
     const teams = FootballSeason.TEAMS.filter(t => !opponent || t.id !== homeTeam.id);
     const list = teams.map(t => ({ name: t.name, desc: t.colorName + (opponent ? ' · Opponent' : ' · Your team'), team: t, teamSlot: opponent ? 'away' : 'home',
       action: () => {
@@ -254,23 +284,40 @@
     $('hero-copy').hidden = true;
   }
   function seasonDashboard() {
+    season.recoverPostseason();
     if (!season.data) return newSeason();
-    activeGame = false; const d = season.data; homeTeam = season.getTeam(d.teamId); awayTeam = season.currentOpponent() || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id);
+    activeGame = false; matchTheme = seasonTheme(); const d = season.data; homeTeam = season.getTeam(d.teamId); awayTeam = season.currentOpponent() || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id);
     const checkpoint = read(SEASON_SAVE), canResume = checkpoint?.seasonMatchId === d.matchId;
     const list = [];
-    if (season.isActive()) list.push({ name: canResume ? 'Resume game' : 'Play next game', desc: season.currentMatchupLabel() + ' · ' + awayTeam.name, action: () => canResume ? resumeSaved(SEASON_SAVE) : startGame(false, { mode: 'season', seasonMatchId: d.matchId, homeTeamId: d.teamId, awayTeamId: d.opponentId }) });
+    const nextRound = d.stage === 'championship' ? 'championship' : d.stage === 'playoffs' ? FootballSeason.PLAYOFF_ROUNDS[d.playoffRound] : null;
+    if (season.isActive()) list.push({ name: nextRound ? (canResume ? 'Resume ' : 'Play ') + nextRound : canResume ? 'Resume game' : 'Play next game', desc: season.currentMatchupLabel() + ' · ' + awayTeam.name, action: () => canResume ? resumeSaved(SEASON_SAVE) : startGame(false, { mode: 'season', seasonMatchId: d.matchId, homeTeamId: d.teamId, awayTeamId: d.opponentId }) });
     list.push({ name: 'Schedule & results', action: seasonSchedule });
     list.push({ name: 'Start a new season', action: newSeason });
     list.push({ name: 'Main menu', action: mainMenu });
-    overlay('season', season.currentMatchupLabel().toUpperCase(), season.isSeasonOver() ? d.stage === 'champions' ? 'Your team are champions. Every result is saved below.' : 'Your season is complete. Build on it next season.' : 'Win 10 to reach the playoffs. Go 16–0 for a direct shot at the championship.', list, {
-      content: '<div class="season-record"><div><b>' + d.wins + '</b><span>WINS</span></div><div><b>' + d.losses + '</b><span>LOSSES</span></div><div><b>' + d.ties + '</b><span>TIES</span></div><div><b>' + d.gamesPlayed + '/16</b><span>REGULAR SEASON</span></div></div><div class="season-matchup"><div class="team-chip" style="--team-color:' + homeTeam.color + '">' + homeTeam.name + '</div><small>VS</small><div class="team-chip" style="--team-color:' + awayTeam.color + '">' + awayTeam.name + '</div></div>', eyebrow: homeTeam.name.toUpperCase() + ' / SEASON HQ'
+    overlay('season', season.currentMatchupLabel().toUpperCase(), seasonDescription(), list, {
+      content: (d.stage !== 'regular' && d.stage !== 'failed' ? seasonRoad() : '') + '<div class="season-record"><div><b>' + d.wins + '</b><span>WINS</span></div><div><b>' + d.losses + '</b><span>LOSSES</span></div><div><b>' + d.ties + '</b><span>TIES</span></div><div><b>' + d.gamesPlayed + '/16</b><span>REGULAR SEASON</span></div></div><div class="season-matchup"><div class="team-chip" style="--team-color:' + homeTeam.color + '">' + homeTeam.name + '</div><small>VS</small><div class="team-chip" style="--team-color:' + awayTeam.color + '">' + awayTeam.name + '</div></div>', eyebrow: homeTeam.name.toUpperCase() + ' / SEASON HQ'
     });
   }
   function seasonSchedule() {
-    const d = season.data;
-    const rows = d.schedule.map((id, i) => { const result = d.results.filter(r => r.stage === 'regular')[i]; return '<li><span>' + String(i + 1).padStart(2, '0') + ' · ' + season.getTeam(id).name + '</span><span class="schedule-score">' + (result ? (result.win ? 'W ' : result.tie ? 'T ' : 'L ') + result.home + '–' + result.away : i === d.gamesPlayed && d.stage === 'regular' ? 'NEXT' : '—') + '</span></li>'; });
-    d.results.filter(r => r.stage !== 'regular').forEach(r => rows.push('<li><span>' + (r.stage === 'championship' ? 'Championship' : r.playoffRound === 0 ? 'Wild Card' : 'Conference') + ' · ' + season.getTeam(r.opponentId).name + '</span><span class="schedule-score">' + r.home + '–' + r.away + '</span></li>'));
-    overlay('schedule', 'THE SEASON SO FAR', season.getTeam(d.teamId).name, [{ name: 'Read schedule aloud', action: () => speaking(d.schedule.map((id, i) => 'Game ' + (i + 1) + ', ' + season.getTeam(id).name + '.').join(' ')) }, { name: 'Back to season', action: seasonDashboard }], { content: '<ul class="schedule-list">' + rows.join('') + '</ul>' });
+    const d = season.data, regular = d.results.filter(r => r.stage === 'regular'), spoken = [];
+    const score = r => (r.win ? 'W ' : r.tie ? 'T ' : 'L ') + r.home + '–' + r.away;
+    const rows = d.schedule.map((id, i) => {
+      const result = regular[i], label = 'Game ' + (i + 1) + ' · ' + season.getTeam(id).name;
+      const value = result ? score(result) : i === d.gamesPlayed && d.stage === 'regular' ? 'NEXT' : '—';
+      spoken.push(label + '. ' + value + '.');
+      return '<li><span>' + label + '</span><span class="schedule-score">' + value + '</span></li>';
+    });
+    d.results.filter(r => r.stage !== 'regular').forEach(r => {
+      const label = FootballSeason.PLAYOFF_ROUNDS[r.playoffRound] + ' · ' + season.getTeam(r.opponentId).name;
+      spoken.push(label + '. ' + score(r) + (r.tie ? '. Replay this round.' : '.'));
+      rows.push('<li><span>' + label + '</span><span class="schedule-score">' + score(r) + '</span></li>');
+    });
+    if (season.isActive() && d.stage !== 'regular') {
+      const next = season.currentMatchupLabel() + ' · ' + season.currentOpponent().name;
+      rows.push('<li><span>' + next + '</span><span class="schedule-score">NEXT</span></li>');
+      spoken.push('Next: ' + next + '.');
+    }
+    overlay('schedule', 'THE SEASON SO FAR', season.getTeam(d.teamId).name, [{ name: 'Read schedule aloud', action: () => speaking(spoken.join(' ')) }, { name: 'Back to season', action: seasonDashboard }], { content: '<ul class="schedule-list">' + rows.join('') + '</ul>' });
   }
   function newGame(practice) {
     if (read(SAVE) && !practice) {
@@ -281,10 +328,10 @@
     }
     startGame(practice);
   }
-  function startGame(practice, config = {}) { gameMode = config.mode || 'exhibition'; seasonMatchId = config.seasonMatchId || null; seasonOutcome = null; homeTeam = FootballSeason.getTeam(config.homeTeamId || prefs.teamId); awayTeam = FootballSeason.getTeam(config.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); const fx = effective(); sim.reset({ difficulty: fx.difficulty, pace: fx.pace, practice, format: gameMode === 'season' ? 'regulation' : 'drives', kickoffs: fx.kickoffs }); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); armed = -1; activeGame = true; phaseSeen = ''; lastResult = null; hinted = {}; screen = 'game'; clearHeld(); saveMatch(); renderPhase(); }
+  function startGame(practice, config = {}) { gameMode = config.mode || 'exhibition'; seasonMatchId = config.seasonMatchId || null; seasonOutcome = null; homeTeam = FootballSeason.getTeam(config.homeTeamId || prefs.teamId); awayTeam = FootballSeason.getTeam(config.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : practice ? 'Practice' : 'Exhibition'; const fx = effective(); sim.reset({ difficulty: fx.difficulty, pace: fx.pace, practice, format: gameMode === 'season' ? 'regulation' : 'drives', kickoffs: fx.kickoffs }); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); armed = -1; activeGame = true; phaseSeen = ''; lastResult = null; hinted = {}; screen = 'game'; clearHeld(); saveMatch(); renderPhase(); }
   function restartCurrent() { startGame(sim.options.practice, { mode: gameMode, seasonMatchId, homeTeamId: homeTeam.id, awayTeamId: awayTeam.id }); }
   function resumeSaved(key = SAVE) {
-    try { const saved = read(key); if (sim.restore(saved?.sim || saved) === false) throw Error('Invalid save'); gameMode = saved.mode === 'season' ? 'season' : 'exhibition'; seasonMatchId = saved.seasonMatchId || null; seasonOutcome = null; if (gameMode === 'season' && seasonMatchId !== season.data?.matchId) throw Error('Old season game'); homeTeam = FootballSeason.getTeam(saved.homeTeamId || prefs.teamId) || FootballSeason.getTeam(prefs.teamId); awayTeam = FootballSeason.getTeam(saved.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); applyOptions(); activeGame = true; screen = 'game'; phaseSeen = ''; lastResult = null; clearHeld(); renderPhase(); }
+    try { const saved = read(key); if (sim.restore(saved?.sim || saved) === false) throw Error('Invalid save'); gameMode = saved.mode === 'season' ? 'season' : 'exhibition'; seasonMatchId = saved.seasonMatchId || null; seasonOutcome = null; if (gameMode === 'season' && seasonMatchId !== season.data?.matchId) throw Error('Old season game'); homeTeam = FootballSeason.getTeam(saved.homeTeamId || prefs.teamId) || FootballSeason.getTeam(prefs.teamId); awayTeam = FootballSeason.getTeam(saved.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : 'Exhibition'; sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); applyOptions(); activeGame = true; screen = 'game'; phaseSeen = ''; lastResult = null; clearHeld(); renderPhase(); }
     catch (_) { toast('This save could not be loaded. Start a new game.'); try { localStorage.removeItem(key); } catch (_) {} mainMenu(); }
   }
   function pause() {
@@ -470,9 +517,11 @@
     } else if (s.phase === 'final') {
       if (!sim.options.practice) { try { localStorage.removeItem(gameMode === 'season' ? SEASON_SAVE : SAVE); } catch (_) {} }
       if (gameMode === 'season' && seasonMatchId && !seasonOutcome) seasonOutcome = season.recordResult(s.homeScore, s.awayScore, seasonMatchId);
-      overlay('game', seasonOutcome?.outcome === 'champions' ? 'SEASON CHAMPIONS.' : s.homeScore > s.awayScore ? 'THAT’S YOUR WIN.' : s.homeScore === s.awayScore ? 'ALL SQUARE.' : 'FINAL WHISTLE.', homeTeam.name + ' ' + s.homeScore + ' — ' + awayTeam.name + ' ' + s.awayScore, [
-        { name: gameMode === 'season' ? 'Continue season' : 'Play again', action: gameMode === 'season' ? seasonDashboard : restartCurrent }, { name: 'Main menu', action: mainMenu }, { name: 'Exit game', action: exitGame }
-      ], { polite: true, content: '<div class="result-stats"><div><b>' + s.homeScore + '</b><span>' + homeTeam.shortName + '</span></div><div><b>FINAL</b><span>' + (gameMode === 'season' ? 'SEASON GAME' : 'Exhibition') + '</span></div><div><b>' + s.awayScore + '</b><span>' + awayTeam.shortName + '</span></div></div>' + statTable(s) + '<p>' + (seasonOutcome?.message || '') + '</p>' });
+      const finalTitle = ({ champions: 'SEASON CHAMPIONS.', made_playoffs: 'YOU MADE THE PLAYOFFS!', perfect_to_championship: 'STRAIGHT TO THE CHAMPIONSHIP!', advanced_playoff: season.data?.stage === 'championship' ? 'CHAMPIONSHIP BOUND!' : 'ON TO THE CONFERENCE GAME!' })[seasonOutcome?.outcome];
+      const finalScore = homeTeam.name + ' ' + s.homeScore + ' — ' + awayTeam.name + ' ' + s.awayScore;
+      overlay('game', finalTitle || (s.homeScore > s.awayScore ? 'THAT’S YOUR WIN.' : s.homeScore === s.awayScore ? 'ALL SQUARE.' : 'FINAL WHISTLE.'), finalScore + (seasonOutcome?.message ? '. ' + seasonOutcome.message : ''), [
+        { name: gameMode === 'season' ? seasonContinueLabel() : 'Play again', desc: gameMode === 'season' && season.isActive() ? season.currentMatchupLabel() + ' · ' + season.currentOpponent().name : '', action: gameMode === 'season' ? seasonDashboard : restartCurrent }, { name: 'Main menu', action: mainMenu }, { name: 'Exit game', action: exitGame }
+      ], { polite: true, content: '<div class="result-stats"><div><b>' + s.homeScore + '</b><span>' + homeTeam.shortName + '</span></div><div><b>FINAL</b><span>' + escape(matchLabel) + '</span></div><div><b>' + s.awayScore + '</b><span>' + awayTeam.shortName + '</span></div></div>' , afterContent: statTable(s) });
     } else { items = []; $('overlay').hidden = true; $('action-panel').hidden = true; $('steer-panel').hidden = true; }
     if (s.phase === 'final') $('pause-button').hidden = true;
     updateHint(); syncAudio();
@@ -493,6 +542,7 @@
       : ['First', 'Second', 'Third', 'Fourth'][Math.max(0, Math.min(3, s.down - 1))] + ' and ' + (s.distance >= goal - .05 ? 'goal' : Math.round(s.distance)) + (spot === 50 ? ' at midfield' : spot < 50 ? ' at your ' + spot : ' at their ' + (100 - spot));
     const lead = s.homeScore - s.awayScore, high = Math.max(s.homeScore, s.awayScore), low = Math.min(s.homeScore, s.awayScore);
     const score = lead === 0 ? 'Tied at ' + s.homeScore : (lead > 0 ? 'You lead ' : 'You trail ') + high + ' to ' + low;
+    document.querySelector('#scoreboard .broadcast-mark small').textContent = matchTheme === 'championship' ? 'CHAMPIONSHIP' : matchTheme === 'playoff' ? 'PLAYOFFS' : 'MECH LEAGUE';
     const seconds = Math.max(0, Math.ceil(s.timeRemaining ?? 120));
     const clock = sim.options.practice ? '' : sim.options.format === 'regulation' ? (s.overtime ? 'Overtime' : ['First', 'Second', 'Third', 'Fourth'][s.quarter - 1] + ' quarter') + ', ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') + ' left' : 'Drive ' + s.drive + ' of ' + s.maxDrives;
     return sentences(home || s.kickoff || s.toss ? '' : 'Visitors have the ball', down, score, clock);
@@ -695,7 +745,8 @@
       else sim.step(dt, steer * (renderer.getSteerSign?.() ?? -1), steer !== 0 || (screen === 'game' && livePhase() && fx.runControl === 'hold' && (presses.has('Space') || presses.has('Enter'))));
       if (sim.s.phase !== phaseSeen || resultHeld && !(sim.s.resultRevealRemaining > 0) && sceneReady(now)) renderPhase();
     }
-    renderer.render(sim.s, document.hidden || (activeGame && screen !== 'game') ? 0 : dt, { reducedMotion: fx.reducedMotion, menu: !activeGame, menuOpen: !$('overlay').hidden && $('overlay').classList.contains('compact'), targetShown: items[focusIndex]?.target !== undefined, kickGuide: fx.kickGuide, charge, chargeZone: ZONE, chargeMax: CHARGE_MAX, homeTeam, awayTeam });
+    renderer.render(sim.s, document.hidden || (activeGame && screen !== 'game') ? 0 : dt, { reducedMotion: fx.reducedMotion, menu: !activeGame, menuOpen: !$('overlay').hidden && $('overlay').classList.contains('compact'), targetShown: items[focusIndex]?.target !== undefined, kickGuide: fx.kickGuide, charge, chargeZone: ZONE, chargeMax: CHARGE_MAX, homeTeam, awayTeam, matchTheme });
+    document.body.dataset.matchTheme = matchTheme;
     document.body.classList.toggle('charging', !!charge);
     document.body.classList.toggle('in-game', activeGame && screen === 'game'); document.body.classList.toggle('menu-open', !$('overlay').hidden);
     if (activeGame) updateHud();
