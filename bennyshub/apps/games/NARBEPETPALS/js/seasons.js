@@ -43,7 +43,7 @@ const sunOut=()=>clearSky()&&skyMode()!=='night';
 const birdsOut=()=>skyMode()!=='night'&&wxNow()!=='rain'&&wxNow()!=='snow';
 const WX_MSG={sunny:n=>skyMode()==='night'?`The clouds cleared away. The stars are out for ${n}.`:`The sun came out! A bright day for ${n}.`,cloudy:()=>`Clouds are rolling in.`,rain:n=>`It started raining. A cozy day inside with ${n}.`,snow:n=>`It's snowing! Everything is turning white. ${n} watches the flakes.`,windy:()=>`It's windy! Leaves are blowing everywhere.`};
 const SEASON_MSG={spring:n=>`It's spring! Flowers are blooming for ${n}.`,summer:n=>`It's summer! Sunny days and splashy fun for ${n}.`,fall:n=>`It's fall! Crunchy leaves and pumpkins for ${n}.`,winter:n=>`It's winter! Snowy days and cozy nights with ${n}.`};
-const HOLIDAY_MSG={valentine:n=>`Valentine's week! ${n} wants to send love to friends.`,easter:n=>`It's almost Easter! Keep an eye out for hidden eggs, ${n}.`,july4:n=>`Happy Fourth of July! There might be fireworks tonight.`,halloween:n=>`It's Halloween season! Time to pick a costume for ${n}.`,christmas:n=>`The holidays are here! Let's decorate the tree with ${n}.`,newyear:n=>`Happy New Year, ${n}!`};
+const HOLIDAY_MSG={valentine:n=>`Valentine's week! ${n} wants to send love to friends.`,easter:n=>`It's almost Easter! Keep an eye out for hidden eggs, ${n}.`,july4:n=>`Happy Fourth of July! There might be fireworks tonight.`,halloween:n=>`Happy Halloween, ${n}!`,christmas:n=>`The holidays are here! Let's decorate the tree with ${n}.`,newyear:n=>`Happy New Year, ${n}!`};
 
 /* ---- Outdoors: snow on the ground and falling flakes in winter, leaves in fall, petals in spring ---- */
 /* Snow on the ground goes behind the pet; falling flakes, leaves and petals go in front. */
@@ -163,23 +163,28 @@ const SEASON_EVENTS={
   sprinkler:{w:3,ok:()=>calSeason()==='summer'&&wxNow()!=='rain',go:()=>startTrip('sprinkler')},
   fireworks:{w:4,ok:()=>['july4','newyear'].includes(calHoliday())&&!doneToday('fireworks'),go:()=>{ markSeasonal('day:fireworks',dayKey()); startTrip('fireworks'); }},
   leafpile:{w:3,ok:()=>calSeason()==='fall'&&wxNow()!=='rain',go:()=>startTrip('leafpile')},
-  halloween:{w:5,ok:()=>calHoliday()==='halloween'&&!doneToday('halloween'),go:()=>{ markSeasonal('day:halloween',dayKey()); askCostume(); }},
+  halloween:{w:5,ok:()=>calHoliday()==='halloween'&&!doneToday('halloween'),go:()=>askCostume()},
   snowday:{w:4,ok:()=>wxNow()==='snow',go:()=>startTrip('snowday')},
   cocoa:{w:2,ok:()=>calSeason()==='winter',go:()=>startTrip('cocoa')},
   treetrim:{w:4,ok:()=>!!treeSpot()&&treeDeco()<10&&calToday().getDate()<=24&&!doneToday('treetrim'),go:()=>{ markSeasonal('day:treetrim',dayKey()); startTrip('treetrim'); }},
   valentines:{w:4,ok:()=>calHoliday()==='valentine'&&!doneToday('valentines'),go:()=>{ markSeasonal('day:valentines',dayKey()); askValentine(); }}
 };
 function seasonalEvents(){ return Object.keys(SEASON_EVENTS).filter(id=>{ try{ return SEASON_EVENTS[id].ok(); }catch(e){ return false; } }).map(id=>[id,SEASON_EVENTS[id].w]); }
-/* Big days don't wait for a random turn: the birthday party and opening presents happen as soon as
-   things are calm; a greeting marks each new season and holiday. */
+/* Big days don't wait for a random turn: birthdays, presents, and Halloween costume choices
+   happen as soon as things are calm; a greeting marks each new season and holiday. */
 function seasonalPriority(){ const n=state.name, y=calToday().getFullYear();
   if(birthdayDue()){ markSeasonal('year:birthday',y); markSeasonal('bdayShow',dayKey()); bgKey=null; lockInput(2000); startTrip('birthday'); return true; }
   if(treeSpot()&&calToday().getDate()>=25&&!doneThisYear('presents')){ markSeasonal('year:presents',y); bgKey=null; const un=unownedToys(); lockInput(2000); startTrip('presents',null,{toy:un.length?pick(un):pick(ownedToys())}); return true; }
   const s=calSeason(), sk='greet:'+s; if(seasonal(sk)!==y){ markSeasonal(sk,y); announce(SEASON_MSG[s](n)); play('twinkle',.5); bgKey=null; return true; }
-  const h=calHoliday(); if(h&&seasonal('greet:'+h)!==y){ markSeasonal('greet:'+h,y); announce(HOLIDAY_MSG[h](n)); play('fanfare',.4); bgKey=null; return true; }
+  const h=calHoliday();
+  // The costume invitation must open its choices immediately. Check today's selection,
+  // not the greeting, so older saves and interrupted prompts can still choose an outfit.
+  if(h==='halloween'&&!doneToday('halloween')){ askCostume(); play('fanfare',.4); bgKey=null; return true; }
+  if(h&&seasonal('greet:'+h)!==y){ markSeasonal('greet:'+h,y); announce(HOLIDAY_MSG[h](n)); play('fanfare',.4); bgKey=null; return true; }
   return false; }
 function askCostume(){ const opts=pickSome(COSTUMES,4);
-  showChoice(`It's Halloween! What should ${state.name} dress up as?`,opts.map(c=>({label:c.label,preview:{outfit:c.fit},fn:()=>{ wearCostume(c); startTrip('trickortreat'); }}))); }
+  showChoice(`It's Halloween! What should ${state.name} dress up as?`,opts.map(c=>({label:c.label,preview:{outfit:c.fit},fn:()=>{ wearCostume(c); markSeasonal('day:halloween',dayKey()); startTrip('trickortreat'); }})));
+  markSeasonal('greet:halloween',calToday().getFullYear()); }
 function askValentine(){ const k=kind(), known=(state.friends||[]).filter(f=>STYLES[f.style]&&STYLES[f.style].kind===k), pool=known.length>=2?pickSome(known,3):known.concat([newFriend(known.map(f=>f.name))]).slice(0,3);
   showChoice(`Who should ${state.name} send a valentine to?`,pool.map(f=>({label:f.name,preview:{petStyle:f.style},fn:()=>{ startTrip('valentines',null,{friend:f}); }}))); }
 

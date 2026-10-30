@@ -2,6 +2,21 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-30 — Pet Pals Halloween costume invitation recovery
+
+Scope: publish Nancy’s subsequent PC Pet Pals fix to the web. Electron port: **NO** for every file below; PC files were read only. Exact gameplay transfer is seasons.js; local web fonts, analytics and shared modules are preserved. Backups and transfer hashes are in WEBSITES/tmp/petpals-halloween-web-20261030.
+
+Halloween now opens the costume choices as a priority when the pet is calm. Hearing the holiday greeting alone no longer prevents that invitation. The daily completion marker is saved only after choosing a costume, so a newly interrupted prompt can be offered again. Choosing still applies the costume and starts trick-or-treating; completed choices remain limited to once per day during the existing Halloween dates. The separate holiday greeting no longer promises a choice without opening it.
+
+Changed files (all web scope, Electron port: NO):
+- bennyshub/apps/games/NARBEPETPALS/js/seasons.js — exact current PC gameplay fix.
+- bennyshub/apps/games/NARBEPETPALS/js/core.js — web build 2026.10.30.2.
+- bennyshub/apps/games/NARBEPETPALS/index.html — matching game script/style cache queries.
+- bennyshub/offline-manifest.json — generated asset revisions.
+- docs/history/DEVELOPMENT-HISTORY.md — scope and verification record.
+
+Verification: the required website unit suite, production build, release audit and Pages checks pass. The three changed runtime files match the production build byte-for-byte. Real Chrome passes 16 focused checks with no browser errors, including a fresh scoped library download (209 assets; 34558083 bytes) before first Pet Pals launch offline through its actual Hub card. Browser coverage includes the immediate costume choices, no early daily marker, selection into trick-or-treating, existing-greeting/interrupted-save recovery, daily/holiday limits and responsive choice visibility. Synthetic date/save fixtures and browser input emulation were used; physical switch and target-device acceptance remain separate. Evidence: browser/report.json and screenshots in the backup folder above. Existing Companion release archives remain unchanged.
+
 ## 2026-10-30 — Nancy’s story and Pet Pals updates on the web
 
 Scope: bring the current PC runtimes for Switch Stories and Pet Pals onto the existing web Hub, as requested. Electron port: **NO** for every file below; the PC Hub was read only and was not launched, installed or modified. Pre-change web copies and a SHA-256 transfer record are in WEBSITES/tmp/nancy-sync-20261030.

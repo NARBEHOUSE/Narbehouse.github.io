@@ -12,7 +12,7 @@ const weightedPick=list=>{ const tot=list.reduce((s,[,w])=>s+w,0); let r=Math.ra
 
 /* ================= Storage ================= */
 // Match the release query on game scripts/styles in index.html when publishing an update.
-const GAME_BUILD='2026.10.30.1';
+const GAME_BUILD='2026.10.30.2';
 /* Pocket Pets saves (pocketpup:*) are read once and carried over, so nobody loses their pet. */
 const SAVE_KEY='narbepetpals:v2', OLD_SAVE_KEY='pocketpup:v1', GAME_SET_KEY='narbepetpals:settings:v1', OLD_SET_KEY='pocketpup:settings:v2',
   SCAN_FALLBACK_KEY='narbepetpals:scan-fallback', TTS_FALLBACK_KEY='narbepetpals:tts-fallback';

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "27c10a142d21e44b2c75f1f1b12c4f6e86eab750cb3ce591d48b08ded18787ee",
-  "totalBytes": 536890745,
+  "version": "e3b0034bf825098d0c93fa7527abbdfc346019493a5abf494330ecd45e35983d",
+  "totalBytes": 536891067,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17260,7 +17260,7 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/index.html",
-      "revision": "70ee81dcac42337fd6e87c14203e6570e496fde0709a81d1b0b6d287a30dbfd4",
+      "revision": "734960c9efa15bfb783c102f1a18f333d38f46e4a2c711114f5c29dd0cb080e2",
       "bytes": 10858
     },
     {
@@ -17280,7 +17280,7 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/core.js",
-      "revision": "0dbff8196ae243ba43df8cd01b1fa31e8d6901ad667464fa98e80fc8c3bfeec5",
+      "revision": "241cd7198e3f9e0fbd4f435c1c7e888b1ef4a0c01c1da9cf32895230dfb8b786",
       "bytes": 6664
     },
     {
@@ -17355,8 +17355,8 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/seasons.js",
-      "revision": "b28ecff2facf44c22509b599790d4c5f10ed58f308fb81d04afb4b34e9bfed04",
-      "bytes": 54687
+      "revision": "a1e6bf0cabfb267ca9644241503eabc29e23395db4da5c75de661be2fc0c5449",
+      "bytes": 55009
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/sound.js",
