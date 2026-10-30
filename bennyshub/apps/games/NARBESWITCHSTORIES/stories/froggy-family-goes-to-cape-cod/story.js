@@ -88,7 +88,7 @@
         },
         objects,
         credits: {
-            text: 'Adapted from Froggy Family Goes to Cape Samila. © 2025 The Asia Foundation – Let’s Read. Illustrations: Vipavi Chakajsongsak. Editor: Rapeephan Pattanavech. Contributors: John Viano and Peeriya Pongsarigun. English translation: Wendy Xiao. Title, text and artwork adapted; switch animations added.',
+            text: 'Adapted from Froggy Family Goes to Cape Samila. © 2025 The Asia Foundation – Let’s Read. Illustrations: Vipavi Chakajsongsak. Editor: Rapeephan Pattanavech. Contributors: John Viano and Peeriya Pongsarigun. English translation: Wendy Xiao. Title, text and artwork adapted; switch animations and image descriptions added. Created to expand access to stories for people who use switches and support a wider range of accessibility needs.',
             links: [
                 { label: 'CC BY-NC 4.0', url: 'https://creativecommons.org/licenses/by-nc/4.0/' },
                 { label: 'Let’s Read source', url: 'https://www.letsreadasia.org/' }

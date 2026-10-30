@@ -11,9 +11,16 @@ NSS.Game = (function () {
     function openStory(id) {
         const story = NSS.Library.get(id);
         if (story) {
-            NSS.Scene.preload(story);
+            NSS.ReadingHistory.record(story.id);
             NSS.Story.open(story);
         }
+    }
+
+    function readAgain() {
+        const view = NSS.Story.view();
+        if (!view || NSS.Story.stats().state !== 'end') return;
+        NSS.ReadingHistory.record(view.story.id);
+        NSS.Story.readAgain();
     }
 
     function pause() {
@@ -56,8 +63,9 @@ NSS.Game = (function () {
         NSS.Scene.init(NSS.UI.stageEl());
         NSS.Sound.init();
         NSS.Input.init();
-        NSS.Library.load().then(function (stories) {
-            // Covers load as drawn; fetch full artwork only for the selected book.
+        Promise.all([NSS.Library.load(), NSS.Descriptions.load()]).then(function ([stories]) {
+            NSS.Descriptions.check(stories);
+            stories.forEach(NSS.Scene.preload);
             NSS.Input.setProvider(NSS.UI.scannables);
             NSS.UI.show('library');
 
@@ -76,6 +84,7 @@ NSS.Game = (function () {
     return {
         boot: boot,
         openStory: openStory,
+        readAgain: readAgain,
         pause: pause,
         resume: resume,
         startOver: startOver,

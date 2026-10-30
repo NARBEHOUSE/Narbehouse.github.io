@@ -21,7 +21,7 @@ NSS.registerStory({
     description: 'Rocky is ready for a day of fun. What will this playful puppy get up to next?',
     readingTag: 'Repetition',
     storyType: 'original',
-    credits: { text: 'Original story by NARBE LLC, illustrations and animations made with AI. Created for free, open-source sharing to expand accessible reading choices for switch users.' },
+    credits: { text: 'Original story by NARBE LLC, illustrations and animations made with AI. Includes image descriptions and is intended for free, open-source sharing. Created to expand access to stories for people who use switches and support a wider range of accessibility needs.' },
     tags: ['Animals'],
     contactShadows: NSS.RockyContactShadows,
     cviOutline: 'alpha', // Clean high-resolution art; the renderer adds the selected outline once.

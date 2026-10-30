@@ -252,14 +252,15 @@ body {
 .nss-page-count { color: #ffe999; background: #493e28; }
 .nss-reading-tag { color: #dbfff0; background: #254b46; }
 .nss-tile-description:empty { display: none; }
-.nss-library-intro { max-width: 780px; margin: 10px auto 12px; color: #f3f4ff; text-align: center; font: 400 17px/1.4 'Segoe UI', system-ui, sans-serif; }
+.nss-library-intro { max-width: 780px; margin: 10px auto 14px; color: #f3f4ff; text-align: center; font: 400 17px/1.4 'Segoe UI', system-ui, sans-serif; }
 .nss-library-browse { display: flex; justify-content: center; gap: 14px; }
 .nss-library-filters { margin-bottom: 14px; }
 .nss-library-paging[hidden] { display: none; }
 .nss-library-browse .nss-menu-item { flex: 1; max-width: 380px; min-height: 58px; font-size: 21px; }
 .nss-library-browse .nss-icon-chip { width: 34px; height: 34px; }
 .nss-library-browse .nss-more { width: auto; margin: 0; }
-.nss-library-note { color: #e2e6f6; text-align: center; font: 400 14px/1.4 'Segoe UI', system-ui, sans-serif; margin: 12px 0; }
+/* The scan highlight extends 11px past a button; reserve room around nearby words. */
+.nss-library-note { color: #e2e6f6; text-align: center; font: 400 14px/1.4 'Segoe UI', system-ui, sans-serif; margin: 14px 0; }
 .nss-filter-status { text-align: center; color: #e2e6f6; font-size: 18px; margin: 0 0 16px; }
 .nss-filter-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
 .nss-filter-choice[aria-pressed="true"] { box-shadow: inset 0 0 0 3px #ffe999; }
@@ -282,9 +283,9 @@ body {
 .nss-library-grid .nss-card-library { padding: 16px 20px; }
 .nss-library-grid .nss-brand-title { font-size: 46px; }
 .nss-library-grid .nss-logo { width: 54px; height: 54px; }
-.nss-library-grid .nss-library-intro { font-size: 16px; margin: 6px auto 8px; }
-.nss-library-grid .nss-library-filters { margin-bottom: 8px; }
-.nss-library-grid .nss-sub { font-size: 20px; margin: 4px 0 12px; }
+.nss-library-grid .nss-library-intro { font-size: 16px; margin: 6px auto 14px; }
+.nss-library-grid .nss-library-filters { margin-bottom: 14px; }
+.nss-library-grid .nss-sub { font-size: 20px; margin: 4px 0 14px; }
 .nss-library-grid .nss-tiles { gap: 14px; margin-bottom: 14px; }
 .nss-library-grid .nss-tile { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-content: start; align-items: center; gap: 8px 12px; }
 .nss-library-grid .nss-tile .nss-pic { width: 72px; height: 72px; }
@@ -294,7 +295,6 @@ body {
 .nss-library-grid .nss-tile-description { font-size: 16px; }
 .nss-library-grid .nss-story-tag { font-size: 14px; }
 .nss-library-grid .nss-library-browse .nss-menu-item { min-height: 50px; font-size: 20px; }
-.nss-library-grid .nss-library-note { margin: 8px 0; }
 .nss-library-grid .nss-util .nss-menu-item { min-height: 54px; font-size: 20px; }
 .nss-library-grid .nss-util .nss-icon-chip { width: 34px; height: 34px; }
 
@@ -368,6 +368,28 @@ body {
 }
 
 .nss-list { display: grid; gap: 12px; }
+
+/* Page navigation stays short and follows a left-to-right scan order. */
+.nss-page-status { text-align: center; margin: 0 0 14px; font-size: 20px; font-weight: 700; }
+.nss-page-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.nss-page-choice { flex-direction: column; justify-content: center; gap: 4px; padding: 12px 4px; }
+.nss-page-number { font-size: clamp(36px, 6vw, 54px); }
+.nss-page-caption { font-size: 16px; }
+.nss-page-choice[aria-current="page"] { box-shadow: inset 0 0 0 4px #fff; }
+.nss-page-navigation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.nss-page-navigation .nss-menu-item { justify-content: center; text-align: center; padding: 10px 8px; }
+.nss-page-navigation .nss-menu-item:disabled { opacity: .38; cursor: default; }
+
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+    .nss-card-pause { width: min(720px, 94vw); }
+    .nss-card-pause .nss-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nss-card-pause .nss-menu-item { min-height: 52px; }
+    .nss-card-pause .nss-icon-chip { width: 32px; height: 32px; }
+    .nss-card-pages .nss-sub { margin-bottom: 8px; }
+    .nss-card-pages .nss-page-status { margin-bottom: 8px; }
+    .nss-page-choice { padding: 8px 4px; }
+    .nss-page-navigation { margin-top: 10px; }
+}
 
 /* ----------------------------------------------------------------- settings */
 
@@ -514,6 +536,8 @@ body {
 /* The CVI look: black, white words, nothing extra. */
 #nss.cvi .nss-textbox { color: #ffffff; text-shadow: none; }
 #nss.cvi .nss-textbox::before { display: none; }
+/* Books awaiting simplified artwork keep a readable caption over their full illustration. */
+#nss.cvi .nss-story.has-spread .nss-textbox::before { display: block; }
 #nss.cvi .nss-hint { color: #c8c8c8; }
 #nss.cvi .nss-pageno { color: #bdbdbd; }
 
@@ -592,19 +616,17 @@ body {
 #nss.cvi .nss-pause-tip { background: #000000; color: #ffffff; box-shadow: inset 0 0 0 2px #8a8a8a; opacity: 1; }
 .nss-pause-btn.holding .nss-ring { opacity: 1; }
 
-/* Scan to Pause: the page itself is a choice. It is an invisible box over
-   the picture; the scan highlight draws a band around it. */
+/* Scan to Pause highlights the visible instruction, in the caption flow.
+   It wraps naturally on small screens and stays aligned as text changes. */
 .nss-page-btn {
-    display: none;
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: max(12px, env(safe-area-inset-left));
-    right: calc(max(14px, env(safe-area-inset-right)) + 96px * var(--display-scale));
-    border-radius: 26px;
+    display: block;
+    max-width: 100%;
+    padding: 0 8px;
+    border-radius: 8px;
     background: transparent;
 }
-
-#nss[data-pause-mode="scan"] .nss-page-btn { display: block; }
+#nss[data-pause-mode="scan"] .nss-page-btn { margin-top: calc(18px * var(--display-scale)); }
+#nss[data-pause-mode="scan"] .nss-textbox { padding-bottom: max(calc(18px * var(--display-scale)), env(safe-area-inset-bottom, 0px)); }
 #nss .nss-story.choosing .nss-page-btn { display: none; }
 
 /* --------------------------------------------------------------- highlight
@@ -635,8 +657,12 @@ body {
 .nss-focus-full .nss-filter-selected { color: var(--focus-ink, #1a1008); }
 .nss-focus-full .nss-icon-chip { background: transparent; box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008); }
 
-/* The page and the Pause button are never filled: a band is drawn instead. */
-.nss-page-btn.nss-focus, .nss-page-btn.nss-focus-full { background: transparent !important; translate: none; outline-width: 10px !important; outline-offset: -10px; }
+/* Keep library buttons in their reserved space when the scanner moves. */
+.nss-card-library .nss-focus, .nss-card-library .nss-focus-full { translate: none; }
+
+/* Keep the instruction still and put the outline outside its letters. */
+.nss-page-btn.nss-focus, .nss-page-btn.nss-focus-full { translate: none; }
+.nss-page-btn.nss-focus-full { text-shadow: none; }
 .nss-pause-btn.nss-focus-full { color: var(--focus-ink, #1a1008) !important; }
 
 /* Auto Scan paused by the Space brake: the same highlight, dotted. */
@@ -687,10 +713,15 @@ body {
     .nss-card-library .nss-util .nss-menu-item { min-height: 48px; padding: 8px; font-size: 16px; }
     .nss-card-library .nss-util .nss-icon-chip { display: none; }
     .nss-library-browse .nss-menu-item { min-height: 48px; }
-    .nss-card-library .nss-library-note { margin: 10px 0; }
+}
+
+/* Reclaim picture space on shorter tablets so scan clearance does not shrink text. */
+@media (min-width: 621px) and (max-height: 899px) {
+    .nss-screen-library:not(.nss-library-single):not(.nss-library-grid) .nss-tile .nss-pic { height: 150px; }
 }
 
 @media (max-height: 500px) and (min-width: 621px) {
+    .nss-card-library { padding-top: 10px; padding-bottom: 10px; }
     .nss-library-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
     .nss-card-library .nss-library-header .nss-library-filters { flex: 1.2; margin: 0; }
     .nss-card-library .nss-library-header .nss-sub { flex: 1; margin: 0; }
@@ -703,30 +734,33 @@ body {
     .nss-card-filters .nss-icon-chip { width: 30px; height: 30px; }
     .nss-filter-choices { gap: 12px; margin-bottom: 12px; }
     .nss-library-single .nss-card-library { max-width: 1000px; }
-    .nss-library-single .nss-tile { grid-template-columns: 120px minmax(0, 1fr); padding: 8px; gap: 12px; }
-    .nss-library-single .nss-tile .nss-pic { width: 120px; height: 120px; }
+    .nss-library-single .nss-tile { grid-template-columns: 96px minmax(0, 1fr); padding: 8px; gap: 12px; }
+    .nss-library-single .nss-tile .nss-pic { width: 96px; height: 96px; }
     .nss-card-library .nss-library-browse .nss-menu-item,
     .nss-card-library .nss-util .nss-menu-item { min-height: 54px; }
     .nss-tile-copy { gap: 6px; }
     .nss-tile-label { font-size: 22px; }
     .nss-tile-description { font-size: 16px; }
-    .nss-library-intro { font-size: 14px; margin: 0 0 8px; }
+    .nss-library-intro { font-size: 14px; margin: 0 0 14px; }
     .nss-story-tag { font-size: 13px; padding: 2px 8px; }
     .nss-card-library .nss-brand { display: none; }
     .nss-card-library .nss-tiles { margin-bottom: 12px; }
-    .nss-card-library .nss-library-note { margin: 7px 0; }
 }
 
 @media (max-height: 620px) and (max-width: 620px) {
+    .nss-card-library { padding-top: 8px; padding-bottom: 8px; }
     .nss-card-library .nss-brand { display: none; }
-    .nss-card-library .nss-library-filters { margin-bottom: 8px; }
+    .nss-card-library .nss-library-filters { margin-bottom: 14px; }
     .nss-card-library .nss-tiles { margin-bottom: 8px; }
-    .nss-card-library .nss-library-note { margin: 6px 0; }
-    .nss-library-single .nss-tile { grid-template-columns: 82px minmax(0, 1fr); gap: 8px; padding: 10px; }
-    .nss-library-single .nss-tile .nss-pic { width: 82px; height: 82px; }
+    .nss-library-single .nss-tile { grid-template-columns: 72px minmax(0, 1fr); gap: 6px; padding: 8px; }
+    .nss-library-single .nss-tile .nss-pic { width: 72px; height: 72px; }
     .nss-library-single .nss-tile-label { font-size: 21px; }
     .nss-tile-description { font-size: 16px; }
-    .nss-library-intro { font-size: 14px; margin: 0 0 8px; }
+    .nss-story-tags { gap: 4px; }
+    .nss-story-tag { padding: 2px 8px; }
+    .nss-library-intro { font-size: 14px; margin: 0 0 14px; }
+    .nss-library-intro br { display: none; }
+    .nss-library-intro span:first-child::after { content: ' '; }
     .nss-card-library .nss-library-browse .nss-menu-item,
     .nss-card-library .nss-util .nss-menu-item { min-height: 54px; }
 }

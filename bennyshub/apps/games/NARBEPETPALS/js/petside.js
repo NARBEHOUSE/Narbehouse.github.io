@@ -42,13 +42,9 @@ function sideTabby(S1){ return (x,y,t,G)=>{ if(t==='tail') return Math.floor(x*.
   if(inE(x,y,G.head)&&y<G.head.y-G.head.ry*.35&&Math.floor(x*1.1)%2===0) return S1; return null; }; }
 const inE=(x,y,e)=>{ const rx=e.rx, ry=e.ry, cx=e.cx!=null?e.cx:e.x, cy=e.cy!=null?e.cy:e.y; return ((x-cx)/rx)**2+((y-cy)/ry)**2<1; };
 
-/* Straight legs: each leg is a column a little wider at the top where it meets the body and slightly
-   narrower toward a small flat-bottomed paw on the ground. Back legs bend back a little at the hock
-   (gently for cats). The legs are painted only into the space below the body, never over it, so they
-   join the body with no outline across the top. The far legs are a shade darker and sit just behind.
-   SIDE_LEGS chooses these ('straight') or the earlier rounded legs ('round'). */
-let SIDE_LEGS='straight';
-const inPoly=(pts,x,y)=>{ let ins=false; for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const [xi,yi]=pts[i],[xj,yj]=pts[j]; if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) ins=!ins; } return ins; };
+/* Full shoulders and haunches taper through soft joints to rounded paws. Limbs merge
+   with the torso, so the sprite has one outer contour rather than an outline around
+   every upper/lower leg. A quieter shade separates the far pair. */
 const solidTag=t=>!!t&&t[t.length-1]!=='!';
 /* Paint a leg shape into the buffer: inside(x,y) says what is leg, isPaw(x,y) what is paw. Only pixels
    that are empty (or only outline) before any leg was drawn are used, and a far leg never covers a near one. */
@@ -57,33 +53,38 @@ function paintLeg(b,pre,taken,box,inside,isPaw,far){ const [x0,y0,x1,y1]=box;
     if(X<0||Y<0||X>=b.w||Y>=b.h) continue; const i=Y*b.w+X; if(solidTag(pre[i])||taken[i]) continue;
     const x=(X+.5)/RES-b.ox, y=(Y+.5)/RES-b.oy; if(!inside(x,y)) continue;
     const paw=isPaw(x,y), back=!far&&!paw&&!inside(x-1/RES,y);
-    b.px[i]=paw?(far?'paw_':'paw'):far?'fur~':back?'fur_':'fur'; if(!far) taken[i]=1; } }
+    b.px[i]=paw?(far?'paw_':'paw'):far?'fur_':back?'fur_':'fur'; if(!far) taken[i]=1; } }
+function inTaper(x,y,a,z){ const dx=z[0]-a[0],dy=z[1]-a[1],d=dx*dx+dy*dy;
+  const t=d?clamp(((x-a[0])*dx+(y-a[1])*dy)/d,0,1):0,r=lerp(a[2],z[2],t);
+  return (x-a[0]-dx*t)**2+(y-a[1]-dy*t)**2<=r*r; }
+function naturalLeg(b,pre,taken,j,w,back,far,cat,cuffs){
+  const {hx,hy,ex,ey,fx,fy}=j, scale=far?.78:1;
+  const hip=[hx,hy,w*(back?1.45:1.2)*scale],knee=[ex,ey,w*(back?.96:.83)*scale];
+  const ankle=[back?lerp(ex,fx,.7)-w*.45:lerp(ex,fx,.65),lerp(ey,fy,.65),w*.63*scale],foot=[fx,fy-.25,w*.7*scale];
+  const paw={cx:fx+w*.4,cy:fy,rx:w*(cat?1.16:1.28)*scale,ry:w*.72};
+  const thigh={cx:lerp(hx,ex,.28),cy:lerp(hy,ey,.3),rx:w*(back?1.5:1.12)*scale,ry:Math.max(w*1.1,Math.abs(ey-hy)*.7)};
+  const inside=(x,y)=>inE(x,y,thigh)||inTaper(x,y,hip,knee)||inTaper(x,y,knee,ankle)||inTaper(x,y,ankle,foot)||inE(x,y,paw)||
+    (cuffs&&inE(x,y,{cx:fx,cy:fy-w*.5,rx:w*1.65,ry:w*1.2}));
+  const xs=[hx,ex,fx],ys=[hy,ey,fy],box=[Math.min(...xs)-w*2,Math.min(...ys)-w*2,Math.max(...xs)+w*2.3,Math.max(...ys)+w*1.5];
+  paintLeg(b,pre,taken,box,inside,(x,y)=>inE(x,y,paw),far);
+}
 function sideLegs(b,legs,o){ const pre=b.px.slice(), taken=new Uint8Array(b.px.length), lw=o.lw, cat=o.cat;
-  const wT=lw*(cat?2:2.15), wH=lw*(cat?1.65:1.8), wB=lw*(cat?1.45:1.6), ph=lw*1.05, toe=.5;
   legs.forEach(([hx,off,isBack,far])=>{
-    /* the same stride as before: the foot swings forward and back, and lifts as it comes forward */
-    const th=Math.sin(o.ph+off)*o.swing, len=SIDE_GY-o.legTop-lw*.8, fx=hx+Math.sin(th)*len*.75, lift=o.swing?Math.max(0,Math.cos(o.ph+off))*1.1:0;
-    const ground=SIDE_GY+.25-lift, pawTop=ground-ph, top=o.legTop;
-    let shapes;
-    if(isBack){ const t=.58, hk=[lerp(hx,fx,t)-lw*(cat?.35:.7),lerp(top,pawTop,t)], wt=wT*1.1;
-      shapes=[[[hx-wt/2,top],[hx+wt/2,top],[hk[0]+wH/2,hk[1]],[hk[0]-wH/2,hk[1]]],[[hk[0]-wH/2,hk[1]],[hk[0]+wH/2,hk[1]],[fx+wB/2,pawTop+.3],[fx-wB/2,pawTop+.3]]]; }
-    else shapes=[[[hx-wT/2,top],[hx+wT/2,top],[fx+wB/2,pawTop+.3],[fx-wB/2,pawTop+.3]]];
-    const px0=fx-wB/2-.5, px1=fx+wB/2+.5+toe;
-    const inPaw=(x,y)=>{ if(y<pawTop||y>ground||x<px0||x>px1) return false; const top2=y<pawTop+.5; return !(top2&&(x<px0+.5||x>px1-.5)); };
-    const cuff=o.cuffs?(x,y)=>((x-fx-.3)/(lw*1.9))**2+((y-(SIDE_GY-lw*.8-lift-.9))/(lw*1.5))**2<1:()=>false;
-    const inside=(x,y)=>inPaw(x,y)||cuff(x,y)||shapes.some(s=>inPoly(s,x,y));
-    const xs=shapes.flat().map(p=>p[0]).concat([px0,px1]), box=[Math.min(...xs)-lw*2,top-1,Math.max(...xs)+lw*2,ground+.5];
-    paintLeg(b,pre,taken,box,inside,inPaw,far); });
+    // A staggered far foot leaves a little daylight between the rounded paws.
+    // Keep its hip close to the torso rather than shifting the entire leg outward.
+    const th=Math.sin(o.ph+off)*o.swing, len=SIDE_GY-o.legTop-lw*.8, fx=hx+Math.sin(th)*len*.75+(far?lw*1.5:0), lift=o.swing?Math.max(0,Math.cos(o.ph+off))*1.1:0;
+    const fy=SIDE_GY-lw*.72-lift,ex=lerp(hx,fx,.45)+lw*(isBack?(cat?.75:1.05):-.15),ey=lerp(o.legTop,fy,.5);
+    naturalLeg(b,pre,taken,{hx,hy:o.legTop,ex,ey,fx,fy},lw,isBack,far,cat,o.cuffs); });
   return b; }
-/* Lying down: the front legs lie forward along the ground, each a straight column with a flat paw at the
-   front, in the same place as the paws were before. */
+/* Resting forelegs soften into small rounded paws instead of rectangular feet. */
 function sideLegsLying(b,BD,lw){ const pre=b.px.slice(), taken=new Uint8Array(b.px.length);
-  [[1,false],[0,true]].forEach(([i,far])=>{ const x0=BD.cx+BD.rx*.4, x1=BD.cx+BD.rx+2.4+i*1.2+lw*2.1, ground=SIDE_GY+.25-i*.5, h=lw*1.5, pawL=lw*2.2;
-    const inside=(x,y)=>{ if(x<x0||x>x1||y>ground) return false; const t=(x-x0)/(x1-x0), hh=x>x1-pawL?h+.5:h*(1.15-.15*t); if(y<ground-hh) return false;
-      if(x>x1-.5&&y<ground-hh+.5) return false; return true; };
-    paintLeg(b,pre,taken,[x0-.5,ground-h-2,x1+.5,ground+.5],inside,(x)=>x>x1-pawL,far); });
+  [[1,false],[0,true]].forEach(([i,far])=>{ const hx=BD.cx+BD.rx*.4,fx=BD.cx+BD.rx+lw*1.8+i,fy=SIDE_GY-lw*.72-i*.4;
+    naturalLeg(b,pre,taken,{hx,hy:fy-lw*.4,ex:lerp(hx,fx,.6),ey:fy-.2,fx,fy},lw,false,far,false,false); });
   return b; }
 function capsule(T,x0,y0,x1,y1,w,t,sh){ const n=Math.max(2,Math.ceil(Math.hypot(x1-x0,y1-y0)*2)); for(let i=0;i<=n;i++){ const k=i/n; E(T,lerp(x0,x1,k),lerp(y0,y1,k),w,w,t,sh); } }
+/* Front/rear poses use the same full-to-tapered contour without outlining each segment. */
+function taperedLimb(T,x0,y0,x1,y1,w0,w1,t){ const n=Math.max(2,Math.ceil(Math.hypot(x1-x0,y1-y0)*2));
+  for(let i=0;i<=n;i++){ const k=i/n,w=lerp(w0,w1,k); E(T,lerp(x0,x1,k),lerp(y0,y1,k),w,w,t); } }
 /* Where the body, head and legs sit for this pose, with the breed's shape applied. */
 function sideGeo(P,o,S){
   const sh=S?shapeOf(S):{}, lie=o.body==='lie'||o.body==='curl', run=o.body==='run', bob=run?[0,-1,0,-.6][o.frame||0]:o.body==='walk'?[0,-.4,0,-.4][o.frame||0]:0;
@@ -110,11 +111,13 @@ function swimLegPose(BD,L,sh,frame,far,back){
 }
 /* Bent legs for a play bow, take-off/landing, airborne tuck, swimming, and a curled roll. */
 function actionLegs(b,o,P,S,Gs){ const BD=Gs.body, L=P.leg, sh=shapeOf(S), w=L.w, ground=SIDE_GY;
-  [true,false].forEach(far=>[true,false].forEach(back=>{
+  // Airborne and rolling paws can overlap the belly; grounded legs join its silhouette.
+  const pre=(o.body==='curl'||o.tuck)?new Array(b.px.length).fill(null):b.px.slice(),taken=new Uint8Array(b.px.length);
+  [false,true].forEach(far=>[true,false].forEach(back=>{
     const hx=BD.cx+(back?L.bx:L.fx)*(sh.long?1.3:1)+(far?w*1.4:0), hy=BD.cy+BD.ry*.35+(o.bow?(back?-2:2)*o.bow:0);
-    let fx=hx, fy=ground-w*.65, ex=hx+(back?-w:w), ey=(hy+fy)/2;
+    let fx=hx+(far?w*1.5:0), fy=ground-w*.72, ex=hx+(back?w:-w*.15), ey=(hy+fy)/2;
     if(o.bow&&!back){ fx+=8*o.bow; ex+=3*o.bow; ey+=3*o.bow; }
-    if(o.crouch){ ex+=(back?-1:1)*o.crouch*3; }
+    if(o.crouch){ ex+=(back?w*1.1:-w*.45)*o.crouch; fx+=(back?w*.7:w*.3)*o.crouch; }
     if(o.tuck){ fx+=(back?3:-3)*o.tuck; fy-=Math.max(3,ground-hy-3)*o.tuck; ex+=(back?-2:2)*o.tuck; ey=(hy+fy)/2+2*o.tuck; }
     if(o.body==='swim') ({fx,fy,ex,ey}=swimLegPose(BD,L,sh,o.frame||0,far,back));
     if(o.body==='dig'&&!back){ const t=(o.frame||0)*Math.PI/2+(far?Math.PI:0); fx+=3+Math.sin(t)*5; fy-=Math.max(0,Math.cos(t))*4; ex=hx+3; ey=(hy+fy)/2+1; }
@@ -124,16 +127,12 @@ function actionLegs(b,o,P,S,Gs){ const BD=Gs.body, L=P.leg, sh=shapeOf(S), w=L.w
       fx=hx+(back?3:-3)+(far?-1:1)*Math.sin(angle)*2;
       fy=lerp(hy+2,BD.cy-BD.ry-3,lift)+(far?-1:1)*Math.sin(angle)*1.5;
       ex=hx+(back?-2:2); ey=lerp(hy+3,BD.cy-BD.ry*.5,lift); }
-    part(b,T=>{ capsule(T,hx,hy,ex,ey,w*.8,far?'fur_':'fur',SH); capsule(T,ex,ey,fx,fy,w*.65,far?'fur_':'fur',SH);
-      if(sh.cuffs) E(T,fx,fy-.6,w*1.6,w*1.3,'fur',SH);
-      E(T,fx+.5,fy,w*1.25,w*.8,far?'paw_':'paw',SHL); });
+    naturalLeg(b,pre,taken,{hx,hy,ex,ey,fx,fy},w,back,far,S.kind==='cat',sh.cuffs);
   }));
 }
 function buildSide(b,o,P,S,fit,cat){
   const Gs=sideGeo(P,o,S), BD=Gs.body, H=Gs.head, L=P.leg, ed=o.ear?1:0, lie=Gs.lie, sh=shapeOf(S), ears=S.ears||(cat?'normal':'flop'), lw=L.w*(sh.body&&sh.body<1?.85:1);
   const swing=o.body==='run'?.8:o.body==='walk'?.48:0, ph=(o.frame||0)*Math.PI/2, legTop=BD.cy+BD.ry*.35;
-  const leg=(hx,off,far)=>{ const th=Math.sin(ph+off)*swing, len=SIDE_GY-legTop-lw*.8, fx=hx+Math.sin(th)*len*.75, lift=swing?Math.max(0,Math.cos(ph+off))*1.1:0, fy=SIDE_GY-lw*.8-lift;
-    part(b,T=>{ capsule(T,hx,legTop,fx,fy,lw,far?'fur~':'fur',far?null:SH); if(sh.cuffs) E(T,fx+.3,fy-.9,lw*1.9,lw*1.5,far?'fur~':'fur',far?null:SH); E(T,fx+.5,fy+.2,lw*1.25,lw*.85,far?'paw_':'paw',SHL); }); };
   /* Tail first, behind everything. */
   const tailWag=[0,.35,-.25][o.tail||0];
   part(b,T=>{ const x0=BD.cx-BD.rx+.8, y0=BD.cy-BD.ry*.35;
@@ -143,11 +142,10 @@ function buildSide(b,o,P,S,fit,cat){
     else { const tr=P.tail.r*(sh.tail==='otter'?1.3:1), n=sh.tail==='pom'?3:4, a=(o.body==='swim'?-3:lie?-2.7:-2.35)+tailWag;
       for(let i=0;i<n;i++){ const d=i*P.tail.len*.4, r=tr*(1-i*.12); E(T,x0+Math.cos(a)*d,y0+Math.sin(a)*d,r*1.2,r,'tail',SH); }
       if(sh.tail==='pom'){ const d=n*P.tail.len*.4; E(T,x0+Math.cos(a)*d,y0+Math.sin(a)*d,tr*1.6,tr*1.5,'tail',SH); } } });
-  if(fit&&fit.body==='cape') part(b,T=>{ Tr(T,H.x-3,H.y+H.ry*.6,BD.cx+BD.rx*.3,BD.cy-BD.ry,BD.cx-BD.rx-2.4,BD.cy+BD.ry*.7,'#D9403E',SH); });
+  // Keep the cape tip on the upper back; a low tip protrudes below the rump during potty poses.
+  if(fit&&fit.body==='cape') part(b,T=>{ Tr(T,H.x-3,H.y+H.ry*.6,BD.cx+BD.rx*.3,BD.cy-BD.ry,BD.cx-BD.rx*.9,BD.cy-BD.ry*.45,'#D9403E',SH); });
   if(fit&&fit.body==='bee') part(b,T=>{ E(T,BD.cx-1,BD.cy-BD.ry-2,3.4,2.2,'#E4F2FA',SHL); E(T,BD.cx+3,BD.cy-BD.ry-1.6,2.8,1.8,'#E4F2FA',SHL); });
-  /* Far legs, body, near legs. (The straight legs are all drawn after the body; see sideLegs.) */
-  const newLegs=SIDE_LEGS==='straight', action=o.bow||o.crouch||o.tuck||o.body==='swim'||o.body==='curl'||o.body==='dig';
-  if(!lie&&!newLegs&&!action){ leg(BD.cx+L.fx*(sh.long?1.3:1)+1.2,Math.PI,true); leg(BD.cx+L.bx*(sh.long?1.3:1)+1.2,0,true); }
+  const action=o.bow||o.crouch||o.tuck||o.body==='swim'||o.body==='curl'||o.body==='dig';
   /* An average body, not a round one: a deeper chest at the front, a slimmer waist tucked up under the
      middle, and narrower hips at the back. */
   part(b,T=>{ E(T,BD.cx+BD.rx*.36,BD.cy+BD.ry*.05+(o.bow||0)*2,BD.rx*.64,BD.ry*1.05,'fur',SH); E(T,BD.cx-BD.rx*.4,BD.cy-BD.ry*.08-(o.bow||0)*2,BD.rx*.6,BD.ry*.9,'fur',SH); E(T,BD.cx,BD.cy-BD.ry*.12,BD.rx*.85,BD.ry*.78,'fur',SH);
@@ -159,11 +157,9 @@ function buildSide(b,o,P,S,fit,cat){
   if(o.body==='curl'&&o.rollPhase&&!fit?.body){ const lift=(1-Math.cos(o.rollPhase/16*TAU))/2;
     E(b,BD.cx,BD.cy+BD.ry*(.35-.55*lift),BD.rx*.75,BD.ry*(.22+.45*lift),'light',SHL); }
   if(action) actionLegs(b,o,P,S,Gs);
-  else if(lie){ part(b,T=>{ E(T,BD.cx-BD.rx*.45,SIDE_GY-lw*1.2,BD.rx*.42,lw*1.4,'fur',SH); });
-    if(newLegs) sideLegsLying(b,BD,lw); else part(b,T=>{ [0,1].forEach(i=>E(T,BD.cx+BD.rx+2.4+i*1.2,SIDE_GY-lw*.8-i*.5,lw*2.1,lw*.95,i?'paw':'paw_',SHL)); }); }
-  else if(newLegs){ const fx=BD.cx+L.fx*(sh.long?1.3:1), bx=BD.cx+L.bx*(sh.long?1.3:1);
+  else if(lie){ E(b,BD.cx-BD.rx*.45,SIDE_GY-lw*1.2,BD.rx*.42,lw*1.4,'fur'); sideLegsLying(b,BD,lw); }
+  else { const fx=BD.cx+L.fx*(sh.long?1.3:1), bx=BD.cx+L.bx*(sh.long?1.3:1);
     sideLegs(b,[[fx,0,false,false],[bx,Math.PI,true,false],[fx+lw*1.4,Math.PI,false,true],[bx+lw*1.4,0,true,true]],{legTop,lw,swing,ph,cat,cuffs:sh.cuffs}); }
-  else { leg(BD.cx+L.fx*(sh.long?1.3:1),0,false); leg(BD.cx+L.bx*(sh.long?1.3:1),Math.PI,false); }
   /* Chest fluff, manes and ruffs */
   if(sh.chest) part(b,T=>{ for(let i=0;i<4;i++) Tr(T,H.x-H.rx*.6+i*1.4,H.y+H.ry*.6,H.x-H.rx*.6+i*1.4+2.4,H.y+H.ry*.6,H.x-H.rx*.6+i*1.4+1.2,H.y+H.ry+3,'light',SHS); });
   if(sh.ruff) part(b,T=>{ for(let i=0;i<5;i++) E(T,H.x-H.rx*.7+i*1.5,H.y+H.ry*.75+Math.abs(i-2)*-.3,2.1,2.5,i>1?'light':'fur',SH); });
@@ -213,7 +209,7 @@ function buildSide(b,o,P,S,fit,cat){
 const sideCache=new Map();
 function getPetSide(style,sg,o,fit){
   const S=STYLES[style]||STYLES.cream; if(!STAGES.includes(sg)) sg='baby';
-  const key=[SIDE_LEGS,style,sg,o.body,o.frame||0,o.eyes,o.mouth,o.tail||0,o.ear||0,o.headDy||0,o.bow||0,o.crouch||0,o.tuck||0,o.rollPhase||0,o.dull?1:0,o.mud?1:0,o.bare?1:0,fitKey(fit)].join('|'); let c=sideCache.get(key); if(c) return c;
+  const key=[style,sg,o.body,o.frame||0,o.eyes,o.mouth,o.tail||0,o.ear||0,o.headDy||0,o.bow||0,o.crouch||0,o.tuck||0,o.rollPhase||0,o.dull?1:0,o.mud?1:0,o.bare?1:0,fitKey(fit)].join('|'); let c=sideCache.get(key); if(c) return c;
   const P=SIDE[S.kind][sg], b=B(SIDE_W,SIDE_H,SIDE_OX,SIDE_OY), Gs=buildSide(b,o,P,S,fit,S.kind==='cat');
   c=finish(b,S.pal,{pattern:SIDE_PAT[style],geo:Gs,dull:o.dull});
   if(sideCache.size>900) sideCache.clear(); sideCache.set(key,c); return c;

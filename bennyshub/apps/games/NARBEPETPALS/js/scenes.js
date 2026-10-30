@@ -102,6 +102,16 @@ function drawVet(){
     rect(g,36,74.8,56,2.6,INK); rect(g,36.6,75.2,54.8,1.8,'#9FD8C8'); rect(g,36.6,75.2,54.8,.5,'#C8EEE4'); glow(g,64,20,60,'#FFFFFF',.25); }));
 }
 /* ---- Town (Pet Parade) ---- */
+/* Familiar pet sprites sit on the far sidewalk and watch the parade. */
+const PARADE_PETS=['cream','siamese','chocolate','tabby','silver','tuxedo','beagle','calico'];
+function paradeSpectator(g,x,y,i,e){
+  const style=PARADE_PETS[i], cat=STYLES[style].kind==='cat';
+  const pose={eyes:(e+i*430)%3600<130?'closed':'happy',mouth:cat?'smile':'tongue',tail:Math.floor(e/240+i)%3,ear:Math.floor(e/500+i)%2,headDy:0};
+  softShadow(g,x,y+.3,6,1.1,.18);
+  g.save(); g.translate(snap(x),y); g.scale(.6,.6);
+  drawPet(g,style,'adult',pose,null,-22,-43.5);
+  g.restore();
+}
 let townLayer=null;
 function drawTown(e){ const night=skyMode()==='night', k=skyPhase()+'|'+VIEW.y+'|'+VIEW.h;
   if(!townLayer||townLayer.k!==k){ const c=hdCanvas(256,VIEW.h), g=c.getContext('2d'); g.setTransform(RES,0,0,RES,0,-VIEW.y*RES); c.k=k; const ph=skyPhase(), n=ph==='night', B={x0:0,x1:256,y0:VIEW.y,y1:VIEW.y+VIEW.h};
@@ -112,7 +122,11 @@ function drawTown(e){ const night=skyMode()==='night', k=skyPhase()+'|'+VIEW.y+'
     for(let x=32;x<256;x+=64){ rect(g,x-1.1,29,2.2,37,INK); rect(g,x-.5,29,1,37,'#3E4A56'); pxEll(g,x,66,2.8,1.1,INK); rect(g,x-3.2,25.4,6.4,4,INK); rect(g,x-2.6,26,5.2,2.8,n?'#FFE9A8':'#E8F0F4'); rect(g,x-3.8,24.2,7.6,1.6,INK); if(n) glow(g,x,28,16,'#FFE9A8',.3); } rect(g,0,70,256,B.y1-70,'#A8A8B0'); for(let x=0;x<256;x+=16) rect(g,x,82,8,1,'#FFFFFF'); townLayer=c; }
   const off=(e*.012)%256; for(let t=al(VIEW.x+off,256)-off;t<VIEW.x+VIEW.w;t+=256) ctx.drawImage(townLayer,snap(t),VIEW.y,256,VIEW.h);
   scrollEach(8,-e*.02,8,(x,i)=>{ const y=6+Math.round(Math.sin((x+e*.02)/10)*2); rect(ctx,x,y,1,1,'#8A6A4A'); ctx.fillStyle=['#F07A8E','#F4C96A','#7FB08C','#7FA8D8'][i%4]; ctx.beginPath(); ctx.moveTo(x+1.5,y+1); ctx.lineTo(x+6.5,y+1); ctx.lineTo(x+4,y+5); ctx.fill(); });
-  scrollEach(10,0,10,(x,i)=>{ const bob=Math.floor(e/180+i)%2; pxEll(ctx,x+4,92-bob,4.2,4.2,INK); pxEll(ctx,x+4,92-bob,3.4,3.4,['#F2C9A5','#C68A5E','#8A5A3A','#F2D2B8'][i%4]); rect(ctx,x+1,88-bob,6,2,['#3B2A22','#F4C542','#8A4A2A','#1C130E'][i%4]); });
+  // Keep each pet beside its shop as the street scrolls past.
+  const crowdOff=e*.012;
+  for(let i=Math.floor((VIEW.x+crowdOff-14)/24);i*24-crowdOff<VIEW.x+VIEW.w+14;i++){
+    paradeSpectator(ctx,i*24+9-crowdOff,68,((i%PARADE_PETS.length)+PARADE_PETS.length)%PARADE_PETS.length,e);
+  }
   if(night){ ctx.fillStyle='rgba(20,24,60,0.22)'; fillView(ctx); } }
 /* ---- Cat café ---- */
 function drawCafe(){

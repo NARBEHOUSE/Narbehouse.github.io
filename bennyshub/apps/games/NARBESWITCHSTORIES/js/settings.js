@@ -55,8 +55,9 @@ NSS.Settings = (function () {
     }
 
     function clamp() {
-        // Older profiles may still have the removed recorded-voice option.
+        // Discard retired options, including a saved animation-off preference.
         delete settings.narration;
+        delete settings.switchAnimations;
         // A saved choice that no longer exists in CONFIG falls back to the default.
         LISTED.forEach(function (key) {
             if (!C.settings[key][settings[key]]) settings[key] = DEFAULTS[key];

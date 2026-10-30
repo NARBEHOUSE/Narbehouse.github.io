@@ -20,8 +20,8 @@ NSS.registerStory({
     description: 'Lily is ready to open a book with her switch. Come along and see where the next page takes her.',
     readingTag: 'Repetition',
     storyType: 'original',
-    credits: { text: 'Original story by NARBE LLC, illustrations and animations made with AI. Created for free, open-source sharing to expand accessible reading choices for switch users.' },
-    tags: ['Friendship', 'Everyday Life'],
+    credits: { text: 'Original story by NARBE LLC, illustrations and animations made with AI. Includes image descriptions and is intended for free, open-source sharing. Created to expand access to stories for people who use switches and support a wider range of accessibility needs.' },
+    tags: ['Friendship', 'Everyday Life', 'Inclusion'],
     contactShadows: NSS.LilyContactShadows,
 
     // Each child's poses: transparent pictures, made to one shared scale.

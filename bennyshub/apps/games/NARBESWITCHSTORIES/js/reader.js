@@ -49,7 +49,13 @@ NSS.Reader = (function () {
         const r = rate();
         const total = estimateMs(text, r);
         const began = performance.now();
-        ticket = NSS.Voice.speak(text, { rate: r, force: true });
+        // Keep pronunciation hints out of the printed story and description chart.
+        // "Tiers" sounds like tears from crying; limit it to crying phrases so
+        // a future sentence about someone who tears paper keeps its own sound.
+        const spoken = text.replace(/\brecess\b/gi, 'ree-sess')
+            .replace(/\b(wipes away (?:his|her|their) )tears\b/gi, '$1tiers')
+            .replace(/\btears(?= on (?:his|her|their) cheeks\b)/gi, 'tiers');
+        ticket = NSS.Voice.speak(spoken, { rate: r, force: true });
         if (!ticket) { later(finish, total + 300); return; }    // no voice at all: give the words time, then carry on
         Promise.resolve(ticket.finished).then(function (result) {
             if (t !== token) return;

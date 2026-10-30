@@ -2,6 +2,159 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-30 — Nancy’s story and Pet Pals updates on the web
+
+Scope: bring the current PC runtimes for Switch Stories and Pet Pals onto the existing web Hub, as requested. Electron port: **NO** for every file below; the PC Hub was read only and was not launched, installed or modified. Pre-change web copies and a SHA-256 transfer record are in WEBSITES/tmp/nancy-sync-20261030.
+
+Switch Stories now includes The Bright Night, its 22 illustrated pages/actions, image descriptions, required animation helpers, reading history and the accompanying current player/older-story updates. Title-page attribution and the story’s CC BY-NC 4.0 credits are preserved. Runtime backgrounds, sprites and the image-description chart ship locally; source PDF/extracts, generation prompts and Pet Pals preview media are excluded. Pet Pals imports the four PC artwork fixes for front/side legs and paws, cat neck fluff, cape placement during bathroom poses, pet parade spectators and camping scenery. Web local fonts, analytics, favicons and shared modules remain intact. Both game entrypoints use release query 2026.10.30.1; Pet Pals’ build label matches. Catalog IDs and player storage keys are unchanged.
+
+Verification: 438 existing website tests and five imported story regression suites pass. The production build, release audit (4,372 public files; no problems) and 1,424 page/link checks pass. All 130 copied PC runtime files match their source hashes, all 132 transferred files match the built output, and 27 transferred JavaScript files pass syntax checks. The two games contribute 389 files to the generated offline library, including the new story and image descriptions. Companion 1.1.0’s immutable ZIP checksum is unchanged.
+
+Real Chrome verifies the story library, complete description data, switch reading/action progression, pause/resume and the coverage recorded in stories-browser/report.json (10 checks). Pet Pals verifies actual adoption, feeding and pause/resume, 2,688 side frames, 252 front/rear probes, 252 cape assertions, parade and 18 camping frames. A fresh scoped Hub/shared/catalog/two-game library (541 assets; 156641383 bytes) is downloaded before first launch; offline/report.json records 8 passing cold-offline/navigation checks. This is focused two-game offline coverage, not a new full-library or physical-device acceptance run. Physical switches, target-tablet performance and installed speech voices remain device checks. Browser reports and screenshots are outside the published project under the backup folder above.
+
+Changed files (each has the web-only scope described above; Electron port: NO):
+- bennyshub/apps/games/NARBEPETPALS/index.html
+- bennyshub/apps/games/NARBEPETPALS/js/core.js
+- bennyshub/apps/games/NARBEPETPALS/js/pets.js
+- bennyshub/apps/games/NARBEPETPALS/js/petside.js
+- bennyshub/apps/games/NARBEPETPALS/js/scenes.js
+- bennyshub/apps/games/NARBEPETPALS/js/school.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/CREDITS.md
+- bennyshub/apps/games/NARBESWITCHSTORIES/IMAGE-DESCRIPTIONS.html
+- bennyshub/apps/games/NARBESWITCHSTORIES/css/style.css
+- bennyshub/apps/games/NARBESWITCHSTORIES/index.html
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/beach-walk.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/braille-books.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/config.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/descriptions.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/final-actions.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/illustration.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/input.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/library.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/main.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/ocean-listen.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/reader.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/reading-history.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/scene.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/sensory-actions.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/settings.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/sound.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/story.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/ui.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/CREDITS.md
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/story.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/story.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/list.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/story.js
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/CREDITS.md
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/cover-blink.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/cover.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/ending-chalkboard-classroom.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/ending-classroom.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-01.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-02.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-03-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-03.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-04-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-04.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-05-smile.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-05.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07-lift.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07-wear.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-09-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-09.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11-listen-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11-splash.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12-open.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12-sigh.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-13.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-14-cane-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-14.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-15.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-16-cane-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-16.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-17-sand.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-17.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-18.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-19-dim.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-19.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-20-wave-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-20.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21-no-chair.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21-tools-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-classroom-touch.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-classroom.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-touch.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-23-jump-clean.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-23.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book-blank.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book-cover.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cane-water.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/classroom-board.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/classroom-girl.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cover-girl-blink.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cover-girl.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/curling-wave-over.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/curling-wave.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ending-friends-cheer.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ending-friends.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/library-chair.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/mobility-cane.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-blue-green-dim.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-blue-green-lights.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-golden-lights.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-wave-splash.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-wave.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-friends-touch.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-friends.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-tools-spaced.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-tools.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-left.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-right.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-stand.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-open.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-rest.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-sigh.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror-lift.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror-wear.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mom-smile.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mom.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-ocean-listening.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-ocean-standing.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-proud-cheer.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-proud.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-sand.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-stargazing.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-body.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-foot.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-leg.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-shin.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-thigh.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-book-cover.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-braille-book-blank.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-braille-book.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/tracing-hand.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-body.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-forearm.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-torso.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-dipping-arm.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-listening.webp
+- bennyshub/apps/games/NARBESWITCHSTORIES/stories/the-bright-night/story.js
+- bennyshub/offline-manifest.json
+- docs/history/DEVELOPMENT-HISTORY.md
+- tests/switchstories-beach-walk.test.cjs
+- tests/switchstories-descriptions.test.cjs
+- tests/switchstories-reading-history.test.cjs
+- tests/switchstories-reading-poses.test.cjs
+- tests/switchstories-sensory-actions.test.cjs
+
 ## 2026-10-29 — Robot Football postseason continuation and championship stadium
 
 Scope: update Robot Football in the explicitly requested PC app and local website copy. The existing rules are retained: 16 regular-season games, 10 wins to qualify for Wild Card then Conference then Championship, and a perfect 16–0 advances directly to Championship. After validation, the owner explicitly authorized committing and pushing this update to GitHub for the normal Pages publication workflow. Prior web game files and a SHA-256 transfer manifest are preserved in the PC workspace's tmp/robotfootball-web folder.

@@ -210,8 +210,11 @@ NSS.Sound = (function () {
         stopFile: stopFile,
         fileStatus: function (url) { return files[url] ? files[url].status : 'none'; },
         action: action,
-        /** The page's afterSound, right after its action. */
-        after: function (page) { if (on() && page.afterSound) playFile(page.afterSound, NSS.Settings.volume()); },
+        /** Play the closing effect; return its duration so descriptions can follow it. */
+        after: function (page) {
+            if (on() && page.afterSound && playFile(page.afterSound, NSS.Settings.volume())) return files[page.afterSound].seconds;
+            return 0;
+        },
         /** How many sounds are built (used by the automated test). */
         status: function () {
             return { built: Object.keys(ready).length, total: Object.keys(RECIPES).length, urls: Object.assign({}, urls) };

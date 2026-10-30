@@ -57,6 +57,29 @@ NSS.CONFIG = {
         protect:   { seconds: 3.0, sound: 'splash' },
         hooray:    { seconds: 2.6, sound: 'fanfare' },
         sunset:    { seconds: 3.4, sound: 'lullaby' },
+        blink:     { seconds: 2.8, sound: 'twinkle' },
+        shine:     { seconds: 2.8, sound: null },
+        blur:      { seconds: 2.4, sound: null },
+        rock:      { seconds: 2.8, sound: 'click' },
+        trace:     { seconds: 3.6, sound: null },
+        sharewarmth: { seconds: 3.2, sound: 'twinkle' },
+        sunglasses: { seconds: 3.0, sound: null },
+        beachwalk: { seconds: 4.2, sound: null },
+        surf:      { seconds: 3.4, sound: 'splash' },
+        oceanlisten: { seconds: 3.8, sound: 'splash' },
+        sigh:      { seconds: 4.0, sound: null },
+        stargaze:  { seconds: 4.0, sound: 'twinkle' },
+        canesweep: { seconds: 3.6, sound: null },
+        listen:    { seconds: 3.6, sound: 'twinkle' },
+        canedip:   { seconds: 3.6, sound: null },
+        sandsift:  { seconds: 3.8, sound: null },
+        goldwater: { seconds: 4.2, sound: 'twinkle' },
+        planktonglow: { seconds: 4.2, sound: 'twinkle' },
+        wavecurl:  { seconds: 4.0, sound: 'splash' },
+        bookopen:  { seconds: 3.8, sound: null },
+        readtogether: { seconds: 3.8, sound: null },
+        proudjump: { seconds: 3.2, sound: null },
+        friendscheer: { seconds: 4.0, sound: 'twinkle' },
         none:      { seconds: 0,   sound: null }         // nothing happens (a title page): the words are read, then a press turns the page
     },
 
@@ -68,6 +91,10 @@ NSS.CONFIG = {
      * choice is made; scanning only says the setting's name and value.
      */
     settings: {
+        imageDescriptions: {
+            off: { label: 'Off', note: 'Read the story without extra picture descriptions.' },
+            on: { label: 'On', note: 'Describe each picture before reading and each action afterward. Press to continue. Descriptions speak only when Read Aloud is on.' }
+        },
         readAloud: {
             on:  { label: 'On',  note: 'The words on each page are read aloud.' },
             off: { label: 'Off', note: 'Nothing is read aloud during the story, so you or a helper can read it.' }
@@ -76,9 +103,6 @@ NSS.CONFIG = {
             normal: { label: 'Normal', rate: 0.92 },
             slow:   { label: 'Slow',   rate: 0.75 }
         },
-        // (There are no page-flow settings, by the user's choice: the words are
-        // always read all the way through, and the player's press makes the
-        // action happen and turns the page.)
         look: {
             book: { label: 'Picture Book', note: 'A colored page behind each picture.' },
             // For players with CVI (cortical visual impairment).
@@ -121,7 +145,7 @@ NSS.CONFIG = {
     maxPixelRatio: 2,        // crisp on 2x displays; cap the cost on very dense screens
 
     defaults: {
-        readAloud: 'on', rate: 'normal',
+        readAloud: 'on', rate: 'normal', imageDescriptions: 'off',
         look: 'book', textSize: 'large', outline: 'yellow', characterSize: 'regular'
     }
 };

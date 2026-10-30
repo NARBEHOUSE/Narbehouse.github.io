@@ -360,28 +360,86 @@ V['therapy:carehome']=tripScene('carehome',{dur:5000,start(){ setCaption(`A visi
 /* ---- Camping ---- */
 PLACES.camping={label:'Camping Trip',sub:'A tent, a campfire, and stars',stage:1,notSeason:'winter',travel:'car',music:'camp',bg:'camp',outdoor:true,
   story:()=>['camp:tent',pick(['camp:marshmallow','camp:songs']),pick(['camp:stars','camp:canoe']),'camp:sleep']};
-function drawCamp(night){ blitView(ctx,cachedLayer('camp'+(night?'N':''),(g,ph,B)=>{ const n=night||ph==='night'; if(night){ vgrad(g,B.x0,B.y0,Bw(B),58-B.y0,[[0,'#1A2050'],[1,'#34406E']]); for(let i=0;i<Math.round(Bw(B)/3);i++) rect(g,B.x0+hash2(i,1,11)*Bw(B),B.y0+hash2(i,2,11)*48,.5,.5,'#FFF6C8'); pxEll(g,100,14,4,4,'#FFF1B8'); } else skyFill(g,58,ph,B);
-  g.fillStyle=n?'#3A4A6A':'#9AB0C8'; g.beginPath(); g.moveTo(B.x0,46); for(let x=B.x0;x<=B.x1+10;x+=10) g.lineTo(x,40-Math.abs(Math.sin(x/23))*14); g.lineTo(B.x1,58); g.lineTo(B.x0,58); g.fill();
-  rect(g,B.x0,52,Bw(B),6,n?'#2F4A7A':'#6FB0D8'); for(let x=al(B.x0,14)+3;x<B.x1;x+=14) rect(g,x,54,6,.5,'rgba(255,255,255,.45)');
-  vgrad(g,B.x0,58,Bw(B),B.y1-58,[[0,n?'#3E5A42':'#7AB062'],[1,n?'#2F4A36':'#5E9A50']]);
-  for(let x=al(B.x0,26)-4;x<B.x1+12;x+=26){ g.fillStyle=n?'#1E3A2A':'#3E6A4A'; g.beginPath(); g.moveTo(x+6,30); g.lineTo(x-2,60); g.lineTo(x+14,60); g.fill(); rect(g,x+5,60,2,3,'#5A3A20'); }
-  [[26,86],[40,90],[54,86]].forEach(([x,y])=>{ pxEll(g,x,y,3,1.8,'#8A8A92'); }); rect(g,14,90,40,3,'#8A5A34'); rect(g,14,90,40,.8,'#A87A4A'); })); }
-function drawCampfire(now,x,y){ rect(ctx,x-7,y,14,2,'#6A4428'); rect(ctx,x-5,y-1,10,2,'#5A3820'); for(let i=0;i<3;i++){ const f=Math.sin(now/110+i*2)*1.4; pxEll(ctx,x-3+i*3,y-3-Math.abs(f),2.4,4+f*.6,i===1?'#FFB347':'#F4743A'); pxEll(ctx,x-3+i*3,y-2,1.2,2,'#FFE27A'); } glow(ctx,x,y-4,36,'#FF9A4A',.28+Math.sin(now/170)*.05); }
+function campPine(g,x,y,h,n,far=false){
+  const dark=n?(far?'#304851':'#1D3C39'):(far?'#668C80':'#305D48'), light=n?'#34584F':'#48785A';
+  rect(g,x-1,y-h*.45,2,h*.45,n?'#53473D':'#785B40');
+  for(let j=2;j>=0;j--){ const tip=y-h+j*h*.21, half=h*(.16+j*.035), base=tip+h*.48;
+    g.fillStyle=dark; g.beginPath();g.moveTo(x,tip);g.lineTo(x-half,base);g.lineTo(x+half,base);g.closePath();g.fill();
+    g.fillStyle=light;g.beginPath();g.moveTo(x,tip);g.lineTo(x-half,base);g.lineTo(x-1,base-h*.07);g.closePath();g.fill();
+    pxLine(g,x-half*.75,base-1,x-2,base-2,n?'#426253':'#5F8A60',.5);
+  }
+}
+function campLantern(g,x,y,n){
+  if(n) glow(g,x,y-4,18,'#FFD28A',.25);
+  pxRing(g,x,y-8,1.6,2,.6,'#4A514C'); rect(g,x-2.3,y-7,4.6,6,'#3C514A');
+  rect(g,x-1.6,y-6.3,3.2,4.6,n?'#FFDA7D':'#D8E7CE'); rect(g,x-.5,y-6,1,4,n?'#FFF4C1':'#F5F4D8');
+  rect(g,x-2.6,y-7.5,5.2,1,'#536A56'); rect(g,x-2.7,y-1.2,5.4,1.2,'#30483E');
+}
+function drawCamp(night){ blitView(ctx,cachedLayer('camp'+(night?'N':''),(g,ph,B)=>{ const n=night||ph==='night';
+  if(n){ vgrad(g,B.x0,B.y0,Bw(B),61-B.y0,[[0,'#17263F'],[.6,'#304563'],[1,'#687782']]);
+    for(let i=0;i<Math.round(Bw(B)/2);i++){ const x=B.x0+hash2(i,1,11)*Bw(B),y=B.y0+hash2(i,2,11)*(41-B.y0); rect(g,x,y,.5,.5,i%3?'#B6C5CC':'#FFF3CD'); }
+    glow(g,100,14,17,'#E7E7C4',.16); pxEll(g,100,14,4,4,'#FFF1CB'); pxEll(g,101,13,1.1,1.5,'#E4D8B8'); pxEll(g,98.8,15.5,.8,.6,'#E4D8B8');
+  } else { skyFill(g,61,ph,B); cloud(g,30,16,1.2,'#F5F1E4'); cloud(g,82,23,.8,'#F5F1E4'); }
+  hillBand(g,44,18,n?'#46596E':'#90A8AF',4,B); hillBand(g,48,12,n?'#354F5C':'#708F8D',1,B);
+  for(let x=al(B.x0,9);x<B.x1+9;x+=9) campPine(g,x,49,12+hash2(x,1,24)*8,n,true);
+  vgrad(g,B.x0,49,Bw(B),18,[[0,n?'#436476':'#8ABAC3'],[1,n?'#2B495B':'#5E97A7']]);
+  for(let j=0;j<6;j++)for(let x=al(B.x0,17)+(j%2)*6;x<B.x1;x+=17){ const y=50+j*2.3; rect(g,x,y,4+hash2(x,j,15)*7,.5,n?'#607D8A':'#ABD2D0'); }
+  if(n) for(let j=0;j<6;j++) rect(g,99-j*.9,50+j*2,3+j*1.6,.5,'#A4B3AC');
+  g.fillStyle=n?'#344E46':'#6A925B';g.beginPath();g.moveTo(B.x0,59);g.bezierCurveTo(12,56,26,68,70,65);g.bezierCurveTo(103,67,119,58,B.x1,59);g.lineTo(B.x1,B.y1);g.lineTo(B.x0,B.y1);g.fill();
+  vgrad(g,B.x0,70,Bw(B),Math.max(1,B.y1-70),[[0,n?'#344E42':'#709650'],[1,n?'#273E35':'#557A42']]);
+  // An open dirt clearing keeps the pet and camping actions easy to see.
+  pxEll(g,66,88,70,21,n?'#585748':'#B5A17A'); pxEll(g,66,87,65,19,n?'#62604D':'#C0AD85');
+  for(let i=0;i<120;i++){ const x=B.x0+hash2(i,2,23)*Bw(B),y=64+hash2(i,3,23)*(B.y1-64), clearing=((x-66)/64)**2+((y-87)/19)**2<1;
+    if(clearing){ if(i%3===0)rect(g,x,y,1.2,.5,n?'#77715A':'#D6C299'); }
+    else tuft(g,x,y,n?'#52674C':'#91AD68');
+  }
+  // Shore rocks and layered pines frame the view without filling the middle.
+  [[17,63,3],[26,65,2],[101,65,2.5],[115,62,3.5]].forEach(([x,y,r])=>{pxEll(g,x,y,r,r*.55,n?'#687374':'#A3AAA0');pxEll(g,x-.6,y-.5,r*.6,.5,n?'#82908A':'#C5CABC');});
+  for(let x=al(B.x0-18,31)+6;x<32;x+=31) campPine(g,x,70,35+hash2(x,2,9)*10,n);
+  for(let x=131;x<B.x1+20;x+=27) campPine(g,x,73,40+hash2(x,2,9)*12,n);
+  // A sawn log, a backpack, and a lantern make this a lived-in campsite.
+  softShadow(g,111,89,10,1.6,.25); rect(g,103,84,15,4.5,n?'#6E503A':'#8C603E'); rect(g,103,84,15,1,n?'#927052':'#B18351');
+  pxEll(g,118,86.3,2,2.3,n?'#A48661':'#D4B17A'); pxRing(g,118,86.3,1.2,1.5,.5,'#806044'); pxLine(g,105,87,113,87,'#513E31',.5);
+  campLantern(g,110,84,n);
+  pxRing(g,126,75,2.3,2,.8,'#354D49'); pxEll(g,126,81,4.7,6,n?'#406B68':'#578C82');rect(g,122,80,8,7,n?'#365F5C':'#4B7E70');
+  rect(g,123,82,6,3,n?'#527D74':'#70A18B');rect(g,123,81,6,.6,'#BAAA78');rect(g,124.8,78,1.4,2,'#CAB88C');
+  if(n)glow(g,110,80,25,'#FFC578',.1);
+})); }
+function drawCampfire(now,x,y){
+  glow(ctx,x,y-3,30,'#FFAA55',.2+Math.sin(now/220)*.025); softShadow(ctx,x,y+2,10,3,.3); pxEll(ctx,x,y,8.5,2.7,'#403C38');
+  const stone=(a)=>{const sx=x+Math.cos(a)*8,sy=y+Math.sin(a)*2.8;pxEll(ctx,sx,sy,2,1.3,'#666A67');pxEll(ctx,sx-.3,sy-.4,1.4,.6,'#92938A');};
+  for(let i=5;i<10;i++)stone(i*Math.PI/5);
+  pxLine(ctx,x-5,y+1,x+5,y-2,'#6E492E',2.3);pxLine(ctx,x-5,y-2,x+5,y+1,'#93613B',2.3);pxEll(ctx,x+5,y+1,1.2,1.1,'#C2955B');
+  for(let i=0;i<3;i++){const f=Math.sin(now/170+i*2),fx=x-3+i*3;
+    ctx.fillStyle=i===1?'#FFC15C':'#EE7C3E';ctx.beginPath();ctx.moveTo(fx-2.5,y-1);ctx.quadraticCurveTo(fx-3,y-5,fx+f,y-10-i%2*2);ctx.quadraticCurveTo(fx+1,y-6,fx+2.5,y-2);ctx.quadraticCurveTo(fx+1,y,fx-2.5,y-1);ctx.fill();
+    pxEll(ctx,fx,y-2.5,1.1,2.4,'#FFE99C');const rise=((now/600+i*.37)%1);rect(ctx,fx+Math.sin(now/700+i),y-9-rise*7,.5,.5,'#FBCB78');
+  }
+  for(let i=0;i<5;i++)stone(i*Math.PI/5);
+}
 /* A big family tent, taller and wider than a grown-up dog, with an open door flap and guy ropes. */
-function drawTent(x,y,k){ if(k<=0) return; const hw=31, h=46, tri=(c,p)=>{ ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) ctx.lineTo(p[i],p[i+1]); ctx.fill(); };
+function drawTent(x,y,k,night=false){ if(k<=0) return; const hw=31, h=46, fabric=night?'#B8784B':'#EDA354', trim=night?'#D9AD74':'#FFE0A2', tri=(c,p)=>{ ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) ctx.lineTo(p[i],p[i+1]); ctx.fill(); };
   if(k<.5){ const t=k*2; pxLine(ctx,x-hw,y,x,y-h*t,'#8A6A4A',1.4); pxLine(ctx,x+hw,y,x,y-h*t,'#8A6A4A',1.4); pxLine(ctx,x,y,x,y-h*t,'#8A6A4A',1); return; }
   pxLine(ctx,x,y-h,x-hw-9,y+1,'#E8DCC0',.6); pxLine(ctx,x,y-h,x+hw+9,y+1,'#E8DCC0',.6); rect(ctx,x-hw-10,y,2,2,'#8A6A4A'); rect(ctx,x+hw+8,y,2,2,'#8A6A4A');
-  tri(INK,[x-hw-1.2,y+.8,x+hw+1.2,y+.8,x,y-h-1.6]); tri('#F08A2A',[x-hw,y,x+hw,y,x,y-h]); tri('#E07428',[x,y-h,x+hw,y,x+hw*.34,y]);
-  for(let i=1;i<4;i++){ const t=i/4; pxLine(ctx,x-hw*t,y-h*(1-t),x+hw*t,y-h*(1-t),'#F6A04A',.5); }
-  if(k>=1){ tri(INK,[x-12.6,y+.4,x+12.6,y+.4,x,y-25]); tri('#5A3420',[x-11.6,y,x+11.6,y,x,y-23.6]); tri('#F6A04A',[x+1,y-23,x+12,y,x+6,y]); pxEll(ctx,x+9.4,y-9,1.4,1.4,'#8A5A34'); }
-  rect(ctx,x-.6,y-h-4,1.2,4,'#8A6A4A'); tri('#F4C542',[x+.6,y-h-4,x+5,y-h-2.6,x+.6,y-h-1.4]); }
+  softShadow(ctx,x,y+1,33,3,.22);rect(ctx,x-hw-1,y-1,hw*2+2,2.5,'#374C46');
+  tri('#5A4B3C',[x-hw-1.2,y+.8,x+hw+1.2,y+.8,x,y-h-1.6]); tri(fabric,[x-hw,y,x+hw,y,x,y-h]); tri(night?'#8F583D':'#CB7B3F',[x,y-h,x+hw,y,x+hw*.34,y]);
+  tri(night?'#CC925D':'#F7BA6C',[x,y-h,x-hw,y,x-21,y,x-3,y-h+8]);
+  pxLine(ctx,x,y-h,x-hw,y,trim,.7);pxLine(ctx,x,y-h,x+hw,y,trim,.7);pxLine(ctx,x,y-h+3,x+hw*.34,y,night?'#AE8056':'#E8A66A',.6);
+  for(let i=0;i<9;i++)rect(ctx,x-hw+3+i*2.2,y-2,.8,.5,trim);
+  // Mesh vent, floor mat, and two tied-back door flaps.
+  tri('#52635A',[x-4.5,y-h+13,x+4.5,y-h+13,x,y-h+6]);pxLine(ctx,x-3,y-h+11,x+3,y-h+11,trim,.5);
+  if(k>=1){ tri('#584A3C',[x-13,y,x+13,y,x,y-28]); tri(night?'#333E3D':'#4B5349',[x-11.8,y,x+11.8,y,x,y-26]);
+    rect(ctx,x-8,y-2,17,2,night?'#577C76':'#6E9F8B');pxLine(ctx,x-11,y-1,x+11,y-1,'#B5AD87',.5);
+    tri(trim,[x,y-27,x-12.8,y,x-7,y-4]);tri(fabric,[x+1,y-26,x+12.8,y,x+8,y-4]);
+    pxLine(ctx,x-10,y-9,x-7,y-8,'#735B3C',1);pxLine(ctx,x+8,y-8,x+11,y-9,'#735B3C',1);
+  }
+  rect(ctx,x-.6,y-h-4,1.2,4,'#8A6A4A'); tri('#E7C365',[x+.6,y-h-4,x+5,y-h-2.6,x+.6,y-h-1.4]); }
 Object.assign(BG,{camp:()=>drawCamp(false),campN:()=>drawCamp(true),lake:()=>drawLake(),tentin:()=>drawTentInside()});
 function drawLake(){ blitView(ctx,cachedLayer('lake',(g,ph,B)=>{ skyFill(g,44,ph,B); for(let x=al(B.x0,18);x<B.x1+10;x+=18){ g.fillStyle='#3E6A4A'; g.beginPath(); g.moveTo(x+6,26); g.lineTo(x,46); g.lineTo(x+12,46); g.fill(); }
   vgrad(g,B.x0,46,Bw(B),B.y1-46,[[0,'#5AA8D8'],[1,'#2F6FA8']]); for(let y=52;y<B.y1;y+=6) for(let x=al(B.x0,20)+(y%12);x<B.x1;x+=20) rect(g,x,y,7,.5,'rgba(255,255,255,.4)'); })); }
 function drawTentInside(){ blitView(ctx,cachedLayer('tentin',(g,ph,B)=>{ rect(g,B.x0,B.y0,Bw(B),B.y1-B.y0,'#E07428'); g.fillStyle='#F08A2A'; g.beginPath(); g.moveTo(B.x0,B.y1); g.lineTo(64,B.y0); g.lineTo(B.x1,B.y1); g.fill();
   pxLine(g,64,B.y0,64,70,'#C9602A',.6); rect(g,B.x0,74,Bw(B),B.y1-74,'#8A5A34'); pxLine(g,64,6,64,16,'#6A4428',.5); rect(g,61,16,6,7,INK); rect(g,61.6,16.6,4.8,5.8,'#FFE27A'); ctx; g.fillStyle='rgba(20,20,50,.25)'; g.fillRect(B.x0,B.y0,Bw(B),B.y1-B.y0); glow(g,64,20,40,'#FFE9A8',.35); })); }
 /* Night by the campfire: the tent stays pitched off to the side. */
-const nightScene=(bg,d)=>{ const s=tripScene(bg,d), sc=s.scene; return Object.assign(s,{scene(e,a){ if(sc) sc.call(s,e,a); else drawCamp(true); drawTent(4,86,1); }}); };
+const nightScene=(bg,d)=>{ const s=tripScene(bg,d), sc=s.scene; return Object.assign(s,{scene(e,a){ if(sc) sc.call(s,e,a); else drawCamp(true); drawTent(8,78,1,true); }}); };
 V['camp:tent']=tripScene('camp',{dur:4600,start(){ setCaption(`Camping! First, let's pitch the tent.`); play('rustle',.4); },
   pose(p,e){ p.dx=-18; p.eyes=e<3000?'open':'happy'; p.headDy=-1; if(e>3000){ p.mouth='tongue'; p.headDy=0; } },
   behind(e){ drawTent(100,86,ph(e,300,2800)); },

@@ -226,7 +226,8 @@ NSS.Library = (function () {
     function normalizePage(raw, i, title, file, lastBg, poses, objects, cast) {
         const where = 'page ' + (i + 1);
         const p = raw && typeof raw === 'object' ? raw : {};
-        let text = typeof p.text === 'string' ? p.text.replace(/\s+/g, ' ').trim() : '';
+        const textParts = Array.isArray(p.textParts) ? p.textParts.map(plainText).filter(Boolean) : [];
+        let text = textParts.length ? textParts.join(' ') : typeof p.text === 'string' ? p.text.replace(/\s+/g, ' ').trim() : '';
         if (!text) { warn(title, where + ' has no text.'); text = ' '; }
         let action = typeof p.action === 'string' ? p.action.trim().toLowerCase() : '';
         if (!C.actions[action]) {
@@ -236,7 +237,22 @@ NSS.Library = (function () {
         const object = objectName(p.object, objects, title, where, 'object');
         const castOnPage = castList(p.cast, cast, title, where);
         const cviRaw = p.cvi && typeof p.cvi === 'object' ? p.cvi : {};
+        const effect = p.spreadAction;
+        const spreadAction = effect && objects[effect.object] && Array.isArray(effect.bounds) &&
+            effect.bounds.length === 4 && effect.bounds.every(n => Number.isFinite(n) && n >= 0 && n <= 1) &&
+            effect.bounds[0] < effect.bounds[2] && effect.bounds[1] < effect.bounds[3] ? {
+                object: effect.object,
+                closedObject: objects[effect.closedObject] ? effect.closedObject : null,
+                detailObject: objects[effect.detailObject] ? effect.detailObject : null,
+                poses: (Array.isArray(effect.poses) ? effect.poses : []).filter(name => objects[name]),
+                rig: effect.rig && objects[effect.rig.leg] ? { leg: effect.rig.leg } : null,
+                overlay: background(effect.overlay, file),
+                overlays: (Array.isArray(effect.overlays) ? effect.overlays : []).map(value => background(value, file)).filter(Boolean),
+                travel: Number.isFinite(effect.travel) ? clampNum(effect.travel, -0.25, 0.25) : 0,
+                bounds: effect.bounds.slice()
+            } : null;
         return {
+            spreadAction: spreadAction,
             // --- pages with a cast of characters and a background picture ---
             illustration: normalizeIllustration(p.illustration, objects),
             cast: castOnPage,
@@ -269,6 +285,18 @@ NSS.Library = (function () {
             // --- every page ---
             number: i,
             text: text,
+            // A switch advances these passages while the illustration and page number stay put.
+            textParts: textParts.length ? textParts : null,
+            spread: background(p.spread, file),
+            spreadAlignTop: p.spreadAlignTop === true,
+            // A panorama's outer scenery may extend; its character region stays proportional.
+            spreadCore: Array.isArray(p.spreadCore) && p.spreadCore.length === 2 &&
+                p.spreadCore.every(v => Number.isFinite(v) && v > 0 && v < 1) && p.spreadCore[0] < p.spreadCore[1]
+                ? p.spreadCore.slice() : null,
+            spreadFocus: Array.isArray(p.spreadFocus) && p.spreadFocus.length === 4 &&
+                p.spreadFocus.every(v => Number.isFinite(v) && v >= 0 && v <= 1) &&
+                p.spreadFocus[2] > p.spreadFocus[0] && p.spreadFocus[3] > p.spreadFocus[1]
+                ? p.spreadFocus.slice() : [0.12, 0.04, 0.88, 0.90],
             action: action,
             object: object || null,
             bg: color(p.bg, lastBg),
@@ -378,6 +406,7 @@ NSS.Library = (function () {
             storyType: ['original', 'adapted'].includes(def.storyType) ? def.storyType : '',
             tags: storyTags((Array.isArray(def.tags) ? def.tags : []).concat(def.readingTag)),
             pageCount: pages.length,
+            requireFreshTurn: def.requireFreshTurn === true,
             base: base,
             credits: normalizeCredits(def.credits),
             poses: poses,

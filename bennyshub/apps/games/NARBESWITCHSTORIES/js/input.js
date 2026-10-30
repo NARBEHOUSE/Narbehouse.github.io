@@ -16,7 +16,7 @@
  *                         Holding Enter (or controller button A) for five
  *                         seconds opens Pause, with a filling ring and a
  *                         beep each second.
- *   Scan to Pause         The highlight moves between the page and Pause,
+ *   Scan to Pause         The highlight moves between the directions and Pause,
  *                         the usual scan contract, for a player who cannot
  *                         hold a switch. Holding Enter still pauses too.
  *

@@ -356,5 +356,495 @@ NSS.Illustrations = (function () {
         return { s: mainD / 300 };
     }
 
-    return { draw: draw };
+    let spreadWash = null;
+    // Continue the edge colours as a soft painted wash. Enlarging narrow image
+    // strips stretches trees, stars and furniture into conspicuous streaks.
+    // Only this colour field extends; the complete illustration stays uniform.
+    function landscapeWash(ctx, img, frame, w, h) {
+        const key = [img.src, frame.x, frame.y, frame.w, frame.h, w, h].join('|');
+        if (!spreadWash || spreadWash.key !== key) {
+            const sample = document.createElement('canvas'); sample.width = sample.height = 6;
+            const sx = sample.getContext('2d', { willReadFrequently: true });
+            sx.drawImage(img, 0, 0, 6, 6);
+            const pixels = sx.getImageData(0, 0, 6, 6).data;
+            const wash = document.createElement('canvas'); wash.width = wash.height = 48;
+            const wx = wash.getContext('2d'), data = wx.createImageData(48, 48);
+            for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) {
+                const u = clamp(((x + 0.5) * w / 48 - frame.x) / frame.w * 6 - 0.5, 0, 5);
+                const v = clamp(((y + 0.5) * h / 48 - frame.y) / frame.h * 6 - 0.5, 0, 5);
+                const left = Math.floor(u), top = Math.floor(v), fx = u - left, fy = v - top;
+                for (let c = 0; c < 3; c++) {
+                    const color = (a, b) => pixels[(Math.min(5, b) * 6 + Math.min(5, a)) * 4 + c];
+                    data.data[(y * 48 + x) * 4 + c] =
+                        (color(left, top) * (1 - fx) + color(left + 1, top) * fx) * (1 - fy) +
+                        (color(left, top + 1) * (1 - fx) + color(left + 1, top + 1) * fx) * fy;
+                }
+                data.data[(y * 48 + x) * 4 + 3] = 255;
+            }
+            wx.putImageData(data, 0, 0);
+            if (spreadWash) spreadWash.canvas.width = spreadWash.canvas.height = 1;
+            spreadWash = { key: key, canvas: wash };
+        }
+        ctx.drawImage(spreadWash.canvas, 0, 0, w, h);
+    }
+
+    // Short, subject-specific actions over a panorama, or one isolated subject
+    // on black. Effects use source-image coordinates so they follow resizing.
+    const effectPatches = new Map();
+    function patch(img, bounds, blur) {
+        const key = [img.src, bounds.join(','), blur].join('|');
+        if (effectPatches.has(key)) return effectPatches.get(key);
+        const [l, t, r, b] = bounds;
+        const c = document.createElement('canvas');
+        c.width = Math.ceil((r - l) * img.width); c.height = Math.ceil((b - t) * img.height);
+        const x = c.getContext('2d');
+        // Draw the surrounding source too, so a blur never pulls in transparent
+        // black at the crop boundary. Feather only this patch's outside edge.
+        x.filter = blur ? 'blur(' + blur + 'px)' : 'none';
+        x.drawImage(img, -l * img.width, -t * img.height);
+        x.filter = 'none'; x.globalCompositeOperation = 'destination-in';
+        for (const horizontal of [true, false]) {
+            const g = x.createLinearGradient(0, 0, horizontal ? c.width : 0, horizontal ? 0 : c.height);
+            g.addColorStop(0, 'transparent'); g.addColorStop(0.08, '#000');
+            g.addColorStop(0.92, '#000'); g.addColorStop(1, 'transparent');
+            x.fillStyle = g; x.fillRect(0, 0, c.width, c.height);
+        }
+        c.src = img.src;
+        effectPatches.set(key, c);
+        if (effectPatches.size > 6) {
+            const oldest = effectPatches.keys().next().value;
+            const old = effectPatches.get(oldest);
+            effectPatches.delete(oldest); old.width = old.height = 1;
+        }
+        return c;
+    }
+
+    function region(frame, bounds) {
+        return { x: frame.x + bounds[0] * frame.w, y: frame.y + bounds[1] * frame.h,
+            w: (bounds[2] - bounds[0]) * frame.w, h: (bounds[3] - bounds[1]) * frame.h };
+    }
+
+    function drawPatch(ctx, img, bounds, frame, blur, alpha) {
+        if (!img || alpha <= 0) return;
+        const r = region(frame, bounds);
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.drawImage(patch(img, bounds, blur), r.x, r.y, r.w, r.h); ctx.restore();
+    }
+
+    function blinkAmount(p) {
+        return ease(clamp((p - 0.15) / 0.10, 0, 1)) * (1 - ease(clamp((p - 0.56) / 0.12, 0, 1)));
+    }
+
+    // Three simple stars, with slow independent brightening rather than flashing.
+    function stars(ctx, positions, radius, p, always) {
+        positions.forEach(([x, y], i) => {
+            const glow = p > 0 && p < 1 ? Math.pow(Math.sin(p * Math.PI), 2) *
+                (0.5 + 0.5 * Math.sin(p * TAU - i)) : 0;
+            if (!always && !glow) return;
+            ctx.save(); ctx.translate(x, y);
+            ctx.globalAlpha = always ? 0.72 + glow * 0.28 : glow * 0.8;
+            ctx.shadowColor = '#fff4ae'; ctx.shadowBlur = radius * glow * 1.3;
+            ctx.fillStyle = '#ffeb87'; ctx.beginPath();
+            for (let k = 0; k < 10; k++) {
+                const a = -Math.PI / 2 + k * Math.PI / 5, d = radius * (k % 2 ? 0.43 : 1) * (1 + glow * 0.24);
+                ctx[k ? 'lineTo' : 'moveTo'](Math.cos(a) * d, Math.sin(a) * d);
+            }
+            ctx.closePath(); ctx.fill(); ctx.restore();
+        });
+    }
+
+    function shine(ctx, r, p) {
+        if (p <= 0 || p >= 1) return;
+        const strength = ease(clamp(p / 0.25, 0, 1)) * (1 - ease(clamp((p - 0.7) / 0.3, 0, 1)));
+        const cx = r.x + r.w * 0.55, cy = r.y + r.h * 0.42, radius = Math.max(r.w, r.h) * 0.9;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        g.addColorStop(0, 'rgba(255,253,207,0.72)');
+        g.addColorStop(0.5, 'rgba(255,239,141,0.3)'); g.addColorStop(1, 'rgba(255,239,141,0)');
+        ctx.save(); ctx.globalAlpha = strength; ctx.fillStyle = g;
+        ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2); ctx.restore();
+    }
+
+    function sighAmounts(p) {
+        return [ease(clamp((p - 0.08) / 0.12, 0, 1)) * (1 - ease(clamp((p - 0.40) / 0.12, 0, 1))),
+            ease(clamp((p - 0.46) / 0.12, 0, 1)) * (1 - ease(clamp((p - 0.76) / 0.16, 0, 1)))];
+    }
+
+    // Slowly brighten existing stars, with no motion of the child underneath.
+    function nightStars(ctx, positions, radius, p, paintStars) {
+        const envelope = ease(clamp(p / 0.14, 0, 1)) * (1 - ease(clamp((p - 0.86) / 0.14, 0, 1)));
+        positions.forEach(([x, y], i) => {
+            const glow = envelope * (0.32 + 0.68 * (0.5 - 0.5 * Math.cos(p * TAU * 1.6 - i * 1.4)));
+            ctx.save(); ctx.translate(x, y);
+            if (glow > 0) {
+                const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 3.5);
+                halo.addColorStop(0, 'rgba(255,249,211,0.9)');
+                halo.addColorStop(0.24, 'rgba(255,226,120,0.55)'); halo.addColorStop(1, 'rgba(255,226,120,0)');
+                ctx.globalAlpha = glow; ctx.fillStyle = halo;
+                ctx.beginPath(); ctx.arc(0, 0, radius * 3.5, 0, TAU); ctx.fill();
+            }
+            if (paintStars) {
+                ctx.globalAlpha = 0.78 + glow * 0.22; ctx.fillStyle = '#ffed9a'; ctx.beginPath();
+                for (let k = 0; k < 10; k++) {
+                    const a = -Math.PI / 2 + k * Math.PI / 5, d = radius * (k % 2 ? 0.43 : 1) * (1 + glow * 0.18);
+                    ctx[k ? 'lineTo' : 'moveTo'](Math.cos(a) * d, Math.sin(a) * d);
+                }
+                ctx.closePath(); ctx.fill();
+            } else if (glow > 0) {
+                ctx.globalAlpha = glow * 0.85; ctx.fillStyle = '#fffbe3'; ctx.beginPath();
+                ctx.moveTo(0, -radius); ctx.quadraticCurveTo(radius * 0.12, -radius * 0.12, radius, 0);
+                ctx.quadraticCurveTo(radius * 0.12, radius * 0.12, 0, radius);
+                ctx.quadraticCurveTo(-radius * 0.12, radius * 0.12, -radius, 0);
+                ctx.quadraticCurveTo(-radius * 0.12, -radius * 0.12, 0, -radius); ctx.fill();
+            }
+            ctx.restore();
+        });
+    }
+
+    function chair(ctx, img, r, p) {
+        const h = Math.min(r.h, r.w * img.height / img.width), w = h * img.width / img.height;
+        const x = r.x + (r.w - w) / 2, bottom = r.y + r.h;
+        const angle = Math.sin(p * TAU * 2) * 0.27 * (1 - p);
+        // Pivot at the lowest front leg, so it never floats while rocking.
+        ctx.save(); ctx.translate(x + w * 0.54, bottom - h * 0.02); ctx.rotate(angle);
+        ctx.drawImage(img, -w * 0.54, -h * 0.98, w, h); ctx.restore();
+    }
+
+    function fitRect(img, r) {
+        const k = Math.min(r.w / img.width, r.h / img.height);
+        return { x: r.x + (r.w - img.width * k) / 2, y: r.y + (r.h - img.height * k) / 2,
+            w: img.width * k, h: img.height * k };
+    }
+
+    // Blend registered poses on transparency, not against the scene. Additive
+    // premultiplied alpha avoids a dark dip or leftover old silhouette.
+    let poseCanvas = null;
+    function mixPose(ctx, a, b, r, amount) {
+        if (!a) return;
+        if (!b || amount <= 0) { ctx.drawImage(a, r.x, r.y, r.w, r.h); return; }
+        if (amount >= 1) { ctx.drawImage(b, r.x, r.y, r.w, r.h); return; }
+        if (!poseCanvas) poseCanvas = document.createElement('canvas');
+        if (poseCanvas.width !== a.width || poseCanvas.height !== a.height) {
+            poseCanvas.width = a.width; poseCanvas.height = a.height;
+        }
+        const c = poseCanvas.getContext('2d'); c.clearRect(0, 0, a.width, a.height);
+        c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1 - amount;
+        c.drawImage(a, 0, 0, a.width, a.height);
+        c.globalCompositeOperation = 'lighter'; c.globalAlpha = amount;
+        c.drawImage(b, 0, 0, a.width, a.height);
+        c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+        poseCanvas.src = a.src;
+        ctx.drawImage(poseCanvas, r.x, r.y, r.w, r.h);
+    }
+
+    function sequence(images, p) {
+        const list = images.filter(Boolean);
+        if (list.length < 2) return [list[0], null, 0];
+        for (let i = 1; i < list.length; i++) {
+            const start = 0.20 + (i - 1) * 0.30;
+            if (p < start + 0.12) return [list[i - 1], list[i], ease(clamp((p - start) / 0.12, 0, 1))];
+        }
+        return [list.at(-1), null, 0];
+    }
+
+    function warmHalo(ctx, r, p) {
+        if (p <= 0) return;
+        const radius = Math.max(r.w, r.h) * 0.72, x = r.x + r.w / 2, y = r.y + r.h * 0.48;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        g.addColorStop(0, 'rgba(255,208,108,0.04)');
+        g.addColorStop(0.5, 'rgba(255,208,108,0.10)');
+        g.addColorStop(0.7, 'rgba(255,194,78,0.32)'); g.addColorStop(1, 'rgba(255,194,78,0)');
+        ctx.save(); ctx.globalAlpha = ease(clamp(p / 0.3, 0, 1)); ctx.fillStyle = g;
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2); ctx.restore();
+    }
+
+    function traceBook(ctx, book, hand, box, p) {
+        const r = fitRect(book, { ...box, h: box.h / 1.14 });
+        ctx.drawImage(book, r.x, r.y, r.w, r.h);
+        if (!hand) return;
+        const u = ease(clamp(p / 0.9, 0, 1)), h = r.h * 0.48, w = h * hand.width / hand.height;
+        const x = r.x + r.w * (0.08 + u * 0.24), y = r.y + r.h * 0.62;
+        // The book remains still; only the touching hand travels along the dots.
+        ctx.save(); ctx.translate(x + w * 0.2, y + h * 0.15);
+        ctx.rotate(Math.sin(p * Math.PI) * 0.025);
+        ctx.drawImage(hand, -w * 0.2, -h * 0.15, w, h); ctx.restore();
+    }
+
+    function footprint(ctx, x, y, size, side, heading, cvi, alpha) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(heading + side * 0.10);
+        ctx.globalAlpha = alpha; ctx.fillStyle = cvi ? '#e4bf84' : 'rgba(137,91,43,0.48)';
+        ctx.beginPath(); ctx.ellipse(0, 0, size * 0.28, size * 0.48, 0, 0, TAU); ctx.fill();
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath(); ctx.ellipse((i - 2) * size * 0.12, -size * (0.53 - Math.abs(i - 2) * 0.035),
+                size * (0.095 - i * 0.009), size * (0.11 - i * 0.01), 0, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function walkImages(page, imageFor) {
+        const spec = page.spreadAction;
+        if (!spec.rig) return [];
+        // Outline the assembled character, not every joint separately.
+        return [spec.object, spec.rig.leg]
+            .map(name => imageFor({ ...page.story.objects[name], background: true }));
+    }
+
+    function continuousLeg(ctx, img, pose) {
+        const art = NSS.BeachWalk.art, w = img.width;
+        const rows = [...new Set([0, ...Array.from({length:33}, (_,i)=>img.height*i/32),
+            art.hipY, (art.hipY+art.ankleY)/2, art.ankleY])].sort((a,b)=>a-b);
+        function triangle(points, matrix, y0, y1) {
+            const cx = points.reduce((s,p)=>s+p.x,0)/3, cy = points.reduce((s,p)=>s+p.y,0)/3;
+            ctx.save(); ctx.beginPath();
+            points.forEach((p,i)=>{
+                const dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy),x=p.x+dx/d*0.0007,y=p.y+dy/d*0.0007;
+                ctx[i?'lineTo':'moveTo'](x,y);
+            });
+            ctx.closePath();ctx.clip();ctx.transform(...matrix);
+            const top=Math.max(0,y0-2),bottom=Math.min(img.height,y1+2);
+            ctx.drawImage(img,0,top,w,bottom-top,0,top,w,bottom-top);ctx.restore();
+        }
+        for(let i=1;i<rows.length;i++) {
+            const y0=rows[i-1],y1=rows[i],dy=y1-y0;
+            const tl=NSS.BeachWalk.point(pose,0,y0),tr=NSS.BeachWalk.point(pose,w,y0),
+                bl=NSS.BeachWalk.point(pose,0,y1),br=NSS.BeachWalk.point(pose,w,y1);
+            let a=(tr.x-tl.x)/w,b=(tr.y-tl.y)/w,c=(br.x-tr.x)/dy,d=(br.y-tr.y)/dy;
+            triangle([tl,tr,br],[a,b,c,d,tl.x-c*y0,tl.y-d*y0],y0,y1);
+            a=(br.x-bl.x)/w;b=(br.y-bl.y)/w;c=(bl.x-tl.x)/dy;d=(bl.y-tl.y)/dy;
+            triangle([tl,br,bl],[a,b,c,d,tl.x-c*y0,tl.y-d*y0],y0,y1);
+        }
+    }
+
+    let walkCanvas, walkClean, walkOutlined, walkKey;
+    function walkingCutout(images, pose, p, distance, cvi) {
+        if (images.some(img => !img)) return null;
+        const color = cvi && !NSS.Settings.is('outline', 'off') ? (NSS.Settings.option('outline').color || '#ffe630') : null;
+        const key = images[0].src + '|' + p + '|' + distance + '|' + color;
+        if (key === walkKey) return color ? walkOutlined : walkClean;
+        if (!walkCanvas) {
+            [walkCanvas, walkClean, walkOutlined] = Array.from({ length: 3 }, () => {
+                const c = document.createElement('canvas'); c.width = 960; c.height = 1200; return c;
+            });
+        }
+        const c = walkCanvas.getContext('2d'), [body, leg] = images;
+        c.clearRect(0, 0, 960, 1200); c.save(); c.scale(1200, 1200); c.translate(0.4 - pose.bodyX, 0);
+        pose.legs.forEach((a, i) => {
+            c.save(); if (!i) c.filter = 'brightness(0.92)';
+            continuousLeg(c,leg,a); c.restore();
+        });
+        const bodyH = 0.755, bodyW = bodyH * body.width / body.height;
+        c.drawImage(body, pose.bodyX - bodyW * 0.48, pose.hipY - 0.625, bodyW, bodyH); c.restore();
+        const clean = walkClean.getContext('2d'); clean.clearRect(0, 0, 960, 1200);
+        clean.filter = 'url(#nss-cvi-silhouette)'; clean.drawImage(walkCanvas, 0, 0); clean.filter = 'none';
+        if (color) {
+            const ring = walkOutlined.getContext('2d'); ring.clearRect(0, 0, 960, 1200);
+            for (let i = 0; i < 16; i++) ring.drawImage(walkClean, Math.cos(i * TAU / 16) * 8, Math.sin(i * TAU / 16) * 8);
+            ring.globalCompositeOperation = 'source-in'; ring.fillStyle = color; ring.fillRect(0, 0, 960, 1200);
+            ring.globalCompositeOperation = 'source-over'; ring.drawImage(walkClean, 0, 0);
+        }
+        walkClean.src = walkOutlined.src = body.src; walkKey = key;
+        return color ? walkOutlined : walkClean;
+    }
+
+    function walkBeach(ctx, images, r, p, travel, cvi) {
+        const pose = NSS.BeachWalk.pose(p, travel / r.h), cx = r.x + r.w / 2;
+        pose.prints.forEach(a => footprint(ctx, cx + (a.x - 0.035) * r.h, r.y + a.y * r.h,
+            r.h * 0.085, a.leg ? 1 : -1, -Math.PI / 2, cvi, 1));
+        if (!cvi) {
+            ctx.save(); ctx.fillStyle = 'rgba(42,58,115,0.19)'; ctx.beginPath();
+            ctx.ellipse(cx + pose.bodyX * r.h, r.y + r.h * 0.968, r.h * 0.14, r.h * 0.014, 0, 0, TAU); ctx.fill(); ctx.restore();
+        }
+        const sprite = walkingCutout(images, pose, p, travel / r.h, cvi);
+        if (sprite) ctx.drawImage(sprite, r.x + pose.bodyX * r.h, r.y, r.w, r.h);
+    }
+
+    // Floating notes remain a visible sound cue when sound is switched off.
+    function musicNotes(ctx, x, y, size, p, cvi) {
+        for (let i = 0; i < 3; i++) {
+            const t = (p - i * 0.13) / 0.74;
+            if (t <= 0 || t >= 1) continue;
+            ctx.save(); ctx.translate(x + (i - 1) * size * 1.6 + Math.sin(t * Math.PI) * size * 0.5,
+                y - t * size * 1.6); ctx.rotate(Math.sin(t * Math.PI * 1.5 + i) * 0.12);
+            ctx.globalAlpha = ease(clamp(t / 0.12, 0, 1)) * (1 - ease(clamp((t - 0.78) / 0.22, 0, 1)));
+            ctx.fillStyle = '#fff'; ctx.strokeStyle = '#17394d';
+            ctx.lineWidth = size * 0.14; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.ellipse(-size * 0.12, 0, size * 0.28, size * 0.19, -0.3, 0, TAU); ctx.stroke(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(size * 0.10, 0); ctx.lineTo(size * 0.10, -size * 0.85);
+            ctx.lineTo(size * 0.24, -size * 0.85); ctx.lineTo(size * 0.24, -size * 0.75);
+            ctx.bezierCurveTo(size * 0.60, -size * 0.55, size * 0.60, -size * 0.35, size * 0.40, -size * 0.22);
+            ctx.bezierCurveTo(size * 0.48, -size * 0.44, size * 0.35, -size * 0.48, size * 0.24, -size * 0.51);
+            ctx.lineTo(size * 0.24, 0); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore();
+        }
+    }
+
+    function drawSimpleSpread(ctx, imageFor, w, pictureH, page, st) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, st.h || pictureH);
+        const spec = page.spreadAction, img = imageFor(page.story.objects[spec.object]);
+        if (!img) return { s: 1 };
+        const area = safeArea(w, pictureH, st, true), ratio = page.action === 'beachwalk' ? 0.8 : img.width / img.height;
+        const starRoom = page.action === 'blink' || page.action === 'canedip' ? 0.24 : page.action === 'stargaze' ? 0.32 : page.action === 'proudjump' ? 0.22 : 0;
+        const motionRoom = page.action === 'rock' ? 0.38 : page.action === 'beachwalk' ? 0.98 : page.action === 'canesweep' ? 0.55 : page.action === 'sandsift' ? 0.30 : page.action === 'canedip' ? 0.18 : page.action === 'oceanlisten' ? 0.44 : 0.06;
+        const fit = Math.min(area.h / (1.06 + starRoom), area.w / (ratio + motionRoom));
+        const h = fit * (st.cover ? 0.94 : NSS.Settings.is('characterSize', 'large') ? 0.94 : 0.55);
+        const r = { x: area.x + (area.w - h * ratio) / 2,
+            y: area.y + (area.h - h * (1 + starRoom)) / 2 + h * starRoom, w: h * ratio, h: h };
+        const p = st.cover ? 0 : st.p || 0;
+        const poses = [img, ...spec.poses.map(name => imageFor(page.story.objects[name]))];
+        ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.beginPath(); ctx.rect(0, 0, w, pictureH); ctx.clip();
+        if (NSS.SensoryActions.handles(page.action)) NSS.SensoryActions.simple(ctx,imageFor,page,img,r,p);
+        else if (NSS.FinalActions.handles(page.action)) NSS.FinalActions.simple(ctx,imageFor,page,img,r,p);
+        else if (page.action === 'trace') traceBook(ctx, img, imageFor(page.story.objects[spec.detailObject]), r, p);
+        else if (page.action === 'sigh') {
+            const [open, exhale] = sighAmounts(p), lift = Math.sin(Math.PI * clamp(p / 0.76, 0, 1)) * 0.012;
+            const anchor = r.y + r.h * 0.95;
+            ctx.save(); ctx.translate(0, anchor); ctx.scale(1, 1 + lift); ctx.translate(0, -anchor);
+            ctx.drawImage(img, r.x, r.y, r.w, r.h);
+            drawPatch(ctx, poses[1], [0.42, 0.14, 0.65, 0.33], r, 0, open);
+            drawPatch(ctx, poses[2], [0.42, 0.14, 0.65, 0.33], r, 0, exhale); ctx.restore();
+        }
+        else if (page.action === 'sharewarmth' || page.action === 'sunglasses') {
+            if (page.action === 'sharewarmth') warmHalo(ctx, r, p);
+            const [a,b,t] = sequence(poses,p); mixPose(ctx,a,b,r,t);
+        } else if (page.action === 'beachwalk') walkBeach(ctx, walkImages(page, imageFor), { ...r, x: r.x + h * 0.45 }, p, -h * 0.90, true);
+        else if (page.action === 'oceanlisten') {
+            NSS.OceanListen.draw(ctx,img,poses[1],r,p);
+        }
+        else if (page.action === 'surf') {
+            const wave = { x: r.x + r.w * 0.075, y: r.y + r.h * 0.15 - Math.sin(p * Math.PI) * r.h * 0.035, w: r.w * 0.85, h: r.h * 0.85 };
+            mixPose(ctx, img, poses[1], wave, Math.pow(Math.sin(p * Math.PI),2));
+            musicNotes(ctx, r.x + r.w * 0.58, r.y + r.h * 0.25, Math.max(12, Math.min(34, r.h * 0.09)), p, true);
+        } else if (page.action === 'rock') chair(ctx, img, r, p);
+        else ctx.drawImage(img, r.x, r.y, r.w, r.h);
+        if (page.action === 'blink') {
+            // Overlay only the glasses interior; the hair/outline never jumps
+            // or doubles when the closed-eye frame comes in.
+            const closed = imageFor(page.story.objects[spec.closedObject]);
+            drawPatch(ctx, closed, [0.29, 0.24, 0.74, 0.45], r, 0, blinkAmount(p));
+            stars(ctx, [[r.x + r.w * 0.22, r.y - h * 0.08], [r.x + r.w * 0.5, r.y - h * 0.17],
+                [r.x + r.w * 0.78, r.y - h * 0.08]], h * 0.045, p, true);
+        } else if (page.action === 'stargaze') {
+            nightStars(ctx, [[r.x + r.w * 0.22, r.y - h * 0.08], [r.x + r.w * 0.5, r.y - h * 0.18],
+                [r.x + r.w * 0.78, r.y - h * 0.08]], h * 0.045, p, true);
+        } else if (page.action === 'shine') shine(ctx, r, p);
+        else if (page.action === 'blur') drawPatch(ctx, img, [0.10, 0.16, 0.9, 0.84], r, img.height * 0.022, ease(p));
+        ctx.restore();
+        return { s: h / 300 };
+    }
+
+    function panoramicPatch(ctx, img, bounds, frame, core, width, alpha) {
+        if (!img || alpha <= 0) return;
+        if (!core) { drawPatch(ctx,img,bounds,frame,0,alpha); return; }
+        const tile = patch(img,bounds,0), [l,t,r,b] = bounds;
+        const stops = [l,...core.filter(n=>n>l&&n<r),r];
+        const left = Math.min(0,frame.x), right = Math.max(width,frame.x+frame.w);
+        const mapX = x => x < core[0] ? left + x / core[0] * (frame.x + core[0] * frame.w - left)
+            : x > core[1] ? frame.x + core[1] * frame.w + (x - core[1]) / (1 - core[1]) * (right - frame.x - core[1] * frame.w)
+            : frame.x + x * frame.w;
+        ctx.save();ctx.globalAlpha=alpha;
+        for(let i=1;i<stops.length;i++) {
+            const x0=stops[i-1],x1=stops[i];
+            ctx.drawImage(tile,(x0-l)/(r-l)*tile.width,0,(x1-x0)/(r-l)*tile.width,tile.height,
+                mapX(x0),frame.y+t*frame.h,mapX(x1)-mapX(x0),(b-t)*frame.h);
+        }
+        ctx.restore();
+    }
+
+    function spreadEffect(ctx, imageFor, img, frame, page, st, width) {
+        const spec = page.spreadAction;
+        if (!spec || st.cover) return;
+        const p = st.p || 0, r = region(frame, spec.bounds);
+        if (NSS.SensoryActions.handles(page.action)) {
+            NSS.SensoryActions.book(ctx,imageFor,page,frame,p,width);
+        } else if (NSS.FinalActions.handles(page.action)) {
+            NSS.FinalActions.book(ctx,imageFor,page,frame,p);
+        } else if (page.action === 'blink') {
+            drawPatch(ctx, imageFor(spec.overlay), spec.bounds, frame, 0, blinkAmount(p));
+            stars(ctx, [[0.234, 0.164], [0.387, 0.191], [0.628, 0.156]].map(([x,y]) =>
+                [frame.x + x * frame.w, frame.y + y * frame.h]), frame.h * 0.017, p, false);
+        } else if (page.action === 'shine') shine(ctx, r, p);
+        else if (page.action === 'blur') {
+            // Sanja's hair overlaps the lower-left board corner. Keep it sharp.
+            ctx.save(); ctx.translate(frame.x, frame.y); ctx.scale(frame.w, frame.h);
+            const [l,t,r,b] = spec.bounds;
+            ctx.beginPath(); ctx.moveTo(l,t); ctx.lineTo(r,t); ctx.lineTo(r,b);
+            ctx.lineTo(0.48,b); ctx.lineTo(0.48,0.366); ctx.lineTo(l,0.366); ctx.closePath(); ctx.clip();
+            ctx.scale(1 / frame.w, 1 / frame.h); ctx.translate(-frame.x,-frame.y);
+            drawPatch(ctx, img, spec.bounds, frame, img.height * 0.023, ease(p)); ctx.restore();
+        }
+        else if (page.action === 'rock') {
+            const sprite = imageFor(page.story.objects[spec.object]);
+            if (sprite) {
+                const h = Math.min(r.h, r.w * sprite.height / sprite.width), w = h * sprite.width / sprite.height;
+                ctx.save(); ctx.fillStyle = 'rgba(48,37,17,0.18)'; ctx.beginPath();
+                ctx.ellipse(r.x + (r.w - w) / 2 + w * 0.54, r.y + r.h - h * 0.014,
+                    h * 0.046, h * 0.009, 0, 0, TAU); ctx.fill(); ctx.restore();
+                chair(ctx, sprite, r, p);
+            }
+        } else if (page.action === 'trace') {
+            const book = imageFor(page.story.objects[spec.object]);
+            if (book) traceBook(ctx, book, imageFor(page.story.objects[spec.detailObject]), r, p);
+        } else if (page.action === 'sharewarmth') {
+            warmHalo(ctx,r,p);
+            drawPatch(ctx,imageFor(spec.overlay),spec.bounds,frame,0,ease(clamp((p - 0.20) / 0.12,0,1)));
+        } else if (page.action === 'sunglasses') {
+            const frames = [img, ...spec.overlays.map(imageFor)];
+            const [a,b,t] = sequence(frames,p);
+            // Only the mirror's interior changes; the harbor stays still.
+            drawPatch(ctx,a,spec.bounds,frame,0,1);
+            drawPatch(ctx,b,spec.bounds,frame,0,t);
+        } else if (page.action === 'beachwalk') {
+            walkBeach(ctx, walkImages(page, imageFor), fitRect({ width: 0.8, height: 1 }, r), p, spec.travel * frame.w, false);
+        } else if (page.action === 'oceanlisten') {
+            const standing=imageFor(page.story.objects[spec.object]),listening=imageFor(page.story.objects[spec.poses[0]]);
+            if(standing){const at=fitRect(standing,r);NSS.OceanListen.draw(ctx,standing,listening,at,p);}
+        } else if (page.action === 'surf') {
+            panoramicPatch(ctx,imageFor(spec.overlay),spec.bounds,frame,page.spreadCore,width,Math.pow(Math.sin(p * Math.PI),2));
+            musicNotes(ctx, r.x + r.w * 0.58, r.y + r.h * 0.38, Math.max(16, Math.min(38, r.h * 0.11)), p, false);
+        } else if (page.action === 'sigh') {
+            const [open, exhale] = sighAmounts(p);
+            drawPatch(ctx, imageFor(spec.overlays[0]), spec.bounds, frame, 0, open);
+            drawPatch(ctx, imageFor(spec.overlays[1]), spec.bounds, frame, 0, exhale);
+        } else if (page.action === 'stargaze') {
+            nightStars(ctx, [[0.317,0.242],[0.422,0.314],[0.519,0.112],[0.563,0.381],
+                [0.654,0.219],[0.716,0.306],[0.270,0.406],[0.757,0.518]].map(([x,y]) =>
+                [frame.x + x * frame.w, frame.y + y * frame.h]), frame.h * 0.019, p, false);
+        }
+    }
+
+    // Keep the important scene above the words and extend only outer scenery.
+    function drawSpread(ctx, imageFor, w, pictureH, page, st) {
+        if (NSS.Settings.cvi() && page.spreadAction) return drawSimpleSpread(ctx, imageFor, w, pictureH, page, st);
+        const img = imageFor(page.spread), fullH = st.h || pictureH;
+        ctx.fillStyle = page.bg; ctx.fillRect(0, 0, w, fullH);
+        if (!img) return { s: 1 };
+        const area = safeArea(w, pictureH, st, false);
+        const frame = frameFor(img, { focus: page.spreadFocus }, area, st.pictureW || w, pictureH);
+        // Close-ups and the courtyard already have safe upper scenery. Keep
+        // that original painting against the screen edge, without a wash band.
+        if(page.spreadAlignTop)frame.y=Math.min(0,frame.y);
+        ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        landscapeWash(ctx, img, frame, w, fullH);
+        const core = page.spreadCore;
+        const mask = (!core && frame.x > 0 ? 1 : 0) | (!core && frame.x + frame.w < w ? 2 : 0) |
+            (frame.y > 0 ? 4 : 0) | (frame.y + frame.h < fullH ? 8 : 0);
+        const painting = softEdges(img, mask, 0.09);
+        if (core) {
+            const sx = [0, core[0] * img.width, core[1] * img.width, img.width];
+            const dx = [Math.min(0, frame.x), frame.x + core[0] * frame.w,
+                frame.x + core[1] * frame.w, Math.max(w, frame.x + frame.w)];
+            // Added panoramic scenery fills wide monitors, with no vertical
+            // strip stretching, mirrored furniture, or repeated characters.
+            for (let i = 0; i < 3; i++) ctx.drawImage(painting,
+                sx[i], 0, sx[i + 1] - sx[i], img.height,
+                dx[i], frame.y, dx[i + 1] - dx[i], frame.h);
+        } else ctx.drawImage(painting, frame.x, frame.y, frame.w, frame.h);
+        if (page.spreadAction) {
+            ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, pictureH); ctx.clip();
+            spreadEffect(ctx, imageFor, img, frame, page, st, w); ctx.restore();
+        }
+        ctx.restore();
+        return { s: 1 };
+    }
+
+    return { draw: draw, drawSpread: drawSpread };
 })();

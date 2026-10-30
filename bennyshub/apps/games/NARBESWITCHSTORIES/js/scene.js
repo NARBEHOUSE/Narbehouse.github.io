@@ -130,10 +130,10 @@ NSS.Scene = (function () {
         const main = load(pic.image, pic.quiet);
         if (S().cvi() && !pic.background) {
             const cvi = load(pic.cviImage, pic.cviGuessed || pic.quiet);
-            if (cvi.status === 'ok') return contrastImage(pic, cvi.img);
+            if (cvi.status === 'ok') return contrastImage(pic, NSS.BrailleBooks.render(cvi.img));
             if (cvi.status === 'pending') return null;
         }
-        return main.status === 'ok' ? main.img : null;
+        return main.status === 'ok' ? NSS.BrailleBooks.render(main.img) : null;
     }
 
     /** True once a picture (and, in the CVI look, its CVI version) is known to be missing. */
@@ -188,7 +188,8 @@ NSS.Scene = (function () {
         Object.keys(story.objects || {}).forEach(k => all.push(story.objects[k]));
         Object.keys(story.cast || {}).forEach(id => Object.keys(story.cast[id].poses).forEach(k => all.push(story.cast[id].poses[k])));
         story.pages.forEach(p => {
-            [p.picture, p.background, p.afterBackground, p.panorama && p.panorama.picture,
+            if (p.spreadAction) all.push(...p.spreadAction.overlays);
+            [p.picture, p.spread, p.spreadAction && p.spreadAction.overlay, p.background, p.afterBackground, p.panorama && p.panorama.picture,
                 p.panorama && p.panorama.afterPicture, p.panorama && p.panorama.extensionPicture].forEach(x => { if (x) all.push(x); });
         });
         all.forEach(function (pic) {
@@ -1093,6 +1094,7 @@ NSS.Scene = (function () {
      *   zoom   bigger, for the small cover tiles
      */
     function drawPage(w, pictureH, page, st) {
+        if (page.spread) return NSS.Illustrations.drawSpread(ctx, imageFor, w, pictureH, page, st);
         if (page.illustration) return NSS.Illustrations.draw(ctx, imageFor, w, pictureH, page, st, time);
         if (page.cast || page.background) return drawCastPage(w, pictureH, page, st);
         const cvi = S().cvi();

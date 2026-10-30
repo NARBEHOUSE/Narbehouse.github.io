@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "3e06ab1283a3ea2e3a19ee8bc01d16e954119e1c48dbe2586a3e87e12bdac29c",
-  "totalBytes": 502713373,
+  "version": "27c10a142d21e44b2c75f1f1b12c4f6e86eab750cb3ce591d48b08ded18787ee",
+  "totalBytes": 536890745,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17260,7 +17260,7 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/index.html",
-      "revision": "f5f40bc4a5a171f12a3ef438af13a4f19f4c9c153aa880e60917c86504b68621",
+      "revision": "70ee81dcac42337fd6e87c14203e6570e496fde0709a81d1b0b6d287a30dbfd4",
       "bytes": 10858
     },
     {
@@ -17280,7 +17280,7 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/core.js",
-      "revision": "c167be761bbc1d672a6954bc5b60a32166ef291056ce8f04a64873c174d90e03",
+      "revision": "0dbff8196ae243ba43df8cd01b1fa31e8d6901ad667464fa98e80fc8c3bfeec5",
       "bytes": 6664
     },
     {
@@ -17310,13 +17310,13 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/pets.js",
-      "revision": "6a4ecd91de551cada61c8f7298358f5ae389a7772159df729fc3e4d787bb8824",
-      "bytes": 41189
+      "revision": "fcef7c9cf2b7b3128cdcc72761d5d0a9e27cc706aeb2d9dbce20a6f829d858ed",
+      "bytes": 41213
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/petside.js",
-      "revision": "e95d84f9e40527b2941afca3147281ba554d38c772da6b6c9dd4290b36350aa4",
-      "bytes": 23411
+      "revision": "1e42dcfa9f515e843069be4d34799ffe447cd4a8d104e52e60d4267c638fed3a",
+      "bytes": 22464
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/pixel.js",
@@ -17345,13 +17345,13 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/scenes.js",
-      "revision": "7934c8a84b69da17e94768e11712e1a6a7956243b1f0fb27664fec2e24a69141",
-      "bytes": 16305
+      "revision": "752e42256af165f6a4d5a81f221e98d70e5406eb4246d61d963076ce65641f5f",
+      "bytes": 16903
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/school.js",
-      "revision": "a09446ca967e5024b31aa2f00a26010148706420dac7398fa9711a108f92efd9",
-      "bytes": 48454
+      "revision": "9a279315ac78c69dbd5e1c5b629fab45796928ff662bc8b8844ff8da1f0bb012",
+      "bytes": 52343
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/seasons.js",
@@ -18110,13 +18110,18 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/CREDITS.md",
-      "revision": "bf708209ab4e1af82ebac86f58ca05e5dfd3a3d31e4ceb2fb60fd0f628c4058e",
-      "bytes": 328
+      "revision": "80a6f2019c4e73deaf7e44602594cfa4f465583ca9c6c5aff9dd8d770973f55e",
+      "bytes": 585
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/IMAGE-DESCRIPTIONS.html",
+      "revision": "94da1222576be09c2982d99e2c3857f80d35505a5228bfcec539b3d25c3869ab",
+      "bytes": 37309
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/css/style.css",
-      "revision": "cd940e01a71ccc9a4ec73e47a006e30ddfa6ef1ef9eb39ae9ceb9bf7947459cd",
-      "bytes": 31088
+      "revision": "26958e1aac2208830b343d14492cc284d83b284bdca79dc9dc3d49ae22c33bac",
+      "bytes": 33172
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/images/library-background.jpg",
@@ -18125,68 +18130,103 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/index.html",
-      "revision": "7a59b16f82288d4e0fecf04fa25382deef0380ace07d6f433ca149beab2157e6",
-      "bytes": 2814
+      "revision": "6c921ad167abb9c38c12c3666a0ae5e8d321837226b831bc53f690b90ae13d5e",
+      "bytes": 3451
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/beach-walk.js",
+      "revision": "3ca2e23d0e60b2c033893a9a1be6083afcd87dff27d26f04f95deb4466e36e90",
+      "bytes": 4923
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/braille-books.js",
+      "revision": "73c571c6623b5a43e53dbb65bcd03a9135505e1c81729b37dd4e39ba731c269a",
+      "bytes": 2596
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/config.js",
-      "revision": "5b46aab59ab8716d312b3a0dce705ca0a3cf60327a8039641edf38f3efc47331",
-      "bytes": 6996
+      "revision": "5b81501b7e2cb2c91298b167317d46afd22cafa0aba0bd8d63187668c0c9d38e",
+      "bytes": 8338
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/descriptions.js",
+      "revision": "de69c7afa32a1d6ea53229822e4bd5792c52b9c1a01fa4d89e0bfecb79a70cf7",
+      "bytes": 3773
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/final-actions.js",
+      "revision": "bc20a361d5d5e8c4da249c29083b8eed31888c13bb21fa39651e51683414f170",
+      "bytes": 8306
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/illustration.js",
-      "revision": "30f0c6508b4ef518563ac60d76a031c1a4cde9b4316ce2ba9348927dce0ad625",
-      "bytes": 20023
+      "revision": "67b583bc583ebbd51fc1af3dd4e19601ee428bc551c89385176ab7e1fe3e489f",
+      "bytes": 49315
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/input.js",
-      "revision": "04a53d6fee08ec755d68c03895935f6f4d636ca6a479749e51a1fb87619a8ab3",
-      "bytes": 15775
+      "revision": "092939b613be5c904791351be72c1bc13f267980dae4104b9addb30f2ea82b8b",
+      "bytes": 15781
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/library.js",
-      "revision": "abcff4261d8eade4db2c8ed4cff790c2735bf73750a40977c9eb4b0962ea2b75",
-      "bytes": 23043
+      "revision": "6f488b683425bcaa9a31e6eead44ecc71d14f621e016d9ee3f82a688bc9cadae",
+      "bytes": 25334
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/main.js",
-      "revision": "ba0f1a204978042697e63e5039ad37557ba36d493be7bee2c0f9d30d0c12b87e",
-      "bytes": 2462
+      "revision": "ca110d11ee72891afec8cf38edc3fc2082e120d5d31be57a1c9e7a9163050821",
+      "bytes": 2772
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/ocean-listen.js",
+      "revision": "7bb177d6d4718a421d1857874e2492310f5700adbd23b5e1d3005255575999d4",
+      "bytes": 2491
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/reader.js",
-      "revision": "6319e285fc2f0be0d1e32c7ad889a9affa4d732fda99ca51e9c943707bade9b8",
-      "bytes": 3001
+      "revision": "994fc00944043d865015c3bbba52f7ac196288c6aa8555245c6e3a460710387b",
+      "bytes": 3467
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/reading-history.js",
+      "revision": "35d4ae5d3de2c0ac07e04a37d1e4125aca947aa2f294af84238d05f6c2a917a0",
+      "bytes": 1550
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/scene.js",
-      "revision": "98669c0faf50b8b4e17d8412031361b717feb6a4a1b41cfac8bf7a738c6fce2a",
-      "bytes": 82379
+      "revision": "4b57b9d3d71d275654ff2fcc5782a4420afd82cea224c794be34f88776964c86",
+      "bytes": 82651
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/js/sensory-actions.js",
+      "revision": "50340441d29a90fd834f07a20623119051c4093b1f222ec227b672f9e41b33fa",
+      "bytes": 16544
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/settings.js",
-      "revision": "233e4fba4f98a49181837581c64ca0c7055657b2b8e068a4434d90df576d6523",
-      "bytes": 4892
+      "revision": "090c72c9147c24eae7d57577318322c739c6c6b22a44ce62c18cf25a55b3626f",
+      "bytes": 4938
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/sound.js",
-      "revision": "f1aa1738cd682ad14057f2d19f7c22438400171d8e4848d3b8c670afbf7b262d",
-      "bytes": 12194
+      "revision": "2b5a088ce47fe15956641d3a764d6b5e5336599823b411bbfac10ecb805b916f",
+      "bytes": 12306
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/story.js",
-      "revision": "d32814fc303958ae857ea422a30e9c9848abe838e2880d7e5cb9105b8a7bc93b",
-      "bytes": 9001
+      "revision": "c23c1accd1f7633d83346d6620f285d1a32b8b59eb15a3bcdc4f217ffcc073ae",
+      "bytes": 16162
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/ui.js",
-      "revision": "06f014ac5422539e8286c905856668c5d8eb323d83ce1c7f09bd057795cfb56b",
-      "bytes": 50949
+      "revision": "189fcfb10c6bb68d6d488dcb4f09bc91f0994b7c8ed08252a389f52f28c3f6e6",
+      "bytes": 56759
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/CREDITS.md",
-      "revision": "1e7571df153e2dbc9aab6014a37b5090bde047933ce3d31bdfabd33c3a32cd64",
-      "bytes": 2371
+      "revision": "3532ab69b810c55ce171a31fbe7409f14307c81204a23431d5480d4f0a5b8159",
+      "bytes": 2522
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/backgrounds/beach-panorama.webp",
@@ -18495,8 +18535,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/story.js",
-      "revision": "5fdf81653a183cbe4d584f933ac6640846c2e1f9d0fcda7bbd5a2d5e27a3ed25",
-      "bytes": 11456
+      "revision": "4ecc1f219a37efa0f8e995adef756a5b700038720ff034ad87f62bca087bf76f",
+      "bytes": 11593
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/backgrounds/bedroom.webp",
@@ -18965,13 +19005,13 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/lily-loves-books/story.js",
-      "revision": "c3fe4b792accd062fbb25a05a72376daad99485c34c7893cb086dcbe8464d090",
-      "bytes": 10124
+      "revision": "aff6a02b469791dea277ba79ecf0c251f063ea87d0e08fcd22422a10127b5a55",
+      "bytes": 10233
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/list.js",
-      "revision": "9fe51176995d3aef13e062075f815060e27683cd80260537ce07d8d5cdf9e09b",
-      "bytes": 2007
+      "revision": "c32a98b258f8d7459793c108eefae2ee8d6c9c331f3faffcc83a9c26552e5022",
+      "bytes": 4101
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/audio/README.txt",
@@ -19220,8 +19260,513 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/rocky-says-hello/story.js",
-      "revision": "2e3232736fcc9ec38721983ae6b76fba83a3a75cfb637269877761b051477886",
-      "bytes": 4553
+      "revision": "772641f8a3b9116da6684bdcfe8047b62a4c3530157dfd7234bad3bfc812d248",
+      "bytes": 4649
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/CREDITS.md",
+      "revision": "bb132f97891dee140ebcdc556d2dec2f9054fd8aa5702d41733e567ce2733cea",
+      "bytes": 6242
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/cover-blink.webp",
+      "revision": "17e7483e461fa26b252126680ff8d75d78395196f1f91cb4753cbea1d8adb5e9",
+      "bytes": 277844
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/cover.webp",
+      "revision": "325cbfcc70d813a11009bc001815f174b619ee28f01dc028067acf99850e82c0",
+      "bytes": 264514
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/ending-chalkboard-classroom.webp",
+      "revision": "9c84fcb26eb9aa85e5d0c93dd07ae5901e2066c86b02edde3e4005e3db8dacf8",
+      "bytes": 278920
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/ending-classroom.webp",
+      "revision": "6cf1717508e5d41f5c0c685ef6a72981d9180d194951590eac357b970e7b9fbe",
+      "bytes": 459954
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-01.webp",
+      "revision": "ea6fa3fe9924d1452676d1f1aa6fff60b8e58a1d25cba1670357ad4446bdc7ed",
+      "bytes": 262664
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-02.webp",
+      "revision": "f6e1e72b9b041e4ce0b1239955c7a2438c396c21944b733e2788db36a856a59f",
+      "bytes": 170344
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-03-clean.webp",
+      "revision": "d6972aae9beeb298454bf9f8d87576dd00986d73882b95495989e6b1daf90cc1",
+      "bytes": 318778
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-03.webp",
+      "revision": "d29b37501608d796c49c50593ab5b91458f35822492cbbb3e85890321c5289db",
+      "bytes": 309072
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-04-clean.webp",
+      "revision": "e1c21519b4bcbf4bdd9aa6a637b8bf941f07a8c845101f3afbeb6eda3fc74dfb",
+      "bytes": 353782
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-04.webp",
+      "revision": "afb457dd0782cabd99ed73caa21496a7c5d61dd111e205e518d7bb18135aadce",
+      "bytes": 355614
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-05-smile.webp",
+      "revision": "c056ecaeda473b72e25a18aea172fa4382196b544fa2612bb5771fa43f8f19a2",
+      "bytes": 212256
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-05.webp",
+      "revision": "313bc82cda46b5337a08ff2f14e319f058a52c54eb187183daf7d39d4f79fce9",
+      "bytes": 181962
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07-lift.webp",
+      "revision": "1f714278985d0c54e9e48d8c0e05d5380ce211c590f12c3240da537ff278814f",
+      "bytes": 489626
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07-wear.webp",
+      "revision": "1548b4627ada29a0c2b0d2b12196c4c5fca135e78603a112854a35d7375c1727",
+      "bytes": 501586
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-07.webp",
+      "revision": "0dd24ef23d82aae00a12366bf3004ae25c543903600f5819b4d668a88162c426",
+      "bytes": 542900
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-09-clean.webp",
+      "revision": "7a4c7e24a6f8d37989f4ea12dd3f6b427f4b33df2e36facde9d7a4fb44063986",
+      "bytes": 539784
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-09.webp",
+      "revision": "a8614f56f47b862671da5ee0916ba8803401c9f690638eedd3cd944cb0783eff",
+      "bytes": 541986
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11-listen-clean.webp",
+      "revision": "14b6b6c68e88899c5e75530cd4f1dea59ae0b0408d6692e9d11f8e2a48ff9f73",
+      "bytes": 531346
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11-splash.webp",
+      "revision": "7dbc23cf68f55b7f4e69b12e5098f03363be3f09fb71fa8095069c2d8e895ee4",
+      "bytes": 543004
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-11.webp",
+      "revision": "1c1ee2d3f41ad38846c725c5115113635d7d6b5a489be41c016bb76b25a57376",
+      "bytes": 538458
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12-open.webp",
+      "revision": "1d57d6e1e1449725e06a5198aab410b3e56bc8a63efa5210bec2bfbb81df8891",
+      "bytes": 414934
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12-sigh.webp",
+      "revision": "507d66b354a82d60a7927794f0812eec0b34a3fca5779ca5357154257cb97e29",
+      "bytes": 412336
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-12.webp",
+      "revision": "7f69093626886df3e188a8946b4c7b0cf0d77fd9689015c9c577cd062fa04721",
+      "bytes": 446396
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-13.webp",
+      "revision": "a6c1268a40a3f4cd2d8e3f6726ffde2d03030608d3200943f2172a1be6defa7f",
+      "bytes": 319472
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-14-cane-clean.webp",
+      "revision": "12d6102ddf75f633e2788ef6de1f6d1105cf11e6cb80b99fd1f2cd2d34167a24",
+      "bytes": 461980
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-14.webp",
+      "revision": "27db5ef50012232fc7455a7ecf424b7b38664e3882c36243e0fe9f3ce2fd58b7",
+      "bytes": 462718
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-15.webp",
+      "revision": "c3951790016a81173eb6c802f9e0fd9f9234f6f65e77d8b037ade53e753b04b0",
+      "bytes": 355772
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-16-cane-clean.webp",
+      "revision": "1c28c59da38f4606be4a3cdd52a8e256933b6c257c229daa9b35311fc4683422",
+      "bytes": 590942
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-16.webp",
+      "revision": "445f46871f664d72bdeed0610ec2f778278e0cbe09683bd4a843ede671e30c4f",
+      "bytes": 641092
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-17-sand.webp",
+      "revision": "db79f77aa95f1239d454c3d67d0269d4ce79da5fc5df4098f493d9d02ee6b748",
+      "bytes": 593948
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-17.webp",
+      "revision": "aeeacc6146024086b1752a6894534af8d315a98c01fc4b37caef15851dc53696",
+      "bytes": 650790
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-18.webp",
+      "revision": "3d3aec7a627e2957f63ff6406c83bf356ef1e7dbcff9905c6f5b88791d8688e8",
+      "bytes": 497154
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-19-dim.webp",
+      "revision": "0d62f652b785338d3ccaf4a5ca950f854ea3a0a40fb8a9f818cb0e0b9740a827",
+      "bytes": 431394
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-19.webp",
+      "revision": "f06e0d22fd0ce8c48c94968cdf0d4cde829fff0f20e00e19c0698295030c7404",
+      "bytes": 411174
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-20-wave-clean.webp",
+      "revision": "9ebca2f4e82978ad43c5404e107453fd4ff0df6950dfbcefb842e3ee3179066c",
+      "bytes": 508796
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-20.webp",
+      "revision": "b1b258dcbca0ebacaa75aba3753421a74fefdc1526da74e15c9e49818c008b43",
+      "bytes": 538750
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21-no-chair.webp",
+      "revision": "c9b7373873be50ba26585c219e429b5731123b3dfc109dd1cdb50bf072f5643b",
+      "bytes": 282928
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21-tools-clean.webp",
+      "revision": "b5af0438321b053c4967b24cfb7c2eb6c42d2a4bbeb620f0dc050174a12545d0",
+      "bytes": 304904
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-21.webp",
+      "revision": "c6a9204e72f0f2bd4f857e27e4cf1fc900af9e69ad406c5be0ec59cc29733fb4",
+      "bytes": 306928
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-classroom-touch.webp",
+      "revision": "deb9d4bdab60ea9bfab9992ddc3494ef1c2a887501423b8e9076e0b97e8b0aef",
+      "bytes": 303864
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-classroom.webp",
+      "revision": "d6327bc08d1153167b660e664915d42e7829e06ddb7d6a9bc8a103a08c9c3bc9",
+      "bytes": 321656
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22-touch.webp",
+      "revision": "156609cdea404029c4368ae206e1b6d42345c5a9e99a67ecc43aafda36339151",
+      "bytes": 469140
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-22.webp",
+      "revision": "07480f19f789eed95c5f04e7610bcfa42798d258d6309d96045f5a986c090232",
+      "bytes": 459522
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-23-jump-clean.webp",
+      "revision": "66e4f6d955b755ea72c3c189b19317fb6bd7af7422df652fb5ebcc6cc91bda34",
+      "bytes": 384016
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/backgrounds/page-23.webp",
+      "revision": "a96678453654e9abd37d0a4ddb1b1c6a19b8e9aa1d89a66b8de277af74b4c26c",
+      "bytes": 366932
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book-blank.webp",
+      "revision": "8e22e6ce117efcae8dcc43736a736364935fdf7e646526b9e001b0f11d1d8ad2",
+      "bytes": 293008
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book-cover.webp",
+      "revision": "f628607aa61b9c53a6f6887aba0c6fa2689548375f89049b878bab5901996fa3",
+      "bytes": 609804
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/braille-book.webp",
+      "revision": "6f52dd72f5304afb21abc10a6cf412b053d09d3b9957d6dc2be4af268b08ac2e",
+      "bytes": 400332
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cane-water.webp",
+      "revision": "51e1cf45eb1ec8a0a779f8528c6deb8d08e6362c5899b0c9f765ad80e4697fc7",
+      "bytes": 331276
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/classroom-board.webp",
+      "revision": "bd103a2db7d1bf7ba5362f0bb2cf04779cb480d45628ae64374bb59251aec3f7",
+      "bytes": 117824
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/classroom-girl.webp",
+      "revision": "5c96a724c4c99b92cf900432b6d13b8addc5f95d9f6ea262b4fa88a8e3f4cc95",
+      "bytes": 499974
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cover-girl-blink.webp",
+      "revision": "fea7f6b01ef1bbed41f420e2a839d4007b026a0cc8fabd40aa1704035e2c978c",
+      "bytes": 285704
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/cover-girl.webp",
+      "revision": "d19ffd462ee56adb0a4a21e963d8f0caab0536265138a33e5e04e9af242a21fb",
+      "bytes": 345536
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/curling-wave-over.webp",
+      "revision": "d77619d5cfedd931572ece76e924283e280203c03c3b3ce7677fb08f525ef5c0",
+      "bytes": 435628
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/curling-wave.webp",
+      "revision": "9f92029e8199782e1b5e0132a2718a02d5efc70e40ab910a3f7d725b56100374",
+      "bytes": 531520
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ending-friends-cheer.webp",
+      "revision": "49e1286c63740db86fbc4bd0288c710ad5024dbdf7a04f98493e339b897a26f9",
+      "bytes": 251016
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ending-friends.webp",
+      "revision": "cc0900cf238f0a48c66286e54ba1b2893b88e1e29c2511f7cb981fbd2599f1fc",
+      "bytes": 199114
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/library-chair.webp",
+      "revision": "8698989d93394e5c9abadd229b7771dc99bade158aef6bd1bd5858aa0a1713a0",
+      "bytes": 188894
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/mobility-cane.webp",
+      "revision": "69b7d7caca8b4bb876b04a00bba0605f9ca626a5a44e4b6093217780818f0b2a",
+      "bytes": 25896
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-blue-green-dim.webp",
+      "revision": "f82f830328634d2a46b12b3150d64f1c6829946b2733f4056594707146018dce",
+      "bytes": 428438
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-blue-green-lights.webp",
+      "revision": "52cb76738f232efa9f571d571bbff9e24e6881ffb8d695fb05d77a47d8784ea2",
+      "bytes": 356810
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-golden-lights.webp",
+      "revision": "1796969221b81a8b30c6a5e0f70b54baf57995a635bd3ee65d3952309b23b726",
+      "bytes": 764650
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-wave-splash.webp",
+      "revision": "d5ec27cb31afa6538a4f7b7e5d60e94c803ac0a36f00de60a5e2747b53318a32",
+      "bytes": 601598
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/ocean-wave.webp",
+      "revision": "9cf7001558475edfb2b58ba5166aeb3935b23e75707f1b4dc5716a7e9f0c0bc2",
+      "bytes": 566386
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-friends-touch.webp",
+      "revision": "da86f3e8208dd01cd010cd0af7d0ee1bd60bd41361ede810190b91a1ba865c45",
+      "bytes": 276126
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-friends.webp",
+      "revision": "58adc1e830f6c7a101a3c8b63d77e584c8b5c79e419f029cfd4b7e61bdeeafba",
+      "bytes": 281280
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-tools-spaced.webp",
+      "revision": "7beac42e4fdd100a3a7d31fe9acacc66706ca8c163dc2dfea2d27f3ba5e5c5cc",
+      "bytes": 222106
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/reading-tools.webp",
+      "revision": "076753b3dfdb0a514c169b42b1c032746537c331b9cc6e876720124ef1847af9",
+      "bytes": 229702
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-left.webp",
+      "revision": "a09261ea402228ec5be1dec5b5718f16a22299abbfa82c17651a85fab342b2a1",
+      "bytes": 209894
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-right.webp",
+      "revision": "56b21bc51f5db86831f433adcd281645ed30a22a5d9b49bec108c7521857e43d",
+      "bytes": 200374
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-beach-stand.webp",
+      "revision": "cba5360db07aa087a3bd8a59aac952c72294fb48edc8048648648f49366e2622",
+      "bytes": 253122
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-open.webp",
+      "revision": "fdd6ea102bc4461d98e655494ef2ef3e55d43b9634ad1fdbb566793152298cbd",
+      "bytes": 236984
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-rest.webp",
+      "revision": "55836215e69e428b3e89504b2bb2472547c41b80bd54f613cd94b8be4ec4f41c",
+      "bytes": 301984
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-evening-sigh.webp",
+      "revision": "733e8959405513f05eeae7aa2aedffced4ba25568d22d35a565b28f464581c52",
+      "bytes": 237062
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror-lift.webp",
+      "revision": "9ff1e9787bba7210f8de7a681a0d86c95d0e1e6a2cd1c758bcec86d473770b11",
+      "bytes": 311840
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror-wear.webp",
+      "revision": "daf6199768a4d0e2703489201682c193e6c91aee4739105fa993aaa399a574b9",
+      "bytes": 321352
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mirror.webp",
+      "revision": "28280a5dc3677463e1aee9c2bcd95decabd5befce1dc40838baa7894381ec09a",
+      "bytes": 411632
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mom-smile.webp",
+      "revision": "b4daf68d1172aed607d858e75fb5f68d464fe8ef57e942c7324d4138ae0ecf7a",
+      "bytes": 272692
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-mom.webp",
+      "revision": "2f53ec0c5ff2093235016bec21b48b4d5b08fe4b1b535275c4fe7ec665d57e12",
+      "bytes": 319696
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-ocean-listening.webp",
+      "revision": "957498e45050cbb5f6240842f8903947080bf6929378b39acf755cfcd1c83964",
+      "bytes": 211540
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-ocean-standing.webp",
+      "revision": "987f8fcb7bc785e71c80c7905897eaad3b6721e9c1aede21b553e8c502602bda",
+      "bytes": 245888
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-proud-cheer.webp",
+      "revision": "c06b5f713f6979a89f0ec8b6a038ecd15ce50c4c3855986f1df4c4808d5709fe",
+      "bytes": 179436
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-proud.webp",
+      "revision": "c1b9b3b33c8ea6bbd6522b267b93f12305623783a396c0bd2efb06e2c32098e4",
+      "bytes": 161574
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-sand.webp",
+      "revision": "b2db2f4c700f98cad3b1abd0c1f0f7e45d146f6fe353d9e5693cbbe10fab837c",
+      "bytes": 274456
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-stargazing.webp",
+      "revision": "f375d7f9e1788778a4d6b026f1a376c95b277e152c1eda0a33cd1813255972cc",
+      "bytes": 295050
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-body.webp",
+      "revision": "f9f2b037827dc577d403f973e5273d2f8faa6d3e5100cc714ba3bf7422757a72",
+      "bytes": 218560
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-foot.webp",
+      "revision": "88806ada127ebf16d7382e6621ac3372fd1c93d27ab25282ece60f3db685b05d",
+      "bytes": 11762
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-leg.webp",
+      "revision": "a2d876bee56627ed3d5c72f62d0ca98941ee225d36a44f3df657e63b3eea1ca0",
+      "bytes": 20154
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-shin.webp",
+      "revision": "477522e98e0550dd6f4889e61b92489d39e6ec14ceeb961da35acaa3e7f1f72f",
+      "bytes": 14258
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/sanja-walk-thigh.webp",
+      "revision": "d26c38f85848a160d3bab7dc851c94b8bb0b3cb1b018436841fc0d4b41b90fda",
+      "bytes": 15836
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-book-cover.webp",
+      "revision": "c75b534e76a256f906b54a91fee899159fafaa5218d8136399bb3a27f1edef13",
+      "bytes": 614034
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-braille-book-blank.webp",
+      "revision": "22565a8853cc82cb7a68e4f15d74b45e9374de7e3575ff5540c07e9bb8d23a6e",
+      "bytes": 264532
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/school-braille-book.webp",
+      "revision": "75dd92054c77c14d934becc060580857525e2619f15b2d1337e24e05bb75199d",
+      "bytes": 347346
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/tracing-hand.webp",
+      "revision": "bf28f3259636cd44fab5f167d1c445a124e3c35377db5f43ed9bfa9d322ee554",
+      "bytes": 188278
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-body.webp",
+      "revision": "b6db0e0e6d978da3d91d755093caca7d761c0eea50ece44e2ac09e405f98fbd2",
+      "bytes": 222790
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-forearm.webp",
+      "revision": "d5e6c88cf1f7c5745c1fe6e81677fdb282cc58156b872b206a995a3e339629ba",
+      "bytes": 38320
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-cane-torso.webp",
+      "revision": "788cd22ae9dbc1e6ff95d879c174b2fa57e6a74c6ea138283a2b01341ae59b01",
+      "bytes": 292442
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-dipping-arm.webp",
+      "revision": "b53b0db0bb9f123864f2560259a62ffc6bb2a1500e054f1bd6bb89057720ed9b",
+      "bytes": 245948
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/sprites/uncle-listening.webp",
+      "revision": "ff7f67841a14427d55ca3e16c308b284c2def9016b89164b13cdd91bb8081cc9",
+      "bytes": 219158
+    },
+    {
+      "url": "./apps/games/NARBESWITCHSTORIES/stories/the-bright-night/story.js",
+      "revision": "8844fd6cae9d3bdb2c39162742091498c0a4d496444472f79a7b9603c9097b4d",
+      "bytes": 24853
     },
     {
       "url": "./apps/games/PICKLEBALLRALLY/index.html",
