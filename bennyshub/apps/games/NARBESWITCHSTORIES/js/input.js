@@ -10,12 +10,12 @@
  *   Auto Scan        the highlight moves by itself; Enter chooses
  *
  * THE STORY has two styles (the Pause setting), as in Glow Pop:
- *   Hold Enter (default)  EVERY press counts, on the press itself: Space,
+ *   Hold Enter (default)  A press counts on release: Space,
  *                         Enter, any key, a tap anywhere, or any game
  *                         controller button. Holding a key does not repeat.
  *                         Holding Enter (or controller button A) for five
  *                         seconds opens Pause, with a filling ring and a
- *                         beep each second.
+ *                         beep each second, without triggering a page action.
  *   Scan to Pause         The highlight moves between the directions and Pause,
  *                         the usual scan contract, for a player who cannot
  *                         hold a switch. Holding Enter still pauses too.
@@ -46,6 +46,7 @@ NSS.Input = (function () {
     let backTimer = null, backRepeat = null;
     let pauseTimer = null, swallowEnter = false;
     let previousAuto = false;
+    const freeHeld = new Set();
 
     function SM() { return window.NarbeScanManager; }
     function scanInterval() { try { return SM().getScanInterval() || 2000; } catch (e) { return 2000; } }
@@ -121,8 +122,9 @@ NSS.Input = (function () {
      */
     function refresh(fresh, restoreId) {
         items = (provider() || []).filter(function (it) { return it && it.el; });
-        // A Space still down from the last screen must not step this one.
-        if (fresh) { index = -1; focused = null; clearSpaceState(); }
+        // A press begun on another screen must not act on this one. Leave
+        // the shared sensitivity cooldown alone; only clear our local holds.
+        if (fresh) { index = -1; focused = null; clearAll(); }
         wireClicks();
         syncChoice(fresh, restoreId);
         paint();
@@ -244,8 +246,8 @@ NSS.Input = (function () {
 
     const IGNORED_KEYS = ['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'ContextMenu'];
 
-    /** A press in the story's free style. Counts on the press itself. */
-    function freeDown(code, key, repeat, e) {
+    /** Arm a story press. Only its release can read, animate or turn a page. */
+    function freeDown(code, key, repeat, e, token = code) {
         if (key === 'Escape') {
             if (e) e.preventDefault();
             if (!repeat) NSS.Game.pause();
@@ -253,7 +255,8 @@ NSS.Input = (function () {
         }
         if (/^F\d+$/.test(key) || IGNORED_KEYS.indexOf(key) >= 0) return;
         if (e) e.preventDefault();
-        if (repeat) return;
+        if (repeat || freeHeld.has(token)) return;
+        freeHeld.add(token);
         if (isEnter(code)) {
             enterHeld = true;
             swallowEnter = false;
@@ -261,7 +264,21 @@ NSS.Input = (function () {
         } else if (code === 'Space') {
             spaceHeld = true;
         }
-        NSS.Story.press();
+    }
+
+    function freeUp(code, token = code) {
+        if (!freeHeld.delete(token)) return false;
+        const swallow = swallowEnter;
+        if (isEnter(code)) {
+            stopPauseHold();
+            enterHeld = false;
+            swallowEnter = false;
+        } else if (code === 'Space') {
+            clearSpaceState();
+        }
+        if (choice) choice.setInputHeld(spaceHeld || enterHeld);
+        if (enabled && freePlay() && !(isEnter(code) && swallow)) NSS.Story.press();
+        return true;
     }
 
     /** A Space or Enter press in a menu, or in Scan to Pause. */
@@ -314,13 +331,21 @@ NSS.Input = (function () {
     }
 
     function onKeyUp(e) {
-        if (!enabled || !isSwitchKey(e.code)) return;
+        if (!enabled) return;
+        if (freeHeld.has(e.code)) {
+            e.preventDefault();
+            freeUp(e.code);
+            return;
+        }
+        if (!isSwitchKey(e.code)) return;
         e.preventDefault();
         switchUp(e.code);
     }
 
     function onCancelled(e) {
         const code = e.detail && e.detail.code;
+        if (!code) { clearAll(); return; }
+        freeHeld.delete(code);
         if (choice) choice.cancelInput();
         braking = false;
         if (isEnter(code)) { stopPauseHold(); enterHeld = false; swallowEnter = false; }
@@ -328,6 +353,7 @@ NSS.Input = (function () {
     }
 
     function clearAll() {
+        freeHeld.clear();
         stopPauseHold();
         clearSpaceState();
         enterHeld = false;
@@ -338,7 +364,7 @@ NSS.Input = (function () {
 
     // --- game controllers ------------------------------------------------------------
     //
-    // In the story, any button counts and holding A pauses. In the menus, A is
+    // In the story, releasing any button counts and holding A pauses. In the menus, A is
     // Enter (choose) and every other button is Space (next).
 
     let padPrev = {};
@@ -352,10 +378,11 @@ NSS.Input = (function () {
             cur.forEach(function (down, i) {
                 if (!enabled || down === !!prev[i]) return;
                 const code = i === 0 ? 'Enter' : 'Space';
+                const token = 'Pad' + p.index + ':' + i;
                 if (down) {
-                    if (freePlay()) freeDown(i === 0 ? 'Enter' : 'Pad', 'Pad' + i, false, null);
+                    if (freePlay()) freeDown(code, token, false, null, token);
                     else switchDown(code);
-                } else if (!(freePlay() && i !== 0)) {
+                } else if (!freeUp(code, token)) {
                     switchUp(code);
                 }
             });
@@ -372,6 +399,8 @@ NSS.Input = (function () {
         document.addEventListener('keyup', onKeyUp);
         document.addEventListener('narbe-input-cancelled', onCancelled);
         window.addEventListener('blur', clearAll);
+        document.addEventListener('visibilitychange', function () { if (document.hidden) clearAll(); });
+        window.addEventListener('gamepaddisconnected', clearAll);
         if (SM() && SM().subscribe) {
             SM().subscribe(function (next) {
                 if (next.autoScan !== previousAuto && spaceHeld) {

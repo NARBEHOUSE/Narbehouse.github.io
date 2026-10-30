@@ -1,6 +1,7 @@
 /** The editable chart is the source of truth, including in the offline hub.
- * A sandboxed local document sends plain table text. No fetch/file:// exception,
- * generated duplicate, network service, or executable chart content in this page.
+ * A sandboxed local document sends plain table text. Web requests use the parent
+ * page's offline cache; file:// keeps direct loading. No generated duplicate,
+ * network service, or executable chart content runs in this page.
  */
 window.NSS = window.NSS || {};
 NSS.Descriptions = (function () {
@@ -16,9 +17,12 @@ NSS.Descriptions = (function () {
             frame.setAttribute('aria-hidden', 'true');
             frame.setAttribute('sandbox', 'allow-scripts');
             frame.title = 'Story description data';
-            let timer;
+            let timer, request, finished = false;
             function finish() {
+                if (finished) return;
+                finished = true;
                 clearTimeout(timer);
+                if (request) request.abort();
                 window.removeEventListener('message', receive);
                 frame.remove();
                 resolve();
@@ -39,8 +43,27 @@ NSS.Descriptions = (function () {
             }
             window.addEventListener('message', receive);
             timer = setTimeout(() => { console.warn('[NSS] Image description chart did not load.'); finish(); }, 8000);
-            frame.src = 'IMAGE-DESCRIPTIONS.html';
-            document.body.appendChild(frame);
+            function attach(html) {
+                if (finished) return;
+                if (typeof html === 'string') frame.srcdoc = html;
+                else frame.src = 'IMAGE-DESCRIPTIONS.html';
+                document.body.appendChild(frame);
+            }
+            if (/^https?:$/.test(window.location.protocol)) {
+                // An opaque-origin sandbox navigation can bypass the Hub's
+                // service worker. Fetch through the controlled parent, then
+                // run the unchanged chart in the same isolated sandbox.
+                request = new AbortController();
+                fetch('IMAGE-DESCRIPTIONS.html', { signal: request.signal, credentials: 'same-origin' })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Description chart: HTTP ' + response.status);
+                        return response.text();
+                    })
+                    .then(attach)
+                    .catch(() => { if (!finished) attach(); });
+            } else {
+                attach();
+            }
         });
         return loading;
     }

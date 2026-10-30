@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "e3b0034bf825098d0c93fa7527abbdfc346019493a5abf494330ecd45e35983d",
-  "totalBytes": 536891067,
+  "version": "355900dd257ddaa6add34d389c7c845f1bead0c256196f471cd0b4ea0b088d50",
+  "totalBytes": 536893390,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18130,7 +18130,7 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/index.html",
-      "revision": "6c921ad167abb9c38c12c3666a0ae5e8d321837226b831bc53f690b90ae13d5e",
+      "revision": "af62dbe4ab8d9176ab63e4723aa219ea6f6040afbd12641a613c998a913becdd",
       "bytes": 3451
     },
     {
@@ -18145,13 +18145,13 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/config.js",
-      "revision": "5b81501b7e2cb2c91298b167317d46afd22cafa0aba0bd8d63187668c0c9d38e",
-      "bytes": 8338
+      "revision": "89d559e9c423a8ed009ac0729b2cae6ea421d8b3fef919b369fc38f7c198533e",
+      "bytes": 8237
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/descriptions.js",
-      "revision": "de69c7afa32a1d6ea53229822e4bd5792c52b9c1a01fa4d89e0bfecb79a70cf7",
-      "bytes": 3773
+      "revision": "a12489d9759f0906222fffd726c01f6444d1e584dad8004e613f23eeeaa2c277",
+      "bytes": 4965
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/final-actions.js",
@@ -18165,8 +18165,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/input.js",
-      "revision": "092939b613be5c904791351be72c1bc13f267980dae4104b9addb30f2ea82b8b",
-      "bytes": 15781
+      "revision": "66e4a5295616366f380163b75782d1a3dba411fd0b686084c386bb571bf60074",
+      "bytes": 16922
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/library.js",
@@ -18215,13 +18215,13 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/story.js",
-      "revision": "c23c1accd1f7633d83346d6620f285d1a32b8b59eb15a3bcdc4f217ffcc073ae",
-      "bytes": 16162
+      "revision": "423cc1f85ccaa6369355f8266613cad6f5e48f1475ae6ffc1c3548b14ae60693",
+      "bytes": 16147
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/ui.js",
-      "revision": "189fcfb10c6bb68d6d488dcb4f09bc91f0994b7c8ed08252a389f52f28c3f6e6",
-      "bytes": 56759
+      "revision": "d7ab2e18886cda32bd116a932e29d0c356a8c262135944e4564857a73604e81c",
+      "bytes": 56865
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/CREDITS.md",

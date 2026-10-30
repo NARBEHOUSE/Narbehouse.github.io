@@ -140,7 +140,6 @@ NSS.CONFIG = {
     libraryBackground: 'images/library-background.jpg',
     fireflies: 12,
 
-    tapCooldown: 0.15,       // seconds; presses in the story closer together than this count as one
     storiesPerScreen: 6,     // maximum per library page; smaller windows show fewer readable cards
     maxPixelRatio: 2,        // crisp on 2x displays; cap the cost on very dense screens
 

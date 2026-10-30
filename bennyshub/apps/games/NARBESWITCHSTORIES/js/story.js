@@ -48,7 +48,6 @@ NSS.Story = (function () {
     let outroT = 0, outroSeconds = 0;
     let acted = false, turnQueued = false, swapped = false, ending = false;
     let afterSoundTimer = null;
-    let lastPress = -1;
     const counts = { presses: 0, actions: 0, turns: 0, ticks: 0, afterSounds: 0 };
 
     function S() { return NSS.Settings; }
@@ -251,9 +250,8 @@ NSS.Story = (function () {
     /** What a press does, depending on the moment. */
     function press() {
         if (!story) return;
-        const now = performance.now() / 1000;
-        if (now - lastPress < C.tapCooldown) return;
-        lastPress = now;
+        // Switch bounce is filtered by the shared input guard. A second local
+        // cooldown would discard valid taps at the user's saved sensitivity.
         counts.presses++;
         switch (state) {
             case 'idle': beginPage(); break;
@@ -288,7 +286,6 @@ NSS.Story = (function () {
         ending = false;
         swapped = false;
         actionT = turnT = outroT = outroSeconds = 0;
-        lastPress = -1;
         NSS.UI.fadeWords(false);
         NSS.UI.showEndChoices(false);
         showPage();

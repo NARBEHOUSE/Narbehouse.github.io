@@ -2,6 +2,26 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-10-30 — Switch Stories acts on switch release
+
+Scope: port Nancy’s latest PC Switch Stories input fix to the web. Electron port: **NO** for every changed file below; the PC Hub was read only and was not launched or modified. The four game JavaScript files match the current PC source byte-for-byte. Backups, hashes and browser evidence are in WEBSITES/tmp/switchstories-release-web-20261030.
+
+Story keyboard/controller presses arm on key/button down and activate once on release. Holding Enter or controller A for the existing five-second Pause gesture no longer starts a story action first, and its release does not select a Pause-menu item. Repeat/orphan releases are inert; screen transitions, blur, hidden documents, cancelled input and controller disconnect clear pending presses. The redundant 150ms story cooldown is removed so shared saved sensitivity remains authoritative. How to Play narration stops on key release and consumes that event. Help text describes press-and-release. Touch behavior is preserved. Menus and Scan to Pause remain CHOICE scans; timed story animations remain mechanics. Auto Space Brake intentionally still freezes scanning on keydown.
+
+Cold offline verification also exposed a web integration defect in the previously imported image-description loader: an opaque-origin sandbox navigation bypassed the service-worker cache. The web loader now fetches the unchanged chart through the controlled parent and renders it as srcdoc inside the existing isolated sandbox. Direct file loading remains available. Source-window validation, row validation and the eight-second fallback remain; completion aborts outstanding requests and prevents late reattachment. No chart scripts execute in the game document. The chart remains the single source of description text.
+
+Changed files (all web scope, Electron port: NO):
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/input.js — release activation, hold cancellation and controller handling.
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/config.js — remove the duplicate tap cooldown option.
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/story.js — use the shared sensitivity guard without a second debounce.
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/ui.js — help wording and consumed narration-cancel release.
+- bennyshub/apps/games/NARBESWITCHSTORIES/js/descriptions.js — web-only cached chart loading with sandbox isolation preserved.
+- bennyshub/apps/games/NARBESWITCHSTORIES/index.html — web release query 2026.10.30.2; existing local fonts, analytics, favicons and shared modules retained.
+- bennyshub/offline-manifest.json — generated source asset revisions.
+- docs/history/DEVELOPMENT-HISTORY.md — scope and verification record.
+
+Verification: all 443 website tests, the production build, public release audit (4,372 files; no problems) and 1,424 Pages checks pass. The six changed runtime files match their production build copies. The focused Chrome regression passes 13 checks with zero browser errors after a fresh scoped library download (484 assets; 151181316 bytes) and first offline launch through the actual Hub card. Coverage includes real key down/up edges across the four stories and both visual/pause modes, repeats, orphan releases, hold-to-pause, lifecycle cancellation, shared sensitivity, fully loaded offline descriptions and multipart reading, scanning/brake/reverse behavior, controller polling fixtures, help narration cancellation and touch. Narration/animation completion is deterministic for these isolated input checks; key events, shared scanner and hold timers run normally. Physical switch/controller hardware and installed voices remain separate acceptance checks. Existing Companion release archives are unchanged.
+
 ## 2026-10-30 — Pet Pals Halloween costume invitation recovery
 
 Scope: publish Nancy’s subsequent PC Pet Pals fix to the web. Electron port: **NO** for every file below; PC files were read only. Exact gameplay transfer is seasons.js; local web fonts, analytics and shared modules are preserved. Backups and transfer hashes are in WEBSITES/tmp/petpals-halloween-web-20261030.

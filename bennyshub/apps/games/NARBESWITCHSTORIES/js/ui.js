@@ -802,7 +802,7 @@ NSS.UI = (function () {
             lines.push(auto ? 'In the story, the highlight moves between the *directions at the bottom* and *Pause* by itself. *Enter* on the directions keeps the story going.'
                             : 'In the story, *Space* moves the highlight between the *directions at the bottom* and *Pause*. *Enter* on the directions keeps the story going.');
         } else {
-            lines.push('In the story, *every press* of a switch, key or touch counts. *Hold Enter*, or tap the *Pause* button, to bring up the menu.');
+            lines.push('In the story, *press and release* a switch, key or controller button, or tap the screen. *Hold Enter*, or tap the *Pause* button, to bring up the menu.');
         }
         lines.push('Follow the words at the bottom: *press* to keep reading, see an action, or turn the page. Longer passages continue over the same picture.');
         lines.push('To jump ahead or go back, open *Pause* and choose *Go to Page*. Choose a number, or use the arrows to see more pages.');
@@ -830,15 +830,18 @@ NSS.UI = (function () {
             if (released) return;
             released = true;
             clearTimeout(timer);
-            document.removeEventListener('keydown', onPress, true);
+            document.removeEventListener('keyup', onPress, true);
             document.removeEventListener('pointerdown', onPress, true);
             NSS.Input.setEnabled(true);
         };
-        const onPress = function () { NSS.Voice.cancel(); release(); };
+        const onPress = function (e) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            NSS.Voice.cancel(); release();
+        };
         NSS.Input.setEnabled(false);
         const timer = setTimeout(release, Math.ceil(text.length / 13 * 1000) + 800);
         Promise.resolve(ticket.finished).then(function (r) { if (r && r.reason !== 'timeout') release(); });
-        document.addEventListener('keydown', onPress, true);
+        document.addEventListener('keyup', onPress, true);
         document.addEventListener('pointerdown', onPress, true);
     }
 
