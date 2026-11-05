@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "6257fe42498b82092956ecf6811d2525ba662cea3b66cc7b881c27db037db2d9",
-  "totalBytes": 536945522,
+  "version": "c426ea201d606d89e01337785e0708408d2e465755cfd5cc4de65ca95db919dd",
+  "totalBytes": 536951702,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -20855,8 +20855,8 @@
     },
     {
       "url": "./index.html",
-      "revision": "f4df9f1887f2e0395c95104ef8e21dc26e41d106a6087b7a4f9f8cdf63b7fcf1",
-      "bytes": 131932
+      "revision": "8adb2da7516189d71f16af57f6703effe6cb02731eebdb02fdca89831de5d784",
+      "bytes": 138112
     },
     {
       "url": "./manifest.webmanifest",

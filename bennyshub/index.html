@@ -339,8 +339,11 @@
 
     /* Home screen layout */
     #screen-home .grid{
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       max-width: 100%;
+    }
+    @media (max-width: 1100px){
+      #screen-home .grid{ grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 900px){
       #screen-home .grid{ grid-template-columns: 1fr; }
@@ -549,6 +552,9 @@
     }
     .modal-text{
       color: var(--muted); margin: 0 0 24px 0; line-height: 1.5;
+    }
+    .modal-note{
+      color: var(--muted); font-size: 15px; margin: -12px 0 24px 0; line-height: 1.45;
     }
     .modal-buttons{
       display: flex; gap: 12px; justify-content: flex-end;
@@ -807,6 +813,19 @@
     </div>
   </div>
 
+  <!-- Exit confirmation: Cancel scans first so an accidental press cannot close the Hub. -->
+  <div class="modal-overlay hidden" id="exit-modal" role="alertdialog" aria-modal="true" aria-labelledby="exit-modal-title" aria-describedby="exit-modal-text exit-modal-note">
+    <div class="modal-content">
+      <h2 class="modal-title" id="exit-modal-title">Exit Benny's Hub?</h2>
+      <p class="modal-text" id="exit-modal-text">This closes Benny's Hub. Choose Cancel to keep using it.</p>
+      <p class="modal-note" id="exit-modal-note">Exit only works when Benny's Hub is opened from a shortcut, such as a desktop shortcut or an AAC system's web link. If the address was typed into the browser, close the tab yourself.</p>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" id="exit-cancel">Cancel</button>
+        <button class="modal-btn primary" id="exit-confirm">Exit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Iframe Container -->
   <div class="iframe-container" id="iframe-container">
     <div class="iframe-header">
@@ -923,6 +942,15 @@
             <div class="row">
               <p class="desc">Customize your experience. Themes, voice, and more.</p>
               <span class="pill">Open</span>
+            </div>
+          </button>
+
+          <button class="card-btn" id="hub-exit">
+            <span class="kicker">Close</span>
+            <div class="btn-title">Exit</div>
+            <div class="row">
+              <p class="desc">Close Benny's Hub. You will be asked to confirm first.</p>
+              <span class="pill">Exit</span>
             </div>
           </button>
         </div>
@@ -1219,10 +1247,16 @@
     const fullscreenModal = document.getElementById('fullscreen-modal');
     const modalFullscreenBtn = document.getElementById('modal-fullscreen');
     const modalCancelBtn = document.getElementById('modal-cancel');
+    const exitModal = document.getElementById('exit-modal');
+    const exitCancelBtn = document.getElementById('exit-cancel');
+    const exitConfirmBtn = document.getElementById('exit-confirm');
+    const exitText = document.getElementById('exit-modal-text');
+    const exitNote = document.getElementById('exit-modal-note');
     const iframeContainer = document.getElementById('iframe-container');
     const iframeBack = document.getElementById('iframe-back');
     const iframeTitle = document.getElementById('iframe-title');
-    const appIframe = document.getElementById('app-iframe');
+    // Replaced by loadAppFrame(); always read it through this binding.
+    let appIframe = document.getElementById('app-iframe');
 
     // App data and state
     let appsData = { tools: [], games: [] };
@@ -1808,6 +1842,40 @@
       closeModal();
     });
 
+    // Apps must not add back-history. Chrome lets a page close its own tab only while
+    // that tab has one history entry, and Exit relies on that when an AAC system
+    // launches the browser straight to the Hub. A fresh frame's first page adds no
+    // entry, so an app opened from a blank frame gets a new frame element.
+    let appFrameGeneration = 0;
+    function appFrameIsBlank(frame) {
+      try { return frame.contentWindow.location.href === 'about:blank'; } catch (e) { return false; }
+    }
+    function freshAppFrame(src) {
+      const next = appIframe.cloneNode(false);
+      next.setAttribute('src', src);
+      appIframe.replaceWith(next);
+      appIframe = next;
+    }
+    function loadAppFrame(src) {
+      appFrameGeneration++;
+      if (appFrameIsBlank(appIframe)) freshAppFrame(src);
+      // An app is still showing: navigate it so its own unload handling still runs.
+      else appIframe.src = src;
+    }
+    function unloadAppFrame() {
+      const generation = ++appFrameGeneration, frame = appIframe;
+      try {
+        // A replacing navigation still unloads the app normally (saves on pagehide,
+        // unsaved-changes prompts) but leaves no history entry behind.
+        frame.contentWindow.location.replace('about:blank');
+        frame.addEventListener('load', () => {
+          if (generation === appFrameGeneration && frame === appIframe && appFrameIsBlank(frame)) freshAppFrame('about:blank');
+        }, { once: true });
+      } catch (e) {
+        frame.src = 'about:blank';
+      }
+    }
+
     // Show iframe with tool/game
     let iframeFocusTimer;
     function showIframe(src, title) {
@@ -1821,7 +1889,7 @@
       if (tool || game) BennyLibrary.recordOpen(tool ? 'tools' : 'games', tool || game);
       window.BennyUsage?.open(src);
       iframeTitle.textContent = title;
-      appIframe.src = src;
+      loadAppFrame(src);
       iframeContainer.classList.add('active');
       resetMenuFocus();
       appIframe.focus();
@@ -1851,7 +1919,7 @@
       clearTimeout(iframeFocusTimer);
       NarbeCommunicationSpeech._service.stop();
       iframeContainer.classList.remove('active');
-      appIframe.src = 'about:blank';
+      unloadAppFrame();
       // Usage sorting is applied before pagination when returning from an app.
       if (filterState[currentScreen]?.sort !== 'alphabetical' && filterState[currentScreen]) {
         filterState[currentScreen].page = 0;
@@ -2357,15 +2425,26 @@
     let menuCancelled = false, menuSpaceAt = 0, menuReverseTimer = null, menuReverseInterval = null;
     let menuAutoMode = window.NarbeScanManager.getSettings().autoScan;
     const menuCycle=NarbeHubToggles.create({current:()=>menuItems().find(el=>menuId(el)===hubMenuScanner?.getState().id),owns:hubMenuOwnsScan,settings:()=>NarbeScanManager.getSettings(),holdThreshold:BACKWARDS_SCAN_THRESHOLD});
-    function menuContext() { return fullscreenModal.classList.contains('hidden') ? currentScreen : 'fullscreen'; }
-    function menuRoot() { return menuContext() === 'fullscreen' ? fullscreenModal.querySelector('.modal-content') : SCREENS[currentScreen]; }
+    function exitConfirmOpen() { return !exitModal.classList.contains('hidden'); }
+    function menuContext() {
+      if (!fullscreenModal.classList.contains('hidden')) return 'fullscreen';
+      return exitConfirmOpen() ? 'exit' : currentScreen;
+    }
+    function menuRoot() {
+      const context = menuContext();
+      if (context === 'fullscreen') return fullscreenModal.querySelector('.modal-content');
+      return context === 'exit' ? exitModal.querySelector('.modal-content') : SCREENS[currentScreen];
+    }
     function hubMenuOwnsScan() {
       return hubMenusReady && !isTransitioning && !iframeContainer.classList.contains('active') &&
-        (menuContext() === 'fullscreen' || (currentScreen !== 'settings' && !document.getElementById('hub-settings').open));
+        (menuContext() === 'fullscreen' || menuContext() === 'exit' ||
+          (currentScreen !== 'settings' && !document.getElementById('hub-settings').open));
     }
     function menuItems() {
       // Keep the fullscreen prompt's existing switch order.
       if (menuContext() === 'fullscreen') return [modalFullscreenBtn, modalCancelBtn];
+      // Cancel comes first, so reaching Exit always takes a deliberate extra step.
+      if (menuContext() === 'exit') return [exitCancelBtn, exitConfirmBtn].filter(el => !el.hidden);
       return getFocusables();
     }
     function menuId(el) {
@@ -2492,6 +2571,55 @@
         if (e.stopImmediatePropagation) e.stopImmediatePropagation();
       }
     }, true);
+
+    // Exit: closes the tab (and the browser when it is the last tab) after a
+    // confirmation. Browsers only allow this for a tab launched straight to the Hub
+    // (a desktop shortcut, an AAC system's web link, an Open-as-window shortcut) or
+    // opened from a link in a new tab. Typing the address into a tab does not count:
+    // Chrome keeps its New Tab page in that tab's history.
+    const EXIT_PROMPT = exitText.textContent;
+    const EXIT_BLOCKED = "The browser kept this tab open. Exit only closes Benny's Hub when it is opened from a shortcut. Close this tab or window to finish.";
+    function resetExitDialog() {
+      exitText.textContent = EXIT_PROMPT;
+      exitNote.hidden = false;
+      exitConfirmBtn.hidden = false;
+      exitCancelBtn.textContent = 'Cancel';
+    }
+    function openExitConfirm() {
+      if (exitConfirmOpen()) return;
+      resetExitDialog();
+      clearHubMenuInput();
+      exitModal.classList.remove('hidden');
+      syncHubMenuOwnership({fresh:true});
+      announceFreshHubMenu("Exit Benny's Hub? Cancel keeps it open. Exit closes it.");
+    }
+    function closeExitConfirm() {
+      if (!exitConfirmOpen()) return;
+      exitModal.classList.add('hidden');
+      resetExitDialog();
+      resetMenuFocus();
+      announceFreshHubMenu('Main menu.');
+    }
+    function exitHub() {
+      window.NarbeVoiceManager?.cancel?.();
+      try { window.close(); } catch (e) { /* reported below */ }
+      // window.close() is silently ignored when the browser does not allow it.
+      setTimeout(() => {
+        if (window.closed || !exitConfirmOpen()) return;
+        exitText.textContent = EXIT_BLOCKED;
+        exitNote.hidden = true;
+        exitConfirmBtn.hidden = true;
+        exitCancelBtn.textContent = 'Back to Hub';
+        syncHubMenuOwnership({fresh:true});
+        announceFreshHubMenu(EXIT_BLOCKED + ' Choose Back to Hub to keep playing.');
+      }, 500);
+    }
+    document.getElementById('hub-exit').addEventListener('click', openExitConfirm);
+    exitCancelBtn.addEventListener('click', closeExitConfirm);
+    exitConfirmBtn.addEventListener('click', exitHub);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && exitConfirmOpen()) { event.preventDefault(); closeExitConfirm(); }
+    });
 
     // Fixed destinations from the Companion; no paths or executable data accepted.
     let companionNavigationReady=false;
