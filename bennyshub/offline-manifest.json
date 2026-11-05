@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "85cf646f4250c183cccf87fcf30e523f8ba709f49ef0fec4f6cfd7eb3089e7fd",
-  "totalBytes": 540466549,
+  "version": "37a5a2b8f6759e07cd1561a5d788e0bec23737e4e5eefb4325245decb8d2afee",
+  "totalBytes": 540469119,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -625,8 +625,8 @@
     },
     {
       "url": "./apps/games/BENNYSBASEBALL2/index.html",
-      "revision": "f6b3173b7d4cf34e930c39685b026c85311ad63b781902d56805b5f15b8ea1d8",
-      "bytes": 4890
+      "revision": "5c017ba1d9a7790167e49a698c87f239b11026de0d1eed2fa55dfc758f1f9646",
+      "bytes": 4893
     },
     {
       "url": "./apps/games/BENNYSBASEBALL2/js/audio.js",
@@ -655,13 +655,13 @@
     },
     {
       "url": "./apps/games/BENNYSBASEBALL2/js/game.js",
-      "revision": "ccad0efae92d30c6b057d9176aed38fb39965ba6629f4fdeff376a6d32e73e6a",
-      "bytes": 210551
+      "revision": "b7c996aebed7358fcc6661aec88dc895900251a9328500c58ad2a807757fab66",
+      "bytes": 212459
     },
     {
       "url": "./apps/games/BENNYSBASEBALL2/js/movement.js",
-      "revision": "8998219ddbe77e9370cc754d2e1a837a3f9667dba38f9c4f97f52cf21ef98dfd",
-      "bytes": 7359
+      "revision": "d53c2b6ce4a979663ca9dc9ff7eb2ccd40a1c59b69c198ff54645f5093b7787a",
+      "bytes": 8018
     },
     {
       "url": "./apps/games/BENNYSBASEBALL2/js/player-art.js",

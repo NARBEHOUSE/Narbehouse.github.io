@@ -7,6 +7,7 @@ class BaseballPlayerMotion {
         this.moves = new Map();
     }
 
+    static get STALL_LIMIT() { return 3; }
     register(p) { this.registered.add(p); return p; }
     players() {
         const s = this.scene;
@@ -135,8 +136,16 @@ class BaseballPlayerMotion {
                 }
                 if(m.onUpdate)m.onUpdate();
                 m.progress=Math.max(m.progress,1-Math.hypot(m.goal.x-p.x,m.goal.y-p.y)/(m.distance||1));
+                // Safety net: a mover parked behind someone who never leaves
+                // would wait forever, and every play step that waits for his
+                // arrival would freeze the game. Yielding normally clears in
+                // well under a second, so after STALL_LIMIT seconds with no
+                // progress he settles where he stands and the play goes on.
+                m.stalled=Math.hypot(dx,dy)>.001?0:(m.stalled||0)+dt;
                 if(Math.hypot(m.goal.x-p.x,m.goal.y-p.y)<.01) {
                     this.stop(p);m.progress=1;if(m.done)m.done();
+                } else if(m.active&&m.stalled>BaseballPlayerMotion.STALL_LIMIT) {
+                    m.gaveUp=true;this.stop(p);if(m.done)m.done();
                 }
             }
         }

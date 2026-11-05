@@ -2463,6 +2463,17 @@ class GameScene extends BaseballScene {
         if (fielder._spr) fielder._spr.setFlipX(false);
         const glove = fielder.actionPoint ? fielder.actionPoint(action.name, 'glove') : {x:fielder.x-4,y:fielder.y+4};
         const target = {x:spot.x-(glove.x-fielder.x),y:spot.y-(glove.y-fielder.y)};
+        // A runner standing on his bag (runner on third, grounder to third)
+        // can occupy the pickup point, and footprints can't overlap, so the
+        // fielder would never arrive. Roll the ball a step clear of him.
+        const motion = this.playerMotion(), defense = Object.values(this.fielders || {});
+        for (const r of motion.players()) {
+            if (defense.includes(r) || motion.moves.has(r)) continue;
+            const need = motion.radius(fielder) + motion.radius(r) + 3, d = Math.hypot(target.x-r.x,target.y-r.y);
+            if (d >= need) continue;
+            const ux = d > .01 ? (target.x-r.x)/d : 0, uy = d > .01 ? (target.y-r.y)/d : 1, shift = need - d;
+            target.x += ux*shift;target.y += uy*shift;spot = {x:spot.x+ux*shift,y:spot.y+uy*shift};
+        }
         const distance = Math.hypot(target.x-fielder.x,target.y-fielder.y);
         this.time.delayedCall(100, () => this.jog(fielder,target.x,target.y,Math.max(160,distance/90*1000)/1.5,'Linear',() => {
             if (fielder._spr) fielder._spr.setFlipX(false);
@@ -3488,6 +3499,7 @@ class GameScene extends BaseballScene {
             this.audio.speak(`Taking it to ${BASE_NAMES[targetBase]}!`);
             this._zoomOnPoint(bag.x, bag.y, 1.6, Math.max(300, runMs));
             this.stopPlayerMovement(fielder);
+            this.clearBagFor(fielderPos, bag.x + 7, bag.y + 7);
             // The ball rides in his glove — visible again for the carry, since
             // startGroundballPlay's fielding hid it a moment ago.
             this.ball.setAlpha(1);
@@ -3555,6 +3567,25 @@ class GameScene extends BaseballScene {
                 });
             }
         });
+    }
+
+    // "Take it to the bag": the teammate who ran over to cover this base at
+    // contact (the pitcher at first, the other middle infielder at second,
+    // the shortstop at third) peels off back to his position. Player
+    // footprints can't overlap, so if he stayed planted on the bag the
+    // fielder carrying the ball could never arrive and the play never ended
+    // (the camera stayed zoomed on the bag with no scoreboard: a frozen game).
+    clearBagFor(fielderPos, x, y) {
+        const motion = this.playerMotion();
+        const near = q => q && Math.hypot(q.x - x, q.y - y) < 26;
+        for (const [pos, p] of Object.entries(this.fielders || {})) {
+            if (pos === fielderPos || !p || !p.active) continue;
+            const move = motion.moves.get(p);
+            if (!near(p) && !(move && near(move.goal))) continue;
+            const home = FIELD.FIELDER_HOMES[pos];
+            this.stopPlayerMovement(p);
+            this.jogToPosition(p, home.x, home.y, 115);
+        }
     }
 
     // Successful throw: record the out, then handle the double-play relay

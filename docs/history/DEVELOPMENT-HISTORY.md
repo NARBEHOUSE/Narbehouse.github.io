@@ -2,6 +2,20 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-05 — Benny's Baseball: fix plays that froze the game
+
+Scope: Ben's report from the PC Hub: the game froze mid-play, players heading toward first base, no scoreboard. Cause: plays wait for players to arrive, and the game's movement model (`js/movement.js`) never lets two players' ground footprints overlap. Choosing **Take it to the bag** (unassisted put-out) on a CPU ground ball sent the fielder to a point 3 px from the teammate who covered that bag at contact (the pitcher at first on every grounder to the first baseman, the other middle infielder at second, the shortstop at third), so he waited forever. The camera stayed zoomed on the bag, which hides the HUD, and no menu appeared. Rarer variants: a grounder to third whose pickup point sat on a runner standing on third, and two retired runners whose dugout-path points overlapped.
+
+Changed files (Electron port: **NO**; fixed in the PC Hub first, and `game.js`, `movement.js` and `play_headless.cjs` match the PC source apart from line endings):
+- `bennyshub/apps/games/BENNYSBASEBALL2/js/game.js` — new `clearBagFor()`: on Take it to the bag, the covering teammate jogs back to his position. `chaseGroundBall()` moves the pickup point a step clear of a stationary runner.
+- `bennyshub/apps/games/BENNYSBASEBALL2/js/movement.js` — `STALL_LIMIT` (3 s): a move with no progress for 3 s ends where the player stands and runs its arrival callback, so no footprint deadlock can stop a play again.
+- `bennyshub/apps/games/BENNYSBASEBALL2/index.html` — `?v=` release queries for game.js and movement.js only; the web-only lines (analytics, favicons, local Phaser) are unchanged.
+- new `bennyshub/apps/games/BENNYSBASEBALL2/art/play_headless.cjs` — Node-only play-tester: the real page and Phaser 3.60 in jsdom on a virtual clock, played by a Space/Enter bot. Excluded from the public build with the rest of `art/`.
+- `bennyshub/offline-manifest.json` — regenerated source manifest (only the three baseball runtime files changed).
+- this record.
+
+Verification (Node only; no browser was launched on the development PC): full 9-inning games through the headless play-tester. With the bot favouring Take it to the bag, the previous code froze in 11 of 12 games; the fixed code completed 47 of 47 games on the PC copy and 6 of 6 on this web copy, with no page errors. The 3 s fallback fired only in the benches-clear scrum and for the dugout-exit pair. `art/check_movement.js` passes; root `node --test` for offline-dependencies, offline-manifest, offline-library, graphics-quality, hub-library and scan-upgrade: 87/87. **Pending:** seeing the fix in a real browser, and `npm test`/build/release audit/Pages checks (run by the Pages workflow on push).
+
 ## 2026-11-05 — Publish NARBE Build n Bash
 
 Scope: publish the new PC Hub game NARBE Build n Bash (`NARBEBUILDNBASH`, catalog id `narbebuildnbash`) to the web Hub and the NARBE House home page, at the owner's request. A switch-accessible cause-and-effect game: each Build press places the next wooden block (12 builds, 6 to 50 blocks, each in its own themed world); Destroy, any time, sends a random destroyer (ten kinds) and big builds come down in chunks; afterwards Build Again or Pick Another. Three.js r155 and ammo.js (Bullet, the same build as Benny's Ballista) are vendored in the game folder with `vendor/THIRD-PARTY-NOTICES.txt`. Every state is a CHOICE scan through the shared adapter (blank, Build, Destroy, Pause); there is no hold-to-pause and Pause is always scannable. Graphics quality integrates through `NarbeGraphics.openGame('buildnbash')`.
