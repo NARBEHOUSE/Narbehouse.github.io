@@ -8177,6 +8177,18 @@ RT.game = (function () {
      */
     function pickTarget(clientX, clientY) {
       if (!dockTargets.length || !cam) return -1;
+      /* THE WATER IS A TARGET TOO. A cast's target is a square of water with
+         no object behind it, and only targets with an object were ever tested
+         - so the one thing at a fishing spot worth clicking could not be
+         hovered or clicked. It is tested against the same box the scan frame
+         is drawn round, so what is framed is what is clickable. */
+      for (let i = 0; i < dockTargets.length; i++) {
+        const t = dockTargets[i];
+        if (!t || !t.water) continue;
+        const r = waterFocusRect(t);
+        if (r && clientX >= r.x && clientX <= r.x + r.w &&
+                 clientY >= r.y && clientY <= r.y + r.h) return i;
+      }
       const objs = [];
       for (const t of dockTargets) if (t.obj) objs.push(t.obj);
       if (!objs.length) return -1;

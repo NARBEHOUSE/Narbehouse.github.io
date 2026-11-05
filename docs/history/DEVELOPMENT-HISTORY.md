@@ -2,6 +2,21 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-05 — Benny's Fish Mystery: Scoop again works with a mouse or a finger
+
+Scope: Ben's report: on the first job (Walt's hand net, fishing off the boards), clicking or tapping **Scoop again** did nothing, so the game could not be played on a phone or with a mouse. Switches worked only because the scan can reach the cast target, a square of water. Cause: on foot the button called `chooseTroll()`, which on the boards only stands the player on the same spot again. The water target has no 3D object, and `pickTarget()` only tested targets with objects, so a pointer could not hover or click it either. In a boat, **Troll on** was the only button at a spot, so a pointer could leave but never cast. The scan's **Scoop Again** row (on foot) had the same dead end for switches.
+
+Changed files (Electron port: **NO**; fixed in the PC Hub first, and `ui.js` and `game.js` match the PC source apart from line endings):
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/js/ui.js` — on foot the Scoop again / Cast again row starts the scoop or the aim, the same as the water. At a spot, the button's tap is answered once, through the scan (`pickWorldKey`). Before this it ran twice: once on pointerup and again on click. Button taps landing within the existing 320 ms settle time of a new scene are ignored. In a boat at a spot, `#tcCast` shows as **Cast here** whenever the scan offers Cast, and pressing it picks that row. The next press is the usual hold-to-cast.
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/js/game.js` — `pickTarget()` tests the water target against the same box the scan frame is drawn round (`waterFocusRect`), so hovering highlights it and clicking it casts.
+- `bennyshub/apps/games/BENNYSFISHMYSTERY/index.html` — `?v=` release queries for game.js and ui.js only; the web-only lines are unchanged.
+- `bennyshub/offline-manifest.json` — regenerated (only the three Fish Mystery files changed).
+- this record.
+
+Aim, charge, hook timing and reel holds are unchanged. Scan rows and their order are unchanged.
+
+Verification (Node only; no browser was launched on the development PC): a jsdom test boots the real page (renderer stubbed) and fires real pointer, touch and key events. On the old code, 8 of 27 checks failed: Scoop again by mouse and by touch, the switch Scoop Again row, a boat's missing Cast button, and clicking the water. On the new code, 27 of 27 passed on both the PC copy and this web copy, with no page errors. The game's `smoke`, `stuckcheck`, `dockcheck` and `hudcheck` tools pass; `bootcheck` fails on the missing `NarbeGraphics` stub, which happened before this change too. Root `node --test` for fish-choice-speech, offline-dependencies, offline-manifest, offline-library, graphics-quality, hub-library, scan-upgrade and choice-scan-adapter: 110/110. **Pending:** seeing it on a real phone and in a real browser, and `npm test`/build/release audit/Pages checks (run by the Pages workflow on push).
+
 ## 2026-11-05 — Benny's Baseball: fix plays that froze the game
 
 Scope: Ben's report from the PC Hub: the game froze mid-play, players heading toward first base, no scoreboard. Cause: plays wait for players to arrive, and the game's movement model (`js/movement.js`) never lets two players' ground footprints overlap. Choosing **Take it to the bag** (unassisted put-out) on a CPU ground ball sent the fielder to a point 3 px from the teammate who covered that bag at contact (the pitcher at first on every grounder to the first baseman, the other middle infielder at second, the shortstop at third), so he waited forever. The camera stayed zoomed on the bag, which hides the HUD, and no menu appeared. Rarer variants: a grounder to third whose pickup point sat on a runner standing on third, and two retired runners whose dugout-path points overlapped.

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "37a5a2b8f6759e07cd1561a5d788e0bec23737e4e5eefb4325245decb8d2afee",
-  "totalBytes": 540469119,
+  "version": "ee95abed2647d76b812157fd3dd61859de0d0f672aff4427a478d134884cc7a4",
+  "totalBytes": 540472399,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -2710,8 +2710,8 @@
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/index.html",
-      "revision": "10a453f0ecb29979a15a3dce486017f3e54bac951eb957608e634e4ee1e642fa",
-      "bytes": 90280
+      "revision": "044bb2bbaf0b3c69707b5a1468fbf186d9e3dd1e60aca4c30ca0d0043f68f661",
+      "bytes": 90312
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/js/art.js",
@@ -2740,8 +2740,8 @@
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/js/game.js",
-      "revision": "66cf820444232007872ebc702a0edacc3d62a648ad21c4cf45dfe4d74d9587fd",
-      "bytes": 491951
+      "revision": "3d6ce40dd4ff467d44117e7a1624b1fb8b421580644b2e823931ba8a4aa3ea93",
+      "bytes": 492636
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/js/icons.js",
@@ -2775,8 +2775,8 @@
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/js/ui.js",
-      "revision": "91bf6355e144794f86a73440432bc9f24c6bdd4f61168b93b93343c1506ed5a1",
-      "bytes": 218744
+      "revision": "f92ae943e9479e2aadfa1725d9ccdcc1eb81f0a605dbb400175327f318468cc5",
+      "bytes": 221307
     },
     {
       "url": "./apps/games/BENNYSFISHMYSTERY/js/util.js",

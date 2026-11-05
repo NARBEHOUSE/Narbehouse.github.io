@@ -824,6 +824,17 @@ RT.ui = (function () {
 
     if (worldPlace === 'spot') {
       if (it.key === 'cast')  { closeWorldScan(); G.startAim(); return; }
+      /* ON THE BOARDS, "SCOOP AGAIN" SCOOPS. Off the jetty this row is the
+         "Scoop again" / "Cast again" button, and it used to call chooseTroll,
+         which on foot only stands you on the boards again - the same spot,
+         the same choices, nothing moved. With a switch you could scan past it
+         to the water; with a mouse or a finger the water is not a button, so
+         that left nothing on screen that fished. Reported: "when I click scoop
+         again with mouse or touch it doesn't do anything ... which makes the
+         game unplayable." It does what it says now: the same as the water. */
+      if (it.key === 'troll' && G.vessel && G.vessel().id === 'foot') {
+        closeWorldScan(); G.startAim(); return;
+      }
       if (it.key === 'troll') { closeWorldScan(); G.chooseTroll(); return; }
       if (it.key === 'dock')  { closeWorldScan(); goInFromSpot(); return; }
       closeWorldScan(); openPause(); return;
@@ -866,13 +877,21 @@ RT.ui = (function () {
     if (!btn) return;
     domBound[id] = true;
     U.addTap(btn, () => {
-      const key = domKeys[id];
-      if (!key || !worldOn) return;   // the scan moved on; this click is late
-      const ix = worldItems.findIndex(w => w.key === key);
-      if (ix < 0) return;             // and this button is not in this scene
-      alignChoice('world',ix);
-      worldActivate();
+      /* A scene that has only just appeared is not taking clicks yet - the
+         same rule the scene itself keeps. A button's pointerup can be what
+         opened this scene, and its click lands a moment later on the new one. */
+      if (Date.now() - worldSince < POINTER_SETTLE_MS) return;
+      pickWorldKey(domKeys[id]);
     });
+  }
+
+  /** Choose the row with this key in the scene on screen, if it has one. */
+  function pickWorldKey(key) {
+    if (!key || !worldOn) return;     // the scan moved on; this click is late
+    const ix = worldItems.findIndex(w => w.key === key);
+    if (ix < 0) return;               // and this button is not in this scene
+    alignChoice('world',ix);
+    worldActivate();
   }
 
   function renderWorldLabels() {
@@ -4281,12 +4300,31 @@ RT.ui = (function () {
     /* One button for the whole cast, in both beats: pressing it while aiming
        takes the aim and starts the meter, pressing it on the meter keeps
        pushing, and letting go throws it. */
-    press('tcCast', () => G.beginCharge(), () => G.releaseCast());
+    /* And at a spot, before any of that, it is the scan's Cast row: the
+       button that takes you from "stopped here" to aiming. The cast's real
+       target is a square of water, which is not a button, has no marker on it
+       until the scan lands there, and so could not be found by a finger at
+       all. Pressing it here starts the aim; the next press is the cast. */
+    let castPick = false;
+    press('tcCast', () => {
+      castPick = worldOn && G.state === G.S.SPOT;
+      if (!castPick) G.beginCharge();
+    }, () => {
+      if (castPick) { castPick = false; pickWorldKey('cast'); return; }
+      G.releaseCast();
+    });
     press('tcHook', () => {}, () => G.hookFish());
     press('tcReel', () => G.setReelHold(true), () => G.setReelHold(false));
     // Nothing on the end of it: hold to wind it back toward the boat.
     press('tcReelIn', () => G.setReelHold(true), () => G.setReelHold(false));
-    press('tcTroll', () => {}, () => { G.chooseTroll(); });
+    /* At a spot the scan owns this button, and its tap is answered there (see
+       bindDomItem) - answering it here as well ran the row twice, the second
+       time on whatever scene the first had opened. Everywhere else (aiming, or
+       a line out with nothing on it) it is this button's own business. */
+    press('tcTroll', () => {}, () => {
+      if (worldOn && domKeys.tcTroll) return;
+      G.chooseTroll();
+    });
     press('tcDock', () => {}, () => { goInFromSpot(); });
   }
 
@@ -4300,7 +4338,8 @@ RT.ui = (function () {
       // On foot there is no trolling: the same button casts again from the boards.
       const netNow = !!(G.missionBrief().rod || {}).isNet;
       if ($('tcTroll')) $('tcTroll').textContent = (G.vessel && G.vessel().id === 'foot') ? (netNow ? 'Scoop again' : 'Cast again') : 'Troll on';
-      if ($('tcCast')) $('tcCast').textContent = (G.missionBrief().rod || {}).isNet ? 'Scoop the net' : 'Hold to cast';
+      if ($('tcCast')) $('tcCast').textContent = (G.missionBrief().rod || {}).isNet ? 'Scoop the net'
+                                               : st === S.SPOT ? 'Cast here' : 'Hold to cast';
       // Off the boards, the way back up the jetty sits beside the cast.
       const onFoot = !!(G.vessel && G.vessel().id === 'foot');
       /* THE BUTTONS MIRROR THE SCAN'S OWN ROWS. This said `on.tcDock = onFoot`,
@@ -4317,6 +4356,11 @@ RT.ui = (function () {
         on.tcTroll = true;
         const rows = (G.spotTargets ? G.spotTargets() : []) || [];
         on.tcDock = onFoot || rows.some(function (t) { return t.key === 'dock'; });
+        /* The cast itself, which the scan offers as a square of water. On the
+           boards "Scoop again" / "Cast again" already is that button; in a
+           boat "Troll on" was the only button, so a finger could leave but
+           never fish. */
+        on.tcCast = !onFoot && rows.some(function (t) { return t.key === 'cast'; });
       }
       else if (st === S.AIM) { on.tcAimL = on.tcAimR = on.tcCast = on.tcTroll = true; }
       else if (st === S.CHARGE) { on.tcCast = true; }
