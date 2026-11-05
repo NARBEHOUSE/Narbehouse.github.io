@@ -23,7 +23,11 @@ const mime={'.html':'text/html','.js':'text/javascript','.json':'application/jso
  await p.goto(base+'/bennyshub/apps/games/NARBEGLOWPOP/index.html');await p.waitForFunction(()=>window.NGP?.UI.current()==='menu');await configure();
  check(await p.evaluate(()=>NGP.Input.state().index===-1),'Glow Pop starts with a blank menu');
  await tap('Space');await tap('Enter');check(await p.evaluate(()=>NGP.UI.current()==='play'),'Space/Enter starts Glow Pop');
- await p.waitForTimeout(600);const before=await p.evaluate(()=>NGP.Scene.stats().pops);await tap('Space');check(await p.evaluate(()=>NGP.Scene.stats().pops)>before,'A switch press pops the ball');
+ await p.waitForTimeout(600);check(await p.evaluate(()=>NGP.Settings.get('pauseMode')==='scan'),'Glow Pop defaults to Scan to Pause');
+ let before=await p.evaluate(()=>NGP.Scene.stats().pops);await tap('Space');check(await p.evaluate(()=>NGP.Input.state().id==='play:pop'&&document.querySelector('.ngp-pop-btn').offsetWidth>0),'Space highlights the visible Press to pop button');
+ await tap('Enter');await p.waitForTimeout(150);check(await p.evaluate(()=>NGP.Scene.stats().pops)>before,'Enter on Press to pop pops the ball');
+ await p.evaluate(()=>{NGP.Settings.set('pauseMode','hold');NGP.Game.toMenu();});await p.waitForTimeout(200);await tap('Space');await tap('Enter');await p.waitForTimeout(600);
+ before=await p.evaluate(()=>NGP.Scene.stats().pops);await tap('Space');check(await p.evaluate(b=>NGP.Settings.get('pauseMode')==='hold'&&NGP.Scene.stats().pops>b,before),'In Hold Enter mode a switch press pops the ball');
  await p.locator('.ngp-pause-btn').click();await choose('NGP','pause:1');
  await choose('NGP','set:look');await choose('NGP','set:color');check(await p.evaluate(()=>NGP.UI.page()==='look'&&NGP.Input.state().id==='set:color'),'Glow Pop nested settings retain their scan choice');
  await choose('NGP','set:back');check(await p.evaluate(()=>NGP.UI.page()==='top'&&NGP.Input.state().id==='set:look'),'Glow Pop Back restores its parent settings choice');
@@ -31,23 +35,29 @@ const mime={'.html':'text/html','.js':'text/javascript','.json':'application/jso
  await p.evaluate(()=>NGP.Game.exit());await p.waitForURL('**/bennyshub/index.html');check(true,'Direct Glow Pop exit returns to Hub');
  await p.setViewportSize({width:1280,height:800});
  const assets=new Set();p.on('request',r=>{if(/NARBESWITCHSTORIES.*\.(webp|jpg|png)(?:$|\?)/.test(r.url()))assets.add(new URL(r.url()).pathname);});
- await p.goto(base+'/bennyshub/apps/games/NARBESWITCHSTORIES/index.html');await p.waitForFunction(()=>window.NSS?.Library.all().length===3);await configure();await p.evaluate(()=>NSS.Settings.set('readAloud','off'));await p.waitForTimeout(1200);
+ await p.goto(base+'/bennyshub/apps/games/NARBESWITCHSTORIES/index.html');await p.waitForFunction(()=>window.NSS?.Library.all().length===4);await configure();await p.evaluate(()=>NSS.Settings.set('readAloud','off'));await p.waitForTimeout(1200);
  report.libraryImageRequests=assets.size;check(assets.size<30,'Switch Stories library loads covers without preloading all books');
  check(await p.evaluate(()=>NSS.Input.state().index===-1),'Switch Stories starts with a blank library');
  await p.screenshot({path:path.join(out,'switchstories-library.png')});
- await tap('Space');await tap('Space');await tap('Enter');await p.waitForFunction(()=>NSS.UI.current()==='story');
+ check(await p.evaluate(()=>NSS.Settings.get('pauseMode')==='scan'),'Switch Stories defaults to Scan to Pause');
+ // The page-turn steps below use Hold Enter, where every switch press acts on the page.
+ await p.evaluate(()=>NSS.Settings.set('pauseMode','hold'));
+ const froggyStep=await p.evaluate(()=>NSS.UI.scannables().findIndex(i=>i.id==='library:froggy-family-goes-to-cape-cod'));check(froggyStep>=0,'Froggy is on the first library page');
+ for(let i=0;i<=froggyStep;i++)await tap('Space');await tap('Enter');await p.waitForFunction(()=>NSS.UI.current()==='story');
  check(await p.evaluate(()=>NSS.Story.view().story.id==='froggy-family-goes-to-cape-cod'),'Switches open Froggy from the library');
  await p.waitForFunction(()=>Object.values(NSS.Scene.pictures()).every(s=>s!=='pending'),{},{timeout:30000});
  report.afterFirstBookImageRequests=assets.size;check(assets.size>report.libraryImageRequests&&assets.size<150,'Opening one book loads that book instead of the whole collection');
  check((await p.locator('.nss-credits').textContent()).includes('The Asia Foundation'),'Froggy title displays its original attribution');
  check(await p.locator('.nss-credits a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count()===1,'Froggy title links to its content license');
  await p.screenshot({path:path.join(out,'switchstories-froggy-credits.png')});
- for(const id of ['froggy-family-goes-to-cape-cod','rocky-says-hello','lily-loves-books']){
+ // Books now load their artwork when opened, so the artwork check covers exactly these.
+ const openedBooks=['froggy-family-goes-to-cape-cod','rocky-says-hello','lily-loves-books'];
+ for(const id of openedBooks){
   await p.evaluate(id=>{NSS.Game.toLibrary();NSS.Game.openStory(id);},id);await p.waitForFunction(()=>Object.values(NSS.Scene.pictures()).every(s=>s!=='pending'));
   await p.waitForFunction(()=>['done','waiting'].includes(NSS.Story.view().state));if(await p.evaluate(()=>NSS.Story.view().state==='waiting')){await tap('Space');await p.waitForFunction(()=>NSS.Story.view().state==='done');}await tap('Space');await p.waitForFunction(()=>NSS.Story.view().index===1&&NSS.Story.view().state==='waiting');await tap('Space');await p.waitForFunction(()=>NSS.Story.view().state==='done');check(true,id+' first-page switch animation completes');
   await p.locator('.nss-pause-btn').click();check(await p.evaluate(()=>NSS.UI.current()==='pause'),id+' pointer Pause works');await choose('NSS','pause:0');check(await p.evaluate(()=>NSS.UI.current()==='story'),id+' Continue returns to the book');
  }
- const missing=await p.evaluate(()=>{const pictures=NSS.Scene.pictures(),required=new Set();function visit(x){if(!x||typeof x!=='object')return;if(typeof x.image==='string')required.add(x.image);if(typeof x.cviImage==='string'&&!x.cviGuessed)required.add(x.cviImage);Object.values(x).forEach(v=>{if(v&&typeof v==='object')visit(v);});}NSS.Library.all().forEach(visit);return [...required].filter(url=>pictures[url]!=='ok').map(url=>({url,status:pictures[url]}));});report.missingRequiredImages=missing;check(!missing.length,'All required artwork for the three opened books decodes');
+ const missing=await p.evaluate(openedBooks=>{const pictures=NSS.Scene.pictures(),required=new Set();function visit(x){if(!x||typeof x!=='object')return;if(typeof x.image==='string')required.add(x.image);if(typeof x.cviImage==='string'&&!x.cviGuessed)required.add(x.cviImage);Object.values(x).forEach(v=>{if(v&&typeof v==='object')visit(v);});}NSS.Library.all().filter(story=>openedBooks.includes(story.id)).forEach(visit);return [...required].filter(url=>pictures[url]!=='ok').map(url=>({url,status:pictures[url]}));},openedBooks);report.missingRequiredImages=missing;check(!missing.length,'All required artwork for the three opened books decodes');
  await p.evaluate(()=>NSS.Game.toLibrary());await choose('NSS','library:settings');await choose('NSS','set:look');await choose('NSS','set:look');check(await p.evaluate(()=>NSS.Settings.get('look')==='cvi'),'Switch Stories high-contrast setting works');await choose('NSS','set:back');check(await p.evaluate(()=>NSS.Input.state().id==='set:look'),'Switch Stories settings Back restores the parent choice');
  for(const [w,h,label] of [[1280,800,'desktop'],[390,844,'phone'],[844,390,'landscape']]){await p.setViewportSize({width:w,height:h});await p.evaluate(()=>NSS.Game.toLibrary());await p.waitForTimeout(200);const r=await p.locator('.nss-screen.show .nss-card').boundingBox();check(r.x>=0&&r.y>=0&&r.x+r.width<=w+1&&r.y+r.height<=h+1,'Switch Stories '+label+' library fits');await p.screenshot({path:path.join(out,'switchstories-'+label+'.png')});}
  await p.evaluate(()=>NSS.Game.exit());await p.waitForURL('**/bennyshub/index.html');check(true,'Direct Switch Stories exit returns to Hub');

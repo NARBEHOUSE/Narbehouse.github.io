@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "355900dd257ddaa6add34d389c7c845f1bead0c256196f471cd0b4ea0b088d50",
-  "totalBytes": 536893390,
+  "version": "6257fe42498b82092956ecf6811d2525ba662cea3b66cc7b881c27db037db2d9",
+  "totalBytes": 536945522,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16815,13 +16815,13 @@
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/css/style.css",
-      "revision": "743a72b1e12a715eadf0d69027eadd851f395a67c0036dbe3b1ab23b49e44318",
-      "bytes": 13713
+      "revision": "ef44eb8d5882d6c0f492878902b48808d0c7f8cead5f309577694badeb735dd4",
+      "bytes": 14256
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/index.html",
-      "revision": "58ebb007b68fc2eef83545e7316e326bdd8ad2b79f4048a1ffa438fed965244c",
-      "bytes": 1776
+      "revision": "ecacfe8ed5c9d27d76075d0e93f5f952292ac1cb989f0144a06f21d5bf2fdbba",
+      "bytes": 1896
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/config.js",
@@ -16830,8 +16830,8 @@
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/input.js",
-      "revision": "605b122245d0643b225d6f1e91c1539e356a724e3adf7c0da246fb9ccfaf475e",
-      "bytes": 15425
+      "revision": "3435bb228f3bfaf81888d76ebf520efecb8e03b6f67bb9cf703d0f43e5b3d5b1",
+      "bytes": 15825
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/main.js",
@@ -16840,13 +16840,13 @@
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/scene.js",
-      "revision": "834152eceaa465e61266441aa878257aab4cf59a1b67d653ca9bbb30cc8a2c02",
-      "bytes": 22063
+      "revision": "98119e789b2aefd834ec5293b9fbc61723cce5a65ea7b8bafb1eba4787109d63",
+      "bytes": 22505
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/settings.js",
-      "revision": "9afecd9a015dd364d2058825205b55f5698c30a427a038a7ab415305d722ef3b",
-      "bytes": 5529
+      "revision": "cc9410ed891d8947bd8efe19268979364e77bb965f6b372da72b1fdede814efe",
+      "bytes": 5977
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/sound.js",
@@ -16855,8 +16855,8 @@
     },
     {
       "url": "./apps/games/NARBEGLOWPOP/js/ui.js",
-      "revision": "b80c813e42826861962b5b3155e9a7c568a21cdc1fba34f055123c14275faee1",
-      "bytes": 32727
+      "revision": "71ecc94808b5ce91e33327d70a9b32c1fedfd2d1a584badcf4ec48b7829c8bd8",
+      "bytes": 33894
     },
     {
       "url": "./apps/games/NARBEKART/css/mobile-race.css",
@@ -17085,18 +17085,18 @@
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/index.html",
-      "revision": "21744206b1f86de8ea57f3e5aa51f5846706ad27cf226cd0c64865fa478b9ec7",
+      "revision": "f6ffe9079c649df683f7877447fb71127dd7cd1980016ff6e83e39f9360439b6",
       "bytes": 1785
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/input.js",
-      "revision": "75f1250605f82bf0c7aa525f272e022e1c9365a983fc7227842fa61368e94910",
-      "bytes": 16339
+      "revision": "52f254248f9d1bf77aebd679ddc17dffaa20a2b2247527362a0570d97151ccef",
+      "bytes": 17743
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/main.js",
-      "revision": "1c43c37ede5a34bb8287b9f378c2bbc8935e6fbd52592449d3664fa9e6744a31",
-      "bytes": 3492
+      "revision": "d0e055f6f70c85fffd8153d6c709d499c1efeb547dbb554b39e7f7a7991e6a76",
+      "bytes": 3351
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/scenes.js",
@@ -17105,8 +17105,8 @@
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/settings.js",
-      "revision": "995ce908b716a422902c9ddd3e55a7bf3dea87c9b82c7ca71d16566e173bfa64",
-      "bytes": 6536
+      "revision": "e6a381a5bf16fc224916060bc79e205036699bafb3b224bc4e21629461894984",
+      "bytes": 6984
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/sound.js",
@@ -17115,8 +17115,8 @@
     },
     {
       "url": "./apps/games/NARBEMAGICBUTTON/js/ui.js",
-      "revision": "4e0d312c8fc0eb8fa8bc3b680244637c00e81145a92185dda5dadb4a424bd91f",
-      "bytes": 33406
+      "revision": "9d3e5bb82e6e42bbd5b6a626f91fcf17a60e3ed332c0a02a6f8103c6ac2b62d1",
+      "bytes": 33405
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/courses/course_list.json",
@@ -17260,33 +17260,33 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/index.html",
-      "revision": "734960c9efa15bfb783c102f1a18f333d38f46e4a2c711114f5c29dd0cb080e2",
-      "bytes": 10858
+      "revision": "bb2103b1d751bc4529e59a6d7f7b891866e2bdef97df8d9a8728c92bfa337453",
+      "bytes": 11333
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/anims.js",
-      "revision": "bf0f1ded2397e741dcb5f6ab35d5b52d53b6180ebb0fe049809ddef6b6a076d4",
-      "bytes": 93264
+      "revision": "df553998e647dda0b1e29fb990785099567ad761d9875ada169514e34807bbe7",
+      "bytes": 95301
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/arrange.js",
-      "revision": "40c13e3d300b59a57f557b53c26b296b0e3a08bfb89284e1a4b4435dea83c9d6",
-      "bytes": 10506
+      "revision": "d769cad2d9b6c38b7ea79c31ac4ebcf554f5fce48897f52becfb16f081d1ccec",
+      "bytes": 10294
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/companions.js",
-      "revision": "dd1d766e9eddd1a135dc2930b6850c4bf3c8735d025073c80413b5b89ab6405a",
-      "bytes": 52279
+      "revision": "07ed746000d89f73887150bf16b5ad262e646f86909dcd60265755465ad4072c",
+      "bytes": 62534
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/core.js",
-      "revision": "241cd7198e3f9e0fbd4f435c1c7e888b1ef4a0c01c1da9cf32895230dfb8b786",
+      "revision": "48d3124afcd082005a1a970910036bec4be10e610bef0d07ec80cb09052f61d2",
       "bytes": 6664
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/game.js",
-      "revision": "4e9fbd1f2b72857483a7a5e7ce3134ace930ae9288972440bb895f4f55922984",
-      "bytes": 118768
+      "revision": "fe5e47884a01c6e70b89698cf0a71c553e1fbf28abc81400f913da09500ba3e8",
+      "bytes": 118859
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/howtodemo.js",
@@ -17305,18 +17305,18 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/outings.js",
-      "revision": "814502828157f5de359b1061c78e40277ad3464ccfe68223ccc42110f9a7caab",
-      "bytes": 48997
+      "revision": "11ef667156cabb4845e9e331bfbcaa80b9c9ed3b21baef4bd3b2a4fd329d70e1",
+      "bytes": 49022
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/pets.js",
-      "revision": "fcef7c9cf2b7b3128cdcc72761d5d0a9e27cc706aeb2d9dbce20a6f829d858ed",
-      "bytes": 41213
+      "revision": "7f4ec41223f872a96b4dd7086eca1730b5fe179e8efc40f4fb9deab2927b66bc",
+      "bytes": 41344
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/petside.js",
-      "revision": "1e42dcfa9f515e843069be4d34799ffe447cd4a8d104e52e60d4267c638fed3a",
-      "bytes": 22464
+      "revision": "962de6047b6b9c90a143fe01455a15c8e61bfecadd9e3c272d92011d5deaf362",
+      "bytes": 24816
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/pixel.js",
@@ -17325,18 +17325,33 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/places.js",
-      "revision": "ee92529eb8812fe1b2ca23278b718df6d7f93d9f5646fb50c14fc2574b1ddea4",
-      "bytes": 22117
+      "revision": "3e204cf32b6c9a8d8d1b141c3ebe6b368e61c7632fe38fbdbc34c18e135f89de",
+      "bytes": 22366
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/props.js",
-      "revision": "93e3bd81b4b407dd9008ecc4d81fc2b3839ee59ef0294baee56ae18daa5f89bf",
-      "bytes": 15250
+      "revision": "4689385acb5a9fc817db4b5eb62a765adcbe6f31b046bc261b8afe5d94e6a443",
+      "bytes": 16686
+    },
+    {
+      "url": "./apps/games/NARBEPETPALS/js/review-isolation.js",
+      "revision": "c366cb99246b90897ba96f8c5f050e2dfbac979e97a0019b118b350142940ad4",
+      "bytes": 1342
+    },
+    {
+      "url": "./apps/games/NARBEPETPALS/js/review-player.js",
+      "revision": "cd32f58a760cbf726cd0cb74ba76dc8dc9437418ec45d1ead1bfbbf11630fc1b",
+      "bytes": 18553
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/room.js",
       "revision": "76edea7cadcad084ecdd91716d516b1888db0576731183bc50386b459b82aaf3",
       "bytes": 40372
+    },
+    {
+      "url": "./apps/games/NARBEPETPALS/js/rush-appearance.js",
+      "revision": "a7fe6df922bb9021593ddbc4641a6f9ae38a388d92205e4635bcbb59c2313420",
+      "bytes": 2555
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/scan-access.js",
@@ -17345,18 +17360,18 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/scenes.js",
-      "revision": "752e42256af165f6a4d5a81f221e98d70e5406eb4246d61d963076ce65641f5f",
-      "bytes": 16903
+      "revision": "ba7bf4b0ad59fe4d89b5bb4b06b0ea8f4e67402eef350bc51d212271401d93f5",
+      "bytes": 17094
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/school.js",
-      "revision": "9a279315ac78c69dbd5e1c5b629fab45796928ff662bc8b8844ff8da1f0bb012",
-      "bytes": 52343
+      "revision": "0f743fc56fe2a5d45ecfa6ba37add404ffcd596a72fa7c7158cb86e9d7294601",
+      "bytes": 53459
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/seasons.js",
-      "revision": "a1e6bf0cabfb267ca9644241503eabc29e23395db4da5c75de661be2fc0c5449",
-      "bytes": 55009
+      "revision": "3df3a4b4edc000738487cbeb7338525954e9d6c22bb1942b57386a189601091e",
+      "bytes": 59392
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/sound.js",
@@ -17365,18 +17380,18 @@
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/sprites.js",
-      "revision": "5f333c7546538bba758f535d0af3251928fd8c13f443c85b862ec490641753b8",
-      "bytes": 15237
+      "revision": "da51f770f9877f3702064d3b51fd88c2dbb363d074c43a48f00af1f368f6db9b",
+      "bytes": 15722
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/tricks.js",
-      "revision": "b3fe20064491acd274a7fa77ae97f37d803b27e7212243aef45a8b47b63f72c2",
-      "bytes": 17030
+      "revision": "b4e756e2d88facd28bb43b4e61f1692a623cbb66cea438726af2b7ec5c8395da",
+      "bytes": 16482
     },
     {
       "url": "./apps/games/NARBEPETPALS/js/ui.js",
-      "revision": "4a5624bce491f790dd0065e03a44dfb449bdf0bb268776d2a777aa6f25daa2d5",
-      "bytes": 24697
+      "revision": "f0a83396955bbc712733696979ad7c27d2005e245ad72763570aac06d42ea56d",
+      "bytes": 24950
     },
     {
       "url": "./apps/games/NARBEPETPALS/sounds/cat%20yawn.wav",
@@ -17575,8 +17590,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/css/freeplay.css",
-      "revision": "22ecdc016c0099efd7f8a8d7b2296abc0bb4565ccce1df75f1d08809444a4785",
-      "bytes": 10925
+      "revision": "762b203b0f67509e797a1b85db2756700a4da95bb7fe4245e27f573540bdba6a",
+      "bytes": 10656
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/css/menu.css",
@@ -17585,18 +17600,18 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/css/piano.css",
-      "revision": "da6293a5c428a23e2b422079203dfc2b93caa5caf4a1aa9001cb4992df6ad1e4",
-      "bytes": 8485
+      "revision": "6e99293e5c49f19275d3b4bc295025280b114b95389717bffb092f365b937b33",
+      "bytes": 8261
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/css/playful.css",
-      "revision": "102479fe28c4d4c9b76a006cda8f004d76803c2da33f9637a15955c85fa3d5f8",
-      "bytes": 4401
+      "revision": "9ca3b9d422a7227f52ec6ff50ce351d871e07defa0b916cd7e64812cdd3f9eaa",
+      "bytes": 4297
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/css/style.css",
-      "revision": "6d603af7fcd8093a8fb0f2291045260c656ef56e06f7705c49b29d4fd468657c",
-      "bytes": 18876
+      "revision": "9a25923bd26cf227b0117ba1f5d8c7cfd2a84186232d166a7a5d6f1afa073d22",
+      "bytes": 19007
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/images/collections/calm.webp",
@@ -18045,7 +18060,7 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/index.html",
-      "revision": "7fa881984f5334e2c5f2fce4fd56637f5e4a9befe3ce3eb612252b3c0d11cd88",
+      "revision": "d0da47af369bd6bb5fbe8e88ea1ebb63ae0ca1b9046cc8daa0d2aecd3d2d8b1b",
       "bytes": 2523
     },
     {
@@ -18055,18 +18070,18 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/js/freeplay.js",
-      "revision": "3724eaa44ecca69621ac1b23451a4f64e7ed005457083bc7109f3fe5b279ecc5",
-      "bytes": 19303
+      "revision": "3d29065b333ce21ae567052d2b5a9f80dee024727a915b5b1aff37476924bf22",
+      "bytes": 19322
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/js/input.js",
-      "revision": "6c356252f1cb3ecbceb7db2628c2a51153d737e8665bce9457b2b59b3663cba0",
-      "bytes": 14628
+      "revision": "713085e4abd481d12ac9c7eba2ed098a7541a2902220b896d12544177a09a786",
+      "bytes": 14859
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/js/main.js",
-      "revision": "d31ae52323d676eefa0ead9e1e0b6ac28c88384264a72b0cb7aa26da0b51361e",
-      "bytes": 3290
+      "revision": "5bc21462d822f7007b1b8eca46a6365c18d83e76ae2ff07bd7fbbef4b99f743e",
+      "bytes": 3356
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/js/music.js",
@@ -18105,8 +18120,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSONGS/js/ui.js",
-      "revision": "3dd3b79b7070c33bc54e953852e65d12598ec29a238e19eefc25c81197e9f502",
-      "bytes": 34924
+      "revision": "609ebe4f9738758beb8b608591daa48c38c36974563dd6294a271ca9d4259593",
+      "bytes": 36489
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/CREDITS.md",
@@ -18130,7 +18145,7 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/index.html",
-      "revision": "af62dbe4ab8d9176ab63e4723aa219ea6f6040afbd12641a613c998a913becdd",
+      "revision": "567348c752387c6085218340bc6b75fa4449a402c7c4445bbd2fdd27849e1508",
       "bytes": 3451
     },
     {
@@ -18165,8 +18180,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/input.js",
-      "revision": "66e4a5295616366f380163b75782d1a3dba411fd0b686084c386bb571bf60074",
-      "bytes": 16922
+      "revision": "3c30560fac352acb8cebd5312a023773f67b6c8a75e659d0a9f83470e9c2aa0e",
+      "bytes": 17047
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/library.js",
@@ -18175,8 +18190,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/main.js",
-      "revision": "ca110d11ee72891afec8cf38edc3fc2082e120d5d31be57a1c9e7a9163050821",
-      "bytes": 2772
+      "revision": "4648e7b8e69e38c710ebd0917e45c26369c727c2c84b78da4f2ab870f41d1c66",
+      "bytes": 2942
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/ocean-listen.js",
@@ -18205,8 +18220,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/settings.js",
-      "revision": "090c72c9147c24eae7d57577318322c739c6c6b22a44ce62c18cf25a55b3626f",
-      "bytes": 4938
+      "revision": "7b6b62859a263898e0ff4bb067ca7632d469cbabcf26ff5e8b498ff860530aac",
+      "bytes": 5386
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/sound.js",
@@ -18220,8 +18235,8 @@
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/js/ui.js",
-      "revision": "d7ab2e18886cda32bd116a932e29d0c356a8c262135944e4564857a73604e81c",
-      "bytes": 56865
+      "revision": "f360cd90b7fc54f790de04fa7fa41bd11fe9fd6d1887fd796a39a717b6bf095e",
+      "bytes": 56840
     },
     {
       "url": "./apps/games/NARBESWITCHSTORIES/stories/froggy-family-goes-to-cape-cod/CREDITS.md",

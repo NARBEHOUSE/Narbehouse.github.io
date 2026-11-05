@@ -246,7 +246,7 @@ const MSG={
   'cuddle:hearts':n=>kind()==='cat'?`${n} purrs.`:`${n} leans in for a cuddle.`, 'cuddle:pats':n=>`Pat pat. ${n} loves head pats.`, 'cuddle:blanket':n=>`${n} snuggles in a cozy blanket.`,
   'bath:bubbles':n=>`Bubble bath! ${n} is clean and fluffy.`, 'bath:tub':n=>`Splish splash! ${n} and the rubber duck.`, 'bath:shake':n=>`Rinse time for ${n}.`,
   'brush:brush':n=>`Brush, brush. ${n} is purring.`, 'brush:groom':n=>`${n} cleans behind the ears.`, 'brush:bow':n=>`Spa day for ${n}!`,
-  'nap:dim':n=>`${n} is taking a nap.`, 'nap:bed':n=>`${n} curls up in bed.`, 'nap:sun':n=>skyMode()==='night'?`${n} naps in the moonlight.`:`${n} naps in a warm sunbeam.`
+  'nap:dim':n=>`${n} is taking a nap.`, 'nap:bed':n=>`${n} curls up on the pet bed.`, 'nap:sun':n=>skyMode()==='night'?`${n} naps in the moonlight.`:`${n} naps in a warm sunbeam.`
 };
 /* Cats explore the house in play now; and treats from the pet store. */
 ['box','tree','tunnel','bag'].forEach(v=>{ MSG['play:'+v]=MSG['explore:'+v]; });
@@ -774,10 +774,10 @@ function drawStations(now,ak){ const kd=kind(), t=state.task, pa=plantAnchor();
   drawObj(stationSprite('door',kd),STATION.door[0],STATION.door[1],hlOn('special'));
   drawFloorUnits(now,ak);
   if(pa&&t==='plant'&&ak!=='task:plant'){ if(hlOn('task')) drawGlowBox(taskRect()); drawPlantTipped(pa); }
-  if(t==='potty'&&ak!=='task:potty') for(let i=0;i<pottyCount();i++) drawObj(SPR.poop,11+FIX.dx+(pottyCount()>1?i*7-4:0),82+FIX.dy+i*.5,hlOn('task'));
+  if(t==='potty'&&ak!=='task:potty'&&!(ak==='rush:give'&&anim.help==='potty')) for(let i=0;i<pottyCount();i++) drawObj(SPR.poop,11+FIX.dx+(pottyCount()>1?i*7-4:0),82+FIX.dy+i*.5,hlOn('task'));
   if(pottyStinky()&&!(ak==='task:potty'||ak==='task:litter')&&everyMs('pottyStink',1300,now)) spawn('stink',16+FIX.dx+rand(-5,5),80+FIX.dy,rand(-2,2),-8,1.6);
   if(t==='litter'&&ak!=='task:litter'){ if(hlOn('task')) drawGlowBox(taskRect()); drawLumps(pottyCount()); }
-  if(t==='toys'&&ak!=='task:toys'){ TOY_SPOTS.forEach(([s,x,y])=>drawObj(SPR[s],x,y,hlOn('task'))); }
+  if(t==='toys'&&ak!=='task:toys'&&!(ak==='rush:give'&&anim.help==='toys')){ TOY_SPOTS.forEach(([s,x,y])=>drawObj(SPR[s],x,y,hlOn('task'))); }
   if(t==='vet'&&ak!=='task:vet') drawObj(CARRIER,carrierX(),CARRIER_Y,hlOn('task'));
   drawRoomLive(ctx,now);
   if(layer==='game'&&!anim){ const hearts={feed:[STATION.feed[0]+7,STATION.feed[1]-5],play:[STATION.basket[0]+8.5,STATION.basket[1]-5],clean:[STATION.bath[0]+8.5,STATION.bath[1]-5]};

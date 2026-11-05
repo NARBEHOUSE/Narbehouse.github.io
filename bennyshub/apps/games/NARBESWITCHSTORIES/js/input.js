@@ -10,13 +10,14 @@
  *   Auto Scan        the highlight moves by itself; Enter chooses
  *
  * THE STORY has two styles (the Pause setting), as in Glow Pop:
- *   Hold Enter (default)  A press counts on release: Space,
+ *   Hold Enter            A press counts on release: Space,
  *                         Enter, any key, a tap anywhere, or any game
  *                         controller button. Holding a key does not repeat.
- *                         Holding Enter (or controller button A) for five
- *                         seconds opens Pause, with a filling ring and a
- *                         beep each second, without triggering a page action.
- *   Scan to Pause         The highlight moves between the directions and Pause,
+ *                         Holding Enter (or controller button A) waits three
+ *                         seconds, then starts a four-second filling ring with
+ *                         a beep each second. Pause opens after seven seconds,
+ *                         without triggering a page action.
+ *   Scan to Pause (default) The highlight moves between the directions and Pause,
  *                         the usual scan contract, for a player who cannot
  *                         hold a switch. Holding Enter still pauses too.
  *
@@ -31,8 +32,9 @@ NSS.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
-    const PAUSE_HOLD = 5000;       // hold Enter this long in the story to pause (as in Glow Pop)
-    const RING_SHOW = 1000;        // the pause ring appears after this much of the hold
+    const RING_SHOW = 3000;        // allow a normal press before showing or sounding the countdown
+    const PAUSE_COUNTDOWN = 4000;  // keep the full four-second countdown after the initial delay
+    const PAUSE_HOLD = RING_SHOW + PAUSE_COUNTDOWN;
 
     let provider = function () { return []; };
     let items = [];
@@ -63,7 +65,7 @@ NSS.Input = (function () {
         return NSS.Voice.speak(text);
     }
 
-    /** The story in the default style: no scan list, every press counts. */
+    /** The story in Hold Enter mode: no scan list, every press counts. */
     function freePlay() {
         return inStory() && NSS.Settings.get('pauseMode') !== 'scan' && !NSS.Story.isChoosing();
     }
@@ -221,7 +223,7 @@ NSS.Input = (function () {
         pauseTimer = setInterval(function () {
             const t = performance.now() - t0;
             if (t >= RING_SHOW) {
-                NSS.UI.holdRing((t - RING_SHOW) / (PAUSE_HOLD - RING_SHOW));
+                NSS.UI.holdRing((t - RING_SHOW) / PAUSE_COUNTDOWN);
                 const s = Math.floor((t - RING_SHOW) / 1000) + 1;
                 if (s > beeps && s <= 4) { beeps = s; NSS.Sound.beep(s); }
             }

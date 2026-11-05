@@ -7,6 +7,21 @@
 const PROPS={};
 const propSpr=(key,w,h,fn,opt)=>PROPS[key]||(PROPS[key]=sprite(w,h,fn,opt));
 
+/* Woven baskets share a curved handle, dark opening, tucked-in contents and rim. */
+function drawWovenBasket(g,x,y,w,h,contents=[]){
+  softShadow(g,x,y+1,w*.55,1.6,.23);
+  pxRing(g,x,y-h-2,w*.42,h*.85,1.7,'#6E482A');pxRing(g,x,y-h-2,w*.42-.3,h*.85-.3,.8,'#C79B61');
+  const body=()=>{g.beginPath();g.moveTo(x-w/2,y-h);g.lineTo(x+w/2,y-h);g.lineTo(x+w*.41,y-1);g.quadraticCurveTo(x,y+2,x-w*.41,y-1);g.closePath();};
+  body();g.fillStyle='#78502F';g.fill();g.save();body();g.clip();vgrad(g,x-w/2,y-h,w,h+2,[[0,'#D7AF77'],[1,'#A87440']]);
+  for(let yy=y-h+2,row=0;yy<y;yy+=2.5,row++){pxLine(g,x-w/2,yy,x+w/2,yy,'#8D6136',.6);for(let xx=x-w/2+(row%2)*2;xx<x+w/2;xx+=4){rect(g,xx,yy-1.3,2.8,.7,'#E2C08A');rect(g,xx+2.8,yy-1.5,.5,2,'#9B6D3D');}}
+  g.restore();pxEll(g,x,y-h,w/2,2.7,'#5C3C28');pxEll(g,x,y-h-.4,w/2-1.1,1.8,'#966439');
+  contents.forEach((item,i)=>{const xx=x+(i%3-1)*w*.21+(i>=3?w*.1:0),yy=y-h-1.8-Math.floor(i/3)*2.7;
+    if(item.kind==='egg'){pxEll(g,xx,yy,2.5,3.2,'#72534E');pxEll(g,xx,yy-.2,2,2.7,item.color);pxLine(g,xx-1.6,yy,xx+1.6,yy,'#FFF9E8',.7);pxEll(g,xx-.6,yy-1.1,.5,.7,'#FFFFFF');}
+    else{pxEll(g,xx,yy,2.7,2.5,'#9B332C');pxEll(g,xx,yy-.3,2.2,2.1,item.color||'#D94C3E');pxEll(g,xx-.7,yy-1,.6,.7,'#F99B76');pxLine(g,xx,yy-2.1,xx+.4,yy-3.5,'#5C432A',.6);pxEll(g,xx+1.1,yy-3,1,.5,'#5B894D');}
+  });
+  pxLine(g,x-w/2+.8,y-h+1,x+w/2-.8,y-h+1,'#6E482A',1.6);pxLine(g,x-w/2+1,y-h+.7,x+w/2-1,y-h+.7,'#E1BB82',.8);
+}
+
 /* ---- Houses ---- */
 const HOUSE_SCHEMES=[
   {wall:'#F2D9A0',roof:'#B8553E',trim:'#FFFDF6',door:'#3E6A8A',shut:'#5A86B0',box:'#F07A8E'},

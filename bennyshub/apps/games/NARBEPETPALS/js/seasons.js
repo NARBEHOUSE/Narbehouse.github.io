@@ -149,7 +149,7 @@ Object.assign(PLACES,{
 });
 Object.assign(BG,{home:()=>{ drawBackground(); blitView(ctx,bg); drawStations(clock(),null); },
   pumpkin:()=>drawPumpkinPatch(), orchard:()=>drawOrchard(), fest:()=>drawFestival(), splash:e=>drawSplashPad(e), sled:()=>drawSledHill(), lights:e=>drawLightsStreet(e||0), rainwalk:e=>drawRainWalk(e||0),
-  eggyard:()=>{ drawGarden(); }, leafyard:()=>{ drawYard(); drawLeafPiles(); }, snowyard:()=>{ drawYard(); }, den:()=>drawDen(), tot:e=>drawHalloweenStreet(e||0)});
+  eggyard:()=>{ drawGarden(); }, leafyard:()=>{ drawYard(); drawLeafPiles(); }, snowyard:()=>drawSnowYard(), den:()=>drawDen(), tot:e=>drawHalloweenStreet(e||0)});
 ['walk:park','walk:beach','walk:woods','walk:dogpark','explore:garden','garden:sniff','yard:sun','yard:dig','yard:birds','catwalk:harness','catwalk:flop','catwalk:refuse','catwalk:proud','catwalk:bird'].forEach(k=>{ if(V[k]) V[k].outdoor=true; });
 /* Which places are open right now: in season, on the right day, and indoors when it rains. */
 function placeInSeason(P){ if(P.season&&P.season!==calSeason()) return false; if(P.notSeason&&P.notSeason===calSeason()) return false; if(P.when&&!P.when()) return false; if(P.wx&&P.wx!==wxNow()) return false; return true; }
@@ -213,7 +213,7 @@ function drawPumpkinPatch(){ blitView(ctx,cachedLayer('pumpkin',(g,ph,B)=>{ cons
   rect(g,4,58,20,9,'#E8C86A'); rect(g,4,58,20,1,'#F4DE8A'); for(let x=5;x<24;x+=2) rect(g,x,59,.5,8,'#C9A04A'); rect(g,104,60,20,8,'#E8C86A'); for(let x=105;x<124;x+=2) rect(g,x,61,.5,7,'#C9A04A'); })); }
 function drawOrchard(){ blitView(ctx,cachedLayer('orchard',(g,ph,B)=>{ const n=ph==='night'; skyFill(g,50,ph,B); vgrad(g,B.x0,50,Bw(B),B.y1-50,[[0,n?'#4E7A52':'#9CCB7E'],[1,n?'#3E6A44':'#7AB062']]);
   for(let x=al(B.x0,34)-4;x<B.x1+20;x+=34){ rect(g,x+7,34,4,22,'#7A5030'); pxEll(g,x+9,28,15,12,n?'#2F5A3A':'#4F8A4A'); pxEll(g,x+8,26,13,10,n?'#3E6E48':'#6FAA5E'); for(let i=0;i<6;i++) pxEll(g,x+2+hash2(i,Math.round(x),2)*14,20+hash2(i,Math.round(x),5)*14,1.4,1.4,'#D9403E'); }
-  rect(g,98,64,14,10,'#C99A62'); for(let x=99;x<112;x+=2) rect(g,x,65,.6,9,'#A8804E'); [[101,63],[104,62],[107,63],[110,62.5]].forEach(([x,y])=>pxEll(g,x,y,1.6,1.6,'#D9403E'));
+  drawWovenBasket(g,108,85,24,13,Array.from({length:5},()=>({kind:'apple'})));
   rect(g,18,40,1.2,30,'#A8804E'); rect(g,24,40,1.2,30,'#A8804E'); for(let y=44;y<70;y+=5) rect(g,18,y,7,1,'#A8804E'); })); }
 function drawFestival(){ blitView(ctx,cachedLayer('fest',(g,ph,B)=>{ const n=ph==='night'; skyFill(g,50,ph,B); vgrad(g,B.x0,50,Bw(B),B.y1-50,[[0,n?'#4E7A52':'#9CCB7E'],[1,n?'#3E6A44':'#7AB062']]);
   const aw=['#F07A8E','#7FA8D8','#F4C542','#8CC98A'];
@@ -225,7 +225,19 @@ function drawSplashPad(e){ blitView(ctx,cachedLayer('splash',(g,ph,B)=>{ skyFill
 function drawSledHill(){ blitView(ctx,cachedLayer('sled',(g,ph,B)=>{ const n=ph==='night'; skyFill(g,60,ph,B); g.fillStyle=n?'#C8D4E8':'#FFFFFF'; g.beginPath(); g.moveTo(B.x0,34); g.lineTo(B.x1,74); g.lineTo(B.x1,B.y1); g.lineTo(B.x0,B.y1); g.fill(); rect(g,B.x0,74,Bw(B),B.y1-74,n?'#D8E0F0':'#F4F8FF');
   for(let x=al(B.x0,30)+10;x<B.x1;x+=30){ const y=30+(x-B.x0)/Bw(B)*40-6; g.fillStyle='#3E6A4A'; g.beginPath(); g.moveTo(x,y-14); g.lineTo(x-6,y); g.lineTo(x+6,y); g.fill(); pxEll(g,x,y-9,3,1.2,'#FFFFFF'); rect(g,x-.6,y,1.2,3,'#6A4428'); }
   for(let i=0;i<30;i++) rect(g,B.x0+hash2(i,1,6)*Bw(B),B.y0+hash2(i,2,6)*60,.6,.6,'#FFFFFF'); })); }
-function drawLeafPiles(){ [[30,86,14],[98,88,12]].forEach(([x,y,r],j)=>{ for(let i=0;i<40;i++){ const a=hash2(i,j,8)*Math.PI, d=hash2(i,j,9)*r; pxEll(ctx,x+Math.cos(a)*d,y-Math.sin(a)*d*.55,1.5,1,['#E08A3C','#C9502E','#E8B54A'][i%3]); } }); }
+function drawSnowYard(){ blitView(ctx,cachedLayer('snowyard',(g,ph,B)=>{
+  const n=ph==='night';vgrad(g,B.x0,B.y0,Bw(B),62-B.y0,[[0,n?'#384865':'#A6D0E5'],[1,n?'#788CA5':'#E9F4FB']]);
+  for(let x=al(B.x0,32)+6;x<B.x1+15;x+=32){rect(g,x-1,32,2,26,'#75655A');pxLine(g,x,42,x-7,34,'#75655A',1.4);pxLine(g,x,37,x+6,29,'#75655A',1.2);pxEll(g,x-5,33,5,1.1,'#F5FAFF');pxEll(g,x+4,28,4,1,'#F5FAFF');}
+  rect(g,B.x0,52,Bw(B),2,'#A69A8A');for(let x=al(B.x0,6);x<B.x1;x+=6){rect(g,x,47,3.5,14,'#C5B7A4');pxEll(g,x+1.7,47,2.4,1.2,'#FFFFFF');}rect(g,B.x0,57,Bw(B),1.3,'#9D8D7D');
+  vgrad(g,B.x0,60,Bw(B),B.y1-60,[[0,n?'#D6E2F0':'#FFFFFF'],[1,n?'#BECFE2':'#E6F1FC']]);
+  for(let x=al(B.x0,25);x<B.x1+25;x+=25)pxEll(g,x,61,18,3.5,n?'#D6E2F0':'#FFFFFF');
+  for(let i=0;i<70;i++){const x=B.x0+hash2(i,4,13)*Bw(B),y=65+hash2(i,7,13)*(B.y1-65);pxEll(g,x,y,1.8,.35,n?'#B4C7DC':'#D1E3F4');}
+}));const e=performance.now();for(let i=0;i<26;i++){const x=VIEW.x+((i*29+Math.sin(e/1800+i)*2+VIEW.w*2)%VIEW.w),y=VIEW.y+(i*17+e*.007)%VIEW.h;pxEll(ctx,x,y,.45,.45,'#FFFFFF');}}
+function drawLeafPile(g,x,y,rx,ry){
+  g.fillStyle='#A84F29';g.beginPath();g.moveTo(x-rx,y);g.bezierCurveTo(x-rx,y-ry*.55,x-rx*.36,y-ry,x,y-ry);g.bezierCurveTo(x+rx*.36,y-ry,x+rx,y-ry*.55,x+rx,y);g.closePath();g.fill();
+  for(let i=0;i<260;i++){const u=hash2(i,2,17),h=hash2(i,5,17),xx=x+(u*2-1)*rx,top=ry*Math.sqrt(Math.max(0,1-(u*2-1)**2)),yy=y-h*top,c=['#D76C31','#E89A3F','#E9BB54','#BA4C2B','#CF7438'][i%5];pxEll(g,xx,yy,1.9,1.3,c);if(i%3===0)pxLine(g,xx-.9,yy+.3,xx+.9,yy-.3,'#965133',.35);}
+}
+function drawLeafPiles(){drawLeafPile(ctx,30,90,25,50);drawLeafPile(ctx,100,90,15,14);}
 function drawDen(){ blitView(ctx,cachedLayer('den',(g,ph,B)=>{ rect(g,B.x0,B.y0,Bw(B),60-B.y0,'#8A5A48'); for(let x=al(B.x0,10);x<B.x1;x+=10) rect(g,x,B.y0,5,60-B.y0,'#7E5040'); planks(g,'#6A4430','#5A3826',{x0:B.x0,x1:B.x1,y0:60,y1:B.y1});
   rect(g,20,24,40,36,'#B8603E'); for(let y=26;y<58;y+=4) for(let x=((y/4)%2)*4+20;x<60;x+=8) rect(g,x,y,7,3,'#C9704E'); rect(g,18,22,44,4,'#6A4428'); rect(g,28,36,24,24,'#2A1A14'); pxEll(g,40,58,9,2,'#6A4428');
   blit(g,armchairSprite('#A84A4A','#F4D27A'),88,36); floorLamp(g,122,60,'#F4E4C8',true); pxEll(g,64,80,30.8,7.8,INK); pxEll(g,64,80,30,7,'#C9573E'); pxEll(g,64,80,26,5,'#E8905A'); })); }
@@ -235,7 +247,9 @@ let lightsLayer=null;
 function litPanes(x0,c){ HOUSE.wins.forEach(([wx,wy])=>[[0,0],[4.9,0],[0,4.4],[4.9,4.4]].forEach(([dx,dy])=>rect(ctx,x0+wx+dx,14+wy+dy,4.1,3.6,c))); }
 function drawLightsStreet(e){ drawStreet(e); ctx.fillStyle='rgba(20,24,70,.55)'; fillView(ctx); const off=(e*.02)%256, now=performance.now();
   for(let t=al(VIEW.x+off,256)-off;t<VIEW.x+VIEW.w;t+=256) for(let h=0;h<4;h++){ const x=t+h*64+4; for(let k=0;k<=14;k++){ const u=k/14, px=u<.5?lerp(x-1.5,x+28,u*2):lerp(x+28,x+57.5,(u-.5)*2), py=(u<.5?lerp(33.5,16.5,u*2):lerp(16.5,33.5,(u-.5)*2))+.4; const c=['#F07A8E','#F4C542','#7FA8D8','#8CC98A'][(k+h)%4]; if(Math.floor(now/400+k+h)%4) { rect(ctx,px-.5,py-.5,1.1,1.1,c); glow(ctx,px,py,2.4,c,.35); } }
-    litPanes(x,'#FFE9A8'); } }
+    litPanes(x,'#FFE9A8');
+    for(const bx of [x+3,x+35.5]){for(let u=0;u<18;u+=.6)rect(ctx,bx+u,56.3+Math.sin(u/18*Math.PI)*1.7,.7,.5,'#384B41');for(let k=0;k<7;k++){const px=bx+k*3,py=56.7+Math.sin(k/6*Math.PI)*1.7,c=['#F07A8E','#F4C542','#7FA8D8','#8CC98A'][(k+h)%4];pxEll(ctx,px,py,.65,.8,c);glow(ctx,px,py,2.1,c,.25+.1*Math.sin(now/400+k));}}
+  } }
 function drawRainWalk(e){ drawStreet(e); ctx.fillStyle='rgba(60,70,100,.25)'; fillView(ctx); [[20,80],[70,84],[110,81]].forEach(([x,y])=>{ const xx=x-((e*.02)%160); pxEll(ctx,((xx%160)+160)%160-16,y,10,2,'#6A8AB0'); });
   for(let i=0;i<40;i++){ const x=VIEW.x+((i*23+e*.05)%(VIEW.w+10)), y=VIEW.y+((i*37+e*.12)%(VIEW.h+10)); rect(ctx,x,y,.5,3,'#CFE2F6'); } }
 function drawHalloweenStreet(e){ drawStreet(e); ctx.fillStyle='rgba(30,20,60,.5)'; fillView(ctx); const off=(e*.02)%256, now=performance.now();
@@ -263,7 +277,7 @@ V['orchard:apples']=tripScene('orchard',{dur:4400,outdoor:true,start(){ setCapti
   front(e){ for(let i=0;i<3;i++){ const t0=500+i*1100, k=ph(e,t0,t0+700); if(e>t0){ const x=46+i*18, y=k<1?lerp(24,86,k*k):86-Math.abs(Math.sin((e-t0-700)/140))*Math.max(0,3-(e-t0-700)/300); pxEll(ctx,x,y,1.8,1.8,INK); pxEll(ctx,x,y,1.4,1.4,'#D9403E'); rect(ctx,x-.2,y-2.6,.5,1,'#6A4428'); } } },
   tick(a,e){ [1200,2300,3400].forEach((t,i)=>{ if(e>t) once(a,'b'+i,()=>play('bounce',.45)); }); if(e>3500) once(a,'h',()=>play(happyNoise(),.45)); }});
 V['orchard:basket']=tripScene('orchard',{dur:3600,outdoor:true,start(){ setCaption(`${sayN()} helps fill the basket with shiny red apples.`); },
-  pose(p,e){ walkBetween(p,e,0,900,16,26); p.eyes='happy'; p.mouth='tongue'; if(e>900){ p.headDy=2; p.wag=180; } },
+  pose(p,e){ walkBetween(p,e,0,900,0,8); p.eyes='happy'; p.mouth='tongue'; if(e>900){ p.headDy=2; p.wag=180; } },
   tick(a,e){ if(e>1400) once(a,'s',()=>{ burst(6); play('sparkle',.5); addPhoto('place',`${sayN()} at the apple orchard.`,{place:'orchard'}); }); }});
 V['fest:flowers']=tripScene('fest',{dur:4200,outdoor:true,start(){ setCaption(`The flower festival! Flowers everywhere, ${sayN()}.`); },
   pose(p,e){ if(e<1500){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(-30,0,e/1500)); } else if(e<3000){ p.headDy=1; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='tongue'; } },
@@ -280,11 +294,15 @@ V['splash:shake']=tripScene('splash',{dur:3000,outdoor:true,start(){ setCaption(
   pose(p,e){ if(e<1500){ p.dx=Math.round(Math.sin(e/35)*3); p.eyes='closed'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
   tick(a,e,now){ if(e<1500&&now>=a.next){ for(let i=0;i<3;i++) spawn('drop',64+rand(-14,14),64,rand(-40,40),rand(-40,-10),.6); a.next=now+90; } if(e>1500) once(a,'p',()=>addPhoto('place',`${sayN()} at the splash pad.`,{place:'splashpad'})); }});
 function drawUmbrella(){ rect(ctx,92,40,1.2,48,'#8A6A4A'); for(let i=0;i<8;i++){ ctx.fillStyle=i%2?'#FFFFFF':'#E0604A'; ctx.beginPath(); ctx.moveTo(92.6,38); ctx.lineTo(76+i*4,46); ctx.lineTo(80+i*4,46); ctx.fill(); } rect(ctx,70,84,36,6,'#7FA8D8'); for(let x=70;x<106;x+=6) rect(ctx,x,84,3,6,'#F4D27A'); }
+function drawBeachShell(x,y){
+  const fan=(r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y+3);for(let i=0;i<=32;i++){const a=Math.PI+i/32*Math.PI,rr=r+(i%4===2?.6:0);ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr*.85);}ctx.closePath();ctx.fill();};
+  fan(6.6,'#A76772');fan(5.8,'#F4B8C6');for(let i=1;i<7;i++){const a=Math.PI+i/7*Math.PI;pxLine(ctx,x,y+2.5,x+Math.cos(a)*5.5,y+Math.sin(a)*4.5,i%2?'#FFF1E5':'#DB8C9F',.65);}pxEll(ctx,x,y+2.8,1.7,.8,'#FFF0DC');
+}
 V['beach:dig']=tripScene('beach',{dur:4400,outdoor:true,start(){ setCaption(`Beach day! ${sayN()} digs in the warm sand.`); },
   behind(){ drawUmbrella(); },
-  pose(p,e){ p.dy=0; if(e<2600){ p.body='dig'; p.face=1; p.bow=.75; p.frame=Math.floor(e/140)%4; p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  front(e){ if(e>2600){ const k=ph(e,2600,3000); pxEll(ctx,72,lerp(90,80,k),2.6,2,INK); pxEll(ctx,72,lerp(90,80,k),2,1.5,'#F7C4CF'); } },
-  tick(a,e,now){ if(e<2600&&now>=a.next){ for(let i=0;i<2;i++) spawn('crumb',64+rand(-6,6),86,rand(-30,30),rand(-40,-20),.6,'#E8C88A'); play('rustle',.25); a.next=now+260; } if(e>2600) once(a,'f',()=>{ setCaption(`${sayN()} found a pretty pink shell!`); play('sparkle',.5); burst(5); }); }});
+  pose(p,e){p.dx=-34;p.dy=0;p.face=1;p.body='stand';if(e<2600){p.body='dig';p.bow=.75;p.frame=Math.floor(e/140)%4;p.eyes='happy';p.mouth='open';}else{p.eyes='happy';p.mouth='tongue';}},
+  front(e){if(e>2600)drawBeachShell(53,lerp(90,81,ph(e,2600,3000)));},
+  tick(a,e,now){if(e<2600&&now>=a.next){for(let i=0;i<2;i++)spawn('crumb',42+rand(-6,6),86,rand(-25,15),rand(-40,-20),.6,'#E8C88A');play('rustle',.25);a.next=now+260;}if(e>2600)once(a,'f',()=>{setCaption(`${sayN()} found a pretty pink shell!`);play('sparkle',.5);burst(5);});}});
 V['beach:rest']=tripScene('beach',{dur:4000,outdoor:true,start(){ setCaption(`A nap in the shade of the beach umbrella.`); },
   behind(){ drawUmbrella(); }, pose(p,e){ p.dx=26; p.body='lie'; p.face=-1; p.frame=0; p.eyes=e>800?'closed':'happy'; },
   tick(a,e,now){ if(e>1000&&now>=a.next){ spawn('z',86,62,5,-7,2.2); a.next=now+1200; } if(e>1500) once(a,'p',()=>addPhoto('place',`${sayN()}'s beach day.`,{place:'beachday'})); }});
@@ -292,11 +310,26 @@ V['sled:ride']=tripScene('sled',{dur:4200,outdoor:true,noShadow:true,start(){ se
   pose(p,e){ const k=ph(e,300,3200); p.dx=Math.round(lerp(-50,40,k)); p.dy=Math.round(lerp(-26,6,k)); p.eyes='happy'; p.mouth='open'; p.ear=Math.floor(e/80)%2; },
   front(e,a,p){ const x=64+p.dx, y=PETY+p.dy+42; rect(ctx,x-12,y-1,24,3,INK); rect(ctx,x-11,y-.4,22,1.8,'#D9403E'); pxLine(ctx,x-12,y+2.4,x+12,y+2.4,'#6A4428',.6); pxLine(ctx,x+12,y+2.4,x+14,y,'#6A4428',.6); },
   tick(a,e,now){ if(e<3200&&now>=a.next){ spawn('puff',64+rand(-6,6),80,rand(-20,-6),rand(-10,-4),.8,'#FFFFFF'); a.next=now+80; } if(e>3300) once(a,'h',()=>{ play(happyNoise(),.5); burst(6); }); }});
-V['snow:angel']=tripScene('snowyard',{dur:4000,outdoor:true,start(){ setCaption(`${sayN()} makes a snow angel!`); },
-  pose(p,e){ p.dy=0; if(e<2800){ p.body='curl'; p.face=1; p.roll=Math.PI+Math.sin(e/260)*.7; p.frame=0; p.eyes='happy'; p.mouth='open'; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  behind(e){ if(e>2800){ pxEll(ctx,64,88,18,4,'rgba(200,215,235,.8)'); pxEll(ctx,50,84,6,3,'rgba(200,215,235,.8)'); pxEll(ctx,78,84,6,3,'rgba(200,215,235,.8)'); } },
-  tick(a,e,now){ if(e<2800&&now>=a.next){ spawn('puff',64+rand(-12,12),84,rand(-10,10),rand(-10,-4),.8,'#FFFFFF'); a.next=now+200; } if(e>2800) once(a,'p',()=>{ burst(6); addPhoto('place',`${sayN()} made a snow angel.`,{place:'snowday'}); }); }});
-V['snow:play']=tripScene('snowyard',{dur:4400,outdoor:true,start(){ setCaption(`Snow day! ${sayN()} pounces in the fluffy snow.`); },
+function drawSnowman(e){
+  const ball=(x,y,r)=>{pxEll(ctx,x,y,r+.6,r,'#A6C3DA');pxEll(ctx,x,y-.5,r,r-.5,'#E1EDF7');pxEll(ctx,x-1.5,y-1.8,r-1.6,r-2,'#FFFFFF');};
+  const k=ph(e,0,1600),r=lerp(4,13,k),x=lerp(50,94,k);softShadow(ctx,x,89,r+2,2,.15);ball(x,88-r,r);
+  if(e>1600){const q=ease(ph(e,1600,3000));ball(lerp(56,94,q),lerp(80,54,q)+arc(q,10),10);}
+  if(e>3000){const q=ease(ph(e,3000,4000));ball(lerp(66,94,q),lerp(80,38,q)+arc(q,12),7.3);}
+  if(e>4000){pxLine(ctx,85,55,75,47,'#79624D',1);pxLine(ctx,78,49,77,45,'#79624D',.8);pxLine(ctx,103,55,112,47,'#79624D',1);pxLine(ctx,110,49,113,50,'#79624D',.8);
+    rect(ctx,87,43,14,2.6,'#C95454');rect(ctx,98,44,2.8,9,'#D96862');for(let y=47;y<53;y+=2)rect(ctx,98,y,2.8,.5,'#F3C87F');
+    rect(ctx,89,24,10,8,'#3F5265');rect(ctx,86,31,16,1.8,'#334354');rect(ctx,89,29,10,1.8,'#C95454');
+    pxEll(ctx,91,36,.75,.75,'#3B4A55');pxEll(ctx,97,36,.75,.75,'#3B4A55');ctx.fillStyle='#E58B3E';ctx.beginPath();ctx.moveTo(93,38);ctx.lineTo(85,40);ctx.lineTo(94,40);ctx.fill();
+    for(let i=0;i<5;i++)pxEll(ctx,91+i*1.5,40.7+Math.sin(i/4*Math.PI)*1.1,.4,.4,'#4A5761');for(const y of [51,57,69,76])pxEll(ctx,94,y,1,1,'#4A5761');
+  }
+}
+V['snow:angel']=tripScene('snowyard',{reviewLabel:'Build a snowman',dur:6400,start(){setCaption(`${sayN()} rolls snowballs to build a snowman!`);},
+  pose(p,e){p.dy=0;p.dx=-4;p.face=1;p.body=e<1600?'walk':'sit';p.frame=Math.floor(e/150)%4;p.eyes='happy';p.mouth='smile';
+    if(e<1600){const k=ph(e,0,1600);p.bow=.65;p.headDy=2;p.dx=0;p.dx=lerp(50,94,k)-lerp(4,13,k)+1-mouthAt(p).x;}
+    else if(e<4000){p.headDy=-1;reachPaw(p,1,Math.sin(ph(e,e<3000?1600:3000,e<3000?3000:4000)*Math.PI),'high');}
+    else p.mouth='tongue';},
+  front(e){drawSnowman(e);},
+  tick(a,e,now){if(e<1600&&now>=a.next){spawn('puff',64+lerp(-48,-4,ph(e,0,1600))+18,86,-5,-8,.7,'#FFFFFF');a.next=now+200;}if(e>4000)once(a,'p',()=>{setCaption(`A scarf, a hat, and a carrot nose! ${sayN()}'s snowman is ready.`);play('sparkle',.5);burst(6);addPhoto('place',`${sayN()} built a snowman.`,{place:'snowday'});});}});
+V['snow:play']=tripScene('snowyard',{dur:4400,start(){setCaption(`Snow day! ${sayN()} pounces in the fluffy snow.`);},
   pose(p,e){ playBounds(p,e,1100,16,700,9,4200); },
   tick(a,e,now){ const t=e%1100; if(t>450&&now>=a.next){ play('rustle',.3); for(let i=0;i<5;i++) spawn('puff',64+Math.sin(e/700)*16+rand(-6,6),86,rand(-20,20),rand(-16,-6),.8,'#FFFFFF'); a.next=now+1000; } }});
 V['lights:walk']=tripScene('lights',{dur:6400,outdoor:true,scroll:1,start(){ setCaption(`A walk past the holiday lights. So twinkly, ${sayN()}!`); play('twinkle',.5); },
@@ -307,28 +340,38 @@ V['rainwalk:puddles']=tripScene('rainwalk',{dur:5600,outdoor:true,scroll:1,start
   pose(p,e){ const t=e%1200; p.body='walk'; p.face=1; p.frame=Math.floor(e/150)%4; p.eyes='happy'; p.mouth='open'; p.dy=0; if(t<650) leapPose(p,t,180,500,6); },
   front(e,a,p){ const nk=neckAt(p); drawLeash(nk.x,nk.y,VIEW.x+VIEW.w+3,nk.y-28,'#F4C542','#B8902A',13); },
   tick(a,e,now){ const t=e%1200; if(t>380&&now>=a.next){ play('splat',.4); for(let i=0;i<5;i++) spawn('drop',64+rand(-8,8),88,rand(-30,30),rand(-40,-20),.6); a.next=now+1100; } }});
-V['leaves:jump']=tripScene('leafyard',{dur:4600,outdoor:true,start(){ setCaption(`Crunchy leaves! ${sayN()} jumps into the leaf pile.`); },
-  pose(p,e){ p.face=-1; if(e<800){ walkBetween(p,e,0,800,0,-26); } else if(e<1800){ p.dx=lerp(-26,-34,ph(e,800,1500)); leapPose(p,e,800,1500,14); p.eyes='happy'; p.mouth='open'; } else { p.dx=-34; p.body='stand'; p.headDy=2; p.eyes='happy'; p.mouth='tongue'; p.dy=0; } },
-  tick(a,e){ if(e>1450) once(a,'b',()=>{ play('rustle',.6); for(let i=0;i<18;i++) spawn('leaf',30+rand(-10,10),82,rand(-30,30),rand(-50,-20),2.4,['#E08A3C','#C9502E','#E8B54A'][i%3]); }); if(e>2600) once(a,'p',()=>{ play(happyNoise(),.45); addPhoto('place',`${sayN()} jumped in the leaves.`,{place:'leafpile'}); }); }});
+V['leaves:jump']=tripScene('leafyard',{dur:5000,outdoor:true,start(){setCaption(`Crunchy leaves! ${sayN()} jumps into the leaf pile.`);},
+  pose(p,e){p.dy=0;p.eyes='happy';p.mouth='open';if(e<800)walkBetween(p,e,0,800,0,28);else if(e<1800){p.face=-1;p.dx=lerp(28,-34,ph(e,800,1800));leapPose(p,e,800,1800,24);}else if(e<3000){p.dx=-34;p.face=-1;}else if(e<4100){p.face=1;p.dx=lerp(-34,16,ph(e,3000,4100));leapPose(p,e,3000,4100,24);}else{p.dx=16;p.face=1;p.body='stand';p.mouth='tongue';}},
+  drawPet(e,a,p,fit){if(e<1800||e>=3000)drawPetPose(ctx,state.style,stageName(),p,fit,PETX+p.dx,PETY+p.dy);},
+  front(e){if(e>1100&&e<3400)drawLeafPile(ctx,30,90,25,50);},
+  tick(a,e){[1600,3100].forEach((t,j)=>{if(e>t)once(a,'b'+j,()=>{play('rustle',.6);for(let i=0;i<18;i++)spawn('leaf',30+rand(-14,14),58,rand(-30,30),rand(-50,-20),2.4,['#E08A3C','#C9502E','#E8B54A'][i%3]);});});if(e>4200)once(a,'p',()=>{setCaption(`There you are! ${sayN()} hops back out of the leaves.`);play(happyNoise(),.45);addPhoto('place',`${sayN()} jumped in the leaves.`,{place:'leafpile'});});}});
+function drawSprinkler(e){
+  const hose=(c,w)=>{for(let i=0;i<40;i++){const t=i/40,q=(i+1)/40;pxLine(ctx,96+t*44,88+Math.sin(t*Math.PI)*5,96+q*44,88+Math.sin(q*Math.PI)*5,c,w);}};hose('#375C4B',2);hose('#74A37D',1);
+  softShadow(ctx,96,89,9,1.4,.25);pxEll(ctx,96,87,8,2.8,INK);pxEll(ctx,96,86.5,7.2,2.2,'#579B77');pxLine(ctx,96,85,96,79,'#4C6873',2.5);pxLine(ctx,95.5,85,95.5,79,'#B8D5DD',.8);pxLine(ctx,87,78,104,78,'#314C5C',2.8);pxLine(ctx,87,77.5,104,77.5,'#A6C5D2',1.4);
+  for(let j=0;j<7;j++){const x=87+j*2.7,dx=-60+j*7+Math.sin(e/700)*9,h=75+j*3,pos=t=>({x:x+dx*t,y:77-h*t+(h+11)*t*t});pxEll(ctx,x,77,.6,.6,'#335B72');
+    for(let i=0;i<30;i++){const a=pos(i/30),b=pos((i+1)/30);pxLine(ctx,a.x,a.y,b.x,b.y,'rgba(130,201,237,.65)',.65);}
+    for(let i=0;i<8;i++){const t=(e/1500+i/8+j*.02)%1,p=pos(t);pxEll(ctx,p.x,p.y,.45,.6,'#DFF7FF');}const end=pos(1);pxEll(ctx,end.x,89,1.6,.45,'#B6E2F2');
+  }
+}
 V['sprinkler:jump']=tripScene('yard',{dur:5000,outdoor:true,start(){ setCaption(`The sprinkler is on! ${sayN()} leaps through the spray.`); },
   pose(p,e){ playBounds(p,e,1300,20,900,9,4800); },
-  front(e){ const a=Math.sin(e/500)*.8; for(let i=0;i<14;i++){ const k=i/14; rect(ctx,94-Math.sin(a)*k*50-k*10,86-Math.sin(k*Math.PI)*26,1.2,1.2,'rgba(160,210,240,.9)'); } rect(ctx,92,86,5,2,'#5FA873'); },
+  front(e){drawSprinkler(e);},
   tick(a,e,now){ const t=e%1300; if(t>420&&now>=a.next){ play('splat',.35); a.next=now+1200; } if(e>4200) once(a,'p',()=>addPhoto('place',`${sayN()} and the summer sprinkler.`,{place:'sprinkler'})); }});
 V['egg:hunt']=tripScene('eggyard',{dur:6400,outdoor:true,start(){ setCaption(`An Easter egg hunt! Can ${sayN()} find the eggs?`); },
   eggs:[[24,84,'#F7C4CF'],[100,82,'#B8E0A0'],[62,92,'#C9B0E8']],
   pose(p,e){ const seg=Math.min(2,Math.floor(e/1900)), tx=this.eggs[seg][0]-64, local=e-seg*1900, from=seg?this.eggs[seg-1][0]-64:0;
     if(local<900){ p.body='walk'; p.face=tx>from?1:-1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(from,tx,local/900)); } else { p.dx=tx; p.eyes='happy'; p.mouth='open'; p.headDy=local<1300?2:0; } },
-  front(e){ this.eggs.forEach(([x,y,c],i)=>{ if(e<i*1900+1300){ pxEll(ctx,x,y,2.4,3,INK); pxEll(ctx,x,y,1.9,2.5,c); rect(ctx,x-1.8,y,3.6,.6,'#FFFFFF'); } }); rect(ctx,110,80,10,7,'#C99A62'); const got=this.eggs.filter((q,i)=>e>=i*1900+1300); got.forEach((q,i)=>pxEll(ctx,112+i*3,79,1.4,1.8,q[2])); },
+  front(e){this.eggs.forEach(([x,y,c],i)=>{if(e<i*1900+1300){pxEll(ctx,x,y,2.4,3,INK);pxEll(ctx,x,y,1.9,2.5,c);rect(ctx,x-1.8,y,3.6,.6,'#FFFFFF');}});const got=this.eggs.filter((q,i)=>e>=i*1900+1300);drawWovenBasket(ctx,115,89,20,12,got.map(q=>({kind:'egg',color:q[2]})));},
   tick(a,e){ [0,1,2].forEach(i=>{ if(e>i*1900+1300) once(a,'e'+i,()=>{ play('sparkle',.5); spawn('sparkle',this.eggs[i][0],this.eggs[i][1]-6,0,-8,.8); setCaption(['One egg!','Two eggs!','Three eggs! All found!'][i]); }); }); if(e>5800) once(a,'p',()=>addPhoto('place',`${sayN()}'s Easter egg hunt.`,{place:'egghunt'})); }});
 V['cocoa:fire']=tripScene('den',{dur:5200,start(){ setCaption(`Hot cocoa by the fire for you, and warm milk for ${sayN()}. So cozy.`); },
   pose(p,e){ p.dx=10; p.eyes=e>2000?'closed':'happy'; p.mouth='smile'; },
   front(e){ drawDenFire(performance.now()); rect(ctx,92,80,6,6,INK); rect(ctx,92.6,80.6,4.8,4.8,'#E8E0D0'); rect(ctx,93.4,81,3.2,1.4,'#8A5A34'); for(let i=0;i<3;i++){ const t=((e/900)+i/3)%1; rect(ctx,94.5+Math.sin(t*6+i)*1.2,78-t*8,.6,.6,`rgba(255,255,255,${(1-t).toFixed(2)})`); } },
   tick(a,e){ if(e>1400) once(a,'p',()=>play(kind()==='cat'?'pet:purr':'pet:sigh',.45)); if(e>2500) once(a,'ph',()=>addPhoto('place',`A cozy night by the fire with ${sayN()}.`,{place:'cocoa'})); }});
 V['fireworks:cozy']={dur:6000,start(){ setCaption(`Fireworks! ${sayN()} feels safe and snug under a cozy blanket.`); },
-  pose(p,e){ p.eyes=Math.floor(e/1600)%2?'open':'happy'; p.mouth='smile'; },
+  pose(p,e){p.eyes='closed';p.headDy=2;p.dy=2;p.wag=0;p.mouth='smile';},
   front(e,a,p){ drawBlanket(Math.round(PETY+G().collar+(big()?1:0))); },
   overlay(e){ ctx.fillStyle='rgba(20,24,70,.35)'; fillView(ctx); const w=WIN(); ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip(); ctx.fillStyle='#1A2050'; ctx.fillRect(w.x,w.y,w.w,w.h); fireworksIn(w.x,w.y,w.w,w.h,performance.now(),1); ctx.restore(); },
-  tick(a,e,now){ if(now>=a.next){ play('pop',.2); a.next=now+1400; } if(e>3000) once(a,'s',()=>setCaption(`Boom, crackle, sparkle! ${sayN()} peeks out to watch.`)); }};
+  tick(a,e,now){if(now>=a.next){play('pop',.2);a.next=now+1400;}if(e>3000)once(a,'s',()=>setCaption(`Boom, crackle, sparkle. ${sayN()} stays snug under the blanket.`));}};
 function drawPumpkinBucket(g,x,y,k=1){ g.save(); g.translate(x,y); g.scale(k,k);
   // Raised handle, hollow opening, three pumpkin lobes, and a carved jack-o'-lantern face.
   g.strokeStyle='#493E45'; g.lineWidth=1.1; g.beginPath(); g.moveTo(-4,-7); g.bezierCurveTo(-5,-17,5,-17,4,-7); g.stroke();

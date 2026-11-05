@@ -68,11 +68,10 @@ const gridPosOf=key=>GRID.pos[key]||null;
 function drawFloorUnits(now,ak){ const kd=kind(), t=state.task, r=(layer==='decor'&&decorPreview)||room(), list=[];
   list.push({y:STATION.bath[1]+15,f:()=>drawObj(stationSprite('bath',kd),STATION.bath[0],STATION.bath[1],hlOn('clean'))});
   list.push({y:STATION.basket[1]+16,f:()=>drawObj(stationSprite('basket',kd),STATION.basket[0],STATION.basket[1],hlOn('play'))});
-  list.push({y:STATION.feed[1]+8,f:()=>{ if(ak!=='feed:bowl') drawObj(foodBowl(),STATION.feed[0],STATION.feed[1],hlOn('feed')); if(ak!=='task:water') drawObj(waterBowl(t==='water'),STATION.water[0],STATION.water[1],hlOn('task')&&t==='water'); }});
+  list.push({y:STATION.feed[1]+8,f:()=>{ if(ak!=='feed:bowl'&&!(ak==='rush:give'&&anim.help==='food')) drawObj(foodBowl(),STATION.feed[0],STATION.feed[1],hlOn('feed')); if(ak!=='task:water'&&!(ak==='rush:give'&&anim.help==='water')) drawObj(waterBowl(t==='water'),STATION.water[0],STATION.water[1],hlOn('task')&&t==='water'); }});
   list.push({y:94+(FIX.dy||0),f:()=>drawFixtures(ctx,kd)});
-  /* The bed grows while the pet naps on it (anims.js napGrow). */
-  { const id=r.spots.floorL||'petBed', p=itemPos(id,'floorL'), d=DECOR[id], k=anim&&anim.type==='nap'?napGrow(clock()-anim.start,anim):1;
-    list.push({y:p.y+d.h,f:()=>{ if(k>1.02){ const cx=p.x+d.w/2, base=p.y+d.h, w=d.w*k, h=d.h*k; softShadow(ctx,cx,base-.5,w*.55,2.4*k,.3); blitSized(ctx,itemSprite(id),cx-w/2,base-h,w,h); return; }
+  { const id=r.spots.floorL||'petBed', p=itemPos(id,'floorL'), d=DECOR[id];
+    list.push({y:p.y+d.h,f:()=>{
       const saved=state.room; state.room=r; try{ drawItem(ctx,id,'floorL',{}); } finally { state.room=saved; } if(hlOn('nap')) drawObj(itemSprite(id),p.x,p.y,true); }}); }
   if(r.spots.floorR&&DECOR[r.spots.floorR]&&!(t==='plant'&&r.spots.floorR==='plant')){ const id=r.spots.floorR, p=itemPos(id,'floorR'); list.push({y:p.y+DECOR[id].h,f:()=>{ const saved=state.room; state.room=r; try{ drawItem(ctx,id,'floorR',{}); } finally { state.room=saved; } }}); }
   const sp=comps().length?compSpots():[]; comps().forEach((c,i)=>{ if(sp[i]) list.push({y:sp[i].y,f:()=>drawCompanion(i,now)}); });

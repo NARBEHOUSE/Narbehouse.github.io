@@ -67,7 +67,7 @@ NMB.Settings = (function () {
          * scan: the highlight moves between Magic and Pause, for a player who
          *       cannot hold a switch long enough to pause.
          */
-        pauseMode: 'hold',
+        pauseMode: 'scan',
         /**
          * regular: the full scenes. simple: Simple High Contrast for players
          * with CVI - plain black, one big bold shape per press in one colour.
@@ -92,7 +92,7 @@ NMB.Settings = (function () {
 
     function clamp() {
         if (MODES.indexOf(settings.mode) === -1) settings.mode = DEFAULTS.mode;
-        if (settings.pauseMode !== 'scan') settings.pauseMode = 'hold';
+        if (settings.pauseMode !== 'scan' && settings.pauseMode !== 'hold') settings.pauseMode = DEFAULTS.pauseMode;
         if (settings.highlightStyle !== 'full') settings.highlightStyle = 'outline';
         if (settings.look !== 'simple') settings.look = 'regular';
         settings.simpleColorIndex = wrapIndex(settings.simpleColorIndex, SIMPLE_COLORS.length);
@@ -123,7 +123,15 @@ NMB.Settings = (function () {
             console.warn('[NMB] Could not read settings:', e);
             settings = Object.assign({}, DEFAULTS);
         }
+        // Apply the new pause default once, including to existing saved choices.
+        // Keep the marker in the same save so later user choices survive reloads.
+        const migratePause = settings.scanPauseDefaultApplied !== true;
+        if (migratePause) {
+            settings.pauseMode = 'scan';
+            settings.scanPauseDefaultApplied = true;
+        }
         clamp();
+        if (migratePause) save();
     }
 
     function save() {

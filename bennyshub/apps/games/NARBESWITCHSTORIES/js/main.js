@@ -11,6 +11,8 @@ NSS.Game = (function () {
     function openStory(id) {
         const story = NSS.Library.get(id);
         if (story) {
+            // Fetch this book's full artwork only when it is opened (repeat calls reuse loads).
+            NSS.Scene.preload(story);
             NSS.ReadingHistory.record(story.id);
             NSS.Story.open(story);
         }
@@ -65,7 +67,7 @@ NSS.Game = (function () {
         NSS.Input.init();
         Promise.all([NSS.Library.load(), NSS.Descriptions.load()]).then(function ([stories]) {
             NSS.Descriptions.check(stories);
-            stories.forEach(NSS.Scene.preload);
+            // Covers load as drawn; never download every book's artwork up front.
             NSS.Input.setProvider(NSS.UI.scannables);
             NSS.UI.show('library');
 

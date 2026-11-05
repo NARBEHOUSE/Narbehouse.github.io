@@ -268,8 +268,8 @@ NMB.UI = (function () {
         el.root.dataset.screen = name;
         el.root.dataset.pauseMode = S().get('pauseMode');
         el.pauseTip.textContent = scanMode()
-            ? 'Choose Pause, hold Enter for 5 seconds, or click or tap Pause to open the menu.'
-            : 'Hold Enter for 5 seconds or click or tap Pause to open the menu.';
+            ? 'Choose Pause, hold Enter, or click or tap Pause to open the menu.'
+            : 'Hold Enter or click or tap Pause to open the menu.';
         el.root.dataset.look = S().get('look');
 
         if (name === 'settings') renderSettings();
@@ -308,10 +308,10 @@ NMB.UI = (function () {
     function prompt(on) { el.prompt.classList.toggle('hidden', !on); }
     function promptShown() { return !el.prompt.classList.contains('hidden'); }
 
-    function holdRing(p) {
+    function holdRing(p, showing = p > 0) {
         p = Math.max(0, Math.min(1, p || 0));
         el.ring.style.setProperty('--p', p.toFixed(3));
-        el.pauseBtn.classList.toggle('holding', p > 0);
+        el.pauseBtn.classList.toggle('holding', showing);
     }
 
     function bumpMagic() {
@@ -376,7 +376,7 @@ NMB.UI = (function () {
                             : 'In the game, *Space* moves the highlight between *Magic* and *Pause*.');
             lines.push('*Enter* on *Magic* makes magic. *Enter* on *Pause* stops the game.');
         } else {
-            lines.push('In the game, *every press* of a switch, key or touch makes magic.');
+            lines.push('In the game, *release a switch or key*, or tap the screen, to make magic.');
             lines.push('*Hold Enter* to pause.');
         }
         lines.push('*Fireworks*: bursts, rings and spirals, and shapes like a star, a smiley face or a paw print.');

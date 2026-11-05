@@ -9,13 +9,14 @@
  *   Auto Scan        the highlight moves by itself; Enter chooses
  *
  * PLAY is cause and effect, and has two styles (the Pause setting):
- *   Hold Enter (default)  EVERY press makes magic, on the press itself: Space,
- *                         Enter, any key, a tap anywhere, or any game
- *                         controller button (so an Xbox Adaptive Controller
- *                         works too). Holding a key does not repeat. Holding
- *                         Enter (or controller button A) for five seconds opens
- *                         Pause, with a filling ring and a beep each second.
- *   Scan to Pause         The highlight moves between Magic and Pause, the
+ *   Hold Enter            Releasing Space, Enter, any key or any controller
+ *                         button makes magic (including an Xbox Adaptive
+ *                         Controller). Mouse/touch taps work immediately.
+ *                         Holding a key does not repeat. Holding
+ *                         Enter (or controller button A) waits three seconds,
+ *                         then fills a ring with four one-second beeps, opening
+ *                         Pause after seven seconds. That release does nothing.
+ *   Scan to Pause (default) The highlight moves between Magic and Pause, the
  *                         usual scan contract, for a player who cannot hold
  *                         a switch. Holding Enter still pauses too.
  *
@@ -30,8 +31,9 @@ NMB.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
-    const PAUSE_HOLD = 5000;       // hold Enter this long in play to pause (as in Pet Pals)
-    const RING_SHOW = 1000;        // the pause ring appears after this much of the hold
+    const PAUSE_DELAY = 3000;     // no pause feedback during an ordinary press
+    const PAUSE_COUNTDOWN = 4000; // four seconds of feedback after the quiet delay
+    const PAUSE_HOLD = PAUSE_DELAY + PAUSE_COUNTDOWN;
 
     let provider = function () { return []; };
     let items = [];
@@ -46,11 +48,13 @@ NMB.Input = (function () {
     let backTimer = null, backRepeat = null;
     let pauseTimer = null, swallowEnter = false;
     let previousAuto = false;
+    const freeHeld = new Set();
+    let windowActive = true;
 
     function SM() { return window.NarbeScanManager; }
     function scanInterval() { try { return SM().getScanInterval() || 2000; } catch (e) { return 2000; } }
 
-    /** Play in the default style: no scan list, every press makes magic. */
+    /** Play in Hold Enter mode: no scan list, every press makes magic. */
     function freePlay() {
         return NMB.UI.current() === 'play' && NMB.Settings.get('pauseMode') !== 'scan';
     }
@@ -122,8 +126,8 @@ NMB.Input = (function () {
     /** Re-read the scan list. A fresh list starts with nothing highlighted. */
     function refresh(fresh) {
         items = (provider() || []).filter(function (it) { return it && it.el; });
-        // A Space still down from the last screen must not step this one.
-        if (fresh) { index = -1; focused = null; lastFocusId = null; clearSpaceState(); }
+        // A press begun on the last screen must not act on this one.
+        if (fresh) { index = -1; focused = null; lastFocusId = null; clearAll(); }
         wireClicks();
         syncChoice(fresh);
         paint();
@@ -224,9 +228,9 @@ NMB.Input = (function () {
         let beeps = 0;
         pauseTimer = setInterval(function () {
             const t = performance.now() - t0;
-            if (t >= RING_SHOW) {
-                NMB.UI.holdRing((t - RING_SHOW) / (PAUSE_HOLD - RING_SHOW));
-                const s = Math.floor((t - RING_SHOW) / 1000) + 1;
+            if (t >= PAUSE_DELAY) {
+                NMB.UI.holdRing((t - PAUSE_DELAY) / PAUSE_COUNTDOWN, true);
+                const s = Math.floor((t - PAUSE_DELAY) / 1000) + 1;
                 if (s > beeps && s <= 4) { beeps = s; NMB.Sound.beep(s); }
             }
             if (t >= PAUSE_HOLD) {
@@ -250,8 +254,8 @@ NMB.Input = (function () {
 
     const IGNORED_KEYS = ['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'ContextMenu'];
 
-    /** A press during free play. Fires the magic on the press itself. */
-    function freeDown(code, key, repeat, e) {
+    /** Arm a free-play action; only its matching release can make magic. */
+    function freeDown(code, key, repeat, e, token = code) {
         if (key === 'Escape') {
             if (e) e.preventDefault();
             if (!repeat) NMB.Game.pause();
@@ -259,15 +263,30 @@ NMB.Input = (function () {
         }
         if (/^F\d+$/.test(key) || IGNORED_KEYS.indexOf(key) >= 0) return;
         if (e) e.preventDefault();
-        if (repeat) return;
+        if (repeat || freeHeld.has(token)) return;
+        freeHeld.add(token);
         if (isEnter(code)) {
             enterHeld = true;
             swallowEnter = false;
-            startPauseHold();       // also restarts it if an earlier release was lost
+            startPauseHold();
         } else if (code === 'Space') {
             spaceHeld = true;
         }
-        NMB.Game.magic();
+    }
+
+    function freeUp(code, token = code) {
+        if (!freeHeld.delete(token)) return false;
+        const swallow = swallowEnter;
+        if (isEnter(code)) {
+            stopPauseHold();
+            enterHeld = false;
+            swallowEnter = false;
+        } else if (code === 'Space') {
+            clearSpaceState();
+        }
+        if (choice) choice.setInputHeld(spaceHeld || enterHeld);
+        if (enabled && freePlay() && !(isEnter(code) && swallow)) NMB.Game.magic();
+        return true;
     }
 
     /** A Space or Enter press in a menu, or in Scan to Pause play. */
@@ -310,7 +329,7 @@ NMB.Input = (function () {
     }
 
     function onKeyDown(e) {
-        if (!enabled || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (!enabled || !windowActive || document.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
         if (freePlay()) { freeDown(e.code, e.key, e.repeat, e); return; }
         if (e.key === 'Escape' && NMB.UI.current() === 'play' && !e.repeat) { NMB.Game.pause(); return; }
         if (!isSwitchKey(e.code)) return;
@@ -320,13 +339,21 @@ NMB.Input = (function () {
     }
 
     function onKeyUp(e) {
-        if (!enabled || !isSwitchKey(e.code)) return;
+        if (!enabled) return;
+        if (freeHeld.has(e.code)) {
+            e.preventDefault();
+            freeUp(e.code);
+            return;
+        }
+        if (!isSwitchKey(e.code)) return;
         e.preventDefault();
         switchUp(e.code);
     }
 
     function onCancelled(e) {
         const code = e.detail && e.detail.code;
+        if (!code) { clearAll(); return; }
+        freeHeld.delete(code);
         if (choice) choice.cancelInput();
         braking = false;
         if (isEnter(code)) { stopPauseHold(); enterHeld = false; swallowEnter = false; }
@@ -334,6 +361,7 @@ NMB.Input = (function () {
     }
 
     function clearAll() {
+        freeHeld.clear();
         stopPauseHold();
         clearSpaceState();
         enterHeld = false;
@@ -344,7 +372,7 @@ NMB.Input = (function () {
 
     // --- game controllers ------------------------------------------------------------
     //
-    // In play, any button makes magic and holding A pauses. In the menus, A is
+    // In play, any button release makes magic and holding A pauses. In the menus, A is
     // Enter (choose) and every other button is Space (next).
 
     let padPrev = {};
@@ -356,12 +384,13 @@ NMB.Input = (function () {
             const prev = padPrev[p.index] || [];
             const cur = p.buttons.map(function (b) { return b.pressed; });
             cur.forEach(function (down, i) {
-                if (!enabled || down === !!prev[i]) return;
+                if (!enabled || !windowActive || document.hidden || down === !!prev[i]) return;
                 const code = i === 0 ? 'Enter' : 'Space';
+                const token = 'Pad' + p.index + ':' + i;
                 if (down) {
-                    if (freePlay()) freeDown(i === 0 ? 'Enter' : 'Pad', 'Pad' + i, false, null);
+                    if (freePlay()) freeDown(code, token, false, null, token);
                     else switchDown(code);
-                } else if (!(freePlay() && i !== 0)) {
+                } else if (!freeUp(code, token)) {
                     switchUp(code);
                 }
             });
@@ -377,7 +406,13 @@ NMB.Input = (function () {
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('keyup', onKeyUp);
         document.addEventListener('narbe-input-cancelled', onCancelled);
-        window.addEventListener('blur', clearAll);
+        window.addEventListener('blur', function () { windowActive = false; clearAll(); });
+        window.addEventListener('focus', function () { windowActive = true; });
+        document.addEventListener('visibilitychange', function () { if (document.hidden) clearAll(); });
+        window.addEventListener('gamepaddisconnected', function (e) {
+            clearAll();
+            if (e.gamepad) delete padPrev[e.gamepad.index];
+        });
         if (SM() && SM().subscribe) {
             SM().subscribe(function (next) {
                 if (next.autoScan !== previousAuto && spaceHeld) {

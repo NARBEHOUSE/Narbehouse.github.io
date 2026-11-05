@@ -10,13 +10,21 @@ individual-key piano for making their own music.
 
 Main menu: Play Songs, Free Play, How to Play, Settings, Exit Game. Choose a collection and
 song. Another Song returns to that same collection. All new screens start on the
-blank park step; Enter does nothing there in manual scanning.
+blank park step; a short Enter press does nothing there in manual scanning.
+Both collection and song lists have Back and Options buttons. Options opens
+Continue, I Need Help, Settings, Main Menu and Exit Game, without song-only
+actions. Continue returns to the same collection or song list, including after
+a Settings visit. Holding Enter or NumpadEnter also pauses while browsing:
+three silent seconds, followed by four seconds of progress and countdown sounds.
+Releasing early cancels the hold and chooses the highlighted item once; the
+release after Pause opens chooses nothing.
 
 Song scanning is **blank → Play Each Note → Keyboard → Listen to Song → Options**.
 Choose **Play Each Note** to highlight the whole keyboard without sounding a note.
 Then each Enter press plays the next note; its release never chooses anything.
-Each press holds the Auto clock. Holding Enter for five seconds pauses from
-anywhere, including parked, with a filling bar and beeps. Its release is consumed,
+Each press holds the Auto clock. Holding Enter waits three seconds, then runs
+a four-second filling bar and beep countdown to pause from anywhere in play,
+including parked. Its release is consumed,
 as is the final note's release across the completion screen. Options provides a
 pause route without a hold. Tapping the scene or any piano key plays one note;
 Options is separate. Menus use release actions and shared scanning, with no
@@ -36,11 +44,14 @@ contain 17–47 notes. A played key moves down, glows and changes color for 400m
 Show Next Key defaults On; Key Labels defaults Off. Songs use piano only. The
 song illustration fills the entire viewport, like Switch Stories. The title,
 keyboard, progress and three action buttons overlay the picture. Directions
-sit at the top right beside the song title. At the bottom, the progress line
+sit at the top right beside the song title. Scanning to Options changes the hint
+to "Press to pull up the Pause Menu with more options." At the bottom, the progress line
 comes first, then the centered keyboard, then the action buttons. The keyboard
 is capped at 980px wide and shrinks with the
 window. Its proportions keep the keys slender, and translucent key fills let
-the scene show through. Played keys and scan highlights remain strong. Solid
+the scene show through. Piano scan targets always use an outline, even with
+Block highlighting selected, so song and Free Play keys keep their normal
+colours and individual played-note feedback. Solid
 panels keep the text and action buttons readable in both looks. All 24 keys
 scale together without horizontal scrolling; the keyboard is one target, with
 no aiming requirement. The picture keeps its proportions and crops to fill
@@ -83,8 +94,9 @@ Selecting it says "I need help, please!" twice and leaves the game paused.
 It uses the Hub communication speaker when enabled, otherwise the shared voice
 manager with Speaking overridden for this deliberate request. Auto narration
 does not interrupt the fallback help message; switches and touch remain usable.
-Holding Enter (or NumpadEnter) for five seconds also opens Pause from anywhere
-in Free Play, including blank/parked, replay and note deletion. The Options
+Holding Enter (or NumpadEnter) with the same three-second delay and four-second
+countdown also opens Pause from anywhere in Free Play, including blank/parked,
+replay and note deletion. The Options
 button shows hold progress with the same countdown sounds as song mode.
 A shorter press still selects on release. A completed pause hold never plays
 or deletes a note, and its release cannot choose a Pause item. Blur, hiding
@@ -222,7 +234,7 @@ be on screen, and scanning must leave both scroll offsets at zero.
 Nine mobile behavior checks exercise real Chrome touch events, keyboard swipes,
 individual note deletion, rotation with selected keys/notes and the Auto brake,
 emulated safe-area insets, listening/stop across rotation, and Free Play's
-five-second pause hold from keys, blank/parked, replay and note deletion.
+pause hold from keys, blank/parked, replay and note deletion.
 The pause checks cover shorter holds, swallowed releases and lifecycle cleanup.
 They also scan the exact song and Free Play pause orders, check the song image
 and name through Settings/Continue, verify Restart Song/Another Song, and
@@ -250,12 +262,20 @@ Browser artifacts are under `tmp/music-games-check/`; Electron results are in
 node tests/music-games-browser.cjs
 node tests/music-games-browser.cjs --songs-only
 node tools/run-electron-test.cjs tests/music-games-electron.cjs
+node tools/run-electron-test.cjs tests/switchsongs-options-electron.cjs
 node tests/switchsongs-responsive.cjs
 node tests/switchsongs-responsive.cjs --free-only
 node tests/switchsongs-mobile.cjs
 node --test tests/switchsongs-listen.test.cjs
 node --test tests/narbeloops-pattern.test.cjs tests/switchsongs-songs.test.cjs tests/scan-upgrade.test.cjs tests/choice-scan-adapter.test.cjs tests/scan-status-badge.test.cjs
 ```
+
+The Options fixture checks the gameplay hint, collection/song-list Options,
+contextual pause menus, Settings/Continue returns, keyboard and mouse actions,
+Auto Scan and parked holds. Real timers check the three-second silent delay,
+four-second countdown, early cancellation, lifecycle cleanup and consumed release
+after pausing, including explicit NumpadEnter events. Desktop, tablet and phone
+layouts in both looks are captured in `tmp/switchsongs-options-test/`.
 
 Both GUI runners use an absolute disposable OS-temp cwd/profile and clean it
 after closing the app. The Electron fixture disables speech; it does not test

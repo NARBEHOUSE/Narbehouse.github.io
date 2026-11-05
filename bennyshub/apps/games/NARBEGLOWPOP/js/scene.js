@@ -62,14 +62,21 @@ NGP.Scene = (function () {
     }
 
     /** Where it is and how big, keeping it fully on screen. */
-    function geometryFor(w, h) {
-        const R = Math.min(w, h) * S().option('size').radius;
+    function geometryFor(w, h, scanControls) {
+        // Leave room for Build Up growth above the scan button on short screens.
+        const extent = scanControls ? 1.45 : 1.05;
+        const desired = Math.min(w, h) * S().option('size').radius;
+        const R = scanControls ? Math.min(desired, h / (2 * extent)) : desired;
         const pos = S().option('position');
         const x = clamp(pos.x * w, Math.min(R * 1.05, w / 2), Math.max(w - R * 1.05, w / 2));
-        const y = clamp(pos.y * h, Math.min(R * 1.1, h / 2), Math.max(h - R * 1.05, h / 2));
+        const y = clamp(pos.y * h, Math.min(R * (scanControls ? extent : 1.1), h / 2), Math.max(h - R * extent, h / 2));
         return { x, y, R };
     }
-    function ballGeometry() { return geometryFor(W, H); }
+    function ballGeometry() {
+        const scanControls = S().get('pauseMode') === 'scan';
+        const reserved = scanControls ? NGP.UI.popButtonSpace() : 0;
+        return geometryFor(W, Math.max(1, H - reserved), scanControls);
+    }
 
     function bringBack() {
         ball.state = 'in'; ball.t = 0;

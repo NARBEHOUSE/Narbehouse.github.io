@@ -130,9 +130,43 @@ function actionLegs(b,o,P,S,Gs){ const BD=Gs.body, L=P.leg, sh=shapeOf(S), w=L.w
     naturalLeg(b,pre,taken,{hx,hy,ex,ey,fx,fy},w,back,far,S.kind==='cat',sh.cuffs);
   }));
 }
-function buildSide(b,o,P,S,fit,cat){
+/* Approved matching ear sizes and placement, shared by all side-view poses. */
+function sideEarGeometry(P,H,S,o){
+    const cat=S.kind==='cat',type=S.ears||(cat?'normal':'flop'),sh=shapeOf(S),ed=o.ear?1:0;
+    const nearX=cat?H.x+H.rx*.3:H.x+P.ear.x,farX=cat?H.x-H.rx*.75:nearX+P.ear.rx*.85;
+    if(cat&&type==='fold')return {shape:'oval',nearX,farX,y:H.y-H.ry*.88,rx:2.4,ry:1.7};
+    if(!cat&&['flop','long'].includes(type))return {shape:'oval',nearX,farX,y:H.y+P.ear.y+ed+(type==='long'?1.2:0),rx:P.ear.rx,ry:P.ear.ry*(type==='long'?1.3:1)*(sh.earLen||1)};
+    if(!cat&&type==='puff')return {shape:'puff',nearX,farX,y:H.y+P.ear.y-1.6+ed,rx:P.ear.rx*1.05,ry:1.9};
+    // Both copies use the larger original silhouette and identical vertical placement.
+    const points=cat?[[-.3*H.rx,-.3*H.ry],[.5*H.rx,-.85*H.ry],[0,-H.ry-P.ear.h*(type==='small'?.6:1)+ed*.5]]:
+      type==='bat'?[[-.2*H.rx,-.15*H.ry],[.95*H.rx,-.85*H.ry],[-ed*.5,-H.ry-P.ear.perk*1.3+ed*.5]]:
+      type==='fold'?[[-.45*H.rx,-.4*H.ry],[.4*H.rx,-.85*H.ry],[0,-H.ry-P.ear.perk*.45]]:
+      [[-.35*H.rx,-.35*H.ry],[.5*H.rx,-.85*H.ry],[-ed*.5,-H.ry-P.ear.perk+ed*.5]];
+    return {shape:'point',type,points,nearX:cat?nearX:H.x-H.rx*(type==='bat'?.75:type==='fold'?.3:.45),farX:cat?farX:H.x+H.rx*(type==='bat'?0:.35),y:H.y,tuft:cat&&type==='tuft'};
+}
+function drawSideEar(b,o,P,S,H,far){
+    const e=sideEarGeometry(P,H,S,o),setback=Math.round(H.rx*(S.kind==='cat'?.65:.25)*RES)/RES,frontIsNear=e.nearX>e.farX;
+    // Set the ear toward the muzzle back onto the crown. Mirroring the finished
+    // sprite keeps this placement consistent when the pet faces left. Cats need
+    // more setback because their wide near-ear base otherwise still covers the brow.
+    const nearX=e.nearX-(frontIsNear?setback:0),farX=e.farX-(frontIsNear?0:setback);
+    const x=nearX+(far?Math.round((farX-nearX)*RES)/RES:0),y=e.y,color=far?'ear_':'ear';
+    if(e.shape==='oval'){part(b,T=>E(T,x,y,e.rx,e.ry,color,SH));return;}
+    if(e.shape==='puff'){part(b,T=>{for(let k=0;k<4;k++)E(T,x+(k%2)*.7,y+k*2,e.rx,e.ry,color,SH);});return;}
+    const [a,z,tip]=e.points;
+    part(b,T=>Tr(T,x+a[0],y+a[1],x+z[0],y+z[1],x+tip[0],y+tip[1],color,SH));
+    if(S.kind==='cat'){const cx=(a[0]+z[0]+tip[0])/3,cy=(a[1]+z[1]+tip[1])/3,p=e.points.map(q=>[x+lerp(cx,q[0],.52),y+lerp(cy,q[1],.52)]);Tr(b,...p.flat(),far?'earIn_':'earIn');}
+    if(e.type==='fold')part(b,T=>Tr(T,x+a[0],y+a[1]-1,x+z[0],y+z[1],x+z[0],y-H.ry*.2+(o.ear?.4:0),'ear_'));
+    if(e.tuft)Ln(b,x+tip[0],y+tip[1]+.4,x+tip[0]+.5,y+tip[1]-2.6,'ear!',2);
+}
+function buildSide(b,o,P,S,fit,cat,headBuffer){
   const Gs=sideGeo(P,o,S), BD=Gs.body, H=Gs.head, L=P.leg, ed=o.ear?1:0, lie=Gs.lie, sh=shapeOf(S), ears=S.ears||(cat?'normal':'flop'), lw=L.w*(sh.body&&sh.body<1?.85:1);
   const swing=o.body==='run'?.8:o.body==='walk'?.48:0, ph=(o.frame||0)*Math.PI/2, legTop=BD.cy+BD.ry*.35;
+  // Approved neck: overlap the shoulder and the underside of the head.
+  const shoulder={x:BD.cx+BD.rx*.55,y:BD.cy-BD.ry*.18},lowerHead={x:H.x-H.rx*.36,y:H.y+H.ry*.45};
+  const neckBase=Math.min(BD.ry*.72,H.rx*(cat?.55:.62)),neckTop=H.rx*(cat?.43:.49);
+  part(b,T=>taperedLimb(T,shoulder.x,shoulder.y,lowerHead.x,lowerHead.y,neckBase,neckTop,'fur'));
+  // End approved neck.
   /* Tail first, behind everything. */
   const tailWag=[0,.35,-.25][o.tail||0];
   part(b,T=>{ const x0=BD.cx-BD.rx+.8, y0=BD.cy-BD.ry*.35;
@@ -148,8 +182,15 @@ function buildSide(b,o,P,S,fit,cat){
   const action=o.bow||o.crouch||o.tuck||o.body==='swim'||o.body==='curl'||o.body==='dig';
   /* An average body, not a round one: a deeper chest at the front, a slimmer waist tucked up under the
      middle, and narrower hips at the back. */
-  part(b,T=>{ E(T,BD.cx+BD.rx*.36,BD.cy+BD.ry*.05+(o.bow||0)*2,BD.rx*.64,BD.ry*1.05,'fur',SH); E(T,BD.cx-BD.rx*.4,BD.cy-BD.ry*.08-(o.bow||0)*2,BD.rx*.6,BD.ry*.9,'fur',SH); E(T,BD.cx,BD.cy-BD.ry*.12,BD.rx*.85,BD.ry*.78,'fur',SH);
-    if(!lie) E(T,BD.cx+BD.rx*.42,BD.cy+BD.ry*.5,BD.rx*.42,BD.ry*.52,'light',SHL); else E(T,BD.cx+BD.rx*.12,BD.cy+BD.ry*.42,BD.rx*.72,BD.ry*.42,'light',SHL); });
+  // Keep the exact body contour, but shade it as one volume.
+  // A narrow underside follows that contour instead of a separately shaded chest oval.
+  const coat=(x,y)=>{
+    const nx=(x-BD.cx)/BD.rx,ny=(y-BD.cy)/BD.ry;
+    const tag=ny>.52+.14*Math.cos(clamp(nx,-1,1)*Math.PI/2)?'light':'fur';
+    return addTone(tag,tone(nx,ny,nx*nx+ny*ny,SH));
+  };
+  part(b,T=>{ E(T,BD.cx+BD.rx*.36,BD.cy+BD.ry*.05+(o.bow||0)*2,BD.rx*.64,BD.ry*1.05,coat); E(T,BD.cx-BD.rx*.4,BD.cy-BD.ry*.08-(o.bow||0)*2,BD.rx*.6,BD.ry*.9,coat); E(T,BD.cx,BD.cy-BD.ry*.12,BD.rx*.85,BD.ry*.78,coat);
+    if(!lie) E(T,BD.cx+BD.rx*.42,BD.cy+BD.ry*.5,BD.rx*.42,BD.ry*.52,coat); else E(T,BD.cx+BD.rx*.12,BD.cy+BD.ry*.42,BD.rx*.72,BD.ry*.42,coat); });
   if(fit&&fit.body&&CLOTHES[fit.body]&&CLOTHES[fit.body].fill){ const C=CLOTHES[fit.body], chest=BD.cx+BD.rx*.55, Gc={neckY:BD.cy-BD.ry,bodyCy:BD.cy,BD:{rx:BD.ry*1.1,ry:BD.ry,cy:BD.cy},cx:22,top:H.y-H.ry};
     part(b,T=>E(T,BD.cx,BD.cy,BD.rx+.3,BD.ry+.3,(x,y)=>C.fill(22+(x-chest)*.8,y,Gc),SH,BD.cy-BD.ry-1,BD.cy+BD.ry*.55)); }
   if(fit&&fit.body==='tutu') part(b,T=>E(T,BD.cx,BD.cy+BD.ry*.5,BD.rx+1.6,2,(x)=>alt2(x*.9,'#F7B8CC','#F2A0BA'),SH));
@@ -163,26 +204,22 @@ function buildSide(b,o,P,S,fit,cat){
   /* Chest fluff, manes and ruffs */
   if(sh.chest) part(b,T=>{ for(let i=0;i<4;i++) Tr(T,H.x-H.rx*.6+i*1.4,H.y+H.ry*.6,H.x-H.rx*.6+i*1.4+2.4,H.y+H.ry*.6,H.x-H.rx*.6+i*1.4+1.2,H.y+H.ry+3,'light',SHS); });
   if(sh.ruff) part(b,T=>{ for(let i=0;i<5;i++) E(T,H.x-H.rx*.7+i*1.5,H.y+H.ry*.75+Math.abs(i-2)*-.3,2.1,2.5,i>1?'light':'fur',SH); });
+  const mud=()=>[[BD.cx-3,BD.cy+1,2.2,1.4],[BD.cx+4,BD.cy-1.5,1.8,1.3],[BD.cx+L.fx,43,1.4,1],[BD.cx+L.bx,43,1.4,1]].forEach(([x,y,a,c])=>E(b,x,y,a,c,'#6B4A2B'));
+  if(o.mud&&headBuffer)mud();
   /* Neck, head, face. */
+  if(headBuffer)b=headBuffer;
   if(o.body==='swim') part(b,T=>capsule(T,BD.cx+BD.rx*.6,BD.cy-BD.ry*.2,H.x-H.rx*.4,H.y+H.ry*.55,H.rx*.46,'fur',SH));
   if(!cat&&!o.bare&&!(fit&&fit.neck)) part(b,T=>E(T,H.x-H.rx*.5,H.y+H.ry*.62,1.3,2.6,'collar',SHS));
   if(fit&&fit.neck&&NECKS[fit.neck]) NECKS[fit.neck](b,{cx:H.x-H.rx*.45,neckY:H.y+H.ry*.5,k:.75,BD:{rx:3.6,ry:4},top:H.y-H.ry});
-  const eh=(P.ear.h||0)*(ears==='small'?.6:1);
-  if(cat&&ears!=='fold') part(b,T=>{ Tr(T,H.x-H.rx*.9,H.y-H.ry*.3,H.x-H.rx*.1,H.y-H.ry*.85,H.x-H.rx*.6-ed*.6,H.y-H.ry-eh+ed*.6,'ear',SH); });
-  else if(!cat&&ears==='perk') part(b,T=>Tr(T,H.x-H.rx*.8,H.y-H.ry*.35,H.x+H.rx*.05,H.y-H.ry*.85,H.x-H.rx*.45-ed*.5,H.y-H.ry-P.ear.perk+ed*.5,'ear',SH));
-  else if(!cat&&ears==='bat') part(b,T=>Tr(T,H.x-H.rx*.95,H.y-H.ry*.15,H.x+H.rx*.2,H.y-H.ry*.85,H.x-H.rx*.75-ed*.5,H.y-H.ry-P.ear.perk*1.3+ed*.5,'ear',SH));
-  else if(!cat&&ears==='fold') part(b,T=>{ Tr(T,H.x-H.rx*.75,H.y-H.ry*.4,H.x+H.rx*.1,H.y-H.ry*.85,H.x-H.rx*.3,H.y-H.ry-P.ear.perk*.45,'ear',SH); Tr(T,H.x-H.rx*.7,H.y-H.ry*.7,H.x+H.rx*.15,H.y-H.ry*.95,H.x+H.rx*.1,H.y-H.ry*.2+ed*.4,'ear_'); });
+  drawSideEar(b,o,P,S,H,true);
+  if(!cat&&['perk','bat','fold'].includes(ears))drawSideEar(b,o,P,S,H,false);
   part(b,T=>E(T,H.x,H.y,H.rx,H.ry,'fur',SH));
   if(sh.topknot) part(b,T=>[[-.3,-.75],[.15,-.85],[-.7,-.45],[.5,-.6]].forEach(([dx,dy])=>E(T,H.x+dx*H.rx,H.y+dy*H.ry,H.rx*.4,H.ry*.33,'fur',SH)));
-  if(cat&&ears!=='fold'){ Tr(b,H.x-H.rx*.2,H.y-H.ry*.5,H.x+H.rx*.45,H.y-H.ry*.82,H.x+H.rx*.05+ed*.5,H.y-H.ry-eh*.9+ed*.5,'ear'); part(b,T=>Tr(T,H.x+H.rx*.05,H.y-H.ry*.45,H.x+H.rx*.7,H.y-H.ry*.75,H.x+H.rx*.3+ed*.5,H.y-H.ry-eh+ed*.5,'ear',SH));
-    Tr(b,H.x+H.rx*.2,H.y-H.ry*.6,H.x+H.rx*.55,H.y-H.ry*.78,H.x+H.rx*.33+ed*.5,H.y-H.ry-eh*.62+ed*.5,'earIn');
-    if(ears==='tuft'){ const tx=H.x+H.rx*.3+ed*.5, ty=H.y-H.ry-eh+ed*.5; Ln(b,tx,ty+.4,tx+.5,ty-2.6,'ear!',2); } }
-  if(cat&&ears==='fold') part(b,T=>{ E(T,H.x-H.rx*.35,H.y-H.ry*.82,2.4,1.7,'ear',SH); E(T,H.x+H.rx*.3,H.y-H.ry*.88,2.4,1.7,'ear',SH); });
+  if(cat)drawSideEar(b,o,P,S,H,false);
   const sn=Gs.sn, sx=H.x+sn.dx, sy=H.y+sn.dy;
   part(b,T=>E(T,sx,sy,sn.rx,sn.ry,P.senior?'grey':'muzzle',SHL));
   if(sh.beard) part(b,T=>E(T,sx-.4,sy+sn.ry*.85,sn.rx*.95,sn.ry*.95,'beard',SHL));
-  if(!cat&&(ears==='flop'||ears==='long')){ const long=ears==='long'; part(b,T=>E(T,H.x+P.ear.x,H.y+P.ear.y+ed+(long?1.2:0),P.ear.rx,P.ear.ry*(long?1.3:1)*(sh.earLen||1),'ear',SH)); }
-  if(!cat&&ears==='puff') part(b,T=>{ for(let k=0;k<4;k++) E(T,H.x+P.ear.x+(k%2)*.7,H.y+P.ear.y-1.6+k*2+ed,P.ear.rx*1.05,1.9,'ear',SH); });
+  if(!cat&&['flop','long','puff'].includes(ears))drawSideEar(b,o,P,S,H,false);
   /* Eye */
   const ex=H.x+P.eye.dx*(sh.head||1), ey=H.y+P.eye.dy, r=Gs.eyeR, st=o.eyes;
   if(st==='closed') Arc(b,ex,ey+.1,r*1.1,r*.6,'line',false,2);
@@ -199,7 +236,7 @@ function buildSide(b,o,P,S,fit,cat){
   const my=sy+sn.ry*.55;
   if(o.mouth==='open'||o.mouth==='tongue'){ E(b,tipX-1.8,my+.3,1.6,1,'mouthIn'); if(o.mouth==='tongue') E(b,tipX-1.6,my+1.5,.9,1.3,'tongue',SHS); }
   if(!sh.beard) Ln(b,tipX-2.8,my-.2,tipX-.4,my-.2,'line',2);
-  if(o.mud) [[BD.cx-3,BD.cy+1,2.2,1.4],[BD.cx+4,BD.cy-1.5,1.8,1.3],[BD.cx+L.fx,43,1.4,1],[BD.cx+L.bx,43,1.4,1]].forEach(([x,y,a,c])=>E(b,x,y,a,c,'#6B4A2B'));
+  if(o.mud&&!headBuffer)mud();
   /* Glasses: one lens from the side */
   if(fit&&fit.face){ const fc={round:['#E0B84A',null],sun:['#1C1C28','#1C1C28'],heart:['#F07A8E','#F07A8E'],star:['#F4C542','#F4C542'],goggles:['#3E6FA4','#9FD8F0'],cateye:['#8A5AB0',null],monocle:['#E0B84A',null]}[fit.face]||['#E0B84A',null];
     part(b,T=>E(T,ex+.2,ey,r*1.7,r*1.6,(px,py,nx,ny)=>(nx*nx+ny*ny)<.5?fc[1]:fc[0],SHS)); Ln(b,ex-r*1.6,ey-.3,H.x-H.rx*.7,ey-.6,fc[0],2); }
@@ -209,9 +246,14 @@ function buildSide(b,o,P,S,fit,cat){
 const sideCache=new Map();
 function getPetSide(style,sg,o,fit){
   const S=STYLES[style]||STYLES.cream; if(!STAGES.includes(sg)) sg='baby';
-  const key=[style,sg,o.body,o.frame||0,o.eyes,o.mouth,o.tail||0,o.ear||0,o.headDy||0,o.bow||0,o.crouch||0,o.tuck||0,o.rollPhase||0,o.dull?1:0,o.mud?1:0,o.bare?1:0,fitKey(fit)].join('|'); let c=sideCache.get(key); if(c) return c;
-  const P=SIDE[S.kind][sg], b=B(SIDE_W,SIDE_H,SIDE_OX,SIDE_OY), Gs=buildSide(b,o,P,S,fit,S.kind==='cat');
+  const key=[style,sg,o.body,o.frame||0,o.eyes,o.mouth,o.tail||0,o.ear||0,o.headDy||0,o.headTilt||0,o.bow||0,o.crouch||0,o.tuck||0,o.rollPhase||0,o.dull?1:0,o.mud?1:0,o.bare?1:0,fitKey(fit)].join('|'); let c=sideCache.get(key); if(c) return c;
+  const P=SIDE[S.kind][sg], b=B(SIDE_W,SIDE_H,SIDE_OX,SIDE_OY),head=o.headTilt?B(SIDE_W,SIDE_H,SIDE_OX,SIDE_OY):null,Gs=buildSide(b,o,P,S,fit,S.kind==='cat',head);
   c=finish(b,S.pal,{pattern:SIDE_PAT[style],geo:Gs,dull:o.dull});
+  if(head){
+    // Turn just the head upward, retaining its actual markings, ears and outfit.
+    const h=finish(head,S.pal,{pattern:SIDE_PAT[style],geo:Gs,dull:o.dull}),g=c.getContext('2d'),x=(Gs.head.x+SIDE_OX)*RES,y=(Gs.head.y+SIDE_OY)*RES;
+    g.save();g.imageSmoothingEnabled=false;g.translate(x,y);g.rotate(o.headTilt);g.drawImage(h,-x,-y);g.restore();
+  }
   if(sideCache.size>900) sideCache.clear(); sideCache.set(key,c); return c;
 }
 /* One call for every pose. (x, y) is the old 44 x 44 sprite origin, so scenes keep their numbers:

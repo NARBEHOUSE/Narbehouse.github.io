@@ -183,6 +183,8 @@ body {
 /* ---------- songs ---------- */
 
 .nss-songlist { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.nss-browse-actions { display: flex; flex-wrap: wrap; gap: 20px; }
+.nss-browse-actions .nss-btn { flex: 1 1 200px; min-width: 0; }
 .nss-list { display: flex; flex-direction: column; gap: 14px; }
 
 .nss-song { flex-direction: column; gap: 10px; }

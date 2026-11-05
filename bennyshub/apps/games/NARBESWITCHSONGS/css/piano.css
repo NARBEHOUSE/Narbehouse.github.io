@@ -65,8 +65,6 @@
 [data-look] .nss-song .nss-key.white:where(:not(.pressed)) { background: #fffaf0d1; box-shadow: inset 0 -5px #b5ac9a66; }
 [data-look] .nss-song .nss-key.black:where(:not(.pressed)) { background: #142638d1; box-shadow: inset 0 -5px #05101e66; }
 .nss-piano.nss-focus { outline: 6px solid var(--focus-color); outline-offset: 3px; }
-.nss-piano.nss-focus-full { outline: 8px solid var(--focus-color); background: var(--focus-color); box-shadow: 0 0 0 5px var(--focus-ink); }
-.nss-piano.nss-focus-full .white:not(.pressed) { background: var(--focus-color); }
 .nss-song-foot { gap: 10px; padding: 0 !important; border: 0 !important; background: transparent !important; }
 .nss-song-foot .nss-options { min-width: 160px; min-height: 72px; }
 .nss-song-foot .nss-hint { max-width: 65%; font-size: 18px; }

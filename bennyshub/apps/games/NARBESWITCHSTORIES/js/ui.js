@@ -173,7 +173,7 @@ NSS.UI = (function () {
         node('span', 'nss-logo', head).innerHTML = ICON.book;
         node('h1', 'nss-brand-title', head, 'Switch Stories');
         const intro = node('p', 'nss-library-intro', lc);
-        node('span', '', intro, 'New stories every month. Books created and adapted for switches,');
+        node('span', '', intro, 'Books created and adapted for switches,');
         node('br', '', intro);
         node('span', '', intro, 'with cause and effect animations in every story.');
         const browseHeader = node('div', 'nss-library-header', lc);

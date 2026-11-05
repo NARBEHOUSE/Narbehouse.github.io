@@ -32,10 +32,11 @@ NSS.Game = (function () {
         UI().show('songend');
     }
 
+    function canPause() { return ['categories', 'songs', 'song', 'free'].includes(UI().current()); }
+
     function pause() {
-        const c = UI().current();
-        if (c !== 'song' && c !== 'free') return;
-        pauseFrom = c;
+        if (!canPause()) return;
+        pauseFrom = UI().current();
         UI().show('pause');
     }
 
@@ -44,7 +45,7 @@ NSS.Game = (function () {
     /** Escape is a caregiver shortcut. Nothing requires it. */
     function escape() {
         const c = UI().current();
-        if (c === 'song' || c === 'free') pause();
+        if (canPause()) pause();
         else if (c === 'pause') resume();
     }
 
@@ -89,7 +90,7 @@ NSS.Game = (function () {
     return {
         boot: boot, openSongs: openSongs, openFreePlay: openFreePlay,
         startSong: startSong, restartSong: restartSong, note: note, songDone: songDone,
-        pause: pause, resume: resume, pausedFrom: function () { return pauseFrom; },
+        canPause: canPause, pause: pause, resume: resume, pausedFrom: function () { return pauseFrom; },
         escape: escape, exit: exit
     };
 })();

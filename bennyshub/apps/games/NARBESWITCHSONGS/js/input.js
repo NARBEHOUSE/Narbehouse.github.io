@@ -15,8 +15,10 @@
  * plays the note on the PRESS (a note that waits for release drags behind
  * the beat), and the release does not choose anything. Each note holds the
  * auto scan clock, so the highlight stays on Play while the player keeps
- * playing. Holding Enter for five seconds pauses from anywhere in the song.
- * FREE PLAY uses the same pause hold; shorter presses still choose on release.
+ * playing. Holding Enter waits three seconds, then runs a four-second
+ * countdown to pause from anywhere in the song.
+ * FREE PLAY and song browsing use the same pause hold; shorter presses still
+ * choose on release.
  *
  * The shared scan manager filters switch bounce and too-quick repeats
  * before any of this sees a key. When it swallows a press it sends
@@ -29,8 +31,9 @@ NSS.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
-    const PAUSE_HOLD = 5000;       // song and Free Play pause hold (as in Magic Button)
-    const RING_SHOW = 1000;        // the hold bar appears after this much of the hold
+    const PAUSE_DELAY = 3000;     // no pause feedback during an ordinary press
+    const PAUSE_COUNTDOWN = 4000;
+    const PAUSE_HOLD = PAUSE_DELAY + PAUSE_COUNTDOWN;
 
     let provider = function () { return []; };
     let items = [];
@@ -154,7 +157,10 @@ NSS.Input = (function () {
         if (!item || !item.el) { lastFocusId = null; return; }
         item.el.style.setProperty('--focus-color', NSS.Settings.highlightColor());
         item.el.style.setProperty('--focus-ink', NSS.Settings.highlightInk());
-        item.el.classList.add(NSS.Settings.get('highlightStyle') === 'full' ? 'nss-focus-full' : 'nss-focus');
+        // Piano targets keep their key colours and note feedback, even in Block mode.
+        const piano = item.el.matches('.nss-piano, .nss-free-scroll, .nss-free-key');
+        const block = NSS.Settings.get('highlightStyle') === 'full' && !piano;
+        item.el.classList.add(block ? 'nss-focus-full' : 'nss-focus');
         if (reveal || item.id !== lastFocusId) {
             lastFocusId = item.id;
             item.el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -221,7 +227,7 @@ NSS.Input = (function () {
         cancelSpaceRelease = false;
     }
 
-    // --- hold Enter during song or Free Play: pause ---------------------------------
+    // --- hold Enter during song browsing, a song or Free Play: pause ----------------
 
     function startPauseHold() {
         stopPauseHold();
@@ -229,9 +235,9 @@ NSS.Input = (function () {
         let beeps = 0;
         pauseTimer = setInterval(function () {
             const t = performance.now() - t0;
-            if (t >= RING_SHOW) {
-                NSS.UI.holdRing((t - RING_SHOW) / (PAUSE_HOLD - RING_SHOW));
-                const s = Math.floor((t - RING_SHOW) / 1000) + 1;
+            if (t >= PAUSE_DELAY) {
+                NSS.UI.holdRing((t - PAUSE_DELAY) / PAUSE_COUNTDOWN, true);
+                const s = Math.floor((t - PAUSE_DELAY) / 1000) + 1;
                 if (s > beeps && s <= 4) { beeps = s; NSS.Sound.beep(s); }
             }
             if (t >= PAUSE_HOLD) {
@@ -260,7 +266,7 @@ NSS.Input = (function () {
             swallowEnter = false;
             enterPlayed = false;
             if (choice) choice.setInputHeld(true);
-            if (NSS.UI.current() === 'song' || NSS.UI.current() === 'free') {
+            if (NSS.Game.canPause()) {
                 startPauseHold();
                 if (onPlay()) { enterPlayed = true; NSS.Game.note(); }
             }

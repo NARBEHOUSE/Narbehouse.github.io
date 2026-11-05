@@ -13,6 +13,7 @@ NSS.UI = (function () {
     'use strict';
 
     const SCREENS = ['menu', 'categories', 'songs', 'song', 'free', 'songend', 'pause', 'settings', 'help'];
+    const OPTIONS_HINT = 'Press to pull up the Pause Menu with more options.';
     let screen = 'menu';
     let settingsFrom = 'menu', helpFrom = 'menu', pauseFrom = 'song';
     let songCategory = 'nursery';
@@ -55,6 +56,14 @@ NSS.UI = (function () {
     }
 
     function onOff(v) { return v ? 'On' : 'Off'; }
+
+    function browseActions(parent, name) {
+        const actions = node('div', 'nss-browse-actions', parent);
+        el[name + 'Back'] = button('nss-item nss-item-nav', actions, 'Back');
+        el[name + 'Options'] = button('nss-item nss-options', actions, 'Options');
+        el[name + 'Hold'] = node('span', 'nss-hold', el[name + 'Options']);
+        el[name + 'Hold'].setAttribute('aria-hidden', 'true');
+    }
 
     function choiceArt(element, file) {
         const image = node('img', 'nss-choice-art');
@@ -118,7 +127,7 @@ NSS.UI = (function () {
         el.categories = node('section', 'nss-screen nss-center', el.root);
         const cc = card(el.categories, 'Familiar Favorites');
         cc.classList.add('nss-card-wide');
-        node('p', 'nss-sub', cc, 'Choose a collection. Find your song.');
+        node('p', 'nss-sub', cc, 'Choose a collection. Choose Options or hold Enter to pause.');
         el.categoryList = node('div', 'nss-songlist', cc);
         M().CATEGORIES.forEach(function (category) {
             const b = valueButton('nss-item nss-song-choice', el.categoryList, category.name);
@@ -126,16 +135,16 @@ NSS.UI = (function () {
             setValue(b, category.name, M().SONGS.filter(s => s.category === category.id).length + ' songs');
             choiceArt(b, category.scene);
         });
-        el.categoriesBack = button('nss-item nss-item-nav', cc, 'Back');
+        browseActions(cc, 'categories');
 
         // Songs in the selected collection.
         el.songs = node('section', 'nss-screen nss-center', el.root);
         const sc = card(el.songs, '');
         el.songsTitle = sc._title;
         sc.classList.add('nss-card-wide');
-        node('p', 'nss-sub', sc, 'Choose a song. Play it your way.');
+        node('p', 'nss-sub', sc, 'Choose a song. Choose Options or hold Enter to pause.');
         el.songList = node('div', 'nss-songlist', sc);
-        el.songsBack = button('nss-item nss-item-nav', sc, 'Back');
+        browseActions(sc, 'songs');
 
         // Playing a song.
         el.song = node('section', 'nss-screen nss-song', el.root);
@@ -172,6 +181,7 @@ NSS.UI = (function () {
         el.songListen.setAttribute('aria-pressed', 'false');
         el.songOptions = valueButton('nss-ctrl nss-options', songActions, 'Options');
         el.hold = node('span', 'nss-hold', el.songOptions);
+        el.hold.setAttribute('aria-hidden', 'true');
 
         // Each Free Play key is an independent choice in the shared scanner.
         el.free = node('section', 'nss-screen nss-free', el.root);
@@ -283,8 +293,8 @@ NSS.UI = (function () {
         const song = NSS.Song.current();
         const line = {
             menu: 'NARBE Switch Songs. Play Songs or Free Play.',
-            categories: 'Familiar favorites. Choose a collection.',
-            songs: el.songsTitle.textContent + '. Choose a song.',
+            categories: 'Familiar favorites. Choose a collection. Choose Options or hold Enter to pause.',
+            songs: el.songsTitle.textContent + '. Choose a song. Choose Options or hold Enter to pause.',
             song: song ? song.song.name + '. Choose Play Each Note, then press Enter to play.' : '',
             free: 'Free Play. Choose the whole keyboard to scan individual keys. After the last key, choose the keyboard to start again, or scan to Replay My Song, Delete Note and Options. Auto Scan enters the keys only when you choose the keyboard. Hold Enter to pause. Your last ten notes are saved.',
             songend: song ? 'You played ' + song.song.name + '. ' + el.endMessage.textContent : '',
@@ -333,7 +343,10 @@ NSS.UI = (function () {
                 speak: category.name,
                 action: function () { openCategory(category.id); }
             };
-        }).concat([{ id: 'categories:back', el: el.categoriesBack, speak: 'Back', action: function () { show('menu'); } }]);
+        }).concat([
+            { id: 'categories:back', el: el.categoriesBack, speak: 'Back', action: function () { show('menu'); } },
+            { id: 'categories:options', el: el.categoriesOptions, speak: 'Options. ' + OPTIONS_HINT, action: function () { NSS.Game.pause(); } }
+        ]);
     }
 
     function categorySongs() { return M().SONGS.filter(s => s.category === songCategory); }
@@ -358,6 +371,7 @@ NSS.UI = (function () {
             };
         });
         list.push({ id: 'songs:back', el: el.songsBack, speak: 'Back', action: function () { show('categories'); } });
+        list.push({ id: 'songs:options', el: el.songsOptions, speak: 'Options. ' + OPTIONS_HINT, action: function () { NSS.Game.pause(); } });
         return list;
     }
 
@@ -395,10 +409,10 @@ NSS.UI = (function () {
     }
 
     function updateSongHint(message) {
-        const playing = NSS.Input.state()?.id === 'song:play';
-        el.songHint.textContent = message || (NSS.Sound.isListening()
+        const selected = NSS.Input.state()?.id;
+        el.songHint.textContent = selected === 'song:options' ? OPTIONS_HINT : message || (NSS.Sound.isListening()
             ? 'Listening to the song. Your place is saved.'
-            : playing ? 'Press Enter to play each note. Hold Enter to pause.'
+            : selected === 'song:play' ? 'Press Enter to play each note. Hold Enter to pause.'
                 : 'Choose Play Each Note, then press Enter to play.');
     }
 
@@ -454,12 +468,20 @@ NSS.UI = (function () {
         updatePiano();
     }
 
-    function holdRing(p) {
+    function holdRing(p, showing = p > 0) {
         p = Math.max(0, Math.min(1, p || 0));
         const songProgress = screen === 'song' ? p : 0;
         el.hold.style.setProperty('--p', songProgress.toFixed(3));
-        el.songOptions.classList.toggle('holding', songProgress > 0);
-        NSS.FreePlay.holdRing(screen === 'free' ? p : 0);
+        el.songOptions.classList.toggle('holding', screen === 'song' && showing);
+        ['categories', 'songs'].forEach(function (name) {
+            const button = el[name + 'Options'];
+            const active = screen === name && showing;
+            // Reveal the countdown only when it starts, without moving the scan.
+            if (active && !button.classList.contains('holding')) button.scrollIntoView({ block: 'nearest' });
+            el[name + 'Hold'].style.setProperty('--p', (active ? p : 0).toFixed(3));
+            button.classList.toggle('holding', active);
+        });
+        NSS.FreePlay.holdRing(screen === 'free' ? p : 0, screen === 'free' && showing);
     }
 
     function songScannables() {
@@ -467,7 +489,7 @@ NSS.UI = (function () {
             { id: 'song:each-note', el: el.songEachNote, speak: 'Play Each Note. Choose to highlight the keyboard.', action: chooseEachNote },
             { id: 'song:play', el: el.piano, speak: 'Keyboard. Press Enter to play each note.', quiet: true, action: function () { NSS.Game.note(); } },
             { id: 'song:listen', el: el.songListen, speak: function () { return NSS.Sound.isListening() ? 'Stop Listening' : 'Listen to Song'; }, action: function () { NSS.Song.toggleListening(); } },
-            { id: 'song:options', el: el.songOptions, speak: 'Options', action: function () { NSS.Game.pause(); } }
+            { id: 'song:options', el: el.songOptions, speak: 'Options. ' + OPTIONS_HINT, action: function () { NSS.Game.pause(); } }
         ];
     }
 
@@ -628,7 +650,7 @@ NSS.UI = (function () {
                 id: 'hlstyle', label: 'Highlight Style', value: function () { return s.get('highlightStyle') === 'full' ? 'Block' : 'Bold Band'; },
                 action: function () { s.set('highlightStyle', s.get('highlightStyle') === 'full' ? 'outline' : 'full'); },
                 after: function () {
-                    return s.get('highlightStyle') === 'full' ? 'Highlight style, block. The whole button fills with colour.'
+                    return s.get('highlightStyle') === 'full' ? 'Highlight style, block. Buttons fill with colour. Piano keys use an outline.'
                         : 'Highlight style, bold band. A thick band goes around the button.';
                 }
             },

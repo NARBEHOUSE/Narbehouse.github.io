@@ -444,11 +444,36 @@ V['camp:tent']=tripScene('camp',{dur:4600,start(){ setCaption(`Camping! First, l
   pose(p,e){ p.dx=-18; p.eyes=e<3000?'open':'happy'; p.headDy=-1; if(e>3000){ p.mouth='tongue'; p.headDy=0; } },
   behind(e){ drawTent(100,86,ph(e,300,2800)); },
   tick(a,e){ [900,1700,2500].forEach((t,i)=>{ if(e>t) once(a,'t'+i,()=>play(i===2?'pop':'knock',.35)); }); if(e>2900) once(a,'d',()=>{ setCaption(`The tent is up! ${nmS()} peeks inside.`); play(happyNoise(),.45); }); }});
-V['camp:marshmallow']=nightScene('campN',{dur:5000,start(){ setCaption(`Roasting marshmallows by the campfire. A ${kind()==='cat'?'kitty':'pup'}-friendly treat for ${nmS()}, too!`); },
-  pose(p,e){ p.dx=18; p.eyes=e<3200?'open':'happy'; if(e>3400&&e<4200){ const b=Math.floor(e/170)%2; p.headDy=b; p.mouth=b?'open':'smile'; } },
-  front(e,a,p){ drawCampfire(performance.now(),40,84); const toast=ph(e,600,2800); pxLine(ctx,64,52,44,72,'#8A5A34',.8); pxEll(ctx,44,72,2,1.6,INK); pxEll(ctx,44,72,1.5,1.2,toast<.5?'#FFFFFF':toast<.9?'#F4D29A':'#D8A060');
-    if(e>3000&&e<3400){ const k=ph(e,3000,3400), m=mouthAt(p); blit(ctx,SPR.cookie,lerp(40,m.x-4,k),lerp(50,m.y-3,k)); } },
-  tick(a,e,now){ if(now>=a.next){ play('crickets',.15); a.next=now+2200; } if(e>2800) once(a,'g',()=>{ setCaption(`Golden brown! Yum.`); play('sparkle',.4); }); if(e>3400) once(a,'c',()=>play('crunch',.5)); }});
+function drawRoastingMarshmallow(e){const toast=ph(e,600,2800),cream=toast<.5?'#FFF8E8':'#F6D5A2';
+  // The roasting stick stays over the fire; the pet receives a separate treat.
+  ctx.save();ctx.translate(70,50);ctx.rotate(Math.atan2(21,-26));
+  pxLine(ctx,-2,0,37,0,'#49372B',1.8);pxLine(ctx,-2,-.2,37,-.2,'#B88B56',.8);
+  pxLine(ctx,8,0,5,2.5,'#795334',1);pxLine(ctx,17,-.7,18,.7,'#795334',.7);
+  pxEll(ctx,34,0,3.8,3.2,INK);rect(ctx,30.5,-3.2,7,6.4,INK);
+  rect(ctx,30.7,-2.6,6.5,5.2,cream);pxEll(ctx,37,0,1.6,2.6,'#E7B879');
+  pxEll(ctx,30.8,0,1.6,2.6,'#FFF8E8');pxLine(ctx,32,-1.8,35.8,-1.8,'#FFF0D5',.7);
+  if(toast>.45){pxEll(ctx,34.8,1,1.2,.7,'#C88B4F');pxEll(ctx,33,-.4,.6,.4,'#DBA564');}
+  ctx.restore();
+}
+const campTreat=()=>kind()==='cat'?{sprite:SPR.fish,name:'fish treat'}:{sprite:SPR.bone,name:'dog biscuit'};
+function campTreatDelivery(e,p){if(e<2800||e>=4550)return null;
+  const m=mouthAt(p),target={x:m.x+6,y:m.y-19},top=VIEW.y-HOME_HAND.lh-2;
+  const hand={x:target.x,y:e<3600?lerp(top,target.y,ease(ph(e,2800,3600))):e<4000?target.y:lerp(target.y,top,ease(ph(e,4000,4550)))};
+  const k=ease(ph(e,3600,3950));
+  return {hand,treat:e<3950?{x:lerp(hand.x+2,m.x,k),y:lerp(hand.y+18,m.y,k)}:null};
+}
+V['camp:marshmallow']=nightScene('campN',{dur:6000,start(){setCaption('Roasting a marshmallow by the campfire.');},
+  pose(p,e){p.dx=18;p.dy=0;p.eyes=e<3950?'open':'happy';
+    if(e>=3600&&e<3950)p.mouth='open';
+    if(e>=3950&&e<4700){const b=Math.floor(e/170)%2;p.headDy=b;p.mouth=b?'open':'smile';}},
+  front(e,a,p){drawCampfire(performance.now(),40,84);drawRoastingMarshmallow(e);
+    const delivery=campTreatDelivery(e,p);if(!delivery)return;
+    blit(ctx,HOME_HAND,delivery.hand.x,delivery.hand.y);
+    if(delivery.treat){const s=campTreat().sprite;blit(ctx,s,delivery.treat.x-s.lw/2,delivery.treat.y-s.lh/2);}},
+  tick(a,e,now){if(now>=a.next){play('crickets',.15);a.next=now+2200;}
+    if(e>2800)once(a,'g',()=>{setCaption(`Here's a ${campTreat().name} for ${nmS()}.`);play('sparkle',.4);});
+    if(e>=3950)once(a,'c',()=>{play('crunch',.5);const p=p0();this.pose(p,3950);const m=mouthAt(p);crumbs(m.x,m.y);});
+    if(e>4700)once(a,'h',()=>setCaption(`${nmS()} enjoys the ${campTreat().name}.`));}});
 V['camp:songs']=nightScene('campN',{dur:5000,start(){ setCaption(kind()==='dog'?`Campfire songs! ${nmS()} howls along.`:`Campfire songs! ${nmS()} purrs along.`); },
   pose(p,e){ p.dx=18; const on=kind()==='dog'&&Math.floor(e/1400)%2===1; p.headDy=on?-2:0; p.mouth=on?'open':'smile'; p.eyes=on?'closed':'happy'; },
   front(){ drawCampfire(performance.now(),40,84); },
@@ -457,13 +482,12 @@ V['camp:stars']=nightScene('campN',{dur:5200,start(){ setCaption(`Look up! So ma
   pose(p,e){ p.body='lie'; p.face=1; p.frame=0; p.eyes='open'; p.headDy=-1; if(e>3200) p.eyes='happy'; },
   front(e){ drawCampfire(performance.now(),28,86); if(e>2400&&e<3200){ const k=ph(e,2400,3200); for(let i=0;i<8;i++) rect(ctx,lerp(20,110,k)-i*2,lerp(8,30,k)-i*.5,1,1,`rgba(255,246,200,${(1-i/8).toFixed(2)})`); } },
   tick(a,e){ if(e>2400) once(a,'s',()=>{ play('twinkle',.6); setCaption(`A shooting star! Make a wish, ${nmS()}.`); }); if(e>3400) once(a,'p',()=>addPhoto('place',`Stargazing on a camping trip with ${nmS()}.`,{place:'camping'})); }});
-V['camp:canoe']=tripScene('lake',{dur:5600,noShadow:true,start(){ setCaption(`A canoe ride on the lake! Paddle, paddle.`); },
-  pose(p,e){ p.dx=Math.round(lerp(-40,30,ph(e,0,5200))); p.dy=4+Math.round(Math.sin(e/400)); p.eyes='happy'; p.mouth=e>2600&&e<3400?'open':'smile'; },
+V['camp:canoe']=tripScene('lake',{reviewLabel:'Ride in the boat',dur:5600,noShadow:true,start(){ setCaption(`A ride in the boat! ${nmS()} sits still and watches the lake.`); },
+  pose(p,e){p.dx=0;p.dy=4;p.eyes=e>2600&&e<3400?'open':'happy';p.mouth=e>2600&&e<3400?'open':'smile';},
   clipY:()=>80,
-  front(e,a,p){ const x=64+p.dx, y=84+Math.round(Math.sin(e/400)); ctx.fillStyle=INK; ctx.beginPath(); ctx.moveTo(x-24,y-4); ctx.lineTo(x+24,y-4); ctx.lineTo(x+18,y+3); ctx.lineTo(x-18,y+3); ctx.fill(); ctx.fillStyle='#C9573E'; ctx.beginPath(); ctx.moveTo(x-22.5,y-3.4); ctx.lineTo(x+22.5,y-3.4); ctx.lineTo(x+17,y+2.4); ctx.lineTo(x-17,y+2.4); ctx.fill(); rect(ctx,x-22,y-4,44,1,'#E8905A');
-    const pa=Math.sin(e/300); pxLine(ctx,x+10,y-14,x+16+pa*4,y+4,'#8A5A34',1); pxEll(ctx,x+16+pa*4,y+5,1.6,3,'#8A5A34');
+  front(e,a,p){const x=64,y=84;ctx.fillStyle=INK;ctx.beginPath();ctx.moveTo(x-24,y-4);ctx.lineTo(x+24,y-4);ctx.lineTo(x+18,y+3);ctx.lineTo(x-18,y+3);ctx.fill();ctx.fillStyle='#C9573E';ctx.beginPath();ctx.moveTo(x-22.5,y-3.4);ctx.lineTo(x+22.5,y-3.4);ctx.lineTo(x+17,y+2.4);ctx.lineTo(x-17,y+2.4);ctx.fill();rect(ctx,x-22,y-4,44,1,'#E8905A');
     if(e>2600&&e<3400){ const k=ph(e,2600,3400); blit(ctx,SPR.fish,lerp(98,108,k),80+arc(k,14)); } },
-  tick(a,e,now){ if(now>=a.next){ play('splat',.15); a.next=now+600; } if(e>2600) once(a,'f',()=>{ play('bounce',.5); setCaption(`A fish jumped! ${nmS()} is so surprised.`); }); if(e>4200) once(a,'p',()=>addPhoto('place',`${nmS()}'s canoe ride.`,{place:'camping'})); }});
+  tick(a,e,now){if(e>2600)once(a,'f',()=>{play('bounce',.5);setCaption(`A fish jumped! ${nmS()} is so surprised.`);});if(e>4200)once(a,'p',()=>addPhoto('place',`${nmS()}'s ride in the boat.`,{place:'camping'}));}});
 V['camp:sleep']=tripScene('tentin',{dur:5000,start(){ setCaption(kind()==='cat'?`Bedtime in the tent. ${nmS()} curls up inside the sleeping bag.`:`Bedtime in the tent. ${nmS()} snuggles into the sleeping bag.`); play('lullaby',.4); },
   pose(p,e){ p.body='lie'; p.face=1; p.frame=0; p.eyes=e>900?'closed':'happy'; },
   front(e,a,p){ const cat=kind()==='cat', y=cat?81:82; rect(ctx,32,y,64,94-y,INK); rect(ctx,33,y+.6,62,93.4-y,'#5A8FC4'); for(let x=36;x<94;x+=6) rect(ctx,x,y+2,3,90-y,'#6A9FD0'); rect(ctx,33,y+.6,62,1.6,'#3E6FA4'); },

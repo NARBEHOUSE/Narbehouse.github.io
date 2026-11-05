@@ -48,7 +48,7 @@ NGP.Settings = (function () {
          * scan: the highlight moves between Pop and Pause, for a player who
          *       cannot hold a switch long enough to pause.
          */
-        pauseMode: 'hold',
+        pauseMode: 'scan',
         sound: true,
         volumeIndex: 1,
         highlightColorIndex: 0,
@@ -67,7 +67,7 @@ NGP.Settings = (function () {
         Object.keys(LISTS).forEach(function (key) {
             if (!C[LISTS[key]][settings[key]]) settings[key] = DEFAULTS[key];
         });
-        if (settings.pauseMode !== 'scan') settings.pauseMode = 'hold';
+        if (settings.pauseMode !== 'scan' && settings.pauseMode !== 'hold') settings.pauseMode = DEFAULTS.pauseMode;
         if (settings.highlightStyle !== 'full') settings.highlightStyle = 'outline';
         settings.sound = settings.sound !== false;
         settings.volumeIndex = wrapIndex(settings.volumeIndex, VOLUMES.length);
@@ -94,7 +94,15 @@ NGP.Settings = (function () {
             console.warn('[NGP] Could not read settings:', e);
             settings = Object.assign({}, DEFAULTS);
         }
+        // Apply the new pause default once, including to existing saved choices.
+        // Keep the marker in the same save so later user choices survive reloads.
+        const migratePause = settings.scanPauseDefaultApplied !== true;
+        if (migratePause) {
+            settings.pauseMode = 'scan';
+            settings.scanPauseDefaultApplied = true;
+        }
         clamp();
+        if (migratePause) save();
     }
 
     function save() {

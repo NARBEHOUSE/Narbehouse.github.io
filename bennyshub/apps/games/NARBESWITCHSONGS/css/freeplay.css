@@ -44,8 +44,6 @@
 .nss-free-stage.deleting .nss-free-history-key { height: max(72px, 8vh); }
 .nss-free-scroll { flex: 7 1 0; min-height: 0; padding: 10px; overflow: visible; }
 .nss-free-scroll.nss-focus, .nss-free-scroll.nss-focus-full { translate: none; }
-.nss-free-scroll.nss-focus-full .nss-key.white { background: var(--focus-color) !important; }
-.nss-free-scroll.nss-focus-full .nss-key.white .nss-key-label { color: var(--focus-ink); }
 .nss-free-piano { position: relative; width: 100%; min-width: 0; height: 100%; }
 .nss-free-key { padding: 0; margin: 0; min-height: 0; min-width: 0; width: calc(100% / var(--white-keys)); transition: none; z-index: 1; touch-action: manipulation; }
 .nss-free-key.black { width: calc(100% / var(--white-keys) * .62); z-index: 2; }
@@ -56,7 +54,6 @@
     box-shadow: inset 0 0 0 6px var(--focus-color), inset 0 0 0 10px var(--focus-ink) !important;
 }
 .nss-free-key.black.nss-focus, .nss-free-key.black.nss-focus-full { z-index: 3; }
-.nss-free-key.nss-focus-full .nss-key-label { color: var(--focus-ink) !important; }
 .nss-free-key[data-narbe-scan-paused]::after { content: ''; position: absolute; inset: 8px; border: 4px dotted var(--focus-ink); border-radius: 4px; pointer-events: none; }
 .nss-free .nss-song-foot { gap: 12px; }
 .nss-free .nss-song-foot .nss-hint { max-width: 42%; font-size: clamp(16px, 1.2vw, 22px); }

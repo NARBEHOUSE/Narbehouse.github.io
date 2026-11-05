@@ -50,6 +50,8 @@ function drawCarPet(e,p,fit){ const s=getPet(state.style,stageName(),p,fit); let
   ctx.drawImage(s,box.x,box.y,box.w,box.h,60-w/2,75+carBob(e)-h,w,h);
 }
 function drawCarFront(e,glass){ const b=carBob(e); ctx.save(); ctx.translate(0,b); ctx.lineJoin='round'; ctx.lineWidth=1;
+  // Dark wheel wells fill the space between the suspension and each tire.
+  [36,94].forEach(x=>pxEll(ctx,x,80.5,10,10,'#252B35'));
   // Curved hatchback cabin, with a large passenger window and a sloping windshield.
   ctx.beginPath(); ctx.moveTo(24,62); ctx.bezierCurveTo(27,48,31,34,44,31); ctx.quadraticCurveTo(60,28,80,31);
   ctx.quadraticCurveTo(89,33,102,58); ctx.lineTo(105,63); ctx.closePath(); carWindowPath(ctx,0,true);
@@ -71,8 +73,9 @@ function drawCarFront(e,glass){ const b=carBob(e); ctx.save(); ctx.translate(0,b
   pxEll(ctx,17,65,2,3,'#A23D38'); pxEll(ctx,17,64.4,1.3,2,'#FFC078');
   pxLine(ctx,15,76,23,76,'#E2D5C2',2); pxLine(ctx,108,76,116,76,'#E2D5C2',2);
   ctx.restore();
-  [36,94].forEach(x=>{ pxEll(ctx,x,81.5,8.2,8.2,'#252B35'); pxEll(ctx,x,81.5,6.7,6.7,'#3D4651'); pxEll(ctx,x,81.5,4.2,4.2,'#CFD7D8'); pxEll(ctx,x,81.5,3.1,3.1,'#7A8793');
-    const a=e/170; for(let k=0;k<5;k++){ const t=a+k*TAU/5; pxLine(ctx,x,81.5,x+Math.cos(t)*3.3,81.5+Math.sin(t)*3.3,'#E6E8DF',.8); } pxEll(ctx,x,81.5,1.1,1.1,'#E6E8DF'); });
+  [36,94].forEach(x=>{pxEll(ctx,x,81.5,9,9,'#1D2530');pxRing(ctx,x,81.5,8,8,.65,'#4A535D');pxEll(ctx,x,81.5,4.9,4.9,'#D6DDE1');pxEll(ctx,x,81.5,3.9,3.9,'#6D7B87');
+    const a=e/170;for(let k=0;k<5;k++){const t=a+k*TAU/5;pxLine(ctx,x+Math.cos(t)*1.2,81.5+Math.sin(t)*1.2,x+Math.cos(t)*3.7,81.5+Math.sin(t)*3.7,'#E6ECEE',1);}
+    pxEll(ctx,x,81.5,1.4,1.4,'#E6ECEE');pxEll(ctx,x,81.5,.6,.6,'#8A99A4');});
 }
 
 /* ---- Pet store ---- */
@@ -97,12 +100,12 @@ function drawPetStore(){
     counter(g,102,40,58,'#E3BC84','#C08A5A',B); rect(g,108,50,12,8,INK); rect(g,109,51,10,7,'#5A6A7A'); rect(g,110,52,8,3,'#9FD8C8'); rect(g,112,48,4,2,'#5A6A7A');
     glow(g,64,12,70,'#FFF3D0',.25); })); }
 /* ---- Groomer: the spa room, and the front desk where you check in ---- */
-function drawGroomer(){
-  blitView(ctx,cachedLayer('groom',(g,ph,B)=>{ tileWall(g,B.y0,62,'#E6F4F8','#CFE6EE',B,8);
+function drawGroomer(showMirror=true){
+  blitView(ctx,cachedLayer(showMirror?'groom':'groom-no-mirror',(g,ph,B)=>{ tileWall(g,B.y0,62,'#E6F4F8','#CFE6EE',B,8);
     for(let i=0,m=Math.round(Bw(B)/10);i<m;i++){ const x=B.x0+hash2(i,2,7)*Bw(B), y=6+hash2(i,3,7)*40; pxRing(g,x,y,1.6+hash2(i,4,7)*1.6,1.6+hash2(i,4,7)*1.6,.5,'#FFFFFF'); }
     rect(g,B.x0,52,Bw(B),10,'#BFE3EE'); rect(g,B.x0,52,Bw(B),.6,'#8ABFCF');
     /* the big mirror on the left and a shelf of shampoo */
-    pxEll(g,14,30,13,17,INK); pxEll(g,14,30,12,16,'#E8C07A'); pxEll(g,14,30,10,14,'#CFE8F2'); rect(g,8,20,2,18,'rgba(255,255,255,.55)');
+    if(showMirror){pxEll(g,14,30,13,17,INK); pxEll(g,14,30,12,16,'#E8C07A'); pxEll(g,14,30,10,14,'#CFE8F2'); rect(g,8,20,2,18,'rgba(255,255,255,.55)');}
     rect(g,94,18,34,2.5,'#8A6234'); [[96,'#B89AD8'],[103,'#8CC98A'],[110,'#F4ECD8'],[117,'#F2A7B5'],[123,'#9FC4E8']].forEach(([x,c])=>{ rect(g,x-.5,8.5,5,10,INK); rect(g,x,9,4,9,c); rect(g,x+1,6.5,2,2.5,INK); rect(g,x+.8,10,1,6,'rgba(255,255,255,.6)'); });
     /* towels on a rack */ rect(g,96,30,28,1.5,'#9AA4AE'); [[97,'#F2A7B5'],[106,'#9FC4E8'],[115,'#F4D27A']].forEach(([x,c])=>{ rect(g,x,31,8,11,c); rect(g,x,39,8,1,'#FFFFFF'); });
     rect(g,B.x0,62,Bw(B),B.y1-62,'#DDEBEF'); checkerFloor(g,62,'#DDEBEF','#C8DCE2',B,8); rect(g,B.x0,61.5,Bw(B),1,'#8ABFCF');

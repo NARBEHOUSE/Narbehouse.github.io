@@ -12,17 +12,14 @@ NMB.Game = (function () {
 
     const IDLE_PROMPT_MS = 30000;   // bring "Press for magic!" back after a quiet spell
     let started = false;
-    let lastPress = -1e9;      // the last magic, for ignoring super-fast double hits
     let lastActivity = -1e9;   // the last press or start, for the idle prompt
 
     function S() { return NMB.Settings; }
 
-    /** Make magic. Super-fast double hits are ignored. */
+    /** Make magic. Switch bounce is already filtered by the shared input guard. */
     function magic() {
         if (NMB.UI.current() !== 'play') return;
-        const now = performance.now();
-        if (now - lastPress < 150) return;
-        lastPress = lastActivity = now;
+        lastActivity = performance.now();
         NMB.UI.prompt(false);
         if (S().get('pauseMode') === 'scan') NMB.UI.bumpMagic();
         NMB.Scene.press();

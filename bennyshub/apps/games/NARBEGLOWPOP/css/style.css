@@ -375,17 +375,36 @@ body {
 .ngp-pause-btn.holding { color: #fff; }
 .ngp-pause-btn.holding .ngp-ring { opacity: 1; }
 
-/* Scan to Pause: Pop is an invisible circle over the shape; Object Ring
-   optionally draws a selection ring around it. */
+/* Scan to Pause: a visible button below the shape, always readable before focus. */
 .ngp-pop-btn {
     display: none;
     position: absolute;
-    border-radius: 50%;
-    background: transparent;
-    outline: none;
+    left: 50%;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    translate: -50% 0;
+    width: min(300px, calc(100vw - 40px));
+    height: clamp(64px, 12vh, 80px);
+    padding: 0 24px;
+    border-radius: 999px;
+    background: var(--btn);
+    color: #fff;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.7);
+    font-size: clamp(24px, 3.6vw, 32px);
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 #ngp[data-pause-mode="scan"] .ngp-pop-btn { display: block; }
+.ngp-pop-btn:active { transform: scale(0.97); }
+
+/* The optional object ring is a visual cue, never another click/scan target. */
+.ngp-object-ring {
+    position: absolute;
+    pointer-events: none;
+    border: 10px solid var(--object-ring-color, #fff);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #1a1008;
+}
 
 /* --------------------------------------------------------------- highlight
    Colour, then a ring of the colour's own ink outside it, so the highlight
@@ -413,8 +432,8 @@ body {
 .ngp-focus-full .ngp-tile-label, .ngp-focus-full .ngp-row-value { color: var(--focus-ink, #1a1008); }
 .ngp-focus-full .ngp-icon-chip { background: transparent; box-shadow: inset 0 0 0 2px var(--focus-ink, #1a1008); }
 
-/* The shape and the Pause button are never filled: a ring is drawn instead. */
-.ngp-pop-btn.ngp-focus, .ngp-pop-btn.ngp-focus-full { background: transparent !important; translate: none; outline-width: 10px !important; }
+/* Keep the centered button's placement when its scan highlight lifts it. */
+.ngp-pop-btn.ngp-focus, .ngp-pop-btn.ngp-focus-full { translate: -50% -3px; }
 .ngp-pause-btn.ngp-focus-full { color: var(--focus-ink, #1a1008) !important; }
 
 /* Auto Scan paused by the Space brake: the same highlight, dotted. */

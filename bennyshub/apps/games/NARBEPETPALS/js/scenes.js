@@ -98,8 +98,12 @@ function drawVet(){
     softShadow(g,64,93,30,3,.25);
     rect(g,58.6,82,10.8,9,INK); rect(g,59.4,82,9.2,9,'#B8C2CA'); rect(g,59.4,82,2,9,'#D8E0E6'); rect(g,66.6,82,2,9,'#9AA4AE');
     rect(g,48,90.4,32,3.4,INK); rect(g,48.6,91,30.8,2.2,'#9AA4AE'); rect(g,48.6,91,30.8,.6,'#C8D0D8');
-    rect(g,31,76.4,66,6.4,INK); rect(g,32,77,64,5,'#D8E0E6'); rect(g,32,77,64,1,'#FFFFFF'); rect(g,32,81,64,1,'#9AA4AE');
-    rect(g,36,74.8,56,2.6,INK); rect(g,36.6,75.2,54.8,1.8,'#9FD8C8'); rect(g,36.6,75.2,54.8,.5,'#C8EEE4'); glow(g,64,20,60,'#FFFFFF',.25); }));
+    // A single rounded top and fitted mat, with no detached strip above the table.
+    g.fillStyle='#536A78';g.beginPath();g.roundRect(30,73.8,68,8.4,2);g.fill();
+    vgrad(g,31,76,66,5,[[0,'#EDF5F8'],[1,'#A6B6C1']]);pxLine(g,33,80.8,95,80.8,'#7F929F',.65);
+    g.fillStyle='#77B6A5';g.beginPath();g.roundRect(31,74.4,66,3.1,1.3);g.fill();
+    pxLine(g,33,75,95,75,'#D6F5E7',.7);pxLine(g,33,77,95,77,'#568E80',.6);
+    glow(g,64,20,60,'#FFFFFF',.25); }));
 }
 /* ---- Town (Pet Parade) ---- */
 /* Familiar pet sprites sit on the far sidewalk and watch the parade. */

@@ -171,6 +171,7 @@ function forelegJoints(P,S,side,q){ const r=frontLegRig(P,S,side);
    a prop. The hand or bell comes to the paw instead. */
 function drawForelegs(b,o,P,S,layer){ if(!o.paws) return; const W=P.paw;
   [-1,1].forEach(s=>{ const q=o.paws[s]; if(!q) return;
+    if(layer==='head'?!q.overHead:layer!=='upper'&&q.overHead)return;
     const {sx,sy,ex,ey,x,y}=forelegJoints(P,S,s,q), lift=q.lift||0, rx=W.rx*lerp(.92,.8,lift), ry=W.ry*(q.pad?1.1:1);
     // The shoulder stays inside the shirt. Only the folded forearm and paw pass
     // in front of it, emerging at the sleeve/hem instead of cutting through the chest.
@@ -354,7 +355,7 @@ function wearBody(b,G,fit){ if(!fit||!fit.body) return; const C=CLOTHES[fit.body
 const petCache=new Map();
 const POSE0={eyes:'open',mouth:'smile',tail:1,ear:0,headDy:0};
 const fitKey=f=>f?OUT_CATS.map(c=>f[c]||'').join('.'):'';
-const pawsKey=p=>p?[-1,1].map(s=>p[s]?[p[s].x,p[s].y,p[s].ex,p[s].ey,p[s].lift||0,p[s].pad||0].join(','):'').join(';'):'';
+const pawsKey=p=>p?[-1,1].map(s=>p[s]?[p[s].x,p[s].y,p[s].ex,p[s].ey,p[s].lift||0,p[s].pad||0,p[s].overHead?1:0].join(','):'').join(';'):'';
 function buildRear(b,o,P,S,fit){ const G=geoFor(P,o), cat=S.kind==='cat', H=P.head, hy=G.hy, sh=shapeOf(S);
   wearBehind(b,G,fit);
   part(b,T=>{ [-1,1].forEach(s=>{ const W=P.paw,x=22+s*W.dx,footY=W.cy-frontStepLift(o.frame||0,s),kneeY=lerp(P.body.cy,footY,.55);
@@ -377,6 +378,7 @@ function getPet(style,sg,o,fit){
   let P=breedP(PARAMS[S.kind][sg],S,style+':'+sg); const b=B(PET_W,PET_H,PET_OX,PET_OY);
   if(o.upright) P={...P,body:{...P.body,ry:P.body.ry*.78}};
   (o.rear?buildRear:S.kind==='dog'?buildDog:buildCat)(b,o,P,S,fit);
+  if(!o.rear)drawForelegs(b,o,P,S,'head');
   const G=geoFor(P,o);
   c=finish(b,S.pal,{pattern:S.pattern,geo:G,dull:o.dull});
   if(petCache.size>900) petCache.clear(); petCache.set(key,c); return c;

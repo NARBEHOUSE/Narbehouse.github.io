@@ -40,7 +40,7 @@ NSS.Settings = (function () {
          * scan: the highlight moves between the page and Pause, for a player
          *       who cannot hold a switch long enough to pause.
          */
-        pauseMode: 'hold',
+        pauseMode: 'scan',
         sound: true,
         volumeIndex: 1,
         highlightColorIndex: 0,
@@ -62,7 +62,7 @@ NSS.Settings = (function () {
         LISTED.forEach(function (key) {
             if (!C.settings[key][settings[key]]) settings[key] = DEFAULTS[key];
         });
-        if (settings.pauseMode !== 'scan') settings.pauseMode = 'hold';
+        if (settings.pauseMode !== 'scan' && settings.pauseMode !== 'hold') settings.pauseMode = DEFAULTS.pauseMode;
         if (settings.highlightStyle !== 'full') settings.highlightStyle = 'outline';
         settings.sound = settings.sound !== false;
         settings.volumeIndex = wrapIndex(settings.volumeIndex, VOLUMES.length);
@@ -77,7 +77,15 @@ NSS.Settings = (function () {
             console.warn('[NSS] Could not read settings:', e);
             settings = Object.assign({}, DEFAULTS);
         }
+        // Apply the new pause default once, including to existing saved choices.
+        // Keep the marker in the same save so later user choices survive reloads.
+        const migratePause = settings.scanPauseDefaultApplied !== true;
+        if (migratePause) {
+            settings.pauseMode = 'scan';
+            settings.scanPauseDefaultApplied = true;
+        }
         clamp();
+        if (migratePause) save();
     }
 
     function save() {

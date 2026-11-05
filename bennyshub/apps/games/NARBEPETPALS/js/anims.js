@@ -80,6 +80,7 @@ function drawRope(x0,y0,x1,y1){ const n=Math.max(1,Math.round(Math.abs(x1-x0)*2)
   for(let i=0;i<=n;i++){ const x=lerp(x0,x1,i/n), y=lerp(y0,y1,i/n)+Math.sin(i/12)*.6; rect(ctx,x,y-1.8,.5,.5,'#5A3A20'); rect(ctx,x,y+1.8,.5,.5,'#5A3A20');
     for(let r=-1.5;r<=1.5;r+=.5) rect(ctx,x,y+r,.5,.5,((i+r*2+80)%8<4)?'#F0DFB8':'#C49A5E'); }
   const kx=lerp(x0,x1,.7), ky=lerp(y0,y1,.7); pxEll(ctx,kx,ky,3.5,3.2,'#5A3A20'); pxEll(ctx,kx,ky,2.8,2.5,'#E3C58E'); pxEll(ctx,kx-.8,ky-.8,.8,.6,'#FFF3D6'); }
+function drawTugHand(x,y){ blit(ctx,SPR.hand,x-10,y-14); }
 function drawLeash(x0,y0,x1,y1,c,d,sag){ sag=sag==null?12:sag; const sw=sag>3&&!reduceMotion?Math.sin(performance.now()/520)*1.4:0, mx=(x0+x1)/2+sw, my=(y0+y1)/2+sag;
   const pts=[]; for(let i=0;i<=18;i++){ const t=i/18, u=1-t; pts.push([u*u*x0+2*u*t*mx+t*t*x1,u*u*y0+2*u*t*my+t*t*y1]); }
   for(let i=1;i<pts.length;i++) pxLine(ctx,pts[i-1][0],pts[i-1][1]+.5,pts[i][0],pts[i][1]+.5,d,1.4);
@@ -104,7 +105,7 @@ function drawBoxFront(x,y){
   rect(ctx,x,y+6,44,16,'#C99A62'); rect(ctx,x+1,y+18,42,3,'#B8884F'); rect(ctx,x+19,y+7,6,6,'#E9D6B0'); rect(ctx,x+1,y+7,42,.5,'#DDB27A');
   rect(ctx,x,y+6,44,1,'#6A4A2A'); rect(ctx,x,y+21,44,1,'#6A4A2A'); rect(ctx,x,y+6,1,16,'#6A4A2A'); rect(ctx,x+43,y+6,1,16,'#6A4A2A'); }
 function drawBag(x,y){ rect(ctx,x-1,y+3,44,22,INK); rect(ctx,x,y+4,42,20,'#C9A06A'); for(let i=0;i<42;i+=3) rect(ctx,x+i,y+3-(i%2),3,2,'#E0C08A'); rect(ctx,x+12,y+6,1,17,'#A8804E'); rect(ctx,x+29,y+6,1,17,'#A8804E'); rect(ctx,x,y+20,42,4,'#B88E58'); }
-function drawWindowRain(e){ const w=WIN(); ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip(); ctx.fillStyle='rgba(40,50,80,0.5)'; ctx.fillRect(w.x,w.y,w.w,w.h);
+function drawWindowRain(e){ const w=WIN(); ctx.save(); clipWindowGlass(); ctx.fillStyle='rgba(40,50,80,0.5)'; ctx.fillRect(w.x,w.y,w.w,w.h);
   for(let i=0;i<16;i++){ const x=w.x+((i*7+Math.floor(e*.02))%(w.w+4))-2, y=w.y+((i*11+Math.floor(e*.09))%(w.h+4))-3; rect(ctx,x,y,.5,3,'#BFD6F0'); } ctx.restore(); }
 function drawGift(x,y,lid,box){ const C=box==='blue'?['#5A8FC4','#3E6FA4','#7FA8D8']:['#D9577A','#B8405E','#E8708E']; rect(ctx,x-1,y-1,22,15,INK); rect(ctx,x,y,20,13,C[0]); rect(ctx,x,y,20,1,C[2]); rect(ctx,x,y+10,20,3,C[1]); rect(ctx,x+8,y,4,13,'#F4C96A');
   if(lid!=null){ const ly=y-5-lid; rect(ctx,x-2,ly-1,24,6,INK); rect(ctx,x-1,ly,22,4,C[2]); rect(ctx,x+8,ly,4,4,'#F4C96A'); pxEll(ctx,x+7,ly-2,2.6,1.8,'#F4C96A'); pxEll(ctx,x+13,ly-2,2.6,1.8,'#F4C96A'); } }
@@ -117,7 +118,7 @@ function drawMud(p){ const g=G(); [[-g.bodyRx*.45,g.chest+1.5,2.2,1.6],[g.bodyRx
   .forEach(([dx,y,rx,ry])=>{ pxEll(ctx,PETX+22+dx+p.dx,PETY+y+p.dy,rx,ry,'#6B4A2B'); pxEll(ctx,PETX+22+dx+p.dx-.5,PETY+y+p.dy-.4,rx*.5,ry*.5,'#8A6440'); }); }
 const LUMPS=[[8,81],[14,82],[21,81]];
 /* How far the pet walks so its mouth reaches the water bowl, wherever the room put it. */
-const toWater=()=>{ const m=mouthAt({body:'stand',face:1,frame:0,dx:0,dy:0,headDy:3}); return Math.round(STATION.water[0]+7-m.x); };
+function waterSpot(){ const m=mouthAt({body:'stand',bow:1,face:1,frame:0,dx:0,dy:0,headDy:3}); return {dx:STATION.water[0]+7-m.x,dy:STATION.water[1]+1-m.y}; }
 function drawLumps(n){ LUMPS.slice(0,n).forEach(([x,y])=>{ pxEll(ctx,x,y,2,1.3,'#8A7A5A'); pxEll(ctx,x-.6,y-.5,.8,.5,'#A89A78'); }); }
 const TOY_SPOTS=[['sock',30,84],['duck',108,74],['bone',46,86],['ball',76,86]];
 function drawToys(skip){ TOY_SPOTS.forEach(([t,x,y],i)=>{ if(i>=skip) blit(ctx,SPR[t],x,y); }); }
@@ -166,7 +167,7 @@ V['play:ball']={dur:3000,
 V['play:yarn']=V['play:ball'];
 V['play:tug']={dur:3200,
   pose(p,e){ p.eyes='happy'; p.mouth='open'; p.dx=Math.round(Math.sin(e/200)*2.5); p.dy=0; p.ear=p.dx>0?1:0; },
-  front(e,a,p){ const m=mouthAt(p); drawRope(m.x+3,m.y+2,130,m.y+6+Math.round(Math.sin(e/200))); pxEll(ctx,m.x,m.y+2,4.2,3.4,'#5A3A20'); pxEll(ctx,m.x,m.y+2,3.4,2.6,'#E3C58E'); pxEll(ctx,m.x-.8,m.y+1.2,.8,.6,'#FFF3D6'); },
+  front(e,a,p){ const m=mouthAt(p),hx=Math.min(124,VIEW.x+VIEW.w-20)+Math.sin(e/200)*1.5,hy=m.y+6+Math.round(Math.sin(e/200)); drawRope(m.x+3,m.y+2,hx,hy); drawTugHand(hx,hy); pxEll(ctx,m.x,m.y+2,4.2,3.4,'#5A3A20'); pxEll(ctx,m.x,m.y+2,3.4,2.6,'#E3C58E'); pxEll(ctx,m.x-.8,m.y+1.2,.8,.6,'#FFF3D6'); },
   tick(a,e){ if(e>300) once(a,'g1',()=>play('pet:growl',.5)); if(e>1900) once(a,'g2',()=>play('pet:growl',.45)); if(e>2900) once(a,'w',()=>play(happyNoise(),.5)); }};
 V['play:squeak']={dur:3200,
   duck(e){ if(e<900){ const k=e/900; return {x:lerp(130,76,k),y:lerp(30,82,k)+arc(k,20)}; } if(e<1900) return {x:76,y:82+(Math.floor(e/120)%2)}; const k=ph(e,1900,2600); return {x:lerp(76,90,k),y:82+arc(k,14)}; },
@@ -325,7 +326,7 @@ V['explore:garden']={dur:6000,
   front(e){ const f=this.fly(e); if(f) blit(ctx,Math.floor(e/110)%2?SPR.fly1:SPR.fly2,f.x-3,f.y-3); if(e>2400){ rect(ctx,92,74,.8,12,'#4F7A5D'); rect(ctx,93,79,3,.8,'#6E9B7B'); pxEll(ctx,92.5,72,4.6,4.2,INK); pxEll(ctx,92.5,72,3.8,3.4,'#F07A8E'); pxEll(ctx,92.5,72,1.4,1.4,'#F4C542'); } },
   overlay(e,a){ fadeOverlay(e,a.dur); },
   tick(a,e,now){ if(e>400) once(a,'s',()=>{ setCaption(`${state.name} is stalking a butterfly...`); play('pet:chatter',.4); }); if(e>1950) once(a,'p',()=>{ play('bounce',.5); setCaption('Pounce! The butterfly floats away.'); });
-    if(e>2900) once(a,'f',()=>setCaption(`${state.name} stops to smell a flower.`)); if(e>3750) once(a,'a',()=>{ play('pet:sneeze',.6); for(let i=0;i<6;i++) spawn('sparkleSmall',84+rand(-6,6),62,rand(-20,20),rand(-16,0),.6); setCaption('Achoo! A flower sneeze.'); });
+    if(e>2900) once(a,'f',()=>setCaption(`${state.name} stops to smell a flower.`)); if(e>3750) once(a,'a',()=>{ play('pet:sneeze',.6); for(let i=0;i<6;i++) spawn('sparkleSmall',84+rand(-6,6),62,rand(-20,20),rand(-16,0),.6); setCaption('Achoo!'); });
     if(e>4300) once(a,'h',()=>setCaption(`${state.name} loves the garden.`)); if(e>4300&&now>=a.next){ spawn('heart',64+rand(-14,14),52,rand(-5,5),-14,1.2); a.next=now+550; } }};
 
 /* ---- Cuddle ---- */
@@ -374,45 +375,42 @@ V['brush:bow']={dur:3200,undressed:(e,a)=>!a.flags.bow,
     if(e>1900) once(a,'bow',()=>{ state.bowUnlocked=true; state.outfit=state.outfit||{}; state.outfit.hat='bow'; save(); burst(6); }); }};
 
 /* ---- Nap ---- */
-/* Every nap happens on the pet's own bed (the Nap choice in the room): the pet walks over, the bed grows
-   big enough to curl up in, and the pet sleeps on it, snuggled behind the bed's front edge. At the end it
-   wakes, walks back to the rug, and the bed goes back to its usual size. */
-const NAP_K=1.5, NAP_IN=750, NAP_OUT=850;
-function napBed(){ const id=room().spots.floorL||'petBed', d=DECOR[id], p=itemPos(id,'floorL'); return {id,d,cx:p.x+d.w/2,base:p.y+d.h}; }
-/* How big the bed is now (1 = its usual size). */
-function napGrow(e,a){ if(reduceMotion) return NAP_K; return 1+(NAP_K-1)*clamp(Math.min(ph(e,NAP_IN-450,NAP_IN-50),1-ph(e,a.dur-NAP_OUT+250,a.dur-NAP_OUT+600)),0,1); }
-/* Where the pet lies: centered on the bed, sunk a little into the cushion. */
-function napSpot(){ const b=napBed(), side=b.cx<64?-1:1; return {b,side,dx:b.cx-64-side*5,dy:b.base-b.d.h*NAP_K*.24-85.5}; }
-const napPose=(p,e,a)=>{ const {side,dx,dy}=napSpot(); p.wag=0;
-  const walk=(t,face)=>{ p.body='walk'; p.face=face; p.frame=Math.floor(e/140)%4; p.dx=Math.round(dx*t); p.dy=Math.round(dy*t); p.eyes='open'; };
-  if(!reduceMotion&&e<NAP_IN){ walk(ph(e,0,NAP_IN),side); return; }
-  if(!reduceMotion&&e>a.dur-NAP_OUT){ walk(1-ph(e,a.dur-NAP_OUT,a.dur),-side); p.eyes='happy'; return; }
-  p.body='lie'; p.face=-side; p.eyes=e>a.dur-NAP_OUT-700?'open':'closed'; p.headDy=1; p.dx=Math.round(dx); p.dy=Math.round(dy)+(reduceMotion?0:Math.floor(e/1300)%2); };
-/* The bed's front edge, drawn again over the sleeping pet. */
-function napBedFront(e,a){ const {b}=napSpot(), k=napGrow(e,a), w=b.d.w*k, h=b.d.h*k, top=b.base-h; if(k<1.02) return;
-  ctx.save(); ctx.beginPath(); ctx.rect(b.cx-w/2-6,b.base-h*.42,w+12,h); ctx.clip(); blitSized(ctx,itemSprite(b.id),b.cx-w/2,top,w,h); ctx.restore(); }
-const napHead=()=>{ const {b,side}=napSpot(); return {x:b.cx-side*13,y:b.base-b.d.h*NAP_K-10}; };
+/* Rest on the selected bed's cushion, following its placement and size. */
+const NAP_IN=1100, NAP_OUT=1000;
+function napSpot(){
+  const id=room().spots.floorL||'petBed',bed=DECOR[id],at=itemPos(id,'floorL');
+  const geo=sideGeo(SIDE[kind()][stageName()],{body:'lie',headDy:1},STYLES[state.style]);
+  const left=geo.body.cx-geo.body.rx,right=geo.head.x+geo.sn.dx+geo.sn.rx;
+  const scale=Math.min(1,(bed.w-5)/(right-left)),cx=at.x+bed.w/2,cy=at.y+({petBed:6.7,bed:7.4,royalBed:10.6}[id]||bed.h*.65);
+  return {dx:cx-64-((left+right)/2-SIDE_GX)*scale,dy:cy-(PETY+42.5),scale,cx,cy};
+}
+const napPose=(p,e,a)=>{ const spot=napSpot(),enter=ease(ph(e,0,NAP_IN-300)),leave=ease(ph(e,a.dur-NAP_OUT+250,a.dur)),k=reduceMotion?1:enter*(1-leave);
+  p.wag=0;p.dx=spot.dx*k;p.dy=spot.dy*k;p.napScale=lerp(1,spot.scale,k);p.face=1;p.frame=0;p.headDy=1;
+  const resting=reduceMotion||e>=NAP_IN&&e<=a.dur-NAP_OUT;
+  p.body=resting?'lie':k>0&&k<1?'walk':'stand';p.eyes=resting&&e<a.dur-NAP_OUT-500?'closed':'happy';
+  if(!resting){p.face=(spot.dx<0?-1:1)*(leave>0?-1:1);p.frame=Math.floor(e/140)%4;p.crouch=poseStep(e<NAP_IN?ph(e,NAP_IN-300,NAP_IN):1-ph(e,a.dur-NAP_OUT,a.dur-NAP_OUT+250));}
+};
+function drawNapPet(e,a,p,fit){ const x=64+p.dx,y=PETY+42.5+p.dy;ctx.save();ctx.translate(x,y);ctx.scale(p.napScale,p.napScale);drawPetPose(ctx,state.style,stageName(),p,fit,-22,-42.5);ctx.restore(); }
+const napHead=()=>{const s=napSpot(),g=sideGeo(SIDE[kind()][stageName()],{body:'lie',headDy:1},STYLES[state.style]);return {x:64+s.dx+(g.head.x-SIDE_GX)*s.scale,y:PETY+42.5+s.dy+(g.head.y-g.head.ry-SIDE_GY)*s.scale-4};};
 const zzz=(a,now,x)=>{ if(now>=a.next){ const hd=napHead(); spawn('z',x||hd.x,hd.y,6,-7,2.6); a.next=now+900; a.zc=(a.zc||0)+1; if(a.zc%2===1) play('pet:snore',.35); } };
-V['nap:dim']={dur:6200,pose:napPose,noShadow:true,front:napBedFront,
+V['nap:dim']={dur:6200,pose:napPose,drawPet:drawNapPet,noShadow:true,
   overlay(e,a){ const f=Math.max(0,Math.min(1,e/500,(a.dur-e)/500)); ctx.fillStyle=`rgba(28,30,70,${(.38*f).toFixed(3)})`; fillView(ctx); },
   tick(a,e,now){ if(e>NAP_IN&&e<a.dur-NAP_OUT) zzz(a,now); }};
 const DREAM_WORD={ball:'playing ball',yarn:'yarn',feed:'dinner',walk:'going for walks',box:'boxes',cuddle:'you'};
 /* A dream nap: a thought bubble over the bed shows what the pet dreams about. */
-V['nap:bed']={dur:6400,pose:napPose,noShadow:true,front:napBedFront,
+V['nap:bed']={dur:6400,pose:napPose,drawPet:drawNapPet,noShadow:true,
   init(a){ a.dream=pick(kind()==='dog'?['ball','feed','walk','cuddle']:['yarn','feed','box','cuddle']); },
   overlay(e,a){ const f=Math.max(0,Math.min(1,e/500,(a.dur-e)/500)); ctx.fillStyle=`rgba(28,30,70,${(.25*f).toFixed(3)})`; fillView(ctx);
     if(e>1500&&e<a.dur-NAP_OUT-400){ const hd=napHead(), bx=clamp(hd.x-4,VIEW.x+2,VIEW.x+VIEW.w-26), by=Math.max(VIEW.y+2,hd.y-20)+(Math.floor(e/700)%2); blit(ctx,SPR.bubbleThought,bx,by); blit(ctx,ICONS[a.dream],bx+6,by+4); } },
   tick(a,e,now){ if(e>NAP_IN&&e<a.dur-NAP_OUT) zzz(a,now); if(e>1600) once(a,'d',()=>setCaption(`${state.name} dreams about ${DREAM_WORD[a.dream]}.`)); }};
-/* A sunbeam (or moonlight) nap: the light slants from the window right onto the bed, wherever the bed
-   has been moved to, with a warm pool of light over the sleeping pet. */
-V['nap:sun']={dur:6200,pose:napPose,noShadow:true,
-  front:napBedFront,
-  overlay(e,a){ const w=WIN(), {b}=napSpot(), night=skyMode()==='night', f=Math.max(0,Math.min(1,e/600,(a.dur-e)/600)), col=night?'#AABEFF':'#FFE282',
-      y0=w.y+w.h, y1=b.base+1, h0=(w.w-4)/2, h1=Math.max(12,b.d.w*NAP_K/2+2);
+/* The sunbeam (or moonlight) reaches the bed where the pet is sleeping. */
+V['nap:sun']={dur:6200,pose:napPose,drawPet:drawNapPet,noShadow:true,
+  overlay(e,a){ const w=WIN(), night=skyMode()==='night', f=Math.max(0,Math.min(1,e/600,(a.dur-e)/600)), col=night?'#AABEFF':'#FFE282',
+      spot=napSpot(),y0=w.y+w.h, y1=spot.cy+2, h0=(w.w-4)/2, h1=17;
     ctx.fillStyle=rgbaStr(col,(night?.22:.32)*f);
-    for(let y=y0;y<y1;y++){ const t=(y-y0)/Math.max(1,y1-y0), cx=lerp(w.cx,b.cx,t), hw=lerp(h0,h1,t); ctx.fillRect(cx-hw,y,hw*2,1); }
-    glow(ctx,b.cx,b.base-b.d.h*NAP_K*.5,h1+6,col,(night?.22:.3)*f); },
-  tick(a,e,now){ if(e>NAP_IN&&e<a.dur-NAP_OUT) zzz(a,now); if(now>=a.next2){ const {b}=napSpot(); spawn('sparkleSmall',b.cx+rand(-16,16),b.base-rand(4,26),rand(-2,2),-3,1.4); a.next2=now+500; } }};
+    for(let y=y0;y<y1;y++){ const t=(y-y0)/Math.max(1,y1-y0), cx=lerp(w.cx,spot.cx,t), hw=lerp(h0,h1,t); ctx.fillRect(cx-hw,y,hw*2,1); }
+    glow(ctx,spot.cx,spot.cy-5,h1+6,col,(night?.22:.3)*f); },
+  tick(a,e,now){ if(e>NAP_IN&&e<a.dur-NAP_OUT) zzz(a,now); if(now>=a.next2){ const spot=napSpot();spawn('sparkleSmall',spot.cx+rand(-12,12),spot.cy-rand(4,20),rand(-2,2),-3,1.4); a.next2=now+500; } }};
 
 /* ---- Little things that happen on their own ---- */
 const IDLE_W={
@@ -446,7 +444,11 @@ V['idle:toy']={dur:2600,init(a){ a.toy=pick(ownedToys()); },
   pose(p,e){ if(e<1000){ p.headDy=2; p.dx=(Math.floor(e/110)%2)?1:-1; p.eyes='closed'; } else { p.eyes='happy'; p.mouth='smile'; p.wag=70; if(e<1300) p.dy=-3; } },
   front(e,a,p){ if(e<1000){ if(Math.floor(e/110)%3===0) spawn('puff',64+rand(-10,10),85,rand(-12,12),-6,.4); return; } const m=mouthAt(p), s=SPR[a.toy]; blit(ctx,s,m.x-s.lw/2,m.y-2); },
   tick(a,e){ if(e>1000) once(a,'f',()=>{ play(toySqueaks(a.toy)?'squeak':'happy',.6); spawn('sparkle',64,60,0,-10,.8); }); }};
-V['idle:scratch']={dur:1700,pose(p,e){ p.ear=Math.floor(e/70)%2; p.headDy=1; p.dx=(Math.floor(e/70)%2); p.eyes='happy'; p.mouth='tongue'; }, tick(a,e){ if(e>100) once(a,'r',()=>play('rustle',.4)); }};
+V['idle:scratch']={dur:1700,pose(p,e){ const k=poseStep(motionHold(e,100,350,1350,1650)),beat=Math.round(Math.sin(e/65)*2)/2;p.ear=beat>0?1:0;p.headDy=2;p.eyes='happy';p.mouth='tongue';p.dy=0;
+    const S=STYLES[state.style],P=breedP(PARAMS[S.kind][stageName()],S,state.style+':'+stageName()),r=frontLegRig(P,S,1);
+    const q={x:lerp(22+P.paw.dx,22+P.head.rx*.88,k),y:lerp(P.paw.cy+.45,P.head.cy+p.headDy+P.ear.dy+P.ear.len*.35+beat*.8,k),ex:lerp(r.sx,r.sx+r.upper*.8,k),ey:lerp(r.sy+r.upper,r.sy-r.upper*.25,k),lift:poseStep(k)};
+    Object.assign(q,forelegJoints(P,S,1,q));q.overHead=true;p.paws={1:q};
+  },tick(a,e){ if(e>100) once(a,'r',()=>play('rustle',.4)); }};
 V['idle:butterfly']={dur:3600,
   pos(e,p){ const hx=64+(p?p.dx:0), hy=PETY+G().top-2;
     if(e<1400){ const k=e/1400; return {x:lerp(28,hx,k)+Math.sin(e/150)*4,y:lerp(24,hy,k)+arc(k,6)}; }
@@ -454,7 +456,7 @@ V['idle:butterfly']={dur:3600,
   pose(p,e){ p.eyes=(e>1400&&e<2700)?'happy':'open'; p.mouth=(e>1400&&e<2700)?'tongue':'smile'; },
   front(e,a,p){ const b=this.pos(e,p), s=(e>1400&&e<2700&&Math.floor(e/500)%2)?SPR.fly2:(Math.floor(e/110)%2?SPR.fly1:SPR.fly2); blit(ctx,s,b.x-3,b.y-3); },
   tick(a,e){ if(e>1400) once(a,'l',()=>{ setCaption(`It landed on ${state.name}!`); spawn('sparkle',64,PETY+G().top-4,0,-6,.8); play('sparkle',.4); }); }};
-V['idle:stretch']={dur:2200,pose(p,e){ if(e<800){ p.body='stand'; p.face=1; p.headDy=2; p.eyes='closed'; } else if(e<1600){ p.body='stand'; p.face=1; p.headDy=-1; p.eyes='closed'; p.mouth='open'; } else p.eyes='happy'; }, tick(a,e){ if(e>800) once(a,'y',()=>play('pet:yawn',.45)); }};
+V['idle:stretch']={dur:2200,pose(p,e){ p.body='stand';p.face=1;p.frame=0;p.dy=0;p.bow=poseStep(motionHold(e,150,650,1450,2050));p.headDy=2;p.eyes=e<1800?'closed':'happy';p.mouth=e>650&&e<1600?'open':'smile';p.wag=0; }, tick(a,e){ if(e>800) once(a,'y',()=>play('pet:yawn',.45)); }};
 V['idle:mouse']={dur:2600,
   mx(e){ return e<1500?lerp(-12,70,e/1500):70; },
   pose(p,e){ const x=this.mx(e); p.eyes='open'; p.dx=Math.round(clamp((x-64)/6,-5,2)); if(e>1300&&e<1700){ p.dy=Math.round(arc(ph(e,1300,1700),6)); p.dx=3; p.eyes='happy'; } else if(e>=1700){ p.dx=3; p.eyes='happy'; p.mouth='open'; } },
@@ -462,21 +464,27 @@ V['idle:mouse']={dur:2600,
   tick(a,e){ if(e>100) once(a,'z',()=>play('squeak',.4)); if(e>1700) once(a,'g',()=>{ play('squeak',.6); spawn('sparkle',74,78,0,-8,.8); }); }};
 V['idle:window']={dur:3200,
   pose(p,e){ p.eyes='open'; p.dx=Math.round(toWin()/8); p.mouth=(e>600&&e<2600&&Math.floor(e/160)%2)?'open':'smile'; p.ear=Math.floor(e/300)%2; p.headDy=-1; },
-  behind(e){ const w=WIN(); ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip(); [[0,w.y+5],[500,w.y+15]].forEach(([d,y])=>{ const t=e-d; if(t>0&&t<2600) blit(ctx,Math.floor(t/150)%2?SPR.gull:SPR.gull2,lerp(w.x-4,w.x+w.w,t/2600),y+Math.sin(t/200)*2); }); ctx.restore(); },
+  behind(e){ const w=WIN(); ctx.save(); clipWindowGlass(); [[0,w.y+5],[500,w.y+15]].forEach(([d,y])=>{ const t=e-d; if(t>0&&t<2600) blit(ctx,Math.floor(t/150)%2?SPR.gull:SPR.gull2,lerp(w.x-4,w.x+w.w,t/2600),y+Math.sin(t/200)*2); }); ctx.restore(); },
   tick(a,e,now){ if(e>500) if(kind()==='cat') once(a,'c',()=>play('pet:chatter',.4)); if(e>600&&e<2600&&now>=a.next){ play('chirp',.3); a.next=now+900; } }};
 V['idle:lick']={dur:2000,pose(p,e){ if(e<1600){ const b=Math.floor(e/260)%2; p.headDy=1+b; p.eyes='closed'; p.mouth='tongue'; } else p.eyes='happy'; },
   tick(a,e,now){ if(e<1600&&now>=a.next){ spawn('sparkleSmall',64+rand(-12,12),rand(60,80),0,-6,.6); a.next=now+300; } }};
 V['idle:hiccup']={dur:2400,pose(p,e){ const hic=[300,1000,1700].some(t=>e>t&&e<t+180); if(hic){ p.dy=-3; p.eyes='closed'; p.mouth='open'; } if(e>2000){ p.eyes='happy'; p.mouth='tongue'; } },
   tick(a,e){ [300,1000,1700].forEach((t,i)=>{ if(e>t) once(a,'h'+i,()=>{ play('hic',.6); spawn('sparkleSmall',64,PETY+G().mouth,rand(-10,10),-12,.4); }); }); if(e>2000) once(a,'d',()=>setCaption('The hiccups are gone!')); }};
 V['idle:leash']={dur:2800,pose(p,e){ p.eyes='open'; p.wag=60; p.dy=(e>800&&e<2200)?-(Math.floor(e/180)%2)*2:0; },
-  front(e,a,p){ const m=mouthAt(p); pxLine(ctx,m.x-2,m.y+1,m.x-9,m.y+12,'#D9577A',1); pxLine(ctx,m.x-1,m.y+1,m.x-8,m.y+12,'#8E2A48',.5);
-    rect(ctx,m.x-13,m.y+12,7,1,'#D9577A'); rect(ctx,m.x-13,m.y+17,7,1,'#D9577A'); rect(ctx,m.x-13,m.y+12,1,6,'#D9577A'); rect(ctx,m.x-7,m.y+12,1,6,'#D9577A'); rect(ctx,m.x-2,m.y,3,2,'#C9C9D0'); },
+  front(e,a,p){ const m=mouthAt(p),sw=Math.sin(e/340)*1.5,x=m.x-13+sw,y=84;
+    // A long loose strap with a small metal clip, without the collar-like loop.
+    drawLeash(m.x-1,m.y+1,x,y,'#D9577A','#7D2948',6);
+    drawLeash(x,y,x+35,y+2,'#D9577A','#7D2948',4);
+    pxLine(ctx,x+35,y+2,x+38,y+2,'#AEBBC5',1.4);
+    pxLine(ctx,x+38,y+2,x+40,y,'#647887',1);pxLine(ctx,x+40,y,x+38,y-1,'#D7E4EC',1);
+    pxLine(ctx,x+38,y-1,x+36.5,y,'#647887',.7);
+  },
   tick(a,e){ if(e>900) once(a,'w',()=>play('pet:barkHappy',.35)); }};
 V['idle:sniff']={dur:2400,pose(p,e){ if(e<2000){ p.body='walk'; p.face=Math.cos(e/250)>=0?1:-1; p.frame=Math.floor(e/220)%4; p.headDy=2; p.dx=Math.round(Math.sin(e/250)*6); p.eyes='closed'; p.dy=0; } else p.eyes='happy'; },
   tick(a,e,now){ if(e<2000&&now>=a.next){ play('sniff',.35); a.next=now+300; } }};
 V['idle:chew']={dur:2800,init(a){ a.toy=pick(ownedToys()); },
   pose(p,e){ if(e<2300){ const b=Math.floor(e/260)%2; p.headDy=1+b; p.eyes=b?'closed':'happy'; p.mouth=b?'open':'smile'; p.dy=0; } else { p.eyes='happy'; p.mouth='tongue'; } },
-  front(e,a){ const s=SPR[a.toy]; blit(ctx,s,64-s.lw/2+(Math.floor(e/260)%2),87-s.lh); },
+  front(e,a,p){ const s=SPR[a.toy],m=mouthAt(p),drop=ease(ph(e,2300,2700));blit(ctx,s,m.x-s.lw/2,lerp(m.y-s.lh/2+1,85-s.lh,drop)); },
   tick(a,e,now){ if(e<2300&&now>=a.next){ play(toySound(a.toy),.35); a.next=now+520; } }};
 V['idle:loaf']={dur:3000,pose(p,e){ p.dy=3; p.headDy=1; p.eyes=e<2400?'closed':'happy'; p.wag=0; }, tick(a,e){ if(e>200) once(a,'p',()=>play('pet:purr',.5)); }};
 V['idle:knead']={dur:3000,pose(p,e){ p.dx=(Math.floor(e/180)%2)?1:-1; p.dy=1; p.eyes='closed'; p.ear=Math.floor(e/360)%2; },
@@ -526,7 +534,7 @@ V['event:playdate']={dur:7200,
 V['event:bark']={dur:5000,
   start(){ setCaption(`${state.name} hears something outside!`); play('knock',.6); },
   pose(p,e){ const d=toWin()/4; if(e<700){ p.ear=1; p.headDy=-1; p.eyes='open'; p.dx=Math.round(d*.75); } else if(e<3000){ const t=(e-700)%450, on=t<180; p.mouth=on?'open':'smile'; p.dy=on?-1:0; p.eyes='open'; p.dx=Math.round(d); p.ear=1; } else { p.eyes='happy'; p.mouth='tongue'; p.wag=80; } },
-  behind(e){ if(e>900&&e<3300){ const w=WIN(), k=ph(e,900,3300), x=lerp(w.x-6,w.x+w.w+6,k), bob=Math.floor(e/200)%2; ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip();
+  behind(e){ if(e>900&&e<3300){ const w=WIN(), k=ph(e,900,3300), x=lerp(w.x-6,w.x+w.w+6,k), bob=Math.floor(e/200)%2; ctx.save(); clipWindowGlass();
     const y=w.y+10; pxEll(ctx,x,y+bob,3.2,3.2,'#4A5566'); rect(ctx,x-4,y+4+bob,8,16,'#4A5566'); rect(ctx,x+3,y+7+bob,5,6,'#6A5A40'); ctx.restore(); } },
   tick(a,e){ [800,1250,1700,2150,2600].forEach((t,i)=>{ if(e>t) once(a,'b'+i,()=>{ play('pet:bark',.6); spawn('exclaim',70,headTopOf(p0()),rand(-4,4),-12,.6); }); });
     if(e>3000) once(a,'d',()=>setCaption(`It was only the mail carrier. Good job keeping watch, ${state.name}!`)); }};
@@ -562,7 +570,7 @@ V['event:gift']={dur:4600,init(a){ a.toy=a.toy||pick(unownedToys().length?unowne
 V['event:rain']={dur:5600,
   start(a){ const n=state.name; setCaption(a.mode==='fort'?`Pillow fort time! ${n} peeks out from inside.`:a.mode==='watch'?`${n} watches the raindrops on the window.`:`A cozy blanket snuggle with ${n}.`); play('rustle',.3); if(a.mode!=='watch'&&kind()==='cat') later(()=>play('pet:purr',.45),900); },
   pose(p,e,a){ if(a.mode==='watch'){ const tw=toWin(); p.dx=e<700?Math.round(tw*e/700):tw; if(e<700&&tw){ p.body='walk'; p.face=tw>0?1:-1; p.frame=Math.floor(e/140)%4; } p.eyes='open'; p.headDy=-1; p.ear=Math.floor(e/700)%2; if(e>3800){ p.eyes='happy'; p.mouth='tongue'; } } else { p.eyes=(e>800&&e<5000)?(a.mode==='fort'?'happy':'closed'):'happy'; p.dy=0; } },
-  behind(e,a){ const w=WIN(); if(a.mode==='watch'&&e>3800){ ctx.save(); ctx.beginPath(); ctx.rect(w.x,w.y,w.w,w.h); ctx.clip(); ['#E8757A','#F4B942','#F4E27A','#8CC98A','#7FA8D8','#B89AD8'].forEach((c,i)=>pxRing(ctx,w.x+w.w/2,w.y+w.h+2,w.w*.5-i,w.h*.72-i,1,c)); ctx.restore(); } else drawWindowRain(e); },
+  behind(e,a){ const w=WIN(); if(a.mode==='watch'&&e>3800){ ctx.save(); clipWindowGlass(); ['#E8757A','#F4B942','#F4E27A','#8CC98A','#7FA8D8','#B89AD8'].forEach((c,i)=>pxRing(ctx,w.x+w.w/2,w.y+w.h+2,w.w*.5-i,w.h*.72-i,1,c)); ctx.restore(); } else drawWindowRain(e); },
   front(e,a){ if(a.mode==='blanket') drawBlanket(Math.round(PETY+G().collar+(big()?1:0)+slide(e,5600,700,500,60)));
     if(a.mode==='fort'){ const o=Math.round(slide(e,5600,600,500,50)); rect(ctx,33,51+o,62,6,INK); for(let x=34;x<94;x+=4) rect(ctx,x,52+o,4,4,(((x-34)/4)%2)?'#F2A7B5':'#FFF1C9'); rect(ctx,34,56+o,3,12,'#F2A7B5'); rect(ctx,91,56+o,3,12,'#F2A7B5');
       [[34,68,'#9FC4E8'],[80,68,'#F4D27A'],[34,78,'#9CC7A7'],[80,78,'#F2A7B5']].forEach(([x,y,c])=>{ rect(ctx,x-1,y-1+o,17,11,INK); rect(ctx,x,y+o,15,9,c); rect(ctx,x+1,y+1+o,13,1,'#FFFFFF'); }); } },
@@ -572,7 +580,7 @@ V['event:rain']={dur:5600,
 
 /* ---- Chores: a button appears until the player takes care of it ---- */
 V['need:potty']={dur:6200,
-  init(a){ a.pottyX=16+FIX.dx+G().bodyRx-64; a.pottyY=FIX.dy; },
+  init(a){ const rear=sideAt({body:'stand',crouch:1,face:1,dx:0,dy:0},g=>g.body.cx-g.body.rx*.45,()=>SIDE_GY);a.pottyX=16+FIX.dx-rear.x;a.pottyY=(kind()==='dog'?89:82)+FIX.dy-(PETY+42.5); },
   pose(p,e,a){ p.dy=0; p.eyes='open'; p.mouth='smile'; p.wag=0;
     if(e<1500){ walkBetween(p,e,0,1500,0,a.pottyX); p.dy=lerp(0,a.pottyY,ease(ph(e,0,1500))); }
     else if(e<4300){ p.dx=a.pottyX; p.dy=a.pottyY; p.body='stand'; p.face=1; p.frame=0; p.crouch=poseStep(motionHold(e,1600,2200,3500,4100)); p.eyes=e<3700?'closed':'happy'; }
@@ -592,13 +600,18 @@ V['task:litter']={dur:3000,
   tick(a,e){ [900,1500,2100].forEach((t,i)=>{ if(e>t) once(a,'l'+i,()=>{ play('rustle',.4); spawn('sparkleSmall',LUMPS[2-i][0],LUMPS[2-i][1],0,-8,.6); }); }); if(e>2500) once(a,'h',()=>play('pet:trill',.45)); }};
 V['task:water']={dur:3400,
   start(){ setCaption('Pouring fresh, cool water.'); play('pour',.5); },
-  pose(p,e){ if(e<1200){ p.eyes='open'; p.dx=6; } else if(e<1700){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(6,toWater(),ph(e,1200,1700))); } else if(e<2900){ p.body='stand'; p.face=1; p.dx=toWater(); p.headDy=3; p.eyes='closed'; p.mouth=Math.floor(e/180)%2?'tongue':'smile'; } else { p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; p.dx=Math.round(lerp(toWater(),0,ph(e,2900,3400))); p.eyes='happy'; } },
+  pose(p,e){ const at=waterSpot();p.dy=0;
+    if(e<1200){p.eyes='open';p.dx=6;}
+    else if(e<1700){const k=ease(ph(e,1200,1700));p.body='walk';p.face=1;p.frame=Math.floor(e/140)%4;p.dx=lerp(6,at.dx,k);p.dy=at.dy*k;}
+    else if(e<2900){p.body='stand';p.face=1;p.dx=at.dx;p.dy=at.dy;p.bow=poseStep(motionHold(e,1700,2000,2700,2900));p.headDy=3;p.eyes='closed';p.mouth=Math.floor(e/180)%2?'tongue':'smile';}
+    else{const k=ease(ph(e,2900,3400));p.body='walk';p.face=-1;p.frame=Math.floor(e/140)%4;p.dx=lerp(at.dx,0,k);p.dy=lerp(at.dy,0,k);p.eyes='happy';}
+  },
   /* A jug tips over the bowl and pours a stream right into it. */
   behind(e){ const wx=STATION.water[0], wy=STATION.water[1]; blit(ctx,waterBowl(e<1200),wx,wy);
     if(e<1400){ const tip=e<250?ph(e,0,250):e>1150?1-ph(e,1150,1400):1, jx=wx+9, jy=lerp(40,wy-22,Math.min(1,e/250)), sx=jx-2-tip*3, sy=jy+5-tip*2;
       if(tip>.8&&e>250&&e<1150) for(let y=sy;y<wy+1;y+=1) rect(ctx,sx+Math.sin((y+e/30)/2)*.3-.6,y,1.4,1,y%2<1?'#9FD4F0':'#CFEAF8');
       ctx.save(); ctx.translate(jx,jy); ctx.rotate(-tip*.7); rect(ctx,-3.2,-5.2,7.4,10.4,INK); rect(ctx,-2.6,-4.6,6.2,9.2,'#7FA8D8'); rect(ctx,-2.6,-4.6,6.2,1.6,'#A8C8EC'); rect(ctx,-5,-4.4,2.4,1,INK); rect(ctx,-4.6,-4,1.8,.5,'#7FA8D8'); pxRing(ctx,4.4,0,2.2,3,.8,INK); ctx.restore(); } },
-  tick(a,e,now){ if(e>300&&e<1150&&now>=a.next){ spawn('drop',STATION.water[0]+rand(4,10),STATION.water[1]+1,rand(-14,14),rand(-26,-10),.32,null); a.next=now+110; } if(e>1700&&e<2900&&now>=a.next2){ play('lap',.35); a.next2=now+360; } }};
+  tick(a,e,now){ if(e>300&&e<1150&&now>=a.next){ spawn('drop',STATION.water[0]+rand(4,10),STATION.water[1]+1,rand(-14,14),rand(-26,-10),.32,null); a.next=now+110; } if(e>2000&&e<2700&&now>=a.next2){ play('lap',.35); a.next2=now+360; } }};
 V['task:toys']={dur:3000,
   start(){ setCaption('Tidy time. Toys go in the basket.'); },
   pose(p,e){ p.eyes='open'; p.mouth='smile'; if(e>2300){ p.eyes='happy'; p.mouth='tongue'; } },
@@ -622,13 +635,24 @@ function drawStethoscope(cx,cy){ const TUBE='#3A3E46', METAL='#AEB6C0', jx=cx-19
     pxEll(ctx,tx-s*.8,ty-6.9,1.3,1.1,INK); pxEll(ctx,tx-s*.8,ty-6.9,.8,.6,'#5A5E66'); });
   pxEll(ctx,jx,jy,1.3,1.3,INK); pxEll(ctx,jx,jy,.7,.7,METAL);
   pxEll(ctx,cx,cy,3.4,3.4,INK); pxEll(ctx,cx,cy,2.7,2.7,'#C8CED6'); pxEll(ctx,cx,cy,1.6,1.6,'#9AA3AE'); pxEll(ctx,cx-.9,cy-.9,.6,.6,'#FFFFFF'); }
+function drawExamLight(target,fromRight){ const dx=fromRight?15:-15,dy=-3,x=target.x+dx,y=target.y+dy,angle=Math.atan2(-dy,-dx);
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  ctx.fillStyle='rgba(255,243,174,.28)';ctx.beginPath();ctx.moveTo(5,-1.7);ctx.lineTo(17,-3.5);ctx.lineTo(17,3.5);ctx.lineTo(5,1.7);ctx.closePath();ctx.fill();
+  rect(ctx,-7,-2.5,12,5,INK);rect(ctx,-6.5,-2,10.5,4,'#426A7E');pxLine(ctx,-5,-1.2,2,-1.2,'#82ABBF',.6);
+  for(let i=0;i<3;i++)pxLine(ctx,-4+i*1.8,-1.8,-4+i*1.8,1.8,'#294B5D',.5);
+  rect(ctx,3.5,-3,2,6,'#A6B5BD');rect(ctx,5,-2,1,4,'#FFF4BE');
+  ctx.restore();
+  glow(ctx,target.x,target.y,3.5,'#FFF3B0',.35);
+}
 V['task:vet']={dur:7800,noShadow:true,
   start(){ setCaption(`Checkup time at the vet. ${state.name} hops up on the table.`); },
   scene(){ drawVet(); },
-  pose(p,e){ p.dy=-6; p.eyes='open'; if(e>1800&&e<3700){ p.eyes='closed'; } if(e>3800&&e<5400){ p.ear=Math.floor(e/300)%2; } if(e>5500&&e<6300){ p.mouth='open'; p.headDy=-1; } if(e>6300){ p.eyes='happy'; p.mouth='tongue'; p.wag=90; } },
+  pose(p,e){ p.dy=-10; p.eyes='open'; if(e>1800&&e<3700){ p.eyes='closed'; } if(e>3800&&e<4600){ p.ear=Math.floor(e/300)%2; } if(e>4600&&e<5400||e>5500&&e<6300){ p.mouth='open'; p.headDy=-1; } if(e>6300){ p.eyes='happy'; p.mouth='tongue'; p.wag=90; } },
+  behind(e,a,p){softShadow(ctx,64+p.dx,75.5,G().bodyRx+3,1.3,.16);},
   front(e,a,p){ const cx=64+p.dx, cy=chestAt(p);
     if(e>1800&&e<3700) drawStethoscope(cx+(e>2750?3:0),cy);
-    if(e>3800&&e<5400&&Math.floor(e/200)%2){ const ex=PETX+22-G().headRx+p.dx, ey=PETY+p.dy+G().top+6; rect(ctx,ex-3,ey,3,2,'#3A3E46'); rect(ctx,ex,ey,2,2,'#FFE27A'); glow(ctx,ex+2,ey+1,4,'#FFF3B0',.5); }
+    if(e>3800&&e<4600)drawExamLight({x:PETX+22-G().headRx+p.dx,y:PETY+p.dy+G().headCy+2},false);
+    else if(e>=4600&&e<5400)drawExamLight(mouthAt(p),true);
     if(e>5500&&e<6200){ const k=ph(e,5500,6100), m=mouthAt(p); blit(ctx,SPR.bone,lerp(118,m.x,k)-6,lerp(30,m.y,k)+arc(k,16)-4); } },
   overlay(e,a){ fadeOverlay(e,a.dur); },
   tick(a,e,now){
@@ -646,7 +670,7 @@ V['welcome:postcard']={dur:3600,pose:holdPose,front(e,a){ if(e>700){ const k=ph(
   tick(a,e){ if(e>700) once(a,'s',()=>{ play('ding',.5); burst(5); }); if(e>1500) once(a,'ph',()=>addPhoto('postcard',`A postcard from ${a.fname}.`,{fstyle:a.fstyle})); }};
 V['welcome:toy']={dur:3200,init(a){ a.toy=pick(ownedToys().concat(['sock'].filter(()=>kind()==='dog'))); },pose:holdPose,
   front(e,a,p){ if(e>700){ const m=mouthAt(p), s=SPR[a.toy]; blit(ctx,s,m.x-s.lw/2,m.y-2); } }, tick(a,e){ if(e>700) once(a,'s',()=>{ play(toySqueaks(a.toy)?'squeak':'happy',.5); burst(5); }); }};
-V['welcome:flower']={dur:3200,pose:holdPose,front(e,a,p){ if(e>700){ const m=mouthAt(p); drawFlower(m.x+3,m.y-5); } }, tick(a,e){ if(e>700) once(a,'s',()=>{ play('sparkle',.5); burst(5); }); }};
+V['welcome:flower']={dur:3200,pose(p,e){holdPose(p,e);if(e>700)p.mouth='smile';},front(e,a,p){ if(e>700){ const m=mouthAt(p);ctx.save();ctx.translate(m.x,m.y+.5);ctx.rotate(Math.PI/2+.12);drawFlower(-.4,-5);ctx.restore(); } }, tick(a,e){ if(e>700) once(a,'s',()=>{ play('sparkle',.5); burst(5); }); }};
 
 /* ---- Toy box ---- */
 V['play:toybox']={dur:3800,
@@ -741,7 +765,7 @@ V['feed:feast']={dur:3600,
     if(left>0){ if(kind()==='cat'){ const s=SPR.fish; blit(ctx,s,64-s.lw/2,y-5); rect(ctx,72,y,3,2,'#F29A80'); }
       else { pxEll(ctx,62,y,6*left+1,2.6,INK); pxEll(ctx,62,y,5*left+1,1.9,'#8A4A2A'); rect(ctx,60,y-1,2,.5,'#B06A4A'); [[70,y+1],[72,y],[71,y+2]].forEach(q=>pxEll(ctx,q[0],q[1],.6,.6,'#7FB08C')); } }
     if(e<1100){ const up=e<700?0:ph(e,700,1100)*20; pxEll(ctx,64,y-up,13,7,INK); pxEll(ctx,64,y-up,12,6,'#C8CED6'); pxEll(ctx,60,y-3-up,4,2,'#FFFFFF'); rect(ctx,63,y-8-up,2,2,'#9AA4AE'); } },
-  tick(a,e,now){ if(e>700) once(a,'l',()=>{ play('twinkle',.6); setCaption('Ta-da! Dinner is served.'); });
+  tick(a,e,now){ if(e>700) once(a,'l',()=>{ play('twinkle',.6); setCaption('Ta-dah! Dinner is served.'); });
     if(e>1300&&e<2900&&now>=a.next){ crumbs(64,82,'#B06A4A'); play('crunch',.45); a.next=now+420; } if(e>2950) once(a,'c',()=>{ burst(8); play('happy',.6); later(()=>play(happyNoise(),.5),400); }); }};
 
 /* ---- Special outings ---- */
@@ -755,11 +779,20 @@ V['event:parade']={dur:7000,
     if(now>=a.next2){ play('step',.25); a.next2=now+300; }
     if(e>2600) once(a,'c',()=>{ setCaption(`The crowd cheers for ${state.name}!`); play('cheer',.6); later(()=>play(happyNoise(),.5),400); }); if(e>4800) once(a,'w',()=>{ setCaption(`${state.name} wins a ribbon for Best Smile!`); play('fanfare',.5); }); },
   end(){ addStars(1); setCaption(`What a parade! You earned a care star.`); if(firstTime('parade')) addPhoto('outing',`${state.name} marched in the Pet Parade.`,{scene:'parade'}); }};
+function drawShowCourse(e){ drawDogPark(e);
+  // Dress the competition field behind the jumping lane.
+  pxLine(ctx,7,30,121,30,'#516A65',.7);
+  for(let i=0;i<12;i++){const x=8+i*10;ctx.fillStyle=['#DB785D','#F2C76F','#70A6BD'][i%3];ctx.beginPath();ctx.moveTo(x,30);ctx.lineTo(x+7,30);ctx.lineTo(x+3.5,36);ctx.closePath();ctx.fill();}
+  ctx.save();ctx.translate(-10,36);ctx.scale(.48,.48);drawSchoolTunnel(false);drawSchoolTunnel(true);ctx.restore();
+  for(let i=0;i<5;i++){const x=83+i*7;softShadow(ctx,x,68,2.8,.7,.17);pxLine(ctx,x,52,x,68,'#FBF5DF',1.6);pxLine(ctx,x,53,x,57,'#D87A5E',1.7);}
+  [26,64,102].forEach((x,i)=>{drawSchoolHurdle(ctx,x,86);const c=['#CE765D','#6C9CAA','#7FA66B'][i];
+    ctx.fillStyle=c;ctx.beginPath();ctx.roundRect(x-14,82,5,5,.8);ctx.fill();ctx.fillStyle='#FFFFFF';ctx.font='bold 3.5px sans-serif';ctx.textAlign='center';ctx.fillText(String(i+1),x-11.5,85.7);});
+}
 V['event:agility']={dur:6400,noShadow:true,
   start(){ setCaption(`Agility show time! ${state.name} takes on the course.`); play('cheer',.5); },
-  scene(e){ drawDogPark(e); [26,64,102].forEach(x=>{ rect(ctx,x-8,68,2,17,'#FFFFFF'); rect(ctx,x+6,68,2,17,'#FFFFFF'); for(let i=0;i<14;i+=4) rect(ctx,x-6+i,74,2,2,i%8?'#FFFFFF':'#D9403E'); }); },
+  scene(e){ctx.save();drawShowCourse(e);ctx.restore();},
   pose(p,e){ p.eyes='happy'; p.mouth='tongue'; p.wag=80;
-    if(e>600&&e<4200){ const k=ph(e,600,4200); p.dx=Math.round(lerp(-54,54,k)); const x=64+p.dx, near=[26,64,102].map(h=>Math.abs(x-h)).reduce((a,b)=>Math.min(a,b)); p.dy=near<12?-Math.round(Math.cos(near/12*Math.PI/2)*12):0; p.ear=Math.floor(e/110)%2; p.body='run'; p.face=1; p.frame=Math.floor(e/90)%4; }
+    if(e>600&&e<4200){ const k=ph(e,600,4200); p.dx=lerp(-54,54,k); const x=64+p.dx, near=[26,64,102].map(h=>Math.abs(x-h)).reduce((a,b)=>Math.min(a,b)),jump=near<17?Math.cos(near/17*Math.PI/2):0;p.dy=-jump*20;p.tuck=poseStep(jump*.85);p.ear=Math.floor(e/110)%2;p.body=jump>0?'jump':'run';p.face=1;p.frame=Math.floor(e/90)%4; }
     else if(e>=4200&&e<4700){ p.dx=Math.round(lerp(54,0,ph(e,4200,4700))); p.body='walk'; p.face=-1; p.frame=Math.floor(e/140)%4; } },
   front(e,a,p){ if(e>4800) drawRibbon(neckAt(p).x,neckAt(p).y+2); },
   overlay(e,a){ fadeOverlay(e,a.dur); },

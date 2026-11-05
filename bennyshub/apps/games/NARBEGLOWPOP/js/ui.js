@@ -112,10 +112,12 @@ NGP.UI = (function () {
         el.stage = node('canvas', 'ngp-stage', el.root);
         el.stage.setAttribute('aria-hidden', 'true');
 
-        // Play: Pop (Scan to Pause only - an optional ring around the shape) and Pause.
+        // Play: a visible scan button below the shape, its optional object ring, and Pause.
         el.hud = node('div', 'ngp-hud', el.root);
-        el.popBtn = button('ngp-pop-btn', el.hud);
-        el.popBtn.setAttribute('aria-label', 'Pop');
+        el.objectRing = node('span', 'ngp-object-ring', el.hud);
+        el.objectRing.setAttribute('aria-hidden', 'true');
+        el.objectRing.hidden = true;
+        el.popBtn = button('ngp-pop-btn', el.hud, 'Press to pop');
         el.pauseBtn = button('ngp-pause-btn', el.hud);
         el.pauseBtn.setAttribute('aria-label', 'Pause');
         el.ring = node('span', 'ngp-ring', el.pauseBtn);
@@ -201,6 +203,7 @@ NGP.UI = (function () {
         window.addEventListener('contextmenu', function (e) { if (screen === 'play') e.preventDefault(); });
 
         window.addEventListener('resize', function () {
+            measurePopButton();
             if (screen === 'settings') sizePreview();
             fit();
         });
@@ -225,13 +228,13 @@ NGP.UI = (function () {
         el.root.dataset.screen = name;
         el.root.dataset.pauseMode = S().get('pauseMode');
         el.pauseTip.textContent = scanMode()
-            ? 'Choose Pause, hold Enter for 5 seconds, or click or tap Pause to open the menu.'
-            : 'Hold Enter for 5 seconds or click or tap Pause to open the menu.';
+            ? 'Choose Pause, hold Enter, or click or tap Pause to open the menu.'
+            : 'Hold Enter or click or tap Pause to open the menu.';
         NGP.Scene.setLive(name === 'play');
 
         if (name === 'settings') { openPage('top'); return; }
         if (name === 'help') { helpPage = 0; renderHelp(); }
-        if (name === 'play') placePopButton();
+        if (name === 'play') { measurePopButton(); placePopButton(); }
 
         fit();
         NGP.Input.refresh(true);
@@ -240,7 +243,7 @@ NGP.UI = (function () {
             menu: 'Glow Pop. Choose one to pop.',
             pause: 'Paused.',
             help: 'How to play. Choose the title to hear the directions.',
-            play: shapeName(S().get('shape')) + '. ' + (scanMode() ? 'Choose Pop.' : 'Press to pop!')
+            play: shapeName(S().get('shape')) + '. ' + (scanMode() ? 'Choose Press to pop or Pause.' : 'Press to pop!')
         }[name];
         if (line) NGP.Input.announce(line);
     }
@@ -259,20 +262,38 @@ NGP.UI = (function () {
         c.style.setProperty('--card-scale', s.toFixed(3));
     }
 
-    function holdRing(p) {
+    function holdRing(p, showing = p > 0) {
         p = Math.max(0, Math.min(1, p || 0));
         el.ring.style.setProperty('--p', p.toFixed(3));
-        el.pauseBtn.classList.toggle('holding', p > 0);
+        el.pauseBtn.classList.toggle('holding', showing);
     }
 
-    /** In Scan to Pause, Pop covers the shape, with an optional selection ring. */
+    let popButtonWidth = 300, popButtonSpace = 124;
+
+    /** Reserve room for the button, its focus outline and the device's safe area. */
+    function measurePopButton() {
+        const style = getComputedStyle(el.popBtn);
+        popButtonWidth = parseFloat(style.width) || Math.min(300, innerWidth - 40);
+        popButtonSpace = (parseFloat(style.height) || 80) + (parseFloat(style.bottom) || 20) + 24;
+    }
+
+    /** The button sits below the object and stays still while it grows or pops. */
     function placePopButton() {
+        if (!scanMode()) return;
         const g = NGP.Scene.geometry();
+        const half = popButtonWidth / 2 + 20;
+        el.popBtn.style.left = Math.max(half, Math.min(innerWidth - half, g.x)) + 'px';
         const d = g.R * 2.2;
-        el.popBtn.style.left = (g.x - d / 2) + 'px';
-        el.popBtn.style.top = (g.y - d / 2) + 'px';
-        el.popBtn.style.width = d + 'px';
-        el.popBtn.style.height = d + 'px';
+        el.objectRing.style.left = (g.x - d / 2) + 'px';
+        el.objectRing.style.top = (g.y - d / 2) + 'px';
+        el.objectRing.style.width = d + 'px';
+        el.objectRing.style.height = d + 'px';
+    }
+
+    function highlightPop(on) {
+        const color = S().option('selectionRing').hex;
+        el.objectRing.hidden = !on || !color || !scanMode();
+        if (color) el.objectRing.style.setProperty('--object-ring-color', color);
     }
 
     /** Called by the scene every frame: keeps the pictures alive. */
@@ -334,8 +355,8 @@ NGP.UI = (function () {
         try { auto = !!window.NarbeScanManager.getSettings().autoScan; } catch (e) { /* no scan manager */ }
         const lines = ['Choose the *Ball*, the *Ladybug* or the *Bee*.'];
         if (scanMode()) {
-            lines.push((auto ? '*Pop* and *Pause* highlight automatically. ' : '*Space* highlights *Pop* or *Pause*. ') +
-                '*Enter* chooses. You can also *click or tap* these buttons.');
+            lines.push((auto ? '*Press to pop* and *Pause* highlight automatically. ' : '*Space* highlights *Press to pop* or *Pause*. ') +
+                '*Enter* chooses. You can also *click or tap anywhere on the picture* to play.');
         } else {
             lines.push('Press a *switch* or *key*, or *click or tap* the picture to play. Release before pressing again.');
         }
@@ -349,7 +370,7 @@ NGP.UI = (function () {
         lines.push('Pops burst into *' + popShapes + '*. ' + (S().get('reactions') === 'same'
             ? '*Same Every Time* repeats a familiar pattern' + (S().get('sound') ? ' and sound.' : '.')
             : '*Mix It Up* varies the motion' + (S().get('sound') ? ' and playful sounds.' : '.')));
-        lines.push('*Hold Enter for 5 seconds* or *click or tap Pause* to open the menu.');
+        lines.push('*Hold Enter* or *click or tap Pause* to open the menu.');
         lines.push(auto ? 'In the menus, the highlight moves by itself. *Enter* chooses.'
                         : 'In the menus, *tap Space* to move the highlight and *hold Space* to go back. *Enter* chooses.');
         lines.push('Use *Settings* to adjust colors, size, position, pop shapes, sound and play.');
@@ -492,7 +513,7 @@ NGP.UI = (function () {
                     id: 'pause', label: 'Pause', value: () => scanMode() ? 'Scan to Pause' : 'Hold Enter',
                     action: () => s.set('pauseMode', scanMode() ? 'hold' : 'scan'),
                     after: () => scanMode()
-                        ? 'Pause, scan to pause. In the game, the highlight moves between Pop and Pause.'
+                        ? 'Pause, scan to pause. In the game, the highlight moves between Press to pop and Pause.'
                         : 'Pause, hold Enter. In the game, every press pops. Hold Enter to pause.'
                 },
                 {
@@ -635,7 +656,7 @@ NGP.UI = (function () {
     function playScannables() {
         if (!scanMode()) return [];
         return [
-            { id: 'play:pop', el: el.popBtn, speak: 'Pop', action: function () { NGP.Game.pop(); } },
+            { id: 'play:pop', el: el.popBtn, speak: 'Press to pop', action: function () { NGP.Game.pop(); } },
             { id: 'play:pause', el: el.pauseBtn, speak: 'Pause', action: function () { NGP.Game.pause(); } }
         ];
     }
@@ -669,6 +690,8 @@ NGP.UI = (function () {
         scannables: scannables,
         scanContext: scanContext,
         holdRing: holdRing,
+        highlightPop: highlightPop,
+        popButtonSpace: function () { return popButtonSpace; },
         frame: frame,
         stageEl: function () { return el.stage; },
         shapeName: shapeName

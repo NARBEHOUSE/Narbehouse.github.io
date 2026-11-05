@@ -147,10 +147,10 @@ NSS.FreePlay = (function () {
         document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); });
     }
 
-    function holdRing(p) {
+    function holdRing(p, showing = p > 0) {
         if (!holdBar) return;
         holdBar.style.setProperty('--p', p.toFixed(3));
-        options.classList.toggle('holding', p > 0);
+        options.classList.toggle('holding', showing);
     }
 
     function stop() {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NARBE Pet Pals</title>
 <link href="../../../shared/offline-vendor/fonts/atkinson-jersey.css" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2026.10.30.2">
+<link rel="stylesheet" href="css/style.css?v=2026.11.02.8">
 <script src="../../../shared/usage-analytics.js" defer></script>
 <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
@@ -127,6 +127,7 @@
 
 <!-- Shared hub modules, in the hub's required order, before any game script.
      Standalone (no hub), the game falls back to its own copies. -->
+<script src="js/review-isolation.js?v=2026.10.31.1"></script>
 <script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
 <script src="../../../shared/platform.js"></script>
 <script src="../../../shared/scan-status-badge.js"></script>
@@ -141,28 +142,37 @@
 
 <!-- Game modules share one scope and load in this order. Bump every release query together with
      GAME_BUILD in core.js so returning players cannot mix old cached scripts with new ones. -->
-<script src="js/core.js?v=2026.10.30.2"></script>
-<script src="js/sound.js?v=2026.10.30.2"></script>
-<script src="js/music.js?v=2026.10.30.2"></script>
-<script src="js/pixel.js?v=2026.10.30.2"></script>
-<script src="js/pets.js?v=2026.10.30.2"></script>
-<script src="js/petside.js?v=2026.10.30.2"></script>
-<script src="js/sprites.js?v=2026.10.30.2"></script>
-<script src="js/room.js?v=2026.10.30.2"></script>
-<script src="js/props.js?v=2026.10.30.2"></script>
-<script src="js/scenes.js?v=2026.10.30.2"></script>
-<script src="js/anims.js?v=2026.10.30.2"></script>
-<script src="js/places.js?v=2026.10.30.2"></script>
-<script src="js/outings.js?v=2026.10.30.2"></script>
-<script src="js/tricks.js?v=2026.10.30.2"></script>
-<script src="js/seasons.js?v=2026.10.30.2"></script>
-<script src="js/school.js?v=2026.10.30.2"></script>
-<script src="js/companions.js?v=2026.10.30.2"></script>
-<script src="js/arrange.js?v=2026.10.30.2"></script>
-<script src="js/howtodemo.js?v=2026.10.30.2"></script>
-<script src="js/mypets.js?v=2026.10.30.2"></script>
-<script src="js/ui.js?v=2026.10.30.2"></script>
-<script src="js/game.js?v=2026.10.30.2"></script>
-<script src="js/scan-access.js?v=2026.10.30.2"></script>
+<script src="js/core.js?v=2026.11.02.8"></script>
+<script src="js/sound.js?v=2026.11.02.8"></script>
+<script src="js/music.js?v=2026.11.02.8"></script>
+<script src="js/pixel.js?v=2026.11.02.8"></script>
+<script src="js/pets.js?v=2026.11.02.8"></script>
+<script src="js/petside.js?v=2026.11.02.8"></script>
+<script src="js/sprites.js?v=2026.11.02.8"></script>
+<script src="js/room.js?v=2026.11.02.8"></script>
+<script src="js/props.js?v=2026.11.02.8"></script>
+<script src="js/scenes.js?v=2026.11.02.8"></script>
+<script src="js/anims.js?v=2026.11.02.8"></script>
+<script src="js/places.js?v=2026.11.02.8"></script>
+<script src="js/outings.js?v=2026.11.02.8"></script>
+<script src="js/tricks.js?v=2026.11.02.8"></script>
+<script src="js/seasons.js?v=2026.11.02.8"></script>
+<script src="js/school.js?v=2026.11.02.8"></script>
+<script src="js/rush-appearance.js?v=2026.11.02.8"></script>
+<script src="js/companions.js?v=2026.11.02.8"></script>
+<script src="js/arrange.js?v=2026.11.02.8"></script>
+<script src="js/howtodemo.js?v=2026.11.02.8"></script>
+<script src="js/mypets.js?v=2026.11.02.8"></script>
+<script src="js/ui.js?v=2026.11.02.8"></script>
+<script src="js/game.js?v=2026.11.02.8"></script>
+<script src="js/scan-access.js?v=2026.11.02.8"></script>
+<!-- The separate caregiver review page uses the real game inside a storage-isolated frame. -->
+<script>
+if (new URLSearchParams(location.search).get('review') === '1' && window.parent !== window) {
+  const review = document.createElement('script');
+  review.src = 'js/review-player.js?v=2026.11.02.8';
+  document.body.appendChild(review);
+}
+</script>
 </body>
 </html>

@@ -335,9 +335,7 @@ function cleanComps(a,hearts){ if(!Array.isArray(a)) return []; return a.filter(
   return {type:c.type,name:(typeof c.name==='string'&&c.name.trim().slice(0,12))||T.names[0],look,at:clamp(Math.floor(Number(c.at)||0),0,hearts),stage:clamp(Math.floor(Number(c.stage)||0),0,T.stages.length-1)}; }); }
 
 /* ================= Rush, the helper dog ================= */
-STYLES.cattle={kind:'dog',label:'Australian Cattle Dog',ears:'perk',sw:'#2E2A30',pal:{fur:'#2E2A30',light:'#46404C',ear:'#2E2A30',line:'#120F14',iris:'#6A4A2A',lid:'#120F14',blush:'#C27088'},
-  pattern:(x,y,t,G)=>{ if(t==='paw') return '#A8683A'; if(t==='fur'&&inC(x,y,G.eyeLX,G.eyeY-.2,3.4)) return '#9A5A30'; return null; }};
-SIDE_PAT.cattle=(x,y,t,G)=>{ if(t==='paw') return '#A8683A'; if(t==='fur'&&inE(x,y,G.head)&&x>G.head.x-.4&&y<G.head.y+.8) return '#9A5A30'; return null; };
+// The approved coat and markings are registered by rush-appearance.js.
 /* When Rush comes. Never in the first 20 minutes of play after the game is opened (or after coming back
    from a long break), and at least an hour after his last visit. He drops by now and then as one of the
    surprises (spaced out more on Slow pace), and he comes to help when a need has been low for 10 minutes of
@@ -355,8 +353,8 @@ const rushReady=()=>rushAllowed(RUSH_GAP*paceK());
 /* The need that has been low for 10 minutes (the longest, if more than one), when Rush may come. */
 function rushNeedDue(){ if(!rushAllowed(RUSH_GAP)) return null; let best=null;
   KEYS.forEach(k=>{ if((rushLowMs[k]||0)>=RUSH_LOW&&state.stats[k]<LOW&&(!best||rushLowMs[k]>rushLowMs[best])) best=k; }); return best; }
-function drawRush(cx,o){ const p=Object.assign({eyes:'open',mouth:'smile',tail:0,ear:0,headDy:0,dy:0,dx:0},o); softShadow(ctx,cx,85.5,p.body&&p.body!=='sit'?20:14,2.4,.3);
-  drawPetPose(ctx,'cattle','adult',p,{neck:'bandana'},cx-22,PETY+(p.dy||0),false); }
+function drawRush(cx,o){ const p=Object.assign({eyes:'open',mouth:'smile',tail:0,ear:0,headDy:0,dy:0,dx:0},o); softShadow(ctx,cx,85.5+p.dy,p.body&&p.body!=='sit'?20:14,2.4,.3);
+  drawPetPose(ctx,'cattle','adult',p,{},cx-22,PETY+(p.dy||0),false); }
 function runV(key,extra,done){ startAnim(key,V[key].dur,done,extra||{}); anim.idle=true; if(V[key].start) V[key].start(anim); }
 const petBeside=(p,e,t0)=>{ const k=t0==null?1:ph(e,t0,t0+800); p.dx=Math.round(lerp(0,12,k)); if(t0!=null&&k>0&&k<1){ p.body='walk'; p.face=1; p.frame=Math.floor(e/140)%4; } };
 /* Rush comes to lend a paw. "How can Rush help today?" offers three of these four, picked at random each
@@ -379,6 +377,7 @@ function startRush(need){ const n=state.name, first=!(state.rushVisits>0); lockI
     const opts=pickSome([
       {label:`Help with what ${n} needs`,preview:{art:'rushNeed'},fn:()=>{ anim=null; rushNeeds(); }},
       {label:`Play with ${n}`,preview:{art:'rushPlay'},fn:()=>{ anim=null; runV('rush:play',{},rushOut); }},
+      {label:'Bring a toy from the basket',preview:{art:'rushPlay'},fn:()=>{anim=null;rushBringToy();}},
       {label:'Help with a chore',preview:{art:'rushChore'},fn:()=>{ anim=null; rushChore(); }},
       {label:'Find something to do',preview:{art:'rushIdea'},fn:()=>{ anim=null; rushIdea(); }}],3);
     showChoice(`Rush is here to lend a paw. How can Rush help today?`,opts); }); }
@@ -387,35 +386,126 @@ function rushOut(after,declined){ runV('rush:out',{declined},()=>{ state.rushAt=
 const lowestNeed=()=>KEYS.reduce((a,k)=>state.stats[k]<state.stats[a]?k:a,KEYS[0]);
 /* For each need: what Rush notices, and what Rush does about it. */
 const RUSH_NEED={
-  food:[n=>`${n} is hungry`,()=>`Rush brings over a tasty snack.`],
-  fun:[n=>`${n} wants to play`,()=>`Rush brings a toy from the toy basket.`],
-  clean:[n=>kind()==='dog'?`${n} could use a bath`:`${n} could use a brushing`,()=>kind()==='dog'?`Rush helps with a quick towel rub.`:`Rush brings the brush.`],
+  food:[n=>`${n} is hungry`,()=>`Rush carries a basket of food to the food bowl.`],
+  fun:[n=>`${n} wants to play`,n=>`Rush and ${n} play chase!`],
+  clean:[n=>kind()==='dog'?`${n} could use a bath`:`${n} could use a brushing`,n=>kind()==='dog'?`Shower time for ${n}. Rush keeps ${n} company.`:`Brushing time for ${n}. Rush keeps ${n} company.`],
   energy:[n=>`${n} is getting sleepy`,()=>`Rush brings a cozy blanket.`],
   love:[n=>`${n} wants some love`,n=>`Rush gives ${n} a gentle nuzzle.`]};
 function rushNeeds(need){ const n=state.name, w=need||lowestNeed();
-  if(!need&&state.stats[w]>=80){ runV('rush:give',{icon:'cuddle',say:`${n} is doing great! Rush gives ${n} a happy nuzzle.`,add:{love:RUSH_BOOST.love}},rushOut); return; }
+  if(!need&&state.stats[w]>=80){ runV('rush:give',{help:'love',say:`${n} is doing great! Rush gives ${n} a happy nuzzle.`,add:{love:RUSH_BOOST.love}},rushOut); return; }
+  if(w==='fun'){runV('rush:play',{},rushOut);return;}
   const say=need?RUSH_NEED[w][1](n):`${RUSH_NEED[w][0](n)}. ${RUSH_NEED[w][1](n)}`;
-  runV('rush:give',{icon:slotIcon(WANT_SLOT[w]),say,add:{[w]:RUSH_BOOST[w]}},rushOut); }
+  runV('rush:give',{help:w,say,add:{[w]:RUSH_BOOST[w]}},rushOut); }
+function rushBringToy(){runV('rush:give',{help:'toy',say:`Rush brings a toy from the basket for ${state.name}.`,add:{fun:12,love:5}},rushOut);}
 /* A chore that is waiting (not the vet checkup, which is for the player), or else fresh water. */
-const RUSH_CHORE={potty:['broom','Rush helps clean up the potty pad.'],litter:['scoop','Rush helps scoop the litter box.'],water:['water',n=>`Rush brings fresh water for ${n}.`],
+const RUSH_CHORE={potty:['scoop','Rush carries a pooper scooper to clean the potty pad.'],litter:['scoop','Rush helps scoop the litter box.'],water:['water',n=>`Rush carries a jug and pours fresh water for ${n}.`],
   toys:['basket','Rush picks up the toys and puts them back in the basket.'],plant:['broom','Rush helps stand the plant back up.']};
 function rushChore(){ const n=state.name, id=state.task, c=RUSH_CHORE[id];
   if(c){ const t=TASKS[id], add={}; if(t.stat) Object.keys(t.stat).forEach(k=>add[k]=Math.round(t.stat[k]/2));
-    runV('rush:give',{icon:c[0],say:typeof c[1]==='function'?c[1](n):c[1],add,chore:id,thanks:'All done! Thank you, Rush.'},rushOut); return; }
-  runV('rush:give',{icon:'water',say:`There are no chores right now, so Rush fills ${n}'s water bowl with fresh water.`,add:{food:8}},rushOut); }
-/* Rush brings something over: it floats from Rush to the pet, the meters go up, and Rush says what changed. */
-V['rush:give']={dur:5200,
-  start(a){ setCaption(a.say); play('dog:barkFriendly:adult',.35); },
-  pose(p,e){ petBeside(p); if(e>2000){ p.eyes='happy'; p.mouth='tongue'; } },
-  front(e,a){ drawRush(RUSH_X,{eyes:e>2000?'happy':'open',mouth:e>2000?'tongue':'smile',tail:Math.floor(e/160)%3});
-    const s=ICONS[a.icon]; if(s&&e>700&&e<2400){ const k=ph(e,700,1900), x=lerp(RUSH_X+6,76,k), y=lerp(58,52,k)-arc(k,10); blitSized(ctx,s,x-6,y-6,12,12); } },
-  tick(a,e,now){ if(e>1900&&(!linesWaiting()||e>a.dur-400)) once(a,'done',()=>{ if(a.chore){ if(a.chore==='potty'||a.chore==='litter'){ state.pottyN=0; state.pottyAt=0; } state.task=null; refreshGameTargets(); }
-      const said=rushBoost(a.add||{}); burst(6); play('happy',.5); setCaption((a.thanks||'Thanks, Rush!')+said); a.doneAt=e; });
-    if(a.doneAt!=null&&now>=(a.next||0)&&e<a.doneAt+1600){ spawn('heart',64+12+rand(-8,8),52,rand(-4,4),-12,1.2); a.next=now+400; } }};
+    runV('rush:give',{help:id,icon:c[0],say:typeof c[1]==='function'?c[1](n):c[1],add,chore:id,thanks:'All done! Thank you, Rush.'},rushOut); return; }
+  runV('rush:give',{help:'water',say:`There are no chores right now, so Rush fills ${n}'s water bowl with fresh water.`,add:{food:8}},rushOut); }
+/* Rush's props attach to his actual side-view mouth. Destinations follow the room layout. */
+const rushHome=()=>({cx:RUSH_X,dy:0,face:1,body:'stand',headDy:0});
+function rushMouth(p){const g=sideGeo(SIDE.dog.adult,p,STYLES.cattle);return {x:p.cx+(g.head.x+g.sn.dx+g.sn.rx-1-SIDE_GX)*(p.face||1),y:PETY+42.5+(p.dy||0)+g.head.y+g.sn.dy+1-SIDE_GY};}
+function rushDock(x,y,face=1,bow=0){const p={...rushHome(),cx:0,dy:0,face,bow},m=rushMouth(p);p.cx=x-m.x;p.dy=y-m.y;return p;}
+function rushWalk(e,t0,t1,from,to){const k=ease(ph(e,t0,t1));return {...to,cx:lerp(from.cx,to.cx,k),dy:lerp(from.dy||0,to.dy||0,k),body:k>0&&k<1?'walk':'stand',face:k<1?(to.cx>=from.cx?1:-1):to.face,frame:Math.floor(e/140)%4};}
+function rushDraw(p){drawRush(p.cx,p);}
+function rushClearChore(a){if(!a.chore||state.task!==a.chore)return;if(a.chore==='potty'||a.chore==='litter'){state.pottyN=0;state.pottyAt=0;}state.task=null;refreshGameTargets();}
+function rushComplete(a,e,at){if(e<at)return;once(a,'done',()=>{rushClearChore(a);const said=rushBoost(a.add||{});play('happy',.5);setCaption((a.thanks||'Thanks, Rush!')+said);});}
+function rushStream(from,to,e,food=false){for(let i=0;i<9;i++){const k=((e/500+i/9)%1),x=lerp(from.x,to.x,k),y=lerp(from.y,to.y,k);if(food)pxEll(ctx,x,y,.65,.55,i%2?'#B87840':'#D8A86A');else rect(ctx,x-.5,y,1.2,2,i%2?'#9FD4F0':'#D9F1FF');}}
+function rushRotated(m,x,y,angle){return {x:m.x+x*Math.cos(angle)-y*Math.sin(angle),y:m.y+x*Math.sin(angle)+y*Math.cos(angle)};}
+function drawRushBasket(m,angle,filled){ctx.save();ctx.translate(m.x,m.y);ctx.rotate(angle);
+  ctx.strokeStyle='#68482D';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-4.5,8);ctx.bezierCurveTo(-5,-2,5,-2,4.5,8);ctx.stroke();
+  rect(ctx,-6,7,12,7,INK);rect(ctx,-5.4,7.5,10.8,5.9,'#D2A56B');pxEll(ctx,0,7,5.5,1.5,'#78502F');
+  for(let y=9;y<14;y+=2)pxLine(ctx,-5,y,5,y,'#9D6A3B',.5);for(let x=-4;x<6;x+=2.5)pxLine(ctx,x,8,x,13,'#E5BE87',.6);
+  if(filled)for(let i=0;i<6;i++)pxEll(ctx,-3.6+i*1.4,6.4+(i%2)*.6,.9,.7,i%2?'#A36B38':'#E5B473');ctx.restore();}
+function drawRushJug(m,angle){ctx.save();ctx.translate(m.x,m.y);ctx.rotate(angle);
+  pxRing(ctx,1,3.5,2.5,3.5,.9,INK);pxRing(ctx,1,3.5,2,3,.5,'#BED8EB');
+  rect(ctx,3,-1,9,12,INK);rect(ctx,3.7,-.3,7.6,10.6,'#8DBBDB');rect(ctx,4.3,4,6.4,5.7,'#5C9CCB');rect(ctx,4.5,1,1,7,'#DBF0FA');
+  pxLine(ctx,11,0,15,1,INK,1.7);pxLine(ctx,11,-.2,14.7,.8,'#CBE4F3',.8);rect(ctx,3,-1,9,1,'#DFEDF4');ctx.restore();}
+/* Keep the shower just below the health bar even when the camera or window changes. */
+function rushShowerGeometry(){const top=VIEW.y+(topBarBottom()+8-STAGE.top)/STAGE.s;
+  return {x:64,top,face:top+7,bottom:PETY+G().collar};}
+function drawRushShower(e){const {x,top,face,bottom}=rushShowerGeometry();
+  // A short chrome elbow feeds a broad downward-facing head, with a rim and spray holes.
+  pxLine(ctx,x+7,top,x+2,top,INK,2.5);pxLine(ctx,x+2,top,x,top+2.5,INK,2.5);pxLine(ctx,x,top+2.5,x,face-2,INK,2.5);
+  pxLine(ctx,x+7,top+.5,x+2,top+.5,'#DCEAF0',1.2);pxLine(ctx,x+2,top+.5,x+.5,top+2.7,'#DCEAF0',1.2);pxLine(ctx,x+.5,top+2.7,x+.5,face-2,'#9AB5C3',1.2);
+  pxEll(ctx,x,face-1.4,7,2.4,INK);pxEll(ctx,x,face-1.7,6.4,1.7,'#A5BFCA');pxEll(ctx,x-1,face-2.5,4.7,.6,'#EDF7FA');
+  pxEll(ctx,x,face,6.8,1.7,INK);pxEll(ctx,x,face,6.1,1.1,'#658794');
+  for(let i=0;i<7;i++){const sx=x-4.5+i*1.5;pxEll(ctx,sx,face,.35,.35,'#263F4D');
+    for(let j=0;j<3;j++){const k=(e/1050+j/3+i*.037)%1,y=lerp(face+2,bottom-2,k);if(y>face+1)pxLine(ctx,sx,y,sx,y+1.8,j%2?'#91D1ED':'#BCE8F8',.5);}}}
+function rushBowlPose(p,e){const target={x:STATION.feed[0]+7,y:STATION.feed[1]+1},q={...p0(),body:'stand',face:1,bow:1,headDy:1},m=mouthAt(q);
+  const dx=target.x-m.x,dy=target.y-m.y,k=e<5400?ease(ph(e,4300,5400)):1-ease(ph(e,7800,8900));
+  p.dx=lerp(12,dx,k);p.dy=dy*k;p.body=e>=5400&&e<7800?'stand':k>0&&k<1?'walk':null;p.face=e>=7800?(dx>12?-1:1):dx>=12?1:-1;p.frame=Math.floor(e/140)%4;
+  if(e>=5400&&e<7800){p.face=1;p.bow=1;p.headDy=1;p.eyes='closed';p.mouth=Math.floor(e/180)%2?'open':'smile';}}
+const RUSH_HELP={
+  food:{dur:9600,pose:rushBowlPose,
+    route(e){const dock=rushDock(STATION.feed[0]-3,STATION.feed[1]-18,1);return e<3600?rushWalk(e,0,1900,rushHome(),dock):rushWalk(e,3600,4400,dock,rushHome());},
+    behind(e){blit(ctx,(decorOn('bowl')?BOWLS_FANCY:BOWLS)[e<2600||e>=7700?2:e<6600?0:1],...STATION.feed);},
+    front(e){const r=this.route(e),m=rushMouth(r),tip=-.75*motionHold(e,2100,2400,3150,3450);rushDraw(r);drawRushBasket(m,tip,e<3150);
+      if(e>2400&&e<3200)rushStream(rushRotated(m,6,7,tip),{x:STATION.feed[0]+7,y:STATION.feed[1]+1},e,true);},
+    tick(a,e,now){if(e>2400&&e<3200)once(a,'pour',()=>{play('rustle',.4);setCaption('Rush tips the food into the bowl.');});
+      if(e>5400&&e<7700&&now>=a.next){const m=mouthAt(lastPetPose);crumbs(m.x,m.y);play('crunch',.4);a.next=now+450;}rushComplete(a,e,8900);}},
+  water:{dur:6400,pose(p){petBeside(p);p.dy=0;},
+    route(e){const dock=rushDock(STATION.water[0]-6,STATION.water[1]-16,1);return e<4000?rushWalk(e,0,1700,rushHome(),dock):rushWalk(e,4000,5400,dock,rushHome());},
+    behind(e){blit(ctx,waterBowl(e<2900),...STATION.water);},
+    front(e){const r=this.route(e),m=rushMouth(r),tip=.8*motionHold(e,1900,2200,3400,3800);rushDraw(r);drawRushJug(m,tip);
+      if(e>2200&&e<3500)rushStream(rushRotated(m,15,1,tip),{x:STATION.water[0]+7,y:STATION.water[1]+1},e);},
+    tick(a,e){if(e>2200)once(a,'pour',()=>play('pour',.5));if(e>3500)once(a,'filled',()=>rushClearChore(a));rushComplete(a,e,5500);}},
+  clean:{dur:6500,pose(p,e,a){p.dy=0;const d=V[kind()==='dog'?'bath:shake':'brush:brush'];d.pose(p,clamp((e-1000)/1.4,0,d.dur-1),a);},
+    front(e,a){drawRush(RUSH_X,{eyes:'happy',tail:Math.floor(e/220)%3});if(e>=1000&&e<5000){if(kind()==='dog'){if(e<2960)drawRushShower(e);}else V['brush:brush'].front(clamp((e-1000)/1.4,0,2899),a);}},
+    tick(a,e,now){if(e>=1000&&e<5000){if(kind()==='dog'&&e<2960){once(a,'shower',()=>play('pour',.4));}
+      else{const d=V[kind()==='dog'?'bath:shake':'brush:brush'];d.tick(a,(e-1000)/1.4,now);}}rushComplete(a,e,5500);}},
+  energy:{dur:7600,pose:napPose,
+    drawPet:drawNapPet,
+    front(e,a,p){const spot=napSpot(),rushX=spot.cx<64?Math.min(VIEW.x+VIEW.w-23,spot.cx+36):Math.max(VIEW.x+23,spot.cx-36);drawRush(rushX,{eyes:e>1500&&e<6000?'closed':'happy'});
+      if(e<1100||e>6600)return;const g=sideGeo(SIDE[kind()][stageName()],{body:'lie',headDy:1},STYLES[state.style]);
+      const x=64+p.dx,y=PETY+42.5+p.dy;ctx.save();ctx.translate(x,y);ctx.scale(p.napScale,p.napScale);
+      const left=g.body.cx-g.body.rx-1-SIDE_GX,right=Math.min(g.body.cx+g.body.rx,g.head.x-g.head.rx*.55)-SIDE_GX,top=g.body.cy-g.body.ry-1-SIDE_GY,bottom=1;
+      ctx.save();ctx.beginPath();ctx.roundRect(left,top,right-left,bottom-top,2);ctx.clip();rect(ctx,left,top,right-left,bottom-top,'#F2A7B5');
+      for(let yy=top;yy<bottom;yy+=3)for(let xx=left;xx<right;xx+=3)if((Math.floor((xx-left)/3)+Math.floor((yy-top)/3))%2)rect(ctx,xx,yy,3,3,'#FFF1C9');ctx.restore();
+      pxLine(ctx,left,top+1,right,top+1,'#C9738A',1);ctx.restore();},
+    tick(a,e,now){if(e>NAP_IN&&e<a.dur-NAP_OUT)zzz(a,now);rushComplete(a,e,6900);}},
+  love:{dur:6200,pose(p,e){p.dx=12;p.dy=0;p.body='stand';p.face=-1;p.frame=0;p.eyes=e>1600?'closed':'happy';p.mouth='smile';},
+    route(e,p){const m=mouthAt(p),dock=rushDock(m.x-2,m.y,1),r=e<4200?rushWalk(e,0,1600,rushHome(),dock):rushWalk(e,4200,5300,dock,rushHome());
+      if(e>=1600&&e<4200){r.headDy=poseStep(Math.sin((e-1600)/240)*1.5);r.eyes='closed';}return r;},
+    front(e,a,p){rushDraw(this.route(e,p));},
+    tick(a,e,now){if(e>1700&&e<4100&&now>=a.next){const m=mouthAt(lastPetPose);spawn('heart',m.x,m.y-7,0,-9,1);a.next=now+500;}rushComplete(a,e,5400);}},
+  potty:{dur:6600,pose(p){petBeside(p);p.dy=0;},
+    route(e){const dock=rushDock(26+FIX.dx,62+FIX.dy,-1);return e<3700?rushWalk(e,0,1900,rushHome(),dock):rushWalk(e,3700,5600,dock,rushHome());},
+    front(e,a){const r=this.route(e),m=rushMouth(r),dip=motionHold(e,2100,2600,3150,3600)*2;const x=m.x+r.face*10,y=m.y+20+dip;
+      if(e<3100)for(let i=0;i<a.pottyN;i++)blit(ctx,SPR.poop,11+FIX.dx+(a.pottyN>1?i*7-4:0),82+FIX.dy+i*.5);
+      rushDraw(r);pxLine(ctx,m.x,m.y,x,y-2,INK,1.4);pxLine(ctx,m.x,m.y,x,y-2,'#94B1BB',.7);rect(ctx,x-5,y-1,11,4,INK);rect(ctx,x-4.3,y-.6,9.6,2.8,'#6095A3');
+      if(e>=3100){blitSized(ctx,SPR.poop,x-3,y-4,6,5);}for(let i=0;i<4;i++)pxLine(ctx,x-4+i*2.4,y+2,x-4+i*2.4,y+5,'#436F7E',1);},
+    tick(a,e){if(e>=3100)once(a,'scooped',()=>{rushClearChore(a);play('rustle',.4);});rushComplete(a,e,5700);}}
+};
+/* One toy is visibly picked up and carried; only the remaining tidy-up toys travel on their own. */
+function rushToyPlan(e,a){const tidy=a.help==='toys',s=SPR[a.toy],source=tidy?{x:TOY_SPOTS[0][1]+s.lw/2,y:TOY_SPOTS[0][2]+s.lh/2}:{x:STATION.basket[0]+8.5,y:STATION.basket[1]+3};
+  const face=source.x<RUSH_X?-1:1,pickup=rushDock(source.x,source.y,face,tidy?1:0),dest=tidy?{x:STATION.basket[0]+8.5,y:STATION.basket[1]+1}:{x:78,y:87},endFace=dest.x>=source.x?1:-1;
+  const drop=rushDock(dest.x,dest.y-(tidy?5:16),endFace),lift={...pickup,bow:0};let r;
+  if(e<1400)r=rushWalk(e,0,1400,rushHome(),{...pickup,bow:0});
+  else if(e<2300)r={...pickup,bow:tidy?(e<1900?ph(e,1400,1900):1-ph(e,1900,2300)):0};
+  else if(e<4900)r=rushWalk(e,2300,4300,lift,drop);else r=rushWalk(e,5100,6600,drop,rushHome());
+  const m=rushMouth(r),fall=ph(e,4500,4900),toy=e<1900?source:e<4500?m:e<4900?{x:lerp(m.x,dest.x,fall),y:lerp(m.y,dest.y,fall)}:tidy?null:dest;
+  return {rush:r,toy,source,dest,s};}
+RUSH_HELP.toy=RUSH_HELP.toys={dur:7600,pose(p){petBeside(p);p.dy=0;p.eyes='happy';},
+  front(e,a){const plan=rushToyPlan(e,a);rushDraw(plan.rush);if(plan.toy)blit(ctx,plan.s,plan.toy.x-plan.s.lw/2,plan.toy.y-plan.s.lh/2);
+    if(a.help==='toys')TOY_SPOTS.slice(1).forEach(([toy,x,y],i)=>{const s=SPR[toy],start=5100+i*450,k=ph(e,start,start+500);if(k>=1)return;blit(ctx,s,lerp(x,plan.dest.x-s.lw/2,k),lerp(y,plan.dest.y-s.lh/2,k)+arc(k,9));});},
+  tick(a,e){if(e>=1900)once(a,'pickup',()=>play('rustle',.3));if(e>=4900)once(a,'drop',()=>{play('pop',.4);if(a.help==='toy')setCaption(`Rush drops the toy for ${state.name}.`);});
+    if(e>=6600)once(a,'tidy',()=>rushClearChore(a));rushComplete(a,e,6800);}};
+V['rush:give']={dur:6200,
+  init(a){a.help=a.help||a.chore||'love';a.action=RUSH_HELP[a.help];if(a.action)a.dur=a.action.dur;a.pottyN=pottyCount()||1;a.toy=a.help==='toys'?TOY_SPOTS[0][0]:pickToy();},
+  start(a){setCaption(a.say||RUSH_NEED[a.help]?.[1](state.name)||`Rush helps ${state.name}.`);play('dog:barkFriendly:adult',.35);},
+  undressed:(e,a)=>a.help==='clean',noShadow:true,
+  pose(p,e,a){if(a.action?.pose)a.action.pose(p,e,a);else{petBeside(p);p.dy=0;p.eyes='happy';}},
+  drawPet(e,a,p,fit){if(a.action?.drawPet)a.action.drawPet(e,a,p,fit);else{softShadow(ctx,64+p.dx,85.5+p.dy,G().bodyRx+3,2,.25);drawPetPose(ctx,state.style,stageName(),p,fit,PETX+p.dx,PETY+p.dy,false);}},
+  behind(e,a,p){a.action?.behind?.(e,a,p);},
+  front(e,a,p){if(a.action)a.action.front(e,a,p);else{drawRush(RUSH_X,{eyes:'happy'});const s=ICONS[a.icon];if(s&&e>700&&e<2400){const k=ph(e,700,1900);blitSized(ctx,s,lerp(RUSH_X,70,k),lerp(58,52,k),12,12);}}},
+  tick(a,e,now){if(a.action)a.action.tick(a,e,now);else rushComplete(a,e,3500);}};
 V['rush:play']={dur:6400,
   start(){ setCaption(`Rush and ${state.name} play chase!`); play('dog:barkHappy:adult',.4); },
-  pose(p,e){ if(e<4600){ const s=Math.sin(e/480); p.dx=Math.round(s*24)+6; p.body='run'; p.face=Math.cos(e/480)>=0?1:-1; p.frame=Math.floor(e/90)%4; p.eyes='happy'; p.mouth='tongue'; } else { petBeside(p); p.eyes='happy'; p.mouth='tongue'; } },
-  front(e){ if(e<4600){ const s=Math.sin(e/480-1.3); drawRush(RUSH_X+18+Math.round(s*24),{body:'run',face:Math.cos(e/480-1.3)>=0?1:-1,frame:Math.floor(e/90+2)%4,eyes:'happy',mouth:'tongue'}); }
+  pose(p,e){ if(e<4600){ const s=Math.sin(e/500); p.dx=Math.round(s*20)+16;p.dy=Math.round(Math.cos(e/500)*2); p.body='run'; p.face=Math.cos(e/500)>=0?1:-1; p.frame=Math.floor(e/90)%4; p.eyes='happy'; p.mouth='tongue'; } else { petBeside(p);p.dy=0; p.eyes='happy'; p.mouth='tongue'; } },
+  behind(e){ if(e<4600){ const s=Math.sin(e/500); drawRush(42+Math.round(s*20),{body:'run',dy:-5+Math.round(Math.cos(e/500)*2),face:Math.cos(e/500)>=0?1:-1,frame:Math.floor(e/90+2)%4,eyes:'happy',mouth:'tongue'}); }
     else drawRush(RUSH_X,{eyes:'happy',mouth:'tongue',tail:Math.floor(e/120)%3}); },
   tick(a,e,now){ if(e<4600&&now>=(a.next||0)){ play('step',.22); a.next=now+200; } if(e>2000) once(a,'b',()=>play(happyNoise(),.45));
     if(e>4600&&(!linesWaiting()||e>a.dur-400)) once(a,'done',()=>{ const said=rushBoost({fun:RUSH_BOOST.fun,love:10}); burst(6); play('happy',.5); setCaption(`What fun!`+said); }); }};
@@ -426,10 +516,10 @@ function rushIdea(){ const n=state.name, ideas=[];
   if(places.length){ const id=pick(places), P=PLACES[id], sub=typeof P.sub==='function'?P.sub():P.sub;
     ideas.push({say:`Rush has an idea: ${P.label}! ${sub}.`,yes:`Yes, go to ${P.label}`,go:()=>startTrip(id)}); }
   if(learnedTricks().length>=2) ideas.push({say:`Rush has an idea: ${n} could put on a Trick Show!`,yes:'Yes, put on a Trick Show',go:()=>startTrip('trickshow')});
-  ideas.push({say:`Rush has an idea: toy time with the toy basket!`,yes:'Yes, play with a toy',go:()=>doAction('play')});
+  ideas.push({say:`Rush has an idea: toy time with the toy basket!`,yes:'Yes, bring a toy',withRush:true,go:rushBringToy});
   const idea=pick(ideas);
   showChoice(`${idea.say} Do you want to?`,[
-    {label:idea.yes,preview:{art:'rushIdea'},fn:()=>{ anim=null; rushOut(idea.go); }},
+    {label:idea.yes,preview:{art:'rushIdea'},fn:()=>{ anim=null; if(idea.withRush)idea.go();else rushOut(idea.go); }},
     {label:'No thanks',fn:()=>{ anim=null; setCaption(`OK! Maybe next time.`); rushOut(null,true); }}]); }
 V['rush:in']={dur:4600,start(a){ play('knock',.5); later(()=>play('knock',.5),380);
     setCaption(a.first?`Knock, knock! Meet Rush, a helper dog. Rush loves to lend a paw around the house.`:`Knock, knock! It's Rush, the helper dog, here to lend a paw.`); },

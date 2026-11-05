@@ -67,7 +67,6 @@
 [data-look="studio"] .nss-key.white { background: #fffaf0; box-shadow: inset 0 -6px #d9cdb4; }
 [data-look="studio"] .nss-key.black { background: #203446; box-shadow: inset 0 -6px #0b1d2a; }
 [data-look="studio"] .nss-key.pressed { background: var(--note-color); box-shadow: inset 0 -3px #254d5e; }
-[data-look="studio"] .nss-piano.nss-focus-full .white:not(.pressed) { background: var(--focus-color); }
 [data-look="studio"] .nss-hold { background: linear-gradient(90deg, #146779 calc(var(--p, 0) * 100%), transparent 0); }
 [data-look="studio"] .nss-free-stage { background: var(--surface); border-color: #14798a; }
 [data-look="studio"] .nss-free-staff i { background: #14798a26; }

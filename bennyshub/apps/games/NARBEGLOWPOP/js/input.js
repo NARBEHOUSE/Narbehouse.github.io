@@ -9,13 +9,13 @@
  *   Auto Scan        the highlight moves by itself; Enter chooses
  *
  * PLAY is cause and effect, and has two styles (the Pause setting):
- *   Hold Enter (default)  EVERY press pops, on the press itself: Space, Enter,
+ *   Hold Enter            EVERY press pops, on the press itself: Space, Enter,
  *                         any key, a tap anywhere, or any game controller
  *                         button (so an Xbox Adaptive Controller works too).
  *                         Holding a key does not repeat. Holding Enter (or
- *                         controller button A) for five seconds opens Pause,
- *                         with a filling ring and a beep each second.
- *   Scan to Pause         The highlight moves between the shape (Pop) and
+ *                         controller button A) waits three seconds, then runs
+ *                         a four-second ring and beep countdown to Pause.
+ *   Scan to Pause (default) The highlight moves between Press to pop and
  *                         Pause, the usual scan contract, for a player who
  *                         cannot hold a switch. Holding Enter still pauses too.
  *
@@ -30,8 +30,9 @@ NGP.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
-    const PAUSE_HOLD = 5000;       // hold Enter this long in play to pause (as in Magic Button)
-    const RING_SHOW = 1000;        // the pause ring appears after this much of the hold
+    const PAUSE_DELAY = 3000;     // no pause feedback during an ordinary press
+    const PAUSE_COUNTDOWN = 4000;
+    const PAUSE_HOLD = PAUSE_DELAY + PAUSE_COUNTDOWN;
 
     let provider = function () { return []; };
     let items = [];
@@ -45,11 +46,12 @@ NGP.Input = (function () {
     let backTimer = null, backRepeat = null;
     let pauseTimer = null, swallowEnter = false;
     let previousAuto = false;
+    let windowActive = true;
 
     function SM() { return window.NarbeScanManager; }
     function scanInterval() { try { return SM().getScanInterval() || 2000; } catch (e) { return 2000; } }
 
-    /** Play in the default style: no scan list, every press pops. */
+    /** Play in Hold Enter mode: no scan list, every press pops. */
     function freePlay() {
         return NGP.UI.current() === 'play' && NGP.Settings.get('pauseMode') !== 'scan';
     }
@@ -108,8 +110,8 @@ NGP.Input = (function () {
      */
     function refresh(fresh, restoreId) {
         items = (provider() || []).filter(function (it) { return it && it.el; });
-        // A Space still down from the last screen must not step this one.
-        if (fresh) { index = -1; focused = null; clearSpaceState(); }
+        // No held switch or countdown may carry over from the last screen.
+        if (fresh) { index = -1; focused = null; clearAll(); }
         wireClicks();
         syncChoice(fresh, restoreId);
         paint();
@@ -136,12 +138,10 @@ NGP.Input = (function () {
             el.classList.remove('ngp-focus', 'ngp-focus-full');
         });
         const item = focused;
+        NGP.UI.highlightPop(!!item && item.id === 'play:pop');
         if (!item || !item.el) return;
-        const objectRing = item.id === 'play:pop';
-        const ringColor = objectRing ? NGP.Settings.option('selectionRing').hex : null;
-        if (objectRing && !ringColor) return;
-        item.el.style.setProperty('--focus-color', objectRing ? ringColor : NGP.Settings.highlightColor());
-        item.el.style.setProperty('--focus-ink', objectRing ? '#1a1008' : NGP.Settings.highlightInk());
+        item.el.style.setProperty('--focus-color', NGP.Settings.highlightColor());
+        item.el.style.setProperty('--focus-ink', NGP.Settings.highlightInk());
         item.el.classList.add(NGP.Settings.get('highlightStyle') === 'full' ? 'ngp-focus-full' : 'ngp-focus');
     }
 
@@ -207,9 +207,9 @@ NGP.Input = (function () {
         let beeps = 0;
         pauseTimer = setInterval(function () {
             const t = performance.now() - t0;
-            if (t >= RING_SHOW) {
-                NGP.UI.holdRing((t - RING_SHOW) / (PAUSE_HOLD - RING_SHOW));
-                const s = Math.floor((t - RING_SHOW) / 1000) + 1;
+            if (t >= PAUSE_DELAY) {
+                NGP.UI.holdRing((t - PAUSE_DELAY) / PAUSE_COUNTDOWN, true);
+                const s = Math.floor((t - PAUSE_DELAY) / 1000) + 1;
                 if (s > beeps && s <= 4) { beeps = s; NGP.Sound.beep(s); }
             }
             if (t >= PAUSE_HOLD) {
@@ -293,7 +293,7 @@ NGP.Input = (function () {
     }
 
     function onKeyDown(e) {
-        if (!enabled || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (!enabled || !windowActive || document.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
         if (freePlay()) { freeDown(e.code, e.key, e.repeat, e); return; }
         if (e.key === 'Escape' && NGP.UI.current() === 'play' && !e.repeat) { NGP.Game.pause(); return; }
         if (!isSwitchKey(e.code)) return;
@@ -310,6 +310,7 @@ NGP.Input = (function () {
 
     function onCancelled(e) {
         const code = e.detail && e.detail.code;
+        if (!code) { clearAll(); return; }
         if (choice) choice.cancelInput();
         braking = false;
         if (isEnter(code)) { stopPauseHold(); enterHeld = false; swallowEnter = false; }
@@ -339,7 +340,7 @@ NGP.Input = (function () {
             const prev = padPrev[p.index] || [];
             const cur = p.buttons.map(function (b) { return b.pressed; });
             cur.forEach(function (down, i) {
-                if (!enabled || down === !!prev[i]) return;
+                if (!enabled || !windowActive || document.hidden || down === !!prev[i]) return;
                 const code = i === 0 ? 'Enter' : 'Space';
                 if (down) {
                     if (freePlay()) freeDown(i === 0 ? 'Enter' : 'Pad', 'Pad' + i, false, null);
@@ -360,7 +361,14 @@ NGP.Input = (function () {
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('keyup', onKeyUp);
         document.addEventListener('narbe-input-cancelled', onCancelled);
-        window.addEventListener('blur', clearAll);
+        window.addEventListener('blur', function () { windowActive = false; clearAll(); });
+        window.addEventListener('focus', function () { windowActive = true; });
+        window.addEventListener('pagehide', clearAll);
+        document.addEventListener('visibilitychange', function () { if (document.hidden) clearAll(); });
+        window.addEventListener('gamepaddisconnected', function (e) {
+            clearAll();
+            if (e.gamepad) delete padPrev[e.gamepad.index];
+        });
         if (SM() && SM().subscribe) {
             SM().subscribe(function (next) {
                 if (next.autoScan !== previousAuto && spaceHeld) {

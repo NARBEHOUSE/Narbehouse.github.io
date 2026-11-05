@@ -79,6 +79,7 @@ const HUD_LAYERS={game:1}, CAPTION_LAYERS={game:1};
 /* Shared choice contexts, including the room, open blank. The fallback keeps its native start. */
 const PLAY_LAYERS={game:1,outing:1};
 function show(name,intro,opt){
+  clearHolds();
   const prev=layer;
   Object.keys(screens).forEach(k=>{ screens[k].hidden=k!==name; });
   layer=name; if(name==='spell') spellMode='row';
@@ -103,7 +104,7 @@ setInterval(()=>{ if(window.petChoice?.owns()){window.petChoice.updateClock();re
 /* ================= Switch input contract ================= */
 /* Each valid Space release advances once. Shared input sensitivity handles switch bounce.
    Hold Space to scan backwards; Scan Speed controls the repeat rate and Auto Scan only. */
-const BACK_HOLD=3000, PAUSE_HOLD=5000, RING_SHOW=1000, FALLBACK_BUFFER=50;
+const BACK_HOLD=3000, PAUSE_DELAY=3000, PAUSE_COUNTDOWN=4000, PAUSE_HOLD=PAUSE_DELAY+PAUSE_COUNTDOWN, FALLBACK_BUFFER=50;
 const scanMs=()=>scan.settings().interval||2000;
 let spaceDown=0, enterDown=0, backTimer=null, backRepeat=null, backActive=false, enterConsumed=false, lastRelease=0, holdTimer=null;
 const isSpace=e=>e.code==='Space'||e.key===' '||e.key==='Spacebar';
@@ -115,6 +116,7 @@ function clearHolds(){ window.petChoice?.cancel(); clearTimeout(backTimer); clea
    happened, so a swallowed release can never leave Enter "held" (which would start the pause
    countdown) or Space "held" (which would start going back). */
 function cancelPress(code){
+  if(!code){ clearHolds(); return; }
   window.petChoice?.cancel();
   if(code==='Enter'||code==='NumpadEnter'){ stopPauseHold(); enterDown=0; enterConsumed=false; }
   else if(code==='Space'){ clearTimeout(backTimer); clearInterval(backRepeat); spaceDown=0; backActive=false; } }
@@ -137,6 +139,8 @@ document.addEventListener('keyup',e=>{
     if(enterConsumed){ enterConsumed=false; return; } activate(); resetAuto(); }
 });
 window.addEventListener('blur',clearHolds);
+window.addEventListener('pagehide',clearHolds);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearHolds(); });
 /* Mouse and touch go through the same rules as switches. */
 document.addEventListener('click',e=>{
   const el=e.target.closest&&e.target.closest('.scan-item,.key,.target'); if(!el) return;
@@ -145,10 +149,10 @@ document.addEventListener('click',e=>{
   const i=getScannables().indexOf(el); if(i>=0&&i!==scanIndex) setHighlight(i,false); window.petChoice?.pointer(el); el.blur(); resetAuto();
 },true);
 const ringEl=$('#hold-ring'), dialEl=$('#dial');
-function startPauseHold(){ const t0=performance.now(); let beeps=0;
+function startPauseHold(){ stopPauseHold(); const t0=performance.now(); let beeps=0;
   holdTimer=setInterval(()=>{ const e=performance.now()-t0;
-    if(e>=RING_SHOW){ ringEl.hidden=false; dialEl.style.setProperty('--p',clamp((e-RING_SHOW)/(PAUSE_HOLD-RING_SHOW),0,1).toFixed(3));
-      const s=Math.floor((e-RING_SHOW)/1000)+1; if(s>beeps&&s<=4){ beeps=s; play('beep'+s,.6); } }
+    if(e>=PAUSE_DELAY){ ringEl.hidden=false; dialEl.style.setProperty('--p',clamp((e-PAUSE_DELAY)/PAUSE_COUNTDOWN,0,1).toFixed(3));
+      const s=Math.floor((e-PAUSE_DELAY)/1000)+1; if(s>beeps&&s<=4){ beeps=s; play('beep'+s,.6); } }
     if(e>=PAUSE_HOLD){ enterConsumed=true; stopPauseHold(); openPause(); } },40); }
 function stopPauseHold(){ clearInterval(holdTimer); holdTimer=null; ringEl.hidden=true; dialEl.style.setProperty('--p',0); }
 
