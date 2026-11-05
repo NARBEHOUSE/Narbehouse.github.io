@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>NARBE Build n Bash</title>
+<link href="../../../shared/offline-vendor/fonts/baloo2.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2026.11.05.1">
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+</head>
+<body>
+
+<div id="bnb" data-screen="loading"></div>
+
+<!-- Shared hub modules, in the hub's required order, before any game script. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/graphics-quality.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/communication-channel.js"></script>
+<script src="../../../shared/communication-speech.js"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+
+<!-- Three.js (r155, the hub's version) and ammo.js (Bullet physics, the same
+     build Benny's Ballista uses), vendored locally: the hub runs offline. -->
+<script src="vendor/three.min.js"></script>
+<script src="vendor/ammo.js"></script>
+
+<!-- Game modules. The headless ones (shapes ... sim) also run in Node: tools/harness.cjs. -->
+<script src="js/settings.js?v=2026.11.05.1"></script>
+<script src="js/sound.js?v=2026.11.05.1"></script>
+<script src="js/shapes.js?v=2026.11.05.1"></script>
+<script src="js/builds.js?v=2026.11.05.1"></script>
+<script src="js/chunks.js?v=2026.11.05.1"></script>
+<script src="js/fx.js?v=2026.11.05.1"></script>
+<script src="js/physics.js?v=2026.11.05.1"></script>
+<script src="js/worlds.js?v=2026.11.05.1"></script>
+<script src="js/worlds2.js?v=2026.11.05.1"></script>
+<script src="js/bashers.js?v=2026.11.05.1"></script>
+<script src="js/sim.js?v=2026.11.05.1"></script>
+<script src="js/stage.js?v=2026.11.05.1"></script>
+<script src="js/input.js?v=2026.11.05.1"></script>
+<script src="js/ui.js?v=2026.11.05.1"></script>
+<script src="js/main.js?v=2026.11.05.1"></script>
+
+</body>
+</html>

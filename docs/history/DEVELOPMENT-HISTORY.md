@@ -2,6 +2,24 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-05 — Publish NARBE Build n Bash
+
+Scope: publish the new PC Hub game NARBE Build n Bash (`NARBEBUILDNBASH`, catalog id `narbebuildnbash`) to the web Hub and the NARBE House home page, at the owner's request. A switch-accessible cause-and-effect game: each Build press places the next wooden block (12 builds, 6 to 50 blocks, each in its own themed world); Destroy, any time, sends a random destroyer (ten kinds) and big builds come down in chunks; afterwards Build Again or Pick Another. Three.js r155 and ammo.js (Bullet, the same build as Benny's Ballista) are vendored in the game folder with `vendor/THIRD-PARTY-NOTICES.txt`. Every state is a CHOICE scan through the shared adapter (blank, Build, Destroy, Pause); there is no hold-to-pause and Pause is always scannable. Graphics quality integrates through `NarbeGraphics.openGame('buildnbash')`.
+
+Web page differences from the PC copy, and the only ones: the local `shared/offline-vendor/fonts/baloo2.css` instead of Google Fonts, `usage-analytics.js`, the two favicons, no `electron-bridge.js`, and `?v=2026.11.05.1` release queries on the game's CSS and modules. All other game files match the PC source byte for byte. The game's `tests/` and `tools/` (Node-only checks and a CPU renderer) stay in the source tree and are excluded from the public build by `scripts/public-files.cjs`.
+
+Changed files (all Electron port: **NO**; the game was built in the PC Hub first and already exists there):
+- new `bennyshub/apps/games/NARBEBUILDNBASH/` (index.html, css/, js/, vendor/, README.md, tests/, tools/).
+- new `bennyshub/images/games/narbebuildnbash.png` (1280x720 catalog picture).
+- `bennyshub/apps/games/games.json` — new entry, genre Interactive (35 games).
+- `index.html` — NARBE House home-page card, first in Games & Tools (image `?v=344ee74e0df0`).
+- `bennyshub/ACCESSIBILITY.md` — per-game row and scannable-pause row.
+- `docs/development/GRAPHICS-QUALITY.md` — Build n Bash profile row; target-device frame times pending.
+- `bennyshub/offline-manifest.json` — regenerated source manifest (adds the game's 20 runtime files and the picture; nothing else changed).
+- this record.
+
+Verification (Node only; no browser was launched on the development PC): the game's own checks pass against the web Hub's shared modules — `tests/builds.test.cjs` (12 builds), `tests/bash.test.cjs` (234 destroyer runs against every build, chunked and whole), `tests/sound.test.cjs`, and `tests/dom-smoke.cjs`, which drives the real page in jsdom by Space/Enter through menu, Build Select, a full build, Destroy, Build Again, Pause, every Settings row, How to Play and Pick Another, with two switches and with Auto Scan. Root `node --test` for offline-dependencies, offline-manifest, offline-library, graphics-quality, hub-library and scan-upgrade: 87/87. **Pending:** the browser checks in docs/development/OFFLINE-LIBRARY.md (cold offline launch from the Hub card), `npm test`/build/release audit/Pages checks, real WebGL rendering and performance, physical switches and target devices.
+
 ## 2026-11-05 — Main-menu Exit closes the Hub after a confirmation
 
 Requested for people who open Benny’s Hub from their own AAC systems. The web Hub’s main menu gains a fourth card, **Exit**, after Settings. Choosing it opens an alert dialog (“Exit Benny’s Hub?”) whose switch scan starts parked with **Cancel** first, so reaching Exit takes a deliberate extra step; Escape and Cancel return to a fresh main-menu scan. Confirming calls `window.close()`, which closes the tab, and the browser when it is the last tab (verified in a headed Chrome window: Chrome quit 0.3 s after confirming). Web scope only; Electron port: **NO** (the PC Hub has its own close-app command).

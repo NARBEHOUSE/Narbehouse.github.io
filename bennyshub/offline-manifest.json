@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "c426ea201d606d89e01337785e0708408d2e465755cfd5cc4de65ca95db919dd",
-  "totalBytes": 536951702,
+  "version": "85cf646f4250c183cccf87fcf30e523f8ba709f49ef0fec4f6cfd7eb3089e7fd",
+  "totalBytes": 540466549,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16809,6 +16809,106 @@
       "bytes": 644798
     },
     {
+      "url": "./apps/games/NARBEBUILDNBASH/css/style.css",
+      "revision": "00029f51a7502aa6f780dff81e8fb94e77d2b63deaac73fa043319b28e6656f2",
+      "bytes": 19081
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/index.html",
+      "revision": "5a8fabe733464036780e1db402c5331e49a4320fbf52875e998d4c5940d2686f",
+      "bytes": 2796
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/bashers.js",
+      "revision": "a4d6a1656165a46c0dec2654af14ca809d5f4948a82c4d03d6964031de76e615",
+      "bytes": 123304
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/builds.js",
+      "revision": "852a3e78eba2a9bc634e86b479e16bdf5446042671d49a3f42227833492bf537",
+      "bytes": 41426
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/chunks.js",
+      "revision": "70af1d2fdc4f7e38d96e388092503929cb3563b96fc1091c55debae16e981855",
+      "bytes": 2693
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/fx.js",
+      "revision": "87a441e388d83384f39ece167231c282ee85f4a0af501db411bee2d625de892a",
+      "bytes": 13354
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/input.js",
+      "revision": "61007bf28b83c08d520c12eeb85b1f4f45a6fc7d0786c0445da97828f29c54fa",
+      "bytes": 12369
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/main.js",
+      "revision": "1b2184aca648bc84f412c7e5c2f3099ea91a3273e1640c987f6d1edb1ac41645",
+      "bytes": 8210
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/physics.js",
+      "revision": "351ddbeea87fde5ea87864922836558f83a690c1ff0aab34696f6bfa5b051612",
+      "bytes": 11210
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/settings.js",
+      "revision": "e1aa32ebb42f61bf017ab4ee4a106b01740387236971077dce3ffd0a318fe6d0",
+      "bytes": 4956
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/shapes.js",
+      "revision": "27e87f4314f047a4bfa3aaa3943c658621b79253666801043623d5064681f452",
+      "bytes": 35606
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/sim.js",
+      "revision": "7f24a0611957ebc64bbcc25236451799629ead04ed67c3c962a28482655806d9",
+      "bytes": 36271
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/sound.js",
+      "revision": "e60c3d14693ed9fc9e29b889db29f718949f40336b4a76cf96823dd2336e0bd0",
+      "bytes": 18128
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/stage.js",
+      "revision": "06be84ed64efa626ae759518c1057b186fa57afc4f19d97d87abac57c0312995",
+      "bytes": 9459
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/ui.js",
+      "revision": "36651b51de17d6f93d860ff891eb70a8f78c4fb2f558071a7f06c242a8be9e0c",
+      "bytes": 35123
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/worlds.js",
+      "revision": "9ac7d7cfa672b08c70dc763ac168828ed7f4119d23615b7c58e47c5f77f98571",
+      "bytes": 153299
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/js/worlds2.js",
+      "revision": "34c6ad12a81d663457183c6e5d8d11d3748b3875a5daee814ac33ba4850771f9",
+      "bytes": 95475
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/vendor/THIRD-PARTY-NOTICES.txt",
+      "revision": "202da1df59bc1a0ccf43ad97c7451a34d5bb46ed2056957c2ca65ae45310cc23",
+      "bytes": 722
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/vendor/ammo.js",
+      "revision": "2104c157ee23c531c1fbb2148404290cdb8e67d9a60f1ad2f3e284937087bb01",
+      "bytes": 1729212
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNBASH/vendor/three.min.js",
+      "revision": "ec0a84377f1dce9d55b98f04ac7057376fa5371c33ab1cd907b85ae5f18fab7e",
+      "bytes": 644798
+    },
+    {
       "url": "./apps/games/NARBEGLOWPOP/CREDITS.md",
       "revision": "e9a91a4730133d3630bf144d9f56dd5b91a4b6c5db6903c4338d7755a1a570a0",
       "bytes": 36
@@ -20045,8 +20145,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "8f808d7a118cbd11f4168c790239c3f933077e2cf759b23a3205bfa4193f1f32",
-      "bytes": 16484
+      "revision": "acbf7672c9c243fb4cde49f70f5a656af6920f14bab447e8dcad05c75f5e36db",
+      "bytes": 17132
     },
     {
       "url": "./apps/tools/dayhub/app.js",
@@ -20752,6 +20852,11 @@
       "url": "./images/games/narbeanimalfriends.png",
       "revision": "15f9fa4be7e8d65d7271684adf4ba8ca997a688cfd7fa5b77024c2e8bd002ff9",
       "bytes": 1075350
+    },
+    {
+      "url": "./images/games/narbebuildnbash.png",
+      "revision": "344ee74e0df0fbd6db9ec49860da03f5f715666ace9c0c03556f52641e8ca70b",
+      "bytes": 516707
     },
     {
       "url": "./images/games/narbeloops-gameplay.webp",

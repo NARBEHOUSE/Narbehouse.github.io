@@ -375,6 +375,16 @@
         "Interactive",
         "Educational"
       ]
+    },
+    {
+      "id": "narbebuildnbash",
+      "title": "NARBE Build n Bash",
+      "description": "Build it up, block by block, then knock it down! Each Build press puts the next wooden block in place: a tiny house, a rocket, an Egyptian pyramid, a castle, an amusement park or a space station, twelve builds in twelve worlds. Destroy any time for a silly surprise: a wrecking ball, a T. rex, a tornado, a big sneeze and more. One or two switches. No score, no timer and nothing to lose.",
+      "path": "apps/games/NARBEBUILDNBASH/index.html",
+      "image": "images/games/narbebuildnbash.png",
+      "genres": [
+        "Interactive"
+      ]
     }
   ]
 }

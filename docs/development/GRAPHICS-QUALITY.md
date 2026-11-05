@@ -33,6 +33,7 @@ All twelve Three.js games cap the internal renderer at **921,600 pixels (1280 ×
 | NARBE Racer / racer | Launch antialiasing off; total split-screen resolution bounded. Shadows were already off. All tracks, props, obstacles and set pieces retained. |
 | Animal Friends / animalfriends | Shadows off; launch antialiasing off in the 3D stage. No selector in its existing inexpensive Simple/2D fallback. |
 | Baseball 2 / baseball (Phaser) | Removes rounding-up supersampling; uses actual display density within its existing 1–3× bounds. Launch WebGL antialiasing off; texture interpolation preserved. No 720p cap because text and controls share this canvas. World units and input mapping stay 1000×600. |
+| Build n Bash / buildnbash (added 2026-11-05) | Shadows off; launch antialiasing off; internal resolution bounded; world props thinned (fewer trees, clouds and extras). Applies to play and the Build Select pictures. Blocks, physics and destroyers unchanged. Target-device frame times: pending (not yet measured on a browser or the Raspberry Pi). |
 
 ## Inventory and other rendering audit
 

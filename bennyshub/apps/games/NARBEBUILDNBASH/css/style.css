@@ -1,0 +1,437 @@
+/* NARBE Build n Bash
+   The 3D scene fills the window. Menus are frosted cards over it, scaled to
+   fit (fit() in ui.js) so nothing is cut off and nothing scrolls. Buttons look
+   like chunky toy blocks: a bright face and a darker lip underneath. */
+
+:root {
+    --ink: #ffffff;
+    --muted: #d6def0;
+    --card: rgba(18, 24, 46, 0.8);
+    --card-edge: rgba(255, 255, 255, 0.22);
+    --green: #2e9e4f; --green-lip: #1d6b35;
+    --red: #e2453c; --red-lip: #9c2620;
+    --blue: #2f6fd0; --blue-lip: #1f4a8f;
+    --plum: #7a4fc9; --plum-lip: #523390;
+    --teal: #1e9c8f; --teal-lip: #126b62;
+    --slate: #4a5568; --slate-lip: #2e3644;
+    --help: #e0662b; --help-lip: #9c4116;
+    --yellow: #f6c833;
+    --font: 'Baloo 2', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; overflow: hidden; background: #0d1530; }
+
+body {
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+}
+
+#bnb { position: fixed; inset: 0; }
+
+.bnb-stage { position: fixed; inset: 0; }
+.bnb-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.bnb-btn {
+    font: inherit;
+    color: inherit;
+    border: 0;
+    cursor: pointer;
+    position: relative;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, translate 120ms ease;
+}
+
+.bnb-icon { width: 30px; height: 30px; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.bnb-dot, .bnb-fill { fill: currentColor; stroke: none; }
+.bnb-f1 { fill: #ffd84a; stroke: #1d1a14; stroke-width: 2.4; }
+.bnb-f2 { fill: #ff6b5e; stroke: #1d1a14; stroke-width: 2.4; }
+.bnb-f3 { fill: #5ab4ff; stroke: #1d1a14; stroke-width: 2.4; }
+
+/* ------------------------------------------------------------------ screens */
+
+.bnb-screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    background: radial-gradient(ellipse at center, rgba(8, 12, 30, 0.08), rgba(8, 12, 30, 0.5));
+    overflow: hidden;
+    z-index: 10;
+}
+.bnb-screen.show { display: flex; }
+
+.bnb-card {
+    position: relative;
+    flex: none;
+    width: min(760px, 94vw);
+    padding: 20px 24px 24px;
+    border-radius: 30px;
+    background: var(--card);
+    border: 2px solid var(--card-edge);
+    box-shadow: 0 30px 80px rgba(4, 8, 24, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    backdrop-filter: blur(8px) saturate(1.2);
+    transform: scale(var(--card-scale, 1));
+    transform-origin: center center;
+    animation: bnb-card-in 280ms cubic-bezier(.2, .9, .3, 1.2);
+}
+.bnb-card-narrow { width: min(560px, 94vw); }
+
+@keyframes bnb-card-in {
+    from { translate: 0 16px; opacity: 0; }
+    to { translate: 0 0; opacity: 1; }
+}
+
+.bnb-title {
+    margin: 0 0 14px;
+    font-size: clamp(30px, 4.2vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.bnb-sub {
+    margin: 2px 0 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: clamp(18px, 2.3vw, 24px);
+    font-weight: 700;
+}
+
+.bnb-scan-status { position: absolute; top: 10px; right: 14px; z-index: 3; }
+.bnb-hud .bnb-scan-status { top: max(16px, env(safe-area-inset-top)); left: 50%; right: auto; translate: -50% 0; }
+
+/* ------------------------------------------------------------ menu buttons */
+
+.bnb-list { display: flex; flex-direction: column; gap: 12px; }
+
+.bnb-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 74px;
+    padding: 10px 22px 10px 12px;
+    border-radius: 20px;
+    background: var(--tone, var(--slate));
+    box-shadow: 0 6px 0 var(--tone-lip, var(--slate-lip)), 0 10px 18px rgba(0, 0, 0, 0.25);
+    font-size: clamp(22px, 2.8vw, 30px);
+    font-weight: 800;
+    text-align: left;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+    margin-bottom: 6px;
+}
+.bnb-menu-item[data-tone="green"] { --tone: var(--green); --tone-lip: var(--green-lip); }
+.bnb-menu-item[data-tone="red"] { --tone: var(--red); --tone-lip: var(--red-lip); }
+.bnb-menu-item[data-tone="blue"] { --tone: var(--blue); --tone-lip: var(--blue-lip); }
+.bnb-menu-item[data-tone="plum"] { --tone: var(--plum); --tone-lip: var(--plum-lip); }
+.bnb-menu-item[data-tone="teal"] { --tone: var(--teal); --tone-lip: var(--teal-lip); }
+.bnb-menu-item[data-tone="slate"] { --tone: var(--slate); --tone-lip: var(--slate-lip); }
+.bnb-menu-item[data-tone="help"] { --tone: var(--help); --tone-lip: var(--help-lip); }
+
+.bnb-icon-chip {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+}
+.bnb-icon-chip .bnb-icon { width: 34px; height: 34px; }
+
+/* --------------------------------------------------------------- loading */
+
+.bnb-loading { text-align: center; }
+.bnb-loading-blocks { display: flex; gap: 10px; justify-content: center; align-items: flex-end; height: 90px; }
+.bnb-loading-blocks span {
+    width: 42px; height: 42px; border-radius: 9px; border: 3px solid #1d1a14;
+    animation: bnb-hop 1.2s ease-in-out infinite;
+}
+.bnb-loading-blocks span:nth-child(1) { background: #e2453c; }
+.bnb-loading-blocks span:nth-child(2) { background: #f6c833; animation-delay: 0.15s; }
+.bnb-loading-blocks span:nth-child(3) { background: #2f6fd0; animation-delay: 0.3s; }
+@keyframes bnb-hop { 0%, 100% { translate: 0 0; } 40% { translate: 0 -34px; } 60% { translate: 0 -30px; } }
+.bnb-loading-text { font-size: 26px; font-weight: 800; color: var(--muted); }
+
+/* ------------------------------------------------------------- main menu */
+
+.bnb-screen-menu { justify-content: flex-start; padding-left: max(5vw, 20px); background: linear-gradient(90deg, rgba(8, 12, 30, 0.45), rgba(8, 12, 30, 0) 60%); }
+.bnb-card-menu { width: min(470px, 92vw); transform-origin: left center; }
+
+.bnb-brand { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 4px; }
+.bnb-logo {
+    width: clamp(64px, 8vw, 84px); height: clamp(64px, 8vw, 84px);
+    border-radius: 22px; display: grid; place-items: center;
+    background: linear-gradient(160deg, #ffffff, #e8eefc);
+    box-shadow: 0 6px 0 #9fb0d6, 0 10px 22px rgba(0, 0, 0, 0.3);
+    animation: bnb-wobble 3.6s ease-in-out infinite;
+}
+.bnb-logo .bnb-icon { width: 76%; height: 76%; }
+@keyframes bnb-wobble { 0%, 100% { rotate: -4deg; } 50% { rotate: 4deg; } }
+.bnb-brand-words { display: flex; flex-direction: column; line-height: 0.92; }
+.bnb-brand-narbe { font-size: 18px; font-weight: 800; letter-spacing: 0.32em; color: var(--yellow); }
+.bnb-brand-title { margin: 0; font-size: clamp(40px, 5.4vw, 58px); font-weight: 800; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.3); }
+.bnb-tagline { margin-bottom: 18px; }
+.bnb-menu-list .bnb-menu-item { min-height: 84px; font-size: clamp(26px, 3.2vw, 34px); }
+
+/* ---------------------------------------------------------- build select */
+
+.bnb-card-select { width: min(1100px, 96vw); padding: 16px 22px 20px; }
+.bnb-select-head { display: flex; align-items: baseline; justify-content: center; gap: 18px; }
+.bnb-select-head .bnb-title { margin-bottom: 10px; }
+.bnb-page-label { font-size: 22px; font-weight: 800; color: var(--muted); }
+
+.bnb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.bnb-tile {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 8px 10px;
+    border-radius: 22px;
+    background: #f7f2e6;
+    color: #1f2433;
+    box-shadow: 0 6px 0 #c6b896, 0 12px 20px rgba(0, 0, 0, 0.25);
+    text-align: left;
+    margin-bottom: 6px;
+}
+.bnb-tile-empty { visibility: hidden; }
+.bnb-thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 15px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #8ccaf2, #dff1fb 60%, #9fd27a 60%, #7cc25a);
+}
+.bnb-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bnb-thumb.waiting { display: grid; place-items: center; }
+.bnb-thumb.waiting .bnb-icon { width: 34%; height: 34%; animation: bnb-wobble 1.6s ease-in-out infinite; }
+.bnb-size {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 46px; height: 60px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    display: grid; place-items: center;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+.bnb-stack { width: 30px; height: 46px; }
+.bnb-built {
+    position: absolute;
+    top: 14px; left: 14px;
+    width: 42px; height: 42px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--green); color: #fff;
+    box-shadow: 0 3px 0 var(--green-lip), 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+.bnb-built .bnb-icon { width: 28px; height: 28px; stroke-width: 5; }
+.bnb-tile-cap { display: flex; flex-direction: column; padding: 6px 6px 0; }
+.bnb-tile-name { font-size: clamp(20px, 2.2vw, 27px); font-weight: 800; line-height: 1.1; }
+.bnb-tile-count { font-size: clamp(14px, 1.5vw, 18px); font-weight: 700; color: #5b6275; }
+
+.bnb-select-foot { display: flex; gap: 16px; margin-top: 14px; }
+.bnb-select-foot .bnb-menu-item { flex: 1; }
+.bnb-select-foot .bnb-menu-item[hidden] { display: none; }
+
+/* ------------------------------------------------------------------ play */
+
+.bnb-hud { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 5; }
+.bnb-hud.show { display: block; }
+.bnb-hud .bnb-btn { pointer-events: auto; }
+
+.bnb-info {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: "name stack" "bar stack" "count stack";
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 14px 12px 18px;
+    border-radius: 20px;
+    background: rgba(18, 24, 46, 0.72);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+    min-width: 230px;
+}
+.bnb-info-name { grid-area: name; font-size: 26px; font-weight: 800; line-height: 1.1; }
+.bnb-info-stack { grid-area: stack; width: 34px; height: 50px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.92); border-radius: 10px; }
+.bnb-info-stack .bnb-stack { width: 24px; height: 38px; }
+.bnb-bar { grid-area: bar; height: 14px; margin: 6px 0 4px; border-radius: 8px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+.bnb-bar-fill { height: 100%; width: 0; border-radius: 8px; background: linear-gradient(90deg, #ffd84a, #ff9f43); transition: width 300ms ease; }
+.bnb-info.finished .bnb-bar-fill { background: linear-gradient(90deg, #6ee07a, #2e9e4f); }
+.bnb-info-count { grid-area: count; font-size: 19px; font-weight: 800; color: var(--muted); }
+
+.bnb-pause-btn {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #f5f2ea;
+    color: #26324a;
+    box-shadow: 0 6px 0 #b9b2a3, 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+.bnb-pause-icon .bnb-icon { width: 36px; height: 36px; }
+.bnb-pause-label { font-size: 16px; font-weight: 800; line-height: 1; margin-top: 2px; }
+
+.bnb-action {
+    position: absolute;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    min-width: 230px;
+    height: 128px;
+    padding: 0 30px 0 20px;
+    border-radius: 30px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 38px; font-weight: 800;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.bnb-action[hidden] { display: none; }
+.bnb-action-icon { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.22); }
+.bnb-action-icon .bnb-icon { width: 62px; height: 62px; }
+.bnb-build-btn { left: max(22px, env(safe-area-inset-left)); background: var(--green); box-shadow: 0 8px 0 var(--green-lip), 0 14px 26px rgba(0, 0, 0, 0.35); }
+.bnb-destroy-btn { right: max(22px, env(safe-area-inset-right)); background: var(--red); box-shadow: 0 8px 0 var(--red-lip), 0 14px 26px rgba(0, 0, 0, 0.35); }
+.bnb-destroy-btn.is-disabled { filter: grayscale(0.85) brightness(0.8); opacity: 0.55; cursor: default; }
+.bnb-pips { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; display: flex; gap: 6px; }
+.bnb-pips i { width: 12px; height: 12px; border-radius: 3px; background: #ffd84a; border: 2px solid #5c1712; }
+
+.bnb-callout {
+    position: absolute;
+    top: 13%;
+    left: 50%;
+    translate: -50% 0;
+    font-size: clamp(40px, 6.5vw, 76px);
+    font-weight: 800;
+    white-space: nowrap;
+    color: #ffffff;
+    -webkit-text-stroke: 3px #1d1a14;
+    paint-order: stroke fill;
+    text-shadow: 0 6px 0 #1d1a14, 0 12px 24px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+}
+.bnb-callout[data-tone="bash"] { color: #ffd84a; }
+.bnb-callout[data-tone="built"] { color: #8bf09a; }
+.bnb-callout.show { animation: bnb-callout 2.6s cubic-bezier(.2, .9, .3, 1.3) forwards; }
+@keyframes bnb-callout {
+    0% { opacity: 0; scale: 0.4; rotate: -6deg; }
+    12% { opacity: 1; scale: 1.12; rotate: 2deg; }
+    22% { scale: 1; rotate: 0deg; }
+    80% { opacity: 1; scale: 1; }
+    100% { opacity: 0; scale: 0.96; }
+}
+
+/* ------------------------------------------------------------ pause/help */
+
+.bnb-pause-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.bnb-pause-list .bnb-menu-item { min-height: 70px; font-size: clamp(20px, 2.4vw, 26px); }
+.bnb-card-pause { width: min(760px, 94vw); }
+
+.bnb-help-title {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: clamp(28px, 3.6vw, 40px); font-weight: 800;
+}
+.bnb-help-body { font-size: clamp(18px, 2.1vw, 23px); font-weight: 600; line-height: 1.35; margin-bottom: 14px; }
+.bnb-help-body p { margin: 0 0 10px; }
+.bnb-help-body b { color: var(--yellow); }
+
+/* -------------------------------------------------------------- settings */
+
+.bnb-card-settings { width: min(1040px, 96vw); }
+.bnb-settings-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 900px) and (min-aspect-ratio: 4/3) {
+    .bnb-settings-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--rows, 8), auto); grid-auto-flow: column; column-gap: 16px; }
+}
+.bnb-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 62px; padding: 8px 18px; border-radius: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+    font-size: clamp(19px, 2vw, 24px); font-weight: 800; text-align: left;
+}
+.bnb-row-value { display: flex; align-items: center; gap: 8px; color: var(--yellow); font-size: 0.92em; text-align: right; }
+.bnb-row-nav { background: var(--slate); }
+.bnb-row-danger { background: rgba(226, 69, 60, 0.45); }
+.bnb-swatch { width: 22px; height: 22px; border-radius: 50%; border: 3px solid #fff; }
+
+/* ------------------------------------------------------------------ done */
+
+.bnb-screen-done { background: radial-gradient(ellipse at center, rgba(8, 12, 30, 0.1), rgba(8, 12, 30, 0.4)); }
+.bnb-card-done { width: min(720px, 94vw); }
+.bnb-done-list { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.bnb-done-list .bnb-menu-item { flex-direction: column; justify-content: center; text-align: center; min-height: 170px; gap: 10px; font-size: clamp(26px, 3.2vw, 34px); }
+.bnb-done-list .bnb-icon-chip { width: 76px; height: 76px; border-radius: 22px; }
+.bnb-done-list .bnb-icon-chip .bnb-icon { width: 54px; height: 54px; }
+
+/* ------------------------------------------------------------- highlight */
+
+.bnb-focus {
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 12px var(--focus-ink, #1a1008), 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+    translate: 0 -4px;
+    z-index: 2;
+}
+.bnb-focus-full {
+    background: var(--focus-color, #ffd700) !important;
+    color: var(--focus-ink, #1a1008) !important;
+    outline: 7px solid var(--focus-color, #ffd700) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 12px var(--focus-ink, #1a1008), 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+    translate: 0 -4px;
+    z-index: 2;
+    text-shadow: none;
+}
+.bnb-focus-full .bnb-row-value, .bnb-focus-full .bnb-tile-count, .bnb-focus-full .bnb-pause-label { color: var(--focus-ink, #1a1008); }
+.bnb-focus-full .bnb-icon-chip, .bnb-focus-full .bnb-action-icon { background: transparent; box-shadow: inset 0 0 0 3px var(--focus-ink, #1a1008); }
+.bnb-tile.bnb-focus, .bnb-tile.bnb-focus-full { scale: 1.03; }
+
+/* Auto Scan paused by the Space brake: the same highlight, dotted. */
+.bnb-focus[data-narbe-scan-paused], .bnb-focus-full[data-narbe-scan-paused] { outline-style: dotted !important; }
+
+/* ------------------------------------------------------------- smaller */
+
+@media (max-width: 700px) {
+    .bnb-card { padding: 14px 14px 18px; border-radius: 24px; }
+    .bnb-grid { gap: 10px; }
+    .bnb-tile { padding: 5px 5px 7px; border-radius: 16px; }
+    .bnb-size { width: 34px; height: 44px; top: 9px; right: 9px; }
+    .bnb-stack { width: 22px; height: 34px; }
+    .bnb-built { width: 30px; height: 30px; top: 9px; left: 9px; }
+    .bnb-action { min-width: 0; height: 100px; padding: 0 18px 0 12px; font-size: 28px; }
+    .bnb-action-icon { width: 58px; height: 58px; }
+    .bnb-action-icon .bnb-icon { width: 46px; height: 46px; }
+    .bnb-pause-list, .bnb-done-list { grid-template-columns: 1fr; }
+    .bnb-screen-menu { justify-content: center; padding-left: 10px; }
+    .bnb-card-menu { transform-origin: center center; }
+}
+@media (max-height: 560px) {
+    .bnb-action { height: 92px; font-size: 28px; }
+    .bnb-info { min-width: 0; padding: 6px 10px 8px 12px; }
+    .bnb-info-name { font-size: 20px; }
+}
+
+/* Calm motion, or the system's reduced-motion setting: no bounces or wobbles. */
+#bnb[data-motion="calm"] .bnb-card, #bnb[data-motion="calm"] .bnb-logo, #bnb[data-motion="calm"] .bnb-thumb.waiting .bnb-icon { animation: none; }
+#bnb[data-motion="calm"] .bnb-callout.show { animation: bnb-callout-calm 2.6s ease forwards; }
+@keyframes bnb-callout-calm { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+    .bnb-card, .bnb-logo, .bnb-loading-blocks span, .bnb-thumb.waiting .bnb-icon { animation: none; }
+    .bnb-callout.show { animation: bnb-callout-calm 2.6s ease forwards; }
+}

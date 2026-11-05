@@ -520,6 +520,7 @@ The current web catalog contains **30 games**, verified against `apps/games/game
 | **NARBE Pet Pals** | Scan scene objects and menus to adopt and care for a pet. Gentler needs, spaced reminders and Rush?s helping choices preserve the existing scanner and narration gates. |
 | **NARBE Magic Button** | Press for fireworks, bubbles or flowers. Optional Simple High Contrast uses bright shapes on black; menu controls remain unchanged. |
 | **Chasing Rainbows** | Untimed card choices and shared-screen turn handoffs, with four rules presets and spoken prompts. |
+| **NARBE Build n Bash** | Cause and effect, all CHOICE: Build, Destroy and Pause are scanned (blank first), and each Build places the next block. Build leaves the scan once the build is finished or knocking down has begun; Destroy waits for the first block. Destroy sends a random destroyer; big builds fall in chunks, one press each (or All at Once). No hold-to-pause. After everything falls, Build Again or Pick Another. Build Select is a paged 3x3 picture grid with one-to-four block size badges. |
 | **Benny's Battle Boats** | Two-stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2-D grid with one switch. |
 | **Benny's Chess and Checkers** | Scan selectable pieces, select a piece, then scan its legal destinations or Cancel. |
 | **Benny's Connect Four** | Scan available columns and select to drop a piece; there is no separate row-selection stage. |
@@ -817,6 +818,7 @@ routes are:
 | Benny's Dice | Pause among the available turn controls; scanning waits during rolling, initiative and CPU turns. |
 | Benny's Mega Slot | Pause in the ordinary play scan; bonus mechanics use their own controls. |
 | Benny's Fish Mystery | **Options** at the end of world/scene scans opens pause and settings; live fishing/boat controls remain separate. |
+| NARBE Build n Bash | Pause is always in the play scan, after Build and Destroy, including while a destroyer runs. No hold route; Escape and pointer also pause. |
 
 **NARBE Racer retains hold-dependent switch pause during a live race**, including
 Press to Step. Its cup/track screens carry the approved notice that players

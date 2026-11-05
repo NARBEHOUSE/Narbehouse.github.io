@@ -1,0 +1,15 @@
+NARBE Build n Bash - vendored third-party code (kept local so the game runs offline)
+
+three.min.js
+  three.js r155 (UMD build), https://threejs.org - MIT License,
+  Copyright 2010-2023 three.js authors.
+  Byte-identical to the copies the hub already ships in NARBE Animal Friends
+  (vendor/three.min.js) and Benny's Ballista (js/three.min.js).
+
+ammo.js
+  ammo.js, a JavaScript port of the Bullet physics engine,
+  https://github.com/kripken/ammo.js - zlib License
+  (Bullet Continuous Collision Detection and Physics Library, Copyright (c) 2003-2014 Erwin Coumans).
+  Byte-identical to the copy Benny's Ballista and Benny's Bowling ship (js/ammo.js).
+
+Neither file is modified. See each project for its full license text.
