@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "ee95abed2647d76b812157fd3dd61859de0d0f672aff4427a478d134884cc7a4",
-  "totalBytes": 540472399,
+  "version": "cf609961526b71ded10bac31e38d97f602501c74de1e6316ef0856ba32ac9aab",
+  "totalBytes": 540478239,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16810,12 +16810,12 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/css/style.css",
-      "revision": "00029f51a7502aa6f780dff81e8fb94e77d2b63deaac73fa043319b28e6656f2",
-      "bytes": 19081
+      "revision": "4655311116d0fc6728f1c843606718b67d98e0a9a7eaf4e3241f98d8ef051184",
+      "bytes": 20104
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/index.html",
-      "revision": "5a8fabe733464036780e1db402c5331e49a4320fbf52875e998d4c5940d2686f",
+      "revision": "1be39271ed00234a47d8c79419ce6214d8a8b0aed9b0e1584277bde4c22fd82a",
       "bytes": 2796
     },
     {
@@ -16840,8 +16840,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/input.js",
-      "revision": "61007bf28b83c08d520c12eeb85b1f4f45a6fc7d0786c0445da97828f29c54fa",
-      "bytes": 12369
+      "revision": "ea79d2e8d85ae381a93bd606873150974d636dd25adfaf5adcc8bd25d731296c",
+      "bytes": 16124
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/main.js",
@@ -16855,8 +16855,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/settings.js",
-      "revision": "e1aa32ebb42f61bf017ab4ee4a106b01740387236971077dce3ffd0a318fe6d0",
-      "bytes": 4956
+      "revision": "f1177e75cb5ec67e8c9eba02fe3c91186c5a946cea998b8a03b6277a49583d64",
+      "bytes": 5159
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/shapes.js",
@@ -16880,8 +16880,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/ui.js",
-      "revision": "36651b51de17d6f93d860ff891eb70a8f78c4fb2f558071a7f06c242a8be9e0c",
-      "bytes": 35123
+      "revision": "43f7da8d81a030fb37867d14015b0a27024d49b00b555ed3cc85c059d477b89f",
+      "bytes": 35982
     },
     {
       "url": "./apps/games/NARBEBUILDNBASH/js/worlds.js",

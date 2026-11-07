@@ -122,6 +122,10 @@ BNB.UI = (function () {
         el.buildBtn = button('bnb-action bnb-build-btn', el.hud);
         node('span', 'bnb-action-icon', el.buildBtn).innerHTML = ICON.build;
         node('span', 'bnb-action-label', el.buildBtn, 'Build');
+        // Hold to Build: fills while Enter is held, then once per block while it builds by itself.
+        const meter = node('span', 'bnb-hold-meter', el.buildBtn);
+        meter.setAttribute('aria-hidden', 'true');
+        node('i', '', meter);
         el.destroyBtn = button('bnb-action bnb-destroy-btn', el.hud);
         node('span', 'bnb-action-icon', el.destroyBtn).innerHTML = ICON.destroy;
         node('span', 'bnb-action-label', el.destroyBtn, 'Destroy');
@@ -370,6 +374,7 @@ BNB.UI = (function () {
         if (BNB.Sim.canBuild()) {
             list.push({
                 id: 'play:build', el: el.buildBtn, quiet: true, speak: 'Build',
+                hold: !!S().get('holdBuild'),
                 action: function () { BNB.Game.build(); }
             });
         }
@@ -440,9 +445,10 @@ BNB.UI = (function () {
     function helpLines() {
         const auto = autoOn();
         const lines = [
-            'Pick a build. Choose *Build* to put the next block in place, and keep choosing it to finish.',
-            'Choose *Destroy* any time, even halfway, and something silly knocks it all down.'
+            'Pick a build. Choose *Build* to put the next block in place, and keep choosing it to finish.'
         ];
+        if (S().get('holdBuild')) lines.push('Or hold *Enter* on *Build*. After 3 seconds it keeps building, one block every second, until you let go or it is finished.');
+        lines.push('Choose *Destroy* any time, even halfway, and something silly knocks it all down.');
         if (S().get('chunked')) lines.push('Big builds come down in chunks. Choose *Destroy* again for each chunk.');
         lines.push('When it is all knocked down, choose *Build Again* or *Pick Another*.');
         lines.push('*Pause* is always in the scan, at the top right.');
@@ -511,6 +517,8 @@ BNB.UI = (function () {
                 after: () => ttsOn() ? 'Speaking on. Everything is read aloud.' : '' },
             { id: 'voice', label: 'Voice', value: voiceName, action: () => { try { vm().cycleVoice(); } catch (e) { /* none */ } },
                 after: () => 'Voice, ' + voiceName() + '. This is the voice you will hear.' },
+            { id: 'hold', label: 'Hold to Build', value: () => onOff(s.get('holdBuild')), action: () => s.toggle('holdBuild'),
+                after: () => s.get('holdBuild') ? 'Hold to build on. A press builds one block. Hold Enter on Build for 3 seconds and it keeps building, one block every second.' : 'Hold to build off. Every press builds one block, however long it is held.' },
             { id: 'names', label: 'Piece Names', value: () => onOff(s.get('pieceNames')), action: () => s.toggle('pieceNames'),
                 after: () => s.get('pieceNames') ? 'Piece names on. Special pieces, like a door or a roof, are said as they land.' : 'Piece names off.' },
             { id: 'chunks', label: 'Big Builds Fall', value: () => s.get('chunked') ? 'In Chunks' : 'All at Once',

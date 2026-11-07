@@ -2,6 +2,25 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-07 — NARBE Build n Bash: Hold to Build
+
+Scope: the owner's request. Ben builds with head turns, and a big build takes one turn per block (up to 50), which tires him. New setting **Hold to Build**, on by default. A press on Build still places one block, on release. Holding Enter on Build for 3 s places a block, then one more every second, until the build is finished or the switch comes up. The release after a hold that built adds nothing, so when Build leaves the scan at the last block the release cannot choose Destroy. Off: every press is one block, however long it is held. Pressing and holding Build with a mouse or finger does the same. A yellow bar along the bottom of Build fills over the 3 s, then refills once per block. Space during a hold moves the highlight off Build and stops it; Pause/Escape, input cancel, window blur and Auto Scan all stop it cleanly.
+
+Changed files (Electron port: **NO**; built in the PC Hub first, and every file except `index.html` matches the PC source):
+- `bennyshub/apps/games/NARBEBUILDNBASH/js/input.js` — hold support for scan items marked `hold` (`HOLD_START` 3000 ms, `HOLD_EVERY` 1000 ms): a key hold needs the item still highlighted at each step; pointer hold through `pointerdown`/`pointerup`/`pointercancel`/`pointerleave`; the click or Enter release that ends a hold that built is swallowed.
+- `bennyshub/apps/games/NARBEBUILDNBASH/js/settings.js` — `holdBuild` (default `true`; saved settings without it read as on).
+- `bennyshub/apps/games/NARBEBUILDNBASH/js/ui.js` — Build is marked `hold` while the setting is on; Settings row **Hold to Build** (after Voice, with a spoken explanation); How to Play line (only while on); the hold bar on Build.
+- `bennyshub/apps/games/NARBEBUILDNBASH/css/style.css` — the hold bar; no long-press callout or text selection on Build.
+- `bennyshub/apps/games/NARBEBUILDNBASH/index.html` — `?v=2026.11.07.1` for style.css, settings.js, input.js and ui.js only; the web-only lines are unchanged.
+- `bennyshub/apps/games/NARBEBUILDNBASH/tests/dom-smoke.cjs` — hold checks: under 3 s is one block, 5.5 s is three, held to the end finishes the build without Destroy, and with the setting off a 4.5 s hold is one block. Counts follow the measured hold length, because jsdom can stretch a sleep.
+- `bennyshub/apps/games/NARBEBUILDNBASH/README.md`, `bennyshub/ACCESSIBILITY.md` — Hold to Build documented.
+- `bennyshub/offline-manifest.json` — regenerated (only the five Build n Bash runtime files changed).
+- this record.
+
+The scan order, the blank step, Space (step on release, hold 3 s to scan back), Destroy, Pause and every other choice are unchanged. Hold to Build is a game-owned hold threshold on one choice. It is not a hub input change.
+
+Verification (Node only; no browser was launched on the development PC): `tests/dom-smoke.cjs` (the real page in jsdom, renderer stubbed, real scan manager and ammo.js) passes for two switches and Auto Scan on the PC copy, and on this web copy with the website's shared scripts. A separate jsdom check of the pointer path passed: a 4.5 s finger hold placed 2 blocks and the click after it was swallowed; sliding the finger off after 3.3 s stopped at 1 block; Enter and a short click afterwards each placed one. Root `node --test` for offline-dependencies, offline-library, offline-manifest, hub-library, scan-upgrade, choice-scan-adapter and graphics-quality: 106/106. **Pending:** a real browser, phone and switch check, and `npm test`/build/release audit/Pages checks (run by the Pages workflow on push).
+
 ## 2026-11-05 — Benny's Fish Mystery: Scoop again works with a mouse or a finger
 
 Scope: Ben's report: on the first job (Walt's hand net, fishing off the boards), clicking or tapping **Scoop again** did nothing, so the game could not be played on a phone or with a mouse. Switches worked only because the scan can reach the cast target, a square of water. Cause: on foot the button called `chooseTroll()`, which on the boards only stands the player on the same spot again. The water target has no 3D object, and `pickTarget()` only tested targets with objects, so a pointer could not hover or click it either. In a boat, **Troll on** was the only button at a spot, so a pointer could leave but never cast. The scan's **Scoop Again** row (on foot) had the same dead end for switches.

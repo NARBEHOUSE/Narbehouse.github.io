@@ -25,8 +25,18 @@ Every screen is a stationary choice scan through the hub's shared
 `NarbeChoiceScanAdapter` (ACCESSIBILITY.md section 4): Space steps on release,
 held Space scans backward, Enter chooses on release, Auto Scan moves by itself.
 Every screen opens with nothing highlighted. In play, **Pause is always a scan
-choice**, and there is no hold-to-pause: holding a switch never changes what a
-press does. Escape and a click or tap on Pause also pause.
+choice**, and there is no hold-to-pause. Escape and a click or tap on Pause also pause.
+
+**Hold to Build** (Settings, on by default; added 2026-11-07 because Ben builds
+with head turns and a big build took many of them): a press on Build still
+places one block, on release. Holding Enter on Build for 3 seconds places a
+block, then one more every second until the build is finished or the switch
+comes up. The release after a hold that built adds nothing, so it can never
+choose Destroy when Build leaves the scan at the last block. A yellow bar fills
+along the bottom of Build during the 3 seconds, then refills once per block.
+Pressing and holding Build with a mouse or finger does the same. Off: every
+press is one block, however long it is held. Timings: `HOLD_START` and
+`HOLD_EVERY` in `js/input.js`.
 
 - Build disappears the moment the last block is chosen, and stays away once
   knocking down has begun; Destroy is dimmed (and skipped) until the first block.
@@ -39,7 +49,7 @@ press does. Escape and a click or tap on Pause also pause.
   "All knocked down!". Event lines queue behind each other and scanning
   interrupts them.
 
-Settings: Speaking, Voice, Piece Names, Big Builds Fall, Next Block Hint (a
+Settings: Speaking, Voice, Hold to Build, Piece Names, Big Builds Fall, Next Block Hint (a
 glowing outline where the next block goes while Build is highlighted), Motion
 (Full / Calm: no shake, steadier camera, fewer effects), Graphics (the hub's
 shared quality), Highlight Style and Color, Auto Scan, Scan Speed, Sound
@@ -90,7 +100,8 @@ node tests/builds.test.cjs [id]        counts, tiers, overlaps, floating blocks,
 node tests/bash.test.cjs [build] [id]  every destroyer against every build, chunked and whole
 node tests/sound.test.cjs              every sound renders; every name the game plays exists
 JSDOM=<dir>/node_modules/jsdom node tests/dom-smoke.cjs
-                                       whole sessions by Space/Enter in jsdom, two switches and Auto Scan
+                                       whole sessions by Space/Enter in jsdom, two switches and Auto Scan,
+                                       including Hold to Build on (short, long, held to the end) and off
 node tools/shot.cjs build|world|scene|bash|bashers|all ...
                                        CPU-rendered pictures into <hub>/tmp/bnb-shots/
 ```

@@ -34,6 +34,8 @@ BNB.Settings = (function () {
     ];
 
     const DEFAULTS = {
+        /** Hold Enter on Build for 3 seconds and it keeps building, one block a second (a press still builds one). */
+        holdBuild: true,
         /** Big builds come down in chunks (about one Destroy press per 15 blocks), or all at once. */
         chunked: true,
         /** Say notable pieces as they land ("Door", "Roof"). */
@@ -54,6 +56,7 @@ BNB.Settings = (function () {
     function wrapIndex(v, len) { v = v | 0; return v >= 0 && v < len ? v : 0; }
 
     function clamp() {
+        settings.holdBuild = settings.holdBuild !== false;
         settings.chunked = settings.chunked !== false;
         settings.pieceNames = settings.pieceNames !== false;
         settings.hint = settings.hint !== false;

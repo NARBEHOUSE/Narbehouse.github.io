@@ -11,8 +11,15 @@
  * nothing highlighted.
  *
  * In play the choices are Build, Destroy and Pause. There is no hold-to-pause:
- * Pause is always in the scan, so a switch held for a minute does exactly
- * what a short press does. Escape and a click or tap on Pause also pause.
+ * Pause is always in the scan. Escape and a click or tap on Pause also pause.
+ *
+ * Hold to Build (a setting, on by default): a choice marked `hold` (Build)
+ * repeats while Enter stays down on it. A press still builds one block on
+ * release; held for HOLD_START it builds one block then, and one more every
+ * HOLD_EVERY until the build is finished or the switch comes up. The release
+ * after a hold that built adds nothing, and never chooses whatever the
+ * highlight moved to. Pressing and holding Build with a mouse or finger does
+ * the same.
  *
  * The shared scan manager filters bounce and too-quick repeats before any of
  * this sees a key; when it swallows a press it sends narbe-input-cancelled and
@@ -25,6 +32,8 @@ BNB.Input = (function () {
     'use strict';
 
     const BACK_SCAN_HOLD = 3000;   // hold Space this long to scan backwards (hub convention)
+    const HOLD_START = 3000;       // hold Enter on Build this long and it starts building by itself...
+    const HOLD_EVERY = 1000;       // ...one more block every second until the build is finished
 
     let provider = function () { return []; };
     let items = [];
@@ -37,6 +46,8 @@ BNB.Input = (function () {
     let previousAuto = false;
     let windowActive = true;
     let highlightListener = null;
+    /** A hold on a repeating choice: { id, source: 'key' | 'pointer', fired, timer, el }. */
+    let hold = null;
 
     function SM() { return window.NarbeScanManager; }
     function scanInterval() { try { return SM().getScanInterval() || 2000; } catch (e) { return 2000; } }
@@ -110,12 +121,75 @@ BNB.Input = (function () {
             item.el.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
+                // The click that ends a mouse or finger hold that already built adds nothing.
+                if (hold && hold.source === 'pointer' && endHold()) return;
                 const current = items.find(it => it.el === item.el);
                 if (!current || !enabled) return;
                 if (choice) choice.align(current.id);
                 run(current);
             });
+            item.el.addEventListener('pointerdown', function (e) {
+                if (!enabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
+                endHold();
+                const current = items.find(it => it.el === item.el);
+                if (holdable(current)) beginHold(current, 'pointer');
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
+                item.el.addEventListener(type, function () { if (hold && hold.source === 'pointer') stopHoldTimer(); });
+            });
         });
+    }
+
+    // --- Hold to Build: a held Enter (or finger) repeats the choice ---------------------------
+
+    function holdable(item) { return !!(item && item.hold && item.el && typeof item.action === 'function'); }
+
+    function holdLook(el, mode) {
+        if (!el) return;
+        el.classList.remove('is-charging', 'is-repeating');
+        if (!mode) return;
+        el.style.setProperty('--hold-start', HOLD_START + 'ms');
+        el.style.setProperty('--hold-every', HOLD_EVERY + 'ms');
+        void el.offsetWidth;            // restart the meter's fill
+        el.classList.add(mode === 'charging' ? 'is-charging' : 'is-repeating');
+    }
+
+    function beginHold(item, source) {
+        hold = { id: item.id, source: source, fired: false, timer: null, el: item.el };
+        holdLook(item.el, 'charging');
+        hold.timer = setTimeout(holdTick, HOLD_START);
+    }
+
+    /** Still there, still allowed, and (for a switch) still highlighted: build again. */
+    function holdTick() {
+        if (!hold) return;
+        hold.timer = null;
+        const item = items.find(it => it.id === hold.id);
+        const onIt = hold.source !== 'key' || (focused && focused.id === hold.id);
+        if (!enabled || !holdable(item) || !onIt) { stopHoldTimer(); return; }
+        hold.fired = true;
+        hold.el = item.el;
+        holdLook(item.el, 'repeating');
+        run(item);
+        if (!hold) return;
+        if (holdable(items.find(it => it.id === hold.id))) hold.timer = setTimeout(holdTick, HOLD_EVERY);
+        else stopHoldTimer();
+    }
+
+    /** Stop repeating but remember whether it built, so the release can be swallowed. */
+    function stopHoldTimer() {
+        if (!hold) return;
+        if (hold.timer) { clearTimeout(hold.timer); hold.timer = null; }
+        holdLook(hold.el, null);
+    }
+
+    /** Finish a hold. Returns true when it built anything (the release must then do nothing). */
+    function endHold() {
+        if (!hold) return false;
+        stopHoldTimer();
+        const fired = hold.fired;
+        hold = null;
+        return fired;
     }
 
     /** Colour AND thickness AND a lift - never colour alone. */
@@ -179,6 +253,8 @@ BNB.Input = (function () {
         if (isEnter(code)) {
             enterHeld = true;
             if (choice) choice.setInputHeld(true);
+            endHold();
+            if (holdable(focused)) beginHold(focused, 'key');
             return;
         }
         if (spaceHeld) clearSpaceState();          // a fresh press while "held": the release was lost
@@ -191,9 +267,10 @@ BNB.Input = (function () {
     function switchUp(code) {
         if (isEnter(code)) {
             const wasHeld = enterHeld;
+            const built = hold && hold.source === 'key' ? endHold() : false;
             enterHeld = false;
             if (choice) choice.setInputHeld(spaceHeld);
-            if (wasHeld) select();
+            if (wasHeld && !built) select();
             return;
         }
         if (braking) { braking = false; if (choice) choice.brakeRelease(); return; }
@@ -227,12 +304,13 @@ BNB.Input = (function () {
         if (!code) { clearAll(); return; }
         if (choice) choice.cancelInput();
         braking = false;
-        if (isEnter(code)) enterHeld = false;
+        if (isEnter(code)) { enterHeld = false; if (hold && hold.source === 'key') endHold(); }
         if (code === 'Space') clearSpaceState();
     }
 
     function clearAll() {
         clearSpaceState();
+        endHold();
         enterHeld = false;
         braking = false;
         if (choice) choice.cancelInput();

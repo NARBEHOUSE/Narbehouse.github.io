@@ -304,6 +304,18 @@ body {
 .bnb-action-icon { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.22); }
 .bnb-action-icon .bnb-icon { width: 62px; height: 62px; }
 .bnb-build-btn { left: max(22px, env(safe-area-inset-left)); background: var(--green); box-shadow: 0 8px 0 var(--green-lip), 0 14px 26px rgba(0, 0, 0, 0.35); }
+.bnb-build-btn { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+/* Hold to Build: a bar fills along the bottom while Enter is held (3 s), then refills once per block. */
+.bnb-hold-meter {
+    position: absolute; left: 20px; right: 20px; bottom: 11px; height: 12px;
+    border-radius: 6px; background: rgba(0, 0, 0, 0.32); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25);
+    overflow: hidden; opacity: 0; transition: opacity 0.15s;
+}
+.bnb-hold-meter i { display: block; width: 0; height: 100%; border-radius: 6px; background: #ffd84a; }
+.bnb-build-btn.is-charging .bnb-hold-meter, .bnb-build-btn.is-repeating .bnb-hold-meter { opacity: 1; }
+.bnb-build-btn.is-charging .bnb-hold-meter i { animation: bnb-hold-fill var(--hold-start, 3000ms) linear forwards; }
+.bnb-build-btn.is-repeating .bnb-hold-meter i { background: #ffffff; animation: bnb-hold-fill var(--hold-every, 1000ms) linear infinite; }
+@keyframes bnb-hold-fill { from { width: 0; } to { width: 100%; } }
 .bnb-destroy-btn { right: max(22px, env(safe-area-inset-right)); background: var(--red); box-shadow: 0 8px 0 var(--red-lip), 0 14px 26px rgba(0, 0, 0, 0.35); }
 .bnb-destroy-btn.is-disabled { filter: grayscale(0.85) brightness(0.8); opacity: 0.55; cursor: default; }
 .bnb-pips { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; display: flex; gap: 6px; }

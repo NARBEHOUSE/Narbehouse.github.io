@@ -6,8 +6,9 @@
  * graph and real ammo.js physics. Only speech, canvas 2D, media and the WebGL renderer are
  * faked (the renderer is swapped for a no-op one as three.min.js is served). A driver presses
  * Space and Enter (keydown/keyup, like a switch interface): menu > Build Select (both pages) >
- * build the Tiny House > Destroy > Build Again > half a build > Pause > every Settings row >
- * How to Play > Continue > Destroy halfway > Pick Another > Back > menu. Then the same with
+ * build the Tiny House > Destroy > Build Again > Hold to Build (short and long holds, held to
+ * the end) > Destroy > Build Again > half a build > Pause > every Settings row (turns Hold to
+ * Build off) > How to Play > Continue > a long hold builds one > Destroy halfway > Pick Another > Back > menu. Then the same with
  * Auto Scan (one switch: Enter only). Any script error fails the run.
  *
  * jsdom is not a hub dependency:  JSDOM=<dir>/node_modules/jsdom node tests/dom-smoke.cjs
@@ -123,15 +124,21 @@ async function session(label, scan) {
     async function press(code, hold) {
         const ev = type => new w.KeyboardEvent(type, { code: code, key: code === 'Space' ? ' ' : 'Enter', bubbles: true, cancelable: true });
         w.document.body.dispatchEvent(ev('keydown'));
+        const t = Date.now();
         await sleep(hold || 30);
+        const held = Date.now() - t;   // jsdom can be busy: the real hold may run long
         w.document.body.dispatchEvent(ev('keyup'));
         await sleep(260);   // past the input guard's cooldown
+        return held;
     }
     /** Two switches: Space steps to `id`, Enter chooses. One switch: wait for the highlight, then Enter. */
-    async function choose(id) {
+    async function choose(id) { await reach(id); await press('Enter'); return true; }
+    /** Hold Enter on `id` for `ms` (reaching it first, as choose() does). */
+    async function holdOn(id, ms) { await reach(id); return press('Enter', ms); }
+    async function reach(id) {
         const trail = [], until = Date.now() + 120000;   // Auto Scan: up to two minutes for the highlight to come round
         for (let k = 0; auto ? Date.now() < until : k < 40; k++) {
-            if (dbg().highlighted === id) { await press('Enter'); return true; }
+            if (dbg().highlighted === id) return true;
             if (auto) await sleep(20); else await press('Space');
             if (process.env.DEBUG && trail[trail.length - 1] !== dbg().highlighted) trail.push(dbg().highlighted);
         }
@@ -175,6 +182,32 @@ async function session(label, scan) {
     await choose('done:again'); await expectScreen('play');
     await until(() => dbg().sim === 'empty', 4000, 'the rubble to clear');
 
+    // Hold to Build (on by default): under 3 s is one block on release; held, one at 3 s and
+    // one a second after; the release after a hold adds nothing.
+    const placedIs = (n, what) => { if (dbg().placed !== n) throw new Error(label + ': ' + what + ': ' + dbg().placed + ' placed, expected ' + n); };
+    /** Blocks a hold of `ms` builds with Hold to Build on (a block lands at 3 s, 4 s, 5 s ...). */
+    const holdBlocks = ms => ms < 3000 ? 1 : Math.floor((ms - 3000) / 1000) + 1;
+    async function holdBuilds(ms, what) {
+        const before = dbg().placed, held = await holdOn('play:build', ms);
+        const got = dbg().placed - before, want = Math.min(holdBlocks(held), dbg().total - before);
+        // Within 150 ms of a step the release and the timer race; either count is right.
+        const near = (held % 1000 > 850 || held % 1000 < 150) && held > 2850;
+        if (got !== want && !(near && Math.abs(got - want) === 1)) throw new Error(label + ': ' + what + ' (' + held + ' ms): ' + got + ' blocks, expected ' + want);
+    }
+    await choose('play:build'); placedIs(1, 'first press');
+    await holdBuilds(2500, 'a 2.5 s hold');
+    await holdBuilds(5500, 'a 5.5 s hold (3 s, 4 s, 5 s)');
+    // Held to the end: Build goes away at the last block and the release must not choose Destroy.
+    await holdBuilds(7500, 'holding to the end'); placedIs(7, 'holding to the end');
+    await until(() => dbg().sim === 'complete', 4000, 'the held build to finish');
+    await sleep(400);
+    if (dbg().sim !== 'complete') throw new Error(label + ': releasing a finished hold did ' + dbg().sim);
+    if (w.document.querySelector('.bnb-build-btn.is-charging, .bnb-build-btn.is-repeating')) throw new Error(label + ': hold meter still showing');
+    await choose('play:destroy');
+    await until(() => dbg().screen === 'done', 15000, 'All knocked down after the hold');
+    await choose('done:again'); await expectScreen('play');
+    await until(() => dbg().sim === 'empty', 4000, 'the rubble to clear again');
+
     // Half a build, then the pause menu and every settings row.
     await choose('play:build'); await press('Enter'); await press('Enter');
     await choose('play:pause'); await expectScreen('pause');
@@ -190,6 +223,12 @@ async function session(label, scan) {
     await choose('pause:help'); await expectScreen('help');
     await choose('help:back'); await expectScreen('pause');
     await choose('pause:continue'); await expectScreen('play');
+
+    // The settings pass turned Hold to Build off: a long hold is one block, on release.
+    if (w.BNB.Settings.get('holdBuild') !== false) throw new Error(label + ': Hold to Build did not turn off');
+    const halfway = dbg().placed;
+    await choose('play:build'); placedIs(halfway + 1, 'a press with Hold to Build off');
+    await holdOn('play:build', 4500); placedIs(halfway + 2, 'a 4.5 s hold with Hold to Build off');
 
     // Destroy halfway: with only a few blocks, one press does it.
     await choose('play:destroy');
