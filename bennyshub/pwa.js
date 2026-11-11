@@ -27,7 +27,7 @@
     let message='Download the library now to use built-in games and tools offline.';
     if(state.phase==='checking')message='Checking the offline library…';
     if(state.phase==='downloading')message='Downloading for offline play: '+percent+'% ('+state.completed+' of '+state.total+' files). Keep the Hub open and connected.';
-    if(state.phase==='ready')message='Ready offline — all built-in game and tool files are saved on this device.';
+    if(state.phase==='ready')message='Ready offline — all built-in game and tool files are saved on this device, except games that play online only.';
     if(state.phase==='paused')message=(state.error||'The offline download is incomplete. Connect to the internet and choose Resume offline download.')+' Saved files will be reused.';
     // Announce meaningful progress without interrupting users for every file.
     if(state.phase!==lastPhase||bucket!==lastBucket||!busy){

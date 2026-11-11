@@ -2,6 +2,31 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-11 — Switch Stories moves to its own GitHub Pages repo
+
+Scope: the owner's hosting change for bigger games. Website copies of games over about 100 MB get their own GitHub Pages repo (public, Pages from `main`, no custom domain) at https://narbehouse.github.io/<repo>/, kept locally in `F:\PROJECT FILES\WEBSITES\GAMES\<repo>`. Switch Stories (116 MB) is the first: repo NARBEHOUSE/switch-stories, https://narbehouse.github.io/switch-stories/. The owner chose: no redirect page at the old path; online-only for moved games, with the Hub's offline screen saying so; git history left alone.
+
+Changed files (Electron port: **NO**; the PC Hub was not touched apart from its new `docs/WEBSITE-GAME-PUBLISHING.md`):
+- `bennyshub/apps/games/NARBESWITCHSTORIES/` — removed (333 files, 116.4 MB). The same files, plus the website-only path fixes, are commit e86f1f2 of the switch-stories repo.
+- `tests/switchstories-*.test.cjs` (5) — moved to the switch-stories repo's `tests/` (paths now relative to the game).
+- `bennyshub/apps/games/games.json` — Switch Stories `path` is `/switch-stories/` (root-relative: the same address live, and it also works in the local preview); new `"onlineOnly": true`. The id `narbeswitchstories` is unchanged, so recent/most-played history continues.
+- `bennyshub/index.html` — `#offline-online-only` note in Install & play offline, filled from games.json `onlineOnly` titles (`showOnlineOnlyGames()`); `showIframe()` speaks "<title> plays online only. Connect to the internet to play it." instead of opening an online-only game while the browser is offline.
+- `bennyshub/pwa.js` — Ready offline message adds "except games that play online only" (still starts with "Ready offline").
+- `bennyshub/offline-manifest.json` — regenerated: Switch Stories gone; 3,956 files, 418 MB.
+- `index.html` — Switch Stories card opens `/switch-stories/`.
+- `scripts/big-games.cjs` — new: the list of big-game repos (`['switch-stories']`).
+- `scripts/serve.cjs` — the preview serves each big-game repo from `../GAMES/<repo>` at `/<repo>/`, and redirects `/<repo>` to `/<repo>/` like GitHub Pages.
+- `scripts/check-pages.cjs` — big-game addresses are reported under `external` instead of as missing files.
+- `scripts/public-files.cjs` — the Switch Stories source-art exclusion moved to the game repo's .gitignore.
+- `scripts/check-nancy-games.cjs` — Switch Stories steps use `/switch-stories/`; SwitchedGames details must link to narbehouse.github.io/switch-stories/.
+- `tests/offline-manifest.test.cjs` — online-only catalog games must point at a big-game repo, and only their thumbnail must be in the offline inventory; the Switch Stories source-path fixture is gone.
+- `.gitignore` — Switch Stories source rules removed (now in the game repo).
+- `AGENTS.md`, `docs/development/OFFLINE-LIBRARY.md` — the big-game rule.
+
+Website-only changes in the game repo: the 13 `../../../shared/...` and `../../../images/...` references in `index.html` are now `/bennyshub/shared/...` and `/bennyshub/images/...`, and the standalone Exit in `js/main.js` goes to `/bennyshub/index.html`. Nothing else in the game changed.
+
+Verification: Node tests 433 pass (all except the browser-launching core.test.cjs); build, Companion ZIP checksum, audit:release and check:pages (1,433 links, 0 issues, `/switch-stories/index.html` external) pass. A jsdom check against the live site loaded the game alone and inside a hub-style frame: all 295 requests returned 200, nothing came from the old path, everything outside the game came from `/bennyshub/shared`, the game asked the hub for scan and voice settings over same-origin messages, scan and voice changes synced both ways, the Hub's `narbe-voice-settings-changed` message applied, speech spoke, and Exit sent `focusBackButton`. jsdom does not build the game's scanner (same at the old path), so the Space-press scan is for a browser check.
+
 ## 2026-11-11 — Build With Us page, crypto pop-up removed, Hub newsletter link
 
 Scope: the owner's website update brief. Remove the crypto statement pop-up everywhere (keep the statement page and links), add a Build With Us page and homepage entry points, and add one small newsletter link to Benny's Hub with no scan change.

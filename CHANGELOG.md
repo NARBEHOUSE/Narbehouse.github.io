@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11 - Switch Stories moves to its own site
+
+- Switch Stories is now published from its own GitHub Pages repo, NARBEHOUSE/switch-stories, at https://narbehouse.github.io/switch-stories/. Its folder bennyshub/apps/games/NARBESWITCHSTORIES/ (116 MB) is removed from this repo, with no redirect page, so the published site drops from 653 MB to 531 MB.
+- Benny's Hub, the NARBE House home page and SwitchedGames link to the new address. Saved settings, progress and recent/most-played history carry over (same origin, same catalog id).
+- Games marked "onlineOnly" in games.json are not part of the Hub's offline download: the offline settings screen names them, and opening one while offline says it needs the internet.
+
 ## 2026-11-11 - Build With Us page; crypto pop-up removed
 
 - Remove the cryptocurrency notice pop-up from the homepage, AI workflow, developer guide and The Dream pages, and delete crypto-statement/modal.js. The statement page and footer links stay.

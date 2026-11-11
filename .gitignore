@@ -51,10 +51,5 @@ bennyshub/apps/games/BENNYSPEGGLE/tools/tmp-*
 # Local partner feedback; excluded from publication.
 /bennyshub/apps/games/CHASINGRAINBOWS/CHanges-October14
 
-# Original Switch Stories artwork and production sources stay local.
+# Local reference material stays local. (Switch Stories and its source rules moved to the switch-stories repo.)
 /local-reference/
-/bennyshub/apps/games/NARBESWITCHSTORIES/**/source/
-/bennyshub/apps/games/NARBESWITCHSTORIES/**/incoming/
-/bennyshub/apps/games/NARBESWITCHSTORIES/**/reference/
-/bennyshub/apps/games/NARBESWITCHSTORIES/**/art/
-/bennyshub/apps/games/NARBESWITCHSTORIES/**/*.pdf

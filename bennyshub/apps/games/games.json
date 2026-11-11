@@ -347,7 +347,8 @@
       "id": "narbeswitchstories",
       "title": "Switch Stories",
       "description": "Explore illustrated stories created and adapted for switch users. Read at your own pace and press your switch to bring each page to life with a cause-and-effect animation. Includes read-aloud, adjustable text sizes, and a simple high-contrast view.",
-      "path": "apps/games/NARBESWITCHSTORIES/index.html",
+      "path": "/switch-stories/",
+      "onlineOnly": true,
       "image": "images/games/switchstories.png?v=0dcf06e09e0e",
       "genres": [
         "Interactive",

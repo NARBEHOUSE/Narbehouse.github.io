@@ -845,6 +845,7 @@
         <section id="offline-settings" aria-labelledby="offline-heading">
           <h2 id="offline-heading">Install &amp; play offline</h2>
           <p>Installing the app starts a one-time download of all built-in games and tool files. Keep the Hub open and connected until it says Ready offline. You can also download them here without installing.</p>
+          <p id="offline-online-only" hidden></p>
           <div class="settings-actions">
             <button type="button" id="pwa-install" hidden>Install Benny's Hub</button>
             <button type="button" id="offline-download" disabled>Download all games &amp; tools</button>
@@ -1299,6 +1300,18 @@
       return 2000;
     }
 
+    // Larger games are published as their own sites (games.json "onlineOnly": true), outside the
+    // Hub's offline download. Say so on the offline settings screen.
+    function showOnlineOnlyGames() {
+      const note = document.getElementById('offline-online-only');
+      if (!note) return;
+      const titles = appsData.games.filter(game => game.onlineOnly).map(game => game.title);
+      note.hidden = !titles.length;
+      note.textContent = !titles.length ? '' : titles.length === 1
+        ? titles[0] + ' is hosted on its own page and plays online only. It is not part of the offline download.'
+        : titles.join(', ') + ' are hosted on their own pages and play online only. They are not part of the offline download.';
+    }
+
     // Load JSON data for apps
     async function loadAppsData() {
       try {
@@ -1313,6 +1326,7 @@
         allTools = toolsData.tools.sort((a, b) => a.title.localeCompare(b.title));
         appsData.tools = allTools.filter(tool => !tool.requiresExtension || BennyExtension.supports(tool.requiresExtension));
         appsData.games = gamesData.games.sort((a, b) => a.title.localeCompare(b.title));
+        showOnlineOnlyGames();
 
         console.log('Apps data loaded:', appsData);
       } catch (error) {
@@ -1889,6 +1903,10 @@
       }
       closeCompanionTutorial();
       const game = appsData.games.find(item => item.path === src);
+      if (game?.onlineOnly && navigator.onLine === false) {
+        speak(game.title + ' plays online only. Connect to the internet to play it.');
+        return;
+      }
       if (tool || game) BennyLibrary.recordOpen(tool ? 'tools' : 'games', tool || game);
       window.BennyUsage?.open(src);
       iframeTitle.textContent = title;

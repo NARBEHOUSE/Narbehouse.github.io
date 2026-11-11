@@ -22,6 +22,8 @@ Saved static files must be served from cache before contacting the network. Phon
 4. Clearly identify inherently online features, such as streaming, live feeds, cloud AI and Trivia's YouTube rewards. Built-in game play must not require these to start. OS/browser speech availability also depends on the device's installed voices.
 5. Run a cold offline test: use a fresh browser context, download from the Hub without opening the game, wait for Ready offline, disconnect, reload the Hub, then launch from its actual Hub card and play inside the embedded frame. Test immediate network failure and a connection that accepts requests but never responds, plus worker restart and upgrade with an existing download. Check visible game/keyboard content, not just an iframe element or top-level URL. Exercise dynamically loaded content, not just the title screen. Test the actual target devices before claiming device acceptance.
 
+6. Exception, big games: a game whose website copy is over about 100 MB is published from its own GitHub Pages repo (`scripts/big-games.cjs`) at https://narbehouse.github.io/<repo>/. The Hub's service worker is scoped to `/bennyshub/`, so such a game is online only: give its catalog entry `"onlineOnly": true` and `"path": "/<repo>/"`. Its thumbnail stays in this repo and in the offline inventory; the offline settings screen lists it, and opening it offline speaks that it needs the internet.
+
 The dependency regression tests reject remote game page scripts/styles and check the pinned vendor files and font closure. They are a guard, not a full detector of dynamically constructed URLs: inspect new network calls and run the browser check.
 
 ## Development and validation

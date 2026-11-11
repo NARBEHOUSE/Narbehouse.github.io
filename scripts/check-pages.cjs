@@ -2,12 +2,15 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../dist'),files=[];
 function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else files.push(path.relative(root,p).replaceAll('\\','/'));}}
-walk(root);const names=new Set(files),issues=[];let checked=0;
+walk(root);const names=new Set(files),issues=[],external=new Set();let checked=0;
+// Big games are their own GitHub Pages repos at /<repo>/ (scripts/big-games.cjs), not part of this build.
+const {BIG_GAMES}=require('./big-games.cjs');
 function check(from,value){
   value=value.replaceAll('&amp;','&').trim();
   if(!value||/^(?:[a-z]+:|\/\/|#|\{)/i.test(value)||value.includes('${'))return;
   let target;try{target=decodeURIComponent(new URL(value,'https://narbehouse.github.io/'+from).pathname).slice(1);}catch{return;}
   if(!target||target.endsWith('/'))target+='index.html';
+  if(BIG_GAMES.some(name=>target.startsWith(name+'/'))){external.add('/'+target);return;}
   checked++;
   if(!names.has(target))issues.push({from,target});
 }
@@ -24,6 +27,6 @@ for(const group of ['tools','games']){
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'bennyshub/manifest.webmanifest')));
 check('bennyshub/manifest.webmanifest',manifest.start_url);
 for(const icon of manifest.icons)check('bennyshub/manifest.webmanifest',icon.src);
-const report={checked,issues};fs.mkdirSync(path.resolve(__dirname,'../artifacts'),{recursive:true});
+const report={checked,issues,external:[...external].sort()};fs.mkdirSync(path.resolve(__dirname,'../artifacts'),{recursive:true});
 fs.writeFileSync(path.resolve(__dirname,'../artifacts/pages-links.json'),JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));if(issues.length)process.exitCode=1;

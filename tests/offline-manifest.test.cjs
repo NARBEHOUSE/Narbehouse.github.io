@@ -30,7 +30,6 @@ test('source inventory shares build exclusions and leaves optional downloads out
     'bennyshub/.private.json','bennyshub/apps/games/TEST/tests/example.json',
     'bennyshub/apps/games/TEST/tools/source.js','bennyshub/apps/games/TEST/node_modules/code.js',
     'bennyshub/apps/games/TEST/rights and publishing/license.txt',
-    'bennyshub/apps/games/NARBESWITCHSTORIES/stories/test/source/page.png',
     'bennyshub/apps/games/CHASINGRAINBOWS/REFERENCE DATA/page.png',
     'bennyshub/apps/games/BENNYSFISHMYSTERY/content/story.json',
     'bennyshub/apps/tools/keyboard/kenlm/model.bin','bennyshub/test-player.js'
@@ -57,7 +56,9 @@ test('all Hub catalog entry pages and thumbnails are represented by the offline 
   for(const kind of ['games','tools']){
     const catalog=JSON.parse(await fs.readFile(path.join(root,'bennyshub/apps',kind,kind+'.json'),'utf8'));
     for(const item of catalog[kind]){
-      for(const field of ['path','image']){const local=item[field].split('?')[0];assert.ok(urls.has(assetUrl(local)),kind+': '+item.id+' '+field);}
+      // Online-only games are their own Pages sites (scripts/big-games.cjs): only their thumbnail ships here.
+      if(item.onlineOnly)assert.ok(require('../scripts/big-games.cjs').BIG_GAMES.some(name=>item.path==='/'+name+'/'),kind+': '+item.id+' online-only path is a big-game repo');
+      for(const field of item.onlineOnly?['image']:['path','image']){const local=item[field].split('?')[0];assert.ok(urls.has(assetUrl(local)),kind+': '+item.id+' '+field);}
     }
   }
 });

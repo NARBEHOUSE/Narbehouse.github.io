@@ -10,8 +10,6 @@ async function isPublicFile(root,source){
     if(/^codex-physical-builds\/images\/.*\.png$/i.test(rel))return false;
     // Retired prediction experiment stays in the source tree, not the public app.
     if(/^bennyshub\/apps\/tools\/keyboard\/kenlm(?:\/|-(?:client|worker)\.js$)/.test(rel))return false;
-    // Switch Stories production references never ship with the playable books.
-    if(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\/(?:.*\/)?(?:source|incoming|reference|art|prototype)(?:\/|$)/i.test(rel)||(/^bennyshub\/apps\/games\/NARBESWITCHSTORIES\//.test(rel)&&/\.pdf$/i.test(name)))return false;
     // Private publishing records never enter a website build, regardless of file type.
     if (/(?:^|\/)rights and publishing[^/]*(?:\/|$)/i.test(rel)) return false;
     // Publish the game's README alongside its license, notice and credits.
