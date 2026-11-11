@@ -2,6 +2,23 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-11 — Build With Us page, crypto pop-up removed, Hub newsletter link
+
+Scope: the owner's website update brief. Remove the crypto statement pop-up everywhere (keep the statement page and links), add a Build With Us page and homepage entry points, and add one small newsletter link to Benny's Hub with no scan change.
+
+Changed files (Electron port: **NO**; the PC Hub was not touched. Porting the Hub link needs "start the Electron pass"):
+- `bennyshub/index.html` — `#newsletter-callout` paragraph directly under `#switch-kit-callout`, `data-scan-exclude`, same size and link colour; its id joins the existing `keydown`/`keyup` `stopPropagation` list next to `switch-kit-callout`, so key presses on the focused link never reach the scanner.
+- `bennyshub/offline-manifest.json` — regenerated (only the `index.html` revision changed).
+- `index.html` — crypto modal script removed; Build With Us nav link and hero button. The CTA's Get Updates button (beacons.ai/narbehouse/connect) is replaced by a Stay in the loop section with the same Beacons email form and scoped CSS as the Build With Us page; the rest of the homepage is pixel-identical with Beacons blocked vs. loaded.
+- `ai-workflow.html`, `developer-guide.html`, `the-dream.html` — crypto modal script removed.
+- `crypto-statement/modal.js` — removed (no other users).
+- `build-with-us/index.html` — new page. Contact Us and Sponsor a Game open the NARBE House contact Google Form (the same form as SwitchedGames' Get in Touch / Partner with us), in a new tab; the owner chose it over `mailto:` links, which do nothing without a default email app. Stay in the loop uses the owner's Beacons email-form embed (code unchanged), with CSS scoped to `.newsletter-embed` so it matches the page. Beacons' injected stylesheet is layered and leaves the rest of the page pixel-identical (checked with Beacons blocked vs. loaded at 1280, 375 and 320 px).
+- `scripts/build.cjs` — `build-with-us` added to the public roots (Pages publishes only `dist/`).
+- `scripts/serve.cjs` — preview server allows `build-with-us/`.
+- `scripts/check-nancy-games.cjs` — no crypto dialog to dismiss; SwitchedGames step dismisses the new support dialog.
+
+Verification: `npm test` 443 pass. Playwright: no dialog on any narbehouse page; homepage button and nav link at desktop and 375 px; new page heading order, focus outline on every tab stop, no horizontal scroll. In the Hub, 30 Space scan steps never reached either callout; the new line renders under the switch kit line.
+
 ## 2026-11-07 — NARBE Build n Bash: Hold to Build
 
 Scope: the owner's request. Ben builds with head turns, and a big build takes one turn per block (up to 50), which tires him. New setting **Hold to Build**, on by default. A press on Build still places one block, on release. Holding Enter on Build for 3 s places a block, then one more every second, until the build is finished or the switch comes up. The release after a hold that built adds nothing, so when Build leaves the scan at the last block the release cannot choose Destroy. Off: every press is one block, however long it is held. Pressing and holding Build with a mouse or finger does the same. A yellow bar along the bottom of Build fills over the 3 s, then refills once per block. Space during a hold moves the highlight off Build and stops it; Pause/Escape, input cancel, window blur and Auto Scan all stop it cleanly.

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build With NARBE House — Accessible Game Ideas</title>
+    <link rel="icon" type="image/png" href="../logos/NARBE.png">
+    <meta name="description" content="Helping you bring accessible game ideas to life. Work with NARBE House to build switch-accessible games for one or two switches, free and open source.">
+    <link rel="canonical" href="https://narbehouse.github.io/build-with-us/">
+    <meta name="color-scheme" content="dark">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#0a0a0a',
+                        'charcoal': '#141414',
+                        'narbe-orange': '#ff5c00',
+                        'narbe-cyan': '#22d3ee',
+                        'access-violet': '#8b5cf6',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0a0a0a;
+        }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 92, 0, 0.15);
+        }
+
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .text-glow-orange {
+            text-shadow: 0 0 30px rgba(255, 92, 0, 0.5);
+        }
+
+        /* Grid Pattern */
+        .grid-pattern {
+            background-image:
+                linear-gradient(rgba(255, 92, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 92, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Gradient Border */
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #ff5c00, #22d3ee);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* Visible focus on every control */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible {
+            outline: 3px solid #22d3ee;
+            outline-offset: 3px;
+        }
+
+        .prose-narbe p + p { margin-top: 1.25rem; }
+
+        /* Beacons email form (Stay in the loop). Scoped overrides so the embed sits inline and
+           matches the page; Beacons' own styles are layered, so these unlayered rules win. */
+        .newsletter-embed { text-align: left; }
+        .newsletter-embed div:has(> div > .beacons-embed-input),
+        .newsletter-embed div:has(> .beacons-embed-input) {
+            padding: 0;
+            margin: 0;
+            max-width: none !important; /* the embed sets an inline 400px cap */
+            width: 100%;
+            align-items: stretch;
+        }
+        .newsletter-embed .beacons-embed-text {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+        }
+        .newsletter-embed .beacons-embed-description {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            text-align: center;
+        }
+        .newsletter-embed .beacons-embed-input {
+            width: 100%;
+            min-height: 52px;
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            background: #0a0a0a;
+            color: #fff;
+            font: inherit;
+            font-size: 1rem;
+        }
+        .newsletter-embed .beacons-embed-input::placeholder { color: #6b7280; opacity: 1; }
+        .newsletter-embed .beacons-embed-button {
+            position: static;
+            width: 100%;
+            min-height: 52px;
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            border: 0;
+            border-radius: 0.75rem;
+            background: #ff5c00;
+            color: #0a0a0a;
+            font: inherit;
+            font-size: 1.125rem;
+            font-weight: 700;
+            opacity: 1;
+            transition: background-color 0.15s;
+        }
+        .newsletter-embed .beacons-embed-button:hover { background: #f97316; opacity: 1; }
+        .newsletter-embed .beacons-embed-button:disabled { opacity: 0.5; }
+        .newsletter-embed .beacons-embed-input:focus,
+        .newsletter-embed .beacons-embed-button:focus-visible {
+            outline: 3px solid #22d3ee;
+            outline-offset: 3px;
+        }
+    </style>
+</head>
+<body class="bg-deep-black text-white antialiased">
+
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-narbe-orange focus:text-deep-black focus:font-semibold">Skip to content</a>
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-nav border-b border-white/5" aria-label="Main">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand -->
+                <a href="../index.html" class="flex items-center gap-3 group">
+                    <img src="../logos/NARBE.png" alt="NARBE House" class="w-10 h-10 rounded-xl object-contain transition-transform group-hover:scale-105 group-hover:rotate-[-3deg]">
+                    <div class="hidden sm:block">
+                        <div class="font-bold text-white">NARBE House</div>
+                        <div class="text-xs text-gray-500">Accessible Apps & Tools</div>
+                    </div>
+                </a>
+
+                <!-- Nav Links -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <a href="./" aria-current="page" class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-narbe-orange font-medium bg-white/5 transition-colors">
+                        <i data-lucide="hammer" class="w-4 h-4"></i>
+                        Build With Us
+                    </a>
+                    <a href="../ai-workflow.html" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-narbe-cyan font-medium hover:bg-narbe-cyan/10 transition-colors">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Vibe Coding
+                    </a>
+                    <a href="../developer-guide.html" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-gray-400 font-medium hover:text-white hover:bg-white/5 transition-colors">
+                        Developer Guide
+                    </a>
+                    <a href="https://narbehouse.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2 bg-narbe-orange hover:bg-orange-600 rounded-lg font-semibold text-white text-sm transition-colors">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Support Us</span>
+                        <span class="sr-only sm:hidden">Support Us</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main">
+        <!-- ==================== HERO ==================== -->
+        <header class="relative overflow-hidden pt-32 pb-16 lg:pt-40 lg:pb-20">
+            <div class="absolute inset-0 grid-pattern opacity-40" aria-hidden="true"></div>
+            <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-narbe-orange/10 rounded-full blur-[120px]" aria-hidden="true"></div>
+            <div class="absolute top-1/3 right-1/4 w-[360px] h-[360px] bg-narbe-cyan/10 rounded-full blur-[100px]" aria-hidden="true"></div>
+
+            <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-narbe-orange text-sm font-medium mb-8">
+                    <i data-lucide="hammer" class="w-4 h-4"></i>
+                    FREE & OPEN SOURCE
+                </span>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 text-glow-orange leading-tight">
+                    Build With <span class="bg-gradient-to-r from-narbe-orange to-narbe-cyan bg-clip-text text-transparent">NARBE House</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                    Helping you bring accessible game ideas to life.
+                </p>
+            </div>
+        </header>
+
+        <!-- ==================== OUR STORY ==================== -->
+        <section class="pb-16 lg:pb-20 relative" aria-label="Our story">
+            <div class="max-w-3xl mx-auto px-6">
+                <div class="glass-card rounded-3xl p-8 sm:p-10 prose-narbe text-gray-300 text-lg leading-relaxed">
+                    <p>Everything we make started with our brother <span class="text-narbe-orange font-semibold">Ben</span>. He didn't have access to games he could actually play, so we built them, and we released them all for free.</p>
+                    <p>For Ben, these games aren't therapy. They're fun, independence and a real part of his quality of life, and everyone deserves that. We design every game for minimal inputs, so anyone using one or two switches can play. We build for all kinds of players, from simple cause-and-effect games to games for teens and adults. They're made for everyone to experience and enjoy, and many people also find them useful in therapy sessions, clinics and classrooms.</p>
+                    <p>We're not an AAC provider, clinicians or medical professionals. What we are is builders, and we want to work alongside SLPs, OTs, AT specialists and educators to create the games and experiences that don't exist yet. <span class="text-white font-semibold">We want to be the place where your ideas come to life.</span></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== BUILD FOR ONE AWARD ==================== -->
+        <section class="py-12 lg:py-16 relative" aria-labelledby="build-for-one-heading">
+            <div class="max-w-4xl mx-auto px-6">
+                <div class="gradient-border rounded-3xl bg-charcoal p-8 sm:p-12">
+                    <div class="w-14 h-14 rounded-2xl bg-narbe-orange/20 flex items-center justify-center mb-6">
+                        <i data-lucide="award" class="w-7 h-7 text-narbe-orange"></i>
+                    </div>
+                    <h2 id="build-for-one-heading" class="text-3xl sm:text-4xl font-bold mb-4">The Build for One Award</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-8 max-w-2xl">
+                        A few times a year, we choose a teacher, therapist, family or organization in our community and build them a game for free. It's built for one person, then shared freely with everyone.
+                    </p>
+                    <a href="https://forms.gle/QhVt7WhoQKe6ozkp9" target="_blank" rel="noopener" class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-4 bg-narbe-orange hover:bg-orange-500 rounded-xl text-lg font-bold text-deep-black transition-colors">
+                        Apply for the Build for One Award
+                        <i data-lucide="external-link" class="w-5 h-5"></i>
+                        <span class="sr-only">(opens in a new tab)</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== WORK WITH US ==================== -->
+        <section class="py-12 lg:py-16 relative" aria-labelledby="work-with-us-heading">
+            <div class="max-w-6xl mx-auto px-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-2xl p-8 flex flex-col" style="border-color: rgba(34, 211, 238, 0.2);">
+                        <div class="w-14 h-14 rounded-2xl bg-narbe-cyan/20 flex items-center justify-center mb-6">
+                            <i data-lucide="users" class="w-7 h-7 text-narbe-cyan"></i>
+                        </div>
+                        <h2 id="work-with-us-heading" class="text-2xl sm:text-3xl font-bold mb-4">Work with us</h2>
+                        <p class="text-gray-300 leading-relaxed mb-8 flex-1">
+                            Want to work with us directly? We offer paid options: one-on-one sessions where we build alongside you and show you how, games we build to your needs, and custom projects for bigger ideas. Reach out and we'll talk through what fits.
+                        </p>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSf2bGKJdF-wUodX1JYJK03Mz3jqXV3y00dCzvaSa7DmvIVVDg/viewform" target="_blank" rel="noopener" class="inline-flex w-full sm:w-auto self-start items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/15 rounded-xl font-semibold transition-colors">
+                            Contact Us
+                            <i data-lucide="external-link" class="w-5 h-5"></i>
+                            <span class="sr-only">(opens in a new tab)</span>
+                        </a>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-8 flex flex-col" style="border-color: rgba(139, 92, 246, 0.25);">
+                        <div class="w-14 h-14 rounded-2xl bg-access-violet/20 flex items-center justify-center mb-6">
+                            <i data-lucide="building-2" class="w-7 h-7 text-access-violet"></i>
+                        </div>
+                        <h2 id="sponsor-heading" class="text-2xl sm:text-3xl font-bold mb-4">For organizations: sponsor your own game</h2>
+                        <p class="text-gray-300 leading-relaxed mb-8 flex-1">
+                            Sponsor a game built specifically for your organization, with your branding. We can make it a team experience: we'll host a one- or two-hour session with your team, come up with ideas together and build the game live. Once everyone's happy with it, we release it free on Switched Games with your logo and a link to your organization. As the site grows, so does your game's reach, and your community can share it too.
+                        </p>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSf2bGKJdF-wUodX1JYJK03Mz3jqXV3y00dCzvaSa7DmvIVVDg/viewform" target="_blank" rel="noopener" class="inline-flex w-full sm:w-auto self-start items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/15 rounded-xl font-semibold transition-colors">
+                            Sponsor a Game
+                            <i data-lucide="external-link" class="w-5 h-5"></i>
+                            <span class="sr-only">(opens in a new tab)</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Promise -->
+                <div class="mt-6 glass-card rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start gap-4">
+                    <i data-lucide="heart-handshake" class="w-8 h-8 text-narbe-orange flex-shrink-0"></i>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        <strong class="text-white">Our promise:</strong> everything we build is free and open source. When you work with us, you're paying for our time and experience, not for access.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== NEWSLETTER ==================== -->
+        <section id="stay-in-the-loop" class="py-16 lg:py-24 relative" aria-labelledby="stay-in-the-loop-heading">
+            <div class="max-w-3xl mx-auto px-6">
+                <div class="gradient-border rounded-3xl bg-charcoal p-8 sm:p-12 text-center">
+                    <h2 id="stay-in-the-loop-heading" class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Stay in the loop</h2>
+                    <p class="text-gray-300 max-w-xl mx-auto mb-8">
+                        Join our newsletter for new games, workshops and updates.
+                    </p>
+                    <div class="newsletter-embed relative z-10 max-w-lg mx-auto">
+                        <!-- Beacons email form embed (NARBE House). Keep the embed code unchanged. -->
+                        <div id="6a33bf19-7ddd-4984-a556-f1ad4e03e7c7"></div> <script> (function () { function loadBeaconsEmailFormEmbed() { var s = document.createElement("script"); var t = Math.floor(new Date().getTime() / 120000); s.type = "module"; s.async = 1; s.src = `https://beacons.ai/embeds/emailForm.js?v=${t}&b=narbehouse&f=6a33bf19-7ddd-4984-a556-f1ad4e03e7c7`; (document.head || document.body || document.documentElement).appendChild(s); } if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", loadBeaconsEmailFormEmbed, { once: true }); return; } loadBeaconsEmailFormEmbed(); })(); </script>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="border-t border-white/5 bg-deep-black">
+        <p style="margin: 0; padding: 1rem 1rem 0.5rem; color: #9ca3af; font-size: 0.75rem; line-height: 1.5; text-align: center;">NARBE is not affiliated with any cryptocurrency or crypto token. <a href="../crypto-statement/" style="color: inherit; text-decoration: underline; text-underline-offset: 0.15em;">Read our official statement</a>.</p>
+        <div class="max-w-3xl mx-auto px-6 pb-8 text-xs text-gray-500">
+            <div class="flex flex-wrap gap-4 justify-center pt-4">
+                <span>© <span id="footer-year">2026</span> NARBE LLC</span>
+                <a href="https://github.com/narbehouse/narbehouse.github.io/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+                <a href="https://github.com/narbehouse/narbehouse.github.io" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+                <a href="https://narbehouse.com" target="_blank" rel="noopener" class="hover:text-white transition-colors">NARBE LLC</a>
+                <a href="https://forms.gle/1afBksFkSpbrP1Jc8" target="_blank" rel="noopener" class="hover:text-white transition-colors">Discord</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        document.getElementById('footer-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

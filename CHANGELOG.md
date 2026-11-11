@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11 - Build With Us page; crypto pop-up removed
+
+- Remove the cryptocurrency notice pop-up from the homepage, AI workflow, developer guide and The Dream pages, and delete crypto-statement/modal.js. The statement page and footer links stay.
+- New page build-with-us/ (Build for One Award, work with us, sponsor a game, newsletter signup). Homepage gains a Build With Us button under the intro and a Build With Us nav link, and its Get Updates button is replaced by the Stay in the loop newsletter form. Contact Us and Sponsor a Game open the NARBE House collaboration Google Form.
+- Benny's Hub: a small newsletter link under the switch kit link, excluded from scanning like the switch kit link.
+
 ## 2026-10-17 - Remove the freezing experimental RTC Lite model
 
 - Remove SmolLM2 from web and desktop AI choices and block its model startup/generation. Previous selections move to AI Off while saved phrases, profile and speech settings remain.

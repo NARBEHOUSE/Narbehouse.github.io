@@ -142,6 +142,66 @@
             max-height: 80vh;
             overflow-y: auto;
         }
+
+        /* Beacons email form (Stay in the loop). Scoped overrides so the embed sits inline and
+           matches the page; Beacons' own styles are layered, so these unlayered rules win. */
+        .newsletter-embed { text-align: left; }
+        .newsletter-embed div:has(> div > .beacons-embed-input),
+        .newsletter-embed div:has(> .beacons-embed-input) {
+            padding: 0;
+            margin: 0;
+            max-width: none !important; /* the embed sets an inline 400px cap */
+            width: 100%;
+            align-items: stretch;
+        }
+        .newsletter-embed .beacons-embed-text {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+        }
+        .newsletter-embed .beacons-embed-description {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            text-align: center;
+        }
+        .newsletter-embed .beacons-embed-input {
+            width: 100%;
+            min-height: 52px;
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            background: #0a0a0a;
+            color: #fff;
+            font: inherit;
+            font-size: 1rem;
+        }
+        .newsletter-embed .beacons-embed-input::placeholder { color: #6b7280; opacity: 1; }
+        .newsletter-embed .beacons-embed-button {
+            position: static;
+            width: 100%;
+            min-height: 52px;
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            border: 0;
+            border-radius: 0.75rem;
+            background: #ff5c00;
+            color: #0a0a0a;
+            font: inherit;
+            font-size: 1.125rem;
+            font-weight: 700;
+            opacity: 1;
+            transition: background-color 0.15s;
+        }
+        .newsletter-embed .beacons-embed-button:hover { background: #f97316; opacity: 1; }
+        .newsletter-embed .beacons-embed-button:disabled { opacity: 0.5; }
+        .newsletter-embed .beacons-embed-input:focus,
+        .newsletter-embed .beacons-embed-button:focus-visible {
+            outline: 3px solid #22d3ee;
+            outline-offset: 3px;
+        }
     </style>
 </head>
 <body class="bg-deep-black text-white antialiased">
@@ -161,6 +221,10 @@
 
                 <!-- Nav Links -->
                 <div class="flex items-center gap-2 sm:gap-4">
+                    <a href="build-with-us/" class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-white font-medium hover:text-narbe-orange hover:bg-white/5 transition-colors">
+                        <i data-lucide="hammer" class="w-4 h-4"></i>
+                        Build With Us
+                    </a>
                     <a href="ai-workflow.html" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-narbe-cyan font-medium hover:bg-narbe-cyan/10 transition-colors">
                         <i data-lucide="sparkles" class="w-4 h-4"></i>
                         Vibe Coding
@@ -202,6 +266,14 @@
                 Switch-accessible apps built for <span class="text-narbe-orange font-semibold">Ben</span> and families like ours.
                 Works with <span class="text-white">1 or 2 switches</span>, head tracking, and eye tracking.
             </p>
+
+            <div class="reveal mb-6">
+                <a href="build-with-us/" class="group inline-flex w-full sm:w-auto items-center justify-center gap-3 px-10 py-5 bg-narbe-orange hover:bg-orange-600 rounded-2xl text-xl font-bold text-white glow-orange transition-colors focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-narbe-cyan">
+                    <i data-lucide="hammer" class="w-6 h-6"></i>
+                    Build With Us
+                    <i data-lucide="arrow-right" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
 
             <div class="reveal flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="https://switchedgames.org" target="_blank" rel="noopener" class="group inline-flex items-center justify-center gap-2 px-8 py-4 glass-card rounded-xl font-semibold hover:border-narbe-orange/50 transition-all duration-300">
@@ -919,9 +991,22 @@
                         <i data-lucide="mail" class="w-5 h-5"></i>
                         Get in Touch
                     </a>
-                    <a href="https://beacons.ai/narbehouse/connect" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold transition-colors">
-                        Get Updates
-                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== NEWSLETTER ==================== -->
+    <section id="stay-in-the-loop" class="pb-16 lg:pb-24 relative" aria-labelledby="stay-in-the-loop-heading">
+        <div class="max-w-3xl mx-auto px-6">
+            <div class="reveal gradient-border rounded-3xl bg-charcoal p-8 sm:p-12 text-center">
+                <h2 id="stay-in-the-loop-heading" class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Stay in the loop</h2>
+                <p class="text-gray-300 max-w-xl mx-auto mb-8">
+                    Join our newsletter for new games, workshops and updates.
+                </p>
+                <div class="newsletter-embed relative z-10 max-w-lg mx-auto">
+                        <!-- Beacons email form embed (NARBE House). Keep the embed code unchanged. -->
+                        <div id="6a33bf19-7ddd-4984-a556-f1ad4e03e7c7"></div> <script> (function () { function loadBeaconsEmailFormEmbed() { var s = document.createElement("script"); var t = Math.floor(new Date().getTime() / 120000); s.type = "module"; s.async = 1; s.src = `https://beacons.ai/embeds/emailForm.js?v=${t}&b=narbehouse&f=6a33bf19-7ddd-4984-a556-f1ad4e03e7c7`; (document.head || document.body || document.documentElement).appendChild(s); } if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", loadBeaconsEmailFormEmbed, { once: true }); return; } loadBeaconsEmailFormEmbed(); })(); </script>
                 </div>
             </div>
         </div>
@@ -1081,6 +1166,5 @@
         });
     </script>
 
-  <script src="/crypto-statement/modal.js" data-theme="house" data-auto-open="session" defer></script>
 </body>
 </html>

@@ -19,7 +19,7 @@ async function build(){
   runPackage(['--check']);
   const existing=await fs.lstat(dest).catch(()=>null);if(existing){if(existing.isSymbolicLink()||(await fs.realpath(dest))!==dest)throw Error('Refusing unsafe build destination');await fs.rm(dest,{recursive:true});}
   await fs.mkdir(dest);
-  const publicRoots=['codex-physical-builds','crypto-statement','bennyshub','logos','videos','steviesmusic','index.html','ai-workflow.html','developer-guide.html','the-dream.html','LICENSE'];
+  const publicRoots=['build-with-us','codex-physical-builds','crypto-statement','bennyshub','logos','videos','steviesmusic','index.html','ai-workflow.html','developer-guide.html','the-dream.html','LICENSE'];
   const {isPublicFile}=require('./public-files.cjs');
   for(const item of publicRoots)await fs.cp(path.join(root,item),path.join(dest,item),{recursive:true,filter:source=>isPublicFile(root,source)});
   await require('./trinkey-public.cjs').publishTrinkey(root,dest);
