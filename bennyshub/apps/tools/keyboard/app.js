@@ -1,10 +1,100 @@
 (async () => {
+  // Keyboard layout with symbols for control buttons
+  const rows = [
+    ["Space", "Del Letter", "Del Word", "Clear", "Settings", "Exit"],
+    ["A","B","C","D","E","F"],
+    ["G","H","I","J","K","L"],
+    ["M","N","O","P","Q","R"],
+    ["S","T","U","V","W","X"],
+    ["Y","Z","0","1","2","3"],
+    ["4","5","6","7","8","9"]
+  ];
+
+  // Control button symbols
+  const controlSymbols = {
+    "Space": "—",        // Em dash symbol (changed from underscore)
+    "Del Letter": "⌫",   // Backspace symbol
+    "Del Word": "⌦",     // Delete forward symbol
+    "Clear": "✕",        // Clear/X symbol
+    "Settings": "⚙",     // Gear symbol
+    "Exit": "⏻"          // Power/Exit symbol
+  };
+
+  function createKeyButton(key, rIdx) {
+    const btn = document.createElement("button");
+    btn.className = "key" + (rIdx === 0 ? " ctrl" : "");
+    if (key === "Settings") btn.classList.add("settings");
+    else if (key === "Exit") btn.classList.add("exit");
+    // For control buttons, add symbol and text
+    if (rIdx === 0 && controlSymbols[key]) {
+      btn.innerHTML = `
+            <span class="ctrl-symbol">${controlSymbols[key]}</span>
+            <span class="ctrl-text">${key}</span>
+          `;
+    } else {
+      btn.textContent = key;
+    }
+    return btn;
+  }
+
+  // Draw the keys before waiting for storage. BennyAppStorage.ready() first asks the
+  // Companion extension, which takes up to 1.6 s to time out when it is not installed,
+  // and until then only the text bar showed. This paint is visual only: nothing is
+  // saved here, and init() rebuilds the same keys with their handlers. A tap on an
+  // early key is queued and run as soon as init() is ready, so it is never lost.
+  const earlyClicks = [];
+  (function paintKeysEarly() {
+    const keyboardEl = document.getElementById("keyboard"), predictEl = document.getElementById("predictBar"), textEl = document.getElementById("textBar");
+    if (!keyboardEl || keyboardEl.children.length) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("kb_settings") || "null") || {};
+      if (typeof saved.theme === "string" && saved.theme !== "default") document.body.classList.add("theme-" + saved.theme);
+      document.body.classList.add("highlight-" + (typeof saved.highlightColor === "string" ? saved.highlightColor : "yellow"));
+    } catch { document.body.classList.add("highlight-yellow"); }
+    try { textEl.textContent = (localStorage.getItem("kb_draft") || "") + "|"; } catch { textEl.textContent = "|"; }
+    rows.forEach((row, rIdx) => row.forEach(key => {
+      const btn = createKeyButton(key, rIdx);
+      btn.addEventListener("click", () => earlyClicks.push([key, rIdx]));
+      keyboardEl.appendChild(btn);
+    }));
+    for (let i = 0; i < 6; i++) {
+      const chip = document.createElement("button");
+      chip.className = "chip"; chip.disabled = true; predictEl.appendChild(chip);
+    }
+  })();
+
   if(window.BennyAppStorage)await BennyAppStorage.ready('keyboard');
   const $ = (sel) => document.querySelector(sel);
   const textBar = $("#textBar");
   const predictBar = $("#predictBar");
   const kb = $("#keyboard");
   const settingsMenu = $("#settingsMenu");
+  // Exit confirmation, shown only when the message is not empty. Cancel scans first,
+  // like the Hub's own Exit dialog. Built here (not in index.html) so a cached older
+  // page can never leave Exit without its dialog; [hidden] works even without the CSS.
+  const exitConfirm = document.createElement("div");
+  exitConfirm.id = "exitConfirm"; exitConfirm.className = "exit-confirm"; exitConfirm.hidden = true;
+  exitConfirm.setAttribute("role", "alertdialog"); exitConfirm.setAttribute("aria-modal", "true");
+  exitConfirm.setAttribute("aria-labelledby", "exitConfirmTitle"); exitConfirm.setAttribute("aria-describedby", "exitConfirmText");
+  exitConfirm.innerHTML = '<div class="exit-confirm-box"><h2 id="exitConfirmTitle">Exit Keyboard?</h2>' +
+    '<p id="exitConfirmText">Your message is saved and will be here when you come back.</p>' +
+    '<p id="exitConfirmMessage" class="exit-confirm-message"></p><div class="exit-confirm-buttons">' +
+    '<button class="settings-item exit-choice" data-exit="cancel" type="button"><span class="setting-label">Cancel</span></button>' +
+    '<button class="settings-item exit-choice" data-exit="leave" type="button"><span class="setting-label">Exit</span></button></div></div>';
+  document.body.append(exitConfirm);
+  const exitButtons = Array.from(exitConfirm.querySelectorAll(".exit-choice"));
+
+  // The message survives Exit and reloads: a sentence can take minutes to scan.
+  // It has its own key, outside the Companion-synced keyboard data.
+  const DRAFT_KEY = "kb_draft";
+  function readDraft() {
+    try { const saved = localStorage.getItem(DRAFT_KEY); return typeof saved === "string" ? saved : ""; }
+    catch { return ""; }
+  }
+  function saveDraft(text) {
+    try { if (text) localStorage.setItem(DRAFT_KEY, text); else localStorage.removeItem(DRAFT_KEY); }
+    catch { /* Storage can be unavailable; typing still works. */ }
+  }
 
   const defaultSettings = {
     autocapI: true,
@@ -33,7 +123,7 @@
   // TTS functionality using unified voice manager
   function speak(text) {
     // Use the unified voice manager's speakProcessed function for better pronunciation
-    if (choiceScan && inSettingsMode) return choiceScan.announceCurrent(text);
+    if (choiceScan && (inSettingsMode || inExitConfirm)) return choiceScan.announceCurrent(text);
     return window.NarbeVoiceManager.speakProcessed(text);
   }
 
@@ -140,6 +230,7 @@
   let inSettingsMode = false;
   let settingsRowIndex = -1;
   let settingsItems = [];
+  let inExitConfirm = false;
 
   // Scanning state
   let inRowSelectionMode = true;
@@ -171,6 +262,7 @@
 
   function setBuffer(txt) {
     buffer = txt;
+    saveDraft(buffer);
     const displayText = buffer + "|";
     textBar.textContent = displayText;
 
@@ -200,49 +292,11 @@
     // Otherwise use default size (no class needed)
   }
 
-  // Keyboard layout with symbols for control buttons
-  const rows = [
-    ["Space", "Del Letter", "Del Word", "Clear", "Settings", "Exit"],
-    ["A","B","C","D","E","F"],
-    ["G","H","I","J","K","L"],
-    ["M","N","O","P","Q","R"],
-    ["S","T","U","V","W","X"],
-    ["Y","Z","0","1","2","3"],
-    ["4","5","6","7","8","9"]
-  ];
-
-  // Control button symbols
-  const controlSymbols = {
-    "Space": "—",        // Em dash symbol (changed from underscore)
-    "Del Letter": "⌫",   // Backspace symbol
-    "Del Word": "⌦",     // Delete forward symbol
-    "Clear": "✕",        // Clear/X symbol
-    "Settings": "⚙",     // Gear symbol
-    "Exit": "⏻"          // Power/Exit symbol
-  };
-
   function renderKeyboard() {
     kb.innerHTML = "";
     rows.forEach((row, rIdx) => {
       row.forEach((key) => {
-        const btn = document.createElement("button");
-        btn.className = "key" + (rIdx === 0 ? " ctrl" : "");
-
-        if (key === "Settings") {
-          btn.classList.add("settings");
-        } else if (key === "Exit") {
-          btn.classList.add("exit");
-        }
-
-        // For control buttons, add symbol and text
-        if (rIdx === 0 && controlSymbols[key]) {
-          btn.innerHTML = `
-            <span class="ctrl-symbol">${controlSymbols[key]}</span>
-            <span class="ctrl-text">${key}</span>
-          `;
-        } else {
-          btn.textContent = key;
-        }
+        const btn = createKeyButton(key, rIdx);
 
         btn.addEventListener("click", () => {
           if (rIdx === 0) {
@@ -323,7 +377,7 @@
   }
   function handleLongPress() {
     longPressTriggered = true;
-    if (inSettingsMode) return;
+    if (inSettingsMode || inExitConfirm) return;
     if (choiceScan.getState().depth) choiceScan.back({restore: true});
     else {
       choiceScan.open(rowChoices(), {restoreId: 'row:predictions'});
@@ -371,12 +425,17 @@
       kind: 'setting', column, element,
       label: [element.querySelector('.setting-label')?.textContent, element.querySelector('.setting-value')?.textContent].filter(Boolean).join('. ')}));
   }
+  function exitChoices() {
+    return exitButtons.map(element => ({id: 'exit:' + element.dataset.exit, kind: 'exit', element,
+      label: element.textContent.trim()}));
+  }
   function refreshChoices() {
     if (!choiceScan) return;
-    choiceScan.setItems(inSettingsMode ? settingsChoices() : choiceScan.getState().depth ? childChoices(currentRowIndex) : rowChoices());
+    choiceScan.setItems(inExitConfirm ? exitChoices() : inSettingsMode ? settingsChoices() : choiceScan.getState().depth ? childChoices(currentRowIndex) : rowChoices());
   }
   function drawChoice(item, state) {
     clearAllHighlights(); settingsItems.forEach(element => element.classList.remove('highlighted')); rowOutline.hide();
+    exitButtons.forEach(element => element.classList.remove('highlighted'));
     document.body.dataset.scanIndex = state.index; document.body.dataset.scanDepth = state.depth;
     document.body.dataset.scanSelected = state.id || ''; document.body.dataset.scanState = state.parked ? 'parked' : state.braked ? 'paused' : 'running';
     if (!item) { currentRowIndex = settingsRowIndex = -1; inRowSelectionMode = true; document.activeElement?.blur(); return; }
@@ -386,6 +445,7 @@
       return;
     }
     if (item.kind === 'setting') { settingsRowIndex = item.column; highlightSettingsItem(item.column); }
+    else if (item.kind === 'exit') item.element.classList.add('highlighted');
     else {
       currentRowIndex = item.row; inRowSelectionMode = item.kind === 'row'; currentButtonIndex = item.column || 0;
       if (item.kind === 'key') item.element.classList.add('highlighted');
@@ -397,6 +457,7 @@
   }
   function chooseItem(item) {
     if (item.kind === 'back') { choiceScan.back({restore: true}); return; }
+    if (item.kind === 'exit') { chooseExit(item.element.dataset.exit); return; }
     if (item.kind === 'setting') { settingsRowIndex = item.column; selectSettingsItem(); if (inSettingsMode) refreshChoices(); return; }
     if (item.kind === 'row') {
       if (item.row === 0) textBar.click();
@@ -404,7 +465,7 @@
       return;
     }
     item.element.click();
-    if (!inSettingsMode) choiceScan.back({restore: true});
+    if (!inSettingsMode && !inExitConfirm) choiceScan.back({restore: true});
   }
 
   let predictionRenderVersion = 0;
@@ -874,16 +935,57 @@
       return;
     }
     if (key === "Exit")       {
-      try {
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({ action: 'focusBackButton' }, '*');
-        }
-      } catch (err) {
-        console.error('Failed to message parent:', err);
-      }
+      // An empty message exits at once, as before; otherwise confirm first.
+      if (!buffer.trim()) { leaveKeyboard(); return; }
+      // Never strand the user: if the dialog cannot open, leave (the message is saved).
+      try { openExitConfirm(); }
+      catch (err) { console.error('Exit confirmation failed:', err); inExitConfirm = false; exitConfirm.hidden = true; leaveKeyboard(); }
       return;
     }
   }
+
+  function leaveKeyboard() {
+    saveDraft(buffer);
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'focusBackButton' }, '*');
+      } else {
+        // Opened on its own (not inside the Hub): go to the Hub, like RTC Lite.
+        window.location.href = '../../../index.html';
+      }
+    } catch (err) {
+      console.error('Failed to message parent:', err);
+    }
+  }
+
+  // Same shape as the Hub's Exit dialog: Cancel first, spoken on open, and the
+  // scan holds only these two choices while it is open.
+  function openExitConfirm() {
+    if (inExitConfirm || !choiceScan) return;
+    inExitConfirm = true;
+    exitConfirm.querySelector("#exitConfirmMessage").textContent = buffer.trim();
+    exitConfirm.hidden = false;
+    clearAllHighlights();
+    document.activeElement?.blur();
+    exitConfirm.querySelector(".exit-confirm-box").append(statusHost);
+    choiceScan.open(exitChoices());
+    choiceScan.announceCurrent("Exit keyboard? Your message is saved. Cancel keeps typing. Exit leaves the keyboard.");
+  }
+  function closeExitConfirm() {
+    if (!inExitConfirm) return;
+    inExitConfirm = false;
+    exitConfirm.hidden = true;
+    exitButtons.forEach(element => element.classList.remove("highlighted"));
+    document.querySelector('main').append(statusHost);
+    choiceScan.open(rowChoices());
+  }
+  function chooseExit(choice) {
+    if (!inExitConfirm) return;
+    closeExitConfirm();
+    if (choice === "leave") leaveKeyboard();
+    else choiceScan.announceCurrent("Keep typing.");
+  }
+  exitButtons.forEach(element => element.addEventListener("click", () => chooseExit(element.dataset.exit)));
 
   function insertKey(k) {
     if (settings.autocapI && k.length === 1) {
@@ -984,7 +1086,9 @@
       previousAuto = next.autoScan; isAutoScanning = next.autoScan;
       updateAutoScanDisplay(); updateScanSpeedDisplay(); refreshChoices();
     });
-    setBuffer("");
+    setBuffer(readDraft());
+    // Taps made on the early-painted keys, in order.
+    earlyClicks.splice(0).forEach(([key, rIdx]) => { if (rIdx === 0) handleControl(key); else insertKey(key); });
     setTimeout(() => renderPredictions(), 100);
 
     if (isAutoScanning) {

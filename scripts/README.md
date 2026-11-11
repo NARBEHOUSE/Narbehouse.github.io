@@ -22,6 +22,12 @@ The website build automatically generates `dist/bennyshub/offline-manifest.json`
 
 `node scripts/check-hub-exit.cjs` checks the main-menu Exit button: its switch order, the confirmation (Cancel first, Escape, Back to Hub), closing a tab opened from a new-tab link, the explanation when a tab reached by navigation cannot close, the four/two/one-column menu layout, and a real `chrome.exe` launched straight to the Hub (as an AAC system or desktop shortcut does) that still closes after a game. Chrome only lets a page close a tab whose history holds one page, so Hub app frames must never add history entries. It serves its own files and uses installed Chrome (`HUB_BROWSER_PATH` overrides).
 
+`node scripts/check-keyboard-exit-draft.cjs` checks the Keyboard's saved message and Exit confirmation by switch (Cancel first, scan trapped, hold-Enter inert), inside the Hub (exit, reopen, empty exits at once), opened on its own (Exit goes to the Hub) and with blocked storage. Needs the preview server on 4173.
+
+`node scripts/check-phraseboard-short-forms.cjs` opens Narbe Default > Needs like a user and checks that starter suggestions join tile short forms ("I need a drink"), that a whole-sentence tile replaces a starter, that tiles without a starter behave as before, and the board picker's status line. Needs the preview server on 4173.
+
+`node scripts/check-hub-switch-choice.cjs` checks the first-visit "1 switch (auto scan) / 2 switches" prompt: shown only when no scan setting was saved, scanned and spoken, 1 switch turns Auto Scan on, 2 switches keeps defaults, never shown again, and a saved setting is never changed. Needs the preview server on 4173.
+
 Start the local preview with `npm start` (port 4173). The `check-*.cjs` runners exercise actual pages and, where applicable, isolated extension copies/profiles. Many scan suites default to installed Microsoft Edge on Windows; some accept `EDGE_PATH`, `HUB_TEST_ORIGIN` or `HUB_TEST_ARTIFACTS`. Inspect the runner's options before using another browser/path: these overrides are not universal. Install the matching Playwright browser only for runners that use its bundled browser.
 
 Run headed keyboard/focus/fullscreen suites one at a time. Concurrent headed windows can steal native focus and invalidate timing checks. Runners use temporary profiles rather than the owner's everyday browser. Production extension copies connect to HTTPS; local preview uses workspace development scoping or an explicitly isolated test copy.

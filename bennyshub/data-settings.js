@@ -261,6 +261,8 @@
     try {
       if (target.group === groups.journal) renderJournal(await BennyJournalStorage.clear(target.revision));
       if (target.app) renderApp(target.app, await BennyAppStorage.clear(target.app, target.revision));
+      // The Keyboard's unsent message is kept outside the synced keys; clear it too.
+      if (target.app === 'keyboard') { try { localStorage.removeItem('kb_draft'); } catch { /* storage unavailable */ } }
       else for (const key of keys(target.group)) localStorage.removeItem(key);
       dialog.close();
       BennyUI.status(target.group.label + ' data cleared. Reopen the app for the empty state.');

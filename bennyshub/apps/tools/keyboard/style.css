@@ -301,6 +301,60 @@ main {
   display: none;
 }
 
+/* Exit confirmation (only when the message is not empty). Buttons reuse
+   .settings-item so every theme and highlight colour applies unchanged. */
+.exit-confirm {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2vh 2vw;
+}
+
+.exit-confirm[hidden] {
+  display: none;
+}
+
+.exit-confirm-box {
+  width: min(900px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  text-align: center;
+  color: #fff;
+}
+
+.exit-confirm-box h2 {
+  font-size: clamp(28px, 7vh, 80px);
+  font-weight: 900;
+  margin: 0 0 1vh;
+}
+
+.exit-confirm-box p {
+  font-size: clamp(18px, 3vh, 36px);
+  margin: 0 0 1.5vh;
+}
+
+.exit-confirm-message {
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}
+
+.exit-confirm-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2vw;
+  margin-top: 2vh;
+}
+
+.exit-confirm-buttons .settings-item {
+  min-height: max(64px, 18vh);
+  font-size: clamp(24px, 6vh, 64px);
+}
+
 .settings-header {
   text-align: center;
   margin-bottom: 2vh; /* Reduced margin */

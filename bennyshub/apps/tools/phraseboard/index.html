@@ -494,7 +494,7 @@
     </main>
 
     <p id="communication-status" role="status" aria-live="polite" hidden style="margin:4px 8px;font-size:16px;line-height:1.3;overflow-wrap:anywhere"></p>
-    <footer id="statusFooter" role="status">Ready - Load CSV to begin</footer>
+    <footer id="statusFooter" role="status">Pick a board to start, try Narbe Default</footer>
   </div>
 
   <div id="iframeModal" role="dialog" aria-modal="true">
@@ -2111,12 +2111,36 @@ function updateHeaderForCurrentView(){
       // Handle regular phrases (non-URLs) - keep same TTS function
       // Pass blockInput=true to prevent accidental scan interruption
       if (state.sentenceMode && (!item.immediate || NarbeCommunicationSpeech.isEnabled())) {
-        state.sentence.push({ text, display: item.display || text, image: item.image || '' });
+        addTileToMessage(item, text);
         updateSentenceDisplay();
       } else {
         const cleanText = cleanTextForTTS(text);
         if (cleanText) { rememberMessage(text); NarbeCommunicationSpeech.speak(cleanText, () => speak(cleanText, false, null, null, true)); } // blockInput=true for phrases
       }
+    }
+
+    // After a starter from Suggestions ("I need"), a tile adds its optional short form
+    // ("a drink"). A full-sentence tile without one replaces the starter instead, so the
+    // spoken message is never "I need Can I have a drink, please?". Otherwise tiles append.
+    function addTileToMessage(item, text) {
+      const shortForm = (item.shortForm || '').trim();
+      const last = state.sentence[state.sentence.length - 1];
+      const afterStarter = !!(last && typeof last === 'object' && last.suggestion);
+      if (afterStarter && shortForm) {
+        state.sentence.push({ text: shortForm, display: item.display || shortForm, image: item.image || '' });
+        return;
+      }
+      if (afterStarter && isFullSentence(text)) {
+        while (state.sentence.length && state.sentence[state.sentence.length - 1]?.suggestion) state.sentence.pop();
+      }
+      state.sentence.push({ text, display: item.display || text, image: item.image || '' });
+    }
+    // A tile reads as a whole sentence when it ends like one, is 3+ words, or opens like
+    // one ("I'm happy", "Can I…"). Single words such as "Mom" or "pizza" still append.
+    const SENTENCE_OPENER = /^(I|I'm|I’m|I've|I’ve|I'd|I’d|I'll|I’ll|Can|Could|Will|Would|Do|Does|Did|Is|Are|What|Where|When|Who|Why|How|Let's|Let’s)\b/i;
+    function isFullSentence(text) {
+      const t = String(text).trim();
+      return /[.!?]$/.test(t) || t.split(/\s+/).length >= 3 || (t.includes(' ') && SENTENCE_OPENER.test(t));
     }
 
     function messageText() { return state.sentence.map(item => typeof item === 'string' ? item : item.text).join(' '); }

@@ -6,7 +6,8 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const KEY = 'narbe_phrase_builder', PREVIOUS = KEY + '_previous';
-  const fields = ['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder','CategoryImage','BoardName','BoardColor','BoardImage','BoardLayout','CategoryLayout','Group','GroupColor','GroupOrder','ScanOrder','X','Y','Width','Height','Immediate','PredictionPhrases'];
+  const fields = ['Category','CategoryOrder','Display','Speak','Image','CategoryColor','TileColor','TileOrder','CategoryImage','BoardName','BoardColor','BoardImage','BoardLayout','CategoryLayout','Group','GroupColor','GroupOrder','ScanOrder','X','Y','Width','Height','Immediate','PredictionPhrases','ShortForm'];
+  // ShortForm is optional: what a tile adds after a starter suggestion ("a drink" after "I need").
   const keys = fields.map(x => x[0].toLowerCase() + x.slice(1));
   const number = (value, fallback, min, max) => Math.min(max, Math.max(min, value !== '' && value != null && Number.isFinite(Number(value)) ? Number(value) : fallback));
   function parse(text) {

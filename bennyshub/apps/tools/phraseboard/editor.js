@@ -8,7 +8,7 @@ function catRows() { return rows.filter(r=>r.category===category); }
 function newRow(name=category) {
   const first = rows[0] || {boardName:'My Personal Board',boardLayout:'grid',boardColor:'#5bb0ff'};
   const same = rows.filter(r=>r.category===name), last = same.at(-1);
-  return PB.normalize([{...first,...last,category:name,categoryOrder:last?.categoryOrder || new Set(rows.map(r=>r.category)).size+1,categoryLayout:last?.categoryLayout || '', display:'New tile',speak:'',image:'',immediate:false,tileOrder:same.length+1,scanOrder:same.length+1,x:(same.length%4)*240,y:Math.floor(same.length/4)*140,width:220,height:120}])[0];
+  return PB.normalize([{...first,...last,category:name,categoryOrder:last?.categoryOrder || new Set(rows.map(r=>r.category)).size+1,categoryLayout:last?.categoryLayout || '', display:'New tile',speak:'',shortForm:'',image:'',immediate:false,tileOrder:same.length+1,scanOrder:same.length+1,x:(same.length%4)*240,y:Math.floor(same.length/4)*140,width:220,height:120}])[0];
 }
 function selectCategory(name) { selectedCategories.clear(); category=name; selected=rows.findIndex(r=>r.category===name); selectedTiles=new Set(selected>=0?[selected]:[]); render(); }
 function render() {
@@ -140,7 +140,7 @@ function renderInspector() {
   const r=rows[selected];$('tileFields').hidden=!r;$('noTile').hidden=!!r;if(!r)return;
   $('tileGroupFields').hidden=PB.layout(catRows())!=='free';
   $('group').replaceChildren();groupList().forEach(g=>{const o=document.createElement('option');o.value=g.name;o.textContent=g.name;$('group').append(o);});
-  for(const key of ['display','speak','image','tileColor','group','scanOrder','tileOrder','x','y','width','height']) $(key).value=r[key] || (key==='tileColor'?r.categoryColor:r[key]);
+  for(const key of ['display','speak','shortForm','image','tileColor','group','scanOrder','tileOrder','x','y','width','height']) $(key).value=r[key] || (key==='tileColor'?r.categoryColor:r[key]);
   $('immediate').checked=r.immediate;
 }
 for(const key of ['boardName','boardLayout','boardColor','boardImage']) $(key).onchange=()=>{snapshot();rows.forEach(r=>r[key]=$(key).value);render();};
@@ -148,7 +148,7 @@ for(const key of ['categoryName','categoryLayout','categoryColor','categoryImage
   const value=$(key).value.trim();if(key==='categoryName'&&(!value||rows.some(r=>r.category===value&&value!==category))){status('Choose a unique category name.',true);render();return;}
   snapshot();catRows().forEach(r=>r[key==='categoryName'?'category':key]=value);if(key==='categoryName'){groupDrafts.set(value,groupDrafts.get(category)||[]);category=value;}render();
 };
-for(const key of ['display','speak','image','tileColor','group','scanOrder','tileOrder','x','y','width','height','immediate']) $(key).onchange=()=>{
+for(const key of ['display','speak','shortForm','image','tileColor','group','scanOrder','tileOrder','x','y','width','height','immediate']) $(key).onchange=()=>{
   if(!rows[selected])return;snapshot();let value=key==='immediate'?$(key).checked:$(key).value;
   const chosenGroup = key==='group' ? groupList().find(g=>g.name===value) : null;
   if(key==='tileColor'&&selectedTiles.size>1){for(const index of selectedTiles)if(rows[index])rows[index].tileColor=value;}

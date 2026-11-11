@@ -103,7 +103,8 @@ function renderPredictions() {
   const content = document.createElement('div'); content.className = 'prediction-buttons';
   const choices = predictionEngine.suggest(messageText(),{category:state.currentCategory});
   choices.forEach(({text,source}) => {
-    const btn = button(text, () => { state.sentence.push({text,display:text}); renderMessage(); });
+    // Tagged so a following tile can join it ("I need" + "a drink") or replace it with a full sentence.
+    const btn = button(text, () => { state.sentence.push({text,display:text,suggestion:true}); renderMessage(); });
     btn.dataset.prediction = 'true'; btn.dataset.source = source; btn.dataset.speakText = text; content.append(btn);
   });
   if (!choices.length) content.textContent = 'No matching continuation on this board yet.';

@@ -16,6 +16,20 @@
   <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16.png">
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <meta name="description" content="A library of tools and games accessible with one or two buttons (mapped to spacebar and return)." />
+  <!-- Link previews (bennyshub.com redirects here). og-image.png: 1200x630 screenshot of the Tools menu. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://narbehouse.github.io/bennyshub/" />
+  <meta property="og:title" content="Benny's Hub" />
+  <meta property="og:description" content="A library of tools and games accessible with one or two buttons (mapped to spacebar and return)." />
+  <meta property="og:image" content="https://narbehouse.github.io/bennyshub/images/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Benny's Hub Tools menu with the Keyboard highlighted for switch scanning" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Benny's Hub" />
+  <meta name="twitter:description" content="A library of tools and games accessible with one or two buttons (mapped to spacebar and return)." />
+  <meta name="twitter:image" content="https://narbehouse.github.io/bennyshub/images/og-image.png" />
+  <meta name="twitter:image:alt" content="Benny's Hub Tools menu with the Keyboard highlighted for switch scanning" />
   <style>
     :root{
       --narbe-orange:#ff5c00;
@@ -804,9 +818,11 @@
   <!-- Fullscreen Prompt Modal -->
   <div class="modal-overlay" id="fullscreen-modal">
     <div class="modal-content">
-      <h2 class="modal-title">Use Fullscreen for the Best Experience</h2>
-      <p class="modal-text">For optimal accessibility and immersion, we recommend using fullscreen mode.</p>
+      <h2 class="modal-title" id="fullscreen-modal-title">Use Fullscreen for the Best Experience</h2>
+      <p class="modal-text" id="fullscreen-modal-text">For optimal accessibility and immersion, we recommend using fullscreen mode.</p>
       <div class="modal-buttons">
+        <!-- First visit only (no scan setting saved yet): this prompt becomes the switch choice. -->
+        <button class="modal-btn primary" id="modal-one-switch" hidden>1 switch (auto scan)</button>
         <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
         <button class="modal-btn primary" id="modal-fullscreen">Fullscreen</button>
       </div>
@@ -1251,6 +1267,27 @@
     const fullscreenModal = document.getElementById('fullscreen-modal');
     const modalFullscreenBtn = document.getElementById('modal-fullscreen');
     const modalCancelBtn = document.getElementById('modal-cancel');
+    const modalOneSwitchBtn = document.getElementById('modal-one-switch');
+    // First visit: when no scan setting has ever been saved (and no choice recorded), the
+    // fullscreen prompt asks "1 switch or 2?" instead. A saved setting is never overridden.
+    const SWITCH_CHOICE_KEY = 'narbe-hub-switch-choice';
+    const switchChoicePending = (() => {
+      try { return localStorage.getItem('narbe-scan-settings') === null && localStorage.getItem(SWITCH_CHOICE_KEY) === null; }
+      catch (e) { return false; } // Storage unavailable: the choice could not be remembered.
+    })();
+    let switchChoiceOpen = switchChoicePending;
+    if (switchChoicePending) {
+      document.getElementById('fullscreen-modal-title').textContent = 'How many switches do you use?';
+      document.getElementById('fullscreen-modal-text').textContent =
+        '1 switch: the highlight moves by itself and you press to choose. 2 switches: one moves the highlight, the other chooses. You can change this later in Settings.';
+      modalFullscreenBtn.hidden = true;
+      modalOneSwitchBtn.hidden = false;
+      modalCancelBtn.textContent = '2 switches';
+    }
+    function recordSwitchChoice(value) {
+      switchChoiceOpen = false;
+      try { localStorage.setItem(SWITCH_CHOICE_KEY, value); } catch (e) { /* asked again next visit */ }
+    }
     const exitModal = document.getElementById('exit-modal');
     const exitCancelBtn = document.getElementById('exit-cancel');
     const exitConfirmBtn = document.getElementById('exit-confirm');
@@ -1856,7 +1893,19 @@
     });
 
     modalCancelBtn.addEventListener('click', () => {
+      // On the first-visit choice this button is "2 switches": the current default stays.
+      const choosing = switchChoiceOpen;
+      if (choosing) recordSwitchChoice('2');
       closeModal();
+      if (choosing) announceFreshHubMenu('Two switches. Space moves, Enter chooses. Main menu.');
+    });
+
+    modalOneSwitchBtn.addEventListener('click', () => {
+      if (!switchChoiceOpen) return;
+      recordSwitchChoice('1');
+      window.NarbeScanManager.updateSettings({ autoScan: true });
+      closeModal();
+      announceFreshHubMenu('Auto scan on. One switch: the highlight moves by itself. Press Enter to choose. Main menu.');
     });
 
     // Apps must not add back-history. Chrome lets a page close its own tab only while
@@ -2462,8 +2511,9 @@
           (currentScreen !== 'settings' && !document.getElementById('hub-settings').open));
     }
     function menuItems() {
-      // Keep the fullscreen prompt's existing switch order.
-      if (menuContext() === 'fullscreen') return [modalFullscreenBtn, modalCancelBtn];
+      // Keep the fullscreen prompt's existing switch order. On the first-visit switch
+      // choice this is [1 switch, 2 switches].
+      if (menuContext() === 'fullscreen') return [modalOneSwitchBtn, modalFullscreenBtn, modalCancelBtn].filter(el => !el.hidden);
       // Cancel comes first, so reaching Exit always takes a deliberate extra step.
       if (menuContext() === 'exit') return [exitCancelBtn, exitConfirmBtn].filter(el => !el.hidden);
       return getFocusables();
@@ -2700,7 +2750,7 @@
       hubMenusReady=true;
       syncHubMenuOwnership({fresh:true});
       companionNavigationReady=true;
-      if(!companionNavigation())announceFreshHubMenu('Use Fullscreen for the Best Experience.', ' Press spacebar to start.');
+      if(!companionNavigation())announceFreshHubMenu(switchChoiceOpen ? 'How many switches do you use? 1 switch, auto scan. Or 2 switches.' : 'Use Fullscreen for the Best Experience.', ' Press spacebar to start.');
     });
 
     // Listen for messages from iframe content
