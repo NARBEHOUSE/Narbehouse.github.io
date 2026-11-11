@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11 - Big-game preview and copy tools
+
+- The local preview (`npm start`) now serves every game repo in F:\PROJECT FILES\WEBSITES\GAMES at /<repo>/, as GitHub Pages does; `node scripts/serve.cjs --log` prints every request.
+- New scripts/copy-big-game.cjs copies a big game from Ben's PC Hub into its website repo and applies the website-only changes (absolute /bennyshub/ shared paths, exit to /bennyshub/, no electron-bridge.js, analytics tag and favicons). It previews by default and only writes with --write.
+- No change to the live games: missing speech and sound effects came from testing a game folder on its own, without the main site's shared scripts.
+
 ## 2026-11-11 - Switch Stories moves to its own site
 
 - Switch Stories is now published from its own GitHub Pages repo, NARBEHOUSE/switch-stories, at https://narbehouse.github.io/switch-stories/. Its folder bennyshub/apps/games/NARBESWITCHSTORIES/ (116 MB) is removed from this repo, with no redirect page, so the published site drops from 653 MB to 531 MB.
