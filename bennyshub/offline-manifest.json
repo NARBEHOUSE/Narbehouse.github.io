@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "0c8b1e7f9cfed8ec8e1cf25f76c58367e5c6389ede824dc97dc32828ad6006b0",
-  "totalBytes": 418507851,
+  "version": "822aa5432416cc38f16c4a3d5709685814c5eaedb664624a7481ae4198c6f59a",
+  "totalBytes": 418509228,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -1165,13 +1165,13 @@
     },
     {
       "url": "./apps/games/BENNYSCHESSCHECKERS/scan-access.js",
-      "revision": "b2125d88d927043ff7ae9a52207d9db8c66f2bdd11e6dae681345aa9029cc7fd",
-      "bytes": 8474
+      "revision": "68f047e9736d2b0e3919b5b1826fc797564c66194943c8747517f97917b76ad4",
+      "bytes": 9466
     },
     {
       "url": "./apps/games/BENNYSCHESSCHECKERS/script.js",
-      "revision": "43484b6d08338860a4d8e7ed5db1d863d796ca869450c0c89646ace97e23d06a",
-      "bytes": 55459
+      "revision": "dd1c8a47a806910b14c121ef69751000623ea7d38f6a60357ddfef4a2ae6790d",
+      "bytes": 55590
     },
     {
       "url": "./apps/games/BENNYSCHESSCHECKERS/style.css",
@@ -1185,13 +1185,13 @@
     },
     {
       "url": "./apps/games/BENNYSCONNECTFOUR/scan-access.js",
-      "revision": "2c2c1c818750a3555c16a98852a7185b0dd5a4cffd5c744e2942124577e89c6f",
-      "bytes": 8478
+      "revision": "0a7137d91d1a78a1adf95ec945237d76dbffeb8bdae97a6c634d87b5eb49b124",
+      "bytes": 9470
     },
     {
       "url": "./apps/games/BENNYSCONNECTFOUR/script.js",
-      "revision": "7c53f538d8ac7e7f362167b642262f96d343968beea39fe91ef9e62422790b1e",
-      "bytes": 41047
+      "revision": "0af371bd508aff1ed167805677279eafdcdafbc6e0db27a33cdb60e042147090",
+      "bytes": 41208
     },
     {
       "url": "./apps/games/BENNYSCONNECTFOUR/style.css",
@@ -6645,13 +6645,13 @@
     },
     {
       "url": "./apps/games/BENNYSMATCHYMATCH/scan-access.js",
-      "revision": "1504a6c31bee69ae96ac947d7de7081264d5dd4455205a4b69cac540344b1d51",
-      "bytes": 7979
+      "revision": "394492d117df7b45aca20e8ad0bf77273d907f49a559d72ce319a12eb1f72c74",
+      "bytes": 8669
     },
     {
       "url": "./apps/games/BENNYSMATCHYMATCH/script.js",
-      "revision": "4d376b3f9cf1380464e903d29766bcf47d39a958225e82f43ee6b5e32866140e",
-      "bytes": 106828
+      "revision": "ea9b8dab08d247f4ebb2122edbac1ec2fb789bd368679765108a7d87429d512e",
+      "bytes": 106908
     },
     {
       "url": "./apps/games/BENNYSMATCHYMATCH/style.css",
@@ -7120,8 +7120,8 @@
     },
     {
       "url": "./apps/games/BENNYSSHOWNSOUND/js/constants.js",
-      "revision": "451fe2e7ee952d9044bb10c6951a4015135c8908ab2b8553fdf67e674c40083a",
-      "bytes": 11371
+      "revision": "4b410995911033c9c093d453df2f14fb25b779f025f6a35e2c41e22c1bbedef7",
+      "bytes": 11078
     },
     {
       "url": "./apps/games/BENNYSSHOWNSOUND/js/game.js",
@@ -7135,8 +7135,8 @@
     },
     {
       "url": "./apps/games/BENNYSSHOWNSOUND/js/scenes.js",
-      "revision": "d21879a6b671870c7fba4bb54e6a0105684a4d26612a916549e012c517154ab2",
-      "bytes": 59800
+      "revision": "7250b787f0b806f45a042b11ea05d90dae5e5e9a2dfda428bccf013ba69eadc4",
+      "bytes": 57532
     },
     {
       "url": "./apps/games/BENNYSSHOWNSOUND/js/ui.js",
@@ -16035,13 +16035,13 @@
     },
     {
       "url": "./apps/games/BENNYSTICTACTOE/scan-access.js",
-      "revision": "07c6b86096564af853bf6df6044d9cb0ad0359b6e3a99298ab057fa1f47a42fd",
-      "bytes": 8470
+      "revision": "c08ba01bf9fbf68e8e5787e1108210304b30a388b23fa111fd595100ccd1be00",
+      "bytes": 9462
     },
     {
       "url": "./apps/games/BENNYSTICTACTOE/script.js",
-      "revision": "2ee7778ade8624c91f780fab6f373e67a479acadb218df918cf5c186fc01b87b",
-      "bytes": 38443
+      "revision": "968b3b6b818f35d9cb42d91edbda5121bac4b34b66e45005b051b24042bbbe13",
+      "bytes": 38271
     },
     {
       "url": "./apps/games/BENNYSTICTACTOE/style.css",
@@ -16060,8 +16060,8 @@
     },
     {
       "url": "./apps/games/BENNYSWORDJUMBLE/game.js",
-      "revision": "43559700e1fc2b9c1238c5d1237780303a7c0a561c6d4b1c8aa61c59cf5898cd",
-      "bytes": 64906
+      "revision": "5815236705d504a2e5c2a0fb58d97458498f5b5625224d43b8683049ade02d1a",
+      "bytes": 64835
     },
     {
       "url": "./apps/games/BENNYSWORDJUMBLE/index.html",
@@ -16070,8 +16070,8 @@
     },
     {
       "url": "./apps/games/BENNYSWORDJUMBLE/style.css",
-      "revision": "070cb182add07a2e58a0288284100dddc1196de75c0274814769b444371b25ce",
-      "bytes": 9357
+      "revision": "05633537373b937fce40ffafde74be95d6350fcbe843bbc2631c76a2768bad6f",
+      "bytes": 9500
     },
     {
       "url": "./apps/games/BENNYSWORDJUMBLE/words.json",

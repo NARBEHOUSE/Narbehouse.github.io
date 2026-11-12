@@ -4781,3 +4781,19 @@ Changed files:
 - `docs/history/DEVELOPMENT-HISTORY.md`: this record.
 
 Verification: check-youtube-startup, check-keyboard-row-wrap, check-prediction-row-speech, check-scan-tools-outline (ytsearch) and the cache unit test pass. The notice was screenshot-reviewed at 1280x800 and 390x844, with no horizontal scroll. check-scan-tools-ytsearch fails at a keyboard row (`narbe:row-back` vs `A:0`, the same stale pre-Back-stop expectation as check-scan-tools-core). The original three YouTube Search files fail identically. Originals are in git (HEAD 1ee58c1 of SwitchedGames, d3dcf5f here).
+
+### 2026-11-12 — Pause is a scan stop in turn-based games
+
+User request: Word Jumble, Matchy Match, Chess and Checkers, Tic Tac Toe and Connect Four only paused on an Enter hold (2–6 s), with the on-screen Pause button outside the scan. Pause now sits last in the root play scan, following Battle Boats and Word Search, and the hold-to-pause is removed: a long Enter in play selects on release. Show n Sound's play row becomes Spin / Pause (New Game and Main Menu were already in its pause menu, as Change Category and Main Menu). Applied to both builds; the PC files were backed up first.
+
+Changed files (web, and PC copy where marked):
+
+- `apps/games/BENNYSWORDJUMBLE/game.js`: `getGameScanList` appends `#pause-button` ("Pause"); the 2 s (PC: 5 s) Enter timer and `onEnterLongPress` removed. Web gains the PC's pause-menu **Help** item. Electron port **YES** (patched by hand; the PC keeps its own input handling).
+- `apps/games/BENNYSWORDJUMBLE/style.css`: the pause bars turn dark when highlighted so they stay visible on the light highlight. Electron port **YES** (file copied).
+- `apps/games/BENNYSMATCHYMATCH/scan-access.js`: root row scan ends with Pause; highlight painted on `#pause-button`; selecting it opens the pause menu. `script.js`: `onEnterLongPress` ignores play (the menu step-back hold stays). Electron port **YES**.
+- `apps/games/BENNYSCHESSCHECKERS`, `BENNYSCONNECTFOUR`, `BENNYSTICTACTOE` `scan-access.js` (shared template): Pause appended to the root move scan (Chess: not while a piece is selected), painted with the game's highlight colour, opens `openPauseMenu`/`showPauseMenu`. `script.js`: the long-Enter pause is removed in play. Web gains the PC's pause-menu **Help** item. Electron port **YES** (`scan-access.js` copied; `script.js` patched by hand; drift elsewhere left as is).
+- `apps/games/BENNYSSHOWNSOUND/js/scenes.js`, `js/constants.js`: row is Spin / Pause (2 columns); the canvas corner pause control and `PAUSE_BTN` removed; the pause menu item "Change Category" is relabelled "New Game"; help text updated. Electron port **YES** (whole web files copied, which also brings over the web's SVG texture fix).
+- `scripts/check-scan-classic-menu.cjs`, `check-scan-classic-board.cjs`, `check-scan-classic-hierarchy.cjs`: assert Pause is the last play stop, selecting it pauses, and a long Enter no longer pauses. The hierarchy check's Matchy row-exit step now uses the row Back stop (it predated Back stops). Electron port **NO**.
+- `bennyshub/ACCESSIBILITY.md`: §8 rows and §12 pause inventory. Electron port **NO**.
+
+Verification: check-scan-classic-menu (Word Jumble), check-scan-classic-board (Tic Tac Toe, Connect Four, Chess and Checkers), check-scan-classic-hierarchy run for Matchy Match only, check-scan-sports-phaser and -deep (Show n Sound) all pass on the web build. The same classic checks and a Show n Sound Spin/Pause check pass against the PC copy served on another port. Screenshots confirmed a visible Pause highlight in each game. The full hierarchy check still fails in Battle Boats' placement step, which also predates Back stops and was not changed here.

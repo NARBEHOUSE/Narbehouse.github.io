@@ -95,7 +95,7 @@ const CAROUSEL = {
 };
 
 // ─── The scannable button row ─────────────────────────────────────────────────
-// Spin / New Game / Main Menu, sitting under the wheel. Spin is FIRST because
+// Spin / Pause, sitting under the wheel. Spin is FIRST because
 // ScanList starts at index -1 and the first press lands on index 0 — putting
 // the most-used action there means one press reaches it, and because the
 // highlight is left where it was after a reveal, repeat spins cost a single
@@ -107,12 +107,8 @@ const BUTTONS = {
     GAP: 14
 };
 
-// Pause is deliberately NOT part of the scan row: it is a caregiver control,
-// not one of Ben's three choices. It sits in the bottom-left corner and is
-// reachable by mouse/touch (or Escape), leaving the scan cycle at three items.
-// Shape follows the hub convention (Matchy Match's circular corner button,
-// Baseball2's icon-only two-bar pause emblem) rather than a labelled pill.
-const PAUSE_BTN = { X: 62, Y: 560, R: 34 };
+// Pause is the second stop of that row (also Escape). New Game and Main Menu
+// are inside the pause menu, so the play scan is only ever Spin / Pause.
 
 // ─── Colour palettes ──────────────────────────────────────────────────────────
 // Contributors pick one of these per category, or build a custom list in the

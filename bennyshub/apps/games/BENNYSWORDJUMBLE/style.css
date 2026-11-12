@@ -354,6 +354,11 @@ body {
     box-shadow: 0 0 20px var(--highlight-color);
 }
 
+/* Keep the pause bars visible on the light highlighted background */
+#pause-button.highlight > div {
+    background: #222 !important;
+}
+
 /* Word Image Style */
 .word-image {
     background-color: transparent;

@@ -2,7 +2,7 @@
 const config = {
     longPress: 3000,     // 3 seconds for backward scanning intent
     repeatInterval: 2000, // Default fallback
-    enterLongPress: 5000, // 5 seconds to open pause menu
+    enterLongPress: 5000, // long Enter outside play is ignored; Pause is a scan stop in play
     scanSpeeds: [
         { label: '1 Second', val: 1000 },
         { label: '2 Seconds', val: 2000 },
@@ -347,6 +347,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Reset Game", action: () => restartGame() },
         { text: "Settings", action: () => showPauseSettings() },
+        { text: "Help", action: () => speak("I need help") },
         { text: "Main Menu", action: () => showMainMenu() }
     ],
     // Separate settings menu instance for pause to handle "Back" correctly
@@ -1261,9 +1262,8 @@ function handleKeyDown(e) {
         state.input.enterHeld = true;
         state.input.enterTime = Date.now();
         state.timers.enter = setTimeout(() => {
-            // Long Press Enter (> 5s)
+            // Long Press Enter (> 5s): no action. Pause is a scan stop in play
             state.timers.enter = null;
-            if (state.mode === 'game') openPauseMenu();
         }, config.enterLongPress);
     }
 }
@@ -1288,8 +1288,8 @@ function handleKeyUp(e) {
         
         if (state.input.enterHeld) {
             const duration = Date.now() - state.input.enterTime;
-            if (duration < config.enterLongPress) {
-                // Short Press: Select
+            if (duration < config.enterLongPress || state.mode === 'game') {
+                // Short Press (or any press in play): Select
                 selectCurrentItem();
             }
         }

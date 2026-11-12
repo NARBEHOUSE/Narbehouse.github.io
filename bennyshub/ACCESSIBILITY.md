@@ -522,18 +522,18 @@ The current web catalog contains **30 games**, verified against `apps/games/game
 | **Chasing Rainbows** | Untimed card choices and shared-screen turn handoffs, with four rules presets and spoken prompts. |
 | **NARBE Build n Bash** | Cause and effect, all CHOICE: Build, Destroy and Pause are scanned (blank first), and each Build places the next block (on release). Hold to Build (Settings, on by default): hold Enter on Build 3 s and it places a block, then one a second until finished or released; the release after a hold that built adds nothing (pointer hold the same; Off = one block per press). Build leaves the scan once the build is finished or knocking down has begun; Destroy waits for the first block. Destroy sends a random destroyer; big builds fall in chunks, one press each (or All at Once). No hold-to-pause. After everything falls, Build Again or Pick Another. Build Select is a paged 3x3 picture grid with one-to-four block size badges. |
 | **Benny's Battle Boats** | Two-stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2-D grid with one switch. |
-| **Benny's Chess and Checkers** | Scan selectable pieces, select a piece, then scan its legal destinations or Cancel. |
-| **Benny's Connect Four** | Scan available columns and select to drop a piece; there is no separate row-selection stage. |
-| **Benny's Tic Tac Toe** | Scan empty cells directly and select to place a mark. |
-| **Benny's Matchy Match** | Two-stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). Memory, no timer. Includes a pack editor. |
+| **Benny's Chess and Checkers** | Scan selectable pieces, then **Pause**; select a piece, then scan its legal destinations or Cancel. A long Enter in play selects on release; it no longer pauses. |
+| **Benny's Connect Four** | Scan available columns, then **Pause**, and select to drop a piece; there is no separate row-selection stage. A long Enter in play selects on release; it no longer pauses. |
+| **Benny's Tic Tac Toe** | Scan empty cells directly, then **Pause**, and select to place a mark. A long Enter in play selects on release; it no longer pauses. |
+| **Benny's Matchy Match** | Two-stage grid selection over the card layout — scan the row, select, then scan the card, select to flip (`scan.mode` toggles `row`/`col`). **Pause** is the last stop of the row scan; a long Enter in play no longer pauses. Memory, no timer. Includes a pack editor. |
 | **Benny Says** | Simon-style sequence repetition, deliberately without the timing pressure of the original. |
-| **Benny's Word Jumble** | Scan unused letters, the sentence readout and filled slots; select to place/remove a letter or hear the sentence. Switch pause uses an Enter hold; the clickable Pause button is outside that scan list. |
+| **Benny's Word Jumble** | Scan unused letters, the sentence readout and filled slots; select to place/remove a letter or hear the sentence. **Pause** is the last stop of that scan; holding Enter no longer pauses, and the pause menu includes Help. |
 | **Elouise's Word Search** | Scan a row, a starting letter, then an available direction; extend along that direction to choose the word. The row scan also includes the spoken word bank and Pause. Later stages offer Back, and a long Enter backs out of the attempt rather than pausing. Includes a word-list editor. |
 | **Trivia Master** | Scan answers and select. Pause follows the last answer on the game screen; there is no hold-to-pause, and a long Enter press selects. Includes a quiz builder. |
 | **Benny's Dice** | Free Throw, Yarkle and Fahtzee. Scan Roll and other available actions, including Pause; Fahtzee also scans dice to keep, while Yarkle keeps scoring dice automatically. Scanning waits during rolling, initiative and CPU turns. |
 | **Benny's Bug Blaster** | Tower defence — scan placement positions and upgrades, select. Turn-paced, not twitch. |
 | **Benny's Mega Slot** | Scan Spin, bet controls, Auto Play and Pause during ordinary play. Bonus mechanics retain their own input. A spin gives an immediate audio-visual payoff. |
-| **Benny's Show n Sound** | Cause and effect: a spinning-wheel See 'n Say. Press to spin, hear the panel named. Phaser-based. |
+| **Benny's Show n Sound** | Cause and effect: a spinning-wheel See 'n Say. Press to spin, hear the panel named. The play scan is **Spin / Pause**; New Game and Main Menu are inside the pause menu. Phaser-based. |
 | **NARBE Animal Friends** | Scan the reveal action in Peekaboo play, or animal choices in the other play modes, then select on Enter release. Pause is always last in the play scan and remains available while an animal reveal is busy. Space steps, or Auto advances for one-switch play. No score, deadline or losing. |
 | **Benny's Fish Mystery** | Aim and charge the cast by scan, then press to set the hook while the take is on and hold to reel, easing off on a run. Timed on the hook, hold-based on the reel; §9 governs both. The world/scene scans end with **Options**, opening pause, settings and the route back; fishing and boat mechanics retain their native controls. Three.js, with a content editor. |
 
@@ -819,12 +819,18 @@ routes are:
 | Benny's Mega Slot | Pause in the ordinary play scan; bonus mechanics use their own controls. |
 | Benny's Fish Mystery | **Options** at the end of world/scene scans opens pause and settings; live fishing/boat controls remain separate. |
 | NARBE Build n Bash | Pause is always in the play scan, after Build and Destroy, including while a destroyer runs. No hold route; Escape and pointer also pause. |
+| Benny's Word Jumble | Pause after the letters, sentence and filled slots. No hold route. |
+| Benny's Matchy Match | Pause after the rows of the root row scan (not inside a row). No hold route in play. |
+| Benny's Chess and Checkers | Pause after the selectable pieces (not inside a piece's move list, which has Cancel). No hold route in play. |
+| Benny's Connect Four | Pause after the columns. No hold route in play. |
+| Benny's Tic Tac Toe | Pause after the empty cells. No hold route in play. |
+| Benny's Show n Sound | Spin / Pause is the whole play scan; New Game and Main Menu moved into the pause menu. Escape and pointer also pause. |
 
 **NARBE Racer retains hold-dependent switch pause during a live race**, including
 Press to Step. Its cup/track screens carry the approved notice that players
 using brief taps may need help pressing Pause. In two-player play either player
 can hold their own switch. The on-screen Pause button also works with a pointer.
-Racer is not the only remaining hold-dependent game: Race Tracks, Word Jumble
+Racer is not the only remaining hold-dependent game: Race Tracks
 and Pickleball Rally also have native hold routes without an in-play Pause scan
 choice. Preserve these controls; this inventory does not authorize retrofits.
 
@@ -834,6 +840,13 @@ after the last answer. The choice scan also has its mandatory root blank; the se
 header stays visible on the end and settings screens. If the player pauses in the
 moment between picking an answer and the next question loading, the next
 question waits for Continue.
+
+**Turn-based board and card games switched (2026‑11‑12, at the user's request).**
+Word Jumble, Matchy Match, Chess and Checkers, Connect Four and Tic Tac Toe now
+put the existing on-screen Pause button last in the play scan, as Battle Boats
+and Word Search already did. Their hold-Enter pause is gone; a long Enter in play
+selects on release. Show n Sound's play scan is now Spin / Pause, with New Game
+and Main Menu inside the pause menu. Both builds match.
 
 **P3GL's pause hold varies by control scheme:** it takes **2 s** with Auto Scan
 on and **5 s** with it off (`holdToPause()` in

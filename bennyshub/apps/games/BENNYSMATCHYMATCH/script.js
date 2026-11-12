@@ -89,7 +89,7 @@ const config = {
     scanHighlightPx: 8,
     spaceDebounce: 200,
     longPress: 3000,
-    pauseLongPress: 5000, // 5 seconds to open pause menu
+    pauseLongPress: 5000, // long Enter in menus steps a setting backwards
     repeatInterval: 2000,
     colors: { ...themes[0] }
 };
@@ -602,10 +602,10 @@ function onEnterShortPress() {
 }
 
 function onEnterLongPress() {
+    // Pause is a scan stop in play now, so a long Enter in play just selects on release
+    if (state.mode === 'game') return;
     state.input.enterLongPressFired = true;
-    if (state.mode === 'game') {
-        showPauseMenu();
-    } else if (state.mode === 'menu' || state.mode === 'pause') {
+    if (state.mode === 'menu' || state.mode === 'pause') {
         // Handle Toggle Backwards
         performToggleBackwards();
         state.timers.enterRepeat = setInterval(() => {

@@ -250,6 +250,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Settings", action: () => showPauseSettings() },
         { text: "Return to Menu", action: () => showMainMenu() },
+        { text: "Help", action: () => speak("I need help") },
         { text: "Exit", action: () => {
              speak("Exiting to Hub");
              setTimeout(() => {
@@ -881,14 +882,8 @@ function setupInput() {
                 state.input.enterTime = Date.now();
                 resetAutoScan();
                 
-                if (state.mode === 'game') {
-                    state.timers.enter = setTimeout(() => {
-                         if(state.mode === 'game') {
-                             showPauseMenu();
-                             state.input.pauseTriggered = true;
-                         }
-                    }, config.enterLongPress);
-                } else if (state.mode === 'menu' || state.mode === 'pause') {
+                // Pause is a scan stop in play, so a long Enter there just selects on release
+                if (state.mode === 'menu' || state.mode === 'pause') {
                      state.timers.enter = setTimeout(startBackwardsToggle, config.longPress);
                 }
             }
@@ -922,7 +917,7 @@ function setupInput() {
                     state.input.pauseTriggered = false;
                 } else {
                     const duration = Date.now() - state.input.enterTime;
-                    if (duration < config.longPress) {
+                    if (duration < config.longPress || state.mode === 'game') {
                         selectItem();
                     }
                 }

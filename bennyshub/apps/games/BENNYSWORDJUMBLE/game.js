@@ -490,7 +490,6 @@ class WordJumbleGame {
                 if (!this.state.input.enterHeld) {
                     this.state.input.enterHeld = true;
                     this.state.input.enterTime = Date.now();
-                    this.state.timers.enter = setTimeout(() => this.onEnterLongPress(), 2000);
                 }
                 e.preventDefault();
             }
@@ -506,10 +505,9 @@ class WordJumbleGame {
                 this.state.input.spaceHeld = false;
                 if (duration < 3000) this.onSpaceShortPress();
             } else if (e.code === 'Enter') {
-                const duration = Date.now() - this.state.input.enterTime;
                 clearTimeout(this.state.timers.enter);
                 this.state.input.enterHeld = false;
-                if (duration < 2000) this.onEnterShortPress();
+                this.onEnterShortPress();
             }
         });
     }
@@ -655,12 +653,6 @@ class WordJumbleGame {
         this.triggerSelection();
     }
     
-    onEnterLongPress() {
-        if (this.state.inputFrozen) return;
-        if (this.state.mode === 'game') this.showPauseMenu();
-        else if (this.state.mode === 'pause') this.resumeGame();
-    }
-
     // --- Navigation ---
     moveScan(direction) {
         if (this.state.mode === 'menu') {
@@ -1213,6 +1205,10 @@ class WordJumbleGame {
                  list.push({ type: 'slot', element: document.getElementById(`slot-${i}`), data: letter });
              }
         }
+
+        // 4. Pause (last, so it never sits between the player and the letters)
+        const pauseBtn = document.getElementById('pause-button');
+        if (pauseBtn) list.push({ type: 'control', element: pauseBtn, data: 'Pause' });
         
         return list;
     }
@@ -1269,6 +1265,7 @@ class WordJumbleGame {
             <button class="menu-button" onclick="game.resumeGame()">Continue Game</button>
             <button class="menu-button" onclick="game.showSettingsMenu(true)">Settings</button>
             <button class="menu-button" onclick="game.resetLevel(); game.resumeGame()">Reset Level</button>
+            <button class="menu-button" onclick="game.speak('I need help')">Help</button>
             <button class="menu-button" onclick="game.showMainMenu()">Main Menu</button>
         `;
         this.state.pauseButtons = Array.from(this.pauseOverlay.getElementsByClassName('menu-button'));

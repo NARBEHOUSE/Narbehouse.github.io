@@ -4,9 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const HELP_TEXT =
-    "Show n Sound. First pick a category. Under the wheel there are three " +
-    "buttons: Spin, New Game, and Main Menu. Press your switch to move between " +
-    "them and press Enter to choose one. Choose Spin to spin the wheel — you " +
+    "Show n Sound. First pick a category. Under the wheel there are two " +
+    "buttons: Spin and Pause. Press your switch to move between them and " +
+    "press Enter to choose one. Pause opens the menu, where you can start a " +
+    "new game or go back to the main menu. Choose Spin to spin the wheel — you " +
     "can press Enter or your switch again at any time to stop it right where " +
     "it is. When it stops, the picture grows big in the middle and you hear " +
     "its sound. Press Enter or your switch to go back to the wheel and spin again.";
@@ -926,7 +927,6 @@ class WheelScene extends Phaser.Scene {
         this.reveal = new Reveal(this);
         this.party = new Party(this);
         this.buildButtons();
-        this.buildPauseButton();
         this.setButtonsVisible(false);   // nothing scannable until the wheel exists
 
         this.input_ = new ScanInput(this, {
@@ -954,9 +954,9 @@ class WheelScene extends Phaser.Scene {
             // units. Using x/y here would misplace every hit test.
             const px = p.worldX, py = p.worldY;
 
-            // Idle: only the wheel face spins. The button row and the corner
-            // pause control sit outside this radius and get their taps from
-            // their own zones, so nothing fights over the same click.
+            // Idle: only the wheel face spins. The Spin / Pause row sits
+            // outside this radius and gets its taps from its own zones, so
+            // nothing fights over the same click.
             const dx = px - WHEEL.CX, dy = py - WHEEL.CY;
             if (Math.sqrt(dx * dx + dy * dy) <= WHEEL.R + WHEEL.RIM) this.doSpin();
         });
@@ -1002,66 +1002,21 @@ class WheelScene extends Phaser.Scene {
     buildButtons() {
         this.buttons = new FunScanList(this, {
             x: W / 2, y: BUTTONS.Y,
-            columns: 3,
+            columns: 2,
             itemW: BUTTONS.W, itemH: BUTTONS.H, gap: BUTTONS.GAP,
             fontSize: '22px',
             audio: this.audio,
+            // Two stops only. New Game and Main Menu live in the pause menu,
+            // so a stray select during play can't end the game.
             options: [
-                { label: 'Spin',      value: 'spin',    speakText: 'Spin the wheel' },
-                { label: 'New Game',  value: 'newgame', speakText: 'Choose a new game' },
-                { label: 'Main Menu', value: 'title',   speakText: 'Back to the main menu' }
+                { label: 'Spin',  value: 'spin',  speakText: 'Spin the wheel' },
+                { label: 'Pause', value: 'pause', speakText: 'Pause' }
             ],
             onSelect: (opt) => {
                 if (opt.value === 'spin') this.doSpin();
-                else if (opt.value === 'newgame') {
-                    this.cleanup();
-                    this.scene.start('CategoryScene');
-                } else if (opt.value === 'title') {
-                    this.cleanup();
-                    this.scene.start('TitleScene');
-                }
+                else if (opt.value === 'pause') this.togglePause();
             }
         });
-    }
-
-    /**
-     * A plain clickable pause control in the bottom-left corner.
-     *
-     * Not a ScanList item on purpose: pausing is a caregiver action, so it stays
-     * out of Ben's scan cycle, which is left as Spin / New Game / Main Menu.
-     * Escape still opens the same menu from a keyboard.
-     */
-    buildPauseButton() {
-        const b = PAUSE_BTN;
-
-        // Circular, bottom-left, icon only \u2014 the shape and position Matchy
-        // Match uses for its corner pause control, drawn with the same
-        // two-vertical-bar emblem Baseball2's pause pill uses instead of a
-        // text label, since an icon reads faster and never needs translating.
-        this.pauseBtnGfx = this.add.graphics().setDepth(40);
-        this.pauseBtnGfx.fillStyle(0x000000, 0.30);
-        this.pauseBtnGfx.fillCircle(b.X + 2, b.Y + 4, b.R);
-        this.pauseBtnGfx.fillStyle(THEME.BTN_FILL, 0.92);
-        this.pauseBtnGfx.fillCircle(b.X, b.Y, b.R);
-        this.pauseBtnGfx.lineStyle(3, THEME.BTN_EDGE, 1);
-        this.pauseBtnGfx.strokeCircle(b.X, b.Y, b.R);
-        // The two bars.
-        const barW = b.R * 0.24, barH = b.R * 0.9, gap = b.R * 0.20;
-        this.pauseBtnGfx.fillStyle(0xffffff, 0.95);
-        this.pauseBtnGfx.fillRoundedRect(b.X - gap / 2 - barW, b.Y - barH / 2, barW, barH, 2);
-        this.pauseBtnGfx.fillRoundedRect(b.X + gap / 2, b.Y - barH / 2, barW, barH, 2);
-
-        this.pauseBtnZone = this.add.zone(b.X, b.Y, b.R * 2, b.R * 2)
-            .setOrigin(0.5).setDepth(42).setInteractive({ useHandCursor: true });
-        this.pauseBtnZone.on('pointerdown', () => this.togglePause());
-    }
-
-    setPauseButtonVisible(v) {
-        if (this.pauseBtnGfx) this.pauseBtnGfx.setVisible(v);
-        if (this.pauseBtnZone) {
-            if (v) this.pauseBtnZone.setInteractive({ useHandCursor: true });
-            else this.pauseBtnZone.disableInteractive();
-        }
     }
 
     /**
@@ -1073,7 +1028,6 @@ class WheelScene extends Phaser.Scene {
      * is a verbatim port and must stay byte-identical (see ui.js header).
      */
     setButtonsVisible(v) {
-        this.setPauseButtonVisible(v);
         if (!this.buttons) return;
         this.buttons.active = v;
         this.buttons.gfx.setVisible(v);
@@ -1085,7 +1039,7 @@ class WheelScene extends Phaser.Scene {
     }
 
     // ─── Input ───────────────────────────────────────────────────────────────
-    // Canonical hub scheme on the wheel screen: SPACE moves between the three
+    // Canonical hub scheme on the wheel screen: SPACE moves between the two
     // buttons, ENTER chooses. During a reveal the meaning changes — ENTER
     // replays the sound, SPACE goes back to the wheel.
 
@@ -1208,7 +1162,7 @@ class WheelScene extends Phaser.Scene {
         return [
             { label: 'Resume', value: 'resume' },
             { label: 'Settings', value: 'settings' },
-            { label: 'Change Category', value: 'category' },
+            { label: 'New Game', value: 'category', speakText: 'Choose a new game' },
             { label: 'Main Menu', value: 'title' },
             { label: 'Exit Game', value: 'exit',
               speakText: 'Exit game. Goes back to the hub.' }
@@ -1315,10 +1269,6 @@ class WheelScene extends Phaser.Scene {
      */
     cleanup() {
         if (this.audio) { this.audio.stopPanel(); this.audio.stopSpeech(); }
-        [this.pauseBtnGfx, this.pauseBtnZone].forEach(o => {
-            if (o) o.destroy();
-        });
-        this.pauseBtnGfx = this.pauseBtnZone = null;
         this._buttonsWereVisible = false;
         this.closePause();
         if (this.reveal) this.reveal.hide();

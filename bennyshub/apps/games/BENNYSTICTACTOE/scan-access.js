@@ -8,6 +8,8 @@
  const status=document.createElement('div');status.id='classic-scan-status';status.className='classic-scan-status';status.hidden=true;
  const style=document.createElement('style');style.textContent='.classic-scan-status{grid-column:1/-1;width:100%;max-width:100%;box-sizing:border-box;flex-shrink:0}.classic-scan-status[hidden]{display:none!important}[data-narbe-scan-paused]{outline-style:dotted!important}';document.head.append(style);
  const rawSpeak=speak,rawSelect=isTic?selectItem:selectCurrentItem;
+ function pauseElement(){return document.getElementById(isTic?'pause-button':'pause-button-icon')}
+ function paintPause(on){const el=pauseElement();if(!el)return;const color=typeof getHighlightColor==='function'?getHighlightColor():highlightColors[settings.highlightColorIndex],full=settings.highlightStyle==='full';el.classList.toggle('scan-highlight',on);el.style.border=on?'6px solid '+color:'';el.style.boxShadow=on?'0 0 20px '+color:'';el.style.background=on&&full?color:'';el.style.color=on&&full?'#000':'';el.style.transform=on?'scale(1.15)':''}
  function itemId(item){if(!ids.has(item))ids.set(item,'option-'+(++nextId));return ids.get(item)}
  function htmlText(value){const tmp=document.createElement('div');tmp.innerHTML=String(value??'');return tmp.textContent.trim()}
  function descriptor(){
@@ -24,6 +26,8 @@
    parent=document.getElementById(isTic?'game-container-inner':'game-board-container');
    if(isTic)items=state.board.flatMap((value,index)=>value===''?[{id:'cell:'+index,label:()=>settings.locationTTS?'Cell '+(index+1)+' Empty':'Empty',element:document.getElementById('cell-'+index),nativeIndex:index}]:[]);
    else items=state.scanItems.map((item,index)=>({id:item.type+':'+(item.col??item.r??'')+':'+(item.c??''),label:item.text,element:document.getElementById(isChess?'cell-'+(item.type==='cancel'?state.selectedPiece.r:item.r)+'-'+(item.type==='cancel'?state.selectedPiece.c:item.c):'arrow-'+item.col),nativeIndex:index,native:item}));
+   // Pause is the last stop of the root move scan (Chess: not inside a piece's move list, which has Cancel)
+   const pauseEl=pauseElement();if(pauseEl&&pauseEl.style.display!=='none'&&!(isChess&&state.selectedPiece))items.push({id:'pause',label:'Pause',element:pauseEl,pause:true});
   }else return null;
   if(!parent)return null;
   if(state.mode==='game'&&isChess){parent=document.getElementById('main-content');const board=document.getElementById('game-board-container');if(status.parentElement!==parent||status.nextElementSibling!==board)parent.insertBefore(status,board)}else if(status.parentElement!==parent){const first=parent.querySelector('.menu-button,.menu-grid');if(first)parent.insertBefore(status,first);else parent.prepend(status)}
@@ -35,8 +39,9 @@
    status.hidden=!(s.parked);const index=item?.nativeIndex??-1;
    if(state.mode==='menu')state.menuIndex=index;else if(state.mode==='pause')state.pauseIndex=index;else if(state.mode==='gameover')state.gameoverIndex=index;else if(isChess)state.scanIndexV=index;else state.scanIndex=index;
    if(isTic||state.mode!=='game')updateHighlights();else updateGameHighlights();
+   paintPause(state.mode==='game'&&!!item?.pause);
    if(s.index<0&&document.activeElement?.matches('button,.cell,.column-arrow'))document.activeElement.blur();
-  },onSelect(){rawSelect();sync();}
+  },onSelect(item){if(item?.pause&&state.mode==='game'){paintPause(false);(isTic?showPauseMenu:openPauseMenu)();return}rawSelect();sync();}
  });
  function sync(options){
   const next=descriptor();if(!next){status.hidden=true;adapter.sync(null);return false}

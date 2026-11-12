@@ -5,7 +5,7 @@
 const config = {
     longPress: 3000,     // 3 seconds for backward scanning intent
     repeatInterval: 2000, // Default fallback
-    enterLongPress: 5000, // 5 seconds to open pause menu
+    enterLongPress: 5000, // long Enter outside play is ignored; Pause is a scan stop in play
     scanSpeeds: [
         { label: '1 Second', val: 1000 },
         { label: '2 Seconds', val: 2000 },
@@ -389,6 +389,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Reset Game", action: () => restartGame() },
         { text: "Settings", action: () => showPauseSettings() },
+        { text: "Help", action: () => speak("I need help") },
         { text: "Main Menu", action: () => showMainMenu() }
     ],
     pauseSettings: []
@@ -927,8 +928,8 @@ function handleKeyDown(e) {
             state.input.enterTime = Date.now();
             state.timers.enter = setTimeout(() => {
                 state.timers.enter = null;
-                state.input.enterLongTriggered = true;
-                if (state.mode === 'game') openPauseMenu();
+                // Pause is a scan stop in play, so a long Enter there just selects on release
+                if (state.mode !== 'game') state.input.enterLongTriggered = true;
             }, config.enterLongPress);
         }
     }
