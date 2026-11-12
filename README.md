@@ -2,7 +2,7 @@
 
 > **Notice:** NARBE House, NARBE Foundation, SwitchedGames, and Benny's Hub are not affiliated with any cryptocurrency or crypto token. We accept donations only through official campaigns listed on our official websites.
 
-Benny's Hub is a free, open-source collection of accessible games and everyday tools, built for Ben and families like ours. It supports one- and two-switch access, mouse input, head tracking, and eye tracking.
+Benny's Hub is a free, open-source collection of accessible games and everyday tools, built for Ben and families like ours. It is built for one- and two-switch access first, with touch and mouse or pointer clicks to play the games and use the tools. Other access methods that work like a mouse, such as head pointers or eye gaze, should work in theory, but we haven't tested them extensively.
 
 **[Open Benny's Hub at bennyshub.com](https://bennyshub.com)**
 
