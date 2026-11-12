@@ -10,7 +10,7 @@ function pass(tool,text){report.checks.push(tool+': '+text);console.log('PASS '+
 (async()=>{
  await fs.mkdir(artifacts,{recursive:true});
  context=await chromium.launchPersistentContext(path.join(artifacts,'profile-'+Date.now()),{executablePath,headless:true,viewport:{width:1280,height:900},args:['--disable-extensions-except='+path.join(root,'extension'),'--load-extension='+path.join(root,'extension')]});
- await context.addInitScript(()=>{
+ await context.addInitScript(()=>{localStorage.setItem('benny-web:v1:youtube.notice-2026-11','continued');
    localStorage.setItem('narbe-scan-settings',JSON.stringify({autoScan:false,scanSpeedIndex:0,inputSensitivityIndex:0,parking:'off',spaceBrake:true,waitForSpeech:false,loopsBeforeParking:2}));
    localStorage.setItem('narbe-voice-settings',JSON.stringify({ttsEnabled:false}));
    localStorage.setItem('tts_enabled','false');window.testSpeech=[];window.testClicks=[];document.addEventListener('click',e=>window.testClicks.push(e.target.closest('button')?.id||e.target.textContent));

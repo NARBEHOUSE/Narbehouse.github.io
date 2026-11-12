@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "cf2cee14d15f58eb7b170bd9272fcba1a6bb987d4eccd68c7d6e77250e862d66",
-  "totalBytes": 418502743,
+  "version": "0c8b1e7f9cfed8ec8e1cf25f76c58367e5c6389ede824dc97dc32828ad6006b0",
+  "totalBytes": 418507851,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18980,8 +18980,8 @@
     },
     {
       "url": "./apps/tools/ytsearch/index.html",
-      "revision": "3807a11c102c5b0ce77dfd4d2713c89d90744c282d718e9565fb3478d15ae425",
-      "bytes": 17500
+      "revision": "9edbcebbc278029a3d69c68bd6750c0396e112806c5d58b3c8758f3b773ba847",
+      "bytes": 18441
     },
     {
       "url": "./apps/tools/ytsearch/js/app.js",
@@ -19015,13 +19015,13 @@
     },
     {
       "url": "./apps/tools/ytsearch/js/startup.js",
-      "revision": "6e0adc30620c6e6e9ae501fce4660c3f63a9ab94998c37f331dc68aaa445a630",
-      "bytes": 3537
+      "revision": "4eab5197eb7d1425beefd8c0b1426fee334ed52404a8aa2d3fd1386562016595",
+      "bytes": 4843
     },
     {
       "url": "./apps/tools/ytsearch/startup.css",
-      "revision": "ac3b1091081333569eb8b08547a6c88058b6bed1e2bf9a3c34e57047fcc82041",
-      "bytes": 588
+      "revision": "1f6c59b72dc903a8e3c305f1552532ebd392827cc901e9ee9a2a4ab0934cfd47",
+      "bytes": 844
     },
     {
       "url": "./apps/tools/ytsearch/styles.css",
@@ -19030,8 +19030,8 @@
     },
     {
       "url": "./companion-privacy.html",
-      "revision": "ce350c7fbe171d0f2903bdf380a291720f226243b802632b85035a16d4b7f049",
-      "bytes": 11765
+      "revision": "813b010fff59b5c395b20586adb40777d9525277d24d7d510ab45420f221cd9a",
+      "bytes": 13070
     },
     {
       "url": "./companion-setup.css",
@@ -19305,8 +19305,8 @@
     },
     {
       "url": "./index.html",
-      "revision": "24d5b0bf46c9a85c156b93253d04699471db3aab1cd4702614e62162c156fc75",
-      "bytes": 143247
+      "revision": "755f4a8642ce67d2bcee459a65c33ed0eef95ae137e3a5dc5e901ae65db1b37b",
+      "bytes": 144547
     },
     {
       "url": "./manifest.webmanifest",

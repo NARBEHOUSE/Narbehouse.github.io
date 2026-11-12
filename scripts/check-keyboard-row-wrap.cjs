@@ -44,7 +44,7 @@ async function main(){
    if(url.pathname.endsWith('/extension-client.js'))return route.fulfill({body:'window.BennyExtension={supports:name=>name!=="journal-storage-v1",check:async()=>({connected:false,capabilities:[]}),onStatus:()=>()=>{},request:async()=>({})};',contentType:'application/javascript'});
    return route.continue();
   });
-  await ctx.addInitScript(({isDesktop})=>{
+  await ctx.addInitScript(({isDesktop})=>{localStorage.setItem('benny-web:v1:youtube.notice-2026-11','continued');
    localStorage.setItem('narbe-scan-settings',JSON.stringify({autoScan:false,scanSpeedIndex:0,inputSensitivityIndex:0,parking:'off',spaceBrake:true,waitForSpeech:false,loopsBeforeParking:1}));
    localStorage.setItem('narbe-voice-settings',JSON.stringify({ttsEnabled:false}));
    localStorage.setItem('tts_enabled','false');

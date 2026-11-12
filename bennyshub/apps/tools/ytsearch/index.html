@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="startup.css">
 </head>
 <body>
+    <dialog id="yt-notice" aria-labelledby="yt-notice-title" aria-describedby="yt-notice-text">
+        <h1 id="yt-notice-title">Before using YouTube Search</h1>
+        <p id="yt-notice-text"><strong>YouTube Search is not made for children under 13.</strong> It plays videos from YouTube, which may show ads and use cookies. A parent or caregiver should decide whether to use it and supervise children who watch.</p>
+        <p>Searches go through NARBE LLC's search service to YouTube, and Cloudflare checks your connection to stop abuse. By continuing, you agree to the <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms of Service</a> and the <a href="../../../companion-privacy.html" target="_blank" rel="noopener">Hub privacy policy</a>.</p>
+        <div class="yt-notice-actions"><button id="yt-notice-continue">Continue</button><button id="yt-notice-back">Back to Hub</button></div>
+    </dialog>
     <dialog id="startup-error" aria-labelledby="startup-error-title">
         <h1 id="startup-error-title">YouTube Search could not open</h1>
         <p id="startup-error-message" role="alert"></p>
