@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "822aa5432416cc38f16c4a3d5709685814c5eaedb664624a7481ae4198c6f59a",
-  "totalBytes": 418509228,
+  "version": "fd2710223ca18b22a8a4f9f46be5eefe2464ba9fea6cd2002e9f5193088c6c03",
+  "totalBytes": 418509404,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18490,8 +18490,8 @@
     },
     {
       "url": "./apps/tools/dayhub/app.js",
-      "revision": "c2b4a681252c36d33ce42d03d670ad7cae0a81be09e88d90f22ad0976a25109d",
-      "bytes": 27449
+      "revision": "f241b9da23f874adf2241323e40303ed6224de7f67578f4ef115f6d5fda619e3",
+      "bytes": 27386
     },
     {
       "url": "./apps/tools/dayhub/day-services.js",
@@ -18550,8 +18550,8 @@
     },
     {
       "url": "./apps/tools/keyboard/app.js",
-      "revision": "899a40c786b74b97366ef9dfb42cc290dd7d5caab104fefc65c53b4a21d4ff88",
-      "bytes": 41648
+      "revision": "568c874ba8b4c3f10c345f24f4e91c88e40735e08e5ff6ee263440a06f1c277a",
+      "bytes": 41887
     },
     {
       "url": "./apps/tools/keyboard/index.html",

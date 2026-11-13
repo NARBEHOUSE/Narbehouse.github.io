@@ -312,7 +312,9 @@
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.repeat) return;
+    // Block held-key repeats too: a key tapped with mouse or touch keeps focus, and
+    // each unblocked Enter repeat would make the browser press that key again.
+    if (e.repeat) { if (/^(Space|Enter|NumpadEnter)$/.test(e.code)) e.preventDefault(); return; }
     if (e.code === "Space") {
       e.preventDefault();
       startScanning();

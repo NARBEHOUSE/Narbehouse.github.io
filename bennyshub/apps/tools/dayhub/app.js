@@ -555,24 +555,16 @@
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.repeat) return;
-    if (isSettingsOpen()) {
-      const tag = document.activeElement && document.activeElement.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
-        e.preventDefault();
-      }
-      return;
-    }
-
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    // Block held-key repeats too: a button tapped with mouse or touch keeps focus, and
+    // each unblocked Enter repeat would make the browser press that button again.
+    if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') e.preventDefault();
+    if (e.repeat || isSettingsOpen()) return;
 
     if (e.code === 'Space') {
-      e.preventDefault();
       startScanning();
     } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-      e.preventDefault();
       startSelecting();
     }
   });
