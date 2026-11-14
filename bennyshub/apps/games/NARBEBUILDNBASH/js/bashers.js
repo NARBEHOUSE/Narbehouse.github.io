@@ -399,6 +399,24 @@ BNB.Bashers = (function () {
     }
 
     /**
+     * A grid surface: f(u, v, out) puts the point for u, v in 0..1 into `out`. With wrap, v goes
+     * all the way round (v = 1 is v = 0). Faces point out when v turns from +z towards +y about +x.
+     */
+    function surface(T, nu, nv, f, wrap) {
+        const pos = [], idx = [], p = new T.Vector3(), cols = wrap ? nv : nv + 1;
+        for (let i = 0; i <= nu; i++) for (let j = 0; j < cols; j++) { f(i / nu, j / nv, p); pos.push(p.x, p.y, p.z); }
+        for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) {
+            const a = i * cols + j, b = a + cols, d = i * cols + (j + 1) % cols, c = d + cols;
+            idx.push(a, b, d, b, c, d);
+        }
+        const g = new T.BufferGeometry();
+        g.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        return g;
+    }
+
+    /**
      * A model kit: toy-paint materials and shapes that are all disposed together.
      *   K.mat(color, { rough, metal, flat, glow, glowI, opacity, double, vc })   lit paint
      *   K.basic(color, { opacity, double, add })                                 unlit (glow, mist)
@@ -429,6 +447,7 @@ BNB.Bashers = (function () {
             cone: function (r, h, seg) { return K.geo(new T.ConeGeometry(r, h, seg || 10)); },
             box: function (w, h, d) { return K.geo(new T.BoxGeometry(w, h, d)); },
             rbox: function (w, h, d, r) { return K.geo(roundBox(T, w, h, d, r)); },
+            surface: function (nu, nv, f, wrap) { return K.geo(surface(T, nu, nv, f, wrap)); },
             group: function (parent, x, y, z) { const g = new T.Group(); g.position.set(x || 0, y || 0, z || 0); parent.add(g); return g; },
             add: function (parent, geo, mat, x, y, z, o) {
                 const m = new T.Mesh(geo, mat);
@@ -876,17 +895,66 @@ BNB.Bashers.register({
         K.add(kneeG, K.cyl(0.45 * s, 0.44 * s, 1.55 * s, 16), sock, 0, -Ls + 0.78 * s, 0);
         K.add(kneeG, K.cyl(0.465 * s, 0.465 * s, 0.13 * s, 16), K.mat('#2f6fd0', { rough: 0.9 }), 0, -Ls + 1.38 * s, 0);
         K.add(kneeG, K.cyl(0.462 * s, 0.462 * s, 0.13 * s, 16), K.mat('#e2453c', { rough: 0.9 }), 0, -Ls + 1.16 * s, 0);
-        // The sneaker, toes along +x, ankle at the origin, sole underneath.
+        // The sneaker, toes along +x, ankle at the origin, sole on the ground (y = -0.62 in
+        // shoe units; everything below is in shoe units and scaled by s). Each part is lofted
+        // along x: a bottom and top line seen from the side, a half width seen from above, and
+        // ends rounded over [heel z, heel y, toe z, toe y]; n = how square the cross-section is.
         const white = K.mat('#fbfaf6', { rough: 0.7 }), shoe = K.mat('#e2453c', { rough: 0.5 }), stripe = K.mat('#f6c833', { rough: 0.5 });
-        K.add(footG, K.rbox(2.05 * s, 0.3 * s, 1.02 * s, 0.13 * s), white, 0.38 * s, -ankleH + 0.15 * s, 0);
-        K.add(footG, K.sphere(1, 20, 14), shoe, 0.32 * s, -ankleH + 0.36 * s, 0, { s: [0.98 * s, 0.52 * s, 0.5 * s] });
-        K.add(footG, K.sphere(1, 14, 10), white, 0.95 * s, -ankleH + 0.3 * s, 0, { s: [0.5 * s, 0.3 * s, 0.5 * s] });
-        K.add(footG, K.sphere(1, 16, 8), stripe, 0.22 * s, -ankleH + 0.44 * s, 0, { s: [0.62 * s, 0.1 * s, 0.53 * s], r: [0, 0, -0.18] });
-        K.add(footG, K.cyl(0.5 * s, 0.48 * s, 0.36 * s, 16), K.mat('#c23a33', { rough: 0.6 }), -0.05 * s, -0.04 * s, 0);   // collar
-        K.add(footG, K.box(0.14 * s, 0.32 * s, 0.3 * s), stripe, -0.6 * s, -0.12 * s, 0);                                  // heel tab
-        [[0.42, 0.25], [0.62, 0.23], [0.82, 0.18]].forEach(l => {
-            K.add(footG, K.box(0.09 * s, 0.06 * s, 0.46 * s), white, l[0] * s, -ankleH + 0.36 * s + l[1] * s + 0.02 * s, 0, { r: [0, 0, -0.2] });
+        const dark = K.mat('#c23a33', { rough: 0.6 }), rubber = K.mat('#4b5160', { rough: 0.85 });
+        const curve = keys => function (x) {   // smooth line through [x, y] keys
+            let i = 0;
+            while (i < keys.length - 2 && x > keys[i + 1][0]) i++;
+            const p0 = keys[Math.max(0, i - 1)], p1 = keys[i], p2 = keys[i + 1], p3 = keys[Math.min(keys.length - 1, i + 2)];
+            const h = p2[0] - p1[0], u = B.clamp((x - p1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+            const m1 = (p2[1] - p0[1]) / (p2[0] - p0[0]) * h, m2 = (p3[1] - p1[1]) / (p3[0] - p1[0]) * h;
+            return (2 * u3 - 3 * u2 + 1) * p1[1] + (u3 - 2 * u2 + u) * m1 + (3 * u2 - 2 * u3) * p2[1] + (u3 - u2) * m2;
+        };
+        const sp = (c, e) => Math.sign(c) * Math.pow(Math.abs(c), e);
+        const round = (dd, L) => (L > 0 && dd < L ? Math.sqrt(Math.max(0, 1 - Math.pow(1 - dd / L, 2))) : 1);
+        function shoePt(o, t, phi, p, d) {   // d puffs the part out (overlays sit on top)
+            const x0 = o.x0 - d, x1 = o.x1 + d, x = x0 + (x1 - x0) * t;
+            const rz = round(x - x0, o.e[0]) * round(x1 - x, o.e[2]), ry = round(x - x0, o.e[1]) * round(x1 - x, o.e[3]);
+            const yb = o.bot(x) - d, yt = yb + (o.top(x) + d - yb) * ry, e = 2 / o.n;
+            let y = (yb + yt) / 2 + (yt - yb) / 2 * sp(Math.sin(phi), e);
+            if (o.clip) y = Math.min(y, o.clip(x));
+            p.set(x * s, y * s, (o.half(x) + d) * rz * sp(Math.cos(phi), e) * s);
+        }
+        const ease = u => 0.5 - 0.5 * Math.cos(Math.PI * u);   // more rings near the rounded ends
+        function part(o, mat, d, ta, tb) {
+            ta = ta || 0; tb = tb === undefined ? 1 : tb;
+            K.add(footG, K.surface(44, 36, (u, v, p) => shoePt(o, ta + (tb - ta) * ease(u), v * Math.PI * 2, p, d || 0), true), mat);
+        }
+        const g0 = -0.62;
+        const spring = x => Math.pow(Math.max(0, x - 0.95), 2) * 0.5 + Math.pow(Math.max(0, -0.45 - x), 2) * 0.8;   // toe and heel lift
+        const half = curve([[-0.68, 0.37], [-0.3, 0.45], [0.2, 0.48], [0.8, 0.5], [1.44, 0.47]]);
+        const upTop = curve([[-0.66, 0.12], [-0.5, 0.21], [-0.2, 0.2], [0.15, 0.24], [0.48, 0.1], [0.85, -0.07], [1.15, -0.18], [1.42, -0.25]]);
+        const upper = { x0: -0.66, x1: 1.42, bot: () => -0.46, top: upTop, half: half, e: [0.3, 0.1, 0.42, 0.26], n: 2.6 };
+        const sole = { x0: -0.7, x1: 1.48, bot: x => g0 + spring(x), top: x => -0.3 + spring(x) * 0.6, half: x => half(x) + 0.05, e: [0.28, 0, 0.4, 0], n: 5 };
+        part(sole, white);
+        part(Object.assign({}, sole, { top: x => g0 + spring(x) + 0.07 }), rubber, 0.012);   // tread
+        part(upper, shoe);
+        // White toe cap, rising out of the sole along the sides.
+        part(Object.assign({}, upper, { clip: x => -0.15 - Math.max(0, 1.02 - x) * 0.5 }), white, 0.022, 0.62, 1);
+        // A yellow stripe down each side, low at the heel and rising to the laces.
+        // Placed by height so it runs straight: (-0.3, -0.24) to (0.46, -0.04), 0.15 tall.
+        [1, -1].forEach(side => {
+            K.add(footG, K.surface(20, 6, (u, v, p) => {
+                const x = -0.3 + 0.76 * u, y = -0.24 + 0.2 * u + (v - 0.5) * 0.15 * side;
+                const q = 2 * (y + 0.46) / (upTop(x) + 0.46) - 1, phi = Math.asin(B.clamp(sp(q, upper.n / 2), -1, 1));
+                shoePt(upper, (x + 0.668) / 2.096, side > 0 ? phi : Math.PI - phi, p, 0.008);
+            }), stripe);
         });
+        // Laces across the instep, a tongue, a padded collar round the ankle and a heel tab.
+        [0.56, 0.74, 0.92].forEach(x => {
+            K.add(footG, K.capsule(0.045 * s, 0.34 * s, 8, 3), white, x * s, (upTop(x) + 0.015) * s, 0, { r: [Math.PI / 2, 0, 0] });
+        });
+        K.add(footG, K.rbox(0.16 * s, 0.36 * s, 0.5 * s, 0.07 * s), shoe, 0.47 * s, 0.13 * s, 0, { r: [0, 0, -0.42] });
+        // Sock filling the opening, so the ankle stays joined however far it bends.
+        K.add(footG, K.cyl(0.44 * s, 0.44 * s, 0.34 * s, 16), sock, -0.04 * s, 0.08 * s, 0);
+        K.add(ankleG, K.sphere(0.44 * s, 16, 12), sock, 0, 0.02 * s, 0);
+        const collar = K.add(footG, K.geo(new T.TorusGeometry(0.49 * s, 0.085 * s, 10, 28)), dark, -0.04 * s, 0.18 * s, 0, { r: [Math.PI / 2, 0, -0.22] });
+        collar.rotation.order = 'ZYX';
+        K.add(footG, K.rbox(0.08 * s, 0.24 * s, 0.2 * s, 0.035 * s), stripe, -0.66 * s, 0.17 * s, 0, { r: [0, 0, 0.12] });
         const footC = new T.Vector3(0.4 * s, -ankleH * 0.55, 0), toeC = new T.Vector3(1.2 * s, -ankleH * 0.5, 0);
 
         function apply(v) {
