@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "15389e4b13a46bd4f55c79d605bb74367f82db841436b4b9c4848125d2a72743",
-  "totalBytes": 418514149,
+  "version": "2df23eaf13d2b1369441560e4f7beab839081a8cde747a149b3a06c3e73eed3a",
+  "totalBytes": 418579854,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18489,6 +18489,26 @@
       "bytes": 17134
     },
     {
+      "url": "./apps/tools/calc/app.js",
+      "revision": "af189e60cfd16921ce25f5db426027a738ce70baee3ca7eceba91c0bf62577b9",
+      "bytes": 26498
+    },
+    {
+      "url": "./apps/tools/calc/calc-engine.js",
+      "revision": "17c01a95b87fda14624e3138c4de9d48c48246a44e13559a2e5ebf460de01416",
+      "bytes": 12762
+    },
+    {
+      "url": "./apps/tools/calc/index.html",
+      "revision": "420f41cbf1d06ffc8a7fa43f62da745e5dabc8f5ddbf2096f1fe3d9079e51b4a",
+      "bytes": 4815
+    },
+    {
+      "url": "./apps/tools/calc/style.css",
+      "revision": "5e22c00eebeb409bdc079e9bc8872cf43bc0f91a6d014dfb472af3a3aaa0e861",
+      "bytes": 15309
+    },
+    {
       "url": "./apps/tools/dayhub/app.js",
       "revision": "f241b9da23f874adf2241323e40303ed6224de7f67578f4ef115f6d5fda619e3",
       "bytes": 27386
@@ -18975,8 +18995,8 @@
     },
     {
       "url": "./apps/tools/tools.json",
-      "revision": "16c1044e89d876307649fbe7462e064a42d1754f6c783d35a8c51720339337d3",
-      "bytes": 2343
+      "revision": "5395badc6315eecea19296fbf9424123e93d0deab57a406272b312da568abaf7",
+      "bytes": 2627
     },
     {
       "url": "./apps/tools/ytsearch/index.html",
@@ -19267,6 +19287,11 @@
       "url": "./images/pwa-512.png",
       "revision": "5f1b9dae661308e0342d7cc77d064e2cf24da8e62482dbbed53b53a9aa009258",
       "bytes": 129219
+    },
+    {
+      "url": "./images/tools/calc.svg",
+      "revision": "717b7fbb2812a67f41be9bb87d985464d45cbe0a68d395b0fa382725167bc031",
+      "bytes": 6037
     },
     {
       "url": "./images/tools/dayhub.png",

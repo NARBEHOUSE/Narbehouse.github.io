@@ -1,0 +1,503 @@
+/* Calculator for Benny's Hub. Fun, chunky and bright: every operator has its
+ * own colour, keys dip when pressed, and an answer pops in with sparkles.
+ * Sizes follow the window height so the whole calculator always fits. */
+
+:root {
+  --font: "Nunito", "Varela Round", "Arial Rounded MT Bold", "Segoe UI Rounded", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --gap: 1.6vh;
+  --radius: 2.2vh;
+  --hl: yellow;
+  --hl-text: #000;
+  --hl-ring: #000;
+}
+
+/* ---------------------------------------------------------------- themes -- */
+
+body.theme-fun {
+  --bg-1: #1d2052; --bg-2: #2f1f62; --glow-1: rgba(255, 122, 26, 0.22); --glow-2: rgba(91, 176, 255, 0.22);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.65); --panel: rgba(255, 255, 255, 0.07);
+  --key: #3d4396; --key-edge: #262a66; --key-text: #fff;
+  --screen: #fffaf0; --screen-edge: #d9cdb4; --screen-text: #1b1e45; --accent: #ff6a00;
+}
+body.theme-light {
+  --bg-1: #eef1f7; --bg-2: #e2e7f3; --glow-1: rgba(255, 122, 26, 0.12); --glow-2: rgba(91, 176, 255, 0.16);
+  --text: #1d2340; --muted: rgba(29, 35, 64, 0.65); --panel: rgba(29, 35, 64, 0.06);
+  --key: #ffffff; --key-edge: #c3cadf; --key-text: #1d2340;
+  --screen: #ffffff; --screen-edge: #c3cadf; --screen-text: #1d2340; --accent: #e85d00;
+}
+body.theme-dark {
+  --bg-1: #1e1e1e; --bg-2: #2a2a2a; --glow-1: rgba(255, 255, 255, 0.04); --glow-2: rgba(255, 255, 255, 0.04);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.6); --panel: rgba(255, 255, 255, 0.06);
+  --key: #4d4d4d; --key-edge: #2b2b2b; --key-text: #fff;
+  --screen: #ececec; --screen-edge: #a9a9a9; --screen-text: #111; --accent: #d35400;
+}
+body.theme-blue {
+  --bg-1: #1a237e; --bg-2: #0d1550; --glow-1: rgba(91, 176, 255, 0.2); --glow-2: rgba(255, 255, 255, 0.06);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.7); --panel: rgba(255, 255, 255, 0.08);
+  --key: #3f51b5; --key-edge: #24318a; --key-text: #fff;
+  --screen: #f2f6ff; --screen-edge: #aebce6; --screen-text: #0d1550; --accent: #e85d00;
+}
+body.theme-green {
+  --bg-1: #1b5e20; --bg-2: #0f3d13; --glow-1: rgba(255, 255, 255, 0.07); --glow-2: rgba(178, 255, 89, 0.12);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.7); --panel: rgba(255, 255, 255, 0.08);
+  --key: #43a047; --key-edge: #2a6e2d; --key-text: #fff;
+  --screen: #f3fbf1; --screen-edge: #b4d8b0; --screen-text: #0f3d13; --accent: #d35400;
+}
+body.theme-purple {
+  --bg-1: #4a148c; --bg-2: #2c0b57; --glow-1: rgba(236, 72, 153, 0.16); --glow-2: rgba(255, 255, 255, 0.06);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.7); --panel: rgba(255, 255, 255, 0.08);
+  --key: #8e24aa; --key-edge: #5c1570; --key-text: #fff;
+  --screen: #fbf3ff; --screen-edge: #d6b6e6; --screen-text: #2c0b57; --accent: #e85d00;
+}
+body.theme-orange {
+  --bg-1: #e65100; --bg-2: #b33d00; --glow-1: rgba(255, 235, 59, 0.2); --glow-2: rgba(255, 255, 255, 0.08);
+  --text: #fff; --muted: rgba(255, 255, 255, 0.8); --panel: rgba(0, 0, 0, 0.12);
+  --key: #ff9800; --key-edge: #b86e00; --key-text: #000;
+  --screen: #fff8ee; --screen-edge: #e2c49a; --screen-text: #3d1a00; --accent: #b33d00;
+}
+body.theme-red {
+  --bg-1: #ffebee; --bg-2: #ffd6dc; --glow-1: rgba(255, 255, 255, 0.5); --glow-2: rgba(229, 57, 53, 0.08);
+  --text: #000; --muted: rgba(0, 0, 0, 0.6); --panel: rgba(0, 0, 0, 0.05);
+  --key: #ffcdd2; --key-edge: #e3979f; --key-text: #000;
+  --screen: #ffffff; --screen-edge: #e3979f; --screen-text: #000; --accent: #c62828;
+}
+
+/* Highlight colours (the scan highlight), as in the hub's keyboards. */
+body.highlight-yellow { --hl: yellow; --hl-text: #000; --hl-ring: #000; }
+body.highlight-pink { --hl: #ff69b4; --hl-text: #fff; --hl-ring: #000; }
+body.highlight-green { --hl: #00e676; --hl-text: #000; --hl-ring: #000; }
+body.highlight-orange { --hl: #ff9800; --hl-text: #000; --hl-ring: #000; }
+body.highlight-black { --hl: #000; --hl-text: #fff; --hl-ring: #fff; }
+body.highlight-white { --hl: #fff; --hl-text: #000; --hl-ring: #000; }
+body.highlight-purple { --hl: #9c27b0; --hl-text: #fff; --hl-ring: #fff; }
+body.highlight-red { --hl: #f44336; --hl-text: #fff; --hl-ring: #000; }
+
+/* ---------------------------------------------------------------- layout -- */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(60vh 60vh at 8% 12%, var(--glow-1), transparent 70%),
+    radial-gradient(70vh 70vh at 96% 92%, var(--glow-2), transparent 70%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  background-color: var(--bg-1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 3vh;
+  padding: 2.5vh 2.5vw;
+}
+
+main {
+  position: relative;
+  flex: 0 1 auto;
+  width: min(100%, 88vh);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.4vh;
+}
+
+/* ---------------------------------------------------------------- screen -- */
+
+.display {
+  position: relative;
+  flex: 0 0 auto;
+  height: 25vh;
+  padding: 4.2vh 2.8vh 1.4vh;
+  border-radius: 3vh;
+  background: var(--screen);
+  color: var(--screen-text);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow:
+    inset 0 -0.6vh 0 rgba(0, 0, 0, 0.06),
+    0 1vh 0 var(--screen-edge),
+    0 2.2vh 4vh rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, color 0.15s;
+}
+
+.display-top {
+  position: absolute;
+  top: 1.5vh;
+  left: 2.6vh;
+  right: 2.6vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dots { display: flex; gap: 0.8vh; }
+.dots i { width: 1.5vh; height: 1.5vh; border-radius: 50%; }
+.dots i:nth-child(1) { background: #ff6a00; }
+.dots i:nth-child(2) { background: #ffd23f; }
+.dots i:nth-child(3) { background: #5bb0ff; }
+.display-hint {
+  font-size: clamp(10px, 1.7vh, 18px);
+  font-weight: 800;
+  opacity: 0.45;
+  letter-spacing: 0.02em;
+}
+
+/* Long sums keep their end in view: overflow goes off the left edge. */
+.expression, .main-value, .preview {
+  display: flex;
+  justify-content: flex-end;
+  white-space: nowrap;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.expression {
+  font-size: 3.4vh;
+  font-weight: 800;
+  opacity: 0.6;
+  min-height: 4vh;
+}
+.expression.long { font-size: 2.6vh; }
+.main-value {
+  font-size: 10vh;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  transform-origin: right center;
+}
+.main-value.len-m { font-size: 7.6vh; }
+.main-value.len-l { font-size: 5.8vh; }
+.main-value.len-xl { font-size: 4.4vh; }
+.preview {
+  font-size: 3.2vh;
+  font-weight: 900;
+  color: var(--accent);
+  min-height: 3.8vh;
+}
+.display[data-state="error"] .main-value { color: #e11d48; font-size: 6.4vh; }
+
+.display.highlighted {
+  background: var(--hl);
+  color: var(--hl-text);
+  box-shadow: 0 0 0 0.7vh var(--hl-ring), 0 1vh 0 var(--screen-edge), 0 2.2vh 4vh rgba(0, 0, 0, 0.3);
+}
+.display.highlighted .preview,
+.display.highlighted[data-state="error"] .main-value { color: inherit; }
+
+/* The answer pops in, with sparkles. */
+.main-value.pop { animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pop {
+  0% { transform: scale(0.72); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.sparkles {
+  position: absolute;
+  left: 72%;
+  top: 58%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.sparkles i {
+  position: absolute;
+  width: 1.8vh;
+  height: 1.8vh;
+  margin: -0.9vh 0 0 -0.9vh;
+  background: var(--c);
+  clip-path: polygon(50% 0%, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0% 50%, 39% 38%);
+  opacity: 0;
+  animation: spark 0.9s ease-out forwards;
+}
+.sparkles i:nth-child(3n) { clip-path: circle(40%); }
+@keyframes spark {
+  0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(160deg); opacity: 0; }
+}
+
+/* A gentle wobble when something can't be done (divide by zero). */
+.display.oops { animation: wobble 0.42s ease-in-out; }
+.key.nope { animation: wobble 0.36s ease-in-out; }
+@keyframes wobble {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -0.9vh 0; }
+  50% { translate: 0.8vh 0; }
+  75% { translate: -0.5vh 0; }
+}
+
+/* ------------------------------------------------------------------ keys -- */
+
+.keypad {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-bottom: 1vh; /* room for the keys' bottom edge */
+}
+.key-row {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+}
+.key-row.system-row {
+  flex: 0.72 1 0;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 0.6vh;
+}
+
+.key {
+  position: relative;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--key);
+  color: var(--key-text);
+  font: inherit;
+  font-weight: 900;
+  font-size: min(5.6vh, 8.5vw);
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2vh;
+  box-shadow: 0 0.9vh 0 var(--key-edge), 0 1.6vh 2.2vh rgba(0, 0, 0, 0.22);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s, filter 0.15s;
+}
+/* A soft shine across the top of each key. */
+.key::before {
+  content: "";
+  position: absolute;
+  inset: 0.5vh 0.8vh auto;
+  height: 42%;
+  border-radius: calc(var(--radius) - 0.5vh) calc(var(--radius) - 0.5vh) 50% 50% / calc(var(--radius) - 0.5vh) calc(var(--radius) - 0.5vh) 30% 30%;
+  background: linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.key-face, .key-icon, .key-text { position: relative; }
+.key:hover { filter: brightness(1.08); }
+.key.pressed, .key:active {
+  transform: translateY(0.7vh);
+  box-shadow: 0 0.2vh 0 var(--key-edge), 0 0.6vh 1vh rgba(0, 0, 0, 0.2);
+}
+
+/* Each operator has its own colour, in every theme. */
+.key.op.div { --key: #8b5cf6; --key-edge: #5a32c2; --key-text: #fff; }
+.key.op.mul { --key: #ec4899; --key-edge: #a8235f; --key-text: #fff; }
+.key.op.sub { --key: #14b8a6; --key-edge: #0b7d71; --key-text: #fff; }
+.key.op.add { --key: #22c55e; --key-edge: #158a3f; --key-text: #fff; }
+.key.op { font-size: min(6.4vh, 9.5vw); }
+.key.fn.clear { --key: #ff5a5f; --key-edge: #c2353a; --key-text: #fff; }
+.key.fn.del { --key: #fbbf24; --key-edge: #b7860b; --key-text: #3a2600; }
+.key.fn.pct, .key.fn.neg { --key: #5bb0ff; --key-edge: #2f78c2; --key-text: #fff; }
+.key.fn.dot { font-size: min(7vh, 10vw); }
+.key.eq {
+  --key-edge: #b84a00;
+  background: linear-gradient(180deg, #ff9a3d, #ff6a00);
+  color: #fff;
+  font-size: min(6.8vh, 10vw);
+}
+.key.sys { font-size: min(3.4vh, 5vw); }
+.key.sys .key-icon { font-size: 1.25em; }
+.key.sys.settings { --key: #5b6478; --key-edge: #383e4d; --key-text: #fff; }
+.key.sys.exit { --key: #e11d48; --key-edge: #9b1231; --key-text: #fff; }
+
+/* The scan highlight: the highlight colour, a ring and a small lift. */
+.key.highlighted {
+  background: var(--hl) !important;
+  color: var(--hl-text) !important;
+  transform: scale(1.05);
+  z-index: 2;
+  filter: none;
+  box-shadow: 0 0 0 0.6vh var(--hl-ring), 0 0.9vh 0 rgba(0, 0, 0, 0.35) !important;
+}
+.key.highlighted::before { opacity: 0.4; }
+.key.highlighted.pressed { transform: scale(1.05) translateY(0.5vh); }
+
+/* ------------------------------------------------------------------ tape -- */
+
+.tape {
+  flex: 0 0 clamp(220px, 23vw, 380px);
+  min-height: 0;
+  padding: 2.2vh 2vh;
+  border-radius: 3vh;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tape-title {
+  margin: 0 0 1.6vh;
+  font-size: 2.8vh;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tape-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vh;
+  overflow: hidden;
+}
+.tape-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 1.2vh 1.6vh;
+  border-radius: 1.8vh;
+  background: var(--panel);
+  font-variant-numeric: tabular-nums;
+}
+.tape-item.newest { animation: slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tape-sum {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 2vh;
+  font-weight: 800;
+  color: var(--muted);
+}
+.tape-answer {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 3.4vh;
+  font-weight: 900;
+}
+.tape-empty {
+  margin: 0;
+  font-size: 2.2vh;
+  font-weight: 700;
+  color: var(--muted);
+}
+@keyframes slide-in {
+  0% { transform: translateY(-1.6vh) scale(0.94); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* No room for the side panel on tall or narrow screens. */
+@media (max-aspect-ratio: 5/4) {
+  .tape { display: none; }
+  #app { padding: 2vh 3vw; }
+}
+
+/* -------------------------------------------------------------- settings -- */
+
+.settings-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 3vh 4vw;
+  overflow-y: auto;
+  background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  background-color: var(--bg-1);
+}
+.settings-menu.hidden { display: none; }
+
+.settings-header {
+  text-align: center;
+  margin-bottom: 2.4vh;
+}
+.settings-header h2 {
+  margin: 0;
+  font-size: clamp(28px, 6.5vh, 72px);
+  font-weight: 900;
+  color: var(--text);
+}
+.settings-instructions {
+  display: inline-block;
+  margin-top: 1.2vh;
+  padding: 0.8vh 2vw;
+  border-radius: 1.4vh;
+  background: var(--panel);
+}
+.settings-instructions p {
+  margin: 0.3vh 0;
+  font-size: clamp(11px, 1.8vh, 18px);
+  font-weight: 700;
+  color: var(--text);
+}
+.settings-instructions strong { color: var(--accent); }
+body.theme-fun .settings-instructions strong,
+body.theme-dark .settings-instructions strong { color: #ffd23f; }
+
+.settings-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 2vh 2vw;
+  max-height: 74vh;
+}
+.settings-item {
+  position: relative;
+  min-height: 0;
+  padding: 1.6vh 1vw;
+  border: none;
+  border-radius: 2.2vh;
+  background: var(--key);
+  color: var(--key-text);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 0.8vh 0 var(--key-edge);
+  transition: transform 0.12s ease, background 0.15s;
+}
+.settings-item[hidden] { display: none; }
+.settings-item[data-setting="close"] { --key: #ff7a1a; --key-edge: #b84a00; --key-text: #fff; }
+.settings-item:hover { filter: brightness(1.08); }
+.setting-label {
+  font-size: clamp(16px, 3.4vh, 36px);
+  font-weight: 900;
+  pointer-events: none;
+}
+.setting-value {
+  margin-top: 0.5vh;
+  font-size: clamp(11px, 2.2vh, 22px);
+  font-weight: 700;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.settings-item.highlighted {
+  background: var(--hl) !important;
+  color: var(--hl-text) !important;
+  transform: scale(1.04);
+  box-shadow: 0 0 0 0.6vh var(--hl-ring), 0 0.8vh 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---------------------------------------------------------------- motion -- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .key.highlighted, .settings-item.highlighted { transform: none; }
+}

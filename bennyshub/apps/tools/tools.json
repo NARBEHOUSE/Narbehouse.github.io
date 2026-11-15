@@ -57,6 +57,16 @@
       "requiresExtension": "dayhub"
     },
     {
+      "id": "calc",
+      "title": "Calculator",
+      "description": "A colorful everyday calculator that speaks every sum and answer.",
+      "path": "apps/tools/calc/index.html",
+      "image": "images/tools/calc.svg",
+      "genres": [
+        "Daily living"
+      ]
+    },
+    {
       "id": "journal",
       "title": "Journal",
       "description": "Private entries, spoken prompts and a switch-accessible keyboard.",

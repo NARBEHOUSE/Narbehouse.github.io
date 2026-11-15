@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="../../../shared/usage-analytics.js" defer></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculator</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+  <link rel="stylesheet" href="style.css" />
+  <script src="../../../shared/extension-client.js"></script>
+</head>
+<body>
+  <div id="app">
+    <main id="main">
+      <!-- The screen: the sum so far, the big number, and a live answer preview -->
+      <section id="display" class="display" aria-live="polite" aria-label="Calculator screen">
+        <div class="display-top" aria-hidden="true">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="display-hint">Pick the screen to hear it</span>
+        </div>
+        <div id="expression" class="expression"></div>
+        <div id="mainValue" class="main-value">0</div>
+        <div id="preview" class="preview"></div>
+        <div id="sparkles" class="sparkles" aria-hidden="true"></div>
+      </section>
+
+      <!-- Keys are built by app.js: five rows of four, then Settings and Exit -->
+      <div id="keypad" class="keypad" aria-label="Calculator keys"></div>
+    </main>
+
+    <!-- Past answers (to look at only; not part of the scan) -->
+    <aside id="tape" class="tape" aria-label="Recent answers">
+      <h2 class="tape-title">Recent</h2>
+      <ol id="tapeList" class="tape-list"></ol>
+      <p id="tapeEmpty" class="tape-empty">Your answers will show up here.</p>
+    </aside>
+  </div>
+
+  <!-- Settings menu overlay -->
+  <div id="settingsMenu" class="settings-menu hidden">
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <div class="settings-instructions">
+        <p><strong>Space:</strong> move forward &nbsp;·&nbsp; <strong>Hold Space:</strong> move backward</p>
+        <p><strong>Enter:</strong> pick &nbsp;·&nbsp; <strong>Hold Enter in a row:</strong> back to the rows</p>
+      </div>
+    </div>
+    <div id="settingsGrid" class="settings-grid">
+      <button class="settings-item" data-setting="theme">
+        <span class="setting-label">Theme</span>
+        <span class="setting-value" id="themeValue">Fun</span>
+      </button>
+      <button class="settings-item" data-setting="highlight">
+        <span class="setting-label">Highlight</span>
+        <span class="setting-value" id="highlightValue">Yellow</span>
+      </button>
+      <button class="settings-item" data-setting="voice">
+        <span class="setting-label">Voice</span>
+        <span class="setting-value" id="voiceValue">Default</span>
+      </button>
+      <button class="settings-item" data-setting="tts-toggle">
+        <span class="setting-label">TTS</span>
+        <span class="setting-value" id="ttsToggleValue">On</span>
+      </button>
+      <button class="settings-item" data-setting="scan-speed">
+        <span class="setting-label">Scan Speed</span>
+        <span class="setting-value" id="scanSpeedValue">Medium</span>
+      </button>
+      <button class="settings-item" data-setting="auto-scan">
+        <span class="setting-label">Auto Scan</span>
+        <span class="setting-value" id="autoScanValue">Off</span>
+      </button>
+      <button class="settings-item" data-setting="volume-up" data-needs="volume">
+        <span class="setting-label">Volume Up</span>
+        <span class="setting-value">Increase Volume</span>
+      </button>
+      <button class="settings-item" data-setting="volume-down" data-needs="volume">
+        <span class="setting-label">Volume Down</span>
+        <span class="setting-value">Decrease Volume</span>
+      </button>
+      <button class="settings-item" data-setting="read-instructions">
+        <span class="setting-label">Help</span>
+        <span class="setting-value">Read Instructions</span>
+      </button>
+      <button class="settings-item" data-setting="close">
+        <span class="setting-label">Close Settings</span>
+        <span class="setting-value">Back to the Calculator</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Shared Managers (Relative to apps/tools/calc/) -->
+  <script src="../../../shared/platform.js"></script>
+  <script src="../../../shared/scan-status-badge.js"></script>
+  <script src="../../../shared/choice-scan.js"></script>
+  <script src="../../../shared/choice-scan-adapter.js"></script>
+  <link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+  <script src="../../../shared/voice-manager.js"></script>
+  <script src="../../../shared/ios-audio-fix.js"></script>
+  <script src="../../../shared/scan-manager.js"></script>
+
+  <script src="calc-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -2,6 +2,19 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-15 — New tool: Calculator
+
+Scope: a request for a calculator on Benny's Hub. A standard calculator (C ⌫ % ÷ / 7 8 9 × / 4 5 6 − / 1 2 3 + / ± 0 . =, then Settings and Exit) with a colorful look: each operator has its own colour, keys dip when pressed, an answer pops in with a few sparkles, and a Recent list sits beside it on wide screens. Sums show in full and use the order of operations (2 + 3 × 4 = 14); percent follows phone calculators (50 + 10% = 55). Row-then-key choice scan like the Keyboard: every row loops through a spoken Back stop, a key returns to its row and speaks what it did, and picking the screen reads the sum and answer. Hold Enter in a row backs out. Mouse, touch and typing (digits, + − * x / % . = Backspace Esc) work too; Space and Enter stay the switch keys. Settings: Theme (Fun default plus the keyboard themes), Highlight, Voice, TTS, Scan Speed, Auto Scan, Help, Close; Volume Up/Down appear only where the PC hub provides `electronAPI.system`, so they never show on the web.
+
+Changed files (Electron port: **built on the PC first by the owner's request**; the PC Hub copy is the same except `index.html`'s head: no analytics, favicons or extension-client, plus electron-bridge.js):
+- `bennyshub/apps/tools/calc/` — new: `index.html`, `style.css`, `app.js` (identical to the PC copy; Exit posts `focusBackButton`, which both hubs accept), `calc-engine.js` (math only, no DOM), `tests/engine.test.cjs` and `tests/dom-smoke.cjs` (not published: the build skips `tests/`).
+- `bennyshub/images/tools/calc.svg` — new card image.
+- `bennyshub/apps/tools/tools.json` — `calc` entry after Day Hub (genre Daily living).
+- `bennyshub/offline-manifest.json` — regenerated: only the five Calculator files and the tools.json revision changed.
+- `bennyshub/ACCESSIBILITY.md` — Calculator added to the key-landing rule, the Back-stop note and the input-cancel coverage list.
+
+Verification (Node only, no browser): `node --test bennyshub/apps/tools/calc/tests/engine.test.cjs` 15/15; the jsdom switch run `bennyshub/apps/tools/calc/tests/dom-smoke.cjs` 47/47 against this copy's shared scripts (and against the PC Hub's): opens blank, root order and park blank, row speech, a whole sum by switch with spoken result, Back stop and outline, hold-Enter back, divide-by-zero message, Settings blank on open with Theme/Highlight saved, Close returns blank, Exit, mouse clicks, keyboard typing and one-switch Auto Scan. `node --test` over every Node-only `tests/*.test.cjs` (core, streaming and the two companion browser tests skipped): 390/390 after the manifest was regenerated. Not checked: how it looks in a real browser or on a phone, real speech voices, and the live hub card.
+
 ## 2026-11-11 — Big games: preview every game repo, copy script, TTS/sound diagnosis
 
 Scope: speech and sound effects seemed to stop in the big games after the move to their own repos. Cause: the game folder was tested on its own (VS Code Live Preview), where every `/bennyshub/shared/...` file returns 404, so the voice manager, SafeAudio, platform and scan manager never load. Through the preview server and on the live site everything loads. The shared scripts already locate their own files from their script address (communication-speech.js `document.currentScript`, the workers' own location / `import.meta.url`, fixed model URLs), so none was changed.

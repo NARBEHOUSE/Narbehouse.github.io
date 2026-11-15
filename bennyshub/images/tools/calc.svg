@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#1d2052"/><stop offset="1" stop-color="#2f1f62"/></linearGradient>
+    <radialGradient id="glowA" cx="0.1" cy="0.15" r="0.6"><stop stop-color="#ff7a1a" stop-opacity="0.35"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowB" cx="0.9" cy="0.85" r="0.6"><stop stop-color="#5bb0ff" stop-opacity="0.3"/><stop offset="1" stop-color="#5bb0ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="eq" x2="0" y2="1"><stop stop-color="#ff9a3d"/><stop offset="1" stop-color="#ff6a00"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" rx="24" fill="url(#bg)"/>
+  <rect width="640" height="400" rx="24" fill="url(#glowA)"/>
+  <rect width="640" height="400" rx="24" fill="url(#glowB)"/>
+
+  <!-- the calculator, tilted a little -->
+  <g transform="translate(250 212) rotate(-7)">
+    <rect x="-128" y="-176" width="256" height="356" rx="30" fill="#14163d"/>
+    <rect x="-128" y="-182" width="256" height="356" rx="30" fill="#272b6e"/>
+    <!-- screen -->
+    <rect x="-108" y="-158" width="216" height="92" rx="16" fill="#d9cdb4"/>
+    <rect x="-108" y="-164" width="216" height="92" rx="16" fill="#fffaf0"/>
+    <circle cx="-90" cy="-148" r="5" fill="#ff6a00"/><circle cx="-76" cy="-148" r="5" fill="#ffd23f"/><circle cx="-62" cy="-148" r="5" fill="#5bb0ff"/>
+    <text x="96" y="-126" text-anchor="end" fill="#1b1e45" fill-opacity="0.55" font-family="Segoe UI,Arial,sans-serif" font-size="20" font-weight="800">12 + 3 × 4 =</text>
+    <text x="96" y="-84" text-anchor="end" fill="#1b1e45" font-family="Segoe UI,Arial,sans-serif" font-size="44" font-weight="900">24</text>
+    <!-- keys: rows of four, each with a darker bottom edge -->
+    <g font-family="Segoe UI,Arial,sans-serif" font-weight="900" font-size="26" text-anchor="middle">
+      <g transform="translate(-81 -32)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#c2353a"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#ff5a5f"/><text y="8" fill="#fff">C</text></g>
+      <g transform="translate(-27 -32)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#b7860b"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#fbbf24"/><text y="8" fill="#3a2600">⌫</text></g>
+      <g transform="translate(27 -32)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#2f78c2"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#5bb0ff"/><text y="8" fill="#fff">%</text></g>
+      <g transform="translate(81 -32)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#5a32c2"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#8b5cf6"/><text y="8" fill="#fff">÷</text></g>
+
+      <g transform="translate(-81 20)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">7</text></g>
+      <g transform="translate(-27 20)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">8</text></g>
+      <g transform="translate(27 20)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">9</text></g>
+      <g transform="translate(81 20)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#a8235f"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#ec4899"/><text y="8" fill="#fff">×</text></g>
+
+      <g transform="translate(-81 72)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">4</text></g>
+      <g transform="translate(-27 72)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">5</text></g>
+      <g transform="translate(27 72)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">6</text></g>
+      <g transform="translate(81 72)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#0b7d71"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#14b8a6"/><text y="8" fill="#fff">−</text></g>
+
+      <g transform="translate(-81 124)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#ffeb3b"/><text y="8" fill="#000">1</text></g>
+      <g transform="translate(-27 124)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">2</text></g>
+      <g transform="translate(27 124)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#1a1d4d"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#3d4396"/><text y="8" fill="#fff">3</text></g>
+      <g transform="translate(81 124)"><rect x="-22" y="-14" width="44" height="40" rx="10" fill="#158a3f"/><rect x="-22" y="-20" width="44" height="40" rx="10" fill="#22c55e"/><text y="8" fill="#fff">+</text></g>
+    </g>
+  </g>
+
+  <!-- the big orange equals, with sparkles -->
+  <g transform="translate(468 176)">
+    <circle r="62" fill="#b84a00" cy="8"/>
+    <circle r="62" fill="url(#eq)"/>
+    <text y="26" text-anchor="middle" fill="#fff" font-family="Segoe UI,Arial,sans-serif" font-size="82" font-weight="900">=</text>
+  </g>
+  <g fill="#ffd23f">
+    <path d="M556 92l7 20 20 7-20 7-7 20-7-20-20-7 20-7z"/>
+    <path d="M392 108l4 11 11 4-11 4-4 11-4-11-11-4 11-4z" fill="#ec4899"/>
+    <path d="M560 236l5 13 13 5-13 5-5 13-5-13-13-5 13-5z" fill="#5bb0ff"/>
+  </g>
+  <circle cx="412" cy="252" r="7" fill="#22c55e"/>
+  <circle cx="540" cy="58" r="6" fill="#a78bfa"/>
+</svg>
