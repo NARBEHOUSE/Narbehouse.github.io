@@ -342,3 +342,11 @@ body[data-match-theme="championship"] #menu-eyebrow,body[data-match-theme="champ
 @media(max-width:600px){.season-road li{padding:8px}.season-road span{font-size:12px}.season-road b{font-size:9px}.season-record{gap:16px}}
 
 #menu-after:not(:empty){margin-top:22px;line-height:1.6;color:#cfdde7}
+/* The broadcast caption (js/broadcast.js): who is talking, by name and colour, and what they said. */
+#caption{position:absolute;left:50%;bottom:168px;transform:translateX(-50%);z-index:17;max-width:min(720px,60vw);padding:10px 18px 11px;background:#040f19e6;box-shadow:inset 4px 0 0 var(--sp,var(--arc)),inset 0 0 0 1px var(--line-2);font-size:20px;line-height:1.35;text-align:left;pointer-events:none;opacity:0;transition:opacity .2s}
+#caption.on{opacity:1}
+#caption .who{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--sp,var(--arc));margin-bottom:2px}
+#caption:has(.sp-pbp){--sp:var(--arc)}#caption:has(.sp-cal){--sp:#ff9d5c}#caption:has(.sp-pa){--sp:var(--volt)}
+body:not(.in-game) #caption{display:none}
+body.large-text #caption{zoom:1.15}
+@media (max-width:700px){#caption{bottom:150px;max-width:86vw;font-size:17px}}

@@ -69,7 +69,7 @@
   function duckCrowd() {
     if (!crowdCanPlay()) { stopCrowd(false); return; }
     // Speech remains the primary accessible interface, including while the crowd is on.
-    const speaking = Boolean(window.speechSynthesis && window.speechSynthesis.speaking);
+    const speaking = Boolean(window.speechSynthesis && window.speechSynthesis.speaking) || Boolean(window.FootballBroadcast && window.FootballBroadcast.talking());
     const duck = speaking ? .28 : 1;
     [[bed, .15], [detail, .055]].forEach(function (entry) {
       const element = entry[0];
