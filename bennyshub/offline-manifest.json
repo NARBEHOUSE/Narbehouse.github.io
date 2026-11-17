@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "2df23eaf13d2b1369441560e4f7beab839081a8cde747a149b3a06c3e73eed3a",
-  "totalBytes": 418579854,
+  "version": "3067cfe84205b513dd20d1de47f6045c103c7826606275d6d00ad47e06899eb8",
+  "totalBytes": 418584900,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17225,17 +17225,17 @@
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/courses/glow_golf_night.json",
-      "revision": "53ca5fcffdf604115b4576dc8f4b2f2b7721669e4a8e53041771758ec201901a",
-      "bytes": 29739
+      "revision": "2a29a74cf5c5621fbb9c40dbafbfa48c78a62ac41043696ec2d5770529d3b7db",
+      "bytes": 29741
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/courses/sunny_meadows.json",
-      "revision": "e5eddd1781d1d9a564d4283c178255b58e5f4365c0696fed8c4d419355f14855",
-      "bytes": 49766
+      "revision": "47471d5ce981f2057d03beab2a264202767b479cd92d5aff2750c329c7a735c8",
+      "bytes": 49764
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/courses/sunset_lagoon.json",
-      "revision": "b0c82b0f3914c6eedd0efcac884cda09ac7c59473608bc32873d2439fe73e5a9",
+      "revision": "6a0a6561cc28a1f0a82b93be2434d32dae7ba828b64d870b90df50ad5d0b409f",
       "bytes": 115331
     },
     {
@@ -17245,8 +17245,8 @@
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/css/style.css",
-      "revision": "a571d9eea69ac3291b0fb8bdec51aa79117953c286ae9e60f8698b7b09701651",
-      "bytes": 19972
+      "revision": "e0506b42cb4ab5b61f882bbd2ea1931fc54610104dbe9d7505b4331d45395ec4",
+      "bytes": 20887
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/editor.html",
@@ -17260,8 +17260,8 @@
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/art.js",
-      "revision": "829fa492dd796f2f3486ef3bf27297dd29dc0b5706681320002e27b93fd9cb2b",
-      "bytes": 46139
+      "revision": "3fa5c629bfac5caffeaf8f3fbeef5123ef5e65fca8e6c81dcc9fce02d215b85b",
+      "bytes": 46476
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/audio.js",
@@ -17290,8 +17290,8 @@
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/game.js",
-      "revision": "013a638aa0ea4e483ee7174daa21e5c7774c6b18bf8ab09937795962f1258138",
-      "bytes": 64173
+      "revision": "106a3bc46904b8c5e05acb0d5007654f95c8e99795e2d95aa262119411c91374",
+      "bytes": 64856
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/gator.js",
@@ -17320,8 +17320,8 @@
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/ui.js",
-      "revision": "cb00bdbb86afc799facdc52cab38d03638de6bd6b516b1e7169467342ec72cf1",
-      "bytes": 60047
+      "revision": "103a114801f75fe125e40b649e8124f26b4222205d627086bd3bf2738255286f",
+      "bytes": 60909
     },
     {
       "url": "./apps/games/NARBEMINIGOLF/js/util.js",
@@ -18490,23 +18490,23 @@
     },
     {
       "url": "./apps/tools/calc/app.js",
-      "revision": "af189e60cfd16921ce25f5db426027a738ce70baee3ca7eceba91c0bf62577b9",
-      "bytes": 26498
+      "revision": "98d6e9d7f768145b334208eb3e448365bbf389579d2e10f01153c4fe13e49689",
+      "bytes": 27095
     },
     {
       "url": "./apps/tools/calc/calc-engine.js",
-      "revision": "17c01a95b87fda14624e3138c4de9d48c48246a44e13559a2e5ebf460de01416",
-      "bytes": 12762
+      "revision": "d5a536fd6792bac7b2d6026652b8a1783b9df62d0da30238086c2a44559e0ae2",
+      "bytes": 13093
     },
     {
       "url": "./apps/tools/calc/index.html",
-      "revision": "420f41cbf1d06ffc8a7fa43f62da745e5dabc8f5ddbf2096f1fe3d9079e51b4a",
-      "bytes": 4815
+      "revision": "0660f71a323872864fa7ecbdac13be46e5cddb3dfe3c6aa2fff32116d40bfa02",
+      "bytes": 4921
     },
     {
       "url": "./apps/tools/calc/style.css",
-      "revision": "5e22c00eebeb409bdc079e9bc8872cf43bc0f91a6d014dfb472af3a3aaa0e861",
-      "bytes": 15309
+      "revision": "ba40e895d0b0d85ba6543fc21bec1811be9d6e5bec13a870763d08bafe2ff46a",
+      "bytes": 15812
     },
     {
       "url": "./apps/tools/dayhub/app.js",
@@ -18995,8 +18995,8 @@
     },
     {
       "url": "./apps/tools/tools.json",
-      "revision": "5395badc6315eecea19296fbf9424123e93d0deab57a406272b312da568abaf7",
-      "bytes": 2627
+      "revision": "77f3ddad07ac7190edd8bda2f4dd44b6de810648a616377d4286909eeee5d37b",
+      "bytes": 2720
     },
     {
       "url": "./apps/tools/ytsearch/index.html",
@@ -19290,8 +19290,8 @@
     },
     {
       "url": "./images/tools/calc.svg",
-      "revision": "717b7fbb2812a67f41be9bb87d985464d45cbe0a68d395b0fa382725167bc031",
-      "bytes": 6037
+      "revision": "acac0e5bea939f866ded46f26076456708eb9eb970752138e9c6333bddc39c9f",
+      "bytes": 6096
     },
     {
       "url": "./images/tools/dayhub.png",
@@ -19760,8 +19760,8 @@
     },
     {
       "url": "./shared/scan-manager.js",
-      "revision": "f4d51c219776a47af04a0ba1007397c01f0f73130837d71792ad8948ef3477fd",
-      "bytes": 9360
+      "revision": "44713de0a6bbc945d811dae1f847bde1acaa9677a5d8cbfc7bcaad474c76be65",
+      "bytes": 9920
     },
     {
       "url": "./shared/scan-settings.js",

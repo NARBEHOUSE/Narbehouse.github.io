@@ -56,7 +56,10 @@ const boost = (cx, cy, w, h, angle) => Object.assign(rectPoly(cx, cy, w, h, angl
 /** Rects in the original format: x,y = unrotated top-left, rotated about the centre. */
 const rect = (cx, cy, w, h, angle) => ({ x: cx - w / 2, y: cy - h / 2, width: w, height: h, angle: angle || 0 });
 const wall = (cx, cy, len, thick, angle) => rect(cx, cy, len, thick || 22, angle);
-const bridge = (cx, cy, len, width, angle) => rect(cx, cy, len, width, angle);
+// Bridges are built 30% narrower than the widths written below, so the water
+// shows on both sides instead of the deck covering a small pond edge to edge.
+const BRIDGE_WIDTH = 0.7;
+const bridge = (cx, cy, len, width, angle) => rect(cx, cy, len, Math.round(width * BRIDGE_WIDTH), angle);
 const windmill = (cx, cy, depth, span, angle, gap, speed) => Object.assign(rect(cx, cy, depth, span, angle), { gap: gap || 80, speed: speed || 1 });
 const angleOf = (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
 
@@ -119,7 +122,7 @@ const sunnyMeadows = {
         ice: [blob(960, 480, 120, 70, 21, 0.1)]
       }),
 
-    hole('Meadow Finale', 3, [200, 920], [1100, 760],
+    hole('Meadow Midway', 3, [200, 920], [1100, 760],
       lane([110, 920, 250], [520, 920, 330], [520, 300, 250], [1100, 300, 250], [1100, 860, 260]), {
         tunnels: [{ x1: 494, y1: 274, x2: 1100, y2: 540, radius: 28, exitAngle: 90 }],
         trees: [{ x: 600, y: 610, radius: 36 }, { x: 790, y: 300, radius: 30 }],

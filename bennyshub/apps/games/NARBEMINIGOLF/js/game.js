@@ -23,7 +23,8 @@
 
   /* ── Settings ─────────────────────────────────────────────────────────── */
 
-  const AIM_SPEEDS = { 'Super Slow': 6, 'Slow': 12, 'Medium': 18, 'Fast': 36 };   // °/s, the original's presets
+  // °/s. 30% slower than the original's presets (6/12/18/36): even Super Slow was too quick to stop on target.
+  const AIM_SPEEDS = { 'Super Slow': 4.2, 'Slow': 8.4, 'Medium': 12.6, 'Fast': 25.2 };
   const LINE_WIDTHS = { 'Thin': 9, 'Medium': 14, 'Thick': 20, 'Extra Thick': 28 };   // px on the course
   const CHARGE_TIMES = { 'Slow': 7, 'Normal': 5, 'Fast': 3 };                         // seconds to full
 
@@ -31,8 +32,11 @@
     aimSpeed: 'Slow', aimLine: 'trajectory', lineWidth: 'Medium', power: 'hold', powerSpeed: 'Normal',
     camera: 'cinematic', ballColor: 'white', gator: true, replays: true, maxStrokes: 10,
     sfx: true, ambience: true,
-    easyPause: false      // for players who can't hold a switch: scan to the putter or Pause before each putt
+    easyPause: true       // scan to the putter or Pause before each putt, so pausing never needs a hold
   };
+  // Settings saved before Easy Pause became the default all carry easyPause: false
+  // (first run stored every default), so turn it on once for them too.
+  const SETTINGS_VERSION = 2;
 
   const settings = (function () {
     let data = U.load('settings', null);
@@ -51,6 +55,12 @@
           if (old.music === false) data.ambience = false;
         }
       } catch (e) { /* no old settings */ }
+      data.version = SETTINGS_VERSION;
+      U.save('settings', data);
+    }
+    if (!(data.version >= SETTINGS_VERSION)) {
+      data.easyPause = true;
+      data.version = SETTINGS_VERSION;
       U.save('settings', data);
     }
     data = Object.assign({}, DEFAULTS, data);
@@ -402,7 +412,7 @@
 
   /* ── Aiming ───────────────────────────────────────────────────────────── */
 
-  function aimSpeed() { return (AIM_SPEEDS[settings.get('aimSpeed')] || 12) * Math.PI / 180; }
+  function aimSpeed() { return (AIM_SPEEDS[settings.get('aimSpeed')] || AIM_SPEEDS.Slow) * Math.PI / 180; }
 
   /**
    * The opening aim, and the way the camera faces: along the route to the cup
@@ -558,12 +568,15 @@
   // A real putter would be twenty balls long and fill the screen; this one is
   // toy-sized but big enough that its backswing reads as the power.
   const PUTTER_SCALE = 1.7;
+  const PUTTER_FOCUS_SCALE = 1.25;   // Easy Pause: the highlighted putter grows so it's plain the scan is on it
 
   function placePutter(back) {
     const p = cur();
     if (!p) return;
     const w = ballWorld(p);
-    const L = putter.userData.shaftLen * PUTTER_SCALE;
+    const scale = PUTTER_SCALE * (putterFocus ? PUTTER_FOCUS_SCALE : 1);
+    putter.scale.setScalar(scale);
+    const L = putter.userData.shaftLen * scale;
     const r = ch.ballR * S;
     putter.position.set(w.x - Math.cos(aimAngle) * (r + 0.32), w.y - r + L + 0.2, w.z - Math.sin(aimAngle) * (r + 0.32));
     putter.rotation.set(back, Math.PI / 2 - aimAngle, 0);
@@ -1368,7 +1381,7 @@
       updateAimLine();
       if (state === 'charge') { placePutter(0.08 + power * 1.0); putterAnim = { back: 0.08 + power * 1.0 }; }
       else placePutter(0.08 + Math.sin(worldT * 2) * 0.03);
-      if (putterFocus) glowPutter(0.45 + 0.35 * Math.sin(worldT * 6));
+      if (putterFocus) glowPutter(1.2 + 0.5 * Math.sin(worldT * 6));
       MG.cam.aim(aimCamArgs());
       MG.fx.showMarker(ballWorld(cur()), A.BALL_COLORS[cur().color] || cur().color, ch.ballR * S);
       updateGator(rawDt);

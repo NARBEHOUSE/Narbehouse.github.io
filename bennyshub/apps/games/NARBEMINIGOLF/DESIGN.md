@@ -14,12 +14,13 @@ reference.
 | Putt — *Choose from List* | Enter opens a list (Tap … Full, Aim Again, Pause) | Same; the list auto-scans |
 | Putt — *Automatic* | Enter putts with the suggested power | Same |
 | Pause | Hold Enter (ring + rising ticks), or the Pause button / Esc | Same |
-| *Easy Pause* setting (off by default) | Before every putt the scan goes between the **putter** (it glows; pick it to putt) and the **Pause** button — Space moves, Enter picks | The scan steps by itself; Enter picks |
+| *Easy Pause* setting (on by default) | Before every putt the scan goes between the **putter** (it glows, grows and gets a gold PUTTER frame; pick it to putt) and the **Pause** button. Nothing is highlighted or named until the first Space — Space moves, Enter picks | The scan steps by itself; Enter picks |
 | Menus | Space next (on release), hold Space back, Enter select | Auto scan, Enter select |
 
 Holding Enter pauses from anywhere in play. While charging, the pause hold
 only starts counting once the meter is full, so charging all the way never
-pauses by accident. **Easy Pause** (Settings, user decision 2026-10-02) is for
+pauses by accident. **Easy Pause** (Settings, user decision 2026-10-02; the
+default since 2026-11-17, switched on once for saved settings too) is for
 a player who can't hold a switch: every turn starts with a two-stop scan over
 things already on screen — the putter and the Pause button — so the pause
 menu is always one press away (ACCESSIBILITY.md §12). No buttons pop up.

@@ -641,8 +641,10 @@
   function makeSign(number, par, name, th) {
     const g = new THREE.Group();
     const wood = new THREE.MeshStandardMaterial({ color: th.glow ? '#2a2f55' : '#8a5a34', roughness: 0.8 });
+    // The post stands behind the board (the text is on its +z face) and stops
+    // short of the top, so it never pokes through the hole number.
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.4, 0.22), wood);
-    post.position.y = 1.2;
+    post.position.set(0, 1.2, -(0.07 + 0.11 + 0.01));
     post.castShadow = true;
     g.add(post);
     const c = canvas(512, 320), x = c.getContext('2d');
@@ -720,9 +722,11 @@
     const lintel = new THREE.Mesh(new THREE.BoxGeometry(w, baseH - tunnelH, gap + 0.02), wallMat);
     lintel.position.set(0, tunnelH + (baseH - tunnelH) / 2, 0);
     g.add(lintel);
-    // Dark tunnel interior so the mouth reads as a hole, not a slot.
-    const inner = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, tunnelH, gap), innerMat);
-    inner.position.set(0, tunnelH / 2, 0);
+    // Dark tunnel interior so the mouth reads as a hole, not a slot. Its floor
+    // sits just above the turf: level with it, the two flickered green and black.
+    const FLOOR_LIFT = 0.04;
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, tunnelH - FLOOR_LIFT, gap), innerMat);
+    inner.position.set(0, FLOOR_LIFT + (tunnelH - FLOOR_LIFT) / 2, 0);
     g.add(inner);
     // Trim: a band round the base top and a frame round each mouth.
     const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.22, d + 0.2), trimMat);

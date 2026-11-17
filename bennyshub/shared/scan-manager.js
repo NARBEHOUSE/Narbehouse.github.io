@@ -62,6 +62,7 @@ window.NarbeScanManager = (function () {
   const lastKeyUpTimes = {};         // Per-key keyup timestamps (rapid-press detection)
   const blockedInteractions = new Set(); // IDs currently in a blocked sequence
   const keyPressStartTimes = {};     // Per-key press start (hold duration check)
+  const acceptedHeld = new Set();    // Keys whose current press was let through and is still down
 
   /**
    * Reset all input tracking state.
@@ -75,6 +76,7 @@ window.NarbeScanManager = (function () {
     for (const key in lastKeyUpTimes) delete lastKeyUpTimes[key];
     for (const key in keyPressStartTimes) delete keyPressStartTimes[key];
     blockedInteractions.clear();
+    acceptedHeld.clear();
   }
 
   function handleGlobalInput(e) {
@@ -102,6 +104,12 @@ window.NarbeScanManager = (function () {
 
       const now = Date.now();
       const sensitivity = getInputSensitivity();
+
+      // Auto-repeat of a press that was already let through is not a new press.
+      // The cooldown below must not catch it: releasing the OTHER switch while
+      // this one is held starts a cooldown, and blocking a repeat here would
+      // also swallow this key's release, so a held Enter would charge forever.
+      if (e.repeat && acceptedHeld.has(id)) return;
 
       // Strict global cooldown from the last VALID release
       if (now - lastValidReleaseTime < sensitivity) {
@@ -135,6 +143,7 @@ window.NarbeScanManager = (function () {
       if (!e.repeat) {
         keyPressStartTimes[id] = now;
         lastKeyDownTimes[id] = now;
+        acceptedHeld.add(id);
       }
     }
 
@@ -149,6 +158,7 @@ window.NarbeScanManager = (function () {
       // Always record keyup time for rapid-press detection on the next keydown
       if (isFinalEvent) {
         lastKeyUpTimes[id] = now;
+        acceptedHeld.delete(id);
       }
 
       // If this sequence was blocked, consume the release and clear the flag

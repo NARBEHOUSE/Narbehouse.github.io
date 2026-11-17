@@ -1146,9 +1146,9 @@
       "bridges": [
         {
           "x": 560,
-          "y": 432.5,
+          "y": 460,
           "width": 480,
-          "height": 185,
+          "height": 130,
           "angle": -41.185925165709655
         }
       ],
@@ -1352,7 +1352,7 @@
       "decor": []
     },
     {
-      "name": "Meadow Finale",
+      "name": "Meadow Midway",
       "par": 3,
       "start": {
         "x": 200,
@@ -1818,9 +1818,9 @@
       "bridges": [
         {
           "x": 590,
-          "y": 492.5,
+          "y": 520,
           "width": 380,
-          "height": 185,
+          "height": 130,
           "angle": 90
         }
       ],
@@ -2378,9 +2378,9 @@
       "bridges": [
         {
           "x": 940,
-          "y": 1305,
+          "y": 1333.5,
           "width": 440,
-          "height": 190,
+          "height": 133,
           "angle": 0
         }
       ],

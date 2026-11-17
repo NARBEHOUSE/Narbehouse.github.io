@@ -164,6 +164,10 @@
   function step(delta) {
     if(overlayOn&&choice?.active){choice.step(delta);return;}
     if (powerMenuOn) { pmStep(delta); return; }
+    // No menu on screen: a leftover back-scan timer must never walk the hidden
+    // items (it read old course titles / pause items aloud mid-round, and a
+    // course item's focus even swapped the hole behind the game).
+    if (!overlayOn) { stopBackScan(); return; }
     if (!items.length) return;
     // Nothing highlighted yet: forward lands on the first item, back on the last.
     let i = index < 0 ? (delta > 0 ? -1 : items.length) : index;
@@ -195,14 +199,20 @@
   /* ── Auto scan ────────────────────────────────────────────────────────── */
 
   function restartAutoScan() {
+    // The overlay and the in-game list each run their own shared scan, so
+    // there is nothing left for a timer of ours to scan. One used to start
+    // here when closing the pause menu (still "paused" for that instant) and
+    // kept reading the hidden pause items aloud during play.
     stopAutoScan();syncChoice();syncPowerChoice();
-    if(overlayOn||powerMenuOn)return;
-    if (ctx() !== 'menu') return;
-    if (!U.isOneSwitch()) return;
-    autoScanTimer = setInterval(() => step(1), U.scanInterval());
   }
 
   function stopAutoScan() { if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; } }
+
+  /** End a hold-Space back-scan (its timers belong to the menu that was up when it began). */
+  function stopBackScan() {
+    clearTimeout(backHoldTimer); backHoldTimer = null;
+    clearInterval(backRepeatTimer); backRepeatTimer = null;
+  }
 
   /* ── Screens ──────────────────────────────────────────────────────────── */
 
@@ -655,19 +665,20 @@
   /* ── In-game power list ───────────────────────────────────────────────── */
 
   let pmItems = [], pmIndex = 0, pmMode = 'power';
-  let choiceHintSaid = false;
 
   let pmChoice=null,pmStatus=null,putterScanOutline=null;
   function updatePutterScanOutline(state=pmChoice?.getState()) {
     if(!putterScanOutline)return;
-    const rect=powerMenuOn&&!overlayOn&&pmMode==='choice'&&pmIndex===0&&state?.braked?G.putterScreenBounds():null;
+    // Shown whenever the scan is on the putter (a glowing frame, styled in style.css);
+    // the shared scan brake adds its dotted outline to this same frame.
+    const rect=powerMenuOn&&!overlayOn&&!G.paused&&pmMode==='choice'&&pmIndex===0?G.putterScreenBounds():null;
     putterScanOutline.style.display=rect?'block':'none';
     if(rect)for(const key of ['left','top','width','height'])putterScanOutline.style[key]=rect[key]+'px';
   }
   function syncPowerChoice(fresh=false){
     if(!powerMenuOn||overlayOn){pmChoice?.sync(null);return;}
     if(!pmStatus){pmStatus=document.createElement('div');pmStatus.id='powerScanStatus';Object.assign(pmStatus.style,{position:'absolute',top:'8px',left:'50%',transform:'translateX(-50%)',zIndex:'18',minBlockSize:'0',pointerEvents:'none'});document.body.append(pmStatus);
-      putterScanOutline=document.createElement('span');putterScanOutline.id='putterScanOutline';putterScanOutline.setAttribute('aria-hidden','true');Object.assign(putterScanOutline.style,{position:'fixed',zIndex:'18',borderRadius:'4px',pointerEvents:'none',display:'none',outlineColor:'#fff',outlineOffset:'0'});document.body.append(putterScanOutline);}
+      putterScanOutline=document.createElement('span');putterScanOutline.id='putterScanOutline';putterScanOutline.setAttribute('aria-hidden','true');putterScanOutline.style.display='none';document.body.append(putterScanOutline);}
     if(!pmChoice)pmChoice=NarbeChoiceScanAdapter.create({holdThreshold:SCAN_BACK_HOLD,stateHost:pmStatus,speak:text=>U.vm()?.speak(text),
       onHighlight(item,state){const previous=pmIndex;pmIndex=item?item.position:-1;if(pmMode==='choice')renderChoice();else{for(const [i,el] of [...$('powerMenu').children].entries())el.classList.toggle('focused',i===pmIndex);if(item&&previous!==pmIndex)G.previewChoice(item.source.p||null);}
         updatePutterScanOutline(state);
@@ -691,9 +702,9 @@
     pmItems = [{ label: 'Putter', speech: 'Putter', putt: true }, { label: 'Pause', speech: 'Pause', pause: true }];
     pmIndex = -1;
     renderChoice();
-    // Queued, so it follows "Ready." / "Player 2's turn." instead of cutting it off.
-    if (!choiceHintSaid) { choiceHintSaid = true; AU.sayQueued('Your putter, or pause. Putter.'); }
-    else AU.sayQueued('Putter.');
+    // Nothing is highlighted yet, so nothing is said: the putter is announced
+    // when the scan reaches it. (A queued hint here used to play after the
+    // player had already scanned to the putter.)
     syncPowerChoice(true);
     refreshChrome();
     restartAutoScan();
@@ -1107,7 +1118,7 @@
       } else activate();
       return;
     }
-    if (k === 'Space') G.aimRelease();
+    if (k === 'Space') { stopBackScan(); didBackHold = false; G.aimRelease(); }
     else G.enterUp();
   }
 
@@ -1187,7 +1198,9 @@
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('narbe-input-cancelled', onInputCancelled);
-    window.addEventListener('blur', () => { finishPointer(true); clearKeysKeepIgnores(); hideHoldRing(); });
+    // Losing focus mid-charge means Enter's release goes to another window, so
+    // the meter would charge on with nothing to stop it: drop the charge instead.
+    window.addEventListener('blur', () => { finishPointer(true); clearKeysKeepIgnores(); G.cancelCharge(); hideHoldRing(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) finishPointer(true); });
 
     const surface = $('canvasWrap');
