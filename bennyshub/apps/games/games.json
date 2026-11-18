@@ -397,6 +397,18 @@
         "Interactive",
         "Simulation"
       ]
+    },
+    {
+      "id": "bensfoodcourt",
+      "title": "Ben's Food Court",
+      "description": "Run the counters of a cartoon mall food court. Talking customers walk up and order, and you make each order on an assembly line where the ingredients come to you one step at a time, one choice per step. Serve it, hear what they think, and earn stars to open more of the court's seven restaurants. Plays with one or two switches.",
+      "path": "/bens-food-court/",
+      "onlineOnly": true,
+      "image": "images/games/bensfoodcourt.png?v=f317f620a59d",
+      "genres": [
+        "Simulation",
+        "Interactive"
+      ]
     }
   ]
 }

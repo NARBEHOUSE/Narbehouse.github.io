@@ -2,7 +2,16 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
-## 2026-11-17 — Publish NARBE Build n Ride
+## 2026-11-18 — Publish Ben's Food Court
+
+Scope: list Ben's Food Court on the web Hub, the NARBE House home page and SwitchedGames, at the owner's request (2026-11-18), after it had been PC-only for Ben's play testing since 2026-11-17. It is a big game published from its own repo (`NARBEHOUSE/bens-food-court`, https://narbehouse.github.io/bens-food-court/, `scripts/big-games.cjs`), so it is online only and not in the offline manifest.
+
+Changed files (all Electron port: **NO**; the PC Hub has listed it since 2026-11-17):
+- `bennyshub/apps/games/games.json` — new `bensfoodcourt` entry after Build n Ride: `"path": "/bens-food-court/"`, `"onlineOnly": true`, image `images/games/bensfoodcourt.png?v=f317f620a59d` (the picture was added 2026-11-17), genres Simulation and Interactive, the PC entry's description (37 games).
+- `index.html` — NARBE House home-page card, first in Games & Tools, opening `/bens-food-court/`.
+- `bennyshub/ACCESSIBILITY.md` — §8 catalog count 37.
+- SwitchedGames (its own repo): card first, Details/search data, 37 games.
+
 
 Scope: publish the new PC Hub game NARBE Build n Ride (`NARBEBUILDNRIDE`, catalog id `narbebuildnride`) to the web Hub, the NARBE House home page and SwitchedGames, at the owner's request. A switch-accessible toy-train game spun off from Build n Bash. **Ride** runs six routes, Countryside to Night City (about 5 to 9 minutes a lap), with stations, weather, seasons, day and night, and events along the line. **Build** lays your own loop one piece at a time: bridges, tunnels, overpasses and stations happen by themselves, Connect lays the way home, and a track has 500 pieces, counted down plainly. **Quick Build** lays a ready-made route a press at a time. **My Tracks** keeps finished tracks (Ride, Edit) and unfinished ones (Keep Building). Three.js r155 is vendored in the game folder with `vendor/THIRD-PARTY-NOTICES.txt`. Every screen is a CHOICE scan through the shared adapter with Pause always in it; held Enter repeats Undo and Quick Build's Build and never pauses. Graphics quality integrates through `NarbeGraphics.openGame('buildnride')`. Settings and tracks stay in the browser's localStorage (`bnr-settings-v1`, `bnr-tracks-v1`).
 

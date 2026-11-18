@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "16e55b7963719a609c4664742df2ac42ccfa8d5ed1142d54e49948a26fc2644c",
-  "totalBytes": 421612563,
+  "version": "4e52d1ad689e99bff26c7ae8f98448a786e70c5eead077803bf657575f87f0cf",
+  "totalBytes": 421613188,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18650,8 +18650,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "21005b1ee59f50454d5fe9b60837baccc858c703ed93c32eda301b157898cbad",
-      "bytes": 17839
+      "revision": "04d8c88a32ead9b6006629c4efd244a71258ce144f38059308ab58c970b2befb",
+      "bytes": 18464
     },
     {
       "url": "./apps/tools/calc/app.js",

@@ -500,7 +500,7 @@ back with a switch, warn before going in.
 
 ## 8. Per‑game notes
 
-The current web catalog contains **36 games**, verified against `apps/games/games.json`. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See §12 for scannable pause routes and their limits, and docs/history/DEVELOPMENT-HISTORY.md for the verified surfaces and mechanical exclusions.
+The current web catalog contains **37 games**, verified against `apps/games/games.json`. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See §12 for scannable pause routes and their limits, and docs/history/DEVELOPMENT-HISTORY.md for the verified surfaces and mechanical exclusions.
 
 | Game | In‑game input model |
 | --- | --- |
