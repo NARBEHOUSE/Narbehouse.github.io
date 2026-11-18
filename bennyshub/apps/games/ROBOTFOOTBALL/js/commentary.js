@@ -12,6 +12,10 @@
   'use strict';
 
   const CALL = 3;
+  // A quip that itself says what happened (a miss, a sack, a turnover) plays BEFORE the game's result line, as a call:
+  // the result line waits for a recorded call (ui.js speechBusy). Reactions ("Small gain...") still follow the yardage.
+  // Bryan 2026-11-18: CAL's kick-miss quip "would work better after the whistle and before the kick wide".
+  const FIRST = CALL;
   // How the game words each kick (simulation.js) -> the family that calls it.
   const KICKS = [[/onside/i, 'onside'], [/punt/i, 'punt'], [/field goal/i, 'fieldGoalUp'], [/extra point/i, 'extraPointUp'], [/kickoff|here comes the kick/i, 'kickoff']];
 
@@ -136,24 +140,24 @@
       if (ours && /^(Tackled|Out of bounds|Forward progress|Runner stopped)$/.test(title))
         return gain >= 20 ? pick('bigGain', null, 2) : gain < 0 ? pick('loss') : pick('shortGain');
       if (!ours && /^(Tackle!|Runner stopped|Tackled)$/.test(title)) return pick('defenseStop');
-      if (!ours && /^Sack/.test(title)) return pick('sack', null, 2);
+      if (!ours && /^Sack/.test(title)) return pick('sack', null, FIRST);
       if (ours && /^(Incomplete pass|Overthrown|Thrown short|Knocked down)$/.test(title)) return pick('incomplete');
-      if (!ours && /^(Interception return|Intercepted!)$/.test(title)) return pick('intercepted');
+      if (!ours && /^(Interception return|Intercepted!)$/.test(title)) return pick('intercepted', null, FIRST);
       if (/^Field goal!/.test(title)) { pick('fieldGoalPA', team(home), CALL); return scored('home', 'fieldGoalQuip', s); }
       if (/^Visitors field goal/.test(title)) { pick('fieldGoalPA', team(away), CALL); return scored('away', 'visitorScore', s); }
-      if (ours && /^Kick (wide|short)/.test(title)) return pick('fieldGoalMiss', null, 2);
+      if (ours && /^Kick (wide|short)/.test(title)) return pick('fieldGoalMiss', null, FIRST);
       if (!ours && /^Kick blocked/.test(title)) return pick('fieldGoalBlocked', null, CALL);
       if (ours && /^Extra point good/.test(title)) return pick('extraPointGood');
-      if (ours && /^Extra point missed/.test(title)) return pick('extraPointMiss');
-      if (ours && /^Two-point conversion/.test(title)) return pick('twoPointGood', null, 2);
-      if (ours && /^Conversion stopped/.test(title)) return pick('twoPointStopped');
+      if (ours && /^Extra point missed/.test(title)) return pick('extraPointMiss', null, FIRST);
+      if (ours && /^Two-point conversion/.test(title)) return pick('twoPointGood', null, FIRST);
+      if (ours && /^Conversion stopped/.test(title)) return pick('twoPointStopped', null, FIRST);
       if (!ours && /^Conversion denied/.test(title)) return pick('defenseStop');
       if (/^Safety/.test(title)) {
         const homeScored = s.homeScore > last.h;
         pick('safety', team(homeScored ? home : away), CALL);
         return homeScored ? pick('safetyQuip') : pick('visitorScore');
       }
-      if (/^Turnover on downs/.test(title)) return ours ? pick('downsLost', null, 2) : pick('downsWon', null, 2);
+      if (/^Turnover on downs/.test(title)) return ours ? pick('downsLost', null, FIRST) : pick('downsWon', null, FIRST);
       if (!ours && /^Punt blocked/.test(title)) return pick('puntBlocked', null, CALL);
       if (ours && /^Punt return/.test(title)) return pick('puntReturn');
       // the quiet moments of a kick: room for CAL's side jobs and his feud with the stadium PA

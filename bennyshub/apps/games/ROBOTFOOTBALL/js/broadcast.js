@@ -181,8 +181,13 @@
     hush();
     for (let i = queue.length - 1; i >= 0; i--) if (queue[i].pri < CALL) queue.splice(i, 1);
   }
-  /** A recorded call is playing: the game's polite lines (the result with yardage) wait for it, not over it. */
-  function callPlaying() { return recording() && !!clipLine && clipLine.pri >= CALL; }
+  /** A recorded call is playing, or one will start as soon as it can: the game's polite lines (the result with its
+   *  yardage) wait for it, not over it. A call held back by a menu or the interface does not count (no deadlock). */
+  function callPlaying() {
+    if (recording() && !!clipLine && clipLine.pri >= CALL) return true;
+    const t = now();
+    return !host.floor() && queue.some(q => q.pri >= CALL && audible(q.line, q.family) && t - q.at < (q.stale || STALE_CALL_S));
+  }
   /** A must-say call is playing or waiting: ui.js holds its next screen for it (with its own cap). */
   function callInFlight() {
     return (recording() && clipLine && clipLine.pri >= CALL) || (ttsOurs() && ttsLine.pri >= CALL) || queue.some(q => q.pri >= CALL);
