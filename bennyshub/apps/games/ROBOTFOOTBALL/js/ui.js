@@ -116,20 +116,29 @@
     if (speechQueue.length && !speechBusy(now)) say(speechQueue.shift().text);
   }
   // True once an outcome's speech is done and has had a short breath; never waits forever.
-  // A commentary line already under way may finish, for at most BROADCAST_HOLD_MS past that point.
-  const BROADCAST_HOLD_MS = 2000;
+  // The broadcast: a commentary line that has started always finishes (cutting one half way sounds worse than the wait;
+  // BROADCAST_FINISH_MS is only a safety cap), then a short breath. A line still waiting gets BROADCAST_HOLD_MS to start;
+  // after that the playbook opens and the waiting line is dropped (Bryan 2026-11-18: CAL's two-point quip was cut).
+  const BROADCAST_HOLD_MS = 2000, BROADCAST_FINISH_MS = 7000;
   let readyAt = 0;
   function sceneReady(now) {
     if (!holdStarted) { holdStarted = now; readyAt = 0; }
-    if (now - holdStarted > 9000) return true;
+    if (now - holdStarted > 9000 + BROADCAST_FINISH_MS) return true;
     if (speechBusy(now) || speechQueue.length) { breathUntil = now + 600; readyAt = 0; return false; }
     if (now < breathUntil) return false;
-    if (bc && (bc.talking() || bc.callInFlight())) { if (!readyAt) readyAt = now; return now - readyAt >= BROADCAST_HOLD_MS; }
+    if (bc && bc.talking()) { if (!readyAt) readyAt = now; breathUntil = now + 400; return now - readyAt >= BROADCAST_FINISH_MS; }
+    if (bc && (bc.pending() || bc.callInFlight())) { if (!readyAt) readyAt = now; if (now - readyAt < BROADCAST_HOLD_MS) return false; bc.yieldToInterface(); }
     return true;
   }
-  // The pre-game, halftime and the final whistle: the field holds for the broadcast (any switch skips it).
-  let broadcastHold = 0, broadcastHoldMin = 0, broadcastHoldLabel = '';
-  function holdForBroadcast(ms, label) { const now = performance.now(); broadcastHold = now + ms; broadcastHoldMin = now + 400; broadcastHoldLabel = label; }
+  // The pre-game, halftime and the final whistle: the field holds for the broadcast (any switch skips it). A hold ends
+  // as soon as the broadcast has nothing left to say; its length is only a safety cap (Bryan 2026-11-18: a cap counted
+  // from the start let the coin toss cut CAL's hello when the menu's own speech ran first).
+  // The cap counts from when the broadcast starts speaking (it first waits for the interface's own speech, e.g. the
+  // menu choice just made); until then the hold may wait up to BROADCAST_WAIT_MS. Lines that cannot start in time go
+  // stale in the broadcast, so a hold never sticks.
+  const BROADCAST_WAIT_MS = 12000;
+  let broadcastHold = 0, broadcastHoldMin = 0, broadcastHoldLabel = '', broadcastHoldCap = 0, broadcastHoldSpoke = false;
+  function holdForBroadcast(ms, label) { const now = performance.now(); broadcastHold = now + BROADCAST_WAIT_MS + ms; broadcastHoldCap = ms; broadcastHoldSpoke = false; broadcastHoldMin = now + 400; broadcastHoldLabel = label; }
   function endBroadcastHold(skip) { if (!broadcastHold) return; broadcastHold = 0; if (skip) bc?.stop(); phaseSeen = ''; renderPhase(); }
   const commentaryVoiced = () => !!bc && ttsOn() && ['full', 'calls'].includes(prefs.commentary);
   const commentary = window.FootballCommentary?.create({ bc, voiced: commentaryVoiced,
@@ -347,7 +356,7 @@
     startGame(practice);
   }
   function startGame(practice, config = {}) { gameMode = config.mode || 'exhibition'; seasonMatchId = config.seasonMatchId || null; seasonOutcome = null; homeTeam = FootballSeason.getTeam(config.homeTeamId || prefs.teamId); awayTeam = FootballSeason.getTeam(config.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : practice ? 'Practice' : 'Exhibition'; const fx = effective(); sim.reset({ difficulty: fx.difficulty, pace: fx.pace, practice, format: gameMode === 'season' ? 'regulation' : 'drives', kickoffs: fx.kickoffs }); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); armed = -1; activeGame = true; phaseSeen = ''; lastResult = null; hinted = {}; screen = 'game'; clearHeld(); saveMatch();
-    broadcastHold = 0; commentary?.startGame(); if (commentary?.intro()) holdForBroadcast(9000, matchTheme === 'championship' ? 'CHAMPIONSHIP NIGHT' : 'WELCOME TO THE MECH LEAGUE'); renderPhase(); }
+    broadcastHold = 0; commentary?.startGame(); if (commentary?.intro()) holdForBroadcast(15000, matchTheme === 'championship' ? 'CHAMPIONSHIP NIGHT' : 'WELCOME TO THE MECH LEAGUE'); renderPhase(); }
   function restartCurrent() { startGame(sim.options.practice, { mode: gameMode, seasonMatchId, homeTeamId: homeTeam.id, awayTeamId: awayTeam.id }); }
   function resumeSaved(key = SAVE) {
     try { const saved = read(key); if (sim.restore(saved?.sim || saved) === false) throw Error('Invalid save'); gameMode = saved.mode === 'season' ? 'season' : 'exhibition'; seasonMatchId = saved.seasonMatchId || null; seasonOutcome = null; if (gameMode === 'season' && seasonMatchId !== season.data?.matchId) throw Error('Old season game'); homeTeam = FootballSeason.getTeam(saved.homeTeamId || prefs.teamId) || FootballSeason.getTeam(prefs.teamId); awayTeam = FootballSeason.getTeam(saved.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : 'Exhibition'; sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); applyOptions(); activeGame = true; screen = 'game'; phaseSeen = ''; lastResult = null; clearHeld(); renderPhase(); }
@@ -585,8 +594,8 @@
     if (tossing) return;
     // The broadcast: a heard commentary call takes over the game's own spoken call for this event (live calls only).
     const called = activeGame ? !!commentary?.event(event) : false;
-    if (called && event.type === 'period') holdForBroadcast(3500, event.text.replace(/\.$/, '').toUpperCase());
-    if (event.type === 'final' && activeGame && commentaryVoiced()) holdForBroadcast(5000, 'FINAL WHISTLE');
+    if (called && event.type === 'period') holdForBroadcast(6000, event.text.replace(/\.$/, '').toUpperCase());
+    if (event.type === 'final' && activeGame && commentaryVoiced()) holdForBroadcast(10000, 'FINAL WHISTLE');
     if (event.type === 'tackle') audio?.play('clang');
     if (event.type === 'result' && resultTone(event.state) === 'alert') audio?.play('powerdown');
     if (event.type === 'conversion') return;
@@ -748,6 +757,7 @@
     }
     $('steer-left').classList.toggle('active', steer < 0); $('steer-right').classList.toggle('active', steer > 0);
     flushSpeech(now);
+    if (broadcastHold && !broadcastHoldSpoke && bc?.talking()) { broadcastHoldSpoke = true; broadcastHold = now + broadcastHoldCap; }
     if (broadcastHold && (now >= broadcastHold || now >= broadcastHoldMin && !bc?.talking() && !bc?.pending())) endBroadcastHold(false);
     if (activeGame && screen === 'game' && !broadcastHold) commentary?.live(sim.s);
     // The coin toss has its moment: the kickoff waits until it has been heard.

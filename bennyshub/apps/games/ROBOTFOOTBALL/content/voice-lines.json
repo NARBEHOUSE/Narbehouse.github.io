@@ -456,8 +456,8 @@
       {
         "id": "pbp_catch_16",
         "speaker": "pbp",
-        "text": "On the money! Caught!",
-        "note": "excited"
+        "text": "On the money! What a grab!",
+        "note": "delighted"
       },
       {
         "id": "pbp_catch_17",
@@ -544,7 +544,7 @@
       {
         "id": "pbp_return_1",
         "speaker": "pbp",
-        "text": "Caught! Run it back!",
+        "text": "Got it! Run it back!",
         "note": "excited"
       },
       {
@@ -2050,8 +2050,8 @@
       {
         "id": "pa_half_5",
         "speaker": "pa",
-        "text": "Halftime. Thirty minutes of football remain. Approximately.",
-        "note": "formal, dry"
+        "text": "Halftime. The second half begins after a short system check.",
+        "note": "formal"
       },
       {
         "id": "pa_half_6",
@@ -3052,7 +3052,7 @@
       {
         "id": "cal_sidejob_11",
         "speaker": "cal",
-        "text": "One moment. I am also the stadium's alarm clock. Wake up, row G.",
+        "text": "One moment. I am also the stadium's alarm clock. Wake up, row F.",
         "note": "deadpan"
       },
       {

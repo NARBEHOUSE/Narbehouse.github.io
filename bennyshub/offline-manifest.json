@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "07f708155809373720c0194413dd74ed178250bdd6155f64c90c61468870c36a",
-  "totalBytes": 421878113,
+  "version": "2406bc9ce655187f1c71a6ca5dcf96c44b579dcb30e2c89b1e878cdbcd4ec882",
+  "totalBytes": 433935201,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18559,6 +18559,3236 @@
       "bytes": 229364
     },
     {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_big_1.mp3",
+      "revision": "541433ae0059d001e27a3f92c8c27f631cd5cd12c92837e181abe102bf28e1e3",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_big_2.mp3",
+      "revision": "83ebd133526849f2c9890b6afcb9e7a53468ff658dba8d4e89b1665adbe0bd2c",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_big_3.mp3",
+      "revision": "0f7df5b34406d5d5f2fe3ac1956c0d4e45563547d3865a9a8f73ea1afc254b8a",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_big_4.mp3",
+      "revision": "f6968fb53c1ef110b002b4312b4e6e17457b5d5182d6c873e425d022a00718d8",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_big_5.mp3",
+      "revision": "ff1a894520d359a6db7202219f65bbd97906c2a02b9e53bd554060029987274f",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_biglead_1.mp3",
+      "revision": "30b0faaf4b9602fff7732235b143cd1a435d5db0e652ad306fa267c1f5db0796",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_biglead_2.mp3",
+      "revision": "4e127d8245b1e0f3360417e29febf7785d8562c0d6b3990ddca3547a826a3a63",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_champions_1.mp3",
+      "revision": "fb6d209112ecca5a5ddbb7e4c41f9f74af439e3e62b4900c5fba55c4765b8385",
+      "bytes": 19347
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_champions_2.mp3",
+      "revision": "999121d0a7be70c523ffbf0ceee64727b1a552184dddde99b628b52fc1df5fae",
+      "bytes": 29849
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_champions_3.mp3",
+      "revision": "af5ea7951523f35e388823001307186d837097b71b50a243ee395d2c671a606e",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_champions_4.mp3",
+      "revision": "c0c811ad4ccd8bbd60b44674b951a098cbc4a9a5d1f288ef411695833966b09d",
+      "bytes": 30476
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_clinchchance_1.mp3",
+      "revision": "aa0e40751b1a7402e21d4649a85495320dcded5736947a27b8865990ac23388f",
+      "bytes": 22796
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_closelate_1.mp3",
+      "revision": "ba889ce666dbfa75d54b415045e9e8056878b3625f1a410da03b74657d3dafad",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_comebackwin_1.mp3",
+      "revision": "04123de6608520bca8297bc80a6fa0c8b7d70caf296eb44d53702bb4cd10685f",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_cutdeficit_1.mp3",
+      "revision": "3e6158d1076127d1bf54cef7cad9c5920dfc9989125376395ae3fb1e72813c4a",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_downslost_1.mp3",
+      "revision": "4bf0b55944e2ed80cd9c16665cc4efae3a7d6ea88f5c422d41181a7fb1b894e9",
+      "bytes": 26244
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_downslost_2.mp3",
+      "revision": "f494baa900a84aaff6d450fc8a0a8da1b77055ab503ecadd2fef43fba1aafd20",
+      "bytes": 18250
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_downswon_1.mp3",
+      "revision": "9406aa1cb8ae031593514f69e7f14aae05b7ac4a16c07e69841fe0aaba464a92",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_downswon_2.mp3",
+      "revision": "9008f460e7380048baa33b7e5ea5e2a037639f9c439cb09976ca758d8bd384b4",
+      "bytes": 16683
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_exhibition_1.mp3",
+      "revision": "6643b0b26b51fb64364981a52ccfdb0b1c053a0d5e798328e8de13a65aeba0b7",
+      "bytes": 23736
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fg_1.mp3",
+      "revision": "c52351c2c4d45188f4a41f6644b632f492ce6fdb55cfe159171cd98536a9407a",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fg_2.mp3",
+      "revision": "64d07dacc4901fd6dff119754f339b6e971e1dcca7061712debcd7eb9ff868d0",
+      "bytes": 30632
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fgmiss_1.mp3",
+      "revision": "8bde18835c0c7b1849d14b57e6c4b212f19a3324e58b4bfbe4d93db63bb65db2",
+      "bytes": 37842
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fgmiss_2.mp3",
+      "revision": "fd80a9413937e8acf8e4ad2a8f73c22578960996449791c6f32197073ba225fa",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fgmiss_3.mp3",
+      "revision": "51d728dad9eb4ddb0f921909fb1fe70dd91e9b47268247826cb3d900d8ed04e9",
+      "bytes": 21228
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fieldgoalblocked_1.mp3",
+      "revision": "bbe0d17fcc692b222781249db01997ad57f0f366852eda16044e4f1c6712964a",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_finalregular_1.mp3",
+      "revision": "ac6c6f0c79c60278b8f11c530a5814c86a53202fc8b1c96a312ae7c6f4726c58",
+      "bytes": 28125
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_1.mp3",
+      "revision": "f56c50876794eebab860285d18f1493374677af6397845efcb9b9186a7d5d6e2",
+      "bytes": 18564
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_2.mp3",
+      "revision": "bcb43085147f98df3d5d9ca14ab9e62cb2a185abaedd5ca6d07e52af0f56320f",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_3.mp3",
+      "revision": "8da061e2651a6d495b9cdc1107447a57dbec444a955c8ebfc496dcbb9d3d215b",
+      "bytes": 20288
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_4.mp3",
+      "revision": "d6c6b8037d5ad81b80f3fcc6d5cb2a2baef513074c84508c83123ecfd02dbfa9",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_5.mp3",
+      "revision": "34498fb7e8d0cc1aacecb9c23abdccd9be3308517bd02f335d33d7eb95d2206f",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_first_6.mp3",
+      "revision": "67774bf6364fee1883fd33e2de1ff1d5e42d6edec40d108d202980417b6ab694",
+      "bytes": 12294
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_halftimelead_1.mp3",
+      "revision": "12e965606c8c940690b36e64ebb180d44f2b4c40e747899743bfb4e144a0bf66",
+      "bytes": 18250
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_halftimelead_2.mp3",
+      "revision": "effaec1d0124a9b5133989b2fe9cdb643607c61304f562d5cb11c4bd3dc3617e",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_halftimetied_1.mp3",
+      "revision": "f63a2c094ac476b07debfdcf5be5fa4096cf96171aa39d71aa7bfa84feecb9cd",
+      "bytes": 24363
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_halftimetrail_1.mp3",
+      "revision": "898cd8130acc962d53cd7ca4ee08a24409d6943800615096893570b4ddb655c0",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_halftimetrail_2.mp3",
+      "revision": "cb86e2a3d2c09b185d7b500dd44a7978e4ee60c0e13b5a00234fd5ca1d5f0a2c",
+      "bytes": 25617
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_1.mp3",
+      "revision": "b2b5be7481006058f62a148ed2d721f2bb19a90e178337f06aca89b8b609c3bb",
+      "bytes": 19974
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_2.mp3",
+      "revision": "c1a107d244fd16462a44d563965e411aa6fef7fb5fe14046d2bff1d2e697184f",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_3.mp3",
+      "revision": "f54014fdc43fbad82c3a3458c6d433f02abe291763f8353908155239ac3d378f",
+      "bytes": 19034
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_4.mp3",
+      "revision": "d28a386d3f214fd013a39826fe5dd36da517d9d4814361e4d3412248865d3902",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_5.mp3",
+      "revision": "c61e066ca1fdb93bd6936391a5b2f2b81f6825fdd97ab11ecee285cfbfa29e6b",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_6.mp3",
+      "revision": "9e50c74caa775c0558984a87f9e967a75ad88c2a0ce34339ba4dd3971d502603",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_7.mp3",
+      "revision": "135467543a30765d55ca6c33367115698c6a9b411debe14d4aa93792e8200afc",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_8.mp3",
+      "revision": "298c67ac6d0b8632b563f4d20cb87b4d077697193fa0495b7319100c172afdcd",
+      "bytes": 33924
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hello_9.mp3",
+      "revision": "1caebf3f99968032cae5adffb079fda642d251dba77b2ba94fc5649aee9b3db8",
+      "bytes": 19034
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_hellopractice_1.mp3",
+      "revision": "abb7fd9e07e71a2266c5df27631d9f0e85b2bda5bcdd28fa139f6a9ec084ee8f",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_inc_1.mp3",
+      "revision": "cb9710ee0cfc3dce6a89f091b776f386c0b1a257ababa62573652d0a54a47203",
+      "bytes": 27968
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_inc_2.mp3",
+      "revision": "d18e0907cb94e377fb3695e9c3a1bc732f702184288b7f0dad1186c294d15208",
+      "bytes": 22796
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_inc_3.mp3",
+      "revision": "9aad16d22c2e17bbb36feebeb005e606432e5bbfad27f2cfb9219e9af12747ed",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_inc_4.mp3",
+      "revision": "8a3fdadec6886f489ae0b10bfc70c162d22051c8b4762a0611cd6cbd628f8956",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_inc_5.mp3",
+      "revision": "daa404dfab0a9e3e99efa192018bee5dff29705d4c745706df7b475b65aa37e3",
+      "bytes": 22796
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_losingstreak_1.mp3",
+      "revision": "843b25bbebdcb8825274c6ac667b43ffdc04cdeb3aee38920764ead895cbc966",
+      "bytes": 29065
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_1.mp3",
+      "revision": "687e530c749c3f31c242c5b2cbba728df33946e1cf3998b5c0a1322fb3e0115c",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_2.mp3",
+      "revision": "e577dac72da60b521b8e628e1307852c14abd2f904f8ecbf40d3d87d56825f24",
+      "bytes": 20915
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_3.mp3",
+      "revision": "04e47b9fd36fc605b7ae2fcf959aeb3044736d60f38ef50ad1769d5a531e9b8c",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_final_1.mp3",
+      "revision": "d380413dbb9ebcf8840744d11bcd02a3a87b1197889a5806a39b5406f4293829",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_final_2.mp3",
+      "revision": "9566c13ccf78bfd2b8b2b84c515ff2d559ddd3b71ee43cbeeac07e5c80cfed13",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_loss_final_3.mp3",
+      "revision": "d255c4ee910880e0243e1ed88bc7aba79941dc7daaaaff729d315e8caa08db0b",
+      "bytes": 29849
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_black_1.mp3",
+      "revision": "d2404879c83e70e8d392aa1f301ca07a6d19206d0874eb10aa9a50661358117b",
+      "bytes": 34080
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_black_2.mp3",
+      "revision": "6dbdceeb76a7b17e3ee243e65125e0feb8d9147b58cc994fe5b644fd7e6e16a9",
+      "bytes": 26087
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_blue_1.mp3",
+      "revision": "a87a631b1ee51a94f4175ff006d903310c3f5dd3638542e722a4f86744a8c2a2",
+      "bytes": 29692
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_blue_2.mp3",
+      "revision": "d44479d5ade1a649b48243deeca5ee3837b928d4ff188022fce545f34c020067",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_gold_1.mp3",
+      "revision": "f725bd2bd47ef0f12b1219f302ca196fd97deb778bf2e6c8aad2f05040b26862",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_gold_2.mp3",
+      "revision": "cadb729dc89e41c326ac7bd1c370839f704752b43af9821047c986dfbdad35e9",
+      "bytes": 30476
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_green_1.mp3",
+      "revision": "61fbb7953fa9c0c77a66a42d4707ec9f8fd68c48e1fd43c3fb8a643ad03cc9c6",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_green_2.mp3",
+      "revision": "2cf539c6f5f5e2c488a76bf4a70050a431531bda1b931cfd145de2c0b1319edd",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_navy_1.mp3",
+      "revision": "6226da9da50ad8688b8cb53c2e4516416ac05b815b01ae9292a44946af182a0d",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_navy_2.mp3",
+      "revision": "44a5666746860d90ca01e65f16c288dfb7145847944b4a8f9ef09024a7ec56b9",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_orange_1.mp3",
+      "revision": "5606c9e5ffe4f02c3e11eb85c6bcb380b480d4c951cbc82250878bfcda0e50e8",
+      "bytes": 23736
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_orange_2.mp3",
+      "revision": "c51b304f0980abb57f7d4d701adcf5f21c44ed5275514d77151301bd7c2323a1",
+      "bytes": 28281
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_pink_1.mp3",
+      "revision": "c3f0a93a8fd6096169ced9c9b6f84ee1824b601de5aa4888f02d6d57e8806e46",
+      "bytes": 32670
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_pink_2.mp3",
+      "revision": "bccea29bf7d70b26204f5f16c666b887b62170a47b671f171c99fe7a299fa4fe",
+      "bytes": 21855
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_purple_1.mp3",
+      "revision": "e99c8b6e40ce29f54ab25f39e271e1ba82be7c2bc3d58c46d4987e4e6b18f539",
+      "bytes": 17937
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_purple_2.mp3",
+      "revision": "411a6a8941edae84adc004137d056635917ceef655cafccaa5e5d8215002d083",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_red_1.mp3",
+      "revision": "c4e4e926907421a55397186868f25c85f359b5d46ea83b75c46d6795a3d8329e",
+      "bytes": 27027
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_red_2.mp3",
+      "revision": "3d934ab0d31ec1819ea85606219464c5421b46e6878e75f35983df3ed3598ce7",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_teal_1.mp3",
+      "revision": "3f276916cdea5aa7f37aa21c6e7dc1fd60a8881f83e0e2993f68a9eb6a12021d",
+      "bytes": 26087
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_opp_teal_2.mp3",
+      "revision": "02bdfc4e9a40b56f504d72c8430ca13622a1db2288c74a60ff5e8d7e3cff6cb2",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_ot_1.mp3",
+      "revision": "276d26f8245d30abc15a119d3619a98d13ebbd6d7f3b9191c74332afb4f0e3df",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_pafeud_1.mp3",
+      "revision": "40118b69f84940b0b3f14b2c4f9573152096d360206f7d73634a1eae38ff3bcc",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_pafeud_2.mp3",
+      "revision": "ae918ce6fb53e0da702735984722ac26e6e7c2af0a0176c86f9874c3d4777f5e",
+      "bytes": 26714
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_pafeud_3.mp3",
+      "revision": "483d0658223e74f9e4aac909be3347f22d1fa12956ac6d4392859cea784924ab",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_pafeud_4.mp3",
+      "revision": "47e2fc8b095be2ec372cae5506f688ee4867158118c45053ec063a45e64d5733",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_picked_1.mp3",
+      "revision": "4c0f5e01424164fcfd71ca127d36862d091f61aa7df2be46e4b73e4387916106",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_picked_2.mp3",
+      "revision": "6e9909b72f803b8ee9ca2a957988a78a709cb36823bb262db9e89b834ac0a557",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_picked_3.mp3",
+      "revision": "139b016fa9c386044bbc2c1c12a530ab852bea92a2f2e4807bb935f99bb5a14b",
+      "bytes": 39096
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_practice_1.mp3",
+      "revision": "dc9ddf744a1aa5934a989a255b7315e0352cdeaf968a804a85779fcddf96e6ff",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_practice_3.mp3",
+      "revision": "88478a5f8dee0a1fb65e37f90df5f3c912fff9f8e84bab28731c5cba645c99b5",
+      "bytes": 19504
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_puntblocked_1.mp3",
+      "revision": "9a499a03ed7aef7b7ee9e83b78d1389924adcd89bf2b461b1ebb6453059ad6dd",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_puntret_1.mp3",
+      "revision": "49080c04577efa1f510e9aebe24e7adfc0b9c4f31df518f585f4b9b8311186fe",
+      "bytes": 27184
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_puntret_2.mp3",
+      "revision": "c092366cd826601ef96cbcb64f6509e32124843cb47fbaea990518ee838924a1",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sack_1.mp3",
+      "revision": "0fd68da3dbed3098d4e60885ea9b1b65c1b4c1d7c1299921313cfc933cd70a2d",
+      "bytes": 27811
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sack_2.mp3",
+      "revision": "180fc891ee60b5f0ad32323431cae71dd748fa886e04fec05c67496387431231",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sack_3.mp3",
+      "revision": "f182ed98399f2e0f93bf3a4e25f1ad300630d5994588d481497be0f80d56ce19",
+      "bytes": 19347
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sack_4.mp3",
+      "revision": "d602d8ac3249996e53ed8cc3555d831057ace4b02eee073fe38a6c06b6cd6494",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_safety_1.mp3",
+      "revision": "0b0474addffb6c0714524f038bd3b3114a3b02f54cdad12f77ea40d70e9a06d8",
+      "bytes": 38626
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_safety_2.mp3",
+      "revision": "dd05af6c7a0373d18fa3aff2215d88e86ac482490a7c93d9e82bb4807f5b79a4",
+      "bytes": 27654
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_seasonopener_1.mp3",
+      "revision": "3f7bdde9159545c904e692f6c8befcb6f1d4ce6395c801f60556255a54fb42a0",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_short_1.mp3",
+      "revision": "8c0996d9fa63b7bf98bdba05bafed04f56f57680c02f955751f1a1a43415d7e4",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_short_2.mp3",
+      "revision": "200efd10a9d13c59056dd743aede3c96bfb6f91027a93ad1c3d75b35bcde1c66",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_short_3.mp3",
+      "revision": "e6ba25c1b9f819b89f247218748dbd9fc948ab2933fd874381ab5d993d433c69",
+      "bytes": 18407
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_short_4.mp3",
+      "revision": "2af98d6d87534c22e2ed456a74df00d972bd61edb69ac1d1eac6b2ad8d03f26a",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_shutoutwin_1.mp3",
+      "revision": "2a244127a5bef4cdc0f648974a02713a36d46761328e97dc30820f26c5d69058",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_1.mp3",
+      "revision": "a420053f6a3aeb014b71f30a20441178547821d76d764a16a6c8820f92e76372",
+      "bytes": 33140
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_10.mp3",
+      "revision": "065d7414b80c25dcd00341a7483d8d231ad67087205f153de282c07673041051",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_11.mp3",
+      "revision": "27a1d62dae1660e68e477831e8c1b880cbb9c11b9ce40a735f29158894be8e87",
+      "bytes": 31102
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_12.mp3",
+      "revision": "17b8767080113351801f1847f545a178d0cf3ab274f4454125e50963dcdf53a2",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_2.mp3",
+      "revision": "7d58d230f5a52ad30aac82e0f6dd4eb578a9ec17ee3ff10cea7740f887c8d650",
+      "bytes": 32043
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_3.mp3",
+      "revision": "502eb8eb3c6c627a1aed4ce971560c0f2e69c68bff6644482fe761b1f2beeaf5",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_4.mp3",
+      "revision": "c2e0c71ad656614630663739fb06d9fd766e761c477f04677bde3a1fae5687d6",
+      "bytes": 31886
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_5.mp3",
+      "revision": "480c70b62c0c9728cf18e40ca762e84695c023c4e6cb59d6283cae0db7006d4e",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_6.mp3",
+      "revision": "d020344a82b8095e91a15c3cdf05b06252d78ad266702008e9ec5d81664ac771",
+      "bytes": 27654
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_7.mp3",
+      "revision": "b69976dad1e4d31a737a4bd728eed85eea83dd202708c2f669237912b1c3859f",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_8.mp3",
+      "revision": "a59aea5317c49efd4264fc8779dbb04f7c4b57609c6fc36df3e96ae6a8e4a256",
+      "bytes": 29222
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_sidejob_9.mp3",
+      "revision": "ac093c9cf31ac27aeeba93411318980979b0d10a1c8c7a678f6e601240c9a602",
+      "bytes": 36431
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_stop_1.mp3",
+      "revision": "ff6327b92ccc9f533ef04c1efaf0984bb01dea2b82424ba49602410293c155e8",
+      "bytes": 26244
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_stop_2.mp3",
+      "revision": "240e3e1689fbf552863c5f34bd56ea11ea7c0f34482352bdb4cf1a4fe550f96c",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_stop_3.mp3",
+      "revision": "a10df3c250b47768c73dc03acb65d8bc85fc8201a39a7e309b252a955774abe9",
+      "bytes": 22796
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_stop_4.mp3",
+      "revision": "182654a253fd138fa88d535c26dd25d45ced221305074f9939fd0439193d0ee8",
+      "bytes": 14645
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_stop_5.mp3",
+      "revision": "568b65a5d135ce45e1f2d0a7161b4765c2bcf4f90192788483f82bc330f9f81e",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_takelead_1.mp3",
+      "revision": "44d1b052d275fa7b71ab61bb5440fb3dcaa5d5577ccb3303255e6a52bac72cdb",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_takelead_2.mp3",
+      "revision": "176cdc1ae9cff105f57540b398aa71a0da96bd704dc44afec8c8e68370861ad7",
+      "bytes": 19504
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_1.mp3",
+      "revision": "091e2d108c97932b5e583e5ba5e342df6843f9917df82391a3a83869da74729b",
+      "bytes": 30789
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_2.mp3",
+      "revision": "474d60132e351b7754a2e70911693e2dc0610d1dd48552affbcc04744dd8f82d",
+      "bytes": 21228
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_3.mp3",
+      "revision": "502ccda4f134e0b8197212078090c1c60f36b0986ace92cdebb2b134f9a440b1",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_4.mp3",
+      "revision": "5cd6d1cc656fed0cc28a2f7f76c652f7bebffed63d5eed2c3af7ff6f9c349cb3",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_5.mp3",
+      "revision": "a6092c16f15e6be81aaa8b7e6d9080aa6e810a0ac86053e9905d411be4c3e053",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_6.mp3",
+      "revision": "ae99e63aef02ca6edc08b3781a93b75911a90353298468e739d4bd8fbb0a6c53",
+      "bytes": 33454
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_7.mp3",
+      "revision": "286f72c28f83cd4b1badad061b96ebca1362ccbe7cd148a1416b654590310b5d",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_8.mp3",
+      "revision": "16d5f7717cd700632f2a854a1f334701df9127e6e91f2d12619c477e8caf2fb5",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_td_9.mp3",
+      "revision": "3b341ecd57ae8c7a1226d7c63c0290123e3ebef5b3f2ce92e37e47e6af06cbcc",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_tdq_1.mp3",
+      "revision": "6970fdd642f2f8673bfb9236570258170ffcecec9989df0c414e56c6727e5c03",
+      "bytes": 11981
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_tdq_3.mp3",
+      "revision": "29f932af61a5b7d10320da302d84eb19e193be7bc6adee16c8bdd70e4afb0fb1",
+      "bytes": 28751
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_tie_1.mp3",
+      "revision": "488c5d9e1cc6047372343f1cda04aee2deb7952a3839518a430b42dd633124f2",
+      "bytes": 23579
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_tie_2.mp3",
+      "revision": "1cbcd1e9bb6222b44b3ed30430641d6f8df4ec6b5fb4d85919188fefd9ca4a29",
+      "bytes": 22325
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_tiedup_1.mp3",
+      "revision": "021a136c1d412e0f358becc3271693099f9affbbbab84447b924e44111aa4ea5",
+      "bytes": 26244
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_touchback_1.mp3",
+      "revision": "562e63d97a51411bc3c0b8c5f2db3268f027e5f41356f564c6451b4ff09180cc",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_touchback_2.mp3",
+      "revision": "d928d823f3a8281527e5ced6b11f8f8e263aaaf2c0e1a88f9b4769011be772bc",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_two_1.mp3",
+      "revision": "fa4b859bf57b58814ed85fba176262b1f275dd5f17e7c9dcc56b19b5e49393aa",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_two_2.mp3",
+      "revision": "f9bd3b7dd021f2cba6b618a6e391d8ff28b9dabcfd65ac2aa5406b133c7a1e88",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_twostop_1.mp3",
+      "revision": "d6aa6e0d8a8c745d3bf641f00c36f43d4fcc9f8d62c61afa9561b630ab8a4b30",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_twostop_2.mp3",
+      "revision": "59662e77f3906095547432d8fee97d644cf060d61a9a1dfc7dcc6c09f4fb1fef",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_unbeaten_1.mp3",
+      "revision": "2c1d338417a4c67adb8e7984ed6a8ee2db57e8df22a25c6d36e5fc1274989138",
+      "bytes": 24049
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_visitorfirstdown_1.mp3",
+      "revision": "408edcdd4a0acc721c192b75e6c29807026b55c9f1eca217ca5e8362662027fd",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_visitorfirstdown_2.mp3",
+      "revision": "c6cb07d7eaac450ebc0ef28bdb9140a051805edfd258b27736efe9ced7e30d5d",
+      "bytes": 17153
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_visitorfirstdown_3.mp3",
+      "revision": "70c181cad4914c951e126dc5cbed57bc74e517e1e3e7ca3e8016672351f6a332",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_visitorslead_1.mp3",
+      "revision": "a224a538cd95e008a2887772570455768a4dec261d1a0735b4da833978b98d5b",
+      "bytes": 24363
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_visitorslead_2.mp3",
+      "revision": "9cfbde0248556c00d8991e6cc1effcc756352d6ff4b2c100fe6f094d90c9471a",
+      "bytes": 27654
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_vscore_1.mp3",
+      "revision": "72c85a256bbc9a2c6b81124ce918596016c77bd7b53589a3d2a9bef2e2ff1216",
+      "bytes": 20758
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_vscore_2.mp3",
+      "revision": "642ec497f772739ba55d0958df348f929e01548d6bc2d5549645c5b4435c642e",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_vscore_3.mp3",
+      "revision": "157b39a28ef5b39622d369d1f107c21eb53af991fee045c2cc2ca3d4a917623b",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_vscore_4.mp3",
+      "revision": "3e55f820c35eee6d6968c596164dd48d927c6f27005459d8006ef19977b75fc9",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_vscore_5.mp3",
+      "revision": "094a31fa4efd7367b9a87451e73d93e78676ded83af3b56986b07072016c50bd",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_win_1.mp3",
+      "revision": "78d98318739f0d901d7419085cccab60f63cdec8fecbd33dd2d3199334c8ae2d",
+      "bytes": 26400
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_win_2.mp3",
+      "revision": "eb2ed233160b124f5350bff912e2308c2837ca20698ec841833c1f50ac062a24",
+      "bytes": 24049
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_win_3.mp3",
+      "revision": "6374b8e038a4f282ccabead6e40b4f7a204d2b0a366345d60a0541220dde3527",
+      "bytes": 29378
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_win_4.mp3",
+      "revision": "a99cdb91ed059685765e785a969425998635f3a428086caea36e840a41d8f90e",
+      "bytes": 26400
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_win_6.mp3",
+      "revision": "4b7bcfd1c16b4ce895586d09d4b4faf627af9b37fbdd33554e63cdbab47ed089",
+      "bytes": 20915
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_winstreak_1.mp3",
+      "revision": "612dc6851828fca6ae2ac1092d64f046b97cf3c73486681c4b38bbf624b27431",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_winstreak_2.mp3",
+      "revision": "911ccf0f571189e19a4f25f308e5aa2f8881d4e05f8d118e43d2b69d244afc36",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_xp_1.mp3",
+      "revision": "82b1554797af7eda4a88fdf5351a573c4488cad083dea2afc65e5017574a1957",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_xp_2.mp3",
+      "revision": "062ac6f8e2dd16b2b0d98fc35b672171d6fd76f60f9d30b84aed90aedc8897f8",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_xpmiss_1.mp3",
+      "revision": "6e75d6314d2bb7cd56a1c70310546f757ed1251886d617ee0749431ddb865948",
+      "bytes": 23266
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_xpmiss_2.mp3",
+      "revision": "52569e8fdd765f9a8cb7e7222c8d335296bada1cb7d70f6d4fecba48a38f3eda",
+      "bytes": 23109
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/index.json",
+      "revision": "1b85b06d0300702057986917cd609092013ec780d98a0db2a461a76914159aa8",
+      "bytes": 30759
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_1.mp3",
+      "revision": "a696a5f41ac995010e71e17415e744e7523eb20c6162a0427b7c890e7fa4dd3d",
+      "bytes": 27027
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_2.mp3",
+      "revision": "70b3e9d601b3f70d658789f977b8fbecee63e2b3829c048727af2399e85b75d2",
+      "bytes": 32043
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_3.mp3",
+      "revision": "fb9141de5262865c8bf56c61702d412f67da702dea5470ba1530bc007d205eaa",
+      "bytes": 24049
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_4.mp3",
+      "revision": "4539fb6b0765c38262641a3c0004135d64244bff7de0d1958f4e00cdf421496f",
+      "bytes": 27498
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_1.mp3",
+      "revision": "76d0b5047896579470d79fb1a26028f615d79acfedaa2697089d1791db80310a",
+      "bytes": 17310
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_2.mp3",
+      "revision": "53a4ba76936c31d720b6b2d9f80e1b43556a74e018e911f3c63ed64a289685c6",
+      "bytes": 23266
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_3.mp3",
+      "revision": "0d2d9b58716959153dfd14b0d0a83496b144f1b98859efcc970057e276bc4a81",
+      "bytes": 19034
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_4.mp3",
+      "revision": "14f60bcffa99bbb8230a8f8a7b9b99abd3670fc92b5bf57b23bb0770d5a0c67b",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_5.mp3",
+      "revision": "23b0afa2ad5f87a948443ab8f303ac89b18a8ea7837d3f692569a8b997921079",
+      "bytes": 26400
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_half_6.mp3",
+      "revision": "d3cb9ea44da808e3d1b7669d840e0eb7692797f07bebcf3a32468d5d51dcb533",
+      "bytes": 19974
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_ot_1.mp3",
+      "revision": "c50fb8f3888e7b3ecb97f5933e6e739f0867e75009990451a8996e2440575e7e",
+      "bytes": 14802
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_ot_2.mp3",
+      "revision": "4708b6633d5a2812f5b7a392402edbe6161b905f660fe8576b000c22171c8980",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_playoff_1.mp3",
+      "revision": "ef2ab17de8b509b3184c93e1ea7cea1dfb27d7093f10b81a6a31550e7c04629e",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_playoff_2.mp3",
+      "revision": "071fd4df8f7baa0789e518a19e2fd3f391f665b98d169bc46bdbf87264134a91",
+      "bytes": 16683
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_playoff_3.mp3",
+      "revision": "c2e1b63930a1cd8ec80736532776ee1b2b31a94a933cd4205a3bb6b0b4a1e3dd",
+      "bytes": 21698
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_playoff_4.mp3",
+      "revision": "729ba956f37be31a11ad33db4ca5c437ffe40242a475095385ad2198095898c5",
+      "bytes": 24676
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q2_1.mp3",
+      "revision": "b38cf733b05662581491ba4bba92fad26c0a1bb10b03aa93c6baea086207059a",
+      "bytes": 6338
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q2_2.mp3",
+      "revision": "1421a62e7dd2664ba0462dae20d40981cc2ab93182c5468b06024c8b9a95698f",
+      "bytes": 11197
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q2_3.mp3",
+      "revision": "7a1e44044c7db6d2fadf7bc752ae19e0b5c98c1eb4154c73d5d835ea0de0b069",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q2_4.mp3",
+      "revision": "2ede3f436fc8a2c91d8dfb5ed9ffbdcd63d99bb7d5cb6dcd83e958652f109175",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q3_1.mp3",
+      "revision": "e70d8e7fa7e4bc8380ed8f088634a6d3b249e0717f92c5345c6e2dc86711dc77",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q3_2.mp3",
+      "revision": "012ed54c80efb04189f4b613491dca241f4148367f567d6a037a8f7449cbc265",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q3_3.mp3",
+      "revision": "d6dbd3169864ee10514d54de1f6c4b5493ed23b0f814cdd2fd471b180f2017f6",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q3_4.mp3",
+      "revision": "9e6a8f73c6cacf2a3b13128322075218dea15e721b6f1f7d0d61c83d2bce0373",
+      "bytes": 22325
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q4_1.mp3",
+      "revision": "c91938b5670185127c1cc387c12773f0a2b363579962cd3006ebecbef356f265",
+      "bytes": 6652
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q4_2.mp3",
+      "revision": "84044c9345104616865c8a4c864f9d6b3c8011eaa93f061ff1d41a108b3748d1",
+      "bytes": 14645
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q4_3.mp3",
+      "revision": "836c08853fc72bba8e22590ed344a165b4239a53ce6c5d638774dc97069e364c",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q4_4.mp3",
+      "revision": "2edcfd7adc276c6b4eb2bc417fb3699bc51ca6c3ff04824ac2f1060e90a6fe63",
+      "bytes": 18407
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_q4_5.mp3",
+      "revision": "0ab7131d5f2fb9568aaed5c9724fb4f8a293734c587b236d4e05b245a0b34700",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_tie_1.mp3",
+      "revision": "c8945c180beff387bf2c554dbc1338ba6291d9ae299f51cbb7f027ebfe47589c",
+      "bytes": 14959
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__black.mp3",
+      "revision": "2986413745b10c00e217ca4c52b61ff7efc7ce28e055a2e73826526eba7e3d9a",
+      "bytes": 33454
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__blue.mp3",
+      "revision": "78e60a2ff05878939034645e58dcfd8641b7d96e5b19984297a5496ab92e559e",
+      "bytes": 26714
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__gold.mp3",
+      "revision": "ac26141d3b471f6436591ada7f6675a0da3e4f6ae4d555fc8d66ffea77f3bab6",
+      "bytes": 32670
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__green.mp3",
+      "revision": "e06c1b88148ec3b01dee39eca09b6a6e28ea788693d0af0630393d7784d76ac4",
+      "bytes": 30946
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__navy.mp3",
+      "revision": "c323742eb59c72d207481c47d7ba8939cdfd8758706abed36ca6cbfe12d468f5",
+      "bytes": 31729
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__orange.mp3",
+      "revision": "afb35a2de2e544c152d53db868a20daf0bf6ba24a0490f10564216e3949922ff",
+      "bytes": 32513
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__pink.mp3",
+      "revision": "a6cedaff45f7587ce7824ee1373c22f793953184133987bea8999f662bb2b63b",
+      "bytes": 32827
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__purple.mp3",
+      "revision": "fc726a925cb30bfc4ea0f9299a62a5600e5df93194408e05ac001521dd8b1c43",
+      "bytes": 34864
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__red.mp3",
+      "revision": "65c6396f0cec5c729cdbb77be9781ae1f991f23522cdc301265b9f0cae10ae2b",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_champions_1__teal.mp3",
+      "revision": "f99215378a1394c374004f31fac064ae6bd3696901cd79b27828105780f20f0a",
+      "bytes": 31416
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__black.mp3",
+      "revision": "5c6a3aaf3f66cfa387959b7cc2f47f203267001b0ec6707ecf022a0e8a4ca4d0",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__blue.mp3",
+      "revision": "dbfdbe11c8d23a55c65668c5b81db57941fa2847eb0a63e4082c0c347dff2dd2",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__gold.mp3",
+      "revision": "06fe0bd208eface87241be1647e6d2aecef1d65fc8f7be4c48475ef2460a9302",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__green.mp3",
+      "revision": "c87281b986d9d7c9dbe11346a8778086a807d84cf97df1b2b9532c26ee596d34",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__navy.mp3",
+      "revision": "c163a4bd1a1e71b3f1770a7358564934cb93be63cbc3623177aba3def941246c",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__orange.mp3",
+      "revision": "8a82092363c58ba48139bbd9a7eeafdc9947f1d357ae99aa2b997fd748d55918",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__pink.mp3",
+      "revision": "d56c88d43546abfd6a85bf8002fdaebf39ad7dbde3bfde824fca1800041c99fa",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__purple.mp3",
+      "revision": "88ace24f303ee0296cce9087f54c3bb0732f120ef5b85b2d19a6f63fdcc4df24",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__red.mp3",
+      "revision": "3efd2483dbdd8440a3ebc13889f8df32a47545fa1f2c911ff2ea1a082fcd7e20",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_fg_1__teal.mp3",
+      "revision": "bccb1ef963cad685631160e3af16f22ba90ac4d59d06f1be047cd2b4e899335a",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__black.mp3",
+      "revision": "b682e50b4d440e745b568f0dcc5c7aca3882c3d93915fcda3f18fba819af87aa",
+      "bytes": 32043
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__blue.mp3",
+      "revision": "aa95eeb2ce70126fff23430d9cf47749977313820fb0585b602f692c4da74c2e",
+      "bytes": 31416
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__gold.mp3",
+      "revision": "5f01a767af1022d29c0604ad4ea39d556fac5b5c2f092337d071f39d408bc152",
+      "bytes": 31416
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__green.mp3",
+      "revision": "4f425a869e81927e1bfd313e8454989d8ccd62815309c09c78f14bee8e120586",
+      "bytes": 35334
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__navy.mp3",
+      "revision": "1bde6c1b9a28b25027a9403cf83ec94127335b123c1d055981efa43b0f52f000",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__orange.mp3",
+      "revision": "d64636329cdae467713f3c6972a42158c79b02ac01d6b68f18c557fa61c62588",
+      "bytes": 33767
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__pink.mp3",
+      "revision": "5f310c297eab6630a79c37e06eab2eef8faa8f6072c91d706aa9d771c8aa1bc9",
+      "bytes": 31102
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__purple.mp3",
+      "revision": "425d1a872f55e8147bf86c7b00bf092339e19e6f915b36efd319a14707d7d2f4",
+      "bytes": 32200
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__red.mp3",
+      "revision": "178378c7c173090d77d3169c2ce2eb4e548b00bb77b617c880b8f4c64bc2ea3e",
+      "bytes": 30946
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_1__teal.mp3",
+      "revision": "9985878027ff09968b0026895091becef7fc344fd1b1f49a4fc8eee7392c9eb3",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__black.mp3",
+      "revision": "f7ae98011b25fd2aebc9d15544523e675eda434c1450cca94c65cea3deaf643d",
+      "bytes": 26714
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__blue.mp3",
+      "revision": "f629b047f68e890ec3db07adee8cc4397d7e8df010834e33a53385aa1228e2de",
+      "bytes": 27498
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__gold.mp3",
+      "revision": "d688f738b76686d6c320fa9cb6d0d97a3fecc3d4603a05754fe5e340eeb44692",
+      "bytes": 23579
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__green.mp3",
+      "revision": "20a2fe1d0888e6d3f5cda34cc9e8f98283bd14a7c85929049fa501774414efa3",
+      "bytes": 25147
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__navy.mp3",
+      "revision": "e7be4420b17282e101a6721945b09f1d1ad276ed24a1672b67516a922ab951ee",
+      "bytes": 30476
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__orange.mp3",
+      "revision": "dbbb42b3092da925fa8e181691330fcf29d7124c440458ae661db9b763c94940",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__pink.mp3",
+      "revision": "fadb4d5dac6ecd0539227be048fc6a65abf223c8b0177df8ffd78612087d1163",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__purple.mp3",
+      "revision": "ac2891ea30c784c166a8abc9992f068d70f894ff23fa2fe72a408ff1003bf5dd",
+      "bytes": 30946
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__red.mp3",
+      "revision": "37c230e9f9b8d2b3d782ac1e92adef16a2ed4c46a7b1119f470aaef4e6aab620",
+      "bytes": 26244
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_2__teal.mp3",
+      "revision": "670d222071feeabb3d302999db48e44f9daa55255c76fa814f59cebf715fb328",
+      "bytes": 29535
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__black.mp3",
+      "revision": "a41b56c4f36c8aee178e22cc7da6568f8758ffb9395021618207fb3dc2e7777a",
+      "bytes": 30476
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__blue.mp3",
+      "revision": "6e11f3c14de5298e5bb9018351ec7a33cf3ce8ba72ec74ffc9d5f38a269ac070",
+      "bytes": 26557
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__gold.mp3",
+      "revision": "3c730c1a11aa6ae842c84dab6e23c1849f6d921112511f36a0bc821d9d0838cf",
+      "bytes": 28281
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__green.mp3",
+      "revision": "7748e0a2cecbe8f826de6415efe0c9c67c5c202f58f34041352e3c154023252e",
+      "bytes": 26557
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__navy.mp3",
+      "revision": "379b6e928f67d6b9033ba3658200a6b0ef7b69262dab48a6c36d295e3665b938",
+      "bytes": 29535
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__orange.mp3",
+      "revision": "1e8aa6871d7bc995ece8348c732188d5610ed77939ddcffd984b99d88c643512",
+      "bytes": 29065
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__pink.mp3",
+      "revision": "8bc06cb9530d7a54944e69bfa455dc34e19c74a67f8f8c8d25dee3e84c872a86",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__purple.mp3",
+      "revision": "b5d5a5f0800965e7b48e0a30324dd0554b271be8a2f14884bb06054c2f4a4c8f",
+      "bytes": 31573
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__red.mp3",
+      "revision": "ff25767f6d345333ecde251079f2bd39ac487caa1996d378b9061f06db638f3b",
+      "bytes": 30946
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_3__teal.mp3",
+      "revision": "0cbdb9720647e91bb252d1998b9333508b783c8256e082c6442bde046b06c682",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__black.mp3",
+      "revision": "33db633048acf1f6749af5fe9e9becc637ddb035f1b2e5bf41680e6ce7bd4431",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__blue.mp3",
+      "revision": "bcf9f82603c57588174d62ba091da5b1118bdfc769bbc3ef00b7ef6c251a5417",
+      "bytes": 28751
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__gold.mp3",
+      "revision": "aa8573a65541e01ef072686f4b17e0ea6dd11dd3c40adf7bf0d42d025faae845",
+      "bytes": 29222
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__green.mp3",
+      "revision": "445d53c20ffa7564ae4bde41a8ed823d87e6d6db072d76ae66096ff5cf86340a",
+      "bytes": 29849
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__navy.mp3",
+      "revision": "1a7802a44380dcd3e6e8af6d30c4d5d85b2cada889cf4b293ed9919a545db1c3",
+      "bytes": 34864
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__orange.mp3",
+      "revision": "b92f098aa60b33f86d68cdac89621b500b3de95eeb5358d5d423256f144e575b",
+      "bytes": 30005
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__pink.mp3",
+      "revision": "a5b8865cd29d8068324ab379cc43306dad10c9717039c3225c1d3731444d2936",
+      "bytes": 29222
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__purple.mp3",
+      "revision": "202aa70ba156316758a9806659d88eddbefeacb2b58f13e2f179cf9c31ab814b",
+      "bytes": 30162
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__red.mp3",
+      "revision": "398fd485c1f491ced65fcf3975edce9d25bf8f051c51afa3ac0d0c20fd9ed38f",
+      "bytes": 28595
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_4__teal.mp3",
+      "revision": "5f750540d45d1ea926497f63c53ed7c0849a70e5787d298502b062b8def29618",
+      "bytes": 28908
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__black.mp3",
+      "revision": "155782f0efd24fa7f099df661cdbd8d403d92ce0e02d23a5fbf13beb00c0c809",
+      "bytes": 22796
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__blue.mp3",
+      "revision": "e3e47e1b56a3d72176f394154d65e50d2586c35f8622a9a4e6b615d46a1eb02c",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__gold.mp3",
+      "revision": "8798cdefff82d1324b7520567fc8f69f8a5dcc75c2b8d1b86f4fdeede826a135",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__green.mp3",
+      "revision": "63dae62820dbe26ada0774db6ff1b6dcbd5f1668322ad8135e4363c9054f784b",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__navy.mp3",
+      "revision": "6a235c4cf48c86c569fd4a3c1d578ee217a7c9886530b1461b827d40b5edaa7c",
+      "bytes": 24676
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__orange.mp3",
+      "revision": "9d9495b8cb7242babc25f97b4dd429c3aaefaf2d5b398642f8a74c55a68f1525",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__pink.mp3",
+      "revision": "331e64da27f16ebb1d56ce73ae3394ed5994b31da1a50545a6e3138fc76cd4d7",
+      "bytes": 24049
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__purple.mp3",
+      "revision": "6695d70537fe90cbaa68903f2f4dc3b612868662f2c782eb0777da97fd660b94",
+      "bytes": 24049
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__red.mp3",
+      "revision": "141b9378f5fdccaaaef7ae62271daf8cd39d4b2661c4008f4da07d1e7df95a7b",
+      "bytes": 20915
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_5__teal.mp3",
+      "revision": "d0c2b2407660701a87ea6c23156938e75b997483cdbb3e5ec937c529b73a1c99",
+      "bytes": 23109
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__black.mp3",
+      "revision": "bf09137b25286e98ab598ef6d51e4c879fb86128557a3ee6fd73e12ca5b30ce7",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__blue.mp3",
+      "revision": "4ab2a054a910507952293b8b6e6be50f44963764d031a8d17b7ae8202b5c028f",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__gold.mp3",
+      "revision": "84047407d4c127e3f2c5a69f2ec7779d98d98cedc7ea88e2bbf640ec9f97816d",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__green.mp3",
+      "revision": "d9123e2a43599f85e3b0a599d0b446fbb60e489174b36161d1737db984f25a15",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__navy.mp3",
+      "revision": "c5779542a106bca48afd34fff799e2b5e4b554212732bde711038164b774d99c",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__orange.mp3",
+      "revision": "a26acafffbd5fb6aa731a542165f0229da84d9c4068cb200dea841b399621e67",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__pink.mp3",
+      "revision": "eff79792d2141ef8d0b16ff8ee81b957eb45f423b0769fa7adeb050f2c1ee623",
+      "bytes": 17780
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__purple.mp3",
+      "revision": "29253aa1752bfa50e6cdff77b9ec5fdd8044acac2ecfbffd41495f886a247216",
+      "bytes": 21071
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__red.mp3",
+      "revision": "6f97193c62a2fda7c05d2073a20e8b78f81e467d97f7d586b40399df18f179fc",
+      "bytes": 19504
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_6__teal.mp3",
+      "revision": "88fa6dcecf68fe78d87a1e922ae950e31eba424669e375744d674914a834359c",
+      "bytes": 18564
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__black.mp3",
+      "revision": "191a079d4cfd204122c9fb1bd31bb781234f7096c6e0a1c3d76f7d84b691be13",
+      "bytes": 29222
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__blue.mp3",
+      "revision": "550a4c448c1f4ec1bbc09f0c99f7d554438c120b7dce2ffdb29a24013147ab72",
+      "bytes": 36275
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__gold.mp3",
+      "revision": "a546b2c18fcc9ac2742a0e73e4e1f7110c074dc64d046df57723439eb47c6364",
+      "bytes": 32513
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__green.mp3",
+      "revision": "1ded697a61b56424b4a950c7f4303476ce20145de4454a5d918f43b5170ed21e",
+      "bytes": 32827
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__navy.mp3",
+      "revision": "93911657566f2cec19adee05d990419b8bc257ac1905cc1194051ac86d07aef1",
+      "bytes": 34080
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__orange.mp3",
+      "revision": "3772e086530c99b30edb73eb798bc4ba4f4765b0e98446b355af84ed2633e64e",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__pink.mp3",
+      "revision": "10a6bfa21ff6c21ca49de1ec8eb36e17baf60a5c010c9a8eabc369a4ec02456e",
+      "bytes": 32513
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__purple.mp3",
+      "revision": "81da35ac30a7496b3124e66eb7720b87a06a713424b67791802907b9c61d37af",
+      "bytes": 34394
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__red.mp3",
+      "revision": "51a94ff17153ba016b4ed7fb98123cead31a4d9184659edcf02b1873976e28a2",
+      "bytes": 32356
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_intro_7__teal.mp3",
+      "revision": "beabdac534ee96009c7480253660b0caf670fcc447113e1fff185d13e9e02206",
+      "bytes": 35491
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__black.mp3",
+      "revision": "4ee64f31d21f1dd637f7a1eb475be026bd401b2adf8d872fb494843773c8d922",
+      "bytes": 17937
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__blue.mp3",
+      "revision": "5bfb5ec83e5162a9ed240133b1f3dd02ce6c585c4867a0122acfdc82a66aa007",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__gold.mp3",
+      "revision": "f204b6a9893d11c16a35d9c9221511709bd20e4a10cf52d345df30bd193406ad",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__green.mp3",
+      "revision": "a766c218465062cf2cea75c4720d4a99112a487869508762fde60d99f313f617",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__navy.mp3",
+      "revision": "0d7d5cf778142e5840035fbbfa9aade0175783ddc602d91ebe6a35f322a08ecb",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__orange.mp3",
+      "revision": "ecc7b9544c3d8f5eb75e8739cd3ad20bcbebcd4b0bf73ba6dad3af56a6855d8b",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__pink.mp3",
+      "revision": "2a1c9cd4ae0e7d8c32e0ae6edac618bd62f0b88496afbc7e066539e6b84c006a",
+      "bytes": 14018
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__purple.mp3",
+      "revision": "321a530275a9ba4e232e84e5852e4e7e2fa7007d80fc9966a77cf5b04d6a500c",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__red.mp3",
+      "revision": "fcbc2985ec22f4612d52f1e69e86594d0ae7a66be8e33e4225d7df142938557f",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_safety_1__teal.mp3",
+      "revision": "cd4643202d26bd6df1c108dd9fe3f3b8e1d268bc5c91d5fd4f996ac9ecbb8bdf",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__black.mp3",
+      "revision": "64c0f77260de5a825c6dd5848354917bbb533c86bd7687ce0e487d0bde3247e5",
+      "bytes": 10884
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__blue.mp3",
+      "revision": "a27e8448ae4a7e4778244576825f4851f062f597e047a54aa1321c32536b8eb4",
+      "bytes": 12138
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__gold.mp3",
+      "revision": "fa57c4012b5ca7ab25b8668d1a8fcc7d8e7f34ea33a2ffdbcd47176f4a4d39ab",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__green.mp3",
+      "revision": "08ca52126dfa3225b071f42ccb4a08dbc7a4bc200364444908bef3ab7f543f9f",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__navy.mp3",
+      "revision": "e0207a9580933eb726e02486ab8d0abd20b854f51c006f891f41164173a90616",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__orange.mp3",
+      "revision": "16f2208b9d0e7e0ac6712f4d95bf5397c38222ca3ac81d8568b07e8225fce174",
+      "bytes": 10257
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__pink.mp3",
+      "revision": "9219c8255cdb973f7cd2b54c2e168e77156ee36a1796ebe481455384d8c986d6",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__purple.mp3",
+      "revision": "ac0ad518822ca2a3b920e41acedae0f406d8e51eaa482104d2d426e27a961c31",
+      "bytes": 14175
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__red.mp3",
+      "revision": "c433add7a1116a6db8bcc96ace48bbc40cb6bf1869048fa718b83313da5175de",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_1__teal.mp3",
+      "revision": "49624a5fc116767063d9600259b2f42705ab6a9c4795a5903b1c910d56231938",
+      "bytes": 11981
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__black.mp3",
+      "revision": "6a1791244411f967ac535ad3abbd22aab4283a569e1b5cb4c9ea0f0beedceed9",
+      "bytes": 11667
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__blue.mp3",
+      "revision": "2877df26e6e807a7946a6fc7cf65c92b62f95d92100976dac41604d6996d6c71",
+      "bytes": 11197
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__gold.mp3",
+      "revision": "02031654d03f72621f0e42ce39240cddd6bc1aafba4c46f1e75a39e7a63a6e85",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__green.mp3",
+      "revision": "89ad5772c01981925f347424cdfa7c52d18be3efb8086376c69f3f6219f52472",
+      "bytes": 10884
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__navy.mp3",
+      "revision": "e3d52b15c7c1691757c51c83c0c2b0c99b2b38a1128243216d397635e9a01d5b",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__orange.mp3",
+      "revision": "924d8565ef426c5f380346bddf35d6eeaf35df962cbf9d604e2f52f31d6dde36",
+      "bytes": 9787
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__pink.mp3",
+      "revision": "831d03cee7329ff6c22bb971454b397b960461c7473e910fc366831c355e9543",
+      "bytes": 10570
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__purple.mp3",
+      "revision": "b635d9bd1d5280e3e7a2dbaf7a6fc13c70a35bcf4c989ba93f5f864012fcc419",
+      "bytes": 11511
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__red.mp3",
+      "revision": "d80c0999e9d816f90d6beb83de6c69a42448a12b8e1da057c2021c895e340d8a",
+      "bytes": 10570
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_2__teal.mp3",
+      "revision": "08966429ccfbc847c2cd44f3866e15e842a3e9308fd112e1f588f523a0f844ca",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__black.mp3",
+      "revision": "851523c665a3521e242f4e09f8d647721feccf45f112b717138fa4339696e1b6",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__blue.mp3",
+      "revision": "39a5e8e6d762b251528797f39f6d7a12c6b21b30f811dadc6ef3b4bb5386f65d",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__gold.mp3",
+      "revision": "b394a7c336429fe97e3412284cacae7e8b6f8ce84c4e0c1adbb84c7c9659c825",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__green.mp3",
+      "revision": "37e57e9d21a4918e39504b06ea795510683e3c3bd698216d330b41f267abb8f8",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__navy.mp3",
+      "revision": "61fe95da9ec56774827dfb819150b85e6c1356ffff636031a36bccd6a3a6d4f8",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__orange.mp3",
+      "revision": "776c2cd85af4f23b92b32199d3285534385f595dbeb45a3fed3719705af96506",
+      "bytes": 15899
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__pink.mp3",
+      "revision": "b40ad203e3d235e82d2dfe3c57b502d45a5c6bea80b5248e03cb9888a2993e11",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__purple.mp3",
+      "revision": "d3db2b4d925f93e736e81379841cf385429e08f16bb9e167359e5cf04b7f993f",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__red.mp3",
+      "revision": "0baedf88354dcb83f84d96c7d67a597a2f880cfe665bfbd0a9721f45d5a61663",
+      "bytes": 15899
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_td_3__teal.mp3",
+      "revision": "5ce14b4fb5a4a0a60b6fbcbb2fa5bcee6c9ca4d2641bdeb6e28b92539192270c",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__black.mp3",
+      "revision": "6d702ed0f5356590be99109ca2f621d7291b49983615335c82d4e7cc42925f7f",
+      "bytes": 14959
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__blue.mp3",
+      "revision": "fc393d5781e34df72ed79295a54d2ebabe7a003da98b17d10fb73ad829c1a337",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__gold.mp3",
+      "revision": "c7e62aad9b3bd6fc0a694cd199385d0a30df9016bf1ac79be6176ddc3c644926",
+      "bytes": 14018
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__green.mp3",
+      "revision": "9e545781950e077a5cc1275daea4b10a6c4b8c21c0990d16d9932482820e256d",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__navy.mp3",
+      "revision": "553cf509c58130f86ce225c724a6e6dc7e21542b63a26df574554ba2d28edcc6",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__orange.mp3",
+      "revision": "6ca9fb8b6e6ed8ab8ff8a4cad458a1556f436f6f908bd0bfed8f37914dd4f5cd",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__pink.mp3",
+      "revision": "d42fde4e98721ad9a725f565c69ca02abff3a365dad84ea4961f900ce2f17ed5",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__purple.mp3",
+      "revision": "72cf7b22ad1483f41ee1630c2a4b0d061dca43ab1772a67cbba906b90da1ddec",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__red.mp3",
+      "revision": "e070ed5a497448511885a4dddd966182b4d540815b2a00fc554a3030cca3a646",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_1__teal.mp3",
+      "revision": "50cb4ebe1e567573b1ded637604261bcd6df77205444389d6ed53c31afbde9c1",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__black.mp3",
+      "revision": "96f9191a568e113bd606d4c2f056e2dda7dfd53d22ffedde1605ff2f9338f802",
+      "bytes": 26400
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__blue.mp3",
+      "revision": "69ac02dfab27424e8448164bb34fcbf53601cbf36f7990316acc17cfb7262eae",
+      "bytes": 25774
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__gold.mp3",
+      "revision": "0a80110894eb5375bc44b19792d5ef3528dc2bcf2853126a430574ae5e602be5",
+      "bytes": 25460
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__green.mp3",
+      "revision": "530f3832ded45c5c61cfbf43c4af4ed963cf2d2a7bb4543f99a446fe99c9bdc1",
+      "bytes": 25617
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__navy.mp3",
+      "revision": "c6d7baa3b11db637b24058c51020f09b07ed8939084998114721dff00cd4231a",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__orange.mp3",
+      "revision": "c7e97eeb46ca73fecee47d5e6b174385338964f542aae8d88b76b185a6fd6aed",
+      "bytes": 18250
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__pink.mp3",
+      "revision": "3959751c8df99b66536057a9411f1398056a96b9fca2414be457370a7eaf8816",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__purple.mp3",
+      "revision": "edeef2af64a48cd87bacf3000b8f9529d59b4bacb26859e1ea03508c6ff6a1ea",
+      "bytes": 26557
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__red.mp3",
+      "revision": "3fdf277ce4cb19506adf0f717f9fc40a629fe8f5e5c5fbe4cd9ed590e260fd38",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa_team/pa_win_2__teal.mp3",
+      "revision": "b2c9ae8b7e7acf2f149ecaee90f173f653e71fba419e8af634c2e21247547174",
+      "bytes": 26557
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_1.mp3",
+      "revision": "1c600413a7a21e1f7e2b485d0b1f42c0bb7866898d470d3826037c9f6172dd3e",
+      "bytes": 15116
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_2.mp3",
+      "revision": "fc49bfabdd6b882268495d7d7125b862213e62e6661517e0c3e454351ee612fb",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_3.mp3",
+      "revision": "497bd52f4393756c192dfcc18d60058602cf78e356313f15da150c396e94bdd1",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_4.mp3",
+      "revision": "391ff44d7f60c48a47ccc014a8d14dd3c157003067575ab2433107cd960382d8",
+      "bytes": 14802
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_5.mp3",
+      "revision": "d17849ff5c0018f4da4ce0e9f76d194301ce67b513a52dcd5b11e1ac76f39e1e",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_big_6.mp3",
+      "revision": "e2157f33317445a886c7e2d84408019fbb643feb1a4290ec4ce383e76feb661b",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_biglead_1.mp3",
+      "revision": "a0ce8dc414161de6e5b31b7e4d2dac9972250ba24f63c7c5aaeaa3df5f92dc53",
+      "bytes": 12138
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_biglead_2.mp3",
+      "revision": "e9557a8406850b1fa8a07fa2afca541662e4cb4b809157c0aa34f40c1fee19a0",
+      "bytes": 12765
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_champions_1.mp3",
+      "revision": "5fd3cac9ccbb57c5d474c992a81c344e7bc8e307943e39f03ff39d2d6e2a8bd7",
+      "bytes": 19974
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_champions_2.mp3",
+      "revision": "33249d8626c206c02fa66173dbe33129069450b220b2910bfb01655e43431c30",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_champions_3.mp3",
+      "revision": "6a2a3c6866d251333ca4ec94b596ef02832285274d342ea5955efee015d52fd1",
+      "bytes": 19191
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_clinchchance_1.mp3",
+      "revision": "c65d440e31ca1720ead626501bec6d88fb676d2401cc193bd8b39b6b847d3c81",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_clinchchance_2.mp3",
+      "revision": "96647f9b5acc4fce42533f6f5e67ee29c477a0f0526377684624581a718117dd",
+      "bytes": 18720
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_closelate_1.mp3",
+      "revision": "691df75b0fe7fa3e08803ec6324e46c36e1eaffc02d201e58078262425413bb6",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_closelate_2.mp3",
+      "revision": "1e6bd1862d126b83ade69bcd1b7bd1d5a583c71daca9d5c8a2f7cb4f5a1f4043",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_closelate_3.mp3",
+      "revision": "866fa1b95018b36130b2cb20fa00dee7643b94db7fa9fd0efeb2c46a6b33ea8a",
+      "bytes": 10570
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_comebackwin_1.mp3",
+      "revision": "550f91c5fc1fe6301109dd79d636fc475d9994ff609ab9a1302034102ffbe2e4",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_comebackwin_2.mp3",
+      "revision": "383b75007eaad130ff035900d92a7a137c49607c8d8f96847abcd245905607f2",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_cutdeficit_1.mp3",
+      "revision": "52825a6b2358d2327d102a4da68f461f01cfe5040a1e0084903011689f17ebff",
+      "bytes": 6809
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_cutdeficit_2.mp3",
+      "revision": "5f85d6e9cd917e45b182be22e350c0c9dd59ae544adfb8061eab63354d8a59ab",
+      "bytes": 8689
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_cutdeficit_3.mp3",
+      "revision": "cd379dc71dc4045c77e503028a771143d0733559dfbc992dfda8aff88bc6b26b",
+      "bytes": 9160
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_downslost_1.mp3",
+      "revision": "cfdc48b1079fce6ea83100f2f1e22a4643d788410cfa9a200bc238c9245a8377",
+      "bytes": 17623
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_downslost_2.mp3",
+      "revision": "f7c74a84f4886a3f710dd27109f68c692c43ebd8705de2f30e5fdcd5c1f46293",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_downswon_1.mp3",
+      "revision": "0f1aff64aa62809509ddd5cf99c7ff532b7d5c01eeea772bef67848f36a52222",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_downswon_2.mp3",
+      "revision": "f19432d98f0e246362dc18a6d02f996810dd9b5b897620adc2b6b3b2ce1469ec",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_exhibition_1.mp3",
+      "revision": "d8ede76a97ac873dc15fc655c4ae9d4efa410e7aae5c3ca798aab07c5768ef90",
+      "bytes": 21855
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_exhibition_2.mp3",
+      "revision": "ff695bfebbf9c3c70bf8789d495f7fa8f308ea934295cd407a777c2de7901dc7",
+      "bytes": 17310
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fg_1.mp3",
+      "revision": "7458e44ca904b756d97c90e197c78adfd5a6638d8b2f54ea0fa73651f77d5b10",
+      "bytes": 8533
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fg_2.mp3",
+      "revision": "a2dd89330828e9f012739f6ebb975f81fda18c295e53256cee8fe16a11966103",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fg_3.mp3",
+      "revision": "64a8fbd80babf63ea91999acce9a5115b4a790d206493ff580ef9dd20b86b45b",
+      "bytes": 11981
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fg_4.mp3",
+      "revision": "e1518fba285184e04d95b1bcbfa095bf854364fc2abb4b5755e85435e3e32122",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fgmiss_1.mp3",
+      "revision": "151507c2120d7194f644d95dd5711ab44020398e3c97ac03e7b0e036db85ee06",
+      "bytes": 19504
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fgmiss_2.mp3",
+      "revision": "5a2504446d0ca479abeb93ba011b3e9ef3f29a96aadef4617e1bdc24312313f3",
+      "bytes": 24363
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fgmiss_3.mp3",
+      "revision": "b1218af3e8e03ba208d73cfddbf88cd4d293808c3b59195e98678b21430dad43",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_fgmiss_4.mp3",
+      "revision": "d0e784f5cd017636773df07ced8dc2ade5b69e68c9131dbb221b577df4bfc6fe",
+      "bytes": 14175
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_finalregular_1.mp3",
+      "revision": "250192748fdb260c964d873a5147f7c42e2e91116f2b65fd406262810f524a1e",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_finalregular_2.mp3",
+      "revision": "8cfa16ec14c173c2e7971385526ca4e708b24c60b8100492247cd28c7f6019f8",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_finaltie_1.mp3",
+      "revision": "8c502f917bdd6dc7eb2959d1b664be23ea29bb370634d82a06fa163da2be9eec",
+      "bytes": 14332
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_1.mp3",
+      "revision": "3e08e75127cf9d4fdc840cffc866d859866149a21c149a9817b9c14633474e97",
+      "bytes": 8219
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_2.mp3",
+      "revision": "a493b63326e43c9febcfe23e9dbce9913d31f59f2c493b8e489b93b07077bbe7",
+      "bytes": 6809
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_3.mp3",
+      "revision": "70f3d759242328eed1a6a5d35dd4c71763dbc586e92ff8c8f3966570d3e6a9e1",
+      "bytes": 8846
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_4.mp3",
+      "revision": "1553fad5d8be0bf00559a339f95261b5f7471d784075dd243b674506d20510d4",
+      "bytes": 11981
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_5.mp3",
+      "revision": "b72622c79db97f3499c603cfcb4b6d20d4d184aeab5ebba19900e8d3774f55d6",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_6.mp3",
+      "revision": "aafe0b16e8c5d7d526721b010f06b825f30141f1e0e5140b15dfc69e54274b4e",
+      "bytes": 16526
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_first_7.mp3",
+      "revision": "379985ce50e2b6148fc240b2b7e31ee235fc6554031bd0a1cacbe0d97d98f95b",
+      "bytes": 9316
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_halftimelead_1.mp3",
+      "revision": "cf72695f3fdd7cf1d5ddbed6a416afc15c14ecf20b1129a7c45f88de7e82a173",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_halftimelead_2.mp3",
+      "revision": "d472f693142a0458680413297a2b6419c25d0f1f0f9c50e20d6a9e4b9fa4d80d",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_halftimetied_1.mp3",
+      "revision": "7c07ec6bc7a908ea96611a1dab2fa64ae3ee6260c77a5ddb769b24522f5d9253",
+      "bytes": 19347
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_halftimetrail_1.mp3",
+      "revision": "430f53e84e3a29e369fc95bd475a285897538b8c99942b9516f7f90b4acb1847",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_halftimetrail_2.mp3",
+      "revision": "8611ba7612e03be3291a4c122622d6a25c69c90e5f4f3916a25da125c7f7cdbb",
+      "bytes": 22012
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_1.mp3",
+      "revision": "5c0ff6586eac66502b49d8340ab5e06358b6ce05285931e24d5994aeece548da",
+      "bytes": 30476
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_2.mp3",
+      "revision": "a027bfd05f9108886f90167def04d3c5d50d72ca1a499e56e5d90c2ea5b7efe9",
+      "bytes": 25147
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_3.mp3",
+      "revision": "bb80c87368b58e9f0233d279bfc1c7e9fc5b6dd1d4d421169ee3edecf3d8733a",
+      "bytes": 23109
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_4.mp3",
+      "revision": "2d49b17fb81bd5f8ec991e62f7e357482a81a206eba0ce792b1a190cf6c62cc2",
+      "bytes": 34080
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_5.mp3",
+      "revision": "5273a37896f1b51849f545e8373a5b76a8dd983c936e988c077961a7d1a0ed90",
+      "bytes": 22482
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_6.mp3",
+      "revision": "a3afabfc8e9407307e79c2f7ce02a90fa4b3cbab45995db97932636ccc4b9307",
+      "bytes": 24520
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_7.mp3",
+      "revision": "26b5026c61bd16379dec0c471c1dabe0a0a25b213657a68bafb679888da4e052",
+      "bytes": 27341
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_8.mp3",
+      "revision": "abf5ad444848674a729c4a17f47ee2f7e1a3a01038b1e0a455469318e7065016",
+      "bytes": 23422
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_hello_9.mp3",
+      "revision": "f532dc852389a0c1b8cbbac854eb1483e2cccc82eb2aed18ed60b13bf0ab6ebe",
+      "bytes": 22325
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_1.mp3",
+      "revision": "2691c7fc540bf1b2b9ada548bf49d3f9ed41da2a09397efe54233bbb63a2693d",
+      "bytes": 10100
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_2.mp3",
+      "revision": "95c08af27b65fbf1bb510fee34864021e22cd54465422fc4f919464f1ba96fc9",
+      "bytes": 15116
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_3.mp3",
+      "revision": "e26f9ade799c1729fea5c8ca0ca6e6a316a0dff62e28ba880f80bd07740fcefa",
+      "bytes": 7749
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_4.mp3",
+      "revision": "e111c5e25d01efa741f2a3d5ee8b07bbff711883d84fd5a02b23f7a54c612526",
+      "bytes": 8846
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_5.mp3",
+      "revision": "3e5e80285bfab59a7d3517d7661e540540ad48d12795651ccb68f79dafba474c",
+      "bytes": 11667
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_inc_6.mp3",
+      "revision": "75e28161df09fad3615e54c31534739f478b28e601cab0b630351420b20fa259",
+      "bytes": 9160
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_losingstreak_1.mp3",
+      "revision": "d881a7df287ce7215e17ba78a8364cc23f39ed0df4ea48ad75862fd3b477f32c",
+      "bytes": 21071
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_losingstreak_2.mp3",
+      "revision": "938f63a8b2d9821b32c26600edae2749cb5b7cfcb1308a240e1d2f57eaf9ca61",
+      "bytes": 11040
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_1.mp3",
+      "revision": "893b17b9effbabb4d932aeaa1aa07d3dec8c6fb001a30495f3db454bc73bfaba",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_2.mp3",
+      "revision": "93907dd6ac210fabd3f92305bc249abc82846e992e799ab94444045f0bb2faa6",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_3.mp3",
+      "revision": "c39d7a62edd9f6c6bb6f6dbfe79c78e6fc657cffc2b0aac506800fd66e8fbeb7",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_4.mp3",
+      "revision": "20c2133108346f9cb47371d156f835b561b87412c8f43fad90cce8ecd8ffcde5",
+      "bytes": 14802
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_final_1.mp3",
+      "revision": "03b58717e9d5f4c92e3baded87f2516056e5a735fa566b21201f663043467b5f",
+      "bytes": 22325
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_final_2.mp3",
+      "revision": "bac4059a0c9ccd13935d529f79681163b385c8e1ee7da367f2f7d1639b13bbc0",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_final_3.mp3",
+      "revision": "3279a30154d17f62678212b0c7593939d62b00ae8a07fd4ba65415029a1b2a8d",
+      "bytes": 22169
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_final_4.mp3",
+      "revision": "32da6b0fa5aeed651b8fee13c3282a66c30bd7951968a3937e5a10df4cdd6ac3",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_loss_final_5.mp3",
+      "revision": "8a8ec165c0d55c550427b77ffa81a0da1595d6f7045ccbd918d0118a12cbf5a2",
+      "bytes": 18250
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_black_1.mp3",
+      "revision": "0a9befbb7a15b1a8323f83a3f37d3d9caaa812af75b8eb0a13e631d6ca53c53a",
+      "bytes": 31416
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_blue_1.mp3",
+      "revision": "0c5043c50adf5a6e39e0f8e834495e093fcf2f62cc6921fd4cd9736a07980c45",
+      "bytes": 22952
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_gold_1.mp3",
+      "revision": "e9e9fd95b70d2f23822c02857192e1c6d987c9cc8b71df32b013fe7f30fc6840",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_green_1.mp3",
+      "revision": "0c50d34fa831af9ff09c430e6177bdd5d0e86354357573c7b88ac9b12dd8bcff",
+      "bytes": 17310
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_navy_1.mp3",
+      "revision": "9f652f790e7c4e633077f5786c255df1eda9a632e7e6d89d59dfa57129364441",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_orange_1.mp3",
+      "revision": "f3421b0ef679adb246f63bcb41a9512ffd9a028aafad7bfdc19a30729367c7c4",
+      "bytes": 22012
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_pink_1.mp3",
+      "revision": "e5afa51a9a2d57ff12fff733adfd4d8bbdc4f2c61ae2eb71a13c38d00832f39b",
+      "bytes": 23893
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_purple_1.mp3",
+      "revision": "89311c3b76a01a65a370c6c1224b1bce55902feff0096b59be0419632a0f22e3",
+      "bytes": 21385
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_red_1.mp3",
+      "revision": "79b71b53b31a5449b7b35e635639601433c1b14dc77385852184b1c9465d9778",
+      "bytes": 27968
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_opp_teal_1.mp3",
+      "revision": "020da44795b4ac776a6250a92b25add7f9af4a3b61bc6008dc0b75b43e4a858f",
+      "bytes": 23893
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_ot_1.mp3",
+      "revision": "64c0fa2413e302883bff0f0fb240d4eee38f4076af82bc4239c4cd1686004a75",
+      "bytes": 24990
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_ot_2.mp3",
+      "revision": "5749cdb3c350b6557daddac66ca15546b5ddea06b5e03257349856eb7a3a0338",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_pafeud_1.mp3",
+      "revision": "7e864d4e42ad389d3915c563bc7fc207d09b6851d4957f9ff0a2f510320604cf",
+      "bytes": 19661
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_pafeud_3.mp3",
+      "revision": "aac9451c37b7ed6189f8936e26740cc8662b2113a39c9bf4095a4e079df26cb2",
+      "bytes": 27654
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_picked_1.mp3",
+      "revision": "2886ba5916f629f988c13438d96fef2a9dad8a6282efd42be5cfe81b14858cf2",
+      "bytes": 22639
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_picked_2.mp3",
+      "revision": "31687e41954b366a1ff1038d55f05d132d94fff73ef79c9c8e55ef5ff7fad742",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_picked_3.mp3",
+      "revision": "173b8641bd2db9ffe50527de7ed54a3968ea5b4e41fb227fe2cb6a933273eb63",
+      "bytes": 20601
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_picked_4.mp3",
+      "revision": "c49c22fea4d00b5fd8ad580a727606dd31812f1df0bd6df35d5f7188d88591ea",
+      "bytes": 15116
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_practice_1.mp3",
+      "revision": "722426e43a084731fc4d85b163f72aa5d455481b461293e19a9eb6ce8e62e669",
+      "bytes": 21855
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_practice_2.mp3",
+      "revision": "2e8488ab9eee3b6cd9120b84f63b7eb9d9ada5de16cc03533656eb0458548e5b",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_practice_3.mp3",
+      "revision": "ee62260e2486079d14aab322d44e2d9b3f18d54f5a8baf76d11f18a6ef936385",
+      "bytes": 19818
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_practice_4.mp3",
+      "revision": "e35199782b274c22e6fbeff49016bbdaac35db373b8af7e75b4e9137093148cf",
+      "bytes": 21071
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_puntret_1.mp3",
+      "revision": "b0b2d6db4089ec06c79a2282760d92dee1cc48eb11ccfc4882c8d2e76d220531",
+      "bytes": 9316
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_puntret_2.mp3",
+      "revision": "b25b3ae75e444e34d8a4363edadbd6d9d6af561129216e129064d3e6c3b6553c",
+      "bytes": 14645
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_puntret_3.mp3",
+      "revision": "788e4e818a9fbb4e05b5ea186a49945d241b4091ef0adadaec7e8b79dcdc6886",
+      "bytes": 11040
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sack_1.mp3",
+      "revision": "5b2e3590ff895513f305116c62f56d9558796da703b244d51e4d107f63dd9b5d",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sack_2.mp3",
+      "revision": "cc431529e61987c600dfa7912bb3a66a24b83964f568c8454d749397f32db19f",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sack_3.mp3",
+      "revision": "4d5ed7edfb2795f72adab548464be003bf71942d62927c34dc662e8c7f75d9cc",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sack_4.mp3",
+      "revision": "a1e659e5f0d1299a392c1091f95f51919d523198592a57a112d3c2aef2e22a55",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_safetyquip_1.mp3",
+      "revision": "6ef098d191778b0b451e77c3d85fad1d97dce219d95a1629c4a3af9fad2e7bd7",
+      "bytes": 16840
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_seasonopener_1.mp3",
+      "revision": "2b19dc79ebad14ab83bcc2937159fa289b1946e66c83af2c7baf58694a878542",
+      "bytes": 22325
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_seasonopener_2.mp3",
+      "revision": "c9f6a3738120f4d342949769b03b19cfe9852f96f3d849cc188337f51524e515",
+      "bytes": 17623
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_1.mp3",
+      "revision": "55f3b18da1cda2563d1d3061a49102c7f91c6bf94e9c245c4d99cf2405890d47",
+      "bytes": 9003
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_2.mp3",
+      "revision": "79cc2a85b227fc1d80270272b3b1921fa72757240a552aa8ab80ef12fcaef6b4",
+      "bytes": 6809
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_3.mp3",
+      "revision": "0f6bf3d49e4eca9847370b73df2f3366cef29669c2b655e71d1f174bc19aa6e1",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_4.mp3",
+      "revision": "79e236ab67266fc52ea9d9cbc4484edf9873d6d231f427030bd77fba70d55e6d",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_5.mp3",
+      "revision": "08afa04b8e47872832df79e967215ae9d27c88449bed10c038e351069b54df31",
+      "bytes": 8533
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_short_6.mp3",
+      "revision": "913dc9a243c2827c2c29df129ca97b9da410fc5eddeaa38a0d9914bc28171e05",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_shutoutwin_1.mp3",
+      "revision": "c0522c8191d0425c7b0cdd2e31df34ba64395db777ac0bec20e48c8a5afefa66",
+      "bytes": 23736
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_shutoutwin_2.mp3",
+      "revision": "af14e0ff9ac339423e9ee83e11eead05dde626ec326026d3877c7559735acb79",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sidejob_12.mp3",
+      "revision": "0156aa25d036dd2efa0dd4f3d5ca26eb8b4b7a5a7afed69b7dd69f14c6ab2718",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sidejob_5.mp3",
+      "revision": "5ad66c4240889caf977780e85faf3a18a57804e5042f49495b579b5bc3b1b50c",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_sidejob_8.mp3",
+      "revision": "f884db473ec270ca2d81bc1dbd289958802f2aafa9dd24454878e9c7159a8cac",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_1.mp3",
+      "revision": "1d7caa766bf93ba45cac70ae149a0c6f0a7f63cda74a8610a096726de5ab4c19",
+      "bytes": 14802
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_2.mp3",
+      "revision": "18d0a83c47e748a48214b432254416f13dfd84fbf04c61419e15a4a9793ca311",
+      "bytes": 14018
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_3.mp3",
+      "revision": "71c6ea2d60343c53d3b08622adb8d10bd6a6ae59008ddaff7d84dba0c8b8bc2d",
+      "bytes": 7906
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_4.mp3",
+      "revision": "5bb87e423ddf7cea7268a11e088acf8adfdab683555c7f28e116d60bfac10ac6",
+      "bytes": 9943
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_5.mp3",
+      "revision": "b90367e5fc0c4609b3b6de093312f8aeaeabfd0a1de583cf10e2f637f16a6360",
+      "bytes": 13391
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_6.mp3",
+      "revision": "c14e3067d68ef1d80d4148547e4c15658cdeaa7126e1bba03b0181fb5aaaa8c2",
+      "bytes": 8689
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_stop_7.mp3",
+      "revision": "293a2c2fb25264c9e642f95bcc41a723c9e82fd6a7f68dbf47bbfc01d45a88c6",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_takelead_1.mp3",
+      "revision": "3f51566ef78ea056dfd75efbd64ac667c22e91b7d645907e46298f1be9ff04b0",
+      "bytes": 9160
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_takelead_2.mp3",
+      "revision": "7ead588c78b00e319dad0d3fa63d4f8d65103b926bcd8f8899bb6e0904fcb0c2",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_takelead_3.mp3",
+      "revision": "f5828bb5bbf0b4f9a8f7c5f404414f1e948006d3aa0aaae56c8c72f8bfd1609c",
+      "bytes": 7749
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tdq_1.mp3",
+      "revision": "06dbc75a7dcecddf1245dce8de81cd277276dd60bba7cc2a71c64d1df0c8fd40",
+      "bytes": 13391
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tdq_2.mp3",
+      "revision": "f09e3f7e2ed4766b9580a4bfd482095d65a46711105d0692f91c4d51c111b72c",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tdq_3.mp3",
+      "revision": "a5bf3b34326c7416e32585e73e6c60a27beb8675024beb548c7884559d1601f1",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tdq_4.mp3",
+      "revision": "0ea5a294f092fa396e45180adc81414d24142d85eb47a670c174a426fd1b3461",
+      "bytes": 8376
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tdq_5.mp3",
+      "revision": "1b582d2a4d8a507918d8e28b934c1e4d3c432ba60eba4b27937249f0587f59a5",
+      "bytes": 14645
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tiedup_1.mp3",
+      "revision": "04fc090cbe746323e051e855391bdfb62dad1471e899cac17d6ead329d2c2f21",
+      "bytes": 8846
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tiedup_2.mp3",
+      "revision": "b80c328bf42dcd823335a616f36432b819b1b46abd831c06e78031180386abe0",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_tiedup_3.mp3",
+      "revision": "e58e496e07b0b6c1b4d08b5c85ef26eae7a5e84fc77daeb2118fb5cca14b5801",
+      "bytes": 14332
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_touchback_1.mp3",
+      "revision": "9bc096d1cf04bfd6064d4b5f34c6daabf72efee5dbf52eee37250a35aa0cc402",
+      "bytes": 17623
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_touchback_2.mp3",
+      "revision": "f28342559a5bce3779ba539ab535c98bcb6f141e07f0f0ddc6736d4b76384ef3",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_two_1.mp3",
+      "revision": "5bee97d031383916ae82a7da730a72c5971f5c82e2375950f782d197973baf19",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_two_2.mp3",
+      "revision": "ff7a945be49e7498c2849956a10629c551b69b979e06dafc1543589f7be2f834",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_twostop_1.mp3",
+      "revision": "75dd94f961feac7d0e25f1468c08eea41c8468766c418c4bb731873349ddf586",
+      "bytes": 19504
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_twostop_2.mp3",
+      "revision": "9abb65da9ef63d7e948c0c839065a685308328461da257de2bff6a5573bb06d8",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_unbeaten_1.mp3",
+      "revision": "304a753f52707d56e5ded08d90b4101f0e7668534f22333ff0be2bd46c63412f",
+      "bytes": 16369
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_unbeaten_2.mp3",
+      "revision": "00a0ed670b6a0883c2eb1f3b3b9b07e7fac30bbc1b5d912d349d82e26f93af98",
+      "bytes": 21542
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_visitorfirstdown_1.mp3",
+      "revision": "406491e58806d9c5fcf0ac9302b57b22c576a2f229c69f5613cfd73af7fd9eb9",
+      "bytes": 21228
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_visitorfirstdown_2.mp3",
+      "revision": "a5d741a4feeb0ef55efeb943395be47989003e935342c16cb016e92d5fcb9c85",
+      "bytes": 16683
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_visitorfirstdown_3.mp3",
+      "revision": "cc500093e4bf5e2e99d08152b8a236ff6c1e47bf411233108ae97773f98e130d",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_visitorslead_1.mp3",
+      "revision": "c5a34b813f6d541d9d9daa5da6cc211204c6d129e4fb1c6e4e37774baa39c78a",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_visitorslead_2.mp3",
+      "revision": "2f0242b5c0aed52b834c32091a6d42431c364126ffe85d7b7f4e881ddb1b30d8",
+      "bytes": 16683
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_vscore_1.mp3",
+      "revision": "6b04d3f20614796c2f3b173bf6b58caf5cf4ee10c20937b2fd1c02c457476558",
+      "bytes": 19347
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_vscore_2.mp3",
+      "revision": "f3800dad41c447260c4a152558f35c6c21a119fb743c915efe608e3ccf470ea7",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_vscore_3.mp3",
+      "revision": "6e49d719f8b6f3223734befbf55bb947f5e1b47cc493840a0a217341d19ddcd6",
+      "bytes": 21698
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_vscore_4.mp3",
+      "revision": "cb638c264338fdb155cb2977a4e96fac88354e504ed67aa2515c18275ad9f2b2",
+      "bytes": 17467
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_vscore_5.mp3",
+      "revision": "9480eeb5c0c181aad6ed58d76b523401f8af74b9093de6ab5ec1bd2860a00c63",
+      "bytes": 19034
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_1.mp3",
+      "revision": "c512f169d1e2d301618190753d3849e5eb8234cc62807b21080f37d4623acaf0",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_2.mp3",
+      "revision": "fa785bdd99b543a0eb16fcdc80ec6d0afde138007d9254c7ae158d3dc41d9ad2",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_3.mp3",
+      "revision": "15b06bfe28ce2b3b35851485ab06c0c7633c1d25edaaa8143eadccd900317b7f",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_4.mp3",
+      "revision": "0480538d6a6e82ea47a8fbd8d3c5d901fe34b5643f1cf99c75291ba2498953d3",
+      "bytes": 23109
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_5.mp3",
+      "revision": "dc3cfe633708e92939240cdcd2a54370ae25298fa809ad35231c5063fc72d3e7",
+      "bytes": 11197
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_win_6.mp3",
+      "revision": "2315ec1acf464d3635d1c659fd4968cb1eb11458def4dc7a574f59a5b57ba23b",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_winstreak_1.mp3",
+      "revision": "87fccb3a690297c9b9c93dc32ca172e7de8d939d626694ed541037a8f349ddc6",
+      "bytes": 17623
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_winstreak_2.mp3",
+      "revision": "f668c83278323a17a861c3778c8365574901c00bb8b73ea590f45a60b02854ca",
+      "bytes": 17780
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xp_1.mp3",
+      "revision": "5d0e2a862511337855f87a341d602bba009f20c36e766d843c55e11314eba56d",
+      "bytes": 10257
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xp_2.mp3",
+      "revision": "f85b6392f83c2e19a581455f276dae5ca084e930fb410b1e76cd4c3ad3594fc3",
+      "bytes": 8533
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xp_3.mp3",
+      "revision": "2a20e9d2776343aaba92c1f928676df84279f13d4e0d2603151fde76debe92db",
+      "bytes": 13391
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xp_4.mp3",
+      "revision": "6191bb86d7c579439eeae7afa6759e07fbf4e2eaee171ba830bac76c99f2284e",
+      "bytes": 12294
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xpmiss_1.mp3",
+      "revision": "b882500d6a0fc4d7695295fac4e81fb980236a0aaef1a1d2688398afeb8a62d3",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny/pbp_xpmiss_2.mp3",
+      "revision": "3b881ee7a951df010145ce5316534f0698037e800df96234c6db93d99907f3b6",
+      "bytes": 17623
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_blocked_1.mp3",
+      "revision": "866a2dd515897f8bc112708c273de802cafd22f51add0ed953abd5f704d84c2d",
+      "bytes": 13391
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_blocked_2.mp3",
+      "revision": "05fb70da57afb38b482b372712309abd11fb53fdbc589e52279d708465de78de",
+      "bytes": 12294
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_blocked_3.mp3",
+      "revision": "e2becd0d4d7d31fb15283336c8bfd647f568cd905ad07018a0b9115d2d327133",
+      "bytes": 14175
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_1.mp3",
+      "revision": "18cedac57239fe209bb46761ca66102e65f67845e043ada75ef21f43bbd79363",
+      "bytes": 6652
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_10.mp3",
+      "revision": "cec2a71f78a2907b9f6063e8e29f79ae9f433a0de75a76e1eb9beabbfb4d2005",
+      "bytes": 6652
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_11.mp3",
+      "revision": "6ae112cbceed29cfa77647e7074b9faedd35ec960375c9929de16c651c84a513",
+      "bytes": 11511
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_2.mp3",
+      "revision": "79771d891e8574daa0b6299ef522d3ec47857b1a0ec65b0f45753dc6a133c6b7",
+      "bytes": 5241
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_3.mp3",
+      "revision": "a00007dc446469af7565f27374e84e790e0cca217631994aeb09d684b717dc0a",
+      "bytes": 8533
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_4.mp3",
+      "revision": "95b78c3d41e28e86ed31caaf3c2e561cd6db5d1236084ae97e0dcbec07011ea0",
+      "bytes": 14018
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_5.mp3",
+      "revision": "f50e5fa3abd0b5b6e05d0b4709db0526236307b21d25184fee9cc41b1c683cf9",
+      "bytes": 6965
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_6.mp3",
+      "revision": "3c01117d8aea1acad43477b90cacf9527feaf1c58ab65c0fc4017e2452022da1",
+      "bytes": 7436
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_7.mp3",
+      "revision": "e3d858c7777e79fcced1fcb6faa83b8355f12473ba767bd43ca7dc180dc37529",
+      "bytes": 9787
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_8.mp3",
+      "revision": "ff8177cecaaf760648c6621c9ffff4a4012389769be7d3faea772c44e171e9cd",
+      "bytes": 10100
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_broken_9.mp3",
+      "revision": "f6f6fa9a62faf86f44137fdc4f1e1063e48c089a85c4ed0415d005aafb7e82e4",
+      "bytes": 13705
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_1.mp3",
+      "revision": "a197f4eee6adb41f32073319f6fcee66e99e301ba30b7d84bae284facf12f23d",
+      "bytes": 4301
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_10.mp3",
+      "revision": "60ffd760a546fda9d04ef9c014124864cffc51b69d42c9eeee10bac883d81b4a",
+      "bytes": 6495
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_11.mp3",
+      "revision": "e9ad51055ade4f60d7a7c1326b8924c4b8cb79a3ff433f40084c0040e651f34c",
+      "bytes": 7436
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_12.mp3",
+      "revision": "4c2fd6312029f73f0f4b4b3bc242aca5320bc8a652fe51b4ea5e84d689b10903",
+      "bytes": 5868
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_13.mp3",
+      "revision": "e6e400007deb9f0a03e2f4e0e099e6a717d7d7664abd9e685987908669e2f97d",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_14.mp3",
+      "revision": "8adaa4a47814783d9bbf2013c360e7cffe6027294a5d21761b81510bb5c13b47",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_15.mp3",
+      "revision": "92bb0c7e9ba6da4deb93d34e7747a0ffc48ab44bac9be7ccc5d0073e8a4bd17b",
+      "bytes": 8689
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_16.mp3",
+      "revision": "3797add040c2a2c75b8a730f9803a8c9590b2f4bcbd25e406928c632cdc215e9",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_17.mp3",
+      "revision": "1ae853d16f323bf58257b3c02a2a8c8c82bae8af7a7cafc4f8522c82dabd7e10",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_18.mp3",
+      "revision": "9921eeb02e535b2a29d61c14001bc2894f47dc8dec16e44d8e6ae56f933ecebc",
+      "bytes": 11981
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_19.mp3",
+      "revision": "f6bd2225af555d5e9c4e473b300528be2cb9f69a70fb7d5db9513db310fcee7a",
+      "bytes": 9003
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_2.mp3",
+      "revision": "a0029f307ddf86fc61a266ee6779ab2e5d9e5eb8d934a461a549bb6920b9e775",
+      "bytes": 5711
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_20.mp3",
+      "revision": "5688b6de413997b82cce2e0999ff7c354b2732eda3cfe95729351f26c259e4da",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_21.mp3",
+      "revision": "fcc1e1b3ce28ee214d6b4b89aecfd90cd11b4e3113734d770e26fff5bfd9b461",
+      "bytes": 8689
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_22.mp3",
+      "revision": "43fa29ab5dcb6f5725df2c3fa553f3b9d52c5528ba4d8cb3be1206a704c4697c",
+      "bytes": 15116
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_3.mp3",
+      "revision": "dcf424b1af888aa587b53fa77181961f52d1af237d3eda593c1141018cd85eb9",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_4.mp3",
+      "revision": "02cad5da9490b4a9280e0b9cd7aa022c359462bb8d979573169c91f4c30a4348",
+      "bytes": 12765
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_5.mp3",
+      "revision": "db82e16387017bff2397afd9cfa9e850a1adf0125a36665b74a41451a892b256",
+      "bytes": 12921
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_6.mp3",
+      "revision": "888a462e302c015f4d87fb431cbaf0647a19ace2c154d277bc258b6b14b55d15",
+      "bytes": 4144
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_7.mp3",
+      "revision": "b5090abfe4d1ab013278b049b6e94c51995465a04e892450bbb521db7804681c",
+      "bytes": 6652
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_8.mp3",
+      "revision": "0a5a3c45dea5f93e5f49a5eeb9e60b4fe27384db8da11b71cd7e0e85ae64d591",
+      "bytes": 7122
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_catch_9.mp3",
+      "revision": "e3db9eff81e83138a8f7a552bb99b1257d51a06bf9359188eed7d758aaf856df",
+      "bytes": 7749
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_1.mp3",
+      "revision": "44fd1810e1183455f109bde562e7aa7849a39a27e0f4e946d0874053bd83321a",
+      "bytes": 16213
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_2.mp3",
+      "revision": "30d93cbb3c18764e2a9387389ffce2b5fe1b0d794afa1e8b2706b4b4f37d3e87",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_3.mp3",
+      "revision": "f3012e723fbbbc6fbb07c04751002ace3dbfcc691398783772a68f51a3edd5bc",
+      "bytes": 20131
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_4.mp3",
+      "revision": "cc3a07ad21fe25b24a11e369f08fc6c96af551f1daa629c06b75e8d7f52e7be4",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_5.mp3",
+      "revision": "5f4e8627bdbcfd2e0a600c381b53797fa995f6253f7829d28b43b6992cc1d7df",
+      "bytes": 17780
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_6.mp3",
+      "revision": "c2428d3af6d0c9d695f9d003c2e1ccbb18ff1ba1de4506c034090cc7081b9e52",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_dive_7.mp3",
+      "revision": "3862b9df80685464cf2a4daaeb136bd4059f3aff68affb9f6cba4b674fd71acb",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_1.mp3",
+      "revision": "f3ce62e9346dc4951838ec48bf3d57cdc6b92ec1928b754fd38d794581f764fd",
+      "bytes": 8533
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_2.mp3",
+      "revision": "ecdcf20bfb4003683360ca9c5d7f51368e3f9a2976996f974acf78d5495036a1",
+      "bytes": 5555
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_3.mp3",
+      "revision": "70c4c757d5c584169df92ff9b96de6653c23b36a42e7194e485e324d72c27a6c",
+      "bytes": 16056
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_4.mp3",
+      "revision": "24e19cfc68520a429821962f0d815fb6fa75be4b235d0f18dcb8169903930297",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_5.mp3",
+      "revision": "26d8c3da29cee581cb9b7974c07d441157d2c5722d5393d321f7c02deffc8dbd",
+      "bytes": 15899
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_fgup_6.mp3",
+      "revision": "4588b6782b654cf2f89bcac817402645a29301a16846ca0f91f5f0433054f5da",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_1.mp3",
+      "revision": "ea05e307a77c97270b172533dc3ffa842eeceed2899c3ff3e16024e103533859",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_2.mp3",
+      "revision": "b636ebdbaa0cb6f8192e6d758eb56738895079831004c16c66910146c7a095da",
+      "bytes": 14332
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_3.mp3",
+      "revision": "d9b2ab602fb39f1f75099b5f00a0ad2e0b6fd9a733bbd49e799bafbbd0dbd17a",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_4.mp3",
+      "revision": "e7e4c9277c74a35985891460cf98a71b1aed0ccc09bfa60c66b3b87b9337abcd",
+      "bytes": 18877
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_5.mp3",
+      "revision": "f66fc671a843f4982b5baec1f62c9e88724cae8e375a60c04f8e5df5b7b2f832",
+      "bytes": 15272
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_6.mp3",
+      "revision": "82702d5731a69cbf9da1d8f8f763b935413fc469eca8e250c058062a149840e0",
+      "bytes": 18094
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_int_7.mp3",
+      "revision": "545f7f2624077fac2db4811f59ab98334d060e1d60e285803c8b97d23468cffd",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_1.mp3",
+      "revision": "b15949bc9d306281f1d165588d497a00c401a89c51d89b8f189104c7b8543557",
+      "bytes": 6338
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_2.mp3",
+      "revision": "81c90ea21073254743e866e425ff5b811b353713fe19e8b1148a3e16b71efa39",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_3.mp3",
+      "revision": "885bd7d5304a4b1fe1aea6616e87cf5b8f0d87ccd07414cdf1a706645141c347",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_4.mp3",
+      "revision": "3be5c74adc2da2012f25130892d65d465d34e5bfa8db7845567ad6b4352bba08",
+      "bytes": 16369
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_5.mp3",
+      "revision": "348283b1bde30a8cc6be353547e162ea6e1cc4d0a6f1fd7882ea75a051c8debf",
+      "bytes": 11040
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_6.mp3",
+      "revision": "e6b732c4a4c6c7ea75fcd47502ce28705d496339cbb501cc903a11d51a09cee8",
+      "bytes": 7592
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_7.mp3",
+      "revision": "43b03c413dc6a7dc9c08f787ea761ab0af9b178a8945b465bfcf9727b92a953c",
+      "bytes": 14332
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_8.mp3",
+      "revision": "56476e271afdb6a997cd24887ae928e24ec3c528957c146d6f4f7c55558b206b",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_kickoff_9.mp3",
+      "revision": "7a6da8fc6f207a8b28330682967e064f1edc08a000a1f24784e439e1fb9ff8f1",
+      "bytes": 13078
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_1.mp3",
+      "revision": "393efc0d76e7ab0b7f3522e57943850d9bde391e73566b3f769f208afc45f9ba",
+      "bytes": 6965
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_2.mp3",
+      "revision": "422427b9bd4e0c5e223dea48f6e572a3124762e0ab963b39f9df75469c3f58cf",
+      "bytes": 7749
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_3.mp3",
+      "revision": "6d2d91ed0e8e3dc5ba0f8f32c065e80fc71941e3d2a701c4e316d2e44eaa44d1",
+      "bytes": 14018
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_4.mp3",
+      "revision": "4577567e4f9be102514e420b2922421099e727f7acea37cf4d673cc91d95226b",
+      "bytes": 8376
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_5.mp3",
+      "revision": "3f3b71c597e7c447b023ad65932776fdcc01f90e474924781d299bfeb61acaf1",
+      "bytes": 9316
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_6.mp3",
+      "revision": "b77d6cfe477da0faf2a25532246cc43adf19d8b3e3fa9e0d8cfaf13ae74be703",
+      "bytes": 10100
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_longpass_7.mp3",
+      "revision": "7f442aff27ccda2a94ac7dd4f7b3befca88b1d404426951f8739e44454004752",
+      "bytes": 6025
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_1.mp3",
+      "revision": "7242851e53632e3342d904c5f29ff7377d0d6d9d3a26ce5ddee38aa318acfabd",
+      "bytes": 6182
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_2.mp3",
+      "revision": "3d2b1063a30cb0c91185c50f4596c0ca64b540faafdce23a0ef5c7225db85c23",
+      "bytes": 8219
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_3.mp3",
+      "revision": "7c4a0d1cd53aa87fd6009ed1eaaf3a21107697a7a568d38bfb0d23ba362d20ba",
+      "bytes": 9003
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_4.mp3",
+      "revision": "21d2415808d5303f6676209af977fd0768c5024c565f62b196100cac7c455a92",
+      "bytes": 7122
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_5.mp3",
+      "revision": "69e3c7f2850b6ed4b7f36111f63b0d4701fe15af723370cd4d3c1b9ce37d4224",
+      "bytes": 9003
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_6.mp3",
+      "revision": "a32e05297b4ac9e4304e07d362b65052a4dea2c73651c76bb91497e239a3fbcd",
+      "bytes": 8689
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_7.mp3",
+      "revision": "345de2abb714853e7a976cd173055ca0b9e11ce68fc6efd87e57b3a6ccfbaf00",
+      "bytes": 8219
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_loose_8.mp3",
+      "revision": "961b9268a953b2955179b9cb56fa0550dbf224bc613a8aa99114939110eae317",
+      "bytes": 12921
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_onside_1.mp3",
+      "revision": "2667d27c0ae44da5ff92f1401af2c3df209170cbceec705e337d6aad3c809f4b",
+      "bytes": 21071
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_onside_2.mp3",
+      "revision": "8c306f200c026a6c7991e3964dc644e2456cdf7f5434c783a4b72b0c6e63d6e8",
+      "bytes": 14802
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_onside_3.mp3",
+      "revision": "377970a789c2e7d5d651bd407348c601d6f6cd5c3b91d3a4bab27cbdfb0f494b",
+      "bytes": 17310
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_onside_4.mp3",
+      "revision": "e38cf5563f37ff66b2c2cc89c0a5e6658ab815638c1acc5df9991b1d1139e3c1",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_pick6_1.mp3",
+      "revision": "398fb1a1f2ba800a42a40e5f3298301ade39b2332cbf2789ba6a50e6ddf02dc3",
+      "bytes": 19347
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_pick6_2.mp3",
+      "revision": "90b54f85dacf5f02589a3ff4eb682b65a6f36a37d0d7e04fd1513060417745d7",
+      "bytes": 13391
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_pick6_3.mp3",
+      "revision": "2753e04f8c89a34287bff41f0248495b81a546a18d49d39249742ec91740fe91",
+      "bytes": 24206
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_pick6_4.mp3",
+      "revision": "4df08b129f44cd6c36755d06de8775306bfd4adb05b34ddf6a82af3a659628e2",
+      "bytes": 20445
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_1.mp3",
+      "revision": "a3bd4189c39b7a7cc65c9221699958daa7adfdb2207ec6bee885071a1aac7c22",
+      "bytes": 5868
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_2.mp3",
+      "revision": "3f6fdc69f5367aeb3e840a5d751efea68af327227c937999599672f05bf1a7bd",
+      "bytes": 7749
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_3.mp3",
+      "revision": "a38b7c82be04bfab9632b8952caebb57f8fcc3fcaafb2cb97b599b03220de0b7",
+      "bytes": 11354
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_4.mp3",
+      "revision": "71de76b6e6d85a6d0ab6e4d14bb6b136d8b095432797b72b570764824ee26127",
+      "bytes": 11667
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_5.mp3",
+      "revision": "fbf8547977eba479904e706ae1cd0b6dadccd9ed9821d8d114304a10c390a191",
+      "bytes": 6965
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_6.mp3",
+      "revision": "eeeb97387d424ecc8068a03fda4811b6fbb72c3166956ca2e981828835db3b32",
+      "bytes": 11824
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_7.mp3",
+      "revision": "4e8b634523e8b0bf4f471a9a7d1efb1815ecc05f5f083af4125d6e378ca101fe",
+      "bytes": 7906
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_punt_8.mp3",
+      "revision": "75a81b75071a86f71ac9368373e8138a4c44d322a47086e62ad9ffbe0c126d12",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_puntblk_1.mp3",
+      "revision": "1c782f85cf63b16f51ce17716ac1ac741ed552ccbee141e1f42e343d893dd397",
+      "bytes": 16369
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_puntblk_2.mp3",
+      "revision": "c543a7b7ef11b4085330bcd7c31efd74b6b0c6074d339a1ed3d4a6e7e71d8df9",
+      "bytes": 15116
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_rettd_1.mp3",
+      "revision": "d0a1ab7fdee106fc7fbcb90be1d824951f14824c64b6897553ae0966c7586c17",
+      "bytes": 19034
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_rettd_2.mp3",
+      "revision": "c9a0465593b2e77e5fcd20b190dbe32ca37348b25e3eefca93a4b501f79dfb7d",
+      "bytes": 14489
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_rettd_3.mp3",
+      "revision": "e7478e406a3612f4fe3ac147250f16d0b8595443bb2f76f7d2f02aa422fcb477",
+      "bytes": 13862
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_rettd_4.mp3",
+      "revision": "577c2fd37137b01e3656feab87df425d6048365596907061607885dbc8558e97",
+      "bytes": 14645
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_1.mp3",
+      "revision": "61e9ee7dacdc302053040d265c3159cc29f638021f55d5627368628c847a1cc4",
+      "bytes": 10727
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_2.mp3",
+      "revision": "78d293436e773f359cee8793b6348592fbef2cccd4de6e537ce7b312d662ad6b",
+      "bytes": 16996
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_3.mp3",
+      "revision": "b1e2e8a67cf97bb292cebdef2542f0742fe67e0e98abf5db161f609e8f38fd13",
+      "bytes": 9943
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_4.mp3",
+      "revision": "61ffcfcab0bb6516fe4c28019a63e91b805e9f9219f01c6496f5626a3f60acd9",
+      "bytes": 11667
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_5.mp3",
+      "revision": "5d07cafa89671633b55c78fa028e3ecafefb323fdab34806b60c11a240fb8952",
+      "bytes": 12138
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_6.mp3",
+      "revision": "aa8c98c8a90b226d6911a6955d8f97dd0c660d8d952a97fef702bb33cc66fee5",
+      "bytes": 13548
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_return_7.mp3",
+      "revision": "8341b9e87d99e9ba9dcf02157ffcb5056421a805405c4946a62dbc9efd67ce8a",
+      "bytes": 12451
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_1.mp3",
+      "revision": "bd6b4a6efc9b71af89608db4ac1fecd9ad46102374f1046bbfa065ef01600c28",
+      "bytes": 5555
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_10.mp3",
+      "revision": "dbcad0d70a46738873f56f95b1cc817b2d1f813420f853a27475d30d6c3bd251",
+      "bytes": 15899
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_11.mp3",
+      "revision": "fc0649ec4b77794b7bd107c48974fd2359012930ad0f358421b5eee432a97351",
+      "bytes": 12921
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_2.mp3",
+      "revision": "680c5c01177a16aabd18a75537bffcf00f11bc8043ddc1c486caa64e2871d2ab",
+      "bytes": 12765
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_3.mp3",
+      "revision": "7a08a860381350c906a8c3906ca4d5d0295394f2203c7aaf74d6f21178b879b3",
+      "bytes": 12138
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_4.mp3",
+      "revision": "78deba6d10c30c4fab5ab06faa47ea2e8e8d5775e5cdac912baf11e867a8dfa1",
+      "bytes": 13235
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_5.mp3",
+      "revision": "735fb39597ea13b6a0b4359f4f052b8dfabd3c87f8ab43019fcbfbae719cc29f",
+      "bytes": 9316
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_6.mp3",
+      "revision": "8473ae235767afd7dc2259b4b1e7b8e356f7ed524edfce9e2c375604f11a1e32",
+      "bytes": 16526
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_7.mp3",
+      "revision": "c64b549d70c30ba63b22e840b785caf4c165e4baf88283985f92d888a8f24f99",
+      "bytes": 15429
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_8.mp3",
+      "revision": "86ae02ef18b9162fd98c7a1fa1394ffb43097e8f8ac78e6b3053599167634b90",
+      "bytes": 15742
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_td_9.mp3",
+      "revision": "d8712294cfd048a327160c247d48e1a163ec6e3db42c47e178c0ae5771d61720",
+      "bytes": 12608
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_visitorsloose_1.mp3",
+      "revision": "a7c997b1feed097d41d00476ae77a263b3c3d2a30002beacdd749b26833584ee",
+      "bytes": 7436
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_visitorsloose_2.mp3",
+      "revision": "c20dbf78bcba543e31d522d499bc8799d1d5e26ea9def626f4799a09881b6e68",
+      "bytes": 6495
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_visitorsloose_3.mp3",
+      "revision": "f81513a1b9661701cf9c058c037d2625b6ca5f677700e6dd2198a1d7da9b18dc",
+      "bytes": 15586
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_visitorsloose_4.mp3",
+      "revision": "c81f2727cf4f8d9f23d51c9289962cf0eda3dbd90cdf731e9354874e7ecaa259",
+      "bytes": 6338
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_visitorsloose_5.mp3",
+      "revision": "0b3787da0c5b65fc9dde758e307ad80e33c2faae22fd132bf6c3e3a7c3318736",
+      "bytes": 10570
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_xpup_1.mp3",
+      "revision": "643ffa4e15a5dbc299d4dfe2e661f7f23d2b72a1a15196e93ad4ed2993f3b8b0",
+      "bytes": 8219
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_xpup_2.mp3",
+      "revision": "d780d29319af7baaf67651542907f05beb834a52a4742b9dfe7c305972733349",
+      "bytes": 9630
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_xpup_3.mp3",
+      "revision": "d419ba565616341c4e87cb5cb69b1a71c01b9ccfec76708fc4e9a0ffc903bbfe",
+      "bytes": 8846
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_xpup_4.mp3",
+      "revision": "abdffde74cd2844e2112eac9c47b57581aeca9b47a23d18263c9b26ccb3480a4",
+      "bytes": 9943
+    },
+    {
+      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/penny_calls/pbp_xpup_5.mp3",
+      "revision": "ed4cb95731c4056ffe7275ec286ffa66d76549df6890615761f2e9ef8f66db51",
+      "bytes": 8219
+    },
+    {
       "url": "./apps/games/ROBOTFOOTBALL/css/stadium.css",
       "revision": "4a1e98591fb6e2c5d1e39da0ddfc34a9142920330d5cd033db15327187034376",
       "bytes": 31612
@@ -18575,8 +21805,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/broadcast.js",
-      "revision": "fc895910dc318180d20aa83a00f0cc2fac0b29be7dd3ca1763bb722b60e88602",
-      "bytes": 12215
+      "revision": "25fa3321c1726aecb9c18a58fa7cdd6f789d4532f729839ff6e05c5158f46ebb",
+      "bytes": 12630
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/commentary.js",
@@ -18610,18 +21840,18 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/ui.js",
-      "revision": "1da134dd73fd267271995f4751ca594d97e7fa29de35e1820eafa67050bb6ffd",
-      "bytes": 92882
+      "revision": "3b1a880e91c1381d6857aef4830b0941657e7947dc97921a735b73b73ea2bd6c",
+      "bytes": 94172
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/voice-index.generated.js",
-      "revision": "8385b7fd122d0ff41ce25922aa47f86c8f1a880f5091e57fb35d7a70e64d8656",
-      "bytes": 138
+      "revision": "1c4648dcd1a0aed43311d7244d4229ceefbe42cb53fa72f488b1cab44a6c2683",
+      "bytes": 27651
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/voice-lines.generated.js",
-      "revision": "cdea39043f815c044e098dcd7457c82099a4012b04213d176896353f034ca0fb",
-      "bytes": 59295
+      "revision": "a932ffe8cb9385388d5e5e03354fe9c0a17678c028d18e35f3970822b3ddedd1",
+      "bytes": 59298
     },
     {
       "url": "./apps/games/TRIVIAMASTER/games_manifest.json",

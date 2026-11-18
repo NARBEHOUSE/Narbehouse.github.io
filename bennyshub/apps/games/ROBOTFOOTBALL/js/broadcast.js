@@ -23,7 +23,7 @@
   const STORE = 'robotfootball-broadcast-v1';
   const COOLDOWN = { pa: 0, pbp: 1.6, cal: 5 };     // seconds between lines, per speaker (chatter only)
   const CALL = 3, WHISTLE = 4;                       // priorities: 1 chatter, 2 a moment, 3 must say, 4 whistle
-  const STALE_S = 2.5, STALE_CALL_S = 6;
+  const STALE_S = 2.5, STALE_CALL_S = 6, MAX_WAIT_S = 8;
   const CAPTION_MS = 2600;
 
   let host = { floor: () => false, ttsBusy: () => false, mode: () => 'full', voiceOn: () => true, caption: () => null };
@@ -109,8 +109,8 @@
     if (pri >= CALL) for (let i = queue.length - 1; i >= 0; i--) if (queue[i].pri < CALL && queue[i].mo !== mo) queue.splice(i, 1);
     moment = mo; momentAt = t;
     const key = slots && slots._key, text = fill(line.text, slots), id = ++token, stale = opts && opts.stale;
-    queue.push({ line, text, pri, family, key, at: t, mo, id, stale });
-    if (line.reply) queue.push({ line: line.reply, text: fill(line.reply.text, slots), pri, family, key, at: t, mo, id: ++token, after: id, stale });
+    queue.push({ line, text, pri, family, key, at: t, born: t, mo, id, stale });
+    if (line.reply) queue.push({ line: line.reply, text: fill(line.reply.text, slots), pri, family, key, at: t, born: t, mo, id: ++token, after: id, stale });
     while (queue.length > 5) { const i = queue.findIndex(q => q.pri < CALL); queue.splice(i >= 0 ? i : 0, 1); }
     history.push({ id: line.id, family, text, at: t }); if (history.length > 80) history.shift();
     pump();
@@ -125,6 +125,10 @@
   function pump() {
     if (pumpTimer || !queue.length) return;
     const head = queue[0], t = now();
+    // While the interface reads its own line for this moment (a result with its yardage), the line waiting behind it
+    // is not getting older: it is about that same moment. Never longer than MAX_WAIT_S in all (Bryan 2026-11-18: CAL's
+    // two-point quip went stale behind the result line).
+    if (host.ttsBusy() && !ttsOurs() && t - head.born < MAX_WAIT_S) head.at = t;
     const stale = q => t - q.at > (q.stale || (q.pri < CALL ? STALE_S : STALE_CALL_S));
     // a reply only follows its own line
     if (head.after && !done.has(head.after)) { queue.shift(); return pump(); }
