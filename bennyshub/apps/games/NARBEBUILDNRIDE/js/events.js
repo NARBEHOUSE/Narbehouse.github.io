@@ -116,7 +116,9 @@ BNR.Events = (function () {
                 emit: function (name, data) { if (o.emit) o.emit(name, data); },
                 passed: function (inf, by) { return inf && inf.train ? inf.train.s - at0 - (by || 0) : -Infinity; },
                 world: o.world, track: o.track,
-                nearLine: function (x, z) { return nearLine(ctx.anchor, x, z); }
+                nearLine: function (x, z) { return nearLine(ctx.anchor, x, z); },
+                // Is this point on screen, within `far` of the camera? null when there is no camera (Node checks).
+                seen: function (x, y, z, far) { return o.seen ? o.seen(x, y, z, far) : null; }
             };
             let inst = null;
             try { inst = K.start(ctx); } catch (e) { console.warn('[BNR] event ' + def.type + ' failed to start', e); return null; }
@@ -411,8 +413,15 @@ BNR.Events = (function () {
 
     // --- another train on a distant line -------------------------------------------------------------
 
+    // "Another train!" is said when the freight is on screen (its engine or its middle, within FREIGHT_SEEN of the train
+    // and well inside the fog, by the camera of the last frame drawn: scene.js onScreen), not when it sets off at the far
+    // end of its line: that is 350 to 520 units
+    // away, in the fog, so the line came about 20 s before there was anything to see (the user, 2026-11-18: "there's no
+    // other train?"). Never on screen (Look turned away, say): never said; its horn still sounds. Without a camera (the
+    // Node checks) "on screen" is within about 45 degrees of the way the train is going. At night it has to come
+    // closer (FREIGHT_NIGHT): unlit, it is only dark shapes at 190 (Night City).
+    const FREIGHT_SAY = 'Another train!', FREIGHT_SEEN = 260, FREIGHT_NIGHT = 100;
     register('freight', {
-        say: 'Another train!',
         lead: 0,
         start: function (ctx) {
             const line = ctx.lines[ctx.def.line || 0];
@@ -424,7 +433,8 @@ BNR.Events = (function () {
             const train = BNR.Train.create(ctx.THREE, { parent: ctx.root, simple: true, cars: ['diesel', 'boxcar', 'tanker', 'boxcar', 'hopper', 'flatcar', 'boxcar', 'caboose'] });
             let s = train.length + 2;
             const SPEED = ctx.def.speed || 12;
-            let honked = 0;
+            let honked = 0, said = false, px = null, pz = null, hx = 0, hz = 0;
+            const mid = {};
             ctx.emit('sound', { name: 'distant-horn', gain: 0.35 });
             return {
                 update: function (dt, inf) {
@@ -433,6 +443,22 @@ BNR.Events = (function () {
                     train.place(sampler, s, ds);
                     const p = train.position();
                     if (!honked && distTrain(p.x, p.z, inf) < 190) { honked = 1; ctx.emit('sound', { name: 'distant-horn', gain: 0.5 }); }
+                    if (!said && inf && inf.train) {
+                        // Which way the main train is going (kept while it stands at a station): the no-camera fallback.
+                        const tx = inf.train.x, tz = inf.train.z;
+                        if (px !== null) { const mx = tx - px, mz = tz - pz, m = Math.hypot(mx, mz); if (m > 0.01) { hx = mx / m; hz = mz / m; } }
+                        px = tx; pz = tz;
+                        const dx = p.x - tx, dz = p.z - tz, d = Math.hypot(dx, dz);
+                        const dark = inf.env ? Math.max(0, Math.min(1, inf.env.night || 0)) : 0;
+                        if (d < FREIGHT_SEEN - (FREIGHT_SEEN - FREIGHT_NIGHT) * dark) {
+                            sampler.at(Math.max(0, s - train.length / 2), mid);
+                            const far = FREIGHT_SEEN + 40;   // the camera rides behind and above the train
+                            let on = ctx.seen(p.x, p.y + 1.5, p.z, far);
+                            if (on === false) on = ctx.seen(mid.x, mid.y + 1.5, mid.z, far);
+                            if (on === null) on = (dx * hx + dz * hz) / d > 0.7;
+                            if (on) { said = true; ctx.emit('event', { def: ctx.def, say: FREIGHT_SAY }); }
+                        }
+                    }
                     return s < L - 1;
                 },
                 dispose: function () { train.dispose(); }

@@ -200,7 +200,8 @@ BNR.Scene = (function () {
         events = BNR.Events.create(THREE, {
             scene: scene, track: track, world: world, lines: lines, seed: world.seed,
             ground: function (x, z) { return terrain.heightAt(x, z); },
-            emit: emit
+            emit: emit,
+            seen: onScreen
         });
         st.s = ride.s; st.speed = 0; st.ds = 0;
         chuffAcc = 0; idleT = 0; inTunnel = false; flashT = 0;
@@ -546,6 +547,23 @@ BNR.Scene = (function () {
     }
 
     /** Put the train's head at s, rolling (tools and tests). */
+    /**
+     * Is (x, y, z) on screen, within `far` of the camera and well inside the fog (65% of its far edge, which the time of
+     * day and the weather set)? As of the last frame drawn; hills and buildings in the way are not counted. No camera
+     * (Node checks): null, and the caller decides.
+     */
+    let seenV = null;
+    function onScreen(x, y, z, far) {
+        if (!viewer) return null;
+        if (!seenV) seenV = new THREE.Vector3();
+        seenV.set(x, y, z);
+        const dist = seenV.distanceTo(viewer.position);
+        if (far !== undefined && dist > far) return false;
+        if (scene && scene.fog && scene.fog.far && dist > scene.fog.far * 0.65) return false;
+        seenV.project(viewer);
+        return seenV.z < 1 && Math.abs(seenV.x) < 0.92 && Math.abs(seenV.y) < 0.85;
+    }
+
     function placeAt(s) {
         if (!ride) return;
         ride.s = s; ride.v = 0; ride.phase = 'run'; ride.station = null;

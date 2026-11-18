@@ -2,6 +2,28 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-18 — NARBE Build n Ride: "Another train!" when it is in view
+
+Scope: the owner heard "Another train!" with no train to be seen. The freight event said it when it set off at the far end of its decorative line, 350 to 520 units away in the fog on every route (checked with the game's own route data at all three speeds); it came within sight 12 to 30 s later. The line (spoken and shown) now waits until the freight is on screen: its engine or middle inside the camera's view, within 260 units of the train and within 65% of the fog's far edge (so less in rain), and within 100 units at night, when the unlit freight is only dark shapes. A freight never on screen (Look turned away) is not announced; its horns are unchanged. Checked in Edge on all six routes at Medium in Third Person: said 5 to 15 s after the trigger with the freight in the picture (Seaside Cliffs' passes along the right edge, so the edge counts).
+
+Changed files (Electron port: **YES**, copied to the PC Hub's NARBEBUILDNRIDE, which matched the published web copy):
+- `bennyshub/apps/games/NARBEBUILDNRIDE/js/events.js` — the freight says its line from its update; events get `seen()`.
+- `bennyshub/apps/games/NARBEBUILDNRIDE/js/scene.js` — `onScreen()` (the camera, the fog), passed to the events as `seen`.
+- `bennyshub/apps/games/NARBEBUILDNRIDE/README.md` — the events list says when the freight is announced.
+- `bennyshub/apps/games/NARBEBUILDNRIDE/index.html` — script queries `?v=2026.11.18.3` (web only).
+- `bennyshub/offline-manifest.json` — regenerated.
+
+## 2026-11-18 — Home page: games get the keyboard; the Food Court card opens
+
+Scope: two fixes to the NARBE House home page's game player, at the owner's request.
+
+- Switch input: a game opened with a card's Play Game opened in the page's player, but the keyboard stayed on that Play Game button behind it. Every Space or Enter clicked it again and restarted the game at its main menu, and the game itself never moved (a player reported Build n Ride's Build and Quick Build "scanning the main menu"). `openApp` now moves focus into the game when it opens and again when it has loaded, as Benny's Hub's `showIframe` does. Checked in Edge on Build n Ride (Build, Quick Build, its Exit Game by switch back to the Hub), Build n Bash, Glow Pop (opened from the keyboard), Switch Stories and Ben's Food Court; the Exit to Benny's Hub button still works.
+- Ben's Food Court card: its Play Game did nothing. The 2026-11-18 card's `onclick` lost the backslash before the apostrophe in "Ben\'s", a syntax error; restored. All 42 buttons with inline code on the page now compile (checked in the browser).
+- Hub-wide check behind the switch report (no change): Benny's Hub (web and PC) suspends its own menus while a game is open and focuses the game; SwitchedGames opens games in their own tab; an Auto Scan sweep of all 37 web games and a mouse-then-switch sweep found no game scanning or clicking a hidden menu behind play.
+
+Changed files (Electron port: **NO**, the home page is website only):
+- `index.html` — `openApp` focus; the Food Court card's `onclick`.
+
 ## 2026-11-18 — NARBE Build n Ride: a smooth start, and smooth lake edges
 
 Scope: the owner saw the camera stutter for the first seconds after opening the game, and blocky lake edges (Crystal Lake, in Ride and in Build). Fixed on the web and in the PC Hub (owner's request).

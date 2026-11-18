@@ -42,7 +42,7 @@ highlighted. Pause is always in the scan; Escape and a click or tap on Pause als
   train's outline through the hill. **Look** turns and eases back by itself after 6 seconds.
 - **Stations**: the train eases in, stands 3 seconds, toots, the name is said and shown and the
   people wave. **Events** fire every lap: deer, sheep, a tractor, balloons, birds and gulls, an
-  eagle, a freight train, a whale, sailboats, tumbleweeds, a waterfall's mist, a blimp, fireworks
+  eagle, a freight train (its "Another train!" waits until it is in view), a whale, sailboats, tumbleweeds, a waterfall's mist, a blimp, fireworks
   (nights) and the northern lights (winter nights). Deer, sheep and the tractor wait at the line
   until the train has gone by. Tumbleweeds (see-through balls of twigs) roll right across with
   the wind; one the train reaches is bumped up and off the line with a puff of dust.
