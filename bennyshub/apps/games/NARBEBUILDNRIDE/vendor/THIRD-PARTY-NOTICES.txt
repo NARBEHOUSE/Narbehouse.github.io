@@ -1,0 +1,8 @@
+NARBE Build n Ride - vendored third-party code (kept local so the game runs offline)
+
+three.min.js
+  three.js r155 (UMD build), https://threejs.org - MIT License,
+  Copyright 2010-2023 three.js authors.
+  Byte-identical to the copy NARBE Build n Bash ships (vendor/three.min.js).
+
+Not modified. See the project for its full license text.

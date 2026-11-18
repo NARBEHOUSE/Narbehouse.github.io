@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "e4245b9fe3f6c0f3b7455be71eb2963d0bf704f70988435b259bfe2366538d5d",
-  "totalBytes": 419959613,
+  "version": "16e55b7963719a609c4664742df2ac42ccfa8d5ed1142d54e49948a26fc2644c",
+  "totalBytes": 421612563,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16909,6 +16909,171 @@
       "bytes": 644798
     },
     {
+      "url": "./apps/games/NARBEBUILDNRIDE/css/style.css",
+      "revision": "cdff181858682268fbb800238227191d1a7ba110735a2803251c98a9989b138d",
+      "bytes": 22273
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/index.html",
+      "revision": "f1ef90aca537a74debc76dede4205012ec9866c7de996b8df212c0dd5ecd528a",
+      "bytes": 3409
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/animals.js",
+      "revision": "3fc333e92be45b501fbe2b67a43a2888bd95f58a718b9cfc5c358569f72c1275",
+      "bytes": 12635
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/biomes.js",
+      "revision": "aa3266963c619b9e9088b3380a460ee3a4bf239d0eb6abf6129fdbbf45f21772",
+      "bytes": 14540
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/build.js",
+      "revision": "ecc35dbfbc7a5550ee2662f222409f2b45f87e057a893acd66f9075a903e7f11",
+      "bytes": 39575
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/buildview.js",
+      "revision": "c42b3901abb86dc1a3eafecbfbdab18158cf11bb987e621f02256d95d0f71030",
+      "bytes": 10764
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/cameras.js",
+      "revision": "fca465de961a884afad79caf6f2a669e239416bac859bffb6ab1106c23f0eb16",
+      "bytes": 7796
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/events.js",
+      "revision": "c6a48ad5fb4d802ebcd518921e4be8fb0c3756d95cacde1eb3fc3ad5d04ec129",
+      "bytes": 59020
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/fx.js",
+      "revision": "67ed5ee90abcb46cef97b29bc419822d1c8aa6bfc19fc4eddb14d60b79901f7f",
+      "bytes": 14016
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/geo.js",
+      "revision": "8ab976ef4e236108c149eed629e12f0a08ee817bd09f97b5acf1a4ebaf670196",
+      "bytes": 11857
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/input.js",
+      "revision": "520f109dd33a806b8cd7ffa5a30b1a953624fab15ec962afc63605d3961609dc",
+      "bytes": 16740
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/main.js",
+      "revision": "c533dd5c6d0d4e1b1c33e3ce11bb0b4298797574ed4c2abf41cb1a32cf6711d7",
+      "bytes": 31148
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/path.js",
+      "revision": "12797051cbacad2a1ed25991ccb1e11435f4c2c7bab7d6ccae36ddaae2aad081",
+      "bytes": 12053
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/props.js",
+      "revision": "a1930f3c849feb16184ef36d45719e8436d6699b0788144b7b753fc3e0885450",
+      "bytes": 23007
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/ride.js",
+      "revision": "d5543a0589b3984e9b7388d6f5e022af57ba6e6b6eb6efd6808feabf5ad58712",
+      "bytes": 4616
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/routes.js",
+      "revision": "fd342f6a34a760abf60c71b65f6c11ed17869205561a6069fdb0a6a9944e2bb3",
+      "bytes": 21432
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/scene.js",
+      "revision": "73db2dfd9db790fe5508e9ca89033b11e6ecec1e60c111057461f220c6017cc5",
+      "bytes": 32978
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/settings.js",
+      "revision": "ed35c67a98a7c412a8794c170f23d7e21b45f6703b9b3479772ea75760a589df",
+      "bytes": 7157
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/sky.js",
+      "revision": "91e3682c754e1a102207310f13ed76e409a0123f648d1f1a2d37b02f3cf030bb",
+      "bytes": 11220
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/sound.js",
+      "revision": "8107b85834687d120158ec19764d5184acf9cc8125e46b7603d6895384b4d8af",
+      "bytes": 34915
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/stage.js",
+      "revision": "43e9f4c74c9eba9c2e8e9a98194049719076320cac158277d3a1d9532d0a33f2",
+      "bytes": 15023
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/stations.js",
+      "revision": "68eee6bae7def034d81b15ad8e04a39f88b951e9001681ce57bbf456477422b4",
+      "bytes": 22775
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/terrain.js",
+      "revision": "eb1a5ec6a916e0a5d5028ce21e638b88f2a0f074c7236a2226320751dcd82a08",
+      "bytes": 29600
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/track.js",
+      "revision": "158dc227c042e3392144158548c00705ee503b397aff45bea1650d34e0d7a505",
+      "bytes": 36911
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/tracks.js",
+      "revision": "460a8881f44e1de29ea99be54ab99bea5be84176aff2df09956565a3622375cb",
+      "bytes": 8094
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/trackview.js",
+      "revision": "4c28fce9b0e99953b2d057c8bafc9845e686ae37a8357c0ee856a5abdb16b09d",
+      "bytes": 32460
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/train.js",
+      "revision": "9b7f3ccca8f83dc920f96a12cd67a522d4145ff070885ecb7a99d4087832a048",
+      "bytes": 21012
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/ui.js",
+      "revision": "569496c51725c46e084534e14590616e7a9d1d52db828f48761f5e0a588157a0",
+      "bytes": 52393
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/util.js",
+      "revision": "13f1b9742ecba51363832b35173d21caf8e37830b6ef58a05adf4c173c98e878",
+      "bytes": 5169
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/weather.js",
+      "revision": "d6ed2208e5e677ea040b38bf7f7b28c7932770a89c681062ba60d5dfe9d6b9ea",
+      "bytes": 20485
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/js/world.js",
+      "revision": "1d65832d0aede1eb2a29969c241dca8d237f3140d1cfb16f8f30828b19d33bbc",
+      "bytes": 40887
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/vendor/THIRD-PARTY-NOTICES.txt",
+      "revision": "98f0f8e3d6df89221e8c66bb8d9f31d6bf90f6f55fe92560d33a13feaffcbeba",
+      "bytes": 338
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/vendor/three.min.js",
+      "revision": "ec0a84377f1dce9d55b98f04ac7057376fa5371c33ab1cd907b85ae5f18fab7e",
+      "bytes": 644798
+    },
+    {
       "url": "./apps/games/NARBEGLOWPOP/CREDITS.md",
       "revision": "e9a91a4730133d3630bf144d9f56dd5b91a4b6c5db6903c4338d7755a1a570a0",
       "bytes": 36
@@ -18485,8 +18650,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "6ac55376d33218f8a7b604c559d241e82062dcd0325148f3879dd82e00da723c",
-      "bytes": 17134
+      "revision": "21005b1ee59f50454d5fe9b60837baccc858c703ed93c32eda301b157898cbad",
+      "bytes": 17839
     },
     {
       "url": "./apps/tools/calc/app.js",
@@ -19222,6 +19387,11 @@
       "url": "./images/games/narbebuildnbash.png",
       "revision": "344ee74e0df0fbd6db9ec49860da03f5f715666ace9c0c03556f52641e8ca70b",
       "bytes": 516707
+    },
+    {
+      "url": "./images/games/narbebuildnride.png",
+      "revision": "f7cfebf580eadb6cf22942151fbebdb1b11a370855346df5e9e3031f8b38b989",
+      "bytes": 331149
     },
     {
       "url": "./images/games/narbeloops-gameplay.webp",

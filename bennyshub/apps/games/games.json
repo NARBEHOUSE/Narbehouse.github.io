@@ -386,6 +386,17 @@
       "genres": [
         "Interactive"
       ]
+    },
+    {
+      "id": "narbebuildnride",
+      "title": "NARBE Build n Ride",
+      "description": "Ride a toy steam train through farms, mountains, deserts, snowy forests, seaside cliffs and a city at night, with deer, balloons, fireworks and more along the way. Or build your own track one piece at a time: bridges, tunnels and stations happen by themselves, and Connect brings it home so you can ride it. Quick Build lays a ready-made track a piece at a time. One or two switches. No score, no timer and nothing to lose.",
+      "path": "apps/games/NARBEBUILDNRIDE/index.html",
+      "image": "images/games/narbebuildnride.png",
+      "genres": [
+        "Interactive",
+        "Simulation"
+      ]
     }
   ]
 }

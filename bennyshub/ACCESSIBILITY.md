@@ -500,7 +500,7 @@ back with a switch, warn before going in.
 
 ## 8. Per‑game notes
 
-The current web catalog contains **30 games**, verified against `apps/games/games.json`. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See §12 for scannable pause routes and their limits, and docs/history/DEVELOPMENT-HISTORY.md for the verified surfaces and mechanical exclusions.
+The current web catalog contains **36 games**, verified against `apps/games/games.json`. Section 4 governs their stationary choices; native pause access and gameplay controls vary by game. See §12 for scannable pause routes and their limits, and docs/history/DEVELOPMENT-HISTORY.md for the verified surfaces and mechanical exclusions.
 
 | Game | In‑game input model |
 | --- | --- |
@@ -521,6 +521,7 @@ The current web catalog contains **30 games**, verified against `apps/games/game
 | **NARBE Magic Button** | Press for fireworks, bubbles or flowers. Optional Simple High Contrast uses bright shapes on black; menu controls remain unchanged. |
 | **Chasing Rainbows** | Untimed card choices and shared-screen turn handoffs, with four rules presets and spoken prompts. |
 | **NARBE Build n Bash** | Cause and effect, all CHOICE: Build, Destroy and Pause are scanned (blank first), and each Build places the next block (on release). Hold to Build (Settings, on by default): hold Enter on Build 3 s and it places a block, then one a second until finished or released; the release after a hold that built adds nothing (pointer hold the same; Off = one block per press). Build leaves the scan once the build is finished or knocking down has begun; Destroy waits for the first block. Destroy sends a random destroyer; big builds fall in chunks, one press each (or All at Once). No hold-to-pause. After everything falls, Build Again or Pick Another. Build Select is a paged 3x3 picture grid with one-to-four block size badges. |
+| **NARBE Build n Ride** | Toy trains, all CHOICE, no timing: every screen is a scan (blank first) with Pause always in it. **Ride**: View, Look, Horn, Speed, Pause; the train drives itself and stops at stations. **Build**: Straight, Long Straight, Turn Left, Turn Right, Undo, Connect, Zoom, Pause; each press lays one piece (on release), and a piece that can't go down is dimmed while the scan says why. Holding Enter on Undo keeps going back (1.5 s, then about three a second); the release after a hold that went back does nothing. Connect lays the way home by itself, then Ride is offered. 500 pieces per track, counted down plainly; unfinished tracks save to My Tracks (Keep Building) and finished ones can be ridden or edited. **Quick Build**: each Build press lays the next piece of a ready-made track; hold Enter 3 s and it keeps building, one a second. Ride, Quick Build and My Tracks pick from 3x3 picture grids (paged past nine). |
 | **Benny's Battle Boats** | Two-stage grid selection: scan the row, select, then scan the column, select. The standard way to reach a 2-D grid with one switch. |
 | **Benny's Chess and Checkers** | Scan selectable pieces, then **Pause**; select a piece, then scan its legal destinations or Cancel. A long Enter in play selects on release; it no longer pauses. |
 | **Benny's Connect Four** | Scan available columns, then **Pause**, and select to drop a piece; there is no separate row-selection stage. A long Enter in play selects on release; it no longer pauses. |
@@ -819,6 +820,7 @@ routes are:
 | Benny's Mega Slot | Pause in the ordinary play scan; bonus mechanics use their own controls. |
 | Benny's Fish Mystery | **Options** at the end of world/scene scans opens pause and settings; live fishing/boat controls remain separate. |
 | NARBE Build n Bash | Pause is always in the play scan, after Build and Destroy, including while a destroyer runs. No hold route; Escape and pointer also pause. |
+| NARBE Build n Ride | Pause is always last in the play scan: riding, building, Quick Build, and while Connect lays the way home. No hold route (held Enter on Undo or Quick Build's Build repeats that choice, never pauses); Escape and pointer also pause. |
 | Benny's Word Jumble | Pause after the letters, sentence and filled slots. No hold route. |
 | Benny's Matchy Match | Pause after the rows of the root row scan (not inside a row). No hold route in play. |
 | Benny's Chess and Checkers | Pause after the selectable pieces (not inside a piece's move list, which has Cancel). No hold route in play. |
