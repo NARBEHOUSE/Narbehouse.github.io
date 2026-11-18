@@ -2,7 +2,19 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
-## 2026-11-18 — Publish Ben's Food Court
+## 2026-11-18 — NARBE Build n Ride: a smooth start, and smooth lake edges
+
+Scope: the owner saw the camera stutter for the first seconds after opening the game, and blocky lake edges (Crystal Lake, in Ride and in Build). Fixed on the web and in the PC Hub (owner's request).
+
+- Start-up stutter: 900 ms after the menu opened, the game built a whole little world for each of the six route tiles' pictures (`BNR.Scene.diorama`), about 0.25 s each with the page frozen (about 1.2 s each with the CPU slowed 4x), while the menu camera orbited. The six pictures now ship as `images/routes/<id>.jpg` (made by the new `tools/route-pictures.cjs` through the game's own picture code, in Edge on the GPU); the game loads them and builds a picture only for a route that has no file. With the CPU slowed 4x the menu now runs at about 83 fps by second 3 (it was about 1 fps for the first 11 s).
+- Lake edges: the water was a whole grid square wherever any corner was under water, so its edge stepped along the grid where the lake's outline ended on low ground. `world.sample()` now also returns `edge` (how far inside the nearest water body's outline), and `terrain.js` cuts the water along the ground's own triangles at the shore and at that outline.
+- Still open: land chunks built near the train cost a hitch of about 50 ms every few seconds with the CPU slowed 4x (one chunk a frame at least).
+
+Changed files (web; Electron port: **YES**, copied to the PC Hub's NARBEBUILDNRIDE, which matched the web copy before):
+- `bennyshub/apps/games/NARBEBUILDNRIDE/js/main.js` (route pictures from files; `ROUTE_PICTURES` version), `js/world.js` (`edge`), `js/terrain.js` (water cut), new `images/routes/*.jpg` (six), new `tools/route-pictures.cjs`.
+- `bennyshub/apps/games/NARBEBUILDNRIDE/index.html` — script queries `?v=2026.11.18.2` (web only; the PC page has none).
+- `bennyshub/offline-manifest.json` — regenerated.
+
 
 Scope: list Ben's Food Court on the web Hub, the NARBE House home page and SwitchedGames, at the owner's request (2026-11-18), after it had been PC-only for Ben's play testing since 2026-11-17. It is a big game published from its own repo (`NARBEHOUSE/bens-food-court`, https://narbehouse.github.io/bens-food-court/, `scripts/big-games.cjs`), so it is online only and not in the offline manifest.
 

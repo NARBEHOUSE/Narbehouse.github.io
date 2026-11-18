@@ -218,6 +218,9 @@ JSDOM=<dir>/node_modules/jsdom node tests/dom-smoke.cjs
 node tools/shot.cjs map|views|looks|tour|train|station|events|thumb|animals <route> [--at s]
                                    CPU-rendered pictures into <hub>/tmp/bnr-shots/
 node tools/shot.cjs hero           the hub picture; python tools/hub-image.py adds the title
+node tools/route-pictures.cjs <page url>
+                                   the route tiles' pictures into images/routes/ (Edge on the GPU, through
+                                   Playwright); then bump ROUTE_PICTURES in js/main.js
 ```
 
 `tools/harness.cjs` boots the real modules in Node; `tools/node_render.cjs` is Build n Bash's

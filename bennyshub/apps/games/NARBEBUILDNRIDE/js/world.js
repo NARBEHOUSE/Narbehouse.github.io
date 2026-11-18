@@ -318,6 +318,10 @@ BNR.World = (function () {
             for (const id in m.relief) if (m.relief[id] > 0.002) rel += m.relief[id] * biomeRelief(id, x, z);
             let h = dat + rel;
             let water = null;
+            // How far inside the nearest water body's outline this spot is (negative outside): the water's
+            // edge, where the ground is still below its surface (js/terrain.js cuts the water along it).
+            let edge = null;
+            const inside = v => { edge = edge === null ? v : Math.max(edge, v); };
             const feats = featuresNear(x, z, m);
             for (let i = 0; i < feats.length; i++) {
                 const f = feats[i];
@@ -325,6 +329,7 @@ BNR.World = (function () {
                     const s = seaS(f, x, z);
                     const shore = f.shore || 30;
                     if (s > -shore - 20) {
+                        inside(s + shore);
                         const k = U.smoothstep(-shore, shore, s);
                         h = h + ((f.level || 0) - (f.depth || 10) - h) * k;
                         if (s > -shore) water = Math.max(water === null ? -Infinity : water, f.level || 0);
@@ -377,6 +382,7 @@ BNR.World = (function () {
                         const k = 1 - U.smoothstep(f.r * 0.45, f.r, d);
                         h = h + (lvl - (f.depth || 6) - h) * k;
                         if (d < f.r) water = Math.max(water === null ? -Infinity : water, lvl);
+                        inside(f.r - d);
                         break;
                     }
                     case 'mesa': {
@@ -389,6 +395,7 @@ BNR.World = (function () {
                         const k = 1 - U.smoothstep(f.r * 0.42, f.r, d);
                         h -= (f.depth || 9) * k;
                         if (d < f.r) water = Math.max(water === null ? -Infinity : water, levelOf(f));
+                        inside(f.r - d);
                         break;
                     }
                     case 'river':
@@ -397,12 +404,13 @@ BNR.World = (function () {
                         const k = 1 - U.smoothstep(f.w * (f.type === 'canyon' ? 0.55 : 0.32), f.w, pd);
                         h -= (f.depth || 6) * k;
                         if (f.type === 'river' && pd < f.w) water = Math.max(water === null ? -Infinity : water, levelOf(f));
+                        if (f.type === 'river') inside(f.w - pd);
                         break;
                     }
                     default: break;
                 }
             }
-            return { h: h, datum: dat, water: water, wet: water !== null && water > h, mix: m };
+            return { h: h, datum: dat, water: water, edge: edge, wet: water !== null && water > h, mix: m };
         }
 
         /** A water body's surface level (fixed per body). */

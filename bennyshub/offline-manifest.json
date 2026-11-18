@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "4e52d1ad689e99bff26c7ae8f98448a786e70c5eead077803bf657575f87f0cf",
-  "totalBytes": 421613188,
+  "version": "ebde54b47974ced78082ae8265978dfc5c381a6c0367dc50b4702b3d8ce0d915",
+  "totalBytes": 421785130,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16914,8 +16914,38 @@
       "bytes": 22273
     },
     {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/countryside.jpg",
+      "revision": "f486ddbf2c594cf2f4319200f693ff80c4d34fbf3ded5b7c62667b9db1a36220",
+      "bytes": 29173
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/desertcanyon.jpg",
+      "revision": "b6df8c80be5e34d203d50b4170a0fb8fcee0147e5589b456021459ed1872cb8e",
+      "bytes": 27851
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/mountainpass.jpg",
+      "revision": "8755dae9ccab2038d6a7017616bcf32907e4184e9a36fdea21c0561be4a3f9c7",
+      "bytes": 28659
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/nightcity.jpg",
+      "revision": "4d55a009cb2a70f28664a371f4fe22f880183848faddb9ecc021dea4d401ef79",
+      "bytes": 33252
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/seasidecliffs.jpg",
+      "revision": "33e4ab8cf78b8c4aa4c06aaab2fa2df3813cbfe3c2694e1a07a7f3e8478e7837",
+      "bytes": 19499
+    },
+    {
+      "url": "./apps/games/NARBEBUILDNRIDE/images/routes/snowyforest.jpg",
+      "revision": "4a56d675fd5d18a0f0d93953d1dac0e6b1caa88b3d44e4097524999b39335746",
+      "bytes": 30437
+    },
+    {
       "url": "./apps/games/NARBEBUILDNRIDE/index.html",
-      "revision": "f1ef90aca537a74debc76dede4205012ec9866c7de996b8df212c0dd5ecd528a",
+      "revision": "10593f5d665126ac97829941d0357c4cee7dad0d00240875d76248398ebd0d1a",
       "bytes": 3409
     },
     {
@@ -16965,8 +16995,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/main.js",
-      "revision": "c533dd5c6d0d4e1b1c33e3ce11bb0b4298797574ed4c2abf41cb1a32cf6711d7",
-      "bytes": 31148
+      "revision": "e065ecfb23113b6e0ea8f101cf3c176a4d60db9caa739a1cddbdbae825319fab",
+      "bytes": 32041
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/path.js",
@@ -17020,8 +17050,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/terrain.js",
-      "revision": "eb1a5ec6a916e0a5d5028ce21e638b88f2a0f074c7236a2226320751dcd82a08",
-      "bytes": 29600
+      "revision": "36472e1915a1b4acb5d1e0b21a9572079bd48b05e9f7b1e4728da4a7672b6274",
+      "bytes": 31241
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/track.js",
@@ -17060,8 +17090,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/world.js",
-      "revision": "1d65832d0aede1eb2a29969c241dca8d237f3140d1cfb16f8f30828b19d33bbc",
-      "bytes": 40887
+      "revision": "5e969911739f7df55a208da333cffecd2e2956e0b47c1e7f094d6a43d9e66560",
+      "bytes": 41424
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/vendor/THIRD-PARTY-NOTICES.txt",

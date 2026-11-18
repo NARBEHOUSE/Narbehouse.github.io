@@ -193,10 +193,17 @@ BNR.Terrain = (function () {
             return g;
         }
 
-        /** Water: a flat quad on every grid cell whose ground dips below a water surface. */
+        /**
+         * Water: a flat surface on every grid cell whose ground dips below a water surface, cut along
+         * the ground's own triangles where the ground rises out of it or the water body's outline ends
+         * (world sample().edge), so the edge is a smooth line and not the grid's squares (the user,
+         * 2026-11-18: Crystal Lake's edges looked blocky, in Ride and in Build).
+         */
         function waterGeometry(ch) {
             const N = ch.N, st = ch.step;
+            const order = ch.order || (ch.order = triOrder(N));
             const out = [];
+            const poly = [], next = [];
             for (let b = 0; b < N; b++) for (let a = 0; a < N; a++) {
                 let level = null, low = Infinity;
                 [[a, b], [a + 1, b], [a, b + 1], [a + 1, b + 1]].forEach(function (q) {
@@ -206,8 +213,28 @@ BNR.Terrain = (function () {
                     low = Math.min(low, ch.H[k]);
                 });
                 if (level === null || low >= level) continue;
-                const x = ch.x0 + a * st, z = ch.z0 + b * st;
-                out.push(x, level, z, x, level, z + st, x + st, level, z + st, x, level, z, x + st, level, z + st, x + st, level, z);
+                // The cell's two ground triangles (triOrder), each kept where the ground is below the water.
+                for (let t = (b * N + a) * 6, e = t + 6; t < e; t += 3) {
+                    poly.length = 0;
+                    for (let v = 0; v < 3; v++) {
+                        const k = order[t + v];
+                        const e = ch.S[k].edge;
+                        poly.push([ch.x0 + (k % (N + 1)) * st, ch.z0 + Math.floor(k / (N + 1)) * st, Math.min(level - ch.H[k], e === null ? -1 : e)]);
+                    }
+                    // Clip to >= 0 (Sutherland-Hodgman against one plane): under the surface and inside the outline.
+                    next.length = 0;
+                    for (let v = 0; v < poly.length; v++) {
+                        const p = poly[v], q = poly[(v + 1) % poly.length];
+                        if (p[2] >= 0) next.push(p);
+                        if ((p[2] >= 0) !== (q[2] >= 0)) {
+                            const f = p[2] / (p[2] - q[2]);
+                            next.push([p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f, 0]);
+                        }
+                    }
+                    for (let v = 1; v + 1 < next.length; v++) {
+                        out.push(next[0][0], level, next[0][1], next[v][0], level, next[v][1], next[v + 1][0], level, next[v + 1][1]);
+                    }
+                }
             }
             if (!out.length) return null;
             return finish(new Float32Array(out), null);

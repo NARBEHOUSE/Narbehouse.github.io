@@ -28,6 +28,8 @@ BNR.Game = (function () {
     let connecting = null;       // Connect's steps while it lays the way home
     let connectWait = 0;
     let customId = null;         // the home-made loop being ridden (its My Tracks id), if any
+    // The shipped route pictures' version (images/routes/): bump it when tools/route-pictures.cjs remakes them.
+    const ROUTE_PICTURES = '2026.11.18.1';
 
     function S() { return BNR.Settings; }
     function rig() { return BNR.Stage.rig(); }
@@ -577,9 +579,20 @@ BNR.Game = (function () {
             try { BNR.Routes.facts(id); BNR.Build.quickFacts(id); } catch (e) { console.warn('[BNR] no facts for ' + id, e); }
             setTimeout(facts, 60);
         })();
+        // Each route's picture ships as a file (images/routes/<id>.jpg, made by tools/route-pictures.cjs).
+        // Building them here meant a whole little world per route, each a quarter second (over a second
+        // on a slower computer) with the page frozen, so the menu's camera stuttered for the first
+        // seconds (the user, 2026-11-18). A route with no file yet still gets its picture built.
         function pictures() {
             const id = ids.shift();
             if (!id) return;
+            const url = 'images/routes/' + id + '.jpg?v=' + ROUTE_PICTURES;
+            const img = new Image();
+            img.onload = function () { BNR.UI.setThumb(id, url); pictures(); };
+            img.onerror = function () { build(id); };
+            img.src = url;
+        }
+        function build(id) {
             let d = null;
             try { d = BNR.Scene.diorama(id, 480, 320); } catch (e) { console.warn('[BNR] no picture for ' + id, e); setTimeout(pictures, 50); return; }
             BNR.Stage.snapshot(d, 480, 320).then(function (url) {
