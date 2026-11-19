@@ -18,9 +18,11 @@
  * later): a choice marked `hold` repeats while Enter stays down on it. A press
  * still chooses it once on release; held for HOLD_START it chooses it then,
  * and again every HOLD_EVERY until the switch comes up (a choice may set its
- * own holdStart and holdEvery: Undo rewinds faster). The release after a
- * hold that repeated adds nothing, and never chooses whatever the highlight
- * moved to. No Ride choice is marked `hold`.
+ * own holdStart and holdEvery: Undo rewinds faster, Build's pieces go one
+ * every 2 s). The release after a hold that repeated adds nothing, and never
+ * chooses whatever the highlight moved to. A refused choice calls stopHold()
+ * so it isn't refused (and announced) again and again. No Ride choice is
+ * marked `hold`.
  *
  * The shared scan manager filters bounce and too-quick repeats before any of
  * this sees a key; when it swallows a press it sends narbe-input-cancelled and
@@ -173,6 +175,7 @@ BNR.Input = (function () {
         holdLook(item.el, 'repeating', item);
         run(item);
         if (!hold) return;
+        if (hold.stopped) { stopHoldTimer(); return; }   // the choice was refused: stop repeating it
         const again = items.find(it => it.id === hold.id);
         if (holdable(again)) hold.timer = setTimeout(holdTick, again.holdEvery || HOLD_EVERY);
         else stopHoldTimer();
@@ -379,6 +382,8 @@ BNR.Input = (function () {
         setEnabled: setEnabled,
         onHighlight: function (fn) { highlightListener = fn; },
         focusedId: function () { return focused ? focused.id : null; },
+        /** A held choice that was refused stops repeating (its release still adds nothing). */
+        stopHold: function () { if (hold) { hold.stopped = true; stopHoldTimer(); } },
         state: function () { return choice ? choice.getState() : null; },
         /** Test hook: press and release a switch key exactly as a switch interface would. */
         _press: function (code) { switchDown(code); switchUp(code); }

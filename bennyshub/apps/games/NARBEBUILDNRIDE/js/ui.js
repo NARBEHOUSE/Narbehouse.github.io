@@ -15,7 +15,8 @@
  *   Keep It first so a stray press keeps the track.
  * Play (Ride): View, Look, Horn and Speed along the bottom, Pause at the top
  *   right, scanned in that order.
- * Build: Straight, Long Straight, Turn Left, Turn Right, Undo, Connect, Pause.
+ * Build: Straight, Long Straight, Turn Left, Turn Right (hold Enter on one to
+ *   keep laying it: 3 s, then one every 2 s), Undo, Connect, Pause.
  *   While Connect lays the way home only Pause is in the scan; once the loop is
  *   closed: Ride and Pause. Quick Build: Build (hold Enter to keep building),
  *   Pause; then Ride and Pause.
@@ -580,8 +581,10 @@ BNR.UI = (function () {
             return [{ id: 'build:quick', el: el.bQuick, speak: 'Build', quiet: true, hold: true, action: function () { BNR.Game.quickNext(); } }, zoom, pause];
         }
         const WHY = { high: 'too high', stuck: 'no way on', steep: 'too steep', full: 'out of track' };
+        // Hold Enter on a piece and it keeps laying that piece: after 3 s, then one every 2 s
+        // (slower than Quick Build, so there is time to see each one land and let go).
         const piece = (id, el2, words, kind) => ({
-            id: 'build:' + id, el: el2, quiet: true,
+            id: 'build:' + id, el: el2, quiet: true, hold: true, holdStart: 3000, holdEvery: 2000,
             speak: function () { const st = BNR.Game.buildState(); const w = st && st.blocked ? st.blocked[kind] : null; return w ? words + ', ' + WHY[w] : words; },
             action: function () { BNR.Game.placePiece(kind); }
         });
@@ -672,6 +675,7 @@ BNR.UI = (function () {
         if (mode === 'build') {
             lines = [
                 'Lay the track one piece at a time: *Straight*, *Long Straight* (three times as long), *Turn Left* and *Turn Right*. When a button is lit, a see-through piece shows where it will go.',
+                'Hold *Enter* on a piece and it keeps laying that piece, one every two seconds, until you let go.',
                 'Go anywhere you like. Bridges, tunnels and crossings happen by themselves, and the track can cross over itself.',
                 'Stations appear by themselves when the track reaches new country.',
                 'Your track is saved in *My Tracks* as you build: leave it and come back to it any time. Edit a finished loop there to change it.',

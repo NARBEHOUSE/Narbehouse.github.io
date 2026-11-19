@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "0ff7cd7fdfffeb7579a51fce8fc9212760e6c181f51afce409a458a750fed908",
-  "totalBytes": 421788379,
+  "version": "a78de9dd54365a8c9ef3319403bfde1f116dd7cec7cdc3a6be9bf666c15ecde7",
+  "totalBytes": 421789361,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -16945,7 +16945,7 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/index.html",
-      "revision": "edfe1155999017e07cd537415161f57d5a894cacd89795cdd654193b37f9b353",
+      "revision": "b756ae2b0663a668212916797791c6523364bc006bb3095e219f81903e4bc550",
       "bytes": 3409
     },
     {
@@ -16990,13 +16990,13 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/input.js",
-      "revision": "520f109dd33a806b8cd7ffa5a30b1a953624fab15ec962afc63605d3961609dc",
-      "bytes": 16740
+      "revision": "ccc23e22a3fa4667c791b080297935b456e6c96abceff00151800509637f0e97",
+      "bytes": 17156
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/main.js",
-      "revision": "e065ecfb23113b6e0ea8f101cf3c176a4d60db9caa739a1cddbdbae825319fab",
-      "bytes": 32041
+      "revision": "a726cdd7f16ce677e9b7271efbf6f4e8b4824d289ea174fdd9a72c2de64b9251",
+      "bytes": 32190
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/path.js",
@@ -17075,8 +17075,8 @@
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/ui.js",
-      "revision": "569496c51725c46e084534e14590616e7a9d1d52db828f48761f5e0a588157a0",
-      "bytes": 52393
+      "revision": "0f95eb4093851b4291ea86aadd183c476b9ef62a95d276c6cd72f9efb8dbfa54",
+      "bytes": 52810
     },
     {
       "url": "./apps/games/NARBEBUILDNRIDE/js/util.js",

@@ -157,6 +157,7 @@ BNR.Game = (function () {
     function refuse(kind, why) {
         const s = session;
         const r = REFUSED[why] || REFUSED.high;
+        if (BNR.Input.stopHold) BNR.Input.stopHold();   // held on this piece: say it once, then stop
         BNR.Sound.play('unsnap', 0.3);
         BNR.UI.callout(r.short + '!', '');
         const b = s.blocked();
@@ -315,7 +316,7 @@ BNR.Game = (function () {
         const s = session;
         if (mode !== 'build' || !s || connecting || !building()) return;
         BNR.Scene.buildLand();
-        if (!s.canUndo()) { BNR.Input.announce('Nothing to undo. This is the start station.'); return; }
+        if (!s.canUndo()) { if (BNR.Input.stopHold) BNR.Input.stopHold(); BNR.Input.announce('Nothing to undo. This is the start station.'); return; }
         const gone = s.lastGroup().map(p => BNR.Track.piecePoint(p, 0.5));
         const res = s.undo();
         if (!res) return;

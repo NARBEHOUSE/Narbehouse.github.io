@@ -19,7 +19,7 @@ real speakers yet.
 | Main menu | Ride, Quick Build, Build, My Tracks, Settings, Exit Game |
 | Pick a Ride | 3x3 route pictures ("About 5 min · 5 stations"), More Rides (over 9), Back |
 | Ride | View, Look, Horn, Speed (bottom), Pause (top right) |
-| Build | Straight, Long Straight, Turn Left, Turn Right, Undo (hold Enter to keep going back), Connect, Zoom, Pause (a piece that can't go down is dimmed; the scan says why) |
+| Build | Straight, Long Straight, Turn Left, Turn Right (hold Enter 3 s and that piece keeps going down, one every 2 s), Undo (hold Enter to keep going back), Connect, Zoom, Pause (a piece that can't go down is dimmed; the scan says why) |
 | Build, while Connect lays track | Zoom, Pause |
 | Build or Quick Build, loop finished | Ride, Zoom, Pause |
 | Quick Build: Pick a Design | 3x3 route pictures ("33 pieces · 5 stations": a piece is one press of Build), Back |

@@ -244,6 +244,16 @@ async function session(label, scan) {
     if (sections() !== 4) throw new Error(label + ': a Long Straight is one piece, three sections long (' + sections() + ')');
     await choose('build:L'); await until(() => built() === 3, 3000, 'a left turn');
     await choose('build:R'); await until(() => built() === 4, 3000, 'a right turn');
+    if (!auto) {
+        // Hold Enter on Straight: one at 3 s, one more every 2 s, nothing on the release.
+        const h0 = built();
+        await reach('build:S');
+        await press('Enter', 5600);
+        await until(() => built() >= h0 + 2, 3000, 'hold Enter on Straight to keep building');
+        await sleep(2500);
+        if (built() !== h0 + 2) throw new Error(label + ': holding Straight 5.6 s laid ' + (built() - h0) + ' pieces (want 2: at 3 s and 5 s)');
+    }
+    const u0 = built();
     // Zoom stands the camera back (remembered), and round again to where it was.
     const zoomAt = () => w.BNR.Settings.get('buildZoomIndex');
     const z0 = zoomAt();
@@ -251,7 +261,7 @@ async function session(label, scan) {
     await choose('build:zoom'); await choose('build:zoom'); await until(() => zoomAt() === z0, 3000, 'Zoom round again');
     await reach('build:undo');
     if (ghostOf() !== 'ghost undo') throw new Error(label + ': no red preview on Undo (' + ghostOf() + ')');
-    await press('Enter'); await until(() => built() === 3, 3000, 'undo');
+    await press('Enter'); await until(() => built() === u0 - 1, 3000, 'undo');
     await reach('build:connect');
     if (ghostOf() !== 'ghost plan') throw new Error(label + ': no gold preview on Connect (' + ghostOf() + ')');
     await press('Enter');
