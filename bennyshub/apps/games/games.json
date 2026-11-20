@@ -409,6 +409,17 @@
         "Simulation",
         "Interactive"
       ]
+    },
+    {
+      "id": "narbespaceexplorer",
+      "title": "NARBE Space Explorer",
+      "description": "Fly your own spaceship through a universe that never ends: galaxies, stars, planets and moons, all different. The ship flies itself; steer, or choose Next Stop. When you come near a planet you are asked, Do you want to go here? Go into orbit, fly low over the surface, scan wacky creatures, visit moons, meet aliens who call to say hello (or go away), and warp to a whole new galaxy. Everywhere you go is saved in your logbook with a picture. One or two switches. No score, no timer and nothing to lose.",
+      "path": "apps/games/NARBESPACEEXPLORER/index.html",
+      "image": "images/games/narbespaceexplorer.png",
+      "genres": [
+        "Interactive",
+        "Simulation"
+      ]
     }
   ]
 }

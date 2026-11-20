@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>NARBE Space Explorer</title>
+<link href="../../../shared/offline-vendor/fonts/baloo2.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2026.11.20.1">
+<link rel="stylesheet" href="../../../shared/scan-status-badge.css">
+<script src="../../../shared/usage-analytics.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="../../../images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../../../images/favicon-16.png">
+</head>
+<body>
+
+<div id="nse" data-screen="loading"></div>
+
+<!-- Shared hub modules, in the hub's required order, before any game script. -->
+<script src="../../../shared/safe-audio.js" onerror="console.warn('safe-audio.js not loaded')"></script>
+<script src="../../../shared/platform.js"></script>
+<script src="../../../shared/graphics-quality.js"></script>
+<script src="../../../shared/scan-status-badge.js"></script>
+<script src="../../../shared/choice-scan.js"></script>
+<script src="../../../shared/choice-scan-adapter.js"></script>
+<script src="../../../shared/voice-manager.js" onerror="console.warn('voice-manager.js not loaded')"></script>
+<script src="../../../shared/communication-channel.js"></script>
+<script src="../../../shared/communication-speech.js"></script>
+<script src="../../../shared/scan-manager.js" onerror="console.warn('scan-manager.js not loaded')"></script>
+<script src="../../../shared/ios-audio-fix.js" onerror="console.warn('ios-audio-fix.js not loaded')"></script>
+
+<!-- Three.js (r155, the hub's version), vendored locally: the hub runs offline. -->
+<script src="vendor/three.min.js"></script>
+
+<!-- Game modules. util, universe and flight are headless (they also run in the Node tests). -->
+<script src="js/util.js?v=2026.11.20.1"></script>
+<script src="js/universe.js?v=2026.11.20.1"></script>
+<script src="js/flight.js?v=2026.11.20.1"></script>
+<script src="js/settings.js?v=2026.11.20.1"></script>
+<script src="js/logbook.js?v=2026.11.20.1"></script>
+<script src="js/planets.js?v=2026.11.20.1"></script>
+<script src="js/ship.js?v=2026.11.20.1"></script>
+<script src="js/creatures.js?v=2026.11.20.1"></script>
+<script src="js/surface.js?v=2026.11.20.1"></script>
+<script src="js/space.js?v=2026.11.20.1"></script>
+<script src="js/galaxyview.js?v=2026.11.20.1"></script>
+<script src="js/aliens.js?v=2026.11.20.1"></script>
+<script src="js/sound.js?v=2026.11.20.1"></script>
+<script src="js/voice.js?v=2026.11.20.1"></script>
+<script src="js/stage.js?v=2026.11.20.1"></script>
+<script src="js/input.js?v=2026.11.20.1"></script>
+<script src="js/ui.js?v=2026.11.20.1"></script>
+<script src="js/main.js?v=2026.11.20.1"></script>
+
+</body>
+</html>

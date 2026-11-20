@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "a78de9dd54365a8c9ef3319403bfde1f116dd7cec7cdc3a6be9bf666c15ecde7",
-  "totalBytes": 421789361,
+  "version": "f3fe3bb35cc24e3ce62f7aa2aabdb840154ebddc3a5fcff61a6c910544e10463",
+  "totalBytes": 423345705,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17884,6 +17884,116 @@
       "bytes": 11472
     },
     {
+      "url": "./apps/games/NARBESPACEEXPLORER/css/style.css",
+      "revision": "b5091d94db2fe63deb632e09bcad20839fa1aeedcbf75b2545be33f708aff6b1",
+      "bytes": 31615
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/index.html",
+      "revision": "dc90601ad7c5ad2d0e54e2666fe0fd3d775feea2891fcca170a64ad471bacf4a",
+      "bytes": 2855
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/aliens.js",
+      "revision": "e1b07bd306eb33e8f509260f563d9d517cd5f4ba36db085515ea303a6cf5d119",
+      "bytes": 12789
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/creatures.js",
+      "revision": "7427b276a4f9c1125f99f63f227892a4cbfdbc310afd0c325145498e1a78b6e0",
+      "bytes": 56153
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/flight.js",
+      "revision": "c2f6c1b59fc081d2ae4888462e8dd3bc8598e926eb4a6cffe0089f009519d9a2",
+      "bytes": 20014
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/galaxyview.js",
+      "revision": "1e3ce584be75138d29f51f1bc2f5db2b0dcce5771336fa1f2008efd6b21afd54",
+      "bytes": 7120
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/input.js",
+      "revision": "8a97ca933c18e682526716d5b9260a79f55f98801a0651686639318cc32a0bb4",
+      "bytes": 16319
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/logbook.js",
+      "revision": "6726e9b919497a298b1488ad06a3fecb80b1331c40c286fbca06c7441b4ade83",
+      "bytes": 4657
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/main.js",
+      "revision": "9570d1ac26a6eee81c4a61e2f0b469d4df5d3ff83e331e32b25b6a2eb6529f03",
+      "bytes": 47769
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/planets.js",
+      "revision": "f19a6010bd5e0a1bd40e5ca72637bb430bee5d1d505e1bed79e0f1ac505b1112",
+      "bytes": 39262
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/settings.js",
+      "revision": "cc91c430d14f7b4bbe52cc9bb3e8425bb704e316360cbbf311fa9889f76a98cb",
+      "bytes": 5707
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/ship.js",
+      "revision": "6d3d1cf3b0fdb9ba176a41931903cfb32cee0c016c358a751fe8a3a2a05fcefc",
+      "bytes": 6737
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/sound.js",
+      "revision": "df836f3ae7d77462c69519e8de0a93820890d4d2ecbbe4ac09bbaf3c8491f8b8",
+      "bytes": 37954
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/space.js",
+      "revision": "584e4442de6417cef972847cd55480f61c02edb8850f850daaef138d4af208b9",
+      "bytes": 33704
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/stage.js",
+      "revision": "7100183f38e42c0d69022e387e768fbd0f17e2853b2f3b9d8c0e0b721f2da740",
+      "bytes": 32454
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/surface.js",
+      "revision": "21bd84f77b0371ae34363ef073a19daf3fe972b66ebcb57fb18f1d9c67d008b1",
+      "bytes": 129122
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/ui.js",
+      "revision": "742d36cf6061cc42f36ab4e67e6245385451ba2ae57bd09bc970d7c82dc1d2bd",
+      "bytes": 73457
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/universe.js",
+      "revision": "80e0b76ab62498e3f7374fa501289340b0f8d34719db4ea1e0289af75bd17c04",
+      "bytes": 43292
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/util.js",
+      "revision": "5cf1372fc08ded6dfc6f938bb2decbf4e68a098cb19e44b367feacf86660c2cd",
+      "bytes": 7313
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/js/voice.js",
+      "revision": "d59598480e6ca1c06d249e36a857e214862ba2f3694d9752d13f11513a555620",
+      "bytes": 2461
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/vendor/THIRD-PARTY-NOTICES.txt",
+      "revision": "b786512ce4ee7f28d9f8ba908f5b1d05814b6dd92c481e681d890e0991afc84c",
+      "bytes": 340
+    },
+    {
+      "url": "./apps/games/NARBESPACEEXPLORER/vendor/three.min.js",
+      "revision": "ec0a84377f1dce9d55b98f04ac7057376fa5371c33ab1cd907b85ae5f18fab7e",
+      "bytes": 644798
+    },
+    {
       "url": "./apps/games/NARBESWITCHSONGS/css/freeplay.css",
       "revision": "762b203b0f67509e797a1b85db2756700a4da95bb7fe4245e27f573540bdba6a",
       "bytes": 10656
@@ -18680,8 +18790,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "04d8c88a32ead9b6006629c4efd244a71258ce144f38059308ab58c970b2befb",
-      "bytes": 18464
+      "revision": "1f26243e48ec6ea8afe6985c4fe48e178935490a793b82a32fbf79c031b2b9d2",
+      "bytes": 19260
     },
     {
       "url": "./apps/tools/calc/app.js",
@@ -19447,6 +19557,11 @@
       "url": "./images/games/narberacer.png",
       "revision": "743244956c54a1e9e73032164be225c85962c1c2564c160f4c4dcfa4fd60df93",
       "bytes": 457046
+    },
+    {
+      "url": "./images/games/narbespaceexplorer.png",
+      "revision": "c43395643170bb60bf3b0ec4dbc2a5194993d973eef00075b318001c2a8057e1",
+      "bytes": 299656
     },
     {
       "url": "./images/games/narbeswitchsongs-gameplay.webp",
