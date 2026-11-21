@@ -23,10 +23,10 @@
   const STORE = 'robotfootball-broadcast-v1';
   const COOLDOWN = { pa: 0, pbp: 1.6, cal: 5 };     // seconds between lines, per speaker (chatter only)
   const CALL = 3, WHISTLE = 4;                       // priorities: 1 chatter, 2 a moment, 3 must say, 4 whistle
-  const STALE_S = 2.5, STALE_CALL_S = 6, MAX_WAIT_S = 8;
+  const STALE_S = 2.5, STALE_CALL_S = 6, MAX_WAIT_S = 8, SAME_MOMENT_S = 0.25;
   const CAPTION_MS = 2600;
 
-  let host = { floor: () => false, ttsBusy: () => false, mode: () => 'full', voiceOn: () => true, caption: () => null };
+  let host = { floor: () => false, ttsBusy: () => false, interfaceWaiting: () => false, mode: () => 'full', voiceOn: () => true, caption: () => null };
   let voIndex = null, clip = null, clipLine = null, captionTimer = null, ttsLine = null;
   let history = [], played = [], perGame = {}, lastAt = { pa: -99, pbp: -99, cal: -99 };
   let moment = 0, momentAt = -99, token = 0;
@@ -113,7 +113,9 @@
     if (line.reply) queue.push({ line: line.reply, text: fill(line.reply.text, slots), pri, family, key, at: t, born: t, mo, id: ++token, after: id, stale });
     while (queue.length > 5) { const i = queue.findIndex(q => q.pri < CALL); queue.splice(i >= 0 ? i : 0, 1); }
     history.push({ id: line.id, family, text, at: t }); if (history.length > 80) history.shift();
-    pump();
+    // Start on the next tick, not now: the game asks for a reaction and then reads its own result line in the same
+    // step, and a clip started first was cut at 0 s by that line (captions showed, no audio - 2026-11-21).
+    if (!pumpTimer) pumpTimer = setTimeout(() => { pumpTimer = null; pump(); }, 0);
     return text;
   }
 
@@ -134,7 +136,9 @@
     if (head.after && !done.has(head.after)) { queue.shift(); return pump(); }
     if (stale(head)) { queue.shift(); return pump(); }
     // the interface has the floor (a menu or card up, or its voice speaking): wait, and let the line go stale
-    if (talking() || performance.now() < busyUntil || (audible(head.line, head.family) && (host.floor() || host.ttsBusy()))) {
+    // Chatter also waits while the interface has a line queued (calls do not: the interface waits for them instead).
+    const iface = host.ttsBusy() || (head.pri < CALL && host.interfaceWaiting());
+    if (talking() || performance.now() < busyUntil || (audible(head.line, head.family) && (host.floor() || iface))) {
       if (talking() && recording() && head.mo === (clipLine && clipLine.mo)) head.at = t;   // a reply waits for its line
       pumpTimer = setTimeout(() => { pumpTimer = null; pump(); }, 120); return;
     }
@@ -179,7 +183,10 @@
    *  for the floor and go stale if it never comes). */
   function yieldToInterface() {
     hush();
-    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].pri < CALL) queue.splice(i, 1);
+    // A reaction asked for in this same instant is about the line the interface is reading now ("Tackled. Gain of 2"):
+    // it stays and follows that line (2026-11-21: CAL's reactions were all dropped here, so CAL was never heard).
+    const t = now();
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].pri < CALL && t - queue[i].born > SAME_MOMENT_S) queue.splice(i, 1);
   }
   /** A recorded call is playing, or one will start as soon as it can: the game's polite lines (the result with its
    *  yardage) wait for it, not over it. A call held back by a menu or the interface does not count (no deadlock). */
