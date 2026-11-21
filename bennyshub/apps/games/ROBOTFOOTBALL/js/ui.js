@@ -5,7 +5,7 @@
   const SAVE = 'bennys-stadium-match-v1', SEASON_SAVE = 'bennys-stadium-season-match-v1', PREFS = 'bennys-stadium-settings-v1';
   const AIM_SPEEDS = [0.14, 0.24, 0.36, 0.55];
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-  const defaults = { mode: 'basic', difficulty: 'rookie', pace: 0.45, aimSpeed: 0.24, sound: true, crowd: true, reducedMotion: motionQuery.matches, runControl: 'hold', teamId: 'blue', largeText: false, charge: true, kickGuide: true, kickoffs: true };
+  const defaults = { mode: 'basic', difficulty: 'rookie', pace: 0.45, aimSpeed: 0.24, sound: true, crowd: true, reducedMotion: motionQuery.matches, runControl: 'hold', teamId: 'blue', largeText: false, charge: true, kickGuide: true, kickoffs: true, commentary: 'full' };
   function read(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
   function store(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { toast('Storage unavailable. This session is still playable.'); } }
   const savedPrefs = read(PREFS) || {};
@@ -17,6 +17,7 @@
   if (AIM_SPEEDS.includes(savedPrefs.aimSpeed)) prefs.aimSpeed = savedPrefs.aimSpeed;
   if (window.FootballSeason?.TEAMS.some(t => t.id === savedPrefs.teamId)) prefs.teamId = savedPrefs.teamId;
   if (['basic', 'advanced'].includes(savedPrefs.mode)) prefs.mode = savedPrefs.mode;
+  if (['full', 'calls', 'captions', 'off'].includes(savedPrefs.commentary)) prefs.commentary = savedPrefs.commentary;
   // Basic keeps only the essentials. These settings play at fixed values there, and the
   // player's own Advanced choices stay saved underneath. Gameplay reads effective(), never prefs.
   const BASIC = { difficulty: 'rookie', pace: 0.45, runControl: 'hold', crowd: true, aimSpeed: 0.24, kickGuide: true, kickoffs: true };
@@ -99,8 +100,12 @@
   const synth = () => window.speechSynthesis;
   const ttsOn = () => voice?.getSettings().ttsEnabled !== false && !!synth();
   const sentences = (...parts) => parts.filter(Boolean).map(p => String(p).trim()).map(p => p.charAt(0).toUpperCase() + p.slice(1)).map(p => /[.!?]$/.test(p) ? p : p + '.').join(' ');
-  const speechBusy = (now = performance.now()) => ttsOn() && (now < speechGuard || !!synth().speaking || !!synth().pending);
-  function say(text) { $('live').textContent = text; voice?.speak(String(text).replace(/#\s?(\d)/g, 'number $1')); speechGuard = performance.now() + 350; }
+  // The broadcast (js/broadcast.js, js/commentary.js) is never the interface: its system-voice fallback does not
+  // count as busy here, but a recorded call playing does, so a polite line waits for it instead of talking over it.
+  const bc = window.FootballBroadcast;
+  const ttsBusyRaw = (now = performance.now()) => ttsOn() && (now < speechGuard || !!synth().speaking || !!synth().pending);
+  const speechBusy = (now = performance.now()) => (ttsBusyRaw(now) && !bc?.ttsOurs()) || !!bc?.callPlaying();
+  function say(text) { bc?.yieldToInterface(); $('live').textContent = text; voice?.speak(String(text).replace(/#\s?(\d)/g, 'number $1')); speechGuard = performance.now() + 350; }
   const speaking = (text, polite, phase) => {
     if (!text) return;
     if (polite && (speechBusy() || speechQueue.length)) { speechQueue.push({ text, at: performance.now(), phase }); speechQueue = speechQueue.slice(-3); return; }
@@ -111,12 +116,33 @@
     if (speechQueue.length && !speechBusy(now)) say(speechQueue.shift().text);
   }
   // True once an outcome's speech is done and has had a short breath; never waits forever.
+  // The broadcast: a commentary line that has started always finishes (cutting one half way sounds worse than the wait;
+  // BROADCAST_FINISH_MS is only a safety cap), then a short breath. A line still waiting gets BROADCAST_HOLD_MS to start;
+  // after that the playbook opens and the waiting line is dropped (Bryan 2026-11-18: CAL's two-point quip was cut).
+  const BROADCAST_HOLD_MS = 2000, BROADCAST_FINISH_MS = 7000;
+  let readyAt = 0;
   function sceneReady(now) {
-    if (!holdStarted) holdStarted = now;
-    if (now - holdStarted > 9000) return true;
-    if (speechBusy(now) || speechQueue.length) { breathUntil = now + 600; return false; }
-    return now >= breathUntil;
+    if (!holdStarted) { holdStarted = now; readyAt = 0; }
+    if (now - holdStarted > 9000 + BROADCAST_FINISH_MS) return true;
+    if (speechBusy(now) || speechQueue.length) { breathUntil = now + 600; readyAt = 0; return false; }
+    if (now < breathUntil) return false;
+    if (bc && bc.talking()) { if (!readyAt) readyAt = now; breathUntil = now + 400; return now - readyAt >= BROADCAST_FINISH_MS; }
+    if (bc && (bc.pending() || bc.callInFlight())) { if (!readyAt) readyAt = now; if (now - readyAt < BROADCAST_HOLD_MS) return false; bc.yieldToInterface(); }
+    return true;
   }
+  // The pre-game, halftime and the final whistle: the field holds for the broadcast (any switch skips it). A hold ends
+  // as soon as the broadcast has nothing left to say; its length is only a safety cap (Bryan 2026-11-18: a cap counted
+  // from the start let the coin toss cut CAL's hello when the menu's own speech ran first).
+  // The cap counts from when the broadcast starts speaking (it first waits for the interface's own speech, e.g. the
+  // menu choice just made); until then the hold may wait up to BROADCAST_WAIT_MS. Lines that cannot start in time go
+  // stale in the broadcast, so a hold never sticks.
+  const BROADCAST_WAIT_MS = 12000;
+  let broadcastHold = 0, broadcastHoldMin = 0, broadcastHoldLabel = '', broadcastHoldCap = 0, broadcastHoldSpoke = false;
+  function holdForBroadcast(ms, label) { const now = performance.now(); broadcastHold = now + BROADCAST_WAIT_MS + ms; broadcastHoldCap = ms; broadcastHoldSpoke = false; broadcastHoldMin = now + 400; broadcastHoldLabel = label; }
+  function endBroadcastHold(skip) { if (!broadcastHold) return; broadcastHold = 0; if (skip) bc?.stop(); phaseSeen = ''; renderPhase(); }
+  const commentaryVoiced = () => !!bc && ttsOn() && ['full', 'calls'].includes(prefs.commentary);
+  const commentary = window.FootballCommentary?.create({ bc, voiced: commentaryVoiced,
+    state: () => ({ sim, home: homeTeam, away: awayTeam, gameMode, season }) });
   function toast(text, tone = '') { clearTimeout(toastTimer); $('toast').textContent = text; $('toast').className = 'on' + (tone ? ' tone-' + tone : ''); toastTimer = setTimeout(() => $('toast').classList.remove('on'), 2600); }
   function preferencesChanged() { store(PREFS, prefs); const fx = effective(); audio?.setEnabled(prefs.sound); audio?.setCrowd(fx.crowd); document.body.classList.toggle('reduced-motion', fx.reducedMotion); document.body.classList.toggle('large-text', prefs.largeText); if (sim) applyOptions(); }
   function applyOptions() { const fx = effective(); sim.options.pace = fx.pace; sim.options.difficulty = fx.difficulty; sim.options.kickoffs = fx.kickoffs; }
@@ -155,7 +181,7 @@
   const choiceLabel = item => item.say ? item.say() : item.spokenName || [item.name,item.value,item.desc].filter(Boolean).join('. ');
   function syncChoices(container, fresh) {
     if(screen === 'game' && ['aim','kickaim'].includes(sim?.s.phase)){choice?.sync(null);return;}
-    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:document.body,speak:text=>{speechQueue=[];$('live').textContent=text;return voice?.speak(text);},
+    if(!choice)choice=NarbeChoiceScanAdapter.create({holdThreshold:3000,stateHost:document.body,speak:text=>{speechQueue=[];bc?.yieldToInterface();$('live').textContent=text;return voice?.speak(text);},
       onHighlight(item){paintingChoice=true;setFocus(item?items.indexOf(item.source):-1,false);paintingChoice=false;},onSelect:()=>activate(true)});
     let host=container.previousElementSibling;
     if(!host?.classList.contains('stationary-scan-status')){host=document.createElement('div');host.className='stationary-scan-status';host.style.minBlockSize='0';container.before(host);}
@@ -243,6 +269,7 @@
     }).join('') + '</ol>';
   }
   function mainMenu() {
+    bc?.stop(); broadcastHold = 0;
     season.recoverPostseason();
     activeGame = false; phaseSeen = ''; clearHeld(); matchTheme = seasonTheme();
     const list = [];
@@ -328,14 +355,15 @@
     }
     startGame(practice);
   }
-  function startGame(practice, config = {}) { gameMode = config.mode || 'exhibition'; seasonMatchId = config.seasonMatchId || null; seasonOutcome = null; homeTeam = FootballSeason.getTeam(config.homeTeamId || prefs.teamId); awayTeam = FootballSeason.getTeam(config.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : practice ? 'Practice' : 'Exhibition'; const fx = effective(); sim.reset({ difficulty: fx.difficulty, pace: fx.pace, practice, format: gameMode === 'season' ? 'regulation' : 'drives', kickoffs: fx.kickoffs }); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); armed = -1; activeGame = true; phaseSeen = ''; lastResult = null; hinted = {}; screen = 'game'; clearHeld(); saveMatch(); renderPhase(); }
+  function startGame(practice, config = {}) { gameMode = config.mode || 'exhibition'; seasonMatchId = config.seasonMatchId || null; seasonOutcome = null; homeTeam = FootballSeason.getTeam(config.homeTeamId || prefs.teamId); awayTeam = FootballSeason.getTeam(config.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : practice ? 'Practice' : 'Exhibition'; const fx = effective(); sim.reset({ difficulty: fx.difficulty, pace: fx.pace, practice, format: gameMode === 'season' ? 'regulation' : 'drives', kickoffs: fx.kickoffs }); sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); armed = -1; activeGame = true; phaseSeen = ''; lastResult = null; hinted = {}; screen = 'game'; clearHeld(); saveMatch();
+    broadcastHold = 0; commentary?.startGame(); if (commentary?.intro()) holdForBroadcast(15000, matchTheme === 'championship' ? 'CHAMPIONSHIP NIGHT' : 'WELCOME TO THE MECH LEAGUE'); renderPhase(); }
   function restartCurrent() { startGame(sim.options.practice, { mode: gameMode, seasonMatchId, homeTeamId: homeTeam.id, awayTeamId: awayTeam.id }); }
   function resumeSaved(key = SAVE) {
     try { const saved = read(key); if (sim.restore(saved?.sim || saved) === false) throw Error('Invalid save'); gameMode = saved.mode === 'season' ? 'season' : 'exhibition'; seasonMatchId = saved.seasonMatchId || null; seasonOutcome = null; if (gameMode === 'season' && seasonMatchId !== season.data?.matchId) throw Error('Old season game'); homeTeam = FootballSeason.getTeam(saved.homeTeamId || prefs.teamId) || FootballSeason.getTeam(prefs.teamId); awayTeam = FootballSeason.getTeam(saved.awayTeamId) || FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); matchTheme = gameMode === 'season' ? seasonTheme() : 'regular'; matchLabel = gameMode === 'season' ? season.currentMatchupLabel() : 'Exhibition'; sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); applyOptions(); activeGame = true; screen = 'game'; phaseSeen = ''; lastResult = null; clearHeld(); renderPhase(); }
     catch (_) { toast('This save could not be loaded. Start a new game.'); try { localStorage.removeItem(key); } catch (_) {} mainMenu(); }
   }
   function pause() {
-    if (!activeGame || screen === 'pause' || sim.s.phase === 'final') return; clearHeld();
+    if (!activeGame || screen === 'pause' || sim.s.phase === 'final') return; clearHeld(); bc?.stop(); broadcastHold = 0;
     const row = {
       continue: { name: 'Continue', action: resume }, help: { name: 'Help', desc: 'Say “I need help”', action: () => NarbeCommunicationSpeech.help(() => speaking('I need help')) },
       status: { name: 'Game status', desc: 'Hear the score, down and last play', action: () => speaking(sentences(situation(sim.s), lastResult && 'Last play: ' + lastResult.title, lastResult?.detail)) },
@@ -346,7 +374,7 @@
   }
   function pauseMenu() { screen = 'game'; pause(); }
   function resume() { screen = 'game'; clearHeld(); phaseSeen = ''; renderPhase(); syncAudio(); }
-  function exitGame() { saveMatch(); audio?.pause(); clearHeld(); scan?.resetInputState?.(); window.parent.postMessage({ action: 'focusBackButton' }, '*'); if (window.parent === window) location.href = '../../../index.html'; }
+  function exitGame() { bc?.stop(); saveMatch(); audio?.pause(); clearHeld(); scan?.resetInputState?.(); window.parent.postMessage({ action: 'focusBackButton' }, '*'); if (window.parent === window) location.href = '../../../index.html'; }
   // Basic lists only the essentials, in the same order as Benny's Football; Advanced lists every option.
   // Rows that wrap the hub's shared voice and scanning stay in both: a game opened outside the hub has no other way to reach them.
   hubGraphics.subscribe(() => { if (screen === 'settings') settings(returnScreen, items[focusIndex]?.name || ''); });
@@ -366,6 +394,7 @@
       autoScan: { name: 'Auto scan', value: auto() ? 'On — One switch' : 'Off — Two switches', action: () => { scan?.toggleAutoScan(); again('Auto scan'); } },
       scanSpeed: { name: 'Scan speed', value: interval() / 1000 + ' seconds', action: () => { scan?.cycleScanSpeed(); again('Scan speed'); } },
       sound: { name: 'Sound effects', value: prefs.sound ? 'On' : 'Off', action: () => { prefs.sound = !prefs.sound; refresh('Sound effects'); } },
+      commentary: { name: 'Commentary', value: ({ full: 'Full broadcast', calls: 'Big calls only', captions: 'Captions only', off: 'Off' })[prefs.commentary], desc: 'Penny Sparks, CAL-9000 and the stadium announcer', action: () => { prefs.commentary = ({ full: 'calls', calls: 'captions', captions: 'off', off: 'full' })[prefs.commentary]; if (prefs.commentary !== 'full') bc?.stop(); refresh('Commentary'); } },
       crowd: { name: 'Stadium crowd', value: prefs.crowd ? 'On' : 'Off', action: () => { prefs.crowd = !prefs.crowd; refresh('Stadium crowd'); } },
       aimSpeed: { name: 'Kick aim speed', value: ({ 0.14: 'Slow', 0.24: 'Standard', 0.36: 'Quick', 0.55: 'Fast' })[prefs.aimSpeed], action: () => { prefs.aimSpeed = AIM_SPEEDS[(AIM_SPEEDS.indexOf(prefs.aimSpeed) + 1) % AIM_SPEEDS.length]; refresh('Kick aim speed'); } },
       largeText: { name: 'Large text', value: prefs.largeText ? 'On' : 'Off', desc: 'Bigger menus, scoreboard and field labels', action: () => { prefs.largeText = !prefs.largeText; refresh('Large text'); } },
@@ -379,8 +408,8 @@
       reset: { name: 'Reset saved progress', action: () => overlay('confirm', 'RESET PROGRESS?', 'This removes your season, saved exhibition and current session. Your accessibility settings stay as they are.', [{ name: 'Keep progress', action: () => again() },{ name: 'Delete saved progress', action: () => { try { localStorage.removeItem(SAVE); localStorage.removeItem(SEASON_SAVE); } catch (_) {} season.reset(); activeGame = false; mainMenu(); toast('Saved progress removed.'); } }]) },
       back: { name: 'Back', action: () => from === 'pause' ? pauseMenu() : mainMenu() }
     };
-    const list = (basic() ? ['sound', 'graphics', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
-      : ['graphics', 'tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
+    const list = (basic() ? ['sound', 'commentary', 'graphics', 'tts', 'voice', 'autoScan', 'scanSpeed', 'easyThrow', 'largeText', 'mode', 'reset', 'back']
+      : ['graphics', 'tts', 'voice', 'difficulty', 'pace', 'runControl', 'motion', 'autoScan', 'scanSpeed', 'sound', 'crowd', 'commentary', 'aimSpeed', 'largeText', 'charge', 'kickGuide', 'kickoffs', 'mode', 'reset', 'back']).map(key => row[key]);
     // Arriving opens with nothing highlighted; changing a row's value rebuilds the menu with focus kept on that row.
     overlay('settings', 'YOUR SETTINGS', 'Set the pace. Every option works with your switches.', list, { focus: focusName ? Math.max(0, list.findIndex(item => item.name === focusName)) : -1 });
   }
@@ -464,6 +493,8 @@
   }
   function renderPhase() {
     if (!activeGame || screen !== 'game') return;
+    // The broadcast has the field (pre-game, a new quarter, the final whistle): nothing opens until it ends.
+    if (broadcastHold) { items = []; choice?.sync(null); $('overlay').hidden = true; $('action-panel').hidden = true; $('steer-panel').hidden = true; updateHint(); return; }
     holdStarted = 0;
     const s = sim.s; phaseSeen = s.phase; resultHeld = s.phase === 'result' && s.resultRevealRemaining > 0; changeContext(); $('target-labels').replaceChildren(); $('kick-readout').hidden = true; $('kick-controls').hidden = true; $('scoreboard').hidden = false; $('situation').hidden = false; $('pause-button').hidden = false;
     if (s.phase === 'playcall') {
@@ -561,6 +592,10 @@
     audio?.play(type);
     // The automatic coin toss speaks for itself, kickoff included.
     if (tossing) return;
+    // The broadcast: a heard commentary call takes over the game's own spoken call for this event (live calls only).
+    const called = activeGame ? !!commentary?.event(event) : false;
+    if (called && event.type === 'period') holdForBroadcast(6000, event.text.replace(/\.$/, '').toUpperCase());
+    if (event.type === 'final' && activeGame && commentaryVoiced()) holdForBroadcast(10000, 'FINAL WHISTLE');
     if (event.type === 'tackle') audio?.play('clang');
     if (event.type === 'result' && resultTone(event.state) === 'alert') audio?.play('powerdown');
     if (event.type === 'conversion') return;
@@ -577,13 +612,13 @@
     const repeated = event.type === 'ready' || event.type === 'tackle' || event.type === 'score' || (event.type === 'snap' || event.type === 'throw') && ours;
     const catcher = event.type === 'catch' && !ours && event.state.players.find(p => p.id === event.state.carrierId);
     const live = ['broken', 'catch', 'throw', 'kick', 'whistle'].includes(event.type) ? event.state.phase : undefined;
-    if (!repeated) speaking(event.type === 'prepare' && /^Get set\./.test(event.text) ? 'Get set.' : catcher ? (/^Intercepted/.test(event.text) ? 'Intercepted by number ' : 'Caught by number ') + catcher.number + '. Make the tackle.' : event.text, true, live);
+    if (!repeated && !called) speaking(event.type === 'prepare' && /^Get set\./.test(event.text) ? 'Get set.' : catcher ? (/^Intercepted/.test(event.text) ? 'Intercepted by number ' : 'Caught by number ') + catcher.number + '. Make the tackle.' : event.text, true, live);
     if (!['snap', 'result', 'ready', 'prepare', 'catch', 'touchdown'].includes(event.type)) toast(event.type === 'broken' ? 'BROKEN TACKLE!' : event.text, event.type === 'broken' ? (ours ? 'good' : 'alert') : '');
   }
   function keyName(e) { return e.code === 'Space' ? 'Space' : ['Enter', 'NumpadEnter'].includes(e.code) ? 'Enter' : null; }
   window.addEventListener('keydown', e => {
     const key = keyName(e); if (!key) return; e.preventDefault(); if (e.repeat || presses.has(key) || inputLocks.has(key)) return;
-    audio?.unlock(); presses.set(key, { start: performance.now(), epoch, screen, phase: sim?.s.phase, reverse: false, nextReverse: 3000 }); scanClock = 0;
+    audio?.unlock(); if (broadcastHold && screen === 'game') { inputLocks.add(key); endBroadcastHold(true); return; } presses.set(key, { start: performance.now(), epoch, screen, phase: sim?.s.phase, reverse: false, nextReverse: 3000 }); scanClock = 0;
     if(choice?.active){if(key==='Space'&&choice.brakePress()){presses.get(key).brake=true;return;}choice.setInputHeld(true);}
     if (screen === 'game' && sim?.s.phase === 'kickaim' && !straightKick() && key === 'Space' && !auto()) aimDirection *= -1;
     if (screen === 'game' && key === 'Enter' && prefs.charge && startCharge()) presses.get(key).charging = true;
@@ -687,6 +722,7 @@
       $('kick-status').textContent = onTarget ? 'ON TARGET' : moving ? 'AIMING ' + (aimDirection < 0 ? 'LEFT' : 'RIGHT') : 'AIM SET';
       $('kick-readout').classList.toggle('on-target', onTarget);
     }
+    if (screen === 'game' && broadcastHold) { $('ready-cue').hidden = false; $('toast').classList.remove('on'); banner(broadcastHoldLabel, 'Press a switch to skip', 'neutral'); return; }
     const outcome = s.phase === 'result' && (s.resultRevealRemaining > 0 || resultHeld);
     const ready = screen === 'game' && (!!tossHold || s.phase === 'presnap' || s.controlGrace > 0 || outcome || s.phase === 'tackle');
     $('ready-cue').hidden = !ready;
@@ -721,6 +757,9 @@
     }
     $('steer-left').classList.toggle('active', steer < 0); $('steer-right').classList.toggle('active', steer > 0);
     flushSpeech(now);
+    if (broadcastHold && !broadcastHoldSpoke && bc?.talking()) { broadcastHoldSpoke = true; broadcastHold = now + broadcastHoldCap; }
+    if (broadcastHold && (now >= broadcastHold || now >= broadcastHoldMin && !bc?.talking() && !bc?.pending())) endBroadcastHold(false);
+    if (activeGame && screen === 'game' && !broadcastHold) commentary?.live(sim.s);
     // The coin toss has its moment: the kickoff waits until it has been heard.
     if (tossHold && activeGame && screen === 'game' && !document.hidden && now >= tossHold.until && sceneReady(now)) { tossHold = null; phaseSeen = ''; renderPhase(); }
     if (activeGame && screen === 'game' && !document.hidden && !tossHold) {
@@ -755,6 +794,10 @@
   try {
     audio?.init(); season = new FootballSeason(); homeTeam = FootballSeason.getTeam(prefs.teamId); awayTeam = FootballSeason.TEAMS.find(t => t.id !== homeTeam.id); preferencesChanged(); motionQuery.addEventListener?.('change', preferencesChanged); sim = new FootballSim({ difficulty: effective().difficulty, pace: effective().pace }, handleEvent);
     sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); renderer = new FootballRenderer($('stadium'));
+    // Commentary speaks only into live play and the broadcast holds; a menu, the receiver scan, kick aiming or the
+    // interface's own voice has the floor (ACCESSIBILITY.md: commentary never over the interface).
+    bc?.init({ mode: () => prefs.commentary, voiceOn: ttsOn, ttsBusy: () => ttsBusyRaw(), caption: () => $('caption'),
+      floor: () => !activeGame || screen !== 'game' || (!broadcastHold && (!$('overlay').hidden || !$('action-panel').hidden || ['aim', 'kickaim', 'returnchoice', 'playcall'].includes(sim.s.phase))) });
     window.addEventListener('resize', () => renderer.resize());
     // Exposes state for local diagnostics without coupling the game to test tools.
     window.RobotFootball = window.BennyFootball = { sim, renderer, prefs, season, pause, resume, startGame, get screen() { return screen; }, get charge() { return charge && { ...charge }; } };

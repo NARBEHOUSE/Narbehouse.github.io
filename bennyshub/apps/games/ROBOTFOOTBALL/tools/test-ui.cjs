@@ -144,11 +144,11 @@ app.whenReady().then(async () => {
     await js("window.__basicMenu='';setInterval(()=>{const t=document.querySelector('#menu-title').textContent;if(BennyFootball.prefs.mode==='basic'&&!document.querySelector('#overlay').hidden&&/^(COIN TOSS|YOU WON THE TOSS|KICKOFF|FREE KICK)\\./.test(t))window.__basicMenu=t},40);void 0");
     check('A brand new player starts in Basic', await js("BennyFootball.prefs.mode==='basic'") && (await value('Settings')).startsWith('Basic · '));
     await click('Settings');
-    check('Basic settings are the essentials, in the order Benny\'s Football uses', await names('#menu-items') === 'Sound effects,Text to speech,Voice,Auto scan,Scan speed,Easy throw,Large text,Game mode,Reset saved progress,Back');
+    check('Basic settings are the essentials, in the order Benny\'s Football uses', await names('#menu-items') === 'Sound effects,Commentary,Graphics quality,Text to speech,Voice,Auto scan,Scan speed,Easy throw,Large text,Game mode,Reset saved progress,Back');
     check('Easy throw starts off, so throws and kicks are charged', await js("BennyFootball.prefs.charge===true") && await value('Easy throw') === 'Off');
     await capture('16-basic-settings');
     await click('Game mode');
-    check('Advanced lists every option and keeps focus on Game mode', await js("BennyFootball.prefs.mode==='advanced'") && await names('#menu-items') === 'Text to speech,Voice,Difficulty,Game speed,Run controls,Camera motion,Auto scan,Scan speed,Sound effects,Stadium crowd,Kick aim speed,Large text,Charge throws and kicks,Kick guide,Kickoffs and coin toss,Game mode,Reset saved progress,Back' && await focused() === 'Game mode');
+    check('Advanced lists every option and keeps focus on Game mode', await js("BennyFootball.prefs.mode==='advanced'") && await names('#menu-items') === 'Graphics quality,Text to speech,Voice,Difficulty,Game speed,Run controls,Camera motion,Auto scan,Scan speed,Sound effects,Stadium crowd,Commentary,Kick aim speed,Large text,Charge throws and kicks,Kick guide,Kickoffs and coin toss,Game mode,Reset saved progress,Back' && await focused() === 'Game mode');
     await js("Object.assign(BennyFootball.prefs,{difficulty:'pro',pace:1,runControl:'scan',kickoffs:false});void 0");
     await click('Game mode');
     check('Switching back to Basic keeps focus on Game mode', await js("BennyFootball.prefs.mode==='basic'") && await focused() === 'Game mode' && (await names('#menu-items')).startsWith('Sound effects,'));

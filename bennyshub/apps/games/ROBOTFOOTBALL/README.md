@@ -97,6 +97,17 @@ Every play leads with what it is for, like the classic game's playbook, with its
 
 Separate exhibition and season checkpoints save at play boundaries. Reloading during action returns to the beginning of that play. Practice does not replace either saved game. Final results advance the season once and clear the match checkpoint. Classic football saves stay separate.
 
+## Broadcast
+
+Three voices call the game: **Penny Sparks** (play-by-play, from New Zealand), **CAL-9000** (a robot commentator who treats everything as data) and the **Stadium** announcer, the stadium's own system. It is the home team's broadcast: the player's team is always home, and nobody is unkind about a missed play.
+
+- **What it replaces:** only the game's spoken live calls (your catch, interception and broken tackle, every kick, touchdowns, quarters and the final whistle), and only while the commentary will be heard. Everything the player decides with stays in the system voice, unchanged: menus and scanning, the receiver scan, down and distance, aim cues, the visitors' "Make the tackle" prompts and every result line with its yardage.
+- **The interface always wins:** a menu, the scanner or the interface voice stops commentary at once. After a play, the playbook waits at most 2 seconds longer than before for a call or quip to finish. The pre-game, a new quarter and the final whistle briefly hold the field for the broadcast; any switch press skips the hold.
+- **Not every moment, every time:** each moment has a play rate and a cap per game in the script. The no-repeat memory is saved in the browser, so a player hears the whole pool across sessions before a line returns.
+- **Setting:** Commentary — Full broadcast, Big calls only, Captions only, Off (Basic and Advanced). Every line is captioned with the speaker's name. With the Hub voice off, commentary is captions only.
+
+The script is `content/voice-lines.json` (510 lines in 89 moments, each with a delivery note and a play rate). `node tools/build-voice-lines.cjs` checks it and writes `js/voice-lines.generated.js`. Recordings go in `audio/vo/` with `audio/vo/index.json` and `js/voice-index.generated.js` (clip key = line id, or `<line id>@<team id>` for lines naming a team); a line with no recording is read by the system voice. The voices are made locally with the hub's voice pipeline (`Projects/Assets/tools/voice`, project `robot-football`; `tools/dump-voice-cast.cjs` is its export). `node tools/check-commentary.cjs` plays 200 games headless through the real broadcast and lists what is said and which game lines it replaces.
+
 ## Verification
 
 From the website root, run `node --test tests/robotfootball-season.test.cjs` and `node scripts/check-robotfootball-postseason.cjs`. The browser check uses an isolated disposable Chrome profile and working directory, verifies the 14–2 final-game handoff, all postseason rounds, saved-game recovery/resume, qualifying thresholds and championship presentation at tablet size. It also checks a fresh offline-library download followed by the game's first launch from the Hub card. Reports and screenshots are written under `artifacts/robotfootball-postseason`.
@@ -110,7 +121,9 @@ The website's normal release checks are `npm test`, `npm run build`, `npm run au
 - `js/robots.js`: shared procedural armor geometry and articulated robot rigs.
 - `js/renderer.js`: stadium, cameras, animation and football presentation.
 - `js/ui.js`: menus, shared accessibility integration, switch input and persistence.
-- `js/audio.js`: sound lifecycle and crowd ducking.
+- `js/audio.js`: sound lifecycle and crowd ducking (under speech and recorded commentary).
+- `js/broadcast.js`: the broadcast engine (line choice, play rates, saved no-repeat memory, queue, captions, recordings with a system-voice fallback).
+- `js/commentary.js`: turns game events into broadcast lines and decides which game lines a call replaces.
 - `tools/generate-audio.mjs`: reproducible offline WAV generator.
 
 The browser entry point is `window.RobotFootball`; `window.BennyFootball` remains an alias for compatibility. Three.js is bundled from the hub's local engine and retains its MIT license header. The game uses original procedural models and art. Original PCM effects and stadium crowd audio play through HTML audio; see [audio provenance](assets/audio/README.md).
