@@ -2,6 +2,20 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-21 — Robot Football: "Skill issue" line removed; listings mention the commentary
+
+Scope: the owner asked to remove CAL's field-goal-miss line "Kick missed. Goalpost variance nominal. Skill issue." (`cal_fgmiss_2`): `fieldGoalMiss` plays only on the player's own missed kick, and the broadcast's rule is never to poke fun at a missed play. The family keeps five lines. The owner also asked for the commentary to be named in the game's listings. The PC Hub already had the broadcast (installed and tested by the owner on 2026-11-20; its engine, script and 645 clips were byte-identical to this copy), so the removal and its listing line were applied there too at the owner's direction.
+
+Changed files (Electron port: **YES**, done in the same pass; PC originals backed up to `Website Backups/PC-RobotFootball-before-skill-issue-removal-20261121/`):
+- `bennyshub/apps/games/ROBOTFOOTBALL/content/voice-lines.json`, `.../audio/vo/index.json` — `cal_fgmiss_2` removed; `.../audio/vo/cal/cal_fgmiss_2.mp3` deleted; `js/voice-lines.generated.js` and `js/voice-index.generated.js` rebuilt with `tools/build-voice-lines.cjs` (509 lines, 644 recordings). The saved no-repeat memory drops ids that no longer exist. PC: the same four files (LF, as before) and the clip removed.
+- `.../ROBOTFOOTBALL/index.html` — `?v=` on the two generated bundles bumped to `20261121-broadcast`, so a cached index cannot point at the deleted clip (its system-voice fallback would read the line). The PC page has no `?v=` queries.
+- `bennyshub/apps/games/games.json` (web) and the PC `games.json` (this game's line only, CRLF kept) — the description names the live commentary from Penny Sparks and CAL-9000.
+- `index.html` (home page card) — "Lead your 3D robot team through a 16-game season, with live play-by-play."
+- `bennyshub/offline-manifest.json` — regenerated; only the files above differ.
+- SwitchedGames (`narbefoundation/SwitchedGames`): `index.html` card text and #game-data description, `CHANGELOG.md`.
+
+Verification: `node tests/simulation.test.cjs` 74/74, `node tests/season.test.cjs` 14/14, `node tools/check-commentary.cjs` (200 games) unchanged in what it replaces; no file in either copy still mentions `cal_fgmiss_2` or "Skill issue"; the PC voice files match this copy apart from line endings; both `games.json` files and SwitchedGames' #game-data parse.
+
 ## 2026-11-21 — Robot Football: broadcast commentary merged (PR #5)
 
 Scope: merge Bryan's PR #5 (`robot-football-voice`, the two 2026-11-17/18 entries below) into main, at the owner's request: voice-over and commentary only, no gameplay change and nothing reverted. The branch started from main at 122292a; main had not touched Robot Football since, and the merge removes no line outside the game folder. Simulation, season, renderer, robots and three.min.js are unchanged.

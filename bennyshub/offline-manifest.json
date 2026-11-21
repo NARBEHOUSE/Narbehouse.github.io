@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "180adcc3a5f28b25a66ba412cf1c17a1bc69bfd6c8aec1337327d1506193d6fd",
-  "totalBytes": 435486153,
+  "version": "c17ed070be2cb962817c58b377e6741f08af4967aec226fe72a6cd6eac757847",
+  "totalBytes": 435455864,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -18784,11 +18784,6 @@
       "bytes": 37842
     },
     {
-      "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fgmiss_2.mp3",
-      "revision": "fd80a9413937e8acf8e4ad2a8f73c22578960996449791c6f32197073ba225fa",
-      "bytes": 30162
-    },
-    {
       "url": "./apps/games/ROBOTFOOTBALL/audio/vo/cal/cal_fgmiss_3.mp3",
       "revision": "51d728dad9eb4ddb0f921909fb1fe70dd91e9b47268247826cb3d900d8ed04e9",
       "bytes": 21228
@@ -19500,8 +19495,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/audio/vo/index.json",
-      "revision": "1b85b06d0300702057986917cd609092013ec780d98a0db2a461a76914159aa8",
-      "bytes": 30759
+      "revision": "fcc9177c5e06b8929c4bcb3362af85e247dc5d97bffac78180c79063eb72c391",
+      "bytes": 30716
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_1.mp3",
@@ -21905,8 +21900,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/index.html",
-      "revision": "26441b1213a253c97575fe285c09d542e531817857e152ac81e4027e73937ef1",
-      "bytes": 5510
+      "revision": "39cdeb2c91341540a13f4852d163828ef9c009808af4d0baaec5fb5f86674dca",
+      "bytes": 5507
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/audio.js",
@@ -21955,13 +21950,13 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/voice-index.generated.js",
-      "revision": "1c4648dcd1a0aed43311d7244d4229ceefbe42cb53fa72f488b1cab44a6c2683",
-      "bytes": 27651
+      "revision": "f2278fefa4327badadede4dfdfa58dc371ae510454f2fbc02df2d06199c07222",
+      "bytes": 27611
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/voice-lines.generated.js",
-      "revision": "a932ffe8cb9385388d5e5e03354fe9c0a17678c028d18e35f3970822b3ddedd1",
-      "bytes": 59298
+      "revision": "733abcdbc601e042a0b99c22bcca3a6ae63aefde18603df505f94a5d2f05b3d6",
+      "bytes": 59179
     },
     {
       "url": "./apps/games/TRIVIAMASTER/games_manifest.json",
@@ -22040,8 +22035,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "1f26243e48ec6ea8afe6985c4fe48e178935490a793b82a32fbf79c031b2b9d2",
-      "bytes": 19260
+      "revision": "fa9f27f381947193f26b3190efd3417fbbe9162cd040df37ccba1f9819d26947",
+      "bytes": 19338
     },
     {
       "url": "./apps/tools/calc/app.js",
