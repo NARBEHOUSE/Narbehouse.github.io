@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "c17ed070be2cb962817c58b377e6741f08af4967aec226fe72a6cd6eac757847",
-  "totalBytes": 435455864,
+  "version": "295d2ff67b7f8623b02e5283ad494f45b6a7901656a3507b58e116b88369a27a",
+  "totalBytes": 435454175,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -19495,8 +19495,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/audio/vo/index.json",
-      "revision": "fcc9177c5e06b8929c4bcb3362af85e247dc5d97bffac78180c79063eb72c391",
-      "bytes": 30716
+      "revision": "5d76c059f42e825da3af4a3911befe4a83b274827440cdf248c89b1da764197b",
+      "bytes": 30069
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/audio/vo/pa/pa_champ_1.mp3",
@@ -21895,28 +21895,28 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/css/stadium.css",
-      "revision": "4a1e98591fb6e2c5d1e39da0ddfc34a9142920330d5cd033db15327187034376",
-      "bytes": 31612
+      "revision": "3620637e2eb28a2dd3f2d3351baff924d0cc7a76ad32a94f4fe352a60dc946e5",
+      "bytes": 31260
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/index.html",
-      "revision": "39cdeb2c91341540a13f4852d163828ef9c009808af4d0baaec5fb5f86674dca",
-      "bytes": 5507
+      "revision": "0f34db19e2d3b7dbd1a5f870a35130ad2fd59126832020473490e2969fc63990",
+      "bytes": 5420
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/audio.js",
-      "revision": "391a32d06d1d5a106a2aabe5777d8e34dd2176cf7e2665e597faecbc4a7c93b8",
-      "bytes": 7450
+      "revision": "76bc5b9b8d42bfba803eac8dab6ddbe24336230e3fbff002d553c10c58a16f13",
+      "bytes": 7204
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/broadcast.js",
-      "revision": "e9931da65550a1bd9393d07530cc03614e1b8acc7b36c9f83c62f913e80ce30a",
-      "bytes": 12922
+      "revision": "5093e35a3ac2ca7cb723dfd95bbbfcaab3b1096577b4e1eefc64877bb74835fe",
+      "bytes": 13528
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/commentary.js",
-      "revision": "196806e5103db954ee60f73d724ce53bdb9ba75424043f236661aa27dbc9602c",
-      "bytes": 11609
+      "revision": "a523e4125e45d9c5a579fe83111aec54ee78f569fdbfe8908b6cfdffda3cb7ea",
+      "bytes": 11408
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/renderer.js",
@@ -21945,8 +21945,8 @@
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/ui.js",
-      "revision": "3b1a880e91c1381d6857aef4830b0941657e7947dc97921a735b73b73ea2bd6c",
-      "bytes": 94172
+      "revision": "418f5db338a9c4125ddc546fb2c2c17f648d71b146aaa55ab64520ea9efc13bf",
+      "bytes": 93410
     },
     {
       "url": "./apps/games/ROBOTFOOTBALL/js/voice-index.generated.js",

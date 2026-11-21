@@ -796,7 +796,7 @@
     sim.setTeamNames(homeTeam.unitName, awayTeam.unitName); renderer = new FootballRenderer($('stadium'));
     // Commentary speaks only into live play and the broadcast holds; a menu, the receiver scan, kick aiming or the
     // interface's own voice has the floor (ACCESSIBILITY.md: commentary never over the interface).
-    bc?.init({ mode: () => prefs.commentary, voiceOn: ttsOn, ttsBusy: () => ttsBusyRaw(), caption: () => $('caption'),
+    bc?.init({ mode: () => prefs.commentary, voiceOn: ttsOn, ttsBusy: () => ttsBusyRaw(), interfaceWaiting: () => speechQueue.length > 0, caption: () => $('caption'),
       floor: () => !activeGame || screen !== 'game' || (!broadcastHold && (!$('overlay').hidden || !$('action-panel').hidden || ['aim', 'kickaim', 'returnchoice', 'playcall'].includes(sim.s.phase))) });
     window.addEventListener('resize', () => renderer.resize());
     // Exposes state for local diagnostics without coupling the game to test tools.
