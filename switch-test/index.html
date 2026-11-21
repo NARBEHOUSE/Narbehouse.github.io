@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>Switch Test</title>
+<style>
+  :root {
+    --bg: #ffffff; --ink: #111111; --muted: #3d3d3d; --line: #1f1f1f; --panel: #f2f2f2;
+    --blue: #0a3d91; --yellow: #ffd400; --green: #0a6b2a; --red: #a4001d;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: light; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 20px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body:focus { outline: none; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 2rem; margin: 0.2em 0 0.1em; }
+  h2 { font-size: 1.35rem; margin: 1.4em 0 0.5em; }
+  .lead { margin: 0 0 1em; color: var(--muted); }
+  ol.steps { margin: 0; padding-left: 1.4em; }
+  ol.steps li { margin: 0.4em 0; }
+  .note { color: var(--muted); font-size: 0.9rem; margin: 0.8em 0 0; }
+
+  button {
+    font: inherit; font-weight: 700; min-height: 64px; padding: 12px 20px;
+    border-radius: 14px; border: 3px solid var(--line); background: #fff; color: var(--ink);
+    cursor: pointer; touch-action: manipulation;
+  }
+  button:focus-visible { outline: 4px solid var(--yellow); outline-offset: 3px; }
+  .primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  .mode-label { font-weight: 700; margin: 1.2em 0 0.4em; }
+  .mode { display: flex; gap: 12px; flex-wrap: wrap; }
+  .mode button { flex: 1 1 220px; }
+  .mode button[aria-pressed="true"] { background: var(--ink); color: var(--yellow); border-color: var(--ink); }
+  .mode button[aria-pressed="true"]::before { content: "\2713  "; }
+
+  .start { display: block; width: 100%; font-size: 1.6rem; min-height: 96px; margin: 20px 0 12px; }
+  .status { display: inline-block; font-weight: 700; padding: 8px 14px; border-radius: 12px; border: 3px solid var(--line); margin: 0; }
+  .status.ok { background: #dff5e3; border-color: var(--green); color: #063d18; }
+  .status.wait { background: #fff1c2; border-color: #7a5a00; color: #3d2c00; }
+
+  .planb-text { margin: 1em 0 0.3em; }
+  .planb {
+    border: 3px dashed var(--line); border-radius: 14px; min-height: 72px; padding: 16px;
+    background: var(--panel); font-weight: 700; caret-color: transparent;
+  }
+  .planb:empty::before { content: attr(data-placeholder); color: var(--muted); }
+  .planb:focus { outline: 4px solid var(--yellow); outline-offset: 3px; background: #fffbe0; }
+
+  .last { background: #111; color: var(--yellow); border-radius: 18px; padding: 18px; text-align: center; margin: 20px 0; }
+  .last.held { background: var(--green); color: #fff; }
+  .last-title { font-size: 1rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; }
+  .last-big { font-size: clamp(48px, 12vw, 104px); font-weight: 800; line-height: 1.1; margin: 0.1em 0; word-break: break-word; }
+  .last-small { font-size: 1.1rem; margin: 0; }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .actions button { flex: 1 1 220px; }
+  .armed { background: var(--red); border-color: var(--red); color: #fff; }
+  #copyStatus { font-weight: 700; margin: 0.6em 0 0; }
+  #copyBox {
+    width: 100%; min-height: 220px; margin-top: 10px; padding: 10px; border: 3px solid var(--line); border-radius: 12px;
+    font: 15px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+  th, td { border: 2px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); }
+  .empty { color: var(--muted); }
+
+  .log {
+    list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto;
+    border: 3px solid var(--line); border-radius: 12px; background: var(--panel);
+    font: 15px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  }
+  .log li { padding: 6px 10px; border-bottom: 1px solid #c8c8c8; word-break: break-word; }
+  .log li.instant { color: var(--red); font-weight: 700; }
+  .log li.sys { color: var(--muted); font-style: italic; }
+  .tag { display: inline-block; padding: 0 6px; border-radius: 6px; font-weight: 700; font-style: normal; margin-right: 6px; }
+  .tag.off { background: #dfe9ff; color: var(--blue); }
+  .tag.on { background: #ffe8a3; color: #5a3d00; }
+  #logNote { margin: 0.4em 0 0; }
+
+  @media (max-width: 600px) { body { font-size: 18px; } }
+</style>
+</head>
+<body tabindex="-1">
+<main>
+  <h1>Switch test</h1>
+  <p class="lead">This page shows what your switches send to a web page, so we can set them up in Benny's Hub.</p>
+
+  <ol class="steps">
+    <li>Press switch 1 a few times, then hold it for about 3 seconds.</li>
+    <li>Press switch 2 a few times, then hold it for about 3 seconds.</li>
+    <li>Try it with Apple Switch Control turned <strong>OFF</strong>, then again with it turned <strong>ON</strong> (Settings &gt; Accessibility &gt; Switch Control). Each time, set the button below to match.</li>
+    <li>Tap <strong>Copy results</strong> and send them to Ari.</li>
+  </ol>
+  <p class="note">Your results stay on this page if you leave to change settings. Nothing is sent anywhere until you copy it and send it yourself.</p>
+
+  <p class="mode-label" id="modeLabel">Apple Switch Control is now:</p>
+  <div class="mode" role="group" aria-labelledby="modeLabel">
+    <button type="button" id="modeOff" data-mode="off" aria-pressed="true">Switch Control OFF</button>
+    <button type="button" id="modeOn" data-mode="on" aria-pressed="false">Switch Control ON</button>
+  </div>
+
+  <button type="button" class="start primary" id="start">Tap here to start</button>
+  <p class="status wait" id="status">Not listening yet. Tap "Tap here to start".</p>
+
+  <p class="planb-text">Nothing showing up when you press a switch? Tap this box, then try again.</p>
+  <div class="planb" id="planb" contenteditable="true" inputmode="none" tabindex="0"
+       autocorrect="off" autocapitalize="off" spellcheck="false"
+       data-label="Plan B box" data-placeholder="Plan B: tap here, then press a switch"
+       aria-label="Plan B: tap here, then press a switch"></div>
+
+  <section class="last" id="last" aria-label="Last input">
+    <p class="last-title">Last input</p>
+    <p class="last-big" id="lastBig">Waiting for a switch&hellip;</p>
+    <p class="last-small" id="lastSmall">&nbsp;</p>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="primary" id="copy">Copy results</button>
+    <button type="button" id="clear">Clear</button>
+  </div>
+  <p id="copyStatus" role="status"></p>
+  <div id="copyWrap" hidden>
+    <p>If copying didn't work: press and hold in the box below, choose Select All, then Copy.</p>
+    <textarea id="copyBox" inputmode="none" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Results text"></textarea>
+  </div>
+
+  <h2>Summary</h2>
+  <div id="summary"><p class="empty">Nothing yet. Press a switch.</p></div>
+
+  <h2>Everything this page heard (newest first)</h2>
+  <p class="note">This list is technical. You don't need to read it; Copy results includes all of it.</p>
+  <ul class="log" id="log"></ul>
+  <p class="note" id="logNote"></p>
+</main>
+<noscript><p style="padding:16px;font-weight:700">This test needs JavaScript turned on.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORE = 'narbe-switch-test-v1';
+  var MAX_SHOWN = 400;    // lines kept on screen
+  var MAX_KEPT = 5000;    // lines kept for Copy results
+  var INSTANT_MS = 50;    // a press shorter than this may mean holds are impossible
+
+  function $(id) { return document.getElementById(id); }
+  var els = {
+    modeOff: $('modeOff'), modeOn: $('modeOn'), start: $('start'), status: $('status'), planb: $('planb'),
+    last: $('last'), lastBig: $('lastBig'), lastSmall: $('lastSmall'), copy: $('copy'), clear: $('clear'),
+    copyStatus: $('copyStatus'), copyWrap: $('copyWrap'), copyBox: $('copyBox'),
+    summary: $('summary'), log: $('log'), logNote: $('logNote')
+  };
+
+  // ---- State -------------------------------------------------------------
+  var state = { mode: 'off', entries: [], stats: {} };
+  var liFor = new WeakMap();
+  var keysDown = {};          // pairing id -> { at, stat }
+  var pointersDown = {};      // pointerId -> { at, stat }
+  var pads = {};              // gamepad index -> { buttons: [], axes: [] }
+  var lastEntry = null;       // used to fold a held key's auto-repeats into one line
+  var lastPointerDownAt = -Infinity;
+
+  function now() { return performance.now(); }
+  function pad(n, width) { n = String(n); while (n.length < (width || 2)) n = '0' + n; return n; }
+  function clock() {
+    var d = new Date();
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '.' + pad(d.getMilliseconds(), 3);
+  }
+  function modeName(mode) { return 'Switch Control ' + mode.toUpperCase(); }
+
+  // ---- Saving (so leaving for Settings doesn't lose anything) -------------
+  var saveTimer = null;
+  function saveNow() {
+    clearTimeout(saveTimer); saveTimer = null;
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) { /* private mode or full: on-screen results still work */ }
+  }
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 300);
+  }
+  function restore() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (!saved || !Array.isArray(saved.entries)) return false;
+      function validMode(mode) { return mode === 'off' || mode === 'on'; }
+      state.mode = saved.mode === 'on' ? 'on' : 'off';
+      state.entries = saved.entries.filter(function (entry) {
+        return entry && typeof entry.text === 'string' && typeof entry.time === 'string' && validMode(entry.mode);
+      }).slice(-MAX_KEPT);
+      state.stats = {};
+      var stats = saved.stats && typeof saved.stats === 'object' ? saved.stats : {};
+      for (var key in stats) {
+        var s = stats[key];
+        if (Object.prototype.hasOwnProperty.call(stats, key) && s && validMode(s.mode) && typeof s.label === 'string') state.stats[key] = s;
+      }
+      return state.entries.length > 0;
+    } catch (_) { return false; }
+  }
+
+  // ---- Log ---------------------------------------------------------------
+  function fillLine(li, entry) {
+    li.textContent = '';
+    li.className = entry.cls || '';
+    var time = document.createElement('span');
+    time.textContent = entry.time + ' ';
+    var tag = document.createElement('span');
+    tag.className = 'tag ' + entry.mode;
+    tag.textContent = 'SC ' + entry.mode.toUpperCase();
+    var text = document.createElement('span');
+    text.textContent = entry.text;
+    li.appendChild(time); li.appendChild(tag); li.appendChild(text);
+  }
+  function showLine(entry) {
+    var li = document.createElement('li');
+    fillLine(li, entry);
+    liFor.set(entry, li);
+    els.log.insertBefore(li, els.log.firstChild);
+    while (els.log.childNodes.length > MAX_SHOWN) els.log.removeChild(els.log.lastChild);
+  }
+  function updateLogNote() {
+    els.logNote.textContent = state.entries.length > MAX_SHOWN
+      ? 'Showing the newest ' + MAX_SHOWN + ' of ' + state.entries.length + ' lines. Copy results includes all of them.'
+      : '';
+  }
+  function addEntry(text, cls) {
+    var entry = { time: clock(), mode: state.mode, text: text, cls: cls || '' };
+    state.entries.push(entry);
+    if (state.entries.length > MAX_KEPT) state.entries.splice(0, state.entries.length - MAX_KEPT);
+    showLine(entry);
+    lastEntry = entry;
+    updateLogNote();
+    scheduleSummary();
+    save();
+    return entry;
+  }
+  function rewriteEntry(entry) {
+    var li = liFor.get(entry);
+    if (li) fillLine(li, entry);
+    save();
+  }
+  function lineText(entry) { return entry.time + ' [' + modeName(entry.mode) + '] ' + entry.text; }
+
+  // ---- Summary -----------------------------------------------------------
+  function statFor(id, label, kind) {
+    var key = state.mode + '|' + id;
+    var stat = state.stats[key];
+    if (!stat) {
+      stat = state.stats[key] = { mode: state.mode, label: label, kind: kind, times: 0, longest: null, instant: 0, repeats: 0 };
+    }
+    return stat;
+  }
+  function recordHold(stat, held) {
+    if (stat.longest === null || held > stat.longest) stat.longest = held;
+  }
+  function statList() {
+    var list = [];
+    for (var key in state.stats) if (Object.prototype.hasOwnProperty.call(state.stats, key)) list.push(state.stats[key]);
+    list.sort(function (a, b) { return a.mode === b.mode ? 0 : (a.mode === 'off' ? -1 : 1); });
+    return list;
+  }
+  function holdText(stat) {
+    if (stat.kind === 'click' || stat.kind === 'touch') return '—';
+    return stat.longest === null ? 'no release seen' : stat.longest + ' ms';
+  }
+  var summaryTimer = null;
+  function scheduleSummary() {
+    if (summaryTimer) return;
+    summaryTimer = setTimeout(function () { summaryTimer = null; renderSummary(); }, 120);
+  }
+  function renderSummary() {
+    var list = statList();
+    els.summary.textContent = '';
+    if (!list.length) {
+      var p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = 'Nothing yet. Press a switch.';
+      els.summary.appendChild(p);
+      return;
+    }
+    var table = document.createElement('table');
+    var head = document.createElement('tr');
+    ['Switch Control', 'Input', 'Times', 'Longest hold', 'Under 50 ms', 'Auto-repeats'].forEach(function (h) {
+      var th = document.createElement('th'); th.textContent = h; head.appendChild(th);
+    });
+    table.appendChild(head);
+    list.forEach(function (s) {
+      var tr = document.createElement('tr');
+      [s.mode.toUpperCase(), s.label, String(s.times), holdText(s),
+       s.kind === 'key' ? String(s.instant) : '—',
+       s.kind === 'key' ? String(s.repeats) : '—'].forEach(function (value) {
+        var td = document.createElement('td'); td.textContent = value; tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    els.summary.appendChild(table);
+  }
+  function summaryText() {
+    var lines = [];
+    ['off', 'on'].forEach(function (mode) {
+      var list = statList().filter(function (s) { return s.mode === mode; });
+      lines.push(modeName(mode) + ':');
+      if (!list.length) { lines.push('  (nothing recorded)'); return; }
+      list.forEach(function (s) {
+        var line = '  ' + s.label + ': ' + s.times + ' time' + (s.times === 1 ? '' : 's');
+        if (s.kind !== 'click' && s.kind !== 'touch') line += ', longest hold ' + holdText(s);
+        if (s.kind === 'key') line += ', ' + s.instant + ' under 50 ms, ' + s.repeats + ' auto-repeats';
+        lines.push(line);
+      });
+    });
+    return lines;
+  }
+
+  // ---- Last input box ----------------------------------------------------
+  function setLast(big, small, held) {
+    els.lastBig.textContent = big;
+    els.lastSmall.textContent = small || ' ';
+    els.last.classList.toggle('held', !!held);
+  }
+  function anyHeld() {
+    for (var k in keysDown) if (Object.prototype.hasOwnProperty.call(keysDown, k)) return true;
+    return false;
+  }
+
+  // ---- Keys --------------------------------------------------------------
+  function keyName(e) {
+    if (e.key === ' ') return 'Space';
+    if (e.key && e.key !== 'Unidentified' && e.key !== 'Dead') return e.key;
+    if (e.code) return e.code;
+    return 'keyCode ' + e.keyCode;
+  }
+  function keyFields(e) {
+    var text = 'key=' + JSON.stringify(e.key) + '  code=' + (e.code || '(empty)') +
+      '  keyCode=' + e.keyCode + '  which=' + e.which + '  repeat=' + e.repeat;
+    var mods = [];
+    if (e.shiftKey) mods.push('Shift');
+    if (e.ctrlKey) mods.push('Control');
+    if (e.altKey) mods.push('Alt');
+    if (e.metaKey) mods.push('Meta');
+    if (mods.length) text += '  mods=' + mods.join('+');
+    return text;
+  }
+  function onKey(e) {
+    // Stop Space scrolling and Enter activating buttons. Cmd/Ctrl shortcuts still work (for copying).
+    if (!e.metaKey && !e.ctrlKey) e.preventDefault();
+    var t = now();
+    var pair = e.code || (e.key ? 'key:' + e.key : 'keyCode:' + e.keyCode);
+    var down = keysDown[pair];
+    var small = 'code ' + (e.code || '(empty)') + ' · keyCode ' + e.keyCode;
+
+    if (e.type === 'keydown') {
+      if (e.repeat) {
+        var rstat = down ? down.stat : statFor('key|' + pair + '|' + e.key, keyName(e), 'key');
+        rstat.repeats++;
+        if (lastEntry && lastEntry.repeatPair === pair && lastEntry.mode === state.mode) {
+          lastEntry.repeatCount++;
+          lastEntry.text = lastEntry.base + '  ×' + lastEntry.repeatCount + ' (auto-repeat while held)';
+          rewriteEntry(lastEntry);
+        } else {
+          var base = 'keydown  ' + keyFields(e);
+          var entry = addEntry(base + '  ×1 (auto-repeat while held)');
+          entry.base = base; entry.repeatPair = pair; entry.repeatCount = 1;
+        }
+        scheduleSummary();
+        return;
+      }
+      if (down) {
+        addEntry('keydown  ' + keyFields(e) + '  (pressed again before any keyup)');
+        return;
+      }
+      var label = keyName(e) + '  (key ' + JSON.stringify(e.key) + ', code ' + (e.code || '(empty)') + ', keyCode ' + e.keyCode + ')';
+      var stat = statFor('key|' + pair + '|' + e.key, label, 'key');
+      stat.times++;
+      keysDown[pair] = { at: t, stat: stat };
+      addEntry('keydown  ' + keyFields(e));
+      setLast(keyName(e), small + ' · holding…', true);
+      return;
+    }
+
+    // keyup
+    if (!down) {
+      addEntry('keyup    ' + keyFields(e) + '  — no matching keydown seen');
+      setLast(keyName(e), small + ' · released (no press seen)', anyHeld());
+      return;
+    }
+    delete keysDown[pair];
+    var held = Math.round(t - down.at);
+    recordHold(down.stat, held);
+    var instant = held < INSTANT_MS;
+    if (instant) down.stat.instant++;
+    addEntry('keyup    ' + keyFields(e) + '  — held ' + held + ' ms' +
+      (instant ? '  ⚠ INSTANT PRESS (under 50 ms: holds may not be possible)' : ''), instant ? 'instant' : '');
+    setLast(keyName(e), small + ' · held ' + held + ' ms' + (instant ? ' (instant press)' : ''), anyHeld());
+  }
+
+  // ---- Taps, clicks and touches -----------------------------------------
+  function targetLabel(target) {
+    var el = target && target.closest ? target.closest('button, [data-label]') : null;
+    if (!el) return 'page';
+    var label = el.getAttribute('data-label') || el.textContent.replace(/\s+/g, ' ').trim();
+    return '"' + label.slice(0, 40) + '"';
+  }
+  function xy(x, y) { return 'x=' + Math.round(x) + ' y=' + Math.round(y); }
+  function onPointer(e) {
+    var t = now();
+    var type = e.pointerType || 'unknown';
+    var where = xy(e.clientX, e.clientY) + '  on ' + targetLabel(e.target);
+    if (e.type === 'pointerdown') {
+      var stat = statFor('pointer|' + type, 'Tap / pointer (' + type + ')', 'pointer');
+      stat.times++;
+      pointersDown[e.pointerId] = { at: t, stat: stat };
+      lastPointerDownAt = t;
+      addEntry('pointerdown  ' + type + '  ' + where + '  button=' + e.button);
+      setLast('Tap', type + ' · ' + where, false);
+      return;
+    }
+    var down = pointersDown[e.pointerId];
+    delete pointersDown[e.pointerId];
+    var held = down ? Math.round(t - down.at) : null;
+    if (down) recordHold(down.stat, held);
+    addEntry(e.type + '  ' + type + '  ' + where + (held === null ? '' : '  — held ' + held + ' ms'));
+  }
+  function onClick(e) {
+    var t = now();
+    var stat = statFor('click', 'Click', 'click');
+    stat.times++;
+    var noTouch = t - lastPointerDownAt > 1000;
+    var where = xy(e.clientX, e.clientY) + '  on ' + targetLabel(e.target);
+    addEntry('click  ' + where + '  detail=' + e.detail +
+      (noTouch ? '  (no pointerdown just before: may be an accessibility tap)' : ''));
+    if (noTouch) setLast('Click', where, false);
+  }
+  function onTouch(e) {
+    var touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    var stat = statFor('touch', 'Touch (touchstart)', 'touch');
+    stat.times++;
+    var count = e.touches ? e.touches.length : 1;
+    addEntry('touchstart  ' + count + ' finger' + (count === 1 ? '' : 's') +
+      (touch ? '  ' + xy(touch.clientX, touch.clientY) : '') + '  on ' + targetLabel(e.target));
+  }
+
+  // ---- Gamepads ----------------------------------------------------------
+  function gamepadRecord(gp, how) {
+    var rec = pads[gp.index];
+    if (!rec) {
+      rec = pads[gp.index] = { buttons: [], axes: [] };
+      addEntry('gamepad ' + how + '  #' + gp.index + '  "' + gp.id + '"  buttons=' + gp.buttons.length +
+        '  axes=' + gp.axes.length + '  mapping=' + (gp.mapping || 'none'), 'sys');
+    }
+    return rec;
+  }
+  function pollGamepads() {
+    var list = [];
+    try { list = navigator.getGamepads ? navigator.getGamepads() : []; } catch (_) { list = []; }
+    for (var i = 0; i < list.length; i++) {
+      var gp = list[i];
+      if (!gp) continue;
+      var rec = gamepadRecord(gp, 'found');
+      for (var b = 0; b < gp.buttons.length; b++) {
+        var button = gp.buttons[b];
+        var pressed = typeof button === 'object' ? (button.pressed || button.value > 0.5) : button > 0.5;
+        var r = rec.buttons[b] || (rec.buttons[b] = { down: false, at: 0 });
+        var name = 'Gamepad #' + gp.index + ' button ' + b;
+        if (pressed && !r.down) {
+          r.down = true; r.at = now();
+          r.stat = statFor('gp|' + gp.index + '|b' + b, name, 'gamepad');
+          r.stat.times++;
+          addEntry('gamepad #' + gp.index + ' button ' + b + ' down');
+          setLast(name, 'holding…', true);
+        } else if (!pressed && r.down) {
+          r.down = false;
+          var held = Math.round(now() - r.at);
+          recordHold(r.stat, held);
+          addEntry('gamepad #' + gp.index + ' button ' + b + ' up  — held ' + held + ' ms');
+          setLast(name, 'held ' + held + ' ms', anyHeld());
+        }
+      }
+      for (var a = 0; a < gp.axes.length; a++) {
+        var value = gp.axes[a];
+        var ax = rec.axes[a] || (rec.axes[a] = { base: value, dir: 0, at: 0 });
+        var delta = value - ax.base;
+        var axisName = 'Gamepad #' + gp.index + ' axis ' + a;
+        if (!ax.dir && Math.abs(delta) > 0.5) {
+          ax.dir = delta > 0 ? 1 : -1; ax.at = now();
+          ax.stat = statFor('gp|' + gp.index + '|a' + a + (ax.dir > 0 ? '+' : '-'), axisName + (ax.dir > 0 ? ' +' : ' −'), 'gamepad');
+          ax.stat.times++;
+          addEntry('gamepad #' + gp.index + ' axis ' + a + ' moved ' + (ax.dir > 0 ? '+' : '−') + '  value=' + value.toFixed(2));
+          setLast(axisName, 'moved', true);
+        } else if (ax.dir && Math.abs(delta) < 0.3) {
+          var axHeld = Math.round(now() - ax.at);
+          recordHold(ax.stat, axHeld);
+          ax.dir = 0;
+          addEntry('gamepad #' + gp.index + ' axis ' + a + ' released  — held ' + axHeld + ' ms');
+          setLast(axisName, 'held ' + axHeld + ' ms', anyHeld());
+        }
+      }
+    }
+    requestAnimationFrame(pollGamepads);
+  }
+
+  // ---- Focus and status --------------------------------------------------
+  function focusPage() {
+    if (document.activeElement === els.planb || document.activeElement === els.copyBox) return;
+    try { document.body.focus({ preventScroll: true }); } catch (_) { document.body.focus(); }
+  }
+  function updateStatus() {
+    var listening = document.visibilityState !== 'hidden' && document.hasFocus();
+    els.status.className = 'status ' + (listening ? 'ok' : 'wait');
+    els.status.textContent = listening
+      ? 'Listening. Press a switch.'
+      : 'Not listening. Tap "Tap here to start".';
+  }
+
+  // ---- Mode toggle, Copy, Clear -----------------------------------------
+  function showMode() {
+    els.modeOff.setAttribute('aria-pressed', String(state.mode === 'off'));
+    els.modeOn.setAttribute('aria-pressed', String(state.mode === 'on'));
+  }
+  function setMode(mode) {
+    if (state.mode === mode) { focusPage(); return; }
+    state.mode = mode;
+    showMode();
+    lastEntry = null;
+    addEntry('— Mode set to ' + modeName(mode) + ' —', 'sys');
+    focusPage();
+  }
+
+  function resultsText() {
+    var lines = [];
+    lines.push("Benny's Hub switch test results");
+    lines.push('Device (user agent): ' + navigator.userAgent);
+    lines.push('Platform: ' + (navigator.platform || 'unknown') + ' · touch points: ' + (navigator.maxTouchPoints || 0) +
+      ' · screen: ' + screen.width + 'x' + screen.height + ' · gamepad support: ' + (navigator.getGamepads ? 'yes' : 'no'));
+    lines.push('Copied: ' + new Date().toString());
+    lines.push('Mode when copied: ' + modeName(state.mode));
+    lines.push('');
+    lines.push('SUMMARY');
+    lines = lines.concat(summaryText());
+    lines.push('');
+    lines.push('FULL LOG (oldest first, ' + state.entries.length + ' lines)');
+    state.entries.forEach(function (entry) { lines.push(lineText(entry)); });
+    return lines.join('\n');
+  }
+  function copyResults() {
+    var text = resultsText();
+    els.copyBox.value = text;
+    els.copyWrap.hidden = false;
+    function fallback() {
+      var ok = false;
+      try {
+        els.copyBox.focus();
+        els.copyBox.select();
+        els.copyBox.setSelectionRange(0, text.length);
+        ok = document.execCommand('copy');
+      } catch (_) { ok = false; }
+      els.copyStatus.textContent = ok
+        ? 'Copied! Paste it into a message or email to Ari.'
+        : 'Copying was blocked. Use the box below instead.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () {
+        els.copyStatus.textContent = 'Copied! Paste it into a message or email to Ari.';
+      }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  var clearTimer = null;
+  function disarmClear() {
+    clearTimeout(clearTimer); clearTimer = null;
+    els.clear.textContent = 'Clear';
+    els.clear.classList.remove('armed');
+  }
+  function clearAll() {
+    state.entries = []; state.stats = {};
+    keysDown = {}; pointersDown = {}; lastEntry = null;
+    els.log.textContent = '';
+    els.copyBox.value = ''; els.copyWrap.hidden = true; els.copyStatus.textContent = '';
+    setLast('Waiting for a switch…', '', false);
+    updateLogNote(); renderSummary(); save();
+  }
+  function onClear() {
+    if (!clearTimer) {
+      els.clear.textContent = 'Tap again to clear everything';
+      els.clear.classList.add('armed');
+      clearTimer = setTimeout(disarmClear, 4000);
+      return;
+    }
+    disarmClear();
+    clearAll();
+    focusPage();
+  }
+
+  // ---- Wire up -----------------------------------------------------------
+  window.addEventListener('keydown', onKey, true);
+  window.addEventListener('keyup', onKey, true);
+  window.addEventListener('pointerdown', onPointer, true);
+  window.addEventListener('pointerup', onPointer, true);
+  window.addEventListener('pointercancel', onPointer, true);
+  window.addEventListener('click', onClick, true);
+  window.addEventListener('touchstart', onTouch, { capture: true, passive: true });
+  window.addEventListener('gamepadconnected', function (e) { if (e.gamepad) gamepadRecord(e.gamepad, 'connected'); });
+  window.addEventListener('gamepaddisconnected', function (e) {
+    if (!e.gamepad) return;
+    delete pads[e.gamepad.index];
+    addEntry('gamepad disconnected  #' + e.gamepad.index + '  "' + e.gamepad.id + '"', 'sys');
+  });
+  window.addEventListener('focus', function () { addEntry('page has focus', 'sys'); updateStatus(); });
+  window.addEventListener('blur', function () { addEntry('page lost focus (switch presses may not reach it)', 'sys'); updateStatus(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') {
+      addEntry('page hidden (left Safari or switched apps)', 'sys');
+      keysDown = {}; pointersDown = {};
+      saveNow();
+    } else {
+      addEntry('page visible again', 'sys');
+      focusPage();
+    }
+    updateStatus();
+  });
+
+  window.addEventListener('pagehide', saveNow);
+
+  // Keep the Plan B box empty: it only exists to hold keyboard focus.
+  els.planb.addEventListener('beforeinput', function (e) { e.preventDefault(); });
+  els.planb.addEventListener('paste', function (e) { e.preventDefault(); });
+  els.planb.addEventListener('drop', function (e) { e.preventDefault(); });
+  els.planb.addEventListener('input', function () { els.planb.textContent = ''; });
+  els.planb.addEventListener('focus', function () {
+    addEntry('Plan B box has focus', 'sys');
+    els.status.className = 'status ok';
+    els.status.textContent = 'Listening (Plan B box). Press a switch.';
+  });
+
+  els.modeOff.addEventListener('click', function () { setMode('off'); });
+  els.modeOn.addEventListener('click', function () { setMode('on'); });
+  els.start.addEventListener('click', function () {
+    focusPage();
+    addEntry('— Started: page focused. Press a switch. —', 'sys');
+    setLast('Ready', 'Press a switch', false);
+    updateStatus();
+  });
+  els.copy.addEventListener('click', copyResults);
+  els.clear.addEventListener('click', onClear);
+
+  // ---- Start -------------------------------------------------------------
+  var hadResults = restore();
+  showMode();
+  if (hadResults) {
+    state.entries.slice(-MAX_SHOWN).forEach(showLine);
+    lastEntry = null;
+    addEntry('— Page reopened. Earlier results kept. —', 'sys');
+  }
+  renderSummary();
+  updateLogNote();
+  focusPage();
+  updateStatus();
+  requestAnimationFrame(pollGamepads);
+})();
+</script>
+</body>
+</html>
