@@ -4992,3 +4992,26 @@ User request: pull the merged `bens-food-court` (voice pass, PR #1) into `F:\PRO
 - `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO**.
 
 Verification: register touchability sampled at 17 window sizes x 3 text sizes in Edge headless: 8 blocked before, none after; a video of the hand-off with picture loads slowed to 500 ms showed the last customer on screen under the new customer's bubble before the fix and an empty counter then the new customer after. Food court `node --test`: 323/323. `tests/dom-play.cjs` on the PC copy: 37 runs ok (the full suite was cut off by a time limit; the counter, Little Lulu and eight-customer runs were included). The PC Hub page lists the tile with its picture; the PC game page loads its shared scripts with no errors. Website `npm test` 438/438. Not run inside Electron itself.
+
+### 2026-11-22 — Switch Stories: four new books from the PC Hub
+
+Scope: copy Nancy's new Switch Stories books and player updates from Ben's PC Hub to the website copy (its own Pages repo, `F:\PROJECT FILES\WEBSITES\GAMES\switch-stories`), as requested. Electron port: **NO** for every file below; the PC Hub was only read (`scripts/copy-big-game.cjs`), not launched or modified.
+
+New books: Little Ant's Big Plan (Book Dash / Let's Read, CC BY 4.0), Real Heroes, Little Fox and Cat and Dog Tea (Let's Read, CC BY-NC 4.0), about 52 MB of WebP artwork together, which takes the website copy to about 170 MB of its own 1 GB. Player updates from the PC: Speak Story Prompts and Quick Page Turn settings, spoken passages continuing on the same picture, a 9-book scrolling library grid with Sort (Newest, Alphabetical, Recently Read, Most Read), automatic Animations / No animations tags, title-then-description library speech, walk/rumble/sequenced/close-up illustration motions and grouped high-contrast scenes.
+
+Switch Stories repo (`GAMES/switch-stories`):
+- `stories/{little-ants-big-plan,real-heroes,little-fox,cat-and-dog-tea}/`: `story.js`, `CREDITS.md` and the artwork the game loads (170 files).
+- `index.html`, `IMAGE-DESCRIPTIONS.html`, `css/style.css`, `js/{config,illustration,input,library,reading-history,sound,story,ui}.js`, `stories/list.js`: the PC versions with the usual website-only edits; cache tag `?v=2026.11.22.2`.
+- `js/sound.js` (second copy, same day): Nancy's pronunciation fixes, used for menus and story narration alike. "Max" is spoken as "Macks" so voices do not expand "Max." to "maximum" (Real Heroes), and "just learned" is spoken with one syllable.
+- `CREDITS.md` (website-owned): attribution lines for the four new books.
+- `tests/`: the eight PC Node tests that cover game behaviour, re-pointed at the repo root (`continuous-reading`, `library-speech` and `story-prompts` are new; `descriptions` and `reading-history` follow the new reading flow). The per-book and illustration-sequence PC tests are not copied; they check production records that stay on the PC.
+- Not copied: the per-book `ARTWORK.json` and `CHARACTERS.json` (image-generation prompts and art-continuity notes the game never loads).
+
+Main repo:
+- `scripts/big-games.cjs`: excludes `stories/*/ARTWORK.json` and `stories/*/CHARACTERS.json` from future copies.
+- `scripts/check-nancy-games.cjs`: serves `/switch-stories/` from `GAMES/switch-stories` (the check had 404'd since the 2026-11-11 move), waits for every book in `NSS.STORY_LIST` rather than exactly four, and checks the scrolling library as the PC grid test does: fits horizontally, and scanning brings every choice fully into view.
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record.
+
+The Switch Stories catalog description and screenshot are unchanged on both builds, so games.json, the home page card and SwitchedGames need no edits.
+
+Verification: copy preview afterwards reports all 500 copied files identical to the PC. Switch Stories Node tests 8/8 (512 continuous-reading flows over all 8 books; 508 normal and 508 quick description flows). `node scripts/check-nancy-games.cjs` passes headless, including the Hub iframe and exit; the library requests 14 images (covers only). A headless pass opened each new book in both looks: 163 images loaded, no 404s, no page errors. Not run inside Electron or on a physical device.

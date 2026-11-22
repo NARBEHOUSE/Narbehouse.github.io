@@ -6,7 +6,9 @@ const GAMES={
   'switch-stories':{
     source:'NARBESWITCHSTORIES',             // bennyshub/apps/games/<source> in Ben's PC Hub
     // PC files that never go to the website: production references the game does not load.
-    exclude:['**/source/','**/incoming/','**/reference/','**/art/','**/prototype/','**/*.pdf','stories/*/images/','**/*-PROMPTS.json'],
+    // ARTWORK.json/CHARACTERS.json: per-book image-generation prompts and art-continuity notes (2026-11-22).
+    exclude:['**/source/','**/incoming/','**/reference/','**/art/','**/prototype/','**/*.pdf','stories/*/images/','**/*-PROMPTS.json',
+      'stories/*/ARTWORK.json','stories/*/CHARACTERS.json'],
     // Website-owned files: made or changed for the website only. The copy never overwrites or removes them.
     // js/descriptions.js: the web copy reads descriptions through the parent page's offline cache (2026-10-30, 37e13a8).
     keep:['README.md','LICENSE','CREDITS.md','.gitignore','.nojekyll','tests/','js/descriptions.js'],
