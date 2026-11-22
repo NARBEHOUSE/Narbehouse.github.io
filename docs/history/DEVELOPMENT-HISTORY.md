@@ -5015,3 +5015,14 @@ Main repo:
 The Switch Stories catalog description and screenshot are unchanged on both builds, so games.json, the home page card and SwitchedGames need no edits.
 
 Verification: copy preview afterwards reports all 500 copied files identical to the PC. Switch Stories Node tests 8/8 (512 continuous-reading flows over all 8 books; 508 normal and 508 quick description flows). `node scripts/check-nancy-games.cjs` passes headless, including the Hub iframe and exit; the library requests 14 images (covers only). A headless pass opened each new book in both looks: 163 images loaded, no 404s, no page errors. Not run inside Electron or on a physical device.
+
+### 2026-11-22 — Robot Football: Bryan's reactions fix (PR #6) ported to the PC Hub
+
+Scope: the owner merged PR #6 (e1d1141, "commentary reactions are heard again") on GitHub and asked for Ben's PC Hub copy to match. Electron pass started at the owner's instruction. The PC copy already matched the website at 105e98c, so it had PR #5 and the removed "Skill issue" line; only e1d1141 was missing. Backup of the whole PC game folder (752 files): `../Website Backups/PC-RobotFootball-before-20261122/`.
+
+- PC `bennyshub/apps/games/ROBOTFOOTBALL/js/broadcast.js`: Bryan's version taken whole (the PC file equalled the website's pre-fix file), kept LF like the PC copy. Electron port **YES**.
+- PC `bennyshub/apps/games/ROBOTFOOTBALL/js/ui.js`: only the `interfaceWaiting: () => speechQueue.length > 0` line. The PC-only async start-up wait for saved scan preferences is kept. Electron port **YES**.
+- PC `index.html` and `README.md`: unchanged. The PC page has no cache-busters, and its README keeps PC-specific test instructions.
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO**.
+
+Verification: the PC `broadcast.js` now matches the website byte for byte apart from line endings; the PC `ui.js` differs from the website only by its PC-only start-up wait. `node --check` passes for both. PC `tests/simulation.test.cjs` 74/74 and `tests/season.test.cjs` 19/19. Electron itself was not launched; listening for CAL's reactions in a real game on the PC is still worth doing.
