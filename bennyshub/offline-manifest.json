@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "044c9b55a3661cd017cf64afdfe35823ab53055ee1e24baa7bcac56686c6a205",
-  "totalBytes": 435890965,
+  "version": "d4a251a70e5c9088cd53b05a4183ff8a7dc6ed00a3974cdf58e14a5d8aa11919",
+  "totalBytes": 435891177,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17890,7 +17890,7 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/index.html",
-      "revision": "0dd320b67064dce6bab7b217817059db5d8d75cf4de99e06f897e99df7d148e8",
+      "revision": "aef3d341b387a2d25f3cd7b4966954770809cb9bb1e0ba6e71a4c2797b9b480b",
       "bytes": 3014
     },
     {
@@ -17970,8 +17970,8 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/stage.js",
-      "revision": "3ca45f365c89d9357af2b0513ead97c9e86b40775ee17bb1ce7fb69422af3f71",
-      "bytes": 48842
+      "revision": "d3f3501729c6363cb0e713cf99a693cbd306612912a878f0cca30bf414a483e9",
+      "bytes": 49054
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/surface.js",

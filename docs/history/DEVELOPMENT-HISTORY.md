@@ -2,6 +2,12 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-23 (follow-up) — NARBE Space Explorer: Field Guide pictures follow the graphics setting
+
+Scope: the owner asked whether the game runs on low graphics quality like the other three.js games. It does (the Hub's shared NarbeGraphics setting, also Settings > Graphics; planets, Fly Low, creatures, plants, cities, comets and whales all have Low budgets), but the Field Guide's portrait renderer ignored it. `index.html` cache tags `?v=2026.11.23.3`; `js/stage.js` — the portrait renderer now takes `quality.rendererOptions()` (no antialiasing on Low) like the main and scanner renderers. Electron port **YES** (same file copied to Ben's PC Hub). `bennyshub/offline-manifest.json` — the stage.js entry. `docs/history/DEVELOPMENT-HISTORY.md` — this record, Electron port **NO**.
+
+Verification: headless Chrome with Graphics switched to Low through the game's setting: orbit, scan (model shows), Fly Low (about 41 fps on SwiftShader, CPU only), Field Guide portraits; no errors. Not yet tried on a real low-end machine.
+
 ## 2026-11-23 (later) — NARBE Space Explorer: Field Guide, rare sights, living worlds, rare grand civilisations, new planet art; PC Hub games use local fonts
 
 Scope: the owner asked to "do it all, make it good": the replayability ideas (a collection book and rare finds), better planet art, and Ben's IP kept private on his PC (fonts loaded from Google). Then: "more details in the worlds, continents and different oceans and for advanced civilizations (rare) would be cities and technology and a ton of different animals and plants to identify". While testing the owner found scanned species and a black hole showing no picture ("this can't happen. fix for anything that should show up") and the Find Another Galaxy icon falling off its button; both fixed. Built by the main session with three parallel helpers (planets, Fly Low life, civilisations), each owning its own files.

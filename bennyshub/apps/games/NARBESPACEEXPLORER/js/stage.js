@@ -653,8 +653,9 @@ NSE.Stage = (function () {
             obj = kind === 'plant' ? (NSE.Flora ? NSE.Flora.build(THREE, subject, 'standard') : null) : (NSE.Creatures ? NSE.Creatures.build(THREE, subject, 'standard') : null);
             if (!obj || !obj.group) return null;
             if (!pRenderer) {
+                // (The Hub's graphics setting decides antialiasing and power use, as for the other renderers.)
                 const o = { antialias: true, alpha: true, preserveDrawingBuffer: true };
-                pRenderer = new THREE.WebGLRenderer(o);
+                pRenderer = new THREE.WebGLRenderer(quality ? Object.assign(quality.rendererOptions(o), { alpha: true, preserveDrawingBuffer: true }) : o);
                 pRenderer.outputColorSpace = THREE.SRGBColorSpace;
                 pRenderer.toneMapping = THREE.ACESFilmicToneMapping;
                 pRenderer.toneMappingExposure = 1.05;
