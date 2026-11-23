@@ -26,6 +26,8 @@ NSE.Space = (function () {
     let sky = null, skyStars = null, skyTex = null, skyJob = null, skyGalaxy = null;
     let points = null, pointsKey = '';
     let dust = null, streaks = null, warpK = 0;
+    // Dust and orbit lines fade in and out (set by the stage: off in orbit and in the dive).
+    let dustK = 1, dustWant = 1, linesK = 1, linesWant = 1;
     let current = null;          // { sys, parts: [{kind, mesh, ...}], orbits }
     let greeters = null;
 
@@ -462,7 +464,8 @@ NSE.Space = (function () {
             a.setXYZ(i, x, y, z);
         }
         a.needsUpdate = true;
-        dust.material.opacity = calm ? 0.25 : 0.55;
+        dust.material.opacity = (calm ? 0.25 : 0.55) * dustK;
+        dust.visible = dustK > 0.01;
     }
 
     function makeStreaks() {
@@ -573,6 +576,10 @@ NSE.Space = (function () {
      */
     function update(dt, camera, flight) {
         const s = flight.state;
+        // Eased over about a second (never popping); held as they are while paused.
+        const fk = dt > 0 ? Math.min(1, dt * 2.5) : 0;
+        dustK += (dustWant - dustK) * fk;
+        linesK += (linesWant - linesK) * fk;
         if (sky) sky.position.copy(camera.position);
         if (skyStars) skyStars.position.copy(camera.position);
         refreshPoints(s.galaxy, s.pos);
@@ -612,7 +619,8 @@ NSE.Space = (function () {
                 }
             });
             // The orbit lines (one per planet, in order) spread with them, and show brighter from above.
-            const op = 0.16 + 0.26 * surveyK;
+            const op = (0.16 + 0.26 * surveyK) * linesK;
+            current.orbits.visible = linesK > 0.01;
             current.orbits.children.forEach(function (l, i) {
                 const pl = sys.planets[i];
                 l.scale.setScalar(pl ? spreadNow(pl.id) : 1);
@@ -640,6 +648,10 @@ NSE.Space = (function () {
         shownScale: shownScale,
         shownPos: shownPos,
         setWarp: setWarp,
+        /** 0..1: the streaming dust (off in orbit and in the dive). */
+        setDust: function (k) { dustWant = U.clamp(+k || 0, 0, 1); },
+        /** 0..1: the faint orbit lines (off in orbit and in the dive). */
+        setOrbitLines: function (k) { linesWant = U.clamp(+k || 0, 0, 1); },
         startGreeters: startGreeters,
         endGreeters: endGreeters,
         greeting: function () { return !!greeters; },

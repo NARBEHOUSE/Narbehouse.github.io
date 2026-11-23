@@ -95,6 +95,7 @@ NSE.GalaxyView = (function () {
         let t = 0, spin = 0;
         const reveal = { from: 60, to: 1050 };
         const worldTarget = new THREE.Vector3();
+        const lookAt0 = new THREE.Vector3(0, -R * 0.12, 0);     // where the camera aims while looking
         return {
             scene: scene,
             /**
@@ -110,13 +111,16 @@ NSE.GalaxyView = (function () {
                 const base = new THREE.Vector3(Math.sin(view.yaw) * Math.cos(view.elev), Math.sin(view.elev), Math.cos(view.yaw) * Math.cos(view.elev)).multiplyScalar(dist);
                 if (phase === 'dive') {
                     worldTarget.copy(target).applyMatrix4(disk.matrixWorld);
-                    const e = U.ease(k);
-                    camera.position.copy(base).lerp(worldTarget, e * 0.985);
-                    camera.lookAt(new THREE.Vector3().lerp(worldTarget, Math.min(1, e * 1.4)));
-                    camera.fov = 55 + e * (calm ? 15 : 35);
+                    // Turn to the arm first, then speed up into it (slow start, fast finish), the
+                    // aim starting exactly where the look phase was aiming (no jump on Fly In).
+                    const turn = U.smooth(k / 0.35);
+                    const go = Math.pow(U.smooth(k), 1.6);
+                    camera.position.copy(base).lerp(worldTarget, go * 0.985);
+                    camera.lookAt(lookAt0.clone().lerp(worldTarget, turn));
+                    camera.fov = 55 + go * (calm ? 12 : 28);
                 } else {
                     camera.position.copy(base);
-                    camera.lookAt(0, -R * 0.12, 0);
+                    camera.lookAt(lookAt0);
                     camera.fov = 55;
                 }
                 camera.near = 0.5; camera.far = 20000;

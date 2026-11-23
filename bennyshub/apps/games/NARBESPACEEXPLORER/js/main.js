@@ -194,6 +194,7 @@ NSE.Game = (function () {
     const VIEWS = ['cockpit', 'chase', 'wide'];
     function switchView() {
         const v = VIEWS[(VIEWS.indexOf(NSE.Stage.view()) + 1) % VIEWS.length];
+        S().set('viewChosen', true);
         S().set('view', v);
         NSE.Stage.setView(v);
         UI().refreshHUD();
@@ -462,14 +463,16 @@ NSE.Game = (function () {
         UI().show('warp', { line: 'Climbing back up to orbit.' });
     }
 
-    function diveInfo() {
+    function diveInfo(climb) {
         const o = target, w = o.world;
         // The nose glows warm, tinted by the sky it is entering (only where there is air).
-        const heat = w && w.atmosphere ? U.toHex(U.mix(U.hex('#ff9a50'), U.hex(w.atmosphere.color), 0.35)) : null;
-        return { centre: () => flight.centreOf(o), radius: o.radius, heat: heat };
+        const heat = w && w.atmosphere && !climb ? U.toHex(U.mix(U.hex('#ff9a50'), U.hex(w.atmosphere.color), 0.35)) : null;
+        return { centre: () => flight.centreOf(o), radius: o.radius, heat: heat, climb: !!climb };
     }
 
     const DIVE = 3.8;      // seconds from orbit down to the cloud tops
+    const INTRO = 2.8;     // seconds from high in the sky down to skimming the ground
+    const CLIMB = 2.4;     // seconds climbing away from the ground on the way back up
 
     /** How thick the air looks during the dive (dive k 0..1), for the haze. */
     function hazeAt(k) { return target && target.world && target.world.atmosphere ? U.smooth((k - 0.45) / 0.55) * 0.9 : 0; }
@@ -491,8 +494,8 @@ NSE.Game = (function () {
                 NSE.Stage.setSurfaceIntro(0);
             }
             if (tr.t >= DIVE + 0.5 && !tr.cleared) { tr.cleared = true; UI().fade(false); }
-            if (tr.built) NSE.Stage.setSurfaceIntro((tr.t - DIVE - 0.35) / 2.8);
-            if (tr.t >= DIVE + 3.2) {
+            if (tr.built) NSE.Stage.setSurfaceIntro((tr.t - DIVE - 0.35) / INTRO, 1 / INTRO);
+            if (tr.t >= DIVE + 0.35 + INTRO) {
                 NSE.Stage.setSurfaceIntro(1);
                 trans = null;
                 mode = 'low';
@@ -500,16 +503,18 @@ NSE.Game = (function () {
                 UI().show('low', { line: 'Flying low over ' + target.name + '. ' + (target.world.type === 'gas' ? 'Skimming the clouds. ' : '') + lifeWords(target.world, life) });
             }
         } else {
-            if (tr.t < 1.8) NSE.Stage.setSurfaceIntro(1 - tr.t / 1.8);
-            if (tr.t >= 1.1 && !tr.faded) { tr.faded = true; UI().fade(true, tr.colour); }
-            if (tr.t >= 1.8 && !tr.swapped) { tr.swapped = true; endSurface(); NSE.Stage.setDive(1, diveInfo()); }
+            // Climb away from the ground (nose up, the camera riding along), into the sky's colour,
+            // then out of the top of the air and back up to the orbit.
+            if (tr.t < CLIMB) NSE.Stage.setSurfaceIntro(1 - tr.t / CLIMB, -1 / CLIMB);
+            if (tr.t >= CLIMB - 0.7 && !tr.faded) { tr.faded = true; UI().fade(true, tr.colour); }
+            if (tr.t >= CLIMB && !tr.swapped) { tr.swapped = true; endSurface(); NSE.Stage.setDive(1, diveInfo(true)); }
             if (tr.swapped) {
-                const k = Math.max(0, 1 - (tr.t - 1.8) / (DIVE - 0.4));
-                NSE.Stage.setDive(k, diveInfo());
+                const k = Math.max(0, 1 - (tr.t - CLIMB) / (DIVE - 0.4));
+                NSE.Stage.setDive(k, diveInfo(true));
                 // Out of the fade into the haze, which thins as the ship climbs.
-                if (tr.t >= 1.95) UI().haze(hazeAt(k), tr.colour);
+                if (tr.t >= CLIMB + 0.15) UI().haze(hazeAt(k), tr.colour);
             }
-            if (tr.t >= 1.8 + DIVE - 0.4) {
+            if (tr.t >= CLIMB + DIVE - 0.4) {
                 NSE.Stage.setDive(null);
                 UI().fade(false);
                 trans = null;
@@ -774,6 +779,7 @@ NSE.Game = (function () {
         NSE.Stage.setMode('galaxy');
         NSE.Stage.setGalaxyPhase('reveal', 0);
         gflow = { phase: 'reveal', t: 0 };
+        UI().refreshHUD();
     }
 
     function stepGalaxy(dt) {
@@ -787,21 +793,30 @@ NSE.Game = (function () {
                 UI().show('galaxy', { data: { galaxy: galaxy() } });
             }
         } else if (gf.phase === 'dive') {
-            NSE.Stage.setGalaxyPhase('dive', Math.min(1, gf.t / 3.4));
-            if (gf.t >= 2.7 && !gf.faded) { gf.faded = true; UI().fade(true, '#050818'); }
-            if (gf.t >= 3.4) {
+            NSE.Stage.setGalaxyPhase('dive', Math.min(1, gf.t / GDIVE));
+            if (gf.t >= GDIVE - 0.7 && !gf.faded) { gf.faded = true; UI().fade(true, '#050818'); }
+            if (gf.t >= GDIVE) {
                 gflow = null;
                 NSE.Stage.setGalaxyView(null);
                 NSE.Stage.setMode('space');
                 UI().fade(false);
-                flight.setHeld(false);
-                mode = 'fly';
-                const sys = st().system || (st().near && st().near[0]);
-                UI().show('fly', { line: 'Exploring the ' + galaxy().name + ' Galaxy.' + (sys ? ' Ahead is the ' + sys.name + ' system.' : '') });
-                saveState();
+                UI().refreshHUD();
+                // Come out among the stars the way a warp does (the lines of light easing off
+                // while the picture fades back in), not a cut to a still scene.
+                const g = galaxy();
+                mode = 'warp';
+                warp = {
+                    t: 3.0, jumped: true, dest: function () {}, after: null, reveal: false,
+                    arriveLine: function () {
+                        const sys = st().system || (st().near && st().near[0]);
+                        return 'Exploring the ' + g.name + ' Galaxy.' + (sys ? ' Ahead is the ' + sys.name + ' system.' : '');
+                    }
+                };
             }
         }
     }
+
+    const GDIVE = 4.2;     // seconds diving into a new galaxy after Fly In
 
     function flyIn() {
         if (!gflow || gflow.phase !== 'look') return;

@@ -1878,8 +1878,30 @@ NSE.Surface = (function () {
                 pitch = U.approach(pitch, U.clamp(Math.atan2(vy, v) * 0.8, -0.2, 0.25), 2, dt);
             } else { bank = bankT; }
             ship.position.copy(shipPos);
-            ship.rotation.set(pitch, yaw, bank, 'YXZ');
+            ship.position.y += introLift();
+            ship.rotation.set(pitch + introPitch(), yaw, bank, 'YXZ');
             skyGroup.position.copy(shipPos);
+        }
+
+        // ----- the way in and out -------------------------------------------------------------------
+        // Fly Low starts with the ship diving down out of the sky (through the cloud layer) and
+        // levelling out over the ground; Back to Orbit is the same climb, nose up. The camera rides
+        // with the ship the whole way, so the ship never drops out of the picture.
+        // intro: 0 high up .. 1 skimming; introRate: how fast it is changing (+ coming down).
+        const INTRO_H = 75;
+        let intro = 1, introRate = 0;
+        function introLift() { return intro >= 1 ? 0 : INTRO_H * (1 - U.smooth(intro)); }
+        /** The nose follows the path: down on the way down, up on the climb (radians, + nose up). */
+        function introPitch() {
+            if (intro >= 1 || !introRate) return 0;
+            const k = U.clamp(intro, 0.01, 0.99), dk = 0.01;
+            const drop = INTRO_H * (U.smooth(k + dk) - U.smooth(k - dk)) / (2 * dk) * introRate;
+            return -U.clamp(Math.atan(drop / Math.max(6, BASE_SPEED * speedK)) * 0.7, -0.55, 0.55);
+        }
+        function setIntro(k, rate) {
+            intro = U.clamp(+k, 0, 1);
+            if (!(intro >= 0)) intro = 1;
+            introRate = intro >= 1 ? 0 : (+rate || 0);
         }
 
         function update(dt, t) {
@@ -1928,7 +1950,15 @@ NSE.Surface = (function () {
         const cw = new THREE.Vector3(), lw = new THREE.Vector3();
         function toWorld(o, out) {
             const c = Math.cos(yaw), s = Math.sin(yaw);
-            return out.set(shipPos.x + o[0] * c + o[2] * s, shipPos.y + o[1], shipPos.z - o[0] * s + o[2] * c);
+            let y = o[1], z = o[2];
+            if (intro < 1) {
+                // On the way in or out: the camera tips with the ship (behind it on its path) and rises with it.
+                const a = introPitch() * 0.8, ca = Math.cos(a), sa = Math.sin(a);
+                const y2 = y * ca - z * sa;
+                z = y * sa + z * ca;
+                y = y2 + introLift();
+            }
+            return out.set(shipPos.x + o[0] * c + z * s, shipPos.y + y, shipPos.z - o[0] * s + z * c);
         }
         function setView(view, camera) {
             const V = VIEWS[view] || VIEWS.chase;
@@ -2049,6 +2079,8 @@ NSE.Surface = (function () {
             style: style,
             update: update,
             setView: setView,
+            /** The way in (k 0 high up .. 1 skimming) or out; rate = k per second (+ coming down). */
+            setIntro: setIntro,
             steer: steer,
             heading: () => yaw,
             nearestCreature: nearestCreature,

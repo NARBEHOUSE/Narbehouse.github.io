@@ -43,7 +43,8 @@ NSE.Settings = (function () {
 
     const DEFAULTS = {
         speedIndex: 2,
-        view: 'cockpit',            // cockpit | chase | wide
+        view: 'chase',              // cockpit | chase | wide (the user: chase "seems to look the best")
+        viewChosen: false,          // true once the player picks a view (View in the Pause menu)
         hails: 'sometimes',
         motion: 'full',
         sound: true,
@@ -61,7 +62,9 @@ NSE.Settings = (function () {
 
     function clamp() {
         settings.speedIndex = idx(settings.speedIndex, SPEEDS.length, DEFAULTS.speedIndex);
-        if (['cockpit', 'chase', 'wide'].indexOf(settings.view) < 0) settings.view = 'cockpit';
+        settings.viewChosen = settings.viewChosen === true;
+        // Saved before Chase became the default (and never picked by hand): use the new default.
+        if (!settings.viewChosen || ['cockpit', 'chase', 'wide'].indexOf(settings.view) < 0) settings.view = DEFAULTS.view;
         if (!HAILS.some(h => h.id === settings.hails)) settings.hails = DEFAULTS.hails;
         if (!MOTIONS.some(m => m.id === settings.motion)) settings.motion = 'full';
         settings.sound = settings.sound !== false;

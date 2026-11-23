@@ -264,17 +264,20 @@ body {
     100% { opacity: 0; scale: 0.96; }
 }
 
-/* The cockpit frame: window struts and a dashboard, under the controls. */
+/* The cockpit: a light canopy (thin rim, two slim corner struts, a low console behind the
+   button bar, a faint tint at the glass's edges), under the controls. */
 .nse-cockpit { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: none; }
 .nse-cockpit.show { display: block; }
 .nse-cockpit svg { width: 100%; height: 100%; display: block; }
-.nse-cp-frame { fill: #1a2238; opacity: 0.94; }
-.nse-cp-strut { stroke: #2b3656; stroke-width: 26; fill: none; stroke-linecap: round; }
-.nse-cp-dash { fill: #222c48; }
-.nse-cp-lights circle { fill: #3fe08a; opacity: 0.85; }
-.nse-cp-lights circle:nth-child(2) { fill: #ffd84a; }
-.nse-cp-lights circle:nth-child(3) { fill: #6ac8ff; }
-.nse-cp-lights circle:nth-child(4) { fill: #ff8a5a; }
+.nse-cp-rim { fill: #121a2e; opacity: 0.92; }
+.nse-cp-bow { fill: none; stroke: #121a2e; stroke-width: 15px; stroke-linecap: round; opacity: 0.9; vector-effect: non-scaling-stroke; }
+.nse-cp-bow-hi { fill: none; stroke: rgba(170, 205, 255, 0.3); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.nse-cp-console { opacity: 0.96; }
+.nse-cp-console-edge { fill: none; stroke: rgba(130, 190, 255, 0.45); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.nse-cp-lights rect { fill: #3fe08a; opacity: 0.85; }
+.nse-cp-lights rect:nth-child(2) { fill: #ffd84a; }
+.nse-cp-lights rect:nth-child(3) { fill: #6ac8ff; }
+.nse-cp-lights rect:nth-child(4) { fill: #ff8a5a; }
 
 /* Where Next Stop is heading, or the place you are being asked about. */
 .nse-marker { position: fixed; left: 0; top: 0; z-index: 6; pointer-events: none; display: none; }

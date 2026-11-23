@@ -229,7 +229,8 @@ async function session(label, scan, full) {
         await choose('hud:pause'); await screen('pause');
         const views = [];
         for (let k = 0; k < 3; k++) { await choose('pause:view'); views.push(dbg().view); }
-        if (views.join() !== 'chase,wide,cockpit') fail('view cycle was ' + views.join());
+        // Chase is the default (since 2026-11-23), so View goes Wide, Cockpit, then back to Chase.
+        if (views.join() !== 'wide,cockpit,chase') fail('view cycle was ' + views.join());
         await choose('pause:continue'); await screen('fly');
         await choose('fly:next');
         if (!dbg().autopilot) fail('Next Stop picked nothing');

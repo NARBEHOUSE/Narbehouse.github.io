@@ -3,8 +3,8 @@
 A calm, switch-accessible space exploration game, built from `SPACEEXPLORER.md` (the design doc).
 You stay in your spaceship and explore a near-infinite, seeded universe of galaxies, star systems,
 planets and moons. No combat, no score, no timer and nothing to lose. Three.js r155, vendored in
-`vendor/` because the hub runs offline. Listed in the PC hub's `games.json` (id `narbespaceexplorer`,
-picture `images/games/narbespaceexplorer.png`) since 2026-11-20. Not on the website.
+`vendor/` because the hub runs offline. Listed in both hubs' `games.json` (id `narbespaceexplorer`,
+picture `images/games/narbespaceexplorer.png`) and on the website's home page since 2026-11-20.
 
 ## Status
 
@@ -32,7 +32,7 @@ GPU, on real switches or with real speakers yet.
 | Alien call | Wave Hello, Say Goodbye |
 | Galaxy map | Warp to a New Star, Warp to a New Galaxy, Back |
 | A new galaxy (seen from outside) | Fly In, Find Another Galaxy |
-| Pause | Continue, View (Cockpit / Chase / Wide), Logbook, Settings, How to Play, I Need Help, Main Menu, Exit Game |
+| Pause | Continue, View (Chase / Wide / Cockpit; Chase first), Logbook, Settings, How to Play, I Need Help, Main Menu, Exit Game |
 | Logbook | 3x3 picture pages, More Pages, Back; an entry: Next, Previous, Visit Again, Back |
 | Settings | Text to Speech, Voice, Flight Speed, Alien Calls, Spoken Facts, Motion, Graphics, Highlight Style, Highlight Color, Auto Scan, Scan Speed, Sound Effects, Volume, Music, Reset Logbook (two steps), Back |
 
@@ -67,13 +67,29 @@ GPU, on real switches or with real speakers yet.
 - **Orbit**: a smooth glide in; the name, type and facts (gravity, moons, day length, weather,
   rings, life, people) are spoken (Settings > Spoken Facts) and it goes into the logbook with a
   picture taken once the planet's maps are painted.
-- **Views**: Cockpit (dashboard frame drawn by the page), Chase, Wide; changes glide, never cut.
-- **Fly Low** (`js/surface.js`): the ship dives down from orbit, through a soft fade in the sky's
-  colour (darker with Motion: Calm; never a flash), and comes down from high above to an endless calm skim over the world, different for every type
+- **Views**: Chase (the default since 2026-11-23: the user said it "seems to look the best"; saved
+  settings switch to it unless View was picked by hand, `viewChosen`), Wide, and Cockpit (a light
+  canopy drawn by the page: thin top rim, two slim corner struts, a low console only where the button
+  bar is, a faint tint at the glass's edges; also shown in Fly Low and on the way down and up). Changes
+  glide, never cut; a glide that follows the ship keeps aiming between the two views' aim points, so the
+  ship never swings out of the picture.
+- **Orbit framing** (`js/stage.js` orbitChasePose / orbitCockpitPose): the world sits whole in the open
+  part of the picture above the button bar (the user: the buttons "completely block the planet").
+  Chase looks down past the ship from behind and above, the ship just over the world's top edge;
+  Cockpit tips the nose down at the world; Wide is the sightseeing shot. The ship is drawn up to 1.7
+  times bigger beside big or ringed giants, and the camera stays far enough back beside small moons.
+  Orbit lines and space dust fade out in orbit and in the dive (the ship sits on its planet's own orbit
+  line, which cut straight up the picture).
+- **Fly Low** (`js/surface.js`): the ship dives down from orbit with the camera close behind it the whole
+  way (nose level at first, tipping down, levelling over the cloud tops; the camera keeps the world's edge
+  in the picture), through a soft fade in the sky's colour (darker with Motion: Calm; never a flash), then
+  dives on out of the sky through the cloud layer, the camera riding with it (`setIntro`), and levels out to
+  an endless calm skim over the world, different for every type
   (ice spires, ocean islands, earth hills and lakes, desert mesas, lava rivers, crystal fields,
   toxic mushrooms, gas-giant cloud tops, cratered moons with the planet in the sky), with that
   world's creatures wandering and, on inhabited worlds, towers, domes and passing saucers. Turn Left
-  and Turn Right steer it (one press, one smooth turn). Back to Orbit climbs out the same way.
+  and Turn Right steer it (one press, one smooth turn). Back to Orbit climbs out the same way, nose up.
+  No speed lines or streaming dust on the way down or up (the user saw "stars go by" inside the air).
   Plants are named when there are any ("Trees and bushes grow here, but no creatures were found").
 - **Scan**: a viewer window shows a creature turning slowly, with its name, size, how it moves, a
   silly fact and its sound; or the world (or star) and its facts. Creatures go in the logbook.
@@ -85,7 +101,8 @@ GPU, on real switches or with real speakers yet.
   them calls (friendly, curious, grumpy or loud) with a cartoon face, gibberish and a translation.
 - **Warp**: one big press. Lines of light, a deep whoosh, no flash, and you come out at a new star.
   Warping to a new galaxy shows the whole galaxy from outside first (`js/galaxyview.js`), then asks
-  "Do you want to fly in and explore?": Fly In dives down into one of its arms. **Visit Again** in the logbook warps straight back and into orbit.
+  "Do you want to fly in and explore?": Fly In turns to one of its arms, speeds down into it and comes
+  out among its stars the way a warp does (the lines of light easing off). **Visit Again** in the logbook warps straight back and into orbit.
 - While the button bar shows, the picture is lifted (an off-centre lens) so the middle of the view
   sits above the buttons, and the prompt card sits low where the bar was (the user: buttons were
   covering things).

@@ -41,7 +41,7 @@ NSE.Stage = (function () {
     // above the buttons instead of behind them (the user: "the buttons are blocking the objects").
     let liftOn = false, liftK = 0;
     // Diving from orbit down into the atmosphere (k 0..1), and Fly Low's descent (0 high .. 1 skimming).
-    let dive = null, surfIntro = 1;
+    let dive = null, surfIntro = 1, surfRate = 0;
     // A whole galaxy seen from outside (js/galaxyview.js).
     let galaxyView = null, galaxyPhase = 'look', galaxyK = 0;
     // Explore System: the camera's shot over the whole system (or over the nearby stars), and how
@@ -49,8 +49,9 @@ NSE.Stage = (function () {
     let survey = null, surveyAmt = 0, surveyDist = 0;
 
     // Camera glide between poses.
-    const blend = { t: 1, dur: 1.4, fromPos: null, fromQuat: null };
+    const blend = { t: 1, dur: 1.4, fromPos: null, fromQuat: null, fromLook: null, fromUp: null, anchored: false };
     let poseFamily = '';
+    let lastLook = null;     // where the camera aimed last frame (a glide starts from there)
 
     async function init(hostEl, fl) {
         THREE = window.THREE;
@@ -76,6 +77,9 @@ NSE.Stage = (function () {
         NSE.Space.init(THREE, qualityLevel());
         blend.fromPos = new THREE.Vector3();
         blend.fromQuat = new THREE.Quaternion();
+        blend.fromLook = new THREE.Vector3();
+        blend.fromUp = new THREE.Vector3(0, 1, 0);
+        lastLook = new THREE.Vector3(0, 0, -1);
         applyQuality();
         if (quality) quality.subscribe(applyQuality);
         if (window.ResizeObserver) new ResizeObserver(resize).observe(host);
@@ -125,7 +129,8 @@ NSE.Stage = (function () {
         const s = flight.state;
         if (menu) return 1;
         const o = s.orbit ? s.orbit.obj : (s.mode === 'travel' ? s.target : null);
-        if (o && o.kind !== 'star') return U.clamp(o.radius / 26, 0.35, 1);
+        // (A little bigger than full size beside a big or ringed giant, so it still shows there.)
+        if (o && o.kind !== 'star') return U.clamp(frameRadius(o) / 26, 0.35, 1.7);
         return 1;
     }
 
@@ -152,12 +157,13 @@ NSE.Stage = (function () {
             const c = new THREE.Vector3(cc.x, cc.y, cc.z);
             const out = p.clone().sub(c).normalize();
             const R = s.orbit.R;
-            if (view === 'cockpit') {
-                return { pos: p.clone().addScaledVector(out, 0.5 * sc), look: p.clone().addScaledVector(fwd, R * 0.9).lerp(c, 0.55), up: out, fov: 64, family: 'orbit-cockpit' };
-            }
-            if (view === 'chase') {
-                return { pos: p.clone().addScaledVector(fwd, -16 * sc).addScaledVector(out, 6 * sc), look: p.clone().addScaledVector(fwd, 10 * sc).lerp(c, 0.28), up: out, fov: 62, family: 'orbit-chase' };
-            }
+            // The orbit tangent (the ship's nose, kept square to "out").
+            const tan = fwd.clone().addScaledVector(out, -fwd.dot(out));
+            if (tan.lengthSq() < 1e-6) tan.copy(right);
+            tan.normalize();
+            const rEff = frameRadius(s.orbit.obj);
+            if (view === 'cockpit') return orbitCockpitPose(p, c, out, tan, R, rEff, sc);
+            if (view === 'chase') return orbitChasePose(p, c, out, tan, R, rEff, sc);
             const side = V().crossVectors(out, fwd).normalize();
             return { pos: p.clone().addScaledVector(out, R * 0.9).addScaledVector(fwd, -R * 0.75).addScaledVector(side, R * 0.35), look: c.clone().lerp(p, 0.25), up: worldUp, fov: 74, family: 'orbit-wide' };
         }
@@ -169,14 +175,97 @@ NSE.Stage = (function () {
             return { pos: p.clone().addScaledVector(fwd, 1.3 * sc).addScaledVector(up, 0.55 * sc), look: p.clone().addScaledVector(fwd, 120).addScaledVector(up, 0.55 * sc), up: rolledUp, fov: 66, family: 'fly-cockpit' };
         }
         if (view === 'chase') {
-            return { pos: p.clone().addScaledVector(fwd, -15 * sc).addScaledVector(up, 4.2 * sc), look: p.clone().addScaledVector(fwd, 26 * sc), up: up, fov: 62, family: 'fly-chase' };
+            // (Far enough back that the ship leaves room to see where it is going.)
+            return { pos: p.clone().addScaledVector(fwd, -19 * sc).addScaledVector(up, 5.4 * sc), look: p.clone().addScaledVector(fwd, 30 * sc), up: up, fov: 62, family: 'fly-chase' };
         }
         return { pos: p.clone().addScaledVector(fwd, -30 * sc).addScaledVector(up, 11 * sc).addScaledVector(right, 15 * sc), look: p.clone().addScaledVector(fwd, 45 * sc), up: up, fov: 76, family: 'fly-wide' };
     }
 
+    // --- orbit framing ------------------------------------------------------------------------------
+    //
+    // In orbit the world must sit in the open part of the picture, above the button bar, never
+    // behind it (the user: "the buttons completely block the planet we are orbiting"). The lift
+    // (applyLift) puts the middle of the lens in the middle of that open part, so the framing
+    // below only works in angles from the lens's middle: about +-0.32 of the field of view is
+    // open while the bar shows.
+
+    const OPEN = 0.32;
+    const DEG = Math.PI / 180;
+
+    /** How big the thing orbited looks for framing: rings and a black hole's disk count. */
+    function frameRadius(o) {
+        if (o.kind === 'star') return o.special === 'blackhole' && o.sys.disk ? o.sys.disk.outer : o.radius * 1.25;
+        const w = o.world;
+        return w && w.rings ? Math.max(o.radius * 1.04, w.rings.outer * 0.92) : o.radius * 1.04;
+    }
+
+    /** A unit vector turned from a toward b (in their plane) by angle ang, and its "up" (toward b). */
+    function turnToward(a, b, ang) {
+        const n = b.clone().addScaledVector(a, -b.dot(a));
+        if (n.lengthSq() < 1e-9) n.set(0, 1, 0).addScaledVector(a, -a.y);
+        n.normalize();
+        return {
+            dir: a.clone().multiplyScalar(Math.cos(ang)).addScaledVector(n, Math.sin(ang)),
+            up: n.clone().multiplyScalar(Math.cos(ang)).addScaledVector(a, -Math.sin(ang))
+        };
+    }
+
     /**
-     * The dive from orbit into the atmosphere (dive.k 0..1): down through the cloud tops,
-     * the view tipping from the planet below to the curved horizon ahead.
+     * Chase in orbit: from behind and above the ship, looking down past it at the whole world.
+     * The ship sits just above the world's top edge and the world fills the middle of the open
+     * part of the picture (like a drone following the ship round the planet).
+     */
+    function orbitChasePose(p, c, out, tan, R, rEff, sc) {
+        const fov = 60, h0 = OPEN * fov * DEG;
+        // The world's size on screen; never so close that the camera dips inside the orbit.
+        let d = Math.max(rEff / Math.sin(0.6 * h0), R + rEff * 0.45 + 12 * sc);
+        // Far enough back that the ship stays small beside a little moon (6 = the ship's length).
+        const shipDist = 6 * sc / Math.tan(0.4 * h0);
+        let rho = 0, A = 0, atCentre = 0;
+        for (let i = 0; i < 6; i++) {
+            rho = Math.asin(Math.min(0.95, rEff / d));
+            // The angle at the camera between the ship and the world's middle.
+            A = Math.min(rho + 0.1 * h0, Math.asin(Math.min(1, R / d)) * 0.985);
+            const atShip = Math.PI - Math.asin(Math.min(1, d * Math.sin(A) / R));
+            atCentre = Math.max(0.01, Math.PI - A - atShip);
+            const toShipLen = R * Math.sin(atCentre) / Math.max(1e-6, Math.sin(A));
+            if (toShipLen >= shipDist * 0.97) break;
+            d = R + (d - R) * shipDist / Math.max(1e-6, toShipLen);
+        }
+        const cam = c.clone().addScaledVector(out, d * Math.cos(atCentre)).addScaledVector(tan, -d * Math.sin(atCentre));
+        const toShip = p.clone().sub(cam).normalize(), toC = c.clone().sub(cam).normalize();
+        // Middle of the lens half way between the ship and the world's bottom edge, then a little
+        // toward the ship (the ship's own height sits above that point).
+        const t = turnToward(toC, toShip, (A - rho) / 2 + 0.07 * h0);
+        return { pos: cam, look: cam.clone().addScaledVector(t.dir, d), up: t.up, fov: fov, family: 'orbit-chase' };
+    }
+
+    /**
+     * Cockpit in orbit: the nose tipped down at the world, a little ahead of straight down, so it
+     * fills the window above the dashboard (it used to sit hidden behind the dashboard).
+     */
+    function orbitCockpitPose(p, c, out, tan, R, rEff, sc) {
+        const rho = Math.asin(Math.min(0.95, rEff / R));
+        const fov = U.clamp(rho / DEG / (0.8 * OPEN), 60, 80);
+        const pos = p.clone().addScaledVector(out, 0.5 * sc);
+        const toC = c.clone().sub(pos).normalize();
+        const t = turnToward(toC, tan, 0.1 * OPEN * fov * DEG);
+        return { pos: pos, look: pos.clone().addScaledVector(t.dir, R), up: t.up, fov: fov, family: 'orbit-cockpit' };
+    }
+
+    /**
+     * How far the nose is tipped during the dive (radians, dive.k 0..1): level at the orbit, so
+     * nothing snaps, tipping down toward the world, then levelling out over the cloud tops. The
+     * climb back up is the same path, nose up.
+     */
+    function noseTip(k) {
+        return 0.62 * U.smooth(k / 0.3) * (1 - 0.88 * U.smooth((k - 0.4) / 0.6));
+    }
+
+    /**
+     * The dive from orbit into the atmosphere (dive.k 0..1), or the climb back out (dive.climb):
+     * the ship flies down (or up) its own path with the camera close behind it the whole way, the
+     * world below and ahead in view.
      */
     function divePose(sc) {
         const s = flight.state;
@@ -189,18 +278,30 @@ NSE.Stage = (function () {
         const ff = NSE.Flight.forwardOf(s.yaw, s.pitch);
         const fwd = new THREE.Vector3(ff.x, ff.y, ff.z);
         fwd.addScaledVector(out, -fwd.dot(out)).normalize();
-        // Nose down at the planet to start with, levelling out to the horizon as the air thickens.
-        const a = U.lerp(0.8, 0.1, e);
+        const climb = !!dive.climb;
+        const a = noseTip(dive.k) * (climb ? -0.8 : 1);           // + nose down, - nose up
         const dir = fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(out, -Math.sin(a));
-        let pos, look;
+        // The camera looks down far enough that the world's edge stays in the lower part of the
+        // picture: steeply from high up (where the orbit view left off), levelling out to the
+        // horizon over the cloud tops. Never less than half the nose's tip on the way down.
+        const fov = 62 + 6 * e;
+        const horizon = Math.PI / 2 - Math.asin(U.clamp(dive.radius / sp.distanceTo(c), 0, 1));
+        const la = Math.max(climb ? 0 : a * 0.55, horizon - 0.55 * fov / 2 * DEG);
+        const ldir = fwd.clone().multiplyScalar(Math.cos(la)).addScaledVector(out, -Math.sin(la));
+        const lup = out.clone().multiplyScalar(Math.cos(la)).addScaledVector(fwd, Math.sin(la));
+        let pos, look, up = lup;
         if (view === 'cockpit') {
+            // From the pilot's seat the world's edge sits lower still, so the world fills the window.
+            const ca = Math.max(climb ? 0 : a, horizon - 0.32 * fov / 2 * DEG);
+            const cdir = fwd.clone().multiplyScalar(Math.cos(ca)).addScaledVector(out, -Math.sin(ca));
+            up = out.clone().multiplyScalar(Math.cos(ca)).addScaledVector(fwd, Math.sin(ca));
             pos = sp.clone().addScaledVector(dir, 1.3 * sc).addScaledVector(out, 0.55 * sc);
-            look = pos.clone().addScaledVector(dir, 100);
+            look = pos.clone().addScaledVector(cdir, 100 * sc);
         } else {
-            pos = sp.clone().addScaledVector(dir, -14 * sc).addScaledVector(out, 3.5 * sc);
-            look = sp.clone().addScaledVector(dir, 30 * sc);
+            pos = sp.clone().addScaledVector(ldir, -14 * sc).addScaledVector(lup, 3.8 * sc);
+            look = sp.clone().addScaledVector(ldir, 24 * sc);
         }
-        return { pos: pos, look: look, up: out, fov: 62 + 8 * e, family: 'dive', ship: sp, dir: dir };
+        return { pos: pos, look: look, up: up, fov: fov, family: 'dive', ship: sp, dir: dir };
     }
 
     // --- Explore System: the shot over the system ---------------------------------------------------
@@ -328,25 +429,49 @@ NSE.Stage = (function () {
         surveyAmt = U.clamp(surveyAmt + (surveyOn ? 1 : -1) * dt / surveyDur(), 0, 1);
         NSE.Space.setSurveyK(U.ease(surveyAmt));
         const t = diving ? divePose(sc) : surveyOn ? surveyPose() : targetPose(sc);
+        // Glides between poses that follow the ship move with the ship, and keep aiming between
+        // the two poses' aim points, so the ship never swings out of the picture on the way.
+        const anchor = t.family === 'survey' ? null : diving ? t.ship : V().set(s.pos.x, s.pos.y, s.pos.z);
         if (t.family !== poseFamily) {
             // Glide from wherever the camera is now (rising over a system takes a little longer).
             if (poseFamily) {
+                blend.anchored = !!anchor && poseFamily !== 'survey';
                 blend.fromPos.copy(camera.position);
+                blend.fromLook.copy(lastLook);
+                if (blend.anchored) { blend.fromPos.sub(anchor); blend.fromLook.sub(anchor); }
+                blend.fromUp.copy(camera.up);
                 blend.fromQuat.copy(camera.quaternion);
                 blend.t = 0;
-                blend.dur = t.family === 'menu' || poseFamily === 'menu' ? 1.8 : t.family === 'survey' || poseFamily === 'survey' ? surveyDur() : 1.4;
+                const dives = t.family === 'dive' || poseFamily === 'dive';
+                blend.dur = t.family === 'menu' || poseFamily === 'menu' ? 1.8 : t.family === 'survey' || poseFamily === 'survey' ? surveyDur() : dives ? 2 : 1.6;
             }
             poseFamily = t.family;
         }
         camera.position.copy(t.pos);
         camera.up.copy(t.up);
         camera.lookAt(t.look);
+        lastLook.copy(t.look);
         if (blend.t < 1) {
             blend.t = Math.min(1, blend.t + dt / blend.dur);
             const k = U.ease(blend.t);
-            const q = camera.quaternion.clone();
-            camera.position.lerpVectors(blend.fromPos, t.pos, k);
-            camera.quaternion.copy(blend.fromQuat).slerp(q, k);
+            if (blend.anchored) {
+                const pos = blend.fromPos.clone().add(anchor).lerp(t.pos, k);
+                const look = blend.fromLook.clone().add(anchor).lerp(t.look, k);
+                const up = blend.fromUp.clone().lerp(t.up, k);
+                if (up.lengthSq() < 1e-6) up.copy(t.up);
+                camera.position.copy(pos);
+                camera.up.copy(up.normalize());
+                camera.lookAt(look);
+                lastLook.copy(look);
+            } else {
+                const q = camera.quaternion.clone();
+                camera.position.lerpVectors(blend.fromPos, t.pos, k);
+                camera.quaternion.copy(blend.fromQuat).slerp(q, k);
+                camera.up.copy(blend.fromUp).lerp(t.up, k);
+                if (camera.up.lengthSq() < 1e-6) camera.up.copy(t.up);
+                camera.up.normalize();
+                camera.getWorldDirection(lastLook).multiplyScalar(t.pos.distanceTo(t.look)).add(camera.position);
+            }
         }
         const fov = t.fov + warpK * warpK * 34;
         if (Math.abs(camera.fov - fov) > 0.05) camera.fov += (fov - camera.fov) * Math.min(1, dt * 4);
@@ -375,7 +500,10 @@ NSE.Stage = (function () {
         } else ship.group.up.set(0, 1, 0);
         // lookAt points an Object3D's +Z at the target: aim +Z backwards so the nose (-Z) leads.
         ship.group.lookAt(at.clone().sub(nose));
-        ship.setVisible(menu || view !== 'cockpit' || blend.t < 0.6 || surveyAmt > 0);
+        // In the cockpit view the ship shows only while the camera is outside it (gliding in from
+        // another view); a glide that starts in the pilot's seat must not show the inside of the hull.
+        const outside = camera.position.distanceTo(at) > 4.2 * sc;
+        ship.setVisible(menu || view !== 'cockpit' || (blend.t < 0.6 && outside) || surveyAmt > 0);
         ship.update(dt, { thrust: diving ? 1 : U.clamp((s.speedNow || 30) / 300, 0.25, 1), bank: s.mode === 'fly' ? s.bank : 0, calm: NSE.Settings.calm() });
 
         // Entering the atmosphere: a soft glow on the nose and faint speed lines (never a flash).
@@ -391,7 +519,15 @@ NSE.Stage = (function () {
             heat.material.opacity = bell * (calm ? 0.35 : 0.7);
             heat.visible = bell > 0.01;
         }
-        if (diving) NSE.Space.setWarp(bell * (calm ? 0.08 : 0.2));
+        // No speed lines or streaming dust on the way down or up: they read as stars rushing past
+        // inside the air (the user: "they seem to fly in and i see stars go by"). The air itself
+        // (the haze, the glow on the nose, the clouds below) shows the speed instead.
+        if (diving) NSE.Space.setWarp(0);
+        NSE.Space.setDust(diving || s.mode === 'orbit' ? 0 : 1);
+        // The faint orbit lines show while flying round a system and from high over it, but not
+        // in orbit or in the dive: there the ship sits on its planet's own line, which then cuts
+        // straight up the picture.
+        NSE.Space.setOrbitLines(surveyAmt > 0 || (!diving && s.mode === 'fly') ? 1 : 0);
     }
 
     // --- the scanner's viewer window -------------------------------------------------------------------
@@ -418,7 +554,8 @@ NSE.Stage = (function () {
             obj = NSE.Creatures.build(THREE, subject, qualityLevel());
             spin.add(obj.group);
             const h = Math.max(0.3, obj.height), r = Math.max(h, (obj.radius || h) * 1.4);
-            obj.group.position.y = -h * 0.45;
+            // (Floaters - jellyfish, balloons, flyers - hover above their feet: lower them into the window.)
+            obj.group.position.y = -h * 0.45 - (obj.hover || 0);
             cam.position.set(0, h * 0.25, r * 2.9 + 0.3);
             cam.lookAt(0, 0, 0);
             // A soft round shadow-plate to stand on.
@@ -563,14 +700,10 @@ NSE.Stage = (function () {
                 applyLift(rawDt);
                 renderer.render(galaxyView.scene, camera);
             } else if (mode === 'surface' && surface) {
+                // Coming down out of the sky (or climbing away): the ship dives with the camera behind it.
+                if (surface.setIntro) surface.setIntro(surfIntro, surfRate);
                 surface.update(dt, now / 1000);
                 surface.setView(view, camera);
-                if (surfIntro < 1) {
-                    // Coming down from high above (or climbing away): higher, looking further down.
-                    const e = U.ease(surfIntro);
-                    camera.position.y += (1 - e) * 140;
-                    camera.rotateX(-(1 - e) * 0.6);
-                }
                 applyLift(rawDt);
                 renderer.render(surface.scene, camera);
             } else {
@@ -635,7 +768,8 @@ NSE.Stage = (function () {
             dive = k === null || k === undefined ? null : Object.assign({}, info, { k: k });
             if (was && !dive) { NSE.Space.setWarp(0); if (heat) heat.visible = false; }
         },
-        setSurfaceIntro: function (k) { surfIntro = U.clamp(k, 0, 1); },
+        /** Fly Low's way in or out: k 0 high in the sky .. 1 skimming; rate = k per second (+ coming down). */
+        setSurfaceIntro: function (k, rate) { surfIntro = U.clamp(k, 0, 1); surfRate = surfIntro >= 1 ? 0 : (+rate || 0); },
         setGalaxyView: function (v) { if (galaxyView && galaxyView !== v) galaxyView.dispose(); galaxyView = v; },
         setGalaxyPhase: function (phase, k) { galaxyPhase = phase; galaxyK = k || 0; },
         onFrame: function (fn) { onFrame = fn; },

@@ -18,10 +18,12 @@ NSE.Ship = (function () {
         const body = new THREE.Group();      // banks and bobs inside the group
         group.add(body);
 
-        const white = new THREE.MeshLambertMaterial({ color: 0xf2f4f8 });
-        const orange = new THREE.MeshLambertMaterial({ color: 0xff8a1f });
-        const navy = new THREE.MeshLambertMaterial({ color: 0x1f3a6e });
-        const grey = new THREE.MeshLambertMaterial({ color: 0x6a7488 });
+        // A little glow of their own, so the ship still reads (white and orange, not near-black)
+        // when the camera is behind it with the star in front: the chase view's usual angle.
+        const white = new THREE.MeshLambertMaterial({ color: 0xf2f4f8, emissive: 0x485064 });
+        const orange = new THREE.MeshLambertMaterial({ color: 0xff8a1f, emissive: 0x4a2208 });
+        const navy = new THREE.MeshLambertMaterial({ color: 0x1f3a6e, emissive: 0x0c1830 });
+        const grey = new THREE.MeshLambertMaterial({ color: 0x6a7488, emissive: 0x1c2230 });
         const glass = new THREE.MeshLambertMaterial({ color: 0x7fd8ff, emissive: 0x1a5a80, transparent: true, opacity: 0.82 });
         const glowMat = new THREE.MeshBasicMaterial({ color: 0x8fe8ff, toneMapped: false });
 

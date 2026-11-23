@@ -130,13 +130,26 @@ NSE.UI = (function () {
         el.root = document.getElementById('nse');
         el.stage = node('div', 'nse-stage', el.root);
 
-        // The cockpit frame (window struts and dashboard), under the controls.
+        // The cockpit: a light canopy, under the controls. A thin rim along the top, two slim curved
+        // struts in the corners (behind the title box and Pause), a low console only where the
+        // button bar already is, and a faint tint at the edges of the glass. It used to be a heavy
+        // frame and dashboard that hid the planet (the user: "a very subtle cockpit view with less
+        // blocking"); it stays the same in Fly Low.
         el.cockpit = node('div', 'nse-cockpit', el.root);
         el.cockpit.innerHTML = '<svg viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
-            '<path class="nse-cp-frame" d="M0 0H1600V900H0Z M60 60 Q800 -10 1540 60 L1500 640 Q800 600 100 640 Z" fill-rule="evenodd"/>' +
-            '<path class="nse-cp-strut" d="M60 60 L230 640 M1540 60 L1370 640"/>' +
-            '<path class="nse-cp-dash" d="M0 900 L0 690 Q800 600 1600 690 L1600 900 Z"/>' +
-            '<g class="nse-cp-lights"><circle cx="300" cy="700" r="9"/><circle cx="340" cy="696" r="9"/><circle cx="1260" cy="696" r="9"/><circle cx="1300" cy="700" r="9"/></g>' +
+            '<defs>' +
+            '<radialGradient id="nse-cp-vig" cx="50%" cy="42%" r="78%"><stop offset="62%" stop-color="#040918" stop-opacity="0"/><stop offset="100%" stop-color="#040918" stop-opacity="0.5"/></radialGradient>' +
+            '<linearGradient id="nse-cp-glint" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfe6ff" stop-opacity="0"/><stop offset="0.5" stop-color="#cfe6ff" stop-opacity="0.06"/><stop offset="1" stop-color="#cfe6ff" stop-opacity="0"/></linearGradient>' +
+            '<linearGradient id="nse-cp-con" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#28355a"/><stop offset="1" stop-color="#10172a"/></linearGradient>' +
+            '</defs>' +
+            '<rect class="nse-cp-vignette" width="1600" height="900" fill="url(#nse-cp-vig)"/>' +
+            '<path class="nse-cp-glint" d="M1180 0H1330L1010 560H860Z" fill="url(#nse-cp-glint)"/>' +
+            '<path class="nse-cp-rim" d="M0 0H1600V28Q800 -6 0 28Z"/>' +
+            '<path class="nse-cp-bow" d="M380 -30Q150 150 -30 620M1220 -30Q1450 150 1630 620"/>' +
+            '<path class="nse-cp-bow-hi" d="M380 -30Q150 150 -30 620M1220 -30Q1450 150 1630 620"/>' +
+            '<path class="nse-cp-console" d="M0 900V812Q800 748 1600 812V900Z" fill="url(#nse-cp-con)"/>' +
+            '<path class="nse-cp-console-edge" d="M0 812Q800 748 1600 812"/>' +
+            '<g class="nse-cp-lights"><rect x="120" y="842" width="22" height="12" rx="6"/><rect x="160" y="838" width="22" height="12" rx="6"/><rect x="1418" y="838" width="22" height="12" rx="6"/><rect x="1458" y="842" width="22" height="12" rx="6"/></g>' +
             '</svg>';
 
         // The target marker: a ring round where Next Stop is heading, or the place being asked about.
@@ -476,7 +489,9 @@ NSE.UI = (function () {
         if (screen === 'fly') el.fExploreLabel.textContent = st.inSystem ? 'Explore System' : 'Nearby Stars';
         if (screen === 'steer') el.sSpeedLabel.textContent = 'Speed: ' + NSE.Settings.speedName();
         const v = NSE.Stage.view();
-        const cockpitShown = v === 'cockpit' && (screen === 'fly' || screen === 'steer' || screen === 'glide' || screen === 'orbit' || screen === 'prompt' || screen === 'hail' || screen === 'warp');
+        // Also in Fly Low and on the way down and back up, so the cockpit never just disappears.
+        // (Not over a whole galaxy seen from outside: that is not the view from the ship.)
+        const cockpitShown = v === 'cockpit' && NSE.Stage.mode() !== 'galaxy' && (screen === 'fly' || screen === 'steer' || screen === 'glide' || screen === 'orbit' || screen === 'low' || screen === 'prompt' || screen === 'hail' || screen === 'warp');
         el.cockpit.classList.toggle('show', cockpitShown);
     }
 

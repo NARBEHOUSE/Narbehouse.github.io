@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "295d2ff67b7f8623b02e5283ad494f45b6a7901656a3507b58e116b88369a27a",
-  "totalBytes": 435454175,
+  "version": "37f25b5b62d76b29e7f9f41660523443e7e968c7aa3979c0602a4d93fe44e552",
+  "totalBytes": 435574185,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -17885,23 +17885,23 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/css/style.css",
-      "revision": "b5091d94db2fe63deb632e09bcad20839fa1aeedcbf75b2545be33f708aff6b1",
-      "bytes": 31615
+      "revision": "0dbed149bbd227aeb37b17ec3b1b140dfac6a62d6813d5f569d9d4d059d62026",
+      "bytes": 31991
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/index.html",
-      "revision": "dc90601ad7c5ad2d0e54e2666fe0fd3d775feea2891fcca170a64ad471bacf4a",
+      "revision": "31a078877a9e7467277c74ede282cc859fe944d835ff63d67c1f52ad634e3c46",
       "bytes": 2855
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/aliens.js",
-      "revision": "e1b07bd306eb33e8f509260f563d9d517cd5f4ba36db085515ea303a6cf5d119",
-      "bytes": 12789
+      "revision": "22e5aa54c15335e6f982257271a447e6b5ef3794d6b69fffcbed2cfcaaf09d4e",
+      "bytes": 40674
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/creatures.js",
-      "revision": "7427b276a4f9c1125f99f63f227892a4cbfdbc310afd0c325145498e1a78b6e0",
-      "bytes": 56153
+      "revision": "0ea31b003e5d57ad05ac3e4bf78687024a845e5a0809b7f7f37ca03c86d0c6e1",
+      "bytes": 132940
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/flight.js",
@@ -17910,8 +17910,8 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/galaxyview.js",
-      "revision": "1e3ce584be75138d29f51f1bc2f5db2b0dcce5771336fa1f2008efd6b21afd54",
-      "bytes": 7120
+      "revision": "9931d2089625c145851c344c6b6b097a8c0d71f21e49bf8ba7d32960c9ddbdd3",
+      "bytes": 7464
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/input.js",
@@ -17925,8 +17925,8 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/main.js",
-      "revision": "9570d1ac26a6eee81c4a61e2f0b469d4df5d3ff83e331e32b25b6a2eb6529f03",
-      "bytes": 47769
+      "revision": "9af18a1bbbc8094a3e09fd0b6d82e4a67cf3205d5a97328616494c95c42c9be7",
+      "bytes": 48740
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/planets.js",
@@ -17935,13 +17935,13 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/settings.js",
-      "revision": "cc91c430d14f7b4bbe52cc9bb3e8425bb704e316360cbbf311fa9889f76a98cb",
-      "bytes": 5707
+      "revision": "575f9ebae032a7f483431661a199fbee47dfb9af791d23392ec83b82b091d761",
+      "bytes": 6034
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/ship.js",
-      "revision": "6d3d1cf3b0fdb9ba176a41931903cfb32cee0c016c358a751fe8a3a2a05fcefc",
-      "bytes": 6737
+      "revision": "b663575f0788aabf606a5e31a2ff42e07af50b25bb90232bbd22e3fe8e57ac0c",
+      "bytes": 7009
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/sound.js",
@@ -17950,23 +17950,23 @@
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/space.js",
-      "revision": "584e4442de6417cef972847cd55480f61c02edb8850f850daaef138d4af208b9",
-      "bytes": 33704
+      "revision": "c3457cd21b222cf60d426a0248490bac569e89484504c18c7f7082fa4edba9d0",
+      "bytes": 34489
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/stage.js",
-      "revision": "7100183f38e42c0d69022e387e768fbd0f17e2853b2f3b9d8c0e0b721f2da740",
-      "bytes": 32454
+      "revision": "3e97566bed99db83cd53c29113dadf7bdc0bcbf560755dd163e7294b7eef0f56",
+      "bytes": 41123
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/surface.js",
-      "revision": "21bd84f77b0371ae34363ef073a19daf3fe972b66ebcb57fb18f1d9c67d008b1",
-      "bytes": 129122
+      "revision": "21afb7a90e739d8a6bbe918c43b4fb08c69693cab860bbae984be3cc939ec9c5",
+      "bytes": 130976
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/ui.js",
-      "revision": "742d36cf6061cc42f36ab4e67e6245385451ba2ae57bd09bc970d7c82dc1d2bd",
-      "bytes": 73457
+      "revision": "0c308860b3122f977307efef5c61c729566557fb75964a12ddca0661847d1e80",
+      "bytes": 75197
     },
     {
       "url": "./apps/games/NARBESPACEEXPLORER/js/universe.js",

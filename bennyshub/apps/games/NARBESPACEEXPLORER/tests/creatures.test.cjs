@@ -6,6 +6,8 @@
  * Specs: deterministic, every field present and in range, movement that fits the body,
  * gentle words. Models: height = spec.size (within 15%), under the triangle cap,
  * hundreds of animation frames without errors or NaNs, dispose() frees everything.
+ * People (spec.people) build as upright figures with clothes; peopleLook is deterministic and
+ * shared with NSE.Aliens, whose calls are deterministic and gentle.
  */
 'use strict';
 const fs = require('node:fs');
@@ -16,7 +18,7 @@ const assert = require('node:assert');
 const ROOT = path.join(__dirname, '..');
 globalThis.window = globalThis;
 globalThis.THREE = require(path.join(ROOT, 'vendor', 'three.min.js'));
-for (const f of ['util.js', 'universe.js', 'creatures.js']) {
+for (const f of ['util.js', 'universe.js', 'creatures.js', 'aliens.js']) {
     vm.runInThisContext(fs.readFileSync(path.join(ROOT, 'js', f), 'utf8'), { filename: f });
 }
 const NSE = globalThis.NSE, THREE = globalThis.THREE;
@@ -37,7 +39,7 @@ for (const t of TYPES) {
     worlds[t] = NSE.Universe.world(U.hash('test-world', t), { kind: t === 'rock' ? 'moon' : 'planet', name: 'Test', type: t });
 }
 
-const tally = { body: {}, move: {}, legs: {}, pattern: {}, glow: 0 };
+const tally = { body: {}, variant: {}, move: {}, legs: {}, pattern: {}, glow: 0 };
 const bump = (o, k) => { o[k] = (o[k] || 0) + 1; };
 const HEX = /^#[0-9a-f]{6}$/;
 const t0 = Date.now();
@@ -64,7 +66,9 @@ for (const t of TYPES) {
         check(Number.isInteger(s.antennae) && s.antennae >= 0 && s.antennae <= 3, id + ' antennae');
         for (const k of ['eyeStalks', 'ears', 'tail', 'wings', 'glow']) check(typeof s[k] === 'boolean', id + ' ' + k + ' boolean');
         for (const k of ['main', 'belly', 'accent', 'eye']) check(HEX.test(s.colors[k]), id + ' colour ' + k + ' ' + s.colors[k]);
-        check(['spots', 'stripes', 'plain'].includes(s.pattern), id + ' pattern');
+        check(C.PATTERNS.includes(s.pattern), id + ' pattern ' + s.pattern);
+        check(typeof s.variant === 'string' && s.variant.length > 2, id + ' variant');
+        for (const k of ['iris', 'dark']) check(HEX.test(s.colors[k]), id + ' colour ' + k + ' ' + s.colors[k]);
         check(s.size >= 0.3 && s.size <= 6, id + ' size ' + s.size);
         for (const k of ['sizeWords', 'moveWords', 'fact', 'sound']) check(typeof s[k] === 'string' && s[k].length > 3, id + ' ' + k);
         check(/^about as (big|tall) as an? /.test(s.sizeWords), id + ' sizeWords "' + s.sizeWords + '"');
@@ -74,9 +78,10 @@ for (const t of TYPES) {
         // Movement fits the body.
         if (s.legs === 0) check(s.move !== 'walk', id + ' walks with no legs');
         if (s.move === 'walk') check(s.legs >= 2 && s.legKind !== 'tentacle', id + ' walk needs legs');
-        if (s.move === 'roll') check(s.body === 'blob' && s.legs === 0, id + ' roll needs a round body');
+        if (s.move === 'roll') check(s.body === 'shell' && s.legs === 0, id + ' roll needs a shell to curl up in');
         if (s.move === 'slither') check(s.body === 'worm' && s.legs === 0, id + ' slither needs a worm');
-        if (s.move === 'crawl') check(s.legs >= 4 || (s.legs === 0 && s.body === 'flat'), id + ' crawl');
+        if (s.move === 'crawl') check(s.legs >= 4 || (s.legs === 0 && (s.body === 'flat' || s.body === 'shell')), id + ' crawl');
+        if (s.body === 'flyer') check(s.wings, id + ' a flyer has wings');
         if (s.move === 'hop') check(s.legs === 0 || (s.legs === 2 && s.legKind !== 'tentacle'), id + ' hop legs');
         if (s.move === 'float' || s.move === 'drift') check(s.legs === 0 || s.legKind === 'tentacle', id + ' floater with walking legs');
         if (s.body === 'jelly') check(s.move === 'float' || s.move === 'drift', id + ' jelly must float');
@@ -88,7 +93,7 @@ for (const t of TYPES) {
         const text = C.words(s).join(' ').toLowerCase();
         for (const w of RUDE_WORDS) check(!new RegExp('\\b' + w + '\\b').test(text), id + ' unfriendly word "' + w + '": ' + text);
 
-        bump(tally.body, s.body); bump(tally.move, s.move); bump(tally.legs, s.legs); bump(tally.pattern, s.pattern);
+        bump(tally.body, s.body); bump(tally.variant, s.variant); bump(tally.move, s.move); bump(tally.legs, s.legs); bump(tally.pattern, s.pattern);
         if (s.glow) tally.glow++;
         specs.push(s);
     }
@@ -102,13 +107,38 @@ for (const m of C.MOVES) check(tally.move[m] > 0, 'move ' + m + ' never chosen')
 // Without a world it still works.
 check(C.spec(7).body && C.spec(7, null).name, 'spec without a world');
 
+// --- people and their calls ---------------------------------------------------------------------
+const MOODS = ['friendly', 'curious', 'grumpy', 'loud'];
+const peopleSpecs = [];
+for (let i = 0; i < 36; i++) {
+    const t = TYPES[i % TYPES.length], seed = U.hash('people-test', i);
+    let same = true;
+    try { assert.deepStrictEqual(C.peopleLook(seed, t), C.peopleLook(seed, t)); } catch (e) { same = false; }
+    check(same, 'peopleLook not deterministic for ' + seed);
+    const lk = C.peopleLook(seed, t);
+    for (const k of ['skin', 'dark', 'belly', 'accent', 'iris', 'outfit', 'trim', 'spots']) check(HEX.test(lk[k]), 'people colour ' + k + ' ' + lk[k]);
+    check(lk.eyes >= 1 && lk.eyes <= 4 && (lk.arms === 2 || lk.arms === 4), 'people eyes/arms');
+    const ps = C.spec(seed, worlds[t]);
+    ps.people = true;
+    peopleSpecs.push(ps);
+    // The alien call from the same civilisation uses the same look, and says only gentle things.
+    const w = Object.assign({}, worlds[t], { civ: { seed: seed, people: 'Testers', mood: MOODS[i % 4], lights: '#ffd27a' } });
+    const a = NSE.Aliens.make(w), b = NSE.Aliens.make(w);
+    check(a.look && a.look.skin === lk.skin && a.look.head === lk.head && a.look.headgear === lk.headgear, 'alien call look matches the people (' + seed + ')');
+    const g1 = a.greeting(), g2 = b.greeting();
+    check(g1.alien === g2.alien && g1.translation === g2.translation, 'alien greeting deterministic');
+    check(a.voice && a.voice.pitch > 0 && typeof a.draw === 'function', 'alien api');
+    const said = (g1.translation + ' ' + a.reply().translation).toLowerCase();
+    for (const wd of RUDE_WORDS) check(!new RegExp('\\b' + wd + '\\b').test(said), 'alien line has "' + wd + '": ' + said);
+}
+
 // --- models -----------------------------------------------------------------------------------
 let built = 0, maxTris = { high: 0, standard: 0, low: 0 }, frames = 0, worst = 0;
-const sample = specs.filter((s, i) => i % 2 === 0);
+const sample = specs.filter((s, i) => i % 2 === 0).concat(peopleSpecs);
 sample.forEach(function (s, si) {
     for (const detail of ['high', 'standard', 'low']) {
         if (detail !== 'high' && si % 3) continue;          // high for all, the others for a third
-        const id = s.worldType + '#' + s.seed + ' ' + s.body + '/' + s.move + '/' + s.legs + s.legKind[0] + '/e' + s.eyes + ' ' + detail;
+        const id = (s.people ? 'people ' : '') + s.worldType + '#' + s.seed + ' ' + s.body + '/' + s.variant + '/' + s.move + '/' + s.legs + s.legKind[0] + '/e' + s.eyes + ' ' + detail;
         let m;
         try { m = C.build(THREE, s, detail); } catch (e) { check(false, id + ' build threw ' + e.stack); continue; }
         built++;
@@ -142,7 +172,8 @@ sample.forEach(function (s, si) {
         check(tris <= CAP[detail], id + ' triangles ' + tris + ' > ' + CAP[detail]);
         check(okMats, id + ' only Lambert/Basic materials');
         check(mats.size <= 8, id + ' materials shared (' + mats.size + ')');
-        if (s.glow) check([...mats].some(mt => mt.emissive && mt.emissiveIntensity > 0.5), id + ' glow has an emissive part');
+        if (s.glow && !s.people) check([...mats].some(mt => mt.emissive && mt.emissiveIntensity > 0.5), id + ' glow has an emissive part');
+        if (s.people) check(m.hover === 0, id + ' people stand on the ground');
 
         // Animate: idle, moving, idle again; the group itself never moves.
         let bad = false;
@@ -191,6 +222,7 @@ sample.forEach(function (s, si) {
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 console.log('Creatures: ' + specs.length + ' specs over ' + TYPES.length + ' world types, ' + built + ' models built, ' + frames + ' animation frames (' + secs + ' s)');
 console.log('  bodies   ' + JSON.stringify(tally.body));
+console.log('  variants ' + JSON.stringify(tally.variant));
 console.log('  moves    ' + JSON.stringify(tally.move));
 console.log('  legs     ' + JSON.stringify(tally.legs));
 console.log('  patterns ' + JSON.stringify(tally.pattern) + ', glowing ' + tally.glow);
