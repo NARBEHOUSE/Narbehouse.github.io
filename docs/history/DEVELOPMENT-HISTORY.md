@@ -5026,3 +5026,21 @@ Scope: the owner merged PR #6 (e1d1141, "commentary reactions are heard again") 
 - `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO**.
 
 Verification: the PC `broadcast.js` now matches the website byte for byte apart from line endings; the PC `ui.js` differs from the website only by its PC-only start-up wait. `node --check` passes for both. PC `tests/simulation.test.cjs` 74/74 and `tests/season.test.cjs` 19/19. Electron itself was not launched; listening for CAL's reactions in a real game on the PC is still worth doing.
+
+### 2026-11-23 — Switch Stories: Alphabet Book and Polaris the North Star from the PC Hub
+
+Scope: copy Nancy's two new books and player updates from Ben's PC Hub to the website copy (`GAMES/switch-stories`) with `scripts/copy-big-game.cjs`, as requested. Electron port: **NO** for every file below; the PC Hub was only read.
+
+New books: Alphabet Book (`abcd`; Pratham Books, Let's Read edition, CC BY 4.0; 26 animated letter pages drawn by its own `NSS.ABCD` module in its `story.js`) and Polaris the North Star (Asafeer, Let's Read edition, CC BY-NC-SA 4.0; still pictures). About 19 MB together, which takes the website copy to about 187 MB of its 1 GB. Player updates: the library pages with Previous stories / Next stories and a "Page N of M" status instead of a looping More Stories item, the Sort button gets one extra second of scan time (only inside this game; Hub settings unchanged), optional timed pauses between spoken phrases within one caption (`speechSequence`), Pause is also offered on The End choices, the Quick Page Turn note explains the current mode, and a shorter Cat and Dog Tea title-page credit.
+
+Switch Stories repo:
+- `stories/abcd/`, `stories/polaris-the-north-star/`: `story.js`, `CREDITS.md` and the artwork the game loads (125 files). Their `ARTWORK.json` stays on the PC.
+- `index.html`, `IMAGE-DESCRIPTIONS.html`, `css/style.css`, `js/{input,library,reader,scene,story,ui}.js`, `stories/list.js`, `stories/cat-and-dog-tea/story.js`: the PC versions with the usual website-only edits; cache tag `?v=2026.11.23.1`.
+- `CREDITS.md` (website-owned): attribution lines for the two new books.
+- `tests/`: `switchstories-descriptions.test.cjs` refreshed and `switchstories-narration-pauses.test.cjs` added from the PC Node tests. Not copied: the per-book tests (they need PC-only production records) and the `reel-*` Electron recording harnesses.
+
+The web `shared/choice-scan-adapter.js` and `choice-scan.js` match the PC, and the web scan manager has the same `getSettings`, `subscribe`, `unsubscribe` and `createChoiceScan` that the Sort timing override relies on, so no shared file changed. Catalog description and screenshot unchanged on both builds.
+
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO**.
+
+Verification: copy preview afterwards reports every copied file identical to the PC. Switch Stories Node tests 9/9 across all 10 books (720 normal and 720 quick description flows; 704 continuous-reading flows; exact 1000 ms narration gap). `node scripts/check-nancy-games.cjs` passes headless (48 checks; library requests 17 images, covers only). A headless pass opened both new books in both looks: 217 images loaded, no 404s, no page errors; library page 2 holds Rocky Says Hello with Previous stories, and scanning starts on its first book. Not run inside Electron or on a physical device.
