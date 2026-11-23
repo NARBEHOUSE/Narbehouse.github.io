@@ -9,6 +9,14 @@
  *   words(spec)                the scanner's lines, in order.
  *   peopleLook(seed, type)     how a civilisation's people look (the scanner's 3D model when
  *                              spec.people is set, and the face on an alien call, NSE.Aliens).
+ *   KINDS, example(kindId)     every kind of animal (spec.variant) with a name and a hint, for the
+ *                              field guide; example() is always the same animal of that kind.
+ *
+ * On worlds with seas some species are sea creatures (body 'swimmer', move 'swim': leaping fish,
+ * dolphins, song whales, sea turtles, sea noodles), chosen from their own random stream so the
+ * land creatures keep their looks. A world's species are different kinds where possible. The
+ * rare ones: world.goldSeed is a GOLDEN creature, world.giantSeed a GENTLE GIANT (3x, up to 12 m).
+ * build(..., 'tiny') is the cheap model Fly Low merges for the far members of a herd.
  *
  * Built like a nature film's friendly cousins, not toys (the user: the old ones looked "very
  * very silly"). What makes them read well, from character-design and procedural-creature
@@ -35,8 +43,8 @@ NSE.Creatures = (function () {
 
     const U = NSE.Util;
 
-    const BODIES = ['puff', 'quad', 'biped', 'flat', 'worm', 'jelly', 'shell', 'flyer'];
-    const MOVES = ['hop', 'drift', 'crawl', 'float', 'walk', 'roll', 'slither'];
+    const BODIES = ['puff', 'quad', 'biped', 'flat', 'worm', 'jelly', 'shell', 'flyer', 'swimmer'];
+    const MOVES = ['hop', 'drift', 'crawl', 'float', 'walk', 'roll', 'slither', 'swim'];
     const PATTERNS = ['plain', 'spots', 'stripes', 'patches', 'saddle', 'mask', 'rings', 'speckles'];
 
     // --- what lives where -------------------------------------------------------------------------
@@ -149,7 +157,33 @@ NSE.Creatures = (function () {
     const SIZE_WORDS = [[0.45, 'about as big as a cat'], [0.9, 'about as big as a dog'], [1.5, 'about as big as a pony'],
         [2.1, 'about as tall as a person'], [3, 'about as big as a car'], [4.2, 'about as big as an elephant'], [Infinity, 'about as big as a house']];
 
-    const PACE = { hop: 0.9, walk: 0.7, crawl: 0.3, slither: 0.4, roll: 1.0, float: 0.45, drift: 0.35 };
+    const PACE = { hop: 0.9, walk: 0.7, crawl: 0.3, slither: 0.4, roll: 1.0, float: 0.45, drift: 0.35, swim: 0.8 };
+
+    // --- sea creatures --------------------------------------------------------------------------------
+    // On worlds with seas some species live in the water (a separate random stream decides, so the
+    // land creatures stay exactly as they were): leaping fish in schools, dolphins in pods, great
+    // slow song whales, sea turtles and shy sea noodles whose humps poke out of the waves.
+    const SEA_P = { ocean: 0.45, earth: 0.28, toxic: 0.22 };
+    const SWIM_BY_TYPE = {
+        ocean: [['fish', 3], ['dolphin', 2], ['whale', 1.1], ['turtle', 2], ['seanoodle', 1]],
+        earth: [['fish', 3], ['turtle', 2], ['dolphin', 1.2], ['whale', 0.5], ['seanoodle', 0.6]],
+        toxic: [['fish', 2.5], ['seanoodle', 2], ['turtle', 1]]
+    };
+    const SWIM_SIZE = { fish: [0.3, 0.55], dolphin: [0.55, 0.95], whale: [2.4, 4.8], turtle: [0.35, 0.7], seanoodle: [0.4, 0.75] };
+    const SWIM_WORDS = {
+        fish: ['It swims in a big shiny school and leaps out of the waves.', 'It flies out of the water in silvery arcs.'],
+        dolphin: ['It leaps and plays in the waves with its friends.', 'It races along and jumps through the waves.'],
+        whale: ['It swims slowly and sings deep, happy songs.', 'It glides along and blows a spout of mist.'],
+        turtle: ['It paddles along slowly on its big flippers.', 'It floats along on the warm water.'],
+        seanoodle: ['It swims in loops, its humps poking out of the water.', 'It ripples through the waves like a ribbon.']
+    };
+    const SWIM_FACTS = {
+        fish: ['They swim together in a big shiny school.', 'It leaps out of the water to say hello.', 'It changes colour when it is happy.'],
+        dolphin: ['It blows bubble rings to say hello.', 'It loves to race alongside ships.', 'It whistles to talk to its friends.'],
+        whale: ['It sings songs that travel right across the sea.', 'It can hold its breath for a whole hour.', 'It blows a fountain of mist when it comes up for air.'],
+        turtle: ['It has been paddling about the sea for a hundred years.', 'It naps floating on the warm water.', 'Its shell is its own little house.'],
+        seanoodle: ['Only its humps poke out of the water, like a row of tiny islands.', 'It is very shy and very gentle.', 'It loops and coils like a ribbon in the waves.']
+    };
 
     // --- colour -----------------------------------------------------------------------------------
 
@@ -316,7 +350,105 @@ NSE.Creatures = (function () {
         seed = seed >>> 0;
         const type = (world && world.type && BODY_BY_TYPE[world.type]) ? world.type : 'earth';
         const pal = (world && world.palette) || DEFAULT_PALETTE;
-        const r = U.rng(U.hash('creature', seed, type));
+        // Does this one live in the sea? (Its own stream: land creatures are unchanged by it.)
+        const sea = !!(world && world.seaLevel >= 0 && SEA_P[type] && U.rng(U.hash('habitat', seed, type))() < SEA_P[type]);
+        const make = k => sea ? swimmerSpec(seed, type, pal, k) : landSpec(seed, type, pal, k);
+        let s = make(0);
+        // A world's species are different kinds of animal where it can manage it (not two wiggle worms):
+        // a species that would repeat an earlier one's kind tries again (same name, a new look).
+        const list = world && world.life && world.life.species;
+        const i = list ? list.indexOf(seed) : -1;
+        if (i > 0) {
+            const taken = earlierKinds(world, i);
+            for (let k = 1; k < 7 && taken.indexOf(s.variant) >= 0; k++) s = make(k);
+        }
+        return rareLook(s, world);
+    }
+    const kindCache = new WeakMap();
+    /** The (final) kinds of a world's species before index i. */
+    function earlierKinds(world, i) {
+        let c = kindCache.get(world);
+        if (!c || c.list !== world.life.species) { c = { list: world.life.species, v: [] }; kindCache.set(world, c); }
+        while (c.v.length < i) c.v.push(spec(world.life.species[c.v.length], world).variant);
+        return c.v.slice(0, i);
+    }
+
+    /** A sea creature: same fields as a land one, body 'swimmer', move 'swim'. */
+    function swimmerSpec(seed, type, pal, k) {
+        const r = U.rng(k ? U.hash('creature', seed, type, k) : U.hash('creature', seed, type));
+        const variant = r.weighted(SWIM_BY_TYPE[type] || SWIM_BY_TYPE.ocean);
+        const glow = r.chance({ toxic: 0.6, ocean: 0.15 }[type] || 0);
+        const sz = SWIM_SIZE[variant];
+        const size = Math.round(r.range(sz[0], sz[1]) * 100) / 100;
+        const colors = colours(r, type, { mid: pal.sea || '#1f5aa0', peak: pal.peak || '#f2f2f2' }, glow);
+        const pattern = r.weighted(variant === 'fish' ? [['stripes', 3], ['spots', 2.5], ['plain', 1.5], ['saddle', 1]]
+            : variant === 'whale' ? [['speckles', 2.5], ['plain', 2], ['patches', 1.5]]
+                : variant === 'turtle' ? [['patches', 3], ['spots', 2], ['plain', 1]]
+                    : variant === 'seanoodle' ? [['rings', 2.5], ['stripes', 2], ['spots', 1.5]]
+                        : [['plain', 3], ['saddle', 1.5], ['speckles', 1]]);
+        const s = {
+            seed: seed,
+            name: NSE.Universe.creatureName(seed),
+            worldType: type,
+            body: 'swimmer',
+            variant: variant,
+            legs: 0,
+            legKind: 'stubby',
+            eyes: 2,
+            eyeStalks: false,
+            eyeStyle: r.weighted([['round', 4], ['sleepy', 1.4], ['bright', 2]]),
+            antennae: 0,
+            antennaKind: 'bobble',
+            ears: variant === 'seanoodle',
+            earKind: 'fan',
+            tail: true,
+            tailKind: 'fin',
+            wings: false,
+            wingKind: 'feather',
+            crest: variant === 'seanoodle' ? r.pick(['bumps', 'none']) : 'none',
+            horns: glow && variant === 'fish' && r.chance(0.5) ? 'lure' : 'none',
+            snout: variant === 'turtle' ? 'beak' : 'none',
+            colors: colors,
+            pattern: pattern,
+            glow: glow,
+            size: size,
+            sizeWords: sizeWordsFor(variant === 'whale' ? size * 3 : variant === 'seanoodle' ? size * 4 : size * 2),
+            move: 'swim',
+            moveWords: r.pick(SWIM_WORDS[variant]),
+            pace: Math.round(PACE.swim * Math.sqrt(size) * 100) / 100,
+            fact: r.pick(SWIM_FACTS[variant]),
+            sound: 'It goes "' + r.pick(variant === 'whale' ? ['hooooom', 'wooo-ooo', 'mmmmooo'] : variant === 'dolphin' ? ['eee-eee', 'click click', 'wheee'] : SOUNDS) + '"' + r.pick(SOUND_WHEN) + '.',
+            habitat: 'sea'
+        };
+        return s;
+    }
+
+    /**
+     * The rare ones: a GOLDEN creature (world.goldSeed) and a GENTLE GIANT (world.giantSeed), the
+     * same in Fly Low, the scanner and the logbook.
+     */
+    function rareLook(s, world) {
+        if (!world) return s;
+        if (world.goldSeed !== undefined && world.goldSeed !== null && (world.goldSeed >>> 0) === s.seed) {
+            s.golden = true;
+            s.name = 'Golden ' + s.name;
+            s.colors = Object.assign({}, s.colors, { main: '#e8b52e', dark: '#a8731a', belly: '#fff0b4', accent: '#fff4cf' });
+            s.glow = true;
+            s.fact = 'It is golden all over, and very, very rare. Lucky you!';
+        }
+        if (world.giantSeed !== undefined && world.giantSeed !== null && (world.giantSeed >>> 0) === s.seed) {
+            s.giant = true;
+            s.name = 'Giant ' + s.name;
+            s.size = Math.round(U.clamp(s.size * 3, 3.5, 12) * 100) / 100;
+            s.sizeWords = sizeWordsFor(s.body === 'swimmer' ? s.size * 2.5 : s.size);
+            s.pace = Math.round(PACE[s.move] * Math.sqrt(s.size) * 0.6 * 100) / 100;
+            s.fact = 'It is a gentle giant: enormous, slow and very kind.';
+        }
+        return s;
+    }
+
+    function landSpec(seed, type, pal, k) {
+        const r = U.rng(k ? U.hash('creature', seed, type, k) : U.hash('creature', seed, type));
 
         const body = r.weighted(BODY_BY_TYPE[type]);
         let move;
@@ -463,8 +595,9 @@ NSE.Creatures = (function () {
 
     // --- the model ------------------------------------------------------------------------------
 
-    const QUALITY = { high: 1, standard: 0.72, low: 0.48 };
-    const TRI_CAP = { high: 2500, standard: 1700, low: 1400 };
+    /** 'tiny' is for the far members of a herd, flock or school in Fly Low (merged and instanced). */
+    const QUALITY = { high: 1, standard: 0.72, low: 0.48, tiny: 0.26 };
+    const TRI_CAP = { high: 2500, standard: 1700, low: 1400, tiny: 520 };
 
     /**
      * A model of a creature. Origin at its feet (floaters hover above it), facing -Z,
@@ -1299,8 +1432,9 @@ NSE.Creatures = (function () {
                 }
             }
             faceJ = pivot;
-        } else if (B === 'worm') {
-            const n = R.int(6, 9), r0 = RR(0.2, 0.26);
+        } else if (B === 'worm' || VAR === 'seanoodle') {
+            // (The sea noodle is a long, round swimmer built like a worm; its humps rise as it swims.)
+            const n = VAR === 'seanoodle' ? R.int(8, 10) : R.int(6, 9), r0 = RR(0.2, 0.26);
             const lift = s.legs ? r0 * 0.35 : 0;
             let z = 0, prev = r0;
             T.c.set(0, lift + r0, 0.6); T.r.set(r0, r0, 0.8);
@@ -1491,6 +1625,86 @@ NSE.Creatures = (function () {
                     if (s.tail) makeTail(pivot, new V(0, c.y, r.z * 0.9), new V(0, -0.2, 1), r.z * 0.35, r.y * 0.16);
                 }
             }
+        } else if (B === 'swimmer') {
+            // Fish, dolphins, whales and sea turtles: they swim at the surface, half in the water.
+            const X = new V(1, 0, 0), Y = new V(0, 1, 0);
+            const qa = (axis, a) => new THREE.Quaternion().setFromAxisAngle(axis, a);
+            const finCol = (p, n, out) => { out[0] = CL.accent[0]; out[1] = CL.accent[1]; out[2] = CL.accent[2]; mixInto(out, CL.dark, 0.3); };
+            const darkFin = (p, n, out) => { bodyCol(p, n, out, { plain: true, belly: 0 }); mixInto(out, CL.dark, 0.35); };
+            if (VAR === 'turtle') {
+                const W = RR(0.4, 0.46), L = W * RR(1.15, 1.3), Hs = RR(0.22, 0.27), by = 0.12;
+                T.c.set(0, by + Hs * 0.4, 0); T.r.set(W, Hs, L);
+                put(pivot, paintBody(ell([0, by, 0], [W, Hs, L], { ws: seg(20, 8), hs: seg(10, 5), cap: Math.PI * 0.5 }), { belly: 0 }), 'skin');
+                put(pivot, paint(ell([0, by, 0], [W * 1.05, 0.035, L * 1.05], { ws: seg(20, 8), hs: seg(5, 3) }), (p, n, out) => { out[0] = CL.belly[0]; out[1] = CL.belly[1]; out[2] = CL.belly[2]; mixInto(out, CL.dark, 0.25); }), 'skin');
+                put(pivot, paintBody(ell([0, by - 0.02, 0], [W * 0.9, 0.08, L * 0.92], { ws: seg(16, 8), hs: seg(6, 4) }), { belly: 1 }), 'skin');
+                const nb = new V(0, by + 0.02, -L * 0.85), hc = new V(0, by + 0.07, -L * 1.15);
+                const nj = joint(pivot, nb);
+                limb(nb, hc, 0.075, 0.07, { capB: false, radial: seg(8, 5) }).forEach(g => put(nj, paintLimb(g, nb, hc, { belly: 0.3 }), 'skin'));
+                face = makeHead(nj, hc, new V(0.11, 0.1, 0.13), { spread: 40, el: 14, eyeR: 0.3, snout: 'beak' });
+                faceJ = nj; A.head = { j: nj };
+                [-1, 1].forEach(function (sd) {
+                    const fj = joint(pivot, new V(sd * W * 0.8, by, -L * 0.45));
+                    const g = ell([0, 0, 0], [W * 0.55, 0.03, L * 0.17], { ws: seg(10, 6), hs: seg(5, 3) });
+                    place(g, new V(sd * W * 1.3, by - 0.02, -L * 0.5), qa(Y, -sd * 0.45));
+                    put(fj, paint(g, darkFin), 'skin');
+                    A.fins.push({ j: fj, side: sd });
+                    const g2 = ell([0, 0, 0], [W * 0.25, 0.03, L * 0.12], { ws: seg(8, 5), hs: seg(4, 3) });
+                    place(g2, new V(sd * W * 0.85, by - 0.02, L * 0.78), qa(Y, sd * 0.5));
+                    put(pivot, paint(g2, darkFin), 'skin');
+                });
+                put(pivot, paint(ell([0, by, L * 1.06], [0.035, 0.03, 0.09], { ws: seg(6, 4), hs: seg(4, 3) }), darkFin), 'skin');
+            } else {
+                const fish = VAR === 'fish', whale = VAR === 'whale';
+                const L = fish ? RR(0.5, 0.6) : whale ? RR(0.9, 1.0) : RR(0.62, 0.72);
+                const Hh = fish ? RR(0.24, 0.3) : whale ? RR(0.3, 0.36) : RR(0.19, 0.23);
+                const Wd = fish ? RR(0.11, 0.15) : whale ? Hh * RR(1.0, 1.1) : Hh * RR(0.9, 1.0);
+                const c = new V(0, Hh + 0.02, 0);
+                T.c.copy(c); T.r.set(Wd, Hh, L);
+                const taper = fish ? (t => t > 0 ? 1 - 0.62 * Math.pow(t, 1.4) : 1)
+                    : whale ? (t => t > 0 ? 1 - 0.72 * Math.pow(t, 1.5) : 1 - 0.08 * t * t) : (t => t > 0 ? 1 - 0.7 * Math.pow(t, 1.5) : 1 - 0.25 * t * t);
+                const body = ell([0, c.y, 0], [Wd, Hh, L], { ws: seg(22, 8), hs: seg(15, 6), taper: taper });
+                if (whale) {
+                    // Pale belly grooves, like a real rorqual's.
+                    put(pivot, paint(body, (p, n, out) => { bodyCol(p, n, out); if (n.y < -0.25 && p.z < L * 0.3) mixInto(out, Math.sin(p.x * 70) > 0.3 ? CL.belly : CL.dark, 0.35 * U.smooth((-n.y - 0.25) / 0.3)); }), 'skin');
+                } else put(pivot, paintBody(body), 'skin');
+                // Back fin.
+                const dfin = ell([0, 0, 0], fish ? [Wd * 0.12, Hh * 0.5, L * 0.32] : whale ? [Wd * 0.08, Hh * 0.3, L * 0.1] : [Wd * 0.12, Hh * 0.75, L * 0.17], { ws: seg(8, 5), hs: seg(6, 4) });
+                place(dfin, new V(0, c.y + Hh * (whale ? 0.92 : 1.0), L * (whale ? 0.35 : 0.06)), qa(X, fish ? -0.35 : -0.6));
+                put(pivot, paint(dfin, fish ? finCol : darkFin), 'skin');
+                // Side fins / flippers.
+                [-1, 1].forEach(function (sd) {
+                    const fj = joint(pivot, new V(sd * Wd * 0.8, c.y - Hh * (fish ? 0.25 : 0.45), -L * (fish ? 0.25 : 0.33)));
+                    const g = fish ? ell([0, 0, 0], [Wd * 0.55, Hh * 0.06, L * 0.15], { ws: seg(8, 5), hs: seg(5, 3) })
+                        : ell([0, 0, 0], [Wd * (whale ? 1.0 : 0.7), Hh * 0.07, L * (whale ? 0.12 : 0.13)], { ws: seg(10, 6), hs: seg(5, 3) });
+                    const at = fish ? new V(sd * Wd * 1.3, c.y - Hh * 0.3, -L * 0.18) : new V(sd * Wd * (whale ? 1.75 : 1.4), c.y - Hh * 0.62, -L * 0.26);
+                    place(g, at, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, sd * (fish ? 0.5 : 0.55), -sd * (fish ? 0.1 : 0.4))));
+                    put(fj, paint(g, fish ? finCol : darkFin), 'skin');
+                    A.fins.push({ j: fj, side: sd });
+                });
+                // Tail: a forked fin that wags (fish), or flukes that beat up and down.
+                const tj = joint(pivot, new V(0, c.y, L * 0.82));
+                if (fish) {
+                    [-1, 1].forEach(function (sd) {
+                        const g = ell([0, 0, 0], [Wd * 0.12, Hh * 0.55, L * 0.24], { ws: seg(8, 5), hs: seg(6, 4) });
+                        place(g, new V(0, c.y + sd * Hh * 0.38, L * 1.04), qa(X, sd * 0.75));
+                        put(tj, paint(g, finCol), 'skin');
+                    });
+                    A.tail = [tj];
+                } else {
+                    [-1, 1].forEach(function (sd) {
+                        const g = ell([0, 0, 0], [L * (whale ? 0.24 : 0.2), Hh * 0.06, L * (whale ? 0.11 : 0.1)], { ws: seg(10, 6), hs: seg(5, 3) });
+                        place(g, new V(sd * L * (whale ? 0.19 : 0.16), c.y, L * (whale ? 1.04 : 1.0)), qa(Y, sd * 0.5));
+                        put(tj, paint(g, darkFin), 'skin');
+                    });
+                    A.fluke = tj;
+                }
+                if (VAR === 'dolphin') put(pivot, paintBody(ell([0, c.y - Hh * 0.28, -L * 0.98], [Wd * 0.3, Hh * 0.22, L * 0.2], { ws: seg(10, 6), hs: seg(7, 4) }), { belly: 0.5 }), 'skin');
+                if (whale) put(pivot, place(new THREE.SphereGeometry(1, seg(8, 5), seg(4, 3)), new V(0, c.y + Hh * 0.97, -L * 0.42), null, new V(Wd * 0.1, Hh * 0.04, L * 0.04)), 'mouth');
+                const hc = fish ? new V(0, c.y + Hh * 0.05, -L * 0.6) : new V(0, c.y + Hh * (whale ? -0.1 : 0.12), -L * 0.58);
+                const hr = fish ? new V(Wd * 0.85, Hh * 0.75, L * 0.4) : new V(Wd * 0.85, Hh * 0.78, L * 0.4);
+                face = makeHead(pivot, hc, hr, { faceOnly: true, spread: fish ? 64 : whale ? 72 : 60, el: fish ? 12 : whale ? -4 : 6, eyeR: fish ? 0.4 : whale ? 0.18 : 0.3, snout: 'none', mouthMin: fish ? -14 : -34 });
+            }
+            faceJ = pivot;
         } else { // flyer
             if (VAR === 'moth') {
                 const r = new V(RR(0.12, 0.15), RR(0.13, 0.16), RR(0.32, 0.4));
@@ -1781,7 +1995,14 @@ NSE.Creatures = (function () {
                     pivot.rotation.z = 0.1 * Math.sin(t * 0.8);
                     pivot.rotation.x = -mv * 0.1;
                     break;
+                case 'swim':
+                    // Riding the waves: a slow bob and roll.
+                    y += 0.03 * s.size * Math.sin(t * 1.1);
+                    pivot.rotation.z = 0.05 * Math.sin(t * 0.9);
+                    pivot.rotation.x = 0.03 * Math.sin(t * 0.7);
+                    break;
             }
+            if (A.fluke) A.fluke.rotation.x = (0.18 + 0.12 * mv) * Math.sin(t * rate * 2.6);
             root.position.y = y;
             if (VAR !== 'slug' && VAR !== 'snail') pivot.scale.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq));
             else { pivot.scale.x = 1; pivot.scale.y = sq; }
@@ -1797,7 +2018,8 @@ NSE.Creatures = (function () {
                 const sg = A.segs[i], r0 = rest.get(sg.j);
                 const amp = (MOVE === 'slither' ? 0.22 : 0.04) * (0.25 + 0.75 * mv) * sg.r * 2 * (i === 0 ? 0.4 : 1);
                 sg.j.position.x = r0.x + amp * Math.sin(t * w * 0.9 - i * 0.9);
-                sg.j.position.y = r0.y + (MOVE === 'crawl' ? mv * sg.r * 0.25 * Math.max(0, Math.sin(t * w - i * 0.8)) : 0);
+                sg.j.position.y = r0.y + (MOVE === 'crawl' ? mv * sg.r * 0.25 * Math.max(0, Math.sin(t * w - i * 0.8))
+                    : MOVE === 'swim' ? sg.r * 0.9 * Math.max(0, Math.sin(t * 1.4 - i * 0.85)) : 0);
             }
 
             for (const L of A.legs) {
@@ -1911,6 +2133,72 @@ NSE.Creatures = (function () {
         };
     }
 
+    // --- the field guide: every kind of animal (spec.variant) ------------------------------------------
+
+    const KINDS = [
+        { id: 'grazer', name: 'Long-neck Grazer', hint: 'Grazes in herds on earth-like worlds' },
+        { id: 'stocky', name: 'Stocky Grazer', hint: 'Plods about in herds on icy and earth-like worlds' },
+        { id: 'lithe', name: 'Leaping Runner', hint: 'Runs in herds across open land' },
+        { id: 'pup', name: 'Space Pup', hint: 'Trots about in little packs' },
+        { id: 'crawler', name: 'Many-leg Crawler', hint: 'Crawls among the rocks' },
+        { id: 'dino', name: 'Little Dino', hint: 'Walks on two legs on warm worlds' },
+        { id: 'upright', name: 'Upright Walker', hint: 'Toddles about on two legs' },
+        { id: 'hopper', name: 'Big-foot Hopper', hint: 'Bounds across deserts and plains' },
+        { id: 'fluff', name: 'Fluffball', hint: 'Hops about on many worlds' },
+        { id: 'smooth', name: 'Bouncy Puff', hint: 'Bounces about on earth-like and icy worlds' },
+        { id: 'pear', name: 'Pear Puff', hint: 'Waddles about on many worlds' },
+        { id: 'balloon', name: 'Sky Balloon Creature', hint: 'Floats high up, most of all over gas giants' },
+        { id: 'frog', name: 'Springy Frog', hint: 'Hops about near water' },
+        { id: 'ray', name: 'Floating Ray', hint: 'Glides through the air like a kite' },
+        { id: 'slug', name: 'Glider Slug', hint: 'Glides slowly over damp ground' },
+        { id: 'octo', name: 'Land Octopus', hint: 'Wiggles along on its arms on toxic and ocean worlds' },
+        { id: 'crab', name: 'Sideways Crab', hint: 'Scuttles over beaches and rocks' },
+        { id: 'caterpillar', name: 'Caterpillar', hint: 'Ripples along on lots of little feet' },
+        { id: 'noodle', name: 'Wiggle Worm', hint: 'Slithers over sand and soil' },
+        { id: 'bell', name: 'Bell Jellyfish', hint: 'Floats on the breeze over ocean and toxic worlds' },
+        { id: 'siphon', name: 'Siphon Jelly', hint: 'Drifts in the skies of many worlds' },
+        { id: 'tortoise', name: 'Tortoise', hint: 'Plods along very slowly' },
+        { id: 'pillbug', name: 'Roly-poly', hint: 'Curls up and rolls on deserts and rocky moons' },
+        { id: 'beetle', name: 'Shiny Beetle', hint: 'Bustles about under its shiny shell' },
+        { id: 'snail', name: 'Snail', hint: 'Glides slowly, carrying its home' },
+        { id: 'bird', name: 'Bird', hint: 'Flies in flocks over many worlds' },
+        { id: 'moth', name: 'Moth', hint: 'Flutters about in swarms' },
+        { id: 'bat', name: 'Bat', hint: 'Swoops about on crystal and lava worlds' },
+        { id: 'fish', name: 'Leaping Fish', hint: 'Leaps from the seas in big shiny schools' },
+        { id: 'dolphin', name: 'Splash Dolphin', hint: 'Plays in the waves in friendly pods' },
+        { id: 'whale', name: 'Song Whale', hint: 'Sings in the deep seas of ocean worlds' },
+        { id: 'turtle', name: 'Sea Turtle', hint: 'Paddles slowly in warm seas' },
+        { id: 'seanoodle', name: 'Sea Noodle', hint: 'Its humps poke out of the sea like tiny islands' }
+    ];
+    const KIND_TYPES = {
+        fish: ['ocean', 'earth'], dolphin: ['ocean'], whale: ['ocean'], turtle: ['ocean', 'earth'], seanoodle: ['ocean', 'toxic'],
+        balloon: ['gas', 'ocean'], siphon: ['gas', 'ocean', 'toxic'], bell: ['ocean', 'toxic', 'gas'], bat: ['crystal', 'lava', 'earth'], pillbug: ['desert', 'rock'],
+        octo: ['toxic', 'ocean'], frog: ['toxic', 'ocean'], ray: ['ocean', 'toxic', 'gas']
+    };
+    const EX_PAL = {
+        ocean: { low: '#d8c58e', mid: '#2f9a7a', high: '#2b6f5a', peak: '#ffffff', sea: '#145a8c' }, earth: DEFAULT_PALETTE,
+        gas: { low: '#c8a57a', mid: '#e8d2a8', high: '#a87a52', peak: '#f4e8d0' }, toxic: { low: '#4a5a1f', mid: '#7a8a2a', high: '#a8b83a', peak: '#d8e87a', sea: '#6aaa1f' },
+        crystal: { low: '#5a3a8a', mid: '#8a5ad0', high: '#c8a0ff', peak: '#ffffff' }, lava: { low: '#2a1a18', mid: '#3d2420', high: '#5a3326', peak: '#7a4a33' },
+        desert: { low: '#c8833f', mid: '#e0a75a', high: '#f0cf8a', peak: '#fff1d0' }, rock: { low: '#5a5650', mid: '#7a766e', high: '#9a958c', peak: '#c4beb4' },
+        ice: { low: '#5f88b8', mid: '#9cc4e6', high: '#dff2ff', peak: '#ffffff' }
+    };
+    const exampleCache = {};
+    /** One animal of this kind, always the same one (field-guide portraits and silhouettes). */
+    function example(kindId) {
+        if (exampleCache[kindId]) return exampleCache[kindId];
+        if (!KINDS.some(k => k.id === kindId)) return null;
+        const types = (KIND_TYPES[kindId] || []).concat(['earth', 'ocean', 'desert', 'ice', 'toxic', 'crystal', 'lava', 'rock', 'gas']);
+        for (let pass = 0; pass < types.length; pass++) {
+            const t = types[pass];
+            const w = { type: t, palette: EX_PAL[t], seaLevel: t === 'ocean' || t === 'earth' || t === 'toxic' ? 0.6 : -1 };
+            for (let i = 0; i < 1500; i++) {
+                const s = spec(U.hash('kind-example', kindId, i), w);
+                if (s.variant === kindId) return (exampleCache[kindId] = s);
+            }
+        }
+        return null;
+    }
+
     return {
         BODIES: BODIES,
         MOVES: MOVES,
@@ -1919,6 +2207,8 @@ NSE.Creatures = (function () {
         TYPE_FACTS: TYPE_FACTS,
         GLOW_FACTS: GLOW_FACTS,
         SOUNDS: SOUNDS,
+        KINDS: KINDS,
+        example: example,
         spec: spec,
         words: words,
         peopleLook: peopleLook,

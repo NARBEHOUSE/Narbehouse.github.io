@@ -219,6 +219,45 @@ sample.forEach(function (s, si) {
     }
 });
 
+// --- the field guide's kinds, sea creatures, the golden one and the gentle giant ------------------
+check(Array.isArray(C.KINDS) && C.KINDS.length >= 30, 'at least 30 kinds of animal (' + (C.KINDS || []).length + ')');
+const kindIds = (C.KINDS || []).map(k => k.id);
+check(new Set(kindIds).size === kindIds.length && C.KINDS.every(k => k.name && k.hint), 'kinds unique, named, hinted');
+for (const v of Object.keys(tally.variant)) check(kindIds.includes(v), 'variant ' + v + ' is in KINDS');
+for (const k of kindIds) {
+    const ex = C.example(k);
+    check(ex && ex.variant === k && C.example(k) === ex, 'example(' + k + ')');
+    if (!ex) continue;
+    const m = C.build(THREE, ex, 'tiny');
+    check(m.triangles <= 900 && Math.abs(m.height - ex.size) / ex.size <= 0.15, k + ' tiny herd copy: ' + m.triangles + ' triangles, height ' + m.height.toFixed(2));
+    m.dispose();
+}
+// Sea creatures only where there is a sea; land creatures keep their look (the sea choice is its own stream).
+{
+    const dry = Object.assign({}, worlds.ocean, { seaLevel: -1 });
+    let swimmers = 0;
+    for (let i = 0; i < 200; i++) {
+        const seed = U.hash('sea-test', i);
+        const wet = C.spec(seed, worlds.ocean), d = C.spec(seed, dry);
+        check(d.body !== 'swimmer', 'a swimmer on a world without a sea');
+        if (wet.body === 'swimmer') { swimmers++; check(wet.move === 'swim' && wet.legs === 0 && wet.habitat === 'sea', 'swimmer fields'); }
+        else check(JSON.stringify(wet) === JSON.stringify(d), 'a land creature changed because the world has a sea (' + seed + ')');
+    }
+    check(swimmers > 40 && swimmers < 140, 'about a third to a half of ocean species swim (' + swimmers + ' of 200)');
+}
+{
+    const w = Object.assign({}, worlds.earth, { life: { species: [101, 202, 303] }, goldSeed: 202, giantSeed: 303 });
+    const g = C.spec(202, w), gi = C.spec(303, w), plain = C.spec(101, w);
+    check(g.golden && g.name === 'Golden ' + NSE.Universe.creatureName(202) && g.colors.main === '#e8b52e' && g.glow, 'golden creature (' + g.name + ')');
+    check(gi.giant && gi.name === 'Giant ' + NSE.Universe.creatureName(303) && gi.size >= 3.5 && gi.size <= 12 && /house|elephant|car/.test(gi.sizeWords), 'gentle giant (' + gi.name + ', ' + gi.size + ' m, ' + gi.sizeWords + ')');
+    check(!plain.golden && !plain.giant, 'other species stay ordinary');
+    for (const s of [g, gi]) {
+        const m = C.build(THREE, s, 'high');
+        check(Math.abs(m.height - s.size) / s.size <= 0.15, s.name + ' builds at its size (' + m.height.toFixed(2) + ' vs ' + s.size + ')');
+        m.dispose();
+    }
+}
+
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 console.log('Creatures: ' + specs.length + ' specs over ' + TYPES.length + ' world types, ' + built + ' models built, ' + frames + ' animation frames (' + secs + ' s)');
 console.log('  bodies   ' + JSON.stringify(tally.body));

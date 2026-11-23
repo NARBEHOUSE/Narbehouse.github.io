@@ -196,7 +196,10 @@ NSE.Stage = (function () {
     function frameRadius(o) {
         if (o.kind === 'star') return o.special === 'blackhole' && o.sys.disk ? o.sys.disk.outer : o.radius * 1.25;
         const w = o.world;
-        return w && w.rings ? Math.max(o.radius * 1.04, w.rings.outer * 0.92) : o.radius * 1.04;
+        let r = w && w.rings ? Math.max(o.radius * 1.04, w.rings.outer * 0.92) : o.radius * 1.04;
+        // An orbital ring round an inhabited world is part of the picture too (js/space.js civOrbitals).
+        if (w && w.civ && (w.civ.tech || []).indexOf('ring') >= 0) r = Math.max(r, w.radius * (w.type === 'gas' ? 1.28 : 1.36));
+        return r;
     }
 
     /** A unit vector turned from a toward b (in their plane) by angle ang, and its "up" (toward b). */
@@ -532,11 +535,21 @@ NSE.Stage = (function () {
 
     // --- the scanner's viewer window -------------------------------------------------------------------
 
+    /** Two meshes driven as one (a binary pair, a star in its nebula). */
+    function both(a, b) {
+        return {
+            update: function (dt, x) { a.update(dt, x); b.update(dt, x); },
+            dispose: function () { a.dispose(); b.dispose(); }
+        };
+    }
+
     /**
-     * Show something in the viewer box on the page: kind 'creature' (spec), 'world' (world)
-     * or 'star' (star). el is the page element the 3D view fills.
+     * Show something in the viewer box on the page: kind 'creature' or 'plant' (spec), 'world'
+     * (world), 'star' (star; extra.nebula = its system when it sits in a nebula), 'binary' or
+     * 'blackhole' (the system). el is the page element the 3D view fills. Everything that can be
+     * scanned shows a picture (the user: "this can't happen").
      */
-    function showViewer(kind, subject, el) {
+    function showViewer(kind, subject, el, extra) {
         hideViewer();
         const sc = new THREE.Scene();
         // Physical light units (three r155's default): about pi times the old 'legacy' numbers.
@@ -550,18 +563,32 @@ NSE.Stage = (function () {
         const cam = new THREE.PerspectiveCamera(36, 1, 0.05, 2000);
         let obj = null, spin = new THREE.Group();
         sc.add(spin);
-        if (kind === 'creature' && NSE.Creatures) {
-            obj = NSE.Creatures.build(THREE, subject, qualityLevel());
+        try {
+        if ((kind === 'creature' && NSE.Creatures) || (kind === 'plant' && NSE.Flora)) {
+            obj = kind === 'plant' ? NSE.Flora.build(THREE, subject, qualityLevel()) : NSE.Creatures.build(THREE, subject, qualityLevel());
             spin.add(obj.group);
-            const h = Math.max(0.3, obj.height), r = Math.max(h, (obj.radius || h) * 1.4);
-            // (Floaters - jellyfish, balloons, flyers - hover above their feet: lower them into the window.)
-            obj.group.position.y = -h * 0.45 - (obj.hover || 0);
-            cam.position.set(0, h * 0.25, r * 2.9 + 0.3);
+            let h = Math.max(0.3, obj.height), r = Math.max(h, (obj.radius || h) * 1.4), floor = -h * 0.45;
+            if (kind === 'plant') {
+                // Plants come in every shape (a thin kelp stalk, a flat lily pad, a wide bush): frame
+                // the plant's own box, from a little above when it is low and wide.
+                const box = new THREE.Box3().setFromObject(obj.group), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+                const wide = Math.max(size.x, size.z), big = Math.max(0.2, size.y, wide);
+                obj.group.position.set(-mid.x, -mid.y, -mid.z);
+                floor = box.min.y - mid.y;
+                const up = size.y < wide * 0.45 ? 0.75 : 0.25;
+                const d = big * 1.75 + 0.3;
+                cam.position.set(0, d * Math.sin(up), d * Math.cos(up));
+                r = wide * 0.75 + 0.2;
+            } else {
+                // (Floaters - jellyfish, balloons, flyers - hover above their feet: lower them into the window.)
+                obj.group.position.y = -h * 0.45 - (obj.hover || 0);
+                cam.position.set(0, h * 0.25, r * 2.9 + 0.3);
+            }
             cam.lookAt(0, 0, 0);
             // A soft round shadow-plate to stand on.
             const plate = new THREE.Mesh(new THREE.CircleGeometry(r * 1.1, 32), new THREE.MeshBasicMaterial({ color: 0x0c1430, transparent: true, opacity: 0.7 }));
             plate.rotation.x = -Math.PI / 2;
-            plate.position.y = -h * 0.45 - 0.01;
+            plate.position.y = floor - 0.01;
             spin.add(plate);
         } else if (kind === 'world') {
             obj = NSE.Planets.worldMesh(subject, { orbit: true });
@@ -573,10 +600,110 @@ NSE.Stage = (function () {
         } else if (kind === 'star') {
             obj = NSE.Planets.starMesh(subject);
             spin.add(obj.group);
-            cam.position.set(0, 0, subject.radius * 5.5);
+            let R = subject.radius;
+            // A star inside a nebula: the glowing cloud round it, shrunk to fit the window.
+            if (extra && extra.nebula && extra.nebula.nebula) {
+                const neb = NSE.Planets.nebulaMesh(extra.nebula);
+                neb.group.scale.setScalar(subject.radius * 2.4 / extra.nebula.nebula.size);
+                spin.add(neb.group);
+                obj = both(obj, neb);
+                R = subject.radius * 1.5;
+            }
+            cam.position.set(0, R * 0.3, R * 5.5);
+            cam.lookAt(0, 0, 0);
+        } else if (kind === 'binary') {
+            // Both stars of a pair, side by side.
+            const a = subject.stars[0], b = subject.stars[1];
+            const ma = NSE.Planets.starMesh(a), mb = NSE.Planets.starMesh(b);
+            const gap = (a.radius + b.radius) * 1.25;
+            ma.group.position.x = -gap * b.radius / (a.radius + b.radius) - a.radius * 0.35;
+            mb.group.position.x = gap * a.radius / (a.radius + b.radius) + b.radius * 0.35;
+            spin.add(ma.group, mb.group);
+            obj = both(ma, mb);
+            const R = gap + Math.max(a.radius, b.radius);
+            cam.position.set(0, R * 0.35, R * 3.4);
+            cam.lookAt(0, 0, 0);
+        } else if (kind === 'blackhole') {
+            // A black hole: its dark heart, the light ring and the glowing disk, seen from a little above.
+            obj = NSE.Planets.blackHoleMesh(subject);
+            spin.add(obj.group);
+            const R = subject.disk ? subject.disk.outer : subject.stars[0].radius * 4;
+            cam.position.set(0, R * 0.62, R * 2.5);
             cam.lookAt(0, 0, 0);
         }
+        } catch (e) {
+            console.warn('[NSE] the scanner could not show this', kind, e);
+        }
         viewer = { scene: sc, camera: cam, obj: obj, spin: spin, el: el, kind: kind, t: 0 };
+    }
+
+    /**
+     * A small still picture of a creature or plant for the Field Guide (a PNG data URL, or null):
+     * kind 'creature' | 'plant', a spec. opts.silhouette draws it as one flat dark shape (a kind
+     * not found yet). Drawn on its own small offscreen canvas, so nothing on screen changes.
+     */
+    let pRenderer = null;
+    function portrait(kind, subject, opts) {
+        opts = opts || {};
+        if (!THREE || !subject) return null;
+        const S = opts.size || 192;
+        let obj = null;
+        const sc = new THREE.Scene();
+        try {
+            obj = kind === 'plant' ? (NSE.Flora ? NSE.Flora.build(THREE, subject, 'standard') : null) : (NSE.Creatures ? NSE.Creatures.build(THREE, subject, 'standard') : null);
+            if (!obj || !obj.group) return null;
+            if (!pRenderer) {
+                const o = { antialias: true, alpha: true, preserveDrawingBuffer: true };
+                pRenderer = new THREE.WebGLRenderer(o);
+                pRenderer.outputColorSpace = THREE.SRGBColorSpace;
+                pRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+                pRenderer.toneMappingExposure = 1.05;
+                pRenderer.setPixelRatio(1);
+            }
+            pRenderer.setSize(S, S, false);
+            sc.add(new THREE.AmbientLight(0xffffff, 0.8 * Math.PI));
+            const key = new THREE.DirectionalLight(0xffffff, 1.4 * Math.PI);
+            key.position.set(3, 4, 5);
+            sc.add(key);
+            const rim = new THREE.DirectionalLight(0x88aaff, 0.6 * Math.PI);
+            rim.position.set(-4, 2, -3);
+            sc.add(rim);
+            const turn = new THREE.Group();
+            turn.rotation.y = opts.turn === undefined ? -0.65 : opts.turn;      // a three-quarter view
+            sc.add(turn);
+            turn.add(obj.group);
+            if (obj.update) { try { obj.update(0.016, opts.t || 0.6, false); } catch (e) { /* still */ } }
+            const h = Math.max(0.3, obj.height || 1), r = Math.max(h, (obj.radius || h) * 1.3);
+            const cam = new THREE.PerspectiveCamera(32, 1, 0.05, 4000);
+            if (kind === 'plant') {
+                // Framed by its own box (thin stalks and flat pads too), from a little above if low and wide.
+                // (Measured unturned, so the box is in the plant's own frame.)
+                const ry = turn.rotation.y;
+                turn.rotation.y = 0;
+                turn.updateMatrixWorld(true);
+                const box = new THREE.Box3().setFromObject(obj.group), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+                turn.rotation.y = ry;
+                const wide = Math.max(size.x, size.z), big = Math.max(0.2, size.y, wide);
+                obj.group.position.set(-mid.x, -mid.y, -mid.z);
+                const up = size.y < wide * 0.45 ? 0.75 : 0.22, d = big * 1.85 + 0.3;
+                cam.position.set(0, d * Math.sin(up), d * Math.cos(up));
+            } else {
+                obj.group.position.y = -h * 0.5 - (obj.hover || 0);
+                cam.position.set(0, h * 0.2, r * 2.7 + 0.3);
+            }
+            cam.lookAt(0, 0, 0);
+            if (opts.silhouette) sc.overrideMaterial = new THREE.MeshBasicMaterial({ color: opts.shade || 0x4a5ca8 });
+            pRenderer.setClearColor(0x000000, 0);
+            pRenderer.render(sc, cam);
+            return pRenderer.domElement.toDataURL('image/png');
+        } catch (e) {
+            console.warn('[NSE] portrait failed', e);
+            return null;
+        } finally {
+            try { if (obj && obj.dispose) obj.dispose(); } catch (e) { /* ignore */ }
+            if (sc.overrideMaterial) sc.overrideMaterial.dispose();
+            sc.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material && n.material.dispose) n.material.dispose(); });
+        }
     }
 
     function hideViewer() {
@@ -619,8 +746,13 @@ NSE.Stage = (function () {
         viewer.t += dt;
         viewer.spin.rotation.y += dt * (NSE.Settings.calm() ? 0.25 : 0.5);
         if (viewer.obj && viewer.obj.update) {
-            if (viewer.kind === 'creature') viewer.obj.update(dt, viewer.t, true);
-            else viewer.obj.update(dt, { x: 400, y: 300, z: 600 });
+            // (Creatures and plants animate with time; a world takes the sun's position; stars and
+            // black holes take Motion: Calm.) An animation must never stop the picture being drawn.
+            try {
+                if (viewer.kind === 'creature' || viewer.kind === 'plant') viewer.obj.update(dt, viewer.t, true);
+                else if (viewer.kind === 'world') viewer.obj.update(dt, { x: 400, y: 300, z: 600 });
+                else viewer.obj.update(dt, NSE.Settings.calm());
+            } catch (e) { if (!viewer.warned) { viewer.warned = true; console.warn('[NSE] viewer animation', e); } }
         }
         viewer.camera.aspect = w / h;
         viewer.camera.updateProjectionMatrix();
@@ -779,6 +911,7 @@ NSE.Stage = (function () {
         surveyAmount: function () { return U.ease(surveyAmt); },
         showViewer: showViewer,
         hideViewer: hideViewer,
+        portrait: portrait,
         snapshot: snapshot,
         project: project,
         projectSphere: projectSphere,

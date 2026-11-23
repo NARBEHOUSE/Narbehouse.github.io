@@ -46,6 +46,9 @@ if (creaturesSource === 'stub') {
 }
 let shipSource = 'box';
 try { load('ship'); if (NSE.Ship) shipSource = 'js/ship.js'; } catch (e) { /* box ship */ }
+// Plant species (js/flora.js); --no-flora checks the older built-in plants still draw without it.
+let floraSource = 'none';
+if (!process.argv.includes('--no-flora') && fs.existsSync(path.join(GAME, 'js', 'flora.js'))) { load('flora'); if (NSE.Flora) floraSource = 'js/flora.js'; }
 load('surface');
 
 let fails = 0, checks = 0;
@@ -64,7 +67,9 @@ function makeShip() {
  */
 function testWorld(label, world, opts, cfg) {
     cfg = cfg || {};
-    const secs = cfg.seconds || 60, budget = cfg.budget || 150000;
+    // (High: 180k since the living worlds of 2026-11-23 — herds, flocks, schools and every plant species;
+    // Low keeps a tight 80k.)
+    const secs = cfg.seconds || 60, budget = cfg.budget || ((opts && opts.detail) === 'low' ? 80000 : 180000);
     const ship = makeShip();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.3, 2000);
     let s;
@@ -74,6 +79,7 @@ function testWorld(label, world, opts, cfg) {
     let altSum = 0, altN = 0, highFrames = 0;
     let minAlt = Infinity, maxAlt = -Infinity, nan = false, camUnder = 0, maxGeo = 0, maxTris = 0, maxChunks = 0, seenCreature = false;
     let tUpd = 0, tMax = 0, frames = 0, threw = null, maxCamStep = 0, prevCam = null, prevStep = null;
+    let seenPlant = false, maxFollowers = 0;
     const dt = 1 / 30, N = secs * 30, steers = (cfg.steer || []).slice();
     const heading0 = s.heading();
     const civ = { ports: 0, launches: 0, built: 0, arch: null, trafficFrames: 0, moving: 0, firstPort: -1 };
@@ -104,7 +110,7 @@ function testWorld(label, world, opts, cfg) {
         prevCam = camera.position.clone();
         const cv = s.civ();
         if (cv) {
-            civ.ports = cv.portsSeen; civ.launches = cv.launches; civ.built = cv.buildingsBuilt; civ.arch = cv.arch;
+            civ.ports = cv.portsSeen; civ.launches = cv.launches; civ.built = cv.buildingsBuilt; civ.arch = cv.arch; civ.last = cv;
             if (cv.traffic.length >= 4) civ.trafficFrames++;
             if (prevTraffic && cv.traffic.length && prevTraffic.length === cv.traffic.length) {
                 const m = Math.hypot(cv.traffic[0].x - prevTraffic[0].x, cv.traffic[0].z - prevTraffic[0].z);
@@ -117,6 +123,8 @@ function testWorld(label, world, opts, cfg) {
             const st = s.stats();
             maxGeo = Math.max(maxGeo, st.geometries); maxTris = Math.max(maxTris, st.triangles); maxChunks = Math.max(maxChunks, st.chunks);
             if (s.nearestCreature()) seenCreature = true;
+            if (s.nearestPlant && s.nearestPlant()) seenPlant = true;
+            if (st.followers) maxFollowers = Math.max(maxFollowers, st.followers);
         }
     }
     ok(!threw, label + ': update/setView threw ' + (threw && threw.stack));
@@ -149,6 +157,20 @@ function testWorld(label, world, opts, cfg) {
         ok(sp.length === 0 && s.nearestCreature() === null, label + ': no life, no creatures');
     }
     ok(s.plants() === NSE.Universe.plants(world), label + ': plants() agrees with Universe.plants (' + s.plants() + ')');
+    // Plants to identify: every species the world grows is listed, drawn, and can be found ahead.
+    if (floraSource !== 'none' && world.flora && NSE.Universe.plants(world)) {
+        const fl = s.flora();
+        ok(fl.length === world.flora.species.length, label + ': flora species listed (' + fl.length + ' of ' + world.flora.species.length + ')');
+        ok(fl.every(sp => sp && sp.name && NSE.Flora.KINDS.some(k => k.id === sp.kind)), label + ': flora specs are known kinds');
+        ok(st1.plants > 0, label + ': plants drawn (' + st1.plants + ')');
+        ok(seenPlant, label + ': nearestPlant finds one');
+        const np = s.nearestPlant();
+        ok(!np || (np.spec && Number.isFinite(np.dist) && np.index >= 0 && np.index < fl.length), label + ': nearestPlant shape');
+    } else if (s.flora) ok(s.flora().length === 0 || floraSource !== 'none', label + ': no flora drawn without plants');
+    const sn = s.seen ? s.seen() : null;
+    ok(sn && typeof sn.rainbow === 'boolean' && typeof sn.golden === 'boolean' && typeof sn.giant === 'boolean', label + ': seen() shape');
+    // Herds, flocks and schools: more than one or two of a kind (the user: not "1 or 2 lame looking animals").
+    if (world.life && sp.length >= 2 && (cfg.detail || (opts && opts.detail) || 'high') !== 'low') ok(maxFollowers > 0, label + ': herds and flocks have members (' + maxFollowers + ')');
     const info = {
         label: label, tris: maxTris, chunks: maxChunks, geo: st0.geometries + '->' + maxGeo, freed: st1.geometriesFreed,
         alt: minAlt.toFixed(1) + '/' + mean.toFixed(1), turn: Math.round(Math.abs(s.heading() - heading0) * DEG), creatures: st1.creatures,
@@ -265,6 +287,33 @@ steerRun('steer gas', 'gas', 'storms');
     // Wildlife still appears (outside the cities).
 }
 
+// --- every civilisation style, with all its technology (civ.style, civ.tech from NSE.Universe) ----
+{
+    const ALL = ['ring', 'elevator', 'maglev', 'drones', 'skyships', 'beacons', 'solar', 'farms'];
+    const styleRuns = [['earth', 'spires'], ['earth', 'domes'], ['desert', 'arcology'], ['ocean', 'floating'], ['earth', 'organic'], ['crystal', 'crystal'], ['gas', 'floating'], ['earth', 'floating', 'low']];
+    styleRuns.forEach(function (sr, k) {
+        const w = UV.world(7100 + k * 31, { kind: 'planet', name: 'Civ', type: sr[0] });
+        w.civ = { seed: NSE.Util.hash('civ', 40 + k), people: 'Zibbles', mood: 'friendly', lights: ['#ffd27a', '#9ad8ff', '#ff9ad8', '#a8ff9a'][k % 4], ships: 3, style: sr[1], tech: ALL.slice(), cities: 6 };
+        if (!w.life) w.life = lifeFor(k);
+        const r = testWorld('civ ' + sr[1] + ' ' + sr[0] + (sr[2] ? ' (low)' : ''), w, { detail: sr[2] || 'high' }, { seconds: 60, steer: [[30, 1]] });
+        if (!r) return;
+        rows.push(r);
+        const c = r.civ.last || {}, b = c.built || {}, seen = c.seen || {}, L = r.label, gas = sr[0] === 'gas';
+        ok(c.style === sr[1], L + ': draws its own style (' + c.style + ')');
+        ok(r.civ.built > 15, L + ': city buildings are built (' + r.civ.built + ')');
+        if (sr[1] === 'domes') ok(b.domes > 0 && seen.domes > 300, L + ': great glass domes over the cities (' + b.domes + ' built, glass shown ' + seen.domes + ' frames)');
+        if (sr[1] === 'arcology') ok(b.megas > 0, L + ': mountain-sized arcologies (' + b.megas + ')');
+        if (sr[1] === 'floating') ok(b.islands > 4, L + ': hovering islands or cloud platforms (' + b.islands + ')');
+        ok(c.elevator && c.ring && seen.climbers > 300, L + ': the space elevator (climbers moving) and the orbital ring are in the sky');
+        ok(seen.drones > 300, L + ': drones buzz round the cities (' + seen.drones + ' frames)');
+        ok(seen.skyships > 300, L + ': sky ships drift over (' + seen.skyships + ' frames)');
+        ok(b.beacons > 0 && seen.beams > 300, L + ': light beacons with soft beams (' + b.beacons + ', ' + seen.beams + ' frames)');
+        if (!gas) ok(b.panels > 50 && b.barns > 0, L + ': solar farms and farmsteads (' + b.panels + ' panels, ' + b.barns + ' barns)');
+        if (!gas && sr[1] !== 'floating') ok(b.rail > 40 && seen.trains > 200, L + ': maglev rails with trains (' + b.rail + ' pieces, trains ' + seen.trains + ' frames)');
+        if (gas || sr[1] === 'floating') ok(!(c.tech || []).includes('maglev'), L + ': no rails between hovering islands or in the clouds');
+    });
+}
+
 // --- low detail, quality changes, determinism, eased views ---------------------------------
 {
     const w = UV.world(2024, { kind: 'planet', name: 'Test', type: 'earth' });
@@ -287,7 +336,37 @@ steerRun('steer gas', 'gas', 'storms');
     a.dispose(); b.dispose();
 }
 
-console.log('NARBE Space Explorer surface tests (creatures: ' + creaturesSource + ', ship: ' + shipSource + ')');
+// --- rare sights: a golden creature, a gentle giant and a rainbow all come into view ----------
+if (creaturesSource !== 'stub') {
+    [['earth', 3101], ['ocean', 3202], ['earth', 3303], ['desert', 3404]].forEach(function (pair, k) {
+        const w = UV.world(pair[1], { kind: 'planet', name: 'Rare', type: pair[0] });
+        w.civ = null;
+        if (!w.life || w.life.species.length < 3) w.life = { species: [11, 22, 33, 44].map(v => NSE.Util.hash('rare-sp', k, v)) };
+        w.goldSeed = w.life.species[1];
+        w.giantSeed = w.life.species[2];
+        w.rainbowSky = (pair[0] === 'earth' || pair[0] === 'ocean') && !!w.clouds && w.seaLevel >= 0;
+        const sp = NSE.Creatures.spec(w.goldSeed, w), gi = NSE.Creatures.spec(w.giantSeed, w);
+        ok(sp.golden && /^Golden /.test(sp.name) && sp.glow, 'rare ' + k + ': golden spec (' + sp.name + ')');
+        ok(gi.giant && /^Giant /.test(gi.name) && gi.size >= 3.5 && gi.size <= 12, 'rare ' + k + ': giant spec (' + gi.name + ', ' + gi.size + ' m)');
+        const s = NSE.Surface.create(THREE, w, { ship: makeShip(), detail: 'high' });
+        const cam = new THREE.PerspectiveCamera(60, 16 / 9, 0.3, 2000);
+        let f = 0;
+        for (; f < 30 * 90; f++) {
+            s.update(1 / 30, f / 30); s.setView('chase', cam);
+            const sn = s.seen();
+            if (sn.golden && sn.giant && (sn.rainbow || !w.rainbowSky)) break;
+        }
+        const sn = s.seen();
+        ok(sn.golden, 'rare ' + k + ' ' + pair[0] + ': the golden creature comes into view');
+        ok(sn.giant, 'rare ' + k + ' ' + pair[0] + ': the gentle giant comes into view');
+        if (w.rainbowSky) ok(sn.rainbow, 'rare ' + k + ' ' + pair[0] + ': the rainbow is in view');
+        console.log('  rare ' + k + ' ' + pair[0] + ': seen after ' + (f / 30).toFixed(1) + ' s ' + JSON.stringify(sn) + ' (giant ' + gi.variant + ' ' + gi.size + ' m, golden ' + sp.variant + ')');
+        s.dispose();
+        ok(s.stats().geometries === 0, 'rare ' + k + ': dispose freed everything');
+    });
+}
+
+console.log('NARBE Space Explorer surface tests (creatures: ' + creaturesSource + ', flora: ' + floraSource + ', ship: ' + shipSource + ')');
 console.log('  world                    tris  chunks  geometries freed  alt min/mean  turn  creatures  update ms avg/max');
 rows.filter(Boolean).forEach(r => console.log('  ' + r.label.padEnd(22) + String(r.tris).padStart(8) + String(r.chunks).padStart(7) + ('  ' + r.geo).padStart(12) +
     String(r.freed).padStart(6) + ('  ' + r.alt).padStart(13) + String(r.turn).padStart(6) + String(r.creatures).padStart(10) + '  ' + r.ms));

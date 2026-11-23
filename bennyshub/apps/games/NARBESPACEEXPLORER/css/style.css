@@ -313,6 +313,9 @@ body {
 .nse-prompt-q { margin: 4px 0 12px; font-size: clamp(26px, 3.2vw, 36px); }
 .nse-prompt-list { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .nse-prompt-list .nse-menu-item { min-height: 88px; font-size: clamp(28px, 3.4vw, 38px); justify-content: center; }
+/* A long label ("Find Another Galaxy") wraps inside its button instead of pushing the icon out of it. */
+.nse-prompt-list .nse-menu-label { flex: 0 1 auto; min-width: 0; line-height: 1.05; }
+.nse-card-galaxy .nse-prompt-list .nse-menu-item { font-size: clamp(24px, 2.8vw, 34px); padding-right: 16px; }
 .nse-prompt-list .nse-menu-label { flex: none; }
 
 /* The fade for going down into (and up out of) an atmosphere. */
@@ -522,6 +525,51 @@ body {
 .nse-entry-life { font-size: clamp(17px, 1.9vw, 21px); font-weight: 700; color: #a8ff9a; }
 .nse-entry-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
 .nse-entry-list .nse-menu-item { min-height: 76px; font-size: clamp(19px, 2.1vw, 25px); padding-right: 12px; }
+
+/* ------------------------------------------------------------ field guide */
+
+.nse-card-guide { width: min(1100px, 96vw); padding: 18px 22px 20px; }
+.nse-guide-stats { margin-bottom: 14px; }
+.nse-guide-cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.nse-guide-cat {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    min-height: 150px; padding: 14px 14px 16px; border-radius: 22px;
+    background: var(--tone, var(--slate));
+    box-shadow: 0 6px 0 var(--tone-lip, var(--slate-lip)), 0 10px 18px rgba(0, 0, 0, 0.3);
+    text-align: left; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); margin-bottom: 6px;
+}
+.nse-guide-cat[data-tone="green"] { --tone: var(--green); --tone-lip: var(--green-lip); }
+.nse-guide-cat[data-tone="blue"] { --tone: var(--blue); --tone-lip: var(--blue-lip); }
+.nse-guide-cat[data-tone="plum"] { --tone: var(--plum); --tone-lip: var(--plum-lip); }
+.nse-guide-cat[data-tone="teal"] { --tone: var(--teal); --tone-lip: var(--teal-lip); }
+.nse-guide-cat[data-tone="help"] { --tone: var(--help); --tone-lip: var(--help-lip); }
+.nse-guide-cat-text { display: flex; flex-direction: column; width: 100%; }
+.nse-guide-cat-name { font-size: clamp(22px, 2.4vw, 28px); font-weight: 800; line-height: 1.05; }
+.nse-guide-cat-count { font-size: clamp(16px, 1.7vw, 20px); font-weight: 800; opacity: 0.92; }
+.nse-guide-bar { display: block; height: 10px; margin-top: 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.3); overflow: hidden; }
+.nse-guide-bar-fill { display: block; height: 100%; border-radius: 6px; background: var(--yellow); }
+.nse-focus-full .nse-guide-bar-fill { background: var(--focus-ink, #1a1008); }
+.nse-guide-back { margin-top: 16px; }
+.nse-tile-unfound { background: #cbd2e8; }
+.nse-tile-unfound .nse-tile-name { color: #36406a; }
+.nse-thumb.unfound { background: radial-gradient(ellipse at 30% 30%, #18204a, #070a1c); }
+.nse-thumb.portrait { background: radial-gradient(ellipse at 50% 40%, #26386f, #070b20); }
+.nse-thumb.portrait img { object-fit: contain; }
+.nse-thumb.waiting.unfound { color: #4a5890; }
+.nse-guide-orb { width: auto; height: 62%; aspect-ratio: 1; }
+.nse-orb-unknown { display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #3a4677, #1a2148 60%, #0a0e24); }
+.nse-orb-neb { box-shadow: 0 0 26px 12px var(--glow, #f8a); }
+.nse-orb-q { font-size: 34px; font-weight: 800; color: #8fa0d8; line-height: 1; }
+.nse-thumb-q { position: absolute; right: 12px; bottom: 6px; }
+.nse-guide-tag { font-size: clamp(16px, 1.7vw, 20px); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--yellow); }
+.nse-gitem-list { grid-template-columns: repeat(2, 1fr); }
+.nse-guide-pic.waiting .nse-icon { width: 30%; height: 30%; }
+.nse-callout[data-tone="rare"] { color: #ffe27a; }
+.nse-callout[data-tone="find"] { color: #b8ffb0; }
+@media (max-width: 760px) {
+    .nse-guide-cats { grid-template-columns: repeat(2, 1fr); }
+    .nse-guide-cat { min-height: 110px; }
+}
 
 /* -------------------------------------------------------------- settings */
 

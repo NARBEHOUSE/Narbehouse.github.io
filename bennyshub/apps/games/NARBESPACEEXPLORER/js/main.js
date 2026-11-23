@@ -75,7 +75,7 @@ NSE.Game = (function () {
 
     function factsLine(w) {
         if (!S().get('facts')) return '';
-        return UV.facts(w).map(f => f.say).join(' ');
+        return UV.facts(w).map(f => f.say).filter(Boolean).join(' ');
     }
 
     function starFacts(o) {
@@ -127,6 +127,122 @@ NSE.Game = (function () {
         if (s.prompting) return { pos: s.prompting.pos, name: s.prompting.name, tone: 'ask' };
         if (s.autopilot && mode === 'fly') return { pos: s.autopilot.pos, name: s.autopilot.name, tone: 'go' };
         return null;
+    }
+
+    // --- the Field Guide --------------------------------------------------------------------------------
+
+    const callQ = [];
+    let callT = 0;
+    /** Big words across the top of the screen, one after another (each shows for about three seconds). */
+    function queueCallout(text, tone) { if (callQ.length < 4) callQ.push({ text: text, tone: tone }); }
+    function stepCallouts(dt) {
+        callT -= dt;
+        if (callT <= 0 && callQ.length) { const c = callQ.shift(); UI().callout(c.text, c.tone); callT = 3; }
+    }
+
+    function placeOf(o) { return { id: o.id, name: o.name, galaxyName: galaxy().name }; }
+    function worldLook(w) {
+        return { type: w.type, sea: w.seaLevel, rings: !!w.rings, pal: { low: w.palette.low, mid: w.palette.mid, high: w.palette.high, peak: w.palette.peak, sea: w.palette.sea } };
+    }
+    function guideName(id) { const f = NSE.Guide.item(id); return f ? f.item.name : id; }
+    function listWords(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+
+    /**
+     * Write finds into the Field Guide (finds = [{ id, where, look, say? }]). Returns the words
+     * about the new ones: { rare: 'Rare find! A comet! ...', fresh: 'New in your field guide: ...' }
+     * ('' when nothing is new), with a callout and a chime for each. opts.say speaks them now
+     * (after whatever is being said); otherwise the caller puts them in its own line.
+     */
+    function guide(finds, opts) {
+        opts = opts || {};
+        const fresh = [], rare = [];
+        finds.forEach(function (f) {
+            if (!f || !NSE.Guide.find(f.id, f.where || null, f.look || null)) return;
+            (f.id.indexOf('rare:') === 0 ? rare : fresh).push(f);
+        });
+        const out = { rare: '', fresh: '' };
+        if (!fresh.length && !rare.length) return out;
+        rare.forEach(function (f) {
+            const R = NSE.Guide.rare(f.id);
+            queueCallout('Rare find: ' + R.name + '!', 'rare');
+            out.rare += 'Rare find! ' + (f.say || R.say) + ' ';
+        });
+        if (fresh.length) {
+            queueCallout(fresh.length === 1 ? 'New: ' + guideName(fresh[0].id) : 'New in your Field Guide!', 'find');
+            out.fresh = 'New in your field guide: ' + listWords(fresh.map(f => guideName(f.id))) + '.';
+        }
+        out.rare = out.rare.trim();
+        // (A beat later, so it never lands on top of the arrival or scanner sound.)
+        const isRare = rare.length > 0;
+        setTimeout(function () { if (isRare) NSE.Sound.play('rare', 0.85); else NSE.Sound.play('find', 0.6); }, opts.soon ? 150 : 900);
+        if (opts.say) NSE.Voice.say((out.rare + ' ' + out.fresh).trim());
+        return out;
+    }
+
+    /** The kind of star a system has, as a Field Guide id. */
+    function starFind(sys) {
+        const k = sys.kind === 'binary' || sys.kind === 'nebula' || sys.kind === 'blackhole' ? sys.kind : sys.stars[0].type;
+        const star = UV.objectsOf(sys)[0];
+        return { id: 'star:' + k, where: { id: star.id, name: star.name, galaxyName: galaxy().name }, look: { kind: sys.kind, color: sys.stars[0].color, light: sys.stars[0].light, disk: sys.disk ? sys.disk.color : null, neb: sys.nebula ? sys.nebula.a : null } };
+    }
+
+    /** What a world adds to the Field Guide when you go into orbit round it. */
+    function worldFinds(o) {
+        const w = o.world, where = placeOf(o), look = worldLook(w), list = [];
+        list.push({ id: 'world:' + w.type, where: where, look: look });
+        if (w.terrain && w.terrain.style) list.push({ id: 'land:' + w.type + ':' + w.terrain.style, where: where, look: look });
+        if (w.rare) list.push({ id: 'rare:' + w.rare, where: where, look: look });
+        if (w.civ) {
+            if (w.civ.style) list.push({ id: 'civ:' + w.civ.style, where: where, look: look });
+            (w.civ.tech || []).forEach(t => list.push({ id: 'tech:' + t, where: where, look: look }));
+        }
+        return list;
+    }
+
+    // Rare sights out in space (a comet, star whales): found when they come into view.
+    function onSight(id, sys) {
+        const star = UV.objectsOf(sys)[0];
+        guide([{ id: id, where: { id: star.id, name: 'the ' + sys.name + ' system', galaxyName: galaxy().name }, look: { sys: sys.id } }], { say: true, soon: true });
+    }
+
+    let guidedSys = null, sightT = 0, sysId = null, sysT = 0;
+    /**
+     * Twice a second: the star of the system you are in (once you have been there a few seconds,
+     * so it never talks over arriving), and rare sights seen while flying low.
+     */
+    function stepGuide(dt) {
+        const sys = st().system;
+        if ((sys && sys.id) !== sysId) { sysId = sys && sys.id; sysT = 0; }
+        // Only time actually spent flying or in orbit counts (not watching a warp or a galaxy from
+        // outside), so arriving is always said first and never cut off.
+        const free = mode === 'fly' || mode === 'glide' || mode === 'orbit';
+        sysT = free ? sysT + dt : 0;
+        sightT -= dt;
+        if (sightT > 0) return;
+        sightT = 0.5;
+        let talking = NSE.Voice.busy();
+        try { if (window.speechSynthesis && window.speechSynthesis.speaking) talking = true; } catch (e) { /* none */ }
+        if (sys && sys.id !== guidedSys && sysT > 6 && !talking && free) {
+            guidedSys = sys.id;
+            guide([starFind(sys)], { say: true, soon: true });
+        }
+        if (mode === 'low' && surface && surface.seen && target && target.world) {
+            const seen = surface.seen() || {}, w = target.world, where = placeOf(target), list = [];
+            if (seen.rainbow) list.push({ id: 'rare:rainbowsky', where: where, look: worldLook(w) });
+            if (seen.golden && w.goldSeed) list.push(creatureFind('rare:golden', w.goldSeed, w, where));
+            if (seen.giant && w.giantSeed) list.push(creatureFind('rare:giant', w.giantSeed, w, where));
+            if (list.length) guide(list, { say: true, soon: true });
+        }
+    }
+
+    function creatureFind(id, seed, w, where) {
+        const f = { id: id, where: where, look: { seed: seed >>> 0 } };
+        if (id === 'rare:golden' || id === 'rare:giant') {
+            let nm = '';
+            try { nm = NSE.Creatures.spec(seed, w).name.replace(/^(Golden|Giant) /, ''); } catch (e) { /* none */ }
+            f.say = id === 'rare:golden' ? 'A golden creature! ' + (nm ? 'A rare, shining ' + nm + '.' : '') : 'A gentle giant! ' + (nm ? 'An enormous, calm ' + nm + '.' : '');
+        }
+        return f;
     }
 
     // --- music -------------------------------------------------------------------------------------------
@@ -323,7 +439,8 @@ NSE.Game = (function () {
         NSE.Sound.play('chime', 0.9);
         const what = o.kind === 'planet' ? o.label + (o.world.rings ? ' with rings' : '') : o.label;
         const people = o.kind === 'planet' && o.world.civ ? ' Its lights are on: people live there!' : '';
-        UI().show('prompt', { data: { obj: o }, line: kindWord(o) + ' ' + o.name + ', ' + what + '.' + people + ' Do you want to go here?' });
+        const rare = o.kind === 'planet' && o.world.rare ? ' Something rare here: ' + (UV.RARE_NAMES[o.world.rare] || 'a rare sight').toLowerCase() + '!' : '';
+        UI().show('prompt', { data: { obj: o }, line: kindWord(o) + ' ' + o.name + ', ' + what + '.' + people + rare + ' Do you want to go here?' });
     }
 
     function answer(yes) {
@@ -358,10 +475,13 @@ NSE.Game = (function () {
         };
         const rec = NSE.Logbook.visit(info);
         snapWait = { t: 0, o: o };
+        const found = w ? guide(worldFinds(o)) : { rare: '', fresh: '' };
         let line = 'Orbiting ' + o.name + ', ' + o.label + '. ';
-        if (w) line += factsLine(w) || (w.civ ? 'The ' + w.civ.people + ' live here, with cities and starships.' : '');
+        if (found.rare) line += found.rare + ' ';
+        if (w) line += factsLine(w) || (w.civ ? 'The ' + w.civ.people + ' live here, with ' + UV.civWords(w.civ) + '.' : '');
         else if (S().get('facts')) line += starFacts(o).slice(0, 2).join(' ');
         if (rec.first) line += ' Added to your logbook.';
+        if (found.fresh) line += ' ' + found.fresh;
         // Inhabited worlds: ships fly up to meet you, and sometimes someone calls.
         hailT = -1; hailDone = false;
         if (w && w.civ) {
@@ -371,7 +491,8 @@ NSE.Game = (function () {
             const p = { often: 0.9, sometimes: 0.45, off: 0 }[S().get('hails')];
             if (Math.random() < p) hailT = S().get('hails') === 'often' ? 7 : 11;
         }
-        UI().callout(o.name, 'good');
+        callQ.unshift({ text: o.name, tone: 'good' });
+        callT = 0;
         UI().show('orbit', { line: line.trim() });
     }
 
@@ -570,9 +691,21 @@ NSE.Game = (function () {
         NSE.Sound.play('scan', 0.7);
         const w = target.world;
         if (target.kind === 'star') { showScanner(starScan()); return; }
-        let specs = [];
-        if (mode === 'low' && surface && surface.species) specs = surface.species();
-        else if (w.life && NSE.Creatures) specs = w.life.species.map(seed => NSE.Creatures.spec(seed, w));
+        let animals = [];
+        if (mode === 'low' && surface && surface.species) animals = surface.species().slice();
+        else if (w.life && NSE.Creatures) animals = w.life.species.map(seed => NSE.Creatures.spec(seed, w));
+        // A golden creature or a gentle giant comes first, so the scanner shows it straight away.
+        const rank = s => (s.seed === w.goldSeed || s.seed === w.giantSeed ? 0 : 1);
+        animals = animals.map((s, i) => ({ s: s, i: i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map(x => x.s);
+        // Then the plants (kinds of plant to identify too).
+        let flora = [];
+        if (NSE.Flora) {
+            try {
+                if (mode === 'low' && surface && surface.flora) flora = surface.flora().slice();
+                else if (w.flora) flora = w.flora.species.map(seed => NSE.Flora.spec(seed, w)).filter(Boolean);
+            } catch (e) { flora = []; }
+        }
+        let specs = animals.concat(flora.map(p => Object.assign({}, p, { plant: true })));
         // An advanced civilisation: its people come first in the scanner, then the wildlife.
         if (w.civ && NSE.Creatures) {
             const ps = NSE.Creatures.spec(w.civ.seed, w);
@@ -581,9 +714,12 @@ NSE.Game = (function () {
         }
         if (!specs.length) { showScanner(worldScan()); return; }
         let index = 0;
-        if (mode === 'low' && surface.nearestCreature) {
-            const n = surface.nearestCreature();
-            if (n && n.spec) index = Math.max(0, specs.findIndex(x => x.seed === n.spec.seed));
+        if (mode === 'low') {
+            // The nearest animal; or the nearest plant when no animal is close.
+            const n = surface.nearestCreature ? surface.nearestCreature() : null;
+            const p = surface.nearestPlant ? surface.nearestPlant() : null;
+            const pick = n && n.spec && !(p && p.spec && n.dist !== undefined && p.dist !== undefined && p.dist < n.dist * 0.5) ? n.spec : p && p.spec ? p.spec : null;
+            if (pick) index = Math.max(0, specs.findIndex(x => !x.people && x.seed === pick.seed));
         }
         scanList = specs;
         showScanner(creatureScan(index));
@@ -592,14 +728,35 @@ NSE.Game = (function () {
     function creatureScan(i) {
         const spec = scanList[i];
         if (spec.people) return peopleScan(i, spec);
+        if (spec.plant) return plantScan(i, spec);
         const lines = NSE.Creatures.words ? NSE.Creatures.words(spec) : [spec.sizeWords, spec.moveWords, spec.fact, spec.sound];
         const fresh = NSE.Logbook.addCreature(target.id, spec.name);
+        const w = target.world, where = placeOf(target);
+        NSE.Guide.species('animals', spec.seed);
+        const finds = [creatureFind('animal:' + spec.variant, spec.seed, w, where)];
+        if (w.goldSeed === spec.seed) finds.push(creatureFind('rare:golden', spec.seed, w, where));
+        if (w.giantSeed === spec.seed) finds.push(creatureFind('rare:giant', spec.seed, w, where));
+        const g = guide(finds);
         return {
-            kind: 'creature', index: i, count: scanList.length, nextLabel: 'Next Creature',
+            kind: 'creature', index: i, count: scanList.length, nextLabel: 'Next',
             name: spec.name, what: 'Lives on ' + target.name,
-            lines: lines.filter(l => !/^This is /.test(l)),
-            speech: 'Scanning. ' + lines.join(' ') + (fresh ? ' New in your logbook!' : ''),
+            lines: lines.filter(l => l && !/^This is /.test(l)),
+            speech: 'Scanning. ' + (g.rare ? g.rare + ' ' : '') + lines.filter(Boolean).join(' ') + (fresh ? ' New in your logbook!' : '') + (g.fresh ? ' ' + g.fresh : ''),
             viewer: { kind: 'creature', subject: spec }
+        };
+    }
+
+    /** A plant: what it is, how big, and something about it. */
+    function plantScan(i, spec) {
+        const lines = (NSE.Flora && NSE.Flora.words ? NSE.Flora.words(spec) : [spec.sizeWords, spec.fact]).filter(Boolean);
+        NSE.Guide.species('plants', spec.seed);
+        const g = guide([{ id: 'plant:' + spec.kind, where: placeOf(target), look: { seed: spec.seed >>> 0 } }]);
+        return {
+            kind: 'plant', index: i, count: scanList.length, nextLabel: 'Next',
+            name: spec.name, what: 'Grows on ' + target.name,
+            lines: lines.filter(l => !/^This is /.test(l)),
+            speech: 'Scanning. ' + lines.join(' ') + (g.fresh ? ' ' + g.fresh : ''),
+            viewer: { kind: 'plant', subject: spec }
         };
     }
 
@@ -625,8 +782,8 @@ NSE.Game = (function () {
 
     function worldScan() {
         const w = target.world;
-        const facts = UV.facts(w);
-        const ground = { ice: 'Frozen ground and ice.', ocean: 'Deep blue seas with little islands.', earth: 'Land, water and clouds, a bit like home.', desert: 'Sand dunes and rocky cliffs.', lava: 'Rivers of glowing melted rock.', crystal: 'Giant shining crystals.', toxic: 'Green bubbling pools and thick haze.', gas: 'No ground at all, just swirling clouds, deeper and deeper.', rock: 'Grey dust and craters.' }[w.type];
+        const facts = UV.facts(w).filter(f => f.say);
+        const ground ={ ice: 'Frozen ground and ice.', ocean: 'Deep blue seas with little islands.', earth: 'Land, water and clouds, a bit like home.', desert: 'Sand dunes and rocky cliffs.', lava: 'Rivers of glowing melted rock.', crystal: 'Giant shining crystals.', toxic: 'Green bubbling pools and thick haze.', gas: 'No ground at all, just swirling clouds, deeper and deeper.', rock: 'Grey dust and craters.' }[w.type];
         return {
             kind: 'world', index: 0, count: 1, name: w.name, what: w.label.charAt(0).toUpperCase() + w.label.slice(1),
             lines: [ground].concat(facts.map(f => f.say)).concat(w.life || UV.plants(w) ? [] : ['No creatures found here.']),
@@ -640,7 +797,10 @@ NSE.Game = (function () {
         return {
             kind: 'star', index: 0, count: 1, name: target.name, what: target.short,
             lines: lines, speech: 'Scanning ' + target.name + '. ' + lines.join(' '),
-            viewer: target.special === 'blackhole' ? null : { kind: 'star', subject: target.star }
+            // Every star shows: a black hole with its disk, both stars of a pair, a star in its nebula.
+            viewer: target.special === 'blackhole' ? { kind: 'blackhole', subject: target.sys }
+                : target.pair ? { kind: 'binary', subject: target.sys }
+                    : { kind: 'star', subject: target.star, extra: target.special === 'nebula' ? { nebula: target.sys } : null }
         };
     }
 
@@ -943,6 +1103,19 @@ NSE.Game = (function () {
         // Faint speed lines on a long fast glide (Nearby Stars), unless a warp or a dive owns them.
         if (!warp && !trans && !gflow) NSE.Space.setWarp(st().mode === 'travel' ? U.clamp((st().speedNow - 500) / 2500, 0, S().calm() ? 0.12 : 0.3) : 0);
         if (gflow) stepGalaxy(rawDt);
+        stepCallouts(rawDt);
+        if (mode !== 'menu' && dt > 0) {
+            stepGuide(dt);
+            if (NSE.Sights) {
+                const sc = UI().current(), s = st();
+                NSE.Sights.update(dt, {
+                    shipPos: s.pos, shipFwd: NSE.Flight.forwardOf(s.yaw, s.pitch), calm: S().calm(),
+                    free: (sc === 'fly' || sc === 'steer' || sc === 'glide') && mode !== 'warp' && !NSE.Stage.surveying(),
+                    looking: (sc === 'fly' || sc === 'steer' || sc === 'glide' || sc === 'orbit' || sc === 'prompt' || sc === 'system') && NSE.Stage.mode() === 'space',
+                    project: NSE.Stage.project
+                });
+            }
+        }
         NSE.UI.tick();
         NSE.Sound.update(rawDt);
         musicT -= rawDt;
@@ -995,7 +1168,8 @@ NSE.Game = (function () {
         flight.on('discover', onDiscover);
         flight.on('arrive', onArrive);
         flight.on('left', onLeft);
-        flight.on('system', function (sys) { NSE.Space.setSystem(sys); });
+        flight.on('system', function (sys) { NSE.Space.setSystem(sys); if (NSE.Sights) NSE.Sights.setSystem(sys); });
+        if (NSE.Sights) NSE.Sights.onFound(onSight);
 
         NSE.Stage.setView(S().get('view'));
         NSE.Stage.init(NSE.UI.stageEl(), flight).then(function () {
@@ -1012,6 +1186,7 @@ NSE.Game = (function () {
             flight.place(g, start.pos, start.yaw, start.pitch);
             flight.setHeld(true);
             NSE.Space.setSystem(st().system);
+            if (NSE.Sights) NSE.Sights.setSystem(st().system);
             NSE.Stage.setMenu(true);
             NSE.Stage.onFrame(frame);
             mode = 'menu';
@@ -1034,7 +1209,8 @@ NSE.Game = (function () {
                 galaxy: s.galaxy, system: s.system ? s.system.name : null, target: target ? target.name : null,
                 prompting: s.prompting ? s.prompting.name : null, autopilot: s.autopilot ? s.autopilot.name : null,
                 view: NSE.Stage.view(), paused: NSE.Stage.paused(), logbook: NSE.Logbook.list().length,
-                warp: !!warp, surface: !!surface, survey: NSE.Stage.surveying()
+                warp: !!warp, surface: !!surface, survey: NSE.Stage.surveying(),
+                guide: NSE.Guide ? NSE.Guide.stats() : null, sights: NSE.Sights ? NSE.Sights.state() : null
             };
         };
         window.__nseFlight = flight;

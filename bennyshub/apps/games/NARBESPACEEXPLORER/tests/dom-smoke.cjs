@@ -440,6 +440,25 @@ async function session(label, scan, full) {
         await until(() => w.spoken.some(s => s.text.indexOf(first.name) === 0), 4000, 'the entry to be read aloud');
         await choose('entry:next');
         await choose('entry:back'); await screen('logbook');
+        // The Field Guide: its sections, a page of finds (silhouettes until found), a find, and back.
+        const gs = w.NSE.Guide.stats();
+        if (gs.found < 3) fail('the trip found too little for the field guide (' + gs.found + ')');
+        await choose('log:guide'); await screen('guide');
+        await blank('guide');
+        await until(() => w.spoken.some(s => /^Field Guide\. You have found \d+ of \d+/.test(s.text)), 4000, 'the field guide to be read aloud');
+        await choose('guide:worlds'); await screen('gpage');
+        await blank('gpage');
+        const foundWorld = w.NSE.Guide.cats().find(c => c.id === 'worlds').items.find(it => w.NSE.Guide.has(it.id));
+        if (!foundWorld) fail('no world in the field guide after orbiting worlds');
+        await choose('gp:' + foundWorld.id); await screen('gitem');
+        await until(() => w.spoken.some(s => s.text.indexOf(foundWorld.name) === 0), 4000, 'the find to be read aloud');
+        await choose('gi:back'); await screen('gpage');
+        await choose('gp:back'); await screen('guide');
+        if ((w.NSE.Input.state() || {}).id !== 'guide:worlds') fail('Back did not return to the same section');
+        await choose('guide:animals'); await screen('gpage');
+        if (w.NSE.Guide.cats().find(c => c.id === 'animals').items.length > 9) { await choose('gp:more'); await screen('gpage'); }
+        await choose('gp:back'); await screen('guide');
+        await choose('guide:back'); await screen('logbook');
         await choose('log:back'); await screen('pause');
         await choose('pause:continue'); await screen('fly');
         if (dbg().paused) fail('Continue did not resume');

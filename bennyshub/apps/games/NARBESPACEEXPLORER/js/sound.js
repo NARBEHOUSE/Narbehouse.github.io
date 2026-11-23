@@ -475,6 +475,32 @@ NSE.Sound = (function () {
         }
         swell(o, c - 0.5, 0.5, 0.6, 'bandpass', 380, 900, 260, 0.55, 1.2);
     });
+    // Something new for the Field Guide: three small bells stepping up over a soft low note.
+    add('find', 1.3, 0.4, o => {
+        held(o, 0, 'sine', 392, 392, 0.3, 0.08, 0.1, 0.7);
+        bell(o, 0.02, 659.25, 0.55, 0.9);
+        bell(o, 0.14, 783.99, 0.5, 0.95);
+        bell(o, 0.26, 1046.5, 0.42, 1.0);
+    });
+    // A rare find: a slow glistening shimmer, a long rising run of bells over a warm chord, and a
+    // faint sparkle on top. Bigger than the field-guide bells, gentler than the discovery chime.
+    add('rare', 2.8, 0.52, o => {
+        [['C3', 0.2], ['G3', 0.16], ['E4', 0.12]].forEach(p => {
+            const f = N[p[0]];
+            held(o, 0, 'sine', f, f, 1.2, p[1], 0.5, 1.3);
+            held(o, 0, 'sine', f * 1.004, f * 1.004, 1.2, p[1] * 0.7, 0.6, 1.3);
+        });
+        [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66].forEach((f, i) => bell(o, 0.1 + i * 0.13, f, 0.36 - i * 0.02, 1.3));
+        [[1.05, 2093], [1.17, 2349.3], [1.29, 2637], [1.41, 3136]].forEach(s => tone(o, s[0], 'sine', s[1], s[1], 0.5, 0.025, 0.012));
+    });
+    // Star whales singing: long, low gliding calls with a slow waver, far away and soft.
+    for (let v = 0; v < 2; v++) add('whale', 4.4, 0.34, o => {
+        const a = rand(150, 175), b = rand(230, 270), c = rand(120, 140);
+        held(o, 0, 'sine', a, b, 1.5, 0.42, 0.7, 1.1, { depth: 0.012, rate: rand(2.4, 3.2) });
+        held(o, 0, 'sine', a * 2, b * 2, 1.5, 0.05, 0.8, 1.0);
+        held(o, 1.9, 'sine', b, c, 1.3, 0.36, 0.6, 1.0, { depth: 0.015, rate: rand(2, 2.8) });
+        held(o, 1.9, 'sine', b * 1.5, c * 1.5, 1.3, 0.04, 0.7, 0.9);
+    });
 
     // The music: each kind of star its own character, all calm, all on C D E G A.
     // Yellow sun: warm and bright-ish, a kalimba strolling over warm chords.

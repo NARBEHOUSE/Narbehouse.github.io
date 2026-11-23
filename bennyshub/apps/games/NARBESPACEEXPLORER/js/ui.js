@@ -99,9 +99,40 @@ NSE.UI = (function () {
             galaxy: svg('<path d="M24 24c0-6 8-8 12-3 5 6-1 17-12 17S6 30 8 20 22 4 32 8"/><circle cx="24" cy="24" r="3" class="nse-dot"/>'),
             prev: svg('<path d="M30 12 18 24l12 12"/>'),
             fwd: svg('<path d="M18 12l12 12-12 12"/>'),
-            planet: svg('<circle cx="24" cy="24" r="11"/><ellipse cx="24" cy="24" rx="21" ry="7" transform="rotate(-20 24 24)"/>')
+            planet: svg('<circle cx="24" cy="24" r="11"/><ellipse cx="24" cy="24" rx="21" ry="7" transform="rotate(-20 24 24)"/>'),
+            // The Field Guide and what is in it.
+            guide: svg('<path d="M8 10h13a4 4 0 0 1 4 4v26a3 3 0 0 0-3-3H8z"/><path d="M40 10H27a4 4 0 0 0-4 4v26a3 3 0 0 1 3-3h14z"/><path d="M29 30c0-7 4-11 9-12 0 7-3 11-9 12z"/>'),
+            paw: svg('<circle cx="14" cy="20" r="3.6"/><circle cx="21" cy="13" r="3.6"/><circle cx="29" cy="13" r="3.6"/><circle cx="36" cy="20" r="3.6"/><path d="M14 34c0-6 5-11 11-11s11 5 11 11c0 4-4 6-11 6s-11-2-11-6z"/>'),
+            leaf: svg('<path d="M10 38C10 20 22 9 40 8c0 18-11 30-29 30z"/><path d="M10 38 30 18"/>'),
+            city: svg('<path d="M5 41h38"/><path d="M9 41V24h8v17M20 41V11h8v30M31 41V27h8v14"/><path d="M24 11V5"/><path d="M23 17h2M23 23h2M23 29h2"/>'),
+            sparkle: svg('<path d="M22 6l3.5 11.5L37 21l-11.5 3.5L22 36l-3.5-11.5L7 21l11.5-3.5z"/><path d="M38 32l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>'),
+            comet: svg('<circle cx="34" cy="14" r="5.5"/><path d="M29 18 8 40M33 20 17 41M27 15 7 32"/>'),
+            whale: svg('<path d="M5 25c3-8 14-12 24-9 6 2 8 6 8 9-6 7-22 9-32 0z"/><path d="M37 24l6-7v14z"/><circle cx="13" cy="23" r="1.8" class="nse-dot"/><path d="M14 30c2 3 4 4 7 4"/>'),
+            rainbow: svg('<path d="M5 37a19 19 0 0 1 38 0"/><path d="M11 37a13 13 0 0 1 26 0"/><path d="M17 37a7 7 0 0 1 14 0"/>'),
+            rings2: svg('<circle cx="24" cy="24" r="8"/><ellipse cx="24" cy="24" rx="20" ry="6" transform="rotate(-20 24 24)"/><ellipse cx="24" cy="24" rx="16" ry="4.5" transform="rotate(28 24 24)"/>'),
+            glowsea: svg('<path d="M5 31c5-4 9-4 14 0s9 4 14 0 8-4 10-1"/><path d="M5 39c5-4 9-4 14 0s9 4 14 0 8-4 10-1"/><circle cx="15" cy="18" r="2.2" class="nse-dot"/><circle cx="28" cy="13" r="2.2" class="nse-dot"/><circle cx="37" cy="21" r="1.8" class="nse-dot"/>'),
+            aurora: svg('<path d="M5 29c6-14 10-18 14-6s8 8 12-4 8-6 12 2"/><path d="M5 39c6-10 10-12 14-4s8 6 12-2 8-4 12 2"/>'),
+            ringmoon: svg('<path d="M27 12a11 11 0 1 0 7 19 9 9 0 0 1-7-19z"/><ellipse cx="24" cy="24" rx="20" ry="5.5" transform="rotate(-15 24 24)"/>'),
+            giant: svg('<path d="M5 34c0-10 8-18 20-18 8 0 14 5 15 12l3 1-3 2v5H5z"/><path d="M11 34v6M19 34v6M29 34v6M37 34v6"/><circle cx="34" cy="24" r="1.8" class="nse-dot"/>'),
+            train: svg('<rect x="7" y="13" width="34" height="17" rx="8"/><path d="M6 37h36"/><path d="M14 21h7M26 21h7"/>'),
+            elevator: svg('<circle cx="24" cy="39" r="5"/><path d="M24 34V5"/><rect x="19" y="13" width="10" height="6" rx="2"/>'),
+            drone: svg('<rect x="17" y="21" width="14" height="9" rx="3"/><path d="M8 16h10M30 16h10M13 16v7M35 16v7"/>'),
+            skyship: svg('<path d="M7 21c0-5 8-8 17-8s17 3 17 8-8 8-17 8-17-3-17-8z"/><path d="M17 29l-2 7h18l-2-7"/>'),
+            beacon: svg('<path d="M19 43l3-26h4l3 26z"/><path d="M24 11V5M13 9l5 4M35 9l-5 4"/>'),
+            solar: svg('<path d="M7 35l6-17h28l-6 17z"/><path d="M10 27h28M21 18l-4 17M31 18l-4 17"/>'),
+            farm: svg('<rect x="6" y="10" width="36" height="28" rx="3"/><path d="M6 24h36M24 10v28M6 17h18M24 31h18"/>'),
+            dome: svg('<path d="M8 38a16 16 0 0 1 32 0z"/><path d="M5 38h38"/><path d="M20 38v-6h8v6M16 26h16"/>'),
+            tree: svg('<path d="M24 42V24"/><path d="M24 26c-9 0-14-5-14-11 0-5 6-9 14-9s14 4 14 9c0 6-5 11-14 11z"/><path d="M18 30l6-4 6 4"/>')
         };
     })();
+
+    /** Each Field Guide find's picture when there is no photo or model: an icon. */
+    const FIND_ICON = {
+        'rare:comet': 'comet', 'rare:whales': 'whale', 'rare:rainbow': 'planet', 'rare:doublering': 'rings2', 'rare:glowsea': 'glowsea', 'rare:aurora': 'aurora',
+        'rare:ringedmoon': 'ringmoon', 'rare:rainbowsky': 'rainbow', 'rare:golden': 'sparkle', 'rare:giant': 'giant',
+        'civ:spires': 'city', 'civ:organic': 'tree', 'civ:domes': 'dome', 'civ:arcology': 'city', 'civ:floating': 'skyship', 'civ:crystal': 'sparkle',
+        'tech:ring': 'planet', 'tech:elevator': 'elevator', 'tech:maglev': 'train', 'tech:skyships': 'skyship', 'tech:drones': 'drone', 'tech:beacons': 'beacon', 'tech:solar': 'solar', 'tech:farms': 'farm'
+    };
 
     function menuItem(parent, label, icon, tone) {
         const b = button('nse-menu-item', parent);
@@ -350,7 +381,44 @@ NSE.UI = (function () {
         el.logGrid = node('div', 'nse-grid', lb);
         el.logFoot = node('div', 'nse-log-foot', lb);
         el.logMore = menuItem(el.logFoot, 'More Pages', 'fwd', 'blue');
+        el.logGuide = menuItem(el.logFoot, 'Field Guide', 'guide', 'help');
         el.logBack = menuItem(el.logFoot, 'Back', 'back', 'slate');
+
+        // The Field Guide: its sections (Worlds, Landscapes, Stars, Animals, Plants, Civilisations,
+        // Rare Sights), each with how many of its finds you have.
+        el.guide = node('section', 'nse-screen', el.root);
+        const gd = node('div', 'nse-card nse-card-guide', el.guide);
+        node('h2', 'nse-title', gd, 'Field Guide');
+        el.guideStats = node('p', 'nse-sub nse-guide-stats', gd, '');
+        el.guideCats = node('div', 'nse-guide-cats', gd);
+        el.guideBack = menuItem(gd, 'Back', 'back', 'slate');
+        el.guideBack.classList.add('nse-guide-back');
+
+        // One section: pages of finds (silhouettes with a hint until found).
+        el.gpage = node('section', 'nse-screen', el.root);
+        const gp = node('div', 'nse-card nse-card-log nse-card-gpage', el.gpage);
+        const gph = node('div', 'nse-log-head', gp);
+        el.gpTitle = node('h2', 'nse-title', gph, '');
+        el.gpPage = node('span', 'nse-page-label', gph);
+        el.gpStats = node('p', 'nse-sub nse-log-stats', gp, '');
+        el.gpGrid = node('div', 'nse-grid nse-guide-grid', gp);
+        const gpf = node('div', 'nse-log-foot', gp);
+        el.gpMore = menuItem(gpf, 'More Pages', 'fwd', 'blue');
+        el.gpBack = menuItem(gpf, 'Back', 'back', 'slate');
+
+        // One find: its picture, what it is, where you found it, and Visit Again.
+        el.gitem = node('section', 'nse-screen', el.root);
+        const gi = node('div', 'nse-card nse-card-entry nse-card-gitem', el.gitem);
+        const gib = node('div', 'nse-entry-body', gi);
+        el.giPic = node('div', 'nse-thumb nse-entry-pic nse-guide-pic', gib);
+        const git = node('div', 'nse-entry-text', gib);
+        el.giTag = node('div', 'nse-guide-tag', git);
+        el.giName = node('h2', 'nse-title nse-entry-name', git);
+        el.giWhat = node('div', 'nse-entry-what', git);
+        el.giWhere = node('div', 'nse-entry-where', git);
+        el.giList = node('div', 'nse-entry-list nse-gitem-list', gi);
+        el.giVisit = menuItem(el.giList, 'Visit Again', 'rocket', 'green');
+        el.giBack = menuItem(el.giList, 'Back', 'back', 'slate');
 
         // One logbook entry.
         el.entry = node('section', 'nse-screen', el.root);
@@ -403,7 +471,7 @@ NSE.UI = (function () {
 
     // --- screens ------------------------------------------------------------------------------
 
-    const CARDS = ['loading', 'error', 'menu', 'prompt', 'moons', 'scanner', 'hail', 'map', 'galaxy', 'system', 'pause', 'logbook', 'entry', 'settings', 'help'];
+    const CARDS = ['loading', 'error', 'menu', 'prompt', 'moons', 'scanner', 'hail', 'map', 'galaxy', 'system', 'pause', 'logbook', 'entry', 'guide', 'gpage', 'gitem', 'settings', 'help'];
     /** HUD screens (the 3D view with buttons): fly, glide, orbit, low; warp shows nothing. */
     const HUDS = ['fly', 'steer', 'glide', 'orbit', 'low'];
 
@@ -428,6 +496,9 @@ NSE.UI = (function () {
         if (name === 'help') renderHelp();
         if (name === 'logbook') renderLogbook();
         if (name === 'entry') renderEntry();
+        if (name === 'guide') renderGuide();
+        if (name === 'gpage') renderGuidePage();
+        if (name === 'gitem') renderGuideItem();
         if (name === 'prompt') renderPrompt();
         if (name === 'moons') renderMoons();
         if (name === 'scanner') renderScanner();
@@ -450,6 +521,9 @@ NSE.UI = (function () {
             case 'help': return 'How to play. Choose the title to hear the directions.';
             case 'logbook': return logLine();
             case 'entry': return entrySpeech();
+            case 'guide': return guideLine();
+            case 'gpage': return guidePageLine();
+            case 'gitem': return guideItemSpeech();
             case 'map': return mapLine();
             case 'moons': return 'Visit a moon. Pick one.';
             case 'system': return systemLine();
@@ -637,7 +711,7 @@ NSE.UI = (function () {
         el.sNext.hidden = !(d.count > 1);
         el.sNext.querySelector('.nse-menu-label').textContent = d.nextLabel || 'Next Creature';
         // The 3D view fills the viewer box once the card is laid out.
-        requestAnimationFrame(function () { if (screen === 'scanner' && d.viewer) NSE.Stage.showViewer(d.viewer.kind, d.viewer.subject, el.viewerWin); });
+        requestAnimationFrame(function () { if (screen === 'scanner' && d.viewer) NSE.Stage.showViewer(d.viewer.kind, d.viewer.subject, el.viewerWin, d.viewer.extra); });
     }
     function scannerScannables() {
         const list = [];
@@ -883,6 +957,7 @@ NSE.UI = (function () {
                     if (w.moons.length) { tags.push(U.plural(w.moons.length, 'moon')); words.push(U.plural(w.moons.length, 'moon')); }
                     if (w.civ) { tags.push('People'); words.push('people live here'); }
                     else if (w.life) { tags.push('Life'); words.push('something lives here'); }
+                    if (w.rare) { tags.push('Rare!'); words.push('something rare here: ' + (NSE.Universe.RARE_NAMES[w.rare] || 'a rare sight').toLowerCase()); }
                 } else words.push('the star');
                 if (NSE.Logbook.get(o.id)) { tags.push('Visited'); words.push('visited'); }
                 const pin = makePin(o.name);
@@ -1009,9 +1084,9 @@ NSE.UI = (function () {
     function logPages() { return Math.max(1, Math.ceil(NSE.Logbook.list().length / PER_PAGE)); }
     function logLine() {
         const n = NSE.Logbook.list().length;
-        if (!n) return 'Logbook. Nothing here yet. Go into orbit somewhere and it is written here by itself.';
-        const st = NSE.Logbook.stats();
-        return 'Logbook. ' + U.plural(st.places, 'place') + ' visited' + (st.creatures ? ', ' + U.plural(st.creatures, 'creature') + ' scanned' : '') + '.' + (logPages() > 1 ? ' Page ' + (logPage + 1) + ' of ' + logPages() + '.' : '');
+        if (!n) return 'Logbook. Nothing here yet. Go into orbit somewhere and it is written here by itself. The Field Guide is here too.';
+        const st = NSE.Logbook.stats(), g = NSE.Guide.stats();
+        return 'Logbook. ' + U.plural(st.places, 'place') + ' visited' + (st.creatures ? ', ' + U.plural(st.creatures, 'creature') + ' scanned' : '') + '. Field Guide, ' + g.found + ' of ' + g.total + ' found.' + (logPages() > 1 ? ' Page ' + (logPage + 1) + ' of ' + logPages() + '.' : '');
     }
 
     let logItems = [];
@@ -1044,7 +1119,196 @@ NSE.UI = (function () {
     function logScannables() {
         const list = logItems.slice();
         if (logPages() > 1) list.push({ id: 'log:more', el: el.logMore, speak: () => 'More pages. Page ' + ((logPage + 1) % logPages() + 1) + ' of ' + logPages(), action: () => { logPage = (logPage + 1) % logPages(); show('logbook'); } });
+        list.push({ id: 'log:guide', el: el.logGuide, speak: () => { const g = NSE.Guide.stats(); return 'Field Guide. ' + g.found + ' of ' + g.total + ' found.'; }, action: () => show('guide') });
         list.push({ id: 'log:back', el: el.logBack, speak: 'Back', action: () => show(logFrom === 'pause' ? 'pause' : 'menu') });
+        return list;
+    }
+
+    // --- the Field Guide ---------------------------------------------------------------------------------
+
+    let guideCat = 0, guidePage = 0, guideItemId = null;
+    const GPER = 9;
+    const pics = new Map();       // picture cache (portraits are drawn once)
+
+    function gcats() { return NSE.Guide.cats(); }
+    function gcat() { const c = gcats(); return c[Math.max(0, Math.min(c.length - 1, guideCat))]; }
+    function gpages() { return Math.max(1, Math.ceil(gcat().items.length / GPER)); }
+
+    function guideLine() {
+        const g = NSE.Guide.stats();
+        return 'Field Guide. You have found ' + g.found + ' of ' + g.total + '.' + (g.animals || g.plants ? ' ' + U.plural(g.animals, 'kind') + ' of animal and ' + U.plural(g.plants, 'kind') + ' of plant identified.' : ' Explore, scan and fly low to fill it in.');
+    }
+    function guidePageLine() {
+        const c = gcat();
+        return c.name + '. ' + NSE.Guide.count(c) + ' of ' + c.items.length + ' found.' + (gpages() > 1 ? ' Page ' + (guidePage + 1) + ' of ' + gpages() + '.' : '');
+    }
+
+    function capsuleWords(g) {
+        return g.found + ' of ' + g.total + ' found' + (g.animals || g.plants ? ' · ' + U.plural(g.animals, 'animal') + ' and ' + U.plural(g.plants, 'plant') + ' identified' : '');
+    }
+
+    let guideItems = [];
+    function renderGuide() {
+        const g = NSE.Guide.stats();
+        el.guideStats.textContent = capsuleWords(g);
+        el.guideCats.innerHTML = '';
+        guideItems = [];
+        gcats().forEach(function (c, i) {
+            const n = NSE.Guide.count(c), all = c.items.length;
+            const b = button('nse-guide-cat', el.guideCats);
+            b.dataset.tone = c.tone;
+            node('span', 'nse-icon-chip', b).innerHTML = ICON[c.icon] || ICON.star;
+            const t = node('span', 'nse-guide-cat-text', b);
+            node('span', 'nse-guide-cat-name', t, c.name);
+            node('span', 'nse-guide-cat-count', t, n + ' of ' + all);
+            const bar = node('span', 'nse-guide-bar', t);
+            node('span', 'nse-guide-bar-fill', bar).style.width = Math.round(n / Math.max(1, all) * 100) + '%';
+            guideItems.push({ id: 'guide:' + c.id, el: b, speak: c.name + ', ' + n + ' of ' + all + ' found', action: () => { guideCat = i; guidePage = 0; show('gpage'); } });
+        });
+        guideItems.push({ id: 'guide:back', el: el.guideBack, speak: 'Back', action: () => show('logbook', { restore: 'log:guide' }) });
+    }
+
+    /** The world (planet or moon) a find was made on, rebuilt from its id (worlds come from seeds). */
+    function worldAt(id) {
+        try { const f = NSE.Universe.findById(id); return f ? (f.moon || f.planet || null) : null; } catch (e) { return null; }
+    }
+
+    /** A CSS planet from a remembered palette (or a dark silhouette). */
+    function lookOrb(parent, look, unknown) {
+        const d = node('span', 'nse-orb nse-guide-orb', parent);
+        if (unknown || !look) { d.classList.add('nse-orb-unknown'); node('span', 'nse-orb-q', d, '?'); return d; }
+        if (look.pal) {
+            const p = look.pal;
+            d.style.background = 'radial-gradient(circle at 35% 30%, ' + p.high + ', ' + p.mid + ' 45%, ' + (look.sea > 0.3 ? p.sea : p.low) + ' 80%, #05060f 100%)';
+            if (look.rings) node('span', 'nse-orb-ring', d);
+        } else if (look.kind === 'blackhole') {
+            d.classList.add('nse-orb-hole'); d.style.setProperty('--glow', look.disk || '#ffb070');
+        } else if (look.color) {
+            d.classList.add('nse-orb-star');
+            d.style.background = 'radial-gradient(circle at 50% 50%, #ffffff, ' + look.color + ' 55%, ' + look.color + ')';
+            d.style.setProperty('--glow', look.neb || look.color);
+            if (look.kind === 'binary') d.classList.add('nse-orb-pair');
+            if (look.kind === 'nebula') d.classList.add('nse-orb-neb');
+        }
+        return d;
+    }
+
+    /** An image (portrait or logbook photo) into a picture box; false if there is none. */
+    function putImg(box, url) {
+        if (!url) return false;
+        const img = node('img', '', box);
+        img.src = url;
+        img.alt = '';
+        return true;
+    }
+
+    /** A creature or plant portrait (cached): its model, or its silhouette if not found yet. */
+    function portraitOf(kind, spec, silhouette) {
+        if (!spec || !NSE.Stage.portrait) return null;
+        const key = kind + ':' + (spec.seed >>> 0) + ':' + (spec.variant || spec.kind || '') + (silhouette ? ':s' : '');
+        if (pics.has(key)) return pics.get(key);
+        const url = NSE.Stage.portrait(kind === 'plant' ? 'plant' : 'creature', spec, { silhouette: silhouette });
+        pics.set(key, url);
+        return url;
+    }
+
+    /**
+     * The picture for a find: a logbook photo of where it was found, a portrait of the creature or
+     * plant, a coloured planet or star, or its icon. Not found yet: a dark silhouette.
+     */
+    function guidePicture(box, cat, it) {
+        box.innerHTML = '';
+        box.classList.remove('waiting', 'unfound', 'portrait');
+        const rec = NSE.Guide.get(it.id);
+        const found = !!rec;
+        if (!found) box.classList.add('unfound');
+        const photo = rec && rec.where && rec.where.id && NSE.Logbook.get(rec.where.id);
+        try {
+            if (cat.id === 'animals' || cat.id === 'plants' || it.id === 'rare:golden' || it.id === 'rare:giant') {
+                const isPlant = cat.id === 'plants';
+                let spec = null;
+                if (found && rec.look && rec.look.seed !== undefined) {
+                    const w = worldAt(rec.where && rec.where.id);
+                    spec = isPlant ? (NSE.Flora && w ? NSE.Flora.spec(rec.look.seed, w) : null) : (NSE.Creatures && w ? NSE.Creatures.spec(rec.look.seed, w) : null);
+                } else if (!found && (cat.id === 'animals' || cat.id === 'plants')) {
+                    const M = isPlant ? NSE.Flora : NSE.Creatures;
+                    spec = M && M.example ? M.example(it.kind) : null;
+                }
+                if (spec && putImg(box, portraitOf(isPlant ? 'plant' : 'creature', spec, !found))) { box.classList.add('portrait'); return; }
+            }
+            if (cat.id === 'worlds' || cat.id === 'lands') {
+                if (found && photo && photo.picture && putImg(box, photo.picture)) return;
+                box.classList.add('waiting');
+                lookOrb(box, rec && rec.look, !found);
+                return;
+            }
+            if (cat.id === 'stars') { box.classList.add('waiting'); lookOrb(box, rec && rec.look, !found); return; }
+            if (found && photo && photo.picture && it.id !== 'rare:comet' && it.id !== 'rare:whales' && it.id !== 'rare:rainbowsky' && putImg(box, photo.picture)) return;
+        } catch (e) { box.innerHTML = ''; }
+        box.classList.add('waiting');
+        box.innerHTML = ICON[FIND_ICON[it.id] || (cat.id === 'plants' ? 'leaf' : cat.id === 'animals' ? 'paw' : cat.icon)] || ICON.star;
+        if (!found) node('span', 'nse-orb-q nse-thumb-q', box, '?');
+    }
+
+    function whereLine(rec) {
+        if (!rec || !rec.where) return '';
+        const w = rec.where;
+        return 'Found at ' + w.name + (w.galaxyName ? ' in the ' + w.galaxyName + ' Galaxy' : '') + '.';
+    }
+
+    let gpageItems = [];
+    function renderGuidePage() {
+        const c = gcat();
+        guidePage = Math.max(0, Math.min(gpages() - 1, guidePage));
+        el.gpTitle.textContent = c.name;
+        el.gpPage.textContent = gpages() > 1 ? 'Page ' + (guidePage + 1) + ' of ' + gpages() : '';
+        el.gpStats.textContent = NSE.Guide.count(c) + ' of ' + c.items.length + ' found';
+        el.gpGrid.innerHTML = '';
+        gpageItems = [];
+        const slice = c.items.slice(guidePage * GPER, guidePage * GPER + GPER);
+        for (let i = 0; i < GPER; i++) {
+            const it = slice[i];
+            if (!it) { node('div', 'nse-tile nse-tile-empty', el.gpGrid); continue; }
+            const rec = NSE.Guide.get(it.id);
+            const t = button('nse-tile nse-guide-tile' + (rec ? '' : ' nse-tile-unfound'), el.gpGrid);
+            guidePicture(node('span', 'nse-thumb', t), c, it);
+            const cap = node('span', 'nse-tile-cap', t);
+            node('span', 'nse-tile-name', cap, it.name);
+            node('span', 'nse-tile-count', cap, rec ? (rec.where ? 'Found at ' + rec.where.name : 'Found') : it.hint || 'Not found yet');
+            gpageItems.push({
+                id: 'gp:' + it.id, el: t,
+                speak: rec ? it.name + '. ' + whereLine(rec) : 'Not found yet: ' + it.name + '. ' + (it.hint || ''),
+                action: rec ? () => { guideItemId = it.id; show('gitem'); } : () => NSE.Input.announce(it.name + ': not found yet. ' + (it.hint || 'Keep exploring!'))
+            });
+        }
+        el.gpMore.hidden = gpages() < 2;
+    }
+    function gpageScannables() {
+        const list = gpageItems.slice();
+        if (gpages() > 1) list.push({ id: 'gp:more', el: el.gpMore, speak: () => 'More pages. Page ' + ((guidePage + 1) % gpages() + 1) + ' of ' + gpages(), action: () => { guidePage = (guidePage + 1) % gpages(); show('gpage', { restore: 'gp:more' }); } });
+        list.push({ id: 'gp:back', el: el.gpBack, speak: 'Back', action: () => show('guide', { restore: 'guide:' + gcat().id }) });
+        return list;
+    }
+
+    function guideItemSpeech() {
+        const f = NSE.Guide.item(guideItemId), rec = NSE.Guide.get(guideItemId);
+        if (!f) return '';
+        return f.item.name + '. ' + (f.item.hint || '') + ' ' + whereLine(rec);
+    }
+    function renderGuideItem() {
+        const f = NSE.Guide.item(guideItemId), rec = NSE.Guide.get(guideItemId);
+        if (!f) return;
+        guidePicture(el.giPic, f.cat, f.item);
+        el.giTag.textContent = f.cat.name;
+        el.giName.textContent = f.item.name;
+        el.giWhat.textContent = f.item.hint || '';
+        el.giWhere.textContent = whereLine(rec);
+        el.giVisit.hidden = !(rec && rec.where && rec.where.id);
+    }
+    function gitemScannables() {
+        const rec = NSE.Guide.get(guideItemId), list = [];
+        if (rec && rec.where && rec.where.id) list.push({ id: 'gi:visit', el: el.giVisit, speak: () => 'Visit ' + rec.where.name + ' again', action: () => G().visitAgain(rec.where.id) });
+        list.push({ id: 'gi:back', el: el.giBack, speak: 'Back', action: () => show('gpage', { restore: 'gp:' + guideItemId }) });
         return list;
     }
 
@@ -1111,8 +1375,9 @@ NSE.UI = (function () {
             'In orbit: *Fly Low* skims over the surface, *Scan* looks closer at creatures and the world, *Visit a Moon* flies to one of its moons, and *Leave Orbit* flies on.',
             '*View*, in the Pause menu, changes the camera: the *Cockpit*, *Chase* behind the ship, or a *Wide* view for sightseeing.',
             '*Warp* opens the galaxy map. From there, jump to a new star or a whole new galaxy!',
-            'Some planets have people. Sometimes they call you up to say hello. Or to tell you to go away.',
-            'Everywhere you visit goes in your *Logbook*, with a picture and every creature you scanned. You can visit any of them again.'
+            'A few planets have whole civilisations, with cities and amazing technology. Sometimes their people call you up to say hello. Or to tell you to go away.',
+            'Everywhere you visit goes in your *Logbook*, with a picture and every creature you scanned. You can visit any of them again.',
+            'The *Field Guide*, in the Logbook, collects every kind of world, landscape, star, animal, plant and civilisation you find. *Scan* animals and plants to identify them. Some sights are rare: comets, star whales, golden creatures and more. Can you find them all?'
         ];
         lines.push(autoOn() ? 'The highlight moves by itself. *Enter* chooses.'
             : '*Tap Space* to move the highlight and *hold Space* to go back. *Enter* chooses.');
@@ -1196,13 +1461,16 @@ NSE.UI = (function () {
                 after: () => 'Volume, ' + s.volumeName() + '.' },
             { id: 'music', label: 'Music', value: () => s.musicName(), action: () => s.cycle('musicIndex', s.LEVELS.length),
                 after: () => s.musicVolume() > 0 ? 'Music, ' + s.musicName() + '. Calm space music.' : 'Music off.' },
-            { id: 'reset', label: 'Reset Logbook', danger: true, value: () => resetArmed ? 'Choose again to erase' : (NSE.Logbook.list().length ? U.plural(NSE.Logbook.list().length, 'place') : 'Empty'),
+            { id: 'reset', label: 'Reset Logbook', danger: true,
+                value: () => resetArmed ? 'Choose again to erase' : (NSE.Logbook.list().length || NSE.Guide.stats().found ? U.plural(NSE.Logbook.list().length, 'place') + ', ' + U.plural(NSE.Guide.stats().found, 'find') : 'Empty'),
                 action: () => {
                     if (!resetArmed) { resetArmed = true; return; }
                     resetArmed = false;
                     NSE.Logbook.clear();
+                    NSE.Guide.clear();
+                    pics.clear();
                 },
-                after: () => resetArmed ? 'Are you sure? This erases every place in your logbook. Choose Reset Logbook again to erase it, or move on to keep it.' : 'Logbook erased.' },
+                after: () => resetArmed ? 'Are you sure? This erases every place in your logbook and everything in your field guide. Choose Reset Logbook again to erase it, or move on to keep it.' : 'Logbook and field guide erased.' },
             { id: 'back', label: '← Back', value: () => '', nav: true, action: () => show(settingsFrom === 'pause' ? 'pause' : 'menu') }
         ];
     }
@@ -1266,6 +1534,9 @@ NSE.UI = (function () {
             case 'pause': return pauseScannables();
             case 'logbook': return logScannables();
             case 'entry': return entryScannables();
+            case 'guide': return guideItems;
+            case 'gpage': return gpageScannables();
+            case 'gitem': return gitemScannables();
             case 'settings': return settingsScannables();
             case 'help': return helpScannables();
             case 'error': return errorScannables();
@@ -1279,7 +1550,8 @@ NSE.UI = (function () {
         if (!scanHost) scanHost = node('div', 'nse-scan-status');
         const parent = HUDS.indexOf(screen) >= 0 ? el.hud : el[screen] && el[screen].querySelector && el[screen].querySelector('.nse-card');
         if (parent && scanHost.parentElement !== parent) parent.prepend(scanHost);
-        const key = screen === 'logbook' ? 'logbook:' + logPage : screen === 'entry' ? 'entry:' + entryIndex : screen;
+        const key = screen === 'logbook' ? 'logbook:' + logPage : screen === 'entry' ? 'entry:' + entryIndex
+            : screen === 'gpage' ? 'gpage:' + guideCat + ':' + guidePage : screen === 'gitem' ? 'gitem:' + guideItemId : screen;
         return { key: key, host: scanHost || el.root };
     }
 

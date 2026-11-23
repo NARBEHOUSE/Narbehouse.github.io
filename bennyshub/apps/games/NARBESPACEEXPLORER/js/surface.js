@@ -8,9 +8,12 @@
  *   s.steer(dir)             +1 = turn left, -1 = turn right: one press = one ~30 degree turn,
  *                            eased over ~1.5 s (presses add up). Returns true.
  *   s.heading()              the flight heading in radians (0 = toward -Z, + = turned left)
- *   s.nearestCreature()      { spec, index, distance, position } or null
+ *   s.nearestCreature()      { spec, index, distance, position } or null (leaders and herd members)
  *   s.species()              the species specs living here ([] when none)
  *   s.plants()               what grows here, same words as NSE.Universe.plants(world), or null
+ *   s.flora()                the plant species drawn here (NSE.Flora specs, [] when none)
+ *   s.nearestPlant()         { spec, index, distance, position } or null
+ *   s.seen()                 { rainbow, golden, giant }: each true once it has been in view near the ship
  *   s.style                  the terrain style drawn (world.terrain.style, checked)
  *   s.setSpeed(k)            0.5..2 (default 1)
  *   s.setQuality(detail)     'high' | 'standard' | 'low' (rebuilds the streamed parts)
@@ -187,6 +190,12 @@ NSE.Surface = (function () {
         const style = STYLES[type].indexOf(TR.style) >= 0 ? TR.style : STYLES[type][0];
         const is = s => style === s;
         const PLANTS = (NSE.Universe && typeof NSE.Universe.plants === 'function') ? NSE.Universe.plants(world) : localPlants(world);
+        // Plant species to find (js/flora.js): the world's own kinds, drawn into the ground chunks.
+        // Without flora.js (or plants) the older built-in trees, palms, cacti and mushrooms are drawn.
+        const FL = (NSE.Flora && typeof NSE.Flora.spec === 'function' && typeof NSE.Flora.draw === 'function') ? NSE.Flora : null;
+        const floraList = [];
+        if (FL && PLANTS && world.flora && world.flora.species) world.flora.species.forEach(function (sd) { try { floraList.push(FL.spec(sd, world)); } catch (e) { /* skip a species that fails */ } });
+        const FLORA_ON = floraList.length > 0;
         const T = templates(THREE);
         const scene = new THREE.Scene();
         scene.name = 'surface';
@@ -591,6 +600,34 @@ NSE.Surface = (function () {
             halo.renderOrder = -9;
             skyGroup.add(halo);
         }
+        // A rainbow (rare: world.rainbowSky): a soft arc in the sky, ahead of the ship as Fly Low begins.
+        let rainbow = null, rainbowAz = 0;
+        if (world.rainbowSky && !airless && !gas) {
+            const rr = U.rng(U.hash(seed, 'rainbow'));
+            rainbowAz = wander(0) + rr.sign() * rr.range(0.15, 0.4);
+            const dist = SKY_R * 0.8, ang = 34 * Math.PI / 180, band = 5.5 * Math.PI / 180;
+            const Rin = dist * Math.tan(ang - band / 2), Rout = dist * Math.tan(ang + band / 2);
+            const g = keepGeo(new THREE.RingGeometry(Rin, Rout, 56, 7, 0, Math.PI));
+            const pos = g.attributes.position, cols = new Float32Array(pos.count * 4);
+            const bands = ['#8a6aff', '#5a8aff', '#5ad8ff', '#6aff8a', '#ffe85a', '#ffa04a', '#ff5a5a'].map(lin);
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i), y = pos.getY(i), len = Math.hypot(x, y);
+                const u = U.clamp((len - Rin) / (Rout - Rin), 0, 1), f = u * (bands.length - 1), j = Math.min(bands.length - 2, Math.floor(f));
+                const c = mixc(bands[j], bands[j + 1], f - j);
+                const th = Math.atan2(y, x);
+                const ends = U.smooth(Math.min(th, Math.PI - th) / 0.5);
+                const edge = Math.sin(Math.PI * u);
+                cols[i * 4] = c[0]; cols[i * 4 + 1] = c[1]; cols[i * 4 + 2] = c[2]; cols[i * 4 + 3] = 0.42 * ends * edge;
+            }
+            g.setAttribute('color', new THREE.BufferAttribute(cols, 4));
+            rainbow = new THREE.Mesh(g, keepMat(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide })));
+            const el = -0.12;
+            rainbow.position.set(-Math.sin(rainbowAz) * Math.cos(el) * dist, Math.sin(el) * dist, -Math.cos(rainbowAz) * Math.cos(el) * dist);
+            rainbow.lookAt(0, Math.sin(el) * dist, 0);
+            rainbow.renderOrder = -8;
+            rainbow.frustumCulled = false;
+            skyGroup.add(rainbow);
+        }
         // Stars on airless worlds.
         if (airless) {
             const r = U.rng(U.hash(seed, 'stars'));
@@ -649,8 +686,24 @@ NSE.Surface = (function () {
                     : type === 'crystal' ? [mixc(pal.sea, pal.high, 0.3), mixc(pal.sea, pal.peak, 0.55)]
                         : is('reefs') ? [mixc(pal.sea, lin('#2fd0c8'), 0.45), mixc(pal.sea, lin('#9af0e8'), 0.5)]
                             : [scl(pal.sea, 0.9), mixc(pal.sea, lin('#9adfff'), 0.25)];
+        // Shallow water near the coasts is lighter (turquoise lagoons over sand, deep blue further out).
+        const shallowCol = !hasSea || type === 'ice' ? null : type === 'lava' ? mixc(pal.sea, lin('#ffd060'), 0.5)
+            : type === 'toxic' ? mixc(pal.sea, lin('#e8ff9a'), 0.45) : type === 'crystal' ? mixc(pal.sea, pal.peak, 0.5)
+                : mixc(pal.sea, lin(is('reefs') ? '#5ff0dc' : '#8ae6d6'), is('reefs') ? 0.7 : 0.55);
+        const depthCache = new Map();
+        function depthAt(X, Z) {
+            const key = X + ',' + Z;
+            let dep = depthCache.get(key);
+            if (dep === undefined) {
+                dep = seaH - height(X * waterCell, Z * waterCell);
+                depthCache.set(key, dep);
+                if (depthCache.size > 24000) depthCache.delete(depthCache.keys().next().value);
+            }
+            return dep;
+        }
         function buildWater() {
             if (water) { scene.remove(water); free(water.geometry); water = null; }
+            depthCache.clear();
             if (!hasSea) return;
             const seg = D.water, size = D.far * 2.15;
             const g = made(new THREE.PlaneGeometry(size, size, seg, seg));
@@ -678,7 +731,12 @@ NSE.Surface = (function () {
                     const X = Math.round((waterBase[i * 3] + wx) / waterCell), Z = Math.round((waterBase[i * 3 + 2] + wz) / waterCell);
                     const k = (U.hash(seed, X, Z) & 1023) / 1023;
                     const c = waterCols[0], c2 = waterCols[1], m = k * k * 0.8;
-                    ca[i * 3] = c[0] + (c2[0] - c[0]) * m; ca[i * 3 + 1] = c[1] + (c2[1] - c[1]) * m; ca[i * 3 + 2] = c[2] + (c2[2] - c[2]) * m;
+                    let cr = c[0] + (c2[0] - c[0]) * m, cg = c[1] + (c2[1] - c[1]) * m, cb = c[2] + (c2[2] - c[2]) * m;
+                    if (shallowCol) {
+                        const sh = (1 - U.smooth(depthAt(X, Z) / 4.5)) * 0.8;
+                        cr += (shallowCol[0] - cr) * sh; cg += (shallowCol[1] - cg) * sh; cb += (shallowCol[2] - cb) * sh;
+                    }
+                    ca[i * 3] = cr; ca[i * 3 + 1] = cg; ca[i * 3 + 2] = cb;
                 }
                 water.geometry.attributes.color.needsUpdate = true;
                 if (!WAVE) { for (let i = 0; i < n; i++) a[i * 3 + 1] = 0; pos.needsUpdate = true; }
@@ -728,7 +786,7 @@ NSE.Surface = (function () {
         const winCol = civ ? lin(civ.lights || '#ffd27a') : null;
 
         function features(S, G, r, x0, z0) {
-            const k = D.feat * DENS * (civ ? 0.65 : 1);      // cities take the place of some wild scenery
+            const k = D.feat * DENS * (civ ? 0.55 : 1);      // cities, farms and solar fields take the place of some wild scenery
             const cnt = base => { const v = base * k, f = Math.floor(v); return f + (r() < v - f ? 1 : 0); };
             const spot = () => { tmpP.x = x0 + r() * CS; tmpP.z = z0 + r() * CS; return tmpP; };
             const dry = (h) => !hasSea || h > seaH + 0.35;
@@ -757,7 +815,7 @@ NSE.Surface = (function () {
                     if (!PLANTS) break;
                     // [trees, bushes, flower patches, rocks]
                     const C = { forest: [14, 9, 2, 3], meadow: [2.5, 6, 8, 2], mountains: [9, 4, 0, 6], lakes: [11, 7, 3, 3], jungle: [15, 8, 0, 1] }[style];
-                    n = cnt(C[0]);
+                    n = FLORA_ON ? 0 : cnt(C[0]);
                     for (i = 0; i < n; i++) {
                         const p = spot(), h = height(p.x, p.z), hn = norm(h);
                         if (!dry(h) || hn > (is('mountains') ? 0.68 : 0.82)) continue;
@@ -782,14 +840,14 @@ NSE.Surface = (function () {
                         else put(S, T.ico0, p.x, h + 3.6 * s, p.z, 2.4 * s, 2.1 * s, 2.4 * s, 0, r() * 6, 0, scl(leaf, 0.8), scl(leaf, 1.15));
                         tall(p.x, p.z, h + top, 2.4 * s);
                     }
-                    n = cnt(C[1]);
+                    n = FLORA_ON ? 0 : cnt(C[1]);
                     for (i = 0; i < n; i++) {
                         const p = spot(), h = height(p.x, p.z);
                         if (!dry(h) || norm(h) > 0.85) continue;
                         const s = r.range(0.7, 1.5) * (is('jungle') ? 1.6 : 1), leaf = r.pick(leafCols);
                         put(S, T.ico0, p.x, h + 0.3 * s, p.z, s, 0.7 * s, s, 0, r() * 6, 0, scl(leaf, 0.85), scl(leaf, 1.1));
                     }
-                    n = cnt(C[2]);
+                    n = FLORA_ON ? 0 : cnt(C[2]);
                     for (i = 0; i < n; i++) {
                         const p = spot(), h0 = height(p.x, p.z);
                         if (!dry(h0) || norm(h0) > 0.75) continue;
@@ -803,7 +861,7 @@ NSE.Surface = (function () {
                     break;
                 }
                 case 'ocean': {
-                    if (PLANTS) {
+                    if (PLANTS && !FLORA_ON) {
                         n = cnt({ islands: 14, archipelago: 16, reefs: 8, open: 10 }[style]);
                         for (i = 0; i < n; i++) {
                             const p = spot(), h = height(p.x, p.z);
@@ -820,7 +878,7 @@ NSE.Surface = (function () {
                             tall(tx, tz, ty + 0.7 * s, 2.6 * s);
                         }
                     }
-                    if (is('reefs')) {
+                    if (is('reefs') && !floraHas('coral')) {
                         n = cnt(12);
                         for (i = 0; i < n; i++) {
                             const p = spot(), h = height(p.x, p.z);
@@ -862,7 +920,7 @@ NSE.Surface = (function () {
                     break;
                 }
                 case 'desert': {
-                    if (PLANTS) {
+                    if (PLANTS && !FLORA_ON) {
                         n = cnt({ dunes: 4, mesas: 6, canyons: 5 }[style] || 0);
                         const green = hueShift(lin('#5f8a3a'), ((world.seed >>> 4) % 7 - 3) * 0.04, 0, 0);
                         for (i = 0; i < n; i++) {
@@ -937,7 +995,7 @@ NSE.Surface = (function () {
                             shard(x, z, h - 0.3, rad, tl, -Math.sin(a) * lean, Math.cos(a) * lean, r() < 0.7);
                         }
                     });
-                    if (is('forest') && PLANTS) {                                   // trees made of crystal
+                    if (is('forest') && PLANTS && !FLORA_ON) {                      // trees made of crystal
                         n = cnt(9);
                         for (i = 0; i < n; i++) {
                             const p = spot(), h = height(p.x, p.z);
@@ -964,7 +1022,7 @@ NSE.Surface = (function () {
                     break;
                 }
                 case 'toxic': {
-                    if (PLANTS) {
+                    if (PLANTS && !FLORA_ON) {
                         n = cnt({ mushrooms: 4, swamp: 1.6, bubbles: 1.6 }[style]);
                         for (i = 0; i < n; i++) {
                             const p = spot(), h = height(p.x, p.z);
@@ -1010,21 +1068,281 @@ NSE.Surface = (function () {
                     break;
                 }
             }
+            // Surf along the coasts: pale foam where the sea meets the land (it comes and goes with the waves).
+            if (hasSea && (type === 'ocean' || type === 'earth') && !is('open')) {
+                const foam = mixc(pal.sea, WHITE, 0.82);
+                for (let j = 0, nn = cnt(24); j < nn; j++) {
+                    const p = spot(), h = height(p.x, p.z);
+                    if (Math.abs(h - seaH) > 0.55) continue;
+                    put(S, T.octa, p.x, seaH + 0.04, p.z, r.range(0.9, 2.2), 0.05, r.range(0.4, 0.9), 0, r() * 6.28, 0, foam, WHITE);
+                }
+            }
+            if (FLORA_ON) plantsIn(S, G, r, x0, z0);
         }
 
-        // ----- advanced civilisations: cities, sky bridges, beacons, spaceports ---------------------
-        // Architecture comes from the civilisation's own seed: glass towers, bubble cities,
-        // tall spires or terraced pyramids (gas giants: busy floating platforms).
+        // ----- plants: every species of the world, each where it likes to grow ---------------------------
+        /** A chunk's plant budget (a big tree counts for more than a tuft of grass: NSE.Flora unit). */
+        const PLANT_BUDGET = {
+            'earth:forest': 30, 'earth:meadow': 22, 'earth:mountains': 17, 'earth:lakes': 20, 'earth:jungle': 28, ocean: 13, 'ocean:reefs': 14, 'ocean:open': 10,
+            desert: 8, 'desert:dunes': 5, toxic: 13, 'toxic:swamp': 12, crystal: 10, 'crystal:forest': 13, ice: 8, lava: 6, gas: 1.6, rock: 5
+        };
+        /** Each style favours its own plants (forests of trees, meadows of flowers and grass...). */
+        const PLANT_STYLE = {
+            forest: { tree: 1.8, pine: 1.5, blossom: 1.4, flower: 0.5, grass: 0.5 }, meadow: { tree: 0.3, pine: 0.2, blossom: 0.5, flower: 2.2, grass: 2.4, tallflower: 1.5, bush: 1.2 },
+            mountains: { pine: 2, tree: 0.6, flower: 0.6, blossom: 0.4 }, lakes: { reed: 1.8, lily: 2 }, jungle: { 'jungle-tree': 2, fern: 1.6, bush: 1.2, palm: 1 },
+            reefs: { coral: 2.5, kelp: 1.4, palm: 0.6 }, open: { kelp: 2, palm: 0.5 }, archipelago: { palm: 1.3 }, swamp: { glowcap: 1.6, reed: 1.6, bubblepod: 1.3 },
+            mushrooms: { mushroom: 1.4 }
+        };
+        const GROVE = { tree: 1, pine: 1, blossom: 1, 'jungle-tree': 1, 'crystal-tree': 1 };
+        const DRIFT = { flower: 1, tallflower: 1, 'crystal-flower': 1, 'ice-bloom': 1, 'fire-flower': 1, glowcap: 1, puffball: 1, lily: 1 };
+        let plantShares = null;
+        function sharesOf() {
+            if (plantShares) return plantShares;
+            const sk = PLANT_STYLE[style] || {};
+            const big = [];
+            floraList.forEach(function (sp, si) { if (!isCover(sp)) big.push({ sp: sp, si: si }); });
+            const ws = big.map(o => (o.si === 0 ? 2.4 : 1) * (o.sp.abundance || 1) * (sk[o.sp.kind] || 1));
+            const tot = ws.reduce((a, b) => a + b, 0) || 1;
+            const budget = (PLANT_BUDGET[type + ':' + style] || PLANT_BUDGET[type] || 8) * (big.length < floraList.length ? 0.8 : 1);
+            plantShares = big.map((o, i) => ({ sp: o.sp, si: o.si, n: budget * ws[i] / tot / (((FL.kind && FL.kind(o.sp.kind)) || {}).unit || 1) }));
+            return plantShares;
+        }
+        function floraHas(kind) { return floraList.some(sp => sp.kind === kind); }
+        let curPlants = null;
+        /** Plant triangles a chunk may have (about what the older built-in trees and bushes used). */
+        const PLANT_TRIS = { high: 500, standard: 390, low: 240 };
+        function plantsIn(S, G, r, x0, z0) {
+            const k = D.feat * DENS * (civ ? 0.65 : 1);
+            const cap = (PLANT_TRIS[detail] || 480) * Math.min(1.15, DENS) * (civ ? 0.55 : 1) * ({ desert: 0.7, crystal: 0.7, ice: 0.8, rock: 0.7 }[type] || 1);
+            let tris = 0;
+            const emit = function (tpl, e, c0, c1, glow) { const t = T[tpl] || T.ico0; tris += t.ys.length / 3; (glow ? G : S).add(t, e, c0, c1); };
+            const shares = sharesOf();
+            const left = shares.map(function (sh) { const v = sh.n * k; return Math.floor(v) + (r() < v - Math.floor(v) ? 1 : 0); });
+            // One of each species at a time, round and round, until all are placed or the chunk's plant
+            // triangles are spent (so the rarer species are never crowded out by the common ones).
+            let more = true;
+            while (more && tris < cap) {
+                more = false;
+                for (let si = 0; si < shares.length && tris < cap; si++) {
+                    if (left[si] <= 0) continue;
+                    left[si]--; more = true;
+                    plantOne(shares[si].sp, shares[si].si, r, x0, z0, emit);
+                }
+            }
+        }
+        function plantOne(sp, si, r, x0, z0, emit) {
+            const hab = sp.habitat;
+            const x = x0 + r() * CS, z = z0 + r() * CS;
+            if (cityMask && cityQ(x, z) < 1.05) return;        // cities replace the wild plants
+            const h = height(x, z);
+            let y = h, size = sp.size * r.range(0.75, 1.2);
+            if (hab === 'land' || (hab === 'shore' && !hasSea)) {
+                if (hasSea && h < seaH + 0.35) return;
+                if (norm(h) > (sp.kind === 'pine' || sp.kind === 'lichen' || sp.kind === 'cushion' || sp.kind === 'snow-moss' ? 0.93 : 0.82)) return;
+                if (slopeAt(x, z) > 0.55) return;
+                if (GROVE[sp.kind] && is('forest') && n2.fbm(x * 0.012, 5.5, z * 0.012, 2) < -0.08) return;      // trees grow in groves
+                if (DRIFT[sp.kind] && n2.fbm(x * 0.021 + si * 7.3, 9.1, z * 0.021, 2) < -0.02) return;          // flowers in drifts
+            } else if (hab === 'shore') {
+                if (h < seaH + 0.5 || h > seaH + 9 || slopeAt(x, z) > 0.6) return;
+            } else if (hab === 'wet') {
+                if (!hasSea || h < seaH - 0.5 || h > seaH + 1.4) return;
+                y = Math.max(h, seaH - 0.4);
+            } else if (hab === 'pond') {
+                if (!hasSea || h > seaH - 0.3 || h < seaH - 3) return;
+                y = seaH + 0.04;
+            } else if (hab === 'sea') {
+                if (!hasSea || h > seaH - 1.2) return;
+                size = Math.min(16, seaH - h) + 0.02;              // kelp reaches up to the waves
+            } else if (hab === 'reef') {
+                if (!hasSea || h > seaH - 0.25 || h < seaH - 3.5) return;
+                size = (seaH - h) + r.range(0.12, 0.4);            // coral tips just break the surface
+            } else if (hab === 'air') {
+                if (inLane(x, z, 10)) return;
+                y = h + r.range(20, 42);                          // floating plants drift high over the clouds
+            }
+            if ((hab === 'land' || hab === 'shore') && size > 4.5) size *= shrink(x, z, size, size * 0.3);
+            const res = FL.draw(THREE, sp, x, y, z, r() * 6.283, size, emit, r);
+            if (hab !== 'air' && res.top > 4.5) tall(x, z, y + res.top, res.r);
+            if (curPlants && curPlants.length < 320) curPlants.push(x, z, y + Math.min(res.top, 6) * 0.5, si);
+        }
+
+        // ----- ground cover: the small plants near the ship ---------------------------------------------
+        // Grass, flowers, ferns, mosses, lichens, little cacti and glow caps are too small to see from far
+        // away and too many to merge into every chunk, so each small species is one instanced mesh of
+        // copies scattered round the ship; copies left behind move on ahead, out in the haze.
+        /** Ground-cover triangles per graphics level (copies = budget / a copy's triangles). */
+        const COVER_TRIS = { high: 18000, standard: 12000, low: 5500 };
+        const covers = [];
+        const cvr = U.rng(U.hash(seed, 'cover'));
+        function isCover(sp) { return sp.size <= 1.3 && (sp.habitat === 'land' || sp.habitat === 'pond'); }
+        function plantGeometry(sp) {
+            const S = new Builder(), G = new Builder();
+            FL.draw(THREE, sp, 0, 0, 0, 0, sp.size, function (tpl, e, c0, c1, glow) { (glow ? G : S).add(T[tpl] || T.ico0, e, c0, c1); }, U.rng(U.hash(sp.seed, 'cover-shape')));
+            return { s: made(S.build(THREE)), g: made(G.build(THREE)) };
+        }
+        function clearCover() {
+            covers.splice(0).forEach(function (cv) {
+                [cv.mesh, cv.glow].forEach(function (m) { if (m) { scene.remove(m); free(m.geometry); if (m.dispose) m.dispose(); } });
+            });
+        }
+        function makeCover() {
+            clearCover();
+            if (!FLORA_ON) return;
+            const list = [];
+            floraList.forEach(function (sp, si) { if (isCover(sp)) list.push({ sp: sp, si: si }); });
+            if (!list.length) return;
+            const sk = PLANT_STYLE[style] || {};
+            const ws = list.map(o => (o.si === 0 ? 2 : 1) * (o.sp.abundance || 1) * (sk[o.sp.kind] || 1));
+            const tot = ws.reduce((a, b) => a + b, 0) || 1;
+            const total = (COVER_TRIS[detail] || 15000) * Math.min(1.15, DENS) * (civ ? 0.55 : 1) * (type === 'rock' ? 0.6 : 1);
+            list.forEach(function (o, i) {
+                const g = plantGeometry(o.sp);
+                const per = Math.max(8, ((g.s ? g.s.attributes.position.count : 0) + (g.g ? g.g.attributes.position.count : 0)) / 3);
+                const n = Math.round(U.clamp(total * ws[i] / tot / per, 8, 420));
+                const mk = function (geo, mat) {
+                    if (!geo) return null;
+                    const m = new THREE.InstancedMesh(geo, mat, n);
+                    m.frustumCulled = false;
+                    if (m.instanceMatrix.setUsage) m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+                    scene.add(m);
+                    return m;
+                };
+                const cv = { sp: o.sp, si: o.si, mesh: mk(g.s, matTerrain), glow: mk(g.g, matGlow), items: [], next: 0 };
+                if (!cv.mesh && !cv.glow) return;
+                for (let k = 0; k < n; k++) {
+                    const it = { x: 0, y: 0, z: 0, on: false, yaw: 0, s: 1 };
+                    placeCover(cv, it, true);
+                    cv.items.push(it);
+                    writeCover(cv, k);
+                }
+                if (cv.mesh) cv.mesh.instanceMatrix.needsUpdate = true;
+                if (cv.glow) cv.glow.instanceMatrix.needsUpdate = true;
+                covers.push(cv);
+            });
+        }
+        const cvM = new THREE.Matrix4(), cvQ = new THREE.Quaternion(), cvV = new THREE.Vector3(), cvS = new THREE.Vector3(), cvUp = new THREE.Vector3(0, 1, 0);
+        const cvZero = new THREE.Matrix4().makeScale(0, 0, 0);
+        function placeCover(cv, it, initial) {
+            const sp = cv.sp, r = cvr;
+            for (let tries = 0; tries < 3; tries++) {
+                lanePoint(initial ? r.range(-15, 150) : r.range(110, 155), r.range(-78, 78), tmpP);
+                const x = tmpP.x, z = tmpP.z;
+                if (civ && cityQ(x, z) < 1.05) continue;
+                const h = height(x, z);
+                if (sp.habitat === 'pond') {
+                    if (!hasSea || h > seaH - 0.3 || h < seaH - 3) continue;
+                    it.y = seaH + 0.04;
+                } else {
+                    if (hasSea && type !== 'ice' && h < seaH + 0.35) continue;
+                    if (hasSea && type === 'ice' && h < seaH + 0.2) continue;
+                    if (norm(h) > 0.93 || slopeAt(x, z) > 0.6) continue;
+                    if (DRIFT[sp.kind] && n2.fbm(x * 0.021 + cv.si * 7.3, 9.1, z * 0.021, 2) < -0.12) continue;      // flowers grow in drifts
+                    it.y = h - 0.02;
+                }
+                it.x = x; it.z = z; it.on = true; it.yaw = r() * 6.283; it.s = r.range(0.75, 1.25);
+                return true;
+            }
+            it.on = false;
+            return false;
+        }
+        function writeCover(cv, i) {
+            const it = cv.items[i];
+            let m = cvZero;
+            if (it.on) { cvQ.setFromAxisAngle(cvUp, it.yaw); cvM.compose(cvV.set(it.x, it.y, it.z), cvQ, cvS.set(it.s, it.s, it.s)); m = cvM; }
+            if (cv.mesh) cv.mesh.setMatrixAt(i, m);
+            if (cv.glow) cv.glow.setMatrixAt(i, m);
+        }
+        /** A few copies a frame: those left behind (or off to the side) move on ahead. */
+        function updateCover() {
+            for (let c = 0; c < covers.length; c++) {
+                const cv = covers[c], n = cv.items.length;
+                let dirty = false;
+                for (let k = 0; k < 8; k++) {
+                    const i = cv.next;
+                    cv.next = (i + 1) % n;
+                    const it = cv.items[i];
+                    if (!it.on || alongOf(it.x, it.z) < -25 || Math.abs(latOf(it.x, it.z)) > 95) { placeCover(cv, it, false); writeCover(cv, i); dirty = true; }
+                }
+                if (dirty) { if (cv.mesh) cv.mesh.instanceMatrix.needsUpdate = true; if (cv.glow) cv.glow.instanceMatrix.needsUpdate = true; }
+            }
+        }
+
+        // ----- advanced civilisations: cities and their technology -----------------------------------
+        // Rare and grand (NSE.Universe: about one star system in eight), so finding one should feel
+        // like an event. How the people build comes from civ.style and what they have from civ.tech;
+        // both are in the arrival words (NSE.Universe.civWords), so what is drawn here matches them:
+        //   spires    tall glass towers with setbacks and needle spires, sky bridges between them
+        //   domes     a great glowing glass dome over each city, little domes round it joined by tubes
+        //   arcology  a mountain-sized terraced city in the middle, gardens on every terrace
+        //   floating  islands hovering high over the land or sea (gas giants: platforms over the clouds)
+        //   organic   tower-trees with leafy platforms and seed-pod homes, vines between them
+        //   crystal   faceted crystal towers and glowing shard clusters
+        // Technology: maglev rails with trains between cities, drones, sky ships, light beacons, solar
+        // farms, patchwork farms, and in the sky a space elevator and the orbital ring (see civSky).
+        // Friendly and calm: soft slow pulses only, nothing military, nothing that flashes.
+        const CIV_STYLES = ['spires', 'domes', 'arcology', 'floating', 'organic', 'crystal'];
         const civR = U.rng(U.hash('civ-arch', civ ? (civ.seed || 1) : 0, world.seed));
-        const ARCH = civ ? (gas ? 'floating' : civR.pick(['glass', 'bubble', 'spires', 'terraced'])) : null;
-        const towerArch = gas ? civR.pick(['bubble', 'spires', 'glass']) : ARCH;
-        const civWalls = [0, 1, 2].map(() => lin(U.toHex(U.hsl(civR.range(0, 360), civR.range(0.25, 0.5), civR.range(0.72, 0.86)))));
-        const civRoof = lin(U.toHex(U.hsl(civR.range(0, 360), 0.55, 0.62)));
+        const CSTYLE = !civ ? null : gas ? 'floating' : CIV_STYLES.indexOf(civ.style) >= 0 ? civ.style : civR.pick(CIV_STYLES);
+        const ARCH = CSTYLE;
+        const floating = CSTYLE === 'floating';
+        const TECH = {};
+        if (civ) {
+            (Array.isArray(civ.tech) ? civ.tech : ['maglev', 'drones', 'skyships', 'beacons', 'solar', 'farms'].filter(() => civR() < 0.5)).forEach(t => { TECH[t] = true; });
+            if (gas || floating) TECH.maglev = false;          // no rails in the clouds or between hovering islands
+            if (gas) TECH.farms = false;                         // (gas giants' solar panels ring their cloud platforms instead of fields)
+        }
+        const civHsl = (h, s, l) => lin(U.toHex(U.hsl(h, s, l)));
+        const civHue = civR.range(0, 360);
+        // The world's own hue, so crystal cities can shine in the colours opposite it.
+        const worldHue = (function () { const c = new THREE.Color(pal.mid[0], pal.mid[1], pal.mid[2]), h = { h: 0, s: 0, l: 0 }; c.getHSL(h); return h.h * 360; })();
+        let civWalls, civRoof;
+        switch (CSTYLE) {
+            case 'spires': civWalls = [0, 1, 2].map(() => civHsl(civR.range(185, 228), civR.range(0.18, 0.38), civR.range(0.55, 0.72))); civRoof = civHsl(civHue, 0.35, 0.8); break;
+            case 'domes': civWalls = [0, 1, 2].map(() => civHsl(civR.range(0, 360), civR.range(0.12, 0.28), civR.range(0.8, 0.9))); civRoof = civHsl(civHue, 0.5, 0.68); break;
+            case 'arcology': civWalls = [0, 1, 2].map(() => civHsl(civR.range(22, 44), civR.range(0.22, 0.38), civR.range(0.62, 0.76))); civRoof = civHsl(civR.range(95, 140), 0.45, 0.42); break;
+            case 'organic': civWalls = [0, 1, 2].map(() => civHsl(civR.range(18, 42), civR.range(0.22, 0.34), civR.range(0.3, 0.42))); civRoof = civHsl(civR.range(95, 165), civR.range(0.45, 0.6), 0.44); break;
+            case 'crystal': { const ch = worldHue + 180 + civR.range(-40, 40); civWalls = [0, 1, 2].map(() => civHsl(ch + civR.range(-25, 25), civR.range(0.5, 0.75), civR.range(0.7, 0.84))); civRoof = civHsl(ch, 0.6, 0.9); break; }
+            default: civWalls = [0, 1, 2].map(() => civHsl(civR.range(195, 235), civR.range(0.06, 0.16), civR.range(0.8, 0.9))); civRoof = civHsl(civHue, 0.5, 0.66);
+        }
+        const civTrim = civ ? mixc(winCol, WHITE, 0.45) : WHITE;
+        const civSilver = lin('#d0d6e0');
         const pave = mixc(lin('#c8ccd4'), civWalls[0], 0.25);
+        const podCols = [civHsl(civHue + 40, 0.55, 0.78), civHsl(civHue + 180, 0.5, 0.8), civHsl(48, 0.7, 0.78)];
+        const leafy = (type === 'earth' || type === 'ocean' || type === 'toxic') ? scl(pal.mid, 0.75) : mixc(civRoof, pal.mid, 0.5);
         const CITY = { name: 'city', size: gas ? 360 : 300, prob: 0.95, r0: 58, r1: 88 };
         const PORT = { name: 'port', size: 520, prob: 1, r0: 16, r1: 22 };
         const plans = new Map();
-        /** How deep inside a city a point is: q < 1 inside (0 = its middle), Infinity when far from any. */
+        /** Fewer buildings at the lower graphics levels (GRAPHICS-QUALITY.md). */
+        const CITY_DENS = { high: 1, standard: 0.85, low: 0.65 }[detail] || 0.85;
+        let domesBuilt = 0, megasBuilt = 0, islandsBuilt = 0, beaconsBuilt = 0;
+
+        /** Solar fields round a city: three rectangles of panels between 1.3 and 1.5 of its radius. */
+        const SOLAR_N = TECH.solar && !gas ? (detail === 'low' ? 1 : detail === 'standard' ? 2 : 3) : 0;
+        const fieldTmp = [];
+        function solarFields(gx, gz, cx, cz, cr, out) {
+            out.length = 0;
+            const h = U.hash(seed, 'solar', gx, gz);
+            for (let i = 0; i < SOLAR_N; i++) {
+                const a = i * 2.094 + ((h >>> (i * 8)) & 255) / 255 - 0.5;
+                const dd = cr * (1.3 + ((h >>> (i * 3 + 24)) & 3) / 3 * 0.2);
+                out.push({ x: cx + Math.cos(a) * dd, z: cz + Math.sin(a) * dd, a: a });
+            }
+            return out;
+        }
+        function inSolar(x, z, gx, gz, c) {
+            solarFields(gx, gz, c.x, c.z, c.r, fieldTmp);
+            for (let i = 0; i < fieldTmp.length; i++) {
+                const f = fieldTmp[i], ca = Math.cos(f.a), sa = Math.sin(f.a);
+                const u = (x - f.x) * ca + (z - f.z) * sa, v = (z - f.z) * ca - (x - f.x) * sa;
+                if (u > -12 && u < 12 && v > -18 && v < 18) return true;
+            }
+            return false;
+        }
+        /**
+         * How deep inside a city a point is: q < 1 inside (0 = its middle), Infinity when far from any.
+         * Wild scenery and wildlife keep out of q < ~1.05; solar fields count as inside. Floating cities
+         * hover above wild land, so under them it stays wild.
+         */
         function cityQ(x, z) {
             if (!civ) return Infinity;
             const gx = Math.floor(x / CITY.size), gz = Math.floor(z / CITY.size);
@@ -1033,71 +1351,165 @@ NSE.Surface = (function () {
                 const c = cellAt(CITY, gx + i, gz + j);
                 if (!c) continue;
                 const q = Math.hypot(x - c.x, z - c.z) / c.r;
-                if (q < best) best = q;
+                if (!floating && q < best) best = q;
+                if (SOLAR_N && q > 1.1 && q < 1.85 && best > 0.97 && inSolar(x, z, gx + i, gz + j, c)) best = 0.97;
             }
             return best;
         }
+        /** The nearest city's middle, radius and field-grid angle (farms), q = distance / radius. */
+        const ncOut = { q: Infinity, x: 0, z: 0, r: 1, a: 0 };
+        function nearCity(x, z) {
+            ncOut.q = Infinity;
+            if (!civ) return ncOut;
+            const gx = Math.floor(x / CITY.size), gz = Math.floor(z / CITY.size);
+            for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+                const c = cellAt(CITY, gx + i, gz + j);
+                if (!c) continue;
+                const q = Math.hypot(x - c.x, z - c.z) / c.r;
+                if (q < ncOut.q) { ncOut.q = q; ncOut.x = c.x; ncOut.z = c.z; ncOut.r = c.r; ncOut.a = c.k * 3.1416; }
+            }
+            return ncOut;
+        }
         const groundOrSea = (x, z) => (gas ? height(x, z) : Math.max(height(x, z), hasSea ? seaH + 0.6 : -Infinity));
+        /** The highest (hi) or lowest ground or sea under a disc. */
+        function groundAround(x, z, r, hi) {
+            let m = groundOrSea(x, z);
+            for (let k = 0; k < 8; k++) {
+                const a = k * 0.785;
+                const g1 = groundOrSea(x + Math.cos(a) * r, z + Math.sin(a) * r), g2 = groundOrSea(x + Math.cos(a) * r * 0.55, z + Math.sin(a) * r * 0.55);
+                m = hi ? Math.max(m, g1, g2) : Math.min(m, g1, g2);
+            }
+            return m;
+        }
+        /** One building of the city's style (where = 'island' for the hovering islands and platforms). */
+        function kindOf(r, q, where) {
+            const big = 1 - 0.6 * q;
+            switch (where || CSTYLE) {
+                case 'spires': { const u = r(); return u < 0.55 ? { kind: 'slab', rad: r.range(3.4, 5.6), d: r.range(3, 5), h: r.range(34, 92) * big, rot: r.range(-0.3, 0.3) } : u < 0.88 ? { kind: 'needle', rad: r.range(2.6, 4.4), h: r.range(36, 82) * big } : { kind: 'tower', rad: r.range(2.4, 3.8), h: r.range(22, 48) * big }; }
+                case 'arcology': return r() < 0.7 ? { kind: 'zig', rad: r.range(6, 9.5), tiers: r.int(2, 4), h: 0 } : { kind: 'tower', rad: r.range(2.4, 3.6), h: r.range(16, 30) * big };
+                case 'organic': return r() < 0.62 ? { kind: 'tree', rad: r.range(2.2, 3.4), h: r.range(30, 62) * big + 8, plats: r.int(2, 3), rot: r() * 6.28 } : { kind: 'sprout', rad: r.range(2, 3.2), h: r.range(5, 10) };
+                case 'crystal': return r() < 0.55 ? { kind: 'prism', rad: r.range(2.6, 4.6), h: r.range(24, 70) * big + 6, rot: r() * 6.28 } : { kind: 'shards', rad: r.range(5, 9), h: r.range(12, 30) * (0.6 + 0.4 * big), n: r.int(3, 5), rot: r() * 6.28 };
+                case 'domes': return r() < 0.5 ? { kind: 'house', rad: r.range(3, 6), h: 0 } : { kind: 'pod', rad: r.range(2.2, 3.6), h: r.range(6, 16) };
+                default: {
+                    const u = r();
+                    return u < 0.35 ? { kind: 'pod', rad: r.range(2.2, 3.6), h: r.range(8, 20) } : u < 0.6 ? { kind: 'tower', rad: r.range(2, 3.2), h: r.range(10, 22) }
+                        : u < 0.8 ? { kind: 'needle', rad: r.range(2, 3.2), h: r.range(14, 28) } : { kind: 'dome', rad: r.range(4, 7), h: 0 };
+                }
+            }
+        }
         function cityPlan(gx, gz) {
             const key = gx + ',' + gz;
             if (plans.has(key)) return plans.get(key);
-            const c = cellAt(CITY, gx, gz);
+            const c0 = cellAt(CITY, gx, gz);
             let plan = null;
-            if (c) {
-                plan = { id: 'c' + key, x: c.x, z: c.z, r: c.r, b: [], bridges: [], masts: [], plats: [], gy: groundOrSea(c.x, c.z) };
+            if (c0) {
+                const c = { x: c0.x, z: c0.z, r: c0.r, k: c0.k };
                 const r = U.rng(U.hash(seed, 'cityplan', gx, gz));
-                const kindOf = (q) => {
-                    const big = 1 - 0.6 * q;
-                    switch (towerArch) {
-                        case 'glass': return r() < 0.15 ? { kind: 'dome', rad: r.range(7, 12), h: 0 } : { kind: 'box', rad: r.range(3.2, 5.5), d: r.range(3.2, 5.5), h: r.range(22, 60) * big };
-                        case 'bubble': return r() < 0.3 ? { kind: 'dome', rad: r.range(7, 13), h: 0 } : { kind: 'pod', rad: r.range(2.6, 4.4), h: r.range(14, 36) * big };
-                        case 'spires': return r() < 0.5 ? { kind: 'needle', rad: r.range(3, 5), h: r.range(32, 70) * big } : { kind: 'tower', rad: r.range(2.4, 3.8), h: r.range(20, 46) * big };
-                        default: return r() < 0.75 ? { kind: 'zig', rad: r.range(7, 11), tiers: r.int(3, 5), h: 0 } : { kind: 'tower', rad: r.range(2.4, 3.6), h: r.range(18, 34) * big };
-                    }
+                plan = {
+                    id: 'c' + key, gx: gx, gz: gz, x: c.x, z: c.z, r: c.r, k: c.k, b: [], bridges: [], masts: [], plats: [], beacons: [], domelets: [],
+                    dome: null, mega: null, gy: groundOrSea(c.x, c.z), tLo: 24, tHi: 46, tMin: 0
                 };
-                if (gas) {
+                if (floating) {
+                    // Islands (gas giants: platforms) hovering high over the land, the sea or the clouds.
                     const np = r.int(3, 5);
                     for (let i = 0; i < np; i++) {
-                        const a = r() * 6.28, dd = i ? r.range(32, c.r * 0.85) : 0;
-                        const pl = { x: c.x + Math.cos(a) * dd, z: c.z + Math.sin(a) * dd, r: r.range(15, 25), y: r.range(32, 44) };
+                        let pl = null;
+                        for (let tries = 0; tries < 8 && !pl; tries++) {
+                            const a = r() * 6.28, dd = plan.plats.length ? r.range(36, c.r * 0.92) : 0, pr = gas ? r.range(15, 25) : r.range(14, 23);
+                            const x = c.x + Math.cos(a) * dd, z = c.z + Math.sin(a) * dd;
+                            if (plan.plats.some(o => Math.hypot(o.x - x, o.z - z) < o.r + pr + 8)) continue;
+                            const top = gas ? height(x, z) + r.range(32, 44) : groundAround(x, z, pr * 1.1, true) + r.range(40, 52) + pr * 1.15;
+                            pl = { x: x, z: z, r: pr, top: top, rot: r() * 6.28, fall: !gas && (type === 'earth' || type === 'ocean') && r() < 0.6 };
+                        }
+                        if (!pl) continue;
                         plan.plats.push(pl);
                         const nb = r.int(3, 6);
                         for (let k = 0; k < nb; k++) {
-                            const a2 = r() * 6.28, d2 = k ? r.range(0.25, 0.7) * pl.r : 0;
-                            const b = kindOf(k ? 0.6 : 0.1);
-                            if (b.kind === 'dome') b.rad = Math.min(b.rad, pl.r * 0.45);
-                            b.x = pl.x + Math.cos(a2) * d2; b.z = pl.z + Math.sin(a2) * d2; b.plat = i; b.wall = r.pick(civWalls);
+                            const a2 = r() * 6.28, d2 = k ? r.range(0.25, 0.66) * pl.r : 0;
+                            const b = kindOf(r, k ? 0.6 : 0.1, 'island');
+                            if (b.kind === 'dome') b.rad = Math.min(b.rad, pl.r * 0.42);
+                            b.x = pl.x + Math.cos(a2) * d2; b.z = pl.z + Math.sin(a2) * d2; b.plat = plan.plats.length - 1; b.wall = r.pick(civWalls);
                             plan.b.push(b);
                         }
-                        if (i) plan.bridges.push({ pa: i, pb: 0 });
+                        if (plan.plats.length > 1) plan.bridges.push({ pa: plan.plats.length - 1, pb: 0 });
+                    }
+                    const t0 = plan.plats.length ? plan.plats[0].top - plan.gy : 40;
+                    if (gas) { plan.tLo = t0 + 6; plan.tHi = t0 + 22; } else { plan.tLo = t0 - 8; plan.tHi = t0 + 14; }
+                    if (TECH.beacons && plan.plats.length) {
+                        const p0 = plan.plats[0], a = r() * 6.28;
+                        plan.beacons.push({ plat: 0, x: p0.x + Math.cos(a) * p0.r * 0.74, z: p0.z + Math.sin(a) * p0.r * 0.74, h: r.range(20, 28), top: null });
                     }
                 } else {
-                    const g = r.range(15, 19), n = Math.ceil(c.r / g);
+                    if (CSTYLE === 'domes') {
+                        // A great glass dome over the middle of the city; little domes round it, joined by tubes.
+                        const R = c.r * 0.62;
+                        plan.dome = { R: R, H: R * 0.5, base: groundAround(c.x, c.z, R, false) - 0.6 };
+                        plan.tLo = plan.dome.base - plan.gy + plan.dome.H + 6; plan.tHi = plan.tLo + 16;
+                        const nd = r.int(2, 4);
+                        for (let i = 0; i < nd; i++) {
+                            const a = i / nd * 6.283 + r.range(-0.4, 0.4), dr = r.range(8, 12.5), dd = R + dr + r.range(5, 9);
+                            const x = c.x + Math.cos(a) * dd, z = c.z + Math.sin(a) * dd;
+                            plan.domelets.push({ x: x, z: z, r: dr, a: a, dd: dd, base: groundAround(x, z, dr, false) - 0.4 });
+                        }
+                        plan.b.push({ kind: 'needle', rad: 3.4, h: Math.max(8, plan.dome.H - 6 - (plan.gy - plan.dome.base)), x: c.x, z: c.z, inDome: true, wall: civWalls[0] });
+                    }
+                    if (CSTYLE === 'arcology') {
+                        plan.mega = { x: c.x, z: c.z, rad: c.r * 0.4, tiers: r.int(6, 9), th: r.range(7, 8.5), rot: r() * 0.8 };
+                        plan.tMin = plan.mega.rad * 1.3 + 8;
+                    }
+                    if (CSTYLE === 'organic') plan.b.push({ kind: 'tree', rad: r.range(5, 6.5), h: r.range(68, 88), plats: 4, rot: r() * 6.28, x: c.x, z: c.z, wall: civWalls[0], great: true });
+                    const g = { organic: r.range(24, 29), crystal: r.range(16, 20), domes: r.range(13, 16) }[CSTYLE] || r.range(15, 19);
+                    const n = Math.ceil(c.r / g);
                     for (let gj = -n; gj <= n; gj++) for (let gi = -n; gi <= n; gi++) {
                         const x = c.x + gi * g + r.range(-3, 3), z = c.z + gj * g + r.range(-3, 3);
-                        const q = Math.hypot(x - c.x, z - c.z) / c.r;
-                        if (q > 1 || r() > 0.66 - q * 0.38) continue;
-                        const b = kindOf(q);
+                        const dc = Math.hypot(x - c.x, z - c.z), qd = dc / c.r;
+                        if (qd > 1 || r() > (0.66 - qd * 0.38) * CITY_DENS) continue;
+                        if ((plan.mega && dc < plan.mega.rad * 1.3) || (CSTYLE === 'organic' && dc < 26)) continue;
+                        let b;
+                        if (plan.dome) {
+                            const D0 = plan.dome;
+                            if (dc < 9 || (dc > D0.R - 5 && dc < D0.R + 3)) continue;           // the middle spire, and the dome's edge
+                            b = kindOf(r, qd, 'domes');
+                            if (dc < D0.R) {
+                                // Under the glass: everything stays below the dome's curve.
+                                const cap = D0.H * Math.sqrt(Math.max(0, 1 - (dc / D0.R) * (dc / D0.R))) - 3 - (groundOrSea(x, z) - D0.base);
+                                if (b.kind === 'pod') b.h = Math.min(b.h, cap - b.rad * 2.7);
+                                else b.rad = Math.min(b.rad, cap / 0.75);
+                                if (b.kind === 'pod' ? b.h < 3 : b.rad < 2) continue;
+                                b.inDome = true;
+                            } else if (plan.domelets.some(dl => Math.hypot(dl.x - x, dl.z - z) < dl.r + 4 || Math.abs((x - c.x) * Math.sin(dl.a) - (z - c.z) * Math.cos(dl.a)) < 4 && (x - c.x) * Math.cos(dl.a) + (z - c.z) * Math.sin(dl.a) > 0)) continue;
+                        } else b = kindOf(r, qd);
                         b.x = x; b.z = z; b.wall = r.pick(civWalls);
                         plan.b.push(b);
                     }
-                    // Sky bridges between neighbouring tall towers.
-                    for (let i = 0; i < plan.b.length; i++) {
-                        const A = plan.b[i];
-                        if (A.h < 18 || r() < 0.45) continue;
-                        let best = -1, bd = g * 2.3;
-                        for (let j = i + 1; j < plan.b.length; j++) {
-                            const B = plan.b[j];
-                            if (B.h < 18) continue;
-                            const dd = Math.hypot(A.x - B.x, A.z - B.z);
-                            if (dd < bd) { bd = dd; best = j; }
+                    // Sky bridges between neighbouring tall towers (vines between the tower-trees, beams of light between crystals).
+                    if (!plan.dome) {
+                        for (let i = 0; i < plan.b.length; i++) {
+                            const A = plan.b[i];
+                            if (!(A.h >= 18) || r() < 0.45) continue;
+                            let best = -1, bd = g * 2.3;
+                            for (let j = i + 1; j < plan.b.length; j++) {
+                                const B = plan.b[j];
+                                if (!(B.h >= 18)) continue;
+                                const dd = Math.hypot(A.x - B.x, A.z - B.z);
+                                if (dd < bd) { bd = dd; best = j; }
+                            }
+                            if (best >= 0) plan.bridges.push({ a: i, b: best, f: r.range(0.4, 0.7) });
                         }
-                        if (best >= 0) plan.bridges.push({ a: i, b: best, f: r.range(0.4, 0.7) });
                     }
                     const nm = r.int(1, 3);
                     for (let i = 0; i < nm; i++) {
-                        const a = r() * 6.28, q = r.range(0.75, 1.05);
-                        plan.masts.push({ x: c.x + Math.cos(a) * q * c.r, z: c.z + Math.sin(a) * q * c.r, h: r.range(28, 46) });
+                        const a = r() * 6.28, qm = r.range(0.75, 1.05);
+                        plan.masts.push({ x: c.x + Math.cos(a) * qm * c.r, z: c.z + Math.sin(a) * qm * c.r, h: r.range(28, 46) });
+                    }
+                    if (TECH.beacons) {
+                        const nb = r.int(1, 2), a0 = r() * 6.28;
+                        for (let i = 0; i < nb; i++) {
+                            const a = a0 + i / nb * 6.283 + r.range(-0.3, 0.3), qb = r.range(0.96, 1.1);
+                            const x = c.x + Math.cos(a) * qb * c.r, z = c.z + Math.sin(a) * qb * c.r;
+                            if (plan.domelets.some(dl => Math.hypot(dl.x - x, dl.z - z) < dl.r + 6)) continue;
+                            plan.beacons.push({ x: x, z: z, h: r.range(38, 58), top: null });
+                        }
                     }
                 }
             }
@@ -1107,16 +1519,18 @@ NSE.Surface = (function () {
         }
         /** Every city whose ground overlaps a rectangle. */
         function citiesNear(x0, z0, x1, z1, out) {
-            const m = CITY.r1;
+            const m = CITY.r1 * 1.6;
             const g0x = Math.floor((x0 - m) / CITY.size), g1x = Math.floor((x1 + m) / CITY.size);
             const g0z = Math.floor((z0 - m) / CITY.size), g1z = Math.floor((z1 + m) / CITY.size);
             for (let gz = g0z; gz <= g1z; gz++) for (let gx = g0x; gx <= g1x; gx++) {
                 const pl = cityPlan(gx, gz);
-                if (pl && pl.x + pl.r > x0 - 10 && pl.x - pl.r < x1 + 10 && pl.z + pl.r > z0 - 10 && pl.z - pl.r < z1 + 10) out.push(pl);
+                const e = pl ? pl.r * 1.6 : 0;           // (solar fields, beacons and little domes reach past the edge)
+                if (pl && pl.x + e > x0 - 10 && pl.x - e < x1 + 10 && pl.z + e > z0 - 10 && pl.z - e < z1 + 10) out.push(pl);
             }
             return out;
         }
-        const winBands = (h) => Math.max(3.4, h / 5.5);
+        const WIN_K = { high: 1, standard: 1.25, low: 1.8 }[detail] || 1.25;      // fewer lit window bands at the lower graphics levels
+        const winBands = (h) => Math.max(3.4, h / 5.5) * WIN_K;
         let cityBuilt = 0;
         function building(S, G, b, y) {
             const w0 = scl(b.wall, 0.82), w1 = b.wall, glow = winCol, roof = civRoof;
@@ -1126,6 +1540,22 @@ NSE.Surface = (function () {
                     for (let f = 3; f < b.h - 1; f += winBands(b.h)) put(G, T.box, b.x, y + f, b.z, b.rad * 2.04, 0.75, b.d * 2.04, 0, b.rot || 0, 0, glow, glow);
                     put(S, T.cap, b.x, y + b.h, b.z, Math.min(b.rad, b.d) * 0.8, Math.min(b.rad, b.d) * 0.6, Math.min(b.rad, b.d) * 0.8, 0, 0, 0, roof, mixc(roof, WHITE, 0.3));
                     tall(b.x, b.z, y + b.h + 2, Math.max(b.rad, b.d) * 1.4);
+                    break;
+                }
+                case 'slab': {
+                    // A glass tower that steps in twice as it rises, with a mast on top.
+                    const g0 = scl(w1, 0.72), g1 = mixc(w1, WHITE, 0.28), rot = b.rot || 0;
+                    const hs = [b.h * 0.6, b.h * 0.27, b.h * 0.13], ws = [1, 0.74, 0.5];
+                    let yy = y;
+                    for (let s = 0; s < 3; s++) {
+                        const wx = b.rad * 2 * ws[s], wz = b.d * 2 * ws[s];
+                        put(S, T.box, b.x, yy, b.z, wx, hs[s], wz, 0, rot, 0, g0, g1);
+                        for (let f = 2.6; f < hs[s] - 0.8; f += winBands(b.h) * 0.8) put(G, T.box, b.x, yy + f, b.z, wx * 1.02, 0.45, wz * 1.02, 0, rot, 0, glow, glow);
+                        yy += hs[s];
+                    }
+                    put(S, T.cone6, b.x, yy, b.z, 0.35, b.h * 0.12, 0.35, 0, 0, 0, civSilver, WHITE);
+                    put(G, T.octa, b.x, yy + b.h * 0.12 + 0.4, b.z, 0.5, 0.8, 0.5, 0, 0, 0, glow, WHITE);
+                    tall(b.x, b.z, yy + b.h * 0.12 + 1.5, Math.max(b.rad, b.d) * 1.4);
                     break;
                 }
                 case 'pod':
@@ -1153,12 +1583,74 @@ NSE.Surface = (function () {
                         const th = 4.5;
                         put(S, T.box, b.x, yy, b.z, w * 2, th, w * 2, 0, 0, 0, scl(w1, 0.86 + t * 0.04), w1);
                         put(G, T.box, b.x, yy + th * 0.55, b.z, w * 2.03, 0.6, w * 2.03, 0, 0, 0, glow, glow);
+                        if (CSTYLE === 'arcology') put(S, T.box, b.x, yy + th, b.z, w * 1.9, 0.4, w * 1.9, 0, 0, 0, scl(roof, 0.8), roof);    // a terrace garden
                         yy += th; w *= 0.72;
                     }
                     put(G, T.octa, b.x, yy + 0.8, b.z, w * 0.8, 1.4, w * 0.8, 0, 0, 0, glow, WHITE);
                     tall(b.x, b.z, yy + 2, b.rad * 1.2);
                     break;
                 }
+                case 'tree': {
+                    // A tower grown like a giant tree: flared roots, a trunk, leafy platforms with seed-pod homes.
+                    const bark0 = scl(w1, 0.75), leaf0 = scl(roof, 0.72), leaf1 = mixc(roof, WHITE, 0.12);
+                    put(S, T.cone6, b.x, y - 0.6, b.z, b.rad * 2.5, b.h * 0.2, b.rad * 2.5, 0, b.rot, 0, bark0, w1);
+                    put(S, T.cyl8, b.x, y, b.z, b.rad * 0.9, b.h, b.rad * 0.9, 0, b.rot, 0, bark0, w1);
+                    for (let f = 6; f < b.h * 0.92; f += 9 * WIN_K) put(G, T.windows, b.x, y + f, b.z, b.rad * 0.93, 0.7, b.rad * 0.93, 0, f, 0, glow, glow);
+                    const np = b.plats || 2;
+                    for (let k = 0; k < np; k++) {
+                        const yy = y + b.h * (0.38 + 0.5 * k / Math.max(1, np - 1)), pr = b.rad * (3.3 - k * 0.45);
+                        put(S, T.disc, b.x, yy - 0.9, b.z, pr, 0.9, pr, 0, b.rot + k, 0, bark0, w1);
+                        put(S, T.ico0, b.x, yy + pr * 0.22, b.z, pr * 0.95, pr * 0.45, pr * 0.95, 0, b.rot + k * 2, 0, leaf0, leaf1);
+                        put(G, T.windows, b.x, yy - 0.55, b.z, pr * 1.01, 0.5, pr * 1.01, 0, k, 0, glow, glow);
+                        for (let p = 0; p < 2; p++) {
+                            const a = b.rot + k * 1.3 + p * 3.1416, px = b.x + Math.cos(a) * pr * 0.78, pz = b.z + Math.sin(a) * pr * 0.78;
+                            const pc = podCols[(k + p) % podCols.length];
+                            put(S, T.ico0, px, yy - 2.6, pz, 1.7, 2.1, 1.7, 0, a, 0, scl(pc, 0.85), mixc(pc, WHITE, 0.3));
+                            put(G, T.octa, px, yy - 2.8, pz, 0.6, 0.6, 0.6, 0, 0, 0, glow, glow);
+                        }
+                    }
+                    put(S, T.ico0, b.x, y + b.h + b.rad * 0.8, b.z, b.rad * 3.7, b.rad * 2.2, b.rad * 3.7, 0, b.rot, 0, leaf0, leaf1);
+                    tall(b.x, b.z, y + b.h + b.rad * 2.9, b.rad * 3.6);
+                    break;
+                }
+                case 'sprout':
+                    put(S, T.cyl8, b.x, y, b.z, b.rad * 0.55, b.h, b.rad * 0.55, 0, 0, 0, scl(w1, 0.75), w1);
+                    put(S, T.ball, b.x, y + b.h + b.rad * 0.6, b.z, b.rad * 1.5, b.rad * 1.15, b.rad * 1.5, 0, 0, 0, mixc(w1, WHITE, 0.45), mixc(roof, WHITE, 0.45));
+                    put(S, T.cap, b.x, y + b.h + b.rad * 1.5, b.z, b.rad * 1.2, b.rad * 0.7, b.rad * 1.2, 0, 0, 0, scl(roof, 0.75), roof);
+                    put(G, T.windows, b.x, y + b.h + b.rad * 0.55, b.z, b.rad * 1.52, 0.5, b.rad * 1.52, 0, 0, 0, glow, glow);
+                    tall(b.x, b.z, y + b.h + b.rad * 2.3, b.rad * 1.5);
+                    break;
+                case 'prism': {
+                    // A faceted crystal tower: lighter towards its point, glowing bands and a glowing tip.
+                    const c0 = scl(w1, 0.68), c1 = mixc(w1, WHITE, 0.42);
+                    put(S, T.cyl5, b.x, y, b.z, b.rad, b.h * 0.8, b.rad, 0, b.rot, 0, c0, c1);
+                    put(S, T.cone6, b.x, y + b.h * 0.8, b.z, b.rad * 1.02, b.h * 0.2, b.rad * 1.02, 0, b.rot, 0, c1, WHITE);
+                    for (let f = 0.22; f < 0.78; f += 0.18) put(G, T.cyl5, b.x, y + b.h * f, b.z, b.rad * 1.015, 0.5, b.rad * 1.015, 0, b.rot, 0, mixc(glow, c1, 0.4), mixc(glow, c1, 0.4));
+                    put(G, T.octa, b.x, y + b.h + 0.9, b.z, 0.9, 1.4, 0.9, 0, b.rot, 0, glow, WHITE);
+                    tall(b.x, b.z, y + b.h + 2.2, b.rad * 1.1);
+                    break;
+                }
+                case 'shards': {
+                    // A cluster of leaning crystals, each glowing at its heart.
+                    const sr = U.rng(U.hash(seed, 'shards', b.x | 0, b.z | 0));
+                    const c0 = scl(w1, 0.7), c1 = mixc(w1, WHITE, 0.45);
+                    for (let k = 0; k < (b.n || 3); k++) {
+                        const a = b.rot + k * 2.4, d = k ? b.rad * sr.range(0.3, 0.6) : 0;
+                        const hk = b.h * (k ? sr.range(0.45, 0.85) : 1), rk = b.rad * sr.range(0.24, 0.36);
+                        const rx = k ? Math.sin(a) * 0.3 : 0, rz = k ? -Math.cos(a) * 0.3 : 0;
+                        const px = b.x + Math.cos(a) * d, pz = b.z + Math.sin(a) * d;
+                        put(S, T.octa, px, y + hk * 0.42, pz, rk, hk * 0.5, rk, rx, a, rz, c0, c1);
+                        put(G, T.octa, px, y + hk * 0.42, pz, rk * 0.32, hk * 0.2, rk * 0.32, rx, a, rz, glow, glow);
+                    }
+                    tall(b.x, b.z, y + b.h + 1, b.rad);
+                    break;
+                }
+                case 'house':
+                    put(S, T.hemi, b.x, y, b.z, b.rad, b.rad * 0.75, b.rad, 0, 0, 0, scl(w1, 0.92), mixc(w1, WHITE, 0.35));
+                    put(G, T.windows, b.x, y + 0.9, b.z, b.rad * 1.005, 0.7, b.rad * 1.005, 0, 0, 0, glow, glow);
+                    put(G, T.octa, b.x, y + b.rad * 0.75 + 0.3, b.z, 0.5, 0.6, 0.5, 0, 0, 0, glow, WHITE);
+                    tall(b.x, b.z, y + b.rad * 0.75, b.rad);
+                    break;
                 default: {      // dome
                     put(S, T.hemi, b.x, y, b.z, b.rad, b.rad * 0.75, b.rad, 0, 0, 0, scl(w1, 0.9), mixc(w1, WHITE, 0.35));
                     put(G, T.windows, b.x, y + 1, b.z, b.rad * 1.005, 0.9, b.rad * 1.005, 0, 0, 0, glow, glow);
@@ -1167,38 +1659,149 @@ NSE.Surface = (function () {
             }
             cityBuilt++;
         }
-        const tallOf = b => b.kind === 'dome' ? b.rad * 0.75 : b.kind === 'zig' ? b.tiers * 4.5 : b.h + 4;
+        const tallOf = b => b.kind === 'dome' || b.kind === 'house' ? b.rad * 0.75 : b.kind === 'zig' ? b.tiers * 4.5 : b.h + 4;
+        /** A hovering island: a rocky underside tapering to a glowing crystal, a lit ring, maybe a waterfall. */
+        const isleTop = gas ? [lin('#9aa4b4'), lin('#e0e6f0')] : (type === 'earth' || type === 'ocean' || type === 'toxic') ? [scl(pal.mid, 0.8), mixc(pal.mid, WHITE, 0.15)] : [scl(pal.high, 0.85), mixc(pal.high, WHITE, 0.2)];
+        const rockA = scl(pal.low, 0.9), rockB = mixc(pal.mid, pal.high, 0.5);
+        function island(S, G, pt) {
+            const y = pt.top;
+            put(S, T.disc, pt.x, y - 2.6, pt.z, pt.r, 2.6, pt.r, 0, pt.rot, 0, isleTop[0], isleTop[1]);
+            if (gas) {
+                // Cloud-city platforms: a bulb of lifting gas under each, ringed with light.
+                put(S, T.ball, pt.x, y - 2.8 - pt.r * 0.32, pt.z, pt.r * 0.62, pt.r * 0.42, pt.r * 0.62, 0, 0, 0, lin('#8a94a8'), lin('#c8d0dc'));
+                put(G, T.windows, pt.x, y - 1.9, pt.z, pt.r * 1.01, 0.6, pt.r * 1.01, 0, 0, 0, winCol, winCol);
+                put(G, T.windows, pt.x, y - 2.8 - pt.r * 0.32, pt.z, pt.r * 0.63, 0.6, pt.r * 0.63, 0, 0, 0, winCol, winCol);
+                put(G, T.octa, pt.x, y - 3.4 - pt.r * 0.74, pt.z, 1.4, 1.6, 1.4, 0, 0, 0, winCol, WHITE);
+                if (TECH.solar) {
+                    // Solar panels round the platform's rim, tipped up to the sun.
+                    for (let k = 0; k < 10; k++) {
+                        const a = pt.rot + k / 10 * 6.283, px = pt.x + Math.cos(a) * pt.r * 0.86, pz = pt.z + Math.sin(a) * pt.r * 0.86;
+                        putR(S, T.box, px, y + 0.2, pz, 2.2, 0.12, 3, 0, -a, 0.42, PANEL0, PANEL1);
+                    }
+                }
+            } else {
+                const deep = pt.r * 1.15;
+                put(S, T.cone6, pt.x, y - 2.5, pt.z, pt.r * 0.96, deep, pt.r * 0.96, Math.PI, pt.rot, 0, rockB, scl(rockA, 0.7));
+                const a = pt.rot + 1.3;
+                put(S, T.cone6, pt.x + Math.cos(a) * pt.r * 0.38, y - 2.8, pt.z + Math.sin(a) * pt.r * 0.38, pt.r * 0.5, deep * 0.72, pt.r * 0.5, Math.PI, pt.rot * 2, 0, rockB, scl(rockA, 0.75));
+                put(G, T.windows, pt.x, y - 3.7, pt.z, pt.r * 0.88, 0.7, pt.r * 0.88, 0, 0, 0, winCol, winCol);
+                put(G, T.octa, pt.x, y - 2.5 - deep - 1.4, pt.z, 1.5, 2.4, 1.5, 0, 0, 0, winCol, WHITE);
+                if (pt.fall) {
+                    const fa = pt.rot - 0.8, fx = pt.x + Math.cos(fa) * pt.r * 0.9, fz = pt.z + Math.sin(fa) * pt.r * 0.9;
+                    put(S, T.cone6, fx, y - 0.6, fz, 1.2, 24, 1.2, Math.PI, 0, 0, mixc(pal.sea, WHITE, 0.75), skyHor);
+                }
+                const tr = U.rng(U.hash(seed, 'isle', pt.x | 0, pt.z | 0));
+                for (let k = 0; k < 4; k++) {
+                    const ta = tr() * 6.28, td = tr.range(0.74, 0.92) * pt.r, s = tr.range(1.1, 2);
+                    put(S, T.ico0, pt.x + Math.cos(ta) * td, y + s * 0.5, pt.z + Math.sin(ta) * td, s * 1.2, s * 1.4, s * 1.2, 0, tr() * 6, 0, scl(leafy, 0.8), leafy);
+                }
+            }
+            islandsBuilt++;
+        }
+        /** The great dome's frame (its glass is one see-through shell from the dome pool, near the ship). */
+        function domeParts(S, G, pl) {
+            const D0 = pl.dome, y = D0.base;
+            put(S, T.cyl8, pl.x, y - 1.2, pl.z, D0.R * 1.02, 2.8, D0.R * 1.02, 0, 0, 0, scl(pave, 0.75), pave);
+            put(G, T.windows, pl.x, y + 0.9, pl.z, D0.R * 1.025, 0.8, D0.R * 1.025, 0, 0, 0, winCol, winCol);
+            [0.38, 0.72].forEach(function (f) {
+                const rr = D0.R * Math.sqrt(1 - f * f);
+                put(G, T.windows, pl.x, y + D0.H * f - 0.2, pl.z, rr * 1.004, 0.35, rr * 1.004, 0, f * 3, 0, civTrim, civTrim);
+            });
+            put(G, T.octa, pl.x, y + D0.H + 0.9, pl.z, 1.2, 1.6, 1.2, 0, 0, 0, winCol, WHITE);
+            // The ship climbs over the glass, following its curve.
+            tall(pl.x, pl.z, y + D0.H * 0.55, D0.R);
+            tall(pl.x, pl.z, y + D0.H * 0.86, D0.R * 0.72);
+            tall(pl.x, pl.z, y + D0.H + 1.2, D0.R * 0.42);
+            domesBuilt++;
+        }
+        function domelet(S, G, pl, dl) {
+            put(S, T.hemi, dl.x, dl.base, dl.z, dl.r, dl.r * 0.7, dl.r, 0, 0, 0, scl(civWalls[1], 0.92), mixc(civWalls[1], WHITE, 0.4));
+            put(G, T.windows, dl.x, dl.base + 1, dl.z, dl.r * 1.005, 0.8, dl.r * 1.005, 0, 0, 0, winCol, winCol);
+            put(G, T.windows, dl.x, dl.base + dl.r * 0.4, dl.z, dl.r * 0.83, 0.45, dl.r * 0.83, 0, 1, 0, civTrim, civTrim);
+            // A walkway tube from the great dome.
+            const s0 = pl.dome.R - 1, s1 = dl.dd - dl.r + 1, len = s1 - s0, sm = (s0 + s1) / 2;
+            const ca = Math.cos(dl.a), sa = Math.sin(dl.a), ry = Math.atan2(ca, sa);
+            const mx = pl.x + ca * sm, mz = pl.z + sa * sm, ty = Math.min(dl.base, pl.dome.base) + 0.4;
+            put(S, T.box, mx, ty, mz, 3.2, 2.8, len, 0, ry, 0, scl(pave, 0.8), civWalls[0]);
+            put(G, T.box, mx, ty + 2.2, mz, 3.3, 0.3, len, 0, ry, 0, winCol, winCol);
+            tall(dl.x, dl.z, dl.base + dl.r * 0.7 + 1, dl.r);
+        }
+        /** The arcology: a terraced mountain of a city, a garden on every terrace and a glowing crown. */
+        function megaParts(S, G, pl) {
+            const m = pl.mega, y0 = groundAround(m.x, m.z, m.rad, false) - 1;
+            if (inLane(m.x, m.z, m.rad)) {
+                // The ship's way runs through here: a garden plaza instead, so the way stays clear.
+                put(S, T.disc, m.x, y0, m.z, m.rad * 0.8, 1.8, m.rad * 0.8, 0, 0, 0, scl(pave, 0.85), pave);
+                put(G, T.windows, m.x, y0 + 1.4, m.z, m.rad * 0.81, 0.4, m.rad * 0.81, 0, 0, 0, winCol, winCol);
+                for (let k = 0; k < 6; k++) { const a = k * 1.047; put(S, T.ico0, m.x + Math.cos(a) * m.rad * 0.55, y0 + 2.6, m.z + Math.sin(a) * m.rad * 0.55, 1.6, 2.2, 1.6, 0, k, 0, scl(civRoof, 0.7), civRoof); }
+                return;
+            }
+            const wall = civWalls[0], ca = Math.cos(m.rot), sa = Math.sin(m.rot);
+            let w = m.rad, yy = y0;
+            for (let t = 0; t < m.tiers; t++) {
+                const th = m.th, nw = w * 0.8;
+                put(S, T.box, m.x, yy, m.z, w * 2, th, w * 2, 0, m.rot, 0, scl(wall, 0.8 + t * 0.025), wall);
+                put(G, T.box, m.x, yy + th * 0.6, m.z, w * 2.02, 0.75, w * 2.02, 0, m.rot, 0, winCol, winCol);
+                put(G, T.box, m.x, yy + th * 0.26, m.z, w * 2.02, 0.45, w * 2.02, 0, m.rot, 0, scl(winCol, 0.8), scl(winCol, 0.8));
+                put(S, T.box, m.x, yy + th, m.z, w * 1.96, 0.5, w * 1.96, 0, m.rot, 0, scl(civRoof, 0.8), civRoof);
+                for (let k = 0; k < 4; k++) {
+                    const u = (k & 1 ? 1 : -1) * (w + nw) * 0.5, v = (k & 2 ? 1 : -1) * (w + nw) * 0.5;
+                    put(S, T.ico0, m.x + u * ca + v * sa, yy + th + 1.1, m.z - u * sa + v * ca, 1.5, 1.9, 1.5, 0, k, 0, scl(civRoof, 0.7), mixc(civRoof, WHITE, 0.1));
+                }
+                tall(m.x, m.z, yy + th + 1, w * 1.42);
+                yy += th; w = nw;
+            }
+            put(S, T.cone6, m.x, yy, m.z, w * 0.9, m.th * 1.6, w * 0.9, 0, m.rot, 0, wall, mixc(wall, WHITE, 0.4));
+            put(S, T.cone6, m.x, yy + m.th * 1.55, m.z, 0.45, 11, 0.45, 0, 0, 0, civSilver, WHITE);
+            put(G, T.octa, m.x, yy + m.th * 1.6 + 11.6, m.z, 1.6, 2.2, 1.6, 0, 0, 0, winCol, WHITE);
+            put(G, T.windows, m.x, yy + m.th * 0.6, m.z, w * 0.62, 0.6, w * 0.62, 0, 0, 0, winCol, winCol);
+            tall(m.x, m.z, yy + m.th * 1.6 + 13, w);
+            megasBuilt++;
+        }
+        /** A light beacon: a slim tower with a glowing orb (its soft beam of light is from the beam pool). */
+        function beaconParts(S, G, pl, bc) {
+            const y = bc.plat !== undefined ? pl.plats[bc.plat].top : groundOrSea(bc.x, bc.z) - 0.5;
+            const wc = civWalls[2];
+            put(S, T.cyl8, bc.x, y, bc.z, 2.2, 3, 2.2, 0, 0, 0, scl(wc, 0.8), wc);
+            put(S, T.cone6, bc.x, y + 2.8, bc.z, 1.5, bc.h, 1.5, 0, 0, 0, wc, mixc(wc, WHITE, 0.5));
+            for (let f = 0.3; f < 0.95; f += 0.22) { const rr = 1.5 * (1 - f) * 1.08 + 0.12; put(G, T.windows, bc.x, y + 2.8 + bc.h * f, bc.z, rr, 0.5, rr, 0, f * 4, 0, winCol, winCol); }
+            put(G, T.ico1, bc.x, y + bc.h + 3.6, bc.z, 1.7, 1.7, 1.7, 0, 0, 0, winCol, mixc(winCol, WHITE, 0.6));
+            bc.top = y + bc.h + 3.6;
+            if (bc.plat === undefined) tall(bc.x, bc.z, bc.top + 2, 3);
+            beaconsBuilt++;
+        }
         function buildCities(S, G, x0, z0) {
             const list = citiesNear(x0, z0, x0 + CS, z0 + CS, []);
             const inChunk = (x, z) => x >= x0 && x < x0 + CS && z >= z0 && z < z0 + CS;
-            const baseOf = (b, pl) => gas ? height(pl.plats[b.plat].x, pl.plats[b.plat].z) + pl.plats[b.plat].y : groundOrSea(b.x, b.z) - 0.8;
+            const baseOf = (b, pl) => b.plat !== undefined ? pl.plats[b.plat].top : groundOrSea(b.x, b.z) - 0.8;
             list.forEach(function (pl) {
                 const skipped = new Set();
-                if (gas) {
-                    pl.plats.forEach(function (pt) {
-                        if (!inChunk(pt.x, pt.z)) return;
-                        const y = height(pt.x, pt.z) + pt.y;
-                        put(S, T.disc, pt.x, y - 2.4, pt.z, pt.r, 2.4, pt.r, 0, 0, 0, lin('#9aa4b4'), lin('#e0e6f0'));
-                        put(S, T.cone6, pt.x, y - 9, pt.z, pt.r * 0.35, 6.6, pt.r * 0.35, Math.PI, 0, 0, lin('#8a94a8'), lin('#9aa4b4'));
-                        put(G, T.windows, pt.x, y - 1.9, pt.z, pt.r * 1.01, 0.6, pt.r * 1.01, 0, 0, 0, winCol, winCol);
-                        put(G, T.octa, pt.x, y - 9.6, pt.z, 1.4, 1.2, 1.4, 0, 0, 0, winCol, WHITE);
-                    });
-                }
+                pl.plats.forEach(function (pt) { if (inChunk(pt.x, pt.z)) island(S, G, pt); });
+                if (pl.dome && inChunk(pl.x, pl.z)) domeParts(S, G, pl);
+                pl.domelets.forEach(function (dl) { if (inChunk(dl.x, dl.z)) domelet(S, G, pl, dl); });
+                if (pl.mega && inChunk(pl.mega.x, pl.mega.z)) megaParts(S, G, pl);
                 pl.b.forEach(function (b, i) {
-                    if (!gas && inLane(b.x, b.z, b.kind === 'dome' || b.kind === 'zig' ? b.rad : b.rad * 1.3)) { skipped.add(i); return; }
+                    if (b.plat === undefined && !b.inDome) {
+                        const rad = (b.kind === 'dome' || b.kind === 'zig' || b.kind === 'house' || b.kind === 'shards' ? b.rad : b.kind === 'tree' ? b.rad * 3.4 : b.rad * 1.3) + (b.h > 24 ? 9 : 0);
+                        if (inLane(b.x, b.z, rad)) { skipped.add(i); return; }
+                    }
                     if (!inChunk(b.x, b.z)) return;
                     const y = baseOf(b, pl);
-                    if (!gas) {
+                    if (b.plat === undefined) {
                         const gnd = height(b.x, b.z);
                         if (gnd < y - 0.6) put(S, T.cyl8, b.x, gnd - 1.5, b.z, b.rad * 1.35, y - gnd + 2.3, b.rad * 1.35, 0, 0, 0, scl(pave, 0.7), pave);   // a plinth over water or a dip
                     }
+                    // High on a hovering island or platform, far over the ship: nothing to climb over.
+                    const keepObs = curObs;
+                    if (b.plat !== undefined) curObs = null;
                     building(S, G, b, y);
+                    curObs = keepObs;
                 });
                 pl.bridges.forEach(function (br) {
                     let ax, az, bx, bz, y;
-                    if (gas) {
+                    if (br.pa !== undefined) {
                         const A = pl.plats[br.pa], B = pl.plats[br.pb];
-                        ax = A.x; az = A.z; bx = B.x; bz = B.z; y = Math.min(height(ax, az) + A.y, height(bx, bz) + B.y) - 1.2;
+                        ax = A.x; az = A.z; bx = B.x; bz = B.z; y = (A.top + B.top) / 2 - 1.4;
                     } else {
                         if (skipped.has(br.a) || skipped.has(br.b)) return;
                         const A = pl.b[br.a], B = pl.b[br.b];
@@ -1209,9 +1812,16 @@ NSE.Surface = (function () {
                     const mx = (ax + bx) / 2, mz = (az + bz) / 2;
                     if (!inChunk(mx, mz)) return;
                     const len = Math.hypot(bx - ax, bz - az), ry = Math.atan2(bx - ax, bz - az);
-                    put(S, T.box, mx, y, mz, gas ? 3 : 1.8, 1.1, len, 0, ry, 0, scl(pave, 0.8), pave);
-                    put(G, T.box, mx, y - 0.15, mz, gas ? 3.1 : 1.9, 0.25, len, 0, ry, 0, winCol, winCol);
-                    if (!gas) tall(mx, mz, y + 1.5, len / 2);
+                    if (CSTYLE === 'crystal') {
+                        put(G, T.box, mx, y, mz, 0.9, 0.5, len, 0, ry, 0, mixc(winCol, civRoof, 0.4), mixc(winCol, WHITE, 0.3));          // a beam of light
+                    } else if (CSTYLE === 'organic') {
+                        put(S, T.box, mx, y, mz, 1.4, 0.8, len, 0, ry, 0, scl(civRoof, 0.65), civRoof);                                     // a living vine walkway
+                        put(G, T.box, mx, y - 0.12, mz, 0.4, 0.2, len, 0, ry, 0, winCol, winCol);
+                    } else {
+                        put(S, T.box, mx, y, mz, floating ? 3 : 1.8, 1.1, len, 0, ry, 0, scl(pave, 0.8), pave);
+                        put(G, T.box, mx, y - 0.15, mz, floating ? 3.1 : 1.9, 0.25, len, 0, ry, 0, winCol, winCol);
+                    }
+                    if (br.pa === undefined) tall(mx, mz, y + 1.5, len / 2);
                 });
                 pl.masts.forEach(function (m) {
                     if (!inChunk(m.x, m.z) || inLane(m.x, m.z, 2)) return;
@@ -1221,6 +1831,11 @@ NSE.Surface = (function () {
                     put(G, T.windows, m.x, y + m.h * 0.7, m.z, 0.32, 0.5, 0.32, 0, 0, 0, winCol, winCol);
                     put(G, T.ico1, m.x, y + m.h + 0.8, m.z, 1.1, 1.1, 1.1, 0, 0, 0, winCol, mixc(winCol, WHITE, 0.6));
                     tall(m.x, m.z, y + m.h + 2, 2);
+                });
+                pl.beacons.forEach(function (bc) {
+                    if (!inChunk(bc.x, bc.z)) return;
+                    if (bc.plat === undefined && inLane(bc.x, bc.z, 3)) { bc.top = null; return; }
+                    beaconParts(S, G, pl, bc);
                 });
             });
         }
@@ -1291,6 +1906,146 @@ NSE.Surface = (function () {
             }
         }
 
+        // ----- a civilisation's technology on the ground: maglev rails, solar farms, farms -------------
+        const PANEL0 = lin('#14244a'), PANEL1 = lin('#5a8ad8'), GLINT = lin('#cfeeff'), RAIL = lin('#e2e6ee'), PYLON = lin('#9aa2b2');
+        const BARN = lin('#b8604c'), BARN_ROOF = lin('#5f6a80'), SILO = lin('#dde1e8');
+        const CROPS = ['#7aa83a', '#c8b048', '#8a6a3a', '#5a9a48', '#d8c070', '#9a86c0', '#6aa86a'].map(h => mixc(lin(h), pal.mid, 0.22));
+        const HEDGE = scl(mixc(lin('#3a6a2a'), pal.mid, 0.3), 0.8);
+        let panelsBuilt = 0, railBuilt = 0, barnsBuilt = 0;
+        /** Yaw, then tip (Euler order YXZ): tilted solar panels, sloping rails. */
+        function putR(B, tpl, x, y, z, sx, sy, sz, rx, ry, rz, c0, c1) {
+            q.setFromEuler(eul.set(rx || 0, ry || 0, rz || 0, 'YXZ'));
+            eul.order = 'XYZ';
+            mtx.compose(vp.set(x, y, z), q, vs.set(sx, sy, sz));
+            B.add(tpl, mtx.elements, c0, c1 || c0);
+        }
+        /** Patchwork farm fields round a city (the terrain's own colour, so they cost nothing to draw). */
+        function farmTint(x, z, jit, out) {
+            const nc = nearCity(x, z);
+            if (nc.q < 1.08 || nc.q > 1.75) return;
+            const ca = Math.cos(nc.a), sa = Math.sin(nc.a);
+            const u = (x - nc.x) * ca + (z - nc.z) * sa, v = (z - nc.z) * ca - (x - nc.x) * sa;
+            const fu = u / 22, fv = v / 30, cu = Math.floor(fu), cv = Math.floor(fv);
+            const h = U.hash(seed, 'field', cu, cv, nc.x | 0) & 7;
+            const edge = Math.min(fu - cu, 1 - (fu - cu)) < 0.07 || Math.min(fv - cv, 1 - (fv - cv)) < 0.05;
+            const col = edge ? HEDGE : h < CROPS.length ? CROPS[h] : null;
+            if (!col) return;
+            const k = 0.62 * (1 - U.smooth((nc.q - 1.55) / 0.2));
+            out[0] += (col[0] * jit - out[0]) * k; out[1] += (col[1] * jit - out[1]) * k; out[2] += (col[2] * jit - out[2]) * k;
+        }
+        /** Maglev links: a city to its neighbour east (dir 0) or south (dir 1), most of them. */
+        const links = new Map();
+        function linkOf(gx, gz, dir) {
+            const key = gx + ',' + gz + ',' + dir;
+            if (links.has(key)) return links.get(key);
+            let L = null;
+            const A = cellAt(CITY, gx, gz);
+            if (A && (U.hash(seed, 'rail', gx, gz, dir) & 255) < 190) {
+                const ax = A.x, az = A.z, ar = A.r;
+                const B = cellAt(CITY, gx + (dir ? 0 : 1), gz + (dir ? 1 : 0));
+                if (B) {
+                    const dx = B.x - ax, dz = B.z - az, Dd = Math.hypot(dx, dz), ux = dx / Dd, uz = dz / Dd;
+                    const s0 = ar * 1.02, s1 = Dd - B.r * 1.02;
+                    if (s1 - s0 > 30) L = { id: key, sx: ax + ux * s0, sz: az + uz * s0, ux: ux, uz: uz, len: s1 - s0, yaw: Math.atan2(ux, uz) };
+                }
+            }
+            links.set(key, L);
+            if (links.size > 240) links.delete(links.keys().next().value);
+            return L;
+        }
+        /** The rail's height along a link: well over the ground (or the sea), smoothed. */
+        function railY(L, s) {
+            let m = -Infinity;
+            for (let k = -1; k <= 1; k++) { const t = U.clamp(s + k * 14, 0, L.len); m = Math.max(m, groundOrSea(L.sx + L.ux * t, L.sz + L.uz * t)); }
+            return m + 6.5;
+        }
+        function railChunk(S, G, L, x0, z0) {
+            let t0 = 0, t1 = L.len;
+            const clip = (p, u, lo, hi) => {
+                if (Math.abs(u) < 1e-6) return p >= lo && p < hi;
+                let a = (lo - p) / u, b = (hi - p) / u;
+                if (a > b) { const tt = a; a = b; b = tt; }
+                t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+                return t0 < t1;
+            };
+            if (!clip(L.sx, L.ux, x0, x0 + CS) || !clip(L.sz, L.uz, z0, z0 + CS)) return;
+            const STEP = 8;
+            for (let s = Math.floor(t0 / STEP) * STEP; s < t1; s += STEP) {
+                if (s < 0 || s >= L.len) continue;
+                const se = Math.min(L.len, s + STEP), sm = (s + se) / 2;
+                const mx = L.sx + L.ux * sm, mz = L.sz + L.uz * sm;
+                if (mx < x0 || mx >= x0 + CS || mz < z0 || mz >= z0 + CS) continue;     // each piece belongs to the chunk holding its middle
+                const ya = railY(L, s), yb = railY(L, se), y = (ya + yb) / 2, p = Math.atan2(yb - ya, se - s), len = (se - s) * 1.04 / Math.cos(p);
+                putR(S, T.box, mx, y - 0.9, mz, 1.9, 0.9, len, -p, L.yaw, 0, scl(RAIL, 0.82), RAIL);
+                putR(G, T.box, mx, y + 0.02, mz, 0.5, 0.1, len, -p, L.yaw, 0, winCol, winCol);
+                if (Math.round(s) % 24 === 0) {
+                    const px = L.sx + L.ux * s, pz = L.sz + L.uz * s, g = height(px, pz);
+                    put(S, T.cyl5, px, g - 1, pz, 0.6, ya - 0.9 - g + 1, 0.6, 0, 0, 0, PYLON, scl(RAIL, 0.9));
+                    put(S, T.box, px, ya - 1.3, pz, 3.2, 0.5, 1.2, 0, L.yaw, 0, PYLON, RAIL);
+                }
+                tall(mx, mz, y + 1.6, 4.5);      // the ship rises over the rails
+                railBuilt++;
+            }
+            // A little station where the line meets each city.
+            [0, L.len].forEach(function (s) {
+                const x = L.sx + L.ux * s, z = L.sz + L.uz * s;
+                if (x < x0 || x >= x0 + CS || z < z0 || z >= z0 + CS || inLane(x, z, 7)) return;
+                const y = railY(L, s), g = groundOrSea(x, z);
+                put(S, T.box, x, g - 0.6, z, 5, y - 1.4 - g + 0.6, 12, 0, L.yaw, 0, scl(civWalls[1], 0.85), civWalls[1]);
+                put(S, T.cap, x, y + 2.6, z, 3.4, 1.6, 6.5, 0, L.yaw, 0, mixc(civRoof, WHITE, 0.2), mixc(civRoof, WHITE, 0.5));
+                put(G, T.box, x, y - 1.5, z, 5.1, 0.4, 12.1, 0, L.yaw, 0, winCol, winCol);
+                tall(x, z, y + 4.5, 7);
+            });
+        }
+        function buildTech(S, G, x0, z0) {
+            const inC = (x, z) => x >= x0 && x < x0 + CS && z >= z0 && z < z0 + CS;
+            if (SOLAR_N) {
+                citiesNear(x0, z0, x0 + CS, z0 + CS, []).forEach(function (pl) {
+                    solarFields(pl.gx, pl.gz, pl.x, pl.z, pl.r, fieldTmp);
+                    fieldTmp.slice().forEach(function (f) {
+                        if (Math.abs(f.x - x0 - CS / 2) > CS / 2 + 24 || Math.abs(f.z - z0 - CS / 2) > CS / 2 + 24) return;
+                        const ca = Math.cos(f.a), sa = Math.sin(f.a);
+                        let row = 0;
+                        for (let u = -8.4; u <= 8.41; u += 4.2, row++) for (let v = -14.4; v <= 14.41; v += 3.6) {
+                            const px = f.x + u * ca - v * sa, pz = f.z + u * sa + v * ca;
+                            if (!inC(px, pz)) continue;
+                            const h = height(px, pz);
+                            if (hasSea && h < seaH + 0.3) continue;
+                            putR(S, T.box, px, h + 0.7, pz, 2.1, 0.12, 3.3, 0, -f.a, 0.42, PANEL0, PANEL1);
+                            if (row % 2 === 0 && detail !== 'low') putR(G, T.box, px, h + 0.83, pz, 0.22, 0.04, 3.2, 0, -f.a, 0.42, GLINT, GLINT);
+                            panelsBuilt++;
+                        }
+                    });
+                });
+            }
+            if (TECH.farms) {
+                const fr = U.rng(U.hash(seed, 'farm', x0, z0));
+                for (let k = 0; k < 2; k++) {
+                    const x = x0 + fr() * CS, z = z0 + fr() * CS, keep = fr();
+                    const nc = nearCity(x, z), qn = nc.q, ang = nc.a;
+                    if (qn < 1.15 || qn > 1.65 || keep < 0.35) continue;
+                    const h = height(x, z);
+                    if ((hasSea && h < seaH + 0.6) || slopeAt(x, z) > 0.2 || inLane(x, z, 9) || cityQ(x, z) < 1) continue;
+                    put(S, T.box, x, h - 0.3, z, 6, 4.4, 9, 0, ang, 0, scl(BARN, 0.85), BARN);
+                    put(S, T.cone6, x, h + 4.05, z, 4.6, 2.6, 6.6, 0, ang + 0.5236, 0, BARN_ROOF, mixc(BARN_ROOF, WHITE, 0.25));
+                    const sx = x + Math.cos(ang) * 5.6, sz = z - Math.sin(ang) * 5.6;
+                    put(S, T.cyl8, sx, h - 0.3, sz, 1.6, 8.4, 1.6, 0, 0, 0, scl(SILO, 0.85), SILO);
+                    put(S, T.hemi, sx, h + 8.05, sz, 1.65, 1.3, 1.65, 0, 0, 0, SILO, WHITE);
+                    tall(x, z, h + 9.5, 7);
+                    barnsBuilt++;
+                }
+            }
+            if (TECH.maglev) {
+                const m = CITY.size;
+                const gx0 = Math.floor((x0 - m) / m), gx1 = Math.floor((x0 + CS + m) / m);
+                const gz0 = Math.floor((z0 - m) / m), gz1 = Math.floor((z0 + CS + m) / m);
+                for (let gz = gz0; gz <= gz1; gz++) for (let gx = gx0; gx <= gx1; gx++) for (let dir = 0; dir < 2; dir++) {
+                    const L = linkOf(gx, gz, dir);
+                    if (L) railChunk(S, G, L, x0, z0);
+                }
+            }
+        }
+
         function buildChunk(cx, cz) {
             const N = D.cells, st = CS / N, x0 = cx * CS, z0 = cz * CS;
             const S = new Builder(), G = new Builder();
@@ -1327,8 +2082,9 @@ NSE.Surface = (function () {
                     const jit = 1 - jitAmp / 2 + (U.hash(seed, cx * 64 + i, cz * 64 + j, t) & 255) / 255 * jitAmp;
                     faceColour(hm, slope, jit, fc);
                     if (civ) {
-                        const cq = cityQ((ax + bx + qx) / 3, (az + bz + qz) / 3);
+                        const mx = (ax + bx + qx) / 3, mz = (az + bz + qz) / 3, cq = cityQ(mx, mz);
                         if (cq < 1.0) { const k = U.smooth((1.0 - cq) / 0.35) * 0.3; fc[0] += (pave[0] * jit - fc[0]) * k; fc[1] += (pave[1] * jit - fc[1]) * k; fc[2] += (pave[2] * jit - fc[2]) * k; }
+                        else if (TECH.farms && hm > seaH + 0.4 && slope < 0.3) farmTint(mx, mz, jit, fc);      // patchwork fields round the cities
                     }
                     const B = lavaShore && hm < seaH + 0.8 && hm > seaH - 1.5 ? G : S;
                     const c = B === G ? mixc(lavaShore, fc, U.clamp((hm - seaH) / 0.8, 0, 1) * 0.6) : fc;
@@ -1346,16 +2102,18 @@ NSE.Surface = (function () {
                     }
                 }
             }
-            const ch = { cx: cx, cz: cz, solid: null, glow: null, tris: 0, obs: [] };
+            const ch = { cx: cx, cz: cz, solid: null, glow: null, tris: 0, obs: [], plants: [] };
             curObs = ch.obs;
+            curPlants = ch.plants;
             const r = U.rng(U.hash(seed, 'chunk', cx, cz));
             cityMask = !!civ;
             features(S, G, r, x0, z0);
+            curPlants = null;
             cityMask = false;
             if (civ) {
                 const keep = curObs;
                 if (gas) curObs = null;            // floating cities ride far above the ship: nothing to climb over
-                buildCities(S, G, x0, z0); buildPort(S, G, x0, z0);
+                buildCities(S, G, x0, z0); buildPort(S, G, x0, z0); buildTech(S, G, x0, z0);
                 curObs = keep;
             }
             curObs = null;
@@ -1586,82 +2344,209 @@ NSE.Surface = (function () {
             }
         }
 
-        // ----- creatures --------------------------------------------------------------------------
+        // ----- creatures: herds, flocks, schools and the rare ones -------------------------------------
+        // Each species lives its own way (the user: not "1 or 2 lame looking animals bouncing around"):
+        // grazers in herds, birds in wheeling flocks, fish in schools that leap from the waves, dolphins
+        // in pods, crabs and beetles in little colonies, jellies drifting in loose bunches. A few of each
+        // species are full animated models (the leaders); the rest of a herd, flock or school are copies
+        // of the same animal (one instanced mesh per species) that keep formation round their leader.
+        // A golden creature and a gentle giant (world.goldSeed / world.giantSeed) come into view early.
         const speciesList = [];
-        const creatures = [];
+        const creatures = [];          // leaders: full animated models
+        const herds = [];              // per species: { spec, si, mesh, glow, members }
         const crng = U.rng(U.hash(seed, 'creatures'));
         const walkable = h => !hasSea || type === 'ice' || h >= seaH + 0.15;
+        const swimmable = h => hasSea && type !== 'ice' && h < seaH - 0.8;
         if (world.life && world.life.species && NSE.Creatures) {
             world.life.species.forEach(function (s) {
                 try { const sp = NSE.Creatures.spec(s, world); if (sp) speciesList.push(sp); } catch (e) { /* skip a species that fails */ }
             });
         }
+        /** How each kind lives: [way, fewest, most] companions per leader. */
+        const SOCIAL = {
+            grazer: ['herd', 5, 8], stocky: ['herd', 4, 6], lithe: ['herd', 4, 7], tortoise: ['herd', 1, 3], pup: ['pack', 3, 5], dino: ['pack', 2, 4],
+            upright: ['pack', 2, 4], hopper: ['pack', 3, 5], bird: ['flock', 6, 11], moth: ['swarm', 5, 9], bat: ['swarm', 5, 8],
+            fish: ['school', 8, 14], dolphin: ['pod', 3, 5], whale: ['pod', 1, 2], turtle: ['pod', 1, 3], seanoodle: ['solo', 0, 0],
+            bell: ['drift', 3, 5], siphon: ['drift', 2, 4], balloon: ['drift', 3, 5], ray: ['drift', 2, 3], crab: ['colony', 2, 4], beetle: ['colony', 2, 4],
+            pillbug: ['colony', 2, 4], snail: ['colony', 1, 3], slug: ['colony', 1, 2], frog: ['colony', 2, 4], caterpillar: ['colony', 1, 3], octo: ['colony', 1, 2],
+            crawler: ['colony', 1, 3], fluff: ['colony', 2, 4], smooth: ['colony', 1, 3], pear: ['colony', 1, 3], noodle: ['solo', 0, 0]
+        };
+        const FOLLOWERS = { high: 44, standard: 28, low: 12 };
+        const seenRare = { rainbow: false, golden: false, giant: false };
+        function socialOf(spec) {
+            if (spec.golden) return ['solo', 0, 0];
+            if (spec.giant) return spec.variant === 'whale' ? ['pod', 1, 1] : ['solo', 0, 0];
+            return SOCIAL[spec.variant] || ['colony', 1, 2];
+        }
         function placeCreature(c, initial) {
             const r = crng;
             let ok = false;
-            for (let tries = 0; tries < 14 && !ok; tries++) {
-                const ah = initial ? r.range(18, D.far * 0.8) : r.range(D.far * 0.5, D.far * 0.8);
-                const u = r();
-                const lat = u < 0.3 ? r.range(-5, 5) : u < 0.7 ? r.range(-22, 22) : r.sign() * r.range(22, 60);
+            const rare = c.spec.giant ? 'giant' : c.spec.golden ? 'golden' : null;
+            for (let tries = 0; tries < 16 && !ok; tries++) {
+                let ah, lat;
+                if (rare === 'giant') { ah = initial ? r.range(110, 200) : r.range(D.far * 0.55, D.far * 0.8); lat = r.sign() * r.range(32, 62); }
+                else if (rare === 'golden') { ah = initial ? r.range(60, 140) : r.range(D.far * 0.45, D.far * 0.7); lat = r.sign() * r.range(10, 30); }
+                else {
+                    ah = initial ? r.range(18, D.far * 0.8) : r.range(D.far * 0.5, D.far * 0.8);
+                    const u = r();
+                    lat = u < 0.3 ? r.range(-5, 5) : u < 0.7 ? r.range(-22, 22) : r.sign() * r.range(22, 60);
+                    if (c.flock) lat = r.sign() * r.range(24, 70);       // flocks wheel beside the course, not across it
+                }
                 lanePoint(ah, lat, tmpP);
                 const h = height(tmpP.x, tmpP.z);
                 c.swim = false;
-                if (c.air || gas) ok = true;
+                if (c.sea) ok = swimmable(h);
+                else if (c.air || gas) ok = true;
                 else if (civ && cityQ(tmpP.x, tmpP.z) < 1.15) ok = false;       // wildlife lives outside the cities
                 else if (walkable(h)) ok = true;
-                else if ((type === 'ocean' || type === 'earth') && tries >= 6) { ok = true; c.swim = true; }
+                else if ((type === 'ocean' || type === 'earth') && tries >= 8 && !c.big) { ok = true; c.swim = true; }
             }
             c.x = tmpP.x; c.z = tmpP.z;
             c.obj.group.visible = ok;
+            c.retry = ok ? 0 : 0.8;
             c.heading = r.range(-Math.PI, Math.PI);
             c.yaw = c.heading;
-            c.turn = 0; c.timer = r.range(0, 2); c.hopT = -1; c.pause = 0;
-            c.alt = gas ? r.range(4, 10) : r.range(2, 8);
+            c.turn = 0; c.timer = r.range(0, 2); c.hopT = -1; c.pause = 0; c.leap = r.range(1, 6); c.leapT = -1; c.pitch = 0;
+            c.alt = c.flock ? r.range(26, 38) : gas ? r.range(4, 10) : r.range(2, 8);
             c.phase = r.range(0, 6.28);
             c.y = creatureY(c, 0, 0);
         }
         function creatureY(c, t, hop) {
+            if (c.sea) return seaH - c.height * 0.42 + Math.sin(t * 1.1 + c.phase) * 0.12 + hop;
             if (gas) return height(c.x, c.z) + c.alt + (c.move === 'float' ? 0 : Math.sin(t * 0.6 + c.phase) * 0.8);
             const h = height(c.x, c.z), g = type === 'ice' && hasSea ? Math.max(h, seaH) : h;
             if (c.air) return Math.max(g, seaH) + c.alt + (c.move === 'drift' ? Math.sin(t * 0.6 + c.phase) * 0.8 : 0);
             if (c.swim) return seaH - c.height * 0.3 + Math.sin(t * 1.1 + c.phase) * 0.12;
             return g + hop;
         }
+        /**
+         * A creature as one static mesh (lit parts) and one unlit mesh (eyes, glowing bits), in its own
+         * space with its feet at the origin: the herd copies. Built at the 'tiny' detail.
+         */
+        function staticCopy(spec) {
+            let obj = null;
+            try { obj = NSE.Creatures.build(THREE, spec, 'tiny'); } catch (e) { return null; }
+            if (!obj || !obj.group) return null;
+            try { obj.update(0, 0, false); } catch (e) { /* rest pose */ }
+            obj.group.updateMatrixWorld(true);
+            const B = { lit: { p: [], n: [], c: [] }, flat: { p: [], n: [], c: [] } };
+            const nm = new THREE.Matrix3(), v = new THREE.Vector3();
+            obj.group.traverse(function (o) {
+                if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+                const g = o.geometry, m = o.material, pos = g.attributes.position, nor = g.attributes.normal, cc = g.attributes.color;
+                const glowy = m.isMeshBasicMaterial || (m.emissive && m.emissiveIntensity > 0.5 && m.emissive.r + m.emissive.g + m.emissive.b > 0.05);
+                const L = glowy ? B.flat : B.lit;
+                const base = m.isMeshBasicMaterial ? m.color : (glowy ? m.emissive : m.color);
+                nm.getNormalMatrix(o.matrixWorld);
+                const idx = g.index ? g.index.array : null, count = idx ? idx.length : pos.count;
+                for (let i = 0; i < count; i++) {
+                    const k = idx ? idx[i] : i;
+                    v.fromBufferAttribute(pos, k).applyMatrix4(o.matrixWorld); L.p.push(v.x, v.y, v.z);
+                    if (nor) { v.fromBufferAttribute(nor, k).applyMatrix3(nm).normalize(); L.n.push(v.x, v.y, v.z); } else L.n.push(0, 1, 0);
+                    if (m.vertexColors && cc) L.c.push(cc.getX(k) * base.r, cc.getY(k) * base.g, cc.getZ(k) * base.b);
+                    else L.c.push(base.r, base.g, base.b);
+                }
+            });
+            const height = obj.height;
+            obj.dispose();
+            const mk = function (L) {
+                if (!L.p.length) return null;
+                const g = new THREE.BufferGeometry();
+                g.setAttribute('position', new THREE.Float32BufferAttribute(L.p, 3));
+                g.setAttribute('normal', new THREE.Float32BufferAttribute(L.n, 3));
+                g.setAttribute('color', new THREE.Float32BufferAttribute(L.c, 3));
+                g.computeBoundingSphere();
+                return made(g);
+            };
+            return { lit: mk(B.lit), flat: mk(B.flat), height: height };
+        }
         function clearCreatures() {
             creatures.splice(0).forEach(c => { scene.remove(c.obj.group); try { c.obj.dispose(); } catch (e) { /* ignore */ } });
+            herds.splice(0).forEach(function (hd) {
+                [hd.mesh, hd.glow].forEach(function (m) { if (m) { scene.remove(m); free(m.geometry); m.material.dispose(); if (m.dispose) m.dispose(); } });
+            });
         }
         function makeCreatures() {
             clearCreatures();
             if (!speciesList.length || !NSE.Creatures) return;
-            const per = Math.max(1, Math.round(D.creatures / speciesList.length));
-            speciesList.forEach(function (spec, si) {
-                for (let k = 0; k < per; k++) {
+            const nSp = speciesList.length;
+            // A few full models per species (herd members are the cheap copies).
+            const per = Math.max(1, Math.round(D.creatures * 0.6 / nSp));
+            const budget = FOLLOWERS[detail] || 30;
+            const plan = speciesList.map(function (spec) {
+                const so = socialOf(spec);
+                const lead = spec.golden || spec.giant ? 1 : (so[0] === 'solo' ? Math.min(per, 2) : per);
+                let want = 0;
+                for (let k = 0; k < lead; k++) want += so[2] ? crng.int(so[1], so[2]) : 0;
+                return { spec: spec, so: so, lead: lead, want: want };
+            });
+            const totalWant = plan.reduce((n, p) => n + p.want, 0);
+            const kf = totalWant > budget ? budget / totalWant : 1;
+            plan.forEach(function (p, si) {
+                const spec = p.spec, move = spec.move || 'walk';
+                const leaders = [];
+                for (let k = 0; k < p.lead; k++) {
                     let obj = null;
                     try { obj = NSE.Creatures.build(THREE, spec, detail); } catch (e) { obj = null; }
                     if (!obj || !obj.group) continue;
-                    const move = spec.move || 'walk';
                     const size = Math.max(0.3, spec.size || obj.height || 1);
                     const c = {
-                        spec: spec, si: si, obj: obj, move: move, air: move === 'drift' || move === 'float',
+                        spec: spec, si: si, obj: obj, move: move, air: move === 'drift' || move === 'float', sea: move === 'swim',
+                        flock: p.so[0] === 'flock' || p.so[0] === 'swarm', big: !!spec.giant,
+                        leaps: move === 'swim' && (spec.variant === 'fish' || spec.variant === 'dolphin'),
                         height: obj.height || size, size: size,
-                        speed: U.clamp(size * 0.5, 0.4, 3.5) * (move === 'crawl' ? 0.4 : move === 'slither' ? 0.5 : move === 'roll' ? 1.2 : move === 'drift' || move === 'float' ? 0.7 : 1),
+                        speed: U.clamp(size * 0.5, 0.4, 3.5) * (move === 'crawl' ? 0.4 : move === 'slither' ? 0.5 : move === 'roll' ? 1.2 : move === 'drift' || move === 'float' ? 0.7 : move === 'swim' ? 0.9 : 1) * (spec.giant ? 0.45 : 1),
                         x: 0, y: 0, z: 0, moving: false
                     };
+                    if (c.flock) c.speed = Math.max(c.speed, 3.2);         // a flock keeps up a gentle cruise
                     scene.add(obj.group);
                     placeCreature(c, true);
                     creatures.push(c);
+                    leaders.push(c);
                 }
+                const nf = Math.round(p.want * kf);
+                if (!nf || !leaders.length) return;
+                const cp = staticCopy(spec);
+                if (!cp || !cp.lit) { if (cp && cp.flat) free(cp.flat); return; }
+                const mesh = new THREE.InstancedMesh(cp.lit, new THREE.MeshLambertMaterial({ vertexColors: true }), nf);
+                const glow = cp.flat ? new THREE.InstancedMesh(cp.flat, new THREE.MeshBasicMaterial({ vertexColors: true }), nf) : null;
+                [mesh, glow].forEach(function (m) { if (!m) return; m.frustumCulled = false; if (m.instanceMatrix.setUsage) m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(m); });
+                const way = p.so[0], size = Math.max(0.3, spec.size || 1);
+                const spread = { herd: 2.5 + size * 2.4, pack: 2 + size * 2, colony: 2 + size * 3, flock: 5 + size * 3, swarm: 3 + size * 2.5, school: 3 + size * 7, pod: 5 + size * 3, drift: 4 + size * 1.6 }[way] || 4;
+                const members = [];
+                for (let i = 0; i < nf; i++) {
+                    const a = crng() * Math.PI * 2, d = spread * (0.35 + 0.65 * Math.sqrt(crng()));
+                    const calf = spec.variant === 'whale' && i % 2 === 0;
+                    members.push({
+                        L: leaders[i % leaders.length], ox: Math.cos(a) * d, oz: Math.sin(a) * d,
+                        oy: way === 'flock' || way === 'swarm' ? crng.range(-3, 3) : way === 'drift' ? crng.range(-2, 3) : 0,
+                        ph: crng.range(0, 6.28), w: crng.range(0.4, 0.9), amp: way === 'swarm' ? 1.4 : way === 'school' ? 0.8 : 0.5,
+                        sc: calf ? 0.5 : way === 'flock' || way === 'swarm' ? crng.range(0.6, 0.88) : crng.range(0.82, 1.1), yj: crng.range(-0.35, 0.35), dir: crng.sign(),
+                        leap: crng.range(1, 7), leapT: -1, ld: crng.range(0.9, 1.3), lh: size * crng.range(1.6, 3.2),
+                        hopT: crng(), okT: 0, ok: true, x: 0, y: 0, z: 0, vis: false
+                    });
+                }
+                herds.push({
+                    spec: spec, si: si, mesh: mesh, glow: glow, members: members, h: cp.height, size: size, way: way,
+                    sea: move === 'swim', air: move === 'drift' || move === 'float', hop: move === 'hop',
+                    leaps: move === 'swim' && (spec.variant === 'fish' || spec.variant === 'dolphin'), flock: way === 'flock' || way === 'swarm', dir: crng.sign()
+                });
             });
+            updateHerds(0, time);
         }
         function updateCreatures(dt, t) {
             for (let i = 0; i < creatures.length; i++) {
                 const c = creatures[i];
                 const along = alongOf(c.x, c.z), lat = latOf(c.x, c.z);
-                if (along < -30 || Math.abs(lat) > 110 || along > D.far + 40 || (!c.obj.group.visible && along < D.far * 0.3)) placeCreature(c, false);
+                if (c.retry > 0) c.retry -= dt;
+                if (along < -30 || Math.abs(lat) > 110 || along > D.far + 40 || (!c.obj.group.visible && along < D.far * 0.3 && c.retry <= 0)) placeCreature(c, false);
                 c.timer -= dt;
                 if (c.timer <= 0) { c.turn = crng.range(-0.6, 0.6); c.timer = crng.range(2, 5); if (c.move === 'walk' && crng() < 0.3) c.pause = crng.range(1, 2.5); }
+                // Flocks keep clear of the course ahead (they wheel off to the side).
+                if (c.flock && along > -10 && along < 90 && Math.abs(lat) < 22) c.turn = lat > 0 ? -0.8 : 0.8;
                 c.heading += c.turn * dt;
                 let step = 0, hop = 0, moving = true;
+                c.pitch = 0;
                 if (c.move === 'hop') {
                     if (c.hopT < 0) { c.rest = (c.rest === undefined ? crng.range(0.3, 1.2) : c.rest) - dt; moving = false; if (c.rest <= 0) { c.hopT = 0; c.rest = crng.range(0.6, 1.6); } }
                     else {
@@ -1672,11 +2557,22 @@ NSE.Surface = (function () {
                     }
                 } else if (c.pause > 0) { c.pause -= dt; moving = false; }
                 else step = c.speed * dt;
+                // Fish and dolphins leap out of the waves now and then.
+                if (c.leaps) {
+                    if (c.leapT >= 0) {
+                        c.leapT += dt / (c.spec.variant === 'fish' ? 0.9 : 1.3);
+                        const u = Math.min(1, c.leapT);
+                        hop = Math.sin(Math.PI * u) * c.size * (c.spec.variant === 'fish' ? 3 : 2.6);
+                        c.pitch = 0.75 * Math.cos(Math.PI * u);
+                        if (c.leapT >= 1) { c.leapT = -1; c.leap = crng.range(3, 8); }
+                    } else if ((c.leap -= dt) <= 0) c.leapT = 0;
+                }
                 let dir = c.heading;
                 if (c.move === 'slither') dir += 0.35 * Math.sin(t * 3 + c.phase);
                 if (step > 0) {
                     const nx = c.x - Math.sin(dir) * step, nz = c.z - Math.cos(dir) * step;
-                    if (!c.air && !gas && !c.swim && !walkable(height(nx, nz))) { c.heading += Math.PI * 0.6; moving = false; }
+                    if (c.sea) { if (swimmable(height(nx, nz))) { c.x = nx; c.z = nz; } else { c.heading += Math.PI * 0.6; moving = false; } }
+                    else if (!c.air && !gas && !c.swim && !walkable(height(nx, nz))) { c.heading += Math.PI * 0.6; moving = false; }
                     else if (c.swim && walkable(height(nx, nz))) { c.swim = false; c.x = nx; c.z = nz; }
                     else { c.x = nx; c.z = nz; }
                 }
@@ -1685,8 +2581,66 @@ NSE.Surface = (function () {
                 c.yaw += angleTo(c.yaw, dir) * (1 - Math.exp(-4 * dt));
                 const g = c.obj.group;
                 g.position.set(c.x, c.y, c.z);
-                g.rotation.set(0, c.yaw, 0);
+                g.rotation.set(c.pitch, c.yaw, c.flock ? -0.2 * Math.sign(c.turn || 1) : 0, 'YXZ');
                 if (c.obj.update) { try { c.obj.update(dt, t, moving); } catch (e) { /* a creature's animation must never stop the flight */ } }
+                // The rare ones count as seen once they are close in front of the ship.
+                if ((c.spec.golden || c.spec.giant) && g.visible && along > 4) {
+                    const range = c.spec.giant ? 170 : 75;
+                    if (along < range && Math.abs(lat) < along * 1.1 + 12) seenRare[c.spec.giant ? 'giant' : 'golden'] = true;
+                }
+            }
+        }
+        const hM = new THREE.Matrix4(), hQ = new THREE.Quaternion(), hE = new THREE.Euler(), hV = new THREE.Vector3(), hS = new THREE.Vector3(), hZ = new THREE.Matrix4().makeScale(0, 0, 0);
+        /** Every herd copy follows its leader in formation (flocks also wheel round it). */
+        function updateHerds(dt, t) {
+            for (let k = 0; k < herds.length; k++) {
+                const hd = herds[k];
+                for (let i = 0; i < hd.members.length; i++) {
+                    const f = hd.members[i], L = f.L;
+                    let show = L.obj.group.visible;
+                    if (show) {
+                        const spin = hd.flock ? t * 0.3 * (hd.way === 'flock' ? hd.dir : f.dir) : 0;
+                        const a = L.yaw + spin;
+                        const ca = Math.cos(a), sa = Math.sin(a);
+                        const ox = f.ox + Math.sin(t * f.w + f.ph) * f.amp, oz = f.oz + Math.cos(t * f.w * 0.8 + f.ph) * f.amp;
+                        f.x = L.x + ox * ca + oz * sa; f.z = L.z - ox * sa + oz * ca;
+                        let y, pitch = 0, roll = 0;
+                        if (hd.sea) {
+                            if ((f.okT -= dt) <= 0) { f.okT = 0.5; f.ok = swimmable(height(f.x, f.z)); }
+                            show = f.ok;
+                            y = seaH - hd.h * f.sc * 0.42 + Math.sin(t * 1.1 + f.ph) * 0.12;
+                            if (hd.leaps) {
+                                if (f.leapT >= 0) {
+                                    f.leapT += dt / f.ld;
+                                    const u = Math.min(1, f.leapT);
+                                    y += Math.sin(Math.PI * u) * f.lh;
+                                    pitch = 0.75 * Math.cos(Math.PI * u);
+                                    if (f.leapT >= 1) { f.leapT = -1; f.leap = crng.range(2.5, 7); }
+                                } else if ((f.leap -= dt) <= 0) f.leapT = 0;
+                            }
+                        } else if (hd.air || gas) {
+                            y = L.y + f.oy + Math.sin(t * 1.3 + f.ph) * 0.5;
+                            if (hd.flock) roll = -0.28 * (hd.way === 'flock' ? hd.dir : f.dir);
+                        } else {
+                            const g0 = height(f.x, f.z);
+                            show = walkable(g0);
+                            y = type === 'ice' && hasSea ? Math.max(g0, seaH) : g0;
+                            if (hd.hop) { f.hopT = (f.hopT + dt * 1.2) % 1; y += Math.max(0, Math.sin(f.hopT * Math.PI * 2)) * (0.35 * hd.size + 0.25); }
+                            else if (L.moving) y += Math.abs(Math.sin(t * 5 + f.ph)) * 0.04 * hd.size;
+                        }
+                        f.y = y;
+                        if (show) {
+                            hQ.setFromEuler(hE.set(pitch, a + f.yj, roll, 'YXZ'));
+                            hM.compose(hV.set(f.x, y, f.z), hQ, hS.set(f.sc, f.sc, f.sc));
+                        }
+                    }
+                    f.vis = show;
+                    const m = show ? hM : hZ;
+                    hd.mesh.setMatrixAt(i, m);
+                    if (hd.glow) hd.glow.setMatrixAt(i, m);
+                }
+                hd.mesh.instanceMatrix.needsUpdate = true;
+                if (hd.glow) hd.glow.instanceMatrix.needsUpdate = true;
             }
         }
 
@@ -1730,9 +2684,10 @@ NSE.Surface = (function () {
             }
         }
 
-        // ----- city traffic and spaceport launches ---------------------------------------------
+        // ----- city traffic, trains, drones, sky ships, spaceport launches ------------------------------
         const traffic = [], launchers = [], portsSeen = new Set();
-        let trafficBody = null, trafficGlow = null, launches = 0, civTick = 0, nearCities = [];
+        let trafficBody = null, trafficGlow = null, launches = 0, civTick = 0, nearCities = [], wideCities = [];
+        const civSeen = { trains: 0, drones: 0, skyships: 0, domes: 0, beams: 0, climbers: 0 };
         if (civ) {
             const n = { high: 12, standard: 9, low: 5 }[detail];
             const bodyG = made(new THREE.IcosahedronGeometry(1, 1));
@@ -1760,7 +2715,258 @@ NSE.Surface = (function () {
                 launchers.push({ g: g, t: -1, x: 0, z: 0, y0: 0, dx: 0, dz: 0 });
             }
         }
+        const civColor = civ ? new THREE.Color(winCol[0], winCol[1], winCol[2]) : null;
+        const instanced = (geo, mat, n) => {
+            const m = new THREE.InstancedMesh(keepGeo(geo), keepMat(mat), n);
+            m.frustumCulled = false;
+            if (m.instanceMatrix.setUsage) m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            tmpM0.makeScale(0, 0, 0);
+            for (let i = 0; i < n; i++) m.setMatrixAt(i, tmpM0);
+            scene.add(m);
+            return m;
+        };
+        const tmpM0 = new THREE.Matrix4();
+        // Maglev trains: four cars gliding along the rails between the cities near the ship.
+        const TRAINS = 3, CARS = 4, TRAIN_V = 26;
+        const trains = [];
+        let carBody = null, carGlow = null;
+        if (civ && TECH.maglev) {
+            carBody = instanced(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: new THREE.Color().setRGB(...mixc(civWalls[0], WHITE, 0.55)) }), TRAINS * CARS);
+            carGlow = instanced(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: civColor }), TRAINS * CARS);
+            for (let i = 0; i < TRAINS; i++) trains.push({ link: null, phase: 0 });
+        }
+        // Drones: little craft with a light, buzzing round the cities.
+        const drones = [];
+        let droneBody = null, droneLight = null;
+        if (civ && TECH.drones) {
+            const n = { high: 22, standard: 14, low: 8 }[detail];
+            droneBody = instanced(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: new THREE.Color().setRGB(...mixc(civWalls[1], WHITE, 0.4)) }), n);
+            droneLight = instanced(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: civColor }), n);
+            const dr = U.rng(U.hash(seed, 'drones'));
+            for (let i = 0; i < n; i++) drones.push({ city: null, rad: 20, h: 20, a: dr() * 6.28, w: dr.range(0.25, 0.6) * dr.sign(), ph: dr() * 6.28, r: dr });
+        }
+        // Great sky ships drifting slowly across, high up.
+        const skyships = [];
+        const skyR = U.rng(U.hash(seed, 'skyships'));
+        if (civ && TECH.skyships) {
+            const S = new Builder(), G = new Builder();
+            const hull0 = mixc(civWalls[1], WHITE, 0.25), hull1 = mixc(civWalls[1], WHITE, 0.62), acc = mixc(civRoof, civWalls[0], 0.3);
+            const sph = new THREE.SphereGeometry(1, 14, 9).toNonIndexed();
+            const sp = sph.attributes.position.array, sys = new Float32Array(sp.length / 3);
+            for (let i = 0; i < sys.length; i++) sys[i] = (sp[i * 3 + 1] + 1) / 2;
+            const SPH = { p: new Float32Array(sp), ys: sys };
+            sph.dispose();
+            const add = (B, tpl, x, y, z, sx, sy, sz, rx, c0, c1) => { q.setFromEuler(eul.set(rx || 0, 0, 0)); mtx.compose(vp.set(x, y, z), q, vs.set(sx, sy, sz)); B.add(tpl, mtx.elements, c0, c1 || c0); };
+            add(S, SPH, 0, 0, 0, 6.2, 5.4, 22, 0, scl(hull0, 0.85), hull1);                // the envelope
+            add(S, T.box, 0, -7.2, -1, 4.2, 2.8, 11, 0, scl(acc, 0.8), acc);              // the gondola
+            add(G, T.box, 0, -6.4, -1, 4.3, 0.7, 10, 0, winCol, winCol);                  // its windows
+            add(S, T.box, 0, 2, 17, 0.5, 6.5, 6.5, 0, acc, hull1);                        // tail fins
+            add(S, T.box, 0, -0.3, 17, 13.5, 0.5, 6.5, 0, acc, hull1);
+            [-1, 1].forEach(function (s) {
+                add(S, T.cyl8, s * 7.6, -3.3, 1, 1.1, 4, 1.1, Math.PI / 2, acc, hull1);  // engine pods
+                add(S, T.box, s * 4.6, -4.2, 2.4, 5, 0.5, 1, 0, acc, acc);
+                add(G, T.octa, s * 7.6, -3.3, 5.3, 0.9, 0.9, 0.9, 0, winCol, WHITE);
+                for (let k = -3; k <= 3; k++) {
+                    const zz = k * 3, xx = 6.2 * Math.sqrt(1 - (zz / 22) * (zz / 22)) * 1.01;
+                    add(G, T.box, s * xx, -0.9, zz, 0.12, 0.7, 1.7, 0, winCol, winCol);
+                }
+            });
+            add(G, T.octa, 0, 0, -22.3, 0.8, 0.8, 0.8, 0, winCol, WHITE);
+            const gS = keepGeo(S.build(THREE)), gG = keepGeo(G.build(THREE));
+            const mShip = keepMat(new THREE.MeshLambertMaterial({ vertexColors: true }));
+            const n = { high: 3, standard: 2, low: 1 }[detail];
+            for (let i = 0; i < n; i++) {
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(gS, mShip), new THREE.Mesh(gG, matGlow));
+                g.visible = false;
+                scene.add(g);
+                skyships.push({ g: g, t: -1, wait: 2 + i * 14, x: 0, y: 0, z: 0, vx: 0, vz: 0, yaw: 0, ph: skyR() * 6.28 });
+            }
+        }
+        // The great domes' glass (one see-through shell per dome near the ship) and the beacons' beams.
+        const domePool = [], beamPool = [];
+        let beamMat = null;
+        if (civ && CSTYLE === 'domes') {
+            const geo = keepGeo(new THREE.SphereGeometry(1, 32, 10, 0, Math.PI * 2, 0, Math.PI / 2));
+            const glass = keepMat(new THREE.MeshLambertMaterial({ color: new THREE.Color().setRGB(...mixc(winCol, lin('#bfe4ff'), 0.6)), emissive: new THREE.Color().setRGB(...scl(winCol, 0.16)), transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+            // A geodesic frame over the glass: the top half of a subdivided icosahedron, drawn as lines.
+            const ico0 = new THREE.IcosahedronGeometry(1, 2), ico = ico0.index ? ico0.toNonIndexed() : ico0, ip = ico.attributes.position.array, keep = [];
+            for (let t = 0; t < ip.length; t += 9) if (ip[t + 1] + ip[t + 4] + ip[t + 7] > -0.05) for (let k = 0; k < 9; k++) keep.push(ip[t + k]);
+            ico.dispose(); ico0.dispose();
+            const frameGeo = keepGeo(new THREE.BufferGeometry());
+            frameGeo.setAttribute('position', new THREE.Float32BufferAttribute(keep, 3));
+            const frameMat = keepMat(new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...mixc(civTrim, WHITE, 0.3)), wireframe: true, transparent: true, opacity: 0.55, depthWrite: false }));
+            for (let i = 0; i < 4; i++) {
+                const m = new THREE.Mesh(geo, glass); m.visible = false; m.renderOrder = 2; scene.add(m);
+                const f = new THREE.Mesh(frameGeo, frameMat); f.visible = false; f.renderOrder = 2; scene.add(f);
+                m.userData.frame = f;
+                domePool.push(m);
+            }
+        }
+        if (civ && TECH.beacons) {
+            const geo = keepGeo(new THREE.CylinderGeometry(1.1, 1.5, 1, 8, 4, true).translate(0, 0.5, 0));
+            const bpos = geo.attributes.position, bcol = new Float32Array(bpos.count * 4);
+            for (let i = 0; i < bpos.count; i++) { const t = bpos.getY(i); bcol[i * 4] = winCol[0]; bcol[i * 4 + 1] = winCol[1]; bcol[i * 4 + 2] = winCol[2]; bcol[i * 4 + 3] = Math.pow(1 - t, 2.2); }
+            geo.setAttribute('color', new THREE.BufferAttribute(bcol, 4));
+            beamMat = keepMat(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+            for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(geo, beamMat); m.visible = false; m.renderOrder = 3; scene.add(m); beamPool.push(m); }
+        }
+        // In the sky (it moves with the camera, so these sit far away): the space elevator's tether
+        // rising out of the haze with climbers on it, and the orbital ring as a pale arch.
+        const civSky = { tether: null, ring: null, climbers: [] };
+        if (civ && TECH.elevator) {
+            const az = 0.42, dir = new THREE.Vector3(-Math.sin(az), 0, -Math.cos(az)), D0 = 560, H = 760, B0 = -45;
+            const tcol = mixc(lin('#6c7894'), winCol, 0.15);
+            const tube = (r, alpha, haze) => {
+                const g = keepGeo(new THREE.CylinderGeometry(r, r, H, 6, 10, true).translate(0, B0 + H / 2, 0));
+                const pos = g.attributes.position, cols = new Float32Array(pos.count * 4);
+                for (let i = 0; i < pos.count; i++) {
+                    const t = (pos.getY(i) - B0) / H;
+                    const c = mixc(haze ? tcol : winCol, skyHor, 0.6 * (1 - U.smooth(t * 3)));
+                    cols[i * 4] = c[0]; cols[i * 4 + 1] = c[1]; cols[i * 4 + 2] = c[2];
+                    cols[i * 4 + 3] = alpha * U.smooth(t * 12) * (1 - U.smooth((t - 0.62) / 0.38));
+                }
+                g.setAttribute('color', new THREE.BufferAttribute(cols, 4));
+                return g;
+            };
+            const tether = new THREE.Mesh(tube(3.4, 0.95, true), keepMat(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false })));
+            const sheath = new THREE.Mesh(tube(1.6, 0.9, false), keepMat(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
+            const mid = new THREE.Mesh(keepGeo(new THREE.TorusGeometry(16, 2.6, 6, 28).rotateX(Math.PI / 2)), keepMat(new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...mixc(tcol, skyHor, 0.3)), fog: false, transparent: true, opacity: 0.9, depthWrite: false })));
+            const midGlow = new THREE.Mesh(keepGeo(new THREE.TorusGeometry(16.4, 0.9, 4, 28).rotateX(Math.PI / 2)), keepMat(new THREE.MeshBasicMaterial({ color: civColor, fog: false, transparent: true, depthWrite: false })));
+            [tether, sheath, mid, midGlow].forEach(m => { m.position.copy(dir).multiplyScalar(D0); m.renderOrder = -8; m.frustumCulled = false; skyGroup.add(m); });
+            mid.position.y = midGlow.position.y = 165;
+            const cg = keepGeo(new THREE.BoxGeometry(5, 9, 5));
+            for (let i = 0; i < 3; i++) {
+                const m = new THREE.Mesh(cg, keepMat(new THREE.MeshBasicMaterial({ color: civColor, fog: false, transparent: true, depthWrite: false })));
+                m.position.copy(dir).multiplyScalar(D0);
+                m.renderOrder = -7;
+                m.frustumCulled = false;
+                skyGroup.add(m);
+                civSky.climbers.push({ m: m, ph: i * 213, up: i !== 1 });
+            }
+            civSky.tether = tether;
+        }
+        if (civ && TECH.ring) {
+            const E = 0.27, grp = new THREE.Group();
+            grp.rotation.y = -0.22;
+            const ringCol = mixc(lin('#7e8aa6'), winCol, 0.12);
+            const band = new THREE.Mesh(keepGeo(new THREE.TorusGeometry(600, 3.6, 4, 128, Math.PI)), keepMat(new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...ringCol), transparent: true, opacity: airless ? 0.9 : 0.62, depthWrite: false, fog: false })));
+            const core = new THREE.Mesh(keepGeo(new THREE.TorusGeometry(600, 1.0, 3, 128, Math.PI)), keepMat(new THREE.MeshBasicMaterial({ color: civColor, transparent: true, opacity: 0.9, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
+            const bp = new Float32Array(26 * 3);
+            for (let i = 0; i < 26; i++) { const a = (i + 0.5) / 26 * Math.PI; bp[i * 3] = Math.cos(a) * 600; bp[i * 3 + 1] = Math.sin(a) * 600; bp[i * 3 + 2] = 4; }
+            const bg = keepGeo(new THREE.BufferGeometry());
+            bg.setAttribute('position', new THREE.BufferAttribute(bp, 3));
+            const beads = new THREE.Points(bg, keepMat(new THREE.PointsMaterial({ color: civColor, size: 4, sizeAttenuation: false, transparent: true, depthWrite: false, fog: false })));
+            [band, core, beads].forEach(m => { m.rotation.x = E - Math.PI / 2; m.renderOrder = -8; m.frustumCulled = false; grp.add(m); });
+            skyGroup.add(grp);
+            civSky.ring = grp;
+        }
+
         const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler(), tmpV = new THREE.Vector3(), tmpS = new THREE.Vector3();
+        /** The links near the ship (nearest first), for the trains. */
+        function linksNear(R) {
+            const out = [], m = CITY.size;
+            const cx = Math.floor(shipPos.x / m), cz = Math.floor(shipPos.z / m);
+            for (let gz = cz - 2; gz <= cz + 1; gz++) for (let gx = cx - 2; gx <= cx + 1; gx++) for (let dir = 0; dir < 2; dir++) {
+                const L = linkOf(gx, gz, dir);
+                if (!L) continue;
+                const t = U.clamp((shipPos.x - L.sx) * L.ux + (shipPos.z - L.sz) * L.uz, 0, L.len);
+                const dd = Math.hypot(L.sx + L.ux * t - shipPos.x, L.sz + L.uz * t - shipPos.z);
+                if (dd < R) out.push([dd, L]);
+            }
+            out.sort((a, b) => a[0] - b[0]);
+            return out.map(o => o[1]);
+        }
+        function hideInst(m, i) { tmpM.makeScale(0, 0, 0); m.setMatrixAt(i, tmpM); }
+        function updateTrains(t) {
+            if (!carBody) return;
+            let shown = 0;
+            for (let i = 0; i < trains.length; i++) {
+                const tr = trains[i], L = tr.link;
+                for (let k = 0; k < CARS; k++) {
+                    const j = i * CARS + k;
+                    if (!L) { hideInst(carBody, j); hideInst(carGlow, j); continue; }
+                    const span = L.len * 2, tt = ((t * TRAIN_V + tr.phase) % span + span) % span;
+                    const s = tt < L.len ? tt : span - tt, dirS = tt < L.len ? 1 : -1;
+                    const sk = s - dirS * k * 9.6;
+                    if (sk < 1 || sk > L.len - 1) { hideInst(carBody, j); hideInst(carGlow, j); continue; }
+                    const y = railY(L, sk) + 0.15, p = Math.atan2(railY(L, Math.min(L.len, sk + 3)) - railY(L, Math.max(0, sk - 3)), 6);
+                    const x = L.sx + L.ux * sk, z = L.sz + L.uz * sk;
+                    tmpQ.setFromEuler(tmpE.set(-p, L.yaw, 0, 'YXZ'));
+                    tmpM.compose(tmpV.set(x, y, z), tmpQ, tmpS.set(2.3, 2.1, 8.6));
+                    carBody.setMatrixAt(j, tmpM);
+                    tmpM.compose(tmpV.set(x, y + 1, z), tmpQ, tmpS.set(2.36, 0.55, 8));
+                    carGlow.setMatrixAt(j, tmpM);
+                    shown++;
+                }
+            }
+            carBody.instanceMatrix.needsUpdate = true;
+            carGlow.instanceMatrix.needsUpdate = true;
+            if (shown) civSeen.trains++;
+        }
+        function updateDrones(dt, t) {
+            if (!droneBody) return;
+            let shown = 0;
+            for (let i = 0; i < drones.length; i++) {
+                const c = drones[i];
+                if (!c.city || nearCities.indexOf(c.city) < 0) {
+                    c.city = nearCities.length ? nearCities[i % Math.min(4, nearCities.length)] : null;
+                    if (c.city) { c.rad = Math.max(c.city.tMin * 0.9, c.r.range(0.15, 0.9) * c.city.r); c.h = c.r.range(c.city.tLo - 8, c.city.tHi - 4); }
+                }
+                if (!c.city) { hideInst(droneBody, i); hideInst(droneLight, i); continue; }
+                c.a += c.w * dt;
+                const x = c.city.x + Math.cos(c.a) * c.rad + Math.sin(c.a * 2.3 + c.ph) * 6;
+                const z = c.city.z + Math.sin(c.a) * c.rad + Math.cos(c.a * 1.7 + c.ph) * 6;
+                const y = c.city.gy + Math.max(10, c.h) + Math.sin(t * 1.3 + c.ph) * 1.6;
+                if (Math.hypot(x - shipPos.x, y - shipPos.y, z - shipPos.z) < 10) { hideInst(droneBody, i); hideInst(droneLight, i); continue; }
+                tmpQ.setFromEuler(tmpE.set(0, t * 2 + c.ph, 0));
+                tmpM.compose(tmpV.set(x, y, z), tmpQ, tmpS.set(0.9, 0.32, 0.9));
+                droneBody.setMatrixAt(i, tmpM);
+                tmpM.compose(tmpV.set(x, y - 0.35, z), tmpQ, tmpS.set(0.26, 0.26, 0.26));
+                droneLight.setMatrixAt(i, tmpM);
+                shown++;
+            }
+            droneBody.instanceMatrix.needsUpdate = true;
+            droneLight.instanceMatrix.needsUpdate = true;
+            if (shown >= 4) civSeen.drones++;
+        }
+        function updateSkyships(dt, t) {
+            let shown = 0;
+            for (const s of skyships) {
+                if (s.t < 0) {
+                    s.wait -= dt;
+                    if (s.wait > 0) { s.g.visible = false; continue; }
+                    // Come into view far ahead and off to one side, high up, and drift slowly across.
+                    const side = skyR.sign();
+                    aheadPoint(skyR.range(220, 380), side * skyR.range(50, 190), tmpP);
+                    s.x = tmpP.x; s.z = tmpP.z;
+                    s.y = (gas ? height(s.x, s.z) + 80 : Math.max(ground(s.x, s.z), obstacleTop(s.x, s.z)) + skyR.range(72, 100));
+                    const sp = skyR.range(4, 7), fw = skyR.range(-1.5, 1.5);
+                    s.vx = -rgt.x * side * sp + fwd.x * fw; s.vz = -rgt.z * side * sp + fwd.z * fw;
+                    s.yaw = Math.atan2(-s.vx, -s.vz);
+                    s.t = 0;
+                }
+                s.t += dt;
+                s.x += s.vx * dt; s.z += s.vz * dt;
+                const al = alongOf(s.x, s.z), lt = latOf(s.x, s.z);
+                if (al < -170 || Math.abs(lt) > 380 || s.t > 150) { s.t = -1; s.wait = skyR.range(8, 22); s.g.visible = false; continue; }
+                s.g.visible = true;
+                s.g.position.set(s.x, s.y + Math.sin(t * 0.25 + s.ph) * 1.2, s.z);
+                s.g.rotation.set(0, s.yaw, Math.sin(t * 0.2 + s.ph) * 0.025);
+                shown++;
+            }
+            if (shown) civSeen.skyships++;
+        }
+        function updateCivSky(t) {
+            if (!civSky.climbers.length) return;
+            const calm = NSE.Settings && NSE.Settings.calm ? NSE.Settings.calm() : false;
+            civSky.climbers.forEach(function (c) {
+                const u = ((t * (calm ? 10 : 16) + c.ph) % 600) / 600;
+                c.m.position.y = -10 + (c.up ? u : 1 - u) * 600;
+                c.m.material.opacity = U.smooth(u * 8) * (1 - U.smooth((u - 0.8) / 0.2));
+            });
+            civSeen.climbers++;
+        }
         function updateCiv(dt, t) {
             if (!civ) return;
             if (civTick-- <= 0) {
@@ -1785,12 +2991,37 @@ NSE.Surface = (function () {
                         }
                     }
                 }
+                // The domes' glass and the beacons' beams, for the cities in view.
+                if (domePool.length || beamPool.length) {
+                    const R = D.far + 140;
+                    wideCities = citiesNear(shipPos.x - R, shipPos.z - R, shipPos.x + R, shipPos.z + R, []).filter(pl => Math.hypot(pl.x - shipPos.x, pl.z - shipPos.z) < R);
+                    let di = 0, bi = 0;
+                    wideCities.forEach(function (pl) {
+                        if (pl.dome && di < domePool.length) { const m = domePool[di++], f = m.userData.frame; m.visible = f.visible = true; m.position.set(pl.x, pl.dome.base, pl.z); m.scale.set(pl.dome.R, pl.dome.H, pl.dome.R); f.position.copy(m.position); f.scale.set(pl.dome.R * 1.01, pl.dome.H * 1.01, pl.dome.R * 1.01); }
+                        pl.beacons.forEach(function (bc) {
+                            if (bc.top === null || bi >= beamPool.length) return;
+                            const m = beamPool[bi++];
+                            m.visible = true; m.position.set(bc.x, bc.top + 1.4, bc.z); m.scale.set(1.3, 170, 1.3);
+                        });
+                    });
+                    for (; di < domePool.length; di++) domePool[di].visible = domePool[di].userData.frame.visible = false;
+                    for (; bi < beamPool.length; bi++) beamPool[bi].visible = false;
+                }
+                // Trains on the nearest lines.
+                if (carBody) {
+                    const near = linksNear(480);
+                    trains.forEach(function (tr, i) {
+                        if (tr.link && near.indexOf(tr.link) >= 0) return;
+                        tr.link = near.find(L => !trains.some(o => o !== tr && o.link === L)) || null;
+                        if (tr.link) tr.phase = (U.hash(tr.link.id) % 1000) / 1000 * tr.link.len * 2;
+                    });
+                }
             }
             for (let i = 0; i < traffic.length; i++) {
                 const c = traffic[i];
                 if (!c.city || nearCities.indexOf(c.city) < 0) {
                     c.city = nearCities.length ? nearCities[i % Math.min(3, nearCities.length)] : null;
-                    if (c.city) { c.rad = c.r.range(0.3, 0.95) * c.city.r; c.h = gas ? c.r.range(48, 66) : c.r.range(24, 46); c.w = c.r.range(11, 19) / c.rad; c.a = c.r() * 6.28; }
+                    if (c.city) { c.rad = Math.max(c.city.tMin, c.r.range(0.3, 0.95) * c.city.r); c.h = c.r.range(c.city.tLo, c.city.tHi); c.w = c.r.range(11, 19) / c.rad; c.a = c.r() * 6.28; }
                 }
                 if (!c.city) { c.y = -1e4; tmpM.makeScale(0, 0, 0); trafficBody.setMatrixAt(i, tmpM); trafficGlow.setMatrixAt(i * 2, tmpM); trafficGlow.setMatrixAt(i * 2 + 1, tmpM); continue; }
                 c.a += c.w * c.dir * dt;
@@ -1821,6 +3052,13 @@ NSE.Surface = (function () {
                 L.g.position.set(L.x + L.dx * drift, L.y0 + rise, L.z + L.dz * drift);
                 L.g.rotation.set(0, t * 1.2, 0);
             }
+            updateTrains(t);
+            updateDrones(dt, t);
+            updateSkyships(dt, t);
+            updateCivSky(t);
+            if (beamMat) beamMat.opacity = 0.08 + 0.05 * (0.5 + 0.5 * Math.sin(t * 0.9));       // a slow, soft breathing
+            if (domePool.some(m => m.visible)) civSeen.domes++;
+            if (beamPool.some(m => m.visible)) civSeen.beams++;
         }
 
         // ----- the flight -------------------------------------------------------------------------
@@ -1848,6 +3086,7 @@ NSE.Surface = (function () {
                 const c = creatures[i];
                 if (!c.obj.group.visible) continue;
                 const along = alongOf(c.x, c.z);
+                if (c.y > target + 3) continue;          // flying high above the course: the ship passes beneath
                 if (along > -6 && along < 45 && Math.abs(latOf(c.x, c.z)) < 8) target = Math.max(target, c.y + c.height + 4.5);
             }
             return target;
@@ -1928,6 +3167,9 @@ NSE.Surface = (function () {
             stream(D.budget);
             updateWater(time);
             updateCreatures(dt, time);
+            updateHerds(dt, time);
+            updateCover();
+            if (rainbow && !seenRare.rainbow && intro >= 1 && fwd.x * -Math.sin(rainbowAz) + fwd.z * -Math.cos(rainbowAz) > 0.7) seenRare.rainbow = true;
             for (let i = 0; i < puffSets.length; i++) puffSets[i].update(dt);
             updateSaucers(dt, time);
             updateCiv(dt, time);
@@ -2003,7 +3245,45 @@ NSE.Surface = (function () {
                 const dist = Math.hypot(c.x - shipPos.x, c.y - shipPos.y, c.z - shipPos.z);
                 if (dist < bd) { bd = dist; best = c; }
             }
-            return best ? { spec: best.spec, index: best.si, distance: bd, position: new THREE.Vector3(best.x, best.y, best.z) } : null;
+            let bh = null, bf = null;
+            for (let k = 0; k < herds.length; k++) {
+                const hd = herds[k];
+                for (let i = 0; i < hd.members.length; i++) {
+                    const f = hd.members[i];
+                    if (!f.vis || alongOf(f.x, f.z) < -8) continue;
+                    const dist = Math.hypot(f.x - shipPos.x, f.y - shipPos.y, f.z - shipPos.z);
+                    if (dist < bd) { bd = dist; bh = hd; bf = f; best = null; }
+                }
+            }
+            if (bh) return { spec: bh.spec, index: bh.si, distance: bd, dist: bd, position: new THREE.Vector3(bf.x, bf.y, bf.z) };
+            return best ? { spec: best.spec, index: best.si, distance: bd, dist: bd, position: new THREE.Vector3(best.x, best.y, best.z) } : null;
+        }
+
+        /** The nearest plant ahead of (or just beside) the ship: { spec, index, distance, position } or null. */
+        function nearestPlant() {
+            if (!FLORA_ON) return null;
+            let bd = Infinity, bi = -1, bx = 0, by = 0, bz = 0;
+            const gx = Math.floor(shipPos.x / CS), gz = Math.floor(shipPos.z / CS);
+            for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+                const ch = chunks.get((gx + i) + ',' + (gz + j));
+                if (!ch || !ch.plants) continue;
+                const pl = ch.plants;
+                for (let k = 0; k < pl.length; k += 4) {
+                    if (alongOf(pl[k], pl[k + 1]) < -8) continue;
+                    const dist = Math.hypot(pl[k] - shipPos.x, pl[k + 2] - shipPos.y, pl[k + 1] - shipPos.z);
+                    if (dist < bd) { bd = dist; bi = pl[k + 3]; bx = pl[k]; by = pl[k + 2]; bz = pl[k + 1]; }
+                }
+            }
+            for (let c = 0; c < covers.length; c++) {
+                const cv = covers[c];
+                for (let k = 0; k < cv.items.length; k++) {
+                    const it = cv.items[k];
+                    if (!it.on || alongOf(it.x, it.z) < -8) continue;
+                    const dist = Math.hypot(it.x - shipPos.x, it.y - shipPos.y, it.z - shipPos.z);
+                    if (dist < bd) { bd = dist; bi = cv.si; bx = it.x; by = it.y; bz = it.z; }
+                }
+            }
+            return bi >= 0 ? { spec: floraList[bi], index: bi, distance: bd, dist: bd, position: new THREE.Vector3(bx, by, bz) } : null;
         }
 
         function stats() {
@@ -2020,7 +3300,12 @@ NSE.Surface = (function () {
                 geometriesMade: geoCount.made,
                 geometriesFreed: geoCount.freed,
                 triangles: Math.round(tris),
-                creatures: creatures.length,
+                creatures: creatures.length + herds.reduce((n, hd) => n + hd.members.length, 0),
+                leaders: creatures.length,
+                followers: herds.reduce((n, hd) => n + hd.members.length, 0),
+                plantSpecies: floraList.length,
+                plants: Array.from(chunks.values()).reduce((n, ch) => n + (ch.plants ? ch.plants.length / 4 : 0), 0) + covers.reduce((n, cv) => n + cv.items.filter(it => it.on).length, 0),
+                groundCover: covers.reduce((n, cv) => n + cv.items.length, 0),
                 puffs: puffSets.reduce((n, s) => n + s.mesh.count, 0),
                 distance: d,
                 altitude: shipPos.y - ground(shipPos.x, shipPos.z),
@@ -2037,6 +3322,7 @@ NSE.Surface = (function () {
             stream(Infinity);
             buildWater();
             makeCreatures();
+            makeCover();
             makePuffs();
         }
 
@@ -2048,11 +3334,13 @@ NSE.Surface = (function () {
             chunks.clear();
             if (water) { scene.remove(water); free(water.geometry); water = null; }
             clearCreatures();
+            clearCover();
             puffSets.splice(0).forEach(s => s.dispose());
             solidPuffs.length = 0;
             saucers.forEach(s => scene.remove(s.g));
             launchers.forEach(l => scene.remove(l.g));
             if (trafficBody) { [trafficBody, trafficGlow].forEach(m => { scene.remove(m); free(m.geometry); if (m.dispose) m.dispose(); }); trafficBody = trafficGlow = null; }
+            [carBody, carGlow, droneBody, droneLight].forEach(m => { if (m && m.dispose) m.dispose(); });
             owned.geos.forEach(free);
             owned.mats.forEach(m => m.dispose());
             scene.remove(ship);
@@ -2070,6 +3358,7 @@ NSE.Surface = (function () {
         stream(Infinity);
         buildWater();
         makeCreatures();
+        makeCover();
         makePuffs();
         poseShip(0);
 
@@ -2086,10 +3375,17 @@ NSE.Surface = (function () {
             nearestCreature: nearestCreature,
             species: () => speciesList.slice(),
             plants: () => PLANTS,
+            flora: () => floraList.slice(),
+            nearestPlant: nearestPlant,
+            /** The rare sights: true once each has been in view near the ship (stays true). */
+            seen: () => ({ rainbow: seenRare.rainbow, golden: seenRare.golden, giant: seenRare.giant }),
             /** Civilisation info: architecture, spaceports passed, launches, traffic craft positions. */
             civ: () => civ ? {
-                arch: ARCH, portsSeen: portsSeen.size, launches: launches, buildingsBuilt: cityBuilt,
-                traffic: traffic.filter(c => c.city).map(c => ({ x: c.x, y: c.y, z: c.z }))
+                arch: ARCH, style: CSTYLE, tech: Object.keys(TECH).filter(k => TECH[k]),
+                portsSeen: portsSeen.size, launches: launches, buildingsBuilt: cityBuilt,
+                traffic: traffic.filter(c => c.city).map(c => ({ x: c.x, y: c.y, z: c.z })),
+                built: { domes: domesBuilt, megas: megasBuilt, islands: islandsBuilt, beacons: beaconsBuilt, panels: panelsBuilt, rail: railBuilt, barns: barnsBuilt },
+                seen: Object.assign({}, civSeen), elevator: !!civSky.tether, ring: !!civSky.ring
             } : null,
             setSpeed: k => { speedT = U.clamp(+k || 1, 0.5, 2); },
             setQuality: setQuality,

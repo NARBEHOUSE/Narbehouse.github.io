@@ -267,7 +267,7 @@ NSE.Space = (function () {
             p.moons.forEach(function (m) { add({ kind: 'moon', mesh: NSE.Planets.worldMesh(m), world: m, planet: p }); });
             // An advanced civilisation: space stations and satellites circling its world.
             if (p.civ) {
-                const civ = add({ kind: 'civ', mesh: civOrbitals(p), planetId: p.id, planet: p });
+                const civ = add({ kind: 'civ', mesh: civOrbitals(p, part.mesh), planetId: p.id, planet: p });
                 civ.mesh.group.position.set(p.pos.x, p.pos.y, p.pos.z);
             }
         });
@@ -357,80 +357,218 @@ NSE.Space = (function () {
         return p ? spreadPos(p, spreadNow(id)) : null;
     }
 
-    // --- an inhabited world's space stations and satellites ----------------------------------------
+    // --- an inhabited world's orbit: stations, satellites, shuttles, the ring and the elevator --------
 
     /**
-     * Ring stations (hub, spokes, solar panels, lit windows in the people's colour) and little
-     * satellites, circling just above the clouds, inside the ship's own orbit. From the
-     * civilisation's seed, so the same people always have the same stations.
+     * What circles an advanced civilisation's world, from its seed (the same people always have
+     * the same things) and its technology (w.civ.tech, also in the arrival words):
+     *   - stations of a few kinds (ring wheels, long habitat tubes, round habitats, solar trusses)
+     *     and little satellites, circling above the clouds, inside the ship's own orbit
+     *   - shuttles spiralling up from the surface to the stations and back down
+     *   - 'ring': the orbital ring, a band all the way round the equator with lit docking hubs
+     *   - 'elevator': a space elevator, a tether from a base on the equator up to a counterweight
+     *     station, with climbers riding it
+     * The ring and the elevator turn with the planet's surface (planetMesh.surface, its spin and
+     * tilt), so the elevator stays standing on its base. Everything stays well inside the ship's
+     * orbit (NSE.Flight orbitRadius: 2.5 radii + 12) so it never meets the ship or the camera.
      */
-    function civOrbitals(w) {
-        const r = U.rng(U.hash('orbitals', w.civ.seed));
+    function civOrbitals(w, planetMesh) {
+        const civ = w.civ, r = U.rng(U.hash('orbitals', civ.seed));
+        const tech = {};
+        (civ.tech || []).forEach(t => { tech[t] = true; });
         const group = new THREE.Group();
         group.name = 'orbitals:' + w.name;
         const hull = new THREE.MeshLambertMaterial({ color: 0xe4e8f0 });
         const dark = new THREE.MeshLambertMaterial({ color: 0x5a6478 });
         const panel = new THREE.MeshLambertMaterial({ color: 0x2f5aa8, emissive: 0x0c1c40 });
-        const lit = new THREE.MeshBasicMaterial({ color: w.civ.lights, toneMapped: false });
-        const movers = [];
-        const S = Math.max(1, w.radius / 12);
-        const nStations = r.int(1, 2);
+        const lit = new THREE.MeshBasicMaterial({ color: civ.lights, toneMapped: false });
+        const glow = new THREE.MeshBasicMaterial({ color: civ.lights, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+        const ringGlow = new THREE.MeshBasicMaterial({ color: civ.lights, transparent: true, opacity: 0.14, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+        const tetherMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(civ.lights).lerp(new THREE.Color(0xe8eef8), 0.55), toneMapped: false });
+        const mats = [hull, dark, panel, lit, glow, ringGlow, tetherMat];
+        const movers = [], shuttles = [], climbers = [];
+        const R0 = w.radius, S = Math.max(1, R0 / 12);
+        // The ring and the elevator live in the planet's own turning frame.
+        const tiltG = new THREE.Group();
+        tiltG.rotation.z = w.tilt || 0;
+        const spinG = new THREE.Group();
+        tiltG.add(spinG);
+        group.add(tiltG);
+        const add = (parent, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0); parent.add(m); return m; };
+
+        let ringR = 0;
+        if (tech.ring) {
+            ringR = R0 * (w.type === 'gas' ? 1.24 : 1.32);
+            const band = new THREE.TorusGeometry(ringR, R0 * 0.016, 6, 180).rotateX(Math.PI / 2);
+            add(spinG, band, hull);
+            const strip = new THREE.TorusGeometry(ringR + R0 * 0.013, R0 * 0.006, 4, 180).rotateX(Math.PI / 2);
+            add(spinG, strip, lit);
+            const halo = new THREE.TorusGeometry(ringR, R0 * 0.034, 6, 120).rotateX(Math.PI / 2);
+            add(spinG, halo, ringGlow);
+            // Sixteen docking hubs with lit bands and solar wings, merged into one mesh per material
+            // (a few draw calls instead of fifty).
+            const hub = new THREE.BoxGeometry(R0 * 0.05, R0 * 0.05, R0 * 0.09);
+            const hubLit = new THREE.BoxGeometry(R0 * 0.054, R0 * 0.016, R0 * 0.094);
+            const pan = new THREE.BoxGeometry(R0 * 0.2, R0 * 0.006, R0 * 0.07);
+            const parts = { hull: [], dark: [], lit: [], panel: [] };
+            const at = (geo, x, y, z, a) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a), new THREE.Vector3(1, 1, 1));
+            for (let k = 0; k < 16; k++) {
+                const a = k / 16 * Math.PI * 2, x = Math.cos(a) * ringR, z = Math.sin(a) * ringR;
+                parts[k % 4 ? 'hull' : 'dark'].push([hub, at(hub, x, 0, z, -a)]);
+                parts.lit.push([hubLit, at(hubLit, x, R0 * 0.02, z, -a)]);
+                if (k % 2 === 0) [-1, 1].forEach(function (s) { parts.panel.push([pan, at(pan, x, s * R0 * 0.06, z, -a)]); });
+            }
+            const merge = list => {
+                const pos = [], nor = [];
+                list.forEach(function (it) {
+                    const g = it[0].clone().applyMatrix4(it[1]), n = g.toNonIndexed();
+                    pos.push.apply(pos, n.attributes.position.array); nor.push.apply(nor, n.attributes.normal.array);
+                    g.dispose(); n.dispose();
+                });
+                const out = new THREE.BufferGeometry();
+                out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+                return out;
+            };
+            add(spinG, merge(parts.hull), hull); add(spinG, merge(parts.dark), dark); add(spinG, merge(parts.lit), lit); add(spinG, merge(parts.panel), panel);
+            [hub, hubLit, pan].forEach(g => g.dispose());
+        }
+        let elevator = null;
+        if (tech.elevator) {
+            // From a base on the equator straight up (outwards) to a counterweight station.
+            const a0 = r.range(0, Math.PI * 2), dir = new THREE.Vector3(Math.cos(a0), 0, Math.sin(a0));
+            let top = R0 * 2.05;
+            if (w.rings) top = Math.min(top, w.rings.inner * 0.92);
+            const base = R0 * 1.0, len = top - base;
+            const tether = new THREE.CylinderGeometry(R0 * 0.012, R0 * 0.012, len, 6, 1, true);
+            const m = add(spinG, tether, tetherMat);
+            m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            m.position.copy(dir).multiplyScalar(base + len / 2);
+            const sheath = add(spinG, new THREE.CylinderGeometry(R0 * 0.04, R0 * 0.04, len, 8, 1, true), glow);
+            sheath.quaternion.copy(m.quaternion); sheath.position.copy(m.position);
+            // The base: a wide platform standing on the ground, lit round its rim.
+            const foot = add(spinG, new THREE.CylinderGeometry(R0 * 0.06, R0 * 0.11, R0 * 0.05, 12), hull);
+            foot.quaternion.copy(m.quaternion); foot.position.copy(dir).multiplyScalar(R0 * 1.0);
+            const footLit = add(spinG, new THREE.CylinderGeometry(R0 * 0.112, R0 * 0.112, R0 * 0.012, 12, 1, true), lit);
+            footLit.quaternion.copy(m.quaternion); footLit.position.copy(dir).multiplyScalar(R0 * 1.0);
+            // The counterweight station at the top.
+            const st = new THREE.Group();
+            add(st, new THREE.SphereGeometry(R0 * 0.07, 12, 8), hull);
+            add(st, new THREE.TorusGeometry(R0 * 0.15, R0 * 0.02, 6, 24), hull).rotation.x = Math.PI / 2;
+            add(st, new THREE.TorusGeometry(R0 * 0.15, R0 * 0.008, 4, 24), lit).rotation.x = Math.PI / 2;
+            [-1, 1].forEach(function (s) { add(st, new THREE.BoxGeometry(R0 * 0.3, R0 * 0.006, R0 * 0.09), panel, 0, s * R0 * 0.09, 0); });
+            st.quaternion.copy(m.quaternion);
+            st.position.copy(dir).multiplyScalar(top + R0 * 0.04);
+            spinG.add(st);
+            // Climbers riding up and down.
+            const cg = new THREE.BoxGeometry(R0 * 0.035, R0 * 0.05, R0 * 0.035);
+            for (let i = 0; i < 3; i++) {
+                const c = add(spinG, cg, i === 1 ? lit : hull);
+                c.quaternion.copy(m.quaternion);
+                climbers.push({ m: c, ph: i / 3, up: i !== 1 });
+            }
+            elevator = { dir: dir, base: base + R0 * 0.03, top: top - R0 * 0.03 };
+        }
+        // Stations, of a few kinds (kept clear of the ring when there is one).
+        const lo = ringR ? 1.56 : 1.45, hi = ringR ? 1.86 : 1.75;
+        const nStations = r.int(2, 3);
         for (let i = 0; i < nStations; i++) {
             const st = new THREE.Group();
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2 * S, 0.32 * S, 8, 28), hull);
-            const glowRing = new THREE.Mesh(new THREE.TorusGeometry(2.2 * S, 0.12 * S, 6, 28), lit);
-            glowRing.scale.setScalar(1.001);
-            glowRing.position.y = 0.2 * S;
-            const hub = new THREE.Mesh(new THREE.SphereGeometry(0.7 * S, 12, 8), hull);
-            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * S, 0.12 * S, 3.4 * S, 6), dark);
-            st.add(ring, glowRing, hub, mast);
-            for (let k = 0; k < 4; k++) {
-                const sp = new THREE.Mesh(new THREE.BoxGeometry(2.2 * S, 0.12 * S, 0.12 * S), dark);
-                sp.rotation.y = k * Math.PI / 4;
-                st.add(sp);
+            const kind = r.pick(['wheel', 'wheel', 'tube', 'sphere', 'truss']);
+            if (kind === 'wheel') {
+                add(st, new THREE.TorusGeometry(2.2 * S, 0.32 * S, 8, 28).rotateX(Math.PI / 2), hull);
+                add(st, new THREE.TorusGeometry(2.2 * S, 0.12 * S, 6, 28).rotateX(Math.PI / 2), lit, 0, 0.2 * S, 0).scale.setScalar(1.001);
+                add(st, new THREE.SphereGeometry(0.7 * S, 12, 8), hull);
+                add(st, new THREE.CylinderGeometry(0.12 * S, 0.12 * S, 3.4 * S, 6), dark);
+                for (let k = 0; k < 4; k++) add(st, new THREE.BoxGeometry(4.4 * S, 0.12 * S, 0.12 * S), dark).rotation.y = k * Math.PI / 4;
+                [-1, 1].forEach(function (s) { add(st, new THREE.BoxGeometry(2.6 * S, 0.05 * S, 1.1 * S), panel, 0, s * 1.7 * S, 0); });
+            } else if (kind === 'tube') {
+                add(st, new THREE.CylinderGeometry(0.5 * S, 0.5 * S, 3.4 * S, 12), hull);
+                for (let k = -1; k <= 1; k++) add(st, new THREE.CylinderGeometry(0.52 * S, 0.52 * S, 0.14 * S, 12, 1, true), lit, 0, k * 1.1 * S, 0);
+                [-1, 1].forEach(function (s) { add(st, new THREE.BoxGeometry(3 * S, 0.05 * S, 0.9 * S), panel, s * 2.1 * S, 0, 0); });
+                add(st, new THREE.SphereGeometry(0.35 * S, 8, 6), dark, 0, 1.9 * S, 0);
+            } else if (kind === 'sphere') {
+                add(st, new THREE.SphereGeometry(1.0 * S, 16, 10), hull);
+                add(st, new THREE.TorusGeometry(1.25 * S, 0.1 * S, 6, 24), lit).rotation.x = Math.PI / 2;
+                add(st, new THREE.TorusGeometry(1.6 * S, 0.14 * S, 6, 24), dark).rotation.x = Math.PI / 2;
+                [-1, 1].forEach(function (s) { add(st, new THREE.BoxGeometry(0.9 * S, 2.4 * S, 0.05 * S), panel, s * 2.3 * S, 0, 0); });
+            } else {
+                add(st, new THREE.BoxGeometry(5 * S, 0.22 * S, 0.22 * S), dark);
+                for (let k = -2; k <= 2; k++) {
+                    add(st, new THREE.BoxGeometry(0.7 * S, 0.04 * S, 1.8 * S), panel, k * 1.1 * S, 0, 0);
+                    add(st, new THREE.SphereGeometry(0.14 * S, 6, 4), lit, k * 1.1 * S, 0.2 * S, 0);
+                }
+                add(st, new THREE.BoxGeometry(0.8 * S, 0.8 * S, 0.8 * S), hull);
             }
-            [-1, 1].forEach(function (s) {
-                const pn = new THREE.Mesh(new THREE.BoxGeometry(2.6 * S, 0.05 * S, 1.1 * S), panel);
-                pn.position.y = s * 1.7 * S;
-                st.add(pn);
-            });
-            st.rotation.x = r.range(-0.5, 0.5);
             group.add(st);
-            movers.push({ obj: st, R: w.radius * r.range(1.45, 1.75), a: r.range(0, Math.PI * 2), speed: r.range(0.05, 0.09) * r.sign(), tilt: r.range(-0.5, 0.5), spin: r.range(0.2, 0.4) });
+            movers.push({ obj: st, R: R0 * r.range(lo, hi), a: r.range(0, Math.PI * 2), speed: r.range(0.05, 0.09) * r.sign(), tilt: r.range(-0.5, 0.5), spin: r.range(0.15, 0.35) });
         }
-        const nSats = r.int(5, 10);
+        const nSats = r.int(5, 10), slo = ringR ? 1.42 : 1.25, shi = ringR ? 1.95 : 1.9;
+        const satBody = new THREE.BoxGeometry(0.5 * S, 0.5 * S, 0.7 * S), satPanel = new THREE.BoxGeometry(1.2 * S, 0.04 * S, 0.45 * S), satLamp = new THREE.SphereGeometry(0.12 * S, 6, 4);
         for (let i = 0; i < nSats; i++) {
             const sat = new THREE.Group();
-            sat.add(new THREE.Mesh(new THREE.BoxGeometry(0.5 * S, 0.5 * S, 0.7 * S), hull));
-            [-1, 1].forEach(function (s) {
-                const pn = new THREE.Mesh(new THREE.BoxGeometry(1.2 * S, 0.04 * S, 0.45 * S), panel);
-                pn.position.x = s * 0.85 * S;
-                sat.add(pn);
-            });
-            const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12 * S, 6, 4), lit);
-            lamp.position.y = 0.32 * S;
-            sat.add(lamp);
+            add(sat, satBody, hull);
+            [-1, 1].forEach(function (s) { add(sat, satPanel, panel, s * 0.85 * S, 0, 0); });
+            const lamp = add(sat, satLamp, lit, 0, 0.32 * S, 0);
             group.add(sat);
-            movers.push({ obj: sat, R: w.radius * r.range(1.25, 1.9), a: r.range(0, Math.PI * 2), speed: r.range(0.08, 0.18) * r.sign(), tilt: r.range(-1.2, 1.2), spin: r.range(0.3, 0.9), lamp: lamp });
+            movers.push({ obj: sat, R: R0 * r.range(slo, shi), a: r.range(0, Math.PI * 2), speed: r.range(0.08, 0.18) * r.sign(), tilt: r.range(-1.2, 1.2), spin: r.range(0.3, 0.9), lamp: lamp });
+        }
+        // Shuttles: up from the clouds to the stations and back down again, a little traffic.
+        const shG = new THREE.ConeGeometry(0.28 * S, 1.0 * S, 6).rotateX(Math.PI / 2), shE = new THREE.SphereGeometry(0.16 * S, 6, 4);
+        const nSh = r.int(3, 6);
+        for (let i = 0; i < nSh; i++) {
+            const sh = new THREE.Group();
+            add(sh, shG, hull);
+            add(sh, shE, lit, 0, 0, -0.55 * S);
+            group.add(sh);
+            shuttles.push({ obj: sh, a: r.range(0, Math.PI * 2), speed: r.range(0.12, 0.2) * r.sign(), tilt: r.range(-0.9, 0.9), ph: r.range(0, Math.PI * 2), rate: r.range(0.08, 0.14), lo: R0 * 1.06, hi: R0 * r.range(1.5, 1.8), prev: new THREE.Vector3() });
         }
         let t = 0;
+        const tmp = new THREE.Vector3();
         function place(m) {
             const x = Math.cos(m.a) * m.R, z = Math.sin(m.a) * m.R;
             m.obj.position.set(x, z * Math.sin(m.tilt), z * Math.cos(m.tilt));
         }
+        function shuttleAt(s, out) {
+            const R = s.lo + (s.hi - s.lo) * (0.5 - 0.5 * Math.cos(s.ph + t * s.rate));
+            const x = Math.cos(s.a) * R, z = Math.sin(s.a) * R;
+            return out.set(x, z * Math.sin(s.tilt), z * Math.cos(s.tilt));
+        }
         movers.forEach(place);
+        shuttles.forEach(s => { shuttleAt(s, s.obj.position); s.prev.copy(s.obj.position); });
         return {
             group: group,
+            /** For tests and the camera: how far out anything reaches (planet radii). */
+            reach: Math.max(hi + 0.2, ringR ? ringR / R0 + 0.1 : 0, elevator ? elevator.top / R0 + 0.2 : 0),
+            ring: ringR, elevator: elevator,
             update: function (dt) {
-                t += dt;
+                const k = calm ? 0.6 : 1;
+                t += dt * k;
+                // Turn with the planet's surface (and its tilt), so the elevator stays on its base.
+                const surf = planetMesh && planetMesh.surface;
+                if (surf) { spinG.rotation.y = surf.rotation.y; if (surf.parent) tiltG.rotation.z = surf.parent.rotation.z; }
+                else spinG.rotation.y += (w.spin || 0) * dt;
                 movers.forEach(function (m) {
-                    m.a += m.speed * dt * (calm ? 0.6 : 1);
+                    m.a += m.speed * dt * k;
                     place(m);
                     m.obj.rotation.y += m.spin * dt;
                     if (m.lamp) m.lamp.visible = calm || (t + m.a) % 2 < 1.4;
                 });
+                shuttles.forEach(function (s) {
+                    s.a += s.speed * dt * k;
+                    s.prev.copy(s.obj.position);
+                    shuttleAt(s, s.obj.position);
+                    tmp.copy(s.obj.position).add(s.obj.position).sub(s.prev);
+                    if (s.obj.position.distanceToSquared(s.prev) > 1e-8) s.obj.lookAt(tmp.applyMatrix4(group.matrixWorld));
+                });
+                if (elevator) {
+                    climbers.forEach(function (c) {
+                        const u = ((t * 0.05 + c.ph) % 1), f = c.up ? u : 1 - u;
+                        c.m.position.copy(elevator.dir).multiplyScalar(elevator.base + (elevator.top - elevator.base) * f);
+                    });
+                }
             },
-            dispose: function () { group.traverse(n => { if (n.geometry) n.geometry.dispose(); }); [hull, dark, panel, lit].forEach(m => m.dispose()); }
+            dispose: function () { group.traverse(n => { if (n.geometry) n.geometry.dispose(); }); mats.forEach(m => m.dispose()); }
         };
     }
 
@@ -512,17 +650,74 @@ NSE.Space = (function () {
         streaks.material.opacity = Math.min(1, warpK * 1.4) * (calm ? 0.5 : 0.9);
     }
 
-    // --- greeters: saucers from an inhabited planet ---------------------------------------------------
+    // --- greeters: little ships from an inhabited planet ----------------------------------------------
 
-    function saucer(color) {
+    /** A greeting ship in the people's own style (saucers, sleek gliders, bubbles, barges, seed pods, gems). */
+    function saucer(color, style) {
         const g = new THREE.Group();
-        const hull = new THREE.Mesh(new THREE.SphereGeometry(1.4, 16, 8), new THREE.MeshLambertMaterial({ color: 0xd8dde8 }));
-        hull.scale.set(1, 0.32, 1);
-        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x9fe8ff, emissive: 0x2a6a88 }));
-        dome.position.y = 0.25;
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.12, 6, 20), new THREE.MeshBasicMaterial({ color: color, toneMapped: false }));
-        ring.rotation.x = Math.PI / 2;
-        g.add(hull, dome, ring);
+        const light = new THREE.MeshBasicMaterial({ color: color, toneMapped: false });
+        const glass = new THREE.MeshLambertMaterial({ color: 0x9fe8ff, emissive: 0x2a6a88 });
+        const body = c => new THREE.MeshLambertMaterial({ color: c });
+        switch (style) {
+            case 'spires': {        // a sleek glider
+                const hull = new THREE.Mesh(new THREE.OctahedronGeometry(1.5, 0), body(0xe0e6f0));
+                hull.scale.set(1.1, 0.22, 1.6);
+                const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+                canopy.position.set(0, 0.2, -0.5); canopy.scale.set(1, 0.7, 1.6);
+                const strip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.06, 0.12), light);
+                strip.position.z = 0.6;
+                g.add(hull, canopy, strip);
+                break;
+            }
+            case 'domes': {         // a glass bubble on a ring
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.0, 0.35, 16), body(0xd8dde8));
+                const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.95, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+                bubble.position.y = 0.17;
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(1.32, 0.1, 6, 20), light);
+                ring.rotation.x = Math.PI / 2;
+                g.add(base, bubble, ring);
+                break;
+            }
+            case 'arcology': {      // a friendly little barge
+                const hull = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.8), body(0xd8c8a8));
+                const deck = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.5, 1.2), body(0x8ab07a));
+                deck.position.set(0, 0.55, 0.4);
+                const win = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.14, 2.84), light);
+                win.position.y = 0.1;
+                g.add(hull, deck, win);
+                break;
+            }
+            case 'organic': {       // a seed pod with leaf fins
+                const pod = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 8), body(0x8ac07a));
+                pod.scale.set(0.8, 0.8, 1.5);
+                g.add(pod);
+                [-1, 1].forEach(function (s) {
+                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 4), body(0x5a9a5a));
+                    leaf.scale.set(1.2, 0.08, 0.6); leaf.position.set(s * 1.0, 0, 0.3); leaf.rotation.y = s * 0.4;
+                    g.add(leaf);
+                });
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), light);
+                eye.position.z = -1.25;
+                g.add(eye);
+                break;
+            }
+            case 'crystal': {       // a gem with a glowing heart
+                const gem = new THREE.Mesh(new THREE.OctahedronGeometry(1.1, 0), new THREE.MeshLambertMaterial({ color: 0xd8c8ff, emissive: 0x3a2a6a, transparent: true, opacity: 0.85 }));
+                gem.scale.set(0.9, 1.3, 0.9);
+                const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), light);
+                g.add(gem, core);
+                break;
+            }
+            default: {              // the classic saucer
+                const hull = new THREE.Mesh(new THREE.SphereGeometry(1.4, 16, 8), body(0xd8dde8));
+                hull.scale.set(1, 0.32, 1);
+                const dome = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+                dome.position.y = 0.25;
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.12, 6, 20), light);
+                ring.rotation.x = Math.PI / 2;
+                g.add(hull, dome, ring);
+            }
+        }
         return g;
     }
 
@@ -532,17 +727,19 @@ NSE.Space = (function () {
         const r = U.rng(U.hash('greet', world.seed, Date.now() & 0xffff));
         const list = [];
         for (let i = 0; i < count; i++) {
-            const m = saucer(world.civ.lights);
+            const m = saucer(world.civ.lights, world.civ.style);
             scene.add(m);
             const dir = new THREE.Vector3(r.range(-1, 1), r.range(-1, 1), r.range(-1, 1)).normalize();
-            list.push({ mesh: m, dir: dir, phase: r.range(0, Math.PI * 2), radius: r.range(9, 15), delay: i * 0.8, t: 0 });
+            list.push({ mesh: m, dir: dir, phase: r.range(0, Math.PI * 2), radius: r.range(9, 15), delay: i * 0.8, t: 0, prev: new THREE.Vector3() });
         }
-        greeters = { world: world, list: list, t: 0, life: 26 };
+        greeters = { world: world, list: list, t: 0, life: 26, spins: !world.civ.style || world.civ.style === 'domes' || world.civ.style === 'floating' || world.civ.style === 'crystal' };
         return list.length;
     }
 
+    let greetTmp = null;      // (made on first use: THREE is only set in init())
     function stepGreeters(dt, shipPos) {
         if (!greeters) return;
+        if (!greetTmp) greetTmp = new THREE.Vector3();
         greeters.t += dt;
         const W = greeters.world;
         const c = new THREE.Vector3(W.pos.x, W.pos.y, W.pos.z);
@@ -557,8 +754,11 @@ NSE.Space = (function () {
             const out = U.smooth(t / 6), home = U.smooth((greeters.t - (greeters.life - 6)) / 6);
             p = start.clone().lerp(circle, out);
             if (home > 0) p.lerp(start, home);
+            g.prev.copy(g.mesh.position);
             g.mesh.position.copy(p);
-            g.mesh.rotation.y += dt * 2.5;
+            // Round ships spin; ships with a front (gliders, barges, seed pods) face the way they fly.
+            if (greeters.spins) g.mesh.rotation.y += dt * 2.5;
+            else if (g.prev.distanceToSquared(p) > 1e-6) g.mesh.lookAt(greetTmp.copy(g.prev));      // (+Z looks back along the path: the nose, at -Z, leads)
         });
         if (greeters.t > greeters.life) endGreeters();
     }

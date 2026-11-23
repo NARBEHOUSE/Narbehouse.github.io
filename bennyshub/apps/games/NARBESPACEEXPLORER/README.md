@@ -33,8 +33,9 @@ GPU, on real switches or with real speakers yet.
 | Galaxy map | Warp to a New Star, Warp to a New Galaxy, Back |
 | A new galaxy (seen from outside) | Fly In, Find Another Galaxy |
 | Pause | Continue, View (Chase / Wide / Cockpit; Chase first), Logbook, Settings, How to Play, I Need Help, Main Menu, Exit Game |
-| Logbook | 3x3 picture pages, More Pages, Back; an entry: Next, Previous, Visit Again, Back |
-| Settings | Text to Speech, Voice, Flight Speed, Alien Calls, Spoken Facts, Motion, Graphics, Highlight Style, Highlight Color, Auto Scan, Scan Speed, Sound Effects, Volume, Music, Reset Logbook (two steps), Back |
+| Logbook | 3x3 picture pages, More Pages, Field Guide, Back; an entry: Next, Previous, Visit Again, Back |
+| Field Guide | Worlds, Landscapes, Stars, Animals, Plants, Civilisations, Rare Sights (each with how many found), Back; a section: 3x3 pages of finds (silhouettes with a hint until found), More Pages, Back; a find: Visit Again, Back |
+| Settings | Text to Speech, Voice, Flight Speed, Alien Calls, Spoken Facts, Motion, Graphics, Highlight Style, Highlight Color, Auto Scan, Scan Speed, Sound Effects, Volume, Music, Reset Logbook (two steps; erases the Field Guide too), Back |
 
 - **Flying**: the ship flies forward by itself. Each steering press turns 30 degrees (up/down 20)
   smoothly. Far from anything it speeds up a lot (an accelerated, not-to-scale pace) and eases back
@@ -91,14 +92,32 @@ GPU, on real switches or with real speakers yet.
   and Turn Right steer it (one press, one smooth turn). Back to Orbit climbs out the same way, nose up.
   No speed lines or streaming dust on the way down or up (the user saw "stars go by" inside the air).
   Plants are named when there are any ("Trees and bushes grow here, but no creatures were found").
-- **Scan**: a viewer window shows a creature turning slowly, with its name, size, how it moves, a
-  silly fact and its sound; or the world (or star) and its facts. Creatures go in the logbook.
-- **Civilisations** (advanced: the user asked that a world sending ships out must look it): city
-  lights on the night side, space stations and satellites circling just above the clouds, ships
-  that fly up to meet you, cities with skyscrapers, spaceports and air traffic in Fly Low; the
-  prompt says people live there, arrival names them ("an advanced civilisation with cities, space
-  stations and starships"), and Scan shows the people first, then the wildlife. Sometimes one of
-  them calls (friendly, curious, grumpy or loud) with a cartoon face, gibberish and a translation.
+- **Scan**: a viewer window shows each thing turning slowly: the people first (on an inhabited
+  world), a golden creature or gentle giant next, then every animal (name, size, how it moves, a
+  silly fact, its sound), then every kind of plant; or the world, or the star (a black hole with
+  its disk, both stars of a pair, a star in its nebula) and its facts. Everything that can be
+  scanned shows a picture (the user: "this can't happen"); creatures and plants are framed by
+  their own shape. Animals and plants go in the Field Guide, creatures in the logbook.
+- **Planets from orbit** (`js/planets.js`, 2026-11-23): continents with crinkled coasts, mountain
+  spines, rivers and biomes from each world's palette; deep oceans, lighter shelves, atolls, a
+  second sea tint, sea ice; lava plates, crystal facets, dune seas, crater fields with rays; banded
+  gas giants with eddies and storms; swirling cloud systems; a real day/night edge with a thin
+  atmosphere rim; ringlets with the planet's shadow; a relief (normal) map and a sun glint on seas.
+  Inhabited worlds show city sprawl, roads and fields by day and lights tracing the coasts at night.
+- **Living worlds in Fly Low** (`js/surface.js`, `js/creatures.js`, `js/flora.js`): herds, flocks
+  and schools (leaders are full models, the rest cheap instanced copies), sea creatures (fish,
+  dolphins, whales, turtles, sea noodles) on worlds with seas, and 35 kinds of plant placed by
+  habitat (kelp and coral in the sea, lilies on ponds, floating plants on gas giants), with
+  turquoise shallows and foam along the coasts.
+- **Civilisations** (rare since 2026-11-23, about one star system in eight to ten, and grand): each
+  builds in its own style (glass towers, great glowing domes, terraced mountain-cities, floating
+  islands or cloud platforms, tree-cities, crystal prisms) and has technology to see: floating
+  trains between cities, drones, sky ships, light beacons, solar farms, patchwork farms, a space
+  elevator and an orbital ring (in the sky in Fly Low, and round the planet in orbit with stations
+  and shuttles; orbit framing takes the ring in). Ships in the people's style fly up to meet you;
+  arrival names the style and technology (`NSE.Universe.civWords`), and Scan shows the people
+  first. Sometimes one of them calls (friendly, curious, grumpy or loud) with a cartoon face,
+  gibberish and a translation.
 - **Warp**: one big press. Lines of light, a deep whoosh, no flash, and you come out at a new star.
   Warping to a new galaxy shows the whole galaxy from outside first (`js/galaxyview.js`), then asks
   "Do you want to fly in and explore?": Fly In turns to one of its arms, speeds down into it and comes
@@ -121,6 +140,36 @@ GPU, on real switches or with real speakers yet.
 - **Auto Scan, Scan Speed, Text to Speech and Voice** are the hub's shared managers, also in the
   game's own Settings (games are played outside the hub too).
 - **Next Stop**, **Spoken Facts**, **Alien Calls** and **Motion** settings were added.
+
+## Replayability: the Field Guide and rare sights (2026-11-23)
+
+The user asked for the game to feel replayable, then for "a ton of different animals and plants to
+identify" and rare, grand civilisations. So:
+
+- **Field Guide** (`js/fieldguide.js`, Logbook > Field Guide): a collection book of every kind of
+  world (9), landscape (32), star (8), animal (`NSE.Creatures.KINDS`), plant (`NSE.Flora.KINDS`),
+  civilisation style and technology (14) and rare sight (10). Things not found yet show as
+  silhouettes (animals and plants: the model drawn flat, `NSE.Stage.portrait`) with a hint where to
+  look. Worlds, landscapes, civilisations and world rare sights are found by going into orbit, stars
+  by flying into the system, animals and plants by scanning them (the scanner now lists plants after
+  the animals), Fly Low sights by seeing them. Each find remembers where it was (Visit Again) and a
+  picture (the logbook photo, a portrait, or a coloured planet or star). Every species scanned is
+  counted ("37 animals identified"). New finds get a callout, a small bell ('find') and a line in
+  the arrival or scanner speech; rare ones a bigger shimmer ('rare') and their own line.
+- **Rare sights** (each from its own random stream, so nothing else about a place changes):
+  a **comet** sweeping round its star with a blue ion tail and a curved dust tail pointing away from
+  the star, and a pod of **star whales** that swim up beside the ship a while after it flies into
+  their system, singing ('whale'), then swim on (`js/sights.js`; about 8% and 5% of systems, whales
+  30% inside nebulae); **rainbow giants**, **double rings**, **glowing seas**, **auroras** and
+  **ringed moons** (drawn in `js/planets.js`); a **rainbow** in the sky, a **golden creature** and a
+  **gentle giant** in Fly Low. A rare world says so in the prompt, Explore System's tags and its
+  facts.
+- **More life**: 4-8 kinds of animal on a living planet (2-4 on gas giants and moons), more worlds
+  with life, and kinds of plant on most worlds (`w.flora`; `NSE.Universe.plants` words follow it).
+- **Civilisations are rare** (about 1 star system in 8-10; `CIV_RATE`) and grander: each builds in a
+  style (`civ.style`: glass towers, domes, mountain-cities, floating, tree-cities, crystal) with
+  technology (`civ.tech`: orbital ring, space elevator, floating trains, drones, sky ships, beacons,
+  solar farms, patchwork farms), named on arrival (`NSE.Universe.civWords`).
 
 ## How the universe works (`js/universe.js`, headless)
 
@@ -153,10 +202,13 @@ GPU, on real switches or with real speakers yet.
 | `js/ship.js` | The player's ship |
 | `js/galaxyview.js` | A whole galaxy seen from outside, after a warp; the dive in |
 | `js/space.js` | The space scene: galaxy sky, background stars, nearby systems, dust, warp lines, welcome ships |
+| `js/sights.js` | Rare sights in space: comets and star whales |
 | `js/surface.js` | Fly Low worlds |
-| `js/creatures.js` | Creatures built from parts, their words and animation |
+| `js/creatures.js` | Creatures built from parts, their words and animation; `KINDS` for the Field Guide |
+| `js/flora.js` | Plants: kinds, specs, words and models (the scanner and Fly Low); `KINDS` for the Field Guide |
 | `js/aliens.js` | Alien faces (2D canvas), gibberish, moods |
 | `js/logbook.js` | The logbook (localStorage, small JPEG pictures, oldest pictures dropped first when full) |
+| `js/fieldguide.js` | The Field Guide: everything there is to find, what has been found and where (localStorage) |
 | `js/sound.js`, `js/voice.js` | Synthesised sound and music; the speech queue |
 | `js/stage.js` | Renderer, graphics quality, cameras and views, scanner viewer, snapshots, render loop |
 | `js/settings.js`, `js/input.js`, `js/ui.js`, `js/main.js` | Game settings, switch input, the page, the game |
@@ -170,6 +222,8 @@ node tests/flight.test.cjs       universe determinism, clean names, spacing, and
 node tests/creatures.test.cjs    creature specs and models (determinism, friendliness, animation)
 node tests/surface.test.cjs      every Fly Low world type for a simulated minute
 node tests/sound.test.cjs        every sound renders, soft and peaceful; every name the game plays exists
+node tests/fieldguide.test.cjs   the guide lists exactly what the universe makes; finds, species, reload, clear;
+                                 rare sights, life, plants and civilisations: deterministic, as often as intended
 JSDOM=<dir>/node_modules/jsdom node tests/dom-smoke.cjs
                                  whole sessions by Space/Enter through the real page (two switches,
                                  then Auto Scan): every screen above, settings, logbook, exit to hub

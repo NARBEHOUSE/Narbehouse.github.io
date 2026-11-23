@@ -361,15 +361,146 @@ NSE.Universe = (function () {
         return w;
     }
 
-    /** What grows on a world (it decides the words, and matches the Fly Low scenery). */
+    /**
+     * What grows on a world, in words (they match the Fly Low scenery). Null when nothing grows:
+     * a world grows plants when it has flora (w.flora, from enrich()).
+     */
     function plants(w) {
+        if (!w.flora) return null;
+        const st = w.terrain.style;
         return ({
-            earth: w.terrain.style === 'jungle' ? 'thick jungle' : w.terrain.style === 'meadow' ? 'grass, bushes and trees' : 'trees and bushes',
+            earth: st === 'jungle' ? 'thick jungle' : st === 'meadow' ? 'grass, bushes and trees' : 'trees and bushes',
             ocean: 'palm trees on the islands',
-            desert: w.terrain.style === 'salt' ? null : 'cactus plants',
+            desert: 'cactus plants',
             toxic: 'giant mushrooms',
-            crystal: w.terrain.style === 'forest' ? 'trees made of crystal' : null
-        })[w.type] || null;
+            crystal: st === 'forest' ? 'trees made of crystal' : 'crystal flowers',
+            ice: 'frost ferns and snow moss',
+            lava: 'fire flowers that love the heat',
+            gas: 'floating sky plants',
+            rock: 'tough little lichens'
+        })[w.type] || 'strange plants';
+    }
+
+    // --- a richer world: more life, plants, grander (and rarer) civilisations, rare sights ---------
+
+    /**
+     * How often a world with life has an advanced civilisation. Rare (the user: civilisations
+     * should be rare, with cities and technology): about one star system in six has one.
+     */
+    const CIV_RATE = { earth: 0.14, ocean: 0.08, desert: 0.06, crystal: 0.07, toxic: 0.04, ice: 0.04, lava: 0.03, gas: 0.02, rock: 0 };
+
+    /** Extra chance of life on a world the first draw left bare (separate stream). */
+    const MORE_LIFE = { ice: 0.25, desert: 0.2, crystal: 0.25, toxic: 0.2, gas: 0.2, lava: 0.15, rock: 0.1, ocean: 0.5, earth: 0.5 };
+
+    /** Plants: [chance, fewest kinds, most kinds] (desert salt flats and bare rock mostly grow nothing). */
+    const FLORA = { earth: [1, 4, 8], ocean: [1, 3, 6], desert: [0.85, 2, 4], toxic: [1, 3, 6], crystal: [0.7, 2, 5], ice: [0.45, 2, 4], lava: [0.3, 1, 3], gas: [0.35, 2, 3], rock: [0.08, 1, 2] };
+
+    /** How a civilisation builds (Fly Low's cities read civ.style), by the kind of world. */
+    const CIV_STYLES = {
+        earth: [['spires', 3], ['organic', 2.5], ['arcology', 1.5], ['domes', 1], ['floating', 0.6]],
+        ocean: [['floating', 3.5], ['spires', 1.5], ['organic', 1.5], ['domes', 1]],
+        desert: [['arcology', 3], ['domes', 2.5], ['spires', 1.5]],
+        crystal: [['crystal', 4], ['spires', 1.5], ['floating', 1]],
+        toxic: [['domes', 3.5], ['arcology', 2], ['organic', 1]],
+        ice: [['domes', 3], ['spires', 2], ['crystal', 1]],
+        lava: [['arcology', 2.5], ['domes', 2.5]],
+        gas: [['floating', 5]]
+    };
+    const CIV_STYLE_WORDS = {
+        spires: 'cities of tall glass towers', domes: 'cities under great glowing domes', arcology: 'giant cities built like mountains',
+        floating: 'floating cities', organic: 'cities grown like giant trees', crystal: 'cities of shining crystal'
+    };
+    const TECH_WORDS = {
+        ring: 'a giant ring around the whole planet', elevator: 'a space elevator up to the stars', maglev: 'fast trains on floating rails',
+        drones: 'busy little drones', skyships: 'great sky ships', beacons: 'tall light beacons', solar: 'shining solar farms', farms: 'farms in neat patchwork fields'
+    };
+
+    /** The rare sights a world can have (each from its own stream; see RARE in the field guide). */
+    function rareOf(w, o) {
+        const r = U.rng(U.hash('rare', w.seed));
+        const type = w.type;
+        const roll = {
+            rainbow: r(), doublering: r(), glowsea: r(), aurora: r(), ringedmoon: r(), sky: r(), golden: r(), giant: r(),
+            pick: r(), hue: r(), tilt: r(), k: r()
+        };
+        if (o.kind === 'moon') {
+            // A moon with rings of its own (kept inside its reach, so nothing changes round it).
+            if (roll.ringedmoon < 0.06) {
+                w.rare = 'ringedmoon';
+                w.rings = { inner: w.radius * 1.55, outer: w.radius * (2.05 + roll.k * 0.25), color: w.palette.high, tilt: (roll.tilt - 0.5) * 0.8 };
+            }
+        } else if (type === 'gas') {
+            if (roll.rainbow < 0.07) w.rare = 'rainbow';
+            else if (w.rings && roll.doublering < 0.12) {
+                w.rare = 'doublering';
+                const R = w.rings;
+                // A second, narrower set of rings inside the first, tipped another way.
+                w.rings2 = { inner: R.inner * 0.86, outer: R.inner + (R.outer - R.inner) * 0.55, color: U.shiftHex(R.color, 40 + roll.hue * 80, 1.1, 1.05), tilt: R.tilt + (roll.tilt < 0.5 ? -1 : 1) * (0.45 + roll.k * 0.35) };
+            }
+        }
+        if (!w.rare && o.kind !== 'moon' && w.seaLevel >= 0 && (type === 'ocean' || type === 'earth' || type === 'toxic') && roll.glowsea < 0.08) {
+            w.rare = 'glowsea';
+            w.glowSea = ['#3affd8', '#5ab8ff', '#7aff9a', '#c08aff'][Math.floor(roll.pick * 4)];
+        }
+        if (!w.rare && o.kind !== 'moon' && w.atmosphere && roll.aurora < 0.06) {
+            w.rare = 'aurora';
+            const a = [['#5affa0', '#5ad8ff'], ['#ff7ad0', '#8a7aff'], ['#7affd8', '#ffe07a'], ['#a8ff6a', '#ff8ad8']][Math.floor(roll.pick * 4)];
+            w.aurora = { color: a[0], color2: a[1] };
+        }
+        // Fly Low sights.
+        if (w.clouds && w.seaLevel >= 0 && (type === 'earth' || type === 'ocean') && roll.sky < 0.12) w.rainbowSky = true;
+        if (w.life && w.life.species.length) {
+            const n = w.life.species.length;
+            if (roll.golden < 0.06) w.goldSeed = w.life.species[Math.floor(roll.hue * n)];
+            if (type !== 'gas' && roll.giant < 0.06 && n > 1) {
+                let i = Math.floor(roll.k * n);
+                if (w.life.species[i] === w.goldSeed) i = (i + 1) % n;
+                w.giantSeed = w.life.species[i];
+            }
+        }
+    }
+
+    /**
+     * More to discover on every world, drawn from separate random streams after everything else
+     * (so a world's name, size, moons, place and first creatures never change): more kinds of
+     * animals, kinds of plants, how a civilisation builds and what technology it has, and the
+     * rare sights.
+     */
+    function enrich(w, o) {
+        const r = U.rng(U.hash('life-more', w.seed));
+        const type = w.type, gas = type === 'gas', moon = o.kind === 'moon';
+        const lifeRoll = r();
+        if (!w.life && lifeRoll < (MORE_LIFE[type] || 0)) w.life = { species: [U.hash('species', w.seed, 0)] };
+        if (w.life) {
+            const want = gas || moon ? r.int(2, 4) : r.int(4, 8);
+            for (let i = w.life.species.length; i < want; i++) w.life.species.push(U.hash('species', w.seed, i));
+        }
+        const F = FLORA[type];
+        const bare = type === 'desert' && w.terrain.style === 'salt';
+        const lush = w.terrain.style === 'jungle' || w.terrain.style === 'forest';
+        if (F && !bare && (r.chance(F[0]) || (type === 'crystal' && w.terrain.style === 'forest'))) {
+            const n = r.int(F[1], F[2]) + (lush ? 2 : 0);
+            const species = [];
+            for (let i = 0; i < n; i++) species.push(U.hash('plant', w.seed, i));
+            w.flora = { species: species };
+        } else w.flora = null;
+        if (w.civ) {
+            const c = U.rng(U.hash('civ-more', w.seed));
+            w.civ.style = c.weighted(CIV_STYLES[type] || CIV_STYLES.earth);
+            const tech = [];
+            if (c.chance(0.3)) tech.push('ring');
+            if (c.chance(0.3)) tech.push('elevator');
+            if (c.chance(gas || w.civ.style === 'floating' ? 0 : 0.7)) tech.push('maglev');
+            if (c.chance(0.6)) tech.push('drones');
+            if (c.chance(0.6)) tech.push('skyships');
+            if (c.chance(0.5)) tech.push('beacons');
+            if (c.chance(type === 'desert' ? 0.85 : 0.4)) tech.push('solar');
+            if (c.chance(type === 'earth' || type === 'ocean' ? 0.7 : 0.2) && !gas) tech.push('farms');
+            w.civ.tech = tech;
+            w.civ.cities = c.int(3, 9);
+        }
+        rareOf(w, o);
+        return w;
     }
 
     const MOODS = [['friendly', 35], ['curious', 30], ['grumpy', 20], ['loud', 15]];
@@ -435,7 +566,7 @@ NSE.Universe = (function () {
             const species = [];
             for (let i = 0; i < n; i++) species.push(U.hash('species', seed, i));
             w.life = { species: species };
-            if (o.kind !== 'moon' && r.chance(T.civ / T.life + 0.05)) {
+            if (o.kind !== 'moon' && r.chance(CIV_RATE[type] || 0)) {
                 w.civ = {
                     seed: U.hash('civ', seed),
                     people: creatureName(U.hash('people', seed)) + 's',
@@ -446,7 +577,7 @@ NSE.Universe = (function () {
                 };
             }
         }
-        return w;
+        return enrich(w, o);
     }
 
     // --- systems --------------------------------------------------------------------------------
@@ -569,6 +700,16 @@ NSE.Universe = (function () {
         }
         const lastP = sys.planets[sys.planets.length - 1];
         sys.radius = Math.round(lastP ? lastP.orbit + lastP.reach + 80 : starReach + 120);
+        // Rare sights (their own stream, so nothing else in the system changes): a comet sweeping
+        // through, or a pod of star whales (most often in a glowing nebula).
+        const rs = U.rng(U.hash('rare-sys', seed));
+        const cr = rs(), wr = rs(), a = rs(), b = rs(), c = rs();
+        if (sys.planets.length && cr < 0.08) {
+            sys.comet = { seed: U.hash('comet', seed), angle: a * Math.PI * 2, dist: 0.3 + b * 0.35, color: ['#bfe8ff', '#d8f4ff', '#c8ffe8', '#ffe8c8'][Math.floor(c * 4)] };
+        }
+        if (wr < (kind === 'nebula' ? 0.3 : kind === 'blackhole' ? 0 : 0.05)) {
+            sys.whales = { seed: U.hash('whales', seed), count: 3 + Math.floor(b * 3), color: ['#6ad0ff', '#8f9aff', '#6affd0', '#b89aff'][Math.floor(a * 4)] };
+        }
         return sys;
     }
 
@@ -753,6 +894,18 @@ NSE.Universe = (function () {
         return 'hot enough to melt rock';
     }
 
+    /** The rare world sights, by w.rare. */
+    const RARE_NAMES = { rainbow: 'Rainbow Giant', doublering: 'Double Rings', glowsea: 'Glowing Seas', aurora: 'Auroras', ringedmoon: 'A Ringed Moon' };
+
+    /** "cities of tall glass towers, fast trains on floating rails and a space elevator up to the stars" */
+    function civWords(civ) {
+        const parts = [CIV_STYLE_WORDS[civ.style] || 'great cities'];
+        const show = ['ring', 'elevator', 'skyships', 'maglev', 'drones', 'beacons', 'solar', 'farms'].filter(t => (civ.tech || []).indexOf(t) >= 0).slice(0, 2);
+        show.forEach(t => parts.push(TECH_WORDS[t]));
+        if (!show.length) parts.push('space stations and starships');
+        return parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
+    }
+
     /** "1.3 times Earth's gravity" style facts for the logbook and the scanner. */
     function facts(w) {
         const out = [];
@@ -762,7 +915,8 @@ NSE.Universe = (function () {
         out.push({ k: 'Weather', v: tempWords(w.temperature), say: 'It is ' + tempWords(w.temperature) + '.' });
         if (w.rings) out.push({ k: 'Rings', v: 'Yes', say: 'It has rings!' });
         const pl = plants(w);
-        if (w.civ) out.push({ k: 'People', v: 'The ' + w.civ.people, say: 'The ' + w.civ.people + ' live here: an advanced civilisation with cities, space stations and starships.' });
+        if (w.civ) out.push({ k: 'People', v: 'The ' + w.civ.people, say: 'The ' + w.civ.people + ' live here: an advanced civilisation with ' + civWords(w.civ) + '.' });
+        if (w.rare) out.push({ k: 'Rare', v: RARE_NAMES[w.rare] || 'Yes', say: '' });
         if (w.life) out.push({ k: 'Wildlife', v: U.plural(w.life.species.length, 'kind') + (pl ? ' + plants' : ''), say: (w.civ ? 'Wild creatures live here too.' : 'Something lives here!') + (pl ? ' And ' + pl + ' grow here.' : '') });
         else if (pl) out.push({ k: 'Plants', v: pl.charAt(0).toUpperCase() + pl.slice(1), say: capFirst(pl) + ' grow here, but no creatures were found.' });
         return out;
@@ -795,6 +949,11 @@ NSE.Universe = (function () {
         newGalaxySeed: newGalaxySeed,
         facts: facts,
         plants: plants,
+        civWords: civWords,
+        CIV_STYLE_WORDS: CIV_STYLE_WORDS,
+        TECH_WORDS: TECH_WORDS,
+        RARE_NAMES: RARE_NAMES,
+        CIV_RATE: CIV_RATE,
         STYLES: STYLES,
         tempWords: tempWords,
         dist: dist,
