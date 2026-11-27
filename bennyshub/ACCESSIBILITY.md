@@ -220,6 +220,7 @@ Every root choice loop includes a recurring blank **-1**, in both directions. Th
 | Park when chosen | Enter on Auto -1 parks. |
 | Auto park | Park after the saved 1, 2 or 3 complete root loops; partial loops do not count. |
 | Parked | Clear highlights, stop automatic movement, speak “parked” with TTS, show Parked. Enter resumes the first item without selecting. Preserve native hold-to-pause where provided. |
+| Menu opens, Parking on | With Auto and Park when chosen or Auto park, every new menu opens parked (since 2026-11-27): nothing moves until Enter starts the scan at the first item, then Parking works as set. This applies to a new screen, a new context key, or a menu coming back after a suspension (back from a game, a new turn). It parks silently, so the menu's own announcement says where the player is; the Hub and Ballista add “Parked. Press Enter to start scanning.” A redraw keeps a running scan running and a parked one parked; Back and pointer selection (restoreId) keep scanning. Parking Off and Step open on the blank as before. Shared code: `scan-manager.js` `opensParked` and `choice-scan-adapter.js`; `choice-scan.js` is unchanged. Switch Stories also parks each new story page. |
 
 Reserve a status host outside the choices in the existing layout. Bring it into view on actual parking using the existing scroll container. Do not create another scrolling panel.
 

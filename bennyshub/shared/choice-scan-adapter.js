@@ -99,7 +99,7 @@ window.NarbeChoiceScanAdapter = (function () {
   function create(options) {
     const manager = options.manager || window.NarbeScanManager;
     let controller = null, contexts = [], stops = [], active = false, updating = false, inputHeld = false;
-    let badge = null, badgeHost = null;
+    let badge = null, badgeHost = null, quietSpeech = false;
     const rowOutline = createRowOutline();
     // The app's own held key, or Help's message (see holdForSpeech).
     const applyHold = () => { if (active) controller?.setInputHeld(inputHeld || speechHold.held); };
@@ -143,11 +143,20 @@ window.NarbeChoiceScanAdapter = (function () {
         choice:true,holdThreshold:options.holdThreshold,brakeKeyAvailable:options.brakeKeyAvailable,
         items:[],getId:item=>item.id,getLabel:item=>typeof item.label==='function'?item.label():item.label,
         getElement:item=>item.element,getLabelElement:item=>item.labelElement || item.element,
-        speak:options.speak || (text=>window.NarbeVoiceManager?.speak(text)),
+        speak:text=>quietSpeech?null:(options.speak || (spoken=>window.NarbeVoiceManager?.speak(spoken)))(text),
         badge:{update(){},destroy(){badge?.destroy();badge=null;badgeHost=null;}},
         onHighlight:(_item,state)=>paint(state),
         onSelect:(item,state)=>{if(item===BACK_STOP){controller.back({restore:true});return;}options.onSelect?.(item,state,context());}
       });
+    }
+    // Menus open parked with Auto Scan and Parking on (scan-manager.js opensParked).
+    // A controller made by a custom manager (Switch Stories, NARBE Racer) is parked
+    // here instead, silently in the same way.
+    function parkOnOpen() {
+      if (!manager.isParkingEnabled?.() || controller.getState().parked) return;
+      if (controller.parkQuietly) { controller.parkQuietly(); return; }
+      quietSpeech = true;
+      try { controller.park(); } finally { quietSpeech = false; }
     }
     function sync(next, {fresh=false,restoreId=null}={}) {
       if (!next) {
@@ -162,10 +171,17 @@ window.NarbeChoiceScanAdapter = (function () {
       const wasActive=active;active=true;
       ensure(next);
       if (!wasActive) controller.setSuspended(false);
+      // A new menu (another context key) or one coming back after a suspension opens
+      // parked when Parking is on, and a redraw of a parked menu stays parked. A redraw
+      // of a running menu, Back and pointer alignment (restoreId) keep scanning.
+      const startParked = (restoreId === null || restoreId === undefined) &&
+        (changed || !wasActive || !!controller.getState().parked);
       if (changed || fresh) {
-        controller.open(next.items,{restoreId});controller.setInputHeld(inputHeld || speechHold.held);
+        controller.open(next.items,{restoreId,startParked});controller.setInputHeld(inputHeld || speechHold.held);
+        if (startParked) parkOnOpen();
       } else {
         controller.setItems(withStop(next.items));
+        if (startParked) parkOnOpen();
         // Resuming clears the controller's held state; Help's hold outlives a redraw.
         if (!wasActive && speechHold.held) controller.setInputHeld(true);
       }

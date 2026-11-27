@@ -5178,3 +5178,34 @@ Verification (Node, jsdom, both builds):
 - Adapter tests: PC 34/34. Website scan suites: 97/97.
 - The headless Help checks pass on both builds. Switch Stories now runs by real key presses: the harness lacked `CSS.escape`, and the scan list arrives after the description chart's 8 s timeout in jsdom.
 - Not run in Electron or on a device.
+
+### 2026-11-27 — With Auto Scan and Parking on, every menu opens parked
+
+Scope: the user asked that with Auto Scan on and Parking on, every menu start parked when it first loads, so the scan only starts when Enter is pressed. After that, Parking works as set: Auto park parks again after 1, 2 or 3 loops, and Park when chosen keeps scanning until park is chosen. With Parking Off, the scan still starts by itself. This replaces the rule "Fresh menus begin blank" for Parking on (AGENTS.md updated). Applied to the website, the Switch Stories repo and Ben's PC Hub (logged in its `ELECTRON-SCAN-UPGRADE.md`).
+
+What counts as a new menu:
+- **Opens parked:** a new screen or context key, or a menu that comes back after the scan was suspended (back from a game, a new turn).
+- **Keeps its state:** a redraw keeps a running scan running and a parked one parked. That covers the same choices reopened, such as the keyboard rows after each letter, and an app redrawing at start-up.
+- **Keeps scanning:** Back to a parent and pointer selection (they pass a restoreId).
+
+It parks silently; the menu's own announcement says where the player is, and the badge shows Parked. The Hub and Ballista now say "Parked. Press Enter to start scanning." where they used to add "Park.". Switch Stories' page parking (earlier today) now follows either parking mode. `choice-scan.js` is unchanged, so the Companion copy stays byte-identical.
+
+Files (Electron port **YES** unless noted):
+- `bennyshub/shared/scan-manager.js`: `createChoiceScan` returns `opensParked(...)`, which wraps `open()` and `setSuspended()`. `open(items, {startParked})` lets callers decide explicitly. Silent park. Items given at creation count as the first menu.
+- `bennyshub/shared/choice-scan-adapter.js`: decides by context key and passes `startParked`. It parks controllers made by a custom manager (Switch Stories, NARBE Racer) itself, silently.
+- `bennyshub/index.html`: the Hub menu announcement says "Parked. Press Enter to start scanning." when parked.
+- `bennyshub/shared/scan-settings.js`: the Parking description says menus open parked.
+- `bennyshub/apps/games/BENNYSBALLISTA/js/ui.js`: the same announcement wording.
+- Switch Stories repo: `js/input.js` (`parkForPage` with either parking mode), `js/ui.js` (How to Play line), `index.html` (cache tag `?v=2026.11.27.5`).
+- `tests/menus-open-parked.test.cjs` (new, 4 tests). `tests/choice-scan-adapter.test.cjs`: test 3 rewritten for the new rule, and test 8 now opens its scanning menu with Parking Off. `tests/scan-upgrade.test.cjs`: its `create()` builds the core controller directly (`NarbeChoiceScan.create`), as these core-parking tests always effectively did.
+- `AGENTS.md`, `bennyshub/ACCESSIBILITY.md` (scan-state table row), `CHANGELOG.md`, `docs/history/DEVELOPMENT-HISTORY.md`: Electron port **NO** (the PC keeps its own).
+
+Verification, all in Node (no browser):
+- All 55 Node unit-test files (`tests/*.test.cjs` except the browser-launching `core.test.cjs`): 442/442 pass.
+- jsdom, both builds, with Auto Scan and Auto park:
+  - The Hub main menu opens parked and stays still for 3 s; it says "...Parked. Press Enter to start scanning."; Enter starts the scan. With Parking Off it is not parked.
+  - The keyboard opens parked; after Enter, typing a letter keeps it scanning.
+  - Glow Pop, Tic Tac Toe and Ballista open parked; Ballista says "Parked. Press Enter to start scanning."; Enter starts them.
+  - Switch Stories with Park when chosen: the library and each page open parked. Auto park, Parking Off and Step mode are as expected.
+  - The earlier Help checks pass on both builds.
+- Not run in Electron or on a device.

@@ -2586,7 +2586,9 @@
     }
     function announceFreshHubMenu(text, stepHint = ' Press spacebar to start scanning.') {
       const parkingLabel = window.NarbeScanManager.isParkingEnabled();
-      const suffix = parkingLabel ? ' Park.' : window.NarbeScanManager.getSettings().autoScan ? '' : stepHint;
+      // With Parking on, menus open parked (scan-manager.js): say so, and how to start.
+      const parked = parkingLabel && hubMenuOwnsScan() && !!hubMenuScanner?.getState().parked;
+      const suffix = parked ? ' Parked. Press Enter to start scanning.' : parkingLabel ? ' Park.' : window.NarbeScanManager.getSettings().autoScan ? '' : stepHint;
       return announceHubMenu(text + suffix, {parkingLabel});
     }
     function alignHubMenuFocus(button) {

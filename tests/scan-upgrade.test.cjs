@@ -83,7 +83,9 @@ function harness({ saved = {}, speechMode = 'normal', speechDuration = 500, voic
   const manager = context.NarbeScanManager, voice = context.NarbeVoiceManager;
   function create(overrides = {}) {
     const selected = [], highlights = [], status = [];
-    const controller = manager.createChoiceScan({
+    // The core controller (choice-scan.js), as these tests always exercised it. The manager's
+    // factory adds "menus open parked" on top; tests/menus-open-parked.test.cjs covers that.
+    const controller = context.NarbeChoiceScan.create(manager, {
       choice: true, holdThreshold: 3000,
       items: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Bravo' }],
       onSelect: item => selected.push(item.id),

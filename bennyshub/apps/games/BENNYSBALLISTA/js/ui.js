@@ -73,7 +73,8 @@ RT.ui = (function () {
     if(fresh)choiceScanner.setInputHeld(spaceDown||enterDown);
   }
   function announceMenu(text){
-    if(choiceActive){const parkingLabel=U.sm().isParkingEnabled()&&scan<0;return choiceScanner.announce(text+(parkingLabel?' Park.':''),{parkingLabel});}
+    // With Parking on, menus open parked (scan-manager.js): say so, and how to start.
+    if(choiceActive){const parkingLabel=U.sm().isParkingEnabled()&&scan<0,parked=!!choiceScanner.getState()?.parked;return choiceScanner.announce(text+(parkingLabel?(parked?' Parked. Press Enter to start scanning.':' Park.'):''),{parkingLabel});}
     return speak(text);
   }
   function announceChoiceValue(text){return choiceActive?choiceScanner.announce(text):speak(text);}

@@ -78,7 +78,7 @@ window.NarbeScanSettings = (function () {
     mode.setAttribute('aria-controls', autoOptions.id);
     modeGroup.append(mode);
     autoOptions.append(
-      card('parking', 'Parking', 'Keep scanning, park when chosen, or park after complete loops.',
+      card('parking', 'Parking', 'Off keeps scanning. With parking on, menus open parked and Enter starts the scan; then park when chosen, or after complete loops.',
         (settings,direction) => ({ parking: parkingModes[(parkingModes.indexOf(settings.parking) + direction + parkingModes.length) % parkingModes.length] })),
       card('parking-loops', 'Loops before parking', 'Park after this many complete scans.',
         (settings,direction) => ({ loopsBeforeParking: (settings.loopsBeforeParking - 1 + direction + 3) % 3 + 1 })),

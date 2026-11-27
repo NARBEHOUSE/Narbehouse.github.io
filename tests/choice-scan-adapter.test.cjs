@@ -27,9 +27,12 @@ test('nested row Back restores identity, while completing its loop returns to ro
  h.adapter.enterGroup(child);assert.equal(h.adapter.getState().depth,1);h.adapter.back({restore:true});assert.equal(h.adapter.getState().id,'a');assert.equal(h.adapter.context.key,'menu');
  h.adapter.enterGroup(child);h.adapter.step(1);h.adapter.step(1);assert.equal(h.adapter.getState().index,-1);assert.equal(h.adapter.context.key,'menu');assert.equal(h.painted.at(-1).context,'menu');
 });
-test('fresh menu is blank, pointer alignment is explicit, and parked redraw stays parked',()=>{
- const h=harness();h.update({autoScan:true,parking:'chosen'});h.adapter.sync(h.root);h.adapter.select();assert.equal(h.adapter.getState().parked,true);h.adapter.sync({...h.root});assert.equal(h.adapter.getState().parked,true);
- h.adapter.align('b');assert.equal(h.adapter.getState().id,'b');assert.equal(h.adapter.getState().parked,false);h.adapter.sync({...h.root,key:'other'});assert.equal(h.adapter.getState().index,-1);
+test('with Parking on a menu opens parked and Enter starts it; a parked redraw stays parked; pointer alignment is explicit',()=>{
+ const h=harness();h.update({autoScan:true,parking:'chosen'});h.adapter.sync(h.root);assert.equal(h.adapter.getState().parked,true,'opens parked');assert.equal(h.badges.at(-1).value,'Parked');
+ h.adapter.select();assert.equal(h.adapter.getState().parked,false);assert.equal(h.adapter.getState().id,'a','Enter starts the scan at the first item');
+ h.adapter.step(1);h.adapter.step(1);assert.equal(h.adapter.getState().index,-1);h.adapter.select();assert.equal(h.adapter.getState().parked,true,'Park when chosen still parks at the blank');
+ h.adapter.sync({...h.root});assert.equal(h.adapter.getState().parked,true,'a parked redraw stays parked');
+ h.adapter.align('b');assert.equal(h.adapter.getState().id,'b');assert.equal(h.adapter.getState().parked,false);h.adapter.sync({...h.root,key:'other'});assert.equal(h.adapter.getState().index,-1);assert.equal(h.adapter.getState().parked,true,'another menu opens parked');
 });
 test('suspension releases transient holds but preserves a completed brake',()=>{
  const h=harness();h.update({autoScan:true});h.adapter.sync(h.root);h.adapter.step(1);h.adapter.brakePress();h.adapter.cancelInput();assert.equal(h.adapter.getState().braked,false);
@@ -52,7 +55,8 @@ test('explicit child identity survives a scan-style rebuild and Back still resto
 
 test('adapter forwards parking ownership for composed labels without cancelling ordinary explicit narration',async()=>{
  for(const parkingLabel of [false,true]){
-  const h=harness();h.update({autoScan:true,parking:'chosen',waitForSpeech:true});h.adapter.sync(h.root);
+  // A menu scanning at its blank with Parking on (menus now open parked, so it opens with Parking Off).
+  const h=harness();h.update({autoScan:true,parking:'off',waitForSpeech:true});h.adapter.sync(h.root);h.update({parking:'chosen'});
   const ticket=h.adapter.announce(parkingLabel?'The dock. Park.':'The dock.',{parkingLabel});
   const spoken=h.spoken.at(-1);let result;ticket.finished.then(value=>{result=value});
   h.update({parking:'off'});await h.tick(0);assert.equal(h.adapter.getState().index,-1);

@@ -6,6 +6,7 @@
 - Help plays on the communication speaker chosen in Hub Settings when Speaker Mode is on. Tic Tac Toe, Chess and Checkers, Connect Four, Word Jumble, Battle Boats and Bug Blaster now do this too. Help still speaks when Text to Speech is off.
 - With Auto Scan on, the scan now stays on Help until the message has been said, then waits one scan interval before moving on, so the next item can no longer cut "I need help" short. Benny's Ballista now scans its menus through the same shared code as the other games.
 - Switch Stories: with Auto Scan and Auto park on, each page now starts parked, so nothing moves while it is read; press Enter to start the scan. Back to Pause on the Go to Page screen lands on Go to Page again.
+- With Auto Scan and Parking on (Park when chosen or Auto park), every menu now opens parked: nothing moves until you press Enter to start the scan, then Parking works as set. Redraws, Back and mouse or touch keep scanning; Parking Off is unchanged.
 
 ## 2026-11-11 - Big-game preview and copy tools
 

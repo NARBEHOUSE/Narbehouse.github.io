@@ -238,7 +238,53 @@ window.NarbeScanManager = (function () {
     shouldParkAfterLoop: loops => settings.autoScan && settings.parking === 'auto' &&
       loops >= settings.loopsBeforeParking,
     // Explicit creation only. No app is converted just by loading this file.
-    createChoiceScan(options) { return window.NarbeChoiceScan.create(api, options); }
+    // With Auto Scan and Parking on, menus open parked (see opensParked).
+    createChoiceScan(options) { return opensParked(api, options); }
   };
+
+  /**
+   * Menus open parked when Auto Scan and Parking are on (the user, 2026-11-27):
+   * nothing moves until Enter starts the scan, then Parking works as set (Auto park
+   * after 1-3 loops, or Park when chosen). Parking Off and Step mode are unchanged.
+   *
+   * A new menu is an open() without a restoreId whose choices differ from the last
+   * open, or any open after the scan was suspended. Reopening the same choices (a
+   * redraw, a keyboard's rows after each letter) keeps a running scan running and a
+   * parked one parked; Back to a parent and pointer alignment pass a restoreId and
+   * keep scanning. open(items, {startParked: true|false}) decides explicitly (the
+   * choice-scan adapter does, by context key). Parking here is silent: the menu's
+   * own announcement says where the player is, and the status badge shows Parked.
+   * choice-scan.js itself is unchanged (the Companion copy stays byte-identical).
+   */
+  function opensParked(manager, options) {
+    let quiet = false, lastIds = null, interrupted = true;
+    const baseSpeak = options.speak || (text => window.NarbeVoiceManager?.speak(text));
+    const identify = options.getId || (item => item.id);
+    const controller = window.NarbeChoiceScan.create(manager, {...options, speak: text => (quiet ? null : baseSpeak(text))});
+    const raw = {open: controller.open, setSuspended: controller.setSuspended};
+    function parkQuietly() {
+      if (!manager.isParkingEnabled() || controller.getState().parked) return false;
+      quiet = true;
+      try { return controller.park(); } finally { quiet = false; }
+    }
+    controller.open = (items, settings = {}) => {
+      const ids = (items || []).map(identify);
+      const wasParked = controller.getState().parked;
+      const result = raw.open(items, settings);
+      const restoring = settings.restoreId !== null && settings.restoreId !== undefined;
+      const isNew = !restoring && (interrupted || !lastIds || lastIds.length !== ids.length || ids.some((id, i) => id !== lastIds[i]));
+      lastIds = ids;
+      interrupted = false;
+      const park = typeof settings.startParked === 'boolean' ? settings.startParked : isNew || (wasParked && !restoring);
+      if (park) parkQuietly();
+      return result;
+    };
+    controller.setSuspended = value => { if (value) interrupted = true; return raw.setSuspended(value); };
+    controller.parkQuietly = parkQuietly;
+    // Items given at creation are the first menu.
+    if (options.items?.length) parkQuietly();
+    return controller;
+  }
+
   return api;
 })();
