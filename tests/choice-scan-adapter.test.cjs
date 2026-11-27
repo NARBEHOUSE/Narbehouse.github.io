@@ -229,3 +229,12 @@ test('Help hold without a completion ticket allows for the words, and Step mode 
  await h.tick(1);assert.equal(h.module.speechHeld(),false);await h.tick(1000);assert.equal(h.adapter.getState().id,'b');
  const s=harness();s.adapter.sync(s.root);s.module.holdForSpeech(helpTicket().ticket);s.adapter.step(1);assert.equal(s.adapter.getState().id,'a');s.adapter.select();
 });
+test('park() parks only with Auto Scan and Parking on; Enter then resumes at the first item without selecting',async()=>{
+ const off=harness();off.adapter.sync(off.root);assert.equal(off.adapter.park(),false,'Step mode never parks');
+ const noParking=harness();noParking.update({autoScan:true});noParking.adapter.sync(noParking.root);assert.equal(noParking.adapter.park(),false,'Parking Off never parks');
+ const picked=[];const h=harness({onSelect:item=>picked.push(item.id)});h.update({autoScan:true,parking:'auto'});h.adapter.sync(h.root);
+ assert.equal(h.adapter.park(),true);assert.equal(h.adapter.getState().parked,true);assert.equal(h.badges.at(-1).value,'Parked');
+ await h.tick(5000);assert.equal(h.adapter.getState().parked,true,'stays parked');
+ h.adapter.select();assert.equal(h.adapter.getState().parked,false);assert.equal(h.adapter.getState().id,'a');assert.deepEqual(picked,[],'resuming selects nothing');
+ h.adapter.sync(null);assert.equal(h.adapter.park(),false,'an inactive adapter does not park');
+});

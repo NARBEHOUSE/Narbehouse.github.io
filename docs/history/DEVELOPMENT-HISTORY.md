@@ -5158,3 +5158,23 @@ Verification, all in Node (no browser):
 - Ballista before and after the move to the adapter, the same presses in Step mode and Auto Scan (menus, back-scan, Space brake, Settings toggle, mouse clicks, entering a castle): identical traces of highlight, speech, status attributes and badge.
 - The earlier two-switch Help check (14 games per build) and the Show n Sound VM check pass again. The PC's Build n Bash, Build n Ride and Space Explorer whole-game jsdom smoke tests pass with the new adapter. Chasing Rainbows' Auto Scan session timed out once while four of these heavy tests ran at the same time; that session never chooses Help, so the hold never engaged. Run on its own, all 9 sessions pass.
 - Not yet tested in Electron, on a device, or heard on a real speaker.
+
+### 2026-11-27 — Switch Stories: pages start parked with Auto park; Back to Pause fix
+
+Scope: the user saw that in Switch Stories the scan keeps moving when a page turns, which is distracting, and asked that with Auto park on, the page start parked so Enter starts the scan. The same pass fixes a regression from today's Help work: Back to Pause on the Go to Page screen restored the second pause item, which became I Need Help when that item was added. Applied to the Switch Stories repo and Ben's PC Hub (logged in its `ELECTRON-SCAN-UPGRADE.md`).
+
+Behaviour: with Auto Scan on and Parking set to Auto park, every story page starts parked. That covers opening a story, each page turn, Go to Page, Start Over, Read Again, and coming back from Pause. The highlight is off and nothing moves while the page is read, and "parked" is not spoken; the status badge shows Parked. Enter resumes the scan on the page button, as parked Enter always does (it selects nothing), and a second Enter presses it. The End choices, Parking Off, Park when chosen and Step mode are unchanged. This is Switch Stories only; other games and menus still open on the recurring blank.
+
+Files:
+- `bennyshub/shared/choice-scan-adapter.js`: `park()`, which parks the controller only with Auto Scan and Parking on. Electron port **YES**.
+- `tests/choice-scan-adapter.test.cjs`: one new test. Electron port **YES**.
+- Switch Stories repo (`GAMES/switch-stories`): `js/input.js` (`parkForPage()`, silent), `js/story.js` (`beginPage` parks), `js/main.js` (back from Pause parks), `js/ui.js` (Back to Pause finds Go to Page by name; a How to Play line when Auto park is on), `index.html` (cache tag `?v=2026.11.27.4`). Copied with `scripts/copy-big-game.cjs`. Electron port **YES**.
+- `docs/history/DEVELOPMENT-HISTORY.md`: this record; `CHANGELOG.md`. Electron port **NO**.
+
+Verification (Node, jsdom, both builds):
+- With Auto Scan and Auto park, the cover starts parked and stays still for 4 s of reading. Enter wakes the scan on the page button; two page turns each start parked and stay still while read. Back from Pause, the page starts parked. "parked" was never spoken.
+- Parking Off, Park when chosen and Step mode behave as before.
+- Pause > Go to Page > Back to Pause lands on Go to Page. Before the fix, the live copy landed on I Need Help.
+- Adapter tests: PC 34/34. Website scan suites: 97/97.
+- The headless Help checks pass on both builds. Switch Stories now runs by real key presses: the harness lacked `CSS.escape`, and the scan list arrives after the description chart's 8 s timeout in jsdom.
+- Not run in Electron or on a device.

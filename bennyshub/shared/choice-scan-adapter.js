@@ -197,6 +197,9 @@ window.NarbeChoiceScanAdapter = (function () {
       getState(){return controller?{...controller.getState(),active,context:context()?.key,backStop:atBackStop()}:null;},
       step(direction){return active && controller?.step(direction);},
       select(){return active && controller?.select();},
+      // Park now (Auto Scan with Parking on only), as if parking had been chosen;
+      // Enter then resumes at the first item. Speaks "parked" through options.speak.
+      park(){return !!(active && controller?.park());},
       // Like the root blank, Space on the back stop is consumed without pausing:
       // there is no item there to carry the dotted pause outline.
       brakePress(){
