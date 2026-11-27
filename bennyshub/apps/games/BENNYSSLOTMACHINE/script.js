@@ -839,6 +839,7 @@ const menus = {
     ],
     pause: [
         { text: "▶️ Continue", action: () => resumeGame() },
+        { text: "🆘 Help", action: () => callForHelp() },
         { text: () => canBuyCredits() ? "💵 Buy 500 Credits" : `⏳ ${getTimeUntilBuy()}`, action: () => buyCredits() },
         { text: "⚙️ Settings", action: () => showPauseSettings() },
         { text: "🏠 Main Menu", action: () => showMainMenu() },
@@ -1157,7 +1158,7 @@ function announceCurrentPauseItem() {
     const items = state.pauseMenuState === 'settings' ? menus.pauseSettings : menus.pause;
     const item = items[state.pauseIndex];
     if (item) {
-        const text = (typeof item.text === 'function' ? item.text() : item.text).replace(/<[^>]*>/g, "").replace(/[🎰⚙️🚪🎨🔊🗣️📡⏱️✨🎯⬅️💎💵▶️🏠⏳🎁💸💰⏸️]/g, "").trim();
+        const text = (typeof item.text === 'function' ? item.text() : item.text).replace(/<[^>]*>/g, "").replace(/[🎰⚙️🚪🎨🔊🗣️📡⏱️✨🎯⬅️💎💵▶️🏠⏳🎁💸💰⏸️🆘]/g, "").trim();
         speak(text);
     }
 }
@@ -2744,6 +2745,20 @@ function performBackwardsToggle() {
 }
 
 // --- TTS ---
+// Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+// (Speaker Mode), otherwise in the hub voice, even with TTS off. The pause menu stays open.
+function callForHelp() {
+    const say = () => {
+        if (window.NarbeVoiceManager) return window.NarbeVoiceManager.speak('I need help', { force: true });
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            speechSynthesis.speak(new SpeechSynthesisUtterance('I need help'));
+        }
+        return null;
+    };
+    return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
+}
+
 function speak(text) {
     // Check NarbeVoiceManager first (it has its own ttsEnabled check)
     if (window.NarbeVoiceManager) {

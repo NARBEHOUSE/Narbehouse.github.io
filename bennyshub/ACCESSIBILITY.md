@@ -430,8 +430,17 @@ everything; the item arms first and only wipes on a second, deliberate select.
 
 ### Pause menu
 Preserve the game’s existing hold-to-pause and on-screen Pause routes. A hold-only route may be unavailable to a player limited to short taps; record that limitation accurately. Standard items: **Continue**, **Restart**, **Settings**, **Main
-Menu**, **Exit Game**, and where useful a **Help** item that speaks a line
-without closing the menu.
+Menu**, **Exit Game**, and a **Help** item that calls for a helper without
+closing the menu. Every game with a pause menu has one (Benny Says has no pause
+menu). It says "I need help" through `NarbeCommunicationSpeech.help()`: on the
+Hub Settings communication speaker when Speaker Mode is on, otherwise in the
+hub voice with `{ force: true }`, so it still speaks when Text to Speech is
+off. Load `communication-channel.js` and `communication-speech.js` after
+`voice-manager.js`. The NARBE switch games label it **I Need Help** and say
+"I need help, please!" twice. While the message plays, Auto Scan stays on Help
+(the held-Enter freeze, `NarbeChoiceScanAdapter.holdForSpeech`); one full
+interval after it ends, scanning moves on. A message that never reports its end
+releases the hold after 12 s. Manual stepping and the Space brake still work.
 
 In a new game, prefer making Pause something the player can also **scan to and
 select**, with the hold kept as a shortcut. §12 covers what that costs and when

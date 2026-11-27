@@ -61,6 +61,7 @@ NMB.UI = (function () {
             exit: svg('<path d="M28 10H12v28h16"/><path d="M24 24h14"/><path d="M32 18l6 6-6 6"/>'),
             play: svg('<circle cx="24" cy="24" r="17"/><path d="M20 17l12 7-12 7z"/>'),
             home: svg('<path d="M8 23 24 10l16 13"/><path d="M12 23v17h24V23"/><path d="M20 40V30h8v10"/>'),
+            hand: svg('<path d="M17 25V12a3 3 0 0 1 6 0v10M23 21V9a3 3 0 0 1 6 0v12M29 21v-8a3 3 0 0 1 6 0v14c0 8-5 13-12 13-5 0-8-3-11-8l-4-7a3 3 0 0 1 5-3l3 4"/>'),
             back: svg('<path d="M30 12 18 24l12 12"/>'),
             check: svg('<circle cx="24" cy="24" r="17"/><path d="M16 24.5l6 6 11-13"/>'),
             cross: svg('<circle cx="24" cy="24" r="17"/><path d="M18 18l12 12"/><path d="M30 18L18 30"/>'),
@@ -344,23 +345,34 @@ NMB.UI = (function () {
 
     const PAUSE_ITEMS = [
         { label: 'Continue', icon: 'play', tone: 'green' },
+        { label: 'I Need Help', icon: 'hand', tone: 'help', quiet: true, speak: 'I need help. Choose this to call a helper.' },
         { label: 'Settings', icon: 'settings', tone: 'plum' },
         { label: 'How to Play', icon: 'help', tone: 'teal' },
         { label: 'Main Menu', icon: 'home', tone: 'blue' },
         { label: 'Exit Game', icon: 'exit', tone: 'slate' }
     ];
 
+    /** I Need Help, as in the other NARBE games: said on the speaker chosen in Hub Settings
+     *  (Speaker Mode), otherwise in the hub voice, even with Text to Speech off. The game stays paused. */
+    function callForHelp() {
+        const message = 'I need help, please! I need help, please!';
+        const fallback = function () { try { return window.NarbeVoiceManager.speak(message, { force: true }); } catch (e) { return null; } };
+        if (window.NarbeCommunicationSpeech) window.NarbeCommunicationSpeech.help(fallback, message);
+        else fallback();
+    }
+
     function pauseScannables() {
         const at = i => el.pauseList.querySelector('[data-pause="' + i + '"]');
         const actions = [
             function () { show('play'); },
+            callForHelp,
             function () { settingsFrom = 'pause'; show('settings'); },
             function () { show('help'); },
             function () { NMB.Game.toMenu(); },
             function () { NMB.Game.exit(); }
         ];
         return PAUSE_ITEMS.map(function (m, i) {
-            return { id: 'pause:' + i, el: at(i), speak: m.label, action: actions[i] };
+            return { id: 'pause:' + i, el: at(i), speak: m.speak || m.label, quiet: m.quiet, action: actions[i] };
         });
     }
 

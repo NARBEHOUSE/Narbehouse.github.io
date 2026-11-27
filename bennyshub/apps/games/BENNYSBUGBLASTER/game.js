@@ -104,6 +104,13 @@ function speak(text) {
     }
 }
 
+// Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+// (Speaker Mode), otherwise in the hub voice, even with TTS off. The pause menu stays open.
+function callForHelp() {
+    const say = () => window.NarbeVoiceManager ? window.NarbeVoiceManager.speak('I need help', { force: true }) : null;
+    return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
+}
+
 // --- Global Constants & Variables ---
 let TOWER_SIZE = Math.min(150, window.innerWidth / 3);
 const ROUND_DURATION = 150; // seconds
@@ -2796,22 +2803,22 @@ function draw_pause_menu() {
     ctx.fillRect(0,0, SCREEN_WIDTH, SCREEN_HEIGHT);
     
     // Panel - Wood Theme
-    let panelW = Math.min(450, SCREEN_WIDTH * 0.9); 
-    let panelH = 450;
+    let panelW = Math.min(450, SCREEN_WIDTH * 0.9);
+    let panelH = 520; // Increased to fit the added Help row while keeping bottom margin consistent
     let px = (SCREEN_WIDTH - panelW)/2;
     let py = (SCREEN_HEIGHT - panelH)/2;
-    
+
     // Board Background
     ctx.save();
     ctx.fillStyle = "#fff3e0"; // Cream/Light Wood
     ctx.strokeStyle = "#5d4037"; // Dark Brown
     ctx.lineWidth = 6;
-    ctx.beginPath(); 
-    if (ctx.roundRect) ctx.roundRect(px, py, panelW, panelH, 20); 
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(px, py, panelW, panelH, 20);
     else ctx.rect(px, py, panelW, panelH);
-    ctx.fill(); 
+    ctx.fill();
     ctx.stroke();
-    
+
     // Screws in corners (Cosmetic)
     ctx.fillStyle = "#a1887f";
     let screwOffset = 15;
@@ -2821,15 +2828,15 @@ function draw_pause_menu() {
     ctx.beginPath(); ctx.arc(px+screwOffset, py+panelH-screwOffset, screwSize, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(px+panelW-screwOffset, py+panelH-screwOffset, screwSize, 0, Math.PI*2); ctx.fill();
     ctx.restore();
-    
+
     // Title
     ctx.fillStyle = "#3e2723"; // Dark Brown
     let titleSize = Math.min(50, panelW / 6);
     ctx.font = `bold ${titleSize}px 'Segoe UI'`;
     let title = "PAUSED";
     ctx.fillText(title, SCREEN_WIDTH/2 - ctx.measureText(title).width/2, py + 70);
-    
-    let options = ["Continue", "Restart Level", "Settings", "Main Menu"];
+
+    let options = ["Continue", "Restart Level", "Settings", "Main Menu", "Help"];
     let optSize = Math.min(28, panelW / 14); 
     
     let startY = py + 140;
@@ -3454,7 +3461,7 @@ function scanBackward() {
         let current_pos = visible_indices.indexOf(menu_selected_index);
         
         if (current_pos === -1) {
-             menu_selected_index = visible_indices[visible_indices.length - 1];
+             menu_selected_index = visible_indices[visible_indices.length - 1]; 
         } else {
              // Backward cycle
              let next_pos = (current_pos - 1 + visible_indices.length) % visible_indices.length;
@@ -3473,12 +3480,12 @@ function scanBackward() {
          speak("Back");
     }
     else if (gameState === 'PAUSED') {
-         menu_selected_index = menu_selected_index < 0 ? 3 : (menu_selected_index - 1 + 4) % 4;
-         let opts = ["Continue", "Restart Level", "Settings", "Main Menu"];
+         menu_selected_index = (menu_selected_index < 0) ? 4 : (menu_selected_index - 1 + 5) % 5;
+         let opts = ["Continue", "Restart Level", "Settings", "Main Menu", "Help"];
          speak(opts[menu_selected_index]);
     }
     else if (gameState === 'SETTINGS') {
-         menu_selected_index = menu_selected_index < 0 ? 6 : (menu_selected_index - 1 + 7) % 7;
+         menu_selected_index = (menu_selected_index < 0) ? 6 : (menu_selected_index - 1 + 7) % 7;
          let opts = ["TTS", "Auto Scan", "Scan Speed", "Auto Stomp", "SFX", "Music", "Back"];
          speak(opts[menu_selected_index]);
     }
@@ -3528,8 +3535,8 @@ function scanForward() {
          speak("Back");
     }
     else if (gameState === 'PAUSED') {
-         menu_selected_index = (menu_selected_index + 1) % 4;
-         let opts = ["Continue", "Restart Level", "Settings", "Main Menu"];
+         menu_selected_index = (menu_selected_index + 1) % 5;
+         let opts = ["Continue", "Restart Level", "Settings", "Main Menu", "Help"];
          speak(opts[menu_selected_index]);
     }
     else if (gameState === 'SETTINGS') {
@@ -3612,6 +3619,8 @@ function selectAction() {
              reset_game_state();
              gameState = 'MENU'; window.classicChoice?.sync();
              menu_selected_index = -1;
+         } else if (menu_selected_index === 4) { // Help
+             callForHelp();
          }
     } else if (gameState === 'SETTINGS') {
         if (menu_selected_index === 0) { // TTS
@@ -3981,13 +3990,13 @@ function handleInput(x, y) {
     } else if (gameState === 'PAUSED') {
          // Pause Menu Click Handling
          let panelW = Math.min(450, SCREEN_WIDTH * 0.9);
-         let panelH = 450;
+         let panelH = 520; // Must match draw_pause_menu()
          let py = (SCREEN_HEIGHT - panelH)/2;
          let startY = py + 140;
          let gap = 70;
-         
-         // 0: Continue, 1: Restart, 2: Settings, 3: Main Menu
-         for(let i=0; i<4; i++) {
+
+         // 0: Continue, 1: Restart, 2: Settings, 3: Main Menu, 4: Help
+         for(let i=0; i<5; i++) {
              let by = startY + i*gap;
              // Larger hit area height
              if (y >= by - 25 && y <= by + 25) {
@@ -3998,12 +4007,12 @@ function handleInput(x, y) {
                  } else if (i === 1) { // Restart Level
                      restore_store_state(); // Restore PRE-LEVEL state (points, upgrades, everything)
                      enter_store(false); // Do not overwrite backup
-                     
+
                      enemies = [];
                      tower_projectiles = [];
                      enemy_projectiles = [];
                      tower_units = [];
-                     
+
                      speak("Level restarted. Purchases reverted. Back to store.");
                  } else if (i === 2) { // Settings
                      settings_return_state = 'PAUSED';
@@ -4014,6 +4023,9 @@ function handleInput(x, y) {
                      reset_game_state();
                      gameState = 'MENU'; window.classicChoice?.sync();
                      menu_selected_index = -1;
+                     click_block_time = Date.now() + 300;
+                 } else if (i === 4) { // Help
+                     callForHelp();
                      click_block_time = Date.now() + 300;
                  }
              }

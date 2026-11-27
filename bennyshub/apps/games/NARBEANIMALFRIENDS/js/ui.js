@@ -137,6 +137,8 @@ NAF.UI = (function () {
                       '<path d="M20 40V30h8v10"/>'),
             play: svg('<circle cx="24" cy="24" r="17"/><path d="M20 17l12 7-12 7z"/>'),
             exit: svg('<path d="M28 10H12v28h16"/><path d="M24 24h14"/><path d="M32 18l6 6-6 6"/>'),
+            // A raised hand, the same one the other NARBE games use for I Need Help.
+            hand: svg('<path d="M17 25V12a3 3 0 0 1 6 0v10M23 21V9a3 3 0 0 1 6 0v12M29 21v-8a3 3 0 0 1 6 0v14c0 8-5 13-12 13-5 0-8-3-11-8l-4-7a3 3 0 0 1 5-3l3 4"/>'),
             check: svg('<circle cx="24" cy="24" r="17"/><path d="M16 24.5l6 6 11-13"/>'),
             cross: svg('<circle cx="24" cy="24" r="17"/><path d="M18 18l12 12"/><path d="M30 18L18 30"/>')
         };
@@ -1205,12 +1207,22 @@ NAF.UI = (function () {
 
     const PAUSE_ITEMS = [
         { label: 'Continue', icon: 'play', tone: 'green' },
+        { label: 'I Need Help', icon: 'hand', tone: 'help' },
         { label: 'Play a Different Game', icon: 'animal', tone: 'blue' },
         { label: 'Settings', icon: 'settings', tone: 'plum' },
         { label: 'How to Play', icon: 'help', tone: 'teal' },
         { label: 'Main Menu', icon: 'home', tone: 'red' },
         { label: 'Exit Game', icon: 'exit', tone: 'slate' }
     ];
+
+    /** I Need Help, as in the other NARBE games: said on the speaker chosen in Hub Settings
+     *  (Speaker Mode), otherwise in the hub voice, even with Text to Speech off. The game stays paused. */
+    function callForHelp() {
+        const message = 'I need help, please! I need help, please!';
+        const fallback = function () { try { return window.NarbeVoiceManager.speak(message, { force: true }); } catch (e) { return null; } };
+        if (window.NarbeCommunicationSpeech) window.NarbeCommunicationSpeech.help(fallback, message);
+        else fallback();
+    }
 
     function renderPause() {
         el.pauseList.innerHTML = '';
@@ -1224,17 +1236,19 @@ NAF.UI = (function () {
         function at(i) { return el.pauseList.querySelector('[data-pause="' + i + '"]'); }
         return [
             { id: 'pause:0', el: at(0), speak: 'Continue playing.', action: function () { show('play'); } },
-            { id: 'pause:1', el: at(1),
+            { id: 'pause:need-help', el: at(1), quiet: true,
+              speak: 'I need help. Choose this to call a helper.', action: callForHelp },
+            { id: 'pause:1', el: at(2),
               speak: 'Play a different game. Choose another way to play.',
               action: function () { NAF.Game.toModes(); } },
-            { id: 'pause:2', el: at(2), speak: 'Settings.', action: function () { settingsFrom = 'pause'; show('settings'); } },
+            { id: 'pause:2', el: at(3), speak: 'Settings.', action: function () { settingsFrom = 'pause'; show('settings'); } },
             // The same How to Play screen the main menu opens, with the printed
             // directions and the read-aloud title. Its Back comes here rather
             // than to the main menu while a game is running - see
             // helpScannables - so the player lands back where they left off.
-            { id: 'pause:3', el: at(3), speak: 'How to play.', action: function () { show('help'); } },
-            { id: 'pause:4', el: at(4), speak: 'Main menu.', action: function () { NAF.Game.toMenu(); } },
-            { id: 'pause:5', el: at(5), speak: 'Exit game. Goes back to the hub.', action: function () { NAF.Game.exit(); } }
+            { id: 'pause:3', el: at(4), speak: 'How to play.', action: function () { show('help'); } },
+            { id: 'pause:4', el: at(5), speak: 'Main menu.', action: function () { NAF.Game.toMenu(); } },
+            { id: 'pause:5', el: at(6), speak: 'Exit game. Goes back to the hub.', action: function () { NAF.Game.exit(); } }
         ];
     }
 

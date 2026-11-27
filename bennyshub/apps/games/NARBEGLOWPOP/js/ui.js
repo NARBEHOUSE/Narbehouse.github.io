@@ -70,6 +70,7 @@ NGP.UI = (function () {
             exit: svg('<path d="M28 10H12v28h16"/><path d="M24 24h14"/><path d="M32 18l6 6-6 6"/>'),
             play: svg('<circle cx="24" cy="24" r="17"/><path d="M20 17l12 7-12 7z"/>'),
             home: svg('<path d="M8 23 24 10l16 13"/><path d="M12 23v17h24V23"/><path d="M20 40V30h8v10"/>'),
+            hand: svg('<path d="M17 25V12a3 3 0 0 1 6 0v10M23 21V9a3 3 0 0 1 6 0v12M29 21v-8a3 3 0 0 1 6 0v14c0 8-5 13-12 13-5 0-8-3-11-8l-4-7a3 3 0 0 1 5-3l3 4"/>'),
             back: svg('<path d="M30 12 18 24l12 12"/>'),
             speaker: svg('<path d="M9 19h7l9-7v24l-9-7H9z"/><path d="M32 18a9 9 0 0 1 0 12"/><path d="M37 13a16 16 0 0 1 0 22"/>'),
             eye: svg('<path d="M4 24s7-12 20-12 20 12 20 12-7 12-20 12S4 24 4 24z"/><circle cx="24" cy="24" r="6"/>'),
@@ -332,8 +333,18 @@ NGP.UI = (function () {
 
     // --- pause ------------------------------------------------------------------------
 
+    /** I Need Help, as in the other NARBE games: said on the speaker chosen in Hub Settings
+     *  (Speaker Mode), otherwise in the hub voice, even with Text to Speech off. The game stays paused. */
+    function callForHelp() {
+        const message = 'I need help, please! I need help, please!';
+        const fallback = function () { try { return window.NarbeVoiceManager.speak(message, { force: true }); } catch (e) { return null; } };
+        if (window.NarbeCommunicationSpeech) window.NarbeCommunicationSpeech.help(fallback, message);
+        else fallback();
+    }
+
     const PAUSE_ITEMS = [
         { label: 'Continue', icon: 'play', action: function () { show('play'); } },
+        { label: 'I Need Help', icon: 'hand', quiet: true, speak: 'I need help. Choose this to call a helper.', action: callForHelp },
         { label: 'Settings', icon: 'settings', action: function () { settingsFrom = 'pause'; show('settings'); } },
         { label: 'How to Play', icon: 'help', action: function () { show('help'); } },
         { label: 'Main Menu', icon: 'home', action: function () { NGP.Game.toMenu(); } },
@@ -343,7 +354,7 @@ NGP.UI = (function () {
     function pauseScannables() {
         const at = i => el.pauseList.querySelector('[data-pause="' + i + '"]');
         return PAUSE_ITEMS.map(function (m, i) {
-            return { id: 'pause:' + i, el: at(i), speak: m.label, action: m.action };
+            return { id: 'pause:' + i, el: at(i), speak: m.speak || m.label, quiet: m.quiet, action: m.action };
         });
     }
 
@@ -370,7 +381,7 @@ NGP.UI = (function () {
         lines.push('Pops burst into *' + popShapes + '*. ' + (S().get('reactions') === 'same'
             ? '*Same Every Time* repeats a familiar pattern' + (S().get('sound') ? ' and sound.' : '.')
             : '*Mix It Up* varies the motion' + (S().get('sound') ? ' and playful sounds.' : '.')));
-        lines.push('*Hold Enter* or *click or tap Pause* to open the menu.');
+        lines.push('*Hold Enter* or *click or tap Pause* to open the menu. *I Need Help* there calls a helper.');
         lines.push(auto ? 'In the menus, the highlight moves by itself. *Enter* chooses.'
                         : 'In the menus, *tap Space* to move the highlight and *hold Space* to go back. *Enter* chooses.');
         lines.push('Use *Settings* to adjust colors, size, position, pop shapes, sound and play.');

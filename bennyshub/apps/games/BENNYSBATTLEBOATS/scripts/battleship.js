@@ -1307,7 +1307,7 @@ function showPauseModal() {
     scanState.scanIndex = -1;
     updatePauseButtonsList();
     
-    speak('Game paused. Continue, Settings, or Main Menu.');
+    speak('Game paused. Continue, Settings, Main Menu, or Help.');
     startAutoScan();
 }
 
@@ -1418,6 +1418,20 @@ function returnToMainMenuFromPause() {
     returnToMainMenu();
 }
 
+function requestHelp() {
+    // Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+    // (Speaker Mode), otherwise in the hub voice, even with TTS off. The pause modal stays open.
+    const say = () => {
+        if (window.NarbeVoiceManager) return window.NarbeVoiceManager.speak('I need help', { force: true });
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            speechSynthesis.speak(new SpeechSynthesisUtterance('I need help'));
+        }
+        return null;
+    };
+    return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
+}
+
 function goBackFromSettings() {
     // If we came from the pause menu during a game, return to the game
     if (scanState.previousMode === 'game-row' || scanState.previousMode === 'buttons') {
@@ -1453,10 +1467,12 @@ function updatePauseButtonsList() {
     const continueBtn = document.getElementById('pauseContinueBtn');
     const settingsBtn = document.getElementById('pauseSettingsBtn');
     const mainMenuBtn = document.getElementById('pauseMainMenuBtn');
+    const helpBtn = document.getElementById('pauseHelpBtn');
 
     if (continueBtn) scanState.pauseButtons.push({ element: continueBtn, label: 'Continue', action: 'continue' });
     if (settingsBtn) scanState.pauseButtons.push({ element: settingsBtn, label: 'Settings', action: 'settings' });
     if (mainMenuBtn) scanState.pauseButtons.push({ element: mainMenuBtn, label: 'Main Menu', action: 'mainMenu' });
+    if (helpBtn) scanState.pauseButtons.push({ element: helpBtn, label: 'Help', action: 'help' });
 }
 
 function enemyFire() {
@@ -1950,10 +1966,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const pauseContinueBtn = document.getElementById('pauseContinueBtn');
     const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
     const pauseMainMenuBtn = document.getElementById('pauseMainMenuBtn');
+    const pauseHelpBtn = document.getElementById('pauseHelpBtn');
 
     if (pauseContinueBtn) pauseContinueBtn.addEventListener('click', hidePauseModal);
     if (pauseSettingsBtn) pauseSettingsBtn.addEventListener('click', showSettingsFromPause);
     if (pauseMainMenuBtn) pauseMainMenuBtn.addEventListener('click', returnToMainMenuFromPause);
+    if (pauseHelpBtn) pauseHelpBtn.addEventListener('click', requestHelp);
     
     // Pause button in corner (clickable icon)
     const pauseButton = document.getElementById('pauseButton');
@@ -3140,6 +3158,9 @@ function selectPauseButton() {
                 break;
             case 'mainMenu':
                 returnToMainMenuFromPause();
+                break;
+            case 'help':
+                requestHelp();
                 break;
         }
     }

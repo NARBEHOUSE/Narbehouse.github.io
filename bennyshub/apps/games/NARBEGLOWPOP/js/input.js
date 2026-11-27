@@ -147,7 +147,7 @@ NGP.Input = (function () {
 
     function run(item) {
         if (!item || typeof item.action !== 'function') return;
-        if (item.id !== 'play:pop') NGP.Sound.choose();
+        if (item.id !== 'play:pop' && !item.quiet) NGP.Sound.choose();
         item.action(item);
     }
 

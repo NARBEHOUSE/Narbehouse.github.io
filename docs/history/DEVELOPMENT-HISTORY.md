@@ -5096,3 +5096,65 @@ The web `shared/choice-scan-adapter.js` and `choice-scan.js` match the PC, and t
 - `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO**.
 
 Verification: copy preview afterwards reports every copied file identical to the PC. Switch Stories Node tests 9/9 across all 10 books (720 normal and 720 quick description flows; 704 continuous-reading flows; exact 1000 ms narration gap). `node scripts/check-nancy-games.cjs` passes headless (48 checks; library requests 17 images, covers only). A headless pass opened both new books in both looks: 217 images loaded, no 404s, no page errors; library page 2 holds Rocky Says Hello with Previous stories, and scanning starts on its first book. Not run inside Electron or on a physical device.
+
+### 2026-11-27 — Help ("I need help") in every game's pause menu
+
+Scope: the user asked which games' in-game pause menus were missing the Help item that says "I need help", then approved adding it to all of them, on the website and in Ben's PC Hub. Two follow-ups were approved with it. The six older games whose Help used only the game voice now go through the shared speaker helper. Help also speaks when Text to Speech is off. Electron port: **YES** for every game file below, because the user asked for both builds. The PC record is in its `ELECTRON-SCAN-UPGRADE.md`.
+
+Behaviour: Help calls `NarbeCommunicationSpeech.help()`. With Speaker Mode on, "I need help" plays on the communication speaker chosen in Hub Settings. Otherwise the hub voice says it with `{ force: true }`, so it is heard even with TTS off. The pause menu stays open. Each new item sits right after Continue, two Space presses in; existing items keep their order. Glow Pop, Magic Button, Switch Stories and Animal Friends use the I Need Help item from Build n Bash and Switch Songs: a hand icon, "I need help, please!" said twice, and no choose click. Benny Says has no pause menu and is unchanged.
+
+Help added (missing on both builds):
+- `bennyshub/apps/games/NARBEGLOWPOP/`: `index.html` (speaker scripts), `js/ui.js` (item, hand icon, one How to Play sentence), `js/input.js` (`quiet` items skip the choose click).
+- `bennyshub/apps/games/NARBEMAGICBUTTON/`: `index.html`, `js/ui.js`, `js/input.js`, `css/style.css` (help tone).
+- `bennyshub/apps/games/NARBEANIMALFRIENDS/`: `index.html`, `js/ui.js` (item; the other items' button indexes shifted, their ids unchanged), `js/input.js`, `css/style.css` (help tone `#a8461c`, about 5.5:1 with the cream label).
+- `bennyshub/apps/games/BENNYSSHOWNSOUND/`: `index.html`, `js/scenes.js` (value `needhelp`, because `help` already means How to Play in `applySetting`).
+- `bennyshub/apps/games/ELOUISESWORDSEARCH/`: `index.html`, `game.js`.
+- `bennyshub/apps/games/BENNYSBALLISTA/`: `index.html`, `js/ui.js`.
+- `bennyshub/apps/games/NARBEPICKLEBALL/`: `index.html`, `js/game.js` (id `needhelp`). The old Pickleball Rally had Help; the redesign dropped it.
+- `bennyshub/apps/games/BENNYSSLOTMACHINE/`: `index.html`, `script.js` (🆘 also added to the two label emoji-strip lists). Help was added in July 2026 and had since been lost.
+- Switch Stories repo (`GAMES/switch-stories`): `index.html`, `js/ui.js`, `js/input.js`, copied with `scripts/copy-big-game.cjs`; cache tag `?v=2026.11.27.1`.
+
+Website catch-up (the PC has had Help since July; the website never got it):
+- `bennyshub/apps/games/BENNYSBATTLEBOATS/`: `index.html` (Help button and speaker scripts), `scripts/battleship.js` (Help patched in; the website's two later `clearAllHighlights()` calls kept).
+- `bennyshub/apps/games/BENNYSBUGBLASTER/`: `index.html`, `game.js`, `scan-access.js` (the PC copies; the only other differences were trailing spaces).
+
+Help moved from the game voice to the shared helper:
+- `bennyshub/apps/games/BENNYSTICTACTOE/`, `BENNYSCHESSCHECKERS/`, `BENNYSCONNECTFOUR/`: `index.html`, `script.js`.
+- `bennyshub/apps/games/BENNYSWORDJUMBLE/`: `index.html`, `game.js`.
+
+Docs: `bennyshub/ACCESSIBILITY.md` (Pause menu: Help is a standard item, and how it speaks) and `CHANGELOG.md`. `docs/history/DEVELOPMENT-HISTORY.md`: this record. Electron port **NO** for docs; the PC has its own.
+
+Verification, all in Node (no browser):
+- Inventory of all 38 catalog games on both builds: 37 have Help that goes through the speaker helper. Benny Says has no pause menu.
+- `node --check` passes on every changed script. Every changed page loads `platform.js`, `voice-manager.js`, `communication-channel.js` and `communication-speech.js` in that order, and each path resolves.
+- Headless jsdom pass on 14 games per build, with the real page, shared scanner, voice manager and `communication-speech.js`, and every outside request blocked. With TTS off, the test opens the in-game pause menu, presses Space to Help and Enter: "I need help" is spoken. With Speaker Mode on, the visible button sends it to the communication speaker and not the hub voice. The menu stays open, and there are no page errors.
+- Switch Stories' input layer does not run in jsdom (also true before this change), so it was checked through its scan item's action. Animal Friends was also checked that all 7 pause buttons still run their own items.
+- Show n Sound (Phaser): the real `scenes.js` was run in a VM. Help sits after Resume; it speaks with TTS off and goes to the speaker in Speaker Mode.
+- PC `tests/rally-game-controls.test.cjs` with `RALLY_GAME_DIR` set to this copy: 10/10.
+- Not yet tested in Electron, on a device, or heard on a real communication speaker.
+
+Known, unchanged: with Auto Scan on and Speaker Mode off, the scanner's clock keeps running after a selection, so the next spoken label can cut a help message short. This affects every game's Help and is best fixed once in shared code.
+
+### 2026-11-27 — Help holds Auto Scan until "I need help" has been said; Ballista on the shared adapter
+
+Scope: the user asked whether Help could stop scanning until its speech is done when Auto Scan is on, so that the scan is accessible rather than frustrating. They also asked that Ballista use the shared choice-scan adapter like the other games. Applied to the website and Ben's PC Hub (logged in its `ELECTRON-SCAN-UPGRADE.md`), as with the Help items earlier today.
+
+Before: choosing an item already delays the next Auto Scan step. The game reports Enter as held, and its release restarts a full interval. A help message longer than the interval was still cut off by the next item's label, because the hub voice cancels whatever is playing. That was the NARBE games' "I need help, please!" said twice (about 3 s), any Help at a fast interval, or Speaker Mode with its start-up delay talking over the room.
+
+Now: `NarbeCommunicationSpeech.help()` passes its ticket to `NarbeChoiceScanAdapter.holdForSpeech()`. Every choice-scan adapter on the page holds its Auto Scan clock (the same freeze as a held Enter) until the message ends, and then one full interval passes. At a 2 s interval, "I need help" keeps the highlight on Help for about 3 s in all. The highlight stays on Help, so another Enter repeats the call. Manual stepping and the Space brake still work. The hold is capped at 12 s, so a message that never reports its end (for example a speaker voice still downloading) cannot stall scanning. It works with Speaker Mode on or off, in all 37 games, with no per-game change: they all scan through the adapter. `choice-scan.js` is unchanged (the Companion copy stays byte-identical).
+
+Ballista: its stationary menus called `NarbeScanManager.createChoiceScan` directly and copied the adapter's bookkeeping by hand. There was no documented reason; it predates the adapter. It now uses `NarbeChoiceScanAdapter` like every other game.
+
+- `bennyshub/shared/choice-scan-adapter.js`: `holdForSpeech(ticket, text)` and `speechHeld()`; every adapter on the page keeps its controller's held-input freeze on while a Help message plays. Electron port **YES**.
+- `bennyshub/shared/communication-speech.js`: `help()` calls `holdForSpeech` with the message it started, with Speaker Mode on or off. Electron port **YES** (the help() block is identical on both builds; the web-only `notBefore` lines are untouched).
+- `bennyshub/apps/games/BENNYSBALLISTA/index.html` (loads `choice-scan-adapter.js`) and `js/ui.js` (`syncChoiceMenu` builds adapter items; `announce`, `align` and `cancelInput` replace the direct `announceCurrent`, `open` and suspend/resume calls). Electron port **YES**.
+- `tests/choice-scan-adapter.test.cjs` (3 new tests; the harness also returns the module) and `tests/communication-speech.test.cjs` (1 new test; the harness also returns `window`). Electron port **YES**.
+- `bennyshub/ACCESSIBILITY.md` (Pause menu), `docs/development/COMMUNICATION-SPEAKER.md` (Help bullet; it also said 19 Help actions in 17 games), `developer-guide.html` (speaker card and a release-checklist line), `CHANGELOG.md`, `docs/history/DEVELOPMENT-HISTORY.md`: docs. Electron port **NO** (the PC keeps its own).
+
+Verification, all in Node (no browser):
+- Unit tests on a fake clock, through the real `choice-scan.js` and adapter: Help holds Auto Scan through its message and a released Enter, manual stepping still works, and the next step comes one full interval after the end. The hold survives a fresh context, suspension, resumption and `cancelInput`; it is released at 12 s with no end; a newer message's hold replaces an older one; without a ticket it allows for the words. Step mode is unaffected. With Speaker Mode off, `help()` holds for the fallback's ticket and text; a page without the adapter still calls for help.
+- `tests/choice-scan-adapter.test.cjs` + `tests/communication-speech.test.cjs`: PC 33/33 (was 29), website 36/36 (was 32). Website `companion-scan-sync`, `scan-upgrade`, `player-adapters` and `scan-status-badge` tests passed with the new adapter.
+- Headless jsdom on 12 games per build, with Auto Scan at 1 s, TTS off and 60 ms of speech per character. Auto Scan reaches Help, Enter is pressed, and the message plays to its end: about 2.5 s for the NARBE games and 0.7 s for "I need help". Nothing else is said and the highlight stays on Help while it plays; the next item comes 1.07 to 1.09 s after it ends. The same holds with Speaker Mode on (a 2.5 s stubbed speaker message). Served the pre-change shared files, the same check fails: Glow Pop's message was cut off after 1.0 s, and Tic Tac Toe moved on 0.3 s after "I need help".
+- Ballista before and after the move to the adapter, the same presses in Step mode and Auto Scan (menus, back-scan, Space brake, Settings toggle, mouse clicks, entering a castle): identical traces of highlight, speech, status attributes and badge.
+- The earlier two-switch Help check (14 games per build) and the Show n Sound VM check pass again. The PC's Build n Bash, Build n Ride and Space Explorer whole-game jsdom smoke tests pass with the new adapter. Chasing Rainbows' Auto Scan session timed out once while four of these heavy tests ran at the same time; that session never chooses Help, so the hold never engaged. Run on its own, all 9 sessions pass.
+- Not yet tested in Electron, on a device, or heard on a real speaker.

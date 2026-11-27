@@ -257,6 +257,7 @@ body {
 .nmb-menu-item[data-tone="slate"] { background: linear-gradient(160deg, #66728a, #3c4558); }
 .nmb-menu-item[data-tone="green"] { background: linear-gradient(160deg, #3ccf6e, #1e8e46); }
 .nmb-menu-item[data-tone="blue"] { background: linear-gradient(160deg, #4f8dff, #2853c7); }
+.nmb-menu-item[data-tone="help"] { background: linear-gradient(160deg, #f07a3a, #b4441a); }
 
 .nmb-menu-label { flex: 1; }
 

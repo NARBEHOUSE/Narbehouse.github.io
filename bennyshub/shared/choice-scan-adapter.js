@@ -60,11 +60,50 @@ window.NarbeChoiceScanAdapter = (function () {
     }
     return {show, hide};
   }
+  // Help ("I need help", communication-speech.js) holds every Auto Scan clock on the
+  // page until its message has been said, so the next item's label cannot talk over
+  // it or cut it off. It is the same freeze as a held Enter: the highlight stays,
+  // manual stepping still works, and once the message ends a full interval passes
+  // before the next item. Bounded, so a message that never reports its end (or a
+  // speaker voice still downloading) cannot stall scanning.
+  const SPEECH_HOLD_MAX = 12000;
+  const speechHold = {held:false, token:0, timer:null, appliers:new Set()};
+  function applySpeechHold() {
+    for (const apply of [...speechHold.appliers]) {
+      try { apply(); } catch (error) { console.warn('NarbeChoiceScanAdapter: speech hold', error); }
+    }
+  }
+  function holdForSpeech(ticket, text = '') {
+    const token = ++speechHold.token;
+    clearTimeout(speechHold.timer);
+    const release = () => {
+      if (token !== speechHold.token) return;
+      clearTimeout(speechHold.timer);
+      speechHold.timer = null;
+      speechHold.held = false;
+      applySpeechHold();
+    };
+    speechHold.held = true;
+    applySpeechHold();
+    const finished = ticket?.finished;
+    if (finished && typeof finished.then === 'function') {
+      speechHold.timer = setTimeout(release, SPEECH_HOLD_MAX);
+      finished.then(release, release);
+    } else {
+      // No completion to wait on: allow for the words (about 2.6 per second) plus start-up.
+      const words = String(text).trim().split(/\s+/).filter(Boolean).length;
+      speechHold.timer = setTimeout(release, Math.min(SPEECH_HOLD_MAX, 1000 + Math.round(words / 2.6 * 1000)));
+    }
+    return release;
+  }
   function create(options) {
     const manager = options.manager || window.NarbeScanManager;
     let controller = null, contexts = [], stops = [], active = false, updating = false, inputHeld = false;
     let badge = null, badgeHost = null;
     const rowOutline = createRowOutline();
+    // The app's own held key, or Help's message (see holdForSpeech).
+    const applyHold = () => { if (active) controller?.setInputHeld(inputHeld || speechHold.held); };
+    speechHold.appliers.add(applyHold);
     const context = () => contexts[contexts.length - 1] || null;
     // An empty row gets no stop, so it is never entered and empties out like any other row.
     const withStop = items => stops[contexts.length - 1] && items.length ? [...items, BACK_STOP] : items;
@@ -124,8 +163,12 @@ window.NarbeChoiceScanAdapter = (function () {
       ensure(next);
       if (!wasActive) controller.setSuspended(false);
       if (changed || fresh) {
-        controller.open(next.items,{restoreId});controller.setInputHeld(inputHeld);
-      } else controller.setItems(withStop(next.items));
+        controller.open(next.items,{restoreId});controller.setInputHeld(inputHeld || speechHold.held);
+      } else {
+        controller.setItems(withStop(next.items));
+        // Resuming clears the controller's held state; Help's hold outlives a redraw.
+        if (!wasActive && speechHold.held) controller.setInputHeld(true);
+      }
       updating=false;paint(controller.getState());
       return true;
     }
@@ -162,12 +205,12 @@ window.NarbeChoiceScanAdapter = (function () {
         return controller.brakePress();
       },
       brakeRelease(){return !!controller?.brakeRelease();},
-      setInputHeld(value){inputHeld=!!value;if(active)controller?.setInputHeld(inputHeld);},
+      setInputHeld(value){inputHeld=!!value;applyHold();},
       announce(text, settings){return active?controller?.announceCurrent(text, settings):null;},
-      cancelInput(){inputHeld=false;if(controller){controller.setSuspended(true);if(active)controller.setSuspended(false);}},
-      dispose(){active=false;rowOutline.hide();controller?.dispose();controller=null;contexts=[];stops=[];}
+      cancelInput(){inputHeld=false;if(controller){controller.setSuspended(true);if(active){controller.setSuspended(false);if(speechHold.held)controller.setInputHeld(true);}}},
+      dispose(){speechHold.appliers.delete(applyHold);active=false;rowOutline.hide();controller?.dispose();controller=null;contexts=[];stops=[];}
     };
     return api;
   }
-  return {create, createRowOutline};
+  return {create, createRowOutline, holdForSpeech, speechHeld:()=>speechHold.held};
 })();

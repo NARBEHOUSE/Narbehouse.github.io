@@ -168,7 +168,7 @@ NMB.Input = (function () {
 
     function run(item) {
         if (!item || typeof item.action !== 'function') return;
-        if (item.id !== 'play:magic') NMB.Sound.choose();
+        if (item.id !== 'play:magic' && !item.quiet) NMB.Sound.choose();
         item.action(item);
     }
 

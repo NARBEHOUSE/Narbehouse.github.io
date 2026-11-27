@@ -2170,6 +2170,7 @@ class WordSearchGame {
         this.pauseOverlay.innerHTML = `
             <div class="pause-title">PAUSED</div>
             <button class="menu-button" onclick="game.resumeGame()">Continue Game</button>
+            <button class="menu-button" onclick="game.callForHelp()">Help</button>
             <button class="menu-button" onclick="game.showSettingsMenu(true)">Settings</button>
             <button class="menu-button" onclick="game.startPuzzle(${this.settings.lastCategoryIndex})">New Puzzle</button>
             <button class="menu-button" onclick="game.giveHint()">Give Hint</button>
@@ -2202,6 +2203,20 @@ class WordSearchGame {
         return String(str).replace(/[&<>"']/g, ch => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[ch]));
+    }
+
+    // Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+    // (Speaker Mode), otherwise in the hub voice, even with Text to Speech off.
+    // The pause menu stays open.
+    callForHelp() {
+        const say = () => {
+            const vm = window.NarbeVoiceManager;
+            if (vm && (typeof vm.areVoicesLoaded !== 'function' || vm.areVoicesLoaded())) {
+                return vm.speak('I need help', { force: true });
+            }
+            return this.speakWithBrowser('I need help', true);
+        };
+        return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
     }
 
     speak(text) {

@@ -936,6 +936,8 @@ html, body {
 /* Dry-grass brown for the safari. Dark enough that the cream label on it stays
    well above 4.5:1, which the lighter savanna yellows do not manage. */
 [data-tone="amber"] { background: #8a5518; }
+/* I Need Help: a warm orange-red, kept dark enough for the cream label (about 5.5:1). */
+[data-tone="help"]  { background: #a8461c; }
 
 /* Settings rows: wood-toned, cream text, values right-aligned. */
 .naf-row {

@@ -13,7 +13,7 @@ function harness(parentService,initial={enabled:false}){
  context.NarbeCommunicationSpeech=window.NarbeCommunicationSpeech;
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../bennyshub/shared/communication-settings.js'),'utf8'),context);
  window.NarbeCommunicationSettings.mount({refreshScan(){},announce(){}});
- return {api:window.NarbeCommunicationSpeech,workers,element,flush:()=>new Promise(resolve=>setImmediate(resolve))};
+ return {api:window.NarbeCommunicationSpeech,window,workers,element,flush:()=>new Promise(resolve=>setImmediate(resolve))};
 }
 test('failed voice preparation stops the preparing label and a fresh setup can become ready',async t=>{
  const h=harness();t.after(()=>h.api._service.dispose());h.api.toggle();
@@ -115,4 +115,14 @@ test('cycling Custom voices reuses the model worker and cancels obsolete prepara
  const worker=h.workers[0],old=worker.sent[0];h.api.cycleVoice(-1);assert.equal(h.api.get().voice,'pocket:b2');assert.equal(h.workers.length,1);assert(worker.sent.some(m=>m.type==='cancel'&&m.id===old.id));
  worker.reply({id:old.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,false);
  const current=worker.sent.filter(m=>m.type==='prepare').at(-1);worker.reply({id:current.id,ready:true});await h.flush();assert.equal(h.api.get().voiceReady,true);
+});
+
+test('Help with Speaker Mode off speaks through the fallback and holds Auto Scan for that message',t=>{
+ const h=harness();t.after(()=>h.api._service.dispose());assert.equal(h.api.isEnabled(),false);
+ const holds=[],ticket={finished:Promise.resolve({reason:'end'})};
+ h.window.NarbeChoiceScanAdapter={holdForSpeech:(held,text)=>holds.push({held,text})};
+ assert.equal(h.api.help(()=>ticket),ticket);
+ assert.deepEqual(holds.map(x=>x.text),['I need help']);assert.equal(holds[0].held,ticket);
+ h.api.help(()=>ticket,'I need help, please! I need help, please!');assert.equal(holds[1].text,'I need help, please! I need help, please!');
+ delete h.window.NarbeChoiceScanAdapter;assert.equal(h.api.help(()=>ticket),ticket,'pages without the adapter still call for help');
 });

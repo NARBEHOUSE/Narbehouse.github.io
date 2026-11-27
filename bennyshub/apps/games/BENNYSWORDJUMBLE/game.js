@@ -1265,7 +1265,7 @@ class WordJumbleGame {
             <button class="menu-button" onclick="game.resumeGame()">Continue Game</button>
             <button class="menu-button" onclick="game.showSettingsMenu(true)">Settings</button>
             <button class="menu-button" onclick="game.resetLevel(); game.resumeGame()">Reset Level</button>
-            <button class="menu-button" onclick="game.speak('I need help')">Help</button>
+            <button class="menu-button" onclick="game.callForHelp()">Help</button>
             <button class="menu-button" onclick="game.showMainMenu()">Main Menu</button>
         `;
         this.state.pauseButtons = Array.from(this.pauseOverlay.getElementsByClassName('menu-button'));
@@ -1279,6 +1279,17 @@ class WordJumbleGame {
         this.state.mode = 'game';
         this.updateGameHighlights();
         this.startAutoScan();
+    }
+
+    // Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+    // (Speaker Mode), otherwise in the hub voice, even with TTS off. The pause menu stays open.
+    callForHelp() {
+        const say = () => {
+            if (window.NarbeVoiceManager) return window.NarbeVoiceManager.speak('I need help', { force: true });
+            this.speakWithBrowser('I need help');
+            return null;
+        };
+        return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
     }
 
     speak(text) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-27 - Help in every game's pause menu
+
+- Every game with a pause menu now has Help, which says "I need help" and leaves the menu open. It is new in Glow Pop, Switch Stories, Magic Button, Animal Friends, Show n Sound, Elouise's Word Search, Benny's Ballista, NARBE Robot Pickleball and Benny's Mega Slot, and the website versions of Battle Boats and Bug Blaster now have it too.
+- Help plays on the communication speaker chosen in Hub Settings when Speaker Mode is on. Tic Tac Toe, Chess and Checkers, Connect Four, Word Jumble, Battle Boats and Bug Blaster now do this too. Help still speaks when Text to Speech is off.
+- With Auto Scan on, the scan now stays on Help until the message has been said, then waits one scan interval before moving on, so the next item can no longer cut "I need help" short. Benny's Ballista now scans its menus through the same shared code as the other games.
+
 ## 2026-11-11 - Big-game preview and copy tools
 
 - The local preview (`npm start`) now serves every game repo in F:\PROJECT FILES\WEBSITES\GAMES at /<repo>/, as GitHub Pages does; `node scripts/serve.cjs --log` prints every request.

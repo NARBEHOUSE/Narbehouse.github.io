@@ -125,6 +125,21 @@ function applySetting(value, audio) {
     return null;
 }
 
+/**
+ * Help, as in every hub game: "I need help" on the speaker chosen in Hub
+ * Settings (Speaker Mode), otherwise in the hub voice, even with Speech off.
+ * The pause menu stays open.
+ */
+function callForHelp(audio) {
+    const say = () => {
+        const vm = window.NarbeVoiceManager;
+        if (vm && vm.speak) return vm.speak('I need help', { force: true });
+        audio.speak('I need help', true);
+        return null;
+    };
+    return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
+}
+
 /** Fisher-Yates, in place. Used to randomize the category carousel's picture
  *  order (and re-randomize it, since a fresh shuffle happens every time the
  *  scene is (re)created). */
@@ -1161,6 +1176,7 @@ class WheelScene extends Phaser.Scene {
         // Matchy Match folds everything secondary into its Settings menu.
         return [
             { label: 'Resume', value: 'resume' },
+            { label: 'Help', value: 'needhelp', speakText: 'Help' },
             { label: 'Settings', value: 'settings' },
             { label: 'New Game', value: 'category', speakText: 'Choose a new game' },
             { label: 'Main Menu', value: 'title' },
@@ -1224,6 +1240,9 @@ class WheelScene extends Phaser.Scene {
         switch (opt.value) {
             case 'resume':
                 this.closePause();
+                break;
+            case 'needhelp':
+                callForHelp(this.audio);
                 break;
             case 'settings':
                 this.pauseMode = 'settings';

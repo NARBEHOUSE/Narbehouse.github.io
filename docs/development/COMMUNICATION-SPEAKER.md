@@ -38,9 +38,15 @@ all returned tracks are stopped immediately, and nothing is recorded.
 - Deliberate public actions: Keyboard text box; Phrase Board tiles with the text
   box closed; Phrase Board message Speak; RTC Lite choices and typed-message Speak.
   RTC Lite's explicit keyboard-entry announcement is also public communication.
-  All 19 existing caregiver Help actions across 17 games also route publicly,
-  including Pet Pals' repeated request. Help focus labels and game instructions
-  remain ordinary native feedback.
+  Every game with a pause menu (37 of the 38 catalog games; Benny Says has none)
+  has a caregiver Help action that routes publicly through
+  `NarbeCommunicationSpeech.help(fallback[, text])`, including Pet Pals' repeated
+  request. With Speaker Mode off, the fallback speaks with
+  `NarbeVoiceManager.speak(text, { force: true })`, so Help is heard with general TTS
+  off. `help()` also holds Auto Scan on its page
+  (`NarbeChoiceScanAdapter.holdForSpeech`) until the message ends, then one full
+  interval passes; the hold is capped at 12 s. Help focus labels and game
+  instructions remain ordinary native feedback.
   Phrase Board's immediate tiles compose when the text box and Speaker Mode are on;
   off retains legacy immediate-tile behavior. Scan labels and other feedback remain native.
 - Native Windows/Chrome voices remain available in normal mode. Browser native

@@ -149,14 +149,16 @@
       window.NarbeVoiceManager?.cancel();return service.speak(String(text),owner,notBefore);
     },
     help(fallback,text='I need help'){
-      if(!api.isEnabled())return fallback?.();
+      // Auto Scan waits until the message has been said (choice-scan-adapter.js holdForSpeech).
+      const holdScan=ticket=>{try{window.NarbeChoiceScanAdapter?.holdForSpeech?.(ticket,text);}catch(_){}return ticket;};
+      if(!api.isEnabled())return holdScan(fallback?.());
       if(!helpStatus){
         helpStatus=document.createElement('p');helpStatus.setAttribute('role','status');
         helpStatus.style.cssText='position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;max-width:calc(100vw - 32px);margin:0;padding:10px 16px;border:2px solid white;border-radius:10px;background:#111;color:white;font:18px/1.4 system-ui,sans-serif;text-align:center;pointer-events:none';
         document.body.append(helpStatus);
       }
       const revision=++helpRevision;clearTimeout(helpTimer);helpStatus.hidden=false;helpStatus.textContent='Calling for help on the selected speaker…';
-      const ticket=api.speak(text);
+      const ticket=holdScan(api.speak(text));
       ticket.finished.then(result=>{if(revision!==helpRevision)return;helpStatus.textContent=result.reason==='ended'?'Help message spoken.':result.reason==='error'?'Help was not spoken. Check the selected speaker in Hub Settings.':'Help message stopped.';helpTimer=setTimeout(()=>{helpStatus.hidden=true;},6000);});
       return ticket;
     },

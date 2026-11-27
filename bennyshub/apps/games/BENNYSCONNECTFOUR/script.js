@@ -389,7 +389,7 @@ const menus = {
         { text: "Continue Game", action: () => resumeGame() },
         { text: "Reset Game", action: () => restartGame() },
         { text: "Settings", action: () => showPauseSettings() },
-        { text: "Help", action: () => speak("I need help") },
+        { text: "Help", action: () => callForHelp() },
         { text: "Main Menu", action: () => showMainMenu() }
     ],
     pauseSettings: []
@@ -1147,6 +1147,20 @@ function updateGameHighlights() {
 }
 
 // --- TTS & Autoscan ---
+
+// Help, as in every hub game: "I need help" on the speaker chosen in Hub Settings
+// (Speaker Mode), otherwise in the hub voice, even with TTS off. The pause menu stays open.
+function callForHelp() {
+    const say = () => {
+        if (window.NarbeVoiceManager) return window.NarbeVoiceManager.speak('I need help', { force: true });
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+            speechSynthesis.speak(new SpeechSynthesisUtterance('I need help'));
+        }
+        return null;
+    };
+    return window.NarbeCommunicationSpeech ? window.NarbeCommunicationSpeech.help(say) : say();
+}
 
 function speak(text) {
     if (window.NarbeVoiceManager) {

@@ -14,7 +14,7 @@ function harness(extra={},globals={}){
  async function flush(){for(let i=0;i<8;i++)await Promise.resolve()}
  async function tick(ms){const end=now+ms;await flush();while(true){const next=[...timers].filter(([,t])=>t.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;timers.delete(next[0]);now=next[1].at;next[1].f();await flush()}now=end;await flush()}
  function update(patch){Object.assign(prefs,patch);subscribers.forEach(f=>f({...prefs}))}
- return{adapter,root,spoken,painted,badges,tick,update};
+ return{adapter,root,spoken,painted,badges,tick,update,module:context.NarbeChoiceScanAdapter};
 }
 test('same-context redraw retains stable choice and brake on the replacement DOM element',()=>{
  const h=harness();h.update({autoScan:true});h.adapter.sync(h.root);h.adapter.step(1);h.adapter.brakePress();h.adapter.brakeRelease();
@@ -204,4 +204,28 @@ test('the Back-stop outline covers only the visible part of a scrolled row',()=>
  // m1 shows 50..60, m2 100..160, m3 200..250; m4 is scrolled out of view.
  assert.deepEqual([box.style.left,box.style.top,box.style.width,box.style.height],['16px','46px','408px','208px']);
  h.adapter.sync(null);assert.equal(dom.boxes.length,0,'a suspended scan removes the outline');
+});
+
+// Help ("I need help") holds Auto Scan until its message has been said (holdForSpeech).
+function helpTicket(){let resolve;return {ticket:{finished:new Promise(r=>resolve=r)},end:()=>resolve({started:true,reason:'end'})};}
+test('Help holds Auto Scan through its message and a released Enter, then waits one full interval',async()=>{
+ const h=harness();h.update({autoScan:true});h.adapter.sync(h.root);await h.tick(1000);assert.equal(h.adapter.getState().id,'a');
+ const help=helpTicket();h.adapter.setInputHeld(true);h.module.holdForSpeech(help.ticket,'I need help');h.adapter.setInputHeld(false);
+ assert.equal(h.module.speechHeld(),true);await h.tick(5000);assert.equal(h.adapter.getState().id,'a','no item is read over the message');
+ h.adapter.step(1);assert.equal(h.adapter.getState().id,'b','manual stepping still works');await h.tick(3000);assert.equal(h.adapter.getState().id,'b');
+ help.end();await h.tick(999);assert.equal(h.adapter.getState().id,'b');assert.equal(h.module.speechHeld(),false);await h.tick(1);assert.equal(h.adapter.getState().index,-1);
+});
+test('Help hold survives a fresh context and resumption, is bounded, and a newer message replaces an older one',async()=>{
+ const h=harness();h.update({autoScan:true});h.adapter.sync(h.root);
+ const first=helpTicket(),second=helpTicket();h.module.holdForSpeech(first.ticket);h.module.holdForSpeech(second.ticket);
+ first.end();await h.tick(0);assert.equal(h.module.speechHeld(),true,'the older message ending does not release the newer one');
+ h.adapter.sync({...h.root,key:'other'});h.adapter.sync(null);h.adapter.sync({...h.root,key:'other'});h.adapter.cancelInput();
+ await h.tick(11999);assert.equal(h.adapter.getState().index,-1);assert.equal(h.module.speechHeld(),true);
+ await h.tick(1);assert.equal(h.module.speechHeld(),false,'released after 12 s even with no end');await h.tick(999);assert.equal(h.adapter.getState().index,-1);await h.tick(1);assert.equal(h.adapter.getState().id,'a');
+});
+test('Help hold without a completion ticket allows for the words, and Step mode is unaffected',async()=>{
+ const h=harness();h.update({autoScan:true});h.adapter.sync(h.root);await h.tick(1000);
+ h.module.holdForSpeech(undefined,'I need help');await h.tick(2153);assert.equal(h.adapter.getState().id,'a');assert.equal(h.module.speechHeld(),true);
+ await h.tick(1);assert.equal(h.module.speechHeld(),false);await h.tick(1000);assert.equal(h.adapter.getState().id,'b');
+ const s=harness();s.adapter.sync(s.root);s.module.holdForSpeech(helpTicket().ticket);s.adapter.step(1);assert.equal(s.adapter.getState().id,'a');s.adapter.select();
 });

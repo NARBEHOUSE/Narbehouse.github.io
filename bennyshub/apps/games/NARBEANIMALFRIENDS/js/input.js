@@ -175,7 +175,7 @@ NAF.Input = (function () {
         if (reveal()) return;
         const item = items[index];
         if (!item) return;
-        NAF.Audio.play('confirm', 0.8);
+        if (!item.quiet) NAF.Audio.play('confirm', 0.8);
         restartAutoScan();
         if (typeof item.action === 'function') item.action(item);
     }
