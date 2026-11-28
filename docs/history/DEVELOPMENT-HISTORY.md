@@ -2,6 +2,17 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-28 (night) — One description per game: Hub and SwitchedGames
+
+Scope: the owner asked for a check of SwitchedGames for inconsistencies and chose one short description per game everywhere. SwitchedGames' cards now use Benny's Hub's descriptions (its own repository; see its CHANGELOG). The ten Hub descriptions not rewritten earlier today were tidied the same way, leaving out other companies' product names: Benny Says ("simon says style"), Benny's Show n Sound ("See 'n Say"), Benny's Baseball (also the typo "simluation"), Trivia Master, Mega Slot, Connect Four, Dice, Chess and Checkers, Word Jumble, Tic Tac Toe.
+
+Changed files (Electron port: **YES**, same pass, owner's request; the PC Hub's games.json was backed up and only its description strings changed):
+- `bennyshub/apps/games/games.json` — the ten descriptions and the typo.
+- `bennyshub/offline-manifest.json` — games.json's new revision.
+- this record.
+
+Verification: `node --test tests/*.test.cjs` 449/449 (catalog descriptions 1 to 120 characters on both copies), `node scripts/build.cjs`, `node scripts/check-pages.cjs` (no issues).
+
 ## 2026-11-28 (evening) — NARBE Color Splash: tile names, a real pumpkin, fewer settings
 
 Scope: the owner's play-test notes on the published game (its own repo, NARBEHOUSE/color-splash). All changes were made in Ben's PC Hub first and copied with `node scripts/copy-big-game.cjs color-splash --write` (12 files, cache tags `?v=2026.11.28.3`).

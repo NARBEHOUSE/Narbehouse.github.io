@@ -47,7 +47,7 @@
     {
       "id": "bennysays",
       "title": "Benny Says",
-      "description": "A simon says style game where you need to match the growing sequence every round",
+      "description": "Watch, listen and repeat the growing pattern each round.",
       "path": "apps/games/BENNYSAYS/index.html",
       "image": "images/games/bennysays.png",
       "genres": [
@@ -58,7 +58,7 @@
     {
       "id": "bennysbaseball",
       "title": "Benny's Baseball",
-      "description": "A full baseball simluation game with no reaction needed, simply make choices and play a full season of baseball.",
+      "description": "Play a full season of baseball by making choices. No quick reactions needed.",
       "path": "apps/games/BENNYSBASEBALL2/index.html",
       "image": "images/games/bennysbaseball.png?v=057ec50ddf48",
       "genres": [
@@ -136,7 +136,7 @@
     {
       "id": "bennyscheckers",
       "title": "Benny's Chess and Checkers",
-      "description": "Play classic Chess or Checkers against the computer or with a friend!",
+      "description": "Play classic chess or checkers against the computer or a friend.",
       "path": "apps/games/BENNYSCHESSCHECKERS/index.html",
       "image": "images/games/bennyscheckers.png",
       "genres": [
@@ -148,7 +148,7 @@
     {
       "id": "bennysconnectfour",
       "title": "Benny's Connect Four",
-      "description": "Drop pieces and connect four in a row to win! Play against the computer or challenge a friend.",
+      "description": "Drop pieces and get four in a row to win. Play the computer or challenge a friend.",
       "path": "apps/games/BENNYSCONNECTFOUR/index.html",
       "image": "images/games/connectfour.png",
       "genres": [
@@ -182,7 +182,7 @@
     {
       "id": "bennystictactoe",
       "title": "Benny's Tic Tac Toe",
-      "description": "Play tic tac toe against the computer or against your friends.",
+      "description": "Play tic-tac-toe against the computer or a friend.",
       "path": "apps/games/BENNYSTICTACTOE/index.html",
       "image": "images/games/bennystictactoe.png",
       "genres": [
@@ -193,7 +193,7 @@
     {
       "id": "bennysdice",
       "title": "Benny's Dice",
-      "description": "A 3D dice game with Free Throw, Yarkle, and Fahtzee modes. Roll dice with realistic physics!",
+      "description": "Roll 3D dice with real physics in Free Throw, Yarkle and Fahtzee modes.",
       "path": "apps/games/BENNYSDICE/index.html",
       "image": "images/games/bennysdice.png",
       "genres": [
@@ -204,7 +204,7 @@
     {
       "id": "bennyswordjumble",
       "title": "Benny's Word Jumble",
-      "description": "A word puzzle game where you have to rearrange the word to advance.",
+      "description": "Unscramble the letters to solve each word and move on.",
       "path": "apps/games/BENNYSWORDJUMBLE/index.html",
       "image": "images/games/bennyswordjumble.png",
       "genres": [
@@ -226,7 +226,7 @@
     {
       "id": "triviamaster",
       "title": "Trivia Master",
-      "description": "A trivia game engine that lets you build your own trivia games! Add pictures and videos to make it more fun!",
+      "description": "Play trivia, or build your own trivia games with pictures and video.",
       "path": "apps/games/TRIVIAMASTER/index.html",
       "image": "images/games/triviamaster.png",
       "genres": [
@@ -238,7 +238,7 @@
     {
       "id": "bennysmegaslot",
       "title": "Benny's Mega Slot",
-      "description": "A fun casino-style slot machine game with bonus modes, multiple themes, and exciting sound effects!",
+      "description": "A casino-style slot machine with bonus modes, lots of themes and big sound effects.",
       "path": "apps/games/BENNYSSLOTMACHINE/index.html",
       "image": "images/games/bennysslotmachine.png",
       "genres": [
@@ -260,7 +260,7 @@
     {
       "id": "bennysshownsound",
       "title": "Benny's Show n Sound",
-      "description": "A spinning wheel See 'n Say. Pick a category, spin the wheel, and hear each panel's name and sound when it lands.",
+      "description": "Pick a category, spin the wheel, and hear the name and sound of whatever it lands on.",
       "path": "apps/games/BENNYSSHOWNSOUND/index.html",
       "image": "images/games/shownsound.png",
       "genres": [
