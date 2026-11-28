@@ -20,5 +20,13 @@ const GAMES={
     keep:['README.md','LICENSE','.gitignore','.nojekyll'],
     cacheTag:false,
   },
+  'color-splash':{
+    source:'NARBECOLORSPLASH',
+    // art-source/: line art, area labels and art jobs (about 125 MB) that build library/; tools/: the Node build and
+    // review scripts that read them; tests/: Node and jsdom tests run on the PC. The game loads none of them (2026-11-28).
+    exclude:['art-source/','tools/','tests/'],
+    keep:['README.md','LICENSE','.gitignore','.nojekyll'],
+    cacheTag:true,
+  },
 };
 module.exports={GAMES,BIG_GAMES:Object.keys(GAMES)};

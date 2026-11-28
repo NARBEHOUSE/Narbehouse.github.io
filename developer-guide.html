@@ -683,7 +683,7 @@ quality.frame(timestamp, targetFPS); // e.g. 60 in play, 30 in a capped menu
           <li>✓ Does a graphics-intensive game inherit Hub quality before its first frame, follow live updates, respect overrides, reset to inheritance and persist after reload/restart?</li>
           <li>✓ Do High/Standard/Low, saved Auto-to-High migration, resize/split views, aiming/picking, readable text, stable settings IDs and native gameplay/pause/Back/exit pass real browser checks?</li>
           <li>✓ Are replaced rendering resources/subscriptions disposed, and are target-device frame times documented or explicitly pending before hardware support is claimed?</li>
-          <li>✓ Is it listed in <code>games.json</code> with a thumbnail and genres?</li>
+          <li>✓ Is it listed in <code>games.json</code> with a thumbnail, genres and a card description of 120 characters or fewer? (The Hub card shows it and the scan speaks it with the title; <code>tests/catalog-descriptions.test.cjs</code> checks the limit.)</li>
           <li>✓ <strong>Has someone who is not you played it start to finish with one switch?</strong></li>
         </ul>
       </section>

@@ -3,7 +3,7 @@
     {
       "id": "bennysspheresplash",
       "title": "Benny's Sphere Splash",
-      "description": "An underwater team sport played inside a giant floating sphere of water. Your team of six swims on its own, and play stops every time there is a choice to make: pass, shoot or dribble with the ball, and tackle or block on defense. Every choice shows its odds, and nothing is ever on a timer. Change formation from the Huddle, pick a difficulty, and hear a full broadcast crew call the match. Created by Bryan R. (Ben’s other big brother), working in collaboration with NARBE LLC.",
+      "description": "An underwater team sport in a giant sphere of water: pass, shoot and tackle, never on a timer. By Bryan R. with NARBE.",
       "path": "apps/games/BENNYSSPHERESPLASH/index.html",
       "image": "images/games/bennyspheresplash-20261017.png",
       "genres": [
@@ -14,7 +14,7 @@
     {
       "id": "chasingrainbows",
       "title": "Chasing Rainbows",
-      "description": "Inclusive Imagination®’s weather card game, played with one or two switches. Choose Chasing Rainbows Full or Lite, or Rainbow Race Full or Lite. Play against computer opponents or share the switch with family. Everything is spoken and nothing is timed.",
+      "description": "Inclusive Imagination®’s weather card game, in Full or Lite. Play the computer or share the switch with family.",
       "path": "apps/games/CHASINGRAINBOWS/index.html",
       "image": "images/games/chasingrainbows.png",
       "genres": [
@@ -25,7 +25,7 @@
     {
       "id": "narbekart",
       "title": "NARBE Racer",
-      "description": "Pick your racer and vehicle, then race sixteen tracks across four cups, with loop-de-loops, banked turns, drive-through waterfalls and a big jump over a different landscape on every track. Race for trophies in Grand Prix, tackle a single race, or beat the clock in Time Trial. Automatic acceleration and one- or two-switch controls keep you in the race, with a two-player mode using one switch each.",
+      "description": "Race sixteen tracks in four cups, with loop-de-loops, waterfalls and big jumps. Grand Prix, Time Trial and two players.",
       "path": "apps/games/NARBEKART/index.html",
       "image": "images/games/narberacer.png",
       "genres": [
@@ -36,7 +36,7 @@
     {
       "id": "bennysballista",
       "title": "Benny's Ballista",
-      "description": "Topple castles in three story campaigns, or create your own castles and full campaigns in the Castle Workshop. Build ordered levels with custom stories and goals, then save, play and share your adventures. Play with one or two switches; the Workshop uses a mouse and keyboard.",
+      "description": "Topple castles with boulders, bolts and bombs in three campaigns, or build your own in the Castle Workshop.",
       "path": "apps/games/BENNYSBALLISTA/index.html",
       "image": "images/games/bennysballista.png",
       "genres": [
@@ -69,7 +69,7 @@
     {
       "id": "bennysbasketball",
       "title": "Benny's Basketball Shooter",
-      "description": "Shoot hoops in a packed arena. Chase a high score in the 12-shot Shootout (a perfect game unlocks sudden-death bonus shots), or play HORSE with a friend: pick a spot and make shots they have to match. Audio cues help you aim and time each shot.",
+      "description": "Shoot hoops in a packed arena: chase a high score in the Shootout or play HORSE with a friend. Audio cues help you aim.",
       "path": "apps/games/BENNYSBASKETBALLSHOOTER/index.html",
       "image": "images/games/bennysbasketball.png",
       "genres": [
@@ -80,7 +80,7 @@
     {
       "id": "bennysfootball",
       "title": "Benny's Football",
-      "description": "Pick your team color and play a 16-game season of football! Call your plays, time your passes, and win 10 games to make the single-elimination playoffs - or go 16-0 for a straight shot at the championship.",
+      "description": "Pick your team color, call your plays and time your passes through a 16-game season and the playoffs.",
       "path": "apps/games/BENNYSFOOTBALL/index.html",
       "image": "images/games/bennysfootball.png",
       "genres": [
@@ -91,7 +91,7 @@
     {
       "id": "robotfootball",
       "title": "Robot Football",
-      "description": "Lead your robot team in 3D football with one or two switches. Call plays, pass, run, and defend in practice, exhibition games, or a 16-game season, with live commentary from announcer Penny Sparks and robot sidekick CAL-9000. Spoken guidance, adjustable pace, and optional scan-and-select movement let you play your way.",
+      "description": "Lead a robot team through a 16-game season with live commentary. Call plays, pass, run and defend. No-fail practice.",
       "path": "apps/games/ROBOTFOOTBALL/index.html",
       "image": "images/games/robotfootball.png",
       "genres": [
@@ -102,7 +102,7 @@
     {
       "id": "bennysbattleboats",
       "title": "Benny's Battle Boats",
-      "description": "A classic battleship-style game where you place your fleet and try to sink the enemy's ships. Play against the computer or challenge a friend in 2-player mode!",
+      "description": "Place your fleet and sink the enemy's ships. Play the computer or challenge a friend in 2-player mode!",
       "path": "apps/games/BENNYSBATTLEBOATS/index.html",
       "image": "images/games/battleboats.png",
       "genres": [
@@ -114,7 +114,7 @@
     {
       "id": "bennysbowling",
       "title": "Benny's Bowling",
-      "description": "Bowling with real physics on a full alley. Hot-seat up to 4 players, each with their own ball and scoresheet. Audio cues let you charge and aim the shot by ear. Ten alley themes.",
+      "description": "Bowling with real physics for up to 4 players. Audio cues help you aim and charge each shot. Ten alley themes.",
       "path": "apps/games/BENNYSBOWLING/index.html",
       "image": "images/games/bennysbowling.png",
       "genres": [
@@ -125,7 +125,7 @@
     {
       "id": "bennysbugblaster",
       "title": "Benny's Bug Blaster",
-      "description": "A tower defense style game where you squash bugs with your boot and have to buy items to keep your defenses up against the bugs.",
+      "description": "Tower defense: squash bugs with your boot and buy items to keep your defenses up.",
       "path": "apps/games/BENNYSBUGBLASTER/index.html",
       "image": "images/games/bennysbugblaster.png",
       "genres": [
@@ -160,7 +160,7 @@
     {
       "id": "bennysmatchymatch",
       "title": "Benny's Matchy Match",
-      "description": "Previously called concentration. A fun matching game with competitive modes and cooperative play. This comes with an editor app to make your own games!",
+      "description": "A matching game with competitive and cooperative modes, plus an editor to make your own games!",
       "path": "apps/games/BENNYSMATCHYMATCH/index.html",
       "image": "images/games/bennysmatchymatch.png",
       "genres": [
@@ -171,7 +171,7 @@
     {
       "id": "bennyspeggle",
       "title": "Benny's P3GL Game",
-      "description": "A glowing 3D peg shooter you play with one or two switches. Pick a mood: Cozy for relaxed play that never runs out of balls, Vivid for a steady climb, or Hyper for a wild neon space ride. Nine campaigns, 180 levels, powers, hazards, moving pegs, and a Campaign Editor for building your own.",
+      "description": "A glowing 3D peg shooter with 9 campaigns and 180 levels, from cozy to wild neon, plus a Campaign Editor.",
       "path": "apps/games/BENNYSPEGGLE/index.html",
       "image": "images/games/bennyspeggle.png",
       "genres": [
@@ -215,7 +215,7 @@
     {
       "id": "elouiseswordsearch",
       "title": "Elouise's Word Search",
-      "description": "Hunt hidden words in a letter grid, one switch at a time. Pick a row, pick a letter, spin the aimer to point the way the word runs, then stretch it out. Words hide sideways, diagonally and backwards. Thirteen categories with over 1500 words, three difficulty levels, and an editor to build your own word lists.",
+      "description": "Find words hidden sideways, diagonally and backwards. 13 categories, over 1500 words, and an editor for your own lists.",
       "path": "apps/games/ELOUISESWORDSEARCH/index.html",
       "image": "images/games/elouiseswordsearch.png",
       "genres": [
@@ -249,7 +249,7 @@
     {
       "id": "pickleballrally",
       "title": "NARBE Robot Pickleball",
-      "description": "First-person robot pickleball with aimed serves and automatic returns. Play with one or two switches, tap without holding, or use mouse and touch. Choose full speed, slow motion or score-free no-fail play. In collaboration with SCSU and Lily Flack; redesigned and developed by NARBE.",
+      "description": "First-person robot pickleball with aimed serves, automatic returns and slow motion. With SCSU and Lily Flack.",
       "path": "apps/games/NARBEPICKLEBALL/index.html",
       "image": "images/games/narbe-pickleball-2026-10.png",
       "genres": [
@@ -271,7 +271,7 @@
     {
       "id": "bennysracetracks",
       "title": "Benny's Race Tracks",
-      "description": "A 3D racing game you steer with a single switch - the game tells you which way to go with arrows, sound, and speech. Race 10 levels in a car, motorcycle, or spaceship, or pick the no-fail Cruise mode and just collect things along the way.",
+      "description": "Steer a car, motorcycle or spaceship with one switch through 10 levels, or relax in the no-fail Cruise mode.",
       "path": "apps/games/BENNYSRACETRACKS/index.html",
       "image": "images/games/bennysracetrack.png",
       "genres": [
@@ -282,7 +282,7 @@
     {
       "id": "narbeanimalfriends",
       "title": "NARBE Animal Friends",
-      "description": "A colourful barnyard peekaboo game - press a switch and the barn doors swing open as an animal steps out to say hello. No score, no timer, no losing.",
+      "description": "Open the barn, the aquarium or the safari and meet sixty animals, each with something to tell you. Nothing to lose.",
       "path": "apps/games/NARBEANIMALFRIENDS/index.html",
       "image": "images/games/narbeanimalfriends.png",
       "genres": [
@@ -293,7 +293,7 @@
     {
       "id": "bennysfishmystery",
       "title": "Benny's Fish Mystery",
-      "description": "A pilot game exploring fishing adventures with one- and two-switch access. Tag fish for Walt's research station, work up from a hand net to a motorboat, and uncover the mystery at the middle of the lake.",
+      "description": "Tag fish for the lake's research station, work up from a hand net to a motorboat, and solve the mystery of the lake.",
       "path": "apps/games/BENNYSFISHMYSTERY/index.html",
       "image": "images/games/bennysfishmystery.png",
       "genres": [
@@ -304,7 +304,7 @@
     {
       "id": "narbeminigolf",
       "title": "NARBE Mini Golf",
-      "description": "3D mini golf you play with one or two switches. Three themed 18-hole courses (54 holes) grow from friendly greens into longer winding routes, with roomy bridges, gentle hills and optional shortcuts. Includes up to four players, cinematic replays and a Course Creator.",
+      "description": "3D mini golf for up to four players: three themed 18-hole courses, cinematic replays and a Course Creator.",
       "path": "apps/games/NARBEMINIGOLF/index.html",
       "image": "images/games/narbeminigolf.png",
       "genres": [
@@ -315,7 +315,7 @@
     {
       "id": "narbepetpals",
       "title": "NARBE Pet Pals",
-      "description": "Adopt a puppy or a kitten from the rescue and watch it grow up with you, from a baby to a teen, a grown-up and one day a wise senior. Feed, play, cuddle, bathe and nap, go on walks and adventures, and hear real barks, whines, meows and purrs. Care stars unlock outfits, tricks, toys and new things for your home: change the curtains, hang a photo from your album and move the furniture around. Two switches do all of it, every screen fits without scrolling, and a short pause after each choice keeps a double press from doing anything by accident.",
+      "description": "Adopt a puppy or a kitten and watch it grow up. Feed, play, cuddle, bathe and walk it, and decorate its home.",
       "path": "apps/games/NARBEPETPALS/index.html",
       "image": "images/games/narbepetpals.png",
       "genres": [
@@ -326,7 +326,7 @@
     {
       "id": "narbemagicbutton",
       "title": "NARBE Magic Button",
-      "description": "Press your switch and make magic! Launch fireworks over a moonlit city, blow shimmery bubbles under the sea, or grow a garden of smiley flowers that ends in a breeze of petals. Every press makes something happen right away, with lots of different sounds so it never gets old. Any switch, key, tap or game controller button works. There is no score, no timer and nothing to lose.",
+      "description": "Press your switch to launch fireworks, blow bubbles or grow a garden of flowers. No score, no timer, nothing to lose.",
       "path": "apps/games/NARBEMAGICBUTTON/index.html",
       "image": "images/games/narbemagicbutton.png?v=c6b1f7acfaf0",
       "genres": [
@@ -336,7 +336,7 @@
     {
       "id": "narbeglowpop",
       "title": "Glow Pop",
-      "description": "Pop a glowing ball, ladybug or bee into colorful sparkles with a switch, key or tap. Choose colors, sizes, sounds and three ways to play. No score, no timer and nothing to lose.",
+      "description": "Pop a glowing ball, ladybug or bee into sparkles with a switch, key or tap. No score, no timer, nothing to lose.",
       "path": "apps/games/NARBEGLOWPOP/index.html",
       "image": "images/games/glowpop.png?v=ab6c0e738f46",
       "genres": [
@@ -346,7 +346,7 @@
     {
       "id": "narbeswitchstories",
       "title": "Switch Stories",
-      "description": "Explore illustrated stories created and adapted for switch users. Read at your own pace and press your switch to bring each page to life with a cause-and-effect animation. Includes read-aloud, adjustable text sizes, and a simple high-contrast view.",
+      "description": "Illustrated stories that come to life with each press, with read-aloud, adjustable text and high contrast.",
       "path": "/switch-stories/",
       "onlineOnly": true,
       "image": "images/games/switchstories.png?v=0dcf06e09e0e",
@@ -358,7 +358,7 @@
     {
       "id": "narbeloops",
       "title": "NARBE Loops",
-      "description": "Build a colorful beat one spot at a time. Add sound lines, change each line’s sound, and save loop templates to reopen. Play with switches, a mouse or touch.",
+      "description": "Build a colorful beat one spot at a time: add sound lines, change their sounds and save loops to play again.",
       "path": "apps/games/NARBELOOPS/index.html",
       "image": "images/games/narbeloops-gameplay.webp",
       "genres": [
@@ -369,7 +369,7 @@
     {
       "id": "narbeswitchsongs",
       "title": "NARBE Switch Songs",
-      "description": "Play familiar songs one press at a time on a big piano with matching illustrations. Listen to a song or explore Free Play, with no score or timer.",
+      "description": "Play familiar songs one press at a time on a big piano with pictures, or explore Free Play. No score or timer.",
       "path": "apps/games/NARBESWITCHSONGS/index.html",
       "image": "images/games/narbeswitchsongs-gameplay.webp",
       "genres": [
@@ -380,7 +380,7 @@
     {
       "id": "narbebuildnbash",
       "title": "NARBE Build n Bash",
-      "description": "Build it up, block by block, then knock it down! Each Build press puts the next wooden block in place: a tiny house, a rocket, an Egyptian pyramid, a castle, an amusement park or a space station, twelve builds in twelve worlds. Destroy any time for a silly surprise: a wrecking ball, a T. rex, a tornado, a big sneeze and more. One or two switches. No score, no timer and nothing to lose.",
+      "description": "Build a house, a rocket, a castle and more block by block, then knock it down with a T. rex or a big sneeze!",
       "path": "apps/games/NARBEBUILDNBASH/index.html",
       "image": "images/games/narbebuildnbash.png",
       "genres": [
@@ -390,7 +390,7 @@
     {
       "id": "narbebuildnride",
       "title": "NARBE Build n Ride",
-      "description": "Ride a toy steam train through farms, mountains, deserts, snowy forests, seaside cliffs and a city at night, with deer, balloons, fireworks and more along the way. Or build your own track one piece at a time: bridges, tunnels and stations happen by themselves, and Connect brings it home so you can ride it. Quick Build lays a ready-made track a piece at a time. One or two switches. No score, no timer and nothing to lose.",
+      "description": "Ride a toy steam train through farms, mountains and a city at night, or build your own track. No score or timer.",
       "path": "apps/games/NARBEBUILDNRIDE/index.html",
       "image": "images/games/narbebuildnride.png",
       "genres": [
@@ -401,7 +401,7 @@
     {
       "id": "bensfoodcourt",
       "title": "Ben's Food Court",
-      "description": "Run the counters of a cartoon mall food court. Talking customers walk up and order, and you make each order on an assembly line where the ingredients come to you one step at a time, one choice per step. Serve it, hear what they think, and earn stars to open more of the court's seven restaurants. Plays with one or two switches.",
+      "description": "Run a mall food court: customers order, and you make each order one step at a time. Earn stars to open new restaurants.",
       "path": "/bens-food-court/",
       "onlineOnly": true,
       "image": "images/games/bensfoodcourt.png?v=f317f620a59d",
@@ -413,12 +413,24 @@
     {
       "id": "narbespaceexplorer",
       "title": "NARBE Space Explorer",
-      "description": "Fly your own spaceship through a universe that never ends: galaxies, stars, planets and moons, all different. The ship flies itself; steer, or choose Next Stop. When you come near a planet you are asked, Do you want to go here? Go into orbit, fly low over the surface, scan wacky creatures, visit moons, meet aliens who call to say hello (or go away), and warp to a whole new galaxy. Everywhere you go is saved in your logbook with a picture. One or two switches. No score, no timer and nothing to lose.",
+      "description": "Fly a spaceship through a universe that never ends: orbit planets, meet aliens, warp to new galaxies. No score or timer.",
       "path": "apps/games/NARBESPACEEXPLORER/index.html",
       "image": "images/games/narbespaceexplorer.png",
       "genres": [
         "Interactive",
         "Simulation"
+      ]
+    },
+    {
+      "id": "narbecolorsplash",
+      "title": "NARBE Color Splash",
+      "description": "Color 96 pages in eight coloring books, one press at a time, or pick every color yourself. No wrong colors, no timer.",
+      "path": "/color-splash/",
+      "onlineOnly": true,
+      "image": "images/games/narbecolorsplash.png?v=bbd12f972299",
+      "genres": [
+        "Interactive",
+        "Educational"
       ]
     }
   ]

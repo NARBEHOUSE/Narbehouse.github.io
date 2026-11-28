@@ -87,11 +87,13 @@ function html(text,file,isIndex,tag){
     const out='<link href="/'+local+'" rel="stylesheet">';note(file,m,out,'local font file instead of Google Fonts');return out;
   });
   if(!/fonts\.googleapis\.com\/css/.test(text))text=text.replace(/^[ \t]*<link\b[^>]*rel=["']preconnect["'][^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>[ \t]*\r?\n?/gim,m=>{note(file,m,'(removed)','preconnect for Google Fonts, no longer used');return '';});
+  // Every published page gets the favicons (a game's other pages too, such as an editor); only the game page
+  // (index.html) gets the analytics tag and the cache tags.
+  if(/<\/title>/i.test(text)&&!/favicon-32\.png/.test(text)){const t='<link rel="icon" type="image/png" sizes="32x32" href="/bennyshub/images/favicon-32.png">'+nl+'<link rel="icon" type="image/png" sizes="16x16" href="/bennyshub/images/favicon-16.png">';
+    text=text.replace(/<\/title>/i,m=>m+nl+t);note(file,'</title>','</title>\n'+t.replace(/\r/g,''),'favicons after <title>');}
   if(isIndex){
     if(!/usage-analytics\.js/.test(text)){const t='<script src="/bennyshub/shared/usage-analytics.js" defer></script>';
       text=text.replace(/<head\b[^>]*>/i,m=>m+nl+t);note(file,'<head>','<head>\n'+t,'analytics tag first in <head>');}
-    if(!/favicon-32\.png/.test(text)){const t='<link rel="icon" type="image/png" sizes="32x32" href="/bennyshub/images/favicon-32.png">'+nl+'<link rel="icon" type="image/png" sizes="16x16" href="/bennyshub/images/favicon-16.png">';
-      text=text.replace(/<\/title>/i,m=>m+nl+t);note(file,'</title>','</title>\n'+t.replace(/\r/g,''),'favicons after <title>');}
     if(tag)text=text.replace(/(<(?:script|link)\b[^>]*\b(?:src|href)\s*=\s*["'])(?![a-z]+:|\/|#)([^"'?#]+\.(?:js|css))(?:\?v=[^"'#]*)?(["'])/gi,(m,pre,ref,post)=>pre+ref+'?v='+tag+post);
   }
   return text;

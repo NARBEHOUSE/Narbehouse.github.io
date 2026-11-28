@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "d4a251a70e5c9088cd53b05a4183ff8a7dc6ed00a3974cdf58e14a5d8aa11919",
-  "totalBytes": 435891177,
+  "version": "bdbd6e5eecc16902aaa2538a3f4540da401345b46aa2e9817d73e5671428a3b1",
+  "totalBytes": 436080403,
   "assets": [
     {
       "url": "./apps/games/BENNYSAYS/index.html",
@@ -22050,8 +22050,8 @@
     },
     {
       "url": "./apps/games/games.json",
-      "revision": "fa9f27f381947193f26b3190efd3417fbbe9162cd040df37ccba1f9819d26947",
-      "bytes": 19338
+      "revision": "b548ce7377b6ce9b62474c55bb654b422c506901fa792dbffd09006805d34e12",
+      "bytes": 15005
     },
     {
       "url": "./apps/tools/calc/app.js",
@@ -22792,6 +22792,11 @@
       "url": "./images/games/narbebuildnride.png",
       "revision": "f7cfebf580eadb6cf22942151fbebdb1b11a370855346df5e9e3031f8b38b989",
       "bytes": 331149
+    },
+    {
+      "url": "./images/games/narbecolorsplash.png",
+      "revision": "bbd12f972299a6cadf7ffaca48fc2f692d8b8d96447b2263737944fb6ba391ba",
+      "bytes": 193559
     },
     {
       "url": "./images/games/narbeloops-gameplay.webp",

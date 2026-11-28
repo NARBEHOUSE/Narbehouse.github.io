@@ -2,6 +2,37 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-28 (later) — Shorter Hub card descriptions: 120 characters at most
+
+Scope: the owner said the Hub cards were too wordy: descriptions ranged from 62 to 682 characters, and the long ones made the cards grow out of the grid, worst at the larger text sizes. The card also speaks its description with the title when the scan reaches it, so long text slowed scanning too. Every game description over 120 characters was rewritten to 120 or fewer (30 games, now 81 to 120). The same text is used in Ben's PC Hub and on the website: the five games whose wording differed between the two copies (Animal Friends, NARBE Racer, Fish Mystery, Ballista, Bowling) were checked to be the same games, and Robot Football has one text under both catalog ids. Credits stay, shortened: Sphere Splash "By Bryan R. with NARBE", Robot Pickleball "With SCSU and Lily Flack", Chasing Rainbows "Inclusive Imagination®’s weather card game". Bowling's PC description lost a typo ("Choose your a ball style"). Tools were already at 112 or fewer and are unchanged.
+
+Changed files (Electron port: **YES**, same pass, owner's request "on both PC and web"; the PC Hub's `bennyshub/apps/games/games.json` was backed up first and only its description strings changed, with the file's line endings and layout kept):
+- `bennyshub/apps/games/games.json` — 29 descriptions (30 games; Robot Football is one entry here).
+- new `tests/catalog-descriptions.test.cjs` — every games.json and tools.json description is 1 to 120 characters; the PC Hub has the same test. Checked to fail on the old catalog.
+- `bennyshub/ACCESSIBILITY.md` (§8) and the PC Hub's `ACCESSIBILITY.md` — the 120-character rule and why; details belong in a game's own Help and README.
+- `developer-guide.html` — the release checklist's games.json item includes the limit.
+- `bennyshub/offline-manifest.json` — games.json's new revision.
+- this record.
+
+## 2026-11-28 — Publish NARBE Color Splash (its own repo)
+
+Scope: publish the new PC Hub game NARBE Color Splash (`NARBECOLORSPLASH`, catalog id `narbecolorsplash`) to the web Hub, the NARBE House home page and SwitchedGames, at the owner's request, from its own GitHub Pages repo (NARBEHOUSE/color-splash, https://narbehouse.github.io/color-splash/, local checkout `F:\PROJECT FILES\WEBSITES\GAMES\color-splash`) so this repo does not grow. A switch-accessible coloring game: 8 books, 96 pages, Color / Palette / Paint play modes, Surprise Me, Simple High Contrast and a Page Maker. The website copy is the files the game loads (index.html, editor.html, sw.js, css/, js/, library/: 412 files, about 7 MB); the PC folder's art-source/ (about 125 MB of line art and labels that build library/), tools/ and tests/ stay on the PC.
+
+Web differences from the PC copy, made by `node scripts/copy-big-game.cjs color-splash --write`: shared hub files at absolute `/bennyshub/...` addresses, the standalone exit to `/bennyshub/index.html`, `usage-analytics.js` first in index.html's head, the two favicons on index.html and editor.html, no `electron-bridge.js`, and `?v=` release queries on the game's own CSS and scripts. The game's `sw.js` (network first, books kept after one visit) is scoped to /color-splash/.
+
+Changed files (all Electron port: **NO**; the game was built in the PC Hub first and already exists there):
+- `scripts/big-games.cjs` — `color-splash` entry (source NARBECOLORSPLASH; art-source/, tools/ and tests/ excluded; cache tags on).
+- `scripts/copy-big-game.cjs` — favicons now go on every published page of a big game (an editor page too), not only index.html; analytics and cache tags stay on index.html only.
+- new `bennyshub/images/games/narbecolorsplash.png` (1280x720 catalog picture: the play screen, Coral Reef 10 of 16, rendered from the game's own page data and CSS numbers by the PC copy's `tools/hub-shot.cjs`).
+- `bennyshub/apps/games/games.json` — new entry after NARBE Space Explorer, `"path": "/color-splash/"`, `"onlineOnly": true`, genres Interactive and Educational (39 games).
+- `index.html` — NARBE House home-page card, first in Games & Tools (image `?v=bbd12f972299`).
+- `bennyshub/ACCESSIBILITY.md` — per-game row and scannable-pause row; the §8 catalog count now reads 39.
+- `bennyshub/offline-manifest.json` — regenerated (games.json's new revision and the picture; the game itself is online only, like the other own-repo games).
+- this record.
+- SwitchedGames (its own repository): the first card and Details/search entry (category Cause & Effect, in Game editors for the Page Maker, `added` 2026-11-28) and the count of 39 games; see its CHANGELOG. It links https://narbehouse.github.io/color-splash/ and this site's picture, so the game repo and this site go live first.
+
+Verification (Node only; no browser was launched on the development PC): the PC copy's jsdom suites run against the website copy and this site's shared hub files, as GitHub Pages serves them: two switches (58 choices, 173 scan lists, largest 7), one switch with Auto Scan, mouse and touch (20 clicks, each straight into its option), and the Page Maker (draw, paint, save, then color the saved page in 3 presses). The PC copy's unit suites pass.
+
 ## 2026-11-23 (follow-up) — NARBE Space Explorer: Field Guide pictures follow the graphics setting
 
 Scope: the owner asked whether the game runs on low graphics quality like the other three.js games. It does (the Hub's shared NarbeGraphics setting, also Settings > Graphics; planets, Fly Low, creatures, plants, cities, comets and whales all have Low budgets), but the Field Guide's portrait renderer ignored it. `index.html` cache tags `?v=2026.11.23.3`; `js/stage.js` — the portrait renderer now takes `quality.rendererOptions()` (no antialiasing on Low) like the main and scanner renderers. Electron port **YES** (same file copied to Ben's PC Hub). `bennyshub/offline-manifest.json` — the stage.js entry. `docs/history/DEVELOPMENT-HISTORY.md` — this record, Electron port **NO**.
