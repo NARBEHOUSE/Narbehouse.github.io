@@ -2,6 +2,16 @@
 
 Detailed implementation and verification records for Benny’s Hub and the NARBE House website. This file was formerly SCAN-UPGRADE-CHANGES.md; its scope now covers all development. Historical entries retain the names and status recorded at the time. Start with [the documentation index](../README.md) for maintained guidance.
 
+## 2026-11-28 (late) — NARBE Foundation and NARBE House: who does what
+
+Scope: the owner's pass making the roles clear on every site. NARBE Foundation runs the free switch kit program, keeps a resource list, hosts a Discord community for ideas and collaboration, and puts some resources toward the shared infrastructure that keeps SwitchedGames and Benny's Hub free and open source (AI tools for open-source game development, hosting, shared website assets). Paid partnerships and sponsorships, and tips, are NARBE House's (NARBE LLC) only; nothing may read as Foundation money going to NARBE House. This site already sent partnership inquiries to narbehouse.com.
+
+Changed files:
+- `bennyshub/shared/tutorial-modal.js` — the tip pop-up said the Foundation "helps by providing funding for tools and hosting", just above NARBE House's tip links; it now says the Foundation is a separate nonprofit that puts some resources toward the shared infrastructure that keeps the hub free and open source, and that tips go to NARBE House, not the Foundation, and are not charitable donations. Electron port: **YES**, same text in Ben's PC Hub (owner: "make sure that's clear where ever").
+- `the-dream.html` — the NARBE House + NARBE Foundation callout said "Your support helps cover costs" beside "Support the Foundation"; it now says donations to the Foundation go to the shared infrastructure and its switch kit program.
+- `index.html` — the Sphere Splash credit on the home page card, "working in collaboration with NARBE House" (NARBE LLC is for legal text).
+- this record.
+
 ## 2026-11-28 (night) — One description per game: Hub and SwitchedGames
 
 Scope: the owner asked for a check of SwitchedGames for inconsistencies and chose one short description per game everywhere. SwitchedGames' cards now use Benny's Hub's descriptions (its own repository; see its CHANGELOG). The ten Hub descriptions not rewritten earlier today were tidied the same way, leaving out other companies' product names: Benny Says ("simon says style"), Benny's Show n Sound ("See 'n Say"), Benny's Baseball (also the typo "simluation"), Trivia Master, Mega Slot, Connect Four, Dice, Chess and Checkers, Word Jumble, Tic Tac Toe.
